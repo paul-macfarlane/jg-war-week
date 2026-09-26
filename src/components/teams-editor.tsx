@@ -13,8 +13,10 @@ import {
 import { ColorField, type ColorSwatch } from "@/components/color-field";
 import { OptionSelect } from "@/components/option-select";
 import {
+  SETUP_EDITOR,
   SetupRowButtons,
   SetupRowError,
+  setupRowProps,
   usageSummary,
   useSetupRow,
 } from "@/components/setup-row";
@@ -68,7 +70,10 @@ function TeamRow({
   }
 
   return (
-    <li className="border-border border-b py-3 last:border-b-0">
+    <li
+      {...setupRowProps(team?.id)}
+      className="border-border border-b py-3 last:border-b-0"
+    >
       <form
         onSubmit={submit}
         aria-label={team ? `${teamLabel} ${team.name}` : `New ${teamLabel}`}
@@ -196,7 +201,10 @@ function ParticipantRow({
   }
 
   return (
-    <li className="border-border border-b py-3 last:border-b-0">
+    <li
+      {...setupRowProps(participant?.id)}
+      className="border-border border-b py-3 last:border-b-0"
+    >
       <form
         onSubmit={submit}
         aria-label={participant ? participant.displayName : "New Participant"}
@@ -319,7 +327,7 @@ export function TeamsEditor({
     }),
   ];
   return (
-    <div className="flex flex-col gap-1">
+    <div {...SETUP_EDITOR} className="flex flex-col gap-1">
       {teams.length === 0 ? (
         <p className="text-foreground/70 text-sm">No {teamLabel}s yet.</p>
       ) : (
@@ -359,7 +367,7 @@ export function RosterEditor({
 }) {
   const rowProps = { teams, teamLabel, leaderTitle, tagSuggestions };
   return (
-    <div className="flex flex-col gap-1">
+    <div {...SETUP_EDITOR} className="flex flex-col gap-1">
       {participants.length === 0 ? (
         <p className="text-foreground/70 text-sm">No Participants yet.</p>
       ) : (

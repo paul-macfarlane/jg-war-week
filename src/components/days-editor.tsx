@@ -5,8 +5,10 @@ import { useId, useState } from "react";
 import { createDay, deleteDay, updateDay } from "@/actions/setup";
 import { DatePicker } from "@/components/date-picker";
 import {
+  SETUP_EDITOR,
   SetupRowButtons,
   SetupRowError,
+  setupRowProps,
   usageSummary,
   useSetupRow,
 } from "@/components/setup-row";
@@ -51,7 +53,10 @@ function DayRow({
   }
 
   return (
-    <li className="border-border border-b py-3 last:border-b-0">
+    <li
+      {...setupRowProps(day?.id)}
+      className="border-border border-b py-3 last:border-b-0"
+    >
       <form onSubmit={submit} aria-label={label}>
         <FieldGroup className="gap-2 sm:flex-row sm:items-end">
           <Field className="sm:w-auto">
@@ -106,7 +111,7 @@ export function DaysEditor({
   endDate: string;
 }) {
   return (
-    <div className="flex flex-col gap-6">
+    <div {...SETUP_EDITOR} className="flex flex-col gap-6">
       {days.length === 0 ? (
         <p className="text-foreground/70 text-sm">No Days yet.</p>
       ) : (

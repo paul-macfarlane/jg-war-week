@@ -43,6 +43,7 @@ describe("warWeekThemeStyle", () => {
     expect(warWeekThemeStyle(fixture)).toEqual({
       "--primary": "#00ff41",
       "--primary-foreground": "#000000",
+      "--primary-text": "#00ff41",
       "--accent": "#008f11",
       "--accent-foreground": "#000000",
       "--background": "#000000",

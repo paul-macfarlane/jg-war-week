@@ -63,7 +63,7 @@ export function ArchiveDetailView({ detail }: { detail: ArchiveDetail }) {
       <div className="flex flex-col gap-6 px-4 pt-4 pb-6">
         <Link
           href="/history"
-          className="text-primary flex items-center gap-1 text-sm font-medium"
+          className="text-primary-text flex items-center gap-1 text-sm font-medium"
         >
           <ArrowLeft aria-hidden className="size-4" />
           All past War Weeks
@@ -71,7 +71,7 @@ export function ArchiveDetailView({ detail }: { detail: ArchiveDetail }) {
 
         {linkOnly ? (
           <Card className="gap-4 px-4">
-            <p className="text-foreground/80 text-sm">
+            <p className="text-muted-foreground text-sm">
               Most of War Week {warWeek.edition.toUpperCase()}&apos;s story
               lives on the original wiki page.
             </p>
@@ -84,7 +84,7 @@ export function ArchiveDetailView({ detail }: { detail: ArchiveDetail }) {
               <Card className="bg-primary text-primary-foreground flex-row items-center gap-3 px-4 ring-0">
                 <Trophy aria-hidden className="size-8 shrink-0" />
                 <div className="flex flex-col">
-                  <span className="text-xs font-medium tracking-wide uppercase opacity-80">
+                  <span className="text-xs font-medium tracking-wide uppercase">
                     Winner
                   </span>
                   <span className="text-xl font-bold">{warWeek.winner}</span>
@@ -134,12 +134,12 @@ export function ArchiveDetailView({ detail }: { detail: ArchiveDetail }) {
                           {recipients || award.description ? (
                             <CardContent className="flex flex-col gap-1">
                               {recipients ? (
-                                <span className="text-primary text-sm font-medium">
+                                <span className="text-primary-text text-sm font-medium">
                                   {recipients}
                                 </span>
                               ) : null}
                               {award.description ? (
-                                <span className="text-foreground/70 text-sm">
+                                <span className="text-muted-foreground text-sm">
                                   {award.description}
                                 </span>
                               ) : null}
@@ -176,13 +176,13 @@ export function ArchiveCard({ warWeek }: { warWeek: WarWeek }) {
           href={`/${warWeek.edition}`}
           className="flex flex-1 flex-col gap-1 px-4 py-3"
         >
-          <span className="text-foreground/60 text-xs font-medium tracking-wide uppercase">
+          <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
             War Week {editionLabel} · {warWeek.year}
           </span>
-          <span className="text-primary text-lg font-semibold">
+          <span className="text-primary-text text-lg font-semibold">
             {warWeek.storyTheme}
           </span>
-          <span className="text-foreground/70 text-sm">
+          <span className="text-muted-foreground text-sm">
             {formatDateRange(warWeek.startDate, warWeek.endDate)}
           </span>
           <span className="text-sm">
@@ -192,7 +192,7 @@ export function ArchiveCard({ warWeek }: { warWeek: WarWeek }) {
                 <span className="font-medium">{warWeek.winner}</span>
               </span>
             ) : (
-              <span className="text-foreground/60">No winner recorded</span>
+              <span className="text-muted-foreground">No winner recorded</span>
             )}
           </span>
         </Link>
@@ -202,7 +202,7 @@ export function ArchiveCard({ warWeek }: { warWeek: WarWeek }) {
               href={warWeek.wikiUrl}
               target="_blank"
               rel="noreferrer"
-              className="text-primary flex w-full items-center gap-1 px-4 py-2 text-xs font-medium"
+              className="text-primary-text flex w-full items-center gap-1 px-4 py-2 text-xs font-medium underline underline-offset-4"
             >
               Original wiki page
               <ExternalLink aria-hidden className="size-3" />

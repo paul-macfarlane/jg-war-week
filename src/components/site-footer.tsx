@@ -11,7 +11,7 @@ export function SiteFooter({ className }: { className?: string }) {
   return (
     <footer
       className={cn(
-        "text-foreground/70 flex flex-wrap items-center justify-center gap-3 px-4 py-6 text-xs",
+        "text-muted-foreground flex flex-wrap items-center justify-center gap-3 px-4 py-6 text-xs",
         className,
       )}
     >

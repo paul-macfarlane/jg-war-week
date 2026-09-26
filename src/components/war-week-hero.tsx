@@ -33,14 +33,14 @@ export function WarWeekHero({ warWeek }: { warWeek: WarWeek }) {
             />
           ) : null}
           <div className="flex flex-col gap-1">
-            <span className="text-foreground/60 text-xs font-medium tracking-wide uppercase">
+            <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
               War Week
             </span>
             <h1 className="text-3xl font-bold">
               War Week {editionLabel}{" "}
-              <span className="text-foreground/60">{warWeek.year}</span>
+              <span className="text-muted-foreground">{warWeek.year}</span>
             </h1>
-            <p className="text-primary text-xl font-semibold">
+            <p className="text-primary-text text-xl font-semibold">
               {warWeek.storyTheme}
             </p>
           </div>
@@ -50,7 +50,7 @@ export function WarWeekHero({ warWeek }: { warWeek: WarWeek }) {
           <Badge variant="outline" className="h-auto px-3 py-1 text-sm">
             {WAR_WEEK_STATUS_LABEL[warWeek.status]}
           </Badge>
-          <span className="text-foreground/70">
+          <span className="text-muted-foreground">
             {formatDateRange(warWeek.startDate, warWeek.endDate)}
           </span>
         </div>
