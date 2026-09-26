@@ -1,10 +1,10 @@
 # Spec: Organizers, Hosts and the write target
 
-**Status:** ready-for-agent
+**Status:** ready-for-agent (red-team passed 2026-09-26, second round: 0 blocking, 5 warnings and 10 minors, all resolved below)
 
 **Source:** ticket `.scratch/hardening/issues/03-roles-and-access-consolidation.md`, ADR 0002 (global Organizers and per-Competition Hosts), ADR 0003 (actions take their War Week from the request). Delivered in Epic B (`.scratch/hardening/epics/B-access-and-action-layer.md`) with tickets 04, 08 and 10.
 
-**Red-team:** required before implementation. This spec changes the Drizzle schema and the access rule (`docs/agents/planning.md`). Ticket 10's migration is reviewed in the same pass. The first review (2026-09-26) returned 1 blocking finding, 4 warnings and 7 minors, all addressed in this revision; see ticket 03's comments.
+**Red-team:** required before implementation. This spec changes the Drizzle schema and the access rule (`docs/agents/planning.md`). Ticket 10's migration is reviewed in the same pass. Two rounds (2026-09-26): the first blocked on the untested migration copy, the second passed with warnings. Both rounds' resolutions are folded in; see ticket 03's comments.
 
 ## Problem Statement
 
@@ -110,7 +110,7 @@ Google-only sign-in and the refusal of non-`@jahnelgroup.com` emails are unchang
 
 ### Migration and deploy
 
-- **One migration set, generated, never hand-edited** (`docs/maintainers-guide.md`), in drizzle-kit's order:
+- **One migration set, journal-managed** (`docs/maintainers-guide.md`), in drizzle-kit's order. The copy step is the one hand-written file, created with `--custom` so the journal and CI's drift check stay consistent; the maintainers guide records that exception in this PR:
   1. **Tables.** `pnpm db:generate` for the two new tables and their constraints.
   2. **Copy.** `drizzle-kit generate --custom` for the data step. It inserts the distinct lowercased `@jahnelgroup.com` emails from the current War Week's `organizer_emails`, with "who added it" null. Current is picked the way the app picks it: the `live` one, else the earliest `upcoming`, else the latest `complete`. A database with no War Week gets an empty list. It ignores any email already present, so rerunning it is harmless.
   3. **Ticket 10.** Ticket 10's indexes and check constraints are generated in the same migration set, and one red-team review covers both.
@@ -118,18 +118,19 @@ Google-only sign-in and the refusal of non-`@jahnelgroup.com` emails are unchang
   CI's schema-drift check stays green because every schema change comes from `db:generate`.
 - **Deploy order.** `migrate.yml` and the Vercel deploy run separately on the same push, so either can land first:
   - Migration first: old code keeps reading `organizer_emails`, which still exists, and ignores the new tables.
-  - Code first: the new code finds no `organizer` table for a moment and its pages fail until the migration finishes. Acceptable for a push to `staging`; for `main`, see the prerequisite below.
+  - Code first: the actor load runs on every page (the Admin link needs it), so until the migration finishes every page fails for every viewer, not only `/admin`. The Migrate workflow takes well under a minute and normally beats the Vercel build, so this is accepted as a possible sub-minute outage on both `staging` and `main`. The prerequisite below carries its post-check.
   - Instant Rollback to a pre-03 deployment works, because the column is still there. It uses the old per-edition lists, frozen as of the migration.
 - **Human prerequisite before the `staging` → `main` PR merges** (post-check included):
   - **Prerequisite:** Epic B is verified on staging.
   - **Action:** Paul confirms that production's current War Week's `organizer_emails` is the intended global Organizer list. Anyone listed only on a past edition is not copied and loses `/admin`. Paul also takes a Neon branch or backup of production.
   - **Expected result:** the list is confirmed, or corrected in production's settings before the merge.
-  - **Post-check after the production migration:** the `organizer` rows match the confirmed list.
+  - **Post-check after the production migration:** the Migrate workflow run for the merge commit succeeded, `/` and `/admin` load on production, and the `organizer` rows match the confirmed list.
 - **Seed schema.** A War Week seed's `organizerEmails` becomes an optional `organizers` list of JG emails. Loading a seed inserts any listed email not already an Organizer and never removes one, the same "seed-initialized, never clobbered" treatment as keyed records. A plain seed reload never touches Hosts. `--reset` deletes the seeded War Weeks, so their Competitions and those Competitions' Hosts go with them; a staging reset wipes Host assignments. The demo seeds change in the same PR: XI's list moves to `organizers`, and the empty lists in the older seeds are dropped.
 
 ### The access rule
 
 - **Actor.** Loaded once per request from the session: `null` when anonymous, otherwise `{ email, isOrganizer, hosts }`. `hosts` lists the (Competition id, War Week id) pairs the email hosts. A signed-in actor with no role is a Participant for access purposes. Emails compare lowercased. `getSessionEmail` already turns a non-JG session into anonymous.
+- **Why tables, not better-auth's role plugins.** Organizers and Hosts are assigned by email before that person has ever signed in, so there's no `user` row to carry a role. Email-keyed tables are the fit.
 - **`can(actor, action, target)`** is a pure function in the access module and the only write rule. The Organizer-list family is global and takes no target. Every other family's `target` carries the War Week id, and where it applies it also carries the Competition id (the row's current one, and the posted one for creates and edits) and the Announcement's author email. The action families:
 
   | Family | Actions | Who |
@@ -168,7 +169,7 @@ Google-only sign-in and the refusal of non-`@jahnelgroup.com` emails are unchang
   4. loads the actor;
   5. calls `can`.
 
-  It returns `{ ok: true, actor, warWeek, ctx }` or `{ ok: false, error }`. Parsing input comes after it in every action.
+  It returns `{ ok: true, actor, warWeek, ctx }` or `{ ok: false, error }`. Parsing input comes after it in every action. Step 2 only checks that an id is shaped like a row id; a malformed or unknown id gets the existing "That record no longer exists." (or the family's not-found message) before `can` runs, because there's no target to check. The order-of-checks smoke therefore posts a real, existing id with malformed *input*, never a malformed id.
 - **Creates and the settings save take a `warWeekId` argument.** Every admin form passes the War Week it was rendered for. Row-level actions load the War Week from the row, as most already do. The `admin_edition` cookie is read only by the admin page loader and the edition switcher.
 - **`MutationContext`** keeps `{ warWeekId, actorEmail }`, and mutations keep refusing rows of another War Week. New mutations: add Organizer, remove Organizer, and set a Competition's Hosts (replacing the list). Remove Organizer locks every `organizer` row (`SELECT … FOR UPDATE`) before counting, so two concurrent removals of the last two Organizers can't both commit: the second waits, recounts and is refused. Create next War Week copies Hosts with Competitions.
 - **Actions return, never throw, on every refusal** covered here. Ticket 04 adds the catch-all for unexpected failures and the parser shape checks on top of this order.
@@ -181,7 +182,7 @@ Google-only sign-in and the refusal of non-`@jahnelgroup.com` emails are unchang
 - **Edition switcher.** Every edition for an Organizer; for a Host, the editions where they host. The Bracket admin pages pass the editions like every other page.
 - **Host trimming.** A Host sees Points (their Competitions only), Brackets for their Competitions, Setup → Competitions (their Competitions, with no create, delete or Hosts field), Setup → Schedule (items linked to their Competitions), Announcements (all listed, edit and delete only on their own, no pin), Standings and the Guide. War Week settings, Days, Teams, FAQ, Awards, Organizers and lifecycle controls are hidden. The actions refuse them anyway.
 - **Organizers page.** A new Organizer-only `/admin` page lists the Organizer list and adds or removes emails. It uses the shared confirm dialog for removal and toasts for results.
-- **Hosts field.** Each Competition's setup page gets an email-chips field, reusing today's Organizer-email chips control, shown and saved only for Organizers.
+- **Hosts field.** Each Competition's setup page gets an email-chips field, reusing today's Organizer-email chips control, shown only to Organizers. Hosts are saved by their own Organizer-only action ("assign Hosts"), never as part of the Competition setup save, so a Host's setup save can't carry a Hosts list at all: the setup parser has no such field and drops unknown keys.
 - **Admin navigation link.** Shown to an Organizer, or to anyone who hosts a Competition in any War Week (the gate then opens their edition). It's hidden for everyone else.
 
 ## Testing Decisions
@@ -202,10 +203,13 @@ A good test checks behavior through a public interface (the rule, a mutation, or
    - Create next War Week copying Hosts with Competitions (and not without);
    - the seed loader adding missing Organizers without removing any, and idempotently;
    - the settings save no longer refusing an actor absent from any list;
-   - the last-Organizer lock: two concurrent removals of the last two Organizers, on two connections, leave exactly one Organizer, and the second removal is refused.
+   - the last-Organizer lock: two concurrent removals of the last two Organizers, on two connections, leave exactly one Organizer, and the second removal is refused;
+   - a Host's Competition setup save leaves the `competition_host` rows unchanged, whatever extra keys the input carries.
 
    Prior art: the setup, lifecycle and seed-load mutation tests.
-2a. **Migration copy test** (local Postgres, its own scratch database, never the smoke or test database):
+
+   **Two-connection tests** (this one and ticket 10's races) can't use the rolled-back harness. They commit their fixtures under a dedicated War Week whose edition is a test-only string (`zz-race-<test name>`), clean it up in `afterEach` (the cascade removes everything else), and are guarded by `isLocalDatabaseUrl` like every DB test. Each test uses its own edition, so parallel vitest files never collide.
+2a. **Migration copy test**, a vitest file under `pnpm test` guarded by `isLocalDatabaseUrl`, so `pnpm gate` runs it. It connects to the local `postgres` superuser (the compose and CI service), creates a scratch database `war_weeker_migration_test` (dropping any leftover first), runs the steps below against it, and drops it in `afterAll`. Drizzle's migrator has no "apply up to", so the test applies the pre-03 SQL files by hand from the journal and inserts matching `drizzle.__drizzle_migrations` rows, then lets `migrate()` apply the rest:
    1. Apply the migrations up to the last pre-03 entry in the journal.
    2. Insert `war_week` fixtures: a `complete` edition listing `Old@jahnelgroup.com`; a `live` edition listing `Jason@JahnelGroup.com`, `jz@jahnelgroup.com`, a duplicate `jason@jahnelgroup.com` and `someone@gmail.com`; and an `upcoming` edition listing `next@jahnelgroup.com`.
    3. Apply the rest of the set.
@@ -250,5 +254,6 @@ A good test checks behavior through a public interface (the rule, a mutation, or
 - Epic B's order holds: this spec (03) first, then 04 and 08 in parallel, then 10. The migration set is 03's migration plus 10's.
 - **Deploy.** The migration is expand-only, and ticket 18 drops `organizer_emails` once rolling back past Epic B is no longer an option. The production prerequisite is in "Migration and deploy".
 - **Branch.** Epic B's branch is `feat/03-roles-and-access`, following the `feat/NN-<slug>` rule. The epic's earlier `feat/hardening-b-access` is superseded.
+- **`schedule_item.host` is not the Host role.** That free-text column is display copy ("Hosted by Tony M") on a Schedule Item; the CONTEXT.md rewrite says so next to the Host entry, and code keeps calling it the Schedule Item's host label.
 - **Access follows the current assignment.** Actor loading happens per request. A Host removed mid-session loses access on their next action, because nothing about roles is cached in the session.
 - ADR 0002 names `can(actor, action, target)` in the access module, and ADR 0003 fixes the action order. This spec contradicts neither.

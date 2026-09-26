@@ -6,9 +6,9 @@
 
 **Branch:** `feat/03-roles-and-access`
 
-**Blocked by:** Epic A (its PR merged into `staging`); ticket 03's spec and red-team review
+**Blocked by:** Epic A (its PR merged into `staging`, #78). Ticket 03's spec is red-teamed. Inside this epic, the tickets' `Blocked by: 03` lines are ordering, not availability: the epic is one branch, so 04, 08 and 10 start once 03's deliverable is integrated on it.
 
-**Status:** needs-triage (next step: re-run `/atlas-red-team` on the revised `.scratch/roles-and-access/spec.md` plus ticket 10; flip to `ready-for-agent` when it passes)
+**Status:** ready-for-agent
 
 **Spec (ticket 03):** `.scratch/roles-and-access/spec.md`
 
@@ -38,3 +38,4 @@ Each ticket's own acceptance criteria (03's as expanded by its spec), plus:
 
 - 2026-09-26: 03's spec written at `.scratch/roles-and-access/spec.md`. It came out large, but ticket 10 stays in this epic by decision (one migration set, one red-team review).
 - 2026-09-26: First red-team review blocked (migration copy untested). The spec was revised: expand/contract migration, copy test, lock on last-Organizer removal, order-of-checks smoke, production prerequisite. Dropping `organizer_emails` moved to ticket 18. Branch renamed to `feat/03-roles-and-access` (`feat/NN-<slug>` rule).
+- 2026-09-26: Second red-team passed (5 warnings, 10 minors, resolved in the spec and ticket 10). Epic and ticket 03 set to `ready-for-agent`.

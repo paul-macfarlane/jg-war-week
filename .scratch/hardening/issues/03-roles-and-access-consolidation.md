@@ -4,13 +4,13 @@
 
 **Blocked by:** 02
 
-**Status:** needs-triage (next step: re-run `/atlas-red-team` on the revised spec plus ticket 10; flip to `ready-for-agent` when it passes)
+**Status:** ready-for-agent
 
 **Spec:** `.scratch/roles-and-access/spec.md`
 
 ## Settled decisions
 
-- **Organizer:** a global list in its own table, managed by Organizers in `/admin`. The last Organizer can't be removed; you can remove yourself if another remains. The migration fills it from the current War Week's `organizerEmails`, then drops that column. The seed schema and demo seeds change in the same PR.
+- **Organizer:** a global list in its own table, managed by Organizers in `/admin`. The last Organizer can't be removed; you can remove yourself if another remains. The migration fills it from the current War Week's `organizerEmails`; the column is dropped later by ticket 18 (expand/contract, decided in the spec). The seed schema and demo seeds change in the same PR.
 - **Host:** a per-Competition list of JG emails, assigned by Organizers on the Competition's setup page. A Host doesn't have to be a Participant. "Create next War Week" copies Hosts along with Competitions when `copyCompetitions` is on.
 - **A Host can**, on their Competitions: edit setup (including scoring and Placement Points), build, run, reopen and finalize the Bracket, add, edit and delete Points Entries, and manage Schedule Items linked to the Competition. A Host can also post Announcements and edit or delete their own. The rest is Organizer-only.
 - **`/admin`** shows a Host only their Competitions and the pages they can use. The page gate becomes "Organizer, or Host of something in this War Week".
@@ -51,3 +51,4 @@
   - M6: branch `feat/03-roles-and-access`.
   - M7: smoke churn listed.
   - Former-Host smoke line added (story 47).
+- 2026-09-26 [RED-TEAM 2]: `ATLAS_RED_TEAM_PASSED`, 5 warnings and 10 minors. Resolved in the spec and ticket 10: W1 lifecycle item dropped; W2 each race names its lock, its sharing writers and a two-connection test, FAQ accepted as harmless; W3 copy test is a guarded vitest file with a scratch database and hand-applied pre-03 files; W4 code-first window accepted as a possible sub-minute outage with a post-check; W5 Hosts saved only by their own Organizer action. M1 statuses flipped; M2 custom-migration exception recorded in the maintainers guide; M3 malformed ids get not-found before `can`; M4 constraints defined; M5 `competition_host.competition_id` index; M6 AC reworded; M7 two-connection fixture pattern; M8 stale line fixed and epic supersedes per-ticket availability; M9 `schedule_item.host` disambiguated; M10 build-vs-buy line. Ready for `/atlas-implement` on Epic B.

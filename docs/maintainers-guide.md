@@ -212,7 +212,10 @@ migration, accept it in the seed format and seeds, and show it on <page>.
 
 The chain is schema → `pnpm db:generate` → migration in `drizzle/` →
 `pnpm db:migrate` locally → seed format and seed files → UI. Never hand-edit
-a migration.
+a migration. The one exception is a data step that the schema diff can't
+express (copying rows between tables): create it with
+`pnpm drizzle-kit generate --custom --name <what-it-copies>` so it gets its
+own journal entry, and write only that file.
 
 ### Add or change a form control
 
