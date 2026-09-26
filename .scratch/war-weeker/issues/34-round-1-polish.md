@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** needs-triage
+**Status:** wontfix (superseded by `.scratch/hardening/issues/08`, `09`, `14`)
 
 ## Findings
 
@@ -27,3 +27,5 @@
 **2026-09-24, Claude (production smoke):** Walked every public and admin page on https://war-weeker.vercel.app signed in as an Organizer. Checked end to end: add, edit and delete a Points Entry (standings updated, over-max warning, placement presets, required-field validation); post and delete an Announcement (bold renders on `/xi/news`); Reveal then Hide (an open, visible leaderboard tab showed the Standings within ~10s). All test data removed; Standings are hidden again. No console errors. The fix-before-submission finding went to ticket 35; the post-hackathon ones are the last three bullets above. Production `/api/mcp` answers 401 without auth, so `MCP_PUBLIC=true` still has to be set before judging (ticket 28, step 5).
 
 **2026-09-24, Claude (production regression round 2):** Re-walked https://war-weeker.vercel.app after PR #49 deployed, signed in as an Organizer. Iframe overflow sweep at 375, 768, 812, 1024 and 1280px across 78 routes: every public page (`/xi/*`, all ten past editions, `/history`, `/about`, `/install`) and every admin page, including the new/edit pages. Ticket 35's pages (`/admin/points`, `/admin/announcements`, `/admin/awards/new`) now measure 0px at every width. The only overflow left is the Schedule Item form at 375px, filed as ticket 36 (fix-before-submission). End to end: add, edit and delete a Points Entry (Blue 20 → 22 → 23.5 → 20, "edited" marker); post and delete an Announcement (bold renders on `/xi/news`); give and delete an Award (shows on `/xi/awards`, then gone); Reveal then Hide (a visible leaderboard tab showed the Standings within ~13s and went back to hidden after Hide). All test data removed; Standings are hidden again. No console errors on any page; the only warnings are the `/about` poster preload and the video iframe's `allowfullscreen`. `MCP_PUBLIC` is on: an unauthenticated `tools/list` returns the tools, and `get_leaderboard` answers "hidden" while Standings are hidden. No new post-hackathon findings.
+
+- 2026-09-26: Superseded. Preview-alias sign-in → `.scratch/hardening/issues/08`; contrast and the Videos column → `09`; the rest → `14`.

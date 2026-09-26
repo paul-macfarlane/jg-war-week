@@ -35,3 +35,5 @@ Grilled 2026-09-24 with Paul.
 - [ ] **Human-gated, after merge:** prerequisite: IT creates an incoming webhook for a test channel, and Paul sets `SLACK_WEBHOOK_URL` in Vercel and redeploys. Action: publish a test Announcement with the box ticked. Expected: one message with the format above appears in the test channel, and its link opens `/<edition>/news`. Post-check: delete the test Announcement, then point the variable at the real War Week channel. Record the result under Comments. Until then this criterion is `BLOCKED`, not `PASS`.
 
 ## Comments
+
+- 2026-09-26: Now a phase 3 candidate in the post-hackathon plan (`.scratch/hardening/issues/17`). It ranks first if IT provides the webhook by January 2027.

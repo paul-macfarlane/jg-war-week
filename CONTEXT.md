@@ -24,8 +24,10 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **You**                       | The Participant the signed-in person is, in the War Week being viewed. Found by **account linking** or the "Which one is you?" pick. |
 | **Account linking**           | Matching the session email to a Participant email, ignoring case. Read-time only; nothing is stored.                             |
 | **Company Tag**               | An optional affiliation label on a participant (LTI, IL, …).                                                                      |
-| **Organizer**                 | A signed-in `@jahnelgroup.com` user on the War Week's allowlist. The only role that can write.                                    |
-| **Competition**               | Anything that awards points. Scored as team or individual.                                                                        |
+| **Organizer**                 | A signed-in `@jahnelgroup.com` user on the global Organizer list. Can change anything in any War Week (ADR 0002).                 |
+| **Host**                      | A signed-in JG user an Organizer assigns to a Competition ("hosted by Tony M"). Runs that Competition; needn't be a Participant.   |
+| **Admin**                     | The management area at `/admin` that Organizers and Hosts use. A place, never a role: say Organizer or Host for people.           |
+| **Competition**               | Anything that awards points. Scored as team or individual. Skill divisions are separate Competitions ("MTG Advanced", "MTG Beginner"). |
 | **Competition Group**         | An optional grouping of competitions ("Team Night Events").                                                                       |
 | **Points Entry**              | One ledger row: points awarded to a team or participant for a competition.                                                        |
 | **Placement Points**          | A Competition's optional preset points for 1st, 2nd, 3rd… (up to 5 places, highest first), offered as buttons on Points Entry.  |
@@ -61,6 +63,7 @@ Do not use these words in code (identifiers, comments, UI copy). Use the
 | ELO         | Points, Points Entry, Standings                                      |
 | Placeholder | "Coming in a later slice", stub, or name the concrete future feature |
 | Tournament  | Competition                                                          |
+| Admin (a person or role) | Organizer or Host; "Admin" names only the `/admin` area   |
 
 Seed content copied verbatim from `old-wikis/` (e.g. a day theme literally
 called "Tournament Day") is exempt: it is historical data, not code, and the
@@ -118,6 +121,12 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   failed.
 
 ## Access rules
+
+> **Changing.** ADR 0002 replaces the per-edition `organizerEmails` list
+> with a global Organizer list plus per-Competition Hosts. ADR 0003 makes
+> every action take its War Week from the request, never from the
+> `admin_edition` cookie. The rules below describe the code as it stands
+> until `.scratch/hardening/issues/03` lands and rewrites this section.
 
 - Sign-in is Google only. Any email whose domain isn't exactly
   `jahnelgroup.com` is refused: better-auth never creates a user for it,
