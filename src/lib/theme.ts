@@ -1,7 +1,12 @@
 import type { CSSProperties } from "react";
 
 import type { WarWeek } from "@/db/schema";
-import { normalizeHex } from "@/lib/color";
+import {
+  contrastRatio,
+  normalizeHex,
+  readableOn,
+  readableText,
+} from "@/lib/color";
 
 const FONT_PRESET_VAR: Record<WarWeek["fontPreset"], string> = {
   sans: "var(--font-preset-sans)",
@@ -33,11 +38,20 @@ export function warWeekThemeStyle(warWeek: ThemeColors): CSSProperties {
   // both keep hover, popover and input states readable.
   const mutedSurface = `color-mix(in oklch, ${bg}, ${fg} 12%)`;
   const mutedText = `color-mix(in oklch, ${fg}, ${bg} 35%)`;
+  // Primary-colored text (Story Themes, small links) and text on the accent
+  // (the bannerless hero) must still read when an Organizer's primary or
+  // accent sits too close to the background or the primary text color.
+  const primaryText = readableText(warWeek.primaryColor, bg, fg);
+  const accentText = readableOn(
+    warWeek.accentColor,
+    warWeek.primaryForegroundColor,
+  );
   return {
     "--primary": warWeek.primaryColor,
     "--primary-foreground": warWeek.primaryForegroundColor,
+    "--primary-text": primaryText,
     "--accent": warWeek.accentColor,
-    "--accent-foreground": warWeek.primaryForegroundColor,
+    "--accent-foreground": accentText,
     "--background": warWeek.backgroundColor,
     "--foreground": warWeek.foregroundColor,
     "--card": warWeek.backgroundColor,
@@ -59,26 +73,7 @@ export function warWeekThemeStyle(warWeek: ThemeColors): CSSProperties {
 /** WCAG AA contrast for body text. */
 export const MIN_TEXT_CONTRAST = 4.5;
 
-/** A hex color's WCAG relative luminance, or null when it isn't a hex color. */
-function luminance(hex: string): number | null {
-  const match = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex.trim());
-  if (!match) return null;
-  const digits =
-    match[1].length === 3 ? [...match[1]].map((d) => d + d).join("") : match[1];
-  const [r, g, b] = [0, 2, 4].map((i) => {
-    const c = parseInt(digits.slice(i, i + 2), 16) / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-/** The WCAG contrast ratio of two hex colors (1–21), or null if either isn't one. */
-export function contrastRatio(a: string, b: string): number | null {
-  const la = luminance(a);
-  const lb = luminance(b);
-  if (la == null || lb == null) return null;
-  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
-}
+export { contrastRatio };
 
 /**
  * The text-on-color pairs the themed pages draw, each below WCAG AA, as

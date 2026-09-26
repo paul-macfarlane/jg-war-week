@@ -11,8 +11,10 @@ import {
 import { OptionSelect } from "@/components/option-select";
 import { PlacementPointsRows } from "@/components/placement-points-rows";
 import {
+  SETUP_EDITOR,
   SetupRowButtons,
   SetupRowError,
+  setupRowProps,
   usageSummary,
   useSetupRow,
 } from "@/components/setup-row";
@@ -74,7 +76,11 @@ function CompetitionRow({
     (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setValues((v) => ({ ...v, [field]: event.target.value }));
   const scoringOptions = [
-    ...(mode === "teams" ? [{ value: "team", label: teamLabel }] : []),
+    // A free-for-all can still hold a team Competition (e.g. after a mode
+    // change); keep its option so the select shows a label, not "team".
+    ...(mode === "teams" || values.scoring === "team"
+      ? [{ value: "team", label: teamLabel }]
+      : []),
     { value: "individual", label: "Individual" },
   ];
 
@@ -103,7 +109,10 @@ function CompetitionRow({
     : "";
 
   return (
-    <li className="border-border border-b py-4 last:border-b-0">
+    <li
+      {...setupRowProps(competition?.id)}
+      className="border-border border-b py-4 last:border-b-0"
+    >
       <form
         onSubmit={submit}
         aria-label={competition ? competition.name : "New Competition"}
@@ -160,6 +169,8 @@ function CompetitionRow({
           {mode === "teams" && (
             <Field
               orientation="horizontal"
+              // Dims the label along with the disabled Switch.
+              data-disabled={values.scoring !== "individual"}
               className="min-h-11 sm:min-h-9 sm:self-end"
             >
               <Switch
@@ -250,7 +261,7 @@ export function CompetitionsEditor({
   groupSuggestions: string[];
 }) {
   return (
-    <div className="flex flex-col gap-6">
+    <div {...SETUP_EDITOR} className="flex flex-col gap-6">
       {competitions.length === 0 ? (
         <p className="text-foreground/70 text-sm">No Competitions yet.</p>
       ) : (

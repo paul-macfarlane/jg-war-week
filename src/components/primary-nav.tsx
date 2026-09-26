@@ -93,7 +93,7 @@ export function BottomTabBar({
           const { label, href, icon: Icon } = destination;
           const active = isActive(pathname, destination, edition);
           const tabClassName = `${TAB_CLASS} ${
-            active ? "text-primary" : "text-foreground/60"
+            active ? "text-primary-text" : "text-muted-foreground"
           }`;
 
           if (label === "More") {
@@ -170,7 +170,7 @@ export function TopNav({
           <span className="text-lg font-bold">
             War Week {edition.toUpperCase()}
           </span>
-          <span className="text-primary text-sm">{storyTheme}</span>
+          <span className="text-primary-text text-sm">{storyTheme}</span>
         </Link>
         <nav aria-label="Primary">
           <ul className="flex items-center gap-1">
@@ -185,7 +185,7 @@ export function TopNav({
                     className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                       active
                         ? "bg-primary text-primary-foreground"
-                        : "text-foreground/70 hover:text-foreground"
+                        : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     {label}
@@ -199,14 +199,14 @@ export function TopNav({
           {account.isOrganizer && (
             <Link
               href="/admin"
-              className="text-primary underline-offset-4 hover:underline"
+              className="text-primary-text underline-offset-4 hover:underline"
             >
               Admin
             </Link>
           )}
           <span
             title={account.email}
-            className="text-foreground/60 hidden max-w-56 truncate lg:inline"
+            className="text-muted-foreground hidden max-w-56 truncate lg:inline"
           >
             {account.email}
           </span>
