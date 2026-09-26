@@ -1,0 +1,20 @@
+# 02 Seed workflow passes the flag, integrated commit b543948
+
+$ grep -n -B6 -A3 allow-remote-reset .github/workflows/seed.yml
+88-          if [ "$RESET" = "true" ]; then
+89-            if [ "$CONFIRM_RESET" != "$TARGET" ]; then
+90-              echo "::error::Reset deletes organizer-entered data. Type \"$TARGET\" in confirm_reset to proceed."
+91-              exit 1
+92-            fi
+93-            # confirm_reset above is the explicit confirmation that lets a hosted reset proceed.
+94:            flags="--reset --allow-remote-reset"
+95-          fi
+96-          pnpm seed:load $flags $files
+
+$ DATABASE_URL=<local .env.example URL> pnpm seed:load --reset seeds/xi.json   # local: no flag needed
+Loaded War Week xi (reset)
+exit=0
+
+$ DATABASE_URL=<local .env.example URL> pnpm seed:load --reset --allow-remote-reset seeds/xi.json   # the workflow invocation shape parses and loads
+Loaded War Week xi (reset)
+exit=0
