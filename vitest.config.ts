@@ -18,7 +18,8 @@ export default defineConfig({
     // local Postgres (parallel worktrees).
     testTimeout: 20_000,
     watch: false,
-    // e2e/ holds the Playwright flows (`pnpm e2e`), not vitest tests.
-    exclude: [...configDefaults.exclude, "e2e/**"],
+    // e2e/ holds the Playwright flows (`pnpm e2e`), not vitest tests;
+    // .claude/ holds agent worktrees, whose copies of src/ must not run here.
+    exclude: [...configDefaults.exclude, "e2e/**", ".claude/**"],
   },
 });

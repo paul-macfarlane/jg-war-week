@@ -95,6 +95,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Generated Drizzle migrations
     "drizzle/**",
+    // Agent worktrees: separate checkouts with their own .next output.
+    ".claude/**",
   ]),
 ]);
 
