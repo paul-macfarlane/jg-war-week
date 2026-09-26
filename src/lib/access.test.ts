@@ -282,7 +282,6 @@ describe("canUseMcp", () => {
     hasSession: false,
     authorization: null,
     mcpToken: token,
-    mcpPublic: undefined,
   };
 
   it("lets a Jahnel Group session in without a token", () => {
@@ -318,20 +317,6 @@ describe("canUseMcp", () => {
       expect(
         canUseMcp({ ...base, mcpToken, authorization: `Bearer ${token}` }),
       ).toBe(false);
-    },
-  );
-
-  it.each(["true", "TRUE", " true "])(
-    "lets anyone in when MCP_PUBLIC is %j",
-    (mcpPublic) => {
-      expect(canUseMcp({ ...base, mcpPublic })).toBe(true);
-    },
-  );
-
-  it.each([undefined, "", "false", "1", "yes"])(
-    "stays closed when MCP_PUBLIC is %j",
-    (mcpPublic) => {
-      expect(canUseMcp({ ...base, mcpPublic })).toBe(false);
     },
   );
 });

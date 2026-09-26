@@ -24,7 +24,7 @@ const READY_TIMEOUT_MS = 30_000;
 const AUTH_SECRET =
   process.env.BETTER_AUTH_SECRET || `smoke-only-secret-${randomUUID()}`;
 const SESSION_COOKIE = "better-auth.session_token";
-// A smoke-only MCP bearer token; MCP_PUBLIC stays off so anonymous gets 401.
+// A smoke-only MCP bearer token; anonymous requests still get 401.
 const MCP_TOKEN = `smoke-mcp-token-${randomUUID()}`;
 
 const childEnv = {
@@ -36,7 +36,6 @@ const childEnv = {
   GOOGLE_CLIENT_ID: "",
   GOOGLE_CLIENT_SECRET: "",
   MCP_TOKEN,
-  MCP_PUBLIC: "",
 };
 
 let failures = 0;

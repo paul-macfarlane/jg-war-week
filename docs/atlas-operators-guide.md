@@ -20,7 +20,7 @@ what Atlas will write on a ticket later, while it does the work.
 | Item | Value |
 |---|---|
 | Workspace name | war-weeker |
-| What this repository is for | JG War Week: one place for Jahnel Group organizers to run War Week (themes, schedule, teams, competitions, points, awards, announcements) and for participants to follow it, plus a curated War Week history. Built for the JG AI Connection Event; submission due Fri 2026-09-25 10:00 AM. |
+| What this repository is for | JG War Week: one place for Jahnel Group organizers to run War Week (themes, schedule, teams, competitions, points, awards, announcements) and for participants to follow it, plus a curated War Week history. |
 | Folder for proof of work | `test-results` |
 
 Atlas may change the repositories below, and nothing else.

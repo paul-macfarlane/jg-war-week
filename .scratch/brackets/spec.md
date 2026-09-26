@@ -3,7 +3,6 @@ title: War Weeker — Brackets, War Week lifecycle, and hiding replaced by the F
 status: done (delivered scope; the deferred tickets continue in .scratch/hardening/issues/16)
 labels: [done]
 created: 2026-09-24
-deadline: none. Only a complete, gate-passing vertical slice may merge before the 2026-09-25 08:00 ET staging freeze (ticket 1 is the likely candidate); the rest merges after submission.
 source: Paul's first-use feedback and grilling session, 2026-09-24 (Q14–Q19, Q24–Q34, Q36); War Week lifecycle added 2026-09-25
 order: 3 of 3 (after .scratch/admin-polish and .scratch/custom-inputs; built with shadcn per spec 2)
 ---

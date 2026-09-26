@@ -28,9 +28,9 @@ you set them in your own `.env.local` or in the service's settings.
 
 Your local `.env.local` needs the variables named in `.env.example`:
 `DATABASE_URL`, `DATABASE_DRIVER`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
-`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and optionally `MCP_TOKEN` and
-`MCP_PUBLIC`. The local database defaults work as-is. Slack posting isn't
-built yet, so there's no Slack app to be granted.
+`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and optionally `MCP_TOKEN`. The
+local database defaults work as-is. Slack posting isn't built yet, so
+there's no Slack app to be granted.
 
 Then follow [README: Fresh clone setup](../README.md#fresh-clone-setup) and
 [README: Organizer sign-in](../README.md#organizer-sign-in).
