@@ -46,7 +46,7 @@ export function isUniqueViolation(error: unknown): boolean {
 }
 
 /** Runs a write, turning a lost race for a unique value into `refusal`. */
-async function refusingDuplicate(
+export async function refusingDuplicate(
   refusal: string,
   write: () => Promise<MutationResult>,
 ): Promise<MutationResult> {

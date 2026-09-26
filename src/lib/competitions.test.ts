@@ -6,7 +6,6 @@ import {
   describeScoring,
   formatMaxPoints,
   groupCompetitions,
-  isCompetitionId,
   placementLabel,
   pointsForPlacement,
 } from "@/lib/competitions";
@@ -86,17 +85,6 @@ describe("formatMaxPoints", () => {
     [null, "No max"],
   ])("formats %s as %s", (maxPoints, expected) => {
     expect(formatMaxPoints(maxPoints)).toBe(expected);
-  });
-});
-
-describe("isCompetitionId", () => {
-  it.each([
-    ["3f1c2b4a-5d6e-4f70-8a9b-0c1d2e3f4a5b", true],
-    ["not-a-uuid", false],
-    ["", false],
-    ["3f1c2b4a-5d6e-4f70-8a9b-0c1d2e3f4a5b; drop table", false],
-  ])("%s is %s", (id, expected) => {
-    expect(isCompetitionId(id)).toBe(expected);
   });
 });
 

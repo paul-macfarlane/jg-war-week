@@ -1,14 +1,14 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { guarded } from "@/actions/result";
+import { revalidateWarWeek } from "@/actions/revalidate";
 import { type TargetKind, authorize } from "@/auth/authorize";
 import type { WarWeekAction } from "@/lib/access";
 import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
 import {
   type CompetitionInput,
   type DayInput,
+  type Parsed,
   type ParticipantInput,
   type TeamInput,
   type WarWeekSettingsInput,
@@ -23,19 +23,12 @@ import type { MutationContext, MutationResult } from "@/mutations/types";
 
 export type SetupActionResult = MutationResult;
 
-// The Appearance Theme and settings show on every page of the War Week,
-// the admin shell and the Archive, so revalidate the whole site.
-function revalidateSite() {
-  revalidatePath("/", "layout");
-}
-
-type Parsed<T> = { ok: true; value: T } | { ok: false; error: string };
-
 /**
  * Runs a setup write: authorizes `action` on the row `id` names (or, for a
  * create or the settings save, the posted War Week), only then parses the
- * input, runs `write` and revalidates the site on success. Every setup
- * action goes through here, so none of them throws (`guarded`).
+ * input, runs `write` and, on success, revalidates the War Week as far as
+ * `reach` (`revalidateWarWeek`). Every setup action goes through here, so
+ * none of them throws (`guarded`).
  */
 async function setupWrite<T>(
   action: WarWeekAction,
@@ -43,6 +36,7 @@ async function setupWrite<T>(
   id: unknown,
   parse: () => Parsed<T>,
   write: (value: T, ctx: MutationContext) => Promise<MutationResult>,
+  reach: "edition" | "site" = "edition",
 ): Promise<SetupActionResult> {
   return guarded(async () => {
     const authorized = await authorize(action, kind, id);
@@ -51,7 +45,7 @@ async function setupWrite<T>(
     if (!parsed.ok) return parsed;
 
     const result = await write(parsed.value, authorized.ctx);
-    if (result.ok) revalidateSite();
+    if (result.ok) revalidateWarWeek(authorized.warWeek.edition, reach);
     return result;
   });
 }
@@ -68,6 +62,8 @@ export async function updateWarWeekSettings(
     warWeekId,
     () => parseWarWeekSettingsInput(input),
     mutations.updateWarWeekSettings,
+    // The header and the Archive show the settings and Appearance Theme.
+    "site",
   );
 }
 

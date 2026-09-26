@@ -1,8 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { guarded } from "@/actions/result";
+import { revalidateWarWeek } from "@/actions/revalidate";
 import { type Authorized, authorize } from "@/auth/authorize";
 import { can } from "@/lib/access";
 import {
@@ -10,14 +9,9 @@ import {
   parseAnnouncementInput,
 } from "@/lib/announcements";
 import * as mutations from "@/mutations/announcements";
+import type { MutationResult } from "@/mutations/types";
 
-export type AnnouncementActionResult =
-  { ok: true } | { ok: false; error: string };
-
-function revalidateWarWeek(edition: string) {
-  revalidatePath("/admin", "layout");
-  revalidatePath(`/${edition}`, "layout");
-}
+export type AnnouncementActionResult = MutationResult;
 
 /**
  * Pinning is Organizer-only, so a create or edit that would change whether

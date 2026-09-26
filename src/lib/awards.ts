@@ -73,13 +73,6 @@ export function parseAwardInput(
   return { ok: false, error: message };
 }
 
-const uuid = z.uuid();
-
-/** Whether a URL segment or action argument is shaped like a row id. */
-export function isAwardId(id: string): boolean {
-  return uuid.safeParse(id).success;
-}
-
 /** An Award with its recipients, as the read path returns it. */
 export type AwardView = {
   id: string;

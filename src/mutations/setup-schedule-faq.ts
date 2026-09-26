@@ -11,24 +11,11 @@ import {
   moveInOrder,
   scheduleItemGuardError,
 } from "@/lib/setup-schedule-faq";
-import { isUniqueViolation, locked } from "@/mutations/setup";
+import { locked, refusingDuplicate } from "@/mutations/setup";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 
 const SCHEDULE_ITEM_NOT_FOUND = "That Schedule Item no longer exists.";
 const FAQ_ITEM_NOT_FOUND = "That FAQ Item no longer exists.";
-
-/** Runs a write, turning a lost race for its natural key into a refusal. */
-async function refusingDuplicate(
-  error: string,
-  write: () => Promise<MutationResult>,
-): Promise<MutationResult> {
-  try {
-    return await write();
-  } catch (caught) {
-    if (!isUniqueViolation(caught)) throw caught;
-    return { ok: false, error };
-  }
-}
 
 /** The War Week's Days, as a subquery for "an item of this War Week". */
 function warWeekDayIds(warWeekId: string, dbOrTx: DBOrTx) {

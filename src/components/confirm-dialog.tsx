@@ -16,9 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-
-/** What every server action returns. */
-export type ActionResult = { ok: true } | { ok: false; error: string };
+import type { WriteResult } from "@/lib/result";
 
 /**
  * The one confirm for destructive or hard-to-undo actions. `title` names
@@ -96,7 +94,7 @@ export function ConfirmActionButton({
   title: string;
   description?: ReactNode;
   confirmLabel?: string;
-  action: () => Promise<ActionResult>;
+  action: () => Promise<WriteResult>;
   successMessage?: string;
   variant?: React.ComponentProps<typeof Button>["variant"];
   size?: React.ComponentProps<typeof Button>["size"];

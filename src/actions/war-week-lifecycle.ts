@@ -1,9 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
 import { guarded } from "@/actions/result";
+import { revalidateAdmin, revalidateWarWeek } from "@/actions/revalidate";
 import { ADMIN_EDITION_COOKIE, getActor } from "@/auth/actor";
 import { authorize } from "@/auth/authorize";
 import { getSessionEmail } from "@/auth/server";
@@ -53,12 +53,6 @@ async function lifecycleWarWeek(
   return { ok: true, warWeek: target, ctx: authorized.ctx };
 }
 
-// Status decides the current War Week, the home redirect and the Archive,
-// so every lifecycle change revalidates the whole site.
-function revalidateSite() {
-  revalidatePath("/", "layout");
-}
-
 /** Start War Week: `upcoming → live`. Refused while another is live. */
 export async function startWarWeek(
   warWeekId: string,
@@ -67,7 +61,7 @@ export async function startWarWeek(
     const organizer = await lifecycleWarWeek("start", warWeekId);
     if (!organizer.ok) return organizer;
     const result = await mutations.startWarWeek(organizer.ctx);
-    if (result.ok) revalidateSite();
+    if (result.ok) revalidateWarWeek(organizer.warWeek.edition, "site");
     return result;
   });
 }
@@ -83,7 +77,7 @@ export async function endWarWeek(
     const parsed = parseClosingInput(input);
     if (!parsed.ok) return parsed;
     const result = await mutations.endWarWeek(parsed.value, organizer.ctx);
-    if (result.ok) revalidateSite();
+    if (result.ok) revalidateWarWeek(organizer.warWeek.edition, "site");
     return result;
   });
 }
@@ -100,7 +94,7 @@ export async function reopenWarWeek(
     const organizer = await lifecycleWarWeek("reopen", warWeekId);
     if (!organizer.ok) return organizer;
     const result = await mutations.reopenWarWeek(organizer.ctx);
-    if (result.ok) revalidateSite();
+    if (result.ok) revalidateWarWeek(organizer.warWeek.edition, "site");
     return result;
   });
 }
@@ -143,7 +137,7 @@ export async function createNextWarWeek(
         result.edition,
         current?.edition === result.edition,
       );
-      revalidateSite();
+      revalidateWarWeek(organizer.warWeek.edition, "site");
     }
     return result;
   });
@@ -172,7 +166,7 @@ export async function selectAdminEdition(
     const refusal = can(actor, "admin.view", { warWeekId: target.id });
     if (refusal) return { ok: false, error: refusal };
     await setAdminEditionCookie(target.edition, target.id === current?.id);
-    revalidatePath("/admin", "layout");
+    revalidateAdmin();
     return { ok: true };
   });
 }

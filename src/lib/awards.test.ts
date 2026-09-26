@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isAwardId, parseAwardInput } from "@/lib/awards";
+import { parseAwardInput } from "@/lib/awards";
 
 const TEAM = "11111111-1111-4111-8111-111111111111";
 const ALICE = "22222222-2222-4222-8222-222222222222";
@@ -81,13 +81,6 @@ describe("parseAwardInput", () => {
       ok: false,
       error: "Choose Participants of this War Week.",
     });
-  });
-});
-
-describe("isAwardId", () => {
-  it("accepts a uuid and refuses anything else", () => {
-    expect(isAwardId(TEAM)).toBe(true);
-    expect(isAwardId("new")).toBe(false);
   });
 });
 

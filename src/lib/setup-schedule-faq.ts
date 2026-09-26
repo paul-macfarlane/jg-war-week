@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { ScheduleItem } from "@/db/schema";
+import { type ScheduleItem, scheduleItemCategory } from "@/db/schema";
 import {
   type Content,
   contentInputSchema,
@@ -27,14 +27,7 @@ export const scheduleItemSeedSchema = z
     location: z.string().max(200).nullish(),
     virtualLink: httpsUrl.nullish(),
     description: contentInputSchema.nullish(),
-    category: z.enum([
-      "competition",
-      "education",
-      "social",
-      "meal",
-      "work",
-      "other",
-    ]),
+    category: z.enum(scheduleItemCategory.enumValues),
     /** A Competition name from this seed. */
     competition: z.string().min(1).max(120).nullish(),
   })
@@ -240,11 +233,4 @@ export function moveInOrder(
   const moved = [...ids];
   [moved[from], moved[to]] = [moved[to], moved[from]];
   return moved;
-}
-
-const uuid = z.uuid();
-
-/** Whether a URL segment or action argument is shaped like a row id. */
-export function isSetupItemId(id: string): boolean {
-  return uuid.safeParse(id).success;
 }

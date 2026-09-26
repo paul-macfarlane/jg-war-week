@@ -8,7 +8,8 @@ import {
   participant,
   team,
 } from "@/db/schema";
-import { type AwardView, isAwardId } from "@/lib/awards";
+import { type AwardView } from "@/lib/awards";
+import { isUuid } from "@/lib/uuid";
 
 export type { AwardView };
 
@@ -79,7 +80,7 @@ export async function getAwardForEdit(
   id: string,
   dbOrTx: DBOrTx = db,
 ): Promise<AwardView | undefined> {
-  if (!isAwardId(id)) return undefined;
+  if (!isUuid(id)) return undefined;
   const awards = await getAwards(warWeek, dbOrTx);
   return awards.find((a) => a.id === id);
 }

@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { WarWeek } from "@/db/schema";
 import {
   contrastRatio,
+  teamSwatches,
   themeContrastWarnings,
   themeSwatches,
   warWeekThemeStyle,
@@ -60,7 +61,6 @@ describe("warWeekThemeStyle", () => {
       "--popover-foreground": "#d1ffd6",
       "--input": "color-mix(in oklch, #000000, #d1ffd6 20%)",
       "--font-sans": "var(--font-preset-mono)",
-      "--ww-primary": "#00ff41",
     });
   });
 
@@ -179,6 +179,27 @@ describe("themeSwatches", () => {
       { color: "#aabbcc", label: "Primary" },
       { color: "#000000", label: "Background" },
       { color: "#d1ffd6", label: "Text" },
+    ]);
+  });
+});
+
+describe("teamSwatches", () => {
+  const teams = [
+    { id: "red", name: "Red", color: "#F00" },
+    { id: "blue", name: "Blue", color: "#0000ff" },
+    { id: "odd", name: "Odd", color: "not a color" },
+  ];
+
+  it("offers each Team's hex color, labelled with its name", () => {
+    expect(teamSwatches(teams)).toEqual([
+      { color: "#ff0000", label: "Red" },
+      { color: "#0000ff", label: "Blue" },
+    ]);
+  });
+
+  it("leaves out the Team being edited", () => {
+    expect(teamSwatches(teams, "red")).toEqual([
+      { color: "#0000ff", label: "Blue" },
     ]);
   });
 });

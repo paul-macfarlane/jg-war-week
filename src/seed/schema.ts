@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { warWeekStatus } from "@/db/schema";
 import { announcementTitleSchema, videoUrlSchema } from "@/lib/announcements";
 import { AWARD_DESCRIPTION_MAX, AWARD_NAME_MAX } from "@/lib/awards";
 import { jgEmailSchema } from "@/lib/jg-email";
@@ -125,7 +126,7 @@ export const warWeekSeedSchema = z
     // Seed-initialized only: `status`, `winner` and `highlights` (from the
     // settings shape) are set when the War Week is first inserted, never on
     // a reload.
-    status: z.enum(["upcoming", "live", "complete"]),
+    status: z.enum(warWeekStatus.enumValues),
     ...warWeekSettingsSeedShape,
     /**
      * Global Organizers this seed adds when missing; a load never removes

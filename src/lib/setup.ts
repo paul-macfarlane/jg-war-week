@@ -1,19 +1,23 @@
 import { type ZodType, z } from "zod";
 
 import type { Competition, Participant, Team, WarWeek } from "@/db/schema";
+import {
+  competitionFormat,
+  competitionScoring,
+  fontPreset,
+  warWeekMode,
+} from "@/db/schema";
+import { HEX_COLOR } from "@/lib/color";
 import { MAX_PLACEMENTS } from "@/lib/competitions";
 import { dayOutsideRangeError } from "@/lib/day-range";
-import { pointsSchema as points } from "@/lib/points-entry";
+import { POINTS_NUMBER, pointsSchema as points } from "@/lib/points-entry";
 
 export { dayOutsideRangeError } from "@/lib/day-range";
 
 // Field rules the seed file (`src/seed/schema.ts`) and the setup forms share,
 // so seed and setup can't drift.
 
-const hexColor = z
-  .string()
-  .max(32)
-  .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "must be a hex color");
+const hexColor = z.string().max(32).regex(HEX_COLOR, "must be a hex color");
 
 const themeUrl = z
   .string()
@@ -34,7 +38,7 @@ export const warWeekSettingsSeedShape = {
   storyTheme: z.string().min(1).max(120),
   startDate: z.iso.date(),
   endDate: z.iso.date(),
-  mode: z.enum(["teams", "free-for-all"]),
+  mode: z.enum(warWeekMode.enumValues),
   teamLabel: z.string().min(1).max(40),
   leaderTitle: z.string().min(1).max(40),
   slackChannelUrl: z.url({ protocol: /^https$/ }).max(500),
@@ -43,7 +47,7 @@ export const warWeekSettingsSeedShape = {
   accent: hexColor,
   background: hexColor,
   foreground: hexColor,
-  fontPreset: z.enum(["sans", "serif", "mono"]),
+  fontPreset: z.enum(fontPreset.enumValues),
   logoUrl: themeUrl.nullish(),
   bannerUrl: themeUrl.nullish(),
   wikiUrl: themeUrl.nullish(),
@@ -90,11 +94,11 @@ export const competitionSeedSchema = z
         error: "each place must be worth no more than the one above it",
       })
       .nullish(),
-    scoring: z.enum(["team", "individual"]),
+    scoring: z.enum(competitionScoring.enumValues),
     countsTowardTeam: z.boolean().default(false),
     group: z.string().min(1).max(120).nullish(),
     /** How the Competition is run; a Bracket's Entrants aren't seeded yet. */
-    format: z.enum(["points", "single-elimination"]).default("points"),
+    format: z.enum(competitionFormat.enumValues).default("points"),
   })
   .refine(
     (c) =>
@@ -421,8 +425,6 @@ export function parseParticipantInput(
   );
 }
 
-const NUMBER = /^-?\d+(\.\d+)?$/;
-
 /** The Competition form's fields, as strings (and one checkbox). */
 const competitionInputShape = z.object({
   name: z.string(),
@@ -446,11 +448,11 @@ export function parseCompetitionInput(
   if (!shape.ok) return shape;
   input = shape.value;
   const maxPoints = input.maxPoints.trim();
-  if (maxPoints && !NUMBER.test(maxPoints)) {
+  if (maxPoints && !POINTS_NUMBER.test(maxPoints)) {
     return { ok: false, error: "Max points must be a number." };
   }
   const places = input.placementPoints.split(/[\s,]+/).filter(Boolean);
-  if (!places.every((place) => NUMBER.test(place))) {
+  if (!places.every((place) => POINTS_NUMBER.test(place))) {
     return {
       ok: false,
       error:

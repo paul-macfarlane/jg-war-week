@@ -90,13 +90,6 @@ export function parseAnnouncementInput(
   return { ok: false, error: message };
 }
 
-const uuid = z.uuid();
-
-/** Whether a URL segment or action argument is shaped like a row id. */
-export function isAnnouncementId(id: string): boolean {
-  return uuid.safeParse(id).success;
-}
-
 /**
  * Pinned Announcements first, then newest first by published-at. Stable:
  * rows that tie on both keep their original order.

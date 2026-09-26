@@ -1,21 +1,13 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { guarded } from "@/actions/result";
+import { revalidateWarWeek } from "@/actions/revalidate";
 import { authorize } from "@/auth/authorize";
 import { type AwardInput, parseAwardInput } from "@/lib/awards";
 import * as mutations from "@/mutations/awards";
 import type { MutationResult } from "@/mutations/types";
 
 export type AwardActionResult = MutationResult;
-
-function revalidateWarWeek(edition: string) {
-  revalidatePath("/admin", "layout");
-  revalidatePath(`/${edition}`, "layout");
-  // A complete War Week's Awards also show in the Archive.
-  revalidatePath("/history", "layout");
-}
 
 /** Gives an Award in the War Week the form was rendered for. */
 export async function createAward(

@@ -1,5 +1,3 @@
-import { z } from "zod";
-
 import { getActor } from "@/auth/actor";
 import {
   type AccessTarget,
@@ -9,6 +7,7 @@ import {
   type WarWeekAction,
   can,
 } from "@/lib/access";
+import { isUuid } from "@/lib/uuid";
 import type { MutationContext } from "@/mutations/types";
 import {
   type LoadedTarget,
@@ -57,8 +56,6 @@ const TARGETS = {
 >;
 
 export type TargetKind = keyof typeof TARGETS;
-
-const isUuid = (id: unknown): id is string => z.uuid().safeParse(id).success;
 
 /**
  * The one authorize step every War Week action runs before touching its

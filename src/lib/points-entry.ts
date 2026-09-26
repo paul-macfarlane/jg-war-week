@@ -4,6 +4,9 @@ import type { Competition, PointsEntry } from "@/db/schema";
 import { formatPoints } from "@/lib/points";
 import { WAR_WEEK_TIME_ZONE } from "@/lib/schedule";
 
+/** A points value as typed: an optional minus, digits, optional decimals. */
+export const POINTS_NUMBER = /^-?\d+(\.\d+)?$/;
+
 /**
  * A points value as the database stores it, numeric(8, 2): at most two
  * decimals and six whole digits. Shared by the seed and the Points Entry
@@ -71,7 +74,7 @@ const pointsEntryFormSchema = z.object({
   points: z
     .string()
     .trim()
-    .regex(/^-?\d+(\.\d+)?$/, { error: "Points must be a number." })
+    .regex(POINTS_NUMBER, { error: "Points must be a number." })
     .transform(Number)
     .pipe(pointsSchema),
   note: pointsEntryNoteSchema
@@ -99,13 +102,6 @@ export function parsePointsEntryInput(
     ? `${label} ${issue.message}.`
     : issue.message;
   return { ok: false, error: message };
-}
-
-const uuid = z.uuid();
-
-/** Whether a URL segment or action argument is shaped like a row id. */
-export function isPointsEntryId(id: string): boolean {
-  return uuid.safeParse(id).success;
 }
 
 /**

@@ -1,21 +1,20 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { guarded } from "@/actions/result";
+import { revalidateWarWeek } from "@/actions/revalidate";
 import { authorize } from "@/auth/authorize";
 import type { WarWeekAction } from "@/lib/access";
 import {
-  isRowId,
   parseEntrantsInput,
   parseFormatInput,
   parseGenerateInput,
   parseHeatResultInput,
 } from "@/lib/bracket/input";
+import { isUuid } from "@/lib/uuid";
 import * as mutations from "@/mutations/brackets";
-import type { MutationContext } from "@/mutations/types";
+import type { MutationContext, MutationResult } from "@/mutations/types";
 
-export type BracketActionResult = { ok: true } | { ok: false; error: string };
+export type BracketActionResult = MutationResult;
 
 export type HeatResultActionResult =
   { ok: true; resetHeatIds: string[] } | { ok: false; error: string };
@@ -35,10 +34,7 @@ async function bracketWrite<R extends { ok: boolean }>(
     if (!authorized.ok) return authorized;
 
     const result = await write(competitionId as string, authorized.ctx);
-    if (result.ok) {
-      revalidatePath("/admin", "layout");
-      revalidatePath(`/${authorized.warWeek.edition}`, "layout");
-    }
+    if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
     return result;
   });
 }
@@ -85,7 +81,7 @@ export async function recordHeatResult(
   input: unknown,
 ): Promise<HeatResultActionResult> {
   return bracketWrite("bracket.heat-result", competitionId, async (id, ctx) => {
-    if (!isRowId(heatId)) {
+    if (!isUuid(heatId)) {
       return { ok: false, error: "That Heat no longer exists." };
     }
     const parsed = parseHeatResultInput(input);

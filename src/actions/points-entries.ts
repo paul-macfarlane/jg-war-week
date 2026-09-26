@@ -1,22 +1,16 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { guarded } from "@/actions/result";
+import { revalidateWarWeek } from "@/actions/revalidate";
 import { authorize, postedCompetitionId } from "@/auth/authorize";
 import {
   type PointsEntryInput,
   parsePointsEntryInput,
 } from "@/lib/points-entry";
 import * as mutations from "@/mutations/points-entries";
+import type { MutationResult } from "@/mutations/types";
 
-export type PointsEntryActionResult =
-  { ok: true } | { ok: false; error: string };
-
-function revalidateWarWeek(edition: string) {
-  revalidatePath("/admin", "layout");
-  revalidatePath(`/${edition}`, "layout");
-}
+export type PointsEntryActionResult = MutationResult;
 
 /** Adds a Points Entry in the posted Competition's War Week. */
 export async function createPointsEntry(

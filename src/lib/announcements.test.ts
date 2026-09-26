@@ -4,7 +4,6 @@ import {
   type AnnouncementInput,
   MAX_VIDEO_LINKS,
   announcementVideoCount,
-  isAnnouncementId,
   parseAnnouncementInput,
   sortAnnouncements,
 } from "@/lib/announcements";
@@ -142,13 +141,6 @@ describe("parseAnnouncementInput", () => {
       ok: true,
       value: expect.objectContaining({ videoUrls: [url] }),
     });
-  });
-});
-
-describe("isAnnouncementId", () => {
-  it("accepts a uuid and rejects everything else", () => {
-    expect(isAnnouncementId("f47ac10b-58cc-4372-a567-0e02b2c3d479")).toBe(true);
-    expect(isAnnouncementId("not-a-uuid")).toBe(false);
   });
 });
 

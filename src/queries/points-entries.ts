@@ -13,8 +13,8 @@ import {
   type AdminLedgerEntry,
   type PointsEntryTargetKind,
   buildAdminLedger,
-  isPointsEntryId,
 } from "@/lib/points-entry";
+import { isUuid } from "@/lib/uuid";
 
 export type PointsEntryFormCompetition = {
   id: string;
@@ -117,7 +117,7 @@ export async function getPointsEntryForEdit(
   id: string,
   dbOrTx: DBOrTx = db,
 ) {
-  if (!isPointsEntryId(id)) return undefined;
+  if (!isUuid(id)) return undefined;
   const [found] = await dbOrTx
     .select({
       id: pointsEntry.id,
