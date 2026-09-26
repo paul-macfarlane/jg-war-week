@@ -103,6 +103,22 @@ Removing something beats adding something. A user-visible change updates
 - `16` Bracket formats, in the order from decision 7
 - `17` Grill "a twist of fun" for War Week XII
 
+### Delivery epics
+
+Phases 1 and 2 ship as four work packages. Each epic is one `/atlas-implement`
+run with one branch and one PR into `staging`, and each waits for the
+previous epic's PR to merge. Epic files live in `epics/`.
+
+| Epic | Tickets | Waits on |
+|---|---|---|
+| `A` Safety net and independent fixes | 02, 06, 05, 07, 09, 15 | nothing |
+| `B` Access and the action layer | 03, 04, 08, 10 | A merged; 03 specced and red-teamed (can run while A is built) |
+| `C` Test net, then refactor | 13, 11 | B merged |
+| `D` Forms and polish | 12, 14 | C merged |
+
+Phase 3 stays per ticket: `16` gets its own epic (T9 and T10 first), and `17`
+is a grilling session.
+
 ## Out of scope
 
 Swiss, ladder, per-person history across years, the Stairs integration (no
