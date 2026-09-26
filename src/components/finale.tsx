@@ -28,7 +28,7 @@ function useFinale(ranks: number[]) {
   const [run, setRun] = useState(0);
 
   const start = useCallback(() => {
-    setDurationMs(finaleDurationMs([ranks]));
+    setDurationMs(finaleDurationMs(ranks));
     setElapsedMs(0);
     setStartedAt(null);
     setPhase("playing");
