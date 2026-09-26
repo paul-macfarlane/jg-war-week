@@ -19,15 +19,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 
-type CopyOption =
-  "copyOrganizers" | "copySettings" | "copyCompetitions" | "copyFaq";
+type CopyOption = "copySettings" | "copyCompetitions" | "copyFaq";
 
 const COPY_OPTIONS: { field: CopyOption; label: string; help: string }[] = [
-  {
-    field: "copyOrganizers",
-    label: "Organizers",
-    help: "You're always an Organizer of the new War Week.",
-  },
   {
     field: "copySettings",
     label: "Settings and Appearance Theme",
@@ -36,7 +30,7 @@ const COPY_OPTIONS: { field: CopyOption; label: string; help: string }[] = [
   {
     field: "copyCompetitions",
     label: "Competitions",
-    help: "With their Placement Points and scoring. No Points Entries.",
+    help: "With their Placement Points, scoring and Hosts. No Points Entries.",
   },
   { field: "copyFaq", label: "FAQ", help: "Every FAQ Item." },
 ];
@@ -65,7 +59,6 @@ export function NextWarWeekForm({
     startDate: "",
     endDate: "",
     storyTheme: "",
-    copyOrganizers: true,
     copySettings: true,
     copyCompetitions: false,
     copyFaq: false,

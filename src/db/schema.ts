@@ -95,6 +95,9 @@ export const warWeek = pgTable(
     bannerUrl: varchar("banner_url", { length: 500 }),
     fontPreset: fontPreset("font_preset").notNull(),
     wikiUrl: varchar("wiki_url", { length: 500 }),
+    // Deprecated: Organizers are global now (the `organizer` table). Kept,
+    // unread by the new access rule, so a rollback still works; ticket 18
+    // drops it.
     organizerEmails: varchar("organizer_emails", { length: 254 })
       .array()
       .notNull()
@@ -104,6 +107,9 @@ export const warWeek = pgTable(
       .array()
       .notNull()
       .default([]),
+    // `created_at` and `updated_at` (here and on every table) stay
+    // `timestamp` without time zone on purpose: they're audit columns, never
+    // shown, and the database session runs in UTC.
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -168,6 +174,7 @@ export const participant = pgTable(
   (table) => [
     unique().on(table.warWeekId, table.displayName),
     unique().on(table.warWeekId, table.email),
+    index("participant_team_id_idx").on(table.teamId),
   ],
 );
 
@@ -234,7 +241,10 @@ export const scheduleItem = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
-  (table) => [unique().on(table.dayId, table.startTime, table.title)],
+  (table) => [
+    unique().on(table.dayId, table.startTime, table.title),
+    index("schedule_item_competition_id_idx").on(table.competitionId),
+  ],
 );
 
 export const pointsEntry = pgTable(
@@ -271,6 +281,8 @@ export const pointsEntry = pgTable(
   },
   (table) => [
     unique().on(table.competitionId, table.seedKey),
+    index("points_entry_team_id_idx").on(table.teamId),
+    index("points_entry_participant_id_idx").on(table.participantId),
     check(
       "points_entry_exactly_one_target",
       sql`num_nonnulls(${table.teamId}, ${table.participantId}) = 1`,
@@ -325,7 +337,10 @@ export const heat = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
-  (table) => [unique().on(table.competitionId, table.round, table.position)],
+  (table) => [
+    unique().on(table.competitionId, table.round, table.position),
+    index("heat_winner_to_heat_id_idx").on(table.winnerToHeatId),
+  ],
 );
 
 /** An Entrant in a Heat's slot, with its place and score once decided. */
@@ -346,6 +361,13 @@ export const heatEntrant = pgTable(
   (table) => [
     primaryKey({ columns: [table.heatId, table.slot] }),
     unique().on(table.heatId, table.entrantId),
+    index("heat_entrant_entrant_id_idx").on(table.entrantId),
+    // The engine's slots are 0-based and its places 1-based.
+    check("heat_entrant_slot_0_or_1", sql`${table.slot} in (0, 1)`),
+    check(
+      "heat_entrant_place_from_1",
+      sql`${table.place} is null or ${table.place} >= 1`,
+    ),
   ],
 );
 
@@ -365,7 +387,10 @@ export const award = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
-  (table) => [unique().on(table.warWeekId, table.seedKey)],
+  (table) => [
+    unique().on(table.warWeekId, table.seedKey),
+    index("award_team_id_idx").on(table.teamId),
+  ],
 );
 
 export const awardParticipant = pgTable(
@@ -378,7 +403,10 @@ export const awardParticipant = pgTable(
       .notNull()
       .references(() => participant.id, { onDelete: "cascade" }),
   },
-  (table) => [primaryKey({ columns: [table.awardId, table.participantId] })],
+  (table) => [
+    primaryKey({ columns: [table.awardId, table.participantId] }),
+    index("award_participant_participant_id_idx").on(table.participantId),
+  ],
 );
 
 export const announcement = pgTable(
@@ -420,6 +448,46 @@ export const faqItem = pgTable(
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (table) => [unique().on(table.warWeekId, table.question)],
+);
+
+/** A global Organizer: may change everything in every War Week. */
+export const organizer = pgTable(
+  "organizer",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    email: varchar("email", { length: 254 }).notNull().unique(),
+    // Null for rows copied by the migration or inserted by a seed load.
+    addedBy: varchar("added_by", { length: 254 }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    check(
+      "organizer_email_lowercase",
+      sql`${table.email} = lower(${table.email})`,
+    ),
+  ],
+);
+
+/** A Host: a JG email that runs one Competition. */
+export const competitionHost = pgTable(
+  "competition_host",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competition.id, { onDelete: "cascade" }),
+    email: varchar("email", { length: 254 }).notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    // Email first, so it also serves the lookup of what an email hosts.
+    unique().on(table.email, table.competitionId),
+    index("competition_host_competition_id_idx").on(table.competitionId),
+    check(
+      "competition_host_email_lowercase",
+      sql`${table.email} = lower(${table.email})`,
+    ),
+  ],
 );
 
 // better-auth's core tables (Google sign-in only). Property names follow
@@ -605,3 +673,5 @@ export type FaqItem = InferSelectModel<typeof faqItem>;
 export type EntrantRow = InferSelectModel<typeof entrant>;
 export type HeatRow = InferSelectModel<typeof heat>;
 export type HeatEntrantRow = InferSelectModel<typeof heatEntrant>;
+export type Organizer = InferSelectModel<typeof organizer>;
+export type CompetitionHost = InferSelectModel<typeof competitionHost>;

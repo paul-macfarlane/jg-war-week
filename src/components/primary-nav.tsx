@@ -17,7 +17,7 @@ import {
 import type { WarWeek } from "@/db/schema";
 
 /** The signed-in user, as shown in the navigation. */
-export type NavAccount = { email: string; isOrganizer: boolean };
+export type NavAccount = { email: string; canOpenAdmin: boolean };
 
 type Destination = {
   label: string;
@@ -196,7 +196,7 @@ export function TopNav({
           </ul>
         </nav>
         <div className="flex min-w-0 items-center gap-3 text-sm whitespace-nowrap">
-          {account.isOrganizer && (
+          {account.canOpenAdmin && (
             <Link
               href="/admin"
               className="text-primary-text underline-offset-4 hover:underline"

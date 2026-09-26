@@ -15,9 +15,9 @@ export const metadata: Metadata = {
 };
 
 export default async function NextWarWeekPage() {
-  const { warWeek, email, isOrganizer, editions } =
-    await loadAdminPage("/admin/setup/next");
-  if (!isOrganizer) return <AdminRefused warWeek={warWeek} email={email} />;
+  const { warWeek, email, allowed, isOrganizer, editions } =
+    await loadAdminPage("/admin/setup/next", "organizers");
+  if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const existing = await getWarWeeks();
 
@@ -25,6 +25,7 @@ export default async function NextWarWeekPage() {
     <AdminShell
       warWeek={warWeek}
       email={email}
+      isOrganizer={isOrganizer}
       editions={editions}
       current="Setup"
     >

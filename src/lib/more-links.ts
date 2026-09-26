@@ -23,7 +23,7 @@ export type MoreLinksInput = {
   edition: string;
   mode: WarWeek["mode"];
   teamLabel: string;
-  isOrganizer: boolean;
+  canOpenAdmin: boolean;
 };
 
 /**
@@ -35,7 +35,7 @@ export function moreLinks({
   edition,
   mode,
   teamLabel,
-  isOrganizer,
+  canOpenAdmin,
 }: MoreLinksInput): MoreLink[] {
   return [
     { label: "Competitions", href: `/${edition}/competitions`, icon: Trophy },
@@ -49,6 +49,6 @@ export function moreLinks({
     { label: "War Week history", href: "/history", icon: History },
     { label: "Install app", href: "/install", icon: Download },
     { label: "About JG War Week", href: "/about", icon: Info },
-    ...(isOrganizer ? [{ label: "Admin", href: "/admin", icon: Shield }] : []),
+    ...(canOpenAdmin ? [{ label: "Admin", href: "/admin", icon: Shield }] : []),
   ];
 }

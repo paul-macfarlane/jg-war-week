@@ -15,10 +15,9 @@ export default async function EditAwardPage({
   params,
 }: PageProps<"/admin/awards/[id]">) {
   const { id } = await params;
-  const { warWeek, email, isOrganizer, editions } = await loadAdminPage(
-    `/admin/awards/${id}`,
-  );
-  if (!isOrganizer) return <AdminRefused warWeek={warWeek} email={email} />;
+  const { warWeek, email, allowed, isOrganizer, editions } =
+    await loadAdminPage(`/admin/awards/${id}`, "organizers");
+  if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const [award, options] = await Promise.all([
     getAwardForEdit(warWeek, id),
@@ -30,12 +29,14 @@ export default async function EditAwardPage({
     <AdminShell
       warWeek={warWeek}
       email={email}
+      isOrganizer={isOrganizer}
       editions={editions}
       current="Awards"
     >
       <section className="flex max-w-3xl flex-col gap-4">
         <h1 className="text-2xl font-bold">Edit Award</h1>
         <AwardForm
+          warWeekId={warWeek.id}
           awardId={award.id}
           options={options}
           teamLabel={warWeek.teamLabel}

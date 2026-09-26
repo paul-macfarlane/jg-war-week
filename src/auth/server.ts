@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { headers } from "next/headers";
 import { cache } from "react";
 
+import { trustedOrigins } from "@/auth/trusted-origins";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { JG_EMAIL_DOMAIN, isJahnelGroupEmail } from "@/lib/access";
@@ -25,6 +26,12 @@ function rejectNonJahnelGroup(email: string | null | undefined) {
 }
 
 export const auth = betterAuth({
+  trustedOrigins: trustedOrigins({
+    BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
+    VERCEL_URL: process.env.VERCEL_URL,
+    VERCEL_BRANCH_URL: process.env.VERCEL_BRANCH_URL,
+    VERCEL_ENV: process.env.VERCEL_ENV,
+  }),
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {

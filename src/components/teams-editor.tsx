@@ -32,10 +32,12 @@ const EMPTY_TEAM: TeamInput = { name: "", color: "#888888", logoUrl: "" };
 
 /** One Team's name, color and logo URL. With no `team` it's the add row. */
 function TeamRow({
+  warWeekId,
   team,
   teamLabel,
   swatches,
 }: {
+  warWeekId: string;
   team?: SetupTeam;
   teamLabel: string;
   swatches: ColorSwatch[];
@@ -64,7 +66,8 @@ function TeamRow({
   function submit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     run(
-      () => (team ? updateTeam(team.id, values) : createTeam(values)),
+      () =>
+        team ? updateTeam(team.id, values) : createTeam(warWeekId, values),
       `${teamLabel} saved`,
     );
   }
@@ -144,12 +147,14 @@ const EMPTY_PARTICIPANT: ParticipantInput = {
  * no `participant` it's the inline "Add Participant" row.
  */
 function ParticipantRow({
+  warWeekId,
   participant,
   teams,
   teamLabel,
   leaderTitle,
   tagSuggestions,
 }: {
+  warWeekId: string;
   participant?: SetupParticipant;
   /** Empty in a free-for-all, which hides the Team and Leader fields. */
   teams: SetupTeam[];
@@ -195,7 +200,7 @@ function ParticipantRow({
       () =>
         participant
           ? updateParticipant(participant.id, values)
-          : createParticipant(values),
+          : createParticipant(warWeekId, values),
       "Participant saved",
     );
   }
@@ -309,10 +314,13 @@ function ParticipantRow({
 
 /** The War Week's Teams, each editable, plus an add row. */
 export function TeamsEditor({
+  warWeekId,
   teams,
   teamLabel,
   themeSwatches,
 }: {
+  /** The War Week this page was rendered for; creates post it. */
+  warWeekId: string;
   teams: SetupTeam[];
   teamLabel: string;
   /** The Appearance Theme's colors, offered as Team color swatches. */
@@ -336,6 +344,7 @@ export function TeamsEditor({
             // Keyed on the saved values so a refresh resets the row's fields.
             <TeamRow
               key={`${team.id}-${team.name}-${team.color}-${team.logoUrl}`}
+              warWeekId={warWeekId}
               team={team}
               teamLabel={teamLabel}
               swatches={swatchesFor(team.id)}
@@ -344,7 +353,11 @@ export function TeamsEditor({
         </ul>
       )}
       <ul>
-        <TeamRow teamLabel={teamLabel} swatches={swatchesFor()} />
+        <TeamRow
+          warWeekId={warWeekId}
+          teamLabel={teamLabel}
+          swatches={swatchesFor()}
+        />
       </ul>
     </div>
   );
@@ -352,12 +365,15 @@ export function TeamsEditor({
 
 /** The roster: every Participant, editable in place, then "Add Participant". */
 export function RosterEditor({
+  warWeekId,
   participants,
   teams,
   teamLabel,
   leaderTitle,
   tagSuggestions,
 }: {
+  /** The War Week this page was rendered for; creates post it. */
+  warWeekId: string;
   participants: SetupParticipant[];
   teams: SetupTeam[];
   teamLabel: string;
@@ -365,7 +381,13 @@ export function RosterEditor({
   /** Company Tags used in any War Week, for the Company Tag field. */
   tagSuggestions: string[];
 }) {
-  const rowProps = { teams, teamLabel, leaderTitle, tagSuggestions };
+  const rowProps = {
+    warWeekId,
+    teams,
+    teamLabel,
+    leaderTitle,
+    tagSuggestions,
+  };
   return (
     <div {...SETUP_EDITOR} className="flex flex-col gap-1">
       {participants.length === 0 ? (

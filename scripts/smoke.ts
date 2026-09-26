@@ -25,6 +25,9 @@ const READY_TIMEOUT_MS = 30_000;
 const AUTH_SECRET =
   process.env.BETTER_AUTH_SECRET || `smoke-only-secret-${randomUUID()}`;
 const SESSION_COOKIE = "better-auth.session_token";
+
+/** What `/admin` shows a signed-in user with no role on the page. */
+const ADMIN_REFUSAL_TEXT = "Organizers and Hosts only.";
 // A smoke-only MCP bearer token; anonymous requests still get 401.
 const MCP_TOKEN = `smoke-mcp-token-${randomUUID()}`;
 
@@ -805,14 +808,29 @@ async function deleteSmokeUsers() {
   ]);
 }
 
-/** Adds or removes the smoke Organizer on War Week XI's allowlist. */
+/** Adds or removes the smoke Organizer on the global Organizer list. */
 async function setSmokeOrganizer(on: boolean) {
   await runQuery(
     on
-      ? `update war_week set organizer_emails = array_append(organizer_emails, $1) where edition = 'xi' and not ($1 = any(organizer_emails))`
-      : `update war_week set organizer_emails = array_remove(organizer_emails, $1) where edition = 'xi'`,
+      ? `insert into organizer (email) values ($1) on conflict do nothing`
+      : `delete from organizer where email = $1`,
     [SMOKE_ORGANIZER_EMAIL],
   );
+}
+
+let xiWarWeekIdCache: string | undefined;
+/**
+ * War Week XI's id: creates and the settings save post the War Week they
+ * write to (ADR 0003).
+ */
+async function xiWarWeekId(): Promise<string> {
+  if (!xiWarWeekIdCache) {
+    const [row] = await runQuery<{ id: string }>(
+      "select id from war_week where edition = 'xi'",
+    );
+    xiWarWeekIdCache = row.id;
+  }
+  return xiWarWeekIdCache;
 }
 
 async function assertAboutPage() {
@@ -961,7 +979,7 @@ async function assertAdminGate(sessions: {
       body.includes("Admin sections"),
     "the refusal": ({ status, body }: AdminResult) =>
       status === 200 &&
-      body.includes("Organizers only") &&
+      body.includes(ADMIN_REFUSAL_TEXT) &&
       !body.includes("Admin sections"),
     "sign-in": ({ status, location }: AdminResult) =>
       status === 307 && location.includes("/sign-in"),
@@ -1218,7 +1236,7 @@ async function assertAdminPointsPage(sessions: {
     const body = await res.text();
     if (
       res.status === 200 &&
-      body.includes("Organizers only") &&
+      body.includes(ADMIN_REFUSAL_TEXT) &&
       !body.includes("Add a Points Entry")
     ) {
       ok(refusedCheck);
@@ -1294,7 +1312,7 @@ async function assertPointsEntryActions(sessions: {
         );
         const rows = await smokeEntries();
         return !result.ok &&
-          /not an Organizer/.test(result.error) &&
+          result.error === "You're not a Host of that Competition." &&
           rows.length === 0
           ? null
           : `result=${JSON.stringify(result)} rows=${rows.length}`;
@@ -1501,7 +1519,7 @@ async function assertFinale(sessions: {
           organizer.body.includes("Open Finale") &&
           organizer.body.includes('href="/xi/finale"'),
         refused:
-          notOrganizer.body.includes("Organizers only") &&
+          notOrganizer.body.includes(ADMIN_REFUSAL_TEXT) &&
           !notOrganizer.body.includes("Open Finale"),
       };
       return Object.values(checks).every(Boolean)
@@ -1654,6 +1672,7 @@ async function assertAnnouncementActions(sessions: {
         const result = await callAction(
           ids.createAnnouncement,
           [
+            await xiWarWeekId(),
             {
               title: `${SMOKE_ANNOUNCEMENT_PREFIX}refused`,
               body: validBody,
@@ -1665,7 +1684,8 @@ async function assertAnnouncementActions(sessions: {
         );
         const rows = await smokeAnnouncements();
         return !result.ok &&
-          /not an Organizer/.test(result.error) &&
+          result.error ===
+            "Only an Organizer or a Host of this War Week can post Announcements." &&
           rows.length === 0
           ? null
           : `result=${JSON.stringify(result)} rows=${rows.length}`;
@@ -1678,6 +1698,7 @@ async function assertAnnouncementActions(sessions: {
         const result = await callAction(
           ids.createAnnouncement,
           [
+            await xiWarWeekId(),
             {
               title: `${SMOKE_ANNOUNCEMENT_PREFIX}bad-video`,
               body: validBody,
@@ -1702,6 +1723,7 @@ async function assertAnnouncementActions(sessions: {
         const result = await callAction(
           ids.createAnnouncement,
           [
+            await xiWarWeekId(),
             {
               title: `${SMOKE_ANNOUNCEMENT_PREFIX}created`,
               body: validBody,
@@ -1766,7 +1788,11 @@ async function assertAnnouncementActions(sessions: {
           );
           const [row] = await smokeAnnouncements();
           const refused = [update, pin, unpin, remove].every(
-            (result) => !result.ok && /not an Organizer/.test(result.error),
+            (result) =>
+              !result.ok &&
+              /^Only an Organizer can (change someone else's Announcement|pin Announcements|unpin Announcements)\.$/.test(
+                result.error,
+              ),
           );
           const unchanged =
             row != null &&
@@ -1922,6 +1948,7 @@ async function assertAnnouncementUnsafeContentStripped(sessions: {
     const result = await callAction(
       ids.createAnnouncement,
       [
+        await xiWarWeekId(),
         {
           title: `${SMOKE_ANNOUNCEMENT_PREFIX}unsafe`,
           body: unsafeBody,
@@ -1984,7 +2011,7 @@ async function assertAnnouncementAdminPages(sessions: {
       hasAllTitles &&
       organizerBody.includes("New Announcement") &&
       notOrganizerRes.status === 200 &&
-      notOrganizerBody.includes("Organizers only")
+      notOrganizerBody.includes(ADMIN_REFUSAL_TEXT)
     ) {
       ok(listCheck);
     } else {
@@ -2203,6 +2230,7 @@ async function assertAwardActions(sessions: {
         const result = await callAction(
           ids.createAward,
           [
+            await xiWarWeekId(),
             {
               name: `${SMOKE_AWARD_PREFIX}refused`,
               description: null,
@@ -2214,7 +2242,7 @@ async function assertAwardActions(sessions: {
         );
         const rows = await smokeAwards();
         return !result.ok &&
-          /not an Organizer/.test(result.error) &&
+          result.error === "Only an Organizer can give Awards." &&
           rows.length === 0
           ? null
           : `result=${JSON.stringify(result)} rows=${rows.length}`;
@@ -2225,6 +2253,7 @@ async function assertAwardActions(sessions: {
       const result = await callAction(
         ids.createAward,
         [
+          await xiWarWeekId(),
           {
             name: `${SMOKE_AWARD_PREFIX}empty`,
             description: null,
@@ -2248,6 +2277,7 @@ async function assertAwardActions(sessions: {
         const result = await callAction(
           ids.createAward,
           [
+            await xiWarWeekId(),
             {
               name: `${SMOKE_AWARD_PREFIX}elsewhere`,
               description: null,
@@ -2272,6 +2302,7 @@ async function assertAwardActions(sessions: {
         const result = await callAction(
           ids.createAward,
           [
+            await xiWarWeekId(),
             {
               name: `${SMOKE_AWARD_PREFIX}mvp`,
               description: "Smoke MVP",
@@ -2326,7 +2357,9 @@ async function assertAwardActions(sessions: {
           );
           const [row] = await smokeAwards();
           return !result.ok &&
-            /not an Organizer/.test(result.error) &&
+            /^Only an Organizer can (change|delete) Awards\.$/.test(
+              result.error,
+            ) &&
             row?.name === `${SMOKE_AWARD_PREFIX}mvp`
             ? null
             : `result=${JSON.stringify(result)} row=${JSON.stringify(row)}`;
@@ -2426,7 +2459,7 @@ async function assertAwardAdminPages(sessions: {
       hasAll &&
       organizerBody.includes("New Award") &&
       notOrganizerRes.status === 200 &&
-      notOrganizerBody.includes("Organizers only")
+      notOrganizerBody.includes(ADMIN_REFUSAL_TEXT)
     ) {
       ok(listCheck);
     } else {
@@ -2487,23 +2520,21 @@ async function assertAwardAdminPages(sessions: {
 
 /**
  * Creates XII from XI, ends XI with a Winner and starts XII through the
- * lifecycle actions, checks the site follows, and that an Organizer of
- * only XI can still pick and edit XI but can't reopen it or create the
- * next War Week. Then puts XI back (`live`, no Winner, its own Organizers)
- * and deletes XII by SQL so the smoke can run again.
+ * lifecycle actions, checks the site follows, that an Organizer can still
+ * pick and correct XI once it's in the Archive, and that a Participant
+ * can't reopen XI or create the next War Week. Then puts XI back (`live`,
+ * no Winner) and deletes XII by SQL so the smoke can run again.
  */
 async function assertWarWeekLifecycle(sessions: {
   organizer: SmokeSession;
   notOrganizer: SmokeSession;
 }) {
   const check =
-    "lifecycle: create XII, end XI with a Winner, start XII; an XI-only Organizer edits XI but can't reopen it; then restore";
-  const xiOnlyEmail = "smoke-xi-only@jahnelgroup.com";
+    "lifecycle: create XII, end XI with a Winner, start XII; an Organizer corrects XI but a Participant can't reopen it; then restore";
   const restore = async () => {
     await runQuery("delete from war_week where edition in ('xii', 'xiii')");
     await runQuery(
-      "update war_week set status = 'live', winner = null, highlights = '{}', organizer_emails = array_remove(organizer_emails, $1) where edition = 'xi'",
-      [xiOnlyEmail],
+      "update war_week set status = 'live', winner = null, highlights = '{}' where edition = 'xi'",
     );
   };
   try {
@@ -2537,7 +2568,12 @@ async function assertWarWeekLifecycle(sessions: {
       args: unknown[],
     ) => {
       const result = await callAction(ids[name], args, sessions.notOrganizer);
-      if (result.ok || !/not an Organizer/.test(result.error)) {
+      if (
+        result.ok ||
+        !/^Only an Organizer can (start|end|reopen) a War Week\.$/.test(
+          result.error,
+        )
+      ) {
         problems.push(`${label}: ${JSON.stringify(result)}`);
       }
     };
@@ -2564,7 +2600,6 @@ async function assertWarWeekLifecycle(sessions: {
         startDate: "2027-02-21",
         endDate: "2027-02-26",
         storyTheme: "Smoke XII",
-        copyOrganizers: true,
         copySettings: true,
       },
     ]);
@@ -2619,30 +2654,20 @@ async function assertWarWeekLifecycle(sessions: {
       );
     }
 
-    // An Organizer of only XI, added after XII was created from it.
-    await runQuery(
-      "update war_week set organizer_emails = array_append(organizer_emails, $1) where edition = 'xi'",
-      [xiOnlyEmail],
+    // Organizers are global: the smoke Organizer picks XI in the switcher
+    // and corrects its highlights now that it's in the Archive.
+    const selected = await callAction(
+      ids.selectAdminEdition,
+      ["xi"],
+      sessions.organizer,
     );
-    const xiOnly = await createSmokeSession(xiOnlyEmail);
-    const xiOnlyDefault = await (
-      await fetch(`${BASE_URL}/admin/setup`, {
-        headers: { cookie: xiOnly.cookie },
-      })
-    ).text();
-    if (!xiOnlyDefault.includes("Editing the Archive: War Week XI")) {
-      problems.push("/admin doesn't open on XI for an XI-only Organizer");
-    }
-    const selected = await callAction(ids.selectAdminEdition, ["xi"], xiOnly);
     if (!selected.ok) {
-      problems.push(
-        `XI-only Organizer selects XI: ${JSON.stringify(selected)}`,
-      );
+      problems.push(`Organizer selects XI: ${JSON.stringify(selected)}`);
     }
     const [xi] = await runQuery<Record<string, string | string[] | null>>(
       `select story_theme, start_date::text, end_date::text, mode,
          team_label, leader_title, slack_channel_url, wiki_url,
-         organizer_emails, primary_color, primary_foreground_color,
+         primary_color, primary_foreground_color,
          accent_color, background_color, foreground_color, logo_url,
          banner_url, font_preset, winner
        from war_week where edition = 'xi'`,
@@ -2650,6 +2675,7 @@ async function assertWarWeekLifecycle(sessions: {
     const saved = await callAction(
       ids.updateWarWeekSettings,
       [
+        xiId,
         {
           storyTheme: xi.story_theme,
           startDate: xi.start_date,
@@ -2659,7 +2685,6 @@ async function assertWarWeekLifecycle(sessions: {
           leaderTitle: xi.leader_title,
           slackChannelUrl: xi.slack_channel_url,
           wikiUrl: xi.wiki_url ?? "",
-          organizerEmails: (xi.organizer_emails as string[]).join("\n"),
           primaryColor: xi.primary_color,
           primaryForegroundColor: xi.primary_foreground_color,
           accentColor: xi.accent_color,
@@ -2672,21 +2697,26 @@ async function assertWarWeekLifecycle(sessions: {
           highlights: "Smoke XI highlight",
         },
       ],
-      { cookie: `${xiOnly.cookie}; admin_edition=xi` },
+      sessions.organizer,
     );
     const [xiAfter] = await runQuery<{ highlights: string[] }>(
       "select highlights from war_week where edition = 'xi'",
     );
     if (!saved.ok || xiAfter.highlights.join() !== "Smoke XI highlight") {
       problems.push(
-        `XI-only Organizer saves XI highlights: ${JSON.stringify(saved)} ${JSON.stringify(xiAfter.highlights)}`,
+        `Organizer saves XI highlights: ${JSON.stringify(saved)} ${JSON.stringify(xiAfter.highlights)}`,
       );
     }
-    const takeover = await callAction(ids.reopenWarWeek, [xiId], xiOnly);
-    if (takeover.ok || !/the current War Week/.test(takeover.error)) {
-      problems.push(
-        `XI-only Organizer reopens XI while XII is live: ${JSON.stringify(takeover)}`,
-      );
+    const takeover = await callAction(
+      ids.reopenWarWeek,
+      [xiId],
+      sessions.notOrganizer,
+    );
+    if (
+      takeover.ok ||
+      takeover.error !== "Only an Organizer can reopen a War Week."
+    ) {
+      problems.push(`Participant reopens XI: ${JSON.stringify(takeover)}`);
     }
     const createFromXi = await callAction(
       ids.createNextWarWeek,
@@ -2701,11 +2731,14 @@ async function assertWarWeekLifecycle(sessions: {
           storyTheme: "Smoke XIII",
         },
       ],
-      xiOnly,
+      sessions.notOrganizer,
     );
-    if (createFromXi.ok || !/the current War Week/.test(createFromXi.error)) {
+    if (
+      createFromXi.ok ||
+      createFromXi.error !== "Only an Organizer can create the next War Week."
+    ) {
       problems.push(
-        `XI-only Organizer creates XIII: ${JSON.stringify(createFromXi)}`,
+        `Participant creates XIII: ${JSON.stringify(createFromXi)}`,
       );
     }
 
@@ -2762,7 +2795,7 @@ async function assertSetup(sessions: {
         const refused = await fetch(`${BASE_URL}${page}`, {
           headers: { cookie: sessions.notOrganizer.cookie },
         });
-        if (!(await refused.text()).includes("Organizers only")) {
+        if (!(await refused.text()).includes(ADMIN_REFUSAL_TEXT)) {
           problems.push(`${page} not refused`);
         }
       }
@@ -2784,7 +2817,7 @@ async function assertSetup(sessions: {
 
   const [xi] = await runQuery<Record<string, string | string[] | null>>(
     `select story_theme, start_date::text, end_date::text, mode,
-       team_label, leader_title, slack_channel_url, wiki_url, organizer_emails,
+       team_label, leader_title, slack_channel_url, wiki_url,
        primary_color, primary_foreground_color, accent_color, background_color,
        foreground_color, logo_url, banner_url, font_preset, winner, highlights
      from war_week where edition = 'xi'`,
@@ -2798,7 +2831,6 @@ async function assertSetup(sessions: {
     leaderTitle: xi.leader_title,
     slackChannelUrl: xi.slack_channel_url,
     wikiUrl: xi.wiki_url ?? "",
-    organizerEmails: (xi.organizer_emails as string[]).join("\n"),
     primaryColor: xi.primary_color,
     primaryForegroundColor: xi.primary_foreground_color,
     accentColor: xi.accent_color,
@@ -2824,14 +2856,14 @@ async function assertSetup(sessions: {
       async () => {
         const result = await callAction(
           ids.updateWarWeekSettings,
-          [{ ...input, primaryColor: smokePrimary }],
+          [await xiWarWeekId(), { ...input, primaryColor: smokePrimary }],
           sessions.notOrganizer,
         );
         const [row] = await runQuery<{ primary_color: string }>(
           "select primary_color from war_week where edition = 'xi'",
         );
         return !result.ok &&
-          /not an Organizer/.test(result.error) &&
+          result.error === "Only an Organizer can change War Week settings." &&
           row.primary_color === xi.primary_color
           ? null
           : `result=${JSON.stringify(result)} color=${row.primary_color}`;
@@ -2843,7 +2875,7 @@ async function assertSetup(sessions: {
       async () => {
         const result = await callAction(
           ids.updateWarWeekSettings,
-          [{ ...input, mode: "free-for-all" }],
+          [await xiWarWeekId(), { ...input, mode: "free-for-all" }],
           sessions.organizer,
         );
         return !result.ok && /Delete them before switching/.test(result.error)
@@ -2857,7 +2889,7 @@ async function assertSetup(sessions: {
       async () => {
         const result = await callAction(
           ids.updateWarWeekSettings,
-          [{ ...input, primaryColor: smokePrimary }],
+          [await xiWarWeekId(), { ...input, primaryColor: smokePrimary }],
           sessions.organizer,
         );
         const body = await (await signedInFetch(`${BASE_URL}/xi`)).text();
@@ -2946,7 +2978,7 @@ async function assertSetupTeamsAndCompetitions(sessions: {
         const refused = await fetch(`${BASE_URL}${page}`, {
           headers: { cookie: sessions.notOrganizer.cookie },
         });
-        if (!(await refused.text()).includes("Organizers only")) {
+        if (!(await refused.text()).includes(ADMIN_REFUSAL_TEXT)) {
           problems.push(`${page} not refused`);
         }
       }
@@ -2995,10 +3027,11 @@ async function assertSetupTeamsAndCompetitions(sessions: {
       async () => {
         const result = await callAction(
           ids.createParticipant,
-          [participant],
+          [await xiWarWeekId(), participant],
           sessions.notOrganizer,
         );
-        return !result.ok && /not an Organizer/.test(result.error)
+        return !result.ok &&
+          result.error === "Only an Organizer can add Participants."
           ? null
           : `result=${JSON.stringify(result)}`;
       },
@@ -3009,13 +3042,16 @@ async function assertSetupTeamsAndCompetitions(sessions: {
       async () => {
         const created = await callAction(
           ids.createParticipant,
-          [participant],
+          [await xiWarWeekId(), participant],
           sessions.organizer,
         );
         const body = await (await signedInFetch(`${BASE_URL}/xi/teams`)).text();
         const duplicate = await callAction(
           ids.createParticipant,
-          [{ ...participant, displayName: `${smokeName} 2` }],
+          [
+            await xiWarWeekId(),
+            { ...participant, displayName: `${smokeName} 2` },
+          ],
           sessions.organizer,
         );
         return created.ok &&
@@ -3048,6 +3084,7 @@ async function assertSetupTeamsAndCompetitions(sessions: {
         const created = await callAction(
           ids.createCompetition,
           [
+            await xiWarWeekId(),
             {
               name: smokeCompetition,
               description: "",
@@ -3124,7 +3161,7 @@ async function assertSetupScheduleFaq(sessions: {
         const refused = await fetch(`${BASE_URL}${page}`, {
           headers: { cookie: sessions.notOrganizer.cookie },
         });
-        if (!(await refused.text()).includes("Organizers only")) {
+        if (!(await refused.text()).includes(ADMIN_REFUSAL_TEXT)) {
           problems.push(`${page} not refused`);
         }
       }
@@ -3179,18 +3216,18 @@ async function assertSetupScheduleFaq(sessions: {
       async () => {
         const backwards = await callAction(
           ids.createScheduleItem,
-          [{ ...item, endTime: "23:00" }],
+          [await xiWarWeekId(), { ...item, endTime: "23:00" }],
           sessions.organizer,
         );
         const outsider = await callAction(
           ids.createScheduleItem,
-          [item],
+          [await xiWarWeekId(), item],
           sessions.notOrganizer,
         );
         return !backwards.ok &&
           backwards.error === "End time must be after the start time." &&
           !outsider.ok &&
-          /not an Organizer/.test(outsider.error)
+          outsider.error === "Link the Schedule Item to a Competition you host."
           ? null
           : `backwards=${JSON.stringify(backwards)} outsider=${JSON.stringify(outsider)}`;
       },
@@ -3201,12 +3238,12 @@ async function assertSetupScheduleFaq(sessions: {
       async () => {
         const created = await callAction(
           ids.createScheduleItem,
-          [item],
+          [await xiWarWeekId(), item],
           sessions.organizer,
         );
         const duplicate = await callAction(
           ids.createScheduleItem,
-          [item],
+          [await xiWarWeekId(), item],
           sessions.organizer,
         );
         const schedule = await (
@@ -3241,7 +3278,10 @@ async function assertSetupScheduleFaq(sessions: {
       async () => {
         const created = await callAction(
           ids.createFaqItem,
-          [{ question, answer: paragraph("smoke answer") }],
+          [
+            await xiWarWeekId(),
+            { question, answer: paragraph("smoke answer") },
+          ],
           sessions.organizer,
         );
         const body = await (await signedInFetch(`${BASE_URL}/xi/faq`)).text();
@@ -3352,6 +3392,7 @@ async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
       await callAction(
         ids.createCompetition,
         [
+          await xiWarWeekId(),
           {
             name: SMOKE_BRACKET_COMPETITION,
             description: "",
@@ -3697,7 +3738,7 @@ async function assertAdminGuidePage(sessions: {
       headers: { cookie: sessions.notOrganizer.cookie },
     });
     const body = await res.text();
-    if (res.status === 200 && body.includes("Organizers only")) {
+    if (res.status === 200 && body.includes(ADMIN_REFUSAL_TEXT)) {
       ok(refusalCheck);
     } else {
       fail(refusalCheck, `status=${res.status}`);
@@ -4081,6 +4122,914 @@ async function assertMcp() {
   }
 }
 
+// The smoke Host (ADR 0002): a JG user with no Organizer row who hosts one
+// seeded XI Competition. Both Competitions are picked by name from
+// seeds/xi.json; the smoke Organizer, the Participant and everyone else
+// never host anything.
+const SMOKE_HOST_EMAIL = "smoke-host@jahnelgroup.com";
+const HOST_COMPETITION = "Tuesday Stairs";
+const OTHER_COMPETITION = "Cypher";
+const NOT_HOST_REFUSAL = "You're not a Host of that Competition.";
+
+/** Runs one named check: `body` returns null when it passes, else why not. */
+async function runCheck(check: string, body: () => Promise<string | null>) {
+  try {
+    const problem = await body();
+    if (problem === null) ok(check);
+    else fail(check, problem);
+  } catch (error) {
+    fail(check, String(error));
+  }
+}
+
+/** Removes every `competition_host` row the smoke Host has. */
+async function deleteSmokeHosts() {
+  await runQuery(`delete from competition_host where email = $1`, [
+    SMOKE_HOST_EMAIL,
+  ]);
+}
+
+type HostFixture = {
+  session: SmokeSession;
+  xiId: string;
+  hostCompetitionId: string;
+  otherCompetitionId: string;
+  /** A Team of XI: the Target of a Points Entry in a team Competition. */
+  teamId: string;
+};
+
+/** The ids of the two Competitions the Host checks use. */
+async function hostFixture(session: SmokeSession): Promise<HostFixture> {
+  const competitions = await runQuery<{ id: string; name: string }>(
+    `select c.id, c.name from competition c join war_week w on w.id = c.war_week_id
+     where w.edition = 'xi' and c.name = any($1) and c.scoring = 'team'`,
+    [[HOST_COMPETITION, OTHER_COMPETITION]],
+  );
+  const idOf = (name: string) => {
+    const row = competitions.find((c) => c.name === name);
+    if (!row) throw new Error(`no XI team Competition named ${name}`);
+    return row.id;
+  };
+  const [team] = await runQuery<{ id: string }>(
+    `select t.id from team t join war_week w on w.id = t.war_week_id
+     where w.edition = 'xi' order by t.name limit 1`,
+  );
+  return {
+    session,
+    xiId: await xiWarWeekId(),
+    hostCompetitionId: idOf(HOST_COMPETITION),
+    otherCompetitionId: idOf(OTHER_COMPETITION),
+    teamId: team.id,
+  };
+}
+
+/**
+ * Every check that needs the smoke Host: assigns it to the Host
+ * Competition, runs them, and removes its `competition_host` rows however
+ * they end. The former-Host check removes the assignment, so it runs last.
+ */
+async function assertHostChecks(sessions: {
+  host: SmokeSession;
+  notOrganizer: SmokeSession;
+}) {
+  const setup = "the smoke Host hosts one XI Competition";
+  let fixture: HostFixture;
+  try {
+    fixture = await hostFixture(sessions.host);
+    await deleteSmokeHosts();
+    await runQuery(
+      `insert into competition_host (competition_id, email) values ($1, $2)`,
+      [fixture.hostCompetitionId, SMOKE_HOST_EMAIL],
+    );
+    ok(setup);
+  } catch (error) {
+    fail(setup, String(error));
+    await deleteSmokeHosts().catch(() => {});
+    return;
+  }
+  try {
+    await assertHostAllowedAndRefused(fixture);
+    await assertHostKeepsOwnPin(fixture);
+    await assertAdminTrimmedForHost(sessions);
+    await assertAdminLinkForHost(sessions);
+    await assertAccessBeforeValidation(sessions, fixture);
+    await assertFormerHostRefused(fixture);
+  } finally {
+    await deleteSmokeHosts().catch((error) =>
+      fail("delete the smoke Host's competition_host rows", String(error)),
+    );
+  }
+}
+
+/** Ticket 03 AC5: a Host runs their own Competition and nothing else. */
+async function assertHostAllowedAndRefused(fixture: HostFixture) {
+  const ids = serverActionIds();
+  const { session, xiId } = fixture;
+  const entry = (competitionId: string, note: string) => ({
+    competitionId,
+    targetId: fixture.teamId,
+    points: "3",
+    note: `${SMOKE_NOTE_PREFIX}${note}`,
+  });
+
+  try {
+    await deleteSmokeEntries();
+    await runCheck(
+      "createPointsEntry as a Host saves an entry on their Competition, entered by the Host",
+      async () => {
+        const result = await callAction(
+          ids.createPointsEntry,
+          [entry(fixture.hostCompetitionId, "host")],
+          session,
+        );
+        const rows = await smokeEntries();
+        return result.ok &&
+          rows.length === 1 &&
+          rows[0].entered_by_email === SMOKE_HOST_EMAIL
+          ? null
+          : `result=${JSON.stringify(result)} rows=${JSON.stringify(rows)}`;
+      },
+    );
+  } finally {
+    await deleteSmokeEntries().catch((error) =>
+      fail("delete smoke Points Entries", String(error)),
+    );
+  }
+
+  await runCheck(
+    "createPointsEntry as a Host refuses another Competition with 'You're not a Host of that Competition.'",
+    async () => {
+      const result = await callAction(
+        ids.createPointsEntry,
+        [entry(fixture.otherCompetitionId, "host-other")],
+        session,
+      );
+      const rows = await smokeEntries();
+      return !result.ok &&
+        result.error === NOT_HOST_REFUSAL &&
+        rows.length === 0
+        ? null
+        : `result=${JSON.stringify(result)} rows=${rows.length}`;
+    },
+  );
+
+  const [settingsBefore] = await runQuery<{ story_theme: string }>(
+    `select story_theme from war_week where id = $1`,
+    [xiId],
+  );
+  const [daysBefore] = await runQuery<{ count: string }>(
+    `select count(*) from day where war_week_id = $1`,
+    [xiId],
+  );
+  const [announcement] = await runQuery<{ id: string; pinned: boolean }>(
+    `select id, pinned from announcement where war_week_id = $1 and not pinned
+     order by published_at limit 1`,
+    [xiId],
+  );
+
+  for (const [label, action, args, expected, unchanged] of [
+    [
+      "updateWarWeekSettings for XI",
+      "updateWarWeekSettings",
+      [xiId, { storyTheme: "smoke-host-theme" }],
+      "Only an Organizer can change War Week settings.",
+      async () => {
+        const [row] = await runQuery<{ story_theme: string }>(
+          `select story_theme from war_week where id = $1`,
+          [xiId],
+        );
+        return row.story_theme === settingsBefore.story_theme;
+      },
+    ],
+    [
+      "createDay for XI",
+      "createDay",
+      [xiId, { date: "2026-02-28", dayTheme: "smoke-host-day" }],
+      "Only an Organizer can add Days.",
+      async () => {
+        const [row] = await runQuery<{ count: string }>(
+          `select count(*) from day where war_week_id = $1`,
+          [xiId],
+        );
+        return row.count === daysBefore.count;
+      },
+    ],
+    [
+      "pinAnnouncement on a seeded Announcement",
+      "pinAnnouncement",
+      [announcement.id],
+      "Only an Organizer can pin Announcements.",
+      async () => {
+        const [row] = await runQuery<{ pinned: boolean }>(
+          `select pinned from announcement where id = $1`,
+          [announcement.id],
+        );
+        return row.pinned === false;
+      },
+    ],
+  ] as const) {
+    await runCheck(
+      `${action} as a Host is refused on ${label} with '${expected}'`,
+      async () => {
+        const result = await callAction(ids[action], [...args], session);
+        const same = await unchanged();
+        return !result.ok && result.error === expected && same
+          ? null
+          : `result=${JSON.stringify(result)} unchanged=${same}`;
+      },
+    );
+  }
+}
+
+/** Spec: a Host's edit of their own Announcement never changes its pin. */
+async function assertHostKeepsOwnPin(fixture: HostFixture) {
+  const ids = serverActionIds();
+  const title = `${SMOKE_ANNOUNCEMENT_PREFIX}host-pinned`;
+  const body = {
+    type: "doc",
+    content: [
+      { type: "paragraph", content: [{ type: "text", text: "smoke" }] },
+    ],
+  };
+  const pinned = async (id: string) => {
+    const [row] = await runQuery<{ pinned: boolean; title: string }>(
+      `select pinned, title from announcement where id = $1`,
+      [id],
+    );
+    return row;
+  };
+  try {
+    await deleteSmokeAnnouncements();
+    // An Organizer pinned the Host's own Announcement.
+    const [row] = await runQuery<{ id: string }>(
+      `insert into announcement (war_week_id, title, body, pinned, author_email)
+       values ($1, $2, $3, true, $4) returning id`,
+      [fixture.xiId, title, JSON.stringify(body), SMOKE_HOST_EMAIL],
+    );
+
+    await runCheck(
+      "updateAnnouncement as a Host without pinned keeps their Organizer-pinned Announcement pinned",
+      async () => {
+        const result = await callAction(
+          ids.updateAnnouncement,
+          [row.id, { title: `${title}-edited`, body, videoUrls: [] }],
+          fixture.session,
+        );
+        const after = await pinned(row.id);
+        return result.ok &&
+          after.pinned === true &&
+          after.title === `${title}-edited`
+          ? null
+          : `result=${JSON.stringify(result)} row=${JSON.stringify(after)}`;
+      },
+    );
+
+    await runCheck(
+      "updateAnnouncement as a Host with pinned: false on their pinned Announcement is refused with 'Only an Organizer can unpin Announcements.'",
+      async () => {
+        const result = await callAction(
+          ids.updateAnnouncement,
+          [
+            row.id,
+            { title: `${title}-unpinned`, body, videoUrls: [], pinned: false },
+          ],
+          fixture.session,
+        );
+        const after = await pinned(row.id);
+        return !result.ok &&
+          result.error === "Only an Organizer can unpin Announcements." &&
+          after.pinned === true &&
+          after.title === `${title}-edited`
+          ? null
+          : `result=${JSON.stringify(result)} row=${JSON.stringify(after)}`;
+      },
+    );
+  } catch (error) {
+    fail("the Host's own pinned Announcement", String(error));
+  } finally {
+    await deleteSmokeAnnouncements().catch((error) =>
+      fail("delete smoke Announcements", String(error)),
+    );
+  }
+}
+
+/** Spec: `/admin` shows a Host their Competitions only. */
+async function assertAdminTrimmedForHost(sessions: {
+  host: SmokeSession;
+  notOrganizer: SmokeSession;
+}) {
+  const get = async (route: string, session: SmokeSession) => {
+    const res = await fetch(`${BASE_URL}${route}`, {
+      headers: { cookie: session.cookie },
+    });
+    return { status: res.status, body: await res.text() };
+  };
+
+  await runCheck(
+    `GET /admin/points as a Host offers ${HOST_COMPETITION} and not ${OTHER_COMPETITION}`,
+    async () => {
+      const { status, body } = await get("/admin/points", sessions.host);
+      const result = {
+        status,
+        form: body.includes("Add a Points Entry"),
+        hosted: hasNameProp(body, HOST_COMPETITION),
+        other: hasNameProp(body, OTHER_COMPETITION),
+      };
+      return status === 200 && result.form && result.hosted && !result.other
+        ? null
+        : JSON.stringify(result);
+    },
+  );
+
+  await runCheck(
+    `GET /admin/setup/war-week as a Host shows '${ADMIN_REFUSAL_TEXT}'`,
+    async () => {
+      const { status, body } = await get(
+        "/admin/setup/war-week",
+        sessions.host,
+      );
+      return status === 200 &&
+        body.includes(ADMIN_REFUSAL_TEXT) &&
+        !body.includes(">War Week settings</h1>")
+        ? null
+        : `status=${status}`;
+    },
+  );
+
+  await runCheck(
+    `GET /admin as a Participant shows '${ADMIN_REFUSAL_TEXT}'`,
+    async () => {
+      const { status, body } = await get("/admin", sessions.notOrganizer);
+      return status === 200 &&
+        body.includes(ADMIN_REFUSAL_TEXT) &&
+        !body.includes("Admin sections")
+        ? null
+        : `status=${status}`;
+    },
+  );
+}
+
+/** The Admin link in the edition navigation (`canOpenAdmin`). */
+async function assertAdminLinkForHost(sessions: {
+  host: SmokeSession;
+  notOrganizer: SmokeSession;
+}) {
+  for (const [label, session, expected] of [
+    ["a Host", sessions.host, true],
+    ["a Participant", sessions.notOrganizer, false],
+  ] as const) {
+    await runCheck(
+      `GET /xi as ${label} ${expected ? "shows" : "hides"} the Admin link`,
+      async () => {
+        const res = await fetch(`${BASE_URL}/xi`, {
+          headers: { cookie: session.cookie },
+        });
+        const body = await res.text();
+        const shown = body.includes('href="/admin"');
+        return res.status === 200 && shown === expected
+          ? null
+          : `status=${res.status} shown=${shown}`;
+      },
+    );
+  }
+}
+
+/** A real, existing row id of each kind in XI, for the order-of-checks calls. */
+async function xiRowIds(fixture: HostFixture) {
+  const first = async (sql: string, params: unknown[] = []) => {
+    const [row] = await runQuery<{ id: string }>(sql, params);
+    if (!row) throw new Error(`no row for: ${sql}`);
+    return row.id;
+  };
+  const xi = fixture.xiId;
+  return {
+    day: await first(`select id from day where war_week_id = $1 limit 1`, [xi]),
+    team: fixture.teamId,
+    participant: await first(
+      `select p.id from participant p where p.war_week_id = $1 limit 1`,
+      [xi],
+    ),
+    scheduleItem: await first(
+      `select s.id from schedule_item s join day d on d.id = s.day_id
+       where d.war_week_id = $1 and s.competition_id is distinct from $2 limit 1`,
+      [xi, fixture.hostCompetitionId],
+    ),
+    faqItem: await first(
+      `select id from faq_item where war_week_id = $1 limit 1`,
+      [xi],
+    ),
+    award: await first(`select id from award where war_week_id = $1 limit 1`, [
+      xi,
+    ]),
+    announcement: await first(
+      `select id from announcement where war_week_id = $1 and author_email <> $2 limit 1`,
+      [xi, SMOKE_HOST_EMAIL],
+    ),
+  };
+}
+
+/**
+ * Spec S-ORDER: access comes before validation. With a real existing id,
+ * a Participant and a Host outside their Competition post malformed input
+ * (wrong types, missing fields) and get the access refusal, never a
+ * validation message. A malformed id gets "no longer exists" first, which
+ * this doesn't test.
+ */
+async function assertAccessBeforeValidation(
+  sessions: { host: SmokeSession; notOrganizer: SmokeSession },
+  fixture: HostFixture,
+) {
+  const ids = serverActionIds();
+  const row = await xiRowIds(fixture);
+  const other = fixture.otherCompetitionId;
+  const organizerOnly = (what: string) => `Only an Organizer can ${what}.`;
+  const cases: {
+    family: string;
+    action: string;
+    args: unknown[];
+    participant: string;
+    host: string;
+  }[] = [
+    {
+      family: "settings",
+      action: "updateWarWeekSettings",
+      args: [fixture.xiId, "not settings"],
+      participant: organizerOnly("change War Week settings"),
+      host: organizerOnly("change War Week settings"),
+    },
+    {
+      family: "Day",
+      action: "updateDay",
+      args: [row.day, { date: 5 }],
+      participant: organizerOnly("change Days"),
+      host: organizerOnly("change Days"),
+    },
+    {
+      family: "Team",
+      action: "updateTeam",
+      args: [row.team, { name: [] }],
+      participant: organizerOnly("change Teams"),
+      host: organizerOnly("change Teams"),
+    },
+    {
+      family: "Participant",
+      action: "updateParticipant",
+      args: [row.participant, { teamId: 9 }],
+      participant: organizerOnly("change Participants"),
+      host: organizerOnly("change Participants"),
+    },
+    {
+      family: "Competition",
+      action: "updateCompetition",
+      args: [other, { scoring: 7 }],
+      participant: NOT_HOST_REFUSAL,
+      host: NOT_HOST_REFUSAL,
+    },
+    {
+      family: "Schedule Item",
+      action: "updateScheduleItem",
+      args: [row.scheduleItem, { competitionId: other, startTime: 9 }],
+      participant: NOT_HOST_REFUSAL,
+      host: NOT_HOST_REFUSAL,
+    },
+    {
+      family: "FAQ",
+      action: "updateFaqItem",
+      args: [row.faqItem, { question: 1 }],
+      participant: organizerOnly("change FAQ Items"),
+      host: organizerOnly("change FAQ Items"),
+    },
+    {
+      family: "Award",
+      action: "updateAward",
+      args: [row.award, { name: null }],
+      participant: organizerOnly("change Awards"),
+      host: organizerOnly("change Awards"),
+    },
+    {
+      family: "Announcement",
+      action: "updateAnnouncement",
+      args: [row.announcement, { title: 3, pinned: "yes" }],
+      participant: "Only an Organizer can change someone else's Announcement.",
+      host: "Only an Organizer can change someone else's Announcement.",
+    },
+    {
+      family: "Points Entry",
+      action: "createPointsEntry",
+      args: [{ competitionId: other, points: {}, targetId: 7 }],
+      participant: NOT_HOST_REFUSAL,
+      host: NOT_HOST_REFUSAL,
+    },
+    {
+      family: "Bracket",
+      action: "replaceEntrants",
+      args: [other, { targetIds: "everyone" }],
+      participant: NOT_HOST_REFUSAL,
+      host: NOT_HOST_REFUSAL,
+    },
+    {
+      family: "lifecycle",
+      action: "endWarWeek",
+      args: [fixture.xiId, "no Winner"],
+      participant: organizerOnly("end a War Week"),
+      host: organizerOnly("end a War Week"),
+    },
+    {
+      family: "Organizer list",
+      action: "addOrganizer",
+      args: [42],
+      participant: organizerOnly("add an Organizer"),
+      host: organizerOnly("add an Organizer"),
+    },
+  ];
+
+  for (const [label, session, key] of [
+    ["a Participant", sessions.notOrganizer, "participant"],
+    ["a Host outside their Competition", sessions.host, "host"],
+  ] as const) {
+    await runCheck(
+      `malformed input from ${label} gets the access refusal, not a validation message, in every family`,
+      async () => {
+        const wrong: string[] = [];
+        for (const c of cases) {
+          const result = await callAction(ids[c.action], c.args, session);
+          if (result.ok || result.error !== c[key]) {
+            wrong.push(`${c.family} (${c.action}): ${JSON.stringify(result)}`);
+          }
+        }
+        return wrong.length === 0 ? null : wrong.join("; ");
+      },
+    );
+  }
+}
+
+/** Spec S-FORMER: removing the assignment takes effect on the next request. */
+async function assertFormerHostRefused(fixture: HostFixture) {
+  const ids = serverActionIds();
+  await runCheck(
+    "createPointsEntry as a former Host is refused on the Competition they no longer host",
+    async () => {
+      await deleteSmokeHosts();
+      try {
+        const result = await callAction(
+          ids.createPointsEntry,
+          [
+            {
+              competitionId: fixture.hostCompetitionId,
+              targetId: fixture.teamId,
+              points: "3",
+              note: `${SMOKE_NOTE_PREFIX}former-host`,
+            },
+          ],
+          fixture.session,
+        );
+        const rows = await smokeEntries();
+        return !result.ok &&
+          result.error === NOT_HOST_REFUSAL &&
+          rows.length === 0
+          ? null
+          : `result=${JSON.stringify(result)} rows=${rows.length}`;
+      } finally {
+        await deleteSmokeEntries();
+      }
+    },
+  );
+}
+
+/**
+ * A signed-in Participant (no Organizer row, hosts nothing) is refused on
+ * one representative action per family, and nothing is written.
+ */
+async function assertParticipantRefused(sessions: {
+  notOrganizer: SmokeSession;
+}) {
+  const ids = serverActionIds();
+  const xi = await xiWarWeekId();
+  const [competition] = await runQuery<{ id: string }>(
+    `select id from competition where war_week_id = $1 and scoring = 'team' order by name limit 1`,
+    [xi],
+  );
+  const [team] = await runQuery<{ id: string }>(
+    `select id from team where war_week_id = $1 order by name limit 1`,
+    [xi],
+  );
+  const [day] = await runQuery<{ id: string }>(
+    `select id from day where war_week_id = $1 order by date limit 1`,
+    [xi],
+  );
+  const doc = (text: string) => ({
+    type: "doc",
+    content: [{ type: "paragraph", content: [{ type: "text", text }] }],
+  });
+  const organizerOnly = (what: string) => `Only an Organizer can ${what}.`;
+  const cases: [string, string, unknown[], string][] = [
+    [
+      "settings",
+      "updateWarWeekSettings",
+      [xi, { storyTheme: "smoke-participant" }],
+      organizerOnly("change War Week settings"),
+    ],
+    [
+      "Day",
+      "createDay",
+      [xi, { date: "2026-02-28", dayTheme: "smoke-participant" }],
+      organizerOnly("add Days"),
+    ],
+    [
+      "Team",
+      "createTeam",
+      [xi, { name: "Smoke Participant Team", color: "#123456", logoUrl: "" }],
+      organizerOnly("add Teams"),
+    ],
+    [
+      "Participant",
+      "createParticipant",
+      [
+        xi,
+        {
+          displayName: "Smoke Refused Participant",
+          companyTag: "",
+          email: "",
+          teamId: team.id,
+          isLeader: false,
+        },
+      ],
+      organizerOnly("add Participants"),
+    ],
+    [
+      "Competition",
+      "createCompetition",
+      [
+        xi,
+        { name: "Smoke Refused Competition", description: "", scoring: "team" },
+      ],
+      organizerOnly("add Competitions"),
+    ],
+    [
+      "Schedule Item",
+      "createScheduleItem",
+      [
+        xi,
+        {
+          dayId: day.id,
+          startTime: "23:10",
+          endTime: "23:50",
+          title: "smoke-participant-schedule-item",
+          host: "",
+          location: "",
+          virtualLink: "",
+          category: "social",
+          competitionId: competition.id,
+          description: doc("smoke"),
+        },
+      ],
+      NOT_HOST_REFUSAL,
+    ],
+    [
+      "FAQ",
+      "createFaqItem",
+      [xi, { question: "smoke-participant?", answer: doc("smoke") }],
+      organizerOnly("add FAQ Items"),
+    ],
+    [
+      "Award",
+      "createAward",
+      [
+        xi,
+        {
+          name: "smoke-award-participant",
+          description: null,
+          teamId: team.id,
+          participantIds: [],
+        },
+      ],
+      organizerOnly("give Awards"),
+    ],
+    [
+      "Announcement",
+      "createAnnouncement",
+      [
+        xi,
+        {
+          title: `${SMOKE_ANNOUNCEMENT_PREFIX}participant`,
+          body: doc("smoke"),
+          pinned: false,
+        },
+      ],
+      "Only an Organizer or a Host of this War Week can post Announcements.",
+    ],
+    [
+      "Points Entry",
+      "createPointsEntry",
+      [
+        {
+          competitionId: competition.id,
+          targetId: team.id,
+          points: "1",
+          note: `${SMOKE_NOTE_PREFIX}participant`,
+        },
+      ],
+      NOT_HOST_REFUSAL,
+    ],
+    ["Bracket", "generateBracket", [competition.id, {}], NOT_HOST_REFUSAL],
+    ["lifecycle", "startWarWeek", [xi], organizerOnly("start a War Week")],
+    [
+      "Organizer list",
+      "removeOrganizer",
+      [SMOKE_ORGANIZER_EMAIL],
+      organizerOnly("remove an Organizer"),
+    ],
+  ];
+
+  for (const [family, action, args, expected] of cases) {
+    await runCheck(
+      `${action} as a Participant is refused (${family}) with '${expected}'`,
+      async () => {
+        if (!ids[action]) return `no server action id for ${action}`;
+        const result = await callAction(
+          ids[action],
+          args,
+          sessions.notOrganizer,
+        );
+        return !result.ok && result.error === expected
+          ? null
+          : `result=${JSON.stringify(result)}`;
+      },
+    );
+  }
+
+  await runCheck("the Participant's refused calls wrote nothing", async () => {
+    const [counts] = await runQuery<Record<string, string>>(
+      `select
+         (select count(*) from points_entry where note = $1) as points_entries,
+         (select count(*) from announcement where title = $2) as announcements,
+         (select count(*) from faq_item where question = 'smoke-participant?') as faq_items,
+         (select count(*) from team where name = 'Smoke Participant Team') as teams,
+         (select count(*) from participant where display_name = 'Smoke Refused Participant') as participants,
+         (select count(*) from competition where name = 'Smoke Refused Competition') as competitions,
+         (select count(*) from award where name = 'smoke-award-participant') as awards,
+         (select count(*) from schedule_item where title = 'smoke-participant-schedule-item') as schedule_items,
+         (select count(*) from day where day_theme = 'smoke-participant') as days,
+         (select count(*) from war_week where story_theme = 'smoke-participant') as settings,
+         (select count(*) from war_week where edition = 'xi' and status = 'live') as xi_live,
+         (select count(*) from organizer where email = $3) as smoke_organizer`,
+      [
+        `${SMOKE_NOTE_PREFIX}participant`,
+        `${SMOKE_ANNOUNCEMENT_PREFIX}participant`,
+        SMOKE_ORGANIZER_EMAIL,
+      ],
+    );
+    const expected = { xi_live: "1", smoke_organizer: "1" };
+    const wrong = Object.entries(counts).filter(
+      ([key, count]) =>
+        count !== (expected[key as keyof typeof expected] ?? "0"),
+    );
+    return wrong.length === 0 ? null : JSON.stringify(counts);
+  });
+}
+
+/**
+ * Ticket 03 AC2 (ADR 0003): a create writes to the War Week it posts, even
+ * when the `admin_edition` cookie names another edition.
+ */
+async function assertPostedWarWeekWins(sessions: { organizer: SmokeSession }) {
+  const ids = serverActionIds();
+  const question = "smoke-posted-war-week?";
+  const faqCount = async (edition: string) => {
+    const [row] = await runQuery<{ count: string }>(
+      `select count(*) from faq_item f join war_week w on w.id = f.war_week_id where w.edition = $1`,
+      [edition],
+    );
+    return Number(row.count);
+  };
+  const deleteRow = () =>
+    runQuery(`delete from faq_item where question = $1`, [question]);
+
+  try {
+    await deleteRow();
+    await runCheck(
+      "createFaqItem posting XI's warWeekId with admin_edition=x in the cookie writes to XI and leaves X unchanged",
+      async () => {
+        const xBefore = await faqCount("x");
+        const result = await callAction(
+          ids.createFaqItem,
+          [
+            await xiWarWeekId(),
+            {
+              question,
+              answer: {
+                type: "doc",
+                content: [
+                  {
+                    type: "paragraph",
+                    content: [{ type: "text", text: "smoke" }],
+                  },
+                ],
+              },
+            },
+          ],
+          { cookie: `${sessions.organizer.cookie}; admin_edition=x` },
+        );
+        const editions = await runQuery<{ edition: string }>(
+          `select w.edition from faq_item f join war_week w on w.id = f.war_week_id where f.question = $1`,
+          [question],
+        );
+        const xAfter = await faqCount("x");
+        return result.ok &&
+          editions.length === 1 &&
+          editions[0].edition === "xi" &&
+          xAfter === xBefore
+          ? null
+          : `result=${JSON.stringify(result)} editions=${JSON.stringify(editions)} x=${xBefore}->${xAfter}`;
+      },
+    );
+  } finally {
+    await deleteRow().catch((error) =>
+      fail("delete the posted-War-Week FAQ Item", String(error)),
+    );
+  }
+}
+
+const FAQ_TABLE_OFF = "faq_item_smoke_off";
+
+/** Puts `faq_item` back if an interrupted run left it renamed. */
+async function restoreFaqTable() {
+  const [row] = await runQuery<{ off: string | null; on: string | null }>(
+    `select to_regclass($1)::text as off, to_regclass('faq_item')::text as on`,
+    [FAQ_TABLE_OFF],
+  );
+  if (row.off && !row.on) {
+    await runQuery(`alter table ${FAQ_TABLE_OFF} rename to faq_item`);
+  }
+}
+
+/**
+ * Ticket 04 AC3: a real server error on an edition page shows the edition
+ * error boundary, not Next's default error page. The only failing query on
+ * /xi/faq is the FAQ Items one, so hiding that table forces the error with
+ * no test-only code in the app. Runs last; the table is always put back.
+ *
+ * The page streams, so the response is already 200 when the error happens:
+ * the server marks the page's Suspense boundary as errored (a
+ * `<template data-dgst>`) and the browser renders the nearest error
+ * boundary from the flight payload. So the check reads what the browser
+ * would: the payload's error row, and the edition layout's error boundary
+ * script, which must carry the ErrorScreen copy.
+ */
+async function assertEditionErrorBoundary() {
+  await runCheck(
+    "GET /xi/faq with its table missing streams the edition error boundary (ErrorScreen copy), not Next's default error page",
+    async () => {
+      await runQuery(`alter table faq_item rename to ${FAQ_TABLE_OFF}`);
+      try {
+        const res = await signedInFetch(`${BASE_URL}/xi/faq`);
+        const body = await res.text();
+        console.log(`  /xi/faq with faq_item missing answered ${res.status}`);
+        // The edition layout's children router names its error boundary's
+        // script; the root layout's global-error is sent separately ("G").
+        const scripts = [
+          ...body.matchAll(
+            /\\"errorScripts\\":\[\[\\"\$\\",\\"script\\",\\"script-0\\",\{\\"src\\":\\"(\/_next\/static\/[^\\"]+)\\"/g,
+          ),
+        ].map((m) => m[1]);
+        let boundaryCopy = false;
+        for (const src of scripts) {
+          const script = await (await fetch(`${BASE_URL}${src}`)).text();
+          if (
+            script.includes("Something went wrong") &&
+            script.includes("This page ran into a problem.") &&
+            script.includes("Go to the current War Week")
+          ) {
+            boundaryCopy = true;
+          }
+        }
+        const result = {
+          status: res.status,
+          erroredBoundary: /<template data-dgst="[^"]+"><\/template>/.test(
+            body,
+          ),
+          errorRow: /\d+:E\{\\"digest\\":/.test(body),
+          nav: body.includes("War Week XI"),
+          scripts,
+          boundaryCopy,
+          nextDefault:
+            body.includes("Application error") ||
+            body.includes("Internal Server Error"),
+        };
+        return result.erroredBoundary &&
+          result.errorRow &&
+          result.nav &&
+          result.boundaryCopy &&
+          !result.nextDefault
+          ? null
+          : JSON.stringify(result);
+      } finally {
+        await restoreFaqTable();
+      }
+    },
+  );
+}
+
 function startServer(port: number, env: NodeJS.ProcessEnv): ChildProcess {
   return spawn("pnpm", ["start", "-p", String(port)], {
     env,
@@ -4169,11 +5118,15 @@ async function main() {
 
   // Clear leftovers from an interrupted run, then add the smoke Organizer
   // to XI's allowlist until the run ends.
+  await restoreFaqTable();
   await deleteSmokeUsers();
+  await deleteSmokeHosts();
   await setSmokeOrganizer(true);
   const sessions = {
     organizer: await createSmokeSession(SMOKE_ORGANIZER_EMAIL),
     notOrganizer: await createSmokeSession("smoke-participant@jahnelgroup.com"),
+    // No Organizer row; assertHostChecks assigns it one XI Competition.
+    host: await createSmokeSession(SMOKE_HOST_EMAIL),
     // Can't happen through sign-in (the user-create hook refuses it); the
     // session check still treats it as anonymous.
     outsider: await createSmokeSession("smoke-outsider@example.com"),
@@ -4232,10 +5185,21 @@ async function main() {
       await assertSetupTeamsAndCompetitions(sessions);
       await assertSetupScheduleFaq(sessions);
       await assertBracketLoop(sessions);
-      // Last: it changes which War Week is current, then restores XI.
+      await assertHostChecks(sessions);
+      await assertParticipantRefused(sessions);
+      await assertPostedWarWeekWins(sessions);
+      // It changes which War Week is current, then restores XI.
       await assertWarWeekLifecycle(sessions);
+      // Last: it hides the faq_item table for one request, then restores it.
+      await assertEditionErrorBoundary();
     }
   } finally {
+    await restoreFaqTable().catch((error) =>
+      fail("restore the faq_item table", String(error)),
+    );
+    await deleteSmokeHosts().catch((error) =>
+      fail("delete the smoke Host's competition_host rows", String(error)),
+    );
     await killServer(server);
     await deleteSmokeUsers().catch((error) =>
       fail("delete smoke users", String(error)),

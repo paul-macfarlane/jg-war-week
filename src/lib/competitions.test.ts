@@ -157,6 +157,23 @@ describe("buildCompetitionLedger", () => {
   it("returns no entries for a Competition nobody has scored yet", () => {
     expect(buildCompetitionLedger({ rows: [] })).toEqual({ entries: [] });
   });
+
+  it("keeps entries entered at the same moment in a stable order, by id", () => {
+    const sameMoment = new Date("2026-02-24T19:00:00-05:00");
+    const tied: LedgerRow[] = ["e-c", "e-a", "e-b"].map((id) => ({
+      id,
+      points: 1,
+      note: null,
+      enteredAt: sameMoment,
+      team: red,
+      participant: null,
+    }));
+    const order = (input: LedgerRow[]) =>
+      buildCompetitionLedger({ rows: input }).entries.map((e) => e.id);
+
+    expect(order(tied)).toEqual(["e-a", "e-b", "e-c"]);
+    expect(order([...tied].reverse())).toEqual(["e-a", "e-b", "e-c"]);
+  });
 });
 
 describe("pointsForPlacement", () => {

@@ -41,9 +41,15 @@ type Initial = {
  * action is the authority on the allow-list and its error is what's shown.
  */
 export function AnnouncementForm({
+  warWeekId,
   announcementId,
   initial,
+  canPin = false,
 }: {
+  /** The War Week this page was rendered for; creates post it. */
+  warWeekId: string;
+  /** Pinning is Organizer-only; a Host doesn't see the switch. */
+  canPin?: boolean;
   /** Set when editing an existing Announcement. */
   announcementId?: string;
   initial?: Initial;
@@ -74,7 +80,7 @@ export function AnnouncementForm({
     startTransition(async () => {
       const saved = announcementId
         ? await updateAnnouncement(announcementId, input)
-        : await createAnnouncement(input);
+        : await createAnnouncement(warWeekId, input);
       setResult(saved);
       if (!saved.ok) {
         toast.error(saved.error);
@@ -174,17 +180,19 @@ export function AnnouncementForm({
           )}
         </FieldSet>
 
-        <Field orientation="horizontal">
-          <Switch
-            id="announcement-pinned"
-            name="pinned"
-            checked={pinned}
-            onCheckedChange={setPinned}
-          />
-          <FieldLabel htmlFor="announcement-pinned">
-            Pinned (shown first in the feed and on the home page)
-          </FieldLabel>
-        </Field>
+        {canPin && (
+          <Field orientation="horizontal">
+            <Switch
+              id="announcement-pinned"
+              name="pinned"
+              checked={pinned}
+              onCheckedChange={setPinned}
+            />
+            <FieldLabel htmlFor="announcement-pinned">
+              Pinned (shown first in the feed and on the home page)
+            </FieldLabel>
+          </Field>
+        )}
       </FieldGroup>
 
       <div className="flex items-center gap-3">

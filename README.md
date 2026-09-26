@@ -86,7 +86,7 @@ Its tools are `get_current_war_week`, `get_leaderboard`, `get_schedule`,
 `get_announcements`, `get_awards`, `get_faq`, `list_history` and
 `get_history`. Every tool is read-only and returns only what a signed-in
 Participant sees, and no tool returns an email
-or the Organizer allowlist (Announcement authors come back as the handle
+or the Organizer list (Announcement authors come back as the handle
 before the `@`).
 
 `/llms.txt` (public, static copy, no War Week data) describes the site, its
@@ -116,9 +116,11 @@ connect.
 ## Organizer sign-in
 
 Every page needs a `@jahnelgroup.com` Google sign-in: anonymous visitors
-are sent to `/sign-in` and come back afterwards. Organizers also manage the
-current War Week at `/admin` (linked from the header, and from More on
-mobile). A War Week's Organizers are the `organizerEmails` in its seed file.
+are sent to `/sign-in` and come back afterwards. Organizers (and Hosts, for
+the Competitions they're assigned) also manage War Week at `/admin` (linked
+from the header, and from More on mobile). The Organizer list is global and
+managed in the app at `/admin/organizers`; a fresh database gets its first
+Organizers from a seed's `organizers` list.
 
 Local setup (needed to use the app in a browser; `pnpm smoke` runs without
 it by signing its own test sessions):
@@ -132,8 +134,8 @@ it by signing its own test sessions):
 3. `pnpm db:migrate`, then `pnpm dev` and open `/admin`.
 
 Any Google account outside `@jahnelgroup.com` is refused at sign-in, even if
-the consent screen were misconfigured. A JG employee who isn't on the
-allowlist can sign in but `/admin` refuses them.
+the consent screen were misconfigured. A JG employee who is neither an
+Organizer nor a Host can sign in but `/admin` refuses them.
 
 `/api/mcp` is locked too: without a session it answers 401 unless the
 request carries the `MCP_TOKEN` bearer token; see "Connect Claude to JG War

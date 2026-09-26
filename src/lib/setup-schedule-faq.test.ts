@@ -232,3 +232,36 @@ describe("moveInOrder", () => {
     expect(moveInOrder(["a", "b"], "z", "up")).toBeNull();
   });
 });
+
+describe("Schedule and FAQ parsers given a malformed call", () => {
+  const MALFORMED: [string, unknown][] = [
+    ["{}", {}],
+    ["null", null],
+    ["undefined", undefined],
+    ["a string", "x"],
+    ["a number", 5],
+  ];
+
+  it.each(MALFORMED)(
+    "parseScheduleItemInput returns an error for %s",
+    (_label, value) => {
+      expect(parseScheduleItemInput(value as never)).toMatchObject({
+        ok: false,
+      });
+    },
+  );
+
+  it.each(MALFORMED)(
+    "parseFaqItemInput returns an error for %s",
+    (_label, value) => {
+      expect(parseFaqItemInput(value as never)).toMatchObject({ ok: false });
+    },
+  );
+
+  it.each<[string, Record<string, unknown>]>([
+    ["question: 5", { question: 5, answer: "x" }],
+    ["answer: 5", { question: "Why?", answer: 5 }],
+  ])("parseFaqItemInput returns an error for %s", (_label, value) => {
+    expect(parseFaqItemInput(value as never)).toMatchObject({ ok: false });
+  });
+});

@@ -1,13 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useId, useState, useTransition } from "react";
+import { toast } from "sonner";
 
 import {
   createCompetition,
   deleteCompetition,
+  setCompetitionHosts,
   updateCompetition,
 } from "@/actions/setup";
+import { JgEmailChips } from "@/components/jg-email-chips";
 import { OptionSelect } from "@/components/option-select";
 import { PlacementPointsRows } from "@/components/placement-points-rows";
 import {
@@ -19,6 +23,7 @@ import {
   useSetupRow,
 } from "@/components/setup-row";
 import { SuggestionCombobox } from "@/components/suggestion-combobox";
+import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -52,14 +57,73 @@ function inputFrom(competition: SetupCompetition): CompetitionInput {
   };
 }
 
+/**
+ * A Competition's Hosts, for Organizers: saved by their own "assign Hosts"
+ * action, never with the Competition's setup.
+ */
+function HostsField({
+  competitionId,
+  initial,
+}: {
+  competitionId: string;
+  initial: string[];
+}) {
+  const router = useRouter();
+  const [emails, setEmails] = useState(initial);
+  const [pending, startTransition] = useTransition();
+  const changed = emails.join("\n") !== initial.join("\n");
+
+  return (
+    <div className="mt-3 flex flex-col gap-2">
+      <JgEmailChips
+        label="Hosts"
+        description="A Host can change this Competition's setup, Bracket, Points Entries and linked Schedule Items."
+        value={emails}
+        onChange={setEmails}
+        disabled={pending}
+      />
+      <div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="min-h-11 sm:min-h-7"
+          disabled={pending || !changed}
+          onClick={() =>
+            startTransition(async () => {
+              const result = await setCompetitionHosts(competitionId, emails);
+              if (!result.ok) {
+                toast.error(result.error);
+                return;
+              }
+              toast.success("Hosts saved");
+              router.refresh();
+            })
+          }
+        >
+          {pending ? "Saving…" : "Save Hosts"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 /** One Competition's fields, saved on its own. With no `competition` it adds. */
 function CompetitionRow({
+  warWeekId,
   competition,
+  canDelete,
+  hosts,
   mode,
   teamLabel,
   groupSuggestions,
 }: {
+  warWeekId: string;
   competition?: SetupCompetition;
+  /** Deleting a Competition is Organizer-only. */
+  canDelete: boolean;
+  /** The Competition's Hosts, shown only to Organizers. */
+  hosts?: string[];
   mode: WarWeek["mode"];
   teamLabel: string;
   groupSuggestions: string[];
@@ -96,7 +160,7 @@ function CompetitionRow({
       () =>
         competition
           ? updateCompetition(competition.id, input)
-          : createCompetition(input),
+          : createCompetition(warWeekId, input),
       "Competition saved",
     );
   }
@@ -229,12 +293,13 @@ function CompetitionRow({
               pending={pending}
               addLabel="Add Competition"
               onDelete={
-                competition &&
-                (() =>
-                  run(
-                    () => deleteCompetition(competition.id),
-                    "Competition deleted",
-                  ))
+                competition && canDelete
+                  ? () =>
+                      run(
+                        () => deleteCompetition(competition.id),
+                        "Competition deleted",
+                      )
+                  : undefined
               }
               deleteTitle={competition && `Delete ${competition.name}?`}
               deleteDescription={usage}
@@ -243,17 +308,33 @@ function CompetitionRow({
         </FieldGroup>
       </form>
       <SetupRowError error={error} />
+      {competition && hosts && (
+        <HostsField
+          key={hosts.join(",")}
+          competitionId={competition.id}
+          initial={hosts}
+        />
+      )}
     </li>
   );
 }
 
 /** The War Week's Competitions by name, each editable, plus an add form. */
 export function CompetitionsEditor({
+  warWeekId,
+  isOrganizer,
+  hosts,
   competitions,
   mode,
   teamLabel,
   groupSuggestions,
 }: {
+  /** The War Week this page was rendered for; creates post it. */
+  warWeekId: string;
+  /** Organizers add, delete and assign Hosts; a Host only edits setup. */
+  isOrganizer: boolean;
+  /** Each Competition's Hosts by Competition id (Organizers only). */
+  hosts?: Record<string, string[]>;
   competitions: SetupCompetition[];
   mode: WarWeek["mode"];
   teamLabel: string;
@@ -270,7 +351,10 @@ export function CompetitionsEditor({
             // Keyed on the saved values so a refresh resets the row's fields.
             <CompetitionRow
               key={`${c.id}-${JSON.stringify(inputFrom(c))}`}
+              warWeekId={warWeekId}
               competition={c}
+              canDelete={isOrganizer}
+              hosts={isOrganizer ? (hosts?.[c.id] ?? []) : undefined}
               mode={mode}
               teamLabel={teamLabel}
               groupSuggestions={groupSuggestions}
@@ -278,16 +362,20 @@ export function CompetitionsEditor({
           ))}
         </ul>
       )}
-      <section className="flex flex-col gap-1">
-        <h2 className="text-lg font-semibold">Add a Competition</h2>
-        <ul>
-          <CompetitionRow
-            mode={mode}
-            teamLabel={teamLabel}
-            groupSuggestions={groupSuggestions}
-          />
-        </ul>
-      </section>
+      {isOrganizer && (
+        <section className="flex flex-col gap-1">
+          <h2 className="text-lg font-semibold">Add a Competition</h2>
+          <ul>
+            <CompetitionRow
+              warWeekId={warWeekId}
+              canDelete
+              mode={mode}
+              teamLabel={teamLabel}
+              groupSuggestions={groupSuggestions}
+            />
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

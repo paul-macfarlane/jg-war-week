@@ -46,11 +46,14 @@ const NO_TEAM = "none";
  * recipients belong to this War Week; its error is what's shown.
  */
 export function AwardForm({
+  warWeekId,
   awardId,
   initial,
   options,
   teamLabel,
 }: {
+  /** The War Week this page was rendered for; creates post it. */
+  warWeekId: string;
   /** Set when editing an existing Award. */
   awardId?: string;
   initial?: AwardInput;
@@ -90,7 +93,7 @@ export function AwardForm({
     startTransition(async () => {
       const saved = awardId
         ? await updateAward(awardId, input)
-        : await createAward(input);
+        : await createAward(warWeekId, input);
       setResult(saved);
       if (!saved.ok) {
         toast.error(saved.error);

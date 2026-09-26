@@ -1,7 +1,6 @@
 import { type ZodType, z } from "zod";
 
 import type { Competition, Participant, Team, WarWeek } from "@/db/schema";
-import { isJahnelGroupEmail } from "@/lib/access";
 import { dayOutsideRangeError } from "@/lib/day-range";
 import {
   competitionSeedSchema,
@@ -23,8 +22,6 @@ export type WarWeekSettingsInput = {
   leaderTitle: string;
   slackChannelUrl: string;
   wikiUrl: string;
-  /** One or more emails, split on whitespace or commas. */
-  organizerEmails: string;
   primaryColor: string;
   primaryForegroundColor: string;
   accentColor: string;
@@ -50,7 +47,6 @@ export type WarWeekSettingsValues = Pick<
   | "leaderTitle"
   | "slackChannelUrl"
   | "wikiUrl"
-  | "organizerEmails"
   | "primaryColor"
   | "primaryForegroundColor"
   | "accentColor"
@@ -74,7 +70,6 @@ export function settingsInputFrom(warWeek: WarWeek): WarWeekSettingsInput {
     leaderTitle: warWeek.leaderTitle,
     slackChannelUrl: warWeek.slackChannelUrl,
     wikiUrl: warWeek.wikiUrl ?? "",
-    organizerEmails: warWeek.organizerEmails.join("\n"),
     primaryColor: warWeek.primaryColor,
     primaryForegroundColor: warWeek.primaryForegroundColor,
     accentColor: warWeek.accentColor,
@@ -124,9 +119,6 @@ const settingsSchema = z
     leaderTitle: trimmed(seed.leaderTitle),
     slackChannelUrl: trimmed(seed.slackChannelUrl),
     wikiUrl: optional(seed.wikiUrl),
-    organizerEmails: seed.organizerEmails.min(1, {
-      error: "Add at least one organizer email.",
-    }),
     primaryColor: trimmed(seed.primary),
     primaryForegroundColor: trimmed(seed.primaryForeground),
     accentColor: trimmed(seed.accent),
@@ -218,7 +210,6 @@ const FIELD_LABELS: Record<string, string> = {
   leaderTitle: "Leader Title",
   slackChannelUrl: "Slack URL",
   wikiUrl: "Wiki URL",
-  organizerEmails: "Organizer emails",
   primaryColor: "Primary color",
   primaryForegroundColor: "Primary text color",
   accentColor: "Accent color",
@@ -287,6 +278,10 @@ export function parseWith<T>(
   if (result.success) return { ok: true, value: result.data };
 
   const issue = result.error.issues[0];
+  // Not an object at all: only a malformed direct call gets here.
+  if (issue.path.length === 0 && issue.code === "invalid_type") {
+    return { ok: false, error: "The form's fields are missing." };
+  }
   const special = describe(issue);
   if (special) return { ok: false, error: special };
   const field = String(issue.path[0]);
@@ -302,29 +297,7 @@ export function parseWith<T>(
 export function parseWarWeekSettingsInput(
   input: WarWeekSettingsInput,
 ): Parsed<WarWeekSettingsValues> {
-  const emails = [
-    ...new Set(
-      input.organizerEmails
-        .split(/[\s,]+/)
-        .filter(Boolean)
-        .map((email) => email.toLowerCase()),
-    ),
-  ];
-  const notJg = emails.find((email) => !isJahnelGroupEmail(email));
-  if (notJg) {
-    return {
-      ok: false,
-      error: `Organizer email "${notJg}" must be an @jahnelgroup.com address.`,
-    };
-  }
-  return parseWith(
-    settingsSchema,
-    { ...input, organizerEmails: emails },
-    (issue) =>
-      issue.path[0] === "organizerEmails" && typeof issue.path[1] === "number"
-        ? `Organizer email "${emails[issue.path[1]]}" must be a valid email.`
-        : null,
-  );
+  return parseWith(settingsSchema, input);
 }
 
 /** Validates one Day's form. Never throws; returns the first error. */
@@ -348,6 +321,17 @@ export function parseParticipantInput(
 
 const NUMBER = /^-?\d+(\.\d+)?$/;
 
+/** The Competition form's fields, as strings (and one checkbox). */
+const competitionInputShape = z.object({
+  name: z.string(),
+  description: z.string(),
+  scoring: z.string(),
+  maxPoints: z.string(),
+  placementPoints: z.string(),
+  countsTowardTeam: z.boolean(),
+  group: z.string(),
+});
+
 /**
  * Validates one Competition's form against the seed's Competition rules.
  * Never throws; returns the first error.
@@ -355,6 +339,10 @@ const NUMBER = /^-?\d+(\.\d+)?$/;
 export function parseCompetitionInput(
   input: CompetitionInput,
 ): Parsed<CompetitionValues> {
+  // Check the shape before touching a field: a direct POST can send anything.
+  const shape = parseWith(competitionInputShape, input);
+  if (!shape.ok) return shape;
+  input = shape.value;
   const maxPoints = input.maxPoints.trim();
   if (maxPoints && !NUMBER.test(maxPoints)) {
     return { ok: false, error: "Max points must be a number." };
@@ -550,16 +538,13 @@ export function inUseError(
 
 /**
  * Refuses a settings save that would leave the War Week inconsistent:
- * Teams in a free-for-all, Days outside its dates, or the saving Organizer
- * locked out. No cascading changes; the Organizer fixes it first.
+ * Teams in a free-for-all or Days outside its dates. No cascading changes;
+ * the Organizer fixes it first.
  */
 export function settingsGuardError(
   values: WarWeekSettingsValues,
-  ctx: { actorEmail: string; teamCount: number; dayDates: string[] },
+  ctx: { teamCount: number; dayDates: string[] },
 ): string | null {
-  if (!values.organizerEmails.includes(ctx.actorEmail.toLowerCase())) {
-    return "You can't remove your own email from the organizer emails.";
-  }
   if (values.mode === "free-for-all" && ctx.teamCount > 0) {
     const teams = ctx.teamCount === 1 ? "1 Team" : `${ctx.teamCount} Teams`;
     return `This War Week has ${teams}. Delete ${ctx.teamCount === 1 ? "it" : "them"} before switching to free-for-all.`;

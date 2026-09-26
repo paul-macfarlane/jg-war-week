@@ -19,7 +19,7 @@ export default async function MorePage({
     edition: warWeek.edition,
     mode: warWeek.mode,
     teamLabel: warWeek.teamLabel,
-    isOrganizer: account.isOrganizer,
+    canOpenAdmin: account.canOpenAdmin,
   });
 
   return (

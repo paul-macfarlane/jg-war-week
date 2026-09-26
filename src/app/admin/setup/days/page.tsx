@@ -14,9 +14,9 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Days · JG War Week" };
 
 export default async function SetupDaysPage() {
-  const { warWeek, email, isOrganizer, editions } =
-    await loadAdminPage("/admin/setup/days");
-  if (!isOrganizer) return <AdminRefused warWeek={warWeek} email={email} />;
+  const { warWeek, email, allowed, isOrganizer, editions } =
+    await loadAdminPage("/admin/setup/days", "organizers");
+  if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const days = await getSetupDays(warWeek);
 
@@ -24,6 +24,7 @@ export default async function SetupDaysPage() {
     <AdminShell
       warWeek={warWeek}
       email={email}
+      isOrganizer={isOrganizer}
       editions={editions}
       current="Setup"
     >
@@ -42,6 +43,7 @@ export default async function SetupDaysPage() {
         </p>
         <SeedOverwriteWarning />
         <DaysEditor
+          warWeekId={warWeek.id}
           days={days}
           startDate={warWeek.startDate}
           endDate={warWeek.endDate}

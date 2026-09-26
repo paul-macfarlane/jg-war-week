@@ -23,7 +23,7 @@ you set them in your own `.env.local` or in the service's settings.
 | Vercel project                             | Preview deploys, production deploys, env vars, rollbacks                                      | Paul                           |
 | Neon project                               | The staging and production databases (you rarely touch them directly)                         | Paul                           |
 | Google Cloud OAuth client                  | Local sign-in: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and adding redirect URIs           | Paul                           |
-| Organizer allowlist                        | `/admin` only opens for emails on the War Week's `organizerEmails`                            | Any current Organizer, in-app  |
+| Organizer list                             | `/admin` only opens for Organizers (and Hosts, for their Competitions)                        | Any Organizer, in-app          |
 | Claude Code with the Atlas plugin          | The recommended way to make changes ([section 2](#2-set-up-claude-code))                      | You (Paul if the install fails) |
 
 Your local `.env.local` needs the variables named in `.env.example`:
@@ -88,7 +88,7 @@ before it says it's done.
 | Appearance Theme → CSS                     | `src/lib/theme.ts`                                                     |
 | Shared UI pieces                           | `src/components/` (shadcn primitives in `src/components/ui/`)          |
 | MCP server (Claude connector)              | `src/app/api/mcp/route.ts`, tools in `src/mcp/`, list in `src/mcp/tools.ts` |
-| Who can do what                            | `src/lib/access.ts`, `src/auth/organizer.ts`                           |
+| Who can do what                            | `src/lib/access.ts` (`can`), `src/auth/authorize.ts`, `src/auth/actor.ts` |
 | Smoke test                                 | `scripts/smoke.ts`                                                     |
 | Past wiki text for history                 | `old-wikis/2016.txt` … `old-wikis/2026.txt`                            |
 | CI, deployed migrations, seeding           | `.github/workflows/` (`ci.yml`, `migrate.yml`, `seed.yml`)             |
@@ -148,9 +148,11 @@ Organizer screens cover it. Sign in and go to `/admin`:
 
 - **`/admin/setup`**: the **Lifecycle** box (Start, End with the Winner and
   highlights, Reopen), War Week settings (Story Theme, dates, mode, Team
-  Label, Leader Title, links, Organizers, Winner and highlights), the
-  Appearance Theme (colors, font, logo, banner), Days, Teams and roster,
-  Competitions, Schedule and FAQ.
+  Label, Leader Title, links, Winner and highlights), the Appearance Theme
+  (colors, font, logo, banner), Days, Teams and roster, Competitions (with
+  their Hosts), Schedule and FAQ.
+- **`/admin/organizers`**: the Organizer list (see
+  [Add an Organizer or assign Hosts](#add-an-organizer-or-assign-hosts)).
 - **`/admin/points`**, **`/admin/standings`** (Run the Finale: "Open Finale" at closing ceremonies),
   **`/admin/announcements`**, **`/admin/awards`**.
 
@@ -158,8 +160,9 @@ To start next year's edition in the app:
 
 1. In `/admin/setup`, press **Create next War Week**. The edition, number
    and year are prefilled (XII, 12, next year); add the dates and Story
-   Theme, and choose what to copy (Organizers and settings are on;
-   Competitions and FAQ are off). It starts `upcoming`, and the admin
+   Theme, and choose what to copy (settings are on; Competitions, with
+   their Hosts, and the FAQ are off). Organizers are global, so there's
+   nothing to copy for them. It starts `upcoming`, and the admin
    switches to it so you can set it up while XI stays current.
 2. When XI is over, switch back to XI in the header's edition switcher and
    press **End War Week**: confirm the Winner (prefilled from first place)
@@ -167,14 +170,41 @@ To start next year's edition in the app:
 3. Switch to XII and press **Start War Week**. `/` and `/admin` now go to
    XII. Only one War Week can be live, so XI must end first.
 
-Organizers of the current War Week can still pick any Archive edition in
-the switcher to correct its results.
+Organizers can still pick any Archive edition in the switcher to correct
+its results.
 
 A seed file for a new edition is optional (for demo data or a bulk
 import). If you use one, load it with the **Seed** workflow in the GitHub
 Actions tab (pick the environment and the file). A reload never changes a
 War Week's status, Winner or highlights. Once organizers edit a War Week in
 the app, stop reloading its seed: a reload overwrites their other edits.
+
+### Add an Organizer or assign Hosts
+
+No code. There are three roles: **Organizers** run every War Week, a
+**Host** runs the Competitions an Organizer assigns them, and everyone else
+signed in is a **Participant** (`CONTEXT.md`, "Access rules").
+
+- **Add or remove an Organizer**: `/admin/organizers` (the Organizers link
+  in the Admin nav). Add a `@jahnelgroup.com` email; it works on their next
+  page load. Any Organizer can remove any other, or themselves, as long as
+  one Organizer is left. The list is global: one list for every War Week.
+- **Assign Hosts**: `/admin/setup/competitions`, the Hosts field on each
+  Competition (Organizers only). A Host needs no Participant record. They
+  get the Admin link and see only their Competitions in Admin: its Points
+  Entries, Bracket, setup and linked Schedule Items, plus Announcements for
+  that War Week. Remove the email to take it away; it applies on their next
+  request. A Schedule Item's "host" text is only what the schedule shows;
+  it doesn't make anyone a Host.
+- **A fresh database** gets its first Organizers from a seed's `organizers`
+  list: a seed load adds any that are missing and never removes one, even
+  with `--reset`. After that, manage them in the app. Hosts never come from
+  seeds; a plain reload leaves them alone, and `--reset` deletes them along
+  with the War Week's Competitions.
+- **Expand/contract.** The old per-edition `organizer_emails` column on
+  `war_week` is still in the database, unused, so a rollback stays safe.
+  Ticket 18 (`.scratch/hardening/issues/18-drop-war-week-organizer-emails.md`)
+  drops it in a later release; don't build on it.
 
 ### Run a knockout Competition as a Bracket
 
@@ -212,7 +242,10 @@ migration, accept it in the seed format and seeds, and show it on <page>.
 
 The chain is schema → `pnpm db:generate` → migration in `drizzle/` →
 `pnpm db:migrate` locally → seed format and seed files → UI. Never hand-edit
-a migration.
+a migration. The one exception is a data step that the schema diff can't
+express (copying rows between tables): create it with
+`pnpm db:generate --custom --name <what-it-copies>` so it gets its
+own journal entry, and write only that file.
 
 ### Add or change a form control
 

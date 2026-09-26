@@ -8,7 +8,6 @@ import { updateWarWeekSettings } from "@/actions/setup";
 import { ColorField, type ColorSwatch } from "@/components/color-field";
 import { DateRangePicker } from "@/components/date-range-picker";
 import { OptionSelect, type SelectOption } from "@/components/option-select";
-import { OrganizerEmailChips } from "@/components/organizer-email-chips";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -62,14 +61,14 @@ const FONT_OPTIONS: SelectOption[] = [
  * the validation and guards, and its error is what's shown.
  */
 export function WarWeekSettingsForm({
+  warWeekId,
   initial,
-  actorEmail,
   dayDates,
   teamSwatches,
 }: {
+  /** The War Week these settings were rendered for; the save posts it. */
+  warWeekId: string;
   initial: WarWeekSettingsInput;
-  /** The signed-in Organizer, whose own chip can't be removed. */
-  actorEmail: string;
   /** The War Week's existing Day dates, `YYYY-MM-DD`. */
   dayDates: string[];
   /** The War Week's Team colors, offered as color swatches. */
@@ -99,7 +98,7 @@ export function WarWeekSettingsForm({
   function submit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     startTransition(async () => {
-      const saved = await updateWarWeekSettings(values);
+      const saved = await updateWarWeekSettings(warWeekId, values);
       if (saved.ok) {
         setError(null);
         toast.success("War Week settings saved");
@@ -184,20 +183,6 @@ export function WarWeekSettingsForm({
             required: true,
           })}
           {text("wikiUrl", "Wiki URL", { placeholder: "Optional" })}
-        </FieldGroup>
-      </FieldSet>
-
-      <FieldSet className="min-w-0">
-        <FieldLegend className="mb-2 font-semibold">Organizers</FieldLegend>
-        <FieldGroup>
-          <OrganizerEmailChips
-            value={values.organizerEmails}
-            actorEmail={actorEmail}
-            onChange={(organizerEmails) => {
-              setValues((v) => ({ ...v, organizerEmails }));
-              setError(null);
-            }}
-          />
         </FieldGroup>
       </FieldSet>
 

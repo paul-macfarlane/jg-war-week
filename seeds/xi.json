@@ -18,7 +18,7 @@
   "fontPreset": "mono",
   "logoUrl": "/themes/xi/logo.svg",
   "bannerUrl": "/themes/xi/banner.svg",
-  "organizerEmails": ["pmacfarlane@jahnelgroup.com"],
+  "organizers": ["pmacfarlane@jahnelgroup.com"],
   "highlights": [],
   "days": [
     {

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   parseEntrantsInput,
   parseFormatInput,
+  parseGenerateInput,
   parseHeatResultInput,
 } from "@/lib/bracket/input";
 
@@ -39,5 +40,45 @@ describe("Bracket action input", () => {
       ok: false,
       error: "Put the Heat's Entrants in finishing order.",
     });
+  });
+});
+
+describe("Bracket parsers given a malformed call", () => {
+  const MALFORMED: [string, unknown][] = [
+    ["{}", {}],
+    ["null", null],
+    ["undefined", undefined],
+    ["a string", "x"],
+    ["a number", 5],
+  ];
+  const parsers: [string, (input: unknown) => { ok: boolean }][] = [
+    ["parseFormatInput", parseFormatInput],
+    ["parseEntrantsInput", parseEntrantsInput],
+    ["parseHeatResultInput", parseHeatResultInput],
+  ];
+
+  it.each(
+    parsers.flatMap(([name, parse]) =>
+      MALFORMED.map(([label, value]) => [name, label, parse, value] as const),
+    ),
+  )("%s returns an error for %s", (_name, _label, parse, value) => {
+    expect(parse(value)).toMatchObject({ ok: false });
+  });
+
+  it.each<[string, (input: unknown) => { ok: boolean }, unknown]>([
+    [
+      'parseGenerateInput with force: "yes"',
+      parseGenerateInput,
+      { force: "yes" },
+    ],
+    ["parseGenerateInput with null", parseGenerateInput, null],
+    [
+      'parseEntrantsInput with targetIds: "x"',
+      parseEntrantsInput,
+      { targetIds: "x" },
+    ],
+    ["parseHeatResultInput with order: 5", parseHeatResultInput, { order: 5 }],
+  ])("%s returns an error", (_label, parse, value) => {
+    expect(parse(value)).toMatchObject({ ok: false });
   });
 });

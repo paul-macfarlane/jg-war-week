@@ -26,9 +26,12 @@ const BACK = "/admin/setup/faq";
 
 /** Add or edit one FAQ Item: a question and its rich-text answer. */
 export function FaqItemForm({
+  warWeekId,
   itemId,
   initial,
 }: {
+  /** The War Week this page was rendered for; creates post it. */
+  warWeekId: string;
   /** Set when editing an existing FAQ Item. */
   itemId?: string;
   initial?: { question: string; answer: Content };
@@ -49,7 +52,7 @@ export function FaqItemForm({
     startTransition(async () => {
       const saved = itemId
         ? await updateFaqItem(itemId, input)
-        : await createFaqItem(input);
+        : await createFaqItem(warWeekId, input);
       setResult(saved);
       if (!saved.ok) {
         toast.error(saved.error);

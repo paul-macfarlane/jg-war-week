@@ -90,3 +90,25 @@ describe("isAwardId", () => {
     expect(isAwardId("new")).toBe(false);
   });
 });
+
+describe("parseAwardInput given a malformed call", () => {
+  const MALFORMED: [string, unknown][] = [
+    ["{}", {}],
+    ["null", null],
+    ["undefined", undefined],
+    ["a string", "x"],
+    ["a number", 5],
+  ];
+
+  it.each(MALFORMED)("returns an error for %s", (_label, value) => {
+    expect(parseAwardInput(value as never)).toMatchObject({ ok: false });
+  });
+
+  it.each<[string, Record<string, unknown>]>([
+    ["name: 5", { name: 5, teamId: null, participantIds: [] }],
+    ['participantIds: "x"', { name: "MVP", participantIds: "x" }],
+    ["teamId: 5", { name: "MVP", teamId: 5 }],
+  ])("returns an error for %s", (_label, value) => {
+    expect(parseAwardInput(value as never)).toMatchObject({ ok: false });
+  });
+});
