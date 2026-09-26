@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { contrastRatio, resolveCssColor } from "@/lib/color";
+import { contrastRatio, mixOklch, resolveCssColor } from "@/lib/color";
 import {
   MIN_TEXT_CONTRAST,
   type ThemeColors,
@@ -47,7 +47,17 @@ const PAIRS = [
   ["text-primary-text", "--primary-text", "--background"],
   ["text-primary-foreground", "--primary-foreground", "--primary"],
   ["text-accent-foreground", "--accent-foreground", "--accent"],
+  // The card footer's "Original wiki page" link sits on `bg-muted/50`.
+  ["text-foreground", "--foreground", "card footer"],
 ] as const;
+
+/** A surface's resolved hex; "card footer" is `bg-muted/50` over the card. */
+function surfaceColor(style: Record<string, string>, surface: string) {
+  if (surface !== "card footer") return resolveCssColor(style[surface]);
+  const muted = resolveCssColor(style["--muted"]);
+  const card = resolveCssColor(style["--card"]);
+  return muted && card ? mixOklch(card, muted, 50) : null;
+}
 
 describe("archive text contrast", () => {
   it("covers every seed", () => {
@@ -59,7 +69,7 @@ describe("archive text contrast", () => {
 
     it.each(PAIRS)("%s (%s on %s) reads at 4.5:1", (_, text, surface) => {
       const fg = resolveCssColor(style[text]);
-      const bg = resolveCssColor(style[surface]);
+      const bg = surfaceColor(style, surface);
       expect(fg, text).not.toBeNull();
       expect(bg, surface).not.toBeNull();
       expect(contrastRatio(fg!, bg!)).toBeGreaterThanOrEqual(MIN_TEXT_CONTRAST);

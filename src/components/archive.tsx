@@ -202,7 +202,7 @@ export function ArchiveCard({ warWeek }: { warWeek: WarWeek }) {
               href={warWeek.wikiUrl}
               target="_blank"
               rel="noreferrer"
-              className="text-primary-text flex w-full items-center gap-1 px-4 py-2 text-xs font-medium underline underline-offset-4"
+              className="text-foreground flex w-full items-center gap-1 px-4 py-2 text-xs font-medium underline underline-offset-4"
             >
               Original wiki page
               <ExternalLink aria-hidden className="size-3" />
