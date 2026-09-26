@@ -58,6 +58,9 @@ None. CI runs on push without a human step; PR creation is closeout. Nothing dep
 - 2026-09-26: plan recorded; proof root cleared; epic and tickets 13, 11 claimed (`in-progress`).
 - Wave 1: D2 accepted (`d3f663c`; orchestrator rerun of `pnpm e2e` 17/17). D1 accepted and cherry-picked (`d07d8a5`); 79 files / 1366 tests; by-hand probe on the `getStandings` join (1003 vs 3) proves 13-AC2b. Evidence `fbcae4f`. Worktree `d1` and its DB removed.
 - Wave 2: D3 accepted (`c8f85e4`). Orchestrator fix `5107556`: vitest and eslint ignore `.claude/**` (with a worktree present, `pnpm test` collected its copies of `src/`). D5 accepted and cherry-picked (`c97e465`, `03ebca8`, `52498ac`, `a1c86d7`); the `OptionSelect` placeholder stays (six callers pass one). `pnpm gate` on `a1c86d7`: 79 files / 1366 tests, smoke 177 ok / 0 FAIL with the same `ok` sequence as Epic B's baseline, e2e 17 passed. Worktree `d5` and its DB removed.
+- Wave 3: D4 accepted (`b9a81a3`, `7e38298`); its narrower revalidation (setup writes and Awards per edition, not `/`) is the ticket's rule, and `/history` reads only War Week rows.
+- Aggregate review: 2 blocking findings (a finalize race never exercised; Drizzle in the `/admin` client chunk) and non-blocking fixes, all in R1 (`d772937`, `c60e155`, `6f84220`); see `[AI CODE REVIEW]` on the tickets.
+- Verification on `6f84220`: `pnpm gate` exit 0 (80 files / 1371 tests; smoke 177 ok / 0 FAIL, same sequence as Epic B; e2e 17 passed); no `drizzle:` in `.next/static`; lint probe fires for seed, queries, mutations, actions, components and value imports of `@/db/schema`; scope probes clean; 13-AC2b probe rerun on `c045639`. Evidence `test-results/hardening-c-{gate,docs,focus}/`, `test-results/e2e/`.
 
 ## Closeout
 

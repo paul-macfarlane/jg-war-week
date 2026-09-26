@@ -1,18 +1,12 @@
-# 13-AC2b by-hand probe (orchestrator) on d07d8a5
+# 13-AC2b by-hand probe (orchestrator) on c045639 (rerun: the test's helper changed after the first run on d07d8a5)
 ## Rule broken: getStandings Points Entry join no longer scoped to the War Week
  src/queries/standings.ts | 3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
-  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
-     × scopes its Points Entry join to the queried War Week's Competitions only 436ms
+     × scopes its Points Entry join to the queried War Week's Competitions only 387ms
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
- FAIL  src/queries/standings.test.ts > getStandings > scopes its Points Entry join to the queried War Week's Competitions only
-AssertionError: expected [ { …(5) } ] to deeply equal [ ObjectContaining{…} ]
 - Expected
 + Received
-+     "color": "#f00",
-+     "id": "ac2b2f40-85a6-48a1-99cb-cc63f30accf6",
 -     "total": 3,
-+     "rank": 1,
 +     "total": 1003,
       Tests  1 failed (1)
 ## Restored
