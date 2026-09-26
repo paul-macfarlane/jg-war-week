@@ -7,7 +7,7 @@ import {
   PinAnnouncementButton,
 } from "@/components/announcement-admin-buttons";
 import { buttonVariants } from "@/components/ui/button";
-import { formatPublishedAt } from "@/lib/announcements";
+import { announcementVideoCount, formatPublishedAt } from "@/lib/announcements";
 import { getAnnouncements } from "@/queries/announcements";
 
 import { loadAdminPage } from "../gate";
@@ -74,7 +74,7 @@ export default async function AdminAnnouncementsPage() {
                       {formatPublishedAt(row.publishedAt)}
                     </td>
                     <td className="py-2 pr-4 text-right tabular-nums">
-                      {row.videoUrls.length}
+                      {announcementVideoCount(row)}
                     </td>
                     <td className="py-2">
                       <div className="flex items-center gap-2">

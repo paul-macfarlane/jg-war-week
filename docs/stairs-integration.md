@@ -3,8 +3,8 @@
 Status: **stub**. Nothing here is implemented. HQ Attendance is scored with
 Points Entries that Organizers enter by hand in `/admin/points`.
 
-This note records what we know so the integration can be picked up after the
-hackathon without redoing the research.
+This note records what we know so the integration can be picked up later
+without redoing the research.
 
 ## What the Stairs App has
 

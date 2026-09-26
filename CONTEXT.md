@@ -159,11 +159,10 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   `/privacy` and `/terms` are static the same way: copy only, no database
   or session reads.
 - `/api/mcp` also lets in `Authorization: Bearer <MCP_TOKEN>` (off when
-  `MCP_TOKEN` is unset or blank), and anyone while `MCP_PUBLIC=true` (off by
-  default; for a claude.ai connector demo). `canUseMcp` in
-  `src/lib/access.ts` is the one check. Every MCP tool is read-only and
-  returns only what a signed-in Participant sees: never an email or the
-  Organizer allowlist. `get_leaderboard` always returns the Standings.
+  `MCP_TOKEN` is unset or blank). `canUseMcp` in `src/lib/access.ts` is the
+  one check. Every MCP tool is read-only and returns only what a signed-in
+  Participant sees: never an email or the Organizer allowlist.
+  `get_leaderboard` always returns the Standings.
 - Standings are always visible to every signed-in user. `/<edition>/finale`
   is readable by any signed-in JG user; only Organizers see the admin link
   to it (`/admin/standings`).
@@ -228,8 +227,9 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 - Regenerating, or replacing the Entrants, before any Heat Result is free.
   After one, it needs a confirmation and clears every Heat Result.
 - A knockout Heat Result needs a clear finishing order. A forfeiting
-  Entrant loses. Editing a decided Heat sends every later Heat its winner
-  reached back to unplayed.
+  Entrant loses. Changing the winner of a decided Heat sends the later Heats
+  that followed from it back to unplayed; an edit that keeps the winner
+  (scores only) changes nothing downstream.
 - **Finalize** turns final placings (1st, 2nd, tied 3rd for both semifinal
   losers, later places tied by the Round lost in) into Points Entries
   through the Competition's Placement Points, tied places each getting that
@@ -241,6 +241,9 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 - Deleting a Team or Participant that is an Entrant is refused with the
   count, and so is changing a Competition's scoring or Format while it has
   Entrants.
+- While a Bracket is finalized, changing the Competition's scoring or
+  Placement Points is refused ("Un-finalize the Bracket first."); its name
+  and description still save.
 
 ## Finale rules
 

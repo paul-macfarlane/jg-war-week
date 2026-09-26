@@ -43,7 +43,8 @@ or stop reloading it once organizers are editing in the app.
 - `--reset` (e.g. `pnpm seed:load --reset seeds/xi.json`) deletes each War
   Week first, including organizer-entered points, Awards and Announcements,
   so the demo starts from exactly the seed. Never use it on a War Week
-  organizers are running.
+  organizers are running. Against a non-local `DATABASE_URL`, `--reset` also
+  needs `--allow-remote-reset`.
 
 Checks:
 
@@ -55,6 +56,10 @@ pnpm build
 ```
 
 ## Smoke test and slice gate
+
+`pnpm smoke` (and `pnpm gate`, which runs it) refuse to start unless
+`DATABASE_URL` is local (`localhost`, `127.0.0.1` or `[::1]`) and
+`DATABASE_DRIVER` isn't `neon`, since smoke resets every seeded War Week.
 
 `pnpm smoke` runs an end-to-end check against a production build: it applies
 migrations, loads every seed (once with `--reset`, then again to prove
@@ -88,13 +93,12 @@ before the `@`).
 pages and these tools for AI agents. Its tool list comes from
 `src/mcp/tools.ts`, the same metadata the MCP route registers.
 
-`/api/mcp` lets a request in when any of these holds; otherwise it answers
+`/api/mcp` lets a request in when either of these holds; otherwise it answers
 401:
 
 - a signed-in `@jahnelgroup.com` browser session;
 - `Authorization: Bearer <MCP_TOKEN>`, where `MCP_TOKEN` is a server-only
-  env var (unset or blank turns token auth off);
-- `MCP_PUBLIC=true`, which drops auth entirely (off by default).
+  env var (unset or blank turns token auth off).
 
 **Claude Code (or any client that can send headers).** Set `MCP_TOKEN`
 (`openssl rand -base64 32`) in the environment, redeploy, then:
@@ -104,10 +108,10 @@ claude mcp add --transport http jg-war-week https://jg-war-week.vercel.app/api/m
 ```
 
 **claude.ai / Claude Desktop custom connector.** Those connectors support
-only OAuth or no auth, so for a demo set `MCP_PUBLIC=true`, redeploy, and add
-`https://jg-war-week.vercel.app/api/mcp` as a custom connector with no auth.
-While it's on, anyone with the URL can read the current War Week, Standings, schedule, Announcements, Awards, FAQ and history.
-Unset it after the demo. MCP OAuth is post-hackathon.
+only OAuth or no auth, and this server only takes a session or a bearer
+token, so a custom connector there needs OAuth support this server doesn't
+have yet. Until then, only Claude Code or another header-capable client can
+connect.
 
 ## Organizer sign-in
 
@@ -132,13 +136,14 @@ the consent screen were misconfigured. A JG employee who isn't on the
 allowlist can sign in but `/admin` refuses them.
 
 `/api/mcp` is locked too: without a session it answers 401 unless the
-request carries the `MCP_TOKEN` bearer token or `MCP_PUBLIC=true` is set; see
-"Connect Claude to JG War Week".
+request carries the `MCP_TOKEN` bearer token; see "Connect Claude to JG War
+Week".
 
 ## Deployment (Vercel + Neon)
 
 Production: **https://jg-war-week.vercel.app** (MCP at
-`https://jg-war-week.vercel.app/api/mcp`).
+`https://jg-war-week.vercel.app/api/mcp`). Staging:
+**https://jg-war-week-staging.vercel.app**.
 
 - **Hosting:** the Vercel project is connected to this GitHub repo. A push to
   `main` builds and deploys to production; every other branch (including
@@ -163,8 +168,8 @@ Production: **https://jg-war-week.vercel.app** (MCP at
 Release flow: merge PRs into `staging` (staging database migrates, preview
 deploys) → merge `staging` into `main` (production database migrates,
 production deploys). Load or refresh seed data with the Seed workflow; check
-the deploy with the requests in `test-results/ac02-deployed-smoke.md`
-(`/` → `/xi`, `/xi` 200, `/api/mcp` answers `tools/call get_current_war_week`).
+the deploy by confirming `/` redirects to `/xi`, `/xi` responds 200, and
+`/api/mcp` answers a `tools/call` of `get_current_war_week`.
 
 ## Deployed migrations
 

@@ -7,6 +7,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { Client } from "pg";
 
+import { isLocalDatabaseUrl } from "@/db/local-url";
 import { ABOUT_FEATURES } from "@/lib/about";
 import { WAR_WEEK_TIME_ZONE } from "@/lib/schedule";
 import { YOU_ROW_CLASS } from "@/lib/you";
@@ -24,7 +25,7 @@ const READY_TIMEOUT_MS = 30_000;
 const AUTH_SECRET =
   process.env.BETTER_AUTH_SECRET || `smoke-only-secret-${randomUUID()}`;
 const SESSION_COOKIE = "better-auth.session_token";
-// A smoke-only MCP bearer token; MCP_PUBLIC stays off so anonymous gets 401.
+// A smoke-only MCP bearer token; anonymous requests still get 401.
 const MCP_TOKEN = `smoke-mcp-token-${randomUUID()}`;
 
 const childEnv = {
@@ -36,7 +37,6 @@ const childEnv = {
   GOOGLE_CLIENT_ID: "",
   GOOGLE_CLIENT_SECRET: "",
   MCP_TOKEN,
-  MCP_PUBLIC: "",
 };
 
 let failures = 0;
@@ -3477,6 +3477,73 @@ async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     );
     if (Number(count) !== 0) problems.push(`${count} Points Entries remain`);
 
+    // Every Heat is decided. A score-only edit of Red's semifinal resets
+    // nothing; changing the winner of the other semifinal resets the one
+    // decided later Heat its winner reached, the final.
+    const semis = await runQuery<{
+      heat_id: string;
+      entrant_id: string;
+      team_name: string;
+    }>(
+      `select h.id as heat_id, he.entrant_id, t.name as team_name
+       from heat h join heat_entrant he on he.heat_id = h.id
+       join entrant e on e.id = he.entrant_id join team t on t.id = e.team_id
+       where h.competition_id = $1 and h.round = 1
+       order by h.position, he.slot`,
+      [id],
+    );
+    const [decidedLater] = await runQuery<{ count: string }>(
+      `select count(*) from heat
+       where competition_id = $1 and round > 1 and status in ('played', 'forfeit')`,
+      [id],
+    );
+    const redHeat = semis.find((s) => s.team_name === "Red")?.heat_id;
+    const otherHeat = semis.find((s) => s.heat_id !== redHeat)?.heat_id;
+    const [{ entrant_id: otherWinner }] = await runQuery<{
+      entrant_id: string;
+    }>(`select entrant_id from heat_entrant where heat_id = $1 and place = 1`, [
+      otherHeat,
+    ]);
+    const resetCount = async (
+      step: string,
+      heatId: string,
+      order: string[],
+    ) => {
+      const result = (await callAction(
+        ids.recordHeatResult,
+        [id, heatId, { order, scores: { [order[0]]: "25" } }],
+        organizer,
+      )) as ActionResult & { resetHeatIds?: string[] };
+      expectOk(step, result);
+      return result.resetHeatIds?.length;
+    };
+    const redOrder = [
+      ...semis.filter((s) => s.heat_id === redHeat && s.team_name === "Red"),
+      ...semis.filter((s) => s.heat_id === redHeat && s.team_name !== "Red"),
+    ].map((s) => s.entrant_id);
+    const sameWinner = await resetCount(
+      "recordHeatResult same winner",
+      redHeat!,
+      redOrder,
+    );
+    if (sameWinner !== 0) {
+      problems.push(`a score-only edit reset ${sameWinner} later Heats`);
+    }
+    const flipped = semis
+      .filter((s) => s.heat_id === otherHeat)
+      .map((s) => s.entrant_id)
+      .sort((a, b) => Number(a === otherWinner) - Number(b === otherWinner));
+    const changedWinner = await resetCount(
+      "recordHeatResult changed winner",
+      otherHeat!,
+      flipped,
+    );
+    if (changedWinner !== Number(decidedLater.count)) {
+      problems.push(
+        `a winner change reset ${changedWinner} later Heats, expected the ${decidedLater.count} decided`,
+      );
+    }
+
     if (problems.length === 0) ok(check);
     else fail(check, problems.join("; "));
   } catch (error) {
@@ -4051,6 +4118,15 @@ function killServer(child: ChildProcess): Promise<void> {
 }
 
 async function main() {
+  if (
+    !isLocalDatabaseUrl(process.env.DATABASE_URL, process.env.DATABASE_DRIVER)
+  ) {
+    console.error(
+      'FAIL - DATABASE_URL must point at a local database (localhost, 127.0.0.1 or [::1]) with DATABASE_DRIVER not "neon"; smoke resets every seeded War Week and never runs against a hosted database',
+    );
+    process.exit(1);
+  }
+
   if (!existsSync(path.resolve(process.cwd(), ".next"))) {
     console.error(
       "FAIL - .next build output missing: run `pnpm build` before `pnpm smoke`",

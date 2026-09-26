@@ -2,13 +2,14 @@ import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import type { DBTx } from "@/db";
+import { isLocalDatabaseUrl } from "@/db/local-url";
 
 // Runs only against a local Postgres (CI's service or docker compose; see
 // vitest.config.ts), never a hosted database.
-const databaseUrl = process.env.DATABASE_URL ?? "";
-const isLocalDatabase =
-  process.env.DATABASE_DRIVER !== "neon" &&
-  /@(localhost|127\.0\.0\.1)[:/]/.test(databaseUrl);
+const isLocalDatabase = isLocalDatabaseUrl(
+  process.env.DATABASE_URL,
+  process.env.DATABASE_DRIVER,
+);
 
 class Rollback extends Error {}
 
@@ -302,7 +303,22 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       view = (await queries.getBracket(f.competitionId, tx))!;
       expect(view.champion).toBe(id("Gold"));
 
-      // Editing the first Heat sends the final back to pending.
+      // A score-only edit keeps the final.
+      expect(
+        await mutations.recordHeatResult(
+          f.competitionId,
+          semi1,
+          { order: [id("Red"), id("Blue")], scores: { [id("Red")]: "25" } },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true, resetHeatIds: [] });
+      view = (await queries.getBracket(f.competitionId, tx))!;
+      expect(heatAt(view, 1, 1).heat.slots[1]).toMatchObject({ score: "25" });
+      expect(heatAt(view, 2, 1).heat.status).toBe("played");
+      expect(view.champion).toBe(id("Gold"));
+
+      // Changing the first Heat's winner sends the final back to pending.
       expect(
         await mutations.recordHeatResult(
           f.competitionId,

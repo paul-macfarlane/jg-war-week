@@ -1,100 +1,93 @@
-# pnpm gate at f87f27b on private DB war_weeker_ci_gates (2026-09-25T10:09:53Z)
+# pnpm gate on 86b1af6, local Postgres 17 (compose, localhost:2345), DATABASE_URL from .env.example, 2026-09-26T19:19:28Z
 
-> war-weeker@0.1.0 db:migrate /Users/pmacfarlane/jg-code/jg-war-week/.claude/worktrees/brackets/sc
-> drizzle-kit migrate
-
-No config path provided, using default 'drizzle.config.ts'
-Reading config file '/Users/pmacfarlane/jg-code/jg-war-week/.claude/worktrees/brackets/sc/drizzle.config.ts'
-Using 'pg' driver for database querying
-[⣷] applying migrations...[2K[1G[⣯] applying migrations...[2K[1G[✓] migrations applied successfully!
-> war-weeker@0.1.0 gate /Users/pmacfarlane/jg-code/jg-war-week/.claude/worktrees/brackets/sc
+> war-weeker@0.1.0 gate ~/Code/war-weeker
 > pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm smoke
 
 
-> war-weeker@0.1.0 typecheck /Users/pmacfarlane/jg-code/jg-war-week/.claude/worktrees/brackets/sc
+> war-weeker@0.1.0 typecheck ~/Code/war-weeker
 > next typegen && tsc --noEmit
 
 Generating route types...
 ✓ Types generated successfully
 
-> war-weeker@0.1.0 lint /Users/pmacfarlane/jg-code/jg-war-week/.claude/worktrees/brackets/sc
+> war-weeker@0.1.0 lint ~/Code/war-weeker
 > eslint .
 
 
-/Users/pmacfarlane/jg-code/jg-war-week/.claude/worktrees/brackets/sc/src/app/sign-in/page.tsx
+~/Code/war-weeker/src/app/sign-in/page.tsx
   49:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
   60:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
 
-/Users/pmacfarlane/jg-code/jg-war-week/.claude/worktrees/brackets/sc/src/components/about-feature-grid.tsx
+~/Code/war-weeker/src/components/about-feature-grid.tsx
   20:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
 
-/Users/pmacfarlane/jg-code/jg-war-week/.claude/worktrees/brackets/sc/src/components/about-finale-demo.tsx
+~/Code/war-weeker/src/components/about-finale-demo.tsx
   28:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
 
-/Users/pmacfarlane/jg-code/jg-war-week/.claude/worktrees/brackets/sc/src/components/roster.tsx
+~/Code/war-weeker/src/components/roster.tsx
   72:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
 
-/Users/pmacfarlane/jg-code/jg-war-week/.claude/worktrees/brackets/sc/src/components/war-week-hero.tsx
+~/Code/war-weeker/src/components/war-week-hero.tsx
   15:9   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
   29:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
 
 ✖ 7 problems (0 errors, 7 warnings)
 
 
-> war-weeker@0.1.0 test /Users/pmacfarlane/jg-code/jg-war-week/.claude/worktrees/brackets/sc
+> war-weeker@0.1.0 test ~/Code/war-weeker
 > vitest run
 
 (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
   - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
 Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
 
- RUN  v4.1.11 /Users/pmacfarlane/jg-code/jg-war-week/.claude/worktrees/brackets/sc
+ RUN  v4.1.11 ~/Code/war-weeker
 
-(node:31223) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:14727) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
 
- Test Files  62 passed (62)
-      Tests  772 passed (772)
-   Start at  06:10:03
-   Duration  5.14s (transform 2.43s, setup 0ms, import 18.26s, tests 13.35s, environment 3ms)
+ Test Files  65 passed (65)
+      Tests  898 passed (898)
+   Start at  15:19:36
+   Duration  4.72s (transform 2.33s, setup 0ms, import 17.11s, tests 13.41s, environment 4ms)
 
 
-> war-weeker@0.1.0 build /Users/pmacfarlane/jg-code/jg-war-week/.claude/worktrees/brackets/sc
+> war-weeker@0.1.0 build ~/Code/war-weeker
 > next build
 
 ▲ Next.js 16.3.6 (Turbopack)
-✓ Running next.config.ts took 39ms
+✓ Running next.config.ts took 57ms
 
   Creating an optimized production build ...
-✓ Compiled successfully in 848ms
+✓ Compiled successfully in 1310ms
   Running TypeScript ...
-  Finished TypeScript in 1959ms ...
+  Finished TypeScript in 3.0s ...
   Collecting page data using 9 workers ...
-2026-09-25T10:10:13.390Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-25T10:10:13.428Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-25T10:10:13.441Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-25T10:10:13.455Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-2026-09-25T10:10:13.460Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-09-26T19:19:47.919Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-09-26T19:19:47.921Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-25T10:10:13.491Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-2026-09-25T10:10:13.491Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-09-26T19:19:47.961Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-09-26T19:19:47.966Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-25T10:10:13.511Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-09-26T19:19:47.984Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-25T10:10:13.543Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-09-26T19:19:48.035Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-25T10:10:13.585Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-09-26T19:19:48.059Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-09-26T19:19:48.068Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-09-26T19:19:48.127Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-09-26T19:19:48.149Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
   Generating static pages using 9 workers (0/8) ...
   Generating static pages using 9 workers (2/8) 
   Generating static pages using 9 workers (4/8) 
   Generating static pages using 9 workers (6/8) 
-✓ Generating static pages using 9 workers (8/8) in 114ms
+✓ Generating static pages using 9 workers (8/8) in 125ms
   Finalizing page optimization ...
 
 Route (app)
@@ -154,19 +147,19 @@ Route (app)
 ƒ  (Dynamic)  server-rendered on demand
 
 
-> war-weeker@0.1.0 smoke /Users/pmacfarlane/jg-code/jg-war-week/.claude/worktrees/brackets/sc
+> war-weeker@0.1.0 smoke ~/Code/war-weeker
 > tsx scripts/smoke.ts
 
 
-> war-weeker@0.1.0 db:migrate /Users/pmacfarlane/jg-code/jg-war-week/.claude/worktrees/brackets/sc
+> war-weeker@0.1.0 db:migrate ~/Code/war-weeker
 > drizzle-kit migrate
 
 No config path provided, using default 'drizzle.config.ts'
-Reading config file '/Users/pmacfarlane/jg-code/jg-war-week/.claude/worktrees/brackets/sc/drizzle.config.ts'
+Reading config file '~/Code/war-weeker/drizzle.config.ts'
 Using 'pg' driver for database querying
 [⣷] applying migrations...[2K[1G[✓] migrations applied successfully!ok - pnpm db:migrate
 
-> war-weeker@0.1.0 seed:load /Users/pmacfarlane/jg-code/jg-war-week/.claude/worktrees/brackets/sc
+> war-weeker@0.1.0 seed:load ~/Code/war-weeker
 > tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xi.json
 
 Loaded War Week i (reset)
@@ -182,7 +175,7 @@ Loaded War Week x (reset)
 Loaded War Week xi (reset)
 ok - pnpm seed:load --reset (11 seeds, load 1)
 
-> war-weeker@0.1.0 seed:load /Users/pmacfarlane/jg-code/jg-war-week/.claude/worktrees/brackets/sc
+> war-weeker@0.1.0 seed:load ~/Code/war-weeker
 > tsx scripts/seed-load.ts seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xi.json
 
 Loaded War Week i
@@ -210,14 +203,14 @@ ok - after loading the seed twice, War Week XI has 6 faq_item rows
 ok - the database rejects a Points Entry with both a Team and a Participant
 ok - the XI seed loads 5/3/1 Placement Points for Catan and none for Beast Mode
 
-> war-weeker@0.1.0 start /Users/pmacfarlane/jg-code/jg-war-week/.claude/worktrees/brackets/sc
-> next start -p 3194
+> war-weeker@0.1.0 start ~/Code/war-weeker
+> next start -p 3100
 
 ▲ Next.js 16.3.6
-- Local:         http://localhost:3194
-- Network:       http://172.20.10.4:3194
-✓ Ready in 90ms
-✓ Running next.config.ts took 20ms
+- Local:         http://localhost:3100
+- Network:       http://192.168.1.186:3100
+✓ Ready in 110ms
+✓ Running next.config.ts took 40ms
 ok - server ready
 ok - signed-in GET / redirects to /xi
 ok - GET /xi renders War Week XI with the Team Standings
@@ -350,4 +343,4 @@ ok - an Organizer deletes the new Schedule Item and FAQ Item
 ok - bracket loop: an Organizer sets single elimination on a Competition, enters 4 Teams, generates, records 3 Heat Results, finalizes; GET /xi/competitions/<id> shows the champion and /xi/leaderboard includes the generated points; un-finalize removes them; then cleans up
 ok - lifecycle: create XII, end XI with a Winner, start XII; an XI-only Organizer edits XI but can't reopen it; then restore
  ELIFECYCLE  Command failed with exit code 143.
-EXIT 0
+gate exit=0

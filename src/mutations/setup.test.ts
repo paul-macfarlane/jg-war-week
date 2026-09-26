@@ -2,14 +2,15 @@ import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import type { DBTx } from "@/db";
+import { isLocalDatabaseUrl } from "@/db/local-url";
 import type { WarWeekSettingsValues } from "@/lib/setup";
 
 // Runs only against a local Postgres (CI's service or docker compose; see
 // vitest.config.ts), never a hosted database.
-const databaseUrl = process.env.DATABASE_URL ?? "";
-const isLocalDatabase =
-  process.env.DATABASE_DRIVER !== "neon" &&
-  /@(localhost|127\.0\.0\.1)[:/]/.test(databaseUrl);
+const isLocalDatabase = isLocalDatabaseUrl(
+  process.env.DATABASE_URL,
+  process.env.DATABASE_DRIVER,
+);
 
 class Rollback extends Error {}
 
@@ -661,6 +662,79 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
         ok: false,
         error: "That Competition no longer exists.",
       });
+    });
+  });
+
+  it("refuses Placement Points or scoring changes while the Bracket is finalized, but not other fields", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { updateCompetition } = await import("@/mutations/setup");
+      const { schema, home, ctx } = await rosterFixture(tx);
+      const [bracket] = await tx
+        .insert(schema.competition)
+        .values({
+          warWeekId: home,
+          name: "Knockout",
+          scoring: "individual" as const,
+          format: "single-elimination" as const,
+          placementPoints: [5, 3, 1],
+        })
+        .returning({ id: schema.competition.id });
+      await tx
+        .update(schema.competition)
+        .set({ finalizedAt: new Date() })
+        .where(eq(schema.competition.id, bracket.id));
+
+      expect(
+        await updateCompetition(
+          bracket.id,
+          { ...competitionValues, name: "Knockout", placementPoints: [10, 5] },
+          ctx,
+          tx,
+        ),
+      ).toEqual({
+        ok: false,
+        error:
+          "This Competition's Bracket is finalized. Un-finalize the Bracket first.",
+      });
+      const [unchanged] = await tx
+        .select()
+        .from(schema.competition)
+        .where(eq(schema.competition.id, bracket.id));
+      expect(unchanged).toMatchObject({
+        name: "Knockout",
+        placementPoints: [5, 3, 1],
+      });
+
+      expect(
+        await updateCompetition(
+          bracket.id,
+          {
+            ...competitionValues,
+            name: "Renamed Knockout",
+            description: "Single elimination",
+          },
+          ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+
+      await tx
+        .update(schema.competition)
+        .set({ finalizedAt: null })
+        .where(eq(schema.competition.id, bracket.id));
+
+      expect(
+        await updateCompetition(
+          bracket.id,
+          {
+            ...competitionValues,
+            name: "Renamed Knockout",
+            placementPoints: [10, 5],
+          },
+          ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
     });
   });
 });

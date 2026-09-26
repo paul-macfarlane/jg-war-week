@@ -28,9 +28,9 @@ you set them in your own `.env.local` or in the service's settings.
 
 Your local `.env.local` needs the variables named in `.env.example`:
 `DATABASE_URL`, `DATABASE_DRIVER`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
-`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and optionally `MCP_TOKEN` and
-`MCP_PUBLIC`. The local database defaults work as-is. Slack posting isn't
-built yet, so there's no Slack app to be granted.
+`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and optionally `MCP_TOKEN`. The
+local database defaults work as-is. Slack posting isn't built yet, so
+there's no Slack app to be granted.
 
 Then follow [README: Fresh clone setup](../README.md#fresh-clone-setup) and
 [README: Organizer sign-in](../README.md#organizer-sign-in).
@@ -115,9 +115,16 @@ Every change, however small:
    it shows you.
 3. **Look at it.** `pnpm dev`, open http://localhost:3000.
 4. **Check it.** `pnpm gate` (type-check, lint, tests, build, smoke). It
-   must pass. Needs Docker Postgres running (`docker compose up -d`).
+   must pass. Needs Docker Postgres running (`docker compose up -d`), and
+   `DATABASE_URL` must point at it: smoke resets every seeded War Week, so
+   it refuses any database that isn't on `localhost`, `127.0.0.1` or
+   `[::1]`. If yours comes from Vercel, run
+   `DATABASE_URL=<the .env.example value> pnpm gate`.
 5. **Open a PR into `staging`.** Ask Claude to "commit and open a PR into
-   staging", or `gh pr create --base staging`. CI runs on the PR.
+   staging", or `gh pr create --base staging`. CI runs on the PR: lint,
+   types, tests, build, smoke against its own Postgres, and a migration
+   drift check that fails when `src/db/schema.ts` changed without a
+   `drizzle/` migration.
 6. **Check the Vercel preview** linked on the PR.
 7. **Merge into `staging`.** The staging database migrates automatically.
 8. **Ship to production:** open a PR from `staging` into `main`, merge it.
@@ -176,7 +183,9 @@ Organizer screens cover setting one up and running it: set the Competition's
 Bracket builder to pick Entrants (all Teams, or specific Participants) and
 Generate; then record each Heat's result from the results screen
 (`/admin/brackets/<id>`) and Finalize to write its placings as Points
-Entries. No code needed for any of that.
+Entries. No code needed for any of that. While a Bracket is finalized, its
+Competition's scoring and Placement Points can't change ("Un-finalize the
+Bracket first."); its name and description still can.
 
 To add a new Format (single elimination is the only one today):
 
@@ -285,7 +294,9 @@ sources. Load locally with `pnpm seed:load seeds/<edition>.json`, then check
   (merge to `staging` / `main`, `migrate.yml`). Never run `pnpm db:migrate`
   against Neon by hand.
 - **Never use `--reset`** on a War Week organizers are running; it deletes
-  their points, Awards and Announcements.
+  their points, Awards and Announcements. Against a non-local database it
+  also needs `--allow-remote-reset`; the Seed workflow passes it after its
+  own `confirm_reset` check.
 - **The gate must pass** before a PR. Don't ask Claude to skip or delete a
   failing test to get there.
 - **When the gate or CI fails**, paste the error into Claude: "`pnpm gate`
