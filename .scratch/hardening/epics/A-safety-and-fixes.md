@@ -66,3 +66,11 @@ Claimed: this epic and tickets 02, 05, 07, 09, 15 (`in-progress`). 06 is claimed
 | DoD team rule: `/about` and maintainer's guide current | review of D15 + D07 diffs | review | — |
 
 Human gates: none actionable now. Announced for later: pushing a throwaway branch for 06-AC2, and reading the PR's CI run for 06-AC1 after the PR opens.
+
+**2026-09-26, Claude (atlas-implement) — [PROGRESS]**
+
+- Wave 1 accepted and integrated: D02 `c625d98` (sonnet), D07 `f7020dc` (opus), D15 `d499032` (sonnet), D05 `f1bd839` (sonnet), D09 `926a1bb` (opus). D06 was written by the orchestrator in `e510a70` (only `ci.yml`, too small to delegate). All merges were clean. `scripts/smoke.ts` (D02, D07, D15) and `CONTEXT.md` (D05, D07, D15) auto-merged, as predicted.
+- Orchestrator fix `e2ed4ee`: axe found the Archive card's "Original wiki page" footer link at 4.03–4.19:1, because it sits on `bg-muted/50`, not the card that D09's contrast test measured. The link now uses the foreground colour, and the test covers the footer surface.
+- Found during integration: `pnpm gate` in the main checkout lints and tests any `.claude/worktrees/*` checkouts, so it only passes once the worker worktrees are removed. They were removed after acceptance.
+- Found during integration: running `pnpm seed:load --reset` without an explicit local `DATABASE_URL` in the shell is now refused, meaning this machine's `.env.local` doesn't give a local database URL. That is the ticket 02 guard working. The gate runs used an explicit `DATABASE_URL` from `.env.example`.
+- Candidate evidence: `test-results/hardening-a-guards/` (02), `hardening-a-axe/` (09-AC1: 0 violations on `/history`, `/x`, `/i` at desktop and phone widths), `hardening-a-focus/` (09-AC2), `hardening-a-gate/gate.txt` (gate on `88d1aeb`: 886 tests, 145 smoke ok; rerun at the end).
