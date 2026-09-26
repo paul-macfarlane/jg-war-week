@@ -7,6 +7,7 @@ import {
   pointsEntryTarget,
   pointsEntryTargetError,
 } from "@/lib/points-entry";
+import { locked } from "@/mutations/setup";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 import {
   getCompetitionInWarWeek,
@@ -109,35 +110,15 @@ async function missedRefusal(
   );
 }
 
-/**
- * Locks a Competition of this War Week for adding a Points Entry. A scoring
- * change takes the same lock (`updateCompetition`), so an entry can't slip
- * in between its entry count and its write.
- */
-async function lockCompetition(
-  competitionId: string,
-  warWeekId: string,
-  tx: DBOrTx,
-) {
-  await tx
-    .select({ id: competition.id })
-    .from(competition)
-    .where(
-      and(
-        eq(competition.id, competitionId),
-        eq(competition.warWeekId, warWeekId),
-      ),
-    )
-    .for("update");
-}
-
 export async function createPointsEntry(
   input: PointsEntryValues,
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-    await lockCompetition(input.competitionId, ctx.warWeekId, tx);
+    // A scoring change takes the same lock (`updateCompetition`), so an
+    // entry can't slip in between its entry count and its write.
+    await locked(tx, competition, input.competitionId, ctx);
     const resolved = await resolveColumns(input, ctx.warWeekId, tx);
     if (!resolved.ok) return resolved;
 
@@ -150,7 +131,9 @@ export async function createPointsEntry(
 
 /**
  * Edits a Points Entry of this War Week. Its entered-by email and time stay
- * as they were; `updated_at` records the edit.
+ * as they were; `updated_at` records the edit. Locks the entry's current
+ * and posted Competitions first (in id order, so two edits can't deadlock),
+ * as a scoring change on either would otherwise miss the move.
  */
 export async function updatePointsEntry(
   id: string,
@@ -158,20 +141,34 @@ export async function updatePointsEntry(
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
-  const generated = await generatedRefusal(id, ctx.warWeekId, dbOrTx);
-  if (generated) return generated;
-  const resolved = await resolveColumns(input, ctx.warWeekId, dbOrTx);
-  if (!resolved.ok) return resolved;
+  return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
+    const [current] = await tx
+      .select({ competitionId: pointsEntry.competitionId })
+      .from(pointsEntry)
+      .where(inWarWeek(id, ctx.warWeekId, tx));
+    if (!current) return { ok: false, error: NOT_FOUND };
+    const competitionIds = [
+      ...new Set([current.competitionId, input.competitionId]),
+    ].sort();
+    for (const competitionId of competitionIds) {
+      await locked(tx, competition, competitionId, ctx);
+    }
 
-  const updated = await dbOrTx
-    .update(pointsEntry)
-    // The database clock, like `created_at`, so the two compare exactly.
-    .set({ ...resolved.columns, updatedAt: sql`now()` })
-    .where(handEnteredInWarWeek(id, ctx.warWeekId, dbOrTx))
-    .returning({ id: pointsEntry.id });
-  return updated.length > 0
-    ? { ok: true }
-    : missedRefusal(id, ctx.warWeekId, dbOrTx);
+    const generated = await generatedRefusal(id, ctx.warWeekId, tx);
+    if (generated) return generated;
+    const resolved = await resolveColumns(input, ctx.warWeekId, tx);
+    if (!resolved.ok) return resolved;
+
+    const updated = await tx
+      .update(pointsEntry)
+      // The database clock, like `created_at`, so the two compare exactly.
+      .set({ ...resolved.columns, updatedAt: sql`now()` })
+      .where(handEnteredInWarWeek(id, ctx.warWeekId, tx))
+      .returning({ id: pointsEntry.id });
+    return updated.length > 0
+      ? { ok: true }
+      : missedRefusal(id, ctx.warWeekId, tx);
+  });
 }
 
 export async function deletePointsEntry(

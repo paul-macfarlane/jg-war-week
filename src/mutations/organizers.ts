@@ -2,11 +2,10 @@ import { eq } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import { organizer } from "@/db/schema";
-import { isJahnelGroupEmail } from "@/lib/access";
+import { JG_EMAIL_MESSAGE, jgEmailSchema } from "@/lib/jg-email";
 import { isUniqueViolation } from "@/mutations/setup";
 import type { MutationResult } from "@/mutations/types";
 
-const NOT_JG = "An Organizer needs an @jahnelgroup.com email.";
 const LAST_ORGANIZER = "The last Organizer can't be removed.";
 
 const alreadyOrganizer = (email: string) => `${email} is already an Organizer.`;
@@ -21,8 +20,9 @@ export async function addOrganizer(
   actorEmail: string,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
-  if (!isJahnelGroupEmail(email)) return { ok: false, error: NOT_JG };
-  const normalized = email.trim().toLowerCase();
+  const parsed = jgEmailSchema.safeParse(email);
+  if (!parsed.success) return { ok: false, error: JG_EMAIL_MESSAGE };
+  const normalized = parsed.data;
   try {
     const inserted = await dbOrTx
       .insert(organizer)

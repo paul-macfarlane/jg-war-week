@@ -35,7 +35,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Standings**                 | The main leaderboard, computed from Points Entries.                                                                               |
 | **Finale**                    | The closing-ceremony screen at `/<edition>/finale`: press Start and the Standings count in from last place to first.             |
 | **Award**                     | A named honor given to participants or a team. It doesn't affect points.                                                          |
-| **Announcement**              | An organizer post (rich text plus video links).                                                                                   |
+| **Announcement**              | A post by an Organizer or Host (rich text plus video links).                                                                      |
 | **FAQ Item**                  | A question and answer pair for a War Week.                                                                                        |
 | **Archive**                   | The past War Weeks shown at `/history`.                                                                                           |
 | **Format**                    | How a Competition is run: `points` (Points Entries only) or `single-elimination` (a Bracket).                                     |
@@ -117,7 +117,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 - When a Slack webhook is configured, creating an Announcement can also post
   it to the War Week's Slack channel ("Also post to Slack", on by default).
   Edits, deletes, pins and seed loads never post.
-- A failed Slack post never blocks publishing; the Organizer is told it
+- A failed Slack post never blocks publishing; the poster is told it
   failed.
 
 ## Access rules
@@ -172,13 +172,13 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   `admin_edition` cookie) picks another edition the actor may view: every
   edition for an Organizer, the editions they host in for a Host. A banner
   marks the Archive ("Editing the Archive: War Week X"). Anonymous visitors
-  go to sign-in; anyone else sees "Organizers and Hosts only".
+  go to sign-in; anyone else sees "Organizers and Hosts only."
 - `/admin` is trimmed for a Host (`loadAdminPage` in
   `src/app/admin/gate.ts`): Points Entries, the Brackets, Setup →
   Competitions and Setup → Schedule list only their Competitions and the
   Schedule Items linked to them. War Week settings, Days, Teams and roster,
   FAQ, Awards, the Organizer list and Create next War Week are
-  Organizer-only pages and show a Host "Organizers and Hosts only". The
+  Organizer-only pages and show a Host "Organizers and Hosts only." The
   Admin link on the edition pages shows for Organizers and for anyone who
   hosts a Competition.
 - Every page and API route needs a JG sign-in. Anonymous visitors to a
@@ -275,7 +275,8 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 ## Finale rules
 
 - The Finale is the closing-ceremony screen at `/<edition>/finale`, for the
-  projector. Organizers open it from `/admin/standings` ("Open Finale").
+  projector. Organizers and Hosts open it from `/admin/standings` ("Open
+  Finale").
 - It opens on a big Start button. Start, `Space`, or a click anywhere on the
   stage plays the countdown for the main leaderboard (team Standings in
   `teams` mode, individual Standings in free-for-all):

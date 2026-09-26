@@ -155,12 +155,11 @@ async function takenError(
  * Appearance Theme, Competitions (new ids, with their Hosts, no Points
  * Entries) and the FAQ as chosen; never Teams, roster, Days, Schedule,
  * Points Entries, Awards or Announcements. Organizers are global, so there
- * are none to copy. `actorEmail` is who asked; nothing records it yet.
+ * are none to copy.
  */
 export async function createNextWarWeek(
   fromWarWeekId: string,
   values: NextWarWeekValues,
-  actorEmail: string,
   dbOrTx: DBOrTx = db,
 ): Promise<{ ok: true; edition: string } | { ok: false; error: string }> {
   try {

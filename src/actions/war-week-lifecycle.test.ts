@@ -15,7 +15,13 @@ vi.mock("@/auth/authorize", () => ({
   authorize: vi.fn(async () => ({
     ok: true,
     actor: { email: "organizer@jahnelgroup.com", isOrganizer: true, hosts: [] },
-    warWeek: { id: WAR_WEEK, edition: "xi" },
+    warWeek: {
+      id: WAR_WEEK,
+      edition: "xi",
+      status: "upcoming",
+      editionNumber: 11,
+      startDate: "2027-02-22",
+    },
     target: { warWeek: { id: WAR_WEEK, edition: "xi" } },
     ctx: { warWeekId: WAR_WEEK, actorEmail: "organizer@jahnelgroup.com" },
   })),

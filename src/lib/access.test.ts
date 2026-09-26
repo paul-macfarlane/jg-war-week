@@ -379,7 +379,7 @@ describe("can: Announcements", () => {
 });
 
 describe("can: the /admin pages", () => {
-  const REFUSED = "Organizers and Hosts only";
+  const REFUSED = "Organizers and Hosts only.";
   it.each(
     cases([
       [

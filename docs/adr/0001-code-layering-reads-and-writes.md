@@ -42,17 +42,19 @@ path. It uses the same lib rules and schemas as the Organizer actions.
 
 ### Writes (from ticket 08)
 
-1. **Server action** in `src/actions/<area>.ts` (`"use server"`):
-   1. Loads the War Week.
-   2. Checks the session email against `organizerEmails` through one shared
-      helper, e.g. `requireOrganizer(warWeek)`.
-   3. Parses `FormData` with a zod schema from `src/lib/`.
-   4. Calls a mutation.
-   5. Calls `revalidatePath` for the affected edition routes.
-   6. Returns `{ ok: true } | { ok: false; error: string; fieldErrors? }`.
-   7. Never throws on a user error.
+1. **Server action** in `src/actions/<area>.ts` (`"use server"`), in the
+   order authenticate → load the target → `can` → parse → mutation:
+   1. Calls `authorize` (`src/auth/authorize.ts`), which authenticates,
+      loads the target row and its War Week, and runs `can`.
+   2. Only then parses the input with a zod schema from `src/lib/`.
+   3. Calls a mutation.
+   4. Calls `revalidatePath` for the affected edition routes.
+   5. Returns `{ ok: true } | { ok: false; error: string; fieldErrors? }`.
+   6. Never throws on a user error.
 2. **Mutation** in `src/mutations/<area>.ts`:
    - `(input, ctx: { warWeekId, actorEmail }, dbOrTx = db)`.
+   - The global Organizer-list mutations take `actorEmail` rather than a
+     War Week `MutationContext`, because the list has no War Week.
    - Enforces business rules by calling lib functions, then writes.
    - Uses `withTransaction` when it touches more than one row, so tests can
      run it against local Postgres.

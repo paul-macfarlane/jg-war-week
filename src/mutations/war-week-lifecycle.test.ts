@@ -24,8 +24,6 @@ async function inRolledBackTransaction(body: (tx: DBTx) => Promise<void>) {
   });
 }
 
-const actorEmail = "creator@jahnelgroup.com";
-
 function warWeekValues(
   n: number,
   status: "upcoming" | "live" | "complete",
@@ -372,7 +370,7 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
       const { eq } = await import("drizzle-orm");
       expect(await counts(live.id)).toEqual(ONE_OF_EVERYTHING);
 
-      const result = await createNextWarWeek(live.id, next(), actorEmail, tx);
+      const result = await createNextWarWeek(live.id, next(), tx);
       expect(result).toEqual({ ok: true, edition: "tii" });
 
       const [created] = await tx
@@ -428,7 +426,6 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
       await createNextWarWeek(
         live.id,
         next({ copyCompetitions: true, copyFaq: true }),
-        actorEmail,
         tx,
       );
       const [created] = await tx
@@ -483,12 +480,7 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
       const { live, schema } = await fixture(tx);
       const { eq } = await import("drizzle-orm");
 
-      await createNextWarWeek(
-        live.id,
-        next({ copySettings: false }),
-        actorEmail,
-        tx,
-      );
+      await createNextWarWeek(live.id, next({ copySettings: false }), tx);
       const [created] = await tx
         .select()
         .from(schema.warWeek)
@@ -513,26 +505,16 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
       const { live } = await fixture(tx);
 
       expect(
-        await createNextWarWeek(
-          live.id,
-          next({ edition: "ti" }),
-          actorEmail,
-          tx,
-        ),
+        await createNextWarWeek(live.id, next({ edition: "ti" }), tx),
       ).toEqual({ ok: false, error: "War Week TI already exists." });
       expect(
-        await createNextWarWeek(
-          live.id,
-          next({ editionNumber: 9301 }),
-          actorEmail,
-          tx,
-        ),
+        await createNextWarWeek(live.id, next({ editionNumber: 9301 }), tx),
       ).toEqual({
         ok: false,
         error: "Edition number 9301 is already War Week TI.",
       });
       expect(
-        await createNextWarWeek(live.id, next({ year: 9301 }), actorEmail, tx),
+        await createNextWarWeek(live.id, next({ year: 9301 }), tx),
       ).toEqual({ ok: false, error: "9301 already has War Week TI." });
     });
   });
@@ -541,7 +523,19 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
     await inRolledBackTransaction(async (tx) => {
       const { createNextWarWeek } =
         await import("@/mutations/war-week-lifecycle");
-      const { getCompetitionHosts } = await import("@/queries/organizers");
+      const getCompetitionHosts = async (
+        competitionId: string,
+        dbTx: typeof tx,
+      ) => {
+        const { competitionHost } = await import("@/db/schema");
+        const { eq: eqHost } = await import("drizzle-orm");
+        const rows = await dbTx
+          .select({ email: competitionHost.email })
+          .from(competitionHost)
+          .where(eqHost(competitionHost.competitionId, competitionId))
+          .orderBy(competitionHost.email);
+        return rows.map((row) => row.email);
+      };
       const { live, chess, schema } = await fixture(tx);
       const { and, eq } = await import("drizzle-orm");
       const [relay] = await tx
@@ -554,12 +548,7 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
         { competitionId: relay.id, email: "amy@jahnelgroup.com" },
       ]);
 
-      await createNextWarWeek(
-        live.id,
-        next({ copyCompetitions: true }),
-        actorEmail,
-        tx,
-      );
+      await createNextWarWeek(live.id, next({ copyCompetitions: true }), tx);
       const [created] = await tx
         .select({ id: schema.warWeek.id })
         .from(schema.warWeek)
@@ -601,7 +590,7 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
         .insert(schema.competitionHost)
         .values({ competitionId: chess.id, email: "tony@jahnelgroup.com" });
 
-      await createNextWarWeek(live.id, next(), actorEmail, tx);
+      await createNextWarWeek(live.id, next(), tx);
       const [created] = await tx
         .select({ id: schema.warWeek.id })
         .from(schema.warWeek)
@@ -629,7 +618,6 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
         await createNextWarWeek(
           "00000000-0000-4000-8000-000000000000",
           next(),
-          actorEmail,
           tx,
         ),
       ).toEqual({ ok: false, error: "That War Week no longer exists." });

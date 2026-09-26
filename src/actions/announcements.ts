@@ -122,34 +122,32 @@ async function setPinned(
   id: string,
   pinned: boolean,
 ): Promise<AnnouncementActionResult> {
-  const authorized = await authorize(
-    pinned ? "announcement.pin" : "announcement.unpin",
-    "announcement",
-    id,
-  );
-  if (!authorized.ok) return authorized;
+  return guarded(async () => {
+    const authorized = await authorize(
+      pinned ? "announcement.pin" : "announcement.unpin",
+      "announcement",
+      id,
+    );
+    if (!authorized.ok) return authorized;
 
-  const result = await mutations.setAnnouncementPinned(
-    id,
-    pinned,
-    authorized.ctx,
-  );
-  if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
-  return result;
+    const result = await mutations.setAnnouncementPinned(
+      id,
+      pinned,
+      authorized.ctx,
+    );
+    if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
+    return result;
+  });
 }
 
 export async function pinAnnouncement(
   id: string,
 ): Promise<AnnouncementActionResult> {
-  return guarded(async () => {
-    return setPinned(id, true);
-  });
+  return setPinned(id, true);
 }
 
 export async function unpinAnnouncement(
   id: string,
 ): Promise<AnnouncementActionResult> {
-  return guarded(async () => {
-    return setPinned(id, false);
-  });
+  return setPinned(id, false);
 }

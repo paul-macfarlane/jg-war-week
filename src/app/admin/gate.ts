@@ -15,7 +15,7 @@ export type AdminPageAccess = "organizers-and-hosts" | "organizers";
 /**
  * The `/admin` gate. Every admin page calls this first: anonymous users go
  * to sign-in and come back to `returnTo`; the caller renders the refusal
- * ("Organizers and Hosts only") when `allowed` is false. The War Week shown
+ * ("Organizers and Hosts only.") when `allowed` is false. The War Week shown
  * is the one picked in the edition switcher (the `admin_edition` cookie)
  * when the actor may view it, otherwise `defaultAdminWarWeek`. Then
  * `can(actor, "admin.view", …)` decides, and an Organizer-only page also

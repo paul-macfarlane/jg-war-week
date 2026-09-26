@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { guarded } from "@/actions/result";
 import { authorizeOrganizerList } from "@/auth/authorize";
+import { JG_EMAIL_MESSAGE, jgEmailSchema } from "@/lib/jg-email";
 import * as mutations from "@/mutations/organizers";
 import type { MutationResult } from "@/mutations/types";
 
@@ -14,8 +15,6 @@ function revalidateSite() {
   revalidatePath("/", "layout");
 }
 
-const EMAIL_REQUIRED = "Enter an email.";
-
 /** Adds a JG email to the global Organizer list. Organizers only. */
 export async function addOrganizer(
   email: string,
@@ -23,10 +22,12 @@ export async function addOrganizer(
   return guarded(async () => {
     const authorized = await authorizeOrganizerList("organizers.add");
     if (!authorized.ok) return authorized;
-    if (typeof email !== "string" || email.trim() === "") {
-      return { ok: false, error: EMAIL_REQUIRED };
-    }
-    const result = await mutations.addOrganizer(email, authorized.actor.email);
+    const parsed = jgEmailSchema.safeParse(email);
+    if (!parsed.success) return { ok: false, error: JG_EMAIL_MESSAGE };
+    const result = await mutations.addOrganizer(
+      parsed.data,
+      authorized.actor.email,
+    );
     if (result.ok) revalidateSite();
     return result;
   });
@@ -42,11 +43,10 @@ export async function removeOrganizer(
   return guarded(async () => {
     const authorized = await authorizeOrganizerList("organizers.remove");
     if (!authorized.ok) return authorized;
-    if (typeof email !== "string" || email.trim() === "") {
-      return { ok: false, error: EMAIL_REQUIRED };
-    }
+    const parsed = jgEmailSchema.safeParse(email);
+    if (!parsed.success) return { ok: false, error: JG_EMAIL_MESSAGE };
     const result = await mutations.removeOrganizer(
-      email,
+      parsed.data,
       authorized.actor.email,
     );
     if (result.ok) revalidateSite();

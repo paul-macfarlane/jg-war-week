@@ -14,7 +14,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { isJahnelGroupEmail } from "@/lib/access";
+import { JG_EMAIL_MESSAGE, jgEmailSchema } from "@/lib/jg-email";
 
 /** Adds one JG email to the Organizer list. */
 function AddOrganizerForm() {
@@ -25,8 +25,8 @@ function AddOrganizerForm() {
 
   function submit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!isJahnelGroupEmail(email)) {
-      setError("An Organizer needs an @jahnelgroup.com email.");
+    if (!jgEmailSchema.safeParse(email).success) {
+      setError(JG_EMAIL_MESSAGE);
       return;
     }
     startTransition(async () => {

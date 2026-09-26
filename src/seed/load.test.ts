@@ -146,13 +146,25 @@ describe.skipIf(!isLocalDatabase)(
     it("refuses a seed Organizer outside @jahnelgroup.com", async () => {
       await expect(
         seed("sa", 1, "upcoming", { organizers: ["someone@gmail.com"] }),
-      ).rejects.toThrow("must be an @jahnelgroup.com email");
+      ).rejects.toThrow("Use an @jahnelgroup.com email.");
     });
 
     it("keeps a Competition's Hosts on a plain reload", async () => {
       await inRolledBackTransaction(async (tx) => {
         const { loadWarWeekSeed } = await import("@/seed/load");
-        const { getCompetitionHosts } = await import("@/queries/organizers");
+        const getCompetitionHosts = async (
+          competitionId: string,
+          dbTx: typeof tx,
+        ) => {
+          const { competitionHost } = await import("@/db/schema");
+          const { eq: eqHost } = await import("drizzle-orm");
+          const rows = await dbTx
+            .select({ email: competitionHost.email })
+            .from(competitionHost)
+            .where(eqHost(competitionHost.competitionId, competitionId))
+            .orderBy(competitionHost.email);
+          return rows.map((row) => row.email);
+        };
         const { setCompetitionHosts } = await import("@/mutations/setup");
         const withCatan = await seed("sa", 1, "upcoming", {
           competitions: [{ name: "Catan", scoring: "individual" }],

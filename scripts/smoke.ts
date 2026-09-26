@@ -25,6 +25,9 @@ const READY_TIMEOUT_MS = 30_000;
 const AUTH_SECRET =
   process.env.BETTER_AUTH_SECRET || `smoke-only-secret-${randomUUID()}`;
 const SESSION_COOKIE = "better-auth.session_token";
+
+/** What `/admin` shows a signed-in user with no role on the page. */
+const ADMIN_REFUSAL_TEXT = "Organizers and Hosts only.";
 // A smoke-only MCP bearer token; anonymous requests still get 401.
 const MCP_TOKEN = `smoke-mcp-token-${randomUUID()}`;
 
@@ -976,7 +979,7 @@ async function assertAdminGate(sessions: {
       body.includes("Admin sections"),
     "the refusal": ({ status, body }: AdminResult) =>
       status === 200 &&
-      body.includes("Organizers and Hosts only") &&
+      body.includes(ADMIN_REFUSAL_TEXT) &&
       !body.includes("Admin sections"),
     "sign-in": ({ status, location }: AdminResult) =>
       status === 307 && location.includes("/sign-in"),
@@ -1233,7 +1236,7 @@ async function assertAdminPointsPage(sessions: {
     const body = await res.text();
     if (
       res.status === 200 &&
-      body.includes("Organizers and Hosts only") &&
+      body.includes(ADMIN_REFUSAL_TEXT) &&
       !body.includes("Add a Points Entry")
     ) {
       ok(refusedCheck);
@@ -1516,7 +1519,7 @@ async function assertFinale(sessions: {
           organizer.body.includes("Open Finale") &&
           organizer.body.includes('href="/xi/finale"'),
         refused:
-          notOrganizer.body.includes("Organizers and Hosts only") &&
+          notOrganizer.body.includes(ADMIN_REFUSAL_TEXT) &&
           !notOrganizer.body.includes("Open Finale"),
       };
       return Object.values(checks).every(Boolean)
@@ -2008,7 +2011,7 @@ async function assertAnnouncementAdminPages(sessions: {
       hasAllTitles &&
       organizerBody.includes("New Announcement") &&
       notOrganizerRes.status === 200 &&
-      notOrganizerBody.includes("Organizers and Hosts only")
+      notOrganizerBody.includes(ADMIN_REFUSAL_TEXT)
     ) {
       ok(listCheck);
     } else {
@@ -2456,7 +2459,7 @@ async function assertAwardAdminPages(sessions: {
       hasAll &&
       organizerBody.includes("New Award") &&
       notOrganizerRes.status === 200 &&
-      notOrganizerBody.includes("Organizers and Hosts only")
+      notOrganizerBody.includes(ADMIN_REFUSAL_TEXT)
     ) {
       ok(listCheck);
     } else {
@@ -2792,7 +2795,7 @@ async function assertSetup(sessions: {
         const refused = await fetch(`${BASE_URL}${page}`, {
           headers: { cookie: sessions.notOrganizer.cookie },
         });
-        if (!(await refused.text()).includes("Organizers and Hosts only")) {
+        if (!(await refused.text()).includes(ADMIN_REFUSAL_TEXT)) {
           problems.push(`${page} not refused`);
         }
       }
@@ -2975,7 +2978,7 @@ async function assertSetupTeamsAndCompetitions(sessions: {
         const refused = await fetch(`${BASE_URL}${page}`, {
           headers: { cookie: sessions.notOrganizer.cookie },
         });
-        if (!(await refused.text()).includes("Organizers and Hosts only")) {
+        if (!(await refused.text()).includes(ADMIN_REFUSAL_TEXT)) {
           problems.push(`${page} not refused`);
         }
       }
@@ -3158,7 +3161,7 @@ async function assertSetupScheduleFaq(sessions: {
         const refused = await fetch(`${BASE_URL}${page}`, {
           headers: { cookie: sessions.notOrganizer.cookie },
         });
-        if (!(await refused.text()).includes("Organizers and Hosts only")) {
+        if (!(await refused.text()).includes(ADMIN_REFUSAL_TEXT)) {
           problems.push(`${page} not refused`);
         }
       }
@@ -3735,7 +3738,7 @@ async function assertAdminGuidePage(sessions: {
       headers: { cookie: sessions.notOrganizer.cookie },
     });
     const body = await res.text();
-    if (res.status === 200 && body.includes("Organizers and Hosts only")) {
+    if (res.status === 200 && body.includes(ADMIN_REFUSAL_TEXT)) {
       ok(refusalCheck);
     } else {
       fail(refusalCheck, `status=${res.status}`);
@@ -4127,7 +4130,6 @@ const SMOKE_HOST_EMAIL = "smoke-host@jahnelgroup.com";
 const HOST_COMPETITION = "Tuesday Stairs";
 const OTHER_COMPETITION = "Cypher";
 const NOT_HOST_REFUSAL = "You're not a Host of that Competition.";
-const ADMIN_REFUSAL_TEXT = "Organizers and Hosts only";
 
 /** Runs one named check: `body` returns null when it passes, else why not. */
 async function runCheck(check: string, body: () => Promise<string | null>) {

@@ -22,6 +22,9 @@ export type TargetWarWeek = {
   id: string;
   edition: string;
   status: "upcoming" | "live" | "complete";
+  /** What the lifecycle status rules (`lifecycleActionError`) compare. */
+  editionNumber: number;
+  startDate: string;
 };
 
 /** A row an action changes: its War Week and what `can` checks on it. */
@@ -39,6 +42,8 @@ const warWeekColumns = {
   id: warWeek.id,
   edition: warWeek.edition,
   status: warWeek.status,
+  editionNumber: warWeek.editionNumber,
+  startDate: warWeek.startDate,
 };
 
 /*

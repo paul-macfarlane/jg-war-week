@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { guarded } from "@/actions/result";
 import { type TargetKind, authorize } from "@/auth/authorize";
 import type { WarWeekAction } from "@/lib/access";
+import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
 import {
   type CompetitionInput,
   type DayInput,
@@ -30,8 +31,6 @@ function revalidateSite() {
 
 type Parsed<T> = { ok: true; value: T } | { ok: false; error: string };
 
-const RECORD_NOT_FOUND = "That record no longer exists.";
-
 /**
  * Runs a setup write: authorizes `action` on the row `id` names (or, for a
  * create or the settings save, the posted War Week), only then parses the
@@ -46,9 +45,7 @@ async function setupWrite<T>(
   write: (value: T, ctx: MutationContext) => Promise<MutationResult>,
 ): Promise<SetupActionResult> {
   return guarded(async () => {
-    const authorized = await authorize(action, kind, id, {
-      notFound: kind === "warWeek" ? undefined : RECORD_NOT_FOUND,
-    });
+    const authorized = await authorize(action, kind, id);
     if (!authorized.ok) return authorized;
     const parsed = parse();
     if (!parsed.ok) return parsed;
@@ -230,10 +227,12 @@ export async function setCompetitionHosts(
     "competition.assign-hosts",
     "competition",
     competitionId,
-    (): Parsed<string[]> =>
-      Array.isArray(emails) && emails.every((e) => typeof e === "string")
-        ? { ok: true, value: emails }
-        : { ok: false, error: "Hosts must be a list of emails." },
+    (): Parsed<string[]> => {
+      const parsed = jgEmailListSchema.safeParse(emails);
+      return parsed.success
+        ? { ok: true, value: parsed.data }
+        : { ok: false, error: JG_EMAIL_MESSAGE };
+    },
     (value, ctx) => mutations.setCompetitionHosts(competitionId, value, ctx),
   );
 }

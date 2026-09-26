@@ -764,8 +764,14 @@ describe.skipIf(!isLocalDatabase)(
 
 describe.skipIf(!isLocalDatabase)("setCompetitionHosts", () => {
   async function hostsOf(tx: DBTx, competitionId: string) {
-    const { getCompetitionHosts } = await import("@/queries/organizers");
-    return getCompetitionHosts(competitionId, tx);
+    const { competitionHost } = await import("@/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const rows = await tx
+      .select({ email: competitionHost.email })
+      .from(competitionHost)
+      .where(eq(competitionHost.competitionId, competitionId))
+      .orderBy(competitionHost.email);
+    return rows.map((row) => row.email);
   }
 
   it("replaces the Hosts, lowercased and deduplicated", async () => {
@@ -818,10 +824,23 @@ describe.skipIf(!isLocalDatabase)("setCompetitionHosts", () => {
         ),
       ).toEqual({
         ok: false,
-        error:
-          'Host email "someone@gmail.com" must be an @jahnelgroup.com address.',
+        error: "Use an @jahnelgroup.com email.",
       });
       expect(await hostsOf(tx, catanId)).toEqual(["tony@jahnelgroup.com"]);
+    });
+  });
+
+  it("refuses a 255-character Host email with the validation message", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { setCompetitionHosts } = await import("@/mutations/setup");
+      const { catanId, ctx } = await rosterFixture(tx);
+      const tooLong = `${"a".repeat(255 - "@jahnelgroup.com".length)}@jahnelgroup.com`;
+
+      expect(await setCompetitionHosts(catanId, [tooLong], ctx, tx)).toEqual({
+        ok: false,
+        error: "Use an @jahnelgroup.com email.",
+      });
+      expect(await hostsOf(tx, catanId)).toEqual([]);
     });
   });
 

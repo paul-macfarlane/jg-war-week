@@ -72,7 +72,7 @@ export type AccessTarget = {
 
 export const SIGN_IN_REFUSAL = "Sign in to continue.";
 /** What `/admin` shows, and says, to a signed-in user with no role there. */
-export const ADMIN_REFUSAL = "Organizers and Hosts only";
+export const ADMIN_REFUSAL = "Organizers and Hosts only.";
 const NOT_HOST = "You're not a Host of that Competition.";
 
 /** What each Organizer-only action is, for "Only an Organizer can …". */

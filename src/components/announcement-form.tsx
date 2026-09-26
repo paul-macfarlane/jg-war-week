@@ -44,7 +44,7 @@ export function AnnouncementForm({
   warWeekId,
   announcementId,
   initial,
-  canPin = true,
+  canPin = false,
 }: {
   /** The War Week this page was rendered for; creates post it. */
   warWeekId: string;

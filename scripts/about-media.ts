@@ -9,7 +9,7 @@
  * Needs a production build, the seeded local Postgres (run `pnpm smoke`
  * first), Google Chrome and ffmpeg on PATH. Starts its own server on port
  * 3202, signs in as a made-up Organizer (`about-demo@jahnelgroup.com`) that
- * it adds to XI's allowlist and lends XI's seeded Points Entries for the
+ * it adds to the Organizer list and lends XI's seeded Points Entries for the
  * run, so no real email is in any file, and restores everything after:
  *   pnpm tsx scripts/about-media.ts
  */
@@ -709,7 +709,7 @@ async function main() {
 
   const realOrganizer = seededOrganizerEmail();
   await query(
-    `update war_week set organizer_emails = array_append(organizer_emails, $1) where edition = 'xi' and not ($1 = any(organizer_emails))`,
+    `insert into organizer (email) values ($1) on conflict (email) do nothing`,
     [DEMO_EMAIL],
   );
   await query(
@@ -816,10 +816,7 @@ async function main() {
     }
     await sleep(1_000);
     rmSync(chrome.dir, { recursive: true, force: true, maxRetries: 3 });
-    await query(
-      `update war_week set organizer_emails = array_remove(organizer_emails, $1) where edition = 'xi'`,
-      [DEMO_EMAIL],
-    );
+    await query(`delete from organizer where email = $1`, [DEMO_EMAIL]);
     await query(
       `update points_entry set entered_by_email = $1 where entered_by_email = $2`,
       [realOrganizer, DEMO_EMAIL],

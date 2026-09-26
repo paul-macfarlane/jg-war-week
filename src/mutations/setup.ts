@@ -14,7 +14,7 @@ import {
   team,
   warWeek,
 } from "@/db/schema";
-import { isJahnelGroupEmail } from "@/lib/access";
+import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
 import {
   type CompetitionValues,
   type DayValues,
@@ -651,14 +651,9 @@ export async function setCompetitionHosts(
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
-  const notJg = emails.find((email) => !isJahnelGroupEmail(email));
-  if (notJg !== undefined) {
-    return {
-      ok: false,
-      error: `Host email "${notJg.trim()}" must be an @jahnelgroup.com address.`,
-    };
-  }
-  const hosts = [...new Set(emails.map((email) => email.trim().toLowerCase()))];
+  const parsed = jgEmailListSchema.safeParse(emails);
+  if (!parsed.success) return { ok: false, error: JG_EMAIL_MESSAGE };
+  const hosts = [...new Set(parsed.data)];
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     if (!(await locked(tx, competition, competitionId, ctx))) {
       return { ok: false, error: COMPETITION_NOT_FOUND };

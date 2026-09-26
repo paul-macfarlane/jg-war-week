@@ -263,6 +263,100 @@ describe.skipIf(!isLocalDatabase)(
   },
 );
 
+describe.skipIf(!isLocalDatabase)(
+  "Points Entry move during a scoring change on two connections",
+  () => {
+    const edition = "zz-r-pm";
+    beforeEach(() => clearWarWeek(edition));
+    afterEach(() => clearWarWeek(edition));
+
+    it.each([["scoring change"], ["Points Entry edit"]])(
+      "ends a scoring change and an edit moving an entry into that Competition with the refusal or the move, never both (%s first)",
+      async (first) => {
+        const { updateCompetition } = await import("@/mutations/setup");
+        const { updatePointsEntry } =
+          await import("@/mutations/points-entries");
+        const f = await committedWarWeek(edition, 4);
+        const { competition, pointsEntry } = f.schema;
+        const [relay] = await f.db
+          .insert(competition)
+          .values({
+            warWeekId: f.ctx.warWeekId,
+            name: "Relay",
+            scoring: "team",
+          })
+          .returning({ id: competition.id });
+        const [entry] = await f.db
+          .insert(pointsEntry)
+          .values({
+            competitionId: relay.id,
+            teamId: f.teamId,
+            points: 3,
+            note: "moved",
+            enteredByEmail: actorEmail,
+          })
+          .returning({ id: pointsEntry.id });
+
+        const results = await withConnections(1, async ([second]) => {
+          const change = () =>
+            updateCompetition(
+              f.competitionId,
+              {
+                name: "Tug of War",
+                description: null,
+                scoring: "individual",
+                maxPoints: null,
+                placementPoints: null,
+                countsTowardTeam: false,
+                competitionGroup: null,
+              },
+              f.ctx,
+              f.db,
+            );
+          const move = () =>
+            updatePointsEntry(
+              entry.id,
+              {
+                competitionId: f.competitionId,
+                targetId: f.teamId,
+                points: 3,
+                note: "moved",
+              },
+              f.ctx,
+              second,
+            );
+          const lockRow = (tx: ConnectionTx) =>
+            tx
+              .select({ id: competition.id })
+              .from(competition)
+              .where(eq(competition.id, f.competitionId))
+              .for("update");
+          const [changed, moved] =
+            first === "scoring change"
+              ? await staggered(lockRow, change, move)
+              : (await staggered(lockRow, move, change)).reverse();
+          return [changed, moved];
+        });
+
+        expect(results.filter((r) => r.ok)).toHaveLength(1);
+        const [found] = await f.db
+          .select({ scoring: competition.scoring })
+          .from(competition)
+          .where(eq(competition.id, f.competitionId));
+        const entries = await f.db.$count(
+          pointsEntry,
+          eq(pointsEntry.competitionId, f.competitionId),
+        );
+        // Individual scoring with the entry left behind, or team scoring
+        // with the entry moved in.
+        expect([found.scoring, entries]).toEqual(
+          results[0].ok ? ["individual", 0] : ["team", 1],
+        );
+      },
+    );
+  },
+);
+
 describe.skipIf(!isLocalDatabase)("Day delete on two connections", () => {
   const edition = "zz-r-dd";
   beforeEach(() => clearWarWeek(edition));

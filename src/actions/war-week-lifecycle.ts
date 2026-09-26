@@ -7,7 +7,6 @@ import { guarded } from "@/actions/result";
 import { ADMIN_EDITION_COOKIE, getActor } from "@/auth/actor";
 import { authorize } from "@/auth/authorize";
 import { getSessionEmail } from "@/auth/server";
-import type { WarWeek } from "@/db/schema";
 import { SIGN_IN_REFUSAL, can } from "@/lib/access";
 import {
   type ClosingInput,
@@ -19,6 +18,7 @@ import {
 } from "@/lib/war-week-lifecycle";
 import type { MutationResult } from "@/mutations/types";
 import * as mutations from "@/mutations/war-week-lifecycle";
+import type { TargetWarWeek } from "@/queries/targets";
 import {
   getCurrentWarWeek,
   getWarWeekByEdition,
@@ -29,14 +29,15 @@ export type LifecycleActionResult = MutationResult;
 
 /**
  * The War Week named by the id in the request, when the caller may run
- * `action` on it: `can` first (Organizers only), then the status rules
- * (`lifecycleActionError`) against every War Week.
+ * `action` on it: `can` first (Organizers only, on the War Week `authorize`
+ * loaded), then the status rules (`lifecycleActionError`) against every
+ * War Week.
  */
 async function lifecycleWarWeek(
   action: LifecycleAction,
   warWeekId: string,
 ): Promise<
-  { ok: true; warWeek: WarWeek; email: string } | { ok: false; error: string }
+  { ok: true; warWeek: TargetWarWeek } | { ok: false; error: string }
 > {
   const authorized = await authorize(
     `lifecycle.${action}`,
@@ -44,12 +45,11 @@ async function lifecycleWarWeek(
     warWeekId,
   );
   if (!authorized.ok) return authorized;
+  const target = authorized.warWeek;
   const warWeeks = await getWarWeeks();
-  const target = warWeeks.find((w) => w.id === authorized.warWeek.id);
-  if (!target) return { ok: false, error: "That War Week no longer exists." };
   const refusal = lifecycleActionError({ action, target, warWeeks });
   if (refusal) return { ok: false, error: refusal };
-  return { ok: true, warWeek: target, email: authorized.actor.email };
+  return { ok: true, warWeek: target };
 }
 
 // Status decides the current War Week, the home redirect and the Archive,
@@ -138,7 +138,6 @@ export async function createNextWarWeek(
     const result = await mutations.createNextWarWeek(
       organizer.warWeek.id,
       parsed.value,
-      organizer.email,
     );
     if (result.ok) {
       const current = await getCurrentWarWeek();
@@ -169,15 +168,11 @@ export async function selectAdminEdition(
       getCurrentWarWeek(),
       getActor(),
     ]);
-    if (
-      !target ||
-      can(actor, "admin.view", { warWeekId: target.id }) !== null
-    ) {
-      return {
-        ok: false,
-        error: "You can't administer that War Week.",
-      };
+    if (!target) {
+      return { ok: false, error: "That War Week no longer exists." };
     }
+    const refusal = can(actor, "admin.view", { warWeekId: target.id });
+    if (refusal) return { ok: false, error: refusal };
     await setAdminEditionCookie(target.edition, target.id === current?.id);
     revalidatePath("/admin", "layout");
     return { ok: true };

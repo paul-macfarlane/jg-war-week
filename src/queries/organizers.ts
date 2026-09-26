@@ -48,19 +48,6 @@ export function getHostedCompetitions(
     .where(eq(competitionHost.email, normalized(email)));
 }
 
-/** A Competition's Host emails, sorted. */
-export async function getCompetitionHosts(
-  competitionId: string,
-  dbOrTx: DBOrTx = db,
-): Promise<string[]> {
-  const rows = await dbOrTx
-    .select({ email: competitionHost.email })
-    .from(competitionHost)
-    .where(eq(competitionHost.competitionId, competitionId))
-    .orderBy(competitionHost.email);
-  return rows.map((row) => row.email);
-}
-
 /** Every Competition's Host emails in a War Week, by Competition id. */
 export async function getWarWeekCompetitionHosts(
   warWeekId: string,

@@ -72,9 +72,24 @@ describe.skipIf(!isLocalDatabase)("addOrganizer", () => {
       ]) {
         expect(await addOrganizer(email, jason, tx)).toEqual({
           ok: false,
-          error: "An Organizer needs an @jahnelgroup.com email.",
+          error: "Use an @jahnelgroup.com email.",
         });
       }
+      expect((await organizerRows(tx)).map((r) => r.email)).toEqual([jason]);
+    });
+  });
+
+  it("refuses a 255-character email with the validation message", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { addOrganizer } = await import("@/mutations/organizers");
+      await onlyOrganizers(tx, [jason]);
+      const tooLong = `${"a".repeat(255 - "@jahnelgroup.com".length)}@jahnelgroup.com`;
+      expect(tooLong).toHaveLength(255);
+
+      expect(await addOrganizer(tooLong, jason, tx)).toEqual({
+        ok: false,
+        error: "Use an @jahnelgroup.com email.",
+      });
       expect((await organizerRows(tx)).map((r) => r.email)).toEqual([jason]);
     });
   });

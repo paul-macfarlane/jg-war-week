@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import { getActor } from "@/auth/actor";
-import { getSessionEmail } from "@/auth/server";
 import {
   type AccessTarget,
   type Actor,
@@ -40,9 +39,9 @@ export type Authorized = {
 /** What an action's id names, with the family's not-found message. */
 const TARGETS = {
   warWeek: ["That War Week no longer exists.", loadWarWeekTarget],
-  day: ["That record no longer exists.", loadDayTarget],
-  team: ["That record no longer exists.", loadTeamTarget],
-  participant: ["That record no longer exists.", loadParticipantTarget],
+  day: ["That Day no longer exists.", loadDayTarget],
+  team: ["That Team no longer exists.", loadTeamTarget],
+  participant: ["That Participant no longer exists.", loadParticipantTarget],
   competition: ["That Competition no longer exists.", loadCompetitionTarget],
   pointsEntry: ["That Points Entry no longer exists.", loadPointsEntryTarget],
   scheduleItem: [
@@ -64,12 +63,11 @@ const isUuid = (id: unknown): id is string => z.uuid().safeParse(id).success;
 /**
  * The one authorize step every War Week action runs before touching its
  * input (ADR 0003):
- * 1. authenticate ("Sign in to continue.");
+ * 1. authenticate: load the actor ("Sign in to continue." when anonymous);
  * 2. check the id is shaped like a row id (the family's not-found message);
  * 3. load the row and its War Week (a create or the settings save passes
  *    the posted `warWeekId` as a `warWeek` target);
- * 4. load the actor;
- * 5. run `can`, with any posted Competition the request carries.
+ * 4. run `can`, with any posted Competition the request carries.
  * The caller parses its input only after this. Never throws on a refusal.
  */
 export async function authorize(
@@ -81,14 +79,13 @@ export async function authorize(
     notFound?: string;
   } = {},
 ): Promise<Authorized | Refused> {
-  if (!(await getSessionEmail())) return { ok: false, error: SIGN_IN_REFUSAL };
+  const actor = await getActor();
+  if (!actor) return { ok: false, error: SIGN_IN_REFUSAL };
   const [defaultNotFound, load] = TARGETS[kind];
   const notFound = options.notFound ?? defaultNotFound;
   if (!isUuid(id)) return { ok: false, error: notFound };
   const target = await load(id);
   if (!target) return { ok: false, error: notFound };
-  const actor = await getActor();
-  if (!actor) return { ok: false, error: SIGN_IN_REFUSAL };
 
   const access: AccessTarget = {
     warWeekId: target.warWeek.id,
@@ -113,7 +110,6 @@ export async function authorize(
 export async function authorizeOrganizerList(
   action: OrganizerListAction,
 ): Promise<{ ok: true; actor: NonNullable<Actor> } | Refused> {
-  if (!(await getSessionEmail())) return { ok: false, error: SIGN_IN_REFUSAL };
   const actor = await getActor();
   if (!actor) return { ok: false, error: SIGN_IN_REFUSAL };
   const refusal = can(actor, action);
