@@ -1,5 +1,5 @@
 import path from "path";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 // Mutation tests run against a local Postgres: CI's service (which sets
 // DATABASE_URL) or `docker compose up -d` (the URL in .env.example).
@@ -18,5 +18,7 @@ export default defineConfig({
     // local Postgres (parallel worktrees).
     testTimeout: 20_000,
     watch: false,
+    // e2e/ holds the Playwright flows (`pnpm e2e`), not vitest tests.
+    exclude: [...configDefaults.exclude, "e2e/**"],
   },
 });

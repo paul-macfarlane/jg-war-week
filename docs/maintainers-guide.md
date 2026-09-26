@@ -90,6 +90,7 @@ before it says it's done.
 | MCP server (Claude connector)              | `src/app/api/mcp/route.ts`, tools in `src/mcp/`, list in `src/mcp/tools.ts` |
 | Who can do what                            | `src/lib/access.ts` (`can`), `src/auth/authorize.ts`, `src/auth/actor.ts` |
 | Smoke test                                 | `scripts/smoke.ts`                                                     |
+| Browser flows (Playwright, `pnpm e2e`)     | `e2e/`, `playwright.config.ts`                                         |
 | Past wiki text for history                 | `old-wikis/2016.txt` … `old-wikis/2026.txt`                            |
 | CI, deployed migrations, seeding           | `.github/workflows/` (`ci.yml`, `migrate.yml`, `seed.yml`)             |
 
@@ -114,17 +115,18 @@ Every change, however small:
 2. **Ask Claude** (`/implement …` or the feature route above). Read the diff
    it shows you.
 3. **Look at it.** `pnpm dev`, open http://localhost:3000.
-4. **Check it.** `pnpm gate` (type-check, lint, tests, build, smoke). It
-   must pass. Needs Docker Postgres running (`docker compose up -d`), and
-   `DATABASE_URL` must point at it: smoke resets every seeded War Week, so
-   it refuses any database that isn't on `localhost`, `127.0.0.1` or
-   `[::1]`. If yours comes from Vercel, run
+4. **Check it.** `pnpm gate` (type-check, lint, tests, build, smoke, then
+   the Playwright browser flows, `pnpm e2e`). It must pass. Needs Docker
+   Postgres running (`docker compose up -d`), and `DATABASE_URL` must point
+   at it: smoke and e2e reset every seeded War Week, so each refuses any
+   database that isn't on `localhost`, `127.0.0.1` or `[::1]`. If yours
+   comes from Vercel, run
    `DATABASE_URL=<the .env.example value> pnpm gate`.
 5. **Open a PR into `staging`.** Ask Claude to "commit and open a PR into
    staging", or `gh pr create --base staging`. CI runs on the PR: lint,
-   types, tests, build, smoke against its own Postgres, and a migration
-   drift check that fails when `src/db/schema.ts` changed without a
-   `drizzle/` migration.
+   types, tests, build, smoke and the Playwright flows against its own
+   Postgres, and a migration drift check that fails when
+   `src/db/schema.ts` changed without a `drizzle/` migration.
 6. **Check the Vercel preview** linked on the PR.
 7. **Merge into `staging`.** The staging database migrates automatically.
 8. **Ship to production:** open a PR from `staging` into `main`, merge it.

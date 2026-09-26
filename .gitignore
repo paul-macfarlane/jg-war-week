@@ -26,3 +26,8 @@ yarn-error.log*
 !test-results/
 !test-results/**
 # atlas-v3:gitignore:end
+
+# Playwright (pnpm e2e): commit the screenshots under test-results/e2e/,
+# never the failure traces or the last-run marker.
+test-results/e2e/**/*.zip
+test-results/**/.last-run.json

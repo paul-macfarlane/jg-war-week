@@ -57,9 +57,9 @@ pnpm build
 
 ## Smoke test and slice gate
 
-`pnpm smoke` (and `pnpm gate`, which runs it) refuse to start unless
+`pnpm smoke` and `pnpm e2e` (and `pnpm gate`, which runs both) refuse to start unless
 `DATABASE_URL` is local (`localhost`, `127.0.0.1` or `[::1]`) and
-`DATABASE_DRIVER` isn't `neon`, since smoke resets every seeded War Week.
+`DATABASE_DRIVER` isn't `neon`, since both reset every seeded War Week.
 
 `pnpm smoke` runs an end-to-end check against a production build: it applies
 migrations, loads every seed (once with `--reset`, then again to prove
@@ -74,9 +74,21 @@ check passed.
 Prerequisites: Docker Postgres running (`docker compose up -d`) and a fresh
 production build (`pnpm build`) before running `pnpm smoke`.
 
+`pnpm e2e` runs the Playwright flows in Chromium against the same production
+build and local database: it refuses a non-local `DATABASE_URL` and a missing
+`.next`, applies migrations, reloads every seed with `--reset`, starts the app
+with `pnpm start -p 3200`, and signs its own JG sessions (no Google). The five
+flows: anonymous and non-JG visitors are sent to `/sign-in`; an Organizer's
+Points Entry shows on `/xi/leaderboard`; a Bracket is built, recorded,
+advanced and finalized into Points Entries; the Finale plays to first place;
+`/history` and every past edition render. Each flow saves full-page
+screenshots under `test-results/e2e/<test>/`; a failing flow also keeps a
+trace there (`pnpm exec playwright show-trace <path>/trace.zip`). The first
+time, install the browser with `pnpm exec playwright install chromium`.
+
 `pnpm gate` runs the full slice gate used before every commit: type-check,
-lint, vitest, production build, then the smoke test —
-`pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm smoke`.
+lint, vitest, production build, the smoke test, then the Playwright flows —
+`pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm smoke && pnpm e2e`.
 
 ## Connect Claude to JG War Week
 
