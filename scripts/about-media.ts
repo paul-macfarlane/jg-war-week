@@ -99,8 +99,8 @@ async function createSession(email: string): Promise<string> {
 function seededOrganizerEmail(): string {
   const seed = JSON.parse(
     readFileSync(path.resolve(process.cwd(), "seeds/xi.json"), "utf8"),
-  ) as { organizerEmails: string[] };
-  return seed.organizerEmails[0];
+  ) as { organizers: string[] };
+  return seed.organizers[0];
 }
 
 // ---------------------------------------------------------------------------

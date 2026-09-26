@@ -5,6 +5,7 @@ import {
   award,
   awardParticipant,
   competition,
+  competitionHost,
   day,
   entrant,
   participant,
@@ -13,6 +14,7 @@ import {
   team,
   warWeek,
 } from "@/db/schema";
+import { isJahnelGroupEmail } from "@/lib/access";
 import {
   type CompetitionValues,
   type DayValues,
@@ -90,7 +92,7 @@ async function dayDates(
 
 /**
  * Saves the War Week's settings and Appearance Theme, refusing a save that
- * would strand Teams or Days or lock the saving Organizer out.
+ * would strand Teams or Days.
  */
 export async function updateWarWeekSettings(
   values: WarWeekSettingsValues,
@@ -103,7 +105,6 @@ export async function updateWarWeekSettings(
       .from(team)
       .where(eq(team.warWeekId, ctx.warWeekId));
     const refusal = settingsGuardError(values, {
-      actorEmail: ctx.actorEmail,
       teamCount: teams.count,
       dayDates: await dayDates(ctx.warWeekId, tx),
     });
@@ -625,5 +626,41 @@ export async function deleteCompetition(
     return deleted.length > 0
       ? { ok: true }
       : { ok: false, error: COMPETITION_NOT_FOUND };
+  });
+}
+
+/**
+ * Replaces a Competition's Hosts with `emails`, lowercased and deduplicated,
+ * in one transaction. Refuses any non-JG email and a Competition outside
+ * `ctx.warWeekId`. The only writer of `competition_host`: the Competition
+ * setup save never carries Hosts.
+ */
+export async function setCompetitionHosts(
+  competitionId: string,
+  emails: string[],
+  ctx: MutationContext,
+  dbOrTx: DBOrTx = db,
+): Promise<MutationResult> {
+  const notJg = emails.find((email) => !isJahnelGroupEmail(email));
+  if (notJg !== undefined) {
+    return {
+      ok: false,
+      error: `Host email "${notJg.trim()}" must be an @jahnelgroup.com address.`,
+    };
+  }
+  const hosts = [...new Set(emails.map((email) => email.trim().toLowerCase()))];
+  return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
+    if (!(await locked(tx, competition, competitionId, ctx))) {
+      return { ok: false, error: COMPETITION_NOT_FOUND };
+    }
+    await tx
+      .delete(competitionHost)
+      .where(eq(competitionHost.competitionId, competitionId));
+    if (hosts.length > 0) {
+      await tx
+        .insert(competitionHost)
+        .values(hosts.map((email) => ({ competitionId, email })));
+    }
+    return { ok: true };
   });
 }

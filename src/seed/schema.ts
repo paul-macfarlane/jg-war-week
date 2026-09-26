@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { isJahnelGroupEmail } from "@/lib/access";
 import { announcementTitleSchema, videoUrlSchema } from "@/lib/announcements";
 import { AWARD_DESCRIPTION_MAX, AWARD_NAME_MAX } from "@/lib/awards";
 import { MAX_PLACEMENTS } from "@/lib/competitions";
@@ -24,6 +25,10 @@ const themeUrl = z
   );
 
 const email = z.email().max(254).toLowerCase();
+
+const jgEmail = email.refine(isJahnelGroupEmail, {
+  error: "must be an @jahnelgroup.com email",
+});
 
 const httpsUrl = z.url({ protocol: /^https$/ }).max(500);
 
@@ -211,7 +216,6 @@ export const warWeekSettingsSeedShape = {
   logoUrl: themeUrl.nullish(),
   bannerUrl: themeUrl.nullish(),
   wikiUrl: themeUrl.nullish(),
-  organizerEmails: z.array(z.email().max(254).toLowerCase()),
   winner: z.string().max(200).nullish(),
   highlights: z.array(z.string().max(500)).default([]),
 };
@@ -230,6 +234,11 @@ export const warWeekSeedSchema = z
     // a reload.
     status: z.enum(["upcoming", "live", "complete"]),
     ...warWeekSettingsSeedShape,
+    /**
+     * Global Organizers this seed adds when missing; a load never removes
+     * one (CONTEXT.md, "Seed idempotence rules").
+     */
+    organizers: z.array(jgEmail).default([]),
     days: z.array(daySeedSchema),
     teams: z.array(teamSeedSchema).default([]),
     participants: z.array(participantSeedSchema).default([]),

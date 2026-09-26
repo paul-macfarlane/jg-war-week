@@ -8,7 +8,6 @@ import { updateWarWeekSettings } from "@/actions/setup";
 import { ColorField, type ColorSwatch } from "@/components/color-field";
 import { DateRangePicker } from "@/components/date-range-picker";
 import { OptionSelect, type SelectOption } from "@/components/option-select";
-import { OrganizerEmailChips } from "@/components/organizer-email-chips";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -63,12 +62,11 @@ const FONT_OPTIONS: SelectOption[] = [
  */
 export function WarWeekSettingsForm({
   initial,
-  actorEmail,
   dayDates,
   teamSwatches,
 }: {
   initial: WarWeekSettingsInput;
-  /** The signed-in Organizer, whose own chip can't be removed. */
+  /** Unread since Organizers left the settings; the page still passes it. */
   actorEmail: string;
   /** The War Week's existing Day dates, `YYYY-MM-DD`. */
   dayDates: string[];
@@ -184,20 +182,6 @@ export function WarWeekSettingsForm({
             required: true,
           })}
           {text("wikiUrl", "Wiki URL", { placeholder: "Optional" })}
-        </FieldGroup>
-      </FieldSet>
-
-      <FieldSet className="min-w-0">
-        <FieldLegend className="mb-2 font-semibold">Organizers</FieldLegend>
-        <FieldGroup>
-          <OrganizerEmailChips
-            value={values.organizerEmails}
-            actorEmail={actorEmail}
-            onChange={(organizerEmails) => {
-              setValues((v) => ({ ...v, organizerEmails }));
-              setError(null);
-            }}
-          />
         </FieldGroup>
       </FieldSet>
 

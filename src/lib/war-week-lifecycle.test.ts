@@ -179,7 +179,6 @@ describe("parseNextWarWeekInput", () => {
         startDate: "2027-02-21",
         endDate: "2027-02-26",
         storyTheme: "Dune",
-        copyOrganizers: true,
         copySettings: true,
         copyCompetitions: false,
         copyFaq: false,

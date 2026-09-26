@@ -22,7 +22,12 @@ async function inRolledBackTransaction(body: (tx: DBTx) => Promise<void>) {
   });
 }
 
-async function seed(edition: string, n: number, status: string) {
+async function seed(
+  edition: string,
+  n: number,
+  status: string,
+  extra: Record<string, unknown> = {},
+) {
   const { warWeekSeedSchema } = await import("@/seed/schema");
   return warWeekSeedSchema.parse({
     edition,
@@ -42,10 +47,10 @@ async function seed(edition: string, n: number, status: string) {
     background: "#ffffff",
     foreground: "#000000",
     fontPreset: "sans",
-    organizerEmails: ["o@jahnelgroup.com"],
     winner: null,
     highlights: [],
     days: [],
+    ...extra,
   });
 }
 
@@ -93,3 +98,84 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed lifecycle fields", () => {
     });
   });
 });
+
+describe.skipIf(!isLocalDatabase)(
+  "loadWarWeekSeed Organizers and Hosts",
+  () => {
+    const kept = "zz-seed-kept@jahnelgroup.com";
+    const added = "zz-seed-added@jahnelgroup.com";
+
+    /** The test's own Organizer rows, so other rows never matter. */
+    async function ownOrganizers(tx: DBTx) {
+      const { getOrganizers } = await import("@/queries/organizers");
+      return (await getOrganizers(tx)).filter((o) =>
+        [kept, added].includes(o.email),
+      );
+    }
+
+    it("adds missing Organizers, never removes one, and a reload changes nothing", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { loadWarWeekSeed } = await import("@/seed/load");
+        const schema = await import("@/db/schema");
+        await tx
+          .insert(schema.organizer)
+          .values({ email: kept, addedBy: "jason@jahnelgroup.com" });
+
+        const withBoth = await seed("sa", 1, "upcoming", {
+          organizers: ["ZZ-Seed-Added@JahnelGroup.com", kept],
+        });
+        await loadWarWeekSeed(withBoth, tx);
+        const afterFirst = await ownOrganizers(tx);
+        expect(
+          afterFirst.map(({ email, addedBy }) => ({ email, addedBy })),
+        ).toEqual([
+          { email: added, addedBy: null },
+          { email: kept, addedBy: "jason@jahnelgroup.com" },
+        ]);
+
+        await loadWarWeekSeed(withBoth, tx);
+        expect(await ownOrganizers(tx)).toEqual(afterFirst);
+
+        const without = await seed("sa", 1, "upcoming");
+        await loadWarWeekSeed(without, tx);
+        await loadWarWeekSeed(without, tx, { reset: true });
+        expect(await ownOrganizers(tx)).toEqual(afterFirst);
+      });
+    });
+
+    it("refuses a seed Organizer outside @jahnelgroup.com", async () => {
+      await expect(
+        seed("sa", 1, "upcoming", { organizers: ["someone@gmail.com"] }),
+      ).rejects.toThrow("must be an @jahnelgroup.com email");
+    });
+
+    it("keeps a Competition's Hosts on a plain reload", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { loadWarWeekSeed } = await import("@/seed/load");
+        const { getCompetitionHosts } = await import("@/queries/organizers");
+        const { setCompetitionHosts } = await import("@/mutations/setup");
+        const withCatan = await seed("sa", 1, "upcoming", {
+          competitions: [{ name: "Catan", scoring: "individual" }],
+        });
+        const warWeek = await loadWarWeekSeed(withCatan, tx);
+        const schema = await import("@/db/schema");
+        const { eq } = await import("drizzle-orm");
+        const [catan] = await tx
+          .select({ id: schema.competition.id })
+          .from(schema.competition)
+          .where(eq(schema.competition.warWeekId, warWeek.id));
+        await setCompetitionHosts(
+          catan.id,
+          ["tony@jahnelgroup.com"],
+          { warWeekId: warWeek.id, actorEmail: "jason@jahnelgroup.com" },
+          tx,
+        );
+
+        await loadWarWeekSeed(withCatan, tx);
+        expect(await getCompetitionHosts(catan.id, tx)).toEqual([
+          "tony@jahnelgroup.com",
+        ]);
+      });
+    });
+  },
+);

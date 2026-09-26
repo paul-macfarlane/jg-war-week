@@ -2564,12 +2564,18 @@ async function assertWarWeekLifecycle(sessions: {
         startDate: "2027-02-21",
         endDate: "2027-02-26",
         storyTheme: "Smoke XII",
-        copyOrganizers: true,
         copySettings: true,
       },
     ]);
     const xiiId = await editionId("xii");
     if (!xiiId) problems.push("XII was not created");
+    // Create next War Week no longer copies the deprecated per-edition
+    // list, which the current access code still reads: put the smoke
+    // Organizer on XII's the way "Copy Organizers" used to.
+    await runQuery(
+      "update war_week set organizer_emails = array_append(organizer_emails, $1) where edition = 'xii'",
+      [SMOKE_ORGANIZER_EMAIL],
+    );
     const early = await callAction(
       ids.startWarWeek,
       [xiiId],
@@ -2659,7 +2665,6 @@ async function assertWarWeekLifecycle(sessions: {
           leaderTitle: xi.leader_title,
           slackChannelUrl: xi.slack_channel_url,
           wikiUrl: xi.wiki_url ?? "",
-          organizerEmails: (xi.organizer_emails as string[]).join("\n"),
           primaryColor: xi.primary_color,
           primaryForegroundColor: xi.primary_foreground_color,
           accentColor: xi.accent_color,
@@ -2798,7 +2803,6 @@ async function assertSetup(sessions: {
     leaderTitle: xi.leader_title,
     slackChannelUrl: xi.slack_channel_url,
     wikiUrl: xi.wiki_url ?? "",
-    organizerEmails: (xi.organizer_emails as string[]).join("\n"),
     primaryColor: xi.primary_color,
     primaryForegroundColor: xi.primary_foreground_color,
     accentColor: xi.accent_color,

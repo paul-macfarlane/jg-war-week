@@ -232,7 +232,6 @@ const nextWarWeekSchema = z
     startDate: trimmed(seed.startDate),
     endDate: trimmed(seed.endDate),
     storyTheme: trimmed(seed.storyTheme),
-    copyOrganizers: z.boolean().default(true),
     copySettings: z.boolean().default(true),
     copyCompetitions: z.boolean().default(false),
     copyFaq: z.boolean().default(false),
@@ -250,11 +249,9 @@ export type NextWarWeekInput = {
   startDate: string;
   endDate: string;
   storyTheme: string;
-  /** Default on; the creating Organizer is always included anyway. */
-  copyOrganizers?: boolean;
   /** Default on: mode, labels, links and the Appearance Theme. */
   copySettings?: boolean;
-  /** Default off: Competitions with their Placement Points and scoring. */
+  /** Default off: Competitions with their Placement Points, scoring and Hosts. */
   copyCompetitions?: boolean;
   /** Default off. */
   copyFaq?: boolean;

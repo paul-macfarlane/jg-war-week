@@ -95,6 +95,9 @@ export const warWeek = pgTable(
     bannerUrl: varchar("banner_url", { length: 500 }),
     fontPreset: fontPreset("font_preset").notNull(),
     wikiUrl: varchar("wiki_url", { length: 500 }),
+    // Deprecated: Organizers are global now (the `organizer` table). Kept,
+    // unread by the new access rule, so a rollback still works; ticket 18
+    // drops it.
     organizerEmails: varchar("organizer_emails", { length: 254 })
       .array()
       .notNull()
@@ -422,6 +425,45 @@ export const faqItem = pgTable(
   (table) => [unique().on(table.warWeekId, table.question)],
 );
 
+/** A global Organizer: may change everything in every War Week. */
+export const organizer = pgTable(
+  "organizer",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    email: varchar("email", { length: 254 }).notNull().unique(),
+    // Null for rows copied by the migration or inserted by a seed load.
+    addedBy: varchar("added_by", { length: 254 }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    check(
+      "organizer_email_lowercase",
+      sql`${table.email} = lower(${table.email})`,
+    ),
+  ],
+);
+
+/** A Host: a JG email that runs one Competition. */
+export const competitionHost = pgTable(
+  "competition_host",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competition.id, { onDelete: "cascade" }),
+    email: varchar("email", { length: 254 }).notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    // Email first, so it also serves the lookup of what an email hosts.
+    unique().on(table.email, table.competitionId),
+    check(
+      "competition_host_email_lowercase",
+      sql`${table.email} = lower(${table.email})`,
+    ),
+  ],
+);
+
 // better-auth's core tables (Google sign-in only). Property names follow
 // better-auth's field names so its Drizzle adapter can map them.
 export const user = pgTable("user", {
@@ -605,3 +647,5 @@ export type FaqItem = InferSelectModel<typeof faqItem>;
 export type EntrantRow = InferSelectModel<typeof entrant>;
 export type HeatRow = InferSelectModel<typeof heat>;
 export type HeatEntrantRow = InferSelectModel<typeof heatEntrant>;
+export type Organizer = InferSelectModel<typeof organizer>;
+export type CompetitionHost = InferSelectModel<typeof competitionHost>;

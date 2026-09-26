@@ -28,7 +28,6 @@ const input: WarWeekSettingsInput = {
   leaderTitle: "Captain",
   slackChannelUrl: "https://jahnelgroup.slack.com/archives/war-week-xi",
   wikiUrl: "",
-  organizerEmails: "PMacfarlane@jahnelgroup.com\njason@jahnelgroup.com, ",
   primaryColor: "#00ff41",
   primaryForegroundColor: "#000000",
   accentColor: "#008f11",
@@ -46,7 +45,7 @@ function parsed(overrides: Partial<WarWeekSettingsInput> = {}) {
 }
 
 describe("parseWarWeekSettingsInput", () => {
-  it("trims text, blanks optional URLs to null and splits organizer emails", () => {
+  it("trims text and blanks optional URLs to null", () => {
     expect(parsed()).toEqual({
       ok: true,
       value: {
@@ -58,10 +57,6 @@ describe("parseWarWeekSettingsInput", () => {
         leaderTitle: "Captain",
         slackChannelUrl: "https://jahnelgroup.slack.com/archives/war-week-xi",
         wikiUrl: null,
-        organizerEmails: [
-          "pmacfarlane@jahnelgroup.com",
-          "jason@jahnelgroup.com",
-        ],
         primaryColor: "#00ff41",
         primaryForegroundColor: "#000000",
         accentColor: "#008f11",
@@ -94,13 +89,12 @@ describe("parseWarWeekSettingsInput", () => {
     expect(result.ok && "status" in result.value).toBe(false);
   });
 
-  it("drops duplicate organizer emails", () => {
-    const result = parsed({
-      organizerEmails: "a@jahnelgroup.com A@jahnelgroup.com",
-    });
-    expect(result.ok && result.value.organizerEmails).toEqual([
-      "a@jahnelgroup.com",
-    ]);
+  it("never carries Organizer emails, since Organizers are global", () => {
+    const result = parseWarWeekSettingsInput({
+      ...input,
+      organizerEmails: "someone@jahnelgroup.com",
+    } as WarWeekSettingsInput);
+    expect(result.ok && "organizerEmails" in result.value).toBe(false);
   });
 
   it.each<[Partial<WarWeekSettingsInput>, string]>([
@@ -126,28 +120,12 @@ describe("parseWarWeekSettingsInput", () => {
       "Highlights must be at most 500 characters.",
     ],
     [{ fontPreset: "comic" }, "Font must be one of sans, serif, mono."],
-    [{ organizerEmails: " " }, "Add at least one organizer email."],
-    [
-      { organizerEmails: "a@jahnelgroup.com, not-an-email" },
-      'Organizer email "not-an-email" must be an @jahnelgroup.com address.',
-    ],
-    [
-      { organizerEmails: "a@jahnelgroup.com, someone@gmail.com" },
-      'Organizer email "someone@gmail.com" must be an @jahnelgroup.com address.',
-    ],
     [
       { startDate: "2026-02-28", endDate: "2026-02-27" },
       "Start date must not be after the end date.",
     ],
   ])("refuses %o", (overrides, error) => {
     expect(parsed(overrides)).toEqual({ ok: false, error });
-  });
-
-  it("accepts a mixed-case Jahnel Group organizer email", () => {
-    const result = parsed({ organizerEmails: "A@JahnelGroup.Com" });
-    expect(result.ok && result.value.organizerEmails).toEqual([
-      "a@jahnelgroup.com",
-    ]);
   });
 });
 
@@ -178,12 +156,11 @@ describe("settingsGuardError", () => {
     return result.value;
   };
   const ctx = {
-    actorEmail: "pmacfarlane@jahnelgroup.com",
     teamCount: 0,
     dayDates: ["2026-02-22", "2026-02-27"],
   };
 
-  it("allows a save that keeps the Organizer, Teams and Days consistent", () => {
+  it("allows a save that keeps Teams and Days consistent", () => {
     expect(settingsGuardError(value(), ctx)).toBeNull();
     expect(settingsGuardError(value({ mode: "free-for-all" }), ctx)).toBeNull();
     expect(settingsGuardError(value({ winner: "Red" }), ctx)).toBeNull();
@@ -208,15 +185,6 @@ describe("settingsGuardError", () => {
     expect(settingsGuardError(value({ endDate: "2026-02-26" }), ctx)).toBe(
       "The Day on 2026-02-27 falls outside the new dates. Move or delete it first.",
     );
-  });
-
-  it("refuses an Organizer removing their own email", () => {
-    expect(
-      settingsGuardError(value({ organizerEmails: "jason@jahnelgroup.com" }), {
-        ...ctx,
-        actorEmail: "PMacfarlane@jahnelgroup.com",
-      }),
-    ).toBe("You can't remove your own email from the organizer emails.");
   });
 });
 

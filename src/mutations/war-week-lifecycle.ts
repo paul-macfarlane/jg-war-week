@@ -1,7 +1,13 @@
-import { and, eq, ne, or, sql } from "drizzle-orm";
+import { and, eq, inArray, ne, or, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
-import { type WarWeek, competition, faqItem, warWeek } from "@/db/schema";
+import {
+  type WarWeek,
+  competition,
+  competitionHost,
+  faqItem,
+  warWeek,
+} from "@/db/schema";
 import {
   type ClosingValues,
   type NextWarWeekValues,
@@ -145,10 +151,11 @@ async function takenError(
 
 /**
  * Create next War Week: inserts an `upcoming` War Week and the chosen
- * copies from `fromWarWeekId` in one transaction. Copies Organizers (the
- * creator is always one), settings with the Appearance Theme, Competitions
- * (new ids, no Points Entries) and the FAQ as chosen; never Teams, roster,
- * Days, Schedule, Points Entries, Awards or Announcements.
+ * copies from `fromWarWeekId` in one transaction. Copies settings with the
+ * Appearance Theme, Competitions (new ids, with their Hosts, no Points
+ * Entries) and the FAQ as chosen; never Teams, roster, Days, Schedule,
+ * Points Entries, Awards or Announcements. Organizers are global, so there
+ * are none to copy. `actorEmail` is who asked; nothing records it yet.
  */
 export async function createNextWarWeek(
   fromWarWeekId: string,
@@ -156,7 +163,6 @@ export async function createNextWarWeek(
   actorEmail: string,
   dbOrTx: DBOrTx = db,
 ): Promise<{ ok: true; edition: string } | { ok: false; error: string }> {
-  const creator = actorEmail.trim().toLowerCase();
   try {
     return await dbOrTx.transaction(async (tx) => {
       const [source] = await tx
@@ -167,9 +173,6 @@ export async function createNextWarWeek(
       const taken = await takenError(values, tx);
       if (taken) return { ok: false as const, error: taken };
 
-      const organizerEmails = values.copyOrganizers
-        ? [...new Set([...source.organizerEmails, creator])]
-        : [creator];
       const settings = values.copySettings
         ? {
             mode: source.mode,
@@ -198,7 +201,6 @@ export async function createNextWarWeek(
           endDate: values.endDate,
           storyTheme: values.storyTheme,
           status: "upcoming",
-          organizerEmails,
           ...settings,
         })
         .returning({ id: warWeek.id });
@@ -209,18 +211,49 @@ export async function createNextWarWeek(
           .from(competition)
           .where(eq(competition.warWeekId, source.id));
         if (competitions.length > 0) {
-          await tx.insert(competition).values(
-            competitions.map((c) => ({
-              warWeekId: created.id,
-              name: c.name,
-              description: c.description,
-              maxPoints: c.maxPoints,
-              placementPoints: c.placementPoints,
-              scoring: c.scoring,
-              countsTowardTeam: c.countsTowardTeam,
-              competitionGroup: c.competitionGroup,
-            })),
+          const copies = await tx
+            .insert(competition)
+            .values(
+              competitions.map((c) => ({
+                warWeekId: created.id,
+                name: c.name,
+                description: c.description,
+                maxPoints: c.maxPoints,
+                placementPoints: c.placementPoints,
+                scoring: c.scoring,
+                countsTowardTeam: c.countsTowardTeam,
+                competitionGroup: c.competitionGroup,
+              })),
+            )
+            .returning({ id: competition.id, name: competition.name });
+          // Names are unique per War Week, so they pair each copy with its
+          // source.
+          const copyIdByName = new Map(copies.map((c) => [c.name, c.id]));
+          const hosts = await tx
+            .select({
+              competitionId: competitionHost.competitionId,
+              email: competitionHost.email,
+            })
+            .from(competitionHost)
+            .where(
+              inArray(
+                competitionHost.competitionId,
+                competitions.map((c) => c.id),
+              ),
+            );
+          const sourceNameById = new Map(
+            competitions.map((c) => [c.id, c.name]),
           );
+          if (hosts.length > 0) {
+            await tx.insert(competitionHost).values(
+              hosts.map((h) => ({
+                competitionId: copyIdByName.get(
+                  sourceNameById.get(h.competitionId)!,
+                )!,
+                email: h.email,
+              })),
+            );
+          }
         }
       }
 

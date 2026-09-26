@@ -9,6 +9,7 @@ import {
   competition,
   day,
   faqItem,
+  organizer,
   participant,
   pointsEntry,
   scheduleItem,
@@ -29,9 +30,12 @@ import { WarWeekSeed } from "@/seed/schema";
  *   deleted, so setup always matches the seed after a load.
  * - Organizer-owned data (Points Entries, Awards, Announcements) is inserted
  *   by seed key only when absent, and never updated or deleted.
+ * - The seed's `organizers` are added to the global Organizer list when
+ *   missing; a load never removes an Organizer, even with `reset`.
  *
  * `reset` first deletes the War Week and everything under it, including
- * organizer-owned data, so the load starts from exactly the seed. Use it to
+ * organizer-owned data and its Competitions' Hosts, so the load starts from
+ * exactly the seed. Use it to
  * reset demo data, never on a War Week organizers are running.
  */
 export async function loadWarWeekSeed(
@@ -45,6 +49,7 @@ export async function loadWarWeekSeed(
     }
     const warWeekRow = await upsertWarWeek(tx, seed);
     const warWeekId = warWeekRow.id;
+    await insertOrganizers(tx, seed);
 
     const teamIds = await syncTeams(tx, warWeekId, seed);
     const participantIds = await syncParticipants(tx, warWeekId, seed, teamIds);
@@ -103,7 +108,6 @@ async function upsertWarWeek(tx: DBTx, seed: WarWeekSeed): Promise<WarWeek> {
     bannerUrl: seed.bannerUrl ?? null,
     fontPreset: seed.fontPreset,
     wikiUrl: seed.wikiUrl ?? null,
-    organizerEmails: seed.organizerEmails,
     updatedAt: new Date(),
   };
 
@@ -144,6 +148,15 @@ async function refuseSecondLive(tx: DBTx, edition: string) {
       `Seed "${edition}" is live, but War Week ${live.edition.toUpperCase()} is already live. End it first or give the seed another status.`,
     );
   }
+}
+
+/** Adds the seed's Organizers that aren't already on the list. */
+async function insertOrganizers(tx: DBTx, seed: WarWeekSeed) {
+  if (!seed.organizers.length) return;
+  await tx
+    .insert(organizer)
+    .values(seed.organizers.map((email) => ({ email })))
+    .onConflictDoNothing({ target: organizer.email });
 }
 
 async function syncTeams(

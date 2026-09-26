@@ -57,6 +57,20 @@
       "when": 1790328875434,
       "tag": "0007_brackets",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790454156227,
+      "tag": "0008_brief_leopardon",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790454160738,
+      "tag": "0009_copy_organizers",
+      "breakpoints": true
     }
   ]
 }
