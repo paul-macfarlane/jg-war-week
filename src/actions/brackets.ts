@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { guarded } from "@/actions/result";
 import { authorize } from "@/auth/authorize";
 import type { WarWeekAction } from "@/lib/access";
 import {
@@ -29,15 +30,17 @@ async function bracketWrite<R extends { ok: boolean }>(
   competitionId: unknown,
   write: (competitionId: string, ctx: MutationContext) => Promise<R>,
 ): Promise<R | { ok: false; error: string }> {
-  const authorized = await authorize(action, "competition", competitionId);
-  if (!authorized.ok) return authorized;
+  return guarded(async () => {
+    const authorized = await authorize(action, "competition", competitionId);
+    if (!authorized.ok) return authorized;
 
-  const result = await write(competitionId as string, authorized.ctx);
-  if (result.ok) {
-    revalidatePath("/admin", "layout");
-    revalidatePath(`/${authorized.warWeek.edition}`, "layout");
-  }
-  return result;
+    const result = await write(competitionId as string, authorized.ctx);
+    if (result.ok) {
+      revalidatePath("/admin", "layout");
+      revalidatePath(`/${authorized.warWeek.edition}`, "layout");
+    }
+    return result;
+  });
 }
 
 /** Part of the Competition's setup. */

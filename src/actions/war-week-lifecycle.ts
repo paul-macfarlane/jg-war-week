@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
+import { guarded } from "@/actions/result";
 import { ADMIN_EDITION_COOKIE, getActor } from "@/auth/actor";
 import { authorize } from "@/auth/authorize";
 import { getSessionEmail } from "@/auth/server";
@@ -61,11 +62,13 @@ function revalidateSite() {
 export async function startWarWeek(
   warWeekId: string,
 ): Promise<LifecycleActionResult> {
-  const organizer = await lifecycleWarWeek("start", warWeekId);
-  if (!organizer.ok) return organizer;
-  const result = await mutations.startWarWeek(organizer.warWeek.id);
-  if (result.ok) revalidateSite();
-  return result;
+  return guarded(async () => {
+    const organizer = await lifecycleWarWeek("start", warWeekId);
+    if (!organizer.ok) return organizer;
+    const result = await mutations.startWarWeek(organizer.warWeek.id);
+    if (result.ok) revalidateSite();
+    return result;
+  });
 }
 
 /** End War Week: `live → complete`, recording the Winner and highlights. */
@@ -73,13 +76,18 @@ export async function endWarWeek(
   warWeekId: string,
   input: ClosingInput,
 ): Promise<LifecycleActionResult> {
-  const organizer = await lifecycleWarWeek("end", warWeekId);
-  if (!organizer.ok) return organizer;
-  const parsed = parseClosingInput(input);
-  if (!parsed.ok) return parsed;
-  const result = await mutations.endWarWeek(organizer.warWeek.id, parsed.value);
-  if (result.ok) revalidateSite();
-  return result;
+  return guarded(async () => {
+    const organizer = await lifecycleWarWeek("end", warWeekId);
+    if (!organizer.ok) return organizer;
+    const parsed = parseClosingInput(input);
+    if (!parsed.ok) return parsed;
+    const result = await mutations.endWarWeek(
+      organizer.warWeek.id,
+      parsed.value,
+    );
+    if (result.ok) revalidateSite();
+    return result;
+  });
 }
 
 /**
@@ -90,11 +98,13 @@ export async function endWarWeek(
 export async function reopenWarWeek(
   warWeekId: string,
 ): Promise<LifecycleActionResult> {
-  const organizer = await lifecycleWarWeek("reopen", warWeekId);
-  if (!organizer.ok) return organizer;
-  const result = await mutations.reopenWarWeek(organizer.warWeek.id);
-  if (result.ok) revalidateSite();
-  return result;
+  return guarded(async () => {
+    const organizer = await lifecycleWarWeek("reopen", warWeekId);
+    if (!organizer.ok) return organizer;
+    const result = await mutations.reopenWarWeek(organizer.warWeek.id);
+    if (result.ok) revalidateSite();
+    return result;
+  });
 }
 
 async function setAdminEditionCookie(edition: string, isCurrent: boolean) {
@@ -120,24 +130,26 @@ export async function createNextWarWeek(
   fromWarWeekId: string,
   input: NextWarWeekInput,
 ): Promise<{ ok: true; edition: string } | { ok: false; error: string }> {
-  const organizer = await lifecycleWarWeek("create-next", fromWarWeekId);
-  if (!organizer.ok) return organizer;
-  const parsed = parseNextWarWeekInput(input);
-  if (!parsed.ok) return parsed;
-  const result = await mutations.createNextWarWeek(
-    organizer.warWeek.id,
-    parsed.value,
-    organizer.email,
-  );
-  if (result.ok) {
-    const current = await getCurrentWarWeek();
-    await setAdminEditionCookie(
-      result.edition,
-      current?.edition === result.edition,
+  return guarded(async () => {
+    const organizer = await lifecycleWarWeek("create-next", fromWarWeekId);
+    if (!organizer.ok) return organizer;
+    const parsed = parseNextWarWeekInput(input);
+    if (!parsed.ok) return parsed;
+    const result = await mutations.createNextWarWeek(
+      organizer.warWeek.id,
+      parsed.value,
+      organizer.email,
     );
-    revalidateSite();
-  }
-  return result;
+    if (result.ok) {
+      const current = await getCurrentWarWeek();
+      await setAdminEditionCookie(
+        result.edition,
+        current?.edition === result.edition,
+      );
+      revalidateSite();
+    }
+    return result;
+  });
 }
 
 /**
@@ -148,21 +160,26 @@ export async function createNextWarWeek(
 export async function selectAdminEdition(
   edition: string,
 ): Promise<LifecycleActionResult> {
-  if (!(await getSessionEmail())) {
-    return { ok: false, error: SIGN_IN_REFUSAL };
-  }
-  const [target, current, actor] = await Promise.all([
-    typeof edition === "string" ? getWarWeekByEdition(edition) : undefined,
-    getCurrentWarWeek(),
-    getActor(),
-  ]);
-  if (!target || can(actor, "admin.view", { warWeekId: target.id }) !== null) {
-    return {
-      ok: false,
-      error: "You can't administer that War Week.",
-    };
-  }
-  await setAdminEditionCookie(target.edition, target.id === current?.id);
-  revalidatePath("/admin", "layout");
-  return { ok: true };
+  return guarded(async () => {
+    if (!(await getSessionEmail())) {
+      return { ok: false, error: SIGN_IN_REFUSAL };
+    }
+    const [target, current, actor] = await Promise.all([
+      typeof edition === "string" ? getWarWeekByEdition(edition) : undefined,
+      getCurrentWarWeek(),
+      getActor(),
+    ]);
+    if (
+      !target ||
+      can(actor, "admin.view", { warWeekId: target.id }) !== null
+    ) {
+      return {
+        ok: false,
+        error: "You can't administer that War Week.",
+      };
+    }
+    await setAdminEditionCookie(target.edition, target.id === current?.id);
+    revalidatePath("/admin", "layout");
+    return { ok: true };
+  });
 }

@@ -240,3 +240,30 @@ describe("announcementVideoCount", () => {
     expect(announcementVideoCount({ videoUrls: [], body: null })).toBe(0);
   });
 });
+
+describe("parseAnnouncementInput given a malformed call", () => {
+  const MALFORMED: [string, unknown][] = [
+    ["{}", {}],
+    ["null", null],
+    ["undefined", undefined],
+    ["a string", "x"],
+    ["a number", 5],
+  ];
+
+  it.each(MALFORMED)("returns an error for %s", (_label, value) => {
+    expect(parseAnnouncementInput(value as never)).toMatchObject({
+      ok: false,
+    });
+  });
+
+  it.each<[string, Record<string, unknown>]>([
+    ["title: 5", { title: 5 }],
+    ['videoUrls: "x"', { videoUrls: "x" }],
+    ['pinned: "yes"', { pinned: "yes" }],
+    ["body: 5", { body: 5 }],
+  ])("returns an error for %s", (_label, overrides) => {
+    expect(
+      parseAnnouncementInput({ ...baseInput(), ...overrides } as never),
+    ).toMatchObject({ ok: false });
+  });
+});

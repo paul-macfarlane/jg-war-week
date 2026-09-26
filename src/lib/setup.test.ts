@@ -569,3 +569,65 @@ describe("inUseError", () => {
     );
   });
 });
+
+describe("setup parsers given a malformed call", () => {
+  const MALFORMED: [string, unknown][] = [
+    ["{}", {}],
+    ["null", null],
+    ["undefined", undefined],
+    ["a string", "x"],
+    ["a number", 5],
+  ];
+  const parsers: [string, (input: never) => { ok: boolean }][] = [
+    ["parseWarWeekSettingsInput", parseWarWeekSettingsInput],
+    ["parseDayInput", parseDayInput],
+    ["parseTeamInput", parseTeamInput],
+    ["parseParticipantInput", parseParticipantInput],
+    ["parseCompetitionInput", parseCompetitionInput],
+  ];
+
+  it.each(
+    parsers.flatMap(([name, parse]) =>
+      MALFORMED.map(([label, value]) => [name, label, parse, value] as const),
+    ),
+  )("%s returns an error for %s", (_name, _label, parse, value) => {
+    expect(parse(value as never)).toMatchObject({ ok: false });
+  });
+
+  const competition: CompetitionInput = {
+    name: "Catan",
+    description: "",
+    scoring: "individual",
+    maxPoints: "10",
+    placementPoints: "5, 3, 1",
+    countsTowardTeam: false,
+    group: "",
+  };
+
+  it.each<[string, Record<string, unknown>]>([
+    ["placementPoints: 5", { placementPoints: 5 }],
+    ["placementPoints: [5]", { placementPoints: [5] }],
+    ["maxPoints: 10", { maxPoints: 10 }],
+    ["name: null", { name: null }],
+    ["description: {}", { description: {} }],
+    ["group: []", { group: [] }],
+    ['countsTowardTeam: "yes"', { countsTowardTeam: "yes" }],
+  ])("parseCompetitionInput returns an error for %s", (_label, overrides) => {
+    expect(
+      parseCompetitionInput({ ...competition, ...overrides } as never),
+    ).toMatchObject({ ok: false });
+  });
+
+  it.each<[string, Record<string, unknown>]>([
+    ['storyTheme: ["a"]', { storyTheme: ["a"] }],
+    ["startDate: 5", { startDate: 5 }],
+    ["highlights: 5", { highlights: 5 }],
+    ["winner: {}", { winner: {} }],
+    ["mode: null", { mode: null }],
+  ])(
+    "parseWarWeekSettingsInput returns an error for %s",
+    (_label, overrides) => {
+      expect(parsed(overrides as never)).toMatchObject({ ok: false });
+    },
+  );
+});

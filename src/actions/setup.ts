@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { guarded } from "@/actions/result";
 import { type TargetKind, authorize } from "@/auth/authorize";
 import type { WarWeekAction } from "@/lib/access";
 import {
@@ -35,7 +36,7 @@ const RECORD_NOT_FOUND = "That record no longer exists.";
  * Runs a setup write: authorizes `action` on the row `id` names (or, for a
  * create or the settings save, the posted War Week), only then parses the
  * input, runs `write` and revalidates the site on success. Every setup
- * action goes through here.
+ * action goes through here, so none of them throws (`guarded`).
  */
 async function setupWrite<T>(
   action: WarWeekAction,
@@ -44,16 +45,18 @@ async function setupWrite<T>(
   parse: () => Parsed<T>,
   write: (value: T, ctx: MutationContext) => Promise<MutationResult>,
 ): Promise<SetupActionResult> {
-  const authorized = await authorize(action, kind, id, {
-    notFound: kind === "warWeek" ? undefined : RECORD_NOT_FOUND,
-  });
-  if (!authorized.ok) return authorized;
-  const parsed = parse();
-  if (!parsed.ok) return parsed;
+  return guarded(async () => {
+    const authorized = await authorize(action, kind, id, {
+      notFound: kind === "warWeek" ? undefined : RECORD_NOT_FOUND,
+    });
+    if (!authorized.ok) return authorized;
+    const parsed = parse();
+    if (!parsed.ok) return parsed;
 
-  const result = await write(parsed.value, authorized.ctx);
-  if (result.ok) revalidateSite();
-  return result;
+    const result = await write(parsed.value, authorized.ctx);
+    if (result.ok) revalidateSite();
+    return result;
+  });
 }
 
 const nothing = (): Parsed<null> => ({ ok: true, value: null });

@@ -6,20 +6,17 @@ import { AutoRefresh } from "@/components/auto-refresh";
 import { BracketView } from "@/components/bracket-view";
 import { CompetitionFacts, PointsEntryList } from "@/components/competitions";
 import { getBracket, getParticipantTeamIds } from "@/queries/brackets";
-import { getCompetitionWithLedger } from "@/queries/competitions";
 
-import { getWarWeekForEdition } from "../../war-week";
+import { getCompetitionPage } from "./competition";
 
 export default async function CompetitionPage({
   params,
 }: PageProps<"/[edition]/competitions/[id]">) {
   const { edition, id } = await params;
-  const warWeek = await getWarWeekForEdition(edition);
-  if (!warWeek) notFound();
-
-  const found = await getCompetitionWithLedger(warWeek, id);
+  // The layout already answered 404 for a missing one, above `loading.tsx`.
+  const found = await getCompetitionPage(edition, id);
   if (!found) notFound();
-  const { competition, ledger } = found;
+  const { warWeek, competition, ledger } = found;
   const bracket = await getBracket(competition.id);
   const isBracket = bracket && bracket.competition.format !== "points";
   const participantTeams =

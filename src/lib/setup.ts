@@ -278,6 +278,10 @@ export function parseWith<T>(
   if (result.success) return { ok: true, value: result.data };
 
   const issue = result.error.issues[0];
+  // Not an object at all: only a malformed direct call gets here.
+  if (issue.path.length === 0 && issue.code === "invalid_type") {
+    return { ok: false, error: "The form's fields are missing." };
+  }
   const special = describe(issue);
   if (special) return { ok: false, error: special };
   const field = String(issue.path[0]);
@@ -317,6 +321,17 @@ export function parseParticipantInput(
 
 const NUMBER = /^-?\d+(\.\d+)?$/;
 
+/** The Competition form's fields, as strings (and one checkbox). */
+const competitionInputShape = z.object({
+  name: z.string(),
+  description: z.string(),
+  scoring: z.string(),
+  maxPoints: z.string(),
+  placementPoints: z.string(),
+  countsTowardTeam: z.boolean(),
+  group: z.string(),
+});
+
 /**
  * Validates one Competition's form against the seed's Competition rules.
  * Never throws; returns the first error.
@@ -324,6 +339,10 @@ const NUMBER = /^-?\d+(\.\d+)?$/;
 export function parseCompetitionInput(
   input: CompetitionInput,
 ): Parsed<CompetitionValues> {
+  // Check the shape before touching a field: a direct POST can send anything.
+  const shape = parseWith(competitionInputShape, input);
+  if (!shape.ok) return shape;
+  input = shape.value;
   const maxPoints = input.maxPoints.trim();
   if (maxPoints && !NUMBER.test(maxPoints)) {
     return { ok: false, error: "Max points must be a number." };

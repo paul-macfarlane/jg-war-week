@@ -168,3 +168,34 @@ describe("overMaxWarning", () => {
     expect(overMaxWarning(Number.NaN, 5)).toBeNull();
   });
 });
+
+describe("parsePointsEntryInput given a malformed call", () => {
+  const MALFORMED: [string, unknown][] = [
+    ["{}", {}],
+    ["null", null],
+    ["undefined", undefined],
+    ["a string", "x"],
+    ["a number", 5],
+  ];
+  const valid = {
+    competitionId: "7d0f1c1e-3c1b-4a55-9a7e-2d3a4b5c6d7e",
+    targetId: "8e1f2d2f-4d2c-4b66-8b8f-3e4b5c6d7e8f",
+    points: "5",
+  };
+
+  it.each(MALFORMED)("returns an error for %s", (_label, value) => {
+    expect(parsePointsEntryInput(value as never)).toMatchObject({ ok: false });
+  });
+
+  it.each<[string, Record<string, unknown>]>([
+    ["points: 5", { points: 5 }],
+    ["points: null", { points: null }],
+    ['competitionId: ["x"]', { competitionId: ["x"] }],
+    ["targetId: 5", { targetId: 5 }],
+    ["note: 5", { note: 5 }],
+  ])("returns an error for %s", (_label, overrides) => {
+    expect(
+      parsePointsEntryInput({ ...valid, ...overrides } as never),
+    ).toMatchObject({ ok: false });
+  });
+});

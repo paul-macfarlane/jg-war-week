@@ -287,3 +287,38 @@ describe("STATUS_LABELS", () => {
     });
   });
 });
+
+describe("lifecycle parsers given a malformed call", () => {
+  const MALFORMED: [string, unknown][] = [
+    ["{}", {}],
+    ["null", null],
+    ["undefined", undefined],
+    ["a string", "x"],
+    ["a number", 5],
+  ];
+
+  it.each(MALFORMED)(
+    "parseClosingInput returns an error for %s",
+    (label, value) => {
+      // {} and undefined are a blank Winner and no highlights: valid.
+      if (label === "{}") return;
+      expect(parseClosingInput(value as never)).toMatchObject({ ok: false });
+    },
+  );
+
+  it.each(MALFORMED)(
+    "parseNextWarWeekInput returns an error for %s",
+    (_label, value) => {
+      expect(parseNextWarWeekInput(value as never)).toMatchObject({
+        ok: false,
+      });
+    },
+  );
+
+  it.each<[string, Record<string, unknown>]>([
+    ["winner: 5", { winner: 5, highlights: "" }],
+    ["highlights: 5", { winner: "", highlights: 5 }],
+  ])("parseClosingInput returns an error for %s", (_label, value) => {
+    expect(parseClosingInput(value as never)).toMatchObject({ ok: false });
+  });
+});

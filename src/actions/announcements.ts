@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { guarded } from "@/actions/result";
 import { type Authorized, authorize } from "@/auth/authorize";
 import { can } from "@/lib/access";
 import {
@@ -46,58 +47,68 @@ export async function createAnnouncement(
   warWeekId: string,
   input: AnnouncementInput,
 ): Promise<AnnouncementActionResult> {
-  const authorized = await authorize(
-    "announcement.create",
-    "warWeek",
-    warWeekId,
-  );
-  if (!authorized.ok) return authorized;
-  const refusal = pinRefusal(authorized, input, false);
-  if (refusal) return { ok: false, error: refusal };
-  const parsed = parseAnnouncementInput(input);
-  if (!parsed.ok) return parsed;
+  return guarded(async () => {
+    const authorized = await authorize(
+      "announcement.create",
+      "warWeek",
+      warWeekId,
+    );
+    if (!authorized.ok) return authorized;
+    const refusal = pinRefusal(authorized, input, false);
+    if (refusal) return { ok: false, error: refusal };
+    const parsed = parseAnnouncementInput(input);
+    if (!parsed.ok) return parsed;
 
-  const result = await mutations.createAnnouncement(
-    parsed.value,
-    authorized.ctx,
-  );
-  if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
-  return result;
+    const result = await mutations.createAnnouncement(
+      parsed.value,
+      authorized.ctx,
+    );
+    if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
+    return result;
+  });
 }
 
 export async function updateAnnouncement(
   id: string,
   input: AnnouncementInput,
 ): Promise<AnnouncementActionResult> {
-  const authorized = await authorize("announcement.edit", "announcement", id);
-  if (!authorized.ok) return authorized;
-  const refusal = pinRefusal(
-    authorized,
-    input,
-    authorized.target.pinned ?? false,
-  );
-  if (refusal) return { ok: false, error: refusal };
-  const parsed = parseAnnouncementInput(input);
-  if (!parsed.ok) return parsed;
+  return guarded(async () => {
+    const authorized = await authorize("announcement.edit", "announcement", id);
+    if (!authorized.ok) return authorized;
+    const refusal = pinRefusal(
+      authorized,
+      input,
+      authorized.target.pinned ?? false,
+    );
+    if (refusal) return { ok: false, error: refusal };
+    const parsed = parseAnnouncementInput(input);
+    if (!parsed.ok) return parsed;
 
-  const result = await mutations.updateAnnouncement(
-    id,
-    parsed.value,
-    authorized.ctx,
-  );
-  if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
-  return result;
+    const result = await mutations.updateAnnouncement(
+      id,
+      parsed.value,
+      authorized.ctx,
+    );
+    if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
+    return result;
+  });
 }
 
 export async function deleteAnnouncement(
   id: string,
 ): Promise<AnnouncementActionResult> {
-  const authorized = await authorize("announcement.delete", "announcement", id);
-  if (!authorized.ok) return authorized;
+  return guarded(async () => {
+    const authorized = await authorize(
+      "announcement.delete",
+      "announcement",
+      id,
+    );
+    if (!authorized.ok) return authorized;
 
-  const result = await mutations.deleteAnnouncement(id, authorized.ctx);
-  if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
-  return result;
+    const result = await mutations.deleteAnnouncement(id, authorized.ctx);
+    if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
+    return result;
+  });
 }
 
 async function setPinned(
@@ -123,11 +134,15 @@ async function setPinned(
 export async function pinAnnouncement(
   id: string,
 ): Promise<AnnouncementActionResult> {
-  return setPinned(id, true);
+  return guarded(async () => {
+    return setPinned(id, true);
+  });
 }
 
 export async function unpinAnnouncement(
   id: string,
 ): Promise<AnnouncementActionResult> {
-  return setPinned(id, false);
+  return guarded(async () => {
+    return setPinned(id, false);
+  });
 }
