@@ -1,0 +1,15 @@
+# pnpm gate on 6f84220 (orchestrator, final)
+environment: local Postgres 17 (docker compose, port 2345), DATABASE_DRIVER=pg; Chromium via @playwright/test
+✖ 7 problems (0 errors, 7 warnings)
+ Test Files  80 passed (80)
+      Tests  1371 passed (1371)
+✓ Compiled successfully in 1121ms
+  17 passed (38.6s)
+smoke ok lines: 177
+smoke FAIL lines: 0
+(smoke's 'ELIFECYCLE … exit code 143' line is its server child being stopped; present in the Epic B baseline too)
+gate exit=0
+smoke ok-line sequence identical to Epic B baseline (2db3b38)
+
+# client bundle: grep -rl 'drizzle:' .next/static
+exit=1 (1 = no match)

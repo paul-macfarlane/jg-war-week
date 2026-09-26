@@ -1,0 +1,30 @@
+# 11-AC2 lint probe (orchestrator) on 6f84220
+## clean tree: pnpm lint
+✖ 7 problems (0 errors, 7 warnings)
+## probe: import "@/seed/schema";
+1:1  error  '@/seed/schema' import is restricted from being used by a pattern. ADR 0001: src/lib is pure business logic and never imports the seed, queries, mutations, actions, components, pages, auth, the MCP server, the database client or driver, Next.js or icons. Move the shared piece down into src/lib, or pass it in  @typescript-eslint/no-restricted-imports
+✖ 1 problem (1 error, 0 warnings)
+## probe: import { getStandings } from "@/queries/standings";
+1:1   error    '@/queries/standings' import is restricted from being used by a pattern. ADR 0001: src/lib is pure business logic and never imports the seed, queries, mutations, actions, components, pages, auth, the MCP server, the database client or driver, Next.js or icons. Move the shared piece down into src/lib, or pass it in  @typescript-eslint/no-restricted-imports
+1:10  warning  'getStandings' is defined but never used                                                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+✖ 2 problems (1 error, 1 warning)
+## probe: import { createPointsEntry } from "@/mutations/points-entries";
+1:1   error    '@/mutations/points-entries' import is restricted from being used by a pattern. ADR 0001: src/lib is pure business logic and never imports the seed, queries, mutations, actions, components, pages, auth, the MCP server, the database client or driver, Next.js or icons. Move the shared piece down into src/lib, or pass it in  @typescript-eslint/no-restricted-imports
+1:10  warning  'createPointsEntry' is defined but never used                                                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+✖ 2 problems (1 error, 1 warning)
+## probe: import { addOrganizer } from "@/actions/organizers";
+1:1   error    '@/actions/organizers' import is restricted from being used by a pattern. ADR 0001: src/lib is pure business logic and never imports the seed, queries, mutations, actions, components, pages, auth, the MCP server, the database client or driver, Next.js or icons. Move the shared piece down into src/lib, or pass it in  @typescript-eslint/no-restricted-imports
+1:10  warning  'addOrganizer' is defined but never used                                                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+✖ 2 problems (1 error, 1 warning)
+## probe: import { Button } from "@/components/ui/button";
+1:1   error    '@/components/ui/button' import is restricted from being used by a pattern. ADR 0001: src/lib is pure business logic and never imports the seed, queries, mutations, actions, components, pages, auth, the MCP server, the database client or driver, Next.js or icons. Move the shared piece down into src/lib, or pass it in  @typescript-eslint/no-restricted-imports
+1:10  warning  'Button' is defined but never used                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
+✖ 2 problems (1 error, 1 warning)
+## probe: import { warWeekMode } from "@/db/schema";
+1:1   error    '@/db/schema' import is restricted from being used. ADR 0001: src/lib imports only types from @/db/schema, so Drizzle stays out of client bundles. Use the value lists in @/lib/enums  @typescript-eslint/no-restricted-imports
+1:10  warning  'warWeekMode' is defined but never used                                                                                                                                                @typescript-eslint/no-unused-vars
+✖ 2 problems (1 error, 1 warning)
+## probe: import type { WarWeek } from "@/db/schema";
+1:15  warning  'WarWeek' is defined but never used  @typescript-eslint/no-unused-vars
+✖ 1 problem (0 errors, 1 warning)
+(points.ts restored)

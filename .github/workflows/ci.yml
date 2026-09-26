@@ -11,7 +11,7 @@ on:
 jobs:
   checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     services:
       postgres:
         # Same major as compose.yaml.
@@ -73,3 +73,16 @@ jobs:
       # migrations, every seed (reset, then idempotent), pages, actions and
       # /api/mcp. Smoke signs its own sessions, so no real auth secrets.
       - run: pnpm smoke
+
+      # The Playwright flows (sign-in, Points Entry, Bracket, Finale,
+      # Archive) in Chromium over the same build and Postgres service.
+      - run: pnpm exec playwright install --with-deps chromium
+
+      - run: pnpm e2e
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: test-results/e2e
+          retention-days: 7

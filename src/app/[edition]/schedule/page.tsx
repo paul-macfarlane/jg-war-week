@@ -21,7 +21,7 @@ export default async function SchedulePage({
   if (!warWeek) notFound();
 
   const days = await getSchedule(warWeek.id);
-  const today = toEasternClock(resolveClock(at)).date;
+  const today = toEasternClock(resolveClock(at, new Date())).date;
   const todayInWeek = days.some((day) => day.date === today);
 
   return (

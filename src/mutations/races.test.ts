@@ -157,10 +157,19 @@ describe.skipIf(!isLocalDatabase)(
       };
       expect(results).toEqual([refusal, refusal]);
       const rows = await f.db
-        .select({ points: pointsEntry.points })
+        .select({
+          points: pointsEntry.points,
+          generatedByBracket: pointsEntry.generatedByBracket,
+        })
         .from(pointsEntry)
         .where(eq(pointsEntry.competitionId, f.competitionId));
-      expect(rows).toEqual([{ points: 3 }, { points: 3 }]);
+      // Connection A's update stands in for a finalize turning both rows
+      // bracket-generated; once it committed, the edit and the delete saw
+      // that and changed neither.
+      expect(rows).toEqual([
+        { points: 3, generatedByBracket: true },
+        { points: 3, generatedByBracket: true },
+      ]);
     });
   },
 );
@@ -412,3 +421,129 @@ describe.skipIf(!isLocalDatabase)("Day delete on two connections", () => {
     },
   );
 });
+
+describe.skipIf(!isLocalDatabase)(
+  "Bracket finalize beside a manual Points Entry on two connections",
+  () => {
+    const edition = "zz-r-bf";
+    beforeEach(() => clearWarWeek(edition));
+    afterEach(() => clearWarWeek(edition));
+
+    it.each([["finalize"], ["Points Entry create"]])(
+      "keeps the hand-entered Points Entry and generates exactly the Placement Points (%s first)",
+      async (first) => {
+        const brackets = await import("@/mutations/brackets");
+        const { getBracket } = await import("@/queries/brackets");
+        const { createPointsEntry } =
+          await import("@/mutations/points-entries");
+        const f = await committedWarWeek(edition, 5);
+        const { competition, pointsEntry, team } = f.schema;
+
+        // A single-elimination Competition, Red against Blue, with Placement
+        // Points 10 · 6 and its one Heat played (Red wins): ready to finalize.
+        const [blue] = await f.db
+          .insert(team)
+          .values({ warWeekId: f.ctx.warWeekId, name: "Blue", color: "#00f" })
+          .returning({ id: team.id });
+        const [clash] = await f.db
+          .insert(competition)
+          .values({
+            warWeekId: f.ctx.warWeekId,
+            name: "Captain Clash",
+            scoring: "team",
+            format: "single-elimination",
+            placementPoints: [10, 6],
+          })
+          .returning({ id: competition.id });
+        await brackets.replaceEntrants(
+          clash.id,
+          { targetIds: [f.teamId, blue.id] },
+          f.ctx,
+          f.db,
+        );
+        await brackets.generateBracket(clash.id, {}, f.ctx, f.db);
+        const view = (await getBracket(clash.id, f.db))!;
+        const [final] = view.bracket.heats;
+        const red = view.entrants.find((e) => e.label === "Red")!.id;
+        expect(
+          await brackets.recordHeatResult(
+            clash.id,
+            final.id,
+            {
+              order: [
+                red,
+                ...final.slots
+                  .map((s) => s.entrantId!)
+                  .filter((id) => id !== red),
+              ],
+            },
+            f.ctx,
+            f.db,
+          ),
+        ).toMatchObject({ ok: true });
+
+        const results = await withConnections(2, async ([a, b]) => {
+          const finalize = () => brackets.finalizeBracket(clash.id, f.ctx, a);
+          const create = () =>
+            createPointsEntry(
+              {
+                competitionId: clash.id,
+                targetId: blue.id,
+                points: 1,
+                note: "Spirit bonus",
+              },
+              f.ctx,
+              b,
+            );
+          const lockRow = (tx: ConnectionTx) =>
+            tx
+              .select({ id: competition.id })
+              .from(competition)
+              .where(eq(competition.id, clash.id))
+              .for("update");
+          return first === "finalize"
+            ? staggered(lockRow, finalize, create)
+            : staggered(lockRow, create, finalize);
+        });
+
+        expect(results).toEqual([{ ok: true }, { ok: true }]);
+        const rows = await f.db
+          .select({
+            teamId: pointsEntry.teamId,
+            points: pointsEntry.points,
+            note: pointsEntry.note,
+            generatedByBracket: pointsEntry.generatedByBracket,
+          })
+          .from(pointsEntry)
+          .where(eq(pointsEntry.competitionId, clash.id));
+        // The hand-entered entry, plus one generated entry per placing.
+        expect(
+          rows.sort(
+            (x, y) =>
+              Number(x.generatedByBracket) - Number(y.generatedByBracket) ||
+              y.points - x.points,
+          ),
+        ).toEqual([
+          {
+            teamId: blue.id,
+            points: 1,
+            note: "Spirit bonus",
+            generatedByBracket: false,
+          },
+          {
+            teamId: f.teamId,
+            points: 10,
+            note: "From bracket",
+            generatedByBracket: true,
+          },
+          {
+            teamId: blue.id,
+            points: 6,
+            note: "From bracket",
+            generatedByBracket: true,
+          },
+        ]);
+      },
+    );
+  },
+);

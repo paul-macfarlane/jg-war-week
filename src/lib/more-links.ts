@@ -1,22 +1,21 @@
-import {
-  CircleHelp,
-  Download,
-  History,
-  Info,
-  type LucideIcon,
-  Medal,
-  Shield,
-  Trophy,
-  Users,
-} from "lucide-react";
-
 import type { WarWeek } from "@/db/schema";
 import { rosterHeading } from "@/lib/roster";
+
+/** Which icon a More link shows; components map it to the icon itself. */
+export type MoreLinkIcon =
+  | "competitions"
+  | "roster"
+  | "awards"
+  | "faq"
+  | "history"
+  | "install"
+  | "about"
+  | "admin";
 
 export type MoreLink = {
   label: string;
   href: string;
-  icon: LucideIcon;
+  icon: MoreLinkIcon;
 };
 
 export type MoreLinksInput = {
@@ -38,17 +37,23 @@ export function moreLinks({
   canOpenAdmin,
 }: MoreLinksInput): MoreLink[] {
   return [
-    { label: "Competitions", href: `/${edition}/competitions`, icon: Trophy },
+    {
+      label: "Competitions",
+      href: `/${edition}/competitions`,
+      icon: "competitions",
+    },
     {
       label: rosterHeading(mode, teamLabel),
       href: `/${edition}/teams`,
-      icon: Users,
+      icon: "roster",
     },
-    { label: "Awards", href: `/${edition}/awards`, icon: Medal },
-    { label: "FAQ", href: `/${edition}/faq`, icon: CircleHelp },
-    { label: "War Week history", href: "/history", icon: History },
-    { label: "Install app", href: "/install", icon: Download },
-    { label: "About JG War Week", href: "/about", icon: Info },
-    ...(canOpenAdmin ? [{ label: "Admin", href: "/admin", icon: Shield }] : []),
+    { label: "Awards", href: `/${edition}/awards`, icon: "awards" },
+    { label: "FAQ", href: `/${edition}/faq`, icon: "faq" },
+    { label: "War Week history", href: "/history", icon: "history" },
+    { label: "Install app", href: "/install", icon: "install" },
+    { label: "About JG War Week", href: "/about", icon: "about" },
+    ...(canOpenAdmin
+      ? [{ label: "Admin", href: "/admin", icon: "admin" as const }]
+      : []),
   ];
 }

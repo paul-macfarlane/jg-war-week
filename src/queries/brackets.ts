@@ -14,7 +14,7 @@ import {
 } from "@/db/schema";
 import { champion } from "@/lib/bracket/engine";
 import type { Bracket, Entrant, Heat } from "@/lib/bracket/types";
-import { isCompetitionId } from "@/lib/competitions";
+import { isUuid } from "@/lib/uuid";
 
 /** An Entrant with what the Bracket view shows and finalizing needs. */
 export type BracketEntrant = Entrant & {
@@ -136,7 +136,7 @@ export async function getBracket(
   competitionId: string,
   dbOrTx: DBOrTx = db,
 ): Promise<BracketView | undefined> {
-  if (!isCompetitionId(competitionId)) return undefined;
+  if (!isUuid(competitionId)) return undefined;
   const [found] = await dbOrTx
     .select({
       id: competition.id,

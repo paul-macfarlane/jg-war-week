@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-import type { WarWeek } from "@/db/schema";
+import type { Team, WarWeek } from "@/db/schema";
 import {
   contrastRatio,
   normalizeHex,
@@ -66,7 +66,6 @@ export function warWeekThemeStyle(warWeek: ThemeColors): CSSProperties {
     "--popover-foreground": fg,
     "--input": `color-mix(in oklch, ${bg}, ${fg} 20%)`,
     "--font-sans": FONT_PRESET_VAR[warWeek.fontPreset],
-    "--ww-primary": warWeek.primaryColor,
   } as CSSProperties;
 }
 
@@ -118,5 +117,21 @@ export function themeSwatches(
   return SWATCH_FIELDS.flatMap(([field, label]) => {
     const color = normalizeHex(theme[field]);
     return color ? [{ color, label }] : [];
+  });
+}
+
+/**
+ * Team colors as color-field swatches (`#rrggbb`, labelled with the Team's
+ * name), leaving out the Team `exceptTeamId` and any color that isn't hex.
+ */
+export function teamSwatches(
+  teams: readonly (Pick<Team, "name" | "color"> & { id?: string })[],
+  exceptTeamId?: string,
+): { color: string; label: string }[] {
+  return teams.flatMap((team) => {
+    const color = normalizeHex(team.color);
+    return color && team.id !== exceptTeamId
+      ? [{ color, label: team.name }]
+      : [];
   });
 }

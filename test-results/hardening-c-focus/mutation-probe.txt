@@ -1,0 +1,14 @@
+# 13-AC2b by-hand probe (orchestrator) on c045639 (rerun: the test's helper changed after the first run on d07d8a5)
+## Rule broken: getStandings Points Entry join no longer scoped to the War Week
+ src/queries/standings.ts | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+     × scopes its Points Entry join to the queried War Week's Competitions only 387ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+- Expected
++ Received
+-     "total": 3,
++     "total": 1003,
+      Tests  1 failed (1)
+## Restored
+(no diff)
+      Tests  1 passed (1)

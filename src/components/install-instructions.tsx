@@ -3,6 +3,7 @@
 import { useState, useSyncExternalStore } from "react";
 
 import { Button } from "@/components/ui/button";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import {
   type InstallPlatform,
   detectInstallPlatform,
@@ -17,36 +18,19 @@ const STANDALONE_QUERY = "(display-mode: standalone)";
 
 type Visitor = { platform: InstallPlatform; standalone: boolean };
 
-function subscribeDisplayMode(onChange: () => void) {
-  const query = window.matchMedia(STANDALONE_QUERY);
-  query.addEventListener("change", onChange);
-  return () => query.removeEventListener("change", onChange);
-}
-
-// A string snapshot keeps useSyncExternalStore's equality check stable.
-function visitorSnapshot(): string {
-  const platform = detectInstallPlatform(
-    navigator.userAgent,
-    navigator.maxTouchPoints,
-  );
-  const standalone =
-    window.matchMedia(STANDALONE_QUERY).matches ||
-    // iOS Safari's own flag for a Home Screen launch.
-    (navigator as Navigator & { standalone?: boolean }).standalone === true;
-  return `${platform}:${standalone}`;
-}
-
+// null on the server and during hydration, so nothing renders until mounted.
 function useVisitor(): Visitor | null {
-  const snapshot = useSyncExternalStore(
-    subscribeDisplayMode,
-    visitorSnapshot,
-    () => null,
-  );
-  if (!snapshot) return null;
-  const [platform, standalone] = snapshot.split(":");
+  const standaloneDisplay = useMediaQuery(STANDALONE_QUERY, null);
+  if (standaloneDisplay === null) return null;
   return {
-    platform: platform as InstallPlatform,
-    standalone: standalone === "true",
+    platform: detectInstallPlatform(
+      navigator.userAgent,
+      navigator.maxTouchPoints,
+    ),
+    standalone:
+      standaloneDisplay ||
+      // iOS Safari's own flag for a Home Screen launch.
+      (navigator as Navigator & { standalone?: boolean }).standalone === true,
   };
 }
 

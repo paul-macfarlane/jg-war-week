@@ -1,0 +1,6 @@
+# D1 focused vitest on d07d8a5 (orchestrator)
+ Test Files  6 passed (6)
+      Tests  53 passed (53)
+# full suite
+ Test Files  79 passed (79)
+      Tests  1366 passed (1366)

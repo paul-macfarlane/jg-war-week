@@ -1,0 +1,23 @@
+# pnpm e2e on d3f663c (orchestrator, wave 1, after D2)
+[⣷] applying migrations...[2K[1G[✓] migrations applied successfully!
+  ✓   1 [chromium] › e2e/archive.spec.ts:23:5 › the Archive lists every past War Week (724ms)
+  ✓   2 [chromium] › e2e/archive.spec.ts:44:7 › past edition /i renders (268ms)
+  ✓   3 [chromium] › e2e/archive.spec.ts:44:7 › past edition /ii renders (215ms)
+[WebServer] ⨯ Error: The destination stream closed early.
+  ✓   4 [chromium] › e2e/archive.spec.ts:44:7 › past edition /iii renders (224ms)
+  ✓   5 [chromium] › e2e/archive.spec.ts:44:7 › past edition /iv renders (283ms)
+  ✓   6 [chromium] › e2e/archive.spec.ts:44:7 › past edition /ix renders (266ms)
+  ✓   7 [chromium] › e2e/archive.spec.ts:44:7 › past edition /v renders (227ms)
+  ✓   8 [chromium] › e2e/archive.spec.ts:44:7 › past edition /vi renders (228ms)
+  ✓   9 [chromium] › e2e/archive.spec.ts:44:7 › past edition /vii renders (277ms)
+  ✓  10 [chromium] › e2e/archive.spec.ts:44:7 › past edition /viii renders (301ms)
+  ✓  11 [chromium] › e2e/archive.spec.ts:44:7 › past edition /x renders (240ms)
+  ✓  12 [chromium] › e2e/bracket.spec.ts:35:5 › a Bracket is built, run and finalized into Points Entries (15.2s)
+  ✓  13 [chromium] › e2e/finale.spec.ts:5:5 › the Finale plays from Start and ends on first place (3.2s)
+  ✓  14 [chromium] › e2e/points-entry.spec.ts:6:5 › an Organizer's Points Entry raises the Team's total on the leaderboard (1.1s)
+  ✓  15 [chromium] › e2e/sign-in.spec.ts:5:5 › an anonymous visit to /xi lands on /sign-in (215ms)
+  ✓  16 [chromium] › e2e/sign-in.spec.ts:20:5 › a session with a non-JG email is refused /xi (250ms)
+  ✓  17 [chromium] › e2e/sign-in.spec.ts:38:5 › a JG session opens /xi (206ms)
+[WebServer] ⨯ Error: The destination stream closed early.
+  17 passed (37.0s)
+exit=

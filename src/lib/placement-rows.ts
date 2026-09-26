@@ -5,11 +5,10 @@
  * wording where it already has one.
  */
 import { MAX_PLACEMENTS } from "@/lib/competitions";
+import { POINTS_NUMBER } from "@/lib/points-entry";
 
 /** The "5 · 3 · 1" quick fill. */
 export const QUICK_FILL = ["5", "3", "1"];
-
-const NUMBER = /^-?\d+(\.\d+)?$/;
 
 /** One row per place from the form's Placement Points text. */
 export function rowsFromPlacementPoints(text: string): string[] {
@@ -41,7 +40,7 @@ export function placementRowErrors(
   if (values.length > MAX_PLACEMENTS) {
     errors.push(`Placement Points cover at most ${MAX_PLACEMENTS} places.`);
   }
-  if (!values.every((value) => NUMBER.test(value))) {
+  if (!values.every((value) => POINTS_NUMBER.test(value))) {
     errors.push("Each place's Placement Points must be a number.");
     return errors;
   }
@@ -55,7 +54,7 @@ export function placementRowErrors(
     );
   }
   const max = maxPoints.trim();
-  if (points.length > 0 && NUMBER.test(max) && points[0] > Number(max)) {
+  if (points.length > 0 && POINTS_NUMBER.test(max) && points[0] > Number(max)) {
     errors.push("1st place's Placement Points can't be more than Max points.");
   }
   return errors;

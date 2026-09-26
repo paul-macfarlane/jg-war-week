@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { announcementTitleSchema, videoUrlSchema } from "@/lib/announcements";
 import { AWARD_DESCRIPTION_MAX, AWARD_NAME_MAX } from "@/lib/awards";
-import { MAX_PLACEMENTS } from "@/lib/competitions";
+import { WAR_WEEK_STATUSES } from "@/lib/enums";
 import { jgEmailSchema } from "@/lib/jg-email";
 import {
   pointsSchema as points,
@@ -10,27 +10,21 @@ import {
   pointsEntryTargetError,
 } from "@/lib/points-entry";
 import { contentInputSchema } from "@/lib/rich-text/content";
+import {
+  competitionSeedSchema,
+  daySeedShape,
+  emailSchema,
+  participantSeedSchema,
+  teamSeedSchema,
+  warWeekSettingsSeedShape,
+} from "@/lib/setup";
+import {
+  faqItemSeedSchema,
+  scheduleItemSeedSchema,
+} from "@/lib/setup-schedule-faq";
 
-const hexColor = z
-  .string()
-  .max(32)
-  .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "must be a hex color");
-
-const themeUrl = z
-  .string()
-  .max(500)
-  .regex(
-    /^(\/[^\s]*|https:\/\/[^\s]+)$/,
-    "must be a root-relative path or an https URL",
-  );
-
-const email = z.email().max(254).toLowerCase();
-
-const httpsUrl = z.url({ protocol: /^https$/ }).max(500);
-
-const clockTime = z
-  .string()
-  .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "must be a 24-hour HH:MM time");
+// Field rules shared with the Organizer setup forms live in `src/lib/`
+// (ADR 0001); the seed composes them into the file format.
 
 /**
  * A stable id for a seeded organizer-owned record (Points Entry, Award,
@@ -43,96 +37,12 @@ const seedKey = z
   .max(80)
   .regex(/^[a-z0-9-]+$/, "must be lowercase letters, digits and dashes");
 
-export const scheduleItemSeedSchema = z
-  .object({
-    startTime: clockTime,
-    endTime: clockTime.nullish(),
-    title: z.string().min(1).max(200),
-    host: z.string().max(200).nullish(),
-    location: z.string().max(200).nullish(),
-    virtualLink: httpsUrl.nullish(),
-    description: contentInputSchema.nullish(),
-    category: z.enum([
-      "competition",
-      "education",
-      "social",
-      "meal",
-      "work",
-      "other",
-    ]),
-    /** A Competition name from this seed. */
-    competition: z.string().min(1).max(120).nullish(),
-  })
-  .refine((item) => !item.endTime || item.endTime > item.startTime, {
-    message: "endTime must be after startTime",
-    path: ["endTime"],
-  });
-
-export type ScheduleItemSeed = z.infer<typeof scheduleItemSeedSchema>;
-
 export const daySeedSchema = z.object({
-  date: z.iso.date(),
-  dayTheme: z.string().min(1).max(120),
+  ...daySeedShape,
   scheduleItems: z.array(scheduleItemSeedSchema).default([]),
 });
 
 export type DaySeed = z.infer<typeof daySeedSchema>;
-
-export const teamSeedSchema = z.object({
-  name: z.string().min(1).max(80),
-  color: hexColor,
-  logoUrl: themeUrl.nullish(),
-});
-
-export type TeamSeed = z.infer<typeof teamSeedSchema>;
-
-export const participantSeedSchema = z.object({
-  displayName: z.string().min(1).max(120),
-  companyTag: z.string().min(1).max(40).nullish(),
-  email: email.nullish(),
-  /** A Team name from this seed. */
-  team: z.string().min(1).max(80).nullish(),
-  isLeader: z.boolean().default(false),
-});
-
-export type ParticipantSeed = z.infer<typeof participantSeedSchema>;
-
-export const competitionSeedSchema = z
-  .object({
-    name: z.string().min(1).max(120),
-    description: z.string().max(2000).nullish(),
-    maxPoints: points.positive().nullish(),
-    /** Placement Points for 1st, 2nd, 3rd…, highest first. */
-    placementPoints: z
-      .array(points.min(0, { error: "must be at least 0" }))
-      .min(1, { error: "at least 1 place" })
-      .max(MAX_PLACEMENTS, { error: `at most ${MAX_PLACEMENTS} places` })
-      .refine((list) => list.every((p, i) => i === 0 || p <= list[i - 1]), {
-        error: "each place must be worth no more than the one above it",
-      })
-      .nullish(),
-    scoring: z.enum(["team", "individual"]),
-    countsTowardTeam: z.boolean().default(false),
-    group: z.string().min(1).max(120).nullish(),
-    /** How the Competition is run; a Bracket's Entrants aren't seeded yet. */
-    format: z.enum(["points", "single-elimination"]).default("points"),
-  })
-  .refine(
-    (c) =>
-      c.maxPoints == null ||
-      c.placementPoints == null ||
-      c.placementPoints[0] <= c.maxPoints,
-    {
-      message: "1st place can't be worth more than maxPoints",
-      path: ["placementPoints"],
-    },
-  )
-  .refine((c) => !c.countsTowardTeam || c.scoring === "individual", {
-    message: "countsTowardTeam can only be set on an individual Competition",
-    path: ["countsTowardTeam"],
-  });
-
-export type CompetitionSeed = z.infer<typeof competitionSeedSchema>;
 
 export const pointsEntrySeedSchema = z
   .object({
@@ -145,7 +55,7 @@ export const pointsEntrySeedSchema = z
     participant: z.string().min(1).max(120).nullish(),
     points,
     note: pointsEntryNoteSchema.nullish(),
-    enteredByEmail: email,
+    enteredByEmail: emailSchema,
     enteredAt: z.iso.datetime({ offset: true }),
   })
   .refine((entry) => (entry.team == null) !== (entry.participant == null), {
@@ -178,43 +88,11 @@ export const announcementSeedSchema = z.object({
   body: contentInputSchema,
   videoUrls: z.array(videoUrlSchema).default([]),
   pinned: z.boolean().default(false),
-  authorEmail: email,
+  authorEmail: emailSchema,
   publishedAt: z.iso.datetime({ offset: true }),
 });
 
 export type AnnouncementSeed = z.infer<typeof announcementSeedSchema>;
-
-export const faqItemSeedSchema = z.object({
-  question: z.string().min(1).max(300),
-  answer: contentInputSchema,
-});
-
-export type FaqItemSeed = z.infer<typeof faqItemSeedSchema>;
-
-/**
- * The War Week fields an Organizer can also edit in `/admin/setup`, so the
- * seed and the setup form share one set of field rules.
- */
-export const warWeekSettingsSeedShape = {
-  storyTheme: z.string().min(1).max(120),
-  startDate: z.iso.date(),
-  endDate: z.iso.date(),
-  mode: z.enum(["teams", "free-for-all"]),
-  teamLabel: z.string().min(1).max(40),
-  leaderTitle: z.string().min(1).max(40),
-  slackChannelUrl: z.url({ protocol: /^https$/ }).max(500),
-  primary: hexColor,
-  primaryForeground: hexColor,
-  accent: hexColor,
-  background: hexColor,
-  foreground: hexColor,
-  fontPreset: z.enum(["sans", "serif", "mono"]),
-  logoUrl: themeUrl.nullish(),
-  bannerUrl: themeUrl.nullish(),
-  wikiUrl: themeUrl.nullish(),
-  winner: z.string().max(200).nullish(),
-  highlights: z.array(z.string().max(500)).default([]),
-};
 
 export const warWeekSeedSchema = z
   .object({
@@ -228,7 +106,7 @@ export const warWeekSeedSchema = z
     // Seed-initialized only: `status`, `winner` and `highlights` (from the
     // settings shape) are set when the War Week is first inserted, never on
     // a reload.
-    status: z.enum(["upcoming", "live", "complete"]),
+    status: z.enum(WAR_WEEK_STATUSES),
     ...warWeekSettingsSeedShape,
     /**
      * Global Organizers this seed adds when missing; a load never removes

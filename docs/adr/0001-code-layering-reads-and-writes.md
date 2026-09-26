@@ -26,11 +26,15 @@ below it.
 | Entry points | `src/app/**` pages, `src/app/api/mcp/route.ts`, `src/actions/*.ts` | Parse input, check auth, call queries, mutations and lib, render or serialize | Business math or rules, raw SQL |
 | Mutations | `src/mutations/<area>.ts` | Validated writes. Each takes `DBOrTx` and runs a multi-row change in one transaction | Auth, `revalidatePath`, form parsing |
 | Queries | `src/queries/<area>.ts` | Load rows for one War Week and hand them to a lib function. Take `DBOrTx` | Business rules beyond the SQL filter |
-| Business logic | `src/lib/<area>.ts` | Pure functions: Standings, schedule now/next, formatting, validation rules and zod field schemas | Database, `next/*`, clock reads (pass `Date` in) |
+| Business logic | `src/lib/<area>.ts` | Pure functions: Standings, schedule now/next, formatting, validation rules and zod field schemas | Database, `next/*`, clock reads (pass `Date` in), value imports from `@/db/schema` (types only) |
 
 `src/mcp/*.ts` holds pure serializers from lib results to MCP tool
 payloads, and sits alongside the entry points. `src/seed/` is the setup write
 path. It uses the same lib rules and schemas as the Organizer actions.
+
+lib imports only types from `@/db/schema`, so Drizzle stays out of client
+bundles that use lib. The enum value lists live in `src/lib/enums.ts`;
+`src/db/schema.ts` builds its pgEnums from them. ESLint enforces this.
 
 ### Reads (in place since ticket 05)
 
@@ -48,7 +52,10 @@ path. It uses the same lib rules and schemas as the Organizer actions.
       loads the target row and its War Week, and runs `can`.
    2. Only then parses the input with a zod schema from `src/lib/`.
    3. Calls a mutation.
-   4. Calls `revalidatePath` for the affected edition routes.
+   4. Revalidates through `src/actions/revalidate.ts`, the one rule:
+      `revalidateWarWeek(edition)` for a write that changes only that War
+      Week's routes, `revalidateSite()` when it changes the header or the
+      Archive.
    5. Returns `{ ok: true } | { ok: false; error: string; fieldErrors? }`.
    6. Never throws on a user error.
 2. **Mutation** in `src/mutations/<area>.ts`:
@@ -56,8 +63,9 @@ path. It uses the same lib rules and schemas as the Organizer actions.
    - The global Organizer-list mutations take `actorEmail` rather than a
      War Week `MutationContext`, because the list has no War Week.
    - Enforces business rules by calling lib functions, then writes.
-   - Uses `withTransaction` when it touches more than one row, so tests can
-     run it against local Postgres.
+   - Runs a change that touches more than one row in one
+     `dbOrTx.transaction(...)`, so tests can run it against local Postgres
+     inside their own transaction.
    - Records the actor where the schema has a column for it, e.g.
      `enteredByEmail`.
 3. **Rules and schemas are shared, not copied.** When a rule already lives
@@ -73,10 +81,11 @@ path. It uses the same lib rules and schemas as the Organizer actions.
 ### Tests per layer
 
 - Lib: vitest, pure, and written first.
-- Mutations: vitest against local Postgres in a rolled-back transaction, once
-  the first mutation lands.
-- Actions and admin forms: the smoke test. Testing.md already names smoke as
-  the only UI and admin-form coverage.
+- Mutations: vitest against local Postgres in a rolled-back transaction
+  (`inRolledBackTransaction`, `src/db/test-transaction.ts`), once the first
+  mutation lands.
+- Actions and admin forms: smoke over HTTP (`pnpm smoke`) plus the
+  Playwright flows (`pnpm e2e`).
 
 ## Consequences
 

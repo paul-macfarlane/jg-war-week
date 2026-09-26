@@ -174,6 +174,28 @@ describe("computeStandings", () => {
       ],
       individual: [],
     },
+    {
+      name: "a negative entry lowers a Team's and a Participant's total and can reorder ranks",
+      input: input({
+        pointsEntries: [
+          teamEntry(tug.id, red.id, 3),
+          teamEntry(tug.id, blue.id, 1),
+          teamEntry(tug.id, red.id, -5),
+          participantEntry(wellness.id, neo.id, 4),
+          participantEntry(wellness.id, trinity.id, 1),
+          participantEntry(wellness.id, trinity.id, -2),
+        ],
+      }),
+      main: "team",
+      team: [
+        { name: "Blue", total: 1, rank: 1 },
+        { name: "Red", total: -2, rank: 2 },
+      ],
+      individual: [
+        { name: "Neo", total: 4, rank: 1 },
+        { name: "Trinity", total: -1, rank: 2 },
+      ],
+    },
   ];
 
   it.each(cases)("$name", ({ input, main, team, individual }) => {
@@ -207,5 +229,18 @@ describe("computeStandings", () => {
       { name: red.name, color: red.color },
       null,
     ]);
+  });
+
+  it("credits Counts Toward Team to a Participant's own total only, adding to no Team when they have none", () => {
+    const standings = computeStandings(
+      input({
+        pointsEntries: [participantEntry(chess.id, morpheus.id, 4)],
+      }),
+    );
+
+    expect(standings.individual).toEqual([
+      expect.objectContaining({ name: "Morpheus", total: 4 }),
+    ]);
+    expect(standings.team.every((row) => row.total === 0)).toBe(true);
   });
 });

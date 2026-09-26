@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import type { DBTx } from "@/db";
 import { isLocalDatabaseUrl } from "@/db/local-url";
+import { inRolledBackTransaction } from "@/db/test-transaction";
 
 // Runs only against a local Postgres (CI's service or docker compose; see
 // vitest.config.ts), never a hosted database.
@@ -10,19 +11,6 @@ const isLocalDatabase = isLocalDatabaseUrl(
   process.env.DATABASE_URL,
   process.env.DATABASE_DRIVER,
 );
-
-class Rollback extends Error {}
-
-/** Runs `body` in a transaction that is always rolled back. */
-async function inRolledBackTransaction(body: (tx: DBTx) => Promise<void>) {
-  const { withTransaction } = await import("@/db");
-  await withTransaction(async (tx) => {
-    await body(tx);
-    throw new Rollback();
-  }).catch((error) => {
-    if (!(error instanceof Rollback)) throw error;
-  });
-}
 
 /** Two War Weeks with a team and an individual Competition each. */
 async function fixture(tx: DBTx) {
@@ -141,7 +129,11 @@ describe.skipIf(!isLocalDatabase)("Points Entry mutations", () => {
           ctx,
           tx,
         ),
-      ).toMatchObject({ ok: false });
+      ).toEqual({
+        ok: false,
+        error:
+          '"Speed Chess" is an individual Competition, so its Points Entries must target a participant.',
+      });
       expect(
         await createPointsEntry(
           { ...entry, competitionId: home.tugId, targetId: other.teamId },

@@ -2,7 +2,8 @@ import { and, desc, eq } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import { type Announcement, type WarWeek, announcement } from "@/db/schema";
-import { isAnnouncementId, sortAnnouncements } from "@/lib/announcements";
+import { sortAnnouncements } from "@/lib/announcements";
+import { isUuid } from "@/lib/uuid";
 
 async function loadSorted(
   warWeekId: string,
@@ -44,7 +45,7 @@ export async function getAnnouncementForEdit(
   id: string,
   dbOrTx: DBOrTx = db,
 ): Promise<Announcement | undefined> {
-  if (!isAnnouncementId(id)) return undefined;
+  if (!isUuid(id)) return undefined;
   const [found] = await dbOrTx
     .select()
     .from(announcement)

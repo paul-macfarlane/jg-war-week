@@ -2,7 +2,7 @@
 
 import { cn } from "cn";
 import { CalendarIcon } from "lucide-react";
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import { type DateRange, getDefaultClassNames } from "react-day-picker";
 
 import { FormValueInput } from "@/components/form-value-input";
@@ -13,6 +13,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import {
   formatDateLabel,
   formatDateValue,
@@ -22,20 +23,6 @@ import { type PendingRange, nextRangeSelection } from "@/lib/day-range";
 
 // Tailwind's `sm` breakpoint: two months side by side from here up.
 const WIDE_QUERY = "(min-width: 40rem)";
-
-function subscribeWide(onChange: () => void) {
-  const query = window.matchMedia(WIDE_QUERY);
-  query.addEventListener("change", onChange);
-  return () => query.removeEventListener("change", onChange);
-}
-
-function useWide(): boolean {
-  return useSyncExternalStore(
-    subscribeWide,
-    () => window.matchMedia(WIDE_QUERY).matches,
-    () => false,
-  );
-}
 
 type DateRangeValue = { start: string; end: string };
 
@@ -69,7 +56,7 @@ export function DateRangePicker({
   id,
   "aria-label": ariaLabel,
 }: DateRangePickerProps) {
-  const wide = useWide();
+  const wide = useMediaQuery(WIDE_QUERY);
   const [open, setOpen] = useState(false);
   // A half-picked or refused range stays on screen until the next tap;
   // only an accepted range reaches `onValueChange`.

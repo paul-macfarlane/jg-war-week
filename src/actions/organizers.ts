@@ -1,19 +1,13 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { guarded } from "@/actions/result";
+import { revalidateSite } from "@/actions/revalidate";
 import { authorizeOrganizerList } from "@/auth/authorize";
 import { JG_EMAIL_MESSAGE, jgEmailSchema } from "@/lib/jg-email";
 import * as mutations from "@/mutations/organizers";
 import type { MutationResult } from "@/mutations/types";
 
 export type OrganizerActionResult = MutationResult;
-
-// The Organizer list decides `/admin` and the Admin link on every page.
-function revalidateSite() {
-  revalidatePath("/", "layout");
-}
 
 /** Adds a JG email to the global Organizer list. Organizers only. */
 export async function addOrganizer(

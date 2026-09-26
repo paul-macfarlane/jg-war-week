@@ -14,8 +14,8 @@ import {
   type CompetitionListItem,
   buildCompetitionLedger,
   groupCompetitions,
-  isCompetitionId,
 } from "@/lib/competitions";
+import { isUuid } from "@/lib/uuid";
 
 const competitionColumns = {
   id: competition.id,
@@ -57,7 +57,7 @@ export async function getCompetitionWithLedger(
 ): Promise<
   { competition: CompetitionListItem; ledger: CompetitionLedger } | undefined
 > {
-  if (!isCompetitionId(id)) return undefined;
+  if (!isUuid(id)) return undefined;
 
   const [found] = await dbOrTx
     .select(competitionColumns)

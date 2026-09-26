@@ -11,24 +11,11 @@ import {
   moveInOrder,
   scheduleItemGuardError,
 } from "@/lib/setup-schedule-faq";
-import { isUniqueViolation, locked } from "@/mutations/setup";
+import { locked, refusingDuplicate } from "@/mutations/setup";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 
 const SCHEDULE_ITEM_NOT_FOUND = "That Schedule Item no longer exists.";
 const FAQ_ITEM_NOT_FOUND = "That FAQ Item no longer exists.";
-
-/** Runs a write, turning a lost race for its natural key into a refusal. */
-async function refusingDuplicate(
-  error: string,
-  write: () => Promise<MutationResult>,
-): Promise<MutationResult> {
-  try {
-    return await write();
-  } catch (caught) {
-    if (!isUniqueViolation(caught)) throw caught;
-    return { ok: false, error };
-  }
-}
 
 /** The War Week's Days, as a subquery for "an item of this War Week". */
 function warWeekDayIds(warWeekId: string, dbOrTx: DBOrTx) {
@@ -78,7 +65,7 @@ export async function createScheduleItem(
   return refusingDuplicate(duplicateScheduleItemError(values), () =>
     dbOrTx.transaction(async (tx): Promise<MutationResult> => {
       // `deleteDay` takes the same lock, so the Day can't go meanwhile.
-      await locked(tx, day, values.dayId, ctx);
+      await locked(day, values.dayId, ctx, tx);
       const refusal = await scheduleItemRefusal(values, ctx, tx);
       if (refusal) return { ok: false, error: refusal };
       await tx.insert(scheduleItem).values(values);
@@ -97,7 +84,7 @@ export async function updateScheduleItem(
   return refusingDuplicate(duplicateScheduleItemError(values), () =>
     dbOrTx.transaction(async (tx): Promise<MutationResult> => {
       // `deleteDay` takes the same lock, so the target Day can't go meanwhile.
-      await locked(tx, day, values.dayId, ctx);
+      await locked(day, values.dayId, ctx, tx);
       const refusal = await scheduleItemRefusal(values, ctx, tx, id);
       if (refusal) return { ok: false, error: refusal };
       const updated = await tx

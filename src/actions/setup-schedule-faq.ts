@@ -1,8 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { guarded } from "@/actions/result";
+import { revalidateWarWeek } from "@/actions/revalidate";
 import { authorize, postedCompetitionId } from "@/auth/authorize";
 import {
   type FaqItemInput,
@@ -14,13 +13,6 @@ import * as mutations from "@/mutations/setup-schedule-faq";
 import type { MutationResult } from "@/mutations/types";
 
 export type SetupScheduleFaqActionResult = MutationResult;
-
-// The Schedule shows on the War Week's home (Now/Next), Schedule and
-// Competition pages; the FAQ on its FAQ page.
-function revalidateWarWeek(edition: string) {
-  revalidatePath("/admin", "layout");
-  revalidatePath(`/${edition}`, "layout");
-}
 
 /**
  * Adds a Schedule Item to the War Week the form was rendered for. A Host

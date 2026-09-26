@@ -1,4 +1,5 @@
-const HEX_PATTERN = /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+/** A hex color as stored: `#` and 3 or 6 hex digits. */
+export const HEX_COLOR = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
 /**
  * Parses a hex color typed into `ColorField`. Accepts an optional leading
@@ -8,7 +9,9 @@ const HEX_PATTERN = /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
  */
 export function normalizeHex(input: string): string | null {
   const trimmed = input.trim();
-  const parts = HEX_PATTERN.exec(trimmed);
+  const parts = HEX_COLOR.exec(
+    trimmed.startsWith("#") ? trimmed : `#${trimmed}`,
+  );
   if (!parts) return null;
 
   const hex = parts[1].toLowerCase();

@@ -167,12 +167,15 @@ export function formatDayHeading(date: string): string {
 /**
  * The clock pages compute now/next from: the `?at=` search param when it is
  * a valid ISO 8601 instant (for demos of a War Week that isn't on right now),
- * otherwise the real time.
+ * otherwise `now`, the real time the page read (lib never reads the clock).
  */
-export function resolveClock(at: string | string[] | undefined): Date {
+export function resolveClock(
+  at: string | string[] | undefined,
+  now: Date,
+): Date {
   if (typeof at === "string") {
     const parsed = parseISO(at);
     if (isValid(parsed)) return parsed;
   }
-  return new Date();
+  return now;
 }

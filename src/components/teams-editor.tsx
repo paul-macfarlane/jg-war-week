@@ -24,8 +24,8 @@ import { SuggestionCombobox } from "@/components/suggestion-combobox";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { normalizeHex } from "@/lib/color";
 import type { ParticipantInput, TeamInput } from "@/lib/setup";
+import { teamSwatches } from "@/lib/theme";
 import type { SetupParticipant, SetupTeam } from "@/queries/setup";
 
 const EMPTY_TEAM: TeamInput = { name: "", color: "#888888", logoUrl: "" };
@@ -329,10 +329,7 @@ export function TeamsEditor({
   // Each row offers the theme colors plus the other Teams' colors.
   const swatchesFor = (teamId?: string) => [
     ...themeSwatches,
-    ...teams.flatMap((other) => {
-      const color = normalizeHex(other.color);
-      return other.id !== teamId && color ? [{ color, label: other.name }] : [];
-    }),
+    ...teamSwatches(teams, teamId),
   ];
   return (
     <div {...SETUP_EDITOR} className="flex flex-col gap-1">

@@ -10,7 +10,7 @@ import {
   faqItem,
   scheduleItem,
 } from "@/db/schema";
-import { isSetupItemId } from "@/lib/setup-schedule-faq";
+import { isUuid } from "@/lib/uuid";
 
 /** A War Week's Competitions by name, for the Schedule Item form's picker. */
 export async function getCompetitionOptions(
@@ -30,7 +30,7 @@ export async function getScheduleItemForEdit(
   id: string,
   dbOrTx: DBOrTx = db,
 ): Promise<ScheduleItem | undefined> {
-  if (!isSetupItemId(id)) return undefined;
+  if (!isUuid(id)) return undefined;
   const [found] = await dbOrTx
     .select({ item: scheduleItem })
     .from(scheduleItem)
@@ -46,7 +46,7 @@ export async function getFaqItemForEdit(
   id: string,
   dbOrTx: DBOrTx = db,
 ): Promise<FaqItem | undefined> {
-  if (!isSetupItemId(id)) return undefined;
+  if (!isUuid(id)) return undefined;
   const [found] = await dbOrTx
     .select()
     .from(faqItem)

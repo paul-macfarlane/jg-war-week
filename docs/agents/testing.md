@@ -21,9 +21,10 @@ rereading this guide.
 | format | `pnpm format` (check: `pnpm format:check`) | Consistent formatting | Before lint | verified |
 | unit | `pnpm test` (vitest) | Pure modules and services through public interfaces; no DB for pure-module tests | During implementation and per slice gate | verified |
 | build | `pnpm build` | Next.js production build | Per slice gate, before PR | verified |
-| e2e | `pnpm smoke` (needs `pnpm build` and local Postgres via `docker compose up -d`) | Migrates, loads every seed twice (first with `--reset`, which wipes those War Weeks in the local DB, then plain to prove idempotence), starts the app; /, /xi, /xi/leaderboard, /api/mcp respond; seed row counts and DB constraints. Only coverage for UI and admin forms | Per slice gate, before PR | verified |
+| smoke | `pnpm smoke` (needs `pnpm build` and local Postgres via `docker compose up -d`) | Migrates, loads every seed twice (first with `--reset`, which wipes those War Weeks in the local DB, then plain to prove idempotence), starts the app; /, /xi, /xi/leaderboard, /api/mcp respond; seed row counts and DB constraints; pages and admin actions over HTTP | Per slice gate, before PR | verified |
+| e2e | `pnpm e2e` (Playwright; needs `pnpm build` and local Postgres via `docker compose up -d`; first time `pnpm exec playwright install chromium`) | Five browser flows in Chromium over the production build on port 3200, after migrating and reloading every seed with `--reset` and signing stub JG sessions (no Google): anonymous and non-JG visitors sent to `/sign-in`; an Organizer's Points Entry updates `/xi/leaderboard`; a Bracket built, recorded, advanced and finalized into Points Entries; the Finale plays to first place; `/history` and every past edition render. Screenshots under `test-results/e2e/<test>/` | Per slice gate, before PR, and in CI after smoke | verified |
 | run | `pnpm dev` | Local dev server | Manual verification and smoke | verified |
-| gate | `pnpm gate` | typecheck, lint, test, build and smoke in order | Per slice gate, before PR | verified |
+| gate | `pnpm gate` | typecheck, lint, test, build, smoke and e2e (Playwright) in order | Per slice gate, before PR | verified |
 
 `verified` means the command ran successfully here. `inferred` means configuration names it but setup did not execute it. `unavailable` is an explicit gap.
 
