@@ -4,7 +4,7 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Spec:** `.scratch/roles-and-access/spec.md`
 
@@ -52,3 +52,4 @@
   - M7: smoke churn listed.
   - Former-Host smoke line added (story 47).
 - 2026-09-26 [RED-TEAM 2]: `ATLAS_RED_TEAM_PASSED`, 5 warnings and 10 minors. Resolved in the spec and ticket 10: W1 lifecycle item dropped; W2 each race names its lock, its sharing writers and a two-connection test, FAQ accepted as harmless; W3 copy test is a guarded vitest file with a scratch database and hand-applied pre-03 files; W4 code-first window accepted as a possible sub-minute outage with a post-check; W5 Hosts saved only by their own Organizer action. M1 statuses flipped; M2 custom-migration exception recorded in the maintainers guide; M3 malformed ids get not-found before `can`; M4 constraints defined; M5 `competition_host.competition_id` index; M6 AC reworded; M7 two-connection fixture pattern; M8 stale line fixed and epic supersedes per-ticket availability; M9 `schedule_item.host` disambiguated; M10 build-vs-buy line. Ready for `/atlas-implement` on Epic B.
+- 2026-09-26 [EXECUTION PLAN]: claimed by Atlas (`/atlas-implement`, Epic B); branch `feat/03-roles-and-access`; plan and verification map in `.scratch/roles-and-access/execution.md`.

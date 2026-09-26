@@ -4,7 +4,7 @@
 
 **Blocked by:** 03 (it sets the action step order)
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 ## Scope
 
@@ -21,3 +21,4 @@
 - [ ] `pnpm gate` passes.
 
 ## Comments
+- 2026-09-26 [EXECUTION PLAN]: claimed by Atlas (`/atlas-implement`, Epic B); branch `feat/03-roles-and-access`; plan and verification map in `.scratch/roles-and-access/execution.md`.

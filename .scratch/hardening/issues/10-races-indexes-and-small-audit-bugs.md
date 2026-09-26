@@ -4,7 +4,7 @@
 
 **Blocked by:** 03 (both touch the mutations)
 
-**Status:** ready-for-agent (red-teamed 2026-09-26 with `.scratch/roles-and-access/spec.md`; delivered inside Epic B, whose single branch supersedes this ticket's `Blocked by`)
+**Status:** in-progress
 
 ## Scope
 
@@ -29,3 +29,4 @@ This changes the schema, so the plan needs a red-team review, and the seed and m
 - [ ] `pnpm gate` passes.
 
 ## Comments
+- 2026-09-26 [EXECUTION PLAN]: claimed by Atlas (`/atlas-implement`, Epic B); branch `feat/03-roles-and-access`; plan and verification map in `.scratch/roles-and-access/execution.md`.
