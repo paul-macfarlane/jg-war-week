@@ -38,4 +38,33 @@ test.describe("forms", () => {
       fullPage: true,
     });
   });
+
+  test("the settings form refused on the server shows under Slack URL and focuses it", async ({
+    context,
+    page,
+  }, testInfo) => {
+    await asOrganizer(context);
+    await page.goto("/admin/setup/war-week");
+    const form = page.getByRole("form", { name: "War Week settings" });
+    const slackUrl = form.getByLabel("Slack URL");
+    await slackUrl.fill("http://slack.example.com/x");
+    await form.getByRole("button", { name: "Save settings" }).click();
+
+    const slackField = form
+      .getByRole("group")
+      .filter({ has: page.getByLabel("Slack URL") });
+    await expect(
+      slackField.getByRole("alert").filter({
+        hasText: "Slack URL must be an https URL.",
+      }),
+    ).toBeVisible();
+    await expect(slackUrl).toHaveAttribute("aria-invalid", "true");
+    await expect
+      .poll(() => page.evaluate(() => document.activeElement?.id))
+      .toBe("settings-slackChannelUrl");
+    await page.screenshot({
+      path: testInfo.outputPath("settings-field-error.png"),
+      fullPage: true,
+    });
+  });
 });

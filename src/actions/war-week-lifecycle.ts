@@ -8,6 +8,7 @@ import { ADMIN_EDITION_COOKIE, getActor } from "@/auth/actor";
 import { authorize } from "@/auth/authorize";
 import { getSessionEmail } from "@/auth/server";
 import { SIGN_IN_REFUSAL, can } from "@/lib/access";
+import type { FieldErrors } from "@/lib/result";
 import {
   type ClosingInput,
   type LifecycleAction,
@@ -121,7 +122,10 @@ async function setAdminEditionCookie(edition: string, isCurrent: boolean) {
 export async function createNextWarWeek(
   fromWarWeekId: string,
   input: NextWarWeekInput,
-): Promise<{ ok: true; edition: string } | { ok: false; error: string }> {
+): Promise<
+  | { ok: true; edition: string }
+  | { ok: false; error: string; fieldErrors?: FieldErrors }
+> {
   return guarded(async () => {
     const organizer = await lifecycleWarWeek("create-next", fromWarWeekId);
     if (!organizer.ok) return organizer;

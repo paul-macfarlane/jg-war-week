@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useActionState, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import {
+  type LifecycleActionResult,
   endWarWeek,
   reopenWarWeek,
   startWarWeek,
@@ -13,10 +14,16 @@ import {
   ConfirmActionButton,
   ConfirmDialog,
 } from "@/components/confirm-dialog";
+import {
+  fieldErrorsOf,
+  formErrorOf,
+  useFocusFirstInvalid,
+} from "@/components/form-field-errors";
 import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldDescription,
+  FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
@@ -101,23 +108,38 @@ function EndWarWeekButton({
   highlights: string[];
 }) {
   const router = useRouter();
+  const formId = useId();
+  const formRef = useRef<HTMLFormElement>(null);
   const [open, setOpen] = useState(false);
-  const [pending, startTransition] = useTransition();
   const [winner, setWinner] = useState(suggestedWinner);
   const [highlights, setHighlights] = useState(initialHighlights.join("\n"));
 
-  function confirm() {
-    startTransition(async () => {
-      const result = await endWarWeek(warWeekId, { winner, highlights });
-      if (result.ok) {
-        toast.success(`War Week ${name} is in the Archive`);
-        setOpen(false);
-      } else {
-        toast.error(result.error);
+  // Validation runs on the server; a refusal names its fields.
+  const [result, formAction, pending] = useActionState(
+    async (
+      _previous: LifecycleActionResult | null,
+      formData: FormData,
+    ): Promise<LifecycleActionResult> => {
+      const input = {
+        winner: String(formData.get("winner") ?? ""),
+        highlights: String(formData.get("highlights") ?? ""),
+      };
+      const saved = await endWarWeek(warWeekId, input);
+      if (!saved.ok) {
+        toast.error(saved.error);
+        router.refresh();
+        return saved;
       }
+      toast.success(`War Week ${name} is in the Archive`);
+      setOpen(false);
       router.refresh();
-    });
-  }
+      return saved;
+    },
+    null,
+  );
+  const fieldErrors = fieldErrorsOf(result);
+  const formError = formErrorOf(result);
+  useFocusFirstInvalid(formRef, result);
 
   const trimmed = winner.trim();
   return (
@@ -141,36 +163,50 @@ function EndWarWeekButton({
         }
         confirmLabel="End War Week"
         pending={pending}
-        onConfirm={confirm}
+        form={formId}
       >
-        <FieldGroup className="gap-4">
-          <Field>
-            <FieldLabel htmlFor="end-winner">Winner</FieldLabel>
-            <Input
-              id="end-winner"
-              name="winner"
-              className="h-11 sm:h-9"
-              maxLength={200}
-              value={winner}
-              onChange={(event) => setWinner(event.target.value)}
-            />
-            <FieldDescription>
-              First place in the Standings. A tie can be &ldquo;Red &amp;
-              Blue&rdquo;.
-            </FieldDescription>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="end-highlights">Highlights</FieldLabel>
-            <Textarea
-              id="end-highlights"
-              name="highlights"
-              rows={3}
-              value={highlights}
-              onChange={(event) => setHighlights(event.target.value)}
-            />
-            <FieldDescription>Optional. One short line each.</FieldDescription>
-          </Field>
-        </FieldGroup>
+        <form
+          ref={formRef}
+          id={formId}
+          action={formAction}
+          aria-label="End War Week"
+        >
+          <FieldGroup className="gap-4">
+            <Field data-invalid={!!fieldErrors.winner}>
+              <FieldLabel htmlFor="end-winner">Winner</FieldLabel>
+              <Input
+                id="end-winner"
+                name="winner"
+                className="h-11 sm:h-9"
+                maxLength={200}
+                aria-invalid={!!fieldErrors.winner}
+                value={winner}
+                onChange={(event) => setWinner(event.target.value)}
+              />
+              <FieldDescription>
+                First place in the Standings. A tie can be &ldquo;Red &amp;
+                Blue&rdquo;.
+              </FieldDescription>
+              <FieldError>{fieldErrors.winner}</FieldError>
+            </Field>
+            <Field data-invalid={!!fieldErrors.highlights}>
+              <FieldLabel htmlFor="end-highlights">Highlights</FieldLabel>
+              <Textarea
+                id="end-highlights"
+                name="highlights"
+                rows={3}
+                aria-invalid={!!fieldErrors.highlights}
+                value={highlights}
+                onChange={(event) => setHighlights(event.target.value)}
+              />
+              <FieldDescription>
+                Optional. One short line each.
+              </FieldDescription>
+              <FieldError>{fieldErrors.highlights}</FieldError>
+            </Field>
+            {formError && !pending && <FieldError>{formError}</FieldError>}
+          </FieldGroup>
+        </form>
       </ConfirmDialog>
     </>
   );

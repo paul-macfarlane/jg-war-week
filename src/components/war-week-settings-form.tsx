@@ -1,12 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useActionState, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { updateWarWeekSettings } from "@/actions/setup";
+import { type SetupActionResult, updateWarWeekSettings } from "@/actions/setup";
 import { ColorField, type ColorSwatch } from "@/components/color-field";
 import { DateRangePicker } from "@/components/date-range-picker";
+import {
+  fieldErrorsOf,
+  formErrorOf,
+  useFocusFirstInvalid,
+} from "@/components/form-field-errors";
 import { OptionSelect, type SelectOption } from "@/components/option-select";
 import { Button } from "@/components/ui/button";
 import {
@@ -54,11 +59,32 @@ const FONT_OPTIONS: SelectOption[] = [
   { value: "mono", label: "Mono" },
 ];
 
+const FIELDS: (keyof WarWeekSettingsInput)[] = [
+  "storyTheme",
+  "startDate",
+  "endDate",
+  "mode",
+  "teamLabel",
+  "leaderTitle",
+  "slackChannelUrl",
+  "wikiUrl",
+  "primaryColor",
+  "primaryForegroundColor",
+  "accentColor",
+  "backgroundColor",
+  "foregroundColor",
+  "logoUrl",
+  "bannerUrl",
+  "fontPreset",
+  "winner",
+  "highlights",
+];
+
 /**
  * Edit a War Week's settings, Appearance Theme and closing (Winner and
  * highlights). Status isn't here: Start, End and Reopen change it. The theme
- * preview and contrast warnings update as you type; the server action does
- * the validation and guards, and its error is what's shown.
+ * preview and contrast warnings update as you type; validation runs on the
+ * server, which returns a field error under its field on a refusal.
  */
 export function WarWeekSettingsForm({
   warWeekId,
@@ -75,18 +101,40 @@ export function WarWeekSettingsForm({
   teamSwatches: ColorSwatch[];
 }) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const formRef = useRef<HTMLFormElement>(null);
   const [values, setValues] = useState(initial);
-  const [error, setError] = useState<string | null>(null);
 
   function setValue(field: keyof WarWeekSettingsInput, value: string) {
     setValues((v) => ({ ...v, [field]: value }));
-    setError(null);
   }
   const set =
     (field: keyof WarWeekSettingsInput) =>
     (event: React.ChangeEvent<HTMLInputElement>) =>
       setValue(field, event.target.value);
+
+  // Validation runs on the server; a refusal names its fields.
+  const [result, formAction, pending] = useActionState(
+    async (
+      _previous: SetupActionResult | null,
+      formData: FormData,
+    ): Promise<SetupActionResult> => {
+      const input: WarWeekSettingsInput = Object.fromEntries(
+        FIELDS.map((field) => [field, String(formData.get(field) ?? "")]),
+      ) as WarWeekSettingsInput;
+      const saved = await updateWarWeekSettings(warWeekId, input);
+      if (!saved.ok) {
+        toast.error(saved.error);
+        return saved;
+      }
+      toast.success("War Week settings saved");
+      router.refresh();
+      return saved;
+    },
+    null,
+  );
+  const fieldErrors = fieldErrorsOf(result);
+  const formError = formErrorOf(result);
+  useFocusFirstInvalid(formRef, result);
 
   const preview = {
     ...values,
@@ -94,43 +142,32 @@ export function WarWeekSettingsForm({
   };
   const warnings = themeContrastWarnings(preview);
   const swatches = [...themeSwatches(values), ...teamSwatches];
-
-  function submit(event: React.SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    startTransition(async () => {
-      const saved = await updateWarWeekSettings(warWeekId, values);
-      if (saved.ok) {
-        setError(null);
-        toast.success("War Week settings saved");
-        router.refresh();
-      } else {
-        setError(saved.error);
-        toast.error(saved.error);
-      }
-    });
-  }
+  const dateError = fieldErrors.startDate ?? fieldErrors.endDate;
 
   const text = (
     field: keyof WarWeekSettingsInput,
     label: string,
     props: React.InputHTMLAttributes<HTMLInputElement> = {},
   ) => (
-    <Field>
+    <Field data-invalid={!!fieldErrors[field]}>
       <FieldLabel htmlFor={`settings-${field}`}>{label}</FieldLabel>
       <Input
         id={`settings-${field}`}
         name={field}
         className="h-11 sm:h-9"
+        aria-invalid={!!fieldErrors[field]}
         value={values[field]}
         onChange={set(field)}
         {...props}
       />
+      <FieldError>{fieldErrors[field]}</FieldError>
     </Field>
   );
 
   return (
     <form
-      onSubmit={submit}
+      ref={formRef}
+      action={formAction}
       className="flex flex-col gap-6"
       aria-label="War Week settings"
     >
@@ -143,29 +180,32 @@ export function WarWeekSettingsForm({
               maxLength: 120,
             })}
           </div>
-          <Field className="sm:col-span-2">
-            <FieldLabel htmlFor="warWeekDates">Dates</FieldLabel>
+          <Field className="sm:col-span-2" data-invalid={!!dateError}>
+            <FieldLabel htmlFor="settings-dates">Dates</FieldLabel>
             <DateRangePicker
-              id="warWeekDates"
+              id="settings-dates"
               startName="startDate"
               endName="endDate"
+              aria-invalid={!!dateError}
               value={{ start: values.startDate, end: values.endDate }}
               days={dayDates}
-              onValueChange={({ start, end }) => {
-                setValues((v) => ({ ...v, startDate: start, endDate: end }));
-                setError(null);
-              }}
+              onValueChange={({ start, end }) =>
+                setValues((v) => ({ ...v, startDate: start, endDate: end }))
+              }
             />
+            <FieldError>{dateError}</FieldError>
           </Field>
-          <Field>
+          <Field data-invalid={!!fieldErrors.mode}>
             <FieldLabel htmlFor="settings-mode">Mode</FieldLabel>
             <OptionSelect
               id="settings-mode"
               name="mode"
+              aria-invalid={!!fieldErrors.mode}
               options={MODE_OPTIONS}
               value={values.mode}
               onValueChange={(mode) => setValue("mode", mode)}
             />
+            <FieldError>{fieldErrors.mode}</FieldError>
           </Field>
           {text("teamLabel", "Team Label", { required: true, maxLength: 40 })}
           {text("leaderTitle", "Leader Title", {
@@ -192,26 +232,32 @@ export function WarWeekSettingsForm({
         </FieldLegend>
         <FieldGroup className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {COLOR_FIELDS.map(({ field, label }) => (
-            <Field key={field}>
-              <FieldLabel htmlFor={field}>{label} color</FieldLabel>
+            <Field key={field} data-invalid={!!fieldErrors[field]}>
+              <FieldLabel htmlFor={`settings-${field}`}>
+                {label} color
+              </FieldLabel>
               <ColorField
-                id={field}
+                id={`settings-${field}`}
                 name={field}
+                aria-invalid={!!fieldErrors[field]}
                 value={values[field]}
                 swatches={swatches}
                 onValueChange={(hex) => setValue(field, hex)}
               />
+              <FieldError>{fieldErrors[field]}</FieldError>
             </Field>
           ))}
-          <Field>
+          <Field data-invalid={!!fieldErrors.fontPreset}>
             <FieldLabel htmlFor="settings-fontPreset">Font</FieldLabel>
             <OptionSelect
               id="settings-fontPreset"
               name="fontPreset"
+              aria-invalid={!!fieldErrors.fontPreset}
               options={FONT_OPTIONS}
               value={values.fontPreset}
               onValueChange={(font) => setValue("fontPreset", font)}
             />
+            <FieldError>{fieldErrors.fontPreset}</FieldError>
           </Field>
         </FieldGroup>
         <FieldGroup className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -259,7 +305,7 @@ export function WarWeekSettingsForm({
       <FieldSet>
         <FieldLegend className="mb-2 font-semibold">Closing</FieldLegend>
         <FieldGroup className="grid gap-4">
-          <Field>
+          <Field data-invalid={!!fieldErrors.winner}>
             <FieldLabel htmlFor="settings-winner">Winner</FieldLabel>
             <Input
               id="settings-winner"
@@ -267,25 +313,29 @@ export function WarWeekSettingsForm({
               className="h-11 sm:h-9"
               maxLength={200}
               placeholder="Set when the War Week ends"
+              aria-invalid={!!fieldErrors.winner}
               value={values.winner}
               onChange={set("winner")}
             />
             <FieldDescription>
               Shown in the Archive. A tie can be &ldquo;Red &amp; Blue&rdquo;.
             </FieldDescription>
+            <FieldError>{fieldErrors.winner}</FieldError>
           </Field>
-          <Field>
+          <Field data-invalid={!!fieldErrors.highlights}>
             <FieldLabel htmlFor="settings-highlights">Highlights</FieldLabel>
             <Textarea
               id="settings-highlights"
               name="highlights"
               rows={4}
+              aria-invalid={!!fieldErrors.highlights}
               value={values.highlights}
               onChange={(event) => setValue("highlights", event.target.value)}
             />
             <FieldDescription>
               One short line each, shown in the Archive.
             </FieldDescription>
+            <FieldError>{fieldErrors.highlights}</FieldError>
           </Field>
         </FieldGroup>
       </FieldSet>
@@ -301,7 +351,7 @@ export function WarWeekSettingsForm({
             {pending ? "Saving…" : "Save settings"}
           </Button>
         </div>
-        <FieldError>{pending ? null : error}</FieldError>
+        {formError && !pending && <FieldError>{formError}</FieldError>}
       </div>
     </form>
   );
