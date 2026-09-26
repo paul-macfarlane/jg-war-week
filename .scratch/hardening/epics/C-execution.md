@@ -57,6 +57,7 @@ None. CI runs on push without a human step; PR creation is closeout. Nothing dep
 
 - 2026-09-26: plan recorded; proof root cleared; epic and tickets 13, 11 claimed (`in-progress`).
 - Wave 1: D2 accepted (`d3f663c`; orchestrator rerun of `pnpm e2e` 17/17). D1 accepted and cherry-picked (`d07d8a5`); 79 files / 1366 tests; by-hand probe on the `getStandings` join (1003 vs 3) proves 13-AC2b. Evidence `fbcae4f`. Worktree `d1` and its DB removed.
+- Wave 2: D3 accepted (`c8f85e4`). Orchestrator fix `5107556`: vitest and eslint ignore `.claude/**` (with a worktree present, `pnpm test` collected its copies of `src/`). D5 accepted and cherry-picked (`c97e465`, `03ebca8`, `52498ac`, `a1c86d7`); the `OptionSelect` placeholder stays (six callers pass one). `pnpm gate` on `a1c86d7`: 79 files / 1366 tests, smoke 177 ok / 0 FAIL with the same `ok` sequence as Epic B's baseline, e2e 17 passed. Worktree `d5` and its DB removed.
 
 ## Closeout
 

@@ -1,0 +1,11 @@
+# pnpm gate on a1c86d7 (orchestrator, after wave 2: D1 D2 D3 D5 + 5107556)
+✖ 7 problems (0 errors, 7 warnings)
+ Test Files  79 passed (79)
+      Tests  1366 passed (1366)
+✓ Compiled successfully in 1548ms
+ ELIFECYCLE  Command failed with exit code 143.
+  17 passed (38.7s)
+exit=0
+smoke ok lines: 177
+smoke FAIL lines: 0
+Compared with 2db3b38:test-results/hardening-b-gate/gate.txt (Epic B baseline): 177 ok lines, identical sequence (diff empty).
