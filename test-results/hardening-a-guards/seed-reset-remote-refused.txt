@@ -1,10 +1,10 @@
-# 02 seed reset guard, integrated commit b543948, local
+# 02-AC2 seed:load --reset refuses a non-local database without the flag, commit f73f2b3, local
 
 $ DATABASE_URL=postgres://u:p@example.com/db pnpm seed:load --reset seeds/xi.json
 --reset refuses a non-local DATABASE_URL (localhost, 127.0.0.1 or [::1] only) unless --allow-remote-reset is also passed; it deletes each seeded War Week, including organizer-entered data
 exit=1
 
-$ DATABASE_URL=postgres://postgres:postgres@localhost:2345/war_weeker DATABASE_DRIVER=neon pnpm seed:load --reset seeds/xi.json
+$ DATABASE_URL=<local .env.example URL> DATABASE_DRIVER=neon pnpm seed:load --reset seeds/xi.json
 --reset refuses a non-local DATABASE_URL (localhost, 127.0.0.1 or [::1] only) unless --allow-remote-reset is also passed; it deletes each seeded War Week, including organizer-entered data
 exit=1
 

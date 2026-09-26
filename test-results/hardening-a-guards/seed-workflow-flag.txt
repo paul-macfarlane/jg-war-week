@@ -1,4 +1,4 @@
-# 02 Seed workflow passes the flag, integrated commit b543948
+# 02-AC3 the Seed workflow passes the flag, commit f73f2b3
 
 $ grep -n -B6 -A3 allow-remote-reset .github/workflows/seed.yml
 88-          if [ "$RESET" = "true" ]; then
@@ -10,10 +10,6 @@ $ grep -n -B6 -A3 allow-remote-reset .github/workflows/seed.yml
 94:            flags="--reset --allow-remote-reset"
 95-          fi
 96-          pnpm seed:load $flags $files
-
-$ DATABASE_URL=<local .env.example URL> pnpm seed:load --reset seeds/xi.json   # local: no flag needed
-Loaded War Week xi (reset)
-exit=0
 
 $ DATABASE_URL=<local .env.example URL> pnpm seed:load --reset --allow-remote-reset seeds/xi.json   # the workflow invocation shape parses and loads
 Loaded War Week xi (reset)

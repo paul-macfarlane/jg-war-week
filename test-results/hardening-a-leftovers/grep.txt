@@ -1,0 +1,11 @@
+# 15-AC1 leftovers grep, commit f73f2b3
+
+$ grep -rniE "MCP_PUBLIC|hackathon|connection event|submission" src scripts README.md docs
+docs/adr/0002-global-organizers-and-competition-hosts.md:5:- Context: post-hackathon grilling session
+docs/adr/0002-global-organizers-and-competition-hosts.md:9:At the hackathon, each War Week had its own `organizerEmails` allowlist, and
+docs/adr/0003-actions-take-war-week-from-the-request.md:5:- Context: post-hackathon code audit; amends ADR 0001's action step order
+exit=0 (1 = no matches)
+
+# The AC allows ADRs and specs recording history. Excluding docs/adr:
+$ grep -rniE "MCP_PUBLIC|hackathon|connection event|submission" src scripts README.md docs --exclude-dir=adr
+exit=1 (1 = no matches)
