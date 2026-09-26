@@ -4,11 +4,13 @@
 
 **Tickets:** `03`, `04`, `08`, `10` (files under `../issues/`)
 
-**Branch:** `feat/hardening-b-access`
+**Branch:** `feat/03-roles-and-access`
 
 **Blocked by:** Epic A (its PR merged into `staging`); ticket 03's spec and red-team review
 
-**Status:** needs-triage (next step: `/to-spec` from ticket 03 and ADRs 0002–0003, then `/atlas-red-team` on the spec plus ticket 10)
+**Status:** needs-triage (next step: re-run `/atlas-red-team` on the revised `.scratch/roles-and-access/spec.md` plus ticket 10; flip to `ready-for-agent` when it passes)
+
+**Spec (ticket 03):** `.scratch/roles-and-access/spec.md`
 
 ## Why together
 
@@ -33,3 +35,6 @@ Each ticket's own acceptance criteria (03's as expanded by its spec), plus:
 - [ ] `pnpm gate` passes locally.
 
 ## Comments
+
+- 2026-09-26: 03's spec written at `.scratch/roles-and-access/spec.md`. It came out large, but ticket 10 stays in this epic by decision (one migration set, one red-team review).
+- 2026-09-26: First red-team review blocked (migration copy untested). The spec was revised: expand/contract migration, copy test, lock on last-Organizer removal, order-of-checks smoke, production prerequisite. Dropping `organizer_emails` moved to ticket 18. Branch renamed to `feat/03-roles-and-access` (`feat/NN-<slug>` rule).

@@ -4,7 +4,9 @@
 
 **Blocked by:** 02
 
-**Status:** needs-triage (next step: `/to-spec` from this ticket and ADRs 0002–0003)
+**Status:** needs-triage (next step: re-run `/atlas-red-team` on the revised spec plus ticket 10; flip to `ready-for-agent` when it passes)
+
+**Spec:** `.scratch/roles-and-access/spec.md`
 
 ## Settled decisions
 
@@ -33,3 +35,19 @@
 - [ ] `pnpm gate` passes; smoke checks that a Host is refused outside their Competition.
 
 ## Comments
+
+- 2026-09-26: Spec written at `.scratch/roles-and-access/spec.md` (`/to-spec`). Decisions made there: seams are `can` unit tests, rolled-back mutation tests and smoke (no mocked-Next action tests); a fresh database gets its Organizers from an optional, insert-only `organizers` list in War Week seeds; ticket 10 stays in Epic B. Next: `/atlas-red-team` on the spec plus ticket 10.
+- 2026-09-26 [RED-TEAM 1]: `ATLAS_RED_TEAM_BLOCKED`, with 1 blocking finding, 4 warnings and 7 minors. Resolution in the spec:
+  - B1 (migration copy never exercised, false-green DoD line): added the migration copy test on pre-migration fixtures and removed the false DoD line.
+  - W1 (hand-edited migration): the set is `db:generate` plus `generate --custom` for the copy; "who added it" is nullable.
+  - W2 (deploy/rollback): expand/contract. The column stays until ticket 18. Added a human prerequisite before `staging` → `main`: confirm the current edition's list and take a Neon backup. Story 54 reworded.
+  - W3 (last-Organizer race): `SELECT … FOR UPDATE` plus a two-connection mutation test.
+  - W4 (parse after `can` unverifiable): a smoke check that malformed input from a Participant, or from a Host outside their Competition, gets the access refusal.
+  - M1: the Organizer-list family takes no target.
+  - M2: statuses flip after the re-review passes.
+  - M3: reworded for `--reset`, which wipes Hosts.
+  - M4: the chips control and guide lose the self-email guard.
+  - M5: the Host unique key is ordered `(email, competition_id)`; lowercase checks on both tables.
+  - M6: branch `feat/03-roles-and-access`.
+  - M7: smoke churn listed.
+  - Former-Host smoke line added (story 47).
