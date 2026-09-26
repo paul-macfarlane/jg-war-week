@@ -56,6 +56,7 @@ None. CI runs on push without a human step; PR creation is closeout. Nothing dep
 ## Progress
 
 - 2026-09-26: plan recorded; proof root cleared; epic and tickets 13, 11 claimed (`in-progress`).
+- Wave 1: D2 accepted (`d3f663c`; orchestrator rerun of `pnpm e2e` 17/17). D1 accepted and cherry-picked (`d07d8a5`); 79 files / 1366 tests; by-hand probe on the `getStandings` join (1003 vs 3) proves 13-AC2b. Evidence `fbcae4f`. Worktree `d1` and its DB removed.
 
 ## Closeout
 
