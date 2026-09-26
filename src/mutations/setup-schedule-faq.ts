@@ -11,7 +11,7 @@ import {
   moveInOrder,
   scheduleItemGuardError,
 } from "@/lib/setup-schedule-faq";
-import { isUniqueViolation } from "@/mutations/setup";
+import { isUniqueViolation, locked } from "@/mutations/setup";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 
 const SCHEDULE_ITEM_NOT_FOUND = "That Schedule Item no longer exists.";
@@ -77,6 +77,8 @@ export async function createScheduleItem(
 ): Promise<MutationResult> {
   return refusingDuplicate(duplicateScheduleItemError(values), () =>
     dbOrTx.transaction(async (tx): Promise<MutationResult> => {
+      // `deleteDay` takes the same lock, so the Day can't go meanwhile.
+      await locked(tx, day, values.dayId, ctx);
       const refusal = await scheduleItemRefusal(values, ctx, tx);
       if (refusal) return { ok: false, error: refusal };
       await tx.insert(scheduleItem).values(values);
@@ -94,6 +96,8 @@ export async function updateScheduleItem(
 ): Promise<MutationResult> {
   return refusingDuplicate(duplicateScheduleItemError(values), () =>
     dbOrTx.transaction(async (tx): Promise<MutationResult> => {
+      // `deleteDay` takes the same lock, so the target Day can't go meanwhile.
+      await locked(tx, day, values.dayId, ctx);
       const refusal = await scheduleItemRefusal(values, ctx, tx, id);
       if (refusal) return { ok: false, error: refusal };
       const updated = await tx
@@ -162,6 +166,9 @@ export async function createFaqItem(
         await otherQuestions(ctx.warWeekId, tx),
       );
       if (refusal) return { ok: false, error: refusal };
+      // Unlocked on purpose: two creates at once can share a `sortOrder`,
+      // which only ties their display order, and any move renumbers the
+      // list.
       const [last] = await tx
         .select({ sortOrder: max(faqItem.sortOrder) })
         .from(faqItem)

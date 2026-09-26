@@ -121,7 +121,11 @@ export function buildCompetitionLedger({
   rows: LedgerRow[];
 }): CompetitionLedger {
   const entries = [...rows]
-    .sort((a, b) => a.enteredAt.getTime() - b.enteredAt.getTime())
+    .sort(
+      (a, b) =>
+        a.enteredAt.getTime() - b.enteredAt.getTime() ||
+        a.id.localeCompare(b.id),
+    )
     .map(({ id, points, note, team, participant }) => ({
       id,
       target: participant

@@ -83,18 +83,69 @@ async function generatedRefusal(
   return found?.generatedByBracket ? { ok: false, error: FROM_BRACKET } : null;
 }
 
+/**
+ * A hand-entered Points Entry of this War Week, for a write. The write
+ * repeats the generated check, so an entry a Bracket took over between the
+ * check and the write is left alone.
+ */
+function handEnteredInWarWeek(id: string, warWeekId: string, dbOrTx: DBOrTx) {
+  return and(
+    inWarWeek(id, warWeekId, dbOrTx),
+    eq(pointsEntry.generatedByBracket, false),
+  );
+}
+
+/** Why a write changed no row: the entry is generated now, or gone. */
+async function missedRefusal(
+  id: string,
+  warWeekId: string,
+  dbOrTx: DBOrTx,
+): Promise<MutationResult> {
+  return (
+    (await generatedRefusal(id, warWeekId, dbOrTx)) ?? {
+      ok: false,
+      error: NOT_FOUND,
+    }
+  );
+}
+
+/**
+ * Locks a Competition of this War Week for adding a Points Entry. A scoring
+ * change takes the same lock (`updateCompetition`), so an entry can't slip
+ * in between its entry count and its write.
+ */
+async function lockCompetition(
+  competitionId: string,
+  warWeekId: string,
+  tx: DBOrTx,
+) {
+  await tx
+    .select({ id: competition.id })
+    .from(competition)
+    .where(
+      and(
+        eq(competition.id, competitionId),
+        eq(competition.warWeekId, warWeekId),
+      ),
+    )
+    .for("update");
+}
+
 export async function createPointsEntry(
   input: PointsEntryValues,
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
-  const resolved = await resolveColumns(input, ctx.warWeekId, dbOrTx);
-  if (!resolved.ok) return resolved;
+  return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
+    await lockCompetition(input.competitionId, ctx.warWeekId, tx);
+    const resolved = await resolveColumns(input, ctx.warWeekId, tx);
+    if (!resolved.ok) return resolved;
 
-  await dbOrTx
-    .insert(pointsEntry)
-    .values({ ...resolved.columns, enteredByEmail: ctx.actorEmail });
-  return { ok: true };
+    await tx
+      .insert(pointsEntry)
+      .values({ ...resolved.columns, enteredByEmail: ctx.actorEmail });
+    return { ok: true };
+  });
 }
 
 /**
@@ -116,9 +167,11 @@ export async function updatePointsEntry(
     .update(pointsEntry)
     // The database clock, like `created_at`, so the two compare exactly.
     .set({ ...resolved.columns, updatedAt: sql`now()` })
-    .where(inWarWeek(id, ctx.warWeekId, dbOrTx))
+    .where(handEnteredInWarWeek(id, ctx.warWeekId, dbOrTx))
     .returning({ id: pointsEntry.id });
-  return updated.length > 0 ? { ok: true } : { ok: false, error: NOT_FOUND };
+  return updated.length > 0
+    ? { ok: true }
+    : missedRefusal(id, ctx.warWeekId, dbOrTx);
 }
 
 export async function deletePointsEntry(
@@ -130,7 +183,9 @@ export async function deletePointsEntry(
   if (generated) return generated;
   const deleted = await dbOrTx
     .delete(pointsEntry)
-    .where(inWarWeek(id, ctx.warWeekId, dbOrTx))
+    .where(handEnteredInWarWeek(id, ctx.warWeekId, dbOrTx))
     .returning({ id: pointsEntry.id });
-  return deleted.length > 0 ? { ok: true } : { ok: false, error: NOT_FOUND };
+  return deleted.length > 0
+    ? { ok: true }
+    : missedRefusal(id, ctx.warWeekId, dbOrTx);
 }

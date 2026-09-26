@@ -689,4 +689,60 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       });
     });
   });
+
+  it("refuses a Heat slot other than 0 or 1, or a place below 1", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations } = await modules();
+      const f = await fixture(tx);
+      const { heat, heatEntrant, entrant } = f.schema;
+      await mutations.replaceEntrants(
+        f.competitionId,
+        [f.red, f.blue],
+        f.ctx,
+        {},
+        tx,
+      );
+      const [red, blue] = await tx
+        .select({ id: entrant.id })
+        .from(entrant)
+        .where(eq(entrant.competitionId, f.competitionId))
+        .orderBy(entrant.seedPosition);
+      const [final] = await tx
+        .insert(heat)
+        .values({ competitionId: f.competitionId, round: 1, position: 1 })
+        .returning({ id: heat.id });
+
+      /** The Postgres error code an insert fails with, or null. */
+      const insertError = async (
+        row: Omit<typeof heatEntrant.$inferInsert, "heatId">,
+      ) =>
+        tx
+          .transaction(async (savepoint) => {
+            await savepoint
+              .insert(heatEntrant)
+              .values({ heatId: final.id, ...row });
+            throw new Rollback();
+          })
+          .then(
+            () => null,
+            (error: { code?: string; cause?: { code?: string } }) =>
+              error instanceof Rollback
+                ? null
+                : (error.cause?.code ?? error.code ?? "unknown"),
+          );
+
+      // 23514 is Postgres's check_violation.
+      expect(await insertError({ entrantId: red.id, slot: 2 })).toBe("23514");
+      expect(await insertError({ entrantId: red.id, slot: -1 })).toBe("23514");
+      expect(await insertError({ entrantId: red.id, slot: 0, place: 0 })).toBe(
+        "23514",
+      );
+      expect(
+        await insertError({ entrantId: blue.id, slot: 1, place: 1 }),
+      ).toBeNull();
+      expect(
+        await insertError({ entrantId: blue.id, slot: 0, place: null }),
+      ).toBeNull();
+    });
+  });
 });

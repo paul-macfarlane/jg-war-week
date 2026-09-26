@@ -184,6 +184,10 @@ export async function deleteDay(
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
+    // Schedule Item writes lock their Day too, so none lands after the count.
+    if (!(await locked(tx, day, id, ctx))) {
+      return { ok: false, error: DAY_NOT_FOUND };
+    }
     const [items] = await tx
       .select({ count: count() })
       .from(scheduleItem)
@@ -202,13 +206,14 @@ export async function deleteDay(
 }
 
 /**
- * Locks a row of this War Week for a delete, so a Points Entry or other
- * reference can't be added between counting references and deleting (which
- * would cascade it). False when there's no such row.
+ * Locks a row of this War Week for a delete or a guarded change, so a
+ * Points Entry or other reference can't be added between counting
+ * references and writing (a delete would cascade it). False when there's
+ * no such row.
  */
-async function locked(
+export async function locked(
   tx: DBOrTx,
-  table: typeof team | typeof participant | typeof competition,
+  table: typeof team | typeof participant | typeof competition | typeof day,
   id: string,
   ctx: MutationContext,
 ): Promise<boolean> {
@@ -567,6 +572,11 @@ export async function updateCompetition(
     `There's already a Competition named "${values.name}".`,
     () =>
       dbOrTx.transaction(async (tx): Promise<MutationResult> => {
+        // Adding a Points Entry or Entrant, or finalizing the Bracket, takes
+        // the same lock, so the counts below hold until this commits.
+        if (!(await locked(tx, competition, id, ctx))) {
+          return { ok: false, error: COMPETITION_NOT_FOUND };
+        }
         const refusal = await competitionRefusal(values, ctx, tx, id);
         if (refusal) return { ok: false, error: refusal };
         const updated = await tx

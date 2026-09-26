@@ -46,7 +46,8 @@ type BracketCompetition = Pick<
 
 /**
  * Locks a Competition of this War Week for a Bracket write, so two writes
- * to the same Bracket run one after the other.
+ * to the same Bracket run one after the other. A scoring change
+ * (`updateCompetition`) and a Points Entry create take the same row lock.
  */
 async function lockedCompetition(
   tx: DBOrTx,
