@@ -8,7 +8,7 @@
 
 **Blocked by:** none (06's dependency on 02 is inside this epic: build 02 first)
 
-**Status:** in-progress
+**Status:** done
 
 ## Order and parallelism
 
@@ -20,9 +20,9 @@
 
 Each ticket's own acceptance criteria, plus:
 
-- [ ] Each ticket file records its closeout and is set to `done` in this branch.
-- [ ] CI on the PR runs smoke and the drift check, and passes.
-- [ ] `pnpm gate` passes locally.
+- [x] Each ticket file records its closeout and is set to `done` in this branch.
+- [x] CI on the PR runs smoke and the drift check, and passes.
+- [x] `pnpm gate` passes locally.
 
 ## Comments
 
@@ -74,3 +74,74 @@ Human gates: none actionable now. Announced for later: pushing a throwaway branc
 - Found during integration: `pnpm gate` in the main checkout lints and tests any `.claude/worktrees/*` checkouts, so it only passes once the worker worktrees are removed. They were removed after acceptance.
 - Found during integration: running `pnpm seed:load --reset` without an explicit local `DATABASE_URL` in the shell is now refused, meaning this machine's `.env.local` doesn't give a local database URL. That is the ticket 02 guard working. The gate runs used an explicit `DATABASE_URL` from `.env.example`.
 - Candidate evidence: `test-results/hardening-a-guards/` (02), `hardening-a-axe/` (09-AC1: 0 violations on `/history`, `/x`, `/i` at desktop and phone widths), `hardening-a-focus/` (09-AC2), `hardening-a-gate/gate.txt` (gate on `88d1aeb`: 886 tests, 145 smoke ok; rerun at the end).
+
+**2026-09-26, Claude (atlas-implement) — [AI CODE REVIEW]**
+
+Diff `3d7ab8f..a15f74d`. Two fresh reviewers (opus), one per axis; the orchestrator adjudicated their findings.
+
+*Technical implementation and spec conformity*
+
+| # | Severity | Finding | Paths | Disposition |
+|---|---|---|---|---|
+| F1 | blocking | When the list empties, focus went to the add row's first input, but 09-AC2 names the Add button | `src/components/setup-row.tsx` | resolved `86b1af6` |
+| F4 | blocking | A `?host=` / `?hostaddr=` query override bypassed the local-database guard (pg honours it) | `src/db/local-url.ts` | resolved `86b1af6`, with a test |
+| F2 | non-blocking | Deleting the last row focuses the previous row; the AC names only "next" and "empty" | `src/lib/setup-row-focus.ts` | interpretation recorded |
+| F3 | non-blocking | 09 re-themes the nav, hero and footer via `--primary-text`; accent text flips to black on 7 of 11 past themes | `src/lib/theme.ts`, `color.ts`, `globals.css`, nav, hero, footer | accepted: needed for `/x` and `/i` in AC1; XI unchanged |
+| F8 | non-blocking | "the later Heats its old winner reached" is wrong when later Heats reset by cascade | CONTEXT, organizer guide, `mutations/brackets.ts`, engine test name | resolved `86b1af6` |
+| F11 | non-blocking | The finalized refusal test didn't save a description | `src/mutations/setup.test.ts` | resolved `86b1af6` |
+| F7 | non-blocking | The winner rule (first non-forfeit) is written in the engine, the mutation and the form; they agree today | `engine.ts`, `mutations/brackets.ts` | open → epic C ticket 11 |
+| F5 | non-blocking | 22 legacy `scripts/*-evidence.ts` delete rows against any `DATABASE_URL`, with no guard | `scripts/*-evidence.ts` | open → follow-up task offered |
+| F9 | non-blocking | The new smoke bracket assertions assume Red won its semifinal and a 4-Entrant Bracket | `scripts/smoke.ts` | open |
+| F10 | non-blocking | An interactive `drizzle-kit` rename prompt could hang the drift step until the timeout | `.github/workflows/ci.yml` | open |
+| F12 | non-blocking | `run()` never settles if the action throws (harmless: pending clears) | `src/components/setup-row.tsx` | open |
+
+*Coding standards*
+
+| # | Severity | Finding | Paths | Disposition |
+|---|---|---|---|---|
+| CS-06/07 (F6) | blocking | Team DoD rule: the maintainer's guide didn't cover 02's refusal, 06's CI steps or 05's refusal; nor did the organizer guide for 05 | `docs/maintainers-guide.md`, `organizer-guide.tsx` | resolved `86b1af6`. `/about` copy covers none of these, so it needed no change. |
+| CS-05 | non-blocking | Stale doc comment on `HeatResultForm` | `bracket-results.tsx` | resolved `86b1af6` |
+| CS-04 | non-blocking | Dead `"::1"` host entry; no doc comment on `isLocalDatabaseUrl`; the helper sits in `src/db/` | `src/db/local-url.ts` | resolved; the location stays (infrastructure, not domain) |
+| CS-01 | non-blocking | Same as F7 | | open → ticket 11 |
+| CS-02/03 | non-blocking | `readableOn` duplicates avatar's black/white pick; `contrastRatio` is re-exported from `theme.ts` | `color.ts`, `theme.ts`, `avatar.ts` | open → ticket 11 |
+| CS-08/09 | non-blocking | Evidence gaps (15 grep, 06 runs); `gate.txt` held local paths | `test-results/` | resolved: evidence added; `gate.txt` has `$HOME` replaced with `~` |
+| CS-10/11/12 | non-blocking | A renamed evidence file; `ADD_ROW` lives in lib; `text-foreground/NN` remains elsewhere | | accepted |
+
+No blocking finding remains open.
+
+**2026-09-26, Claude (atlas-implement) — [CLOSEOUT]**
+
+One repository delivery: `war-weeker`, branch `fix/hardening-a-safety` from `staging` @ `3d7ab8f`. PR https://github.com/paul-macfarlane/jg-war-week/pull/78.
+
+| Deliverable | Ticket | Worker / model | Commit |
+|---|---|---|---|
+| D02 | 02 | atlas-worker / sonnet | `c625d98` |
+| D05 | 05 | atlas-worker / sonnet | `f1bd839` |
+| D06 | 06 | orchestrator (opus), inline | `e510a70` |
+| D07 | 07 | atlas-worker / opus | `f7020dc` |
+| D09 | 09 | atlas-worker / opus | `926a1bb` |
+| D15 | 15 | atlas-worker / sonnet | `d499032` |
+| fixes | 09, 02, review | orchestrator | `e2ed4ee`, `86b1af6` |
+
+The prediction that parallel work would collide in shared files was right, but no conflict materialized. `scripts/smoke.ts` was touched by D02 (the guard at the top of `main()`), D07 (the bracket loop, around line 3480) and D15 (lines 27–39). `CONTEXT.md` was touched by D05 (the last Bracket-rules bullet), D07 (the knockout bullet) and D15 (Access rules). All three deliverables in each file had separate hunks and merged automatically. Running the five in parallel worktrees was right; smoke ran only in the main checkout.
+
+Verification (per `docs/agents/testing.md`; evidence committed under `test-results/`):
+
+| Criterion | Verdict | Evidence |
+|---|---|---|
+| 02-AC1–AC3 | PASS | `hardening-a-guards/` (on `f73f2b3`) |
+| 05-AC1–AC3 | PASS | `setup.test.ts` in the gate; CONTEXT.md |
+| 06-AC1 | PASS | PR CI run https://github.com/paul-macfarlane/jg-war-week/actions/runs/36265877480 (head `f25d65d`: lint, format, typecheck, migrate, drift check, test, build, smoke all green; 0 smoke FAIL lines; job about 2 minutes) |
+| 06-AC2 | PASS | `hardening-a-ci/runs.md` (run 36265647553, drift step failed) |
+| 07-AC1–AC2 | PASS | engine tests plus the smoke bracket loop, in the gate |
+| 09-AC1 | PASS | `hardening-a-axe/` |
+| 09-AC2 | PASS | `hardening-a-focus/` (on `86b1af6`) |
+| 09-AC3 | PASS | `announcements.test.ts` in the gate |
+| 15-AC1 | PASS | `hardening-a-leftovers/grep.txt` |
+| 15-AC2 | PASS | smoke MCP checks in the gate |
+| Every ticket's gate AC, plus E-AC3 | PASS | `hardening-a-gate/gate.txt`: `pnpm gate` on `86b1af6`, 898 tests, 145 smoke ok. Command: `DATABASE_URL=postgres://postgres:postgres@localhost:2345/war_weeker?sslmode=disable pnpm gate` |
+| E-AC1 | PASS | tickets 02, 05, 06, 07, 09 and 15 are `done`, each with a closeout, in this commit |
+| E-AC2 | PASS | PR CI run https://github.com/paul-macfarlane/jg-war-week/actions/runs/36265877480 (head `f25d65d`: lint, format, typecheck, migrate, drift check, test, build, smoke all green; 0 smoke FAIL lines; job about 2 minutes) (smoke and drift both green) |
+| DoD: `/about` and maintainer's guide current | PASS | review F6 resolved; `/about` copy unaffected |
+
+Deviations and interpretations: F2 and F3 above. Per Paul, root `about.md` and CLAUDE.md's "Post-hackathon" line stay. No deployed-target smoke: nothing is deployed until this PR merges into `staging`.

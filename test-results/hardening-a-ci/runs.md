@@ -18,4 +18,7 @@
 
 ## 06-AC1: a PR run shows smoke passing in CI
 
-Recorded in the epic's closeout and the PR description once the work package PR's CI run completes (the run URL can't exist before the PR does).
+- PR https://github.com/paul-macfarlane/jg-war-week/pull/78, run https://github.com/paul-macfarlane/jg-war-week/actions/runs/36265877480 on head `f25d65d`: **success**.
+- Steps: install, lint, format:check, typecheck, db:migrate, Migration drift check, test, build and **pnpm smoke** all succeeded. The smoke log has no `FAIL -` lines.
+- Job duration was about 2 minutes (19:23:18Z → 19:25:16Z), under the ticket's ~10-minute budget.
+- The closeout commit that follows changes only `.scratch/` records and this file, and its own CI run is on the PR.
