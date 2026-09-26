@@ -414,6 +414,8 @@ export const faqItem = pgTable(
       .notNull()
       .references(() => warWeek.id, { onDelete: "cascade" }),
     question: varchar("question", { length: 300 }).notNull(),
+    // Drift-check probe: a schema change with no migration. Never merge.
+    driftProbe: varchar("drift_probe", { length: 10 }),
     answer: jsonb("answer").$type<Content>().notNull(),
     sortOrder: integer("sort_order").notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
