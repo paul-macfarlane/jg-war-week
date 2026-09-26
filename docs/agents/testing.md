@@ -62,3 +62,10 @@ incorrect, `BLOCKED` when it cannot be observed or exercised, and `SKIPPED` only
 for an approved exception with the attempted command and reason. Sanitize every
 retained artifact before storage or sharing.
 <!-- atlas-v3:testing:end -->
+
+## Team rules
+
+- **Keep the showcase current.** A user-visible change updates `/about`
+  (copy, and media via `scripts/about-media.ts` where affected) and
+  `docs/maintainers-guide.md` in the same PR. Part of every Definition of
+  Done. Decided 2026-09-26.

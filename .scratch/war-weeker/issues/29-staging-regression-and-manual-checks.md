@@ -4,7 +4,7 @@
 
 **Blocked by:** none for the manual steps. The regression rounds run after the hackathon batch (16, 20–28) has merged to `staging`. Round 1 can start at 17:00 on 2026-09-24 on whatever has merged.
 
-**Status:** in-progress
+**Status:** done
 
 ## Manual steps (Paul)
 
@@ -53,3 +53,5 @@ Not exercised: the "Which one is you?" picker (Paul's email matches the roster, 
 Round 2 runs after the round 1 fixes (32, 33) merge to `staging`.
 
 **2026-09-24 17:10 ET, Claude (implement):** Round 1 PR: https://github.com/paul-macfarlane/war-weeker/pull/46 (base `staging`). Ticket stays `in-progress` until round 2 and Paul's manual steps.
+
+- 2026-09-26: Closed. Both regression rounds ran (round 2 is recorded in ticket 34's comments). Paul's remaining manual steps, including the seed reset and the staging → main promotion, moved to `.scratch/hardening/issues/01`.

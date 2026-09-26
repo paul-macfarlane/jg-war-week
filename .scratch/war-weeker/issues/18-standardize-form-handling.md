@@ -4,7 +4,7 @@
 
 **Blocked by:** none (but do this only after the hackathon submission on Fri 2026-09-25 10:00 AM; judges won't see the difference)
 
-**Status:** needs-triage
+**Status:** wontfix (superseded by `.scratch/hardening/issues/12`)
 
 ## Scope (forms today)
 
@@ -23,3 +23,5 @@ Not in scope: non-form UI state such as `reveal-standings.tsx`, `standings-visib
 - Behavior must not change: same fields, same validation messages, same redirects after save. What test coverage proves that before the refactor?
 
 ## Comments
+
+- 2026-09-26: Superseded. The open question is decided in ADR 0004 (`useActionState` + Zod), and the work is `.scratch/hardening/issues/12`.

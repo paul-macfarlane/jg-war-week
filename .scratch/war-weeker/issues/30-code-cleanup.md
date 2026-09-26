@@ -4,7 +4,7 @@
 
 **Blocked by:** none, but do it only after the hackathon submission on Fri 2026-09-25 10:00 AM
 
-**Status:** needs-triage
+**Status:** wontfix (superseded by `.scratch/hardening/issues/11`)
 
 ## Scope
 
@@ -19,3 +19,5 @@
 - [ ] `pnpm gate` passes.
 
 ## Comments
+
+- 2026-09-26: Superseded. Both items and the deferred-review sweep are folded into `.scratch/hardening/issues/11`.

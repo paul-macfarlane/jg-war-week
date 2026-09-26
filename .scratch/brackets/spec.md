@@ -1,7 +1,7 @@
 ---
 title: War Weeker — Brackets, War Week lifecycle, and hiding replaced by the Finale
-status: in-progress
-labels: [ready-for-agent]
+status: done (delivered scope; the deferred tickets continue in .scratch/hardening/issues/16)
+labels: [done]
 created: 2026-09-24
 deadline: none. Only a complete, gate-passing vertical slice may merge before the 2026-09-25 08:00 ET staging freeze (ticket 1 is the likely candidate); the rest merges after submission.
 source: Paul's first-use feedback and grilling session, 2026-09-24 (Q14–Q19, Q24–Q34, Q36); War Week lifecycle added 2026-09-25
