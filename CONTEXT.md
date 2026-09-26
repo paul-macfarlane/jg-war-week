@@ -228,8 +228,9 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 - Regenerating, or replacing the Entrants, before any Heat Result is free.
   After one, it needs a confirmation and clears every Heat Result.
 - A knockout Heat Result needs a clear finishing order. A forfeiting
-  Entrant loses. Editing a decided Heat sends every later Heat its winner
-  reached back to unplayed.
+  Entrant loses. Changing the winner of a decided Heat sends the later Heats
+  its old winner reached back to unplayed; an edit that keeps the winner
+  (scores only) changes nothing downstream.
 - **Finalize** turns final placings (1st, 2nd, tied 3rd for both semifinal
   losers, later places tied by the Round lost in) into Points Entries
   through the Competition's Placement Points, tied places each getting that

@@ -7,7 +7,7 @@ import {
   generate,
   hasResults,
   isComplete,
-  resetDownstream,
+  resetByResult,
 } from "@/lib/bracket/engine";
 import type { Bracket, Entrant, Heat } from "@/lib/bracket/types";
 
@@ -270,45 +270,97 @@ describe("applyResult", () => {
   });
 });
 
-describe("resetDownstream", () => {
-  it("sends every later Heat fed by the Heat back to pending", () => {
+/** An 8-Entrant Bracket played to the end: s1 beats s2 in the final. */
+function played8(): Bracket {
+  let bracket = generate(entrants(8));
+  for (const [id, winner] of [
+    ["r1h1", "s1"],
+    ["r1h2", "s4"],
+    ["r1h3", "s2"],
+    ["r1h4", "s3"],
+    ["r2h1", "s1"],
+    ["r2h2", "s2"],
+    ["r3h1", "s1"],
+  ]) {
+    bracket = win(bracket, id, winner);
+  }
+  return bracket;
+}
+
+describe("a score-only edit of a decided Heat", () => {
+  it("updates the Heat's scores and keeps every later Heat", () => {
+    const bracket = played8();
+
+    expect(resetByResult(bracket, "r1h2", "s4")).toEqual([]);
+    const edited = applyResult(bracket, "r1h2", {
+      order: ["s4", "s5"],
+      scores: { s4: "30", s5: "12" },
+    });
+
+    expect(heat(edited, "r1h2")).toMatchObject({
+      status: "played",
+      slots: [
+        { entrantId: "s4", place: 1, score: "30" },
+        { entrantId: "s5", place: 2, score: "12" },
+      ],
+    });
+    expect(heat(edited, "r2h1")).toEqual(heat(bracket, "r2h1"));
+    expect(heat(edited, "r3h1")).toEqual(heat(bracket, "r3h1"));
+    expect(champion(edited)).toBe("s1");
+  });
+});
+
+describe("resetByResult", () => {
+  it("names every later Heat the old winner reached when the winner changes", () => {
+    const bracket = played8();
+
+    expect(resetByResult(bracket, "r1h2", "s5")).toEqual(["r2h1", "r3h1"]);
+    const edited = win(bracket, "r1h2", "s5");
+    expect(heat(edited, "r2h1")).toMatchObject({
+      status: "ready",
+      slots: [
+        { entrantId: "s1", place: null, score: null },
+        { entrantId: "s5", place: null },
+      ],
+    });
+    expect(heat(edited, "r3h1")).toMatchObject({
+      status: "pending",
+      slots: [{ entrantId: null }, { entrantId: "s2", place: null }],
+    });
+    // The other side stays as it was.
+    expect(heat(edited, "r2h2").status).toBe("played");
+    expect(isComplete(edited)).toBe(false);
+  });
+
+  it("counts only later Heats that had a Heat Result", () => {
     let bracket = generate(entrants(8));
     for (const [id, winner] of [
       ["r1h1", "s1"],
       ["r1h2", "s4"],
-      ["r1h3", "s2"],
-      ["r1h4", "s3"],
       ["r2h1", "s1"],
-      ["r2h2", "s2"],
-      ["r3h1", "s1"],
     ]) {
       bracket = win(bracket, id, winner);
     }
+    // s1 sits in the still-pending final, which has no Heat Result.
+    expect(pairing(heat(bracket, "r3h1"))).toBe("s1 v -");
 
-    const { bracket: reset, resetHeatIds } = resetDownstream(bracket, "r1h2");
-
-    expect(resetHeatIds).toEqual(["r2h1", "r3h1"]);
-    expect(heat(reset, "r2h1")).toMatchObject({
-      status: "pending",
-      slots: [
-        { entrantId: "s1", place: null, score: null },
-        { entrantId: null, place: null },
-      ],
-    });
-    expect(heat(reset, "r3h1")).toMatchObject({
-      status: "pending",
-      slots: [{ entrantId: null }, { entrantId: "s2", place: null }],
-    });
-    // The Heat itself and the other side stay as they were.
-    expect(heat(reset, "r1h2").status).toBe("played");
-    expect(heat(reset, "r2h2").status).toBe("played");
-    expect(isComplete(reset)).toBe(false);
+    expect(resetByResult(bracket, "r1h1", "s8")).toEqual(["r2h1"]);
+    const edited = win(bracket, "r1h1", "s8");
+    expect(pairing(heat(edited, "r2h1"))).toBe("s8 v s4");
+    // Cleared of the old winner, but not counted as reset.
+    expect(pairing(heat(edited, "r3h1"))).toBe("- v -");
   });
 
-  it("stops at a later Heat the winner hasn't reached", () => {
+  it("names nothing when the winner has reached no decided Heat", () => {
     const bracket = win(generate(entrants(4)), "r1h1", "s1");
-    expect(resetDownstream(bracket, "r1h2").resetHeatIds).toEqual([]);
-    expect(resetDownstream(bracket, "r1h1").resetHeatIds).toEqual(["r2h1"]);
+    expect(resetByResult(bracket, "r1h1", "s4")).toEqual([]);
+  });
+
+  it("names nothing for an undecided Heat, a bye or no winner", () => {
+    const bracket = win(generate(entrants(3)), "r1h2", "s2");
+    expect(resetByResult(bracket, "r2h1", "s1")).toEqual([]);
+    expect(resetByResult(bracket, "r1h1", "s1")).toEqual([]);
+    expect(resetByResult(bracket, "r1h2", null)).toEqual([]);
   });
 });
 

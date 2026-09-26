@@ -302,7 +302,22 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       view = (await queries.getBracket(f.competitionId, tx))!;
       expect(view.champion).toBe(id("Gold"));
 
-      // Editing the first Heat sends the final back to pending.
+      // A score-only edit keeps the final.
+      expect(
+        await mutations.recordHeatResult(
+          f.competitionId,
+          semi1,
+          { order: [id("Red"), id("Blue")], scores: { [id("Red")]: "25" } },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true, resetHeatIds: [] });
+      view = (await queries.getBracket(f.competitionId, tx))!;
+      expect(heatAt(view, 1, 1).heat.slots[1]).toMatchObject({ score: "25" });
+      expect(heatAt(view, 2, 1).heat.status).toBe("played");
+      expect(view.champion).toBe(id("Gold"));
+
+      // Changing the first Heat's winner sends the final back to pending.
       expect(
         await mutations.recordHeatResult(
           f.competitionId,
