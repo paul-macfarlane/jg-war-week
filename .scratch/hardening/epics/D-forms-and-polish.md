@@ -8,7 +8,7 @@
 
 **Blocked by:** Epic C (its PR merged into `staging`)
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 ## Order
 
