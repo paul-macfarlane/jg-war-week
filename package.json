@@ -16,7 +16,7 @@
     "db:migrate": "drizzle-kit migrate",
     "seed:load": "tsx scripts/seed-load.ts",
     "seed:all": "tsx scripts/seed-load.ts seeds/*.json",
-    "smoke": "tsx scripts/smoke.ts",
+    "smoke": "tsx scripts/smoke/index.ts",
     "e2e": "playwright test",
     "gate": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm smoke && pnpm e2e"
   },

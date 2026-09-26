@@ -89,7 +89,7 @@ before it says it's done.
 | Shared UI pieces                           | `src/components/` (shadcn primitives in `src/components/ui/`)          |
 | MCP server (Claude connector)              | `src/app/api/mcp/route.ts`, tools in `src/mcp/`, list in `src/mcp/tools.ts` |
 | Who can do what                            | `src/lib/access.ts` (`can`), `src/auth/authorize.ts`, `src/auth/actor.ts` |
-| Smoke test                                 | `scripts/smoke.ts`                                                     |
+| Smoke test                                 | `scripts/smoke/` (entry: `scripts/smoke/index.ts`)                     |
 | Browser flows (Playwright, `pnpm e2e`)     | `e2e/`, `playwright.config.ts`                                         |
 | Past wiki text for history                 | `old-wikis/2016.txt` … `old-wikis/2026.txt`                            |
 | CI, deployed migrations, seeding           | `.github/workflows/` (`ci.yml`, `migrate.yml`, `seed.yml`)             |
