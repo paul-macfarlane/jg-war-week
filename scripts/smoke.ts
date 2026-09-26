@@ -7,6 +7,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { Client } from "pg";
 
+import { isLocalDatabaseUrl } from "@/db/local-url";
 import { ABOUT_FEATURES } from "@/lib/about";
 import { WAR_WEEK_TIME_ZONE } from "@/lib/schedule";
 import { YOU_ROW_CLASS } from "@/lib/you";
@@ -4051,6 +4052,15 @@ function killServer(child: ChildProcess): Promise<void> {
 }
 
 async function main() {
+  if (
+    !isLocalDatabaseUrl(process.env.DATABASE_URL, process.env.DATABASE_DRIVER)
+  ) {
+    console.error(
+      'FAIL - DATABASE_URL must point at a local database (localhost, 127.0.0.1 or [::1]) with DATABASE_DRIVER not "neon"; smoke resets every seeded War Week and never runs against a hosted database',
+    );
+    process.exit(1);
+  }
+
   if (!existsSync(path.resolve(process.cwd(), ".next"))) {
     console.error(
       "FAIL - .next build output missing: run `pnpm build` before `pnpm smoke`",

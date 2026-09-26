@@ -43,7 +43,8 @@ or stop reloading it once organizers are editing in the app.
 - `--reset` (e.g. `pnpm seed:load --reset seeds/xi.json`) deletes each War
   Week first, including organizer-entered points, Awards and Announcements,
   so the demo starts from exactly the seed. Never use it on a War Week
-  organizers are running.
+  organizers are running. Against a non-local `DATABASE_URL`, `--reset` also
+  needs `--allow-remote-reset`.
 
 Checks:
 
@@ -55,6 +56,10 @@ pnpm build
 ```
 
 ## Smoke test and slice gate
+
+`pnpm smoke` (and `pnpm gate`, which runs it) refuse to start unless
+`DATABASE_URL` is local (`localhost`, `127.0.0.1` or `[::1]`) and
+`DATABASE_DRIVER` isn't `neon`, since smoke resets every seeded War Week.
 
 `pnpm smoke` runs an end-to-end check against a production build: it applies
 migrations, loads every seed (once with `--reset`, then again to prove
