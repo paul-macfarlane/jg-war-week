@@ -5,10 +5,13 @@ on:
     types: [opened, synchronize, reopened]
   push:
     branches: [staging, main]
+  # Manual runs, e.g. to prove the drift check on a throwaway branch.
+  workflow_dispatch:
 
 jobs:
   checks:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     services:
       postgres:
         # Same major as compose.yaml.
@@ -49,8 +52,24 @@ jobs:
       # database, before anything else touches it.
       - run: pnpm db:migrate
 
+      # Migration drift: generating from the schema must add nothing, so
+      # every schema change ships with its migration.
+      - name: Migration drift check
+        run: |
+          pnpm db:generate
+          if [ -n "$(git status --porcelain drizzle)" ]; then
+            git status --porcelain drizzle
+            echo "::error::src/db/schema.ts has changes with no migration. Run pnpm db:generate and commit drizzle/."
+            exit 1
+          fi
+
       - run: pnpm test
 
       # Catches production-compile-only failures that lint, typecheck and
       # dev mode can't see.
       - run: pnpm build
+
+      # End-to-end over the production build against the Postgres service:
+      # migrations, every seed (reset, then idempotent), pages, actions and
+      # /api/mcp. Smoke signs its own sessions, so no real auth secrets.
+      - run: pnpm smoke
