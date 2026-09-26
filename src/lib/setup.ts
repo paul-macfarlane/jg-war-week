@@ -10,6 +10,7 @@ import {
   FONT_PRESETS,
   WAR_WEEK_MODES,
 } from "@/lib/enums";
+import { fieldErrorsFrom } from "@/lib/form-errors";
 import { POINTS_NUMBER, pointsSchema as points } from "@/lib/points-entry";
 import type { Parsed } from "@/lib/result";
 
@@ -376,19 +377,22 @@ export function parseWith<T>(
   const result = schema.safeParse(input);
   if (result.success) return { ok: true, value: result.data };
 
-  const issue = result.error.issues[0];
-  // Not an object at all: only a malformed direct call gets here.
-  if (issue.path.length === 0 && issue.code === "invalid_type") {
-    return { ok: false, error: "The form's fields are missing." };
-  }
-  const special = describe(issue);
-  if (special) return { ok: false, error: special };
-  const field = String(issue.path[0]);
-  const label = labels[field] ?? FIELD_LABELS[field];
-  const phrase = mustPhrase(issue);
   return {
     ok: false,
-    error: label && phrase ? `${label} ${phrase}.` : issue.message,
+    ...fieldErrorsFrom(result.error, {
+      describe: (issue) => {
+        // Not an object at all: only a malformed direct call gets here.
+        if (issue.path.length === 0 && issue.code === "invalid_type") {
+          return "The form's fields are missing.";
+        }
+        const special = describe(issue);
+        if (special) return special;
+        const field = String(issue.path[0]);
+        const label = labels[field] ?? FIELD_LABELS[field];
+        const phrase = mustPhrase(issue);
+        return label && phrase ? `${label} ${phrase}.` : null;
+      },
+    }),
   };
 }
 
@@ -442,15 +446,14 @@ export function parseCompetitionInput(
   input = shape.value;
   const maxPoints = input.maxPoints.trim();
   if (maxPoints && !POINTS_NUMBER.test(maxPoints)) {
-    return { ok: false, error: "Max points must be a number." };
+    const error = "Max points must be a number.";
+    return { ok: false, error, fieldErrors: { maxPoints: error } };
   }
   const places = input.placementPoints.split(/[\s,]+/).filter(Boolean);
   if (!places.every((place) => POINTS_NUMBER.test(place))) {
-    return {
-      ok: false,
-      error:
-        "Placement Points must be numbers separated by commas, 1st place first.",
-    };
+    const error =
+      "Placement Points must be numbers separated by commas, 1st place first.";
+    return { ok: false, error, fieldErrors: { placementPoints: error } };
   }
 
   const parsed = parseWith(

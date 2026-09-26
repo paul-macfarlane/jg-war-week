@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import type { SetupActionResult } from "@/actions/setup";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { FOCUSABLE } from "@/components/form-field-errors";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
 import type { UsageCount } from "@/lib/setup";
@@ -20,9 +21,6 @@ export const SETUP_EDITOR = { [EDITOR_ATTR]: "" };
 export function setupRowProps(id?: string) {
   return { [ROW_ATTR]: id ?? ADD_ROW };
 }
-
-const FOCUSABLE =
-  "input:not([type=hidden]):not(:disabled), button:not(:disabled), textarea:not(:disabled), a[href], [tabindex]:not([tabindex='-1'])";
 
 /**
  * Once `row` (a deleted setup row) leaves the page, focuses the first

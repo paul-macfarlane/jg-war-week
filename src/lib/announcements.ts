@@ -1,6 +1,8 @@
 import { z } from "zod";
 
+import { fieldErrorsFrom } from "@/lib/form-errors";
 import { formatLedgerTime } from "@/lib/points-entry";
+import type { Parsed } from "@/lib/result";
 import { contentInputSchema } from "@/lib/rich-text/content";
 import { videoEmbedUrl } from "@/lib/video";
 
@@ -57,37 +59,36 @@ const FIELD_LABELS: Record<string, string> = {
   title: "Title",
 };
 
-/** Validates the Announcement form. Never throws; returns the first error. */
-export function parseAnnouncementInput(
-  input: AnnouncementInput,
-): { ok: true; value: AnnouncementValues } | { ok: false; error: string } {
-  const result = announcementInputSchema.safeParse(input);
-  if (result.success) return { ok: true, value: result.data };
-
-  const issue = result.error.issues[0];
+/** Words the video-link and body issues; the rest take the label rule. */
+function describeAnnouncementIssue(issue: z.core.$ZodIssue): string | null {
   if (issue.path[0] === "videoUrls") {
     if (issue.path.length === 1) {
-      return {
-        ok: false,
-        error: `Add at most ${MAX_VIDEO_LINKS} video links.`,
-      };
+      return `Add at most ${MAX_VIDEO_LINKS} video links.`;
     }
     const index = typeof issue.path[1] === "number" ? issue.path[1] : 0;
-    return {
-      ok: false,
-      error: `Video link ${index + 1} ${issue.message}.`,
-    };
+    return `Video link ${index + 1} ${issue.message}.`;
   }
-  if (issue.path[0] === "body") {
-    return { ok: false, error: "Body must be valid rich text." };
-  }
+  if (issue.path[0] === "body") return "Body must be valid rich text.";
+  return null;
+}
 
-  const label = FIELD_LABELS[String(issue.path[0])];
+/**
+ * Validates the Announcement form. Never throws; returns the first error
+ * and one per refused field.
+ */
+export function parseAnnouncementInput(
+  input: AnnouncementInput,
+): Parsed<AnnouncementValues> {
+  const result = announcementInputSchema.safeParse(input);
+  if (result.success) return { ok: true, value: result.data };
   // Shared field schemas word their errors as "must …"; prefix the field.
-  const message = issue.message.startsWith("must ")
-    ? `${label} ${issue.message}.`
-    : issue.message;
-  return { ok: false, error: message };
+  return {
+    ok: false,
+    ...fieldErrorsFrom(result.error, {
+      labels: FIELD_LABELS,
+      describe: describeAnnouncementIssue,
+    }),
+  };
 }
 
 /**

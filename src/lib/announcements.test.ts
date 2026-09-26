@@ -42,7 +42,7 @@ describe("parseAnnouncementInput", () => {
   });
 
   it("rejects an empty title", () => {
-    expect(parseAnnouncementInput(baseInput({ title: "   " }))).toEqual({
+    expect(parseAnnouncementInput(baseInput({ title: "   " }))).toMatchObject({
       ok: false,
       error: "Title must not be empty.",
     });
@@ -51,7 +51,7 @@ describe("parseAnnouncementInput", () => {
   it("rejects a title over 200 characters", () => {
     expect(
       parseAnnouncementInput(baseInput({ title: "x".repeat(201) })),
-    ).toEqual({
+    ).toMatchObject({
       ok: false,
       error: "Title must be at most 200 characters.",
     });
@@ -59,7 +59,9 @@ describe("parseAnnouncementInput", () => {
 
   it("rejects a malformed or wrong-protocol video URL", () => {
     for (const url of ["http://youtube.com/watch?v=x", "not-a-url"]) {
-      expect(parseAnnouncementInput(baseInput({ videoUrls: [url] }))).toEqual({
+      expect(
+        parseAnnouncementInput(baseInput({ videoUrls: [url] })),
+      ).toMatchObject({
         ok: false,
         error: "Video link 1 must be an https:// link.",
       });
@@ -71,7 +73,7 @@ describe("parseAnnouncementInput", () => {
       parseAnnouncementInput(
         baseInput({ videoUrls: ["https://evil.example.com/watch?v=x"] }),
       ),
-    ).toEqual({
+    ).toMatchObject({
       ok: false,
       error:
         "Video link 1 must be a YouTube, Loom, Vimeo or Google Drive video link.",
@@ -85,7 +87,7 @@ describe("parseAnnouncementInput", () => {
           videoUrls: ["https://www.youtube.com/playlist?list=x"],
         }),
       ),
-    ).toEqual({
+    ).toMatchObject({
       ok: false,
       error:
         "Video link 1 must be a YouTube, Loom, Vimeo or Google Drive video link.",
@@ -102,7 +104,7 @@ describe("parseAnnouncementInput", () => {
           ],
         }),
       ),
-    ).toEqual({
+    ).toMatchObject({
       ok: false,
       error:
         "Video link 2 must be a YouTube, Loom, Vimeo or Google Drive video link.",
@@ -113,7 +115,7 @@ describe("parseAnnouncementInput", () => {
     const overlong = `https://www.youtube.com/watch?v=abc&pad=${"x".repeat(500)}`;
     expect(
       parseAnnouncementInput(baseInput({ videoUrls: [overlong] })),
-    ).toEqual({
+    ).toMatchObject({
       ok: false,
       error: "Video link 1 must be at most 500 characters.",
     });
@@ -127,6 +129,7 @@ describe("parseAnnouncementInput", () => {
     expect(parseAnnouncementInput(baseInput({ videoUrls: urls }))).toEqual({
       ok: false,
       error: `Add at most ${MAX_VIDEO_LINKS} video links.`,
+      fieldErrors: { videoUrls: `Add at most ${MAX_VIDEO_LINKS} video links.` },
     });
   });
 
@@ -257,5 +260,25 @@ describe("parseAnnouncementInput given a malformed call", () => {
     expect(
       parseAnnouncementInput({ ...baseInput(), ...overrides } as never),
     ).toMatchObject({ ok: false });
+  });
+});
+
+describe("parseAnnouncementInput field errors", () => {
+  it("puts a video link's error under videoUrls and the title's under title", () => {
+    expect(
+      parseAnnouncementInput(
+        baseInput({
+          title: " ",
+          videoUrls: ["https://www.youtube.com/watch?v=abc", "http://x.test"],
+        }),
+      ),
+    ).toEqual({
+      ok: false,
+      error: "Title must not be empty.",
+      fieldErrors: {
+        title: "Title must not be empty.",
+        videoUrls: "Video link 2 must be an https:// link.",
+      },
+    });
   });
 });

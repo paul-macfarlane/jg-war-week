@@ -33,6 +33,7 @@ export function ConfirmDialog({
   destructive = true,
   pending = false,
   onConfirm,
+  form,
   children,
 }: {
   open: boolean;
@@ -43,7 +44,13 @@ export function ConfirmDialog({
   /** Red confirm button; false for actions that remove nothing. */
   destructive?: boolean;
   pending?: boolean;
-  onConfirm: () => void;
+  /** Runs on confirm; unused when `form` is set. */
+  onConfirm?: () => void;
+  /**
+   * The id of a form the confirm button submits, so the confirm posts
+   * through that form's `useActionState` instead of calling `onConfirm`.
+   */
+  form?: string;
   /** Fields the confirm needs, e.g. End War Week's Winner. */
   children?: ReactNode;
 }) {
@@ -65,7 +72,7 @@ export function ConfirmDialog({
             variant={destructive ? "destructive" : "default"}
             className="min-h-11 sm:min-h-9"
             disabled={pending}
-            onClick={onConfirm}
+            {...(form ? { type: "submit", form } : { onClick: onConfirm })}
           >
             {pending ? `${confirmLabel}…` : confirmLabel}
           </AlertDialogAction>

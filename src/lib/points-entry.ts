@@ -1,7 +1,9 @@
 import { z } from "zod";
 
 import type { Competition, PointsEntry } from "@/db/schema";
+import { fieldErrorsFrom } from "@/lib/form-errors";
 import { formatPoints } from "@/lib/points";
+import type { Parsed } from "@/lib/result";
 import { WAR_WEEK_TIME_ZONE } from "@/lib/schedule";
 
 /** A points value as typed: an optional minus, digits, optional decimals. */
@@ -88,20 +90,20 @@ const FIELD_LABELS: Record<string, string> = {
   note: "Note",
 };
 
-/** Validates the Points Entry form. Never throws; returns the first error. */
+/**
+ * Validates the Points Entry form. Never throws; returns the first error and
+ * one per refused field.
+ */
 export function parsePointsEntryInput(
   input: PointsEntryInput,
-): { ok: true; value: PointsEntryValues } | { ok: false; error: string } {
+): Parsed<PointsEntryValues> {
   const result = pointsEntryFormSchema.safeParse(input);
   if (result.success) return { ok: true, value: result.data };
-
-  const issue = result.error.issues[0];
-  const label = FIELD_LABELS[String(issue.path[0])];
   // Shared field schemas word their errors as "must …"; prefix the field.
-  const message = issue.message.startsWith("must ")
-    ? `${label} ${issue.message}.`
-    : issue.message;
-  return { ok: false, error: message };
+  return {
+    ok: false,
+    ...fieldErrorsFrom(result.error, { labels: FIELD_LABELS }),
+  };
 }
 
 /**

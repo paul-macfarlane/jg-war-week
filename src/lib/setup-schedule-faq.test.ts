@@ -72,34 +72,35 @@ describe("parseScheduleItemInput", () => {
     const error = {
       ok: false,
       error: "End time must be after the start time.",
+      fieldErrors: { endTime: "End time must be after the start time." },
     };
     expect(parsedItem({ endTime: "08:59" })).toEqual(error);
     expect(parsedItem({ endTime: "09:00" })).toEqual(error);
   });
 
   it("words field errors with the field's label", () => {
-    expect(parsedItem({ title: "  " })).toEqual({
+    expect(parsedItem({ title: "  " })).toMatchObject({
       ok: false,
       error: "Title must not be empty.",
     });
-    expect(parsedItem({ startTime: "9am" })).toEqual({
+    expect(parsedItem({ startTime: "9am" })).toMatchObject({
       ok: false,
       error: "Start time must be a 24-hour HH:MM time.",
     });
-    expect(parsedItem({ virtualLink: "http://example.com" })).toEqual({
+    expect(parsedItem({ virtualLink: "http://example.com" })).toMatchObject({
       ok: false,
       error: "Virtual link must be an https URL.",
     });
-    expect(parsedItem({ category: "nap" })).toEqual({
+    expect(parsedItem({ category: "nap" })).toMatchObject({
       ok: false,
       error:
         "Category must be one of competition, education, social, meal, work, other.",
     });
-    expect(parsedItem({ dayId: "" })).toEqual({
+    expect(parsedItem({ dayId: "" })).toMatchObject({
       ok: false,
       error: "Pick a Day.",
     });
-    expect(parsedItem({ description: "<p>hi</p>" })).toEqual({
+    expect(parsedItem({ description: "<p>hi</p>" })).toMatchObject({
       ok: false,
       error: "Description must be valid rich text.",
     });
@@ -197,14 +198,14 @@ describe("parseFaqItemInput", () => {
   });
 
   it("refuses a blank question or answer", () => {
-    expect(parseFaqItemInput({ ...faq, question: " " })).toEqual({
+    expect(parseFaqItemInput({ ...faq, question: " " })).toMatchObject({
       ok: false,
       error: "Question must not be empty.",
     });
     expect(
       parseFaqItemInput({ ...faq, answer: { type: "doc", content: [] } }),
-    ).toEqual({ ok: false, error: "Answer must not be empty." });
-    expect(parseFaqItemInput({ ...faq, answer: null })).toEqual({
+    ).toMatchObject({ ok: false, error: "Answer must not be empty." });
+    expect(parseFaqItemInput({ ...faq, answer: null })).toMatchObject({
       ok: false,
       error: "Answer must be valid rich text.",
     });
@@ -263,5 +264,26 @@ describe("Schedule and FAQ parsers given a malformed call", () => {
     ["answer: 5", { question: "Why?", answer: 5 }],
   ])("parseFaqItemInput returns an error for %s", (_label, value) => {
     expect(parseFaqItemInput(value as never)).toMatchObject({ ok: false });
+  });
+});
+
+describe("Schedule and FAQ parsers' field errors", () => {
+  it("names each refused Schedule Item field", () => {
+    expect(parsedItem({ title: " ", dayId: "" })).toEqual({
+      ok: false,
+      error: "Pick a Day.",
+      fieldErrors: { dayId: "Pick a Day.", title: "Title must not be empty." },
+    });
+  });
+
+  it("names the refused FAQ field", () => {
+    expect(parseFaqItemInput({ question: " ", answer: null })).toEqual({
+      ok: false,
+      error: "Question must not be empty.",
+      fieldErrors: {
+        question: "Question must not be empty.",
+        answer: "Answer must be valid rich text.",
+      },
+    });
   });
 });

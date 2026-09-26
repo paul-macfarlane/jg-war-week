@@ -257,7 +257,8 @@ Convert a field:
 ```text
 /implement Convert the <field> on the <form> to shadcn's <Select / Switch /
 …>, or our <EntityCombobox / DatePicker / DateRangePicker / TimeCombobox /
-ColorField>, keeping the same state and the same submitted name and value.
+ColorField>, keeping the same submitted name and value, and its field
+error under it.
 ```
 
 Add a new control:
@@ -285,6 +286,14 @@ Notes:
 - Lay out every field with `Field` / `FieldLabel htmlFor` /
   `FieldDescription` from `ui/field`, and show a form's server error in a
   `FieldError` under its buttons.
+- Admin forms post through React's `useActionState` (ADR 0004;
+  `src/components/points-entry-form.tsx` is the reference). The server
+  action validates with the form's Zod schema and returns `fieldErrors`
+  (built by `fieldErrorsFrom` in `src/lib/form-errors.ts`); the form shows
+  each one in a `FieldError` under its field (`Field data-invalid`, the
+  control `aria-invalid`) and moves focus to the first invalid field with
+  `useFocusFirstInvalid` from `src/components/form-field-errors.tsx`. A
+  message no field owns stays in the `FieldError` under the buttons.
 - Confirm anything destructive with `ConfirmDialog` or `ConfirmActionButton`
   (`src/components/confirm-dialog.tsx`), never `window.confirm`. Report
   results with `toast.success` / `toast.error` from `sonner`, never
