@@ -297,7 +297,7 @@ export async function generateBracket(
 
 /**
  * Records a Heat Result and advances the winner. Changing a decided Heat's
- * winner resets the later Heats the old winner reached; the ids of those
+ * winner resets the later Heats that followed from it; the ids of those
  * that had a Heat Result are returned. A score-only edit resets nothing.
  */
 export async function recordHeatResult(

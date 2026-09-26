@@ -26,7 +26,7 @@ const FOCUSABLE =
 
 /**
  * Once `row` (a deleted setup row) leaves the page, focuses the first
- * control of its next row, else its previous row, else the add row, so
+ * control of its next row, else its previous row, else the Add button, so
  * focus doesn't fall to `<body>`. The row goes when `router.refresh()`
  * lands, so this waits for it frame by frame (up to ten seconds).
  */
@@ -45,10 +45,14 @@ function focusNeighborOnceRemoved(row: HTMLElement) {
       return;
     }
     const scope: ParentNode = editor?.isConnected ? editor : document;
-    scope
-      .querySelector(`[${ROW_ATTR}="${CSS.escape(targetId)}"]`)
-      ?.querySelector<HTMLElement>(FOCUSABLE)
-      ?.focus();
+    const target = scope.querySelector(
+      `[${ROW_ATTR}="${CSS.escape(targetId)}"]`,
+    );
+    // An emptied list lands on the Add button; a row, on its first control.
+    (targetId === ADD_ROW
+      ? target?.querySelector<HTMLElement>("button[type=submit]")
+      : target?.querySelector<HTMLElement>(FOCUSABLE)
+    )?.focus();
   }
   requestAnimationFrame(focusTarget);
 }

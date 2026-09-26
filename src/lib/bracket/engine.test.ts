@@ -311,7 +311,7 @@ describe("a score-only edit of a decided Heat", () => {
 });
 
 describe("resetByResult", () => {
-  it("names every later Heat the old winner reached when the winner changes", () => {
+  it("names every decided later Heat that followed from it when the winner changes", () => {
     const bracket = played8();
 
     expect(resetByResult(bracket, "r1h2", "s5")).toEqual(["r2h1", "r3h1"]);

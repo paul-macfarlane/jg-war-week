@@ -42,6 +42,21 @@ describe("isLocalDatabaseUrl", () => {
     );
   });
 
+  it("rejects a host or hostaddr override in the query", () => {
+    expect(
+      isLocalDatabaseUrl(
+        "postgres://u:p@localhost/db?host=prod.example.com",
+        "pg",
+      ),
+    ).toBe(false);
+    expect(
+      isLocalDatabaseUrl("postgres://u:p@localhost/db?hostaddr=10.0.0.5", "pg"),
+    ).toBe(false);
+    expect(
+      isLocalDatabaseUrl("postgres://u:p@localhost/db?sslmode=disable", "pg"),
+    ).toBe(true);
+  });
+
   it("rejects an undefined URL", () => {
     expect(isLocalDatabaseUrl(undefined, "node-postgres")).toBe(false);
   });

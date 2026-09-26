@@ -708,7 +708,11 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
       expect(
         await updateCompetition(
           bracket.id,
-          { ...competitionValues, name: "Renamed Knockout" },
+          {
+            ...competitionValues,
+            name: "Renamed Knockout",
+            description: "Single elimination",
+          },
           ctx,
           tx,
         ),

@@ -48,8 +48,9 @@ function plural(count: number, one: string, many: string) {
 
 /**
  * The Heat Result form in the bottom Sheet: tap the winner, optional
- * scores, a Forfeit switch per Entrant. Re-recording a Heat whose winner
- * already reached later Heats asks first, naming them.
+ * scores, a Forfeit switch per Entrant. Changing the winner of a Heat whose
+ * later Heats have results asks first, naming them; a score-only edit
+ * doesn't ask.
  */
 function HeatResultForm({
   competitionId,

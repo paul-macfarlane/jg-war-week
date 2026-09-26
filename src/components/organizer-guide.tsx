@@ -127,11 +127,12 @@ export function OrganizerGuide({
           or specific Participants — and Generate the Bracket (Seed Positions
           are random; Re-roll before any Heat is played to try again). From the
           results screen, tap a Heat to record its winner, score or a forfeit;
-          changing a decided Heat&apos;s winner resets the later Heats it
-          reached, while a score-only edit keeps them. Finalize turns the
-          Bracket&apos;s placings into Points Entries marked &quot;From
+          changing a decided Heat&apos;s winner resets the later Heats that
+          followed from it, while a score-only edit keeps them. Finalize turns
+          the Bracket&apos;s placings into Points Entries marked &quot;From
           bracket&quot;; un-finalize removes them so you can fix a Heat and
-          finalize again.
+          finalize again. While it&apos;s finalized, the Competition&apos;s
+          scoring and Placement Points can&apos;t change: un-finalize first.
         </p>
       </section>
 
