@@ -141,7 +141,11 @@ describe.skipIf(!isLocalDatabase)("Points Entry mutations", () => {
           ctx,
           tx,
         ),
-      ).toMatchObject({ ok: false });
+      ).toEqual({
+        ok: false,
+        error:
+          '"Speed Chess" is an individual Competition, so its Points Entries must target a participant.',
+      });
       expect(
         await createPointsEntry(
           { ...entry, competitionId: home.tugId, targetId: other.teamId },

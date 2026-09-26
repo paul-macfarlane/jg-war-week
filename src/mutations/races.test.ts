@@ -157,10 +157,18 @@ describe.skipIf(!isLocalDatabase)(
       };
       expect(results).toEqual([refusal, refusal]);
       const rows = await f.db
-        .select({ points: pointsEntry.points })
+        .select({
+          points: pointsEntry.points,
+          generatedByBracket: pointsEntry.generatedByBracket,
+        })
         .from(pointsEntry)
         .where(eq(pointsEntry.competitionId, f.competitionId));
-      expect(rows).toEqual([{ points: 3 }, { points: 3 }]);
+      // Connection A's finalize committed (both rows are bracket-generated
+      // now); B's write saw that and updated neither.
+      expect(rows).toEqual([
+        { points: 3, generatedByBracket: true },
+        { points: 3, generatedByBracket: true },
+      ]);
     });
   },
 );

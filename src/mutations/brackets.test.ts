@@ -317,6 +317,9 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(heatAt(view, 1, 1).heat.slots[1]).toMatchObject({ score: "25" });
       expect(heatAt(view, 2, 1).heat.status).toBe("played");
       expect(view.champion).toBe(id("Gold"));
+      // The later Heat's Entrants and recorded result are untouched.
+      expect(heatAt(view, 2, 1).labels).toEqual(["Red", "Gold"]);
+      expect(heatAt(view, 2, 1).heat.slots.map((s) => s.place)).toEqual([2, 1]);
 
       // Changing the first Heat's winner sends the final back to pending.
       expect(
@@ -582,6 +585,61 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(remaining).toEqual([{ note: "Spirit bonus" }]);
       view = (await queries.getBracket(f.competitionId, tx))!;
       expect(view.finalized).toBe(false);
+    });
+  });
+
+  it("refuses to change Placement Points while the Bracket is finalized", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations, queries } = await modules();
+      const setup = await import("@/mutations/setup");
+      const f = await fixture(tx);
+      await mutations.replaceEntrants(
+        f.competitionId,
+        [f.red, f.blue],
+        f.ctx,
+        {},
+        tx,
+      );
+      await mutations.generateBracket(
+        f.competitionId,
+        f.ctx,
+        { rng: rngZero },
+        tx,
+      );
+      const bracket = (await queries.getBracket(f.competitionId, tx))!;
+      const only = bracket.bracket.heats[0];
+      await mutations.recordHeatResult(
+        f.competitionId,
+        only.id,
+        { order: only.slots.map((s) => s.entrantId!) },
+        f.ctx,
+        tx,
+      );
+      expect(
+        await mutations.finalizeBracket(f.competitionId, f.ctx, tx),
+      ).toEqual({ ok: true });
+
+      const values: Parameters<typeof setup.updateCompetition>[1] = {
+        name: "Captain Clash",
+        description: null,
+        scoring: "team",
+        maxPoints: null,
+        placementPoints: [10, 5, 1],
+        countsTowardTeam: false,
+        competitionGroup: null,
+      };
+      expect(
+        await setup.updateCompetition(f.competitionId, values, f.ctx, tx),
+      ).toEqual({
+        ok: false,
+        error:
+          "This Competition's Bracket is finalized. Un-finalize the Bracket first.",
+      });
+      const [row] = await tx
+        .select({ placementPoints: f.schema.competition.placementPoints })
+        .from(f.schema.competition)
+        .where(eq(f.schema.competition.id, f.competitionId));
+      expect(row.placementPoints).toEqual([10, 6, 3]);
     });
   });
 
