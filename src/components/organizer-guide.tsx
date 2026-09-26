@@ -53,17 +53,33 @@ export function OrganizerGuide({
       </section>
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Adding Organizers</h2>
+        <h2 className="text-lg font-semibold">Organizers and Hosts</h2>
         <p className="text-foreground/70">
+          Organizers run every War Week. The{" "}
           <Link
-            href="/admin/setup/war-week"
+            href="/admin/organizers"
             className="text-primary underline underline-offset-4"
           >
-            War Week settings
+            Organizers
           </Link>{" "}
-          holds the Organizer emails list. Anyone whose email is on it gets the
-          admin pages the next time they sign in — there are no other roles. You
-          can&apos;t remove your own email from the list.
+          page holds the list: add a @jahnelgroup.com email and they get the
+          admin pages the next time they load one. You can remove anyone,
+          yourself included, as long as one Organizer is left.
+        </p>
+        <p className="text-foreground/70">
+          A Host runs one Competition for you. Assign Hosts on{" "}
+          <Link
+            href="/admin/setup/competitions"
+            className="text-primary underline underline-offset-4"
+          >
+            Competitions
+          </Link>{" "}
+          (the Hosts field on each Competition). A Host sees only their
+          Competitions in Admin: they add its Points Entries, run its Bracket,
+          edit its setup and linked Schedule Items, and can post Announcements.
+          Everything else stays with Organizers. A Schedule Item&apos;s host
+          text is just what the schedule shows; it doesn&apos;t make anyone a
+          Host.
         </p>
       </section>
 
@@ -170,12 +186,12 @@ export function OrganizerGuide({
           page&apos;s Lifecycle box moves a War Week through Start, End and
           Reopen. Only one War Week is ever live: End this one (confirming the
           Winner, prefilled from first place, and any highlights) before the
-          next can Start. Create next War Week copies what you choose
-          (Organizers and settings by default; Competitions and the FAQ are off)
-          and opens the new edition as upcoming, so you can set it up while this
-          one stays live. The header&apos;s edition switcher moves the admin
-          between editions you may administer — a banner marks the Archive so
-          you don&apos;t mistake it for the live one.
+          next can Start. Create next War Week copies what you choose (settings
+          by default; Competitions, with their Hosts, and the FAQ are off) and
+          opens the new edition as upcoming, so you can set it up while this one
+          stays live. The header&apos;s edition switcher moves the admin between
+          editions you may administer — a banner marks the Archive so you
+          don&apos;t mistake it for the live one.
         </p>
       </section>
 
