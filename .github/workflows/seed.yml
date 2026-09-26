@@ -90,6 +90,7 @@ jobs:
               echo "::error::Reset deletes organizer-entered data. Type \"$TARGET\" in confirm_reset to proceed."
               exit 1
             fi
-            flags="--reset"
+            # confirm_reset above is the explicit confirmation that lets a hosted reset proceed.
+            flags="--reset --allow-remote-reset"
           fi
           pnpm seed:load $flags $files
