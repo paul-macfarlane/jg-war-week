@@ -175,24 +175,20 @@ export type McpAccessInput = {
   authorization: string | null | undefined;
   /** `MCP_TOKEN`; unset or blank turns token auth off. */
   mcpToken: string | undefined;
-  /** `MCP_PUBLIC`; only `true` opens `/api/mcp` to everyone. */
-  mcpPublic: string | undefined;
 };
 
 /**
- * Who may use `/api/mcp`: a Jahnel Group session, a request carrying
- * `Authorization: Bearer <MCP_TOKEN>`, or anyone while `MCP_PUBLIC=true`
- * (see CONTEXT.md, "Access rules"). Every MCP tool is read-only and returns
- * only what a signed-in Participant sees.
+ * Who may use `/api/mcp`: a Jahnel Group session, or a request carrying
+ * `Authorization: Bearer <MCP_TOKEN>` (see CONTEXT.md, "Access rules").
+ * Every MCP tool is read-only and returns only what a signed-in Participant
+ * sees.
  */
 export function canUseMcp({
   hasSession,
   authorization,
   mcpToken,
-  mcpPublic,
 }: McpAccessInput): boolean {
   if (hasSession) return true;
-  if (mcpPublic?.trim().toLowerCase() === "true") return true;
 
   const expected = mcpToken?.trim();
   if (!expected || !authorization) return false;

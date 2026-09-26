@@ -159,11 +159,10 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   `/privacy` and `/terms` are static the same way: copy only, no database
   or session reads.
 - `/api/mcp` also lets in `Authorization: Bearer <MCP_TOKEN>` (off when
-  `MCP_TOKEN` is unset or blank), and anyone while `MCP_PUBLIC=true` (off by
-  default; for a claude.ai connector demo). `canUseMcp` in
-  `src/lib/access.ts` is the one check. Every MCP tool is read-only and
-  returns only what a signed-in Participant sees: never an email or the
-  Organizer allowlist. `get_leaderboard` always returns the Standings.
+  `MCP_TOKEN` is unset or blank). `canUseMcp` in `src/lib/access.ts` is the
+  one check. Every MCP tool is read-only and returns only what a signed-in
+  Participant sees: never an email or the Organizer allowlist.
+  `get_leaderboard` always returns the Standings.
 - Standings are always visible to every signed-in user. `/<edition>/finale`
   is readable by any signed-in JG user; only Organizers see the admin link
   to it (`/admin/standings`).

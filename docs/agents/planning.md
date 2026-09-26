@@ -16,7 +16,7 @@ invoked skill.
 | confirmed team policy | Auth or access-control change | Red-team the plan; preserve Google-only sign-in and rejection of non-@jahnelgroup.com emails. |
 | confirmed team policy | Finale change | Red-team not required; the Finale must never reorder or recompute Standings. |
 | discovered repository fact | Any vertical slice | Gate: type-check, lint, vitest, production build, and smoke (/xi, /xi/leaderboard, /xi/finale, /api/mcp) must pass; on failure stop and report. |
-| discovered repository fact | MCP tool change | /api/mcp stays read-only and accepts a signed-in @jahnelgroup.com session, `Authorization: Bearer <MCP_TOKEN>`, or anyone while `MCP_PUBLIC=true` (ticket 21); never expose emails or the organizer allowlist, since public mode may be on. |
+| discovered repository fact | MCP tool change | /api/mcp stays read-only and accepts a signed-in @jahnelgroup.com session or `Authorization: Bearer <MCP_TOKEN>` (ticket 21); never expose emails or the organizer allowlist. |
 | Atlas recommendation | Ticket lacks a clear problem, outcome, or bounded decision | Return to /grill-with-docs, /to-spec, or /to-tickets as appropriate. |
 | unresolved question | Stairs app integration | No documented owner or access for the Stairs deploy; do not plan work that depends on it. |
 

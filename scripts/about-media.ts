@@ -731,7 +731,6 @@ async function main() {
       GOOGLE_CLIENT_ID: "",
       GOOGLE_CLIENT_SECRET: "",
       MCP_TOKEN: "",
-      MCP_PUBLIC: "",
     },
     stdio: "ignore",
     detached: true,
