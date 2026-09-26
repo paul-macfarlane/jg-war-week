@@ -1,8 +1,8 @@
 import { z } from "zod";
 
-import { warWeekStatus } from "@/db/schema";
 import { announcementTitleSchema, videoUrlSchema } from "@/lib/announcements";
 import { AWARD_DESCRIPTION_MAX, AWARD_NAME_MAX } from "@/lib/awards";
+import { WAR_WEEK_STATUSES } from "@/lib/enums";
 import { jgEmailSchema } from "@/lib/jg-email";
 import {
   pointsSchema as points,
@@ -11,9 +11,6 @@ import {
 } from "@/lib/points-entry";
 import { contentInputSchema } from "@/lib/rich-text/content";
 import {
-  type CompetitionSeed,
-  type ParticipantSeed,
-  type TeamSeed,
   competitionSeedSchema,
   daySeedShape,
   emailSchema,
@@ -22,29 +19,12 @@ import {
   warWeekSettingsSeedShape,
 } from "@/lib/setup";
 import {
-  type FaqItemSeed,
-  type ScheduleItemSeed,
   faqItemSeedSchema,
   scheduleItemSeedSchema,
 } from "@/lib/setup-schedule-faq";
 
 // Field rules shared with the Organizer setup forms live in `src/lib/`
 // (ADR 0001); the seed composes them into the file format.
-export {
-  competitionSeedSchema,
-  faqItemSeedSchema,
-  participantSeedSchema,
-  scheduleItemSeedSchema,
-  teamSeedSchema,
-  warWeekSettingsSeedShape,
-};
-export type {
-  CompetitionSeed,
-  FaqItemSeed,
-  ParticipantSeed,
-  ScheduleItemSeed,
-  TeamSeed,
-};
 
 /**
  * A stable id for a seeded organizer-owned record (Points Entry, Award,
@@ -126,7 +106,7 @@ export const warWeekSeedSchema = z
     // Seed-initialized only: `status`, `winner` and `highlights` (from the
     // settings shape) are set when the War Week is first inserted, never on
     // a reload.
-    status: z.enum(warWeekStatus.enumValues),
+    status: z.enum(WAR_WEEK_STATUSES),
     ...warWeekSettingsSeedShape,
     /**
      * Global Organizers this seed adds when missing; a load never removes

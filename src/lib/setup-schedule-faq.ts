@@ -1,13 +1,15 @@
 import { z } from "zod";
 
-import { type ScheduleItem, scheduleItemCategory } from "@/db/schema";
+import type { ScheduleItem } from "@/db/schema";
+import { SCHEDULE_ITEM_CATEGORIES } from "@/lib/enums";
+import type { Parsed } from "@/lib/result";
 import {
   type Content,
   contentInputSchema,
   isBlankContent,
 } from "@/lib/rich-text/content";
 import { formatEtTime } from "@/lib/schedule";
-import { type Parsed, optional, parseWith, trimmed } from "@/lib/setup";
+import { optional, parseWith, trimmed } from "@/lib/setup";
 
 // Field rules the seed file (`src/seed/schema.ts`) and the setup forms share,
 // so seed and setup can't drift.
@@ -27,7 +29,7 @@ export const scheduleItemSeedSchema = z
     location: z.string().max(200).nullish(),
     virtualLink: httpsUrl.nullish(),
     description: contentInputSchema.nullish(),
-    category: z.enum(scheduleItemCategory.enumValues),
+    category: z.enum(SCHEDULE_ITEM_CATEGORIES),
     /** A Competition name from this seed. */
     competition: z.string().min(1).max(120).nullish(),
   })
@@ -36,14 +38,10 @@ export const scheduleItemSeedSchema = z
     path: ["endTime"],
   });
 
-export type ScheduleItemSeed = z.infer<typeof scheduleItemSeedSchema>;
-
 export const faqItemSeedSchema = z.object({
   question: z.string().min(1).max(300),
   answer: contentInputSchema,
 });
-
-export type FaqItemSeed = z.infer<typeof faqItemSeedSchema>;
 
 /** The Schedule Item form's raw fields, all as the inputs hold them. */
 export type ScheduleItemInput = {

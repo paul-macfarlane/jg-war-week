@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 
 import { guarded } from "@/actions/result";
-import { revalidateAdmin, revalidateWarWeek } from "@/actions/revalidate";
+import { revalidateAdmin, revalidateSite } from "@/actions/revalidate";
 import { ADMIN_EDITION_COOKIE, getActor } from "@/auth/actor";
 import { authorize } from "@/auth/authorize";
 import { getSessionEmail } from "@/auth/server";
@@ -61,7 +61,7 @@ export async function startWarWeek(
     const organizer = await lifecycleWarWeek("start", warWeekId);
     if (!organizer.ok) return organizer;
     const result = await mutations.startWarWeek(organizer.ctx);
-    if (result.ok) revalidateWarWeek(organizer.warWeek.edition, "site");
+    if (result.ok) revalidateSite();
     return result;
   });
 }
@@ -77,7 +77,7 @@ export async function endWarWeek(
     const parsed = parseClosingInput(input);
     if (!parsed.ok) return parsed;
     const result = await mutations.endWarWeek(parsed.value, organizer.ctx);
-    if (result.ok) revalidateWarWeek(organizer.warWeek.edition, "site");
+    if (result.ok) revalidateSite();
     return result;
   });
 }
@@ -94,7 +94,7 @@ export async function reopenWarWeek(
     const organizer = await lifecycleWarWeek("reopen", warWeekId);
     if (!organizer.ok) return organizer;
     const result = await mutations.reopenWarWeek(organizer.ctx);
-    if (result.ok) revalidateWarWeek(organizer.warWeek.edition, "site");
+    if (result.ok) revalidateSite();
     return result;
   });
 }
@@ -137,7 +137,7 @@ export async function createNextWarWeek(
         result.edition,
         current?.edition === result.edition,
       );
-      revalidateWarWeek(organizer.warWeek.edition, "site");
+      revalidateSite();
     }
     return result;
   });

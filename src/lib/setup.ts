@@ -1,16 +1,17 @@
 import { type ZodType, z } from "zod";
 
 import type { Competition, Participant, Team, WarWeek } from "@/db/schema";
-import {
-  competitionFormat,
-  competitionScoring,
-  fontPreset,
-  warWeekMode,
-} from "@/db/schema";
 import { HEX_COLOR } from "@/lib/color";
 import { MAX_PLACEMENTS } from "@/lib/competitions";
 import { dayOutsideRangeError } from "@/lib/day-range";
+import {
+  COMPETITION_FORMATS,
+  COMPETITION_SCORINGS,
+  FONT_PRESETS,
+  WAR_WEEK_MODES,
+} from "@/lib/enums";
 import { POINTS_NUMBER, pointsSchema as points } from "@/lib/points-entry";
+import type { Parsed } from "@/lib/result";
 
 export { dayOutsideRangeError } from "@/lib/day-range";
 
@@ -38,7 +39,7 @@ export const warWeekSettingsSeedShape = {
   storyTheme: z.string().min(1).max(120),
   startDate: z.iso.date(),
   endDate: z.iso.date(),
-  mode: z.enum(warWeekMode.enumValues),
+  mode: z.enum(WAR_WEEK_MODES),
   teamLabel: z.string().min(1).max(40),
   leaderTitle: z.string().min(1).max(40),
   slackChannelUrl: z.url({ protocol: /^https$/ }).max(500),
@@ -47,7 +48,7 @@ export const warWeekSettingsSeedShape = {
   accent: hexColor,
   background: hexColor,
   foreground: hexColor,
-  fontPreset: z.enum(fontPreset.enumValues),
+  fontPreset: z.enum(FONT_PRESETS),
   logoUrl: themeUrl.nullish(),
   bannerUrl: themeUrl.nullish(),
   wikiUrl: themeUrl.nullish(),
@@ -67,8 +68,6 @@ export const teamSeedSchema = z.object({
   logoUrl: themeUrl.nullish(),
 });
 
-export type TeamSeed = z.infer<typeof teamSeedSchema>;
-
 export const participantSeedSchema = z.object({
   displayName: z.string().min(1).max(120),
   companyTag: z.string().min(1).max(40).nullish(),
@@ -77,8 +76,6 @@ export const participantSeedSchema = z.object({
   team: z.string().min(1).max(80).nullish(),
   isLeader: z.boolean().default(false),
 });
-
-export type ParticipantSeed = z.infer<typeof participantSeedSchema>;
 
 export const competitionSeedSchema = z
   .object({
@@ -94,11 +91,11 @@ export const competitionSeedSchema = z
         error: "each place must be worth no more than the one above it",
       })
       .nullish(),
-    scoring: z.enum(competitionScoring.enumValues),
+    scoring: z.enum(COMPETITION_SCORINGS),
     countsTowardTeam: z.boolean().default(false),
     group: z.string().min(1).max(120).nullish(),
     /** How the Competition is run; a Bracket's Entrants aren't seeded yet. */
-    format: z.enum(competitionFormat.enumValues).default("points"),
+    format: z.enum(COMPETITION_FORMATS).default("points"),
   })
   .refine(
     (c) =>
@@ -114,8 +111,6 @@ export const competitionSeedSchema = z
     message: "countsTowardTeam can only be set on an individual Competition",
     path: ["countsTowardTeam"],
   });
-
-export type CompetitionSeed = z.infer<typeof competitionSeedSchema>;
 
 /** The War Week settings form's raw fields, all as the inputs hold them. */
 export type WarWeekSettingsInput = {
@@ -367,8 +362,6 @@ function mustPhrase(issue: z.core.$ZodIssue): string | null {
       return null;
   }
 }
-
-export type Parsed<T> = { ok: true; value: T } | { ok: false; error: string };
 
 /**
  * Parses a setup form, worded as "<Field label> must …" from `labels`

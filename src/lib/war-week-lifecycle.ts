@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 import type { WarWeek } from "@/db/schema";
+import type { Parsed } from "@/lib/result";
 import {
-  type Parsed,
   optional,
   parseWith,
   warWeekSettingsSeedShape as seed,

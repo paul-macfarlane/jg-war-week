@@ -25,49 +25,44 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
+import {
+  BRACKET_POINTS,
+  COMPETITION_FORMATS,
+  COMPETITION_SCORINGS,
+  FONT_PRESETS,
+  HEAT_STATUSES,
+  SCHEDULE_ITEM_CATEGORIES,
+  WAR_WEEK_MODES,
+  WAR_WEEK_STATUSES,
+} from "@/lib/enums";
 import type { Content } from "@/lib/rich-text/content";
 
-export const warWeekStatus = pgEnum("war_week_status", [
-  "upcoming",
-  "live",
-  "complete",
-]);
+// The value lists live in `src/lib/enums.ts`, so client code can use them
+// without importing this module.
+export const warWeekStatus = pgEnum("war_week_status", WAR_WEEK_STATUSES);
 
-export const warWeekMode = pgEnum("war_week_mode", ["teams", "free-for-all"]);
+export const warWeekMode = pgEnum("war_week_mode", WAR_WEEK_MODES);
 
-export const fontPreset = pgEnum("font_preset", ["sans", "serif", "mono"]);
+export const fontPreset = pgEnum("font_preset", FONT_PRESETS);
 
-export const scheduleItemCategory = pgEnum("schedule_item_category", [
-  "competition",
-  "education",
-  "social",
-  "meal",
-  "work",
-  "other",
-]);
+export const scheduleItemCategory = pgEnum(
+  "schedule_item_category",
+  SCHEDULE_ITEM_CATEGORIES,
+);
 
-export const competitionScoring = pgEnum("competition_scoring", [
-  "team",
-  "individual",
-]);
+export const competitionScoring = pgEnum(
+  "competition_scoring",
+  COMPETITION_SCORINGS,
+);
 
-export const competitionFormat = pgEnum("competition_format", [
-  "points",
-  "single-elimination",
-]);
+export const competitionFormat = pgEnum(
+  "competition_format",
+  COMPETITION_FORMATS,
+);
 
-export const bracketPoints = pgEnum("bracket_points", [
-  "placings",
-  "per-heat",
-  "both",
-]);
+export const bracketPoints = pgEnum("bracket_points", BRACKET_POINTS);
 
-export const heatStatus = pgEnum("heat_status", [
-  "pending",
-  "ready",
-  "played",
-  "forfeit",
-]);
+export const heatStatus = pgEnum("heat_status", HEAT_STATUSES);
 
 export const warWeek = pgTable(
   "war_week",

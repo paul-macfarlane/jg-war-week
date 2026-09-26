@@ -1,14 +1,14 @@
 "use server";
 
 import { guarded } from "@/actions/result";
-import { revalidateWarWeek } from "@/actions/revalidate";
+import { revalidateSite, revalidateWarWeek } from "@/actions/revalidate";
 import { type TargetKind, authorize } from "@/auth/authorize";
 import type { WarWeekAction } from "@/lib/access";
 import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
+import type { Parsed } from "@/lib/result";
 import {
   type CompetitionInput,
   type DayInput,
-  type Parsed,
   type ParticipantInput,
   type TeamInput,
   type WarWeekSettingsInput,
@@ -26,8 +26,9 @@ export type SetupActionResult = MutationResult;
 /**
  * Runs a setup write: authorizes `action` on the row `id` names (or, for a
  * create or the settings save, the posted War Week), only then parses the
- * input, runs `write` and, on success, revalidates the War Week as far as
- * `reach` (`revalidateWarWeek`). Every setup action goes through here, so
+ * input, runs `write` and, on success, revalidates the War Week's routes
+ * (`revalidateWarWeek`), or the whole site when `reach` is `"site"`
+ * (`revalidateSite`). Every setup action goes through here, so
  * none of them throws (`guarded`).
  */
 async function setupWrite<T>(
@@ -45,7 +46,10 @@ async function setupWrite<T>(
     if (!parsed.ok) return parsed;
 
     const result = await write(parsed.value, authorized.ctx);
-    if (result.ok) revalidateWarWeek(authorized.warWeek.edition, reach);
+    if (result.ok) {
+      if (reach === "site") revalidateSite();
+      else revalidateWarWeek(authorized.warWeek.edition);
+    }
     return result;
   });
 }
