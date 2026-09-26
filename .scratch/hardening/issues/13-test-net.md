@@ -4,7 +4,7 @@
 
 **Blocked by:** 03, 06
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 ## Scope
 
@@ -32,3 +32,5 @@
 - [ ] `pnpm gate` includes the Playwright run and passes.
 
 ## Comments
+
+- 2026-09-26 [EXECUTION PLAN]: claimed by Atlas (`/atlas-implement`, Epic C); branch `chore/hardening-c-tests-and-layering`; deliverables D1 (vitest gaps) and D2 (Playwright, CI, gate, docs); plan and verification map in `../epics/C-execution.md`.

@@ -8,7 +8,7 @@
 
 **Blocked by:** Epic B (its PR merged into `staging`)
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 ## Order
 
@@ -24,3 +24,5 @@ Each ticket's own acceptance criteria, plus:
 - [ ] `pnpm gate` passes locally.
 
 ## Comments
+
+- 2026-09-26 [EXECUTION PLAN]: claimed by Atlas (`/atlas-implement`, Epic C); branch `chore/hardening-c-tests-and-layering` from `staging` `2db3b38` (Epic B merged in #79); plan and verification map in `C-execution.md` beside this file.

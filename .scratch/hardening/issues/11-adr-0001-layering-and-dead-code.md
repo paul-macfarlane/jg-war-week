@@ -4,7 +4,7 @@
 
 **Blocked by:** 03, 13 (refactor behind the test net)
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 ## Scope
 
@@ -47,3 +47,5 @@
 - [ ] `pnpm gate` passes.
 
 ## Comments
+
+- 2026-09-26 [EXECUTION PLAN]: claimed by Atlas (`/atlas-implement`, Epic C); branch `chore/hardening-c-tests-and-layering`; deliverables D3 (layering + lint rule), D5 (dead code, evidence scripts, smoke split, Heat button) and D4 (duplication, one `revalidatePath` rule, seed helper, pgEnum-derived zod enums), all behind the ticket 13 test net; plan and verification map in `../epics/C-execution.md`. Resolved here: `cn@0.4.0` is a compiled clsx + tailwind-merge replacement (its README and engine merge Tailwind classes), so it stays.
