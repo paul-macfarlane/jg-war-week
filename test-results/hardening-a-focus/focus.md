@@ -1,12 +1,15 @@
 # 09-AC2: focus after deleting a setup row (and the delete dialog's pending state)
 
-Production build with `pnpm start -p 3300` on the local, seeded Postgres, signed in as a made-up local Organizer. On `/admin/setup/competitions` (War Week XI), two throwaway Competitions with no Points Entries were inserted: "Aaa Evidence focus first" (first row) and "Zzz Evidence focus last" (last row). Each one was deleted through its Delete button and the confirm dialog, driven by Playwright.
+Commit `86b1af6`. Production build (from `pnpm gate`) served with `pnpm start -p 3300` on the local, seeded Postgres, signed in as a made-up local Organizer (`evidence-organizer@jahnelgroup.com`, removed afterwards). Throwaway Competitions with no Points Entries were inserted, then deleted through each row's Delete button and the confirm dialog, driven by Playwright on `/admin/setup/competitions`.
 
-| Deleted | Position | Confirm button while pending | `document.activeElement` after the row left |
-|---|---|---|---|
-| Aaa Evidence focus first | first of 24 Competition rows | "Delete…" shown | the Name input of the next row, "AI Survey Completion" (`first-row.png`) |
-| Zzz Evidence focus last | last row | "Delete…" shown | the Name input of the previous row, "Winning the Day Challenge" (`last-row.png`) |
+| Screenshot | Deleted | Before | Confirm button while pending | `document.activeElement` after the row left |
+|---|---|---|---|---|
+| `middle-row.png` | "Evidence first" (XI) | row 9 of 24; next "Evidence second" | "Delete…" shown | Name input of the next row, "Evidence second" |
+| `middle-row-2.png` | "Evidence second" (XI) | row 9 of 23; next "Guns, Lots of Guns" | "Delete…" shown | Name input of the next row, "Guns, Lots of Guns" |
+| `empty-list.png` | "Evidence only one" (War Week V, via the edition switcher's `admin_edition` cookie) | the only row | "Delete…" shown | the **Add Competition** button (`button[type=submit]` in the add row) |
 
-Focus never fell to `<body>`. The rule, which the unit tests in `src/lib/setup-row-focus.test.ts` cover: next row, else previous row, else the Add row when the list is empty. The ticket names only the next row and the empty list. For the last row, D09 chose the previous row.
+Focus never fell to `<body>`.
 
-The empty-list case (focus goes to the Add row) is covered by the unit test only. Emptying a seeded list in the browser would have meant deleting every row.
+A first run on `e2ed4ee`, before the review fix, found the emptied list focusing the add row's first input, not the Add button. Fixed in `86b1af6`.
+
+Deleting the last row of a non-empty list focuses the previous row. The AC doesn't name this case; it's covered by `src/lib/setup-row-focus.test.ts` and recorded as an interpretation in the review.
