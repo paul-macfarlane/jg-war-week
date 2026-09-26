@@ -1,10 +1,56 @@
 import { z } from "zod";
 
 import type { ScheduleItem } from "@/db/schema";
-import { type Content, isBlankContent } from "@/lib/rich-text/content";
+import {
+  type Content,
+  contentInputSchema,
+  isBlankContent,
+} from "@/lib/rich-text/content";
 import { formatEtTime } from "@/lib/schedule";
 import { type Parsed, optional, parseWith, trimmed } from "@/lib/setup";
-import { faqItemSeedSchema, scheduleItemSeedSchema } from "@/seed/schema";
+
+// Field rules the seed file (`src/seed/schema.ts`) and the setup forms share,
+// so seed and setup can't drift.
+
+const httpsUrl = z.url({ protocol: /^https$/ }).max(500);
+
+const clockTime = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "must be a 24-hour HH:MM time");
+
+export const scheduleItemSeedSchema = z
+  .object({
+    startTime: clockTime,
+    endTime: clockTime.nullish(),
+    title: z.string().min(1).max(200),
+    host: z.string().max(200).nullish(),
+    location: z.string().max(200).nullish(),
+    virtualLink: httpsUrl.nullish(),
+    description: contentInputSchema.nullish(),
+    category: z.enum([
+      "competition",
+      "education",
+      "social",
+      "meal",
+      "work",
+      "other",
+    ]),
+    /** A Competition name from this seed. */
+    competition: z.string().min(1).max(120).nullish(),
+  })
+  .refine((item) => !item.endTime || item.endTime > item.startTime, {
+    message: "endTime must be after startTime",
+    path: ["endTime"],
+  });
+
+export type ScheduleItemSeed = z.infer<typeof scheduleItemSeedSchema>;
+
+export const faqItemSeedSchema = z.object({
+  question: z.string().min(1).max(300),
+  answer: contentInputSchema,
+});
+
+export type FaqItemSeed = z.infer<typeof faqItemSeedSchema>;
 
 /** The Schedule Item form's raw fields, all as the inputs hold them. */
 export type ScheduleItemInput = {
@@ -63,7 +109,6 @@ function optionalContent<T extends z.ZodType>(schema: T) {
     .transform((value) => value ?? null);
 }
 
-// Field rules come from the seed schema so seed and setup can't drift.
 const item = scheduleItemSeedSchema.shape;
 const scheduleItemSchema = z
   .object({

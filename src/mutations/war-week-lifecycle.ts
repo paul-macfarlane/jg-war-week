@@ -10,12 +10,13 @@ import {
 } from "@/db/schema";
 import {
   type ClosingValues,
+  DEFAULT_SETTINGS,
   type NextWarWeekValues,
   moveError,
   transitionError,
 } from "@/lib/war-week-lifecycle";
 import { isUniqueViolation } from "@/mutations/setup";
-import type { MutationResult } from "@/mutations/types";
+import type { MutationContext, MutationResult } from "@/mutations/types";
 
 const WAR_WEEK_NOT_FOUND = "That War Week no longer exists.";
 
@@ -80,45 +81,28 @@ async function transition(
 
 /** Start War Week: `upcoming → live`, when no other War Week is live. */
 export function startWarWeek(
-  warWeekId: string,
+  ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
-  return transition(warWeekId, "live", {}, dbOrTx, "start");
+  return transition(ctx.warWeekId, "live", {}, dbOrTx, "start");
 }
 
 /** End War Week: `live → complete`, recording the Winner and highlights. */
 export function endWarWeek(
-  warWeekId: string,
   closing: ClosingValues,
+  ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
-  return transition(warWeekId, "complete", closing, dbOrTx);
+  return transition(ctx.warWeekId, "complete", closing, dbOrTx);
 }
 
 /** Reopen: `complete → live` for corrections, when nothing else is live. */
 export function reopenWarWeek(
-  warWeekId: string,
+  ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
-  return transition(warWeekId, "live", {}, dbOrTx, "reopen");
+  return transition(ctx.warWeekId, "live", {}, dbOrTx, "reopen");
 }
-
-/** Settings a new War Week gets when they aren't copied. */
-const DEFAULT_SETTINGS = {
-  mode: "teams",
-  teamLabel: "Team",
-  leaderTitle: "Captain",
-  slackChannelUrl: "https://jahnelgroup.slack.com/",
-  wikiUrl: null,
-  primaryColor: "#1d4ed8",
-  primaryForegroundColor: "#ffffff",
-  accentColor: "#f59e0b",
-  backgroundColor: "#ffffff",
-  foregroundColor: "#111827",
-  fontPreset: "sans",
-  logoUrl: null,
-  bannerUrl: null,
-} as const;
 
 /** Why the new edition, edition number or year is taken, or null. */
 async function takenError(
@@ -151,15 +135,15 @@ async function takenError(
 
 /**
  * Create next War Week: inserts an `upcoming` War Week and the chosen
- * copies from `fromWarWeekId` in one transaction. Copies settings with the
+ * copies from the War Week `ctx` names in one transaction. Copies settings with the
  * Appearance Theme, Competitions (new ids, with their Hosts, no Points
  * Entries) and the FAQ as chosen; never Teams, roster, Days, Schedule,
  * Points Entries, Awards or Announcements. Organizers are global, so there
  * are none to copy.
  */
 export async function createNextWarWeek(
-  fromWarWeekId: string,
   values: NextWarWeekValues,
+  ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<{ ok: true; edition: string } | { ok: false; error: string }> {
   try {
@@ -167,7 +151,7 @@ export async function createNextWarWeek(
       const [source] = await tx
         .select()
         .from(warWeek)
-        .where(eq(warWeek.id, fromWarWeekId));
+        .where(eq(warWeek.id, ctx.warWeekId));
       if (!source) return { ok: false as const, error: WAR_WEEK_NOT_FOUND };
       const taken = await takenError(values, tx);
       if (taken) return { ok: false as const, error: taken };

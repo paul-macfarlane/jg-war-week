@@ -5,11 +5,11 @@ import {
   type Parsed,
   optional,
   parseWith,
+  warWeekSettingsSeedShape as seed,
   splitLines,
   trimmed,
 } from "@/lib/setup";
 import type { Standings } from "@/lib/standings";
-import { warWeekSettingsSeedShape as seed } from "@/seed/schema";
 
 type Status = WarWeek["status"];
 
@@ -186,6 +186,23 @@ export type ClosingValues = Pick<WarWeek, "winner" | "highlights">;
 export function parseClosingInput(input: ClosingInput): Parsed<ClosingValues> {
   return parseWith(closingSchema, input);
 }
+
+/** Settings a new War Week gets when they aren't copied. */
+export const DEFAULT_SETTINGS = {
+  mode: "teams",
+  teamLabel: "Team",
+  leaderTitle: "Captain",
+  slackChannelUrl: "https://jahnelgroup.slack.com/",
+  wikiUrl: null,
+  primaryColor: "#1d4ed8",
+  primaryForegroundColor: "#ffffff",
+  accentColor: "#f59e0b",
+  backgroundColor: "#ffffff",
+  foregroundColor: "#111827",
+  fontPreset: "sans",
+  logoUrl: null,
+  bannerUrl: null,
+} as const;
 
 const nextWarWeekSchema = z
   .object({

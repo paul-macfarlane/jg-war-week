@@ -1,16 +1,117 @@
 import { type ZodType, z } from "zod";
 
 import type { Competition, Participant, Team, WarWeek } from "@/db/schema";
+import { MAX_PLACEMENTS } from "@/lib/competitions";
 import { dayOutsideRangeError } from "@/lib/day-range";
-import {
-  competitionSeedSchema,
-  daySeedSchema,
-  participantSeedSchema,
-  warWeekSettingsSeedShape as seed,
-  teamSeedSchema,
-} from "@/seed/schema";
+import { pointsSchema as points } from "@/lib/points-entry";
 
 export { dayOutsideRangeError } from "@/lib/day-range";
+
+// Field rules the seed file (`src/seed/schema.ts`) and the setup forms share,
+// so seed and setup can't drift.
+
+const hexColor = z
+  .string()
+  .max(32)
+  .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "must be a hex color");
+
+const themeUrl = z
+  .string()
+  .max(500)
+  .regex(
+    /^(\/[^\s]*|https:\/\/[^\s]+)$/,
+    "must be a root-relative path or an https URL",
+  );
+
+/** An email address, lowercased. */
+export const emailSchema = z.email().max(254).toLowerCase();
+
+/**
+ * The War Week fields an Organizer can also edit in `/admin/setup`, so the
+ * seed and the setup form share one set of field rules.
+ */
+export const warWeekSettingsSeedShape = {
+  storyTheme: z.string().min(1).max(120),
+  startDate: z.iso.date(),
+  endDate: z.iso.date(),
+  mode: z.enum(["teams", "free-for-all"]),
+  teamLabel: z.string().min(1).max(40),
+  leaderTitle: z.string().min(1).max(40),
+  slackChannelUrl: z.url({ protocol: /^https$/ }).max(500),
+  primary: hexColor,
+  primaryForeground: hexColor,
+  accent: hexColor,
+  background: hexColor,
+  foreground: hexColor,
+  fontPreset: z.enum(["sans", "serif", "mono"]),
+  logoUrl: themeUrl.nullish(),
+  bannerUrl: themeUrl.nullish(),
+  wikiUrl: themeUrl.nullish(),
+  winner: z.string().max(200).nullish(),
+  highlights: z.array(z.string().max(500)).default([]),
+};
+
+/** A Day's own fields; the seed adds its Schedule Items. */
+export const daySeedShape = {
+  date: z.iso.date(),
+  dayTheme: z.string().min(1).max(120),
+};
+
+export const teamSeedSchema = z.object({
+  name: z.string().min(1).max(80),
+  color: hexColor,
+  logoUrl: themeUrl.nullish(),
+});
+
+export type TeamSeed = z.infer<typeof teamSeedSchema>;
+
+export const participantSeedSchema = z.object({
+  displayName: z.string().min(1).max(120),
+  companyTag: z.string().min(1).max(40).nullish(),
+  email: emailSchema.nullish(),
+  /** A Team name from this seed. */
+  team: z.string().min(1).max(80).nullish(),
+  isLeader: z.boolean().default(false),
+});
+
+export type ParticipantSeed = z.infer<typeof participantSeedSchema>;
+
+export const competitionSeedSchema = z
+  .object({
+    name: z.string().min(1).max(120),
+    description: z.string().max(2000).nullish(),
+    maxPoints: points.positive().nullish(),
+    /** Placement Points for 1st, 2nd, 3rd…, highest first. */
+    placementPoints: z
+      .array(points.min(0, { error: "must be at least 0" }))
+      .min(1, { error: "at least 1 place" })
+      .max(MAX_PLACEMENTS, { error: `at most ${MAX_PLACEMENTS} places` })
+      .refine((list) => list.every((p, i) => i === 0 || p <= list[i - 1]), {
+        error: "each place must be worth no more than the one above it",
+      })
+      .nullish(),
+    scoring: z.enum(["team", "individual"]),
+    countsTowardTeam: z.boolean().default(false),
+    group: z.string().min(1).max(120).nullish(),
+    /** How the Competition is run; a Bracket's Entrants aren't seeded yet. */
+    format: z.enum(["points", "single-elimination"]).default("points"),
+  })
+  .refine(
+    (c) =>
+      c.maxPoints == null ||
+      c.placementPoints == null ||
+      c.placementPoints[0] <= c.maxPoints,
+    {
+      message: "1st place can't be worth more than maxPoints",
+      path: ["placementPoints"],
+    },
+  )
+  .refine((c) => !c.countsTowardTeam || c.scoring === "individual", {
+    message: "countsTowardTeam can only be set on an individual Competition",
+    path: ["countsTowardTeam"],
+  });
+
+export type CompetitionSeed = z.infer<typeof competitionSeedSchema>;
 
 /** The War Week settings form's raw fields, all as the inputs hold them. */
 export type WarWeekSettingsInput = {
@@ -108,7 +209,8 @@ export function optional<T extends ZodType>(schema: T) {
     .transform((value) => value ?? null);
 }
 
-// Field rules come from the seed schema so seed and setup can't drift.
+const seed = warWeekSettingsSeedShape;
+
 const settingsSchema = z
   .object({
     storyTheme: trimmed(seed.storyTheme),
@@ -136,8 +238,8 @@ const settingsSchema = z
   });
 
 const daySchema = z.object({
-  date: trimmed(daySeedSchema.shape.date),
-  dayTheme: trimmed(daySeedSchema.shape.dayTheme),
+  date: trimmed(daySeedShape.date),
+  dayTheme: trimmed(daySeedShape.dayTheme),
 });
 
 export type DayInput = { date: string; dayTheme: string };

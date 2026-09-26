@@ -78,7 +78,7 @@ export async function createScheduleItem(
   return refusingDuplicate(duplicateScheduleItemError(values), () =>
     dbOrTx.transaction(async (tx): Promise<MutationResult> => {
       // `deleteDay` takes the same lock, so the Day can't go meanwhile.
-      await locked(tx, day, values.dayId, ctx);
+      await locked(day, values.dayId, ctx, tx);
       const refusal = await scheduleItemRefusal(values, ctx, tx);
       if (refusal) return { ok: false, error: refusal };
       await tx.insert(scheduleItem).values(values);
@@ -97,7 +97,7 @@ export async function updateScheduleItem(
   return refusingDuplicate(duplicateScheduleItemError(values), () =>
     dbOrTx.transaction(async (tx): Promise<MutationResult> => {
       // `deleteDay` takes the same lock, so the target Day can't go meanwhile.
-      await locked(tx, day, values.dayId, ctx);
+      await locked(day, values.dayId, ctx, tx);
       const refusal = await scheduleItemRefusal(values, ctx, tx, id);
       if (refusal) return { ok: false, error: refusal };
       const updated = await tx

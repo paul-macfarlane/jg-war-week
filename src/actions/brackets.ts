@@ -63,9 +63,7 @@ export async function replaceEntrants(
   return bracketWrite("bracket.entrants", competitionId, async (id, ctx) => {
     const parsed = parseEntrantsInput(input);
     if (!parsed.ok) return parsed;
-    return mutations.replaceEntrants(id, parsed.value.targetIds, ctx, {
-      force: parsed.value.force,
-    });
+    return mutations.replaceEntrants(id, parsed.value, ctx);
   });
 }
 
@@ -77,7 +75,7 @@ export async function generateBracket(
   return bracketWrite("bracket.generate", competitionId, async (id, ctx) => {
     const parsed = parseGenerateInput(input);
     if (!parsed.ok) return parsed;
-    return mutations.generateBracket(id, ctx, { force: parsed.value.force });
+    return mutations.generateBracket(id, { force: parsed.value.force }, ctx);
   });
 }
 

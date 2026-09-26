@@ -56,8 +56,9 @@ path. It uses the same lib rules and schemas as the Organizer actions.
    - The global Organizer-list mutations take `actorEmail` rather than a
      War Week `MutationContext`, because the list has no War Week.
    - Enforces business rules by calling lib functions, then writes.
-   - Uses `withTransaction` when it touches more than one row, so tests can
-     run it against local Postgres.
+   - Runs a change that touches more than one row in one
+     `dbOrTx.transaction(...)`, so tests can run it against local Postgres
+     inside their own transaction.
    - Records the actor where the schema has a column for it, e.g.
      `enteredByEmail`.
 3. **Rules and schemas are shared, not copied.** When a rule already lives
@@ -73,8 +74,9 @@ path. It uses the same lib rules and schemas as the Organizer actions.
 ### Tests per layer
 
 - Lib: vitest, pure, and written first.
-- Mutations: vitest against local Postgres in a rolled-back transaction, once
-  the first mutation lands.
+- Mutations: vitest against local Postgres in a rolled-back transaction
+  (`inRolledBackTransaction`, `src/db/test-transaction.ts`), once the first
+  mutation lands.
 - Actions and admin forms: the smoke test. Testing.md already names smoke as
   the only UI and admin-form coverage.
 

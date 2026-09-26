@@ -118,7 +118,7 @@ export async function createPointsEntry(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     // A scoring change takes the same lock (`updateCompetition`), so an
     // entry can't slip in between its entry count and its write.
-    await locked(tx, competition, input.competitionId, ctx);
+    await locked(competition, input.competitionId, ctx, tx);
     const resolved = await resolveColumns(input, ctx.warWeekId, tx);
     if (!resolved.ok) return resolved;
 
@@ -151,7 +151,7 @@ export async function updatePointsEntry(
       ...new Set([current.competitionId, input.competitionId]),
     ].sort();
     for (const competitionId of competitionIds) {
-      await locked(tx, competition, competitionId, ctx);
+      await locked(competition, competitionId, ctx, tx);
     }
 
     const generated = await generatedRefusal(id, ctx.warWeekId, tx);

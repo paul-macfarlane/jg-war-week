@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { DBTx } from "@/db";
 import { isLocalDatabaseUrl } from "@/db/local-url";
+import { inRolledBackTransaction } from "@/db/test-transaction";
 
 // Runs only against a local Postgres (CI's service or docker compose; see
 // vitest.config.ts), never a hosted database.
@@ -9,18 +10,6 @@ const isLocalDatabase = isLocalDatabaseUrl(
   process.env.DATABASE_URL,
   process.env.DATABASE_DRIVER,
 );
-
-class Rollback extends Error {}
-
-async function inRolledBackTransaction(body: (tx: DBTx) => Promise<void>) {
-  const { withTransaction } = await import("@/db");
-  await withTransaction(async (tx) => {
-    await body(tx);
-    throw new Rollback();
-  }).catch((error) => {
-    if (!(error instanceof Rollback)) throw error;
-  });
-}
 
 async function seed(
   edition: string,
@@ -64,6 +53,12 @@ async function clearLive(tx: DBTx) {
     .where(eq(schema.warWeek.status, "live"));
 }
 
+/** An Organizer acting on the War Week `warWeekId`. */
+const ctxOf = (warWeekId: string) => ({
+  warWeekId,
+  actorEmail: "organizer@jahnelgroup.com",
+});
+
 describe.skipIf(!isLocalDatabase)("loadWarWeekSeed lifecycle fields", () => {
   it("sets status, Winner and highlights on insert and never overwrites them", async () => {
     await inRolledBackTransaction(async (tx) => {
@@ -73,7 +68,11 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed lifecycle fields", () => {
       const first = await loadWarWeekSeed(await seed("sa", 1, "live"), tx);
       expect(first.status).toBe("live");
 
-      await endWarWeek(first.id, { winner: "Red", highlights: ["gg"] }, tx);
+      await endWarWeek(
+        { winner: "Red", highlights: ["gg"] },
+        ctxOf(first.id),
+        tx,
+      );
       const reloaded = await loadWarWeekSeed(await seed("sa", 1, "live"), tx);
 
       expect(reloaded).toMatchObject({

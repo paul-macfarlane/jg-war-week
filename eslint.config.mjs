@@ -47,6 +47,42 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    // ADR 0001: lib is pure business logic at the bottom of the layers. It
+    // never imports the seed, queries, mutations, actions, components, pages,
+    // auth, Next.js or icons. Drizzle schema types and pgEnums stay allowed.
+    files: ["src/lib/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "@/seed",
+                "@/seed/*",
+                "@/queries",
+                "@/queries/*",
+                "@/mutations",
+                "@/mutations/*",
+                "@/actions",
+                "@/actions/*",
+                "@/components",
+                "@/components/*",
+                "@/app/*",
+                "@/auth/*",
+                "next",
+                "next/*",
+                "lucide-react",
+              ],
+              message:
+                "ADR 0001: src/lib is pure business logic and never imports the seed, queries, mutations, actions, components, pages, auth, Next.js or icons. Move the shared piece down into src/lib, or pass it in.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // The shadcn primitives are where native controls may still live.
     files: ["src/components/ui/**"],
     rules: { "no-restricted-syntax": "off" },

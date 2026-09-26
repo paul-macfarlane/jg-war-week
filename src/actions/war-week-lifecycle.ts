@@ -16,7 +16,7 @@ import {
   parseClosingInput,
   parseNextWarWeekInput,
 } from "@/lib/war-week-lifecycle";
-import type { MutationResult } from "@/mutations/types";
+import type { MutationContext, MutationResult } from "@/mutations/types";
 import * as mutations from "@/mutations/war-week-lifecycle";
 import type { TargetWarWeek } from "@/queries/targets";
 import {
@@ -37,7 +37,8 @@ async function lifecycleWarWeek(
   action: LifecycleAction,
   warWeekId: string,
 ): Promise<
-  { ok: true; warWeek: TargetWarWeek } | { ok: false; error: string }
+  | { ok: true; warWeek: TargetWarWeek; ctx: MutationContext }
+  | { ok: false; error: string }
 > {
   const authorized = await authorize(
     `lifecycle.${action}`,
@@ -49,7 +50,7 @@ async function lifecycleWarWeek(
   const warWeeks = await getWarWeeks();
   const refusal = lifecycleActionError({ action, target, warWeeks });
   if (refusal) return { ok: false, error: refusal };
-  return { ok: true, warWeek: target };
+  return { ok: true, warWeek: target, ctx: authorized.ctx };
 }
 
 // Status decides the current War Week, the home redirect and the Archive,
@@ -65,7 +66,7 @@ export async function startWarWeek(
   return guarded(async () => {
     const organizer = await lifecycleWarWeek("start", warWeekId);
     if (!organizer.ok) return organizer;
-    const result = await mutations.startWarWeek(organizer.warWeek.id);
+    const result = await mutations.startWarWeek(organizer.ctx);
     if (result.ok) revalidateSite();
     return result;
   });
@@ -81,10 +82,7 @@ export async function endWarWeek(
     if (!organizer.ok) return organizer;
     const parsed = parseClosingInput(input);
     if (!parsed.ok) return parsed;
-    const result = await mutations.endWarWeek(
-      organizer.warWeek.id,
-      parsed.value,
-    );
+    const result = await mutations.endWarWeek(parsed.value, organizer.ctx);
     if (result.ok) revalidateSite();
     return result;
   });
@@ -101,7 +99,7 @@ export async function reopenWarWeek(
   return guarded(async () => {
     const organizer = await lifecycleWarWeek("reopen", warWeekId);
     if (!organizer.ok) return organizer;
-    const result = await mutations.reopenWarWeek(organizer.warWeek.id);
+    const result = await mutations.reopenWarWeek(organizer.ctx);
     if (result.ok) revalidateSite();
     return result;
   });
@@ -136,8 +134,8 @@ export async function createNextWarWeek(
     const parsed = parseNextWarWeekInput(input);
     if (!parsed.ok) return parsed;
     const result = await mutations.createNextWarWeek(
-      organizer.warWeek.id,
       parsed.value,
+      organizer.ctx,
     );
     if (result.ok) {
       const current = await getCurrentWarWeek();

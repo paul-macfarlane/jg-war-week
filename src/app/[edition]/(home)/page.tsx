@@ -37,7 +37,7 @@ export default async function EditionHomePage({
     getSchedule(warWeek.id),
     getPinnedAnnouncement(warWeek),
   ]);
-  const nowNext = computeNowNext(schedule, resolveClock(at));
+  const nowNext = computeNowNext(schedule, resolveClock(at, new Date()));
 
   return (
     <main className="mx-auto flex max-w-md flex-col md:max-w-3xl md:py-8">

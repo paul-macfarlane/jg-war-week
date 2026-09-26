@@ -19,7 +19,7 @@ describe("moreLinks", () => {
     const links = moreLinks({ ...base, canOpenAdmin: true });
     const admin = links.find((link) => link.label === "Admin");
     expect(admin?.href).toBe("/admin");
-    expect(admin?.icon).toBeDefined();
+    expect(admin?.icon).toBe("admin");
   });
 
   it("labels the roster link with rosterHeading's plural Team Label", () => {

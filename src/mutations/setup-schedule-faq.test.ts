@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import type { DBTx } from "@/db";
 import { isLocalDatabaseUrl } from "@/db/local-url";
+import { inRolledBackTransaction } from "@/db/test-transaction";
 import type {
   FaqItemValues,
   ScheduleItemValues,
@@ -14,19 +15,6 @@ const isLocalDatabase = isLocalDatabaseUrl(
   process.env.DATABASE_URL,
   process.env.DATABASE_DRIVER,
 );
-
-class Rollback extends Error {}
-
-/** Runs `body` in a transaction that is always rolled back. */
-async function inRolledBackTransaction(body: (tx: DBTx) => Promise<void>) {
-  const { withTransaction } = await import("@/db");
-  await withTransaction(async (tx) => {
-    await body(tx);
-    throw new Rollback();
-  }).catch((error) => {
-    if (!(error instanceof Rollback)) throw error;
-  });
-}
 
 const actorEmail = "organizer@jahnelgroup.com";
 

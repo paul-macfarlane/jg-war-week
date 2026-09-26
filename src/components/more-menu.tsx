@@ -4,6 +4,7 @@ import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 import { SignOutButton } from "@/components/auth-buttons";
+import { MoreLinkIcon } from "@/components/more-link-icon";
 import type { NavAccount } from "@/components/primary-nav";
 import { type MoreLinksInput, moreLinks } from "@/lib/more-links";
 
@@ -35,14 +36,14 @@ export function MoreMenu({
   return (
     <div className="flex flex-col gap-4 overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
       <ul className="border-border flex flex-col rounded-lg border">
-        {links.map(({ label, href, icon: Icon }) => (
+        {links.map(({ label, href, icon }) => (
           <li key={href} className="border-border border-b last:border-b-0">
             <Link
               href={href}
               onClick={onNavigate}
               className="flex min-h-11 items-center gap-3 px-4 py-3"
             >
-              <Icon aria-hidden className="text-primary size-5" />
+              <MoreLinkIcon icon={icon} />
               <span className="flex-1 font-medium">{label}</span>
               <ChevronRight aria-hidden className="text-foreground/40 size-4" />
             </Link>

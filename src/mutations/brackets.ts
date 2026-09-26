@@ -197,9 +197,8 @@ export async function setCompetitionFormat(
  */
 export async function replaceEntrants(
   competitionId: string,
-  targetIds: string[],
+  { targetIds, force }: { targetIds: string[]; force?: boolean },
   ctx: MutationContext,
-  options: { force?: boolean } = {},
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
@@ -225,7 +224,7 @@ export async function replaceEntrants(
           : `"${found.name}" is an individual Competition, so its Entrants must be Participants of this War Week.`,
       );
     }
-    if (!options.force && hasResults(await loadBracket(competitionId, tx))) {
+    if (!force && hasResults(await loadBracket(competitionId, tx))) {
       return refuse(HAS_RESULTS_ERROR);
     }
 
@@ -252,8 +251,8 @@ export async function replaceEntrants(
  */
 export async function generateBracket(
   competitionId: string,
+  options: { rng?: () => number; force?: boolean },
   ctx: MutationContext,
-  options: { rng?: () => number; force?: boolean } = {},
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {

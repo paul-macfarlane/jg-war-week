@@ -185,7 +185,7 @@ export async function deleteDay(
 ): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     // Schedule Item writes lock their Day too, so none lands after the count.
-    if (!(await locked(tx, day, id, ctx))) {
+    if (!(await locked(day, id, ctx, tx))) {
       return { ok: false, error: DAY_NOT_FOUND };
     }
     const [items] = await tx
@@ -212,10 +212,10 @@ export async function deleteDay(
  * no such row.
  */
 export async function locked(
-  tx: DBOrTx,
   table: typeof team | typeof participant | typeof competition | typeof day,
   id: string,
   ctx: MutationContext,
+  tx: DBOrTx,
 ): Promise<boolean> {
   const rows = await tx
     .select({ id: table.id })
@@ -309,7 +309,7 @@ export async function deleteTeam(
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-    if (!(await locked(tx, team, id, ctx))) {
+    if (!(await locked(team, id, ctx, tx))) {
       return { ok: false, error: TEAM_NOT_FOUND };
     }
     const refusal = inUseError(
@@ -440,7 +440,7 @@ export async function deleteParticipant(
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-    if (!(await locked(tx, participant, id, ctx))) {
+    if (!(await locked(participant, id, ctx, tx))) {
       return { ok: false, error: PARTICIPANT_NOT_FOUND };
     }
     const refusal = inUseError(
@@ -574,7 +574,7 @@ export async function updateCompetition(
       dbOrTx.transaction(async (tx): Promise<MutationResult> => {
         // Adding a Points Entry or Entrant, or finalizing the Bracket, takes
         // the same lock, so the counts below hold until this commits.
-        if (!(await locked(tx, competition, id, ctx))) {
+        if (!(await locked(competition, id, ctx, tx))) {
           return { ok: false, error: COMPETITION_NOT_FOUND };
         }
         const refusal = await competitionRefusal(values, ctx, tx, id);
@@ -606,7 +606,7 @@ export async function deleteCompetition(
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-    if (!(await locked(tx, competition, id, ctx))) {
+    if (!(await locked(competition, id, ctx, tx))) {
       return { ok: false, error: COMPETITION_NOT_FOUND };
     }
     const refusal = inUseError(
@@ -655,7 +655,7 @@ export async function setCompetitionHosts(
   if (!parsed.success) return { ok: false, error: JG_EMAIL_MESSAGE };
   const hosts = [...new Set(parsed.data)];
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-    if (!(await locked(tx, competition, competitionId, ctx))) {
+    if (!(await locked(competition, competitionId, ctx, tx))) {
       return { ok: false, error: COMPETITION_NOT_FOUND };
     }
     await tx

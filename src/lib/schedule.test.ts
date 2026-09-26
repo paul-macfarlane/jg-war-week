@@ -296,19 +296,20 @@ describe("formatDayHeading", () => {
 });
 
 describe("resolveClock", () => {
+  const now = new Date("2026-02-24T09:00:00-05:00");
+
   it("uses a parseable ?at= instant", () => {
-    expect(resolveClock("2026-02-23T12:30:00-05:00").toISOString()).toBe(
+    expect(resolveClock("2026-02-23T12:30:00-05:00", now).toISOString()).toBe(
       "2026-02-23T17:30:00.000Z",
     );
   });
 
   it.each([undefined, "not a date", ["2026-02-23T12:30:00Z"]])(
-    "falls back to the real clock for %s",
+    "falls back to the given current time for %s",
     (at) => {
-      const before = Date.now();
-      const clock = resolveClock(at).getTime();
-      expect(clock).toBeGreaterThanOrEqual(before);
-      expect(clock).toBeLessThanOrEqual(Date.now());
+      expect(resolveClock(at, now).toISOString()).toBe(
+        "2026-02-24T14:00:00.000Z",
+      );
     },
   );
 });
