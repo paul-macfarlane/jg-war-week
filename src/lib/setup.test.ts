@@ -485,15 +485,25 @@ describe("participantGuardError", () => {
 });
 
 describe("competitionGuardError", () => {
-  const values = { name: "Catan", scoring: "team" as const };
+  const values = {
+    name: "Catan",
+    scoring: "team" as const,
+    placementPoints: [5, 3, 1],
+  };
   const ctx = { mode: "teams" as const, nameTaken: false, existing: null };
+  const existingBase = {
+    scoring: "team" as const,
+    placementPoints: [5, 3, 1] as number[] | null,
+    pointsEntryCount: 0,
+    finalizedAt: null as Date | null,
+  };
 
   it("allows a new Competition and a scoring change with no Points Entries", () => {
     expect(competitionGuardError(values, ctx)).toBeNull();
     expect(
       competitionGuardError(values, {
         ...ctx,
-        existing: { scoring: "individual", pointsEntryCount: 0 },
+        existing: { ...existingBase, scoring: "individual" },
       }),
     ).toBeNull();
   });
@@ -510,11 +520,44 @@ describe("competitionGuardError", () => {
     expect(
       competitionGuardError(values, {
         ...ctx,
-        existing: { scoring: "individual", pointsEntryCount: 2 },
+        existing: {
+          ...existingBase,
+          scoring: "individual",
+          pointsEntryCount: 2,
+        },
       }),
     ).toBe(
       "This Competition has 2 Points Entries, so its scoring can't change. Delete them first.",
     );
+  });
+
+  it("refuses a scoring or Placement Points change while the Bracket is finalized, but allows an unchanged save", () => {
+    const finalized = { ...existingBase, finalizedAt: new Date() };
+    expect(
+      competitionGuardError(values, {
+        ...ctx,
+        existing: { ...finalized, scoring: "individual" },
+      }),
+    ).toBe(
+      "This Competition's Bracket is finalized. Un-finalize the Bracket first.",
+    );
+    expect(
+      competitionGuardError(
+        { ...values, placementPoints: [10, 5] },
+        { ...ctx, existing: finalized },
+      ),
+    ).toBe(
+      "This Competition's Bracket is finalized. Un-finalize the Bracket first.",
+    );
+    expect(
+      competitionGuardError(values, { ...ctx, existing: finalized }),
+    ).toBeNull();
+    expect(
+      competitionGuardError(
+        { ...values, placementPoints: null },
+        { ...ctx, existing: { ...finalized, placementPoints: [] } },
+      ),
+    ).toBeNull();
   });
 });
 

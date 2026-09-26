@@ -663,4 +663,73 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
       });
     });
   });
+
+  it("refuses Placement Points or scoring changes while the Bracket is finalized, but not other fields", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { updateCompetition } = await import("@/mutations/setup");
+      const { schema, home, ctx } = await rosterFixture(tx);
+      const [bracket] = await tx
+        .insert(schema.competition)
+        .values({
+          warWeekId: home,
+          name: "Knockout",
+          scoring: "individual" as const,
+          format: "single-elimination" as const,
+          placementPoints: [5, 3, 1],
+        })
+        .returning({ id: schema.competition.id });
+      await tx
+        .update(schema.competition)
+        .set({ finalizedAt: new Date() })
+        .where(eq(schema.competition.id, bracket.id));
+
+      expect(
+        await updateCompetition(
+          bracket.id,
+          { ...competitionValues, name: "Knockout", placementPoints: [10, 5] },
+          ctx,
+          tx,
+        ),
+      ).toEqual({
+        ok: false,
+        error:
+          "This Competition's Bracket is finalized. Un-finalize the Bracket first.",
+      });
+      const [unchanged] = await tx
+        .select()
+        .from(schema.competition)
+        .where(eq(schema.competition.id, bracket.id));
+      expect(unchanged).toMatchObject({
+        name: "Knockout",
+        placementPoints: [5, 3, 1],
+      });
+
+      expect(
+        await updateCompetition(
+          bracket.id,
+          { ...competitionValues, name: "Renamed Knockout" },
+          ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+
+      await tx
+        .update(schema.competition)
+        .set({ finalizedAt: null })
+        .where(eq(schema.competition.id, bracket.id));
+
+      expect(
+        await updateCompetition(
+          bracket.id,
+          {
+            ...competitionValues,
+            name: "Renamed Knockout",
+            placementPoints: [10, 5],
+          },
+          ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+    });
+  });
 });
