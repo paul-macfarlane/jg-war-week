@@ -4,7 +4,7 @@
 
 **Blocked by:** 03, 06
 
-**Status:** ai-review
+**Status:** done
 
 ## Scope
 
@@ -27,9 +27,9 @@
 
 ## Acceptance criteria
 
-- [ ] The five flows pass locally and in CI.
-- [ ] The new vitest cases pass and fail when the rule they cover is broken (check one of them by hand).
-- [ ] `pnpm gate` includes the Playwright run and passes.
+- [x] The five flows pass locally and in CI.
+- [x] The new vitest cases pass and fail when the rule they cover is broken (check one of them by hand).
+- [x] `pnpm gate` includes the Playwright run and passes.
 
 ## Comments
 
@@ -46,3 +46,40 @@
     - Fixed: stale comments naming `scripts/smoke.ts` and a deleted evidence script; two stale ADR 0001 lines (UI coverage; step 4 names `revalidateWarWeek`/`revalidateSite`); dead seed re-exports and `*Seed` types; `Parsed` defined once in `src/lib/result.ts`; the smoke harness uses `WriteResult` and one host email; `finaleRows` loses the multi-list `durationMs`; the hook moves to `src/hooks/`; `OptionSelect`'s `placeholder` removed (no call site passes it; D5's report that six did was wrong); the maintainer's guide names the one-time Chromium install; `uuidSchema` un-exported; a JSDoc rewrap.
     - Deviation (follow-up): `src/lib/install-prompt.ts` is a stateful browser module in lib; the DB tests still copy the local-database guard; e2e and smoke each sign stub sessions. None is in ticket 11's list.
   - Remaining risk: `src/db/schema.ts` now imports `@/lib/enums` through the `@/` alias; drizzle-kit, tsx, the build and smoke resolve it.
+
+- 2026-09-27 [CLOSEOUT] Epic C delivered on `chore/hardening-c-tests-and-layering` (base `staging` `2db3b38`). The verified code head is `6f84220`; later commits add only records and evidence.
+  - **Deliverables** (orchestrator Opus):
+    - D1, vitest gaps (Sonnet): `d07d8a5`.
+    - D2, Playwright, CI, gate and docs (Opus): `d3f663c`.
+    - D3, layering, lint rule and `withTransaction` (Opus): `c8f85e4`.
+    - D5, dead code, evidence scripts, smoke split and Heat button (Sonnet): `c97e465`, `03ebca8`, `52498ac`, `a1c86d7`.
+    - D4, duplication, the one revalidation rule, seed helper and enums (Opus): `b9a81a3`, `7e38298`.
+    - Orchestrator fix (vitest and eslint ignore `.claude/**`): `5107556`.
+    - Review fixes, R1 (Opus): `d772937`, `c60e155`, `6f84220`.
+  - **Verified run command:** `pnpm gate` with the local Postgres from `docker compose` (`DATABASE_URL` as in `.env.example`, `DATABASE_DRIVER=pg`). Result: typecheck clean; lint 0 errors; vitest 80 files / 1371 tests; build ok; smoke 177 ok / 0 FAIL (the same sequence as Epic B); Playwright 17 passed; exit 0.
+  - **Verdicts:**
+    - 13-AC1 PASS: the five flows pass locally (`test-results/hardening-c-gate/`, screenshots in `test-results/e2e/`) and in CI (`test-results/hardening-c-ci/runs.md`).
+    - 13-AC2 PASS: the new cases pass; unscoping the Standings join fails the new query test, 1003 vs 3 (`test-results/hardening-c-focus/mutation-probe.txt`). Two of the seven cases tighten existing tests.
+    - 13-AC3 PASS: `gate` ends in `pnpm e2e` and passes.
+    - 11-AC1 PASS: vitest, the Playwright flows and smoke pass, and smoke's checks are unchanged.
+    - 11-AC2 PASS: `@typescript-eslint/no-restricted-imports` refuses seed, queries, mutations, actions, components (and value imports of `@/db/schema`) in `src/lib` (`test-results/hardening-c-focus/lint-probe.txt`).
+    - 11-AC3 PASS: `pnpm gate`.
+    - Scope PASS: `test-results/hardening-c-docs/grep.txt`.
+    - Epic AC1 PASS: this record, and `done`.
+    - Epic AC2 PASS: CI ran smoke and Playwright on the PR and passed.
+    - Epic AC3 PASS: `pnpm gate` locally.
+  - **Deviations** are recorded in `[AI CODE REVIEW]`. Also: `cn@0.4.0` stays, because it already merges Tailwind classes; folding `/admin` page visibility into `can` was not in ticket 11's list and stays open.
+  - **Isolation re-check:**
+    - Wave 1: D1 touched only `src/**/*.test.ts` and D2 nothing under `src/`, as predicted (disjoint).
+    - Wave 2: D3 and D5 shared no file, so the cherry-picks applied cleanly. Moving `--ww-primary` to D4 and `withTransaction` to D3 kept them apart.
+    - D4 edited `src/actions/*`, `src/mutations/setup*.ts` and `src/lib/setup*.ts`, all of which D3 also changed, so serializing it was right.
+    - Running parallel worktrees under `.claude/` made the main checkout's vitest collect their tests. `5107556` fixes that.
+  - **PR:** https://github.com/paul-macfarlane/jg-war-week/pull/80
+  - **Follow-ups:**
+    - Move `src/lib/install-prompt.ts` out of lib.
+    - Share one local-database guard across the DB tests.
+    - Share the stub-session helper between e2e and smoke.
+    - Resolve the e2e Bracket fixture from the database.
+    - Add a busy-port check for e2e.
+    - Type `upsertDeletingAbsent`'s column parameters.
+    - Fold `/admin` visibility into `can`.

@@ -64,4 +64,4 @@ None. CI runs on push without a human step; PR creation is closeout. Nothing dep
 
 ## Closeout
 
-Pending.
+PR https://github.com/paul-macfarlane/jg-war-week/pull/80. CI run 36278986168 on `b3eb38c` green, smoke and Playwright included (`test-results/hardening-c-ci/runs.md`). Every criterion PASS; see the `[CLOSEOUT]` records on the epic and tickets 13 and 11, all `done`.
