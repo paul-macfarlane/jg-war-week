@@ -3,7 +3,7 @@
 import { useState, useSyncExternalStore } from "react";
 
 import { Button } from "@/components/ui/button";
-import { useMediaQuery } from "@/components/use-media-query";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import {
   type InstallPlatform,
   detectInstallPlatform,

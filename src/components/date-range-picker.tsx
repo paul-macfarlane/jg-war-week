@@ -13,7 +13,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useMediaQuery } from "@/components/use-media-query";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import {
   formatDateLabel,
   formatDateValue,

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /** A row id: every table keys its rows by uuid. */
-export const uuidSchema = z.uuid();
+const uuidSchema = z.uuid();
 
 /**
  * Whether a URL segment or action argument is shaped like a row id, checked

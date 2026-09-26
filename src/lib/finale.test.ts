@@ -85,21 +85,6 @@ describe("finaleRows", () => {
     expect(rows.every((r) => r.shown && r.progress === 1)).toBe(true);
   });
 
-  it("delays a shorter list so every list's first place lands at the end", () => {
-    const short = [1, 2];
-    const long = [1, 2, 3, 4, 5, 6];
-    const duration = Math.max(finaleDurationMs(short), finaleDurationMs(long));
-    const firstStart = (ranks: number[]) =>
-      [...Array(duration + 1).keys()].find(
-        (t) => finaleRows(ranks, t, duration)[0].shown,
-      );
-    expect(firstStart(short)).toBe(firstStart(long));
-    expect(finaleRows(short, 0, duration)[1].shown).toBe(false);
-    expect(
-      finaleRows(short, duration, duration).every((r) => r.progress === 1),
-    ).toBe(true);
-  });
-
   it("returns an empty list for no rows", () => {
     expect(finaleRows([], 500)).toEqual([]);
   });

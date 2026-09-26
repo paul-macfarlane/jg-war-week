@@ -1,5 +1,6 @@
+import type { WriteResult } from "@/lib/result";
+
 import {
-  type ActionResult,
   BASE_URL,
   type SmokeSession,
   callAction,
@@ -240,7 +241,7 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
         ids.recordHeatResult,
         [id, heatId, { order, scores: { [order[0]]: "25" } }],
         organizer,
-      )) as ActionResult & { resetHeatIds?: string[] };
+      )) as WriteResult & { resetHeatIds?: string[] };
       expectOk(step, result);
       return result.resetHeatIds?.length;
     };

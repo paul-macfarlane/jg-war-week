@@ -5,6 +5,7 @@ import {
 import {
   ADMIN_REFUSAL_TEXT,
   BASE_URL,
+  SMOKE_HOST_EMAIL,
   SMOKE_ORGANIZER_EMAIL,
   type SmokeSession,
   callAction,
@@ -26,7 +27,6 @@ import {
 // seeded XI Competition. Both Competitions are picked by name from
 // seeds/xi.json; the smoke Organizer, the Participant and everyone else
 // never host anything.
-const SMOKE_HOST_EMAIL = "smoke-host@jahnelgroup.com";
 const HOST_COMPETITION = "Tuesday Stairs";
 const OTHER_COMPETITION = "Cypher";
 const NOT_HOST_REFUSAL = "You're not a Host of that Competition.";

@@ -79,3 +79,10 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
 
       - run: pnpm e2e
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: test-results/e2e
+          retention-days: 7

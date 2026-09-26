@@ -1,6 +1,6 @@
 import { loadEnvConfig } from "@next/env";
 
-// The same env the app gets from `.env.local`, as `scripts/smoke.ts` loads it.
+// The same env the app gets from `.env.local`, as `scripts/smoke/index.ts` loads it.
 loadEnvConfig(process.cwd());
 
 export const E2E_PORT = 3200;

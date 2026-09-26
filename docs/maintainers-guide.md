@@ -121,7 +121,8 @@ Every change, however small:
    at it: smoke and e2e reset every seeded War Week, so each refuses any
    database that isn't on `localhost`, `127.0.0.1` or `[::1]`. If yours
    comes from Vercel, run
-   `DATABASE_URL=<the .env.example value> pnpm gate`.
+   `DATABASE_URL=<the .env.example value> pnpm gate`. First time only:
+   `pnpm exec playwright install chromium`.
 5. **Open a PR into `staging`.** Ask Claude to "commit and open a PR into
    staging", or `gh pr create --base staging`. CI runs on the PR: lint,
    types, tests, build, smoke and the Playwright flows against its own

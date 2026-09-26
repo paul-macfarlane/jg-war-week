@@ -375,7 +375,7 @@ export function BracketResults({
                         type="button"
                         variant="ghost"
                         aria-label={`${isDecided(heat) ? "Edit" : "Record"} ${name}`}
-                        className="focus-visible:ring-ring/50 absolute inset-0 size-auto rounded-xl bg-transparent p-0 outline-none hover:bg-transparent focus-visible:ring-3"
+                        className="focus-visible:ring-ring/50 absolute inset-0 size-auto rounded-xl border-0 bg-transparent p-0 outline-none hover:bg-transparent focus-visible:ring-3 active:translate-y-0"
                         onClick={() => setOpenHeatId(heat.id)}
                       />
                     )}

@@ -135,11 +135,11 @@ async function takenError(
 
 /**
  * Create next War Week: inserts an `upcoming` War Week and the chosen
- * copies from the War Week `ctx` names in one transaction. Copies settings with the
- * Appearance Theme, Competitions (new ids, with their Hosts, no Points
- * Entries) and the FAQ as chosen; never Teams, roster, Days, Schedule,
- * Points Entries, Awards or Announcements. Organizers are global, so there
- * are none to copy.
+ * copies from the War Week `ctx` names in one transaction. Copies settings
+ * with the Appearance Theme, Competitions (new ids, with their Hosts, no
+ * Points Entries) and the FAQ as chosen; never Teams, roster, Days,
+ * Schedule, Points Entries, Awards or Announcements. Organizers are global,
+ * so there are none to copy.
  */
 export async function createNextWarWeek(
   values: NextWarWeekValues,

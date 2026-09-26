@@ -28,7 +28,6 @@ export function OptionSelect({
   options,
   required,
   disabled,
-  placeholder,
   id,
   "aria-label": ariaLabel,
 }: {
@@ -38,7 +37,6 @@ export function OptionSelect({
   options: readonly SelectOption[];
   required?: boolean;
   disabled?: boolean;
-  placeholder?: string;
   id?: string;
   "aria-label"?: string;
 }) {
@@ -62,7 +60,7 @@ export function OptionSelect({
           aria-label={ariaLabel}
           className="h-11 w-full sm:h-9"
         >
-          <SelectValue placeholder={placeholder} />
+          <SelectValue />
         </SelectTrigger>
         <SelectContent>
           {items.map((item) => (

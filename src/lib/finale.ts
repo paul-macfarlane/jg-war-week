@@ -33,21 +33,13 @@ export function finaleDurationMs(ranks: number[]): number {
 /**
  * Each row's state `elapsedMs` into the Finale. Rows sharing a rank appear
  * together, one step per distinct rank, starting with the last-ranked.
- * `progress` runs 0 → 1 over the row's count-up. Given the whole Finale's
- * `durationMs` (when several lists share one clock), a shorter list starts
- * later so that it ends with the others: every list's first place lands at
- * the end.
+ * `progress` runs 0 → 1 over the row's count-up.
  */
-export function finaleRows(
-  ranks: number[],
-  elapsedMs: number,
-  durationMs = finaleDurationMs(ranks),
-): RowFinale[] {
+export function finaleRows(ranks: number[], elapsedMs: number): RowFinale[] {
   const order = stepRanks(ranks);
   const gap = stepMs(order.length);
-  const delayMs = Math.max(0, durationMs - finaleDurationMs(ranks));
   return ranks.map((rank) => {
-    const startMs = delayMs + order.indexOf(rank) * gap;
+    const startMs = order.indexOf(rank) * gap;
     if (elapsedMs < startMs) return { shown: false, progress: 0 };
     return {
       shown: true,

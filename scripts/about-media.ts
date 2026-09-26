@@ -430,9 +430,9 @@ const BRACKET_COMP_NAME = "Capture the Flag";
 /**
  * Builds a small, already-finished single-elimination Bracket on XI (4
  * Participant Entrants, two Round 1 Heats and a decided final) directly in
- * SQL, the way `scripts/brackets-evidence.ts` sets its demo Bracket up. The
- * caller deletes the Competition (which cascades its Entrants and Heats)
- * when done.
+ * SQL: the Competition, its Entrants at Seed Positions 1–4, and each Heat
+ * with its slots and places. The caller deletes the Competition (which
+ * cascades its Entrants and Heats) when done.
  */
 async function setupBracketDemo(): Promise<string> {
   const [xiWarWeek] = await query<{ id: string }>(

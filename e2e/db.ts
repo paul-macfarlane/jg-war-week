@@ -2,7 +2,7 @@ import { Client } from "pg";
 
 import { E2E_EMAIL_PATTERN } from "./env";
 
-/** Runs one query on its own connection, as `scripts/smoke.ts` does. */
+/** Runs one query on its own connection, as `scripts/smoke/harness.ts` does. */
 export async function runQuery<T extends Record<string, unknown>>(
   sql: string,
   params: unknown[] = [],

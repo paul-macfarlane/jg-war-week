@@ -8,7 +8,8 @@ export async function teamTotal(page: Page, team: string): Promise<number> {
       has: page.getByRole("heading", { name: "Team standings", exact: true }),
     })
     .getByRole("listitem")
-    .filter({ hasText: team });
+    // The Team's name exactly, so "Blue" never matches "Blue Steel".
+    .filter({ has: page.getByText(team, { exact: true }) });
   const words = (await row.innerText()).trim().split(/\s+/);
   return Number(words[words.length - 1].replace(/,/g, ""));
 }

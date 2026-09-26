@@ -13,7 +13,8 @@ export const E2E_PARTICIPANT_EMAIL = "e2e-participant@jahnelgroup.com";
 export const E2E_OUTSIDER_EMAIL = "e2e-outsider@example.com";
 
 /**
- * Signs `context` in as `email` the way `scripts/smoke.ts` does: a `user`
+ * Signs `context` in as `email` the way `scripts/smoke/harness.ts`
+ * (`createSmokeSession`) does: a `user`
  * and `session` row straight in the database, and the session cookie
  * better-auth would have set after a Google sign-in. No Google.
  */

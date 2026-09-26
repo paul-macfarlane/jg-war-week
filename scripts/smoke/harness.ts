@@ -5,6 +5,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { Client } from "pg";
 
+import type { WriteResult } from "@/lib/result";
+
 // SMOKE_PORT lets parallel worktrees run smoke side by side.
 export const PORT = Number(process.env.SMOKE_PORT ?? 3100);
 export const BASE_URL = `http://localhost:${PORT}`;
@@ -45,7 +47,8 @@ export const state = {
 };
 
 export type SmokeSession = { cookie: string };
-export type ActionResult = { ok: true } | { ok: false; error: string };
+/** The Competition Host smoke signs in as (an Organizer never is one). */
+export const SMOKE_HOST_EMAIL = "smoke-host@jahnelgroup.com";
 
 export function signedInFetch(url: string, init: RequestInit = {}) {
   return fetch(url, {
@@ -217,7 +220,7 @@ export async function callAction(
   actionId: string,
   args: unknown[],
   session: SmokeSession,
-): Promise<ActionResult> {
+): Promise<WriteResult> {
   const res = await fetch(`${BASE_URL}/admin/points`, {
     method: "POST",
     headers: {
@@ -234,7 +237,7 @@ export async function callAction(
   if (res.status !== 200 || !line) {
     throw new Error(`status=${res.status} body=${body.slice(0, 300)}`);
   }
-  return JSON.parse(line.slice(line.indexOf(":") + 1)) as ActionResult;
+  return JSON.parse(line.slice(line.indexOf(":") + 1)) as WriteResult;
 }
 
 /**

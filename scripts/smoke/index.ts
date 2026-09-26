@@ -31,6 +31,7 @@ import {
   BASE_URL,
   PORT,
   READY_TIMEOUT_MS,
+  SMOKE_HOST_EMAIL,
   SMOKE_ORGANIZER_EMAIL,
   childEnv,
   createSmokeSession,
@@ -87,8 +88,6 @@ import {
 } from "./setup";
 
 loadEnvConfig(process.cwd());
-
-const HOST_EMAIL = "smoke-host@jahnelgroup.com";
 
 async function main() {
   if (
@@ -150,7 +149,7 @@ async function main() {
     organizer: await createSmokeSession(SMOKE_ORGANIZER_EMAIL),
     notOrganizer: await createSmokeSession("smoke-participant@jahnelgroup.com"),
     // No Organizer row; assertHostChecks assigns it one XI Competition.
-    host: await createSmokeSession(HOST_EMAIL),
+    host: await createSmokeSession(SMOKE_HOST_EMAIL),
     // Can't happen through sign-in (the user-create hook refuses it); the
     // session check still treats it as anonymous.
     outsider: await createSmokeSession("smoke-outsider@example.com"),

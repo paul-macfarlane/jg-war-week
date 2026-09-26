@@ -62,10 +62,7 @@ function useFinale(ranks: number[]) {
   return {
     phase,
     start,
-    rows:
-      phase === "playing"
-        ? finaleRows(ranks, elapsedMs, durationMs)
-        : undefined,
+    rows: phase === "playing" ? finaleRows(ranks, elapsedMs) : undefined,
     startedAt,
   };
 }
