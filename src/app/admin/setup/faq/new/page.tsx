@@ -11,15 +11,15 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "New FAQ Item · JG War Week" };
 
 export default async function NewFaqItemPage() {
-  const { warWeek, email, isOrganizer, editions } = await loadAdminPage(
-    "/admin/setup/faq/new",
-  );
-  if (!isOrganizer) return <AdminRefused warWeek={warWeek} email={email} />;
+  const { warWeek, email, allowed, isOrganizer, editions } =
+    await loadAdminPage("/admin/setup/faq/new", "organizers");
+  if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   return (
     <AdminShell
       warWeek={warWeek}
       email={email}
+      isOrganizer={isOrganizer}
       editions={editions}
       current="Setup"
     >
@@ -31,7 +31,7 @@ export default async function NewFaqItemPage() {
           ← FAQ
         </Link>
         <h1 className="text-2xl font-bold">New FAQ Item</h1>
-        <FaqItemForm />
+        <FaqItemForm warWeekId={warWeek.id} />
       </section>
     </AdminShell>
   );

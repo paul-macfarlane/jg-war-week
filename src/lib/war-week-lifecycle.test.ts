@@ -200,254 +200,77 @@ describe("parseNextWarWeekInput", () => {
 });
 
 describe("lifecycleActionError", () => {
-  const lead = "lead@jahnelgroup.com";
-  const pastOnly = "past@jahnelgroup.com";
-  const nextOnly = "next@jahnelgroup.com";
-  const stranger = "someone@jahnelgroup.com";
-
+  // Who may run a lifecycle action is `can` (Organizers only); this is only
+  // the status rules.
   type Edition = {
     id: string;
     edition: string;
     editionNumber: number;
     status: Status;
     startDate: string;
-    organizerEmails: string[];
   };
-  const edition = (
-    n: number,
-    roman: string,
-    status: Status,
-    organizerEmails: string[],
-  ): Edition => ({
+  const edition = (n: number, roman: string, status: Status): Edition => ({
     id: roman,
     edition: roman,
     editionNumber: n,
     status,
     startDate: `20${n + 15}-02-21`,
-    organizerEmails,
   });
 
-  // X is over; XI ended; XII is live and run by `lead`.
-  const x = edition(10, "x", "complete", [pastOnly]);
-  const xi = edition(11, "xi", "complete", [pastOnly, lead]);
-  const xiiLive = edition(12, "xii", "live", [lead]);
+  // X and XI are over; XII is live.
+  const x = edition(10, "x", "complete");
+  const xi = edition(11, "xi", "complete");
+  const xiiLive = edition(12, "xii", "live");
   const liveWeeks = [x, xi, xiiLive];
 
-  // XI ended and XII is upcoming (so XII is current).
-  const xiiUpcoming = edition(12, "xii", "upcoming", [lead, nextOnly]);
+  // XI ended and XII is upcoming.
+  const xiiUpcoming = edition(12, "xii", "upcoming");
   const upcomingWeeks = [x, xi, xiiUpcoming];
-
-  // Everything ended: XI is current.
-  const allOver = [x, xi];
 
   it.each<[string, Parameters<typeof lifecycleActionError>[0], string | null]>([
     [
-      "a past-only Organizer can't reopen their edition while XII is live",
-      {
-        action: "reopen",
-        target: xi,
-        current: xiiLive,
-        warWeeks: liveWeeks,
-        email: pastOnly,
-      },
-      "Only an Organizer of War Week XII, the current War Week, can reopen a War Week.",
+      "Start runs on an upcoming edition",
+      { action: "start", target: xiiUpcoming, warWeeks: upcomingWeeks },
+      null,
     ],
     [
-      "a past-only Organizer can't reopen an older edition once everything has ended",
-      {
-        action: "reopen",
-        target: x,
-        current: { ...xi, organizerEmails: [lead] },
-        warWeeks: [x, { ...xi, organizerEmails: [lead] }],
-        email: pastOnly,
-      },
-      "Only an Organizer of War Week XI, the current War Week, can reopen a War Week.",
-    ],
-    [
-      "a past-only Organizer can't use Start to reopen their edition",
-      {
-        action: "start",
-        target: x,
-        current: xiiLive,
-        warWeeks: liveWeeks,
-        email: pastOnly,
-      },
+      "Start on an ended edition says to reopen it",
+      { action: "start", target: x, warWeeks: liveWeeks },
       "This War Week has ended. Reopen it instead.",
     ],
     [
-      "a past-only Organizer can't create the next War Week from their edition",
-      {
-        action: "create-next",
-        target: x,
-        current: xiiLive,
-        warWeeks: liveWeeks,
-        email: pastOnly,
-      },
-      "Only an Organizer of War Week XII, the current War Week, can create the next War Week.",
-    ],
-    [
-      "a past-only Organizer can't start the upcoming edition",
-      {
-        action: "start",
-        target: xiiUpcoming,
-        current: xiiUpcoming,
-        warWeeks: upcomingWeeks,
-        email: pastOnly,
-      },
-      "You're not an Organizer for War Week XII.",
-    ],
-    [
-      "a non-Organizer can't reopen, even with a forged id",
-      {
-        action: "reopen",
-        target: x,
-        current: xiiLive,
-        warWeeks: liveWeeks,
-        email: stranger,
-      },
-      "You're not an Organizer for War Week X.",
-    ],
-    [
-      "a non-Organizer can't start",
-      {
-        action: "start",
-        target: xiiUpcoming,
-        current: xiiUpcoming,
-        warWeeks: upcomingWeeks,
-        email: stranger,
-      },
-      "You're not an Organizer for War Week XII.",
-    ],
-    [
-      "a non-Organizer can't end",
-      {
-        action: "end",
-        target: xiiLive,
-        current: xiiLive,
-        warWeeks: liveWeeks,
-        email: stranger,
-      },
-      "You're not an Organizer for War Week XII.",
-    ],
-    [
-      "a non-Organizer can't create the next War Week",
-      {
-        action: "create-next",
-        target: xiiLive,
-        current: xiiLive,
-        warWeeks: liveWeeks,
-        email: stranger,
-      },
-      "You're not an Organizer for War Week XII.",
-    ],
-    [
-      "nobody signed in can't do anything",
-      {
-        action: "end",
-        target: xiiLive,
-        current: xiiLive,
-        warWeeks: liveWeeks,
-        email: null,
-      },
-      "You're not an Organizer for War Week XII.",
-    ],
-    [
-      "a current Organizer can reopen the latest ended edition (the one-live guard decides next)",
-      {
-        action: "reopen",
-        target: xi,
-        current: xiiLive,
-        warWeeks: liveWeeks,
-        email: lead,
-      },
-      null,
-    ],
-    [
-      "a current Organizer can't reopen an older ended edition",
-      {
-        action: "reopen",
-        target: x,
-        current: xiiLive,
-        warWeeks: liveWeeks,
-        email: lead,
-      },
-      "Only War Week XI, the most recently ended War Week, can be reopened.",
-    ],
-    [
-      "reopen isn't available while a later edition is upcoming",
-      {
-        action: "reopen",
-        target: xi,
-        current: xiiUpcoming,
-        warWeeks: upcomingWeeks,
-        email: lead,
-      },
-      "War Week XII is next; reopen isn't available.",
-    ],
-    [
-      "the current Organizer of an all-ended site can reopen it",
-      {
-        action: "reopen",
-        target: xi,
-        current: xi,
-        warWeeks: allOver,
-        email: lead,
-      },
-      null,
-    ],
-    [
-      "an Organizer of only the upcoming edition can start it",
-      {
-        action: "start",
-        target: xiiUpcoming,
-        current: xiiUpcoming,
-        warWeeks: upcomingWeeks,
-        email: nextOnly,
-      },
-      null,
-    ],
-    [
-      "a current Organizer can start a later upcoming edition they don't organize",
-      {
-        action: "start",
-        target: edition(13, "xiii", "upcoming", [nextOnly]),
-        current: xiiUpcoming,
-        warWeeks: [...upcomingWeeks, edition(13, "xiii", "upcoming", [])],
-        email: lead,
-      },
-      null,
-    ],
-    [
       "Reopen on an upcoming edition says to start it",
-      {
-        action: "reopen",
-        target: xiiUpcoming,
-        current: xiiUpcoming,
-        warWeeks: upcomingWeeks,
-        email: lead,
-      },
+      { action: "reopen", target: xiiUpcoming, warWeeks: upcomingWeeks },
       "This War Week hasn't started. Start it instead.",
     ],
     [
-      "a current Organizer can end the live edition",
-      {
-        action: "end",
-        target: xiiLive,
-        current: xiiLive,
-        warWeeks: liveWeeks,
-        email: lead,
-      },
+      "Reopen runs on the most recently ended edition (the one-live guard decides next)",
+      { action: "reopen", target: xi, warWeeks: liveWeeks },
       null,
     ],
     [
-      "a current Organizer can create the next War Week from a past edition",
-      {
-        action: "create-next",
-        target: x,
-        current: xiiLive,
-        warWeeks: liveWeeks,
-        email: lead,
-      },
+      "Reopen refuses an older ended edition",
+      { action: "reopen", target: x, warWeeks: liveWeeks },
+      "Only War Week XI, the most recently ended War Week, can be reopened.",
+    ],
+    [
+      "Reopen isn't available while a later edition is upcoming",
+      { action: "reopen", target: xi, warWeeks: upcomingWeeks },
+      "War Week XII is next; reopen isn't available.",
+    ],
+    [
+      "Reopen runs when every edition has ended",
+      { action: "reopen", target: xi, warWeeks: [x, xi] },
+      null,
+    ],
+    [
+      "End leaves the live check to the transition",
+      { action: "end", target: xiiLive, warWeeks: liveWeeks },
+      null,
+    ],
+    [
+      "Create next War Week runs from any edition, even a past one",
+      { action: "create-next", target: x, warWeeks: liveWeeks },
       null,
     ],
   ])("%s", (_, input, expected) => {

@@ -17,9 +17,9 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "FAQ · JG War Week" };
 
 export default async function SetupFaqPage() {
-  const { warWeek, email, isOrganizer, editions } =
-    await loadAdminPage("/admin/setup/faq");
-  if (!isOrganizer) return <AdminRefused warWeek={warWeek} email={email} />;
+  const { warWeek, email, allowed, isOrganizer, editions } =
+    await loadAdminPage("/admin/setup/faq", "organizers");
+  if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const items = await getFaqItems(warWeek);
 
@@ -27,6 +27,7 @@ export default async function SetupFaqPage() {
     <AdminShell
       warWeek={warWeek}
       email={email}
+      isOrganizer={isOrganizer}
       editions={editions}
       current="Setup"
     >

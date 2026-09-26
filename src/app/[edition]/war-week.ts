@@ -1,10 +1,9 @@
 import { redirect } from "next/navigation";
 import { cache } from "react";
 
-import { getSessionEmail } from "@/auth/server";
+import { getActor } from "@/auth/actor";
 import type { NavAccount } from "@/components/primary-nav";
-import { isOrganizer } from "@/lib/access";
-import { getCurrentWarWeek, getWarWeekByEdition } from "@/queries/war-weeks";
+import { getWarWeekByEdition } from "@/queries/war-weeks";
 
 /**
  * Loads a War Week by its edition segment, memoized per request so the
@@ -16,16 +15,16 @@ export const getWarWeekForEdition = cache(async (edition: string) => {
 });
 
 /**
- * The signed-in user for the navigation, memoized per request. `/admin`
- * manages the current War Week, so the Admin link shows for its Organizers.
- * The proxy already requires sign-in; a missing session goes to sign-in.
+ * The signed-in user for the navigation, memoized per request. The Admin
+ * link shows for an Organizer, or anyone who hosts a Competition in any War
+ * Week (the `/admin` gate then opens their edition). The proxy already
+ * requires sign-in; a missing session goes to sign-in.
  */
 export const getNavAccount = cache(async (): Promise<NavAccount> => {
-  const email = await getSessionEmail();
-  if (!email) redirect("/sign-in");
-  const current = await getCurrentWarWeek();
+  const actor = await getActor();
+  if (!actor) redirect("/sign-in");
   return {
-    email,
-    isOrganizer: current ? isOrganizer(email, current) : false,
+    email: actor.email,
+    canOpenAdmin: actor.isOrganizer || actor.hosts.length > 0,
   };
 });

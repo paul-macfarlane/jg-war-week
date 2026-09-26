@@ -10,14 +10,15 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Organizer guide · JG War Week" };
 
 export default async function AdminGuidePage() {
-  const { warWeek, email, isOrganizer, editions } =
+  const { warWeek, email, allowed, isOrganizer, editions } =
     await loadAdminPage("/admin/guide");
-  if (!isOrganizer) return <AdminRefused warWeek={warWeek} email={email} />;
+  if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   return (
     <AdminShell
       warWeek={warWeek}
       email={email}
+      isOrganizer={isOrganizer}
       editions={editions}
       current="Guide"
     >

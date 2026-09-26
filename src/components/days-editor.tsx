@@ -22,10 +22,12 @@ import type { SetupDay } from "@/queries/setup";
  * guard; its error is what's shown.
  */
 function DayRow({
+  warWeekId,
   day,
   startDate,
   endDate,
 }: {
+  warWeekId: string;
   day?: SetupDay;
   startDate: string;
   endDate: string;
@@ -49,7 +51,10 @@ function DayRow({
   function submit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const input = { date, dayTheme };
-    run(() => (day ? updateDay(day.id, input) : createDay(input)), "Day saved");
+    run(
+      () => (day ? updateDay(day.id, input) : createDay(warWeekId, input)),
+      "Day saved",
+    );
   }
 
   return (
@@ -102,10 +107,13 @@ function DayRow({
 
 /** The War Week's Days in date order, each editable, plus an add row. */
 export function DaysEditor({
+  warWeekId,
   days,
   startDate,
   endDate,
 }: {
+  /** The War Week this page was rendered for; creates post it. */
+  warWeekId: string;
   days: SetupDay[];
   startDate: string;
   endDate: string;
@@ -120,6 +128,7 @@ export function DaysEditor({
             // Keyed on the saved values so a refresh resets the row's fields.
             <DayRow
               key={`${day.id}-${day.date}-${day.dayTheme}`}
+              warWeekId={warWeekId}
               day={day}
               startDate={startDate}
               endDate={endDate}
@@ -130,7 +139,11 @@ export function DaysEditor({
       <section className="flex flex-col gap-1">
         <h2 className="text-lg font-semibold">Add a Day</h2>
         <ul>
-          <DayRow startDate={startDate} endDate={endDate} />
+          <DayRow
+            warWeekId={warWeekId}
+            startDate={startDate}
+            endDate={endDate}
+          />
         </ul>
       </section>
     </div>

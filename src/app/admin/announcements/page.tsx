@@ -7,6 +7,7 @@ import {
   PinAnnouncementButton,
 } from "@/components/announcement-admin-buttons";
 import { buttonVariants } from "@/components/ui/button";
+import { can } from "@/lib/access";
 import { announcementVideoCount, formatPublishedAt } from "@/lib/announcements";
 import { getAnnouncements } from "@/queries/announcements";
 
@@ -17,17 +18,22 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Announcements · JG War Week" };
 
 export default async function AdminAnnouncementsPage() {
-  const { warWeek, email, isOrganizer, editions } = await loadAdminPage(
-    "/admin/announcements",
-  );
-  if (!isOrganizer) return <AdminRefused warWeek={warWeek} email={email} />;
+  const { warWeek, email, actor, allowed, isOrganizer, editions } =
+    await loadAdminPage("/admin/announcements");
+  if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const announcements = await getAnnouncements(warWeek);
+  // A Host edits and deletes only their own Announcements; only an
+  // Organizer pins.
+  const mayChange = (authorEmail: string) =>
+    can(actor, "announcement.edit", { warWeekId: warWeek.id, authorEmail }) ===
+    null;
 
   return (
     <AdminShell
       warWeek={warWeek}
       email={email}
+      isOrganizer={isOrganizer}
       editions={editions}
       current="Announcements"
     >
@@ -78,20 +84,26 @@ export default async function AdminAnnouncementsPage() {
                     </td>
                     <td className="py-2">
                       <div className="flex items-center gap-2">
-                        <Link
-                          href={`/admin/announcements/${row.id}`}
-                          className="text-primary text-xs underline-offset-4 hover:underline"
-                        >
-                          Edit
-                        </Link>
-                        <PinAnnouncementButton
-                          id={row.id}
-                          pinned={row.pinned}
-                        />
-                        <DeleteAnnouncementButton
-                          id={row.id}
-                          title={row.title}
-                        />
+                        {mayChange(row.authorEmail) && (
+                          <Link
+                            href={`/admin/announcements/${row.id}`}
+                            className="text-primary text-xs underline-offset-4 hover:underline"
+                          >
+                            Edit
+                          </Link>
+                        )}
+                        {isOrganizer && (
+                          <PinAnnouncementButton
+                            id={row.id}
+                            pinned={row.pinned}
+                          />
+                        )}
+                        {mayChange(row.authorEmail) && (
+                          <DeleteAnnouncementButton
+                            id={row.id}
+                            title={row.title}
+                          />
+                        )}
                       </div>
                     </td>
                   </tr>

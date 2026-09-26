@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import type { WarWeek } from "@/db/schema";
-import { canAdministerWarWeek, isOrganizer } from "@/lib/access";
 import {
   type Parsed,
   optional,
@@ -64,68 +63,40 @@ export type LifecycleAction = "start" | "end" | "reopen" | "create-next";
 
 type LifecycleWarWeek = Pick<
   WarWeek,
-  | "id"
-  | "edition"
-  | "editionNumber"
-  | "status"
-  | "startDate"
-  | "organizerEmails"
+  "id" | "edition" | "editionNumber" | "status" | "startDate"
 >;
 
 const warWeekName = (w: Pick<WarWeek, "edition">) =>
   `War Week ${w.edition.toUpperCase()}`;
 
 /**
- * Why `email` can't run a lifecycle action on `target`, or null when it
- * can. `current` is the current War Week and `warWeeks` every edition.
- * - End: whoever may administer the target (`canAdministerWarWeek`).
- * - Create next War Week: an Organizer of the current War Week, from any
- *   edition they may administer.
- * - Start (an `upcoming` target): an Organizer of the target or of the
- *   current War Week.
- * - Reopen (a `complete` target, whichever button asked): an Organizer of
- *   the current War Week who may administer the target, and only for the
- *   most recently ended edition while no later edition is upcoming.
- * So an Organizer of only a past edition can never make it current again.
+ * Why a lifecycle action can't run on `target` given every edition
+ * (`warWeeks`), or null when it can. Only the status rules: who may run it
+ * is `can` (Organizers only), checked first.
+ * - Start only moves an `upcoming` edition; on a `complete` one it says to
+ *   reopen instead.
+ * - Reopen (a `complete` target, whichever button asked) only for the most
+ *   recently ended edition, and never while a later edition is upcoming.
  * The one-live rule (`transitionError`) is checked after this.
  */
 export function lifecycleActionError({
   action,
   target,
-  current,
   warWeeks,
-  email,
 }: {
   action: LifecycleAction;
   target: LifecycleWarWeek;
-  current: LifecycleWarWeek | undefined;
   warWeeks: LifecycleWarWeek[];
-  email: string | null | undefined;
 }): string | null {
-  const notOrganizer = `You're not an Organizer for ${warWeekName(target)}.`;
-  const administers = canAdministerWarWeek(email, target, current);
-  const organizesCurrent = current !== undefined && isOrganizer(email, current);
-  const currentOnly = (what: string) =>
-    current
-      ? `Only an Organizer of ${warWeekName(current)}, the current War Week, can ${what}.`
-      : notOrganizer;
-
-  if (action === "end") return administers ? null : notOrganizer;
-  if (action === "create-next") {
-    if (!administers) return notOrganizer;
-    return organizesCurrent ? null : currentOnly("create the next War Week");
-  }
+  if (action === "end" || action === "create-next") return null;
   if (target.status === "upcoming") {
-    if (!isOrganizer(email, target) && !organizesCurrent) return notOrganizer;
     return action === "reopen" ? moveError("reopen", "upcoming") : null;
   }
   // Already live: the transition itself says so.
-  if (target.status === "live") return administers ? null : notOrganizer;
+  if (target.status === "live") return null;
 
   // A complete target: the move is Reopen, whichever button asked.
-  if (!administers) return notOrganizer;
   if (action === "start") return moveError("start", "complete");
-  if (!organizesCurrent) return currentOnly("reopen a War Week");
   const latest = warWeeks
     .filter((w) => w.status === "complete")
     .reduce<LifecycleWarWeek | undefined>(

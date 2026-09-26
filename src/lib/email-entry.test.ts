@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  emailsFromInput,
-  inputFromEmails,
-  parseEmailEntry,
-} from "@/lib/organizer-emails";
+import { parseEmailEntry } from "@/lib/email-entry";
 
 describe("parseEmailEntry", () => {
   it("accepts a single address typed then Enter", () => {
@@ -53,30 +49,5 @@ describe("parseEmailEntry", () => {
 
   it("gives nothing for blank input", () => {
     expect(parseEmailEntry(" , \n")).toEqual({ accepted: [], rejected: [] });
-  });
-});
-
-describe("emailsFromInput / inputFromEmails", () => {
-  it("reads the newline-separated form value into a list", () => {
-    expect(
-      emailsFromInput("jane@jahnelgroup.com\nsam@jahnelgroup.com"),
-    ).toEqual(["jane@jahnelgroup.com", "sam@jahnelgroup.com"]);
-    expect(emailsFromInput("")).toEqual([]);
-  });
-
-  it("writes a list back as one address per line", () => {
-    expect(
-      inputFromEmails(["jane@jahnelgroup.com", "sam@jahnelgroup.com"]),
-    ).toBe("jane@jahnelgroup.com\nsam@jahnelgroup.com");
-  });
-
-  it("round-trips the form value", () => {
-    for (const value of [
-      "jane@jahnelgroup.com\nsam@jahnelgroup.com",
-      "jane@jahnelgroup.com",
-      "",
-    ]) {
-      expect(inputFromEmails(emailsFromInput(value))).toBe(value);
-    }
   });
 });

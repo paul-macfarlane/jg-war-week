@@ -29,7 +29,7 @@ export function MoreMenu({
     edition,
     mode,
     teamLabel,
-    isOrganizer: account.isOrganizer,
+    canOpenAdmin: account.canOpenAdmin,
   });
 
   return (

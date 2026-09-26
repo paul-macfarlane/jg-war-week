@@ -1,7 +1,4 @@
-/**
- * Organizer emails as chips in the War Week settings form. The chips still
- * submit the newline-separated text `parseWarWeekSettingsInput` validates.
- */
+/** Reading JG emails typed or pasted into the email-chips control. */
 import { isJahnelGroupEmail } from "@/lib/access";
 
 const SEPARATORS = /[\s,]+/;
@@ -22,14 +19,4 @@ export function parseEmailEntry(text: string): {
     else rejected.add(entry);
   }
   return { accepted: [...accepted], rejected: [...rejected] };
-}
-
-/** The chip list from the form's Organizer emails text. */
-export function emailsFromInput(value: string): string[] {
-  return value.split(SEPARATORS).filter(Boolean);
-}
-
-/** The form's Organizer emails text from the chip list, one per line. */
-export function inputFromEmails(emails: string[]): string {
-  return emails.join("\n");
 }

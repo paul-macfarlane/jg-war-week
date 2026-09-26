@@ -6,7 +6,7 @@ const base = {
   edition: "xi",
   mode: "teams" as const,
   teamLabel: "House",
-  isOrganizer: false,
+  canOpenAdmin: false,
 };
 
 describe("moreLinks", () => {
@@ -16,7 +16,7 @@ describe("moreLinks", () => {
   });
 
   it("includes the Admin link for an Organizer", () => {
-    const links = moreLinks({ ...base, isOrganizer: true });
+    const links = moreLinks({ ...base, canOpenAdmin: true });
     const admin = links.find((link) => link.label === "Admin");
     expect(admin?.href).toBe("/admin");
     expect(admin?.icon).toBeDefined();

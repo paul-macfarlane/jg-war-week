@@ -26,21 +26,29 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Points Entries · JG War Week" };
 
 export default async function AdminPointsPage() {
-  const { warWeek, email, isOrganizer, editions } =
+  const { warWeek, email, allowed, isOrganizer, editions, runs } =
     await loadAdminPage("/admin/points");
-  if (!isOrganizer) return <AdminRefused warWeek={warWeek} email={email} />;
+  if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
-  const [options, ledger, standings, brackets] = await Promise.all([
+  const [allOptions, allLedger, standings, allBrackets] = await Promise.all([
     getPointsEntryFormOptions(warWeek),
     getAdminLedger(warWeek),
     getStandings(warWeek),
     getBracketCompetitions(warWeek),
   ]);
+  // A Host sees only their own Competitions in the form, ledger and Brackets.
+  const options = {
+    ...allOptions,
+    competitions: allOptions.competitions.filter((c) => runs(c.id)),
+  };
+  const ledger = allLedger.filter((entry) => runs(entry.competitionId));
+  const brackets = allBrackets.filter((b) => runs(b.id));
 
   return (
     <AdminShell
       warWeek={warWeek}
       email={email}
+      isOrganizer={isOrganizer}
       editions={editions}
       current="Points Entries"
     >

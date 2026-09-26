@@ -19,9 +19,9 @@ export const metadata: Metadata = {
  * add them to the list below.
  */
 export default async function AdminFinalePage() {
-  const { warWeek, email, isOrganizer, editions } =
+  const { warWeek, email, allowed, isOrganizer, editions } =
     await loadAdminPage("/admin/standings");
-  if (!isOrganizer) return <AdminRefused warWeek={warWeek} email={email} />;
+  if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const edition = warWeek.edition;
 
@@ -29,6 +29,7 @@ export default async function AdminFinalePage() {
     <AdminShell
       warWeek={warWeek}
       email={email}
+      isOrganizer={isOrganizer}
       editions={editions}
       current="Finale"
     >

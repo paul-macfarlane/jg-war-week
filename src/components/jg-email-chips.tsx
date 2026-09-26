@@ -1,7 +1,7 @@
 "use client";
 
 import { XIcon } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,58 +12,56 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  emailsFromInput,
-  inputFromEmails,
-  parseEmailEntry,
-} from "@/lib/organizer-emails";
+import { parseEmailEntry } from "@/lib/email-entry";
 
 /**
- * Organizer emails as removable chips. Enter, a comma or pasting a list adds
- * them; addresses outside @jahnelgroup.com are refused inline and left in
- * the box to fix. Your own chip can't be removed. `value` is the same
- * newline-separated text the settings action already validates.
+ * A list of Jahnel Group emails as removable chips. Enter, a comma or
+ * pasting a list adds them; addresses outside @jahnelgroup.com are refused
+ * inline and left in the box to fix. The server re-validates whatever is
+ * saved.
  */
-export function OrganizerEmailChips({
+export function JgEmailChips({
+  label,
+  description,
   value,
-  actorEmail,
   onChange,
+  disabled = false,
 }: {
-  value: string;
-  actorEmail: string;
-  onChange: (value: string) => void;
+  label: string;
+  description?: string;
+  value: string[];
+  onChange: (value: string[]) => void;
+  disabled?: boolean;
 }) {
-  const emails = emailsFromInput(value);
+  const id = useId();
+  const labelId = `${id}-label`;
+  const inputId = `${id}-input`;
+  const helpId = `${id}-help`;
   const [draft, setDraft] = useState("");
   const [rejected, setRejected] = useState<string[]>([]);
-  const self = actorEmail.toLowerCase();
 
   function add(text: string) {
     const entry = parseEmailEntry(text);
-    const known = new Set(emails.map((email) => email.toLowerCase()));
+    const known = new Set(value.map((email) => email.toLowerCase()));
     const added = entry.accepted.filter((email) => !known.has(email));
-    if (added.length > 0) onChange(inputFromEmails([...emails, ...added]));
+    if (added.length > 0) onChange([...value, ...added]);
     setRejected(entry.rejected);
     setDraft(entry.rejected.join(", "));
   }
 
   function remove(email: string) {
     const target = email.toLowerCase();
-    onChange(inputFromEmails(emails.filter((e) => e.toLowerCase() !== target)));
+    onChange(value.filter((e) => e.toLowerCase() !== target));
   }
 
   return (
     <Field>
-      <FieldLabel id="organizer-emails-label" htmlFor="organizer-emails-input">
-        Organizer emails
+      <FieldLabel id={labelId} htmlFor={inputId}>
+        {label}
       </FieldLabel>
-      <ul
-        aria-labelledby="organizer-emails-label"
-        className="flex flex-wrap gap-1.5"
-      >
-        {emails.map((email) => {
-          const isSelf = email.toLowerCase() === self;
-          return (
+      {value.length > 0 && (
+        <ul aria-labelledby={labelId} className="flex flex-wrap gap-1.5">
+          {value.map((email) => (
             <li key={email} className="max-w-full">
               <Badge
                 variant="secondary"
@@ -74,30 +72,29 @@ export function OrganizerEmailChips({
                   type="button"
                   variant="ghost"
                   size="icon-xs"
-                  className="rounded-full aria-disabled:cursor-not-allowed aria-disabled:opacity-40"
+                  className="rounded-full"
                   aria-label={`Remove ${email}`}
-                  disabled={isSelf}
-                  focusableWhenDisabled={isSelf}
-                  title={isSelf ? "You can't remove your own email" : undefined}
+                  disabled={disabled}
                   onClick={() => remove(email)}
                 >
                   <XIcon />
                 </Button>
               </Badge>
             </li>
-          );
-        })}
-      </ul>
+          ))}
+        </ul>
+      )}
       <Input
-        id="organizer-emails-input"
-        aria-labelledby="organizer-emails-label"
-        aria-describedby="organizer-emails-help"
+        id={inputId}
+        aria-labelledby={labelId}
+        aria-describedby={helpId}
         type="text"
         inputMode="email"
         autoComplete="off"
         placeholder="name@jahnelgroup.com"
         className="border-border h-11 sm:h-9"
         value={draft}
+        disabled={disabled}
         aria-invalid={rejected.length > 0 || undefined}
         onChange={(event) => {
           const text = event.target.value;
@@ -129,13 +126,12 @@ export function OrganizerEmailChips({
       />
       {rejected.length > 0 && (
         <FieldError>
-          Only @jahnelgroup.com addresses can be Organizers:{" "}
-          {rejected.join(", ")}
+          Only @jahnelgroup.com addresses can be added: {rejected.join(", ")}
         </FieldError>
       )}
-      <FieldDescription id="organizer-emails-help">
-        Press Enter or a comma to add, or paste a list. Everyone listed can use
-        these admin pages.
+      <FieldDescription id={helpId}>
+        Press Enter or a comma to add, or paste a list.
+        {description ? ` ${description}` : ""}
       </FieldDescription>
     </Field>
   );

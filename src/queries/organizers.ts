@@ -60,3 +60,24 @@ export async function getCompetitionHosts(
     .orderBy(competitionHost.email);
   return rows.map((row) => row.email);
 }
+
+/** Every Competition's Host emails in a War Week, by Competition id. */
+export async function getWarWeekCompetitionHosts(
+  warWeekId: string,
+  dbOrTx: DBOrTx = db,
+): Promise<Record<string, string[]>> {
+  const rows = await dbOrTx
+    .select({
+      competitionId: competitionHost.competitionId,
+      email: competitionHost.email,
+    })
+    .from(competitionHost)
+    .innerJoin(competition, eq(competition.id, competitionHost.competitionId))
+    .where(eq(competition.warWeekId, warWeekId))
+    .orderBy(competitionHost.email);
+  const hosts: Record<string, string[]> = {};
+  for (const row of rows) {
+    (hosts[row.competitionId] ??= []).push(row.email);
+  }
+  return hosts;
+}

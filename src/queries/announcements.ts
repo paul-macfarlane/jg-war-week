@@ -1,12 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
-import {
-  type Announcement,
-  type WarWeek,
-  announcement,
-  warWeek as warWeekTable,
-} from "@/db/schema";
+import { type Announcement, type WarWeek, announcement } from "@/db/schema";
 import { isAnnouncementId, sortAnnouncements } from "@/lib/announcements";
 
 async function loadSorted(
@@ -54,25 +49,6 @@ export async function getAnnouncementForEdit(
     .select()
     .from(announcement)
     .where(and(eq(announcement.id, id), eq(announcement.warWeekId, warWeek.id)))
-    .limit(1);
-  return found;
-}
-
-const organizerWarWeekColumns = {
-  id: warWeekTable.id,
-  edition: warWeekTable.edition,
-  status: warWeekTable.status,
-  organizerEmails: warWeekTable.organizerEmails,
-};
-
-/** The War Week an Announcement belongs to, for the Organizer check. */
-export async function getAnnouncementWarWeek(id: string, dbOrTx: DBOrTx = db) {
-  if (!isAnnouncementId(id)) return undefined;
-  const [found] = await dbOrTx
-    .select(organizerWarWeekColumns)
-    .from(announcement)
-    .innerJoin(warWeekTable, eq(warWeekTable.id, announcement.warWeekId))
-    .where(eq(announcement.id, id))
     .limit(1);
   return found;
 }

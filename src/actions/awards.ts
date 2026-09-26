@@ -2,29 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireAdminWarWeek, requireOrganizer } from "@/auth/organizer";
+import { authorize } from "@/auth/authorize";
 import { type AwardInput, parseAwardInput } from "@/lib/awards";
 import * as mutations from "@/mutations/awards";
 import type { MutationResult } from "@/mutations/types";
-import { getAwardWarWeek } from "@/queries/awards";
 
 export type AwardActionResult = MutationResult;
-
-const NOT_FOUND = "That Award no longer exists.";
-
-type OrganizerWarWeek = NonNullable<
-  Awaited<ReturnType<typeof getAwardWarWeek>>
->;
-
-/** The mutation context when the caller is an Organizer of `warWeek`. */
-async function organizerContext(warWeek: OrganizerWarWeek) {
-  const organizer = await requireOrganizer(warWeek);
-  if (!organizer.ok) return organizer;
-  return {
-    ok: true as const,
-    ctx: { warWeekId: warWeek.id, actorEmail: organizer.email },
-  };
-}
 
 function revalidateWarWeek(edition: string) {
   revalidatePath("/admin", "layout");
@@ -33,21 +16,18 @@ function revalidateWarWeek(edition: string) {
   revalidatePath("/history", "layout");
 }
 
+/** Gives an Award in the War Week the form was rendered for. */
 export async function createAward(
+  warWeekId: string,
   input: AwardInput,
 ): Promise<AwardActionResult> {
-  // No row to derive it from: the War Week selected in `/admin`.
-  // requireAdminWarWeek has already done the Organizer check.
-  const selected = await requireAdminWarWeek();
-  if (!selected.ok) return selected;
-  const { warWeek } = selected;
-  const ctx = { warWeekId: warWeek.id, actorEmail: selected.email };
-
+  const authorized = await authorize("award.create", "warWeek", warWeekId);
+  if (!authorized.ok) return authorized;
   const parsed = parseAwardInput(input);
   if (!parsed.ok) return parsed;
 
-  const result = await mutations.createAward(parsed.value, ctx);
-  if (result.ok) revalidateWarWeek(warWeek.edition);
+  const result = await mutations.createAward(parsed.value, authorized.ctx);
+  if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
   return result;
 }
 
@@ -55,26 +35,21 @@ export async function updateAward(
   id: string,
   input: AwardInput,
 ): Promise<AwardActionResult> {
-  const warWeek = await getAwardWarWeek(id);
-  if (!warWeek) return { ok: false, error: NOT_FOUND };
-  const organizer = await organizerContext(warWeek);
-  if (!organizer.ok) return organizer;
-
+  const authorized = await authorize("award.edit", "award", id);
+  if (!authorized.ok) return authorized;
   const parsed = parseAwardInput(input);
   if (!parsed.ok) return parsed;
 
-  const result = await mutations.updateAward(id, parsed.value, organizer.ctx);
-  if (result.ok) revalidateWarWeek(warWeek.edition);
+  const result = await mutations.updateAward(id, parsed.value, authorized.ctx);
+  if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
   return result;
 }
 
 export async function deleteAward(id: string): Promise<AwardActionResult> {
-  const warWeek = await getAwardWarWeek(id);
-  if (!warWeek) return { ok: false, error: NOT_FOUND };
-  const organizer = await organizerContext(warWeek);
-  if (!organizer.ok) return organizer;
+  const authorized = await authorize("award.delete", "award", id);
+  if (!authorized.ok) return authorized;
 
-  const result = await mutations.deleteAward(id, organizer.ctx);
-  if (result.ok) revalidateWarWeek(warWeek.edition);
+  const result = await mutations.deleteAward(id, authorized.ctx);
+  if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
   return result;
 }
