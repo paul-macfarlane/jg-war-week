@@ -34,7 +34,7 @@ repository keeps its own base SHA, branch, verification result, and pull request
 
 ## Repository framing
 
-**war-weeker** — JG War Week: one place for Jahnel Group organizers to run War Week (themes, schedule, teams, competitions, points, awards, announcements) and for participants to follow it, plus a curated War Week history. Built for the JG AI Connection Event; submission due Fri 2026-09-25 10:00 AM.
+**war-weeker** — JG War Week: one place for Jahnel Group Organizers and Competition Hosts to run War Week (themes, schedule, teams, competitions, points, awards, announcements) and for participants to follow it, plus a curated War Week history. Post-hackathon: being hardened toward War Week XII (late Feb 2027); plan in `.scratch/hardening/spec.md`.
 
 ### Structure
 
@@ -46,7 +46,7 @@ repository keeps its own base SHA, branch, verification result, and pull request
 
 - Competiscore data is gone; historical War Week content comes only from old-wikis/ or manual entry
 - Never read .env.local or other .env files; use .env.example for variable names
-- Keep scope to what fits the Fri 2026-09-25 10:00 AM deadline
+- No new feature without a named Organizer, Host or Participant need; prefer removing to adding. Correctness, then design, then fun (`.scratch/hardening/spec.md`)
 - All work goes on a feature branch (`feat/NN-<slug>`, `fix/…`, `chore/…`, `docs/…`) with a PR into `staging`. Never commit directly to `staging` or `main`; `staging` → `main` is its own PR. This overrides any skill that says to commit to the current branch.
 - UI uses shadcn components (base-nova / Base UI, `components.json`). Add one with `pnpm dlx shadcn@latest add <name>`; don't hand-roll a control shadcn already has. App-specific wrappers (`EntityCombobox`, `DatePicker`, `DateRangePicker`, `TimeCombobox`, `ColorField`, `ConfirmDialog`) live in `src/components/`; confirms use `ConfirmDialog`, results use sonner toasts; their popups portal into the themed root via `ThemeRoot`.
 

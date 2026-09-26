@@ -1,4 +1,5 @@
 # Overnight handoff — 2026-09-25
+> **2026-09-26:** Stale. PRs #65–#70 have all merged into `staging`. Open follow-ups now live in `.scratch/hardening/`.
 
 Written for Paul by Claude (orchestrator). Everything is an open PR; nothing was merged.
 

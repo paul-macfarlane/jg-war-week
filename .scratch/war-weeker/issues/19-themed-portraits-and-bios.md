@@ -31,3 +31,5 @@
 - Does the MCP server expose portraits or bios?
 
 ## Comments
+
+- 2026-09-26: Now a phase 3 candidate (`.scratch/hardening/issues/17`). It still needs its own grilling before any build.
