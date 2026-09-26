@@ -4207,6 +4207,7 @@ async function assertHostChecks(sessions: {
   }
   try {
     await assertHostAllowedAndRefused(fixture);
+    await assertHostKeepsOwnPin(fixture);
     await assertAdminTrimmedForHost(sessions);
     await assertAdminLinkForHost(sessions);
     await assertAccessBeforeValidation(sessions, fixture);
@@ -4334,6 +4335,78 @@ async function assertHostAllowedAndRefused(fixture: HostFixture) {
           ? null
           : `result=${JSON.stringify(result)} unchanged=${same}`;
       },
+    );
+  }
+}
+
+/** Spec: a Host's edit of their own Announcement never changes its pin. */
+async function assertHostKeepsOwnPin(fixture: HostFixture) {
+  const ids = serverActionIds();
+  const title = `${SMOKE_ANNOUNCEMENT_PREFIX}host-pinned`;
+  const body = {
+    type: "doc",
+    content: [
+      { type: "paragraph", content: [{ type: "text", text: "smoke" }] },
+    ],
+  };
+  const pinned = async (id: string) => {
+    const [row] = await runQuery<{ pinned: boolean; title: string }>(
+      `select pinned, title from announcement where id = $1`,
+      [id],
+    );
+    return row;
+  };
+  try {
+    await deleteSmokeAnnouncements();
+    // An Organizer pinned the Host's own Announcement.
+    const [row] = await runQuery<{ id: string }>(
+      `insert into announcement (war_week_id, title, body, pinned, author_email)
+       values ($1, $2, $3, true, $4) returning id`,
+      [fixture.xiId, title, JSON.stringify(body), SMOKE_HOST_EMAIL],
+    );
+
+    await runCheck(
+      "updateAnnouncement as a Host without pinned keeps their Organizer-pinned Announcement pinned",
+      async () => {
+        const result = await callAction(
+          ids.updateAnnouncement,
+          [row.id, { title: `${title}-edited`, body, videoUrls: [] }],
+          fixture.session,
+        );
+        const after = await pinned(row.id);
+        return result.ok &&
+          after.pinned === true &&
+          after.title === `${title}-edited`
+          ? null
+          : `result=${JSON.stringify(result)} row=${JSON.stringify(after)}`;
+      },
+    );
+
+    await runCheck(
+      "updateAnnouncement as a Host with pinned: false on their pinned Announcement is refused with 'Only an Organizer can unpin Announcements.'",
+      async () => {
+        const result = await callAction(
+          ids.updateAnnouncement,
+          [
+            row.id,
+            { title: `${title}-unpinned`, body, videoUrls: [], pinned: false },
+          ],
+          fixture.session,
+        );
+        const after = await pinned(row.id);
+        return !result.ok &&
+          result.error === "Only an Organizer can unpin Announcements." &&
+          after.pinned === true &&
+          after.title === `${title}-edited`
+          ? null
+          : `result=${JSON.stringify(result)} row=${JSON.stringify(after)}`;
+      },
+    );
+  } catch (error) {
+    fail("the Host's own pinned Announcement", String(error));
+  } finally {
+    await deleteSmokeAnnouncements().catch((error) =>
+      fail("delete smoke Announcements", String(error)),
     );
   }
 }

@@ -21,25 +21,33 @@ function revalidateWarWeek(edition: string) {
 
 /**
  * Pinning is Organizer-only, so a create or edit that would change whether
- * the Announcement is pinned is checked as a pin or unpin too.
+ * the Announcement is pinned is checked as a pin or unpin too, against the
+ * parsed value that will be written.
  */
 function pinRefusal(
   authorized: Authorized,
-  input: unknown,
+  pinned: boolean,
   pinnedNow: boolean,
 ): string | null {
-  const posted =
-    typeof input === "object" && input !== null
-      ? (input as { pinned?: unknown }).pinned
-      : undefined;
-  if (typeof posted !== "boolean" || posted === pinnedNow) return null;
+  if (pinned === pinnedNow) return null;
   return can(
     authorized.actor,
-    posted ? "announcement.pin" : "announcement.unpin",
+    pinned ? "announcement.pin" : "announcement.unpin",
     {
       warWeekId: authorized.warWeek.id,
     },
   );
+}
+
+/**
+ * An edit that doesn't post `pinned` leaves it as it is: the current value
+ * is carried into the input before parsing, so the parser's default
+ * (`false`) never unpins it.
+ */
+function withCurrentPin(input: unknown, pinnedNow: boolean): unknown {
+  if (typeof input !== "object" || input === null) return input;
+  const posted = (input as { pinned?: unknown }).pinned;
+  return posted === undefined ? { ...input, pinned: pinnedNow } : input;
 }
 
 /** Posts an Announcement to the War Week the form was rendered for. */
@@ -54,10 +62,10 @@ export async function createAnnouncement(
       warWeekId,
     );
     if (!authorized.ok) return authorized;
-    const refusal = pinRefusal(authorized, input, false);
-    if (refusal) return { ok: false, error: refusal };
     const parsed = parseAnnouncementInput(input);
     if (!parsed.ok) return parsed;
+    const refusal = pinRefusal(authorized, parsed.value.pinned, false);
+    if (refusal) return { ok: false, error: refusal };
 
     const result = await mutations.createAnnouncement(
       parsed.value,
@@ -75,14 +83,13 @@ export async function updateAnnouncement(
   return guarded(async () => {
     const authorized = await authorize("announcement.edit", "announcement", id);
     if (!authorized.ok) return authorized;
-    const refusal = pinRefusal(
-      authorized,
-      input,
-      authorized.target.pinned ?? false,
+    const pinnedNow = authorized.target.pinned ?? false;
+    const parsed = parseAnnouncementInput(
+      withCurrentPin(input, pinnedNow) as AnnouncementInput,
     );
-    if (refusal) return { ok: false, error: refusal };
-    const parsed = parseAnnouncementInput(input);
     if (!parsed.ok) return parsed;
+    const refusal = pinRefusal(authorized, parsed.value.pinned, pinnedNow);
+    if (refusal) return { ok: false, error: refusal };
 
     const result = await mutations.updateAnnouncement(
       id,
