@@ -1,0 +1,415 @@
+
+> war-weeker@0.1.0 gate /Users/paulmacfarlane/Code/war-weeker
+> pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm smoke
+
+
+> war-weeker@0.1.0 typecheck /Users/paulmacfarlane/Code/war-weeker
+> next typegen && tsc --noEmit
+
+Generating route types...
+✓ Types generated successfully
+
+> war-weeker@0.1.0 lint /Users/paulmacfarlane/Code/war-weeker
+> eslint .
+
+
+/Users/paulmacfarlane/Code/war-weeker/src/app/sign-in/page.tsx
+  49:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  60:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/paulmacfarlane/Code/war-weeker/src/components/about-feature-grid.tsx
+  20:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/paulmacfarlane/Code/war-weeker/src/components/about-finale-demo.tsx
+  28:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/paulmacfarlane/Code/war-weeker/src/components/roster.tsx
+  72:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/paulmacfarlane/Code/war-weeker/src/components/war-week-hero.tsx
+  15:9   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  29:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+✖ 7 problems (0 errors, 7 warnings)
+
+
+> war-weeker@0.1.0 test /Users/paulmacfarlane/Code/war-weeker
+> vitest run
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.11 /Users/paulmacfarlane/Code/war-weeker
+
+(node:71435) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:71428) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+ Test Files  78 passed (78)
+      Tests  1362 passed (1362)
+   Start at  17:44:40
+   Duration  6.10s (transform 2.31s, setup 0ms, import 20.69s, tests 21.14s, environment 5ms)
+
+
+> war-weeker@0.1.0 build /Users/paulmacfarlane/Code/war-weeker
+> next build
+
+▲ Next.js 16.3.6 (Turbopack)
+✓ Running next.config.ts took 57ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1209ms
+  Running TypeScript ...
+  Finished TypeScript in 1729ms ...
+  Collecting page data using 9 workers ...
+2026-09-26T21:44:51.386Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-09-26T21:44:51.398Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-09-26T21:44:51.419Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-09-26T21:44:51.427Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-09-26T21:44:51.449Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-09-26T21:44:51.451Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-09-26T21:44:51.475Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-09-26T21:44:51.482Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-09-26T21:44:51.528Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-09-26T21:44:51.558Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+  Generating static pages using 9 workers (0/8) ...
+  Generating static pages using 9 workers (2/8) 
+  Generating static pages using 9 workers (4/8) 
+  Generating static pages using 9 workers (6/8) 
+✓ Generating static pages using 9 workers (8/8) in 114ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[edition]
+├ ƒ /[edition]/awards
+├ ƒ /[edition]/competitions
+├ ƒ /[edition]/competitions/[id]
+├ ƒ /[edition]/faq
+├ ƒ /[edition]/finale
+├ ƒ /[edition]/leaderboard
+├ ƒ /[edition]/more
+├ ƒ /[edition]/news
+├ ƒ /[edition]/schedule
+├ ƒ /[edition]/teams
+├ ○ /about
+├ ƒ /admin
+├ ƒ /admin/announcements
+├ ƒ /admin/announcements/[id]
+├ ƒ /admin/announcements/new
+├ ƒ /admin/awards
+├ ƒ /admin/awards/[id]
+├ ƒ /admin/awards/new
+├ ƒ /admin/brackets/[id]
+├ ƒ /admin/guide
+├ ƒ /admin/organizers
+├ ƒ /admin/points
+├ ƒ /admin/points/[id]
+├ ƒ /admin/setup
+├ ƒ /admin/setup/competitions
+├ ƒ /admin/setup/competitions/[id]/bracket
+├ ƒ /admin/setup/days
+├ ƒ /admin/setup/faq
+├ ƒ /admin/setup/faq/[id]
+├ ƒ /admin/setup/faq/new
+├ ƒ /admin/setup/next
+├ ƒ /admin/setup/schedule
+├ ƒ /admin/setup/schedule/[id]
+├ ƒ /admin/setup/schedule/new
+├ ƒ /admin/setup/teams
+├ ƒ /admin/setup/war-week
+├ ƒ /admin/standings
+├ ƒ /api/auth/[...all]
+├ ƒ /api/mcp
+├ ƒ /history
+├ ƒ /install
+├ ƒ /llms.txt
+├ ○ /manifest.webmanifest
+├ ○ /privacy
+├ ƒ /sign-in
+└ ○ /terms
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> war-weeker@0.1.0 smoke /Users/paulmacfarlane/Code/war-weeker
+> tsx scripts/smoke.ts
+
+
+> war-weeker@0.1.0 db:migrate /Users/paulmacfarlane/Code/war-weeker
+> drizzle-kit migrate
+
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/Users/paulmacfarlane/Code/war-weeker/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] applying migrations...[2K[1G[✓] migrations applied successfully!ok - pnpm db:migrate
+
+> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/war-weeker
+> tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xi.json
+
+Loaded War Week i (reset)
+Loaded War Week ii (reset)
+Loaded War Week iii (reset)
+Loaded War Week iv (reset)
+Loaded War Week ix (reset)
+Loaded War Week v (reset)
+Loaded War Week vi (reset)
+Loaded War Week vii (reset)
+Loaded War Week viii (reset)
+Loaded War Week x (reset)
+Loaded War Week xi (reset)
+ok - pnpm seed:load --reset (11 seeds, load 1)
+
+> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/war-weeker
+> tsx scripts/seed-load.ts seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xi.json
+
+Loaded War Week i
+Loaded War Week ii
+Loaded War Week iii
+Loaded War Week iv
+Loaded War Week ix
+Loaded War Week v
+Loaded War Week vi
+Loaded War Week vii
+Loaded War Week viii
+Loaded War Week x
+Loaded War Week xi
+ok - pnpm seed:load (11 seeds, load 2)
+ok - after loading the seed twice, War Week XI has 1 war_week rows
+ok - after loading the seed twice, War Week XI has 6 day rows
+ok - after loading the seed twice, War Week XI has 47 schedule_item rows
+ok - after loading the seed twice, War Week XI has 2 team rows
+ok - after loading the seed twice, War Week XI has 101 participant rows
+ok - after loading the seed twice, War Week XI has 22 competition rows
+ok - after loading the seed twice, War Week XI has 16 points_entry rows
+ok - after loading the seed twice, War Week XI has 3 award rows
+ok - after loading the seed twice, War Week XI has 3 announcement rows
+ok - after loading the seed twice, War Week XI has 6 faq_item rows
+ok - the database rejects a Points Entry with both a Team and a Participant
+ok - the XI seed loads 5/3/1 Placement Points for Catan and none for Beast Mode
+
+> war-weeker@0.1.0 start /Users/paulmacfarlane/Code/war-weeker
+> next start -p 3100
+
+▲ Next.js 16.3.6
+- Local:         http://localhost:3100
+- Network:       http://192.168.1.186:3100
+✓ Ready in 83ms
+✓ Running next.config.ts took 19ms
+ok - server ready
+ok - signed-in GET / redirects to /xi
+ok - GET /xi renders War Week XI with the Team Standings
+ok - GET /zz returns 404
+ok - GET /xi/leaderboard responds and shows the Team Standings for the demo seed
+ok - GET /xi/schedule groups by Day with Day Themes, ET times and Competition links
+ok - GET /xi?at=<Tue Feb 24 12:30 ET> shows today's Day Theme and now/next
+ok - GET /xi/more links to Competitions, Teams, Awards, FAQ, history, Install app and About
+ok - PWA: manifest, icons and service worker load without a session, pages link them, and /install renders
+ok - GET /llms.txt returns 200 text/plain without a session and names every MCP tool
+ok - GET /history lists every complete War Week, newest first, each in its own theme
+ok - GET /viii renders 2023 in its Harry Potter theme with stored winner, Houses, Awards, highlights and wiki link
+ok - GET /i, /ii, /iii render as link-only cards with the wiki link
+ok - GET /xi/competitions groups Competitions with max points and scoring
+ok - GET /xi/competitions/[id] shows the Competition and lists its Points Entries (target, points, note)
+ok - GET /xi/competitions/00000000-0000-4000-8000-000000000000 returns 404
+ok - GET /xi/competitions/not-a-uuid returns 404
+ok - GET /xi/teams shows each Team with Leaders marked by Leader Title and Company Tags
+ok - GET /iv/teams shows one roster of all Participants for a free-for-all War Week
+ok - a signed-in user linked by email sees one 'You' on /xi/teams and no picker
+ok - a signed-in user linked by email sees one 'You' on the individual leaderboard
+ok - a signed-in user linked by email sees 'You' on their Award on /xi/awards
+ok - a signed-in user with no email match gets the 'Which one is you?' picker and no 'You'
+ok - MCP tools/list includes get_current_war_week
+ok - MCP tools/list includes get_leaderboard
+ok - MCP tools/list includes get_schedule
+ok - MCP tools/list includes get_announcements
+ok - MCP tools/list includes get_awards
+ok - MCP tools/list includes get_faq
+ok - MCP tools/list includes list_history
+ok - MCP tools/list includes get_history
+ok - MCP tools/call get_current_war_week returns edition xi
+ok - MCP get_leaderboard(team) returns Standings with numeric totals
+ok - MCP get_leaderboard(individual) returns Standings with numeric totals
+ok - MCP get_schedule(2026-02-24) returns only that Day
+ok - MCP get_schedule() returns all six XI Days
+ok - MCP get_announcements(limit: 2) returns edition xi, 2 Announcements, welcome pinned first with its video and body
+ok - MCP get_announcements() returns all 3 Announcements
+ok - MCP get_awards returns XI's three seeded Awards with the same recipients as /xi/awards
+ok - MCP get_faq returns XI's six FAQ Items in seed order with plain-text answers
+ok - MCP list_history returns 2025 down to 2016
+ok - MCP get_history(2023) returns the stored winner, Houses, Awards and wiki link
+ok - MCP get_history(2030) returns a clear not-found result
+ok - MCP get_history(2026) returns a clear not-found result
+ok - anonymous GET /about is 200 with the Finale video, every feature card, the XI link and no sign-in redirect
+ok - anonymous GET /about/leaderboard redirects to sign-in
+ok - anonymous GET /aboutx redirects to sign-in
+ok - anonymous GET /privacy is 200 with its "Privacy" heading, "Last updated" and no sign-in redirect
+ok - anonymous GET /terms is 200 with its "Terms" heading, "Last updated" and no sign-in redirect
+ok - anonymous GET /privacy/x redirects to sign-in
+ok - anonymous GET /termsx redirects to sign-in
+ok - GET /sign-in renders without OAuth credentials and says Google isn't configured
+ok - GET /api/auth/get-session answers null with no session
+ok - anonymous GET /admin redirects to sign-in
+ok - GET /admin as an allowlisted Organizer shows the admin shell
+ok - GET /admin as a signed-in JG user off the allowlist shows the refusal
+ok - GET /admin as a session with a non-JG email shows sign-in
+ok - GET /admin as an Organizer says 'Back to War Week XI' and never 'public site'
+ok - GET /admin/standings as an Organizer says 'Back to War Week XI' and never 'public site'
+ok - GET /admin/points as an Organizer says 'Back to War Week XI' and never 'public site'
+ok - anonymous GET / redirects to sign-in
+ok - anonymous GET /xi redirects to sign-in
+ok - anonymous GET /xi/leaderboard redirects to sign-in
+ok - anonymous POST /api/mcp answers 401
+ok - POST /api/mcp with a wrong bearer token answers 401
+ok - POST /api/mcp with the bearer token and no session completes initialize and get_current_war_week
+ok - GET /xi/more as an Organizer shows the Admin link and shows the account
+ok - GET /xi/more as a non-Organizer hides the Admin link and shows the account
+ok - GET /admin/guide as an Organizer shows the guide, linked in the admin nav
+ok - GET /admin/guide as a signed-in non-Organizer shows the refusal
+ok - GET /admin/points as an Organizer shows the form with every Competition, the ledger with entered-by, and the current standings (16 unscheduled Competitions offered)
+ok - GET /admin/points as a non-Organizer shows the refusal
+ok - createPointsEntry rejects a signed-in JG user off the allowlist
+(node:72091) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ok - createPointsEntry rejects a Participant in a team Competition and a Team in an individual one
+ok - createPointsEntry as an Organizer saves an over-max decimal entry with entered-by
+ok - an entry saved in admin shows up on /xi/leaderboard on the next refresh
+ok - updatePointsEntry and deletePointsEntry reject a non-Organizer
+ok - updatePointsEntry as an Organizer edits points and keeps entered-by
+ok - deletePointsEntry as an Organizer removes it
+ok - GET /xi/finale as a signed-in user shows the Start button
+ok - GET /admin/standings shows the Finale page with Open Finale to an Organizer and the refusal to a non-Organizer
+ok - MCP get_leaderboard(team) returns the same Team totals as /xi/leaderboard
+ok - GET /xi/news orders the pinned welcome first, then Wellness Wednesday, then Tournament Night recap
+ok - GET /xi/news embeds the welcome Announcement's video as a YouTube iframe
+ok - GET /xi shows a Pinned section with the welcome Announcement
+ok - GET /xi/news and /xi both show the Pinned badge
+ok - createAnnouncement rejects a signed-in JG user off the allowlist
+ok - createAnnouncement rejects a disallowed video URL (AC2)
+ok - createAnnouncement as an Organizer saves a valid Announcement with author-email and a recent published-at
+ok - updateAnnouncement, pinAnnouncement, unpinAnnouncement and deleteAnnouncement each reject a non-Organizer and leave the row unchanged
+ok - updateAnnouncement changes the title and keeps author-email and published-at
+ok - pinAnnouncement pins it, and it now sorts first on /xi/news
+ok - unpinAnnouncement unpins it, and the welcome Announcement sorts first again
+ok - deleteAnnouncement as an Organizer removes it
+ok - deleteAnnouncement of an id that no longer exists says so
+ok - createAnnouncement strips a javascript: link, a data: image and an unrecognized iframe block on write
+ok - GET /admin/announcements as an Organizer lists the seeded titles and New Announcement, and refuses a non-Organizer
+ok - GET /admin/announcements/new as an Organizer shows the Announcement form
+ok - GET /admin/announcements/[id] as an Organizer shows Edit Announcement for the seeded welcome Announcement
+ok - GET /xi/awards lists the seeded Awards with descriptions and recipients, and says Awards don't affect Standings
+ok - GET /xi/faq lists the six seeded FAQ Items in seed order with their answers
+ok - createAward rejects a signed-in JG user off the allowlist
+ok - createAward refuses an Award with no recipients
+ok - createAward refuses a Participant of another War Week
+ok - createAward as an Organizer saves an Award to a Team and two Participants, shown on /xi/awards
+ok - updateAward rejects a signed-in JG user off the allowlist
+ok - deleteAward rejects a signed-in JG user off the allowlist
+ok - updateAward as an Organizer renames it and replaces the recipients with one Participant and no Team
+ok - Giving and editing Awards adds no Points Entries
+ok - deleteAward as an Organizer removes it
+ok - deleteAward of an id that no longer exists says so
+ok - GET /admin/awards as an Organizer lists the seeded Awards and New Award, and refuses a non-Organizer
+ok - GET /admin/awards/new as an Organizer shows the Award form with XI's Teams and Participants
+ok - GET /admin/awards/[id] as an Organizer shows Edit Award for the seeded Catan Champion
+ok - GET /admin/setup, /admin/setup/war-week and /admin/setup/days show the setup pages to an Organizer and the refusal to a non-Organizer
+ok - updateWarWeekSettings rejects a signed-in JG user off the allowlist
+ok - updateWarWeekSettings refuses free-for-all while XI has Teams
+ok - an Organizer saves a new primary color and GET /xi is themed with it
+ok - an Organizer edits a Day Theme and GET /xi/schedule shows it; deleting a Day with Schedule Items is refused
+ok - GET /admin/setup/teams and /admin/setup/competitions show the editors to an Organizer and the refusal to a non-Organizer; the landing links them
+ok - createParticipant refuses a signed-in JG user off the allowlist
+ok - an Organizer adds a Participant and GET /xi/teams shows them; a second with the same email is refused
+ok - deleteTeam refuses a Team that has Participants, naming the count
+ok - an Organizer adds a Competition with Placement Points and GET /admin/points offers them as presets
+ok - GET /admin/setup/schedule and /admin/setup/faq show the setup pages to an Organizer and the refusal to a non-Organizer
+ok - createScheduleItem refuses an end before the start and a non-Organizer
+ok - an Organizer adds a Schedule Item; GET /xi/schedule lists it, GET /xi shows it in Now/Next while it's on, and a duplicate is refused
+ok - an Organizer adds an FAQ Item and GET /xi/faq lists it last
+ok - an Organizer deletes the new Schedule Item and FAQ Item
+ok - bracket loop: an Organizer sets single elimination on a Competition, enters 4 Teams, generates, records 3 Heat Results, finalizes; GET /xi/competitions/<id> shows the champion and /xi/leaderboard includes the generated points; un-finalize removes them; then cleans up
+ok - the smoke Host hosts one XI Competition
+ok - createPointsEntry as a Host saves an entry on their Competition, entered by the Host
+ok - createPointsEntry as a Host refuses another Competition with 'You're not a Host of that Competition.'
+ok - updateWarWeekSettings as a Host is refused on updateWarWeekSettings for XI with 'Only an Organizer can change War Week settings.'
+ok - createDay as a Host is refused on createDay for XI with 'Only an Organizer can add Days.'
+ok - pinAnnouncement as a Host is refused on pinAnnouncement on a seeded Announcement with 'Only an Organizer can pin Announcements.'
+ok - updateAnnouncement as a Host without pinned keeps their Organizer-pinned Announcement pinned
+ok - updateAnnouncement as a Host with pinned: false on their pinned Announcement is refused with 'Only an Organizer can unpin Announcements.'
+ok - GET /admin/points as a Host offers Tuesday Stairs and not Cypher
+ok - GET /admin/setup/war-week as a Host shows 'Organizers and Hosts only.'
+ok - GET /admin as a Participant shows 'Organizers and Hosts only.'
+ok - GET /xi as a Host shows the Admin link
+ok - GET /xi as a Participant hides the Admin link
+ok - malformed input from a Participant gets the access refusal, not a validation message, in every family
+ok - malformed input from a Host outside their Competition gets the access refusal, not a validation message, in every family
+ok - createPointsEntry as a former Host is refused on the Competition they no longer host
+ok - updateWarWeekSettings as a Participant is refused (settings) with 'Only an Organizer can change War Week settings.'
+ok - createDay as a Participant is refused (Day) with 'Only an Organizer can add Days.'
+ok - createTeam as a Participant is refused (Team) with 'Only an Organizer can add Teams.'
+ok - createParticipant as a Participant is refused (Participant) with 'Only an Organizer can add Participants.'
+ok - createCompetition as a Participant is refused (Competition) with 'Only an Organizer can add Competitions.'
+ok - createScheduleItem as a Participant is refused (Schedule Item) with 'You're not a Host of that Competition.'
+ok - createFaqItem as a Participant is refused (FAQ) with 'Only an Organizer can add FAQ Items.'
+ok - createAward as a Participant is refused (Award) with 'Only an Organizer can give Awards.'
+ok - createAnnouncement as a Participant is refused (Announcement) with 'Only an Organizer or a Host of this War Week can post Announcements.'
+ok - createPointsEntry as a Participant is refused (Points Entry) with 'You're not a Host of that Competition.'
+ok - generateBracket as a Participant is refused (Bracket) with 'You're not a Host of that Competition.'
+ok - startWarWeek as a Participant is refused (lifecycle) with 'Only an Organizer can start a War Week.'
+ok - removeOrganizer as a Participant is refused (Organizer list) with 'Only an Organizer can remove an Organizer.'
+ok - the Participant's refused calls wrote nothing
+ok - createFaqItem posting XI's warWeekId with admin_edition=x in the cookie writes to XI and leaves X unchanged
+ok - lifecycle: create XII, end XI with a Winner, start XII; an Organizer corrects XI but a Participant can't reopen it; then restore
+⨯ Error: Failed query: select "id", "war_week_id", "question", "answer", "sort_order", "created_at", "updated_at" from "faq_item" where "faq_item"."war_week_id" = $1 order by "faq_item"."sort_order" asc, "faq_item"."id" asc
+params: 23a7f094-e445-4db6-843b-50647f0ad72c
+    at o.queryWithCache (.next/server/chunks/ssr/_1fkudyw._.js:25:37181)
+    at async (.next/server/chunks/ssr/_1fkudyw._.js:18:6014)
+    at async k (.next/server/chunks/ssr/[root-of-the-server]__1jjyymb._.js:1:5588) {
+  query: 'select "id", "war_week_id", "question", "answer", "sort_order", "created_at", "updated_at" from "faq_item" where "faq_item"."war_week_id" = $1 order by "faq_item"."sort_order" asc, "faq_item"."id" asc',
+  params: [ '23a7f094-e445-4db6-843b-50647f0ad72c' ],
+  digest: '4126367609',
+  [cause]: error: relation "faq_item" does not exist
+      at async (.next/server/chunks/ssr/_1fkudyw._.js:18:6229)
+      at async o.queryWithCache (.next/server/chunks/ssr/_1fkudyw._.js:25:37156)
+      at async (.next/server/chunks/ssr/_1fkudyw._.js:18:6014)
+      at async k (.next/server/chunks/ssr/[root-of-the-server]__1jjyymb._.js:1:5588) {
+    length: 107,
+    severity: 'ERROR',
+    code: '42P01',
+    detail: undefined,
+    hint: undefined,
+    position: '97',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '1449',
+    routine: 'parserOpenTable'
+  }
+}
+  /xi/faq with faq_item missing answered 200
+ok - GET /xi/faq with its table missing streams the edition error boundary (ErrorScreen copy), not Next's default error page
+ ELIFECYCLE  Command failed with exit code 143.
+exit 0

@@ -1,0 +1,22 @@
+## 03-AC3 CONTEXT.md
+$ grep -n "Changing\|organizerEmails\|allowlist" CONTEXT.md
+150:  Competition. Changing another person's Announcement, pinning and
+257:  Entrant loses. Changing the winner of a decided Heat sends the later Heats
+316:  - Changing a Competition's `scoring` in the seed does not re-check its
+
+$ grep -n "^## Access rules\|^## War Week lifecycle rules" CONTEXT.md
+123:## Access rules
+200:## War Week lifecycle rules
+$ grep -c "Host" CONTEXT.md
+26
+
+## 03-AC4 about, Organizer guide, maintainers guide
+$ grep -c Host src/lib/about.ts
+1
+$ grep -c Host src/components/organizer-guide.tsx
+5
+$ grep -c Host docs/maintainers-guide.md
+10
+
+## Leftover readers of organizer_emails in src/ (schema and migration comment expected)
+src/db/schema.ts:101:    organizerEmails: varchar("organizer_emails", { length: 254 })

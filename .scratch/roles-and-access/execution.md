@@ -55,4 +55,14 @@ No gate is actionable before dispatch.
 
 ## Progress
 
-- 2026-09-26: plan recorded; wave 1 dispatch next.
+- 2026-09-26: plan recorded.
+- Wave 1: D1 accepted (23c63b0).
+- Wave 2: D2 accepted (1395b21, 3467069).
+- Wave 3: D4 (51b109d), D3 (31f7a6e) and D5 (2e82621) integrated; `pnpm gate` green on 2e82621. Worktrees removed after integration: their `.next` output broke `pnpm lint` in the main checkout.
+- Wave 4: D6 accepted (d4b7f33, 611f9b8).
+- Aggregate review: 1 blocking finding (a Host could unpin by omitting `pinned`) and non-blocking fixes, all in 235dce2 and 26bc170. Deviations are recorded on the tickets.
+- Verification: every local criterion PASS on 26bc170 (`pnpm gate`: 1362 tests, smoke 177/0).
+
+## Closeout
+
+See the `[CLOSEOUT]` records on tickets 03, 04, 08 and 10 and on the epic. After push: CI on the PR head, and ticket 08's preview sign-in (human). The production prerequisite rides with the `staging` → `main` PR.

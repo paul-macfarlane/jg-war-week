@@ -1,6 +1,6 @@
 # Spec: Organizers, Hosts and the write target
 
-**Status:** in-progress (execution: `execution.md`; red-team passed 2026-09-26, second round: 0 blocking, 5 warnings and 10 minors, all resolved below)
+**Status:** done (execution: `execution.md`; red-team passed 2026-09-26, second round: 0 blocking, 5 warnings and 10 minors, all resolved below)
 
 **Source:** ticket `.scratch/hardening/issues/03-roles-and-access-consolidation.md`, ADR 0002 (global Organizers and per-Competition Hosts), ADR 0003 (actions take their War Week from the request). Delivered in Epic B (`.scratch/hardening/epics/B-access-and-action-layer.md`) with tickets 04, 08 and 10.
 

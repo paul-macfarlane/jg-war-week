@@ -1,0 +1,512 @@
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.11 /Users/paulmacfarlane/Code/war-weeker
+
+ ✓ src/lib/access.test.ts > isJahnelGroupEmail > accepts "pmacfarlane@jahnelgroup.com" 1ms
+ ✓ src/lib/access.test.ts > isJahnelGroupEmail > accepts "PMacfarlane@JahnelGroup.com" 0ms
+ ✓ src/lib/access.test.ts > isJahnelGroupEmail > accepts "  someone@jahnelgroup.com  " 0ms
+ ✓ src/lib/access.test.ts > isJahnelGroupEmail > accepts "first.last+tag@jahnelgroup.com" 0ms
+ ✓ src/lib/access.test.ts > isJahnelGroupEmail > rejects "someone@gmail.com" 0ms
+ ✓ src/lib/access.test.ts > isJahnelGroupEmail > rejects "someone@jahnelgroup.co" 0ms
+ ✓ src/lib/access.test.ts > isJahnelGroupEmail > rejects "someone@evil-jahnelgroup.com" 0ms
+ ✓ src/lib/access.test.ts > isJahnelGroupEmail > rejects "someone@jahnelgroup.com.evil.com" 0ms
+ ✓ src/lib/access.test.ts > isJahnelGroupEmail > rejects "someone@mail.jahnelgroup.com" 0ms
+ ✓ src/lib/access.test.ts > isJahnelGroupEmail > rejects "a@evil.com@jahnelgroup.com" 0ms
+ ✓ src/lib/access.test.ts > isJahnelGroupEmail > rejects "jahnelgroup.com" 0ms
+ ✓ src/lib/access.test.ts > isJahnelGroupEmail > rejects "@jahnelgroup.com" 0ms
+ ✓ src/lib/access.test.ts > isJahnelGroupEmail > rejects "someone@" 0ms
+ ✓ src/lib/access.test.ts > isJahnelGroupEmail > rejects "" 0ms
+ ✓ src/lib/access.test.ts > isJahnelGroupEmail > rejects null 0ms
+ ✓ src/lib/access.test.ts > isJahnelGroupEmail > rejects undefined 0ms
+ ✓ src/lib/access.test.ts > can: the Organizer list > organizers.view is Organizer-only 0ms
+ ✓ src/lib/access.test.ts > can: the Organizer list > organizers.add is Organizer-only 0ms
+ ✓ src/lib/access.test.ts > can: the Organizer list > organizers.remove is Organizer-only 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > settings.save {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > settings.save {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > settings.save {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > settings.save {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > settings.save {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > settings.save {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.start {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.start {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.start {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.start {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.start {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.start {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.end {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.end {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.end {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.end {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.end {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.end {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.reopen {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.reopen {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.reopen {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.reopen {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.reopen {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.reopen {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.create-next {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.create-next {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.create-next {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.create-next {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.create-next {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > lifecycle.create-next {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > day.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > day.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > day.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > day.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > day.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > day.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > day.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > day.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > day.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > day.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > day.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > day.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > day.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > day.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > day.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > day.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > day.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > day.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > team.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > team.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > team.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > team.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > team.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > team.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > team.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > team.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > team.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > team.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > team.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > team.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > team.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > team.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > team.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > team.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > team.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > team.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > participant.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > participant.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > participant.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > participant.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > participant.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > participant.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > participant.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > participant.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > participant.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > participant.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > participant.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > participant.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > participant.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > participant.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > participant.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > participant.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > participant.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > participant.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.move {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.move {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.move {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.move {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.move {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > faq-item.move {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > award.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > award.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > award.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > award.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > award.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > award.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > award.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > award.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > award.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > award.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > award.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > award.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > award.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > award.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > award.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > award.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > award.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > award.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > competition.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > competition.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > competition.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > competition.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > competition.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > competition.create {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > competition.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > competition.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > competition.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > competition.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > competition.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > competition.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > competition.assign-hosts {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > competition.assign-hosts {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > competition.assign-hosts {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > competition.assign-hosts {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > competition.assign-hosts {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > competition.assign-hosts {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > announcement.pin {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > announcement.pin {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > announcement.pin {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > announcement.pin {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > announcement.pin {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > announcement.pin {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > announcement.unpin {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > announcement.unpin {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > announcement.unpin {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > announcement.unpin {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > announcement.unpin {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Organizer-only War Week families > announcement.unpin {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > competition.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > competition.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > competition.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > competition.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > competition.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > competition.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.entrants {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.entrants {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.entrants {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.entrants {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.entrants {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.entrants {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.generate {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.generate {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.generate {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.generate {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.generate {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.generate {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.heat-result {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.heat-result {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.heat-result {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.heat-result {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.heat-result {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.heat-result {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.finalize {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.finalize {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.finalize {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.finalize {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.finalize {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.finalize {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.unfinalize {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.unfinalize {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.unfinalize {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.unfinalize {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.unfinalize {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > bracket.unfinalize {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: a Competition's setup and Bracket > refuses a Host whose Competition id is claimed for another War Week 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.create {"warWeekId":"war-week-xi","postedCompetitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.create {"warWeekId":"war-week-xi","postedCompetitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.create {"warWeekId":"war-week-xi","postedCompetitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.create {"warWeekId":"war-week-xi","postedCompetitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.create {"warWeekId":"war-week-xi","postedCompetitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.create {"warWeekId":"war-week-xi","postedCompetitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"mtg-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"mtg-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"mtg-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"mtg-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"mtg-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"mtg-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.edit {"warWeekId":"war-week-xi","competitionId":"mtg-xi","postedCompetitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.edit {"warWeekId":"war-week-xi","competitionId":"mtg-xi","postedCompetitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.edit {"warWeekId":"war-week-xi","competitionId":"mtg-xi","postedCompetitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.edit {"warWeekId":"war-week-xi","competitionId":"mtg-xi","postedCompetitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.edit {"warWeekId":"war-week-xi","competitionId":"mtg-xi","postedCompetitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Points Entries > points-entry.edit {"warWeekId":"war-week-xi","competitionId":"mtg-xi","postedCompetitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.create {"warWeekId":"war-week-xi","postedCompetitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.create {"warWeekId":"war-week-xi","postedCompetitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.create {"warWeekId":"war-week-xi","postedCompetitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.create {"warWeekId":"war-week-xi","postedCompetitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.create {"warWeekId":"war-week-xi","postedCompetitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.create {"warWeekId":"war-week-xi","postedCompetitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.create {"warWeekId":"war-week-xi","postedCompetitionId":null} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.create {"warWeekId":"war-week-xi","postedCompetitionId":null} as host 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.create {"warWeekId":"war-week-xi","postedCompetitionId":null} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.create {"warWeekId":"war-week-xi","postedCompetitionId":null} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.create {"warWeekId":"war-week-xi","postedCompetitionId":null} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.create {"warWeekId":"war-week-xi","postedCompetitionId":null} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"mtg-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"mtg-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"mtg-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"mtg-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"mtg-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":"mtg-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"mtg-xi","postedCompetitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"mtg-xi","postedCompetitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"mtg-xi","postedCompetitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"mtg-xi","postedCompetitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"mtg-xi","postedCompetitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"mtg-xi","postedCompetitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":null} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":null} as host 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":null} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":null} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":null} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":"catan-xi","postedCompetitionId":null} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":null,"postedCompetitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":null,"postedCompetitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":null,"postedCompetitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":null,"postedCompetitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":null,"postedCompetitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.edit {"warWeekId":"war-week-xi","competitionId":null,"postedCompetitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.delete {"warWeekId":"war-week-xi","competitionId":"catan-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.delete {"warWeekId":"war-week-xi","competitionId":null} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.delete {"warWeekId":"war-week-xi","competitionId":null} as host 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.delete {"warWeekId":"war-week-xi","competitionId":null} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.delete {"warWeekId":"war-week-xi","competitionId":null} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.delete {"warWeekId":"war-week-xi","competitionId":null} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Schedule Items > schedule-item.delete {"warWeekId":"war-week-xi","competitionId":null} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.create {"warWeekId":"war-week-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.create {"warWeekId":"war-week-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.create {"warWeekId":"war-week-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.create {"warWeekId":"war-week-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.create {"warWeekId":"war-week-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.create {"warWeekId":"war-week-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.edit {"warWeekId":"war-week-xi","authorEmail":"Tony@JahnelGroup.com"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.edit {"warWeekId":"war-week-xi","authorEmail":"Tony@JahnelGroup.com"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.edit {"warWeekId":"war-week-xi","authorEmail":"Tony@JahnelGroup.com"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.edit {"warWeekId":"war-week-xi","authorEmail":"Tony@JahnelGroup.com"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.edit {"warWeekId":"war-week-xi","authorEmail":"Tony@JahnelGroup.com"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.edit {"warWeekId":"war-week-xi","authorEmail":"Tony@JahnelGroup.com"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.edit {"warWeekId":"war-week-xi","authorEmail":"casey@jahnelgroup.com"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.edit {"warWeekId":"war-week-xi","authorEmail":"casey@jahnelgroup.com"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.edit {"warWeekId":"war-week-xi","authorEmail":"casey@jahnelgroup.com"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.edit {"warWeekId":"war-week-xi","authorEmail":"casey@jahnelgroup.com"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.edit {"warWeekId":"war-week-xi","authorEmail":"casey@jahnelgroup.com"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.edit {"warWeekId":"war-week-xi","authorEmail":"casey@jahnelgroup.com"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.delete {"warWeekId":"war-week-xi","authorEmail":"Tony@JahnelGroup.com"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.delete {"warWeekId":"war-week-xi","authorEmail":"Tony@JahnelGroup.com"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.delete {"warWeekId":"war-week-xi","authorEmail":"Tony@JahnelGroup.com"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.delete {"warWeekId":"war-week-xi","authorEmail":"Tony@JahnelGroup.com"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.delete {"warWeekId":"war-week-xi","authorEmail":"Tony@JahnelGroup.com"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.delete {"warWeekId":"war-week-xi","authorEmail":"Tony@JahnelGroup.com"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.delete {"warWeekId":"war-week-xi","authorEmail":"casey@jahnelgroup.com"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.delete {"warWeekId":"war-week-xi","authorEmail":"casey@jahnelgroup.com"} as host 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.delete {"warWeekId":"war-week-xi","authorEmail":"casey@jahnelgroup.com"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.delete {"warWeekId":"war-week-xi","authorEmail":"casey@jahnelgroup.com"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.delete {"warWeekId":"war-week-xi","authorEmail":"casey@jahnelgroup.com"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: Announcements > announcement.delete {"warWeekId":"war-week-xi","authorEmail":"casey@jahnelgroup.com"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: the /admin pages > admin.view {"warWeekId":"war-week-xi"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: the /admin pages > admin.view {"warWeekId":"war-week-xi"} as host 0ms
+ ✓ src/lib/access.test.ts > can: the /admin pages > admin.view {"warWeekId":"war-week-xi"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: the /admin pages > admin.view {"warWeekId":"war-week-xi"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: the /admin pages > admin.view {"warWeekId":"war-week-xi"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: the /admin pages > admin.view {"warWeekId":"war-week-xi"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > can: the /admin pages > admin.view {"warWeekId":"war-week-xii"} as organizer 0ms
+ ✓ src/lib/access.test.ts > can: the /admin pages > admin.view {"warWeekId":"war-week-xii"} as host 0ms
+ ✓ src/lib/access.test.ts > can: the /admin pages > admin.view {"warWeekId":"war-week-xii"} as otherHost 0ms
+ ✓ src/lib/access.test.ts > can: the /admin pages > admin.view {"warWeekId":"war-week-xii"} as namesakeHost 0ms
+ ✓ src/lib/access.test.ts > can: the /admin pages > admin.view {"warWeekId":"war-week-xii"} as participant 0ms
+ ✓ src/lib/access.test.ts > can: the /admin pages > admin.view {"warWeekId":"war-week-xii"} as anonymous 0ms
+ ✓ src/lib/access.test.ts > defaultAdminWarWeek and adminEditions > opens an Organizer on the current War Week 0ms
+ ✓ src/lib/access.test.ts > defaultAdminWarWeek and adminEditions > opens a Host on the current War Week when they host there 0ms
+ ✓ src/lib/access.test.ts > defaultAdminWarWeek and adminEditions > opens a Host on their earliest upcoming edition, then their newest past one 8ms
+ ✓ src/lib/access.test.ts > defaultAdminWarWeek and adminEditions > leaves a Participant or anonymous visitor on the current War Week, where they're refused 0ms
+ ✓ src/lib/access.test.ts > defaultAdminWarWeek and adminEditions > lists every edition for an Organizer, newest first 0ms
+ ✓ src/lib/access.test.ts > defaultAdminWarWeek and adminEditions > lists only the editions a Host hosts in 0ms
+ ✓ src/lib/access.test.ts > defaultAdminWarWeek and adminEditions > lists nothing for a Participant or anonymous visitor 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > keeps "/sign-in" public 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > keeps "/api/auth" public 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > keeps "/api/auth/callback/google" public 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > keeps "/about" public 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > keeps "/privacy" public 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > keeps "/terms" public 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > requires sign-in for "/" 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > requires sign-in for "/xi" 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > requires sign-in for "/xi/leaderboard" 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > requires sign-in for "/admin" 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > requires sign-in for "/api/mcp" 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > requires sign-in for "/sign-in-other" 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > requires sign-in for "/api/authx" 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > requires sign-in for "/aboutx" 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > requires sign-in for "/about-anything" 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > requires sign-in for "/aboutx/y" 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > requires sign-in for "/About" 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > requires sign-in for "/about/" 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > requires sign-in for "/about/leaderboard" 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > requires sign-in for "/about/x" 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > requires sign-in for "/about%2Fxi" 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > requires sign-in for "/privacy/x" 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > requires sign-in for "/termsx" 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > requires sign-in for "/privacy/" 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > requires sign-in for "/Privacy" 0ms
+ ✓ src/lib/access.test.ts > isPublicPath > requires sign-in for "/terms/leaderboard" 0ms
+ ✓ src/lib/access.test.ts > safeCallbackPath > keeps the same-origin path "/admin" 0ms
+ ✓ src/lib/access.test.ts > safeCallbackPath > keeps the same-origin path "/xi/leaderboard?tab=team" 0ms
+ ✓ src/lib/access.test.ts > safeCallbackPath > falls back to / for undefined 0ms
+ ✓ src/lib/access.test.ts > safeCallbackPath > falls back to / for "" 0ms
+ ✓ src/lib/access.test.ts > safeCallbackPath > falls back to / for "admin" 0ms
+ ✓ src/lib/access.test.ts > safeCallbackPath > falls back to / for "//evil.com" 0ms
+ ✓ src/lib/access.test.ts > safeCallbackPath > falls back to / for "/\\evil.com" 0ms
+ ✓ src/lib/access.test.ts > safeCallbackPath > falls back to / for "https://evil.com/admin" 0ms
+ ✓ src/lib/access.test.ts > safeCallbackPath > falls back to / for "/%5Cevil.com" 0ms
+ ✓ src/lib/access.test.ts > safeCallbackPath > falls back to / for "javascript:alert(1)" 0ms
+ ✓ src/lib/access.test.ts > canUseMcp > lets a Jahnel Group session in without a token 0ms
+ ✓ src/lib/access.test.ts > canUseMcp > lets a correct bearer token in 0ms
+ ✓ src/lib/access.test.ts > canUseMcp > refuses a wrong token 0ms
+ ✓ src/lib/access.test.ts > canUseMcp > refuses a token prefix 0ms
+ ✓ src/lib/access.test.ts > canUseMcp > refuses a longer token 0ms
+ ✓ src/lib/access.test.ts > canUseMcp > refuses a non-bearer scheme 4ms
+ ✓ src/lib/access.test.ts > canUseMcp > refuses the bare token 0ms
+ ✓ src/lib/access.test.ts > canUseMcp > refuses an empty bearer 0ms
+ ✓ src/lib/access.test.ts > canUseMcp > refuses no header 0ms
+ ✓ src/lib/access.test.ts > canUseMcp > turns token auth off when MCP_TOKEN is undefined 0ms
+ ✓ src/lib/access.test.ts > canUseMcp > turns token auth off when MCP_TOKEN is "" 0ms
+ ✓ src/lib/access.test.ts > canUseMcp > turns token auth off when MCP_TOKEN is "   " 0ms
+ ✓ src/actions/organizers.test.ts > Organizer actions > return the generic error when the mutation throws 2ms
+ ✓ src/actions/awards.test.ts > Award actions > return the generic error when the mutation throws 3ms
+ ✓ src/actions/awards.test.ts > Award actions > let a redirect propagate 1ms
+ ✓ src/actions/awards.test.ts > Award actions > let a not-found propagate 0ms
+ ✓ src/lib/competitions.test.ts > groupCompetitions > returns no groups and no ungrouped Competitions for an empty list 1ms
+ ✓ src/lib/competitions.test.ts > groupCompetitions > groups by Competition Group, ordering groups and Competitions by name 1ms
+ ✓ src/lib/competitions.test.ts > groupCompetitions > lists every Competition as ungrouped when none has a group 0ms
+ ✓ src/lib/competitions.test.ts > describeScoring > describes { scoring: 'team', countsTowardTeam: false } as Team 0ms
+ ✓ src/lib/competitions.test.ts > describeScoring > describes { scoring: 'individual', countsTowardTeam: false } as Individual 0ms
+ ✓ src/lib/competitions.test.ts > describeScoring > describes { scoring: 'individual', countsTowardTeam: true } as Individual · counts toward House 0ms
+ ✓ src/lib/competitions.test.ts > formatMaxPoints > formats 3 as Max 3 pts 0ms
+ ✓ src/lib/competitions.test.ts > formatMaxPoints > formats 1 as Max 1 pt 0ms
+ ✓ src/lib/competitions.test.ts > formatMaxPoints > formats 1.5 as Max 1.5 pts 0ms
+ ✓ src/lib/competitions.test.ts > formatMaxPoints > formats null as No max 0ms
+ ✓ src/lib/competitions.test.ts > isCompetitionId > 3f1c2b4a-5d6e-4f70-8a9b-0c1d2e3f4a5b is true 0ms
+ ✓ src/lib/competitions.test.ts > isCompetitionId > not-a-uuid is false 0ms
+ ✓ src/lib/competitions.test.ts > isCompetitionId >  is false 0ms
+ ✓ src/lib/competitions.test.ts > isCompetitionId > 3f1c2b4a-5d6e-4f70-8a9b-0c1d2e3f4a5b; drop table is false 0ms
+ ✓ src/lib/competitions.test.ts > buildCompetitionLedger > lists entries in the order they were entered, naming each target 0ms
+ ✓ src/lib/competitions.test.ts > buildCompetitionLedger > returns no entries for a Competition nobody has scored yet 0ms
+ ✓ src/lib/competitions.test.ts > buildCompetitionLedger > keeps entries entered at the same moment in a stable order, by id 0ms
+ ✓ src/lib/competitions.test.ts > pointsForPlacement > returns the points for each place, 1st first 0ms
+ ✓ src/lib/competitions.test.ts > pointsForPlacement > returns null for a place past the presets 0ms
+ ✓ src/lib/competitions.test.ts > pointsForPlacement > returns null for a place below 1 or not a whole number 0ms
+ ✓ src/lib/competitions.test.ts > pointsForPlacement > returns null when the Competition has no presets 0ms
+ ✓ src/lib/competitions.test.ts > placementLabel > names places as ordinals 0ms
+ ✓ src/db/migration-copy.test.ts > Organizer copy migration > copies the live War Week's JG emails, deduplicated and lowercased, and reruns harmlessly 78ms
+ ✓ src/db/migration-copy.test.ts > Organizer copy migration > uses the earliest upcoming War Week when none is live 25ms
+ ✓ src/db/migration-copy.test.ts > Organizer copy migration > uses the latest complete War Week when none is live or upcoming 21ms
+ ✓ src/db/migration-copy.test.ts > Organizer copy migration > copies nothing when there is no War Week 14ms
+ ✓ src/lib/jg-email.test.ts > jgEmailSchema > accepts a JG email, trimmed and lowercased 1ms
+ ✓ src/lib/jg-email.test.ts > jgEmailSchema > accepts a 254-character JG email 0ms
+ ✓ src/lib/jg-email.test.ts > jgEmailSchema > refuses an empty string with one message 1ms
+ ✓ src/lib/jg-email.test.ts > jgEmailSchema > refuses another domain with one message 0ms
+ ✓ src/lib/jg-email.test.ts > jgEmailSchema > refuses a subdomain with one message 0ms
+ ✓ src/lib/jg-email.test.ts > jgEmailSchema > refuses a look-alike domain with one message 0ms
+ ✓ src/lib/jg-email.test.ts > jgEmailSchema > refuses two @ signs with one message 0ms
+ ✓ src/lib/jg-email.test.ts > jgEmailSchema > refuses no @ with one message 0ms
+ ✓ src/lib/jg-email.test.ts > jgEmailSchema > refuses 255 characters with one message 0ms
+ ✓ src/lib/jg-email.test.ts > jgEmailSchema > refuses a non-string with one message 0ms
+ ✓ src/lib/jg-email.test.ts > jgEmailSchema > says to use a JG email 0ms
+ ✓ src/actions/announcements.test.ts > Announcement actions > return the generic error when the mutation throws 2ms
+ ✓ src/actions/announcements.test.ts > Announcement actions > keep a Host's own pinned Announcement pinned when the edit omits pinned 2ms
+ ✓ src/actions/announcements.test.ts > Announcement actions > refuse a Host's edit that unpins their own pinned Announcement 0ms
+ ✓ src/actions/announcements.test.ts > Announcement actions > let a Host edit their own unpinned Announcement without pinned 0ms
+ ✓ src/actions/points-entries.test.ts > Points Entry actions > return the generic error when the mutation throws 7ms
+ ✓ src/actions/setup-schedule-faq.test.ts > Schedule and FAQ actions > return the generic error when the mutation throws 2ms
+ ✓ src/auth/trusted-origins.test.ts > trustedOrigins > production gives only the base origin 1ms
+ ✓ src/auth/trusted-origins.test.ts > trustedOrigins > a preview adds exactly its two Vercel hosts 0ms
+ ✓ src/auth/trusted-origins.test.ts > trustedOrigins > a preview with a missing or blank branch URL adds only the deployment host 0ms
+ ✓ src/auth/trusted-origins.test.ts > trustedOrigins > normalizes values that already carry a scheme or trailing slash 0ms
+ ✓ src/auth/trusted-origins.test.ts > trustedOrigins > has no duplicates when the deployment host equals the branch alias 0ms
+ ✓ src/actions/brackets.test.ts > Bracket actions > return the generic error when the mutation throws 2ms
+ ✓ src/mutations/setup.test.ts > updateWarWeekSettings > saves the settings and Appearance Theme of only this War Week 1438ms
+ ✓ src/mutations/organizers.test.ts > addOrganizer > adds a JG email lowercased, recording who added it 1614ms
+(node:72445) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ ✓ src/mutations/brackets.test.ts > brackets > enters Teams, generates a randomly seeded Bracket and shows it 1484ms
+ ✓ src/mutations/setup.test.ts > updateWarWeekSettings > refuses free-for-all while the War Week has Teams 12ms
+ ✓ src/mutations/setup.test.ts > updateWarWeekSettings > refuses dates that leave a Day outside the War Week 8ms
+ ✓ src/mutations/setup.test.ts > Day mutations > creates, edits and deletes a Day of this War Week 21ms
+ ✓ src/mutations/setup.test.ts > Day mutations > refuses a duplicate date, a date outside the War Week, and deleting a Day with Schedule Items 10ms
+ ✓ src/mutations/setup.test.ts > Day mutations > won't touch another War Week's Day 8ms
+ ✓ src/mutations/setup.test.ts > Team mutations > creates, edits and deletes a Team of this War Week 28ms
+ ✓ src/mutations/setup.test.ts > Team mutations > refuses a duplicate name, Teams in a free-for-all and deleting a Team in use 23ms
+ ✓ src/mutations/brackets.test.ts > brackets > labels Participant Entrants with their Team color 12ms
+ ✓ src/mutations/brackets.test.ts > brackets > refuses Entrants of the wrong kind or another War Week 20ms
+ ✓ src/mutations/brackets.test.ts > brackets > records Heat Results, advances winners and resets later Heats on an edit 59ms
+ ✓ src/mutations/brackets.test.ts > brackets > asks for force before clearing Heat Results by regenerating or replacing Entrants 47ms
+ ✓ src/mutations/setup.test.ts > Team mutations > won't touch another War Week's Team 12ms
+ ✓ src/mutations/setup.test.ts > Participant mutations > creates, edits and deletes a Participant 21ms
+ ✓ src/mutations/setup.test.ts > Participant mutations > refuses a duplicate email as a field error, naming who has it 12ms
+ ✓ src/mutations/setup.test.ts > Participant mutations > allows the same email in another War Week 10ms
+ ✓ src/mutations/setup.test.ts > Participant mutations > refuses a duplicate name, another War Week's Team and deleting a Participant with scoring data 15ms
+ ✓ src/mutations/setup.test.ts > Competition mutations > creates, edits and deletes a Competition with Placement Points 18ms
+ ✓ src/mutations/setup.test.ts > Competition mutations > refuses a duplicate name, changing scoring under Points Entries and deleting a Competition in use 14ms
+ ✓ src/mutations/brackets.test.ts > brackets > finalizes into generated Points Entries, and un-finalizing removes only those 69ms
+ ✓ src/mutations/brackets.test.ts > brackets > sets the Format and refuses to drop it while there are Entrants 30ms
+ ✓ src/mutations/brackets.test.ts > brackets > refuses deleting a Team or Participant that is an Entrant 26ms
+ ✓ src/mutations/setup.test.ts > Competition mutations > won't touch another War Week's Competition 10ms
+ ✓ src/mutations/setup.test.ts > Competition mutations > refuses Placement Points or scoring changes while the Bracket is finalized, but not other fields 21ms
+ ✓ src/mutations/setup.test.ts > updateWarWeekSettings and the Organizer list > saves for an actor on no War Week's organizer emails 7ms
+ ✓ src/mutations/setup.test.ts > setCompetitionHosts > replaces the Hosts, lowercased and deduplicated 17ms
+ ✓ src/mutations/setup.test.ts > setCompetitionHosts > refuses an email outside @jahnelgroup.com and changes nothing 15ms
+ ✓ src/mutations/setup.test.ts > setCompetitionHosts > refuses a 255-character Host email with the validation message 14ms
+ ✓ src/mutations/setup.test.ts > setCompetitionHosts > won't touch another War Week's Competition 14ms
+ ✓ src/mutations/setup.test.ts > setCompetitionHosts > leaves the Hosts alone when a Competition setup save carries a hosts key 19ms
+ ✓ src/mutations/brackets.test.ts > brackets > refuses a Heat slot other than 0 or 1, or a place below 1 15ms
+ ✓ src/mutations/organizers.test.ts > addOrganizer > refuses an email outside @jahnelgroup.com 4ms
+ ✓ src/mutations/organizers.test.ts > addOrganizer > refuses a 255-character email with the validation message 6ms
+ ✓ src/mutations/organizers.test.ts > addOrganizer > refuses an email already on the list, ignoring case 5ms
+ ✓ src/mutations/organizers.test.ts > removeOrganizer > removes another Organizer, ignoring case 5ms
+ ✓ src/mutations/organizers.test.ts > removeOrganizer > lets an Organizer remove themselves while another remains 5ms
+ ✓ src/mutations/organizers.test.ts > removeOrganizer > refuses removing the last Organizer 4ms
+ ✓ src/mutations/organizers.test.ts > removeOrganizer > says so when the email isn't an Organizer 3ms
+ ✓ src/mutations/organizers.test.ts > Organizer queries > lists Organizers by email and matches an email ignoring case 4ms
+ ✓ src/mutations/organizers.test.ts > removeOrganizer on two connections > leaves exactly one Organizer when the last two are removed at once 320ms
+ ✓ src/actions/setup.test.ts > setup actions > return the generic error when the mutation throws 3ms
+ ✓ src/mutations/races.test.ts > Points Entry edit on two connections > refuses an edit or delete of an entry that became bracket-generated after its check 1775ms
+ ✓ src/actions/war-week-lifecycle.test.ts > War Week lifecycle actions > return the generic error when the mutation throws 2ms
+ ✓ src/mutations/races.test.ts > Competition scoring change on two connections > ends a scoring change and a Points Entry create with the refusal or the entry, never both (scoring change first) 447ms
+ ✓ src/mutations/races.test.ts > Competition scoring change on two connections > ends a scoring change and a Points Entry create with the refusal or the entry, never both (Points Entry create first) 444ms
+ ✓ src/mutations/races.test.ts > Points Entry move during a scoring change on two connections > ends a scoring change and an edit moving an entry into that Competition with the refusal or the move, never both (scoring change first) 458ms
+ ✓ src/mutations/races.test.ts > Points Entry move during a scoring change on two connections > ends a scoring change and an edit moving an entry into that Competition with the refusal or the move, never both (Points Entry edit first) 446ms
+ ✓ src/mutations/races.test.ts > Day delete on two connections > ends a Day delete and a Schedule Item create with the refusal or the item, never a lost item (Day delete first) 464ms
+ ✓ src/mutations/races.test.ts > Day delete on two connections > ends a Day delete and a Schedule Item create with the refusal or the item, never a lost item (Schedule Item create first) 468ms
+
+ Test Files  17 passed (17)
+      Tests  497 passed (497)
+   Start at  17:45:33
+   Duration  4.85s (transform 1.18s, setup 0ms, import 8.12s, tests 10.58s, environment 1ms)
+
+exit 0
