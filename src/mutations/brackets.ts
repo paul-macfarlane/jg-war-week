@@ -17,10 +17,8 @@ import {
   finalPlacings,
   generate,
   hasResults,
-  isBye,
   isComplete,
-  isDecided,
-  resetDownstream,
+  resetByResult,
 } from "@/lib/bracket/engine";
 import { pointsFor } from "@/lib/bracket/points";
 import { shuffleSeedPositions } from "@/lib/bracket/seeding";
@@ -298,8 +296,9 @@ export async function generateBracket(
 }
 
 /**
- * Records a Heat Result and advances the winner. Editing a decided Heat
- * resets the later Heats its winner reached; their ids are returned.
+ * Records a Heat Result and advances the winner. Changing a decided Heat's
+ * winner resets the later Heats the old winner reached; the ids of those
+ * that had a Heat Result are returned. A score-only edit resets nothing.
  */
 export async function recordHeatResult(
   competitionId: string,
@@ -319,11 +318,11 @@ export async function recordHeatResult(
     if (!target) return refuse(HEAT_NOT_FOUND);
 
     let next: Bracket;
-    let resetHeatIds: string[] = [];
+    let resetHeatIds: string[];
     try {
-      if (isDecided(target) && !isBye(target)) {
-        resetHeatIds = resetDownstream(bracket, heatId).resetHeatIds;
-      }
+      const forfeits = result.forfeits ?? [];
+      const winner = result.order.find((id) => !forfeits.includes(id));
+      resetHeatIds = resetByResult(bracket, heatId, winner ?? null);
       next = applyResult(bracket, heatId, result);
     } catch (error) {
       if (error instanceof BracketError) return refuse(error.message);

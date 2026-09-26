@@ -3478,6 +3478,73 @@ async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     );
     if (Number(count) !== 0) problems.push(`${count} Points Entries remain`);
 
+    // Every Heat is decided. A score-only edit of Red's semifinal resets
+    // nothing; changing the winner of the other semifinal resets the one
+    // decided later Heat its winner reached, the final.
+    const semis = await runQuery<{
+      heat_id: string;
+      entrant_id: string;
+      team_name: string;
+    }>(
+      `select h.id as heat_id, he.entrant_id, t.name as team_name
+       from heat h join heat_entrant he on he.heat_id = h.id
+       join entrant e on e.id = he.entrant_id join team t on t.id = e.team_id
+       where h.competition_id = $1 and h.round = 1
+       order by h.position, he.slot`,
+      [id],
+    );
+    const [decidedLater] = await runQuery<{ count: string }>(
+      `select count(*) from heat
+       where competition_id = $1 and round > 1 and status in ('played', 'forfeit')`,
+      [id],
+    );
+    const redHeat = semis.find((s) => s.team_name === "Red")?.heat_id;
+    const otherHeat = semis.find((s) => s.heat_id !== redHeat)?.heat_id;
+    const [{ entrant_id: otherWinner }] = await runQuery<{
+      entrant_id: string;
+    }>(`select entrant_id from heat_entrant where heat_id = $1 and place = 1`, [
+      otherHeat,
+    ]);
+    const resetCount = async (
+      step: string,
+      heatId: string,
+      order: string[],
+    ) => {
+      const result = (await callAction(
+        ids.recordHeatResult,
+        [id, heatId, { order, scores: { [order[0]]: "25" } }],
+        organizer,
+      )) as ActionResult & { resetHeatIds?: string[] };
+      expectOk(step, result);
+      return result.resetHeatIds?.length;
+    };
+    const redOrder = [
+      ...semis.filter((s) => s.heat_id === redHeat && s.team_name === "Red"),
+      ...semis.filter((s) => s.heat_id === redHeat && s.team_name !== "Red"),
+    ].map((s) => s.entrant_id);
+    const sameWinner = await resetCount(
+      "recordHeatResult same winner",
+      redHeat!,
+      redOrder,
+    );
+    if (sameWinner !== 0) {
+      problems.push(`a score-only edit reset ${sameWinner} later Heats`);
+    }
+    const flipped = semis
+      .filter((s) => s.heat_id === otherHeat)
+      .map((s) => s.entrant_id)
+      .sort((a, b) => Number(a === otherWinner) - Number(b === otherWinner));
+    const changedWinner = await resetCount(
+      "recordHeatResult changed winner",
+      otherHeat!,
+      flipped,
+    );
+    if (changedWinner !== Number(decidedLater.count)) {
+      problems.push(
+        `a winner change reset ${changedWinner} later Heats, expected the ${decidedLater.count} decided`,
+      );
+    }
+
     if (problems.length === 0) ok(check);
     else fail(check, problems.join("; "));
   } catch (error) {
