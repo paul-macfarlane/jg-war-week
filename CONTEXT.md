@@ -241,6 +241,9 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 - Deleting a Team or Participant that is an Entrant is refused with the
   count, and so is changing a Competition's scoring or Format while it has
   Entrants.
+- While a Bracket is finalized, changing the Competition's scoring or
+  Placement Points is refused ("Un-finalize the Bracket first."); its name
+  and description still save.
 
 ## Finale rules
 

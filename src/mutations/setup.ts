@@ -486,7 +486,11 @@ async function competitionRefusal(
   let existing = null;
   if (exceptId) {
     const [found] = await tx
-      .select({ scoring: competition.scoring })
+      .select({
+        scoring: competition.scoring,
+        placementPoints: competition.placementPoints,
+        finalizedAt: competition.finalizedAt,
+      })
       .from(competition)
       .where(
         and(
@@ -497,6 +501,8 @@ async function competitionRefusal(
     if (!found) return COMPETITION_NOT_FOUND;
     existing = {
       scoring: found.scoring,
+      placementPoints: found.placementPoints,
+      finalizedAt: found.finalizedAt,
       pointsEntryCount: await tx.$count(
         pointsEntry,
         eq(pointsEntry.competitionId, exceptId),

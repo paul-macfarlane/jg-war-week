@@ -454,19 +454,39 @@ export function participantGuardError(
   return null;
 }
 
+/** Placement Points as either `null` or `[]` normalize to, for comparison. */
+function normalizedPlacementPoints(
+  points: CompetitionValues["placementPoints"],
+): readonly number[] {
+  return points ?? [];
+}
+
+/** Whether Placement Points changed, treating `null` and `[]` as the same. */
+function placementPointsChanged(
+  before: CompetitionValues["placementPoints"],
+  after: CompetitionValues["placementPoints"],
+): boolean {
+  const a = normalizedPlacementPoints(before);
+  const b = normalizedPlacementPoints(after);
+  return a.length !== b.length || a.some((value, index) => value !== b[index]);
+}
+
 /**
  * Refuses a Competition whose name is taken, a team Competition in a
- * free-for-all, or a scoring change that would strand its Points Entries.
+ * free-for-all, a scoring change that would strand its Points Entries, or a
+ * scoring or Placement Points change while its Bracket is finalized.
  */
 export function competitionGuardError(
-  values: Pick<CompetitionValues, "name" | "scoring">,
+  values: Pick<CompetitionValues, "name" | "scoring" | "placementPoints">,
   ctx: {
     mode: WarWeek["mode"];
     nameTaken: boolean;
     /** The saved Competition when editing. */
     existing: {
       scoring: Competition["scoring"];
+      placementPoints: Competition["placementPoints"];
       pointsEntryCount: number;
+      finalizedAt: Competition["finalizedAt"];
     } | null;
   },
 ): string | null {
@@ -477,6 +497,14 @@ export function competitionGuardError(
     return "A free-for-all War Week has no Teams, so its Competitions are individual.";
   }
   const existing = ctx.existing;
+  if (
+    existing &&
+    existing.finalizedAt &&
+    (existing.scoring !== values.scoring ||
+      placementPointsChanged(existing.placementPoints, values.placementPoints))
+  ) {
+    return "This Competition's Bracket is finalized. Un-finalize the Bracket first.";
+  }
   if (
     existing &&
     existing.scoring !== values.scoring &&
