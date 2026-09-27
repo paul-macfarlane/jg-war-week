@@ -72,7 +72,11 @@ export async function generateBracket(
   return bracketWrite("bracket.generate", competitionId, async (id, ctx) => {
     const parsed = parseGenerateInput(input);
     if (!parsed.ok) return parsed;
-    return mutations.generateBracket(id, { force: parsed.value.force }, ctx);
+    return mutations.generateBracket(
+      id,
+      { force: parsed.value.force, seeding: parsed.value.seeding },
+      ctx,
+    );
   });
 }
 

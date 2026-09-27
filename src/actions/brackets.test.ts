@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { finalizeBracket, setHeatSchedule } from "@/actions/brackets";
+import {
+  finalizeBracket,
+  generateBracket,
+  setHeatSchedule,
+} from "@/actions/brackets";
 
 // vi.mock factories are hoisted above the imports, so their values are too.
 const { ID, boom, authorized } = vi.hoisted(() => {
@@ -27,6 +31,9 @@ const { ID, boom, authorized } = vi.hoisted(() => {
   };
 });
 
+/** `authorized.current`'s original ok value, so a test can restore it. */
+const AUTHORIZED_OK = { ...authorized.current };
+
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/auth/authorize", () => ({
   authorize: vi.fn(async () => authorized.current),
@@ -35,6 +42,7 @@ vi.mock("@/auth/authorize", () => ({
 vi.mock("@/mutations/brackets", () => ({
   finalizeBracket: vi.fn(boom),
   setHeatSchedule: vi.fn(async () => ({ ok: true })),
+  generateBracket: vi.fn(async () => ({ ok: true })),
 }));
 
 beforeEach(() => {
@@ -51,6 +59,23 @@ describe("Bracket actions", () => {
       error: "Something went wrong. Try again.",
     });
     expect(console.error).toHaveBeenCalled();
+  });
+});
+
+describe("generateBracket", () => {
+  it('passes seeding: "standings" through to the mutation', async () => {
+    authorized.current = { ...AUTHORIZED_OK };
+    const mutations = await import("@/mutations/brackets");
+
+    await expect(
+      generateBracket(ID, { seeding: "standings" }),
+    ).resolves.toEqual({ ok: true });
+
+    expect(mutations.generateBracket).toHaveBeenCalledWith(
+      ID,
+      { force: undefined, seeding: "standings" },
+      (authorized.current as { ctx: unknown }).ctx,
+    );
   });
 });
 

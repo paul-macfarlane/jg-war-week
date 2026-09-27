@@ -244,6 +244,68 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
     });
   });
 
+  it("seeds by the current Standings, with the top-ranked Entrant first", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations, queries } = await modules();
+      const f = await fixture(tx);
+
+      await mutations.replaceEntrants(
+        f.competitionId,
+        { targetIds: [f.red, f.blue, f.green, f.gold] },
+        f.ctx,
+        tx,
+      );
+      // Red ranks 1st; Blue and Green tie for 2nd (a rank shared by three
+      // Points Entries); Gold has none, so it ties Standings' zero-point
+      // teams and comes last.
+      await tx.insert(f.schema.pointsEntry).values([
+        {
+          competitionId: f.competitionId,
+          teamId: f.red,
+          points: 30,
+          enteredByEmail: actorEmail,
+        },
+        {
+          competitionId: f.competitionId,
+          teamId: f.blue,
+          points: 20,
+          enteredByEmail: actorEmail,
+        },
+        {
+          competitionId: f.competitionId,
+          teamId: f.green,
+          points: 20,
+          enteredByEmail: actorEmail,
+        },
+      ]);
+
+      expect(
+        await mutations.generateBracket(
+          f.competitionId,
+          { rng: rngZero, seeding: "standings" },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+
+      const view = (await queries.getBracket(f.competitionId, tx))!;
+      expect(view.entrants[0]).toMatchObject({
+        label: "Red",
+        seedPosition: 1,
+      });
+      expect(view.entrants.map((e) => e.label).slice(1)).toEqual(
+        expect.arrayContaining(["Blue", "Green", "Gold"]),
+      );
+      // Gold, with no Points Entry, comes after Blue and Green's tied rank.
+      expect(
+        view.entrants.findIndex((e) => e.label === "Gold"),
+      ).toBeGreaterThan(view.entrants.findIndex((e) => e.label === "Blue"));
+      expect(
+        view.entrants.findIndex((e) => e.label === "Gold"),
+      ).toBeGreaterThan(view.entrants.findIndex((e) => e.label === "Green"));
+    });
+  });
+
   it("labels Participant Entrants with their Team color", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();

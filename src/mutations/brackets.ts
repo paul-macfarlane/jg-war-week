@@ -12,6 +12,7 @@ import {
   participant,
   pointsEntry,
   team,
+  warWeek,
 } from "@/db/schema";
 import { type HeatsConfig, configOf } from "@/lib/bracket/config";
 import {
@@ -26,7 +27,10 @@ import {
 } from "@/lib/bracket/formats";
 import { type HeatScheduleValues } from "@/lib/bracket/heat-schedule";
 import { pointsFor } from "@/lib/bracket/points";
-import { shuffleSeedPositions } from "@/lib/bracket/seeding";
+import {
+  shuffleSeedPositions,
+  standingsSeedPositions,
+} from "@/lib/bracket/seeding";
 import {
   type Bracket,
   BracketError,
@@ -37,6 +41,7 @@ import {
 import { inUseError } from "@/lib/setup";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 import { getBracketEntrants, loadBracket } from "@/queries/brackets";
+import { getStandings } from "@/queries/standings";
 
 const COMPETITION_NOT_FOUND = "That Competition no longer exists.";
 const HEAT_NOT_FOUND = "That Heat no longer exists.";
@@ -337,13 +342,18 @@ export async function replaceEntrants(
 }
 
 /**
- * Seeds the Entrants randomly (by `rng`) and builds the Bracket, byes
- * included. Once a Heat has a Heat Result, regenerating needs `force`,
- * which clears every result.
+ * Seeds the Entrants — randomly (by `rng`), or by the current Standings —
+ * and builds the Bracket, byes included. Once a Heat has a Heat Result,
+ * regenerating needs `force`, which clears every result.
  */
 export async function generateBracket(
   competitionId: string,
-  options: { rng?: () => number; force?: boolean },
+  options: {
+    rng?: () => number;
+    force?: boolean;
+    /** "random" (default) or "standings"; see `standingsSeedPositions`. */
+    seeding?: "random" | "standings";
+  },
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
@@ -362,10 +372,25 @@ export async function generateBracket(
       return refuse(HAS_RESULTS_ERROR);
     }
 
-    const seeded = shuffleSeedPositions(
-      entrants.map((e) => e.id),
-      options.rng ?? Math.random,
-    );
+    const rng = options.rng ?? Math.random;
+    let seeded: { entrantId: string; seedPosition: number }[];
+    if (options.seeding === "standings") {
+      const [warWeekRow] = await tx
+        .select({ mode: warWeek.mode })
+        .from(warWeek)
+        .where(eq(warWeek.id, ctx.warWeekId))
+        .limit(1);
+      const standings = await getStandings(
+        { id: ctx.warWeekId, mode: warWeekRow!.mode },
+        tx,
+      );
+      seeded = standingsSeedPositions(entrants, standings, found.scoring, rng);
+    } else {
+      seeded = shuffleSeedPositions(
+        entrants.map((e) => e.id),
+        rng,
+      );
+    }
     // Seed Positions are unique per Competition: move them aside first.
     await tx
       .update(entrant)

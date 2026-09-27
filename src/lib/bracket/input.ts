@@ -74,7 +74,11 @@ export function parseEntrantsInput(input: unknown): Parsed<EntrantsInput> {
   return parse(entrantsSchema, input);
 }
 
-const generateSchema = z.object({ force: z.boolean().optional() });
+const generateSchema = z.object({
+  /** Random Seed Positions, or by the current Standings; default random. */
+  seeding: z.enum(["random", "standings"]).optional(),
+  force: z.boolean().optional(),
+});
 
 export type GenerateInput = z.infer<typeof generateSchema>;
 
