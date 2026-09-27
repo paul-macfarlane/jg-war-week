@@ -4,13 +4,13 @@ import { Avatar } from "@/components/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useYou } from "@/components/you";
-import { isBye, isDecided } from "@/lib/bracket/engine";
+import { isBye } from "@/lib/bracket/formats";
 import type { Bracket, Heat } from "@/lib/bracket/types";
 import {
   entrantForYou,
-  finalRoundOf,
   groupRounds,
   heatName,
+  isDecided,
   nextHeatFor,
 } from "@/lib/bracket/view";
 import { YOU_ROW_CLASS } from "@/lib/you";
@@ -69,9 +69,19 @@ function feederOf(bracket: Bracket, heat: Heat, slot: number) {
   );
 }
 
+/** "A", "A and B", "A, B and C". */
+function listNames(names: string[]): string {
+  if (names.length <= 1) return names.join("");
+  return `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+}
+
 /**
- * A Heat's two places: each Entrant with its mark, the winner bold with a
- * ✓, scores and forfeits; "Bye" or "Waiting for …" for an empty place.
+ * A Heat's places: each Entrant with its mark, scores and forfeits. A
+ * decided two-slot Heat marks its winner bold with a ✓; a decided Heat of
+ * more lists its Entrants by place with their place numbers. An empty
+ * single-elimination place reads "Bye" or "Waiting for …"; a Heats Round
+ * not yet filled reads "Waiting for Round N to finish", and a Heats bye
+ * says its Entrants advance.
  */
 export function HeatRows({
   heat,
@@ -88,11 +98,24 @@ export function HeatRows({
   primaryColor: string;
   youEntrantId?: string | null;
 }) {
-  const finalRound = finalRoundOf(bracket);
-  const decided = isDecided(heat) && !isBye(heat);
+  const bye = isBye(bracket, heat);
+  const decided = isDecided(heat) && !bye;
+  const ranked = decided && heat.slots.length > 2;
+  if (
+    bracket.format === "heats" &&
+    heat.slots.every((s) => s.entrantId === null)
+  ) {
+    return (
+      <p className="text-foreground/60 flex min-h-8 items-center px-1 italic">
+        Waiting for Round {heat.round - 1} to finish
+      </p>
+    );
+  }
+  const slots = heat.slots.map((slot, i) => ({ slot, i }));
+  if (ranked) slots.sort((a, b) => (a.slot.place ?? 0) - (b.slot.place ?? 0));
   return (
     <ul className="flex flex-col gap-1">
-      {heat.slots.map((slot, i) => {
+      {slots.map(({ slot, i }) => {
         const entrant = slot.entrantId
           ? entrantsById.get(slot.entrantId)
           : undefined;
@@ -103,10 +126,10 @@ export function HeatRows({
               key={i}
               className="text-foreground/60 flex min-h-8 items-center px-1 italic"
             >
-              {isBye(heat)
+              {bye
                 ? "Bye"
                 : feeder
-                  ? `Waiting for ${heatName(feeder, finalRound)}`
+                  ? `Waiting for ${heatName(bracket, feeder)}`
                   : "Waiting"}
             </li>
           );
@@ -117,6 +140,14 @@ export function HeatRows({
             key={i}
             className={`flex min-h-8 min-w-0 items-center gap-2 px-1 ${YOU_ROW_CLASS}`}
           >
+            {ranked && (
+              <span
+                aria-label={`Place ${slot.place}`}
+                className={`w-5 shrink-0 text-right text-sm tabular-nums ${won ? "text-primary font-bold" : "text-foreground/60"}`}
+              >
+                {slot.place}
+              </span>
+            )}
             <EntrantMark
               entrant={entrant}
               scoring={scoring}
@@ -127,7 +158,7 @@ export function HeatRows({
             >
               {entrant.label}
             </span>
-            {won && (
+            {won && !ranked && (
               <span aria-label="Winner" className="text-primary font-bold">
                 ✓
               </span>
@@ -144,13 +175,18 @@ export function HeatRows({
           </li>
         );
       })}
+      {bye && bracket.format === "heats" && (
+        <li className="text-foreground/60 flex min-h-8 items-center px-1 italic">
+          Bye — advances
+        </li>
+      )}
     </ul>
   );
 }
 
 /**
  * The phone Bracket view: a vertical list of Heats grouped by Round, with
- * "Winner → …" chips, the champion and Your next Heat pinned on top, and
+ * (single elimination) "Winner → …" chips, the champion and Your next Heat pinned on top, and
  * Your Entrant highlighted under the You rules.
  */
 export function BracketView({
@@ -181,7 +217,6 @@ export function BracketView({
       : null,
     scoring,
   );
-  const finalRound = finalRoundOf(bracket);
   const next = youEntrantId ? nextHeatFor(bracket, youEntrantId) : null;
   const winner = champion ? entrantsById.get(champion) : undefined;
   const heatsById = new Map(bracket.heats.map((h) => [h.id, h]));
@@ -234,19 +269,38 @@ export function BracketView({
           className="ring-accent ring-2"
         >
           <CardContent className="flex min-w-0 flex-col gap-1">
-            <span className="text-foreground/60 text-xs font-medium uppercase">
-              Your next Heat · {heatName(next.heat, finalRound)}
-            </span>
-            {next.opponentId ? (
-              <span className="truncate font-semibold">
-                vs {entrantsById.get(next.opponentId)?.label ?? "Unknown"}
-              </span>
+            {next.kind === "advanced" ? (
+              <>
+                <span className="text-foreground/60 text-xs font-medium uppercase">
+                  Your next Heat
+                </span>
+                <span className="font-semibold">
+                  Advanced to Round {next.round} · waiting for Round{" "}
+                  {next.round - 1} to finish
+                </span>
+              </>
             ) : (
-              <span className="text-foreground/70">
-                {next.waitingFor
-                  ? `Waiting for ${heatName(next.waitingFor, finalRound)}`
-                  : "Waiting for an opponent"}
-              </span>
+              <>
+                <span className="text-foreground/60 text-xs font-medium uppercase">
+                  Your next Heat · {heatName(bracket, next.heat)}
+                </span>
+                {next.opponentIds.length > 0 ? (
+                  <span className="font-semibold break-words">
+                    vs{" "}
+                    {listNames(
+                      next.opponentIds.map(
+                        (id) => entrantsById.get(id)?.label ?? "Unknown",
+                      ),
+                    )}
+                  </span>
+                ) : (
+                  <span className="text-foreground/70">
+                    {next.waitingFor
+                      ? `Waiting for ${heatName(bracket, next.waitingFor)}`
+                      : "Waiting for an opponent"}
+                  </span>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
@@ -261,15 +315,16 @@ export function BracketView({
           <h3 className="font-semibold">{round.name}</h3>
           <ul className="flex flex-col gap-2">
             {round.heats.map((heat) => {
-              const to = heat.winnerTo
-                ? heatsById.get(heat.winnerTo.heatId)
-                : undefined;
+              const to =
+                bracket.format === "single-elimination" && heat.winnerTo
+                  ? heatsById.get(heat.winnerTo.heatId)
+                  : undefined;
               return (
                 <li key={heat.id}>
                   <Card size="sm">
                     <CardContent className="flex min-w-0 flex-col gap-2">
                       <span className="text-foreground/60 text-xs font-medium">
-                        {heatName(heat, finalRound)}
+                        {heatName(bracket, heat)}
                       </span>
                       <HeatRows
                         heat={heat}
@@ -281,7 +336,7 @@ export function BracketView({
                       />
                       {to && (
                         <Badge variant="secondary">
-                          Winner → {heatName(to, finalRound)}
+                          Winner → {heatName(bracket, to)}
                         </Badge>
                       )}
                     </CardContent>

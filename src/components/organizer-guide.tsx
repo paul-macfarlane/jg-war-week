@@ -132,23 +132,30 @@ export function OrganizerGuide({
       <section className="flex flex-col gap-2">
         <h2 className="text-lg font-semibold">Running a Bracket</h2>
         <p className="text-foreground/70">
-          Set a Competition&apos;s Format to single elimination under{" "}
+          Set a Competition&apos;s Format to Single elimination or Heats under{" "}
           <Link
             href="/admin/setup/competitions"
             className="text-primary underline underline-offset-4"
           >
             Competitions
           </Link>
-          , then open its Bracket builder to pick Entrants — all {teamLower}s,
-          or specific Participants — and Generate the Bracket (Seed Positions
-          are random; Re-roll before any Heat is played to try again). From the
-          results screen, tap a Heat to record its winner, score or a forfeit;
-          changing a decided Heat&apos;s winner resets the later Heats that
-          followed from it, while a score-only edit keeps them. Finalize turns
-          the Bracket&apos;s placings into Points Entries marked &quot;From
-          bracket&quot;; un-finalize removes them so you can fix a Heat and
-          finalize again. While it&apos;s finalized, the Competition&apos;s
-          scoring and Placement Points can&apos;t change: un-finalize first.
+          . Single elimination is one against one: the winner of each Heat
+          advances. Heats puts up to a few Entrants in each Heat (you choose how
+          many, and how many advance); the top few of each Heat go on, Round
+          after Round, until one Heat is left. The final Heat&apos;s order is
+          the final placing; everyone else ties with those who went out in the
+          same Round, and forfeiters finish last. Open the Bracket builder to
+          pick Entrants — all {teamLower}s, or specific Participants — and
+          Generate the Bracket (Seed Positions are random; Re-roll before any
+          Heat is played to try again). From the results screen, tap a Heat to
+          record it: its winner, or for a bigger Heat its Entrants in finishing
+          order, with scores or forfeits; changing who advances resets the later
+          Heats that followed from it, while a score-only edit keeps them.
+          Finalize turns the Bracket&apos;s placings into Points Entries marked
+          &quot;From bracket&quot;; un-finalize removes them so you can fix a
+          Heat and finalize again. While it&apos;s finalized, the
+          Competition&apos;s scoring and Placement Points can&apos;t change:
+          un-finalize first.
         </p>
       </section>
 

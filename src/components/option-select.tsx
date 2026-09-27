@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export type SelectOption = { value: string; label: string };
+export type SelectOption = { value: string; label: string; disabled?: boolean };
 
 /** Base UI's Select won't accept `""` as an item value. */
 const EMPTY = "__none__";
@@ -45,6 +45,7 @@ export function OptionSelect({
   const items = options.map((option) => ({
     value: toItemValue(option.value),
     label: option.label,
+    disabled: option.disabled,
   }));
 
   return (
@@ -70,6 +71,7 @@ export function OptionSelect({
             <SelectItem
               key={item.value}
               value={item.value}
+              disabled={item.disabled}
               className="min-h-11 sm:min-h-8"
             >
               {item.label}
