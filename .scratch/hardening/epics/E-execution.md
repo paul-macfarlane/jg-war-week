@@ -422,4 +422,4 @@ optional input field that only ever held `placings`; no schema change. The orche
 
 ## [PROGRESS]
 
-_(none yet)_
+- 2026-09-27 **Execution structure recorded** (`/atlas-implement`, work package `hardening-e`): waves as planned, six deliverables D1–D6 with edges D2→D3, D1→D4, D3→D4, D4→D5, D5→D6. Wave 1 runs D1 in a worktree (`.claude/worktrees/hardening-e/war-weeker/d1`, branch `feat/hardening-e-bracket-formats-d1`, database `war_weeker_d1`) while D2 runs on the direct checkout; predicted ownership is disjoint (D1: `src/queries/unfinalized-brackets.ts` + test, `src/app/admin/setup/page.tsx`, `src/components/war-week-lifecycle-controls.tsx`; D2: enums, schema, `drizzle/`, `src/lib/bracket/{types,config,formats,engine}`, `src/queries/brackets.ts`, `src/mutations/brackets.ts`, `src/lib/setup.ts`, `src/seed/`). Re-checked at closeout. Every later wave is one worker on the direct checkout. Packet change against the plan: the `bracketPoints` code removal (decision 7) moves from D4 to D2, which already owns every file it touches. Human gates: none. Proof root `test-results/` cleared in `69e86d4`.
