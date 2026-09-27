@@ -188,9 +188,6 @@ export function BracketBuilder({
                       ? `Find a ${teamLabel}`
                       : `Find by name or ${teamLabel}`
                   }
-                  aria-label={
-                    isTeam ? `Find ${teamLabel}s` : "Find Participants"
-                  }
                 />
               </Field>
               <Button

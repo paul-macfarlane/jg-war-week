@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useActionState, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -9,6 +9,11 @@ import {
   createAnnouncement,
   updateAnnouncement,
 } from "@/actions/announcements";
+import {
+  fieldErrorsOf,
+  formErrorOf,
+  useFocusFirstInvalid,
+} from "@/components/form-field-errors";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,53 +60,57 @@ export function AnnouncementForm({
   initial?: Initial;
 }) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const formRef = useRef<HTMLFormElement>(null);
   const [title, setTitle] = useState(initial?.title ?? "");
   const [body, setBody] = useState<Content>(initial?.body ?? EMPTY_BODY);
   const [videoUrls, setVideoUrls] = useState<string[]>(
     initial?.videoUrls ?? [],
   );
   const [pinned, setPinned] = useState(initial?.pinned ?? false);
-  const [result, setResult] = useState<AnnouncementActionResult | null>(null);
 
   function setVideoUrl(index: number, value: string) {
     setVideoUrls((urls) => urls.map((url, i) => (i === index ? value : url)));
   }
 
-  function submit(event: React.SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    // Blank rows are left-over "Add video link" clicks, not links.
-    const input = {
-      title,
-      body,
-      videoUrls: videoUrls.map((url) => url.trim()).filter(Boolean),
-      pinned,
-    };
-    startTransition(async () => {
+  // Validation runs on the server; a refusal names its fields. Every field
+  // is closed over from state (rather than read off `FormData`) so the
+  // rich-text body and the video-link list survive a refusal unchanged.
+  const [result, formAction, pending] = useActionState(
+    async (): Promise<AnnouncementActionResult> => {
+      // Blank rows are left-over "Add video link" clicks, not links.
+      const input = {
+        title,
+        body,
+        videoUrls: videoUrls.map((url) => url.trim()).filter(Boolean),
+        pinned,
+      };
       const saved = announcementId
         ? await updateAnnouncement(announcementId, input)
         : await createAnnouncement(warWeekId, input);
-      setResult(saved);
       if (!saved.ok) {
         toast.error(saved.error);
-        return;
+        return saved;
       }
-      toast.success(
-        announcementId ? "Announcement saved" : "Announcement posted",
-      );
+      toast.success("Announcement saved");
       router.push("/admin/announcements");
       router.refresh();
-    });
-  }
+      return saved;
+    },
+    null,
+  );
+  const fieldErrors = fieldErrorsOf(result);
+  const formError = formErrorOf(result);
+  useFocusFirstInvalid(formRef, result);
 
   return (
     <form
-      onSubmit={submit}
+      ref={formRef}
+      action={formAction}
       className="flex flex-col gap-5"
       aria-label="Announcement"
     >
       <FieldGroup>
-        <Field>
+        <Field data-invalid={!!fieldErrors.title}>
           <FieldLabel htmlFor="announcement-title">Title</FieldLabel>
           <Input
             id="announcement-title"
@@ -109,14 +118,22 @@ export function AnnouncementForm({
             required
             maxLength={ANNOUNCEMENT_TITLE_MAX}
             className="h-11 sm:h-9"
+            aria-invalid={!!fieldErrors.title}
             value={title}
             onChange={(event) => setTitle(event.target.value)}
           />
+          <FieldError>{fieldErrors.title}</FieldError>
         </Field>
 
-        <Field>
-          <FieldLabel>Body</FieldLabel>
-          <RichTextEditor content={body} onChange={setBody} label="Body" />
+        <Field data-invalid={!!fieldErrors.body}>
+          <FieldLabel id="announcement-body-label">Body</FieldLabel>
+          <RichTextEditor
+            content={body}
+            onChange={setBody}
+            label="Body"
+            labelId="announcement-body-label"
+          />
+          <FieldError>{fieldErrors.body}</FieldError>
         </Field>
 
         <FieldSet>
@@ -165,6 +182,9 @@ export function AnnouncementForm({
               );
             })}
           </FieldGroup>
+          {fieldErrors.videoUrls && (
+            <FieldError>{fieldErrors.videoUrls}</FieldError>
+          )}
           {videoUrls.length < MAX_VIDEO_LINKS && (
             <div>
               <Button
@@ -181,7 +201,7 @@ export function AnnouncementForm({
         </FieldSet>
 
         {canPin && (
-          <Field orientation="horizontal">
+          <Field orientation="horizontal" data-invalid={!!fieldErrors.pinned}>
             <Switch
               id="announcement-pinned"
               name="pinned"
@@ -191,6 +211,7 @@ export function AnnouncementForm({
             <FieldLabel htmlFor="announcement-pinned">
               Pinned (shown first in the feed and on the home page)
             </FieldLabel>
+            <FieldError>{fieldErrors.pinned}</FieldError>
           </Field>
         )}
       </FieldGroup>
@@ -218,9 +239,7 @@ export function AnnouncementForm({
           Cancel
         </Button>
       </div>
-      {result && !result.ok && !pending && (
-        <FieldError>{result.error}</FieldError>
-      )}
+      {formError && !pending && <FieldError>{formError}</FieldError>}
     </form>
   );
 }

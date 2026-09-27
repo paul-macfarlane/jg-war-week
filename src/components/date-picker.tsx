@@ -30,6 +30,8 @@ type DatePickerProps = {
   required?: boolean;
   id?: string;
   "aria-label"?: string;
+  /** Marks the control invalid when its field shows an error. */
+  "aria-invalid"?: boolean;
 };
 
 /**
@@ -45,6 +47,7 @@ export function DatePicker({
   required,
   id,
   "aria-label": ariaLabel,
+  "aria-invalid": ariaInvalid,
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const selected = parseDateValue(value);
@@ -64,6 +67,7 @@ export function DatePicker({
               type="button"
               variant="outline"
               aria-label={ariaLabel}
+              aria-invalid={ariaInvalid}
               className="h-11 w-full justify-start font-normal sm:h-9 sm:w-auto sm:min-w-44"
             />
           }

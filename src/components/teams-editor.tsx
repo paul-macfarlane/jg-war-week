@@ -21,7 +21,12 @@ import {
   useSetupRow,
 } from "@/components/setup-row";
 import { SuggestionCombobox } from "@/components/suggestion-combobox";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import type { ParticipantInput, TeamInput } from "@/lib/setup";
@@ -47,9 +52,13 @@ function TeamRow({
     : EMPTY_TEAM;
   const id = useId();
   const [values, setValues] = useState(initial);
-  const { pending, run, error } = useSetupRow(
-    team ? undefined : () => setValues(EMPTY_TEAM),
-  );
+  const { pending, formRef, formAction, fieldErrors, error, remove } =
+    useSetupRow(
+      () =>
+        team ? updateTeam(team.id, values) : createTeam(warWeekId, values),
+      `${teamLabel} saved`,
+      team ? undefined : () => setValues(EMPTY_TEAM),
+    );
   const set =
     (field: keyof TeamInput) => (event: React.ChangeEvent<HTMLInputElement>) =>
       setValues((v) => ({ ...v, [field]: event.target.value }));
@@ -63,26 +72,21 @@ function TeamRow({
       ])
     : "";
 
-  function submit(event: React.SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    run(
-      () =>
-        team ? updateTeam(team.id, values) : createTeam(warWeekId, values),
-      `${teamLabel} saved`,
-    );
-  }
-
   return (
     <li
       {...setupRowProps(team?.id)}
       className="border-border border-b py-3 last:border-b-0"
     >
       <form
-        onSubmit={submit}
+        ref={formRef}
+        action={formAction}
         aria-label={team ? `${teamLabel} ${team.name}` : `New ${teamLabel}`}
       >
         <FieldGroup className="gap-2 sm:flex-row sm:items-end">
-          <Field className="min-w-0 sm:flex-1">
+          <Field
+            className="min-w-0 sm:flex-1"
+            data-invalid={!!fieldErrors.name}
+          >
             <FieldLabel htmlFor={`${id}-name`}>Name</FieldLabel>
             <Input
               id={`${id}-name`}
@@ -90,21 +94,25 @@ function TeamRow({
               required
               maxLength={80}
               className="h-11 sm:h-9"
+              aria-invalid={!!fieldErrors.name}
               value={values.name}
               onChange={set("name")}
             />
+            <FieldError>{fieldErrors.name}</FieldError>
           </Field>
-          <Field className="sm:w-auto">
+          <Field className="sm:w-auto" data-invalid={!!fieldErrors.color}>
             <FieldLabel htmlFor={`${id}-color`}>Color</FieldLabel>
             <ColorField
               id={`${id}-color`}
               name="color"
+              aria-invalid={!!fieldErrors.color}
               value={values.color}
               swatches={swatches}
               onValueChange={(color) => setValues((v) => ({ ...v, color }))}
             />
+            <FieldError>{fieldErrors.color}</FieldError>
           </Field>
-          <Field className="sm:flex-1">
+          <Field className="sm:flex-1" data-invalid={!!fieldErrors.logoUrl}>
             <FieldLabel htmlFor={`${id}-logo`}>Logo URL</FieldLabel>
             <Input
               id={`${id}-logo`}
@@ -112,16 +120,18 @@ function TeamRow({
               maxLength={500}
               placeholder="Optional"
               className="h-11 sm:h-9"
+              aria-invalid={!!fieldErrors.logoUrl}
               value={values.logoUrl}
               onChange={set("logoUrl")}
             />
+            <FieldError>{fieldErrors.logoUrl}</FieldError>
           </Field>
           <SetupRowButtons
             pending={pending}
             addLabel={`Add ${teamLabel}`}
             onDelete={
               team &&
-              (() => run(() => deleteTeam(team.id), `${teamLabel} deleted`))
+              (() => remove(() => deleteTeam(team.id), `${teamLabel} deleted`))
             }
             deleteTitle={team && `Delete ${teamLabel} ${team.name}?`}
             deleteDescription={usage}
@@ -174,9 +184,15 @@ function ParticipantRow({
     : EMPTY_PARTICIPANT;
   const id = useId();
   const [values, setValues] = useState(initial);
-  const { pending, run, error } = useSetupRow(
-    participant ? undefined : () => setValues(EMPTY_PARTICIPANT),
-  );
+  const { pending, formRef, formAction, fieldErrors, error, remove } =
+    useSetupRow(
+      () =>
+        participant
+          ? updateParticipant(participant.id, values)
+          : createParticipant(warWeekId, values),
+      "Participant saved",
+      participant ? undefined : () => setValues(EMPTY_PARTICIPANT),
+    );
   const set =
     (field: Exclude<keyof ParticipantInput, "isLeader">) =>
     (event: React.ChangeEvent<HTMLInputElement>) =>
@@ -194,28 +210,18 @@ function ParticipantRow({
       ])
     : "";
 
-  function submit(event: React.SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    run(
-      () =>
-        participant
-          ? updateParticipant(participant.id, values)
-          : createParticipant(warWeekId, values),
-      "Participant saved",
-    );
-  }
-
   return (
     <li
       {...setupRowProps(participant?.id)}
       className="border-border border-b py-3 last:border-b-0"
     >
       <form
-        onSubmit={submit}
+        ref={formRef}
+        action={formAction}
         aria-label={participant ? participant.displayName : "New Participant"}
       >
         <FieldGroup className="grid gap-2 sm:grid-cols-3 sm:items-end xl:grid-cols-[minmax(0,1.4fr)_minmax(0,0.7fr)_minmax(0,1.4fr)_minmax(0,1fr)_auto_auto]">
-          <Field>
+          <Field data-invalid={!!fieldErrors.displayName}>
             <FieldLabel htmlFor={`${id}-name`}>Display name</FieldLabel>
             <Input
               id={`${id}-name`}
@@ -223,27 +229,28 @@ function ParticipantRow({
               required
               maxLength={120}
               className="h-11 sm:h-9"
+              aria-invalid={!!fieldErrors.displayName}
               value={values.displayName}
               onChange={set("displayName")}
             />
+            <FieldError>{fieldErrors.displayName}</FieldError>
           </Field>
-          <Field>
-            {/* SuggestionCombobox takes no id, so the label wraps it. */}
-            <FieldLabel className="w-full flex-col items-stretch">
-              Company Tag
-              <SuggestionCombobox
-                name="companyTag"
-                maxLength={40}
-                placeholder="Optional"
-                suggestions={tagSuggestions}
-                value={values.companyTag}
-                onValueChange={(companyTag) =>
-                  setValues((v) => ({ ...v, companyTag }))
-                }
-              />
-            </FieldLabel>
+          <Field data-invalid={!!fieldErrors.companyTag}>
+            <FieldLabel htmlFor={`${id}-tag`}>Company Tag</FieldLabel>
+            <SuggestionCombobox
+              id={`${id}-tag`}
+              name="companyTag"
+              maxLength={40}
+              placeholder="Optional"
+              suggestions={tagSuggestions}
+              value={values.companyTag}
+              onValueChange={(companyTag) =>
+                setValues((v) => ({ ...v, companyTag }))
+              }
+            />
+            <FieldError>{fieldErrors.companyTag}</FieldError>
           </Field>
-          <Field>
+          <Field data-invalid={!!fieldErrors.email}>
             <FieldLabel htmlFor={`${id}-email`}>Email</FieldLabel>
             <Input
               id={`${id}-email`}
@@ -252,23 +259,27 @@ function ParticipantRow({
               maxLength={254}
               placeholder="Optional"
               className="h-11 sm:h-9"
+              aria-invalid={!!fieldErrors.email}
               value={values.email}
               onChange={set("email")}
             />
+            <FieldError>{fieldErrors.email}</FieldError>
           </Field>
           {teams.length > 0 ? (
             <>
-              <Field>
+              <Field data-invalid={!!fieldErrors.teamId}>
                 <FieldLabel htmlFor={`${id}-team`}>{teamLabel}</FieldLabel>
                 <OptionSelect
                   id={`${id}-team`}
                   name="teamId"
+                  aria-invalid={!!fieldErrors.teamId}
                   options={teamOptions}
                   value={values.teamId}
                   onValueChange={(teamId) =>
                     setValues((v) => ({ ...v, teamId }))
                   }
                 />
+                <FieldError>{fieldErrors.teamId}</FieldError>
               </Field>
               <Field orientation="horizontal" className="min-h-11 sm:min-h-9">
                 <Switch
@@ -291,7 +302,7 @@ function ParticipantRow({
             onDelete={
               participant &&
               (() =>
-                run(
+                remove(
                   () => deleteParticipant(participant.id),
                   "Participant deleted",
                 ))

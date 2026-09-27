@@ -24,7 +24,12 @@ import {
 } from "@/components/setup-row";
 import { SuggestionCombobox } from "@/components/suggestion-combobox";
 import { Button } from "@/components/ui/button";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -132,9 +137,22 @@ function CompetitionRow({
   const [values, setValues] = useState(
     competition ? inputFrom(competition) : emptyCompetition(mode),
   );
-  const { pending, run, error } = useSetupRow(
-    competition ? undefined : () => setValues(emptyCompetition(mode)),
-  );
+  const { pending, formRef, formAction, fieldErrors, error, remove } =
+    useSetupRow(
+      () => {
+        // Only an individual Competition can count toward the Team.
+        const input = {
+          ...values,
+          countsTowardTeam:
+            values.scoring === "individual" && values.countsTowardTeam,
+        };
+        return competition
+          ? updateCompetition(competition.id, input)
+          : createCompetition(warWeekId, input);
+      },
+      "Competition saved",
+      competition ? undefined : () => setValues(emptyCompetition(mode)),
+    );
   const set =
     (field: Exclude<keyof CompetitionInput, "countsTowardTeam">) =>
     (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -147,23 +165,6 @@ function CompetitionRow({
       : []),
     { value: "individual", label: "Individual" },
   ];
-
-  function submit(event: React.SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    // Only an individual Competition can count toward the Team.
-    const input = {
-      ...values,
-      countsTowardTeam:
-        values.scoring === "individual" && values.countsTowardTeam,
-    };
-    run(
-      () =>
-        competition
-          ? updateCompetition(competition.id, input)
-          : createCompetition(warWeekId, input),
-      "Competition saved",
-    );
-  }
 
   const usage = competition
     ? usageSummary([
@@ -178,11 +179,12 @@ function CompetitionRow({
       className="border-border border-b py-4 last:border-b-0"
     >
       <form
-        onSubmit={submit}
+        ref={formRef}
+        action={formAction}
         aria-label={competition ? competition.name : "New Competition"}
       >
         <FieldGroup className="grid gap-3 sm:grid-cols-2">
-          <Field>
+          <Field data-invalid={!!fieldErrors.name}>
             <FieldLabel htmlFor={`${id}-name`}>Name</FieldLabel>
             <Input
               id={`${id}-name`}
@@ -190,25 +192,29 @@ function CompetitionRow({
               required
               maxLength={120}
               className="h-11 sm:h-9"
+              aria-invalid={!!fieldErrors.name}
               value={values.name}
               onChange={set("name")}
             />
+            <FieldError>{fieldErrors.name}</FieldError>
           </Field>
-          <Field>
-            {/* SuggestionCombobox takes no id, so the label wraps it. */}
-            <FieldLabel className="w-full flex-col items-stretch">
-              Group
-              <SuggestionCombobox
-                name="group"
-                maxLength={120}
-                placeholder="Optional"
-                suggestions={groupSuggestions}
-                value={values.group}
-                onValueChange={(group) => setValues((v) => ({ ...v, group }))}
-              />
-            </FieldLabel>
+          <Field data-invalid={!!fieldErrors.group}>
+            <FieldLabel htmlFor={`${id}-group`}>Group</FieldLabel>
+            <SuggestionCombobox
+              id={`${id}-group`}
+              name="group"
+              maxLength={120}
+              placeholder="Optional"
+              suggestions={groupSuggestions}
+              value={values.group}
+              onValueChange={(group) => setValues((v) => ({ ...v, group }))}
+            />
+            <FieldError>{fieldErrors.group}</FieldError>
           </Field>
-          <Field className="sm:col-span-2">
+          <Field
+            className="sm:col-span-2"
+            data-invalid={!!fieldErrors.description}
+          >
             <FieldLabel htmlFor={`${id}-description`}>Description</FieldLabel>
             <Textarea
               id={`${id}-description`}
@@ -216,19 +222,23 @@ function CompetitionRow({
               maxLength={2000}
               rows={2}
               placeholder="Optional"
+              aria-invalid={!!fieldErrors.description}
               value={values.description}
               onChange={set("description")}
             />
+            <FieldError>{fieldErrors.description}</FieldError>
           </Field>
-          <Field>
+          <Field data-invalid={!!fieldErrors.scoring}>
             <FieldLabel htmlFor={`${id}-scoring`}>Scoring</FieldLabel>
             <OptionSelect
               id={`${id}-scoring`}
               name="scoring"
+              aria-invalid={!!fieldErrors.scoring}
               options={scoringOptions}
               value={values.scoring}
               onValueChange={(scoring) => setValues((v) => ({ ...v, scoring }))}
             />
+            <FieldError>{fieldErrors.scoring}</FieldError>
           </Field>
           {mode === "teams" && (
             <Field
@@ -253,7 +263,10 @@ function CompetitionRow({
               </FieldLabel>
             </Field>
           )}
-          <Field className="sm:col-start-1">
+          <Field
+            className="sm:col-start-1"
+            data-invalid={!!fieldErrors.maxPoints}
+          >
             <FieldLabel htmlFor={`${id}-max`}>Max points</FieldLabel>
             <Input
               id={`${id}-max`}
@@ -261,9 +274,11 @@ function CompetitionRow({
               inputMode="decimal"
               placeholder="Optional"
               className="h-11 sm:h-9"
+              aria-invalid={!!fieldErrors.maxPoints}
               value={values.maxPoints}
               onChange={set("maxPoints")}
             />
+            <FieldError>{fieldErrors.maxPoints}</FieldError>
           </Field>
           <PlacementPointsRows
             value={values.placementPoints}
@@ -272,6 +287,11 @@ function CompetitionRow({
               setValues((v) => ({ ...v, placementPoints }))
             }
           />
+          {fieldErrors.placementPoints && (
+            <FieldError className="sm:col-span-2">
+              {fieldErrors.placementPoints}
+            </FieldError>
+          )}
           <div className="flex flex-wrap items-center justify-between gap-2 sm:col-span-2">
             <div className="flex flex-col gap-1">
               {competition && (
@@ -295,7 +315,7 @@ function CompetitionRow({
               onDelete={
                 competition && canDelete
                   ? () =>
-                      run(
+                      remove(
                         () => deleteCompetition(competition.id),
                         "Competition deleted",
                       )
