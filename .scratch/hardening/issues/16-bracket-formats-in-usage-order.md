@@ -31,3 +31,10 @@
 - T3: the phone bracket layout, option (b) as shipped, is accepted. No prototype.
 
 ## Comments
+
+**[DECISION] 2026-09-26 (Paul, during `/atlas-plan` of Epic E):**
+
+- **T10 dropped.** No new Format needed: Pool is plain single elimination, and Bouncy Ping Pong ran as two Competitions (a points qualifier, then a four-Entrant single-elimination Bracket of the top finishers, teams of 2). Two Competitions stay the answer. The "~14 uses" came from wiki mentions of qualifiers and finals nights, not from Group play. Round-robin Groups and tiebreaks stay under T7.
+- **`per-heat` and `both` points removed.** No Competition needs points per Heat; past multi-entrant games paid only 1st place, which Placement Points express. Epic E removes the code; a later migration drops `competition.bracket_points` and its type after Epic E is on `main`.
+- **No seeded XI Bracket:** there is no history to seed one from.
+- Epic E (`../epics/E-bracket-formats-milestone.md`) is the End War Week warning, T9 Heats and the points-mode code removal.
