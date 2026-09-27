@@ -40,3 +40,6 @@
 - **`per-heat` and `both` points removed.** No Competition needs points per Heat; past multi-entrant games paid only 1st place, which Placement Points express. Epic E removes the code; a later migration drops `competition.bracket_points` and its type after Epic E is on `main`.
 - **No seeded XI Bracket:** there is no history to seed one from.
 - Epic E (`../epics/E-bracket-formats-milestone.md`) is the End War Week warning, T9 Heats and the points-mode code removal.
+
+**[PROGRESS] 2026-09-27 (Epic E, PR https://github.com/paul-macfarlane/jg-war-week/pull/84):** delivered item 1 (T9 Heats), the End War Week warning (T6 extra) and the `per-heat`/`both` points removal from the code (the column drop follows after `main`). T10 dropped (see the decision above). Still open here: T11 Squads, T12 self-report, T13 Heat times and Now/Next, T7 round robin, T8 double elimination, the other T6/T14 extras, W2 seeding.
+
