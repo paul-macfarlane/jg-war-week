@@ -8,7 +8,7 @@ export function DeletePointsEntryButton({
   description,
 }: {
   id: string;
-  /** e.g. "5 pts to Red in Tug of War", for the confirm prompt. */
+  /** e.g. "5 points to Red in Tug of War", for the confirm prompt. */
   description: string;
 }) {
   return (

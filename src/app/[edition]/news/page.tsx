@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { AnnouncementCard } from "@/components/announcement-card";
-import { getAnnouncements } from "@/queries/announcements";
+import { getAnnouncementCards } from "@/queries/announcements";
 
 import { getWarWeekForEdition } from "../war-week";
 
@@ -12,7 +12,7 @@ export default async function NewsPage({
   const warWeek = await getWarWeekForEdition(edition);
   if (!warWeek) notFound();
 
-  const announcements = await getAnnouncements(warWeek);
+  const announcements = await getAnnouncementCards(warWeek);
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 px-4 py-6 md:max-w-3xl">

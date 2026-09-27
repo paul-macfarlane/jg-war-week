@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   type AnnouncementInput,
   MAX_VIDEO_LINKS,
+  announcementAuthorName,
   announcementVideoCount,
   parseAnnouncementInput,
   sortAnnouncements,
@@ -280,5 +281,34 @@ describe("parseAnnouncementInput field errors", () => {
         videoUrls: "Video link 2 must be an https:// link.",
       },
     });
+  });
+});
+
+describe("announcementAuthorName", () => {
+  const participants = [
+    { email: "pmacfarlane@jahnelgroup.com", displayName: "Paul Macfarlane" },
+    { email: null, displayName: "No Email" },
+  ];
+
+  it("uses the matching Participant's display name", () => {
+    expect(
+      announcementAuthorName("pmacfarlane@jahnelgroup.com", participants),
+    ).toBe("Paul Macfarlane");
+  });
+
+  it("matches case-insensitively", () => {
+    expect(
+      announcementAuthorName("PMacfarlane@JahnelGroup.com", participants),
+    ).toBe("Paul Macfarlane");
+  });
+
+  it("falls back to the handle before the @ with no Participant match", () => {
+    expect(
+      announcementAuthorName("someone-else@jahnelgroup.com", participants),
+    ).toBe("someone-else");
+  });
+
+  it("falls back with no Participants at all", () => {
+    expect(announcementAuthorName("solo@jahnelgroup.com", [])).toBe("solo");
   });
 });

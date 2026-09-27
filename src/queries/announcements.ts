@@ -1,8 +1,17 @@
 import { and, desc, eq } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
-import { type Announcement, type WarWeek, announcement } from "@/db/schema";
-import { sortAnnouncements } from "@/lib/announcements";
+import {
+  type Announcement,
+  type WarWeek,
+  announcement,
+  participant,
+} from "@/db/schema";
+import {
+  type AnnouncementCardData,
+  announcementAuthorName,
+  sortAnnouncements,
+} from "@/lib/announcements";
 import { isUuid } from "@/lib/uuid";
 
 async function loadSorted(
@@ -52,4 +61,59 @@ export async function getAnnouncementForEdit(
     .where(and(eq(announcement.id, id), eq(announcement.warWeekId, warWeek.id)))
     .limit(1);
   return found;
+}
+
+/** A War Week's Participant emails, for `announcementAuthorName`'s match. */
+async function loadAuthorCandidates(
+  warWeekId: string,
+  dbOrTx: DBOrTx,
+): Promise<{ email: string | null; displayName: string }[]> {
+  return dbOrTx
+    .select({ email: participant.email, displayName: participant.displayName })
+    .from(participant)
+    .where(eq(participant.warWeekId, warWeekId));
+}
+
+function toCardData(
+  row: Announcement,
+  participants: { email: string | null; displayName: string }[],
+): AnnouncementCardData {
+  return {
+    id: row.id,
+    title: row.title,
+    body: row.body,
+    videoUrls: row.videoUrls,
+    pinned: row.pinned,
+    publishedAt: row.publishedAt,
+    authorName: announcementAuthorName(row.authorEmail, participants),
+  };
+}
+
+/**
+ * A War Week's Announcements as `AnnouncementCard` data (author display
+ * name, not email). `/news` and the home feed both use this, never the
+ * admin pages or MCP, which keep the email.
+ */
+export async function getAnnouncementCards(
+  warWeek: Pick<WarWeek, "id">,
+  options: { limit?: number } = {},
+  dbOrTx: DBOrTx = db,
+): Promise<AnnouncementCardData[]> {
+  const [rows, participants] = await Promise.all([
+    getAnnouncements(warWeek, options, dbOrTx),
+    loadAuthorCandidates(warWeek.id, dbOrTx),
+  ]);
+  return rows.map((row) => toCardData(row, participants));
+}
+
+/** The pinned Announcement's card data, if there is one. */
+export async function getPinnedAnnouncementCard(
+  warWeek: Pick<WarWeek, "id">,
+  dbOrTx: DBOrTx = db,
+): Promise<AnnouncementCardData | undefined> {
+  const [pinned, participants] = await Promise.all([
+    getPinnedAnnouncement(warWeek, dbOrTx),
+    loadAuthorCandidates(warWeek.id, dbOrTx),
+  ]);
+  return pinned ? toCardData(pinned, participants) : undefined;
 }

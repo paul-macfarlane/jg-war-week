@@ -1,10 +1,20 @@
 import { z } from "zod";
 
+import type { Announcement } from "@/db/schema";
 import { fieldErrorsFrom } from "@/lib/form-errors";
 import { formatLedgerTime } from "@/lib/points-entry";
 import type { Parsed } from "@/lib/result";
 import { contentInputSchema } from "@/lib/rich-text/content";
 import { videoEmbedUrl } from "@/lib/video";
+
+/**
+ * What an `AnnouncementCard` renders: an Announcement's content plus its
+ * author's display name (`announcementAuthorName`), never the raw email.
+ */
+export type AnnouncementCardData = Pick<
+  Announcement,
+  "id" | "title" | "body" | "videoUrls" | "pinned" | "publishedAt"
+> & { authorName: string };
 
 /** The Announcement title's column length. */
 export const ANNOUNCEMENT_TITLE_MAX = 200;
@@ -106,6 +116,21 @@ export function sortAnnouncements<
 
 /** An Announcement's published-at, in War Week time (ET). */
 export const formatPublishedAt = formatLedgerTime;
+
+/**
+ * The name an Announcement's author shows as, for a Participant-facing
+ * card: the War Week's Participant whose email matches the author's
+ * (case-insensitively), else the handle before the `@`. Never the raw
+ * email, unlike the admin pages and MCP, which keep it.
+ */
+export function announcementAuthorName(
+  authorEmail: string,
+  participants: { email: string | null; displayName: string }[],
+): string {
+  const email = authorEmail.toLowerCase();
+  const match = participants.find((p) => p.email?.toLowerCase() === email);
+  return match ? match.displayName : authorEmail.split("@")[0];
+}
 
 /** How many `video` blocks a rich-text tree holds, at any depth. */
 function embeddedVideos(node: unknown): number {

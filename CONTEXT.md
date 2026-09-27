@@ -284,8 +284,10 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   - Totals count up from 0.
   - Every list ends together, so each first place lands at the end.
   - The whole Finale is under 8 s.
-- Replay plays it again. With `prefers-reduced-motion`, Start shows the
-  final state at once.
+- Replay plays it again. With `prefers-reduced-motion`, Start still has to be
+  pressed (or `Space`, or a click on the stage) — reduced motion only skips
+  the count-in animation once pressed, jumping straight to the final state.
+  It never auto-starts: the ceremony needs a deliberate start.
 - The Finale never reorders or recomputes Standings: it plays the same
   `getStandings` rows the leaderboard shows.
 - The home and leaderboard pages keep refreshing about every 10 s while the

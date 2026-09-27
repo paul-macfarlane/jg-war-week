@@ -26,6 +26,11 @@ export function rosterHeading(
   return mode === "free-for-all" ? "Participants" : `${teamLabel}s`;
 }
 
+/** A Team card's member count, labelled: "8 Participants", "1 Participant". */
+export function participantCountLabel(count: number): string {
+  return `${count} ${count === 1 ? "Participant" : "Participants"}`;
+}
+
 /** Leaders first, then by display name. */
 function byRosterOrder(a: RosterParticipant, b: RosterParticipant): number {
   if (a.isLeader !== b.isLeader) return a.isLeader ? -1 : 1;
