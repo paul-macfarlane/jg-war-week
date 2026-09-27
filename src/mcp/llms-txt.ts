@@ -52,9 +52,8 @@ editions stay in the Archive at \`/history\`. Standings are never hidden: they
 are always the current Standings, live or complete. The Finale
 (\`/<edition>/finale\`) is a closing-ceremony playback of those Standings, not
 a separate result — it changes nothing. Some Competitions run as a Bracket
-(single elimination or Heats) instead of plain points; there is no MCP tool
-for Bracket detail yet, so ask about a Competition's Standings, not its
-Bracket.
+(single elimination or Heats) instead of plain points; \`get_bracket\` reads
+one by Competition name.
 
 ## Pages
 

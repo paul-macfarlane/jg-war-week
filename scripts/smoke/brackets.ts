@@ -2,6 +2,7 @@ import type { WriteResult } from "@/lib/result";
 
 import {
   BASE_URL,
+  MCP_TOKEN,
   type SmokeSession,
   callAction,
   fail,
@@ -12,6 +13,7 @@ import {
   signedInFetch,
   xiWarWeekId,
 } from "./harness";
+import { mcpTool } from "./mcp";
 
 // The bracket loop check's own Competition and extra Teams (XI has two
 // Teams), deleted after the check and before it, so it's rerunnable.
@@ -186,6 +188,40 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     if (before === null || finalized !== before + 10) {
       problems.push(`Red total ${before} → ${finalized}, expected +10`);
     }
+
+    // get_bracket over /api/mcp, with the bearer token and no session.
+    const bearer = { Authorization: `Bearer ${MCP_TOKEN}` };
+    const bracket = await mcpTool(
+      "get_bracket",
+      { competition: SMOKE_BRACKET_COMPETITION },
+      undefined,
+      "",
+      bearer,
+    );
+    const bracketPayload = bracket.parsed as
+      | { found: boolean; champion?: string | null; entrants?: unknown[] }
+      | undefined;
+    if (
+      bracketPayload?.found !== true ||
+      bracketPayload.champion !== "Red" ||
+      bracketPayload.entrants?.length !== 4 ||
+      bracket.text.includes("@")
+    ) {
+      problems.push(`get_bracket result=${JSON.stringify(bracket.parsed)}`);
+    }
+    const missingBracket = await mcpTool(
+      "get_bracket",
+      { competition: "no such competition" },
+      undefined,
+      "",
+      bearer,
+    );
+    if (missingBracket.parsed?.found !== false) {
+      problems.push(
+        `get_bracket(no such competition) result=${JSON.stringify(missingBracket.parsed)}`,
+      );
+    }
+
     const ledger = await (await get("/admin/points")).text();
     if (!ledger.includes("From bracket")) {
       problems.push("/admin/points shows no From bracket row");
