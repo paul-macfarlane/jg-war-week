@@ -8,6 +8,7 @@ import { isBye } from "@/lib/bracket/formats";
 import type { Bracket, Heat } from "@/lib/bracket/types";
 import {
   entrantForYou,
+  formatHeatWhen,
   groupRounds,
   heatName,
   isDecided,
@@ -196,6 +197,7 @@ export function BracketView({
   scoring,
   primaryColor,
   participantTeams,
+  days,
 }: {
   entrants: BracketViewEntrant[];
   bracket: Bracket;
@@ -204,6 +206,8 @@ export function BracketView({
   primaryColor: string;
   /** Each Participant's Team id, for finding Your Team's Entrant. */
   participantTeams: Record<string, string>;
+  /** The War Week's Days, for a timed Heat's Day, time and place. */
+  days: { id: string; date: string }[];
 }) {
   const you = useYou();
   const entrantsById = new Map(entrants.map((e) => [e.id, e]));
@@ -284,6 +288,11 @@ export function BracketView({
                 <span className="text-foreground/60 text-xs font-medium uppercase">
                   Your next Heat · {heatName(bracket, next.heat)}
                 </span>
+                {formatHeatWhen(next.heat, days) && (
+                  <span className="text-foreground/70 text-sm">
+                    {formatHeatWhen(next.heat, days)}
+                  </span>
+                )}
                 {next.opponentIds.length > 0 ? (
                   <span className="font-semibold break-words">
                     vs{" "}
@@ -319,6 +328,7 @@ export function BracketView({
                 bracket.format === "single-elimination" && heat.winnerTo
                   ? heatsById.get(heat.winnerTo.heatId)
                   : undefined;
+              const when = formatHeatWhen(heat, days);
               return (
                 <li key={heat.id}>
                   <Card size="sm">
@@ -326,6 +336,11 @@ export function BracketView({
                       <span className="text-foreground/60 text-xs font-medium">
                         {heatName(bracket, heat)}
                       </span>
+                      {when && (
+                        <span className="text-foreground/70 text-xs">
+                          {when}
+                        </span>
+                      )}
                       <HeatRows
                         heat={heat}
                         bracket={bracket}

@@ -6,6 +6,7 @@ import { AutoRefresh } from "@/components/auto-refresh";
 import { BracketView } from "@/components/bracket-view";
 import { CompetitionFacts, PointsEntryList } from "@/components/competitions";
 import { getBracket, getParticipantTeamIds } from "@/queries/brackets";
+import { getSetupDays } from "@/queries/setup";
 
 import { getCompetitionPage } from "./competition";
 
@@ -19,10 +20,14 @@ export default async function CompetitionPage({
   const { warWeek, competition, ledger } = found;
   const bracket = await getBracket(competition.id);
   const isBracket = bracket && bracket.competition.format !== "points";
-  const participantTeams =
-    isBracket && competition.scoring === "team"
-      ? await getParticipantTeamIds(warWeek)
-      : {};
+  const [participantTeams, days] = isBracket
+    ? await Promise.all([
+        competition.scoring === "team"
+          ? getParticipantTeamIds(warWeek)
+          : Promise.resolve({}),
+        getSetupDays(warWeek),
+      ])
+    : [{}, []];
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-6 px-4 py-6 md:max-w-3xl">
@@ -53,6 +58,7 @@ export default async function CompetitionPage({
           scoring={competition.scoring}
           primaryColor={warWeek.primaryColor}
           participantTeams={participantTeams}
+          days={days}
         />
       ) : null}
       {competition.description ? (

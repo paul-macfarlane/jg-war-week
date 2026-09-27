@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import {
   SMOKE_ANNOUNCEMENT_PREFIX,
   deleteSmokeAnnouncements,
@@ -517,6 +519,13 @@ async function assertAccessBeforeValidation(
       host: NOT_HOST_REFUSAL,
     },
     {
+      family: "Heat time",
+      action: "setHeatSchedule",
+      args: [other, randomUUID(), null, {}],
+      participant: NOT_HOST_REFUSAL,
+      host: NOT_HOST_REFUSAL,
+    },
+    {
       family: "lifecycle",
       action: "endWarWeek",
       args: [fixture.xiId, "no Winner"],
@@ -721,6 +730,12 @@ export async function assertParticipantRefused(sessions: {
       NOT_HOST_REFUSAL,
     ],
     ["Bracket", "generateBracket", [competition.id, {}], NOT_HOST_REFUSAL],
+    [
+      "Heat time",
+      "setHeatSchedule",
+      [competition.id, randomUUID(), null, {}],
+      NOT_HOST_REFUSAL,
+    ],
     ["lifecycle", "startWarWeek", [xi], organizerOnly("start a War Week")],
     [
       "Organizer list",
