@@ -4,7 +4,10 @@ import { useRouter } from "next/navigation";
 import { useActionState, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { createNextWarWeek } from "@/actions/war-week-lifecycle";
+import {
+  type NextWarWeekActionResult,
+  createNextWarWeek,
+} from "@/actions/war-week-lifecycle";
 import { DateRangePicker } from "@/components/date-range-picker";
 import {
   fieldErrorsOf,
@@ -23,7 +26,6 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import type { FieldErrors } from "@/lib/result";
 import type { NextWarWeekInput } from "@/lib/war-week-lifecycle";
 
 type CopyOption = "copySettings" | "copyCompetitions" | "copyFaq";
@@ -41,10 +43,6 @@ const COPY_OPTIONS: { field: CopyOption; label: string; help: string }[] = [
   },
   { field: "copyFaq", label: "FAQ", help: "Every FAQ Item." },
 ];
-
-type NextWarWeekActionResult =
-  | { ok: true; edition: string }
-  | { ok: false; error: string; fieldErrors?: FieldErrors };
 
 type Values = {
   edition: string;

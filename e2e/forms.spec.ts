@@ -18,7 +18,9 @@ test.describe("forms", () => {
     await page.getByRole("option", { name: /^Blue/ }).click();
     const points = form.getByLabel("Points", { exact: true });
     await points.fill("9999999");
-    await form.getByRole("button", { name: "Add Points Entry" }).click();
+    // Enter in Points submits; the refused value must survive the
+    // post-action form reset.
+    await points.press("Enter");
 
     const pointsField = form
       .getByRole("group")
@@ -29,6 +31,7 @@ test.describe("forms", () => {
       }),
     ).toBeVisible();
     await expect(points).toHaveAttribute("aria-invalid", "true");
+    await expect(points).toHaveValue("9999999");
     const pointsId = await points.getAttribute("id");
     await expect
       .poll(() => page.evaluate(() => document.activeElement?.id))

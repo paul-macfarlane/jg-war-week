@@ -59,27 +59,6 @@ const FONT_OPTIONS: SelectOption[] = [
   { value: "mono", label: "Mono" },
 ];
 
-const FIELDS: (keyof WarWeekSettingsInput)[] = [
-  "storyTheme",
-  "startDate",
-  "endDate",
-  "mode",
-  "teamLabel",
-  "leaderTitle",
-  "slackChannelUrl",
-  "wikiUrl",
-  "primaryColor",
-  "primaryForegroundColor",
-  "accentColor",
-  "backgroundColor",
-  "foregroundColor",
-  "logoUrl",
-  "bannerUrl",
-  "fontPreset",
-  "winner",
-  "highlights",
-];
-
 /**
  * Edit a War Week's settings, Appearance Theme and closing (Winner and
  * highlights). Status isn't here: Start, End and Reopen change it. The theme
@@ -118,9 +97,29 @@ export function WarWeekSettingsForm({
       _previous: SetupActionResult | null,
       formData: FormData,
     ): Promise<SetupActionResult> => {
-      const input: WarWeekSettingsInput = Object.fromEntries(
-        FIELDS.map((field) => [field, String(formData.get(field) ?? "")]),
-      ) as WarWeekSettingsInput;
+      const read = (field: keyof WarWeekSettingsInput) =>
+        String(formData.get(field) ?? "");
+      // Key by key, so a new settings field is a type error here.
+      const input: WarWeekSettingsInput = {
+        storyTheme: read("storyTheme"),
+        startDate: read("startDate"),
+        endDate: read("endDate"),
+        mode: read("mode"),
+        teamLabel: read("teamLabel"),
+        leaderTitle: read("leaderTitle"),
+        slackChannelUrl: read("slackChannelUrl"),
+        wikiUrl: read("wikiUrl"),
+        primaryColor: read("primaryColor"),
+        primaryForegroundColor: read("primaryForegroundColor"),
+        accentColor: read("accentColor"),
+        backgroundColor: read("backgroundColor"),
+        foregroundColor: read("foregroundColor"),
+        logoUrl: read("logoUrl"),
+        bannerUrl: read("bannerUrl"),
+        fontPreset: read("fontPreset"),
+        winner: read("winner"),
+        highlights: read("highlights"),
+      };
       const saved = await updateWarWeekSettings(warWeekId, input);
       if (!saved.ok) {
         toast.error(saved.error);

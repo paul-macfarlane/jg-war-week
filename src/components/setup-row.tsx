@@ -19,7 +19,6 @@ import {
 } from "@/components/form-field-errors";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
-import type { FieldErrors } from "@/lib/result";
 import type { UsageCount } from "@/lib/setup";
 import { ADD_ROW, setupRowFocusTarget } from "@/lib/setup-row-focus";
 
@@ -74,6 +73,8 @@ function focusNeighborOnceRemoved(row: HTMLElement) {
  * success it toasts `successMessage`, runs `onSaved` (the add row clears its
  * fields there) and refreshes the page. Delete has no fields, so it keeps a
  * plain transition (`remove`), sharing this row's `pending` and `error`.
+ * Only the latest action's refusal shows: a save clears a refused
+ * delete's, and a delete clears a refused save's.
  */
 export function useSetupRow(
   action: () => Promise<SetupActionResult>,
@@ -86,9 +87,14 @@ export function useSetupRow(
   const [deleteResult, setDeleteResult] = useState<SetupActionResult | null>(
     null,
   );
+  // The save result a later delete hid.
+  const [dismissedSave, setDismissedSave] = useState<SetupActionResult | null>(
+    null,
+  );
 
   const [result, formAction, savePending] = useActionState(
     async (): Promise<SetupActionResult> => {
+      setDeleteResult(null);
       const saved = await action();
       if (!saved.ok) {
         toast.error(saved.error);
@@ -110,6 +116,7 @@ export function useSetupRow(
   ): Promise<SetupActionResult> {
     return new Promise((resolve) => {
       startDeleteTransition(async () => {
+        setDismissedSave(result);
         const saved = await deleteAction();
         setDeleteResult(saved);
         resolve(saved);
@@ -124,12 +131,11 @@ export function useSetupRow(
   }
 
   const pending = savePending || deletePending;
-  const fieldErrors: FieldErrors = fieldErrorsOf(result);
+  const saveResult = result === dismissedSave ? null : result;
+  const fieldErrors = fieldErrorsOf(saveResult);
   const deleteError =
-    deleteResult && !deleteResult.ok && !deletePending
-      ? deleteResult.error
-      : null;
-  const error = deleteError ?? (savePending ? null : formErrorOf(result));
+    deleteResult && !deleteResult.ok ? deleteResult.error : null;
+  const error = pending ? null : (deleteError ?? formErrorOf(saveResult));
 
   return { pending, formRef, formAction, fieldErrors, error, remove };
 }

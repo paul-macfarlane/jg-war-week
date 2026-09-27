@@ -111,6 +111,10 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   War Week is ignored) with "Not me / clear" to undo. Participant emails
   never reach the client, only the matched id. Past editions use their own
   roster.
+- A Participant-facing Announcement card shows its author's Participant
+  display name when the author's email matches a Participant's (account
+  linking), else the part of the email before the `@`. Only the admin pages
+  show the author's email.
 
 ## Slack rules
 

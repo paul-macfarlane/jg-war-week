@@ -280,18 +280,17 @@ function CompetitionRow({
             />
             <FieldError>{fieldErrors.maxPoints}</FieldError>
           </Field>
-          <PlacementPointsRows
-            value={values.placementPoints}
-            maxPoints={values.maxPoints}
-            onChange={(placementPoints) =>
-              setValues((v) => ({ ...v, placementPoints }))
-            }
-          />
-          {fieldErrors.placementPoints && (
-            <FieldError className="sm:col-span-2">
-              {fieldErrors.placementPoints}
-            </FieldError>
-          )}
+          <Field data-invalid={!!fieldErrors.placementPoints}>
+            <PlacementPointsRows
+              value={values.placementPoints}
+              maxPoints={values.maxPoints}
+              invalid={!!fieldErrors.placementPoints}
+              onChange={(placementPoints) =>
+                setValues((v) => ({ ...v, placementPoints }))
+              }
+            />
+            <FieldError>{fieldErrors.placementPoints}</FieldError>
+          </Field>
           <div className="flex flex-wrap items-center justify-between gap-2 sm:col-span-2">
             <div className="flex flex-col gap-1">
               {competition && (

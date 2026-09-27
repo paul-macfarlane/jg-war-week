@@ -28,17 +28,19 @@ export function formErrorOf(state: FormState): string | null {
 
 /**
  * Focuses the first control of the first invalid field in `form` (a
- * `Field` with `data-invalid`, in DOM order) when `fieldErrors` names any.
+ * `Field` with `data-invalid`, in DOM order) when `fieldErrors` names any:
+ * a rich-text field's editor, else its first focusable control.
  */
 export function focusFirstInvalid(
   form: HTMLFormElement | null,
   fieldErrors: FieldErrors | undefined,
 ) {
   if (!form || !fieldErrors || Object.keys(fieldErrors).length === 0) return;
-  form
-    .querySelector("[data-slot=field][data-invalid=true]")
-    ?.querySelector<HTMLElement>(FOCUSABLE)
-    ?.focus();
+  const field = form.querySelector("[data-slot=field][data-invalid=true]");
+  (
+    field?.querySelector<HTMLElement>('[contenteditable="true"]') ??
+    field?.querySelector<HTMLElement>(FOCUSABLE)
+  )?.focus();
 }
 
 /**

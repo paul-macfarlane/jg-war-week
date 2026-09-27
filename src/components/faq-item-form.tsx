@@ -21,6 +21,7 @@ import {
   FieldError,
   FieldGroup,
   FieldLabel,
+  FieldTitle,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import type { Content } from "@/lib/rich-text/content";
@@ -96,7 +97,7 @@ export function FaqItemForm({
         </Field>
 
         <Field data-invalid={!!fieldErrors.answer}>
-          <FieldLabel id="faq-answer-label">Answer</FieldLabel>
+          <FieldTitle id="faq-answer-label">Answer</FieldTitle>
           <RichTextEditor
             content={answer}
             onChange={setAnswer}

@@ -28,6 +28,11 @@ import {
 
 export type LifecycleActionResult = MutationResult;
 
+/** Create next War Week's result: the new edition, or a refusal. */
+export type NextWarWeekActionResult =
+  | { ok: true; edition: string }
+  | { ok: false; error: string; fieldErrors?: FieldErrors };
+
 /**
  * The War Week named by the id in the request, when the caller may run
  * `action` on it: `can` first (Organizers only, on the War Week `authorize`
@@ -122,10 +127,7 @@ async function setAdminEditionCookie(edition: string, isCurrent: boolean) {
 export async function createNextWarWeek(
   fromWarWeekId: string,
   input: NextWarWeekInput,
-): Promise<
-  | { ok: true; edition: string }
-  | { ok: false; error: string; fieldErrors?: FieldErrors }
-> {
+): Promise<NextWarWeekActionResult> {
   return guarded(async () => {
     const organizer = await lifecycleWarWeek("create-next", fromWarWeekId);
     if (!organizer.ok) return organizer;

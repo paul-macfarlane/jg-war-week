@@ -24,6 +24,7 @@ import {
   FieldLabel,
   FieldLegend,
   FieldSet,
+  FieldTitle,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -126,7 +127,7 @@ export function AnnouncementForm({
         </Field>
 
         <Field data-invalid={!!fieldErrors.body}>
-          <FieldLabel id="announcement-body-label">Body</FieldLabel>
+          <FieldTitle id="announcement-body-label">Body</FieldTitle>
           <RichTextEditor
             content={body}
             onChange={setBody}
@@ -136,69 +137,70 @@ export function AnnouncementForm({
           <FieldError>{fieldErrors.body}</FieldError>
         </Field>
 
-        <FieldSet>
-          <FieldLegend variant="label">Video links</FieldLegend>
-          <FieldDescription>
-            YouTube, Loom, Vimeo or Google Drive links only
-          </FieldDescription>
-          <FieldGroup>
-            {videoUrls.map((url, index) => {
-              const hint =
-                url.trim() !== "" && videoEmbedUrl(url.trim()) === null
-                  ? "Not a recognized YouTube, Loom, Vimeo or Google Drive video link"
-                  : null;
-              return (
-                <Field key={index}>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="url"
-                      aria-label={`Video link ${index + 1}`}
-                      className="h-11 flex-1 sm:h-9"
-                      value={url}
-                      onChange={(event) =>
-                        setVideoUrl(index, event.target.value)
-                      }
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="min-h-11 sm:min-h-7"
-                      onClick={() =>
-                        setVideoUrls((urls) =>
-                          urls.filter((_, i) => i !== index),
-                        )
-                      }
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                  {hint && (
-                    <FieldDescription className="font-medium text-amber-600">
-                      {hint}
-                    </FieldDescription>
-                  )}
-                </Field>
-              );
-            })}
-          </FieldGroup>
-          {fieldErrors.videoUrls && (
+        <Field data-invalid={!!fieldErrors.videoUrls}>
+          <FieldSet>
+            <FieldLegend variant="label">Video links</FieldLegend>
+            <FieldDescription>
+              YouTube, Loom, Vimeo or Google Drive links only
+            </FieldDescription>
+            <FieldGroup>
+              {videoUrls.map((url, index) => {
+                const hint =
+                  url.trim() !== "" && videoEmbedUrl(url.trim()) === null
+                    ? "Not a recognized YouTube, Loom, Vimeo or Google Drive video link"
+                    : null;
+                return (
+                  <Field key={index}>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="url"
+                        aria-label={`Video link ${index + 1}`}
+                        aria-invalid={!!fieldErrors.videoUrls}
+                        className="h-11 flex-1 sm:h-9"
+                        value={url}
+                        onChange={(event) =>
+                          setVideoUrl(index, event.target.value)
+                        }
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="min-h-11 sm:min-h-7"
+                        onClick={() =>
+                          setVideoUrls((urls) =>
+                            urls.filter((_, i) => i !== index),
+                          )
+                        }
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    {hint && (
+                      <FieldDescription className="font-medium text-amber-600">
+                        {hint}
+                      </FieldDescription>
+                    )}
+                  </Field>
+                );
+              })}
+            </FieldGroup>
             <FieldError>{fieldErrors.videoUrls}</FieldError>
-          )}
-          {videoUrls.length < MAX_VIDEO_LINKS && (
-            <div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="min-h-11 sm:min-h-7"
-                onClick={() => setVideoUrls((urls) => [...urls, ""])}
-              >
-                Add video link
-              </Button>
-            </div>
-          )}
-        </FieldSet>
+            {videoUrls.length < MAX_VIDEO_LINKS && (
+              <div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="min-h-11 sm:min-h-7"
+                  onClick={() => setVideoUrls((urls) => [...urls, ""])}
+                >
+                  Add video link
+                </Button>
+              </div>
+            )}
+          </FieldSet>
+        </Field>
 
         {canPin && (
           <Field orientation="horizontal" data-invalid={!!fieldErrors.pinned}>

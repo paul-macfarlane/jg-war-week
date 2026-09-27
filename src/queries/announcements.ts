@@ -9,6 +9,7 @@ import {
 } from "@/db/schema";
 import {
   type AnnouncementCardData,
+  type AuthorCandidate,
   announcementAuthorName,
   sortAnnouncements,
 } from "@/lib/announcements";
@@ -67,7 +68,7 @@ export async function getAnnouncementForEdit(
 async function loadAuthorCandidates(
   warWeekId: string,
   dbOrTx: DBOrTx,
-): Promise<{ email: string | null; displayName: string }[]> {
+): Promise<AuthorCandidate[]> {
   return dbOrTx
     .select({ email: participant.email, displayName: participant.displayName })
     .from(participant)
@@ -76,7 +77,7 @@ async function loadAuthorCandidates(
 
 function toCardData(
   row: Announcement,
-  participants: { email: string | null; displayName: string }[],
+  participants: AuthorCandidate[],
 ): AnnouncementCardData {
   return {
     id: row.id,
@@ -91,8 +92,8 @@ function toCardData(
 
 /**
  * A War Week's Announcements as `AnnouncementCard` data (author display
- * name, not email). `/news` and the home feed both use this, never the
- * admin pages or MCP, which keep the email.
+ * name, not email). `/news` and the home feed both use this; only the
+ * admin pages keep the email (MCP shows the handle before the `@`).
  */
 export async function getAnnouncementCards(
   warWeek: Pick<WarWeek, "id">,

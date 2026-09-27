@@ -137,8 +137,13 @@ function EndWarWeekButton({
     },
     null,
   );
-  const fieldErrors = fieldErrorsOf(result);
-  const formError = formErrorOf(result);
+  // Each opening starts clean: the refusal shown before a Cancel is hidden.
+  const [dismissed, setDismissed] = useState<LifecycleActionResult | null>(
+    null,
+  );
+  const shown = result === dismissed ? null : result;
+  const fieldErrors = fieldErrorsOf(shown);
+  const formError = formErrorOf(shown);
   useFocusFirstInvalid(formRef, result);
 
   const trimmed = winner.trim();
@@ -148,7 +153,10 @@ function EndWarWeekButton({
         type="button"
         size="lg"
         className="min-h-11 self-start sm:min-h-9"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setDismissed(result);
+          setOpen(true);
+        }}
       >
         End War Week
       </Button>

@@ -24,6 +24,7 @@ import {
   FieldError,
   FieldGroup,
   FieldLabel,
+  FieldTitle,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import type { ScheduleItem } from "@/db/schema";
@@ -281,9 +282,9 @@ export function ScheduleItemForm({
         </Field>
 
         <Field data-invalid={!!fieldErrors.description}>
-          <FieldLabel id="schedule-description-label">
+          <FieldTitle id="schedule-description-label">
             Description (optional)
-          </FieldLabel>
+          </FieldTitle>
           <RichTextEditor
             content={fields.description as Content}
             onChange={(description) => set("description", description)}

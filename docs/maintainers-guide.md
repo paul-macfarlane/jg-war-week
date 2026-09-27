@@ -307,6 +307,10 @@ Notes:
   control `aria-invalid`) and moves focus to the first invalid field with
   `useFocusFirstInvalid` from `src/components/form-field-errors.tsx`. A
   message no field owns stays in the `FieldError` under the buttons.
+  Validation runs on the server only; the form reads `FormData` when every
+  control posts a named input, and closes over React state when a field is
+  rich text or a list (Announcement, Award participants, FAQ, Schedule
+  description, setup rows).
 - Confirm anything destructive with `ConfirmDialog` or `ConfirmActionButton`
   (`src/components/confirm-dialog.tsx`), never `window.confirm`. Report
   results with `toast.success` / `toast.error` from `sonner`, never

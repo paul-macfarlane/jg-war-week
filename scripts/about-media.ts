@@ -6,8 +6,10 @@
  * anonymous visitor at 390px, desktop and with reduced motion into
  * `test-results/28-splash/`, with a log.
  *
- * Needs a production build, the seeded local Postgres (run `pnpm smoke`
- * first), Google Chrome and ffmpeg on PATH. Starts its own server on port
+ * Needs a production build and a freshly seeded local Postgres, the same
+ * prerequisite as `docs/maintainers-guide.md` (`pnpm build`, then
+ * `pnpm seed:load --reset seeds/*.json`), and Google Chrome; ffmpeg on
+ * PATH only without `--stills`. Starts its own server on port
  * 3202, signs in as a made-up Organizer (`about-demo@jahnelgroup.com`) that
  * it adds to the Organizer list and lends XI's seeded Points Entries for the
  * run, so no real email is in any file, and restores everything after:

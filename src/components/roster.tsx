@@ -2,8 +2,11 @@ import { Avatar } from "@/components/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { YouTag } from "@/components/you";
-import { participantCountLabel } from "@/lib/roster";
-import type { RosterParticipant, RosterTeam } from "@/lib/roster";
+import {
+  type RosterParticipant,
+  type RosterTeam,
+  participantCountLabel,
+} from "@/lib/roster";
 import { YOU_ROW_CLASS } from "@/lib/you";
 
 export function RosterList({

@@ -194,8 +194,8 @@ export function PointsEntryForm({
             id="points-entry-points"
             name="points"
             required
-            type="number"
-            step="0.01"
+            // Text, not number: React's post-action form reset blanks a
+            // focused number input. The server validates the number.
             inputMode="decimal"
             className="h-11 sm:h-9"
             aria-invalid={!!fieldErrors.points}

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { Announcement } from "@/db/schema";
+import { sameEmail } from "@/lib/access";
 import { fieldErrorsFrom } from "@/lib/form-errors";
 import { formatLedgerTime } from "@/lib/points-entry";
 import type { Parsed } from "@/lib/result";
@@ -120,16 +121,23 @@ export const formatPublishedAt = formatLedgerTime;
 /**
  * The name an Announcement's author shows as, for a Participant-facing
  * card: the War Week's Participant whose email matches the author's
- * (case-insensitively), else the handle before the `@`. Never the raw
- * email, unlike the admin pages and MCP, which keep it.
+ * (account linking: `sameEmail`), else `authorHandle`. Never the raw
+ * email; only the admin pages keep it.
  */
 export function announcementAuthorName(
   authorEmail: string,
-  participants: { email: string | null; displayName: string }[],
+  participants: AuthorCandidate[],
 ): string {
-  const email = authorEmail.toLowerCase();
-  const match = participants.find((p) => p.email?.toLowerCase() === email);
-  return match ? match.displayName : authorEmail.split("@")[0];
+  const match = participants.find((p) => sameEmail(p.email, authorEmail));
+  return match ? match.displayName : authorHandle(authorEmail);
+}
+
+/** A War Week's Participant an Announcement author can match. */
+export type AuthorCandidate = { email: string | null; displayName: string };
+
+/** The part of an email before the `@`: "pat@jahnelgroup.com" → "pat". */
+export function authorHandle(email: string): string {
+  return email.split("@")[0];
 }
 
 /** How many `video` blocks a rich-text tree holds, at any depth. */

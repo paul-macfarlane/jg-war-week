@@ -88,6 +88,13 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+/* The viewport's scrollbar takes its scheme from <html>: follow the edition
+   layout's root (`ThemeRoot pageColorScheme`) when its Appearance Theme is
+   dark. */
+html:has([data-color-scheme="dark"]) {
+  color-scheme: dark;
+}
+
 .dark {
   color-scheme: dark;
   --background: oklch(0.145 0 0);

@@ -129,8 +129,11 @@ function hostsIn(actor: SignedIn, warWeekId: string): boolean {
   return actor.hosts.some((h) => h.warWeekId === warWeekId);
 }
 
-const sameEmail = (a: string | undefined, b: string) =>
-  a !== undefined && a.trim().toLowerCase() === b.trim().toLowerCase();
+/** Whether two emails are the same address, ignoring case and spaces. */
+export const sameEmail = (a: string | null | undefined, b: string) =>
+  a !== undefined &&
+  a !== null &&
+  a.trim().toLowerCase() === b.trim().toLowerCase();
 
 /**
  * The one access rule (ADR 0002): why `actor` can't take `action` on

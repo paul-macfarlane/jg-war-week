@@ -7,8 +7,6 @@ import {
 } from "@/lib/announcements";
 import { videoEmbedUrl } from "@/lib/video";
 
-export type { AnnouncementCardData };
-
 /** One Announcement: title, author and time, body, then any video embeds. */
 export function AnnouncementCard({
   announcement,
