@@ -32,6 +32,8 @@
 
 ## Comments
 
+- 2026-09-27: items 1 (Heats) and 2 (groups → knockout), the End War Week unfinalized-Bracket warning and the XI demo seed's new Brackets are grouped as `../epics/E-bracket-formats-milestone.md`. The rest stays here. *(Superseded the same day by the [DECISION] below: T10 and the demo seed were dropped.)*
+
 **[DECISION] 2026-09-26 (Paul, during `/atlas-plan` of Epic E):**
 
 - **T10 dropped.** No new Format needed: Pool is plain single elimination, and Bouncy Ping Pong ran as two Competitions (a points qualifier, then a four-Entrant single-elimination Bracket of the top finishers, teams of 2). Two Competitions stay the answer. The "~14 uses" came from wiki mentions of qualifiers and finals nights, not from Group play. Round-robin Groups and tiebreaks stay under T7.
