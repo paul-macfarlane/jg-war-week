@@ -1,0 +1,83 @@
+# Docs and scope probes on 72a8620
+
+## 12-AC1: useActionState
+src/components/announcement-form.tsx
+src/components/award-form.tsx
+src/components/confirm-dialog.tsx
+src/components/form-field-errors.tsx
+src/components/faq-item-form.tsx
+src/components/next-war-week-form.tsx
+src/components/schedule-item-form.tsx
+src/components/war-week-lifecycle-controls.tsx
+src/components/points-entry-form.tsx
+src/components/war-week-settings-form.tsx
+src/components/setup-row.tsx
+
+## 12-AC1: startTransition kept (must match the ticket 12 keep-list)
+src/components/admin-edition-switcher.tsx
+src/components/announcement-admin-buttons.tsx
+src/components/bracket-builder.tsx
+src/components/bracket-results.tsx
+src/components/competitions-editor.tsx
+src/components/confirm-dialog.tsx
+src/components/organizers-editor.tsx
+src/components/setup-schedule-faq-buttons.tsx
+
+## 14: /about link
+52:          Open JG War Week
+
+## Guide: forms, stills
+155:pnpm tsx scripts/about-media.ts --stills
+158:Without `--stills` it also re-records the Finale video, which needs
+302:- Admin forms post through React's `useActionState` (ADR 0004;
+305:  (built by `fieldErrorsFrom` in `src/lib/form-errors.ts`); the form shows
+
+## ADR 0004 Built
+20:## Built
+
+## CONTEXT: author display, Finale reduced motion
+114:- A Participant-facing Announcement card shows its author's Participant
+115-  display name when the author's email matches a Participant's (account
+116-  linking), else the part of the email before the `@`. Only the admin pages
+117-  show the author's email.
+291:- Replay plays it again. With `prefers-reduced-motion`, Start still has to be
+292:  pressed (or `Space`, or a click on the stage) — reduced motion only skips
+
+## About stills changed in this branch
+ public/about/announcements.png   | Bin 826702 -> 823353 bytes
+ public/about/archive.png         | Bin 311579 -> 314367 bytes
+ public/about/ask-claude.png      | Bin 275021 -> 274755 bytes
+ public/about/brackets.png        | Bin 135518 -> 128403 bytes
+ public/about/lifecycle.png       | Bin 182017 -> 183790 bytes
+ public/about/organizer-setup.png | Bin 210005 -> 211804 bytes
+ public/about/points.png          | Bin 201844 -> 205528 bytes
+ public/about/schedule.png        | Bin 427675 -> 417966 bytes
+ 8 files changed, 0 insertions(+), 0 deletions(-)
+
+## polish evidence
+test-results/hardening-d-polish/about-top-bar/after.png
+test-results/hardening-d-polish/about-top-bar/before.png
+test-results/hardening-d-polish/announcement-author/after.png
+test-results/hardening-d-polish/announcement-author/before.png
+test-results/hardening-d-polish/avatar-outline/after.png
+test-results/hardening-d-polish/avatar-outline/before.png
+test-results/hardening-d-polish/dark-scrollbar/after.png
+test-results/hardening-d-polish/dark-scrollbar/before.png
+test-results/hardening-d-polish/dark-scrollbar/note.md
+test-results/hardening-d-polish/home-skeleton/after-loading.png
+test-results/hardening-d-polish/home-skeleton/after-page.png
+test-results/hardening-d-polish/home-skeleton/before-loading.png
+test-results/hardening-d-polish/home-skeleton/before-page.png
+test-results/hardening-d-polish/long-badge/after.png
+test-results/hardening-d-polish/long-badge/before.png
+test-results/hardening-d-polish/long-badge/note.md
+test-results/hardening-d-polish/points-delete-confirm/after.png
+test-results/hardening-d-polish/points-delete-confirm/before.png
+test-results/hardening-d-polish/roster-count/after.png
+test-results/hardening-d-polish/roster-count/before.png
+test-results/hardening-d-polish/setup-save-toasts/after.png
+test-results/hardening-d-polish/setup-save-toasts/before.png
+test-results/hardening-d-polish/setup-save-toasts/note.md
+test-results/hardening-d-polish/toolbar-active/after.png
+test-results/hardening-d-polish/toolbar-active/before.png
+test-results/hardening-d-polish/toolbar-active/note.md
