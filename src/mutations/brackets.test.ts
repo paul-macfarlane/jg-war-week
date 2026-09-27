@@ -1180,4 +1180,288 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       ).toBeNull();
     });
   });
+
+  describe("setHeatSchedule", () => {
+    /** A Day of the fixture's War Week (or, with `other`, its otherCtx). */
+    async function makeDay(
+      tx: DBTx,
+      f: Awaited<ReturnType<typeof fixture>>,
+      warWeekId: string,
+    ) {
+      const [row] = await tx
+        .insert(f.schema.day)
+        .values({ warWeekId, date: "2099-01-01", dayTheme: "Kickoff" })
+        .returning({ id: f.schema.day.id });
+      return row.id;
+    }
+
+    it("sets, keeps through a Heat Result, and clears a Heat's time and place", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { mutations, queries } = await modules();
+        const f = await fixture(tx);
+        await mutations.replaceEntrants(
+          f.competitionId,
+          { targetIds: [f.red, f.blue, f.green, f.gold] },
+          f.ctx,
+          tx,
+        );
+        await mutations.generateBracket(
+          f.competitionId,
+          { rng: rngZero },
+          f.ctx,
+          tx,
+        );
+        const dayId = await makeDay(tx, f, f.ctx.warWeekId);
+        let view = (await queries.getBracket(f.competitionId, tx))!;
+        const semi1 = heatAt(view, 1, 1).heat.id;
+
+        expect(
+          await mutations.setHeatSchedule(
+            f.competitionId,
+            semi1,
+            { dayId, startTime: "19:00", location: "Main room" },
+            f.ctx,
+            tx,
+          ),
+        ).toEqual({ ok: true });
+        view = (await queries.getBracket(f.competitionId, tx))!;
+        expect(heatAt(view, 1, 1).heat).toMatchObject({
+          dayId,
+          startTime: "19:00:00",
+          location: "Main room",
+        });
+
+        // Recording a Heat Result keeps the time and place.
+        const id = (label: string) =>
+          view.entrants.find((e) => e.label === label)!.id;
+        await mutations.recordHeatResult(
+          f.competitionId,
+          semi1,
+          { order: [id("Red"), id("Blue")] },
+          f.ctx,
+          tx,
+        );
+        view = (await queries.getBracket(f.competitionId, tx))!;
+        expect(heatAt(view, 1, 1).heat).toMatchObject({
+          dayId,
+          startTime: "19:00:00",
+          location: "Main room",
+        });
+
+        // Clearing sets every field back to null.
+        expect(
+          await mutations.setHeatSchedule(
+            f.competitionId,
+            semi1,
+            { dayId: null, startTime: null, location: null },
+            f.ctx,
+            tx,
+          ),
+        ).toEqual({ ok: true });
+        view = (await queries.getBracket(f.competitionId, tx))!;
+        expect(heatAt(view, 1, 1).heat).toMatchObject({
+          dayId: null,
+          startTime: null,
+          location: null,
+        });
+      });
+    });
+
+    it("a re-generate drops a Heat's time and place", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { mutations, queries } = await modules();
+        const f = await fixture(tx);
+        await mutations.replaceEntrants(
+          f.competitionId,
+          { targetIds: [f.red, f.blue, f.green, f.gold] },
+          f.ctx,
+          tx,
+        );
+        await mutations.generateBracket(
+          f.competitionId,
+          { rng: rngZero },
+          f.ctx,
+          tx,
+        );
+        const dayId = await makeDay(tx, f, f.ctx.warWeekId);
+        let view = (await queries.getBracket(f.competitionId, tx))!;
+        const semi1 = heatAt(view, 1, 1).heat.id;
+        await mutations.setHeatSchedule(
+          f.competitionId,
+          semi1,
+          { dayId, startTime: "19:00", location: "Main room" },
+          f.ctx,
+          tx,
+        );
+
+        await mutations.generateBracket(
+          f.competitionId,
+          { rng: rngZero },
+          f.ctx,
+          tx,
+        );
+        view = (await queries.getBracket(f.competitionId, tx))!;
+        expect(heatAt(view, 1, 1).heat).toMatchObject({
+          dayId: null,
+          startTime: null,
+          location: null,
+        });
+      });
+    });
+
+    it("refuses a Heat not in this Competition", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { mutations } = await modules();
+        const f = await fixture(tx);
+        await mutations.replaceEntrants(
+          f.competitionId,
+          { targetIds: [f.red, f.blue, f.green, f.gold] },
+          f.ctx,
+          tx,
+        );
+        await mutations.generateBracket(
+          f.competitionId,
+          { rng: rngZero },
+          f.ctx,
+          tx,
+        );
+        expect(
+          await mutations.setHeatSchedule(
+            f.competitionId,
+            "00000000-0000-4000-8000-000000000000",
+            { dayId: null, startTime: null, location: "Table 3" },
+            f.ctx,
+            tx,
+          ),
+        ).toEqual({ ok: false, error: "That Heat no longer exists." });
+      });
+    });
+
+    it("refuses a Day outside the Competition's War Week", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { mutations, queries } = await modules();
+        const f = await fixture(tx);
+        await mutations.replaceEntrants(
+          f.competitionId,
+          { targetIds: [f.red, f.blue, f.green, f.gold] },
+          f.ctx,
+          tx,
+        );
+        await mutations.generateBracket(
+          f.competitionId,
+          { rng: rngZero },
+          f.ctx,
+          tx,
+        );
+        const otherDayId = await makeDay(tx, f, f.otherCtx.warWeekId);
+        const view = (await queries.getBracket(f.competitionId, tx))!;
+        const semi1 = heatAt(view, 1, 1).heat.id;
+
+        expect(
+          await mutations.setHeatSchedule(
+            f.competitionId,
+            semi1,
+            { dayId: otherDayId, startTime: "19:00", location: null },
+            f.ctx,
+            tx,
+          ),
+        ).toEqual({ ok: false, error: "That Day no longer exists." });
+      });
+    });
+
+    it("refuses a bye", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { mutations, queries } = await modules();
+        const f = await fixture(tx);
+        // Three Teams: one gets a bye into the Final.
+        await mutations.replaceEntrants(
+          f.competitionId,
+          { targetIds: [f.red, f.blue, f.green] },
+          f.ctx,
+          tx,
+        );
+        await mutations.generateBracket(
+          f.competitionId,
+          { rng: rngZero },
+          f.ctx,
+          tx,
+        );
+        const view = (await queries.getBracket(f.competitionId, tx))!;
+        const bye = view.bracket.heats.find(
+          (h) => h.round === 1 && h.slots.some((s) => s.entrantId === null),
+        )!;
+
+        expect(
+          await mutations.setHeatSchedule(
+            f.competitionId,
+            bye.id,
+            { dayId: null, startTime: null, location: "Table 3" },
+            f.ctx,
+            tx,
+          ),
+        ).toEqual({ ok: false, error: "A bye isn't played." });
+      });
+    });
+
+    it("refuses changing a finalized Bracket's Heat times", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { mutations, queries } = await modules();
+        const f = await fixture(tx);
+        await mutations.replaceEntrants(
+          f.competitionId,
+          { targetIds: [f.red, f.blue, f.green, f.gold] },
+          f.ctx,
+          tx,
+        );
+        await mutations.generateBracket(
+          f.competitionId,
+          { rng: rngZero },
+          f.ctx,
+          tx,
+        );
+        let view = (await queries.getBracket(f.competitionId, tx))!;
+        const id = (label: string) =>
+          view.entrants.find((e) => e.label === label)!.id;
+        const semi1 = heatAt(view, 1, 1).heat.id;
+        const semi2 = heatAt(view, 1, 2).heat.id;
+        const final = heatAt(view, 2, 1).heat.id;
+        await mutations.recordHeatResult(
+          f.competitionId,
+          semi1,
+          { order: [id("Red"), id("Blue")] },
+          f.ctx,
+          tx,
+        );
+        await mutations.recordHeatResult(
+          f.competitionId,
+          semi2,
+          { order: [id("Gold"), id("Green")] },
+          f.ctx,
+          tx,
+        );
+        view = (await queries.getBracket(f.competitionId, tx))!;
+        await mutations.recordHeatResult(
+          f.competitionId,
+          final,
+          { order: [id("Red"), id("Gold")] },
+          f.ctx,
+          tx,
+        );
+        await mutations.finalizeBracket(f.competitionId, f.ctx, tx);
+
+        expect(
+          await mutations.setHeatSchedule(
+            f.competitionId,
+            final,
+            { dayId: null, startTime: null, location: "Table 3" },
+            f.ctx,
+            tx,
+          ),
+        ).toEqual({
+          ok: false,
+          error: "Un-finalize the Bracket before changing it.",
+        });
+      });
+    });
+  });
 });

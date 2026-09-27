@@ -51,6 +51,7 @@ export type WarWeekAction =
   | "bracket.entrants"
   | "bracket.generate"
   | "bracket.heat-result"
+  | "bracket.heat-schedule"
   | "bracket.finalize"
   | "bracket.unfinalize"
   | `points-entry.${Crud}`

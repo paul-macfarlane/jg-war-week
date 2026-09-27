@@ -185,6 +185,9 @@ export function generate(
         slots: Array.from({ length: size }, emptySlot),
         winnerTo: null,
         status: "pending",
+        dayId: null,
+        startTime: null,
+        location: null,
       });
     });
   });

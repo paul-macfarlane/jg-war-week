@@ -104,6 +104,9 @@ export function generate(
               }
             : null,
         status: "pending",
+        dayId: null,
+        startTime: null,
+        location: null,
       });
     }
   }

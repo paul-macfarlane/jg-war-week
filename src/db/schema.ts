@@ -340,12 +340,19 @@ export const heat = pgTable(
       { onDelete: "set null" },
     ),
     winnerToSlot: integer("winner_to_slot"),
+    // Optional time and place, set from the results screen; a Day delete
+    // nulls this rather than being refused (see CONTEXT.md, Bracket rules).
+    dayId: uuid("day_id").references(() => day.id, { onDelete: "set null" }),
+    // Wall-clock time in ET, like a Schedule Item's.
+    startTime: time("start_time"),
+    location: varchar("location", { length: 200 }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (table) => [
     unique().on(table.competitionId, table.round, table.position),
     index("heat_winner_to_heat_id_idx").on(table.winnerToHeatId),
+    index("heat_day_id_idx").on(table.dayId),
   ],
 );
 

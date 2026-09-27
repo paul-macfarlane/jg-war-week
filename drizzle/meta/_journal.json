@@ -85,6 +85,13 @@
       "when": 1790481075551,
       "tag": "0011_swift_sister_grimm",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790547195452,
+      "tag": "0012_lean_sprite",
+      "breakpoints": true
     }
   ]
 }

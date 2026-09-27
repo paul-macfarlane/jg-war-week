@@ -23,6 +23,8 @@ export type BracketEntrant = Entrant & {
   participantId: string | null;
   /** The Team's color (a Participant's Team), or null without one. */
   color: string | null;
+  /** A Participant Entrant's Team name, for `get_bracket`; null without one. */
+  teamName: string | null;
 };
 
 export type BracketCompetition = Pick<
@@ -66,6 +68,7 @@ export async function getBracketEntrants(
       teamColor: team.color,
       participantName: participant.displayName,
       participantTeamColor: participantTeam.color,
+      participantTeamName: participantTeam.name,
     })
     .from(entrant)
     .leftJoin(team, eq(team.id, entrant.teamId))
@@ -80,6 +83,8 @@ export async function getBracketEntrants(
     teamId: row.teamId,
     participantId: row.participantId,
     color: row.teamColor ?? row.participantTeamColor ?? null,
+    // A Team Entrant's own name, or a Participant Entrant's Team name.
+    teamName: row.teamName ?? row.participantTeamName ?? null,
   }));
 }
 
@@ -140,6 +145,9 @@ export async function loadBracket(
         row.winnerToHeatId !== null && row.winnerToSlot !== null
           ? { heatId: row.winnerToHeatId, slot: row.winnerToSlot }
           : null,
+      dayId: row.dayId,
+      startTime: row.startTime,
+      location: row.location,
       slots: Array.from({ length: row.slotCount }, (_, slot) => {
         const found = slots.find((s) => s.heatId === row.id && s.slot === slot);
         return {
