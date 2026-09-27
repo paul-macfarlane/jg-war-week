@@ -5,9 +5,9 @@
  */
 import type { BracketConfig } from "@/lib/bracket/config";
 import { singleElimination } from "@/lib/bracket/engine";
+import { heats } from "@/lib/bracket/heats";
 import {
   type Bracket,
-  BracketError,
   type BracketFormat,
   type Entrant,
   type FormatEngine,
@@ -21,8 +21,7 @@ export function engineFor(format: BracketFormat): FormatEngine {
     case "single-elimination":
       return singleElimination;
     case "heats":
-      // Coming in a later slice: the heats engine (`heats.ts`).
-      throw new BracketError("Heats aren't built yet.");
+      return heats;
   }
 }
 
