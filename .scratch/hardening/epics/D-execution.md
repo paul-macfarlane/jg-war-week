@@ -52,3 +52,28 @@ Isolation: direct checkout, one worker at a time. D1a and D1b touch disjoint com
 ## Progress
 
 - 2026-09-26: plan recorded; proof root cleared; epic and tickets 12, 14 claimed (`in-progress`).
+- D0 accepted (`86ed6fb`, opus): `fieldErrorsFrom`, `form-field-errors.tsx`, `ConfirmDialog form`, Points Entry on `useActionState`, `e2e/forms.spec.ts` Points case. Orchestrator rerun of `src/lib`: 39 files / 1036 tests (`test-results/hardening-d-d0/vitest.txt`).
+- D1a accepted (`8b433a3`, sonnet): settings (ids `settings-<field>`), next War Week, End War Week (form inside the confirm); settings e2e case.
+- D1b accepted (`0fc11dc`, sonnet): Announcement, Award, FAQ, Schedule, setup rows; a11y carry-overs; "saved" toasts; keep-list on ticket 12. Its report claimed e2e 19/19, but `e2e/bracket.spec.ts` failed on `0fc11dc` (the Entrants picker's accessible name changed); D2 fixed the locator. Recorded as a D1b regression caught in D2, not a flake.
+- D2 accepted (`e77de3f`, sonnet): every ticket 14 item with before/after under `test-results/hardening-d-polish/`; toasts and toolbar re-checked and closed as already fixed.
+- Scope decision (operator, 2026-09-26): About media via a `--stills` flag on `scripts/about-media.ts`, not ffmpeg. Orchestrator commit `136e5ba`: the flag, all eight stills regenerated (the Announcements still now shows a name, not an email), a "refresh /about" paragraph in the maintainer's guide; run log `test-results/28-splash/`.
+- Aggregate review started; epic and tickets `ai-review`.
+- Aggregate review: 1 blocking (dark scrollbar never reached `<html>`) and 20 non-blocking; R1 `72a8620` (opus) fixed all but three approved deviations; see `[AI CODE REVIEW]` on the tickets.
+- Verification on `72a8620`: `pnpm gate` exit 0 (82 files / 1411 tests; smoke 177 ok / 0 FAIL; e2e 22 passed). Evidence `test-results/hardening-d-{gate,docs,d0,polish}/`, `test-results/e2e/`.
+
+## Isolation re-check
+
+Predicted: D1a and D1b sequential to share one pattern, with `e2e/forms.spec.ts` and the guide as the only shared files. Actual (`git show --name-only 8b433a3` vs `0fc11dc`): no shared source file; the only overlap is e2e screenshots each rerun rewrote. The real constraint was shared mutable state — one local Postgres, port 3200 and one `.next` build that both workers' e2e runs needed — which parallel worktrees would have had to split (per-worktree database and port, as Epic C's D1 did). Next time: D1a ∥ D1b in worktrees with their own DB and port is safe.
+
+## Closeout
+
+| Deliverable | Worker / model | Commit |
+|---|---|---|
+| D0 field-error foundation, Points Entry | atlas-worker / opus | `86ed6fb` |
+| D1a settings, next War Week, End War Week | atlas-worker / sonnet | `8b433a3` |
+| D1b Announcement, Award, FAQ, Schedule, setup rows, a11y | atlas-worker / sonnet | `0fc11dc` |
+| D2 ticket 14 polish | atlas-worker / sonnet | `e77de3f` |
+| M1 `about-media --stills`, stills, guide | orchestrator | `136e5ba` |
+| R1 aggregate review fixes | atlas-worker / opus | `72a8620` |
+
+Deviations: `aria-invalid` props on the shadcn wrappers; state-sourced input in forms with rich-text or list fields; `about-media --stills` instead of ffmpeg (operator choice); no UI e2e for End War Week / Create next War Week; D1b's worker reported e2e green while `bracket.spec.ts` failed on its commit (fixed in D2). Every criterion PASS; see the `[CLOSEOUT]` records on the epic and tickets 12 and 14, all `done`. PR https://github.com/paul-macfarlane/jg-war-week/pull/81.
