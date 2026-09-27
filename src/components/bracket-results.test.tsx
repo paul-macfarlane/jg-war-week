@@ -44,6 +44,7 @@ const props = {
   bracket,
   champion: null,
   finalized: false,
+  finaleHref: null,
   primaryColor: "#000",
   days: [{ id: "d1", date: "2026-02-22" }],
   onOpenSheetChange: () => {},
@@ -84,5 +85,17 @@ describe("BracketResultsView", () => {
 
   it("shows a timed Heat's Day, time and place on its card", () => {
     expect(render(null)).toContain("Sunday, Feb 22 · 7:00 PM ET · Main room");
+  });
+
+  it("links a finalized Bracket's note to its Finale", () => {
+    const html = renderToStaticMarkup(
+      <BracketResultsView
+        {...props}
+        finalized
+        finaleHref="/xi/finale/c1"
+        openSheet={null}
+      />,
+    );
+    expect(html).toMatch(/<a[^>]*href="\/xi\/finale\/c1"[^>]*>Play the Finale/);
   });
 });

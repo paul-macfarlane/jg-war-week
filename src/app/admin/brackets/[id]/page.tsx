@@ -75,6 +75,11 @@ export default async function BracketResultsPage({
             finalized={view.finalized}
             primaryColor={warWeek.primaryColor}
             days={days}
+            finaleHref={
+              view.finalized
+                ? `/${warWeek.edition}/finale/${competition.id}`
+                : null
+            }
           />
         )}
       </section>

@@ -1,7 +1,10 @@
 "use client";
 
+import Link from "next/link";
+
 import { Avatar } from "@/components/avatar";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useYou } from "@/components/you";
 import { isBye } from "@/lib/bracket/formats";
@@ -198,6 +201,7 @@ export function BracketView({
   primaryColor,
   participantTeams,
   days,
+  finaleHref,
 }: {
   entrants: BracketViewEntrant[];
   bracket: Bracket;
@@ -208,6 +212,8 @@ export function BracketView({
   participantTeams: Record<string, string>;
   /** The War Week's Days, for a timed Heat's Day, time and place. */
   days: { id: string; date: string }[];
+  /** The Bracket Finale, once the Bracket is finalized; null before. */
+  finaleHref: string | null;
 }) {
   const you = useYou();
   const entrantsById = new Map(entrants.map((e) => [e.id, e]));
@@ -262,6 +268,14 @@ export function BracketView({
                 {winner.id === youEntrantId && <YouMark />}
               </span>
             </div>
+            {finaleHref && (
+              <Link
+                href={finaleHref}
+                className={`${buttonVariants({ variant: "outline", size: "sm" })} ml-auto shrink-0`}
+              >
+                Play the Finale
+              </Link>
+            )}
           </CardContent>
         </Card>
       )}

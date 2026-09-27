@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useId, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -450,6 +451,8 @@ type BracketResultsProps = {
   primaryColor: string;
   /** The War Week's Days, for a Heat's time and place. */
   days: { id: string; date: string }[];
+  /** The Bracket Finale, once the Bracket is finalized; null before. */
+  finaleHref: string | null;
 };
 
 /**
@@ -483,6 +486,7 @@ export function BracketResultsView({
   finalized,
   primaryColor,
   days,
+  finaleHref,
   openSheet,
   onOpenSheetChange,
 }: BracketResultsProps & {
@@ -529,6 +533,17 @@ export function BracketResultsView({
             <p className="text-foreground/70 text-sm">
               Finalized: its Points Entries are in the ledger. Un-finalize to
               change a Heat Result.
+              {finaleHref && (
+                <>
+                  {" "}
+                  <Link
+                    href={finaleHref}
+                    className="text-primary underline underline-offset-4"
+                  >
+                    Play the Finale
+                  </Link>
+                </>
+              )}
             </p>
             <ConfirmActionButton
               title="Delete the Points Entries this Bracket created?"

@@ -59,6 +59,11 @@ export default async function CompetitionPage({
           primaryColor={warWeek.primaryColor}
           participantTeams={participantTeams}
           days={days}
+          finaleHref={
+            bracket.finalized
+              ? `/${warWeek.edition}/finale/${competition.id}`
+              : null
+          }
         />
       ) : null}
       {competition.description ? (

@@ -37,7 +37,7 @@ export async function deleteSmokeBracket() {
 
 export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
   const check =
-    "bracket loop: an Organizer sets single elimination on a Competition, enters 4 Teams, generates, records 3 Heat Results, finalizes; GET /xi/competitions/<id> shows the champion and /xi/leaderboard includes the generated points; un-finalize removes them; then cleans up";
+    "bracket loop: an Organizer sets single elimination on a Competition, enters 4 Teams, generates, records 3 Heat Results, finalizes; GET /xi/competitions/<id> shows the champion and /xi/leaderboard includes the generated points and /xi/finale/<id> answers 200; un-finalize removes them and /xi/finale/<id> answers 404; then cleans up";
   const ids = serverActionIds();
   const missing = [
     "createCompetition",
@@ -188,6 +188,15 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     if (before === null || finalized !== before + 10) {
       problems.push(`Red total ${before} → ${finalized}, expected +10`);
     }
+    const finale = await get(`/xi/finale/${id}`);
+    const finaleBody = await finale.text();
+    if (
+      finale.status !== 200 ||
+      !finaleBody.includes('data-finale="ready"') ||
+      !finaleBody.includes(SMOKE_BRACKET_COMPETITION)
+    ) {
+      problems.push(`/xi/finale/<id> after finalize status=${finale.status}`);
+    }
 
     // get_bracket over /api/mcp, with the bearer token and no session.
     const bearer = { Authorization: `Bearer ${MCP_TOKEN}` };
@@ -234,6 +243,12 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     const unfinalized = await leaderboardTeamTotal("Red");
     if (unfinalized !== before) {
       problems.push(`Red total after un-finalize ${unfinalized} != ${before}`);
+    }
+    const unfinalizedFinale = await get(`/xi/finale/${id}`);
+    if (unfinalizedFinale.status !== 404) {
+      problems.push(
+        `/xi/finale/<id> after un-finalize status=${unfinalizedFinale.status}`,
+      );
     }
     const [{ count }] = await runQuery<{ count: string }>(
       `select count(*) from points_entry where competition_id = $1`,
