@@ -43,3 +43,9 @@
 
 **[PROGRESS] 2026-09-27 (Epic E, PR https://github.com/paul-macfarlane/jg-war-week/pull/84):** delivered item 1 (T9 Heats), the End War Week warning (T6 extra) and the `per-heat`/`both` points removal from the code (the column drop follows after `main`). T10 dropped (see the decision above). Still open here: T11 Squads, T12 self-report, T13 Heat times and Now/Next, T7 round robin, T8 double elimination, the other T6/T14 extras, W2 seeding.
 
+
+**[SCOPE CHANGE] 2026-09-27 (Paul):**
+
+- **Cut:** T7 round robin with Group tables and ties (2 past uses), the Archive bracket view from T14 (no past Brackets to show), and drag seeding from W2 (deferred in the brackets spec). None has a named need.
+- **Grouped:** `../epics/F-brackets-on-the-day.md` takes T13 Heat times and Now/Next, T14 live refresh and MCP `get_bracket`, the Finale for a Bracket, and seeding by Standings. `../epics/G-squads-and-self-report.md` takes T11 Squads and T12 self-report (with proposed decisions that replace the brackets spec's stories 19–21), together with tickets 18 and 19.
+- **Left out of both:** T8 double elimination (build only on request; a new ticket if someone asks) and the Slack champion post (waits on Slack posting, ticket 17). After Epic G this ticket has nothing else open and closes.
