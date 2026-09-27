@@ -38,7 +38,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Announcement**              | A post by an Organizer or Host (rich text plus video links).                                                                      |
 | **FAQ Item**                  | A question and answer pair for a War Week.                                                                                        |
 | **Archive**                   | The past War Weeks shown at `/history`.                                                                                           |
-| **Format**                    | How a Competition is run: `points` (Points Entries only) or `single-elimination` (a Bracket).                                     |
+| **Format**                    | How a Competition is run: `points` (Points Entries only), `single-elimination` or `heats` (a Bracket).                            |
 | **Bracket**                   | The Rounds and Heats of a non-`points` Competition.                                                                               |
 | **Round**                     | One step of a Bracket, holding Heats that can be played at the same time. Round 1 is the first.                                   |
 | **Heat**                      | One game between Entrants in a Bracket. Covers 1v1 and multi-entrant games.                                                       |
@@ -248,33 +248,51 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 
 ## Bracket rules
 
-- A Competition's **Format** is `points` or `single-elimination`. Only a
-  single-elimination Competition has Entrants and a Bracket. A team
-  Competition's Entrants are Teams, an individual one's Participants of the
-  same War Week.
-- **Generate** seeds the Entrants randomly and builds the Bracket. When the
-  count isn't a power of two, the top Seed Positions get byes and advance
-  straight away; a bye is never a played Heat.
+- A Competition's **Format** is `points`, `single-elimination` or `heats`.
+  Only a single-elimination or Heats Competition has Entrants and a
+  Bracket. A team Competition's Entrants are Teams, an individual one's
+  Participants of the same War Week.
+- **Generate** seeds the Entrants randomly and builds the Bracket. In
+  single elimination, when the count isn't a power of two, the top Seed
+  Positions get byes and advance straight away; a bye is never a played
+  Heat.
 - Regenerating, or replacing the Entrants, before any Heat Result is free.
   After one, it needs a confirmation and clears every Heat Result.
-- A knockout Heat Result needs a clear finishing order. A forfeiting
-  Entrant loses. Changing the winner of a decided Heat sends the later Heats
-  that followed from it back to unplayed; an edit that keeps the winner
-  (scores only) changes nothing downstream.
-- **Finalize** turns final placings (1st, 2nd, tied 3rd for both semifinal
-  losers, later places tied by the Round lost in) into Points Entries
-  through the Competition's Placement Points, tied places each getting that
-  place's points. They're marked "From bracket", can't be edited or deleted
-  in the ledger, and are replaced wholesale when the Bracket is finalized
-  again. Un-finalizing deletes them; hand-entered Points Entries on the same
-  Competition are never touched. A finalized Bracket can't change until it's
-  un-finalized.
+- A Heat Result needs a clear finishing order (a knockout Heat's is just its
+  winner). A forfeiting Entrant loses in a knockout Heat, and in a Heat of
+  more than two finishes behind everyone who didn't forfeit. Changing the
+  winner of a decided knockout Heat, or a Heats Heat's result so different
+  Entrants advance or in a different order, sends the later Heats that
+  followed from it back to unplayed; an edit that changes nothing about who
+  advances (scores only, or a knockout winner unchanged) changes nothing
+  downstream.
+- **Heats** settings (the Format's "Heat settings" form) are Entrants per
+  Heat (2–8) and how many advance from each. Each Round deals the Entrants
+  into Heats snake-style by Seed Position, so Heat sizes in a Round differ
+  by at most one; the top few of each Heat advance, ranked by place then by
+  Heat, into the next Round, Round after Round until one Heat, the Final, is
+  left. A setting that would never end (as many or more advance than a
+  Round sends on) is refused at Generate. A Heat with no more Entrants than
+  advance is a bye, decided without being played.
+- **Finalize** turns final placings into Points Entries through the
+  Competition's Placement Points, tied places each getting that place's
+  points. In single elimination that's 1st, 2nd, tied 3rd for both
+  semifinal losers, later places tied by the Round lost in; in Heats it's
+  the Final Heat's order, then everyone else tied by the Round they went
+  out in. They're marked "From bracket", can't be edited or deleted in the
+  ledger, and are replaced wholesale when the Bracket is finalized again.
+  Un-finalizing deletes them; hand-entered Points Entries on the same
+  Competition are never touched. A finalized Bracket can't change until
+  it's un-finalized.
 - Deleting a Team or Participant that is an Entrant is refused with the
   count, and so is changing a Competition's scoring or Format while it has
   Entrants.
 - While a Bracket is finalized, changing the Competition's scoring or
   Placement Points is refused ("Un-finalize the Bracket first."); its name
   and description still save.
+- Ending a War Week never refuses on an unfinalized Bracket; it only warns,
+  naming it, because its placings aren't in the Standings until it's
+  finalized.
 
 ## Finale rules
 
@@ -338,6 +356,9 @@ same rows with the same values (only `updated_at` moves).
     with that key exists, and never updates or deletes one. Records organizers
     create in the app have no key and are never touched by a load. Adding a
     new keyed record to a seed and reloading adds just that record.
+  - A Competition's `format` is applied only on insert, like `bracketConfig`
+    (its Heats settings): a reload never turns an Organizer's Bracket back
+    into `points`, changes its Format, or undoes its Heats settings.
 
 **Setup in the UI.** Organizers can also edit setup in `/admin/setup`
 (War Week settings, the Appearance Theme, Days, Teams, the roster,

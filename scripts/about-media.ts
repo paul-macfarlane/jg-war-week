@@ -429,33 +429,37 @@ async function recordFinale(cookie: string, ffmpeg: string) {
 }
 
 // ---------------------------------------------------------------------------
-// A finished single-elimination Bracket for the "brackets" still
+// A finished Heats Bracket for the "brackets" still
 
 const BRACKET_COMP_NAME = "Capture the Flag";
 
 /**
- * Builds a small, already-finished single-elimination Bracket on XI (4
- * Participant Entrants, two Round 1 Heats and a decided final) directly in
- * SQL: the Competition, its Entrants at Seed Positions 1–4, and each Heat
- * with its slots and places. The caller deletes the Competition (which
- * cascades its Entrants and Heats) when done.
+ * Builds a small, already-finished Heats Bracket on XI (8 Participant
+ * Entrants, 4 per Heat with the top 2 advancing, two Round 1 Heats and a
+ * decided Final) directly in SQL: the Competition, its Entrants at Seed
+ * Positions 1–8, and each Heat with its slots and places. The caller deletes
+ * the Competition (which cascades its Entrants and Heats) when done.
  */
 async function setupBracketDemo(): Promise<string> {
   const [xiWarWeek] = await query<{ id: string }>(
     `select id from war_week where edition = 'xi'`,
   );
   const [comp] = await query<{ id: string }>(
-    `insert into competition (war_week_id, name, scoring, format)
-     values ($1, $2, 'individual', 'single-elimination') returning id`,
-    [xiWarWeek.id, BRACKET_COMP_NAME],
+    `insert into competition (war_week_id, name, scoring, format, bracket_config)
+     values ($1, $2, 'individual', 'heats', $3) returning id`,
+    [
+      xiWarWeek.id,
+      BRACKET_COMP_NAME,
+      { entrantsPerHeat: 4, advancePerHeat: 2 },
+    ],
   );
   const competitionId = comp.id;
   const participants = await query<{ id: string }>(
-    `select id from participant where war_week_id = $1 order by display_name limit 4`,
+    `select id from participant where war_week_id = $1 order by display_name limit 8`,
     [xiWarWeek.id],
   );
-  if (participants.length < 4) {
-    throw new Error("XI needs at least 4 Participants for the Bracket demo");
+  if (participants.length < 8) {
+    throw new Error("XI needs at least 8 Participants for the Bracket demo");
   }
   const entrantIds: string[] = [];
   for (const [i, p] of participants.entries()) {
@@ -466,28 +470,28 @@ async function setupBracketDemo(): Promise<string> {
     );
     entrantIds.push(entrant.id);
   }
-  const [e1, e2, e3, e4] = entrantIds;
+  const [e1, e2, e3, e4, e5, e6, e7, e8] = entrantIds;
   const [finalHeat] = await query<{ id: string }>(
-    `insert into heat (competition_id, round, position, status)
-     values ($1, 2, 1, 'played') returning id`,
+    `insert into heat (competition_id, round, position, status, slot_count)
+     values ($1, 2, 1, 'played', 4) returning id`,
     [competitionId],
   );
   const [heatA] = await query<{ id: string }>(
-    `insert into heat (competition_id, round, position, status, winner_to_heat_id, winner_to_slot)
-     values ($1, 1, 1, 'played', $2, 0) returning id`,
-    [competitionId, finalHeat.id],
+    `insert into heat (competition_id, round, position, status, slot_count)
+     values ($1, 1, 1, 'played', 4) returning id`,
+    [competitionId],
   );
   const [heatB] = await query<{ id: string }>(
-    `insert into heat (competition_id, round, position, status, winner_to_heat_id, winner_to_slot)
-     values ($1, 1, 2, 'played', $2, 1) returning id`,
-    [competitionId, finalHeat.id],
+    `insert into heat (competition_id, round, position, status, slot_count)
+     values ($1, 1, 2, 'played', 4) returning id`,
+    [competitionId],
   );
   await query(
     `insert into heat_entrant (heat_id, entrant_id, slot, place) values
-       ($1, $2, 0, 1), ($1, $3, 1, 2),
-       ($4, $5, 0, 1), ($4, $6, 1, 2),
-       ($7, $2, 0, 1), ($7, $5, 1, 2)`,
-    [heatA.id, e1, e4, heatB.id, e2, e3, finalHeat.id],
+       ($1, $2, 0, 1), ($1, $3, 1, 2), ($1, $4, 2, 3), ($1, $5, 3, 4),
+       ($6, $7, 0, 1), ($6, $8, 1, 2), ($6, $9, 2, 3), ($6, $10, 3, 4),
+       ($11, $2, 0, 1), ($11, $7, 1, 2), ($11, $3, 2, 3), ($11, $8, 3, 4)`,
+    [heatA.id, e1, e2, e3, e4, heatB.id, e5, e6, e7, e8, finalHeat.id],
   );
   note(`bracket demo: competition ${competitionId}, champion entrant ${e1}`);
   return competitionId;

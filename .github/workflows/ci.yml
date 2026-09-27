@@ -74,8 +74,8 @@ jobs:
       # /api/mcp. Smoke signs its own sessions, so no real auth secrets.
       - run: pnpm smoke
 
-      # The Playwright flows (sign-in, Points Entry, Bracket, Finale,
-      # Archive) in Chromium over the same build and Postgres service.
+      # The Playwright flows (sign-in, Points Entry, Bracket, Heats Bracket,
+      # Finale, Archive) in Chromium over the same build and Postgres service.
       - run: pnpm exec playwright install --with-deps chromium
 
       - run: pnpm e2e
