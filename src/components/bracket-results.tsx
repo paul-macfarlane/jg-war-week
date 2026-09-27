@@ -31,36 +31,17 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
-import { isBye, isDecided, resetByResult } from "@/lib/bracket/engine";
-import type { Bracket, Heat } from "@/lib/bracket/types";
-import { finalRoundOf, groupRounds, heatName } from "@/lib/bracket/view";
+import { isRecordable, resetByResult } from "@/lib/bracket/formats";
+import type { Bracket, Heat, HeatResult } from "@/lib/bracket/types";
+import { groupRounds, heatName, isDecided } from "@/lib/bracket/view";
 
 type Scoring = "team" | "individual";
-
-/** A Heat the Organizer can record: both Entrants known, not a bye. */
-function isRecordable(heat: Heat) {
-  return !isBye(heat) && heat.slots.every((s) => s.entrantId !== null);
-}
 
 function plural(count: number, one: string, many: string) {
   return `${count} ${count === 1 ? one : many}`;
 }
 
-/**
- * The Heat Result form in the bottom Sheet: tap the winner, optional
- * scores, a Forfeit switch per Entrant. Changing the winner of a Heat whose
- * later Heats have results asks first, naming them; a score-only edit
- * doesn't ask.
- */
-function HeatResultForm({
-  competitionId,
-  heat,
-  bracket,
-  entrantsById,
-  scoring,
-  primaryColor,
-  onSaved,
-}: {
+type HeatResultFormProps = {
   competitionId: string;
   heat: Heat;
   bracket: Bracket;
@@ -68,10 +49,153 @@ function HeatResultForm({
   scoring: Scoring;
   primaryColor: string;
   onSaved: () => void;
-}) {
+};
+
+/**
+ * Saving a Heat Result from either Sheet: the later Heats it would reset
+ * (named, for the confirm), and a `save` that records it and toasts
+ * "<1st place> wins <Heat name>".
+ */
+function useSaveHeatResult(
+  { competitionId, heat, bracket, entrantsById, onSaved }: HeatResultFormProps,
+  result: HeatResult | null,
+) {
   const router = useRouter();
-  const id = useId();
   const [pending, startTransition] = useTransition();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const name = heatName(bracket, heat);
+  const label = (entrantId: string) =>
+    entrantsById.get(entrantId)?.label ?? "Unknown";
+  const resetNames = (
+    result ? resetByResult(bracket, heat.id, result) : []
+  ).map((resetId) =>
+    heatName(
+      bracket,
+      bracket.heats.find((h) => h.id === resetId)!,
+    ),
+  );
+
+  function save() {
+    if (!result) return;
+    const forfeits = new Set(result.forfeits ?? []);
+    const first = result.order.find((id) => !forfeits.has(id))!;
+    startTransition(async () => {
+      const saved = await recordHeatResult(competitionId, heat.id, result);
+      setConfirmOpen(false);
+      if (!saved.ok) {
+        toast.error(saved.error);
+        return;
+      }
+      const reset = saved.resetHeatIds.length;
+      toast.success(
+        `${label(first)} wins ${name}` +
+          (reset > 0
+            ? ` · ${plural(reset, "later Heat", "later Heats")} reset`
+            : ""),
+      );
+      onSaved();
+      router.refresh();
+    });
+  }
+
+  const saveButton = (
+    <SheetFooter>
+      <Button
+        type="button"
+        size="lg"
+        className="min-h-11"
+        disabled={!result || pending}
+        onClick={() => (resetNames.length > 0 ? setConfirmOpen(true) : save())}
+      >
+        {pending ? "Saving…" : "Save Heat Result"}
+      </Button>
+    </SheetFooter>
+  );
+  const confirm = (
+    <ConfirmDialog
+      open={confirmOpen}
+      onOpenChange={setConfirmOpen}
+      title={`Change the ${name} result?`}
+      description={resetNames.map((reset) => (
+        <span key={reset} className="block">
+          {reset} will be reset.
+        </span>
+      ))}
+      confirmLabel="Save and reset"
+      pending={pending}
+      onConfirm={save}
+    />
+  );
+  return { name, label, saveButton, confirm };
+}
+
+/** The scores typed so far, without the empty ones. */
+function filledScores(scores: Record<string, string>) {
+  return Object.fromEntries(
+    Object.entries(scores).filter(([, score]) => score.trim() !== ""),
+  );
+}
+
+/** A score input for one Entrant. */
+function ScoreField({
+  id,
+  label,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <Field>
+      <FieldLabel htmlFor={id} className="min-w-0 break-words">
+        {label} score
+      </FieldLabel>
+      <Input
+        id={id}
+        maxLength={40}
+        placeholder="Optional, e.g. 21 or 1:32.4"
+        className="h-11 sm:h-9"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </Field>
+  );
+}
+
+/** A Forfeit switch for one Entrant. */
+function ForfeitField({
+  id,
+  label,
+  checked,
+  onCheckedChange,
+}: {
+  id: string;
+  label: string;
+  checked: boolean;
+  onCheckedChange: (on: boolean) => void;
+}) {
+  return (
+    <Field orientation="horizontal" className="min-h-11 sm:min-h-9">
+      <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} />
+      <FieldLabel htmlFor={id} className="min-w-0 break-words">
+        {label} forfeits
+      </FieldLabel>
+    </Field>
+  );
+}
+
+/**
+ * The Heat Result form for a two-slot Heat: tap the winner, optional
+ * scores, a Forfeit switch per Entrant. Changing the winner of a Heat whose
+ * later Heats have results asks first, naming them; a score-only edit
+ * doesn't ask.
+ */
+function WinnerForm(props: HeatResultFormProps) {
+  const { heat, entrantsById, scoring, primaryColor } = props;
+  const id = useId();
   const ids = heat.slots.map((s) => s.entrantId!);
   const decided = isDecided(heat);
   const [winner, setWinner] = useState<string | null>(
@@ -83,50 +207,19 @@ function HeatResultForm({
   const [forfeit, setForfeit] = useState<string | null>(
     heat.slots.find((s) => s.forfeited)?.entrantId ?? null,
   );
-  const [confirmOpen, setConfirmOpen] = useState(false);
-
-  const finalRound = finalRoundOf(bracket);
-  const name = heatName(heat, finalRound);
-  const label = (entrantId: string) =>
-    entrantsById.get(entrantId)?.label ?? "Unknown";
-  const resetNames = resetByResult(bracket, heat.id, winner).map((resetId) => {
-    const reset = bracket.heats.find((h) => h.id === resetId)!;
-    return heatName(reset, finalRound);
-  });
+  const result: HeatResult | null = winner
+    ? {
+        order: [winner, ...ids.filter((e) => e !== winner)],
+        scores: filledScores(scores),
+        forfeits: forfeit ? [forfeit] : [],
+      }
+    : null;
+  const { name, label, saveButton, confirm } = useSaveHeatResult(props, result);
 
   function toggleForfeit(entrantId: string, on: boolean) {
     setForfeit(on ? entrantId : null);
     // A forfeiting Entrant loses, so the other one wins.
     if (on) setWinner(ids.find((other) => other !== entrantId) ?? null);
-  }
-
-  function save() {
-    if (!winner) return;
-    const order = [winner, ...ids.filter((e) => e !== winner)];
-    const filled = Object.fromEntries(
-      Object.entries(scores).filter(([, score]) => score.trim() !== ""),
-    );
-    startTransition(async () => {
-      const result = await recordHeatResult(competitionId, heat.id, {
-        order,
-        scores: filled,
-        forfeits: forfeit ? [forfeit] : [],
-      });
-      setConfirmOpen(false);
-      if (!result.ok) {
-        toast.error(result.error);
-        return;
-      }
-      const reset = result.resetHeatIds.length;
-      toast.success(
-        `${label(winner)} wins ${name}` +
-          (reset > 0
-            ? ` · ${plural(reset, "later Heat", "later Heats")} reset`
-            : ""),
-      );
-      onSaved();
-      router.refresh();
-    });
   }
 
   return (
@@ -172,65 +265,168 @@ function HeatResultForm({
         <FieldGroup className="gap-4">
           {ids.map((entrantId, i) => (
             <div key={entrantId} className="flex flex-col gap-2">
-              <Field>
-                <FieldLabel htmlFor={`${id}-score-${i}`}>
-                  {label(entrantId)} score
-                </FieldLabel>
-                <Input
-                  id={`${id}-score-${i}`}
-                  maxLength={40}
-                  placeholder="Optional, e.g. 21 or 1:32.4"
-                  className="h-11 sm:h-9"
-                  value={scores[entrantId] ?? ""}
-                  onChange={(event) =>
-                    setScores((s) => ({
-                      ...s,
-                      [entrantId]: event.target.value,
-                    }))
-                  }
-                />
-              </Field>
-              <Field orientation="horizontal" className="min-h-11 sm:min-h-9">
-                <Switch
-                  id={`${id}-forfeit-${i}`}
-                  checked={forfeit === entrantId}
-                  onCheckedChange={(on) => toggleForfeit(entrantId, on)}
-                />
-                <FieldLabel htmlFor={`${id}-forfeit-${i}`}>
-                  {label(entrantId)} forfeits
-                </FieldLabel>
-              </Field>
+              <ScoreField
+                id={`${id}-score-${i}`}
+                label={label(entrantId)}
+                value={scores[entrantId] ?? ""}
+                onChange={(value) =>
+                  setScores((s) => ({ ...s, [entrantId]: value }))
+                }
+              />
+              <ForfeitField
+                id={`${id}-forfeit-${i}`}
+                label={label(entrantId)}
+                checked={forfeit === entrantId}
+                onCheckedChange={(on) => toggleForfeit(entrantId, on)}
+              />
             </div>
           ))}
         </FieldGroup>
       </div>
-      <SheetFooter>
+      {saveButton}
+      {confirm}
+    </>
+  );
+}
+
+/**
+ * The Heat Result form for a Heat of more than two: tap the Entrants in
+ * finishing order (each shows its place), Undo the last tap, optional
+ * scores, and a Forfeit switch per Entrant; forfeiters aren't tapped and
+ * finish last. A result that changes who advances from a complete Round
+ * asks first, naming the later Heats it resets.
+ */
+function FinishingOrderForm(props: HeatResultFormProps) {
+  const { heat, entrantsById, scoring, primaryColor } = props;
+  const id = useId();
+  const ids = heat.slots.map((s) => s.entrantId!);
+  const decided = isDecided(heat);
+  const [forfeits, setForfeits] = useState<string[]>(() =>
+    heat.slots.filter((s) => s.forfeited).map((s) => s.entrantId!),
+  );
+  const [order, setOrder] = useState<string[]>(() =>
+    decided
+      ? heat.slots
+          .filter((s) => !s.forfeited)
+          .sort((a, b) => (a.place ?? 0) - (b.place ?? 0))
+          .map((s) => s.entrantId!)
+      : [],
+  );
+  const [scores, setScores] = useState<Record<string, string>>(() =>
+    Object.fromEntries(heat.slots.map((s) => [s.entrantId!, s.score ?? ""])),
+  );
+  const toPlace = ids.filter((e) => !forfeits.includes(e));
+  const complete = order.length > 0 && order.length === toPlace.length;
+  const result: HeatResult | null = complete
+    ? {
+        order: [...order, ...ids.filter((e) => forfeits.includes(e))],
+        scores: filledScores(scores),
+        forfeits,
+      }
+    : null;
+  const { name, label, saveButton, confirm } = useSaveHeatResult(props, result);
+
+  function toggleForfeit(entrantId: string, on: boolean) {
+    setForfeits((f) =>
+      on ? [...f, entrantId] : f.filter((e) => e !== entrantId),
+    );
+    // A forfeiter finishes last, so it leaves the tapped order.
+    if (on) setOrder((o) => o.filter((e) => e !== entrantId));
+  }
+
+  return (
+    <>
+      <SheetHeader>
+        <SheetTitle>{name}</SheetTitle>
+        <SheetDescription>
+          Tap the Entrants in finishing order, 1st first. Forfeiters finish
+          last. Scores are optional.
+        </SheetDescription>
+      </SheetHeader>
+      <div className="flex flex-col gap-4 px-4">
+        <div
+          role="group"
+          aria-label="Finishing order"
+          className="grid grid-cols-1 gap-2 sm:grid-cols-2"
+        >
+          {ids.map((entrantId) => {
+            const entrant = entrantsById.get(entrantId)!;
+            const place = order.indexOf(entrantId) + 1;
+            const forfeited = forfeits.includes(entrantId);
+            return (
+              <Button
+                key={entrantId}
+                type="button"
+                variant={place > 0 ? "default" : "outline"}
+                aria-pressed={place > 0}
+                disabled={forfeited}
+                className="h-auto min-h-11 justify-start gap-2 py-2"
+                onClick={() => {
+                  if (place === 0) setOrder((o) => [...o, entrantId]);
+                }}
+              >
+                <EntrantMark
+                  entrant={entrant}
+                  scoring={scoring}
+                  primaryColor={primaryColor}
+                />
+                <span className="min-w-0 truncate">{entrant.label}</span>
+                {place > 0 && (
+                  <span
+                    aria-label={`Place ${place}`}
+                    className="bg-primary-foreground text-primary ml-auto flex size-6 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums"
+                  >
+                    {place}
+                  </span>
+                )}
+                {forfeited && <span className="ml-auto shrink-0">Forfeit</span>}
+              </Button>
+            );
+          })}
+        </div>
         <Button
           type="button"
+          variant="outline"
           size="lg"
-          className="min-h-11"
-          disabled={!winner || pending}
-          onClick={() =>
-            resetNames.length > 0 ? setConfirmOpen(true) : save()
-          }
+          className="min-h-11 w-fit"
+          disabled={order.length === 0}
+          onClick={() => setOrder((o) => o.slice(0, -1))}
         >
-          {pending ? "Saving…" : "Save Heat Result"}
+          Undo
         </Button>
-      </SheetFooter>
-      <ConfirmDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title={`Change the ${name} result?`}
-        description={resetNames.map((reset) => (
-          <span key={reset} className="block">
-            {reset} will be reset.
-          </span>
-        ))}
-        confirmLabel="Save and reset"
-        pending={pending}
-        onConfirm={save}
-      />
+        <FieldGroup className="gap-4">
+          {ids.map((entrantId, i) => (
+            <div key={entrantId} className="flex flex-col gap-2">
+              <ScoreField
+                id={`${id}-score-${i}`}
+                label={label(entrantId)}
+                value={scores[entrantId] ?? ""}
+                onChange={(value) =>
+                  setScores((s) => ({ ...s, [entrantId]: value }))
+                }
+              />
+              <ForfeitField
+                id={`${id}-forfeit-${i}`}
+                label={label(entrantId)}
+                checked={forfeits.includes(entrantId)}
+                onCheckedChange={(on) => toggleForfeit(entrantId, on)}
+              />
+            </div>
+          ))}
+        </FieldGroup>
+      </div>
+      {saveButton}
+      {confirm}
     </>
+  );
+}
+
+/** A two-slot Heat takes its winner; a bigger one its finishing order. */
+function HeatResultSheet(props: HeatResultFormProps) {
+  return props.heat.slots.length > 2 ? (
+    <FinishingOrderForm {...props} />
+  ) : (
+    <WinnerForm {...props} />
   );
 }
 
@@ -257,7 +453,6 @@ export function BracketResults({
 }) {
   const [openHeatId, setOpenHeatId] = useState<string | null>(null);
   const entrantsById = new Map(entrants.map((e) => [e.id, e]));
-  const finalRound = finalRoundOf(bracket);
   const openHeat = bracket.heats.find((h) => h.id === openHeatId);
   const winner = champion ? entrantsById.get(champion) : undefined;
 
@@ -344,8 +539,8 @@ export function BracketResults({
           <h2 className="font-semibold">{round.name}</h2>
           <ul className="flex flex-col gap-2">
             {round.heats.map((heat) => {
-              const name = heatName(heat, finalRound);
-              const tappable = !finalized && isRecordable(heat);
+              const name = heatName(bracket, heat);
+              const tappable = !finalized && isRecordable(bracket, heat.id);
               const rows = (
                 <HeatRows
                   heat={heat}
@@ -395,7 +590,7 @@ export function BracketResults({
       >
         <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto">
           {openHeat && (
-            <HeatResultForm
+            <HeatResultSheet
               key={openHeat.id}
               competitionId={competitionId}
               heat={openHeat}

@@ -1,7 +1,7 @@
 # jg-war-week
 
 War Week: themes, schedule, teams, competitions (including single-elimination
-Brackets), points, awards, announcements, and a closing-ceremony Finale, for
+or Heats Brackets), points, awards, announcements, and a closing-ceremony Finale, for
 Jahnel Group's annual War Week — one live edition at a time, with a curated
 Archive of every past one. See `CONTEXT.md` for the domain glossary.
 
@@ -77,12 +77,14 @@ production build (`pnpm build`) before running `pnpm smoke`.
 `pnpm e2e` runs the Playwright flows in Chromium against the same production
 build and local database: it refuses a non-local `DATABASE_URL` and a missing
 `.next`, applies migrations, reloads every seed with `--reset`, starts the app
-with `pnpm start -p 3200`, and signs its own JG sessions (no Google). The five
-flows: anonymous and non-JG visitors are sent to `/sign-in`; an Organizer's
-Points Entry shows on `/xi/leaderboard`; a Bracket is built, recorded,
-advanced and finalized into Points Entries; the Finale plays to first place;
-`/history` and every past edition render. Each flow saves full-page
-screenshots under `test-results/e2e/<test>/`; a failing flow also keeps a
+with `pnpm start -p 3200`, and signs its own JG sessions (no Google). The flows:
+anonymous and non-JG visitors are sent to `/sign-in`; an Organizer's Points
+Entry shows on `/xi/leaderboard`; a Bracket is built, recorded, advanced and
+finalized into Points Entries; a Heats Bracket is run to Points Entries,
+with the End War Week warning; the Finale plays to first place; `/history`
+and every past edition render; server-refused form fields show their error
+and take focus; an edition's Appearance Theme darkens the whole page while
+the Archive stays light. Each flow saves full-page screenshots under `test-results/e2e/<test>/`; a failing flow also keeps a
 trace there (`pnpm exec playwright show-trace <path>/trace.zip`). The first
 time, install the browser with `pnpm exec playwright install chromium`.
 

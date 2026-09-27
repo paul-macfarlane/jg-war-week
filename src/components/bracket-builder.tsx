@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import {
@@ -23,16 +23,31 @@ import {
   FieldLegend,
   FieldSet,
 } from "@/components/ui/field";
-import { isBye } from "@/lib/bracket/engine";
+import {
+  ADVANCE_PER_HEAT_OPTIONS,
+  ENTRANTS_PER_HEAT_OPTIONS,
+  type HeatsConfig,
+  advancePerHeatLabel,
+  entrantsPerHeatLabel,
+  heatsConfig as heatsConfigOf,
+} from "@/lib/bracket/config";
+import { isBye, validateConfig } from "@/lib/bracket/formats";
 import { type Bracket, HAS_RESULTS_ERROR } from "@/lib/bracket/types";
-import { type Format, formatLabel, groupRounds } from "@/lib/bracket/view";
+import {
+  type Format,
+  formatLabel,
+  groupRounds,
+  heatName,
+} from "@/lib/bracket/view";
+import { COMPETITION_FORMATS } from "@/lib/enums";
 import type { BracketEntrant } from "@/queries/brackets";
 
 type Target = { id: string; name: string; team: string | null };
 
-const FORMAT_OPTIONS = (["points", "single-elimination"] as const).map(
-  (format) => ({ value: format, label: formatLabel(format) }),
-);
+const FORMAT_OPTIONS = COMPETITION_FORMATS.map((format) => ({
+  value: format,
+  label: formatLabel(format),
+}));
 
 /** A write that may be refused for clearing Heat Results; retried with `force`. */
 type ForceableAction = {
@@ -40,6 +55,146 @@ type ForceableAction = {
   success: string;
   title: string;
 };
+
+/**
+ * The Heats Format's settings: how many Entrants play in each Heat and how
+ * many of them advance. With a saved Entrant count, a "how many advance"
+ * that Generate would refuse is disabled, and the refusal is shown when the
+ * current choice is one.
+ */
+function HeatSettingsForm({
+  competitionId,
+  config,
+  entrantCount,
+  disabled,
+  onRefused,
+}: {
+  competitionId: string;
+  config: HeatsConfig;
+  entrantCount: number;
+  disabled: boolean;
+  /** A save refused for clearing Heat Results: confirm, then force it. */
+  onRefused: (action: ForceableAction) => void;
+}) {
+  const router = useRouter();
+  const [perHeat, setPerHeat] = useState(config.entrantsPerHeat);
+  const [advance, setAdvance] = useState(config.advancePerHeat);
+
+  const [, formAction, saving] = useActionState(
+    async (
+      _previous: BracketActionResult | null,
+      formData: FormData,
+    ): Promise<BracketActionResult> => {
+      const next = {
+        entrantsPerHeat: Number(formData.get("entrantsPerHeat")),
+        advancePerHeat: Number(formData.get("advancePerHeat")),
+      };
+      const run = (force: boolean) =>
+        setCompetitionFormat(competitionId, {
+          format: "heats",
+          config: next,
+          force,
+        });
+      const result = await run(false);
+      if (result.ok) {
+        toast.success("Heat settings saved");
+        router.refresh();
+      } else if (result.error === HAS_RESULTS_ERROR) {
+        onRefused({
+          run,
+          success: "Heat settings saved",
+          title: "Clear every Heat Result and save the Heat settings?",
+        });
+      } else {
+        toast.error(result.error);
+      }
+      return result;
+    },
+    null,
+  );
+
+  const refusalAt = (entrantsPerHeat: number, advancePerHeat: number) =>
+    entrantCount >= 2
+      ? validateConfig(
+          "heats",
+          { entrantsPerHeat, advancePerHeat },
+          entrantCount,
+        )
+      : null;
+  const refusalFor = (advancePerHeat: number) =>
+    refusalAt(perHeat, advancePerHeat);
+  const refusal = refusalFor(advance);
+  const perHeatOptions = ENTRANTS_PER_HEAT_OPTIONS.map((count) => ({
+    value: String(count),
+    label: entrantsPerHeatLabel(count),
+  }));
+  const advanceOptions = ADVANCE_PER_HEAT_OPTIONS.filter(
+    (count) => count < perHeat,
+  ).map((count) => {
+    const reason = refusalFor(count);
+    return {
+      value: String(count),
+      label: advancePerHeatLabel(count),
+      disabled: reason !== null,
+      title: reason ?? undefined,
+    };
+  });
+  const off = disabled || saving;
+
+  return (
+    <form action={formAction} className="flex flex-col gap-4">
+      <FieldSet>
+        <FieldLegend>Heat settings</FieldLegend>
+        <FieldDescription>
+          Each Round deals the Entrants into Heats; the top few of each go on to
+          the next Round until one Heat, the Final, is left.
+        </FieldDescription>
+        <FieldGroup className="gap-4 sm:flex-row">
+          <Field className="sm:max-w-48">
+            <FieldLabel htmlFor="heat-entrants">Entrants per Heat</FieldLabel>
+            <OptionSelect
+              id="heat-entrants"
+              name="entrantsPerHeat"
+              options={perHeatOptions}
+              value={String(perHeat)}
+              disabled={off}
+              onValueChange={(value) => {
+                const size = Number(value);
+                setPerHeat(size);
+                // The most that can advance at this size, for these Entrants.
+                const best = ADVANCE_PER_HEAT_OPTIONS.filter(
+                  (count) => count < size && refusalAt(size, count) === null,
+                ).at(-1);
+                setAdvance(best ?? 1);
+              }}
+            />
+          </Field>
+          <Field className="sm:max-w-48" data-invalid={refusal !== null}>
+            <FieldLabel htmlFor="heat-advance">How many advance</FieldLabel>
+            <OptionSelect
+              id="heat-advance"
+              name="advancePerHeat"
+              options={advanceOptions}
+              value={String(advance)}
+              disabled={off}
+              aria-invalid={refusal !== null}
+              onValueChange={(value) => setAdvance(Number(value))}
+            />
+          </Field>
+        </FieldGroup>
+        {refusal && <FieldDescription>{refusal}</FieldDescription>}
+      </FieldSet>
+      <Button
+        type="submit"
+        size="lg"
+        className="min-h-11 w-fit"
+        disabled={off || refusal !== null}
+      >
+        {saving ? "Saving…" : "Save Heat settings"}
+      </Button>
+    </form>
+  );
+}
 
 /** Same Entrants, in any order (Generate reorders them by Seed Position). */
 function sameSet(a: string[], b: string[]) {
@@ -122,6 +277,8 @@ export function BracketBuilder({
   const firstRound = groupRounds(bracket)[0];
   const labelOf = (entrantId: string | null) =>
     entrants.find((e) => e.id === entrantId)?.label ?? "Unknown";
+  const heatsConfig =
+    competition.format === "heats" ? heatsConfigOf(bracket.config) : null;
 
   return (
     <div className="flex flex-col gap-8">
@@ -147,6 +304,18 @@ export function BracketBuilder({
           Competition has Entrants.
         </FieldDescription>
       </Field>
+
+      {heatsConfig && (
+        <HeatSettingsForm
+          // A saved change (after the refresh) starts the form from it.
+          key={`${heatsConfig.entrantsPerHeat}-${heatsConfig.advancePerHeat}`}
+          competitionId={competition.id}
+          config={heatsConfig}
+          entrantCount={entrants.length}
+          disabled={pending || locked}
+          onRefused={setConfirm}
+        />
+      )}
 
       {competition.format !== "points" && (
         <>
@@ -271,14 +440,21 @@ export function BracketBuilder({
               <h2 className="text-lg font-semibold">
                 Preview · {firstRound.name}
               </h2>
-              <ul className="flex flex-col gap-1 text-sm">
+              <ul className="flex flex-col gap-2 text-sm">
                 {firstRound.heats.map((heat) => {
-                  const [a, b] = heat.slots.map((s) => s.entrantId);
+                  const names = heat.slots
+                    .filter((s) => s.entrantId !== null)
+                    .map((s) => labelOf(s.entrantId));
                   return (
-                    <li key={heat.id} className="min-w-0 truncate">
-                      {isBye(heat)
-                        ? `${labelOf(a ?? b)} · Bye`
-                        : `${labelOf(a)} vs ${labelOf(b)}`}
+                    <li key={heat.id} className="flex min-w-0 flex-col">
+                      <span className="text-foreground/60 text-xs font-medium">
+                        {heatName(bracket, heat)}
+                      </span>
+                      <span className="break-words">
+                        {isBye(bracket, heat)
+                          ? `${names.join(", ")} · Bye — advances`
+                          : names.join(" vs ")}
+                      </span>
                     </li>
                   );
                 })}

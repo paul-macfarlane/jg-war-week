@@ -1,0 +1,914 @@
+# Bracket engine tests after D3 (b19d231)
+Command: pnpm exec vitest run src/lib/bracket --reporter=verbose
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.11 /Users/paulmacfarlane/Code/war-weeker
+
+ ✓ src/lib/bracket/seeding.test.ts > shuffleSeedPositions > shuffles with the given random numbers 3ms
+ ✓ src/lib/bracket/seeding.test.ts > shuffleSeedPositions > keeps the order when every draw is just under 1 0ms
+ ✓ src/lib/bracket/seeding.test.ts > shuffleSeedPositions > doesn't change its input 0ms
+ ✓ src/lib/bracket/engine.test.ts > generate > pairs 4 Entrants 1 v 4 and 2 v 3, with the final waiting 8ms
+ ✓ src/lib/bracket/engine.test.ts > generate > uses standard seeding for 16 Entrants 1ms
+ ✓ src/lib/bracket/engine.test.ts > generate > gives byes to the top Seed Positions and advances them 1ms
+ ✓ src/lib/bracket/engine.test.ts > generate > puts the only first-Round game of 17 Entrants between 16 and 17 1ms
+ ✓ src/lib/bracket/engine.test.ts > generate > builds 2 Entrants into a 2 bracket with 0 byes 4ms
+ ✓ src/lib/bracket/engine.test.ts > generate > builds 3 Entrants into a 4 bracket with 1 byes 1ms
+ ✓ src/lib/bracket/engine.test.ts > generate > builds 4 Entrants into a 4 bracket with 0 byes 1ms
+ ✓ src/lib/bracket/engine.test.ts > generate > builds 5 Entrants into a 8 bracket with 3 byes 1ms
+ ✓ src/lib/bracket/engine.test.ts > generate > builds 6 Entrants into a 8 bracket with 2 byes 0ms
+ ✓ src/lib/bracket/engine.test.ts > generate > builds 7 Entrants into a 8 bracket with 1 byes 0ms
+ ✓ src/lib/bracket/engine.test.ts > generate > builds 8 Entrants into a 8 bracket with 0 byes 0ms
+ ✓ src/lib/bracket/engine.test.ts > generate > builds 9 Entrants into a 16 bracket with 7 byes 0ms
+ ✓ src/lib/bracket/engine.test.ts > generate > builds 10 Entrants into a 16 bracket with 6 byes 0ms
+ ✓ src/lib/bracket/engine.test.ts > generate > builds 11 Entrants into a 16 bracket with 5 byes 0ms
+ ✓ src/lib/bracket/engine.test.ts > generate > builds 12 Entrants into a 16 bracket with 4 byes 0ms
+ ✓ src/lib/bracket/engine.test.ts > generate > builds 13 Entrants into a 16 bracket with 3 byes 0ms
+ ✓ src/lib/bracket/engine.test.ts > generate > builds 14 Entrants into a 16 bracket with 2 byes 0ms
+ ✓ src/lib/bracket/engine.test.ts > generate > builds 15 Entrants into a 16 bracket with 1 byes 0ms
+ ✓ src/lib/bracket/engine.test.ts > generate > builds 16 Entrants into a 16 bracket with 0 byes 0ms
+ ✓ src/lib/bracket/engine.test.ts > generate > builds 17 Entrants into a 32 bracket with 15 byes 0ms
+ ✓ src/lib/bracket/engine.test.ts > generate > orders Entrants by Seed Position, not by list order 0ms
+ ✓ src/lib/bracket/engine.test.ts > generate > refuses fewer than 2 Entrants 1ms
+ ✓ src/lib/bracket/engine.test.ts > generate > takes heat ids from the given function 0ms
+ ✓ src/lib/bracket/engine.test.ts > applyResult > records places and scores and advances the winner 2ms
+ ✓ src/lib/bracket/engine.test.ts > applyResult > makes a forfeiting Entrant lose, even when listed first 0ms
+ ✓ src/lib/bracket/engine.test.ts > applyResult > refuses a Heat Result with an Entrant missing 0ms
+ ✓ src/lib/bracket/engine.test.ts > applyResult > refuses a Heat Result with an Entrant twice 0ms
+ ✓ src/lib/bracket/engine.test.ts > applyResult > refuses a Heat Result with an outsider 0ms
+ ✓ src/lib/bracket/engine.test.ts > applyResult > refuses a Heat Result with everyone forfeiting 0ms
+ ✓ src/lib/bracket/engine.test.ts > applyResult > refuses a Heat Result with an outsider forfeiting 0ms
+ ✓ src/lib/bracket/engine.test.ts > applyResult > refuses a Heat Result with an outsider's score 0ms
+ ✓ src/lib/bracket/engine.test.ts > applyResult > refuses a Heat still waiting for its Entrants 0ms
+ ✓ src/lib/bracket/engine.test.ts > applyResult > refuses a bye 0ms
+ ✓ src/lib/bracket/engine.test.ts > applyResult > refuses an unknown Heat 0ms
+ ✓ src/lib/bracket/engine.test.ts > applyResult > re-recording a played Heat replaces the advanced Entrant downstream 1ms
+ ✓ src/lib/bracket/engine.test.ts > a score-only edit of a decided Heat > updates the Heat's scores and keeps every later Heat 1ms
+ ✓ src/lib/bracket/engine.test.ts > resetByResult > names every decided later Heat that followed from it when the winner changes 1ms
+ ✓ src/lib/bracket/engine.test.ts > resetByResult > counts only later Heats that had a Heat Result 1ms
+ ✓ src/lib/bracket/engine.test.ts > resetByResult > names nothing when the winner has reached no decided Heat 0ms
+ ✓ src/lib/bracket/engine.test.ts > resetByResult > names nothing for an undecided Heat, a bye or no winner 0ms
+ ✓ src/lib/bracket/engine.test.ts > finalPlacings > places 8 Entrants 1st, 2nd, tied 3rd and tied 5th 1ms
+ ✓ src/lib/bracket/engine.test.ts > finalPlacings > doesn't count a bye as a played Heat 0ms
+ ✓ src/lib/bracket/engine.test.ts > finalPlacings > places 5 Entrants 1st, 2nd, 3rd, 3rd, 5th 0ms
+ ✓ src/lib/bracket/engine.test.ts > finalPlacings > refuses an unfinished Bracket 0ms
+ ✓ src/lib/bracket/engine.test.ts > hasResults > ignores byes and counts recorded Heat Results 0ms
+ ✓ src/lib/bracket/view.test.ts > roundName > names the last Round the Final and the one before the Semifinal 3ms
+ ✓ src/lib/bracket/view.test.ts > roundName > calls a two-Entrant Bracket's only Round the Final 0ms
+ ✓ src/lib/bracket/view.test.ts > roundName > numbers earlier Rounds from the start 0ms
+ ✓ src/lib/bracket/view.test.ts > heatName > names Heats by Round and position 0ms
+ ✓ src/lib/bracket/view.test.ts > groupRounds > groups a 5-Entrant Bracket's Heats into named Rounds in order 1ms
+ ✓ src/lib/bracket/view.test.ts > groupRounds > has no Rounds before Generate 0ms
+ ✓ src/lib/bracket/view.test.ts > nextHeatFor > waits on the Heat feeding the empty slot after a bye 0ms
+ ✓ src/lib/bracket/view.test.ts > nextHeatFor > names the opponent of a ready Heat 0ms
+ ✓ src/lib/bracket/view.test.ts > nextHeatFor > finds the opponent once the feeding Heat is decided 1ms
+ ✓ src/lib/bracket/view.test.ts > nextHeatFor > has nothing for an eliminated Entrant or after the Final 0ms
+ ✓ src/lib/bracket/view.test.ts > nextHeatFor > has nothing for someone who isn't an Entrant 0ms
+ ✓ src/lib/bracket/view.test.ts > entrantForYou > is the Participant's own Entrant in an individual Competition 1ms
+ ✓ src/lib/bracket/view.test.ts > entrantForYou > is the Participant's Team in a team Competition 0ms
+ ✓ src/lib/bracket/view.test.ts > entrantForYou > is null when You aren't known or aren't entered 0ms
+ ✓ src/lib/bracket/view.test.ts > formatLabel > names each Format for Organizers 0ms
+ ✓ src/lib/bracket/config.test.ts > heatsConfigSchema > accepts 2 to 8 per Heat with fewer advancing than play 6ms
+ ✓ src/lib/bracket/config.test.ts > heatsConfigSchema > refuses Heats outside 2 to 8 Entrants 2ms
+ ✓ src/lib/bracket/config.test.ts > heatsConfigSchema > refuses advancing none, or as many as play 3ms
+ ✓ src/lib/bracket/config.test.ts > bracketConfigSchema > takes a Heats config for heats 1ms
+ ✓ src/lib/bracket/config.test.ts > bracketConfigSchema > takes no config for single elimination or points 3ms
+ ✓ src/lib/bracket/config.test.ts > defaultConfig > is 4 per Heat, top 2 advance, for heats 0ms
+ ✓ src/lib/bracket/config.test.ts > defaultConfig > is null otherwise 0ms
+ ✓ src/lib/bracket/config.test.ts > configOf > reads a valid saved config 0ms
+ ✓ src/lib/bracket/config.test.ts > configOf > falls back to the default when none is saved 0ms
+ ✓ src/lib/bracket/config.test.ts > configOf > falls back to the default on a config that doesn't parse 0ms
+ ✓ src/lib/bracket/config.test.ts > builder options > lists 2 to 8 per Heat and 1 to 7 advancing 0ms
+ ✓ src/lib/bracket/config.test.ts > builder options > labels them for Organizers 0ms
+ ✓ src/lib/bracket/formats.test.ts > single elimination through the Format dispatch > generates, records and crowns a champion 17ms
+ ✓ src/lib/bracket/formats.test.ts > single elimination through the Format dispatch > gives single elimination its own engine 0ms
+ ✓ src/lib/bracket/formats.test.ts > heats through the Format dispatch > generates, records every Heat and crowns a champion 6ms
+ ✓ src/lib/bracket/input.test.ts > Bracket action input > accepts a Format and refuses an unknown one 7ms
+ ✓ src/lib/bracket/input.test.ts > Bracket action input > trims scores and refuses long ones 26ms
+ ✓ src/lib/bracket/input.test.ts > Bracket action input > refuses Entrants that aren't row ids 1ms
+ ✓ src/lib/bracket/input.test.ts > Bracket parsers given a malformed call > parseFormatInput returns an error for {} 1ms
+ ✓ src/lib/bracket/input.test.ts > Bracket parsers given a malformed call > parseFormatInput returns an error for null 1ms
+ ✓ src/lib/bracket/input.test.ts > Bracket parsers given a malformed call > parseFormatInput returns an error for undefined 0ms
+ ✓ src/lib/bracket/input.test.ts > Bracket parsers given a malformed call > parseFormatInput returns an error for a string 0ms
+ ✓ src/lib/bracket/input.test.ts > Bracket parsers given a malformed call > parseFormatInput returns an error for a number 0ms
+ ✓ src/lib/bracket/input.test.ts > Bracket parsers given a malformed call > parseEntrantsInput returns an error for {} 0ms
+ ✓ src/lib/bracket/input.test.ts > Bracket parsers given a malformed call > parseEntrantsInput returns an error for null 0ms
+ ✓ src/lib/bracket/input.test.ts > Bracket parsers given a malformed call > parseEntrantsInput returns an error for undefined 0ms
+ ✓ src/lib/bracket/input.test.ts > Bracket parsers given a malformed call > parseEntrantsInput returns an error for a string 0ms
+ ✓ src/lib/bracket/input.test.ts > Bracket parsers given a malformed call > parseEntrantsInput returns an error for a number 0ms
+ ✓ src/lib/bracket/input.test.ts > Bracket parsers given a malformed call > parseHeatResultInput returns an error for {} 0ms
+ ✓ src/lib/bracket/input.test.ts > Bracket parsers given a malformed call > parseHeatResultInput returns an error for null 0ms
+ ✓ src/lib/bracket/input.test.ts > Bracket parsers given a malformed call > parseHeatResultInput returns an error for undefined 0ms
+ ✓ src/lib/bracket/input.test.ts > Bracket parsers given a malformed call > parseHeatResultInput returns an error for a string 0ms
+ ✓ src/lib/bracket/input.test.ts > Bracket parsers given a malformed call > parseHeatResultInput returns an error for a number 0ms
+ ✓ src/lib/bracket/input.test.ts > Bracket parsers given a malformed call > parseGenerateInput with force: "yes" returns an error 1ms
+ ✓ src/lib/bracket/input.test.ts > Bracket parsers given a malformed call > parseGenerateInput with null returns an error 0ms
+ ✓ src/lib/bracket/input.test.ts > Bracket parsers given a malformed call > parseEntrantsInput with targetIds: "x" returns an error 0ms
+ ✓ src/lib/bracket/input.test.ts > Bracket parsers given a malformed call > parseHeatResultInput with order: 5 returns an error 0ms
+ ✓ src/lib/bracket/points.test.ts > pointsFor > gives each tied place that place's Placement Points 4ms
+ ✓ src/lib/bracket/points.test.ts > pointsFor > covers places up to 5th 0ms
+ ✓ src/lib/bracket/points.test.ts > pointsFor > awards nothing without Placement Points 0ms
+ ✓ src/lib/bracket/points.test.ts > pointsFor > a Heats Bracket's placings 5ms
+ ✓ src/lib/bracket/heats.test.ts > validateConfig > accepts 318 and refuses 130 of the configs over 2–17 Entrants 15ms
+ ✓ src/lib/bracket/heats.test.ts > validateConfig > names the Round that would never end 0ms
+ ✓ src/lib/bracket/heats.test.ts > validateConfig > accepts a count that fits in one Heat, however many advance 0ms
+ ✓ src/lib/bracket/heats.test.ts > validateConfig > needs 2 Entrants and a valid config, defaulting to 4 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 2 per Heat, 1 advancing 3ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 3 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 3 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 4 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 4 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 4 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 5 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 5 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 5 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 5 per Heat, 4 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 6 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 6 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 6 per Heat, 3 advancing 2ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 6 per Heat, 4 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 6 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 7 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 7 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 7 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 7 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 7 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 7 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 8 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 8 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 8 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 8 per Heat, 4 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 8 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 8 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 2 Entrants, 8 per Heat, 7 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 2 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 3 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 3 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 4 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 4 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 4 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 5 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 5 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 5 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 5 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 6 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 6 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 6 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 6 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 6 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 7 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 7 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 7 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 7 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 7 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 7 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 8 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 8 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 8 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 8 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 8 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 8 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 3 Entrants, 8 per Heat, 7 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 2 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 3 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 4 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 4 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 4 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 5 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 5 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 5 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 5 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 6 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 6 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 6 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 6 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 6 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 7 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 7 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 7 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 7 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 7 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 7 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 8 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 8 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 8 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 8 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 8 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 8 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 4 Entrants, 8 per Heat, 7 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 2 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 3 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 4 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 4 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 5 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 5 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 5 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 5 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 6 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 6 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 6 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 6 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 6 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 7 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 7 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 7 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 7 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 7 per Heat, 5 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 7 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 8 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 8 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 8 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 8 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 8 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 8 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 5 Entrants, 8 per Heat, 7 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 2 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 3 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 4 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 4 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 5 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 5 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 6 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 6 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 6 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 6 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 6 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 7 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 7 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 7 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 7 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 7 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 7 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 8 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 8 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 8 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 8 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 8 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 8 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 6 Entrants, 8 per Heat, 7 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 2 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 3 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 4 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 4 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 5 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 5 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 6 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 6 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 6 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 7 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 7 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 7 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 7 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 7 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 7 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 8 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 8 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 8 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 8 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 8 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 8 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 7 Entrants, 8 per Heat, 7 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 8 Entrants, 2 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 8 Entrants, 3 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 8 Entrants, 4 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 8 Entrants, 4 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 8 Entrants, 5 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 8 Entrants, 5 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 8 Entrants, 6 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 8 Entrants, 6 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 8 Entrants, 6 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 8 Entrants, 7 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 8 Entrants, 7 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 8 Entrants, 7 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 8 Entrants, 8 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 8 Entrants, 8 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 8 Entrants, 8 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 8 Entrants, 8 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 8 Entrants, 8 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 8 Entrants, 8 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 8 Entrants, 8 per Heat, 7 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 9 Entrants, 2 per Heat, 1 advancing 2ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 9 Entrants, 3 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 9 Entrants, 4 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 9 Entrants, 4 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 9 Entrants, 5 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 9 Entrants, 5 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 9 Entrants, 6 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 9 Entrants, 6 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 9 Entrants, 6 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 9 Entrants, 7 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 9 Entrants, 7 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 9 Entrants, 7 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 9 Entrants, 8 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 9 Entrants, 8 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 9 Entrants, 8 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 9 Entrants, 8 per Heat, 4 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 10 Entrants, 2 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 10 Entrants, 3 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 10 Entrants, 4 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 10 Entrants, 4 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 10 Entrants, 5 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 10 Entrants, 5 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 10 Entrants, 6 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 10 Entrants, 6 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 10 Entrants, 6 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 10 Entrants, 7 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 10 Entrants, 7 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 10 Entrants, 7 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 10 Entrants, 8 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 10 Entrants, 8 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 10 Entrants, 8 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 10 Entrants, 8 per Heat, 4 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 11 Entrants, 2 per Heat, 1 advancing 2ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 11 Entrants, 3 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 11 Entrants, 4 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 11 Entrants, 4 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 11 Entrants, 5 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 11 Entrants, 5 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 11 Entrants, 6 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 11 Entrants, 6 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 11 Entrants, 6 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 11 Entrants, 7 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 11 Entrants, 7 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 11 Entrants, 7 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 11 Entrants, 8 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 11 Entrants, 8 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 11 Entrants, 8 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 11 Entrants, 8 per Heat, 4 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 12 Entrants, 2 per Heat, 1 advancing 2ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 12 Entrants, 3 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 12 Entrants, 4 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 12 Entrants, 4 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 12 Entrants, 5 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 12 Entrants, 5 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 12 Entrants, 6 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 12 Entrants, 6 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 12 Entrants, 6 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 12 Entrants, 7 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 12 Entrants, 7 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 12 Entrants, 7 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 12 Entrants, 8 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 12 Entrants, 8 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 12 Entrants, 8 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 12 Entrants, 8 per Heat, 4 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 13 Entrants, 2 per Heat, 1 advancing 2ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 13 Entrants, 3 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 13 Entrants, 4 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 13 Entrants, 4 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 13 Entrants, 5 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 13 Entrants, 5 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 13 Entrants, 6 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 13 Entrants, 6 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 13 Entrants, 6 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 13 Entrants, 7 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 13 Entrants, 7 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 13 Entrants, 7 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 13 Entrants, 8 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 13 Entrants, 8 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 13 Entrants, 8 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 13 Entrants, 8 per Heat, 4 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 14 Entrants, 2 per Heat, 1 advancing 2ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 14 Entrants, 3 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 14 Entrants, 4 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 14 Entrants, 4 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 14 Entrants, 5 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 14 Entrants, 5 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 14 Entrants, 6 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 14 Entrants, 6 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 14 Entrants, 6 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 14 Entrants, 7 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 14 Entrants, 7 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 14 Entrants, 7 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 14 Entrants, 8 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 14 Entrants, 8 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 14 Entrants, 8 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 14 Entrants, 8 per Heat, 4 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 15 Entrants, 2 per Heat, 1 advancing 2ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 15 Entrants, 3 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 15 Entrants, 4 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 15 Entrants, 4 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 15 Entrants, 5 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 15 Entrants, 5 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 15 Entrants, 6 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 15 Entrants, 6 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 15 Entrants, 6 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 15 Entrants, 7 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 15 Entrants, 7 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 15 Entrants, 7 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 15 Entrants, 8 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 15 Entrants, 8 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 15 Entrants, 8 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 15 Entrants, 8 per Heat, 4 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 16 Entrants, 2 per Heat, 1 advancing 2ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 16 Entrants, 3 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 16 Entrants, 4 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 10 Entrants, 4 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 16 Entrants, 4 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 10 Entrants, 5 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 16 Entrants, 5 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 10 Entrants, 5 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 16 Entrants, 5 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 10 Entrants, 6 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 16 Entrants, 6 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 10 Entrants, 6 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 16 Entrants, 6 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 10 Entrants, 6 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 16 Entrants, 6 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 10 Entrants, 7 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 16 Entrants, 7 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 10 Entrants, 7 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 16 Entrants, 7 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 10 Entrants, 7 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 16 Entrants, 7 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 10 Entrants, 8 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 16 Entrants, 8 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 10 Entrants, 8 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 16 Entrants, 8 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 10 Entrants, 8 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 16 Entrants, 8 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 10 Entrants, 8 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 16 Entrants, 8 per Heat, 4 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 11 Entrants, 2 per Heat, 1 advancing to a champion 2ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 17 Entrants, 2 per Heat, 1 advancing 2ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 11 Entrants, 3 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 17 Entrants, 3 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 11 Entrants, 4 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 17 Entrants, 4 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 11 Entrants, 4 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 17 Entrants, 4 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 11 Entrants, 5 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 17 Entrants, 5 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 11 Entrants, 5 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 17 Entrants, 5 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 11 Entrants, 6 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 17 Entrants, 6 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 11 Entrants, 6 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 17 Entrants, 6 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 11 Entrants, 6 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 17 Entrants, 6 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 11 Entrants, 7 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 17 Entrants, 7 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 11 Entrants, 7 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 17 Entrants, 7 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 11 Entrants, 7 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 17 Entrants, 7 per Heat, 3 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 11 Entrants, 8 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 17 Entrants, 8 per Heat, 1 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 11 Entrants, 8 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 17 Entrants, 8 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 11 Entrants, 8 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 17 Entrants, 8 per Heat, 3 advancing 2ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 11 Entrants, 8 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds every Round for 17 Entrants, 8 per Heat, 4 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 12 Entrants, 2 per Heat, 1 advancing to a champion 2ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 4 Entrants, 3 per Heat, 2 advancing 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 12 Entrants, 3 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 5 Entrants, 3 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 12 Entrants, 4 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 5 Entrants, 4 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 12 Entrants, 4 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 6 Entrants, 3 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 12 Entrants, 5 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 6 Entrants, 4 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 12 Entrants, 5 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 6 Entrants, 5 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 12 Entrants, 6 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 6 Entrants, 5 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 12 Entrants, 6 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 7 Entrants, 3 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 12 Entrants, 6 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 7 Entrants, 4 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 12 Entrants, 7 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 7 Entrants, 5 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 12 Entrants, 7 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 7 Entrants, 5 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 12 Entrants, 7 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 7 Entrants, 6 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 12 Entrants, 8 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 7 Entrants, 6 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 12 Entrants, 8 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 8 Entrants, 3 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 12 Entrants, 8 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 8 Entrants, 4 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 12 Entrants, 8 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 8 Entrants, 5 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 13 Entrants, 2 per Heat, 1 advancing to a champion 2ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 8 Entrants, 5 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 13 Entrants, 3 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 8 Entrants, 6 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 13 Entrants, 4 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 8 Entrants, 6 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 13 Entrants, 4 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 8 Entrants, 7 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 13 Entrants, 5 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 8 Entrants, 7 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 13 Entrants, 5 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 8 Entrants, 7 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 13 Entrants, 6 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 9 Entrants, 3 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 13 Entrants, 6 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 9 Entrants, 4 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 13 Entrants, 6 per Heat, 3 advancing to a champion 2ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 9 Entrants, 5 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 13 Entrants, 7 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 9 Entrants, 5 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 13 Entrants, 7 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 9 Entrants, 6 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 13 Entrants, 7 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 9 Entrants, 6 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 13 Entrants, 8 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 9 Entrants, 7 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 13 Entrants, 8 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 9 Entrants, 7 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 13 Entrants, 8 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 9 Entrants, 7 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 13 Entrants, 8 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 9 Entrants, 8 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 14 Entrants, 2 per Heat, 1 advancing to a champion 2ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 9 Entrants, 8 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 14 Entrants, 3 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 9 Entrants, 8 per Heat, 7 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 14 Entrants, 4 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 10 Entrants, 3 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 14 Entrants, 4 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 10 Entrants, 4 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 14 Entrants, 5 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 10 Entrants, 5 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 14 Entrants, 5 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 10 Entrants, 5 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 14 Entrants, 6 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 10 Entrants, 6 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 14 Entrants, 6 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 10 Entrants, 6 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 14 Entrants, 6 per Heat, 3 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 10 Entrants, 7 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 14 Entrants, 7 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 10 Entrants, 7 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 14 Entrants, 7 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 10 Entrants, 7 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 14 Entrants, 7 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 10 Entrants, 8 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 14 Entrants, 8 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 10 Entrants, 8 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 14 Entrants, 8 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 10 Entrants, 8 per Heat, 7 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 14 Entrants, 8 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 11 Entrants, 3 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 14 Entrants, 8 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 11 Entrants, 4 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 15 Entrants, 2 per Heat, 1 advancing to a champion 2ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 11 Entrants, 5 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 15 Entrants, 3 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 11 Entrants, 5 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 15 Entrants, 4 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 11 Entrants, 6 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 15 Entrants, 4 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 11 Entrants, 6 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 15 Entrants, 5 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 11 Entrants, 7 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 15 Entrants, 5 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 11 Entrants, 7 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 15 Entrants, 6 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 11 Entrants, 7 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 15 Entrants, 6 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 11 Entrants, 8 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 15 Entrants, 6 per Heat, 3 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 11 Entrants, 8 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 15 Entrants, 7 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 11 Entrants, 8 per Heat, 7 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 15 Entrants, 7 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 12 Entrants, 3 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 15 Entrants, 7 per Heat, 3 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 12 Entrants, 4 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 15 Entrants, 8 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 12 Entrants, 5 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 15 Entrants, 8 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 12 Entrants, 5 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 15 Entrants, 8 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 12 Entrants, 6 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 15 Entrants, 8 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 12 Entrants, 6 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 16 Entrants, 2 per Heat, 1 advancing to a champion 3ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 12 Entrants, 7 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 16 Entrants, 3 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 12 Entrants, 7 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 16 Entrants, 4 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 12 Entrants, 7 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 16 Entrants, 4 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 12 Entrants, 8 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 16 Entrants, 5 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 12 Entrants, 8 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 16 Entrants, 5 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 12 Entrants, 8 per Heat, 7 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 16 Entrants, 6 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 13 Entrants, 3 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 16 Entrants, 6 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 13 Entrants, 4 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 16 Entrants, 6 per Heat, 3 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 13 Entrants, 5 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 16 Entrants, 7 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 13 Entrants, 5 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 16 Entrants, 7 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 13 Entrants, 6 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 16 Entrants, 7 per Heat, 3 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 13 Entrants, 6 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 16 Entrants, 8 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 13 Entrants, 7 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 16 Entrants, 8 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 13 Entrants, 7 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 16 Entrants, 8 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 13 Entrants, 7 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 16 Entrants, 8 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 13 Entrants, 8 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 17 Entrants, 2 per Heat, 1 advancing to a champion 3ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 13 Entrants, 8 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 17 Entrants, 3 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 13 Entrants, 8 per Heat, 7 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 17 Entrants, 4 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 14 Entrants, 3 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 17 Entrants, 4 per Heat, 2 advancing to a champion 2ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 14 Entrants, 4 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 17 Entrants, 5 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 14 Entrants, 5 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 17 Entrants, 5 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 14 Entrants, 5 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 17 Entrants, 6 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 14 Entrants, 6 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 17 Entrants, 6 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 14 Entrants, 6 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 17 Entrants, 6 per Heat, 3 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 14 Entrants, 7 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 17 Entrants, 7 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 14 Entrants, 7 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 17 Entrants, 7 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 14 Entrants, 7 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 17 Entrants, 7 per Heat, 3 advancing to a champion 2ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 14 Entrants, 8 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 17 Entrants, 8 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 14 Entrants, 8 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 17 Entrants, 8 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 14 Entrants, 8 per Heat, 7 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 17 Entrants, 8 per Heat, 3 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 15 Entrants, 3 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 17 Entrants, 8 per Heat, 4 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 15 Entrants, 4 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 15 Entrants, 5 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > resetByResult > resets nothing for a score-only edit or a swap below the advance line 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 15 Entrants, 5 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > resetByResult > clears the later Heats when an advancer changes 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 15 Entrants, 6 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > resetByResult > clears the later Heats when only the advancers' order changes 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 15 Entrants, 6 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > resetByResult > resets nothing before the Round is complete, or for byes and undecided Heats 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 15 Entrants, 7 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > resetByResult > names no Heat when the next Round is filled but unplayed, and refills it 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 15 Entrants, 7 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > resetByResult > clears every later Round of a three-Round Bracket 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 15 Entrants, 7 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 15 Entrants, 8 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > finalPlacings > places the final in order and ties each Round's losers 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 15 Entrants, 8 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > finalPlacings > ranks those who went out later above those who went out earlier 1ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 15 Entrants, 8 per Heat, 7 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > finalPlacings > counts a bye as going through, not going out 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 16 Entrants, 3 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 16 Entrants, 4 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > hasResults > counts a recorded Heat, not a bye or an empty Heat 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 16 Entrants, 5 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 16 Entrants, 5 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 16 Entrants, 6 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 16 Entrants, 6 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 16 Entrants, 7 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 16 Entrants, 7 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 16 Entrants, 7 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 16 Entrants, 8 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 16 Entrants, 8 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 16 Entrants, 8 per Heat, 7 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 17 Entrants, 3 per Heat, 2 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 17 Entrants, 4 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 17 Entrants, 5 per Heat, 3 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 17 Entrants, 5 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 17 Entrants, 6 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 17 Entrants, 6 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 17 Entrants, 7 per Heat, 4 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 17 Entrants, 7 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 17 Entrants, 7 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 17 Entrants, 8 per Heat, 5 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 17 Entrants, 8 per Heat, 6 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses 17 Entrants, 8 per Heat, 7 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > refuses too few Entrants and a bad config 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > deals 8 Entrants into two Heats of 4 by snake, the final waiting 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > deals 10 Entrants into Heats of 3, 3 and 4, then 3, 3, then the final 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > builds a later one-slot Heat: 6 Entrants, 2 per Heat, 1 advancing 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > decides Round-1 byes at Generate 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > makes a count that fits in one Heat the final, even when all would advance 0ms
+ ✓ src/lib/bracket/heats.test.ts > generate > uses 4 per Heat, 2 advancing when there's no config 0ms
+ ✓ src/lib/bracket/heats.test.ts > applyResult > places a Heat's Entrants in finishing order, trimming scores 2ms
+ ✓ src/lib/bracket/heats.test.ts > applyResult > refuses what can't be recorded 1ms
+ ✓ src/lib/bracket/heats.test.ts > applyResult > puts a forfeiter listed first behind everyone who didn't forfeit 0ms
+ ✓ src/lib/bracket/heats.test.ts > applyResult > advances a forfeiter only when fewer than the advancing number didn't forfeit 0ms
+ ✓ src/lib/bracket/heats.test.ts > applyResult > fills the next Round by place, then Heat position, once the Round is complete 0ms
+ ✓ src/lib/bracket/heats.test.ts > applyResult > fills an upset's winner first 0ms
+ ✓ src/lib/bracket/heats.test.ts > applyResult > decides a later-Round bye when its Round fills 1ms
+ ✓ src/lib/bracket/heats.test.ts > applyResult > records a final that everyone in it would advance from 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 2 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 3 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 3 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 4 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 4 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 4 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 5 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 5 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 5 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 5 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 6 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 6 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 6 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 6 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 6 per Heat, 5 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 7 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 7 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 7 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 7 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 7 per Heat, 5 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 7 per Heat, 6 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 8 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 8 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 8 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 8 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 8 per Heat, 5 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 8 per Heat, 6 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 2 Entrants, 8 per Heat, 7 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 2 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 3 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 3 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 4 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 4 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 4 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 5 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 5 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 5 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 5 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 6 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 6 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 6 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 6 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 6 per Heat, 5 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 7 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 7 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 7 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 7 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 7 per Heat, 5 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 7 per Heat, 6 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 8 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 8 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 8 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 8 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 8 per Heat, 5 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 8 per Heat, 6 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 3 Entrants, 8 per Heat, 7 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 2 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 3 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 4 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 4 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 4 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 5 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 5 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 5 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 5 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 6 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 6 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 6 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 6 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 6 per Heat, 5 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 7 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 7 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 7 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 7 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 7 per Heat, 5 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 7 per Heat, 6 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 8 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 8 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 8 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 8 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 8 per Heat, 5 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 8 per Heat, 6 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 4 Entrants, 8 per Heat, 7 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 2 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 3 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 4 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 4 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 5 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 5 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 5 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 5 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 6 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 6 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 6 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 6 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 6 per Heat, 5 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 7 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 7 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 7 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 7 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 7 per Heat, 5 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 7 per Heat, 6 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 8 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 8 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 8 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 8 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 8 per Heat, 5 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 8 per Heat, 6 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 5 Entrants, 8 per Heat, 7 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 2 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 3 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 4 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 4 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 5 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 5 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 6 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 6 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 6 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 6 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 6 per Heat, 5 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 7 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 7 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 7 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 7 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 7 per Heat, 5 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 7 per Heat, 6 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 8 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 8 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 8 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 8 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 8 per Heat, 5 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 8 per Heat, 6 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 6 Entrants, 8 per Heat, 7 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 2 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 3 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 4 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 4 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 5 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 5 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 6 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 6 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 6 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 7 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 7 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 7 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 7 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 7 per Heat, 5 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 7 per Heat, 6 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 8 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 8 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 8 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 8 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 8 per Heat, 5 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 8 per Heat, 6 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 7 Entrants, 8 per Heat, 7 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 8 Entrants, 2 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 8 Entrants, 3 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 8 Entrants, 4 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 8 Entrants, 4 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 8 Entrants, 5 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 8 Entrants, 5 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 8 Entrants, 6 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 8 Entrants, 6 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 8 Entrants, 6 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 8 Entrants, 7 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 8 Entrants, 7 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 8 Entrants, 7 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 8 Entrants, 8 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 8 Entrants, 8 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 8 Entrants, 8 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 8 Entrants, 8 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 8 Entrants, 8 per Heat, 5 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 8 Entrants, 8 per Heat, 6 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 8 Entrants, 8 per Heat, 7 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 9 Entrants, 2 per Heat, 1 advancing to a champion 2ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 9 Entrants, 3 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 9 Entrants, 4 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 9 Entrants, 4 per Heat, 2 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 9 Entrants, 5 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 9 Entrants, 5 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 9 Entrants, 6 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 9 Entrants, 6 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 9 Entrants, 6 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 9 Entrants, 7 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 9 Entrants, 7 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 9 Entrants, 7 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 9 Entrants, 8 per Heat, 1 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 9 Entrants, 8 per Heat, 2 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 9 Entrants, 8 per Heat, 3 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 9 Entrants, 8 per Heat, 4 advancing to a champion 0ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 10 Entrants, 2 per Heat, 1 advancing to a champion 2ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 10 Entrants, 3 per Heat, 1 advancing to a champion 1ms
+ ✓ src/lib/bracket/heats.test.ts > playing a whole Bracket > plays 10 Entrants, 4 per Heat, 1 advancing to a champion 1ms
+
+ Test Files  8 passed (8)
+      Tests  899 passed (899)
+   Start at  00:08:29
+   Duration  1.28s (transform 1.32s, setup 0ms, import 2.49s, tests 561ms, environment 2ms)
+

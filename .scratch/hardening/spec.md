@@ -115,7 +115,7 @@ previous epic's PR to merge. Epic files live in `epics/`.
 | `B` Access and the action layer | 03, 04, 08, 10 | A merged; 03 specced and red-teamed (can run while A is built) |
 | `C` Test net, then refactor | 13, 11 | B merged |
 | `D` Forms and polish | 12, 14 | C merged |
-| `E` Bracket formats for the milestone | 16 (items 1–2, the End War Week warning, demo seed) | D merged; plan red-teamed (schema change) |
+| `E` Bracket formats for the milestone | 16 (item 1 Heats, the End War Week warning, removing per-heat/both points; T10 and the demo seed dropped) | D merged; plan red-teamed (schema change) |
 
 Phase 3 stays per ticket: `16` gets its own epic (T9 and T10 first), and `17`
 is a grilling session.

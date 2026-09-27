@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { heats } from "@/lib/bracket/heats";
 import { pointsFor } from "@/lib/bracket/points";
 
 // 8 Entrants: 1st, 2nd, tied 3rd, tied 5th.
@@ -34,5 +35,38 @@ describe("pointsFor", () => {
 
   it("awards nothing without Placement Points", () => {
     expect(pointsFor(placings, { placementPoints: null })).toEqual([]);
+  });
+
+  it("a Heats Bracket's placings", () => {
+    // 8 Entrants, 4 per Heat, 2 advancing: the final finishes e1 e2 e5 e6
+    // and the four Round-1 losers tie 5th.
+    const entrants = Array.from({ length: 8 }, (_, i) => ({
+      id: `e${i + 1}`,
+      seedPosition: i + 1,
+      label: `E${i + 1}`,
+    }));
+    let bracket = heats.generate(
+      { entrantsPerHeat: 4, advancePerHeat: 2 },
+      entrants,
+      (r, p) => `r${r}h${p}`,
+    );
+    bracket = heats.applyResult(bracket, "r1h1", {
+      order: ["e1", "e5", "e4", "e8"],
+    });
+    bracket = heats.applyResult(bracket, "r1h2", {
+      order: ["e2", "e6", "e3", "e7"],
+    });
+    bracket = heats.applyResult(bracket, "r2h1", {
+      order: ["e1", "e2", "e5", "e6"],
+    });
+    expect(
+      pointsFor(heats.finalPlacings(bracket, entrants), {
+        placementPoints: [5, 3, 1],
+      }),
+    ).toEqual([
+      { entrantId: "e1", points: 5 },
+      { entrantId: "e2", points: 3 },
+      { entrantId: "e5", points: 1 },
+    ]);
   });
 });

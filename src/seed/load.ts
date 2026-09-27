@@ -277,6 +277,7 @@ async function syncCompetitions(
       countsTowardTeam: c.countsTowardTeam,
       competitionGroup: c.group ?? null,
       format: c.format,
+      bracketConfig: c.bracketConfig ?? null,
     })),
     target: [competition.warWeekId, competition.name],
     set: {
@@ -286,8 +287,9 @@ async function syncCompetitions(
       scoring: sql`excluded.scoring`,
       countsTowardTeam: sql`excluded.counts_toward_team`,
       competitionGroup: sql`excluded.competition_group`,
-      // `format` is set on insert only: a reload must never turn an
-      // Organizer's Bracket back into `points`.
+      // `format` and `bracketConfig` are set on insert only: a reload must
+      // never turn an Organizer's Bracket back into `points` or undo its
+      // Heats settings.
       updatedAt: new Date(),
     },
     scope: eq(competition.warWeekId, warWeekId),

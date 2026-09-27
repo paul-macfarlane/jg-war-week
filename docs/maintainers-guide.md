@@ -182,7 +182,9 @@ To start next year's edition in the app:
    switches to it so you can set it up while XI stays current.
 2. When XI is over, switch back to XI in the header's edition switcher and
    press **End War Week**: confirm the Winner (prefilled from first place)
-   and any highlights. XI moves to the Archive.
+   and any highlights. XI moves to the Archive. The confirm names any
+   Bracket that isn't finalized; finalize it first so its placings count
+   (it warns, it doesn't stop you).
 3. Switch to XII and press **Start War Week**. `/` and `/admin` now go to
    XII. Only one War Week can be live, so XI must end first.
 
@@ -225,23 +227,39 @@ signed in is a **Participant** (`CONTEXT.md`, "Access rules").
 ### Run a knockout Competition as a Bracket
 
 Organizer screens cover setting one up and running it: set the Competition's
-**Format** to single elimination under `/admin/setup/competitions`, open its
-Bracket builder to pick Entrants (all Teams, or specific Participants) and
-Generate; then record each Heat's result from the results screen
-(`/admin/brackets/<id>`) and Finalize to write its placings as Points
+**Format** to single elimination or Heats under `/admin/setup/competitions`,
+open its Bracket builder to pick Entrants (all Teams, or specific
+Participants) and Generate; then record each Heat's result from the results
+screen (`/admin/brackets/<id>`) and Finalize to write its placings as Points
 Entries. No code needed for any of that. While a Bracket is finalized, its
 Competition's scoring and Placement Points can't change ("Un-finalize the
 Bracket first."); its name and description still can.
 
-To add a new Format (single elimination is the only one today):
+Single elimination is a straight 1v1 knockout. Heats plays several Entrants
+at once: its builder shows a "Heat settings" form for Entrants per Heat and
+how many advance from each, and its results screen has Organizers tap the
+whole finishing order instead of just a winner once a Heat holds more than
+two.
+
+Format behavior goes through `src/lib/bracket/formats.ts`: it dispatches
+every Bracket operation (generate, record a result, finalize…) to that
+Format's `FormatEngine`, defined in `engine.ts` (single elimination) or
+`heats.ts`. The display helpers in `src/lib/bracket/view.ts` (Round and
+Heat names, `nextHeatFor`) also branch on Format. To add a new Format:
 
 ```text
 /implement Add a <name> Format to Competitions, alongside single
-elimination. Follow src/lib/bracket/ (types.ts, seeding.ts, engine.ts,
-points.ts, view.ts, each with its test) for the shape a Format needs:
-building the bracket structure from Entrants, advancing a Heat's winner,
-and turning a finished bracket into Points Entries. Add it to the Format
-select on the Competition form and to the builder/results screens.
+elimination and Heats. Add its value to COMPETITION_FORMATS in
+src/lib/enums.ts and run `pnpm db:generate` for the migration (a value
+added with ALTER TYPE … ADD VALUE can't be used in the same transaction,
+so keep it in its own migration). Add its config schema and default in
+src/lib/bracket/config.ts and its label (plus any Round/Heat naming) in
+src/lib/bracket/view.ts. Write a FormatEngine (see engine.ts and heats.ts
+for the shape: building the Heats from Entrants, applying a Heat Result,
+and producing final placings, which points.ts and finalizeBracket turn
+into Points Entries) and add its case in formats.ts. Add it to the
+builder/results screens, and describe its rules under "Bracket rules" in
+CONTEXT.md.
 ```
 
 The engine is deliberately separate from the UI: `src/lib/bracket/` has no

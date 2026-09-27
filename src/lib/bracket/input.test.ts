@@ -22,6 +22,59 @@ describe("Bracket action input", () => {
     });
   });
 
+  it("accepts a heats Format with a valid config and force", () => {
+    expect(
+      parseFormatInput({
+        format: "heats",
+        config: { entrantsPerHeat: 4, advancePerHeat: 2 },
+        force: true,
+      }),
+    ).toEqual({
+      ok: true,
+      value: {
+        format: "heats",
+        config: { entrantsPerHeat: 4, advancePerHeat: 2 },
+        force: true,
+      },
+    });
+    expect(parseFormatInput({ format: "heats" })).toEqual({
+      ok: true,
+      value: { format: "heats" },
+    });
+  });
+
+  it("refuses a heats config where as many advance as play", () => {
+    expect(
+      parseFormatInput({
+        format: "heats",
+        config: { entrantsPerHeat: 4, advancePerHeat: 4 },
+      }),
+    ).toEqual({ ok: false, error: "Fewer must advance than play in a Heat." });
+    expect(
+      parseFormatInput({
+        format: "heats",
+        config: { entrantsPerHeat: 9, advancePerHeat: 2 },
+      }),
+    ).toEqual({ ok: false, error: "A Heat holds at most 8 Entrants." });
+  });
+
+  it("refuses a config for single elimination", () => {
+    expect(
+      parseFormatInput({
+        format: "single-elimination",
+        config: { entrantsPerHeat: 4, advancePerHeat: 2 },
+      }),
+    ).toMatchObject({ ok: false });
+  });
+
+  it("accepts a four-Entrant finishing order", () => {
+    const c = "3c2b1a0f-9e8d-4c7b-8a69-5f4e3d2c1b0a";
+    const d = "7d6c5b4a-3f2e-4d1c-9b0a-8f7e6d5c4b3a";
+    expect(
+      parseHeatResultInput({ order: [a, b, c, d], forfeits: [d] }),
+    ).toEqual({ ok: true, value: { order: [a, b, c, d], forfeits: [d] } });
+  });
+
   it("trims scores and refuses long ones", () => {
     expect(
       parseHeatResultInput({ order: [a, b], scores: { [a]: " 21 " } }),

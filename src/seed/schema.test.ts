@@ -126,6 +126,56 @@ describe("warWeekSeedSchema", () => {
     });
   });
 
+  describe("Bracket config", () => {
+    function withCompetition(competition: Record<string, unknown>) {
+      const fixture = loadFixture();
+      return {
+        ...fixture,
+        competitions: [
+          ...fixture.competitions,
+          { name: "Fixture Relay", scoring: "team", ...competition },
+        ],
+      };
+    }
+    const at = `competitions.${loadFixture().competitions.length}.bracketConfig`;
+
+    it("accepts a heats Competition with or without its config", () => {
+      for (const extra of [
+        { bracketConfig: { entrantsPerHeat: 5, advancePerHeat: 2 } },
+        {},
+      ]) {
+        const result = warWeekSeedSchema.safeParse(
+          withCompetition({ format: "heats", ...extra }),
+        );
+        expect(result.success ? [] : result.error.issues).toEqual([]);
+      }
+    });
+
+    it("rejects a heats config where as many advance as play", () => {
+      expect(
+        rejectionOf(
+          withCompetition({
+            format: "heats",
+            bracketConfig: { entrantsPerHeat: 4, advancePerHeat: 4 },
+          }),
+        ),
+      ).toContain(
+        `${at}.advancePerHeat: Fewer must advance than play in a Heat.`,
+      );
+    });
+
+    it("rejects a config on a single-elimination Competition", () => {
+      expect(
+        rejectionOf(
+          withCompetition({
+            format: "single-elimination",
+            bracketConfig: { entrantsPerHeat: 4, advancePerHeat: 2 },
+          }),
+        ),
+      ).toContain(`${at}: bracketConfig is only for a heats Competition`);
+    });
+  });
+
   describe("Points Entries", () => {
     function withEntry(entry: Record<string, unknown>) {
       const fixture = loadFixture();
