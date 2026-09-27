@@ -42,6 +42,7 @@ export function WarWeekLifecycleControls({
   status,
   suggestedWinner,
   highlights,
+  unfinalizedBrackets,
 }: {
   warWeekId: string;
   edition: string;
@@ -49,6 +50,8 @@ export function WarWeekLifecycleControls({
   /** First place in the main Standings, to prefill the Winner. */
   suggestedWinner: string;
   highlights: string[];
+  /** Names of Brackets not yet finalized, to warn about when ending. */
+  unfinalizedBrackets: string[];
 }) {
   const name = edition.toUpperCase();
 
@@ -92,6 +95,7 @@ export function WarWeekLifecycleControls({
       name={name}
       suggestedWinner={suggestedWinner}
       highlights={highlights}
+      unfinalizedBrackets={unfinalizedBrackets}
     />
   );
 }
@@ -101,11 +105,13 @@ function EndWarWeekButton({
   name,
   suggestedWinner,
   highlights: initialHighlights,
+  unfinalizedBrackets,
 }: {
   warWeekId: string;
   name: string;
   suggestedWinner: string;
   highlights: string[];
+  unfinalizedBrackets: string[];
 }) {
   const router = useRouter();
   const formId = useId();
@@ -147,6 +153,13 @@ function EndWarWeekButton({
   useFocusFirstInvalid(formRef, result);
 
   const trimmed = winner.trim();
+  const endDescription = trimmed
+    ? `${name} moves to the Archive with ${trimmed} as Winner.`
+    : `${name} moves to the Archive with no Winner.`;
+  const description =
+    unfinalizedBrackets.length > 0
+      ? `${endDescription} Not finalized: ${unfinalizedBrackets.join(", ")}. Their placings aren't in the Standings until you finalize them.`
+      : endDescription;
   return (
     <>
       <Button
@@ -164,11 +177,7 @@ function EndWarWeekButton({
         open={open}
         onOpenChange={setOpen}
         title={`End War Week ${name}?`}
-        description={
-          trimmed
-            ? `${name} moves to the Archive with ${trimmed} as Winner.`
-            : `${name} moves to the Archive with no Winner.`
-        }
+        description={description}
         confirmLabel="End War Week"
         pending={pending}
         form={formId}
