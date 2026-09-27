@@ -8,7 +8,7 @@
 
 **Blocked by:** Epic E (its PR #84 merged into `staging`)
 
-**Status:** ready-for-agent
+**Status:** plan-review
 
 **Red-team:** required. Heat times add columns to `heat`, a Drizzle schema change (`docs/agents/planning.md`).
 
@@ -52,3 +52,4 @@ Brackets spec (`.scratch/brackets/spec.md`) stories 9 (by Standings only), 13, 2
 - Double elimination: only on request.
 
 ## Comments
+- 2026-09-27 [EXECUTION PLAN]: written to `./F-execution.md`. Red-teamed three times: pass 1 blocked (2 blocking, resolved), pass 2 blocked (1 blocking, resolved), pass 3 `ATLAS_RED_TEAM_PASS` (4 minors, applied). Paul accepted every open-decision default, including refilled reset Heats showing in Now/Next. Ready for `/atlas-implement`.
