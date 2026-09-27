@@ -47,7 +47,10 @@ test("a Bracket is built, run and finalized into Points Entries", async ({
     page.getByText("Format set to Single elimination"),
   ).toBeVisible();
 
-  const find = page.getByRole("combobox", { name: "Find Participants" });
+  // Not by accessible name: its FieldLabel is "Pick Participants (N chosen)"
+  // and changes as Entrants are added, so a fixed-name role locator would
+  // stop matching after the first pick.
+  const find = page.locator("#bracket-entrants");
   for (const entrant of ENTRANTS) {
     await find.fill(entrant);
     await page.getByRole("option", { name: new RegExp(`^${entrant}`) }).click();

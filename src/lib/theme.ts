@@ -26,11 +26,26 @@ export type ThemeColors = Pick<
 >;
 
 /**
+ * Whether a background reads as a dark surface: white text contrasts more
+ * against it than black does. Ties (and non-hex input, where `contrastRatio`
+ * returns null) default to light, the safer native-control fallback.
+ */
+export function backgroundColorScheme(background: string): "dark" | "light" {
+  const onWhite = contrastRatio("#ffffff", background);
+  const onBlack = contrastRatio("#000000", background);
+  if (onWhite == null || onBlack == null) return "light";
+  return onWhite > onBlack ? "dark" : "light";
+}
+
+/**
  * Maps a War Week's Appearance Theme onto the shadcn CSS custom properties
  * so the themed wrapper can be styled purely from `style`. Pure function:
- * no DOM, no I/O.
+ * no DOM, no I/O. Also sets native `color-scheme` (form controls,
+ * scrollbars) so a dark Appearance Theme doesn't keep light chrome.
  */
-export function warWeekThemeStyle(warWeek: ThemeColors): CSSProperties {
+export function warWeekThemeStyle(
+  warWeek: ThemeColors,
+): CSSProperties & { colorScheme: "dark" | "light" } {
   const bg = warWeek.backgroundColor;
   const fg = warWeek.foregroundColor;
   // Muted surfaces lean from the background toward the text, and muted text
@@ -47,6 +62,7 @@ export function warWeekThemeStyle(warWeek: ThemeColors): CSSProperties {
     warWeek.primaryForegroundColor,
   );
   return {
+    colorScheme: backgroundColorScheme(bg),
     "--primary": warWeek.primaryColor,
     "--primary-foreground": warWeek.primaryForegroundColor,
     "--primary-text": primaryText,
@@ -66,7 +82,7 @@ export function warWeekThemeStyle(warWeek: ThemeColors): CSSProperties {
     "--popover-foreground": fg,
     "--input": `color-mix(in oklch, ${bg}, ${fg} 20%)`,
     "--font-sans": FONT_PRESET_VAR[warWeek.fontPreset],
-  } as CSSProperties;
+  } as CSSProperties & { colorScheme: "dark" | "light" };
 }
 
 /** WCAG AA contrast for body text. */

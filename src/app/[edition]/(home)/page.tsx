@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { WarWeekHero } from "@/components/war-week-hero";
 import { isArchived } from "@/lib/archive";
 import { computeNowNext, resolveClock } from "@/lib/schedule";
-import { getPinnedAnnouncement } from "@/queries/announcements";
+import { getPinnedAnnouncementCard } from "@/queries/announcements";
 import { getArchiveDetail } from "@/queries/archive";
 import { getSchedule } from "@/queries/schedule";
 import { getStandings } from "@/queries/standings";
@@ -35,7 +35,7 @@ export default async function EditionHomePage({
   const [standings, schedule, pinnedAnnouncement] = await Promise.all([
     getStandings(warWeek),
     getSchedule(warWeek.id),
-    getPinnedAnnouncement(warWeek),
+    getPinnedAnnouncementCard(warWeek),
   ]);
   const nowNext = computeNowNext(schedule, resolveClock(at, new Date()));
 

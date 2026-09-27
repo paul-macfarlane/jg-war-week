@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import type { Parsed } from "@/lib/result";
 import type { Standings } from "@/lib/standings";
 import {
   STATUS_LABELS,
@@ -11,6 +12,14 @@ import {
   toRoman,
   transitionError,
 } from "@/lib/war-week-lifecycle";
+
+/** Refused with `error`, which also shows under the field it names. */
+function expectRefused(result: Parsed<unknown>, error: string) {
+  expect(result).toMatchObject({ ok: false, error });
+  expect(Object.values((!result.ok && result.fieldErrors) || {})).toContain(
+    error,
+  );
+}
 
 type Status = "upcoming" | "live" | "complete";
 
@@ -149,10 +158,13 @@ describe("parseClosingInput", () => {
   it("refuses an over-long Winner or highlight", () => {
     expect(
       parseClosingInput({ winner: "x".repeat(201), highlights: "" }),
-    ).toEqual({ ok: false, error: "Winner must be at most 200 characters." });
+    ).toMatchObject({
+      ok: false,
+      error: "Winner must be at most 200 characters.",
+    });
     expect(
       parseClosingInput({ winner: "Red", highlights: "y".repeat(501) }),
-    ).toEqual({
+    ).toMatchObject({
       ok: false,
       error: "Highlights must be at most 500 characters.",
     });
@@ -192,10 +204,7 @@ describe("parseNextWarWeekInput", () => {
     [{ storyTheme: " " }, "Story Theme must not be empty."],
     [{ startDate: "2027-03-01" }, "Start date must not be after the end date."],
   ])("refuses %j", (overrides, error) => {
-    expect(parseNextWarWeekInput({ ...input, ...overrides })).toEqual({
-      ok: false,
-      error,
-    });
+    expectRefused(parseNextWarWeekInput({ ...input, ...overrides }), error);
   });
 });
 
@@ -320,5 +329,37 @@ describe("lifecycle parsers given a malformed call", () => {
     ["highlights: 5", { winner: "", highlights: 5 }],
   ])("parseClosingInput returns an error for %s", (_label, value) => {
     expect(parseClosingInput(value as never)).toMatchObject({ ok: false });
+  });
+});
+
+describe("lifecycle parsers' field errors", () => {
+  it("names the refused End War Week field", () => {
+    expect(
+      parseClosingInput({ winner: "x".repeat(201), highlights: "" }),
+    ).toEqual({
+      ok: false,
+      error: "Winner must be at most 200 characters.",
+      fieldErrors: { winner: "Winner must be at most 200 characters." },
+    });
+  });
+
+  it("names each refused Create next War Week field", () => {
+    expect(
+      parseNextWarWeekInput({
+        edition: "12",
+        editionNumber: "0",
+        year: "2027",
+        startDate: "2027-02-21",
+        endDate: "2027-02-26",
+        storyTheme: "Dune",
+      }),
+    ).toEqual({
+      ok: false,
+      error: "Edition must be a Roman numeral like XII.",
+      fieldErrors: {
+        edition: "Edition must be a Roman numeral like XII.",
+        editionNumber: "Edition number must be at least 1.",
+      },
+    });
   });
 });

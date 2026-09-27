@@ -2,7 +2,11 @@ import { Avatar } from "@/components/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { YouTag } from "@/components/you";
-import type { RosterParticipant, RosterTeam } from "@/lib/roster";
+import {
+  type RosterParticipant,
+  type RosterTeam,
+  participantCountLabel,
+} from "@/lib/roster";
 import { YOU_ROW_CLASS } from "@/lib/you";
 
 export function RosterList({
@@ -88,7 +92,7 @@ export function TeamRoster({
           {team.name}
         </h2>
         <span className="text-foreground/60 text-sm tabular-nums">
-          {team.participants.length}
+          {participantCountLabel(team.participants.length)}
         </span>
       </CardHeader>
       <CardContent>

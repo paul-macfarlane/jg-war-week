@@ -1,10 +1,22 @@
 // Only client components import this; it holds their shared row plumbing.
 import { useRouter } from "next/navigation";
-import { type ReactNode, useRef, useState, useTransition } from "react";
+import {
+  type ReactNode,
+  useActionState,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { toast } from "sonner";
 
 import type { SetupActionResult } from "@/actions/setup";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import {
+  FOCUSABLE,
+  fieldErrorsOf,
+  formErrorOf,
+  useFocusFirstInvalid,
+} from "@/components/form-field-errors";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
 import type { UsageCount } from "@/lib/setup";
@@ -20,9 +32,6 @@ export const SETUP_EDITOR = { [EDITOR_ATTR]: "" };
 export function setupRowProps(id?: string) {
   return { [ROW_ATTR]: id ?? ADD_ROW };
 }
-
-const FOCUSABLE =
-  "input:not([type=hidden]):not(:disabled), button:not(:disabled), textarea:not(:disabled), a[href], [tabindex]:not([tabindex='-1'])";
 
 /**
  * Once `row` (a deleted setup row) leaves the page, focuses the first
@@ -58,39 +67,77 @@ function focusNeighborOnceRemoved(row: HTMLElement) {
 }
 
 /**
- * Runs one setup row's server action, keeps its result, and refreshes the
- * page on success. A refusal shows as an error toast (and stays in the
- * row's `SetupRowError`); a success toasts `successMessage` when given.
- * `onSaved` runs after a successful save (the add row clears its fields
- * there). `run` resolves with the action's result.
+ * Runs one setup row's server action on `useActionState`, so the row's own
+ * `<form action={formAction}>` posts it, a field error shows under its
+ * field (`fieldErrors`), and focus moves to the first invalid field. On
+ * success it toasts `successMessage`, runs `onSaved` (the add row clears its
+ * fields there) and refreshes the page. Delete has no fields, so it keeps a
+ * plain transition (`remove`), sharing this row's `pending` and `error`.
+ * Only the latest action's refusal shows: a save clears a refused
+ * delete's, and a delete clears a refused save's.
  */
-export function useSetupRow(onSaved?: () => void) {
+export function useSetupRow(
+  action: () => Promise<SetupActionResult>,
+  successMessage: string,
+  onSaved?: () => void,
+) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
-  const [result, setResult] = useState<SetupActionResult | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [deletePending, startDeleteTransition] = useTransition();
+  const [deleteResult, setDeleteResult] = useState<SetupActionResult | null>(
+    null,
+  );
+  // The save result a later delete hid.
+  const [dismissedSave, setDismissedSave] = useState<SetupActionResult | null>(
+    null,
+  );
 
-  function run(
-    action: () => Promise<SetupActionResult>,
-    successMessage?: string,
+  const [result, formAction, savePending] = useActionState(
+    async (): Promise<SetupActionResult> => {
+      setDeleteResult(null);
+      const saved = await action();
+      if (!saved.ok) {
+        toast.error(saved.error);
+        return saved;
+      }
+      toast.success(successMessage);
+      onSaved?.();
+      router.refresh();
+      return saved;
+    },
+    null,
+  );
+  useFocusFirstInvalid(formRef, result);
+
+  /** Runs a Delete (or other field-less write) in its own transition. */
+  function remove(
+    deleteAction: () => Promise<SetupActionResult>,
+    deleteSuccessMessage?: string,
   ): Promise<SetupActionResult> {
     return new Promise((resolve) => {
-      startTransition(async () => {
-        const saved = await action();
-        setResult(saved);
+      startDeleteTransition(async () => {
+        setDismissedSave(result);
+        const saved = await deleteAction();
+        setDeleteResult(saved);
         resolve(saved);
         if (!saved.ok) {
           toast.error(saved.error);
           return;
         }
-        if (successMessage) toast.success(successMessage);
-        onSaved?.();
+        if (deleteSuccessMessage) toast.success(deleteSuccessMessage);
         router.refresh();
       });
     });
   }
 
-  const error = result && !result.ok && !pending ? result.error : null;
-  return { pending, run, error };
+  const pending = savePending || deletePending;
+  const saveResult = result === dismissedSave ? null : result;
+  const fieldErrors = fieldErrorsOf(saveResult);
+  const deleteError =
+    deleteResult && !deleteResult.ok ? deleteResult.error : null;
+  const error = pending ? null : (deleteError ?? formErrorOf(saveResult));
+
+  return { pending, formRef, formAction, fieldErrors, error, remove };
 }
 
 /**

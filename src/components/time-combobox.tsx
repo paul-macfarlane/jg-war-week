@@ -28,6 +28,8 @@ type TimeComboboxProps = {
   required?: boolean;
   id?: string;
   "aria-label"?: string;
+  /** Marks the control invalid when its field shows an error. */
+  "aria-invalid"?: boolean;
   placeholder?: string;
 };
 
@@ -48,6 +50,7 @@ export function TimeCombobox({
   required,
   id,
   "aria-label": ariaLabel,
+  "aria-invalid": ariaInvalid,
   placeholder,
 }: TimeComboboxProps) {
   const options = useMemo(() => timeOptions(start), [start]);
@@ -109,6 +112,7 @@ export function TimeCombobox({
         <ComboboxInput
           id={id}
           aria-label={ariaLabel}
+          aria-invalid={ariaInvalid}
           placeholder={placeholder}
           className="h-11 w-full sm:h-9"
           onBlur={commitTyped}

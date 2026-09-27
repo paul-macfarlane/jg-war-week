@@ -39,7 +39,7 @@ describe("parseAwardInput", () => {
   });
 
   it("refuses an Award with no recipients", () => {
-    expect(parseAwardInput(input({ participantIds: [] }))).toEqual({
+    expect(parseAwardInput(input({ participantIds: [] }))).toMatchObject({
       ok: false,
       error: "Choose a Team or at least one Participant.",
     });
@@ -48,11 +48,11 @@ describe("parseAwardInput", () => {
   it("trims the name and refuses an empty or too-long one", () => {
     const trimmed = parseAwardInput(input({ name: "  MVP  " }));
     expect(trimmed.ok && trimmed.value.name).toBe("MVP");
-    expect(parseAwardInput(input({ name: "   " }))).toEqual({
+    expect(parseAwardInput(input({ name: "   " }))).toMatchObject({
       ok: false,
       error: "Name must not be empty.",
     });
-    expect(parseAwardInput(input({ name: "x".repeat(121) }))).toEqual({
+    expect(parseAwardInput(input({ name: "x".repeat(121) }))).toMatchObject({
       ok: false,
       error: "Name must be at most 120 characters.",
     });
@@ -61,7 +61,9 @@ describe("parseAwardInput", () => {
   it("stores a blank description as null and refuses a too-long one", () => {
     const blank = parseAwardInput(input({ description: "  " }));
     expect(blank.ok && blank.value.description).toBeNull();
-    expect(parseAwardInput(input({ description: "x".repeat(1001) }))).toEqual({
+    expect(
+      parseAwardInput(input({ description: "x".repeat(1001) })),
+    ).toMatchObject({
       ok: false,
       error: "Description must be at most 1000 characters.",
     });
@@ -73,11 +75,11 @@ describe("parseAwardInput", () => {
   });
 
   it("refuses recipient ids that aren't row ids", () => {
-    expect(parseAwardInput(input({ teamId: "nope" }))).toEqual({
+    expect(parseAwardInput(input({ teamId: "nope" }))).toMatchObject({
       ok: false,
       error: "Choose a Team of this War Week.",
     });
-    expect(parseAwardInput(input({ participantIds: ["nope"] }))).toEqual({
+    expect(parseAwardInput(input({ participantIds: ["nope"] }))).toMatchObject({
       ok: false,
       error: "Choose Participants of this War Week.",
     });
@@ -103,5 +105,25 @@ describe("parseAwardInput given a malformed call", () => {
     ["teamId: 5", { name: "MVP", teamId: 5 }],
   ])("returns an error for %s", (_label, value) => {
     expect(parseAwardInput(value as never)).toMatchObject({ ok: false });
+  });
+});
+
+describe("parseAwardInput field errors", () => {
+  it("names each refused field, the recipients under participantIds", () => {
+    expect(parseAwardInput(input({ name: " ", participantIds: [] }))).toEqual({
+      ok: false,
+      error: "Name must not be empty.",
+      fieldErrors: {
+        name: "Name must not be empty.",
+        participantIds: "Choose a Team or at least one Participant.",
+      },
+    });
+    expect(parseAwardInput(input({ participantIds: [] }))).toEqual({
+      ok: false,
+      error: "Choose a Team or at least one Participant.",
+      fieldErrors: {
+        participantIds: "Choose a Team or at least one Participant.",
+      },
+    });
   });
 });

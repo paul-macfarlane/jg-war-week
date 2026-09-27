@@ -50,6 +50,7 @@
 }
 
 :root {
+  color-scheme: light;
   --font-sans: var(--font-preset-sans);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -87,7 +88,15 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+/* The viewport's scrollbar takes its scheme from <html>: follow the edition
+   layout's root (`ThemeRoot pageColorScheme`) when its Appearance Theme is
+   dark. */
+html:has([data-color-scheme="dark"]) {
+  color-scheme: dark;
+}
+
 .dark {
+  color-scheme: dark;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);

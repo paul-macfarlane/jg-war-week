@@ -1,9 +1,0 @@
-docs/agents/testing.md:25:| e2e | `pnpm e2e` (Playwright; needs `pnpm build` and local Postgres via `docker compose up -d`; first time `pnpm exec playwright install chromium`) | Five browser flows in Chromium over the production build on port 3200, after migrating and reloading every seed with `--reset` and signing stub JG sessions (no Google): anonymous and non-JG visitors sent to `/sign-in`; an Organizer's Points Entry updates `/xi/leaderboard`; a Bracket built, recorded, advanced and finalized into Points Entries; the Finale plays to first place; `/history` and every past edition render. Screenshots under `test-results/e2e/<test>/` | Per slice gate, before PR, and in CI after smoke | verified |
-docs/agents/testing.md:27:| gate | `pnpm gate` | typecheck, lint, test, build, smoke and e2e (Playwright) in order | Per slice gate, before PR | verified |
-README.md:60:`pnpm smoke` and `pnpm e2e` (and `pnpm gate`, which runs both) refuse to start unless
-README.md:77:`pnpm e2e` runs the Playwright flows in Chromium against the same production
-README.md:85:screenshots under `test-results/e2e/<test>/`; a failing flow also keeps a
-README.md:91:`pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm smoke && pnpm e2e`.
-docs/maintainers-guide.md:93:| Browser flows (Playwright, `pnpm e2e`)     | `e2e/`, `playwright.config.ts`                                         |
-docs/maintainers-guide.md:119:   the Playwright browser flows, `pnpm e2e`). It must pass. Needs Docker
-docs/maintainers-guide.md:121:   at it: smoke and e2e reset every seeded War Week, so each refuses any

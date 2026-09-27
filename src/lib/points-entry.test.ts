@@ -45,13 +45,13 @@ describe("parsePointsEntryInput", () => {
   it("rejects more than two decimal places and values the column can't hold", () => {
     expect(
       parsePointsEntryInput({ competitionId, targetId, points: "1.234" }),
-    ).toEqual({
+    ).toMatchObject({
       ok: false,
       error: "Points must have at most two decimal places.",
     });
     expect(
       parsePointsEntryInput({ competitionId, targetId, points: "1000000" }),
-    ).toEqual({ ok: false, error: "Points must be at most 999999.99." });
+    ).toMatchObject({ ok: false, error: "Points must be at most 999999.99." });
     expect(
       parsePointsEntryInput({ competitionId, targetId, points: "999999.99" })
         .ok,
@@ -197,5 +197,25 @@ describe("parsePointsEntryInput given a malformed call", () => {
     expect(
       parsePointsEntryInput({ ...valid, ...overrides } as never),
     ).toMatchObject({ ok: false });
+  });
+});
+
+describe("parsePointsEntryInput field errors", () => {
+  it("names each refused field, worded as its error", () => {
+    expect(
+      parsePointsEntryInput({
+        competitionId: "",
+        targetId: "nope",
+        points: "9999999",
+      }),
+    ).toEqual({
+      ok: false,
+      error: "Choose a Competition.",
+      fieldErrors: {
+        competitionId: "Choose a Competition.",
+        targetId: "Choose a Team or Participant.",
+        points: "Points must be at most 999999.99.",
+      },
+    });
   });
 });

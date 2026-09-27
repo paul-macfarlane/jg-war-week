@@ -44,9 +44,12 @@ export default async function EditionLayout({
     storedId: null,
   });
 
+  const themeStyle = warWeekThemeStyle(warWeek);
+
   return (
     <ThemeRoot
-      style={warWeekThemeStyle(warWeek)}
+      style={themeStyle}
+      pageColorScheme={themeStyle.colorScheme}
       className="bg-background text-foreground min-h-dvh pb-20 font-sans lg:pb-0"
     >
       <TopNav

@@ -36,6 +36,7 @@ type DateRangePickerProps = {
   days: string[];
   id?: string;
   "aria-label"?: string;
+  "aria-invalid"?: boolean;
 };
 
 const dotClass =
@@ -55,6 +56,7 @@ export function DateRangePicker({
   days,
   id,
   "aria-label": ariaLabel,
+  "aria-invalid": ariaInvalid,
 }: DateRangePickerProps) {
   const wide = useMediaQuery(WIDE_QUERY);
   const [open, setOpen] = useState(false);
@@ -114,6 +116,7 @@ export function DateRangePicker({
               type="button"
               variant="outline"
               aria-label={ariaLabel}
+              aria-invalid={ariaInvalid}
               className="h-11 w-full justify-start font-normal sm:h-9 sm:w-auto"
             />
           }

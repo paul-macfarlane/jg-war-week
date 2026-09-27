@@ -21,15 +21,18 @@ import {
 /**
  * Placement Points as numbered rows (1st, 2nd…), up to five, with a
  * 5 · 3 · 1 quick fill and live errors. `value` is the same comma-separated
- * text the Competition action already validates.
+ * text the Competition action already validates. `invalid` marks every
+ * row when the server refused the Placement Points.
  */
 export function PlacementPointsRows({
   value,
   maxPoints,
+  invalid = false,
   onChange,
 }: {
   value: string;
   maxPoints: string;
+  invalid?: boolean;
   onChange: (value: string) => void;
 }) {
   const [rows, setRowsState] = useState(() => rowsFromPlacementPoints(value));
@@ -79,6 +82,7 @@ export function PlacementPointsRows({
                   min={0}
                   step="any"
                   aria-label={`${label} place Placement Points`}
+                  aria-invalid={invalid || undefined}
                   className="border-border h-11 w-28 sm:h-9"
                   value={row}
                   onChange={(event) =>

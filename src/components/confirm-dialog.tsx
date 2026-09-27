@@ -18,6 +18,33 @@ import {
 import { Button } from "@/components/ui/button";
 import type { WriteResult } from "@/lib/result";
 
+type ConfirmDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description?: ReactNode;
+  confirmLabel?: string;
+  /** Red confirm button; false for actions that remove nothing. */
+  destructive?: boolean;
+  pending?: boolean;
+  /** Fields the confirm needs, e.g. End War Week's Winner. */
+  children?: ReactNode;
+} & (
+  | {
+      /** Runs on confirm. */
+      onConfirm: () => void;
+      form?: never;
+    }
+  | {
+      /**
+       * The id of a form the confirm button submits, so the confirm posts
+       * through that form's `useActionState` instead of calling `onConfirm`.
+       */
+      form: string;
+      onConfirm?: never;
+    }
+);
+
 /**
  * The one confirm for destructive or hard-to-undo actions. `title` names
  * what will be deleted (or removed, reset…); `description` carries what the caller
@@ -33,20 +60,9 @@ export function ConfirmDialog({
   destructive = true,
   pending = false,
   onConfirm,
+  form,
   children,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  description?: ReactNode;
-  confirmLabel?: string;
-  /** Red confirm button; false for actions that remove nothing. */
-  destructive?: boolean;
-  pending?: boolean;
-  onConfirm: () => void;
-  /** Fields the confirm needs, e.g. End War Week's Winner. */
-  children?: ReactNode;
-}) {
+}: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -65,7 +81,7 @@ export function ConfirmDialog({
             variant={destructive ? "destructive" : "default"}
             className="min-h-11 sm:min-h-9"
             disabled={pending}
-            onClick={onConfirm}
+            {...(form ? { type: "submit", form } : { onClick: onConfirm })}
           >
             {pending ? `${confirmLabel}…` : confirmLabel}
           </AlertDialogAction>

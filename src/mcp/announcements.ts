@@ -1,4 +1,5 @@
 import type { Announcement } from "@/db/schema";
+import { authorHandle } from "@/lib/announcements";
 import { toPlainText } from "@/lib/rich-text/plain-text";
 
 export type AnnouncementsResult = {
@@ -33,7 +34,7 @@ export function toAnnouncementsResult(
     announcements: rows.map((row) => ({
       title: row.title,
       pinned: row.pinned,
-      author: row.authorEmail.split("@")[0],
+      author: authorHandle(row.authorEmail),
       publishedAt: row.publishedAt.toISOString(),
       body: toPlainText(row.body),
       videoUrls: row.videoUrls,

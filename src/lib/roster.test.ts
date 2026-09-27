@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   type RosterParticipantInput,
   buildRoster,
+  participantCountLabel,
   rosterHeading,
   rosterParticipants,
 } from "@/lib/roster";
@@ -192,5 +193,15 @@ describe("rosterParticipants", () => {
       "Neo",
       "Trinity",
     ]);
+  });
+});
+
+describe("participantCountLabel", () => {
+  it.each([
+    [0, "0 Participants"],
+    [1, "1 Participant"],
+    [8, "8 Participants"],
+  ])("labels %d as %s", (count, expected) => {
+    expect(participantCountLabel(count)).toBe(expected);
   });
 });

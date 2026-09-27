@@ -10,7 +10,7 @@ import {
 } from "@/components/standings";
 import { Badge } from "@/components/ui/badge";
 import { formatLabel } from "@/lib/bracket/view";
-import { formatPoints } from "@/lib/points";
+import { formatPoints, formatPointsLabel } from "@/lib/points";
 import { formatLedgerTime } from "@/lib/points-entry";
 import { getBracketCompetitions } from "@/queries/brackets";
 import {
@@ -170,7 +170,7 @@ export default async function AdminPointsPage() {
                           </Link>
                           <DeletePointsEntryButton
                             id={entry.id}
-                            description={`${formatPoints(entry.points)} pts to ${entry.target} in ${entry.competition}`}
+                            description={`${formatPointsLabel(entry.points)} to ${entry.target} in ${entry.competition}`}
                           />
                         </div>
                       )}

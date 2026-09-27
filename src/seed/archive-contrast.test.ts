@@ -65,7 +65,7 @@ describe("archive text contrast", () => {
   });
 
   describe.each(themes)("War Week %s", (_, theme) => {
-    const style = warWeekThemeStyle(theme) as Record<string, string>;
+    const style = warWeekThemeStyle(theme) as unknown as Record<string, string>;
 
     it.each(PAIRS)("%s (%s on %s) reads at 4.5:1", (_, text, surface) => {
       const fg = resolveCssColor(style[text]);

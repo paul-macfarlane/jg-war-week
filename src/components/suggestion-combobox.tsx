@@ -21,6 +21,7 @@ export function SuggestionCombobox({
   name,
   placeholder,
   maxLength,
+  id,
 }: {
   suggestions: string[];
   value: string;
@@ -28,6 +29,7 @@ export function SuggestionCombobox({
   name?: string;
   placeholder?: string;
   maxLength?: number;
+  id?: string;
 }) {
   return (
     <Combobox
@@ -44,6 +46,7 @@ export function SuggestionCombobox({
       }}
     >
       <ComboboxInput
+        id={id}
         name={name}
         placeholder={placeholder}
         maxLength={maxLength}

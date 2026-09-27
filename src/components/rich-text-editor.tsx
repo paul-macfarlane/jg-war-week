@@ -1,9 +1,16 @@
 "use client";
 
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import {
   type Content,
   isHttpUrl,
@@ -41,9 +48,6 @@ const PANEL_ACTION = {
 
 const EDITOR_CLASS =
   "min-h-48 px-4 py-3 outline-none [&>*+*]:mt-3 break-words [&_a]:underline [&_a]:underline-offset-4 [&_h1]:text-2xl [&_h1]:font-semibold [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-semibold [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-lg [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6 [&_.ProseMirror-selectednode]:ring-2 [&_.ProseMirror-selectednode]:ring-ring";
-
-const fieldClass =
-  "border-border bg-background h-9 rounded-md border px-2 text-sm focus-visible:ring-ring/50 outline-none focus-visible:ring-3";
 
 /**
  * `onMouseDown` is swallowed so the selection survives the click: without it
@@ -91,11 +95,18 @@ export function RichTextEditor({
   content,
   onChange,
   label = "Body",
+  labelId,
 }: {
   content: Content;
   onChange: (content: Content) => void;
-  /** The editing surface's accessible name. */
+  /** The editing surface's accessible name, used when `labelId` is absent. */
   label?: string;
+  /**
+   * The id of an external `FieldLabel` that names this editor, so the
+   * visible label is the accessible name rather than a duplicate one from
+   * `aria-label`.
+   */
+  labelId?: string;
 }) {
   // The editor is created once, so its update callback reads the current
   // `onChange` out of a ref rather than closing over the first render's.
@@ -104,6 +115,7 @@ export function RichTextEditor({
     onChangeRef.current = onChange;
   }, [onChange]);
 
+  const idPrefix = useId();
   const [panel, setPanel] = useState<keyof typeof PANEL_LABEL | null>(null);
   const [linkUrl, setLinkUrl] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -118,7 +130,9 @@ export function RichTextEditor({
     // would produce markup the client then disagrees with.
     immediatelyRender: false,
     editorProps: {
-      attributes: { "aria-label": label, class: EDITOR_CLASS },
+      attributes: labelId
+        ? { "aria-labelledby": labelId, class: EDITOR_CLASS }
+        : { "aria-label": label, class: EDITOR_CLASS },
     },
     onUpdate: ({ editor: instance }) => {
       const sanitized = sanitizeContent(instance.getJSON());
@@ -300,58 +314,62 @@ export function RichTextEditor({
           className="border-foreground/10 bg-muted/40 flex flex-col gap-2 border-b px-3 py-3"
         >
           {panel === "link" ? (
-            <label className="flex flex-col gap-1 text-sm font-medium">
-              Link URL
-              <input
+            <Field>
+              <FieldLabel htmlFor={`${idPrefix}-link-url`}>Link URL</FieldLabel>
+              <Input
+                id={`${idPrefix}-link-url`}
                 autoComplete="off"
-                className={fieldClass}
+                className="h-9"
                 value={linkUrl}
                 onChange={(event) => setLinkUrl(event.target.value)}
               />
-            </label>
+            </Field>
           ) : panel === "video" ? (
-            <label className="flex flex-col gap-1 text-sm font-medium">
-              Video URL
-              <input
+            <Field>
+              <FieldLabel htmlFor={`${idPrefix}-video-url`}>
+                Video URL
+              </FieldLabel>
+              <Input
+                id={`${idPrefix}-video-url`}
                 autoComplete="off"
-                className={fieldClass}
+                className="h-9"
                 value={videoUrl}
                 onChange={(event) => setVideoUrl(event.target.value)}
               />
-              <span className="text-foreground/60 text-xs font-normal">
-                {VIDEO_HINT}
-              </span>
-            </label>
+              <FieldDescription>{VIDEO_HINT}</FieldDescription>
+            </Field>
           ) : (
             <>
-              <label className="flex flex-col gap-1 text-sm font-medium">
-                Image URL
-                <input
+              <Field>
+                <FieldLabel htmlFor={`${idPrefix}-image-url`}>
+                  Image URL
+                </FieldLabel>
+                <Input
+                  id={`${idPrefix}-image-url`}
                   autoComplete="off"
-                  className={fieldClass}
+                  className="h-9"
                   value={imageUrl}
                   onChange={(event) => setImageUrl(event.target.value)}
                 />
-              </label>
-              <label className="flex flex-col gap-1 text-sm font-medium">
-                Alt text
-                <input
+              </Field>
+              <Field>
+                <FieldLabel htmlFor={`${idPrefix}-image-alt`}>
+                  Alt text
+                </FieldLabel>
+                <Input
+                  id={`${idPrefix}-image-alt`}
                   autoComplete="off"
-                  className={fieldClass}
+                  className="h-9"
                   value={imageAlt}
                   onChange={(event) => setImageAlt(event.target.value)}
                 />
-                <span className="text-foreground/60 text-xs font-normal">
+                <FieldDescription>
                   Describe the image for people who cannot see it
-                </span>
-              </label>
+                </FieldDescription>
+              </Field>
             </>
           )}
-          {panelError && (
-            <p role="alert" className="text-destructive text-sm">
-              {panelError}
-            </p>
-          )}
+          {panelError && <FieldError>{panelError}</FieldError>}
           <div className="flex items-center gap-2">
             <Button type="button" size="sm" onClick={applyPanel[panel]}>
               {PANEL_ACTION[panel]}

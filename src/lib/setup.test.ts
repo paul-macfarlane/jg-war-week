@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import type { Parsed } from "@/lib/result";
 import {
   type CompetitionInput,
   type ParticipantInput,
@@ -18,6 +19,14 @@ import {
   settingsGuardError,
   teamGuardError,
 } from "@/lib/setup";
+
+/** Refused with `error`, which also shows under the field it names. */
+function expectRefused(result: Parsed<unknown>, error: string) {
+  expect(result).toMatchObject({ ok: false, error });
+  expect(Object.values((!result.ok && result.fieldErrors) || {})).toContain(
+    error,
+  );
+}
 
 const input: WarWeekSettingsInput = {
   storyTheme: "  The Matrix ",
@@ -125,7 +134,7 @@ describe("parseWarWeekSettingsInput", () => {
       "Start date must not be after the end date.",
     ],
   ])("refuses %o", (overrides, error) => {
-    expect(parsed(overrides)).toEqual({ ok: false, error });
+    expectRefused(parsed(overrides), error);
   });
 });
 
@@ -206,7 +215,7 @@ describe("parseDayInput", () => {
       "Day Theme must be at most 120 characters.",
     ],
   ])("refuses %o", (day, error) => {
-    expect(parseDayInput(day)).toEqual({ ok: false, error });
+    expectRefused(parseDayInput(day), error);
   });
 });
 
@@ -272,7 +281,7 @@ describe("parseTeamInput", () => {
       "Logo URL must be a root-relative path or an https URL.",
     ],
   ])("refuses %o", (input, error) => {
-    expect(parseTeamInput(input)).toEqual({ ok: false, error });
+    expectRefused(parseTeamInput(input), error);
   });
 });
 
@@ -313,10 +322,10 @@ describe("parseParticipantInput", () => {
     [{ teamId: "nope" }, "Choose a Team."],
     [{ teamId: "" }, "A Leader needs a Team."],
   ])("refuses %o", (overrides, error) => {
-    expect(parseParticipantInput({ ...participant, ...overrides })).toEqual({
-      ok: false,
+    expectRefused(
+      parseParticipantInput({ ...participant, ...overrides }),
       error,
-    });
+    );
   });
 });
 
@@ -384,10 +393,10 @@ describe("parseCompetitionInput", () => {
       "Only an individual Competition can count toward the Team.",
     ],
   ])("refuses %o", (overrides, error) => {
-    expect(parseCompetitionInput({ ...competition, ...overrides })).toEqual({
-      ok: false,
+    expectRefused(
+      parseCompetitionInput({ ...competition, ...overrides }),
       error,
-    });
+    );
   });
 });
 
@@ -630,4 +639,27 @@ describe("setup parsers given a malformed call", () => {
       expect(parsed(overrides as never)).toMatchObject({ ok: false });
     },
   );
+});
+
+describe("setup parsers' field errors", () => {
+  it("names each refused settings field with its label", () => {
+    expect(
+      parsed({ storyTheme: " ", slackChannelUrl: "http://slack.com/x" }),
+    ).toEqual({
+      ok: false,
+      error: "Story Theme must not be empty.",
+      fieldErrors: {
+        storyTheme: "Story Theme must not be empty.",
+        slackChannelUrl: "Slack URL must be an https URL.",
+      },
+    });
+  });
+
+  it("keeps a missing form in the error only", () => {
+    expect(parseWarWeekSettingsInput(null as never)).toEqual({
+      ok: false,
+      error: "The form's fields are missing.",
+      fieldErrors: {},
+    });
+  });
 });
