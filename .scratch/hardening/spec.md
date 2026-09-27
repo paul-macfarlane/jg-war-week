@@ -102,6 +102,8 @@ Removing something beats adding something. A user-visible change updates
 
 - `16` Bracket formats, in the order from decision 7
 - `17` Grill "a twist of fun" for War Week XII
+- `18` Drop `war_week.organizer_emails` (contract step of 03)
+- `19` Drop `competition.bracket_points` (contract step of Epic E)
 
 ### Delivery epics
 
@@ -116,9 +118,12 @@ previous epic's PR to merge. Epic files live in `epics/`.
 | `C` Test net, then refactor | 13, 11 | B merged |
 | `D` Forms and polish | 12, 14 | C merged |
 | `E` Bracket formats for the milestone | 16 (item 1 Heats, the End War Week warning, removing per-heat/both points; T10 and the demo seed dropped) | D merged; plan red-teamed (schema change) |
+| `F` Brackets on the day | 16 (Heat times and Now/Next, live refresh, MCP `get_bracket`, Finale for a Bracket, seeding by Standings) | E merged; plan red-teamed (schema change) |
+| `G` Squads, self-report and the contract migrations | 16 (Squads, self-report), 18, 19 | F merged; Paul confirms 18's and 19's rollback preconditions; plan red-teamed (schema and access change) |
 
-Phase 3 stays per ticket: `16` gets its own epic (T9 and T10 first), and `17`
-is a grilling session.
+Phase 3: `16` runs as Epics E, F and G (round robin, drag seeding and the
+Archive bracket view were cut on 2026-09-27; double elimination waits for a
+request), and `17` is a grilling session.
 
 ## Out of scope
 
