@@ -106,7 +106,10 @@ export async function loadBracket(
         .limit(1)
     )[0];
   if (!found || found.format === "points") {
-    // A points Competition (or a missing one) has no Bracket.
+    // A points Competition (or a missing one) has no Bracket and so no
+    // Heats: the Format returned here is arbitrary, since nothing reads
+    // its rules for an empty Bracket, and getBracket shows no champion
+    // for a points Competition.
     return { format: "single-elimination", config: null, heats: [] };
   }
   const heats = await dbOrTx

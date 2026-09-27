@@ -260,7 +260,9 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   After one, it needs a confirmation and clears every Heat Result.
 - A Heat Result needs a clear finishing order (a knockout Heat's is just its
   winner). A forfeiting Entrant loses in a knockout Heat, and in a Heat of
-  more than two finishes behind everyone who didn't forfeit. Changing the
+  more than two finishes behind everyone who didn't forfeit. A forfeiter
+  advances only when fewer than the advancing number didn't forfeit, and
+  not every Entrant of a Heat may forfeit. Changing the
   winner of a decided knockout Heat, or a Heats Heat's result so different
   Entrants advance or in a different order, sends the later Heats that
   followed from it back to unplayed; an edit that changes nothing about who
@@ -272,8 +274,8 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   by at most one; the top few of each Heat advance, ranked by place then by
   Heat, into the next Round, Round after Round until one Heat, the Final, is
   left. A setting that would never end (as many or more advance than a
-  Round sends on) is refused at Generate. A Heat with no more Entrants than
-  advance is a bye, decided without being played.
+  Round sends on) is refused at Generate. A Heat before the Final with no more
+  Entrants than advance is a bye, decided without being played.
 - **Finalize** turns final placings into Points Entries through the
   Competition's Placement Points, tied places each getting that place's
   points. In single elimination that's 1st, 2nd, tied 3rd for both

@@ -28,8 +28,8 @@ import {
   ENTRANTS_PER_HEAT_OPTIONS,
   type HeatsConfig,
   advancePerHeatLabel,
-  defaultConfig,
   entrantsPerHeatLabel,
+  heatsConfig as heatsConfigOf,
 } from "@/lib/bracket/config";
 import { isBye, validateConfig } from "@/lib/bracket/formats";
 import { type Bracket, HAS_RESULTS_ERROR } from "@/lib/bracket/types";
@@ -113,14 +113,16 @@ function HeatSettingsForm({
     null,
   );
 
-  const refusalFor = (advancePerHeat: number) =>
+  const refusalAt = (entrantsPerHeat: number, advancePerHeat: number) =>
     entrantCount >= 2
       ? validateConfig(
           "heats",
-          { entrantsPerHeat: perHeat, advancePerHeat },
+          { entrantsPerHeat, advancePerHeat },
           entrantCount,
         )
       : null;
+  const refusalFor = (advancePerHeat: number) =>
+    refusalAt(perHeat, advancePerHeat);
   const refusal = refusalFor(advance);
   const perHeatOptions = ENTRANTS_PER_HEAT_OPTIONS.map((count) => ({
     value: String(count),
@@ -128,11 +130,15 @@ function HeatSettingsForm({
   }));
   const advanceOptions = ADVANCE_PER_HEAT_OPTIONS.filter(
     (count) => count < perHeat,
-  ).map((count) => ({
-    value: String(count),
-    label: advancePerHeatLabel(count),
-    disabled: refusalFor(count) !== null,
-  }));
+  ).map((count) => {
+    const reason = refusalFor(count);
+    return {
+      value: String(count),
+      label: advancePerHeatLabel(count),
+      disabled: reason !== null,
+      title: reason ?? undefined,
+    };
+  });
   const off = disabled || saving;
 
   return (
@@ -155,7 +161,11 @@ function HeatSettingsForm({
               onValueChange={(value) => {
                 const size = Number(value);
                 setPerHeat(size);
-                if (advance >= size) setAdvance(size - 1);
+                // The most that can advance at this size, for these Entrants.
+                const best = ADVANCE_PER_HEAT_OPTIONS.filter(
+                  (count) => count < size && refusalAt(size, count) === null,
+                ).at(-1);
+                setAdvance(best ?? 1);
               }}
             />
           </Field>
@@ -174,7 +184,12 @@ function HeatSettingsForm({
         </FieldGroup>
         {refusal && <FieldDescription>{refusal}</FieldDescription>}
       </FieldSet>
-      <Button type="submit" size="lg" className="min-h-11 w-fit" disabled={off}>
+      <Button
+        type="submit"
+        size="lg"
+        className="min-h-11 w-fit"
+        disabled={off || refusal !== null}
+      >
         {saving ? "Saving…" : "Save Heat settings"}
       </Button>
     </form>
@@ -263,9 +278,7 @@ export function BracketBuilder({
   const labelOf = (entrantId: string | null) =>
     entrants.find((e) => e.id === entrantId)?.label ?? "Unknown";
   const heatsConfig =
-    competition.format === "heats"
-      ? ((bracket.config ?? defaultConfig("heats")) as HeatsConfig)
-      : null;
+    competition.format === "heats" ? heatsConfigOf(bracket.config) : null;
 
   return (
     <div className="flex flex-col gap-8">

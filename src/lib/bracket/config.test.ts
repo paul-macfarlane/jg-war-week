@@ -8,6 +8,7 @@ import {
   configOf,
   defaultConfig,
   entrantsPerHeatLabel,
+  heatsConfig,
   heatsConfigSchema,
 } from "@/lib/bracket/config";
 
@@ -133,5 +134,18 @@ describe("builder options", () => {
     expect(entrantsPerHeatLabel(4)).toBe("4 per Heat");
     expect(advancePerHeatLabel(2)).toBe("Top 2 advance");
     expect(advancePerHeatLabel(1)).toBe("Top 1 advances");
+  });
+});
+
+describe("heatsConfig", () => {
+  it("is the saved config, or 4 per Heat with 2 advancing when there is none", () => {
+    expect(heatsConfig({ entrantsPerHeat: 6, advancePerHeat: 3 })).toEqual({
+      entrantsPerHeat: 6,
+      advancePerHeat: 3,
+    });
+    expect(heatsConfig(null)).toEqual({
+      entrantsPerHeat: 4,
+      advancePerHeat: 2,
+    });
   });
 });

@@ -1,4 +1,5 @@
 import {
+  type Browser,
   type Locator,
   type Page,
   type TestInfo,
@@ -6,8 +7,9 @@ import {
   test,
 } from "@playwright/test";
 
-import { xiCompetitionId } from "./db";
-import { asOrganizer } from "./session";
+import { runQuery, xiCompetitionId } from "./db";
+import { E2E_BASE_URL } from "./env";
+import { E2E_PARTICIPANT_EMAIL, asOrganizer, signIn } from "./session";
 
 // Settlers of Catan is an individual War Week XI Competition with Placement
 // Points 5 / 3 / 1. None of these eight has a hand-entered Catan Points
@@ -38,11 +40,24 @@ async function assertNoHorizontalOverflow(page: Page) {
   ).toBe(true);
 }
 
-/** Checks no horizontal overflow at 375/768/1280, screenshotting 375/1280. */
-async function checkViewports(page: Page, testInfo: TestInfo, name: string) {
+/**
+ * Checks no horizontal overflow at 375/768/1280 (of the page, and of
+ * `dialog` when one is open), screenshotting 375/1280.
+ */
+async function checkViewports(
+  page: Page,
+  testInfo: TestInfo,
+  name: string,
+  dialog?: Locator,
+) {
   for (const width of VIEWPORT_WIDTHS) {
     await page.setViewportSize({ width, height: 900 });
     await assertNoHorizontalOverflow(page);
+    if (dialog) {
+      expect(
+        await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth),
+      ).toBe(true);
+    }
     if (SCREENSHOT_WIDTHS.includes(width)) {
       await page.screenshot({
         path: testInfo.outputPath(`${name}-${width}.png`),
@@ -88,7 +103,35 @@ async function recordHeat(
   return order;
 }
 
+/** A War Week XI Participant's id, by display name. */
+async function xiParticipantId(displayName: string): Promise<string> {
+  const [row] = await runQuery<{ id: string }>(
+    `select p.id from participant p join war_week w on w.id = p.war_week_id
+     where w.edition = 'xi' and p.display_name = $1`,
+    [displayName],
+  );
+  if (!row)
+    throw new Error(`No War Week XI Participant named "${displayName}"`);
+  return row.id;
+}
+
+/**
+ * A signed-in Participant's page, with "Which one is you?" already picked
+ * as `displayName` (XI's Participants have no emails to link by).
+ */
+async function participantPageAs(browser: Browser, displayName: string) {
+  const participantId = await xiParticipantId(displayName);
+  const context = await browser.newContext({ baseURL: E2E_BASE_URL });
+  await signIn(context, E2E_PARTICIPANT_EMAIL);
+  await context.addInitScript(
+    ([key, id]) => window.localStorage.setItem(key, id),
+    ["ww:you:xi", participantId] as const,
+  );
+  return { context, page: await context.newPage() };
+}
+
 test("a Heats Bracket is built, run and finalized into Points Entries", async ({
+  browser,
   context,
   page,
 }, testInfo) => {
@@ -133,10 +176,30 @@ test("a Heats Bracket is built, run and finalized into Points Entries", async ({
 
   // Screenshots and the overflow check happen with the Sheet open, on a
   // four-Entrant Heat, before any tap.
-  await recordHeat(page, "Round 1 Heat 1", async () => {
-    await checkViewports(page, testInfo, "results-sheet");
+  const heat1 = await recordHeat(page, "Round 1 Heat 1", async (sheet) => {
+    await checkViewports(page, testInfo, "results-sheet", sheet);
   });
-  await recordHeat(page, "Round 1 Heat 2");
+
+  // Heat 1's winner, as "You", has advanced while Heat 2 is still to play.
+  const advancer = heat1[0];
+  const you = await participantPageAs(browser, advancer);
+  await you.page.goto(`/xi/competitions/${id}`);
+  const nextHeat = you.page.getByLabel("Your next Heat");
+  await expect(nextHeat).toContainText(
+    "Advanced to Round 2 · waiting for Round 1 to finish",
+  );
+  await checkViewports(you.page, testInfo, "participant-advanced");
+
+  const heat2 = await recordHeat(page, "Round 1 Heat 2");
+
+  // The Final is filled: their next Heat lists the three others in it.
+  await you.page.reload();
+  await expect(nextHeat).toContainText("Your next Heat · Final");
+  for (const opponent of [heat1[1], heat2[0], heat2[1]]) {
+    await expect(nextHeat).toContainText(opponent);
+  }
+  await you.context.close();
+
   const finalOrder = await recordHeat(page, "Final");
   const champion = finalOrder[0];
   await expect(page.getByLabel("Champion", { exact: true })).toContainText(

@@ -1,7 +1,7 @@
 import { type ZodType, z } from "zod";
 
 import type { Competition, Participant, Team, WarWeek } from "@/db/schema";
-import { bracketConfigSchema, heatsConfigSchema } from "@/lib/bracket/config";
+import { heatsConfigSchema } from "@/lib/bracket/config";
 import { HEX_COLOR } from "@/lib/color";
 import { MAX_PLACEMENTS } from "@/lib/competitions";
 import { dayOutsideRangeError } from "@/lib/day-range";
@@ -117,10 +117,7 @@ export const competitionSeedSchema = z
   })
   .superRefine((c, ctx) => {
     // A heats config is checked by its field; any other Format takes none.
-    if (
-      c.bracketConfig != null &&
-      !bracketConfigSchema(c.format).safeParse(c.bracketConfig).success
-    ) {
+    if (c.bracketConfig != null && c.format !== "heats") {
       ctx.addIssue({
         code: "custom",
         message: "bracketConfig is only for a heats Competition",

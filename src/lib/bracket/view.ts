@@ -2,11 +2,13 @@
  * Display helpers for a Bracket: Round and Heat names, Rounds in order, and
  * the Heat an Entrant plays next. Pure, like the engine.
  */
-import { type HeatsConfig, defaultConfig } from "@/lib/bracket/config";
+import { heatsConfig } from "@/lib/bracket/config";
 import { isBye } from "@/lib/bracket/formats";
+import { isDecided } from "@/lib/bracket/heat-status";
 import type { Bracket, Format, Heat } from "@/lib/bracket/types";
 
 export type { Format } from "@/lib/bracket/types";
+export { isDecided };
 
 const FORMAT_LABELS: Record<Format, string> = {
   points: "Points",
@@ -17,11 +19,6 @@ const FORMAT_LABELS: Record<Format, string> = {
 /** A Format as Organizers read it. */
 export function formatLabel(format: Format): string {
   return FORMAT_LABELS[format];
-}
-
-/** Whether a Heat has a Heat Result (a bye's counts as one). */
-export function isDecided(heat: Heat): boolean {
-  return heat.status === "played" || heat.status === "forfeit";
 }
 
 /** The final's Round number; 0 before Generate. */
@@ -131,8 +128,7 @@ export function nextHeatFor(
     .filter(inHeat)
     .reduce<Heat | null>((a, h) => (a && a.round > h.round ? a : h), null);
   if (!last || last.round >= finalRoundOf(bracket)) return null;
-  const { advancePerHeat } = (bracket.config ??
-    defaultConfig("heats")) as HeatsConfig;
+  const { advancePerHeat } = heatsConfig(bracket.config);
   const place = last.slots.find((s) => s.entrantId === entrantId)?.place;
   if (place == null || place > advancePerHeat) return null;
   return { kind: "advanced", round: last.round + 1 };

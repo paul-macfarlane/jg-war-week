@@ -6,9 +6,10 @@
 import {
   type BracketConfig,
   type HeatsConfig,
-  defaultConfig,
+  heatsConfig,
   heatsConfigSchema,
 } from "@/lib/bracket/config";
+import { isDecided } from "@/lib/bracket/heat-status";
 import {
   type Bracket,
   BracketError,
@@ -23,15 +24,11 @@ import {
 /** More Rounds than any Bracket the builder allows could need. */
 const MAX_ROUNDS = 64;
 
-function heatsConfig(config: BracketConfig): HeatsConfig {
-  return config ?? (defaultConfig("heats") as HeatsConfig);
-}
-
 /**
  * The Heat sizes of a Round of `count` Entrants dealt snake-style into
  * ⌈count/S⌉ Heats: they differ by at most one.
  */
-export function heatSizes(count: number, perHeat: number): number[] {
+function heatSizes(count: number, perHeat: number): number[] {
   const heatCount = Math.ceil(count / perHeat);
   const sizes = Array.from({ length: heatCount }, () => 0);
   for (let rank = 0; rank < count; rank++) sizes[snakeHeat(rank, heatCount)]++;
@@ -87,10 +84,6 @@ export function validateConfig(
 
 function emptySlot(): HeatSlot {
   return { entrantId: null, place: null, score: null, forfeited: false };
-}
-
-function isDecided(heat: Heat): boolean {
-  return heat.status === "played" || heat.status === "forfeit";
 }
 
 function finalRound(bracket: Bracket): number {

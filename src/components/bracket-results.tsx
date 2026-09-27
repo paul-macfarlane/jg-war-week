@@ -159,7 +159,7 @@ function ScoreField({
         placeholder="Optional, e.g. 21 or 1:32.4"
         className="h-11 sm:h-9"
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(e) => onChange(e.target.value)}
       />
     </Field>
   );

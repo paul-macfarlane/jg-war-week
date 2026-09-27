@@ -2,6 +2,7 @@
  * The single-elimination Bracket engine. Every function is pure: it takes a
  * Bracket and returns a new one, never changing its input.
  */
+import { isDecided } from "@/lib/bracket/heat-status";
 import {
   type Bracket,
   BracketError,
@@ -46,10 +47,6 @@ function findHeat(bracket: Bracket, heatId: string): Heat {
 /** A first-Round Heat with an empty slot: its one Entrant advances. */
 export function isBye(heat: Heat): boolean {
   return heat.round === 1 && heat.slots.some((s) => s.entrantId === null);
-}
-
-export function isDecided(heat: Heat): boolean {
-  return heat.status === "played" || heat.status === "forfeit";
 }
 
 /**

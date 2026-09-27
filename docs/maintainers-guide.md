@@ -182,7 +182,9 @@ To start next year's edition in the app:
    switches to it so you can set it up while XI stays current.
 2. When XI is over, switch back to XI in the header's edition switcher and
    press **End War Week**: confirm the Winner (prefilled from first place)
-   and any highlights. XI moves to the Archive.
+   and any highlights. XI moves to the Archive. The confirm names any
+   Bracket that isn't finalized; finalize it first so its placings count
+   (it warns, it doesn't stop you).
 3. Switch to XII and press **Start War Week**. `/` and `/admin` now go to
    XII. Only one War Week can be live, so XI must end first.
 
@@ -239,18 +241,25 @@ how many advance from each, and its results screen has Organizers tap the
 whole finishing order instead of just a winner once a Heat holds more than
 two.
 
-`src/lib/bracket/formats.ts` is the one seam Format-dependent behavior goes
-through: it dispatches every Bracket operation (generate, record a result,
-finalize…) to that Format's `FormatEngine`, defined in `engine.ts` (single
-elimination) or `heats.ts`. To add a new Format:
+Format behavior goes through `src/lib/bracket/formats.ts`: it dispatches
+every Bracket operation (generate, record a result, finalize…) to that
+Format's `FormatEngine`, defined in `engine.ts` (single elimination) or
+`heats.ts`. The display helpers in `src/lib/bracket/view.ts` (Round and
+Heat names, `nextHeatFor`) also branch on Format. To add a new Format:
 
 ```text
 /implement Add a <name> Format to Competitions, alongside single
-elimination and Heats. Write a FormatEngine (see engine.ts and heats.ts for
-the shape: building the bracket structure from Entrants, advancing a Heat's
-result, and turning a finished bracket into Points Entries) and add a case
-for it in formats.ts. Add it to the Format select on the Competition form
-and to the builder/results screens.
+elimination and Heats. Add its value to COMPETITION_FORMATS in
+src/lib/enums.ts and run `pnpm db:generate` for the migration (a value
+added with ALTER TYPE … ADD VALUE can't be used in the same transaction,
+so keep it in its own migration). Add its config schema and default in
+src/lib/bracket/config.ts and its label (plus any Round/Heat naming) in
+src/lib/bracket/view.ts. Write a FormatEngine (see engine.ts and heats.ts
+for the shape: building the Heats from Entrants, applying a Heat Result,
+and producing final placings, which points.ts and finalizeBracket turn
+into Points Entries) and add its case in formats.ts. Add it to the
+builder/results screens, and describe its rules under "Bracket rules" in
+CONTEXT.md.
 ```
 
 The engine is deliberately separate from the UI: `src/lib/bracket/` has no

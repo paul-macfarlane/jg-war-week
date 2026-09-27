@@ -55,7 +55,12 @@ export function bracketConfigSchema(
 
 /** What a Bracket of this Format uses when nothing is saved. */
 export function defaultConfig(format: Format): BracketConfig {
-  return format === "heats" ? { entrantsPerHeat: 4, advancePerHeat: 2 } : null;
+  return format === "heats" ? heatsConfig(null) : null;
+}
+
+/** A heats Bracket's config: the saved one, or the heats default. */
+export function heatsConfig(config: BracketConfig): HeatsConfig {
+  return config ?? { entrantsPerHeat: 4, advancePerHeat: 2 };
 }
 
 /**

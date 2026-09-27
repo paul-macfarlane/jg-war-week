@@ -1037,6 +1037,42 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
     });
   });
 
+  it("refuses to save Heat settings that Generate would refuse, keeping the Heat Results", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations, queries } = await modules();
+      const f = await generatedHeats(tx);
+      let view = (await queries.getBracket(f.relayId, tx))!;
+      const first = heatAt(view, 1, 1).heat;
+      await mutations.recordHeatResult(
+        f.relayId,
+        first.id,
+        { order: first.slots.map((s) => s.entrantId!) },
+        f.ctx,
+        tx,
+      );
+
+      expect(
+        await mutations.setCompetitionFormat(
+          f.relayId,
+          {
+            format: "heats",
+            config: { entrantsPerHeat: 3, advancePerHeat: 2 },
+            force: true,
+          },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({
+        ok: false,
+        error:
+          "With 8 Entrants, 3 per Heat and 2 advancing, Round 3 would never end. Lower how many advance.",
+      });
+      expect(await savedConfig(tx, f, f.relayId)).toEqual(fourTwo);
+      view = (await queries.getBracket(f.relayId, tx))!;
+      expect(heatAt(view, 1, 1).heat.status).toBe("played");
+    });
+  });
+
   it("refuses deleting a Team or Participant that is an Entrant", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations } = await modules();

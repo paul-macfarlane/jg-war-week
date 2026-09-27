@@ -166,8 +166,8 @@ async function insertSlots(tx: DBOrTx, heats: Bracket["heats"]) {
 }
 
 /**
- * Writes an existing Bracket's Heat statuses and slots back, matching Heats
- * by id. Only Generate adds or removes Heats (and sets their slot counts),
+ * Writes an existing Bracket's Heat statuses and slots back, looking each
+ * Heat up by id. Only Generate adds or removes Heats (and sets their slot counts),
  * so a different set of Heat ids here is a programming error.
  */
 async function saveBracket(tx: DBOrTx, before: Bracket, after: Bracket) {
@@ -237,6 +237,15 @@ export async function setCompetitionFormat(
     if (values.format === "heats") {
       bracketConfig =
         values.config ?? (formatChanges ? null : found.bracketConfig);
+      // Never save a config Generate would refuse for these Entrants.
+      const [entrants] = await tx
+        .select({ count: count() })
+        .from(entrant)
+        .where(eq(entrant.competitionId, competitionId));
+      if (entrants.count >= 2) {
+        const refusal = validateConfig("heats", bracketConfig, entrants.count);
+        if (refusal) return refuse(refusal);
+      }
     }
     const configChanges =
       !formatChanges &&
