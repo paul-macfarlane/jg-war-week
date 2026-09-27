@@ -12,6 +12,10 @@
  * it adds to the Organizer list and lends XI's seeded Points Entries for the
  * run, so no real email is in any file, and restores everything after:
  *   pnpm tsx scripts/about-media.ts
+ *
+ * `--stills` rewrites only the feature-card stills and leaves the Finale
+ * recording alone, so it needs no ffmpeg:
+ *   pnpm tsx scripts/about-media.ts --stills
  */
 import { loadEnvConfig } from "@next/env";
 import { makeSignature } from "better-auth/crypto";
@@ -686,8 +690,14 @@ async function evidence() {
 
 // ---------------------------------------------------------------------------
 
+/** Only the feature-card stills; the Finale video and poster stay as they are. */
+const STILLS_ONLY = process.argv.includes("--stills");
+
 async function main() {
-  if (spawnSync("ffmpeg", ["-version"], { stdio: "ignore" }).status !== 0) {
+  if (
+    !STILLS_ONLY &&
+    spawnSync("ffmpeg", ["-version"], { stdio: "ignore" }).status !== 0
+  ) {
     console.error("Install ffmpeg: brew install ffmpeg");
     process.exit(1);
   }
@@ -750,7 +760,7 @@ async function main() {
     }
     await waitForChrome();
 
-    await recordFinale(cookie, "ffmpeg");
+    if (!STILLS_ONLY) await recordFinale(cookie, "ffmpeg");
 
     const slugs = ABOUT_FEATURES.map((f) => f.slug);
     await still("organizer-setup", cookie, "/admin/setup");
@@ -799,8 +809,7 @@ async function main() {
     await evidence();
 
     for (const name of [
-      "finale.mp4",
-      "finale-poster.png",
+      ...(STILLS_ONLY ? [] : ["finale.mp4", "finale-poster.png"]),
       ...slugs.map((s) => `${s}.png`),
     ]) {
       note(
