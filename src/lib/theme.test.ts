@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 
 import type { WarWeek } from "@/db/schema";
 import {
+  backgroundColorScheme,
   contrastRatio,
+  teamSwatches,
   themeContrastWarnings,
   themeSwatches,
   warWeekThemeStyle,
@@ -41,8 +43,10 @@ const fixture: WarWeek = {
 describe("warWeekThemeStyle", () => {
   it("maps a War Week's Appearance Theme onto shadcn CSS custom properties", () => {
     expect(warWeekThemeStyle(fixture)).toEqual({
+      colorScheme: "dark",
       "--primary": "#00ff41",
       "--primary-foreground": "#000000",
+      "--primary-text": "#00ff41",
       "--accent": "#008f11",
       "--accent-foreground": "#000000",
       "--background": "#000000",
@@ -59,7 +63,6 @@ describe("warWeekThemeStyle", () => {
       "--popover-foreground": "#d1ffd6",
       "--input": "color-mix(in oklch, #000000, #d1ffd6 20%)",
       "--font-sans": "var(--font-preset-mono)",
-      "--ww-primary": "#00ff41",
     });
   });
 
@@ -92,7 +95,7 @@ describe("warWeekThemeStyle", () => {
       },
     ],
   ])("sets every token the Button variants reference for %s", (_, theme) => {
-    const style = warWeekThemeStyle(theme) as Record<string, string>;
+    const style = warWeekThemeStyle(theme) as unknown as Record<string, string>;
     for (const token of BUTTON_TOKENS) {
       expect(style[token], token).toBeTruthy();
     }
@@ -116,6 +119,30 @@ describe("warWeekThemeStyle", () => {
 
     expect(sansStyle["--font-sans"]).toBe("var(--font-preset-sans)");
     expect(serifStyle["--font-sans"]).toBe("var(--font-preset-serif)");
+  });
+});
+
+describe("backgroundColorScheme", () => {
+  it("is dark for a black background", () => {
+    expect(backgroundColorScheme("#000000")).toBe("dark");
+  });
+
+  it("is light for a white background", () => {
+    expect(backgroundColorScheme("#ffffff")).toBe("light");
+  });
+
+  it("is dark when white text contrasts more than black", () => {
+    // A dark navy: white reads far better on it than black does.
+    expect(backgroundColorScheme("#0a0a2a")).toBe("dark");
+  });
+
+  it("is light when black text contrasts more than white", () => {
+    // A pale yellow: black reads far better on it than white does.
+    expect(backgroundColorScheme("#fff8dc")).toBe("light");
+  });
+
+  it("falls back to light for a background that isn't hex", () => {
+    expect(backgroundColorScheme("not-a-color")).toBe("light");
   });
 });
 
@@ -178,6 +205,27 @@ describe("themeSwatches", () => {
       { color: "#aabbcc", label: "Primary" },
       { color: "#000000", label: "Background" },
       { color: "#d1ffd6", label: "Text" },
+    ]);
+  });
+});
+
+describe("teamSwatches", () => {
+  const teams = [
+    { id: "red", name: "Red", color: "#F00" },
+    { id: "blue", name: "Blue", color: "#0000ff" },
+    { id: "odd", name: "Odd", color: "not a color" },
+  ];
+
+  it("offers each Team's hex color, labelled with its name", () => {
+    expect(teamSwatches(teams)).toEqual([
+      { color: "#ff0000", label: "Red" },
+      { color: "#0000ff", label: "Blue" },
+    ]);
+  });
+
+  it("leaves out the Team being edited", () => {
+    expect(teamSwatches(teams, "red")).toEqual([
+      { color: "#0000ff", label: "Blue" },
     ]);
   });
 });

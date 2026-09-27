@@ -11,9 +11,9 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "New Award · JG War Week" };
 
 export default async function NewAwardPage() {
-  const { warWeek, email, isOrganizer, editions } =
-    await loadAdminPage("/admin/awards/new");
-  if (!isOrganizer) return <AdminRefused warWeek={warWeek} email={email} />;
+  const { warWeek, email, allowed, isOrganizer, editions } =
+    await loadAdminPage("/admin/awards/new", "organizers");
+  if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const options = await getAwardFormOptions(warWeek);
 
@@ -21,12 +21,17 @@ export default async function NewAwardPage() {
     <AdminShell
       warWeek={warWeek}
       email={email}
+      isOrganizer={isOrganizer}
       editions={editions}
       current="Awards"
     >
       <section className="flex max-w-3xl flex-col gap-4">
         <h1 className="text-2xl font-bold">New Award</h1>
-        <AwardForm options={options} teamLabel={warWeek.teamLabel} />
+        <AwardForm
+          warWeekId={warWeek.id}
+          options={options}
+          teamLabel={warWeek.teamLabel}
+        />
       </section>
     </AdminShell>
   );

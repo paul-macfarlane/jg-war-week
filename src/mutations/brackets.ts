@@ -17,10 +17,8 @@ import {
   finalPlacings,
   generate,
   hasResults,
-  isBye,
   isComplete,
-  isDecided,
-  resetDownstream,
+  resetByResult,
 } from "@/lib/bracket/engine";
 import { pointsFor } from "@/lib/bracket/points";
 import { shuffleSeedPositions } from "@/lib/bracket/seeding";
@@ -48,7 +46,8 @@ type BracketCompetition = Pick<
 
 /**
  * Locks a Competition of this War Week for a Bracket write, so two writes
- * to the same Bracket run one after the other.
+ * to the same Bracket run one after the other. A scoring change
+ * (`updateCompetition`) and a Points Entry create take the same row lock.
  */
 async function lockedCompetition(
   tx: DBOrTx,
@@ -198,9 +197,8 @@ export async function setCompetitionFormat(
  */
 export async function replaceEntrants(
   competitionId: string,
-  targetIds: string[],
+  { targetIds, force }: { targetIds: string[]; force?: boolean },
   ctx: MutationContext,
-  options: { force?: boolean } = {},
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
@@ -226,7 +224,7 @@ export async function replaceEntrants(
           : `"${found.name}" is an individual Competition, so its Entrants must be Participants of this War Week.`,
       );
     }
-    if (!options.force && hasResults(await loadBracket(competitionId, tx))) {
+    if (!force && hasResults(await loadBracket(competitionId, tx))) {
       return refuse(HAS_RESULTS_ERROR);
     }
 
@@ -253,8 +251,8 @@ export async function replaceEntrants(
  */
 export async function generateBracket(
   competitionId: string,
+  options: { rng?: () => number; force?: boolean },
   ctx: MutationContext,
-  options: { rng?: () => number; force?: boolean } = {},
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
@@ -298,8 +296,9 @@ export async function generateBracket(
 }
 
 /**
- * Records a Heat Result and advances the winner. Editing a decided Heat
- * resets the later Heats its winner reached; their ids are returned.
+ * Records a Heat Result and advances the winner. Changing a decided Heat's
+ * winner resets the later Heats that followed from it; the ids of those
+ * that had a Heat Result are returned. A score-only edit resets nothing.
  */
 export async function recordHeatResult(
   competitionId: string,
@@ -319,11 +318,11 @@ export async function recordHeatResult(
     if (!target) return refuse(HEAT_NOT_FOUND);
 
     let next: Bracket;
-    let resetHeatIds: string[] = [];
+    let resetHeatIds: string[];
     try {
-      if (isDecided(target) && !isBye(target)) {
-        resetHeatIds = resetDownstream(bracket, heatId).resetHeatIds;
-      }
+      const forfeits = result.forfeits ?? [];
+      const winner = result.order.find((id) => !forfeits.includes(id));
+      resetHeatIds = resetByResult(bracket, heatId, winner ?? null);
       next = applyResult(bracket, heatId, result);
     } catch (error) {
       if (error instanceof BracketError) return refuse(error.message);

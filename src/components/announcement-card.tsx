@@ -1,14 +1,11 @@
 import { RichText } from "@/components/rich-text";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Announcement } from "@/db/schema";
-import { formatPublishedAt } from "@/lib/announcements";
+import {
+  type AnnouncementCardData,
+  formatPublishedAt,
+} from "@/lib/announcements";
 import { videoEmbedUrl } from "@/lib/video";
-
-export type AnnouncementCardData = Pick<
-  Announcement,
-  "title" | "body" | "videoUrls" | "pinned" | "authorEmail" | "publishedAt"
->;
 
 /** One Announcement: title, author and time, body, then any video embeds. */
 export function AnnouncementCard({
@@ -31,7 +28,7 @@ export function AnnouncementCard({
             {announcement.pinned ? <Badge>Pinned</Badge> : null}
           </CardTitle>
           <p className="text-foreground/60 text-xs">
-            {announcement.authorEmail} ·{" "}
+            {announcement.authorName} ·{" "}
             {formatPublishedAt(announcement.publishedAt)}
           </p>
         </CardHeader>

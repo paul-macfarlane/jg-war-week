@@ -1,29 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import type { DBTx } from "@/db";
+import { isLocalDatabaseUrl } from "@/db/local-url";
+import { inRolledBackTransaction } from "@/db/test-transaction";
 import type { NextWarWeekValues } from "@/lib/war-week-lifecycle";
 
 // Runs only against a local Postgres (CI's service or docker compose; see
 // vitest.config.ts), never a hosted database.
-const databaseUrl = process.env.DATABASE_URL ?? "";
-const isLocalDatabase =
-  process.env.DATABASE_DRIVER !== "neon" &&
-  /@(localhost|127\.0\.0\.1)[:/]/.test(databaseUrl);
-
-class Rollback extends Error {}
-
-/** Runs `body` in a transaction that is always rolled back. */
-async function inRolledBackTransaction(body: (tx: DBTx) => Promise<void>) {
-  const { withTransaction } = await import("@/db");
-  await withTransaction(async (tx) => {
-    await body(tx);
-    throw new Rollback();
-  }).catch((error) => {
-    if (!(error instanceof Rollback)) throw error;
-  });
-}
-
-const actorEmail = "creator@jahnelgroup.com";
+const isLocalDatabase = isLocalDatabaseUrl(
+  process.env.DATABASE_URL,
+  process.env.DATABASE_DRIVER,
+);
 
 function warWeekValues(
   n: number,
@@ -214,13 +201,18 @@ function next(overrides: Partial<NextWarWeekValues> = {}): NextWarWeekValues {
     startDate: "2100-01-01",
     endDate: "2100-01-05",
     storyTheme: "Next one",
-    copyOrganizers: true,
     copySettings: true,
     copyCompetitions: false,
     copyFaq: false,
     ...overrides,
   };
 }
+
+/** An Organizer acting on the War Week `warWeekId`. */
+const ctxOf = (warWeekId: string) => ({
+  warWeekId,
+  actorEmail: "organizer@jahnelgroup.com",
+});
 
 describe.skipIf(!isLocalDatabase)("war_week_one_live index", () => {
   it("rejects a second live War Week in the database itself", async () => {
@@ -242,8 +234,8 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
       const { live, byId } = await fixture(tx);
 
       const result = await endWarWeek(
-        live.id,
         { winner: "Red & Blue", highlights: ["Red won Chess"] },
+        ctxOf(live.id),
         tx,
       );
 
@@ -265,7 +257,7 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
         .values(warWeekValues(2, "upcoming"))
         .returning();
 
-      expect(await startWarWeek(upcoming.id, tx)).toEqual({
+      expect(await startWarWeek(ctxOf(upcoming.id), tx)).toEqual({
         ok: false,
         error: "End TI first.",
       });
@@ -283,8 +275,8 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
         .values(warWeekValues(2, "upcoming"))
         .returning();
 
-      await endWarWeek(live.id, { winner: "Red", highlights: [] }, tx);
-      expect(await startWarWeek(upcoming.id, tx)).toEqual({ ok: true });
+      await endWarWeek({ winner: "Red", highlights: [] }, ctxOf(live.id), tx);
+      expect(await startWarWeek(ctxOf(upcoming.id), tx)).toEqual({ ok: true });
       expect((await byId(upcoming.id)).status).toBe("live");
     });
   });
@@ -298,16 +290,20 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
         .insert(schema.warWeek)
         .values(warWeekValues(2, "upcoming"))
         .returning();
-      await endWarWeek(live.id, { winner: "Red", highlights: [] }, tx);
-      await startWarWeek(upcoming.id, tx);
+      await endWarWeek({ winner: "Red", highlights: [] }, ctxOf(live.id), tx);
+      await startWarWeek(ctxOf(upcoming.id), tx);
 
-      expect(await reopenWarWeek(live.id, tx)).toEqual({
+      expect(await reopenWarWeek(ctxOf(live.id), tx)).toEqual({
         ok: false,
         error: "End TII first.",
       });
 
-      await endWarWeek(upcoming.id, { winner: null, highlights: [] }, tx);
-      expect(await reopenWarWeek(live.id, tx)).toEqual({ ok: true });
+      await endWarWeek(
+        { winner: null, highlights: [] },
+        ctxOf(upcoming.id),
+        tx,
+      );
+      expect(await reopenWarWeek(ctxOf(live.id), tx)).toEqual({ ok: true });
       expect(await byId(live.id)).toMatchObject({
         status: "live",
         winner: "Red",
@@ -324,13 +320,13 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
         .insert(schema.warWeek)
         .values(warWeekValues(2, "upcoming"))
         .returning();
-      await endWarWeek(live.id, { winner: null, highlights: [] }, tx);
+      await endWarWeek({ winner: null, highlights: [] }, ctxOf(live.id), tx);
 
-      expect(await startWarWeek(live.id, tx)).toEqual({
+      expect(await startWarWeek(ctxOf(live.id), tx)).toEqual({
         ok: false,
         error: "This War Week has ended. Reopen it instead.",
       });
-      expect(await reopenWarWeek(upcoming.id, tx)).toEqual({
+      expect(await reopenWarWeek(ctxOf(upcoming.id), tx)).toEqual({
         ok: false,
         error: "This War Week hasn't started. Start it instead.",
       });
@@ -349,22 +345,26 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
         .values(warWeekValues(2, "upcoming"))
         .returning();
 
-      expect(await startWarWeek(live.id, tx)).toEqual({
+      expect(await startWarWeek(ctxOf(live.id), tx)).toEqual({
         ok: false,
         error: "This War Week is already live.",
       });
       expect(
-        await endWarWeek(upcoming.id, { winner: null, highlights: [] }, tx),
+        await endWarWeek(
+          { winner: null, highlights: [] },
+          ctxOf(upcoming.id),
+          tx,
+        ),
       ).toEqual({ ok: false, error: "Start this War Week before ending it." });
       expect(
-        await startWarWeek("00000000-0000-4000-8000-000000000000", tx),
+        await startWarWeek(ctxOf("00000000-0000-4000-8000-000000000000"), tx),
       ).toEqual({ ok: false, error: "That War Week no longer exists." });
     });
   });
 });
 
 describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
-  it("copies Organizers and settings by default and nothing else", async () => {
+  it("copies settings by default and nothing else", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { createNextWarWeek } =
         await import("@/mutations/war-week-lifecycle");
@@ -372,7 +372,7 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
       const { eq } = await import("drizzle-orm");
       expect(await counts(live.id)).toEqual(ONE_OF_EVERYTHING);
 
-      const result = await createNextWarWeek(live.id, next(), actorEmail, tx);
+      const result = await createNextWarWeek(next(), ctxOf(live.id), tx);
       expect(result).toEqual({ ok: true, edition: "tii" });
 
       const [created] = await tx
@@ -401,11 +401,8 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
         fontPreset: "serif",
         logoUrl: "/themes/t/logo.svg",
         bannerUrl: "/themes/t/banner.svg",
-        organizerEmails: [
-          "lead@jahnelgroup.com",
-          "other@jahnelgroup.com",
-          actorEmail,
-        ],
+        // Deprecated column, left at its default: Organizers are global.
+        organizerEmails: [],
       });
       expect(await counts(created.id)).toEqual({
         team: 0,
@@ -429,9 +426,8 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
       const { eq } = await import("drizzle-orm");
 
       await createNextWarWeek(
-        live.id,
         next({ copyCompetitions: true, copyFaq: true }),
-        actorEmail,
+        ctxOf(live.id),
         tx,
       );
       const [created] = await tx
@@ -479,7 +475,7 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
     });
   });
 
-  it("makes the creator the only Organizer when Organizers aren't copied, and uses defaults without settings", async () => {
+  it("uses defaults without settings", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { createNextWarWeek } =
         await import("@/mutations/war-week-lifecycle");
@@ -487,16 +483,14 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
       const { eq } = await import("drizzle-orm");
 
       await createNextWarWeek(
-        live.id,
-        next({ copyOrganizers: false, copySettings: false }),
-        "Creator@JahnelGroup.com",
+        next({ copySettings: false }),
+        ctxOf(live.id),
         tx,
       );
       const [created] = await tx
         .select()
         .from(schema.warWeek)
         .where(eq(schema.warWeek.edition, "tii"));
-      expect(created.organizerEmails).toEqual([actorEmail]);
       expect(created).toMatchObject({
         mode: "teams",
         teamLabel: "Team",
@@ -517,18 +511,12 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
       const { live } = await fixture(tx);
 
       expect(
-        await createNextWarWeek(
-          live.id,
-          next({ edition: "ti" }),
-          actorEmail,
-          tx,
-        ),
+        await createNextWarWeek(next({ edition: "ti" }), ctxOf(live.id), tx),
       ).toEqual({ ok: false, error: "War Week TI already exists." });
       expect(
         await createNextWarWeek(
-          live.id,
           next({ editionNumber: 9301 }),
-          actorEmail,
+          ctxOf(live.id),
           tx,
         ),
       ).toEqual({
@@ -536,8 +524,103 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
         error: "Edition number 9301 is already War Week TI.",
       });
       expect(
-        await createNextWarWeek(live.id, next({ year: 9301 }), actorEmail, tx),
+        await createNextWarWeek(next({ year: 9301 }), ctxOf(live.id), tx),
       ).toEqual({ ok: false, error: "9301 already has War Week TI." });
+    });
+  });
+
+  it("copies each Competition's Hosts with the Competitions", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { createNextWarWeek } =
+        await import("@/mutations/war-week-lifecycle");
+      const getCompetitionHosts = async (
+        competitionId: string,
+        dbTx: typeof tx,
+      ) => {
+        const { competitionHost } = await import("@/db/schema");
+        const { eq: eqHost } = await import("drizzle-orm");
+        const rows = await dbTx
+          .select({ email: competitionHost.email })
+          .from(competitionHost)
+          .where(eqHost(competitionHost.competitionId, competitionId))
+          .orderBy(competitionHost.email);
+        return rows.map((row) => row.email);
+      };
+      const { live, chess, schema } = await fixture(tx);
+      const { and, eq } = await import("drizzle-orm");
+      const [relay] = await tx
+        .insert(schema.competition)
+        .values({ warWeekId: live.id, name: "Relay", scoring: "team" })
+        .returning();
+      await tx.insert(schema.competitionHost).values([
+        { competitionId: chess.id, email: "tony@jahnelgroup.com" },
+        { competitionId: chess.id, email: "tom@jahnelgroup.com" },
+        { competitionId: relay.id, email: "amy@jahnelgroup.com" },
+      ]);
+
+      await createNextWarWeek(
+        next({ copyCompetitions: true }),
+        ctxOf(live.id),
+        tx,
+      );
+      const [created] = await tx
+        .select({ id: schema.warWeek.id })
+        .from(schema.warWeek)
+        .where(eq(schema.warWeek.edition, "tii"));
+      const copyOf = async (name: string) => {
+        const [row] = await tx
+          .select({ id: schema.competition.id })
+          .from(schema.competition)
+          .where(
+            and(
+              eq(schema.competition.warWeekId, created.id),
+              eq(schema.competition.name, name),
+            ),
+          );
+        return row.id;
+      };
+      expect(await getCompetitionHosts(await copyOf("Chess"), tx)).toEqual([
+        "tom@jahnelgroup.com",
+        "tony@jahnelgroup.com",
+      ]);
+      expect(await getCompetitionHosts(await copyOf("Relay"), tx)).toEqual([
+        "amy@jahnelgroup.com",
+      ]);
+      // The source keeps its own Hosts.
+      expect(await getCompetitionHosts(chess.id, tx)).toEqual([
+        "tom@jahnelgroup.com",
+        "tony@jahnelgroup.com",
+      ]);
+    });
+  });
+
+  it("copies no Hosts when Competitions aren't copied", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { createNextWarWeek } =
+        await import("@/mutations/war-week-lifecycle");
+      const { live, chess, schema } = await fixture(tx);
+      const { eq } = await import("drizzle-orm");
+      await tx
+        .insert(schema.competitionHost)
+        .values({ competitionId: chess.id, email: "tony@jahnelgroup.com" });
+
+      await createNextWarWeek(next(), ctxOf(live.id), tx);
+      const [created] = await tx
+        .select({ id: schema.warWeek.id })
+        .from(schema.warWeek)
+        .where(eq(schema.warWeek.edition, "tii"));
+      const competitionIds = (
+        await tx
+          .select({ id: schema.competition.id })
+          .from(schema.competition)
+          .where(eq(schema.competition.warWeekId, created.id))
+      ).map((c) => c.id);
+      expect(competitionIds).toEqual([]);
+      const hosts = await tx
+        .select()
+        .from(schema.competitionHost)
+        .where(eq(schema.competitionHost.email, "tony@jahnelgroup.com"));
+      expect(hosts.map((h) => h.competitionId)).toEqual([chess.id]);
     });
   });
 
@@ -547,9 +630,8 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
         await import("@/mutations/war-week-lifecycle");
       expect(
         await createNextWarWeek(
-          "00000000-0000-4000-8000-000000000000",
           next(),
-          actorEmail,
+          ctxOf("00000000-0000-4000-8000-000000000000"),
           tx,
         ),
       ).toEqual({ ok: false, error: "That War Week no longer exists." });

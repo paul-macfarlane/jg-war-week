@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { CompetitionsEditor } from "@/components/competitions-editor";
 import { SeedOverwriteWarning } from "@/components/seed-overwrite-warning";
+import { getWarWeekCompetitionHosts } from "@/queries/organizers";
 import {
   getCompetitionGroupSuggestions,
   getSetupCompetitions,
@@ -16,20 +17,23 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Competitions · JG War Week" };
 
 export default async function SetupCompetitionsPage() {
-  const { warWeek, email, isOrganizer, editions } = await loadAdminPage(
-    "/admin/setup/competitions",
-  );
-  if (!isOrganizer) return <AdminRefused warWeek={warWeek} email={email} />;
+  const { warWeek, email, allowed, isOrganizer, editions, runs } =
+    await loadAdminPage("/admin/setup/competitions");
+  if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
-  const [competitions, groupSuggestions] = await Promise.all([
+  const [allCompetitions, groupSuggestions, hosts] = await Promise.all([
     getSetupCompetitions(warWeek),
     getCompetitionGroupSuggestions(warWeek),
+    // Host emails are shown only to Organizers.
+    isOrganizer ? getWarWeekCompetitionHosts(warWeek.id) : undefined,
   ]);
+  const competitions = allCompetitions.filter((c) => runs(c.id));
 
   return (
     <AdminShell
       warWeek={warWeek}
       email={email}
+      isOrganizer={isOrganizer}
       editions={editions}
       current="Setup"
     >
@@ -49,6 +53,9 @@ export default async function SetupCompetitionsPage() {
         </p>
         <SeedOverwriteWarning />
         <CompetitionsEditor
+          warWeekId={warWeek.id}
+          isOrganizer={isOrganizer}
+          hosts={hosts}
           competitions={competitions}
           groupSuggestions={groupSuggestions}
           mode={warWeek.mode}

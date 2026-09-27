@@ -2,18 +2,34 @@ import { loadEnvConfig } from "@next/env";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
+import { isLocalDatabaseUrl } from "@/db/local-url";
 import type { WarWeekSeed } from "@/seed/schema";
 
 loadEnvConfig(process.cwd());
 
-const USAGE = "Usage: pnpm seed:load [--reset] <seed.json> [<seed.json> ...]";
+const USAGE =
+  "Usage: pnpm seed:load [--reset] [--allow-remote-reset] <seed.json> [<seed.json> ...]";
 
 async function main() {
   const args = process.argv.slice(2);
   const reset = args.includes("--reset");
-  const seedPaths = args.filter((arg) => arg !== "--reset");
+  const allowRemoteReset = args.includes("--allow-remote-reset");
+  const seedPaths = args.filter(
+    (arg) => arg !== "--reset" && arg !== "--allow-remote-reset",
+  );
   if (!seedPaths.length || seedPaths.some((arg) => arg.startsWith("--"))) {
     console.error(USAGE);
+    process.exit(1);
+  }
+
+  if (
+    reset &&
+    !allowRemoteReset &&
+    !isLocalDatabaseUrl(process.env.DATABASE_URL, process.env.DATABASE_DRIVER)
+  ) {
+    console.error(
+      "--reset refuses a non-local DATABASE_URL (localhost, 127.0.0.1 or [::1] only) unless --allow-remote-reset is also passed; it deletes each seeded War Week, including organizer-entered data",
+    );
     process.exit(1);
   }
 

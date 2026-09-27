@@ -16,18 +16,22 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Schedule · JG War Week" };
 
 export default async function SetupSchedulePage() {
-  const { warWeek, email, isOrganizer, editions } = await loadAdminPage(
-    "/admin/setup/schedule",
-  );
-  if (!isOrganizer) return <AdminRefused warWeek={warWeek} email={email} />;
+  const { warWeek, email, allowed, isOrganizer, editions, runs } =
+    await loadAdminPage("/admin/setup/schedule");
+  if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
-  // The same grouping and order as the public Schedule page.
-  const days = await getSchedule(warWeek.id);
+  // The same grouping and order as the public Schedule page. A Host sees
+  // only the items linked to their Competitions.
+  const days = (await getSchedule(warWeek.id)).map((day) => ({
+    ...day,
+    items: day.items.filter((item) => runs(item.competition?.id)),
+  }));
 
   return (
     <AdminShell
       warWeek={warWeek}
       email={email}
+      isOrganizer={isOrganizer}
       editions={editions}
       current="Setup"
     >
@@ -58,13 +62,19 @@ export default async function SetupSchedulePage() {
         {days.length === 0 ? (
           <p className="text-foreground/70 text-sm">
             No Days yet.{" "}
-            <Link
-              href="/admin/setup/days"
-              className="text-primary underline-offset-4 hover:underline"
-            >
-              Add a Day
-            </Link>{" "}
-            before adding Schedule Items.
+            {isOrganizer ? (
+              <>
+                <Link
+                  href="/admin/setup/days"
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  Add a Day
+                </Link>{" "}
+                before adding Schedule Items.
+              </>
+            ) : (
+              "An Organizer adds the Days first."
+            )}
           </p>
         ) : (
           <div aria-label="Schedule Items" className="flex flex-col gap-6">

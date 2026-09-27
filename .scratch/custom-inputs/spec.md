@@ -4,7 +4,6 @@ status: done
 phases: A done (PR https://github.com/paul-macfarlane/jg-war-week/pull/63); B done (PR https://github.com/paul-macfarlane/jg-war-week/pull/65); C done (PR feat/custom-inputs-phase-c)
 labels: [done]
 created: 2026-09-24
-deadline: 2026-09-25T08:00-04:00 (staging freeze; whatever phases have merged by then ship)
 source: Paul's first-use feedback and grilling session, 2026-09-24 (Q10–Q13, Q21–Q23)
 order: 2 of 3 (after .scratch/admin-polish; blocked by nothing in it except shared shadcn components)
 ---

@@ -28,9 +28,9 @@ export function OptionSelect({
   options,
   required,
   disabled,
-  placeholder,
   id,
   "aria-label": ariaLabel,
+  "aria-invalid": ariaInvalid,
 }: {
   name?: string;
   value: string;
@@ -38,9 +38,9 @@ export function OptionSelect({
   options: readonly SelectOption[];
   required?: boolean;
   disabled?: boolean;
-  placeholder?: string;
   id?: string;
   "aria-label"?: string;
+  "aria-invalid"?: boolean;
 }) {
   const items = options.map((option) => ({
     value: toItemValue(option.value),
@@ -60,9 +60,10 @@ export function OptionSelect({
         <SelectTrigger
           id={id}
           aria-label={ariaLabel}
+          aria-invalid={ariaInvalid}
           className="h-11 w-full sm:h-9"
         >
-          <SelectValue placeholder={placeholder} />
+          <SelectValue />
         </SelectTrigger>
         <SelectContent>
           {items.map((item) => (

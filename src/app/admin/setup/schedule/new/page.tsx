@@ -13,20 +13,22 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "New Schedule Item · JG War Week" };
 
 export default async function NewScheduleItemPage() {
-  const { warWeek, email, isOrganizer, editions } = await loadAdminPage(
-    "/admin/setup/schedule/new",
-  );
-  if (!isOrganizer) return <AdminRefused warWeek={warWeek} email={email} />;
+  const { warWeek, email, allowed, isOrganizer, editions, runs } =
+    await loadAdminPage("/admin/setup/schedule/new");
+  if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
-  const [days, competitions] = await Promise.all([
+  const [days, allCompetitions] = await Promise.all([
     getSetupDays(warWeek),
     getCompetitionOptions(warWeek),
   ]);
+  // A Host links a new item to one of their own Competitions.
+  const competitions = allCompetitions.filter((c) => runs(c.id));
 
   return (
     <AdminShell
       warWeek={warWeek}
       email={email}
+      isOrganizer={isOrganizer}
       editions={editions}
       current="Setup"
     >
@@ -50,7 +52,12 @@ export default async function NewScheduleItemPage() {
             first.
           </p>
         ) : (
-          <ScheduleItemForm days={days} competitions={competitions} />
+          <ScheduleItemForm
+            warWeekId={warWeek.id}
+            requireCompetition={!isOrganizer}
+            days={days}
+            competitions={competitions}
+          />
         )}
       </section>
     </AdminShell>

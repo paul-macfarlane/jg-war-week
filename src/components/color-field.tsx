@@ -30,6 +30,7 @@ export function ColorField({
   swatches,
   id,
   "aria-label": ariaLabel,
+  "aria-invalid": ariaInvalid,
 }: {
   name?: string;
   /** `#rrggbb` */
@@ -38,6 +39,7 @@ export function ColorField({
   swatches: ColorSwatch[];
   id?: string;
   "aria-label"?: string;
+  "aria-invalid"?: boolean;
 }) {
   const [draft, setDraft] = useState(value);
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +69,7 @@ export function ColorField({
           <Button
             id={id}
             aria-label={ariaLabel}
+            aria-invalid={ariaInvalid}
             type="button"
             variant="outline"
             className="h-11 justify-start gap-2 sm:h-9"

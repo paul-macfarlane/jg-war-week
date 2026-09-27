@@ -13,27 +13,36 @@ import {
 import { ColorField, type ColorSwatch } from "@/components/color-field";
 import { OptionSelect } from "@/components/option-select";
 import {
+  SETUP_EDITOR,
   SetupRowButtons,
   SetupRowError,
+  setupRowProps,
   usageSummary,
   useSetupRow,
 } from "@/components/setup-row";
 import { SuggestionCombobox } from "@/components/suggestion-combobox";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { normalizeHex } from "@/lib/color";
 import type { ParticipantInput, TeamInput } from "@/lib/setup";
+import { teamSwatches } from "@/lib/theme";
 import type { SetupParticipant, SetupTeam } from "@/queries/setup";
 
 const EMPTY_TEAM: TeamInput = { name: "", color: "#888888", logoUrl: "" };
 
 /** One Team's name, color and logo URL. With no `team` it's the add row. */
 function TeamRow({
+  warWeekId,
   team,
   teamLabel,
   swatches,
 }: {
+  warWeekId: string;
   team?: SetupTeam;
   teamLabel: string;
   swatches: ColorSwatch[];
@@ -43,9 +52,13 @@ function TeamRow({
     : EMPTY_TEAM;
   const id = useId();
   const [values, setValues] = useState(initial);
-  const { pending, run, error } = useSetupRow(
-    team ? undefined : () => setValues(EMPTY_TEAM),
-  );
+  const { pending, formRef, formAction, fieldErrors, error, remove } =
+    useSetupRow(
+      () =>
+        team ? updateTeam(team.id, values) : createTeam(warWeekId, values),
+      `${teamLabel} saved`,
+      team ? undefined : () => setValues(EMPTY_TEAM),
+    );
   const set =
     (field: keyof TeamInput) => (event: React.ChangeEvent<HTMLInputElement>) =>
       setValues((v) => ({ ...v, [field]: event.target.value }));
@@ -59,22 +72,21 @@ function TeamRow({
       ])
     : "";
 
-  function submit(event: React.SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    run(
-      () => (team ? updateTeam(team.id, values) : createTeam(values)),
-      `${teamLabel} saved`,
-    );
-  }
-
   return (
-    <li className="border-border border-b py-3 last:border-b-0">
+    <li
+      {...setupRowProps(team?.id)}
+      className="border-border border-b py-3 last:border-b-0"
+    >
       <form
-        onSubmit={submit}
+        ref={formRef}
+        action={formAction}
         aria-label={team ? `${teamLabel} ${team.name}` : `New ${teamLabel}`}
       >
         <FieldGroup className="gap-2 sm:flex-row sm:items-end">
-          <Field className="min-w-0 sm:flex-1">
+          <Field
+            className="min-w-0 sm:flex-1"
+            data-invalid={!!fieldErrors.name}
+          >
             <FieldLabel htmlFor={`${id}-name`}>Name</FieldLabel>
             <Input
               id={`${id}-name`}
@@ -82,21 +94,25 @@ function TeamRow({
               required
               maxLength={80}
               className="h-11 sm:h-9"
+              aria-invalid={!!fieldErrors.name}
               value={values.name}
               onChange={set("name")}
             />
+            <FieldError>{fieldErrors.name}</FieldError>
           </Field>
-          <Field className="sm:w-auto">
+          <Field className="sm:w-auto" data-invalid={!!fieldErrors.color}>
             <FieldLabel htmlFor={`${id}-color`}>Color</FieldLabel>
             <ColorField
               id={`${id}-color`}
               name="color"
+              aria-invalid={!!fieldErrors.color}
               value={values.color}
               swatches={swatches}
               onValueChange={(color) => setValues((v) => ({ ...v, color }))}
             />
+            <FieldError>{fieldErrors.color}</FieldError>
           </Field>
-          <Field className="sm:flex-1">
+          <Field className="sm:flex-1" data-invalid={!!fieldErrors.logoUrl}>
             <FieldLabel htmlFor={`${id}-logo`}>Logo URL</FieldLabel>
             <Input
               id={`${id}-logo`}
@@ -104,16 +120,18 @@ function TeamRow({
               maxLength={500}
               placeholder="Optional"
               className="h-11 sm:h-9"
+              aria-invalid={!!fieldErrors.logoUrl}
               value={values.logoUrl}
               onChange={set("logoUrl")}
             />
+            <FieldError>{fieldErrors.logoUrl}</FieldError>
           </Field>
           <SetupRowButtons
             pending={pending}
             addLabel={`Add ${teamLabel}`}
             onDelete={
               team &&
-              (() => run(() => deleteTeam(team.id), `${teamLabel} deleted`))
+              (() => remove(() => deleteTeam(team.id), `${teamLabel} deleted`))
             }
             deleteTitle={team && `Delete ${teamLabel} ${team.name}?`}
             deleteDescription={usage}
@@ -139,12 +157,14 @@ const EMPTY_PARTICIPANT: ParticipantInput = {
  * no `participant` it's the inline "Add Participant" row.
  */
 function ParticipantRow({
+  warWeekId,
   participant,
   teams,
   teamLabel,
   leaderTitle,
   tagSuggestions,
 }: {
+  warWeekId: string;
   participant?: SetupParticipant;
   /** Empty in a free-for-all, which hides the Team and Leader fields. */
   teams: SetupTeam[];
@@ -164,9 +184,15 @@ function ParticipantRow({
     : EMPTY_PARTICIPANT;
   const id = useId();
   const [values, setValues] = useState(initial);
-  const { pending, run, error } = useSetupRow(
-    participant ? undefined : () => setValues(EMPTY_PARTICIPANT),
-  );
+  const { pending, formRef, formAction, fieldErrors, error, remove } =
+    useSetupRow(
+      () =>
+        participant
+          ? updateParticipant(participant.id, values)
+          : createParticipant(warWeekId, values),
+      "Participant saved",
+      participant ? undefined : () => setValues(EMPTY_PARTICIPANT),
+    );
   const set =
     (field: Exclude<keyof ParticipantInput, "isLeader">) =>
     (event: React.ChangeEvent<HTMLInputElement>) =>
@@ -184,25 +210,18 @@ function ParticipantRow({
       ])
     : "";
 
-  function submit(event: React.SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    run(
-      () =>
-        participant
-          ? updateParticipant(participant.id, values)
-          : createParticipant(values),
-      "Participant saved",
-    );
-  }
-
   return (
-    <li className="border-border border-b py-3 last:border-b-0">
+    <li
+      {...setupRowProps(participant?.id)}
+      className="border-border border-b py-3 last:border-b-0"
+    >
       <form
-        onSubmit={submit}
+        ref={formRef}
+        action={formAction}
         aria-label={participant ? participant.displayName : "New Participant"}
       >
         <FieldGroup className="grid gap-2 sm:grid-cols-3 sm:items-end xl:grid-cols-[minmax(0,1.4fr)_minmax(0,0.7fr)_minmax(0,1.4fr)_minmax(0,1fr)_auto_auto]">
-          <Field>
+          <Field data-invalid={!!fieldErrors.displayName}>
             <FieldLabel htmlFor={`${id}-name`}>Display name</FieldLabel>
             <Input
               id={`${id}-name`}
@@ -210,27 +229,28 @@ function ParticipantRow({
               required
               maxLength={120}
               className="h-11 sm:h-9"
+              aria-invalid={!!fieldErrors.displayName}
               value={values.displayName}
               onChange={set("displayName")}
             />
+            <FieldError>{fieldErrors.displayName}</FieldError>
           </Field>
-          <Field>
-            {/* SuggestionCombobox takes no id, so the label wraps it. */}
-            <FieldLabel className="w-full flex-col items-stretch">
-              Company Tag
-              <SuggestionCombobox
-                name="companyTag"
-                maxLength={40}
-                placeholder="Optional"
-                suggestions={tagSuggestions}
-                value={values.companyTag}
-                onValueChange={(companyTag) =>
-                  setValues((v) => ({ ...v, companyTag }))
-                }
-              />
-            </FieldLabel>
+          <Field data-invalid={!!fieldErrors.companyTag}>
+            <FieldLabel htmlFor={`${id}-tag`}>Company Tag</FieldLabel>
+            <SuggestionCombobox
+              id={`${id}-tag`}
+              name="companyTag"
+              maxLength={40}
+              placeholder="Optional"
+              suggestions={tagSuggestions}
+              value={values.companyTag}
+              onValueChange={(companyTag) =>
+                setValues((v) => ({ ...v, companyTag }))
+              }
+            />
+            <FieldError>{fieldErrors.companyTag}</FieldError>
           </Field>
-          <Field>
+          <Field data-invalid={!!fieldErrors.email}>
             <FieldLabel htmlFor={`${id}-email`}>Email</FieldLabel>
             <Input
               id={`${id}-email`}
@@ -239,23 +259,27 @@ function ParticipantRow({
               maxLength={254}
               placeholder="Optional"
               className="h-11 sm:h-9"
+              aria-invalid={!!fieldErrors.email}
               value={values.email}
               onChange={set("email")}
             />
+            <FieldError>{fieldErrors.email}</FieldError>
           </Field>
           {teams.length > 0 ? (
             <>
-              <Field>
+              <Field data-invalid={!!fieldErrors.teamId}>
                 <FieldLabel htmlFor={`${id}-team`}>{teamLabel}</FieldLabel>
                 <OptionSelect
                   id={`${id}-team`}
                   name="teamId"
+                  aria-invalid={!!fieldErrors.teamId}
                   options={teamOptions}
                   value={values.teamId}
                   onValueChange={(teamId) =>
                     setValues((v) => ({ ...v, teamId }))
                   }
                 />
+                <FieldError>{fieldErrors.teamId}</FieldError>
               </Field>
               <Field orientation="horizontal" className="min-h-11 sm:min-h-9">
                 <Switch
@@ -278,7 +302,7 @@ function ParticipantRow({
             onDelete={
               participant &&
               (() =>
-                run(
+                remove(
                   () => deleteParticipant(participant.id),
                   "Participant deleted",
                 ))
@@ -301,10 +325,13 @@ function ParticipantRow({
 
 /** The War Week's Teams, each editable, plus an add row. */
 export function TeamsEditor({
+  warWeekId,
   teams,
   teamLabel,
   themeSwatches,
 }: {
+  /** The War Week this page was rendered for; creates post it. */
+  warWeekId: string;
   teams: SetupTeam[];
   teamLabel: string;
   /** The Appearance Theme's colors, offered as Team color swatches. */
@@ -313,13 +340,10 @@ export function TeamsEditor({
   // Each row offers the theme colors plus the other Teams' colors.
   const swatchesFor = (teamId?: string) => [
     ...themeSwatches,
-    ...teams.flatMap((other) => {
-      const color = normalizeHex(other.color);
-      return other.id !== teamId && color ? [{ color, label: other.name }] : [];
-    }),
+    ...teamSwatches(teams, teamId),
   ];
   return (
-    <div className="flex flex-col gap-1">
+    <div {...SETUP_EDITOR} className="flex flex-col gap-1">
       {teams.length === 0 ? (
         <p className="text-foreground/70 text-sm">No {teamLabel}s yet.</p>
       ) : (
@@ -328,6 +352,7 @@ export function TeamsEditor({
             // Keyed on the saved values so a refresh resets the row's fields.
             <TeamRow
               key={`${team.id}-${team.name}-${team.color}-${team.logoUrl}`}
+              warWeekId={warWeekId}
               team={team}
               teamLabel={teamLabel}
               swatches={swatchesFor(team.id)}
@@ -336,7 +361,11 @@ export function TeamsEditor({
         </ul>
       )}
       <ul>
-        <TeamRow teamLabel={teamLabel} swatches={swatchesFor()} />
+        <TeamRow
+          warWeekId={warWeekId}
+          teamLabel={teamLabel}
+          swatches={swatchesFor()}
+        />
       </ul>
     </div>
   );
@@ -344,12 +373,15 @@ export function TeamsEditor({
 
 /** The roster: every Participant, editable in place, then "Add Participant". */
 export function RosterEditor({
+  warWeekId,
   participants,
   teams,
   teamLabel,
   leaderTitle,
   tagSuggestions,
 }: {
+  /** The War Week this page was rendered for; creates post it. */
+  warWeekId: string;
   participants: SetupParticipant[];
   teams: SetupTeam[];
   teamLabel: string;
@@ -357,9 +389,15 @@ export function RosterEditor({
   /** Company Tags used in any War Week, for the Company Tag field. */
   tagSuggestions: string[];
 }) {
-  const rowProps = { teams, teamLabel, leaderTitle, tagSuggestions };
+  const rowProps = {
+    warWeekId,
+    teams,
+    teamLabel,
+    leaderTitle,
+    tagSuggestions,
+  };
   return (
-    <div className="flex flex-col gap-1">
+    <div {...SETUP_EDITOR} className="flex flex-col gap-1">
       {participants.length === 0 ? (
         <p className="text-foreground/70 text-sm">No Participants yet.</p>
       ) : (

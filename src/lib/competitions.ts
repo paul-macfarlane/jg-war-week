@@ -1,5 +1,3 @@
-import { z } from "zod";
-
 import type { Competition, PointsEntry, Team } from "@/db/schema";
 import { formatPoints } from "@/lib/points";
 
@@ -87,13 +85,6 @@ export function formatMaxPoints(maxPoints: number | null): string {
   return `Max ${formatPoints(maxPoints)} ${maxPoints === 1 ? "pt" : "pts"}`;
 }
 
-const competitionId = z.uuid();
-
-/** Whether a URL segment is shaped like a Competition id (a UUID). */
-export function isCompetitionId(id: string): boolean {
-  return competitionId.safeParse(id).success;
-}
-
 type LedgerTeam = Pick<Team, "name" | "color">;
 
 export type LedgerRow = Pick<
@@ -121,7 +112,11 @@ export function buildCompetitionLedger({
   rows: LedgerRow[];
 }): CompetitionLedger {
   const entries = [...rows]
-    .sort((a, b) => a.enteredAt.getTime() - b.enteredAt.getTime())
+    .sort(
+      (a, b) =>
+        a.enteredAt.getTime() - b.enteredAt.getTime() ||
+        a.id.localeCompare(b.id),
+    )
     .map(({ id, points, note, team, participant }) => ({
       id,
       target: participant

@@ -18,21 +18,28 @@ export default async function EditPointsEntryPage({
   params,
 }: PageProps<"/admin/points/[id]">) {
   const { id } = await params;
-  const { warWeek, email, isOrganizer, editions } = await loadAdminPage(
-    `/admin/points/${id}`,
-  );
-  if (!isOrganizer) return <AdminRefused warWeek={warWeek} email={email} />;
+  const { warWeek, email, allowed, isOrganizer, editions, runs } =
+    await loadAdminPage(`/admin/points/${id}`);
+  if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
-  const [entry, options] = await Promise.all([
+  const [entry, allOptions] = await Promise.all([
     getPointsEntryForEdit(warWeek, id),
     getPointsEntryFormOptions(warWeek),
   ]);
   if (!entry) notFound();
+  if (!runs(entry.competitionId)) {
+    return <AdminRefused warWeek={warWeek} email={email} />;
+  }
+  const options = {
+    ...allOptions,
+    competitions: allOptions.competitions.filter((c) => runs(c.id)),
+  };
 
   return (
     <AdminShell
       warWeek={warWeek}
       email={email}
+      isOrganizer={isOrganizer}
       editions={editions}
       current="Points Entries"
     >

@@ -10,22 +10,25 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Admin · JG War Week" };
 
 export default async function AdminPage() {
-  const { warWeek, email, isOrganizer, editions } =
+  const { warWeek, email, allowed, isOrganizer, editions } =
     await loadAdminPage("/admin");
-  if (!isOrganizer) return <AdminRefused warWeek={warWeek} email={email} />;
+  if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   return (
     <AdminShell
       warWeek={warWeek}
       email={email}
+      isOrganizer={isOrganizer}
       editions={editions}
       current="Overview"
     >
       <div className="flex max-w-2xl flex-col gap-3">
-        <h1 className="text-2xl font-bold">Organizer overview</h1>
+        <h1 className="text-2xl font-bold">
+          {isOrganizer ? "Organizer overview" : "Host overview"}
+        </h1>
         <p className="text-foreground/70">
-          You&apos;re signed in as an Organizer for War Week{" "}
-          {warWeek.edition.toUpperCase()} ({warWeek.status}).
+          You&apos;re signed in as {isOrganizer ? "an Organizer" : "a Host"} for
+          War Week {warWeek.edition.toUpperCase()} ({warWeek.status}).
         </p>
         <p className="text-foreground/70">
           <Link
@@ -47,14 +50,19 @@ export default async function AdminPage() {
             className="text-primary underline underline-offset-4"
           >
             post Announcements
-          </Link>{" "}
-          and{" "}
-          <Link
-            href="/admin/awards"
-            className="text-primary underline underline-offset-4"
-          >
-            give Awards
           </Link>
+          {isOrganizer && (
+            <>
+              {" "}
+              and{" "}
+              <Link
+                href="/admin/awards"
+                className="text-primary underline underline-offset-4"
+              >
+                give Awards
+              </Link>
+            </>
+          )}
           .
         </p>
       </div>

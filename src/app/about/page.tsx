@@ -46,10 +46,10 @@ export default function AboutPage() {
       <header className="relative mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-5 sm:px-6">
         <span className="text-sm font-bold tracking-wide">JG War Week</span>
         <Link
-          href="/sign-in"
+          href="/"
           className="text-foreground/70 hover:text-foreground text-sm underline-offset-4 hover:underline"
         >
-          Sign in
+          Open JG War Week
         </Link>
       </header>
 

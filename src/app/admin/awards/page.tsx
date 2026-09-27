@@ -13,9 +13,9 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Awards · JG War Week" };
 
 export default async function AdminAwardsPage() {
-  const { warWeek, email, isOrganizer, editions } =
-    await loadAdminPage("/admin/awards");
-  if (!isOrganizer) return <AdminRefused warWeek={warWeek} email={email} />;
+  const { warWeek, email, allowed, isOrganizer, editions } =
+    await loadAdminPage("/admin/awards", "organizers");
+  if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const awards = await getAwards(warWeek);
 
@@ -23,6 +23,7 @@ export default async function AdminAwardsPage() {
     <AdminShell
       warWeek={warWeek}
       email={email}
+      isOrganizer={isOrganizer}
       editions={editions}
       current="Awards"
     >

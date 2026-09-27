@@ -17,10 +17,9 @@ export default async function EditFaqItemPage({
   params,
 }: PageProps<"/admin/setup/faq/[id]">) {
   const { id } = await params;
-  const { warWeek, email, isOrganizer, editions } = await loadAdminPage(
-    `/admin/setup/faq/${id}`,
-  );
-  if (!isOrganizer) return <AdminRefused warWeek={warWeek} email={email} />;
+  const { warWeek, email, allowed, isOrganizer, editions } =
+    await loadAdminPage(`/admin/setup/faq/${id}`, "organizers");
+  if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const item = await getFaqItemForEdit(warWeek, id);
   if (!item) notFound();
@@ -32,6 +31,7 @@ export default async function EditFaqItemPage({
     <AdminShell
       warWeek={warWeek}
       email={email}
+      isOrganizer={isOrganizer}
       editions={editions}
       current="Setup"
     >
@@ -44,6 +44,7 @@ export default async function EditFaqItemPage({
         </Link>
         <h1 className="text-2xl font-bold">Edit FAQ Item</h1>
         <FaqItemForm
+          warWeekId={warWeek.id}
           itemId={item.id}
           initial={{
             question: item.question,

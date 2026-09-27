@@ -1,8 +1,21 @@
 import { z } from "zod";
 
+import type { Announcement } from "@/db/schema";
+import { sameEmail } from "@/lib/access";
+import { fieldErrorsFrom } from "@/lib/form-errors";
 import { formatLedgerTime } from "@/lib/points-entry";
+import type { Parsed } from "@/lib/result";
 import { contentInputSchema } from "@/lib/rich-text/content";
 import { videoEmbedUrl } from "@/lib/video";
+
+/**
+ * What an `AnnouncementCard` renders: an Announcement's content plus its
+ * author's display name (`announcementAuthorName`), never the raw email.
+ */
+export type AnnouncementCardData = Pick<
+  Announcement,
+  "id" | "title" | "body" | "videoUrls" | "pinned" | "publishedAt"
+> & { authorName: string };
 
 /** The Announcement title's column length. */
 export const ANNOUNCEMENT_TITLE_MAX = 200;
@@ -57,44 +70,36 @@ const FIELD_LABELS: Record<string, string> = {
   title: "Title",
 };
 
-/** Validates the Announcement form. Never throws; returns the first error. */
-export function parseAnnouncementInput(
-  input: AnnouncementInput,
-): { ok: true; value: AnnouncementValues } | { ok: false; error: string } {
-  const result = announcementInputSchema.safeParse(input);
-  if (result.success) return { ok: true, value: result.data };
-
-  const issue = result.error.issues[0];
+/** Words the video-link and body issues; the rest take the label rule. */
+function describeAnnouncementIssue(issue: z.core.$ZodIssue): string | null {
   if (issue.path[0] === "videoUrls") {
     if (issue.path.length === 1) {
-      return {
-        ok: false,
-        error: `Add at most ${MAX_VIDEO_LINKS} video links.`,
-      };
+      return `Add at most ${MAX_VIDEO_LINKS} video links.`;
     }
     const index = typeof issue.path[1] === "number" ? issue.path[1] : 0;
-    return {
-      ok: false,
-      error: `Video link ${index + 1} ${issue.message}.`,
-    };
+    return `Video link ${index + 1} ${issue.message}.`;
   }
-  if (issue.path[0] === "body") {
-    return { ok: false, error: "Body must be valid rich text." };
-  }
-
-  const label = FIELD_LABELS[String(issue.path[0])];
-  // Shared field schemas word their errors as "must …"; prefix the field.
-  const message = issue.message.startsWith("must ")
-    ? `${label} ${issue.message}.`
-    : issue.message;
-  return { ok: false, error: message };
+  if (issue.path[0] === "body") return "Body must be valid rich text.";
+  return null;
 }
 
-const uuid = z.uuid();
-
-/** Whether a URL segment or action argument is shaped like a row id. */
-export function isAnnouncementId(id: string): boolean {
-  return uuid.safeParse(id).success;
+/**
+ * Validates the Announcement form. Never throws; returns the first error
+ * and one per refused field.
+ */
+export function parseAnnouncementInput(
+  input: AnnouncementInput,
+): Parsed<AnnouncementValues> {
+  const result = announcementInputSchema.safeParse(input);
+  if (result.success) return { ok: true, value: result.data };
+  // Shared field schemas word their errors as "must …"; prefix the field.
+  return {
+    ok: false,
+    ...fieldErrorsFrom(result.error, {
+      labels: FIELD_LABELS,
+      describe: describeAnnouncementIssue,
+    }),
+  };
 }
 
 /**
@@ -112,3 +117,46 @@ export function sortAnnouncements<
 
 /** An Announcement's published-at, in War Week time (ET). */
 export const formatPublishedAt = formatLedgerTime;
+
+/**
+ * The name an Announcement's author shows as, for a Participant-facing
+ * card: the War Week's Participant whose email matches the author's
+ * (account linking: `sameEmail`), else `authorHandle`. Never the raw
+ * email; only the admin pages keep it.
+ */
+export function announcementAuthorName(
+  authorEmail: string,
+  participants: AuthorCandidate[],
+): string {
+  const match = participants.find((p) => sameEmail(p.email, authorEmail));
+  return match ? match.displayName : authorHandle(authorEmail);
+}
+
+/** A War Week's Participant an Announcement author can match. */
+export type AuthorCandidate = { email: string | null; displayName: string };
+
+/** The part of an email before the `@`: "pat@jahnelgroup.com" → "pat". */
+export function authorHandle(email: string): string {
+  return email.split("@")[0];
+}
+
+/** How many `video` blocks a rich-text tree holds, at any depth. */
+function embeddedVideos(node: unknown): number {
+  if (typeof node !== "object" || node === null) return 0;
+  const { type, content } = node as { type?: unknown; content?: unknown };
+  const own = type === "video" ? 1 : 0;
+  return Array.isArray(content)
+    ? content.reduce<number>((sum, child) => sum + embeddedVideos(child), own)
+    : own;
+}
+
+/** An Announcement's videos: its video links plus videos embedded in the body. */
+export function announcementVideoCount({
+  videoUrls,
+  body,
+}: {
+  videoUrls: string[];
+  body: unknown;
+}): number {
+  return videoUrls.length + embeddedVideos(body);
+}

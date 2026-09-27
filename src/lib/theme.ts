@@ -1,7 +1,12 @@
 import type { CSSProperties } from "react";
 
-import type { WarWeek } from "@/db/schema";
-import { normalizeHex } from "@/lib/color";
+import type { Team, WarWeek } from "@/db/schema";
+import {
+  contrastRatio,
+  normalizeHex,
+  readableOn,
+  readableText,
+} from "@/lib/color";
 
 const FONT_PRESET_VAR: Record<WarWeek["fontPreset"], string> = {
   sans: "var(--font-preset-sans)",
@@ -21,11 +26,26 @@ export type ThemeColors = Pick<
 >;
 
 /**
+ * Whether a background reads as a dark surface: white text contrasts more
+ * against it than black does. Ties (and non-hex input, where `contrastRatio`
+ * returns null) default to light, the safer native-control fallback.
+ */
+export function backgroundColorScheme(background: string): "dark" | "light" {
+  const onWhite = contrastRatio("#ffffff", background);
+  const onBlack = contrastRatio("#000000", background);
+  if (onWhite == null || onBlack == null) return "light";
+  return onWhite > onBlack ? "dark" : "light";
+}
+
+/**
  * Maps a War Week's Appearance Theme onto the shadcn CSS custom properties
  * so the themed wrapper can be styled purely from `style`. Pure function:
- * no DOM, no I/O.
+ * no DOM, no I/O. Also sets native `color-scheme` (form controls,
+ * scrollbars) so a dark Appearance Theme doesn't keep light chrome.
  */
-export function warWeekThemeStyle(warWeek: ThemeColors): CSSProperties {
+export function warWeekThemeStyle(
+  warWeek: ThemeColors,
+): CSSProperties & { colorScheme: "dark" | "light" } {
   const bg = warWeek.backgroundColor;
   const fg = warWeek.foregroundColor;
   // Muted surfaces lean from the background toward the text, and muted text
@@ -33,11 +53,21 @@ export function warWeekThemeStyle(warWeek: ThemeColors): CSSProperties {
   // both keep hover, popover and input states readable.
   const mutedSurface = `color-mix(in oklch, ${bg}, ${fg} 12%)`;
   const mutedText = `color-mix(in oklch, ${fg}, ${bg} 35%)`;
+  // Primary-colored text (Story Themes, small links) and text on the accent
+  // (the bannerless hero) must still read when an Organizer's primary or
+  // accent sits too close to the background or the primary text color.
+  const primaryText = readableText(warWeek.primaryColor, bg, fg);
+  const accentText = readableOn(
+    warWeek.accentColor,
+    warWeek.primaryForegroundColor,
+  );
   return {
+    colorScheme: backgroundColorScheme(bg),
     "--primary": warWeek.primaryColor,
     "--primary-foreground": warWeek.primaryForegroundColor,
+    "--primary-text": primaryText,
     "--accent": warWeek.accentColor,
-    "--accent-foreground": warWeek.primaryForegroundColor,
+    "--accent-foreground": accentText,
     "--background": warWeek.backgroundColor,
     "--foreground": warWeek.foregroundColor,
     "--card": warWeek.backgroundColor,
@@ -52,33 +82,13 @@ export function warWeekThemeStyle(warWeek: ThemeColors): CSSProperties {
     "--popover-foreground": fg,
     "--input": `color-mix(in oklch, ${bg}, ${fg} 20%)`,
     "--font-sans": FONT_PRESET_VAR[warWeek.fontPreset],
-    "--ww-primary": warWeek.primaryColor,
-  } as CSSProperties;
+  } as CSSProperties & { colorScheme: "dark" | "light" };
 }
 
 /** WCAG AA contrast for body text. */
 export const MIN_TEXT_CONTRAST = 4.5;
 
-/** A hex color's WCAG relative luminance, or null when it isn't a hex color. */
-function luminance(hex: string): number | null {
-  const match = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex.trim());
-  if (!match) return null;
-  const digits =
-    match[1].length === 3 ? [...match[1]].map((d) => d + d).join("") : match[1];
-  const [r, g, b] = [0, 2, 4].map((i) => {
-    const c = parseInt(digits.slice(i, i + 2), 16) / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-/** The WCAG contrast ratio of two hex colors (1–21), or null if either isn't one. */
-export function contrastRatio(a: string, b: string): number | null {
-  const la = luminance(a);
-  const lb = luminance(b);
-  if (la == null || lb == null) return null;
-  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
-}
+export { contrastRatio };
 
 /**
  * The text-on-color pairs the themed pages draw, each below WCAG AA, as
@@ -123,5 +133,21 @@ export function themeSwatches(
   return SWATCH_FIELDS.flatMap(([field, label]) => {
     const color = normalizeHex(theme[field]);
     return color ? [{ color, label }] : [];
+  });
+}
+
+/**
+ * Team colors as color-field swatches (`#rrggbb`, labelled with the Team's
+ * name), leaving out the Team `exceptTeamId` and any color that isn't hex.
+ */
+export function teamSwatches(
+  teams: readonly (Pick<Team, "name" | "color"> & { id?: string })[],
+  exceptTeamId?: string,
+): { color: string; label: string }[] {
+  return teams.flatMap((team) => {
+    const color = normalizeHex(team.color);
+    return color && team.id !== exceptTeamId
+      ? [{ color, label: team.name }]
+      : [];
   });
 }

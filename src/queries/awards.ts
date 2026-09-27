@@ -7,9 +7,9 @@ import {
   awardParticipant,
   participant,
   team,
-  warWeek as warWeekTable,
 } from "@/db/schema";
-import { type AwardView, isAwardId } from "@/lib/awards";
+import { type AwardView } from "@/lib/awards";
+import { isUuid } from "@/lib/uuid";
 
 export type { AwardView };
 
@@ -80,7 +80,7 @@ export async function getAwardForEdit(
   id: string,
   dbOrTx: DBOrTx = db,
 ): Promise<AwardView | undefined> {
-  if (!isAwardId(id)) return undefined;
+  if (!isUuid(id)) return undefined;
   const awards = await getAwards(warWeek, dbOrTx);
   return awards.find((a) => a.id === id);
 }
@@ -150,21 +150,4 @@ export async function recipientsInWarWeek(
     team: teams.length > 0,
     participants: participants.length === recipients.participantIds.length,
   };
-}
-
-/** The War Week an Award belongs to, for the Organizer check. */
-export async function getAwardWarWeek(id: string, dbOrTx: DBOrTx = db) {
-  if (!isAwardId(id)) return undefined;
-  const [found] = await dbOrTx
-    .select({
-      id: warWeekTable.id,
-      edition: warWeekTable.edition,
-      status: warWeekTable.status,
-      organizerEmails: warWeekTable.organizerEmails,
-    })
-    .from(award)
-    .innerJoin(warWeekTable, eq(warWeekTable.id, award.warWeekId))
-    .where(eq(award.id, id))
-    .limit(1);
-  return found;
 }

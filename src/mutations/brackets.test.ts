@@ -2,26 +2,17 @@ import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import type { DBTx } from "@/db";
+import { isLocalDatabaseUrl } from "@/db/local-url";
+import { inRolledBackTransaction } from "@/db/test-transaction";
 
 // Runs only against a local Postgres (CI's service or docker compose; see
 // vitest.config.ts), never a hosted database.
-const databaseUrl = process.env.DATABASE_URL ?? "";
-const isLocalDatabase =
-  process.env.DATABASE_DRIVER !== "neon" &&
-  /@(localhost|127\.0\.0\.1)[:/]/.test(databaseUrl);
+const isLocalDatabase = isLocalDatabaseUrl(
+  process.env.DATABASE_URL,
+  process.env.DATABASE_DRIVER,
+);
 
 class Rollback extends Error {}
-
-/** Runs `body` in a transaction that is always rolled back. */
-async function inRolledBackTransaction(body: (tx: DBTx) => Promise<void>) {
-  const { withTransaction } = await import("@/db");
-  await withTransaction(async (tx) => {
-    await body(tx);
-    throw new Rollback();
-  }).catch((error) => {
-    if (!(error instanceof Rollback)) throw error;
-  });
-}
 
 const actorEmail = "organizer@jahnelgroup.com";
 
@@ -151,17 +142,16 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(
         await mutations.replaceEntrants(
           f.competitionId,
-          [f.red, f.blue, f.green, f.gold],
+          { targetIds: [f.red, f.blue, f.green, f.gold] },
           f.ctx,
-          {},
           tx,
         ),
       ).toEqual({ ok: true });
       expect(
         await mutations.generateBracket(
           f.competitionId,
-          f.ctx,
           { rng: rngZero },
+          f.ctx,
           tx,
         ),
       ).toEqual({ ok: true });
@@ -191,9 +181,8 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
 
       await mutations.replaceEntrants(
         f.chessId,
-        [f.neo, f.trinity],
+        { targetIds: [f.neo, f.trinity] },
         f.ctx,
-        {},
         tx,
       );
       const view = (await queries.getBracket(f.chessId, tx))!;
@@ -212,9 +201,8 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(
         await mutations.replaceEntrants(
           f.competitionId,
-          [f.red, f.neo],
+          { targetIds: [f.red, f.neo] },
           f.ctx,
-          {},
           tx,
         ),
       ).toEqual({
@@ -225,18 +213,16 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(
         await mutations.replaceEntrants(
           f.competitionId,
-          [f.red, f.outsider],
+          { targetIds: [f.red, f.outsider] },
           f.ctx,
-          {},
           tx,
         ),
       ).toMatchObject({ ok: false });
       expect(
         await mutations.replaceEntrants(
           f.competitionId,
-          [f.red],
+          { targetIds: [f.red] },
           f.otherCtx,
-          {},
           tx,
         ),
       ).toEqual({ ok: false, error: "That Competition no longer exists." });
@@ -249,15 +235,14 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       const f = await fixture(tx);
       await mutations.replaceEntrants(
         f.competitionId,
-        [f.red, f.blue, f.green, f.gold],
+        { targetIds: [f.red, f.blue, f.green, f.gold] },
         f.ctx,
-        {},
         tx,
       );
       await mutations.generateBracket(
         f.competitionId,
-        f.ctx,
         { rng: rngZero },
+        f.ctx,
         tx,
       );
       let view = (await queries.getBracket(f.competitionId, tx))!;
@@ -302,7 +287,25 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       view = (await queries.getBracket(f.competitionId, tx))!;
       expect(view.champion).toBe(id("Gold"));
 
-      // Editing the first Heat sends the final back to pending.
+      // A score-only edit keeps the final.
+      expect(
+        await mutations.recordHeatResult(
+          f.competitionId,
+          semi1,
+          { order: [id("Red"), id("Blue")], scores: { [id("Red")]: "25" } },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true, resetHeatIds: [] });
+      view = (await queries.getBracket(f.competitionId, tx))!;
+      expect(heatAt(view, 1, 1).heat.slots[1]).toMatchObject({ score: "25" });
+      expect(heatAt(view, 2, 1).heat.status).toBe("played");
+      expect(view.champion).toBe(id("Gold"));
+      // The later Heat's Entrants and recorded result are untouched.
+      expect(heatAt(view, 2, 1).labels).toEqual(["Red", "Gold"]);
+      expect(heatAt(view, 2, 1).heat.slots.map((s) => s.place)).toEqual([2, 1]);
+
+      // Changing the first Heat's winner sends the final back to pending.
       expect(
         await mutations.recordHeatResult(
           f.competitionId,
@@ -338,23 +341,22 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       const f = await fixture(tx);
       await mutations.replaceEntrants(
         f.competitionId,
-        [f.red, f.blue, f.green],
+        { targetIds: [f.red, f.blue, f.green] },
         f.ctx,
-        {},
         tx,
       );
       await mutations.generateBracket(
         f.competitionId,
-        f.ctx,
         { rng: rngZero },
+        f.ctx,
         tx,
       );
       // Regenerating before any Heat Result needs no force (byes don't count).
       expect(
         await mutations.generateBracket(
           f.competitionId,
-          f.ctx,
           { rng: rngZero },
+          f.ctx,
           tx,
         ),
       ).toEqual({ ok: true });
@@ -376,17 +378,16 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(
         await mutations.generateBracket(
           f.competitionId,
-          f.ctx,
           { rng: rngZero },
+          f.ctx,
           tx,
         ),
       ).toEqual(refusal);
       expect(
         await mutations.replaceEntrants(
           f.competitionId,
-          [f.red, f.blue],
+          { targetIds: [f.red, f.blue] },
           f.ctx,
-          {},
           tx,
         ),
       ).toEqual(refusal);
@@ -394,8 +395,8 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(
         await mutations.generateBracket(
           f.competitionId,
-          f.ctx,
           { rng: rngZero, force: true },
+          f.ctx,
           tx,
         ),
       ).toEqual({ ok: true });
@@ -410,9 +411,8 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(
         await mutations.replaceEntrants(
           f.competitionId,
-          [f.red, f.blue],
+          { targetIds: [f.red, f.blue], force: true },
           f.ctx,
-          { force: true },
           tx,
         ),
       ).toEqual({ ok: true });
@@ -438,15 +438,14 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       });
       await mutations.replaceEntrants(
         f.competitionId,
-        [f.red, f.blue, f.green, f.gold],
+        { targetIds: [f.red, f.blue, f.green, f.gold] },
         f.ctx,
-        {},
         tx,
       );
       await mutations.generateBracket(
         f.competitionId,
-        f.ctx,
         { rng: rngZero },
+        f.ctx,
         tx,
       );
       expect(
@@ -516,8 +515,8 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(
         await mutations.generateBracket(
           f.competitionId,
-          f.ctx,
           { force: true },
+          f.ctx,
           tx,
         ),
       ).toEqual({
@@ -569,6 +568,60 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
     });
   });
 
+  it("refuses to change Placement Points while the Bracket is finalized", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations, queries } = await modules();
+      const setup = await import("@/mutations/setup");
+      const f = await fixture(tx);
+      await mutations.replaceEntrants(
+        f.competitionId,
+        { targetIds: [f.red, f.blue] },
+        f.ctx,
+        tx,
+      );
+      await mutations.generateBracket(
+        f.competitionId,
+        { rng: rngZero },
+        f.ctx,
+        tx,
+      );
+      const bracket = (await queries.getBracket(f.competitionId, tx))!;
+      const only = bracket.bracket.heats[0];
+      await mutations.recordHeatResult(
+        f.competitionId,
+        only.id,
+        { order: only.slots.map((s) => s.entrantId!) },
+        f.ctx,
+        tx,
+      );
+      expect(
+        await mutations.finalizeBracket(f.competitionId, f.ctx, tx),
+      ).toEqual({ ok: true });
+
+      const values: Parameters<typeof setup.updateCompetition>[1] = {
+        name: "Captain Clash",
+        description: null,
+        scoring: "team",
+        maxPoints: null,
+        placementPoints: [10, 5, 1],
+        countsTowardTeam: false,
+        competitionGroup: null,
+      };
+      expect(
+        await setup.updateCompetition(f.competitionId, values, f.ctx, tx),
+      ).toEqual({
+        ok: false,
+        error:
+          "This Competition's Bracket is finalized. Un-finalize the Bracket first.",
+      });
+      const [row] = await tx
+        .select({ placementPoints: f.schema.competition.placementPoints })
+        .from(f.schema.competition)
+        .where(eq(f.schema.competition.id, f.competitionId));
+      expect(row.placementPoints).toEqual([10, 6, 3]);
+    });
+  });
+
   it("sets the Format and refuses to drop it while there are Entrants", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
@@ -588,9 +641,8 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(
         await mutations.replaceEntrants(
           f.competitionId,
-          [f.red, f.blue],
+          { targetIds: [f.red, f.blue] },
           f.ctx,
-          {},
           tx,
         ),
       ).toEqual({
@@ -606,9 +658,8 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       );
       await mutations.replaceEntrants(
         f.competitionId,
-        [f.red, f.blue],
+        { targetIds: [f.red, f.blue] },
         f.ctx,
-        {},
         tx,
       );
       expect(
@@ -633,12 +684,16 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       const f = await fixture(tx);
       await mutations.replaceEntrants(
         f.competitionId,
-        [f.gold, f.green],
+        { targetIds: [f.gold, f.green] },
         f.ctx,
-        {},
         tx,
       );
-      await mutations.replaceEntrants(f.chessId, [f.trinity], f.ctx, {}, tx);
+      await mutations.replaceEntrants(
+        f.chessId,
+        { targetIds: [f.trinity] },
+        f.ctx,
+        tx,
+      );
 
       expect(await setup.deleteTeam(f.gold, f.ctx, tx)).toEqual({
         ok: false,
@@ -671,6 +726,61 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         error:
           "This Competition has 1 Entrant. Remove them before changing its scoring.",
       });
+    });
+  });
+
+  it("refuses a Heat slot other than 0 or 1, or a place below 1", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations } = await modules();
+      const f = await fixture(tx);
+      const { heat, heatEntrant, entrant } = f.schema;
+      await mutations.replaceEntrants(
+        f.competitionId,
+        { targetIds: [f.red, f.blue] },
+        f.ctx,
+        tx,
+      );
+      const [red, blue] = await tx
+        .select({ id: entrant.id })
+        .from(entrant)
+        .where(eq(entrant.competitionId, f.competitionId))
+        .orderBy(entrant.seedPosition);
+      const [final] = await tx
+        .insert(heat)
+        .values({ competitionId: f.competitionId, round: 1, position: 1 })
+        .returning({ id: heat.id });
+
+      /** The Postgres error code an insert fails with, or null. */
+      const insertError = async (
+        row: Omit<typeof heatEntrant.$inferInsert, "heatId">,
+      ) =>
+        tx
+          .transaction(async (savepoint) => {
+            await savepoint
+              .insert(heatEntrant)
+              .values({ heatId: final.id, ...row });
+            throw new Rollback();
+          })
+          .then(
+            () => null,
+            (error: { code?: string; cause?: { code?: string } }) =>
+              error instanceof Rollback
+                ? null
+                : (error.cause?.code ?? error.code ?? "unknown"),
+          );
+
+      // 23514 is Postgres's check_violation.
+      expect(await insertError({ entrantId: red.id, slot: 2 })).toBe("23514");
+      expect(await insertError({ entrantId: red.id, slot: -1 })).toBe("23514");
+      expect(await insertError({ entrantId: red.id, slot: 0, place: 0 })).toBe(
+        "23514",
+      );
+      expect(
+        await insertError({ entrantId: blue.id, slot: 1, place: 1 }),
+      ).toBeNull();
+      expect(
+        await insertError({ entrantId: blue.id, slot: 0, place: null }),
+      ).toBeNull();
     });
   });
 });

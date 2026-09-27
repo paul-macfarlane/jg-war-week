@@ -51,10 +51,14 @@ export function isDecided(heat: Heat): boolean {
   return heat.status === "played" || heat.status === "forfeit";
 }
 
-/** Moves a Heat's winner into the Heat it feeds. */
+/**
+ * Moves a Heat's winner into the Heat it feeds. A winner already there is
+ * left alone, keeping that Heat's own result.
+ */
 function advance(bracket: Bracket, heat: Heat, entrantId: string) {
   if (!heat.winnerTo) return;
   const next = findHeat(bracket, heat.winnerTo.heatId);
+  if (next.slots[heat.winnerTo.slot].entrantId === entrantId) return;
   next.slots[heat.winnerTo.slot] = { ...emptySlot(), entrantId };
   if (next.slots.every((s) => s.entrantId !== null)) next.status = "ready";
 }
@@ -144,43 +148,56 @@ export function champion(bracket: Bracket): string | null {
   return final.slots.find((s) => s.place === 1)?.entrantId ?? null;
 }
 
-/** Clears the Heats downstream of `heat`, collecting their ids. */
+function winnerOf(heat: Heat): string | null {
+  return heat.slots.find((s) => s.place === 1)?.entrantId ?? null;
+}
+
+/**
+ * Clears `heat`'s winner out of every later Heat it reached, sending those
+ * Heats back to pending. Returns the ids of the ones that had a Heat Result.
+ */
 function clearDownstream(bracket: Bracket, heat: Heat): string[] {
   const resetHeatIds: string[] = [];
   let current = heat;
   while (current.winnerTo) {
     const next = findHeat(bracket, current.winnerTo.heatId);
     if (next.slots[current.winnerTo.slot].entrantId === null) break;
+    if (isDecided(next)) resetHeatIds.push(next.id);
     next.slots = next.slots.map((slot, i) =>
       i === current.winnerTo!.slot
         ? emptySlot()
         : { ...emptySlot(), entrantId: slot.entrantId },
     );
     next.status = "pending";
-    resetHeatIds.push(next.id);
     current = next;
   }
   return resetHeatIds;
 }
 
 /**
- * Sends every later Heat that `heatId`'s winner reached back to pending,
- * clearing that Entrant and the Heat's places and scores. The Heat itself
- * keeps its Heat Result.
+ * The later Heats that recording `winnerId` as the winner of `heatId` would
+ * send back to unplayed: those with a Heat Result that the current winner
+ * reached. None when the Heat is undecided, is a bye, or keeps its winner
+ * (a score-only edit).
  */
-export function resetDownstream(
+export function resetByResult(
   bracket: Bracket,
   heatId: string,
-): { bracket: Bracket; resetHeatIds: string[] } {
+  winnerId: string | null,
+): string[] {
+  const heat = findHeat(bracket, heatId);
+  if (!isDecided(heat) || isBye(heat) || winnerId === null) return [];
+  if (winnerOf(heat) === winnerId) return [];
   const next = structuredClone(bracket);
-  const resetHeatIds = clearDownstream(next, findHeat(next, heatId));
-  return { bracket: next, resetHeatIds };
+  return clearDownstream(next, findHeat(next, heatId));
 }
 
 /**
  * Records a Heat Result and advances the winner. A knockout Heat needs a
  * clear order of every Entrant; forfeiting Entrants finish behind the rest.
- * Re-recording a decided Heat first resets the Heats downstream of it.
+ * Re-recording a decided Heat with a new winner first clears the old winner
+ * from the later Heats it reached (see `resetByResult`); keeping the winner
+ * changes only this Heat.
  */
 export function applyResult(
   bracket: Bracket,
@@ -220,12 +237,14 @@ export function applyResult(
     );
   }
 
-  if (isDecided(heat)) clearDownstream(next, heat);
-
   const finishing = [
     ...order.filter((id) => !forfeits.has(id)),
     ...order.filter((id) => forfeits.has(id)),
   ];
+  if (isDecided(heat) && winnerOf(heat) !== finishing[0]) {
+    clearDownstream(next, heat);
+  }
+
   heat.slots = heat.slots.map((slot) => ({
     entrantId: slot.entrantId,
     place: finishing.indexOf(slot.entrantId!) + 1,

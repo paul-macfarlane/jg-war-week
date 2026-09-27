@@ -8,15 +8,13 @@ import {
   participant,
   pointsEntry,
   team,
-  warWeek as warWeekTable,
 } from "@/db/schema";
-import { isCompetitionId } from "@/lib/competitions";
 import {
   type AdminLedgerEntry,
   type PointsEntryTargetKind,
   buildAdminLedger,
-  isPointsEntryId,
 } from "@/lib/points-entry";
+import { isUuid } from "@/lib/uuid";
 
 export type PointsEntryFormCompetition = {
   id: string;
@@ -119,7 +117,7 @@ export async function getPointsEntryForEdit(
   id: string,
   dbOrTx: DBOrTx = db,
 ) {
-  if (!isPointsEntryId(id)) return undefined;
+  if (!isUuid(id)) return undefined;
   const [found] = await dbOrTx
     .select({
       id: pointsEntry.id,
@@ -132,41 +130,6 @@ export async function getPointsEntryForEdit(
     .from(pointsEntry)
     .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
     .where(and(eq(pointsEntry.id, id), eq(competition.warWeekId, warWeek.id)))
-    .limit(1);
-  return found;
-}
-
-const organizerWarWeekColumns = {
-  id: warWeekTable.id,
-  edition: warWeekTable.edition,
-  status: warWeekTable.status,
-  organizerEmails: warWeekTable.organizerEmails,
-};
-
-/** The War Week a Competition belongs to, for the Organizer check. */
-export async function getCompetitionWarWeek(
-  competitionId: string,
-  dbOrTx: DBOrTx = db,
-) {
-  if (!isCompetitionId(competitionId)) return undefined;
-  const [found] = await dbOrTx
-    .select(organizerWarWeekColumns)
-    .from(competition)
-    .innerJoin(warWeekTable, eq(warWeekTable.id, competition.warWeekId))
-    .where(eq(competition.id, competitionId))
-    .limit(1);
-  return found;
-}
-
-/** The War Week a Points Entry belongs to, for the Organizer check. */
-export async function getPointsEntryWarWeek(id: string, dbOrTx: DBOrTx = db) {
-  if (!isPointsEntryId(id)) return undefined;
-  const [found] = await dbOrTx
-    .select(organizerWarWeekColumns)
-    .from(pointsEntry)
-    .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
-    .innerJoin(warWeekTable, eq(warWeekTable.id, competition.warWeekId))
-    .where(eq(pointsEntry.id, id))
     .limit(1);
   return found;
 }

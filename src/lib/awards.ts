@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 import type { ArchiveAward } from "@/lib/archive";
+import { fieldErrorsFrom } from "@/lib/form-errors";
+import type { Parsed } from "@/lib/result";
 
 /** The Award name's column length. */
 export const AWARD_NAME_MAX = 120;
@@ -56,28 +58,18 @@ const FIELD_LABELS: Record<string, string> = {
   description: "Description",
 };
 
-/** Validates the Award form. Never throws; returns the first error. */
-export function parseAwardInput(
-  input: AwardInput,
-): { ok: true; value: AwardValues } | { ok: false; error: string } {
+/**
+ * Validates the Award form. Never throws; returns the first error and one
+ * per refused field.
+ */
+export function parseAwardInput(input: AwardInput): Parsed<AwardValues> {
   const result = awardInputSchema.safeParse(input);
   if (result.success) return { ok: true, value: result.data };
-
-  const issue = result.error.issues[0];
-  const label = FIELD_LABELS[String(issue.path[0])];
   // Field schemas word their errors as "must …"; prefix the field.
-  const message =
-    label && issue.message.startsWith("must ")
-      ? `${label} ${issue.message}.`
-      : issue.message;
-  return { ok: false, error: message };
-}
-
-const uuid = z.uuid();
-
-/** Whether a URL segment or action argument is shaped like a row id. */
-export function isAwardId(id: string): boolean {
-  return uuid.safeParse(id).success;
+  return {
+    ok: false,
+    ...fieldErrorsFrom(result.error, { labels: FIELD_LABELS }),
+  };
 }
 
 /** An Award with its recipients, as the read path returns it. */

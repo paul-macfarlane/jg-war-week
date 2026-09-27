@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   type AnnouncementInput,
   MAX_VIDEO_LINKS,
-  isAnnouncementId,
+  announcementAuthorName,
+  announcementVideoCount,
   parseAnnouncementInput,
   sortAnnouncements,
 } from "@/lib/announcements";
@@ -42,7 +43,7 @@ describe("parseAnnouncementInput", () => {
   });
 
   it("rejects an empty title", () => {
-    expect(parseAnnouncementInput(baseInput({ title: "   " }))).toEqual({
+    expect(parseAnnouncementInput(baseInput({ title: "   " }))).toMatchObject({
       ok: false,
       error: "Title must not be empty.",
     });
@@ -51,7 +52,7 @@ describe("parseAnnouncementInput", () => {
   it("rejects a title over 200 characters", () => {
     expect(
       parseAnnouncementInput(baseInput({ title: "x".repeat(201) })),
-    ).toEqual({
+    ).toMatchObject({
       ok: false,
       error: "Title must be at most 200 characters.",
     });
@@ -59,7 +60,9 @@ describe("parseAnnouncementInput", () => {
 
   it("rejects a malformed or wrong-protocol video URL", () => {
     for (const url of ["http://youtube.com/watch?v=x", "not-a-url"]) {
-      expect(parseAnnouncementInput(baseInput({ videoUrls: [url] }))).toEqual({
+      expect(
+        parseAnnouncementInput(baseInput({ videoUrls: [url] })),
+      ).toMatchObject({
         ok: false,
         error: "Video link 1 must be an https:// link.",
       });
@@ -71,7 +74,7 @@ describe("parseAnnouncementInput", () => {
       parseAnnouncementInput(
         baseInput({ videoUrls: ["https://evil.example.com/watch?v=x"] }),
       ),
-    ).toEqual({
+    ).toMatchObject({
       ok: false,
       error:
         "Video link 1 must be a YouTube, Loom, Vimeo or Google Drive video link.",
@@ -85,7 +88,7 @@ describe("parseAnnouncementInput", () => {
           videoUrls: ["https://www.youtube.com/playlist?list=x"],
         }),
       ),
-    ).toEqual({
+    ).toMatchObject({
       ok: false,
       error:
         "Video link 1 must be a YouTube, Loom, Vimeo or Google Drive video link.",
@@ -102,7 +105,7 @@ describe("parseAnnouncementInput", () => {
           ],
         }),
       ),
-    ).toEqual({
+    ).toMatchObject({
       ok: false,
       error:
         "Video link 2 must be a YouTube, Loom, Vimeo or Google Drive video link.",
@@ -113,7 +116,7 @@ describe("parseAnnouncementInput", () => {
     const overlong = `https://www.youtube.com/watch?v=abc&pad=${"x".repeat(500)}`;
     expect(
       parseAnnouncementInput(baseInput({ videoUrls: [overlong] })),
-    ).toEqual({
+    ).toMatchObject({
       ok: false,
       error: "Video link 1 must be at most 500 characters.",
     });
@@ -127,6 +130,7 @@ describe("parseAnnouncementInput", () => {
     expect(parseAnnouncementInput(baseInput({ videoUrls: urls }))).toEqual({
       ok: false,
       error: `Add at most ${MAX_VIDEO_LINKS} video links.`,
+      fieldErrors: { videoUrls: `Add at most ${MAX_VIDEO_LINKS} video links.` },
     });
   });
 
@@ -141,13 +145,6 @@ describe("parseAnnouncementInput", () => {
       ok: true,
       value: expect.objectContaining({ videoUrls: [url] }),
     });
-  });
-});
-
-describe("isAnnouncementId", () => {
-  it("accepts a uuid and rejects everything else", () => {
-    expect(isAnnouncementId("f47ac10b-58cc-4372-a567-0e02b2c3d479")).toBe(true);
-    expect(isAnnouncementId("not-a-uuid")).toBe(false);
   });
 });
 
@@ -171,5 +168,147 @@ describe("sortAnnouncements", () => {
     const a = { id: "a", pinned: false, publishedAt: when };
     const b = { id: "b", pinned: false, publishedAt: when };
     expect(sortAnnouncements([a, b]).map((row) => row.id)).toEqual(["a", "b"]);
+  });
+});
+
+describe("announcementVideoCount", () => {
+  const video = (src: string) => ({ type: "video", attrs: { src } });
+  const paragraph = {
+    type: "paragraph",
+    content: [{ type: "text", text: "Hi" }],
+  };
+
+  it("is zero with no links and no embeds", () => {
+    expect(
+      announcementVideoCount({
+        videoUrls: [],
+        body: { type: "doc", content: [paragraph] },
+      }),
+    ).toBe(0);
+  });
+
+  it("counts video links", () => {
+    expect(
+      announcementVideoCount({
+        videoUrls: ["https://youtu.be/a", "https://vimeo.com/1"],
+        body: { type: "doc", content: [paragraph] },
+      }),
+    ).toBe(2);
+  });
+
+  it("counts videos embedded in the body", () => {
+    expect(
+      announcementVideoCount({
+        videoUrls: [],
+        body: {
+          type: "doc",
+          content: [
+            video("https://youtu.be/a"),
+            paragraph,
+            video("https://youtu.be/b"),
+          ],
+        },
+      }),
+    ).toBe(2);
+  });
+
+  it("counts links and embeds together, including nested embeds", () => {
+    expect(
+      announcementVideoCount({
+        videoUrls: ["https://loom.com/share/abc"],
+        body: {
+          type: "doc",
+          content: [
+            video("https://youtu.be/a"),
+            {
+              type: "bulletList",
+              content: [
+                { type: "listItem", content: [video("https://youtu.be/b")] },
+              ],
+            },
+          ],
+        },
+      }),
+    ).toBe(3);
+  });
+
+  it("tolerates a body that isn't a document", () => {
+    expect(announcementVideoCount({ videoUrls: [], body: null })).toBe(0);
+  });
+});
+
+describe("parseAnnouncementInput given a malformed call", () => {
+  const MALFORMED: [string, unknown][] = [
+    ["{}", {}],
+    ["null", null],
+    ["undefined", undefined],
+    ["a string", "x"],
+    ["a number", 5],
+  ];
+
+  it.each(MALFORMED)("returns an error for %s", (_label, value) => {
+    expect(parseAnnouncementInput(value as never)).toMatchObject({
+      ok: false,
+    });
+  });
+
+  it.each<[string, Record<string, unknown>]>([
+    ["title: 5", { title: 5 }],
+    ['videoUrls: "x"', { videoUrls: "x" }],
+    ['pinned: "yes"', { pinned: "yes" }],
+    ["body: 5", { body: 5 }],
+  ])("returns an error for %s", (_label, overrides) => {
+    expect(
+      parseAnnouncementInput({ ...baseInput(), ...overrides } as never),
+    ).toMatchObject({ ok: false });
+  });
+});
+
+describe("parseAnnouncementInput field errors", () => {
+  it("puts a video link's error under videoUrls and the title's under title", () => {
+    expect(
+      parseAnnouncementInput(
+        baseInput({
+          title: " ",
+          videoUrls: ["https://www.youtube.com/watch?v=abc", "http://x.test"],
+        }),
+      ),
+    ).toEqual({
+      ok: false,
+      error: "Title must not be empty.",
+      fieldErrors: {
+        title: "Title must not be empty.",
+        videoUrls: "Video link 2 must be an https:// link.",
+      },
+    });
+  });
+});
+
+describe("announcementAuthorName", () => {
+  const participants = [
+    { email: "pmacfarlane@jahnelgroup.com", displayName: "Paul Macfarlane" },
+    { email: null, displayName: "No Email" },
+  ];
+
+  it("uses the matching Participant's display name", () => {
+    expect(
+      announcementAuthorName("pmacfarlane@jahnelgroup.com", participants),
+    ).toBe("Paul Macfarlane");
+  });
+
+  it("matches case-insensitively", () => {
+    expect(
+      announcementAuthorName("PMacfarlane@JahnelGroup.com", participants),
+    ).toBe("Paul Macfarlane");
+  });
+
+  it("falls back to the handle before the @ with no Participant match", () => {
+    expect(
+      announcementAuthorName("someone-else@jahnelgroup.com", participants),
+    ).toBe("someone-else");
+  });
+
+  it("falls back with no Participants at all", () => {
+    expect(announcementAuthorName("solo@jahnelgroup.com", [])).toBe("solo");
   });
 });

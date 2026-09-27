@@ -31,3 +31,5 @@
 - T3: the phone bracket layout, option (b) as shipped, is accepted. No prototype.
 
 ## Comments
+
+- 2026-09-27: items 1 (Heats) and 2 (groups → knockout), the End War Week unfinalized-Bracket warning and the XI demo seed's new Brackets are grouped as `../epics/E-bracket-formats-milestone.md`. The rest stays here.

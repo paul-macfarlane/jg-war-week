@@ -6,8 +6,8 @@ import { canUseMcp, isJahnelGroupEmail, isPublicPath } from "@/lib/access";
 /**
  * Every page and API route needs a Jahnel Group session. Pages redirect
  * anonymous visitors to `/sign-in` and come back afterwards; API routes
- * answer 401. `/api/mcp` also takes `Authorization: Bearer <MCP_TOKEN>`, or
- * no auth at all while `MCP_PUBLIC=true`, so MCP clients can connect.
+ * answer 401. `/api/mcp` also takes `Authorization: Bearer <MCP_TOKEN>`, so
+ * MCP clients can connect.
  */
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
@@ -22,7 +22,6 @@ export async function proxy(request: NextRequest) {
       hasSession,
       authorization: request.headers.get("authorization"),
       mcpToken: process.env.MCP_TOKEN,
-      mcpPublic: process.env.MCP_PUBLIC,
     });
     if (allowed) return NextResponse.next();
     return NextResponse.json(

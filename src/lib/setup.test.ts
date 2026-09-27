@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import type { Parsed } from "@/lib/result";
 import {
   type CompetitionInput,
   type ParticipantInput,
@@ -19,6 +20,14 @@ import {
   teamGuardError,
 } from "@/lib/setup";
 
+/** Refused with `error`, which also shows under the field it names. */
+function expectRefused(result: Parsed<unknown>, error: string) {
+  expect(result).toMatchObject({ ok: false, error });
+  expect(Object.values((!result.ok && result.fieldErrors) || {})).toContain(
+    error,
+  );
+}
+
 const input: WarWeekSettingsInput = {
   storyTheme: "  The Matrix ",
   startDate: "2026-02-22",
@@ -28,7 +37,6 @@ const input: WarWeekSettingsInput = {
   leaderTitle: "Captain",
   slackChannelUrl: "https://jahnelgroup.slack.com/archives/war-week-xi",
   wikiUrl: "",
-  organizerEmails: "PMacfarlane@jahnelgroup.com\njason@jahnelgroup.com, ",
   primaryColor: "#00ff41",
   primaryForegroundColor: "#000000",
   accentColor: "#008f11",
@@ -46,7 +54,7 @@ function parsed(overrides: Partial<WarWeekSettingsInput> = {}) {
 }
 
 describe("parseWarWeekSettingsInput", () => {
-  it("trims text, blanks optional URLs to null and splits organizer emails", () => {
+  it("trims text and blanks optional URLs to null", () => {
     expect(parsed()).toEqual({
       ok: true,
       value: {
@@ -58,10 +66,6 @@ describe("parseWarWeekSettingsInput", () => {
         leaderTitle: "Captain",
         slackChannelUrl: "https://jahnelgroup.slack.com/archives/war-week-xi",
         wikiUrl: null,
-        organizerEmails: [
-          "pmacfarlane@jahnelgroup.com",
-          "jason@jahnelgroup.com",
-        ],
         primaryColor: "#00ff41",
         primaryForegroundColor: "#000000",
         accentColor: "#008f11",
@@ -94,13 +98,12 @@ describe("parseWarWeekSettingsInput", () => {
     expect(result.ok && "status" in result.value).toBe(false);
   });
 
-  it("drops duplicate organizer emails", () => {
-    const result = parsed({
-      organizerEmails: "a@jahnelgroup.com A@jahnelgroup.com",
-    });
-    expect(result.ok && result.value.organizerEmails).toEqual([
-      "a@jahnelgroup.com",
-    ]);
+  it("never carries Organizer emails, since Organizers are global", () => {
+    const result = parseWarWeekSettingsInput({
+      ...input,
+      organizerEmails: "someone@jahnelgroup.com",
+    } as WarWeekSettingsInput);
+    expect(result.ok && "organizerEmails" in result.value).toBe(false);
   });
 
   it.each<[Partial<WarWeekSettingsInput>, string]>([
@@ -126,28 +129,12 @@ describe("parseWarWeekSettingsInput", () => {
       "Highlights must be at most 500 characters.",
     ],
     [{ fontPreset: "comic" }, "Font must be one of sans, serif, mono."],
-    [{ organizerEmails: " " }, "Add at least one organizer email."],
-    [
-      { organizerEmails: "a@jahnelgroup.com, not-an-email" },
-      'Organizer email "not-an-email" must be an @jahnelgroup.com address.',
-    ],
-    [
-      { organizerEmails: "a@jahnelgroup.com, someone@gmail.com" },
-      'Organizer email "someone@gmail.com" must be an @jahnelgroup.com address.',
-    ],
     [
       { startDate: "2026-02-28", endDate: "2026-02-27" },
       "Start date must not be after the end date.",
     ],
   ])("refuses %o", (overrides, error) => {
-    expect(parsed(overrides)).toEqual({ ok: false, error });
-  });
-
-  it("accepts a mixed-case Jahnel Group organizer email", () => {
-    const result = parsed({ organizerEmails: "A@JahnelGroup.Com" });
-    expect(result.ok && result.value.organizerEmails).toEqual([
-      "a@jahnelgroup.com",
-    ]);
+    expectRefused(parsed(overrides), error);
   });
 });
 
@@ -178,12 +165,11 @@ describe("settingsGuardError", () => {
     return result.value;
   };
   const ctx = {
-    actorEmail: "pmacfarlane@jahnelgroup.com",
     teamCount: 0,
     dayDates: ["2026-02-22", "2026-02-27"],
   };
 
-  it("allows a save that keeps the Organizer, Teams and Days consistent", () => {
+  it("allows a save that keeps Teams and Days consistent", () => {
     expect(settingsGuardError(value(), ctx)).toBeNull();
     expect(settingsGuardError(value({ mode: "free-for-all" }), ctx)).toBeNull();
     expect(settingsGuardError(value({ winner: "Red" }), ctx)).toBeNull();
@@ -209,15 +195,6 @@ describe("settingsGuardError", () => {
       "The Day on 2026-02-27 falls outside the new dates. Move or delete it first.",
     );
   });
-
-  it("refuses an Organizer removing their own email", () => {
-    expect(
-      settingsGuardError(value({ organizerEmails: "jason@jahnelgroup.com" }), {
-        ...ctx,
-        actorEmail: "PMacfarlane@jahnelgroup.com",
-      }),
-    ).toBe("You can't remove your own email from the organizer emails.");
-  });
 });
 
 describe("parseDayInput", () => {
@@ -238,7 +215,7 @@ describe("parseDayInput", () => {
       "Day Theme must be at most 120 characters.",
     ],
   ])("refuses %o", (day, error) => {
-    expect(parseDayInput(day)).toEqual({ ok: false, error });
+    expectRefused(parseDayInput(day), error);
   });
 });
 
@@ -304,7 +281,7 @@ describe("parseTeamInput", () => {
       "Logo URL must be a root-relative path or an https URL.",
     ],
   ])("refuses %o", (input, error) => {
-    expect(parseTeamInput(input)).toEqual({ ok: false, error });
+    expectRefused(parseTeamInput(input), error);
   });
 });
 
@@ -345,10 +322,10 @@ describe("parseParticipantInput", () => {
     [{ teamId: "nope" }, "Choose a Team."],
     [{ teamId: "" }, "A Leader needs a Team."],
   ])("refuses %o", (overrides, error) => {
-    expect(parseParticipantInput({ ...participant, ...overrides })).toEqual({
-      ok: false,
+    expectRefused(
+      parseParticipantInput({ ...participant, ...overrides }),
       error,
-    });
+    );
   });
 });
 
@@ -416,10 +393,10 @@ describe("parseCompetitionInput", () => {
       "Only an individual Competition can count toward the Team.",
     ],
   ])("refuses %o", (overrides, error) => {
-    expect(parseCompetitionInput({ ...competition, ...overrides })).toEqual({
-      ok: false,
+    expectRefused(
+      parseCompetitionInput({ ...competition, ...overrides }),
       error,
-    });
+    );
   });
 });
 
@@ -485,15 +462,25 @@ describe("participantGuardError", () => {
 });
 
 describe("competitionGuardError", () => {
-  const values = { name: "Catan", scoring: "team" as const };
+  const values = {
+    name: "Catan",
+    scoring: "team" as const,
+    placementPoints: [5, 3, 1],
+  };
   const ctx = { mode: "teams" as const, nameTaken: false, existing: null };
+  const existingBase = {
+    scoring: "team" as const,
+    placementPoints: [5, 3, 1] as number[] | null,
+    pointsEntryCount: 0,
+    finalizedAt: null as Date | null,
+  };
 
   it("allows a new Competition and a scoring change with no Points Entries", () => {
     expect(competitionGuardError(values, ctx)).toBeNull();
     expect(
       competitionGuardError(values, {
         ...ctx,
-        existing: { scoring: "individual", pointsEntryCount: 0 },
+        existing: { ...existingBase, scoring: "individual" },
       }),
     ).toBeNull();
   });
@@ -510,11 +497,44 @@ describe("competitionGuardError", () => {
     expect(
       competitionGuardError(values, {
         ...ctx,
-        existing: { scoring: "individual", pointsEntryCount: 2 },
+        existing: {
+          ...existingBase,
+          scoring: "individual",
+          pointsEntryCount: 2,
+        },
       }),
     ).toBe(
       "This Competition has 2 Points Entries, so its scoring can't change. Delete them first.",
     );
+  });
+
+  it("refuses a scoring or Placement Points change while the Bracket is finalized, but allows an unchanged save", () => {
+    const finalized = { ...existingBase, finalizedAt: new Date() };
+    expect(
+      competitionGuardError(values, {
+        ...ctx,
+        existing: { ...finalized, scoring: "individual" },
+      }),
+    ).toBe(
+      "This Competition's Bracket is finalized. Un-finalize the Bracket first.",
+    );
+    expect(
+      competitionGuardError(
+        { ...values, placementPoints: [10, 5] },
+        { ...ctx, existing: finalized },
+      ),
+    ).toBe(
+      "This Competition's Bracket is finalized. Un-finalize the Bracket first.",
+    );
+    expect(
+      competitionGuardError(values, { ...ctx, existing: finalized }),
+    ).toBeNull();
+    expect(
+      competitionGuardError(
+        { ...values, placementPoints: null },
+        { ...ctx, existing: { ...finalized, placementPoints: [] } },
+      ),
+    ).toBeNull();
   });
 });
 
@@ -556,5 +576,90 @@ describe("inUseError", () => {
     ).toBe(
       "This Participant has 2 Points Entries, 1 Award and 1 Thing. Delete them first.",
     );
+  });
+});
+
+describe("setup parsers given a malformed call", () => {
+  const MALFORMED: [string, unknown][] = [
+    ["{}", {}],
+    ["null", null],
+    ["undefined", undefined],
+    ["a string", "x"],
+    ["a number", 5],
+  ];
+  const parsers: [string, (input: never) => { ok: boolean }][] = [
+    ["parseWarWeekSettingsInput", parseWarWeekSettingsInput],
+    ["parseDayInput", parseDayInput],
+    ["parseTeamInput", parseTeamInput],
+    ["parseParticipantInput", parseParticipantInput],
+    ["parseCompetitionInput", parseCompetitionInput],
+  ];
+
+  it.each(
+    parsers.flatMap(([name, parse]) =>
+      MALFORMED.map(([label, value]) => [name, label, parse, value] as const),
+    ),
+  )("%s returns an error for %s", (_name, _label, parse, value) => {
+    expect(parse(value as never)).toMatchObject({ ok: false });
+  });
+
+  const competition: CompetitionInput = {
+    name: "Catan",
+    description: "",
+    scoring: "individual",
+    maxPoints: "10",
+    placementPoints: "5, 3, 1",
+    countsTowardTeam: false,
+    group: "",
+  };
+
+  it.each<[string, Record<string, unknown>]>([
+    ["placementPoints: 5", { placementPoints: 5 }],
+    ["placementPoints: [5]", { placementPoints: [5] }],
+    ["maxPoints: 10", { maxPoints: 10 }],
+    ["name: null", { name: null }],
+    ["description: {}", { description: {} }],
+    ["group: []", { group: [] }],
+    ['countsTowardTeam: "yes"', { countsTowardTeam: "yes" }],
+  ])("parseCompetitionInput returns an error for %s", (_label, overrides) => {
+    expect(
+      parseCompetitionInput({ ...competition, ...overrides } as never),
+    ).toMatchObject({ ok: false });
+  });
+
+  it.each<[string, Record<string, unknown>]>([
+    ['storyTheme: ["a"]', { storyTheme: ["a"] }],
+    ["startDate: 5", { startDate: 5 }],
+    ["highlights: 5", { highlights: 5 }],
+    ["winner: {}", { winner: {} }],
+    ["mode: null", { mode: null }],
+  ])(
+    "parseWarWeekSettingsInput returns an error for %s",
+    (_label, overrides) => {
+      expect(parsed(overrides as never)).toMatchObject({ ok: false });
+    },
+  );
+});
+
+describe("setup parsers' field errors", () => {
+  it("names each refused settings field with its label", () => {
+    expect(
+      parsed({ storyTheme: " ", slackChannelUrl: "http://slack.com/x" }),
+    ).toEqual({
+      ok: false,
+      error: "Story Theme must not be empty.",
+      fieldErrors: {
+        storyTheme: "Story Theme must not be empty.",
+        slackChannelUrl: "Slack URL must be an https URL.",
+      },
+    });
+  });
+
+  it("keeps a missing form in the error only", () => {
+    expect(parseWarWeekSettingsInput(null as never)).toEqual({
+      ok: false,
+      error: "The form's fields are missing.",
+      fieldErrors: {},
+    });
   });
 });

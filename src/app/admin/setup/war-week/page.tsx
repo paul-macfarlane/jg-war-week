@@ -4,8 +4,8 @@ import Link from "next/link";
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { SeedOverwriteWarning } from "@/components/seed-overwrite-warning";
 import { WarWeekSettingsForm } from "@/components/war-week-settings-form";
-import { normalizeHex } from "@/lib/color";
 import { settingsInputFrom } from "@/lib/setup";
+import { teamSwatches } from "@/lib/theme";
 import { getSetupDays, getSetupTeams } from "@/queries/setup";
 
 import { loadAdminPage } from "../../gate";
@@ -15,10 +15,9 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "War Week settings · JG War Week" };
 
 export default async function WarWeekSettingsPage() {
-  const { warWeek, email, isOrganizer, editions } = await loadAdminPage(
-    "/admin/setup/war-week",
-  );
-  if (!isOrganizer) return <AdminRefused warWeek={warWeek} email={email} />;
+  const { warWeek, email, allowed, isOrganizer, editions } =
+    await loadAdminPage("/admin/setup/war-week", "organizers");
+  if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const [days, teams] = await Promise.all([
     getSetupDays(warWeek),
@@ -29,6 +28,7 @@ export default async function WarWeekSettingsPage() {
     <AdminShell
       warWeek={warWeek}
       email={email}
+      isOrganizer={isOrganizer}
       editions={editions}
       current="Setup"
     >
@@ -42,14 +42,11 @@ export default async function WarWeekSettingsPage() {
         <h1 className="text-2xl font-bold">War Week settings</h1>
         <SeedOverwriteWarning />
         <WarWeekSettingsForm
+          warWeekId={warWeek.id}
           key={warWeek.updatedAt.toISOString()}
           initial={settingsInputFrom(warWeek)}
-          actorEmail={email}
           dayDates={days.map((day) => day.date)}
-          teamSwatches={teams.flatMap((team) => {
-            const color = normalizeHex(team.color);
-            return color ? [{ color, label: team.name }] : [];
-          })}
+          teamSwatches={teamSwatches(teams)}
         />
       </section>
     </AdminShell>

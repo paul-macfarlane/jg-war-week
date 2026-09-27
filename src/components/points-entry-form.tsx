@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useActionState, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -10,6 +10,11 @@ import {
   updatePointsEntry,
 } from "@/actions/points-entries";
 import { EntityCombobox } from "@/components/entity-combobox";
+import {
+  fieldErrorsOf,
+  formErrorOf,
+  useFocusFirstInvalid,
+} from "@/components/form-field-errors";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -54,14 +59,54 @@ export function PointsEntryForm({
   initial?: Initial;
 }) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const formRef = useRef<HTMLFormElement>(null);
   const [competitionId, setCompetitionId] = useState(
     initial?.competitionId ?? "",
   );
   const [targetId, setTargetId] = useState(initial?.targetId ?? "");
   const [points, setPoints] = useState(initial?.points ?? "");
   const [note, setNote] = useState(initial?.note ?? "");
-  const [result, setResult] = useState<PointsEntryActionResult | null>(null);
+
+  // Validation runs on the server; a refusal names its fields.
+  const [result, formAction, pending] = useActionState(
+    async (
+      _previous: PointsEntryActionResult | null,
+      formData: FormData,
+    ): Promise<PointsEntryActionResult> => {
+      const input = {
+        competitionId: String(formData.get("competitionId") ?? ""),
+        targetId: String(formData.get("targetId") ?? ""),
+        points: String(formData.get("points") ?? ""),
+        note: String(formData.get("note") ?? ""),
+      };
+      const saved = entryId
+        ? await updatePointsEntry(entryId, input)
+        : await createPointsEntry(input);
+      if (!saved.ok) {
+        toast.error(saved.error);
+        return saved;
+      }
+      toast.success("Points Entry saved");
+      if (entryId) {
+        router.push("/admin/points");
+      } else {
+        setTargetId("");
+        setPoints("");
+        setNote("");
+      }
+      router.refresh();
+      return saved;
+    },
+    null,
+  );
+  // Choosing another Competition clears the last refusal.
+  const [dismissed, setDismissed] = useState<PointsEntryActionResult | null>(
+    null,
+  );
+  const shown = result === dismissed ? null : result;
+  const fieldErrors = fieldErrorsOf(shown);
+  const formError = formErrorOf(shown);
+  useFocusFirstInvalid(formRef, result);
 
   const competition = options.competitions.find((c) => c.id === competitionId);
   const targets =
@@ -78,38 +123,15 @@ export function PointsEntryForm({
       )
     : null;
 
-  function submit(event: React.SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const input = { competitionId, targetId, points, note };
-    startTransition(async () => {
-      const saved = entryId
-        ? await updatePointsEntry(entryId, input)
-        : await createPointsEntry(input);
-      setResult(saved);
-      if (!saved.ok) {
-        toast.error(saved.error);
-        return;
-      }
-      toast.success("Points Entry saved");
-      if (entryId) {
-        router.push("/admin/points");
-      } else {
-        setTargetId("");
-        setPoints("");
-        setNote("");
-      }
-      router.refresh();
-    });
-  }
-
   return (
     <form
-      onSubmit={submit}
+      ref={formRef}
+      action={formAction}
       className="flex flex-col gap-4"
       aria-label="Points Entry"
     >
       <FieldGroup>
-        <Field>
+        <Field data-invalid={!!fieldErrors.competitionId}>
           <FieldLabel htmlFor="points-entry-competition">
             Competition
           </FieldLabel>
@@ -117,6 +139,7 @@ export function PointsEntryForm({
             id="points-entry-competition"
             name="competitionId"
             aria-label="Competition"
+            aria-invalid={!!fieldErrors.competitionId}
             required
             placeholder="Choose a Competition…"
             items={options.competitions.map((c) => ({
@@ -128,12 +151,13 @@ export function PointsEntryForm({
             onValueChange={(id) => {
               setCompetitionId(id);
               setTargetId("");
-              setResult(null);
+              setDismissed(result);
             }}
           />
+          <FieldError>{fieldErrors.competitionId}</FieldError>
         </Field>
 
-        <Field>
+        <Field data-invalid={!!fieldErrors.targetId}>
           <FieldLabel htmlFor="points-entry-target">
             {competition?.scoring === "individual" ? "Participant" : teamLabel}
           </FieldLabel>
@@ -143,6 +167,7 @@ export function PointsEntryForm({
             aria-label={
               competition?.scoring === "individual" ? "Participant" : teamLabel
             }
+            aria-invalid={!!fieldErrors.targetId}
             required
             disabled={!competition}
             placeholder={
@@ -160,18 +185,20 @@ export function PointsEntryForm({
             value={targetId}
             onValueChange={setTargetId}
           />
+          <FieldError>{fieldErrors.targetId}</FieldError>
         </Field>
 
-        <Field>
+        <Field data-invalid={!!fieldErrors.points}>
           <FieldLabel htmlFor="points-entry-points">Points</FieldLabel>
           <Input
             id="points-entry-points"
             name="points"
             required
-            type="number"
-            step="0.01"
+            // Text, not number: React's post-action form reset blanks a
+            // focused number input. The server validates the number.
             inputMode="decimal"
             className="h-11 sm:h-9"
+            aria-invalid={!!fieldErrors.points}
             value={points}
             onChange={(event) => setPoints(event.target.value)}
           />
@@ -183,6 +210,7 @@ export function PointsEntryForm({
               ⚠️ {warning}
             </FieldDescription>
           )}
+          <FieldError>{fieldErrors.points}</FieldError>
         </Field>
         {competition && places.length > 0 && (
           <div
@@ -206,16 +234,18 @@ export function PointsEntryForm({
           </div>
         )}
 
-        <Field>
+        <Field data-invalid={!!fieldErrors.note}>
           <FieldLabel htmlFor="points-entry-note">Note (optional)</FieldLabel>
           <Input
             id="points-entry-note"
             name="note"
             maxLength={500}
             className="h-11 sm:h-9"
+            aria-invalid={!!fieldErrors.note}
             value={note}
             onChange={(event) => setNote(event.target.value)}
           />
+          <FieldError>{fieldErrors.note}</FieldError>
         </Field>
       </FieldGroup>
 
@@ -240,9 +270,7 @@ export function PointsEntryForm({
           </Button>
         )}
       </div>
-      {result && !result.ok && !pending && (
-        <FieldError>{result.error}</FieldError>
-      )}
+      {formError && !pending && <FieldError>{formError}</FieldError>}
     </form>
   );
 }

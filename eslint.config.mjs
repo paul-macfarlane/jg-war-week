@@ -47,6 +47,79 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    // ADR 0001: lib is pure business logic at the bottom of the layers. It
+    // never imports the seed, queries, mutations, actions, components, pages,
+    // auth, the MCP server, Next.js, icons, or the database client and
+    // driver. From `@/db/schema` it takes types only: a value import would
+    // pull Drizzle into every client bundle that uses lib. Enum value lists
+    // live in `src/lib/enums.ts`.
+    files: ["src/lib/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": "off",
+      "@typescript-eslint/no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@/db/schema",
+              allowTypeImports: true,
+              message:
+                "ADR 0001: src/lib imports only types from @/db/schema, so Drizzle stays out of client bundles. Use the value lists in @/lib/enums.",
+            },
+            // The live database client, by exact name: a "@/db" pattern
+            // would also refuse the type imports from "@/db/schema".
+            ...["@/db", "@/db/index"].map((name) => ({
+              name,
+              message:
+                "ADR 0001: src/lib never touches the database; reads belong in queries and writes in mutations.",
+            })),
+          ],
+          patterns: [
+            {
+              group: [
+                "@/seed",
+                "@/seed/*",
+                "@/queries",
+                "@/queries/*",
+                "@/mutations",
+                "@/mutations/*",
+                "@/actions",
+                "@/actions/*",
+                "@/components",
+                "@/components/*",
+                "@/app",
+                "@/app/*",
+                "@/auth",
+                "@/auth/*",
+                "@/mcp",
+                "@/mcp/*",
+                "@/db/local-url",
+                "@/db/test-transaction",
+                "pg",
+                "@neondatabase/*",
+                "drizzle-orm",
+                "drizzle-orm/*",
+                "next",
+                "next/*",
+                "lucide-react",
+              ],
+              message:
+                "ADR 0001: src/lib is pure business logic and never imports the seed, queries, mutations, actions, components, pages, auth, the MCP server, the database client or driver, Next.js or icons. Move the shared piece down into src/lib, or pass it in.",
+            },
+            {
+              // A relative import that climbs out of src/lib into another
+              // layer (e.g. "../db/schema" or "../../mutations/setup").
+              regex:
+                "^(\\.\\./)+(seed|queries|mutations|actions|components|app|auth|mcp|db)(/|$)",
+              message:
+                "ADR 0001: import other layers by their @/ alias, and only those src/lib may use.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // The shadcn primitives are where native controls may still live.
     files: ["src/components/ui/**"],
     rules: { "no-restricted-syntax": "off" },
@@ -59,6 +132,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Generated Drizzle migrations
     "drizzle/**",
+    // Agent worktrees: separate checkouts with their own .next output.
+    ".claude/**",
   ]),
 ]);
 

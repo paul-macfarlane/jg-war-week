@@ -22,17 +22,20 @@ export default async function EditScheduleItemPage({
   params,
 }: PageProps<"/admin/setup/schedule/[id]">) {
   const { id } = await params;
-  const { warWeek, email, isOrganizer, editions } = await loadAdminPage(
-    `/admin/setup/schedule/${id}`,
-  );
-  if (!isOrganizer) return <AdminRefused warWeek={warWeek} email={email} />;
+  const { warWeek, email, allowed, isOrganizer, editions, runs } =
+    await loadAdminPage(`/admin/setup/schedule/${id}`);
+  if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
-  const [item, days, competitions] = await Promise.all([
+  const [item, days, allCompetitions] = await Promise.all([
     getScheduleItemForEdit(warWeek, id),
     getSetupDays(warWeek),
     getCompetitionOptions(warWeek),
   ]);
   if (!item) notFound();
+  if (!runs(item.competitionId)) {
+    return <AdminRefused warWeek={warWeek} email={email} />;
+  }
+  const competitions = allCompetitions.filter((c) => runs(c.id));
 
   // Sanitized on write; again here so the editor only gets the closed set.
   const description = item.description && sanitizeContent(item.description);
@@ -41,6 +44,7 @@ export default async function EditScheduleItemPage({
     <AdminShell
       warWeek={warWeek}
       email={email}
+      isOrganizer={isOrganizer}
       editions={editions}
       current="Setup"
     >
@@ -53,6 +57,8 @@ export default async function EditScheduleItemPage({
         </Link>
         <h1 className="text-2xl font-bold">Edit Schedule Item</h1>
         <ScheduleItemForm
+          warWeekId={warWeek.id}
+          requireCompetition={!isOrganizer}
           itemId={item.id}
           initial={scheduleItemInputFrom({
             ...item,

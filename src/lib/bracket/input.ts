@@ -5,8 +5,8 @@
 import { z } from "zod";
 
 import type { HeatResult } from "@/lib/bracket/types";
-
-type Parsed<T> = { ok: true; value: T } | { ok: false; error: string };
+import { COMPETITION_FORMATS } from "@/lib/enums";
+import type { Parsed } from "@/lib/result";
 
 function parse<T>(schema: z.ZodType<T>, input: unknown): Parsed<T> {
   const result = schema.safeParse(input);
@@ -20,7 +20,7 @@ const id = (error: string) => z.uuid({ error });
 export const MAX_ENTRANTS = 64;
 
 const formatSchema = z.object({
-  format: z.enum(["points", "single-elimination"], {
+  format: z.enum(COMPETITION_FORMATS, {
     error: "Choose a Format.",
   }),
   bracketPoints: z
@@ -75,11 +75,4 @@ const heatResultSchema = z.object({
 
 export function parseHeatResultInput(input: unknown): Parsed<HeatResult> {
   return parse(heatResultSchema, input);
-}
-
-const uuid = z.uuid();
-
-/** Whether an action argument is shaped like a row id. */
-export function isRowId(value: unknown): value is string {
-  return uuid.safeParse(value).success;
 }

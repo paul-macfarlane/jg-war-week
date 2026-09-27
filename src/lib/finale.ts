@@ -24,15 +24,8 @@ function stepMs(stepCount: number): number {
   return Math.min(MAX_STEP_MS, (FINALE_MAX_MS - COUNT_UP_MS) / (stepCount - 1));
 }
 
-/**
- * How long the Finale runs when these lists (each a list's ranks, in
- * order) animate on one clock: the longest of them.
- */
-export function finaleDurationMs(lists: number[][]): number {
-  return Math.max(0, ...lists.map(listDurationMs));
-}
-
-function listDurationMs(ranks: number[]): number {
+/** How long the Finale runs for these ranks. */
+export function finaleDurationMs(ranks: number[]): number {
   const steps = stepRanks(ranks).length;
   return steps === 0 ? 0 : (steps - 1) * stepMs(steps) + COUNT_UP_MS;
 }
@@ -40,20 +33,13 @@ function listDurationMs(ranks: number[]): number {
 /**
  * Each row's state `elapsedMs` into the Finale. Rows sharing a rank appear
  * together, one step per distinct rank, starting with the last-ranked.
- * `progress` runs 0 → 1 over the row's count-up. Given the whole Finale's
- * `durationMs`, a shorter list starts later so that it ends with the
- * others: every list's first place lands at the end.
+ * `progress` runs 0 → 1 over the row's count-up.
  */
-export function finaleRows(
-  ranks: number[],
-  elapsedMs: number,
-  durationMs = listDurationMs(ranks),
-): RowFinale[] {
+export function finaleRows(ranks: number[], elapsedMs: number): RowFinale[] {
   const order = stepRanks(ranks);
   const gap = stepMs(order.length);
-  const delayMs = Math.max(0, durationMs - listDurationMs(ranks));
   return ranks.map((rank) => {
-    const startMs = delayMs + order.indexOf(rank) * gap;
+    const startMs = order.indexOf(rank) * gap;
     if (elapsedMs < startMs) return { shown: false, progress: 0 };
     return {
       shown: true,

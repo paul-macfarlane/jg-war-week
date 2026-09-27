@@ -28,7 +28,7 @@ function useFinale(ranks: number[]) {
   const [run, setRun] = useState(0);
 
   const start = useCallback(() => {
-    setDurationMs(finaleDurationMs([ranks]));
+    setDurationMs(finaleDurationMs(ranks));
     setElapsedMs(0);
     setStartedAt(null);
     setPhase("playing");
@@ -62,10 +62,7 @@ function useFinale(ranks: number[]) {
   return {
     phase,
     start,
-    rows:
-      phase === "playing"
-        ? finaleRows(ranks, elapsedMs, durationMs)
-        : undefined,
+    rows: phase === "playing" ? finaleRows(ranks, elapsedMs) : undefined,
     startedAt,
   };
 }

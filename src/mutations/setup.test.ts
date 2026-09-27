@@ -2,27 +2,16 @@ import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import type { DBTx } from "@/db";
+import { isLocalDatabaseUrl } from "@/db/local-url";
+import { inRolledBackTransaction } from "@/db/test-transaction";
 import type { WarWeekSettingsValues } from "@/lib/setup";
 
 // Runs only against a local Postgres (CI's service or docker compose; see
 // vitest.config.ts), never a hosted database.
-const databaseUrl = process.env.DATABASE_URL ?? "";
-const isLocalDatabase =
-  process.env.DATABASE_DRIVER !== "neon" &&
-  /@(localhost|127\.0\.0\.1)[:/]/.test(databaseUrl);
-
-class Rollback extends Error {}
-
-/** Runs `body` in a transaction that is always rolled back. */
-async function inRolledBackTransaction(body: (tx: DBTx) => Promise<void>) {
-  const { withTransaction } = await import("@/db");
-  await withTransaction(async (tx) => {
-    await body(tx);
-    throw new Rollback();
-  }).catch((error) => {
-    if (!(error instanceof Rollback)) throw error;
-  });
-}
+const isLocalDatabase = isLocalDatabaseUrl(
+  process.env.DATABASE_URL,
+  process.env.DATABASE_DRIVER,
+);
 
 const actorEmail = "organizer@jahnelgroup.com";
 
@@ -35,7 +24,6 @@ const settings: WarWeekSettingsValues = {
   leaderTitle: "Captain",
   slackChannelUrl: "https://example.slack.com/archives/x",
   wikiUrl: null,
-  organizerEmails: [actorEmail],
   primaryColor: "#123456",
   primaryForegroundColor: "#ffffff",
   accentColor: "#000000",
@@ -661,6 +649,244 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
         ok: false,
         error: "That Competition no longer exists.",
       });
+    });
+  });
+
+  it("refuses Placement Points or scoring changes while the Bracket is finalized, but not other fields", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { updateCompetition } = await import("@/mutations/setup");
+      const { schema, home, ctx } = await rosterFixture(tx);
+      const [bracket] = await tx
+        .insert(schema.competition)
+        .values({
+          warWeekId: home,
+          name: "Knockout",
+          scoring: "individual" as const,
+          format: "single-elimination" as const,
+          placementPoints: [5, 3, 1],
+        })
+        .returning({ id: schema.competition.id });
+      await tx
+        .update(schema.competition)
+        .set({ finalizedAt: new Date() })
+        .where(eq(schema.competition.id, bracket.id));
+
+      expect(
+        await updateCompetition(
+          bracket.id,
+          { ...competitionValues, name: "Knockout", placementPoints: [10, 5] },
+          ctx,
+          tx,
+        ),
+      ).toEqual({
+        ok: false,
+        error:
+          "This Competition's Bracket is finalized. Un-finalize the Bracket first.",
+      });
+      const [unchanged] = await tx
+        .select()
+        .from(schema.competition)
+        .where(eq(schema.competition.id, bracket.id));
+      expect(unchanged).toMatchObject({
+        name: "Knockout",
+        placementPoints: [5, 3, 1],
+      });
+
+      expect(
+        await updateCompetition(
+          bracket.id,
+          {
+            ...competitionValues,
+            name: "Renamed Knockout",
+            description: "Single elimination",
+          },
+          ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+
+      await tx
+        .update(schema.competition)
+        .set({ finalizedAt: null })
+        .where(eq(schema.competition.id, bracket.id));
+
+      expect(
+        await updateCompetition(
+          bracket.id,
+          {
+            ...competitionValues,
+            name: "Renamed Knockout",
+            placementPoints: [10, 5],
+          },
+          ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+    });
+  });
+});
+
+describe.skipIf(!isLocalDatabase)(
+  "updateWarWeekSettings and the Organizer list",
+  () => {
+    it("saves for an actor on no War Week's organizer emails", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { updateWarWeekSettings } = await import("@/mutations/setup");
+        const { schema, home } = await fixture(tx);
+
+        const result = await updateWarWeekSettings(
+          { ...settings, storyTheme: "Corrected" },
+          { warWeekId: home, actorEmail: "unlisted@jahnelgroup.com" },
+          tx,
+        );
+        expect(result).toEqual({ ok: true });
+        const [row] = await tx
+          .select()
+          .from(schema.warWeek)
+          .where(eq(schema.warWeek.id, home));
+        expect(row.storyTheme).toBe("Corrected");
+      });
+    });
+  },
+);
+
+describe.skipIf(!isLocalDatabase)("setCompetitionHosts", () => {
+  async function hostsOf(tx: DBTx, competitionId: string) {
+    const { competitionHost } = await import("@/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const rows = await tx
+      .select({ email: competitionHost.email })
+      .from(competitionHost)
+      .where(eq(competitionHost.competitionId, competitionId))
+      .orderBy(competitionHost.email);
+    return rows.map((row) => row.email);
+  }
+
+  it("replaces the Hosts, lowercased and deduplicated", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { setCompetitionHosts } = await import("@/mutations/setup");
+      const { catanId, relayId, ctx } = await rosterFixture(tx);
+
+      expect(
+        await setCompetitionHosts(
+          catanId,
+          [
+            "Tony@JahnelGroup.com",
+            " tony@jahnelgroup.com",
+            "tom@jahnelgroup.com",
+          ],
+          ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+      expect(await hostsOf(tx, catanId)).toEqual([
+        "tom@jahnelgroup.com",
+        "tony@jahnelgroup.com",
+      ]);
+
+      expect(
+        await setCompetitionHosts(catanId, ["amy@jahnelgroup.com"], ctx, tx),
+      ).toEqual({ ok: true });
+      expect(await hostsOf(tx, catanId)).toEqual(["amy@jahnelgroup.com"]);
+      expect(await hostsOf(tx, relayId)).toEqual([]);
+
+      expect(await setCompetitionHosts(catanId, [], ctx, tx)).toEqual({
+        ok: true,
+      });
+      expect(await hostsOf(tx, catanId)).toEqual([]);
+    });
+  });
+
+  it("refuses an email outside @jahnelgroup.com and changes nothing", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { setCompetitionHosts } = await import("@/mutations/setup");
+      const { catanId, ctx } = await rosterFixture(tx);
+      await setCompetitionHosts(catanId, ["tony@jahnelgroup.com"], ctx, tx);
+
+      expect(
+        await setCompetitionHosts(
+          catanId,
+          ["tom@jahnelgroup.com", "someone@gmail.com"],
+          ctx,
+          tx,
+        ),
+      ).toEqual({
+        ok: false,
+        error: "Use an @jahnelgroup.com email.",
+      });
+      expect(await hostsOf(tx, catanId)).toEqual(["tony@jahnelgroup.com"]);
+    });
+  });
+
+  it("refuses a 255-character Host email with the validation message", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { setCompetitionHosts } = await import("@/mutations/setup");
+      const { catanId, ctx } = await rosterFixture(tx);
+      const tooLong = `${"a".repeat(255 - "@jahnelgroup.com".length)}@jahnelgroup.com`;
+
+      expect(await setCompetitionHosts(catanId, [tooLong], ctx, tx)).toEqual({
+        ok: false,
+        error: "Use an @jahnelgroup.com email.",
+      });
+      expect(await hostsOf(tx, catanId)).toEqual([]);
+    });
+  });
+
+  it("won't touch another War Week's Competition", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { setCompetitionHosts } = await import("@/mutations/setup");
+      const { other, catanId } = await rosterFixture(tx);
+
+      expect(
+        await setCompetitionHosts(
+          catanId,
+          ["tony@jahnelgroup.com"],
+          { warWeekId: other, actorEmail },
+          tx,
+        ),
+      ).toEqual({ ok: false, error: "That Competition no longer exists." });
+      expect(await hostsOf(tx, catanId)).toEqual([]);
+    });
+  });
+
+  it("leaves the Hosts alone when a Competition setup save carries a hosts key", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { setCompetitionHosts, updateCompetition } =
+        await import("@/mutations/setup");
+      const { parseCompetitionInput } = await import("@/lib/setup");
+      const { catanId, ctx } = await rosterFixture(tx);
+      await setCompetitionHosts(catanId, ["tony@jahnelgroup.com"], ctx, tx);
+
+      const parsed = parseCompetitionInput({
+        name: "Catan",
+        description: "",
+        scoring: "individual",
+        maxPoints: "",
+        placementPoints: "",
+        countsTowardTeam: false,
+        group: "",
+        hosts: "tom@jahnelgroup.com",
+      } as Parameters<typeof parseCompetitionInput>[0]);
+      if (!parsed.ok) throw new Error(parsed.error);
+      expect("hosts" in parsed.value).toBe(false);
+      expect(await updateCompetition(catanId, parsed.value, ctx, tx)).toEqual({
+        ok: true,
+      });
+      expect(await hostsOf(tx, catanId)).toEqual(["tony@jahnelgroup.com"]);
+
+      // Even a values object carrying hosts past the parser writes none.
+      expect(
+        await updateCompetition(
+          catanId,
+          {
+            ...parsed.value,
+            hosts: ["tom@jahnelgroup.com"],
+          } as typeof parsed.value,
+          ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+      expect(await hostsOf(tx, catanId)).toEqual(["tony@jahnelgroup.com"]);
     });
   });
 });

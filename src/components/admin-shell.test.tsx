@@ -29,6 +29,7 @@ describe("AdminShell", () => {
       <AdminShell
         warWeek={fakeWarWeek}
         email="o@jahnelgroup.com"
+        isOrganizer
         current="Overview"
       >
         x
@@ -37,6 +38,38 @@ describe("AdminShell", () => {
 
     expect(html).toContain("Back to War Week XI");
     expect(html).not.toContain("public site");
+  });
+
+  it("links an Organizer to Awards and the Organizer list", () => {
+    const html = renderToStaticMarkup(
+      <AdminShell
+        warWeek={fakeWarWeek}
+        email="o@jahnelgroup.com"
+        isOrganizer
+        current="Overview"
+      >
+        x
+      </AdminShell>,
+    );
+    expect(html).toContain('href="/admin/awards"');
+    expect(html).toContain('href="/admin/organizers"');
+  });
+
+  it("hides Awards and the Organizer list from a Host", () => {
+    const html = renderToStaticMarkup(
+      <AdminShell
+        warWeek={fakeWarWeek}
+        email="host@jahnelgroup.com"
+        isOrganizer={false}
+        current="Overview"
+      >
+        x
+      </AdminShell>,
+    );
+    expect(html).not.toContain('href="/admin/awards"');
+    expect(html).not.toContain('href="/admin/organizers"');
+    expect(html).toContain('href="/admin/points"');
+    expect(html).toContain('href="/admin/setup"');
   });
 });
 
@@ -70,6 +103,7 @@ describe("editingBanner", () => {
       <AdminShell
         warWeek={{ ...fakeWarWeek, edition: "x", status: "complete" }}
         email="o@jahnelgroup.com"
+        isOrganizer
         editions={editions}
         current="Overview"
       >

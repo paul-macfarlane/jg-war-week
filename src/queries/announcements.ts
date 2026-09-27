@@ -5,9 +5,15 @@ import {
   type Announcement,
   type WarWeek,
   announcement,
-  warWeek as warWeekTable,
+  participant,
 } from "@/db/schema";
-import { isAnnouncementId, sortAnnouncements } from "@/lib/announcements";
+import {
+  type AnnouncementCardData,
+  type AuthorCandidate,
+  announcementAuthorName,
+  sortAnnouncements,
+} from "@/lib/announcements";
+import { isUuid } from "@/lib/uuid";
 
 async function loadSorted(
   warWeekId: string,
@@ -49,7 +55,7 @@ export async function getAnnouncementForEdit(
   id: string,
   dbOrTx: DBOrTx = db,
 ): Promise<Announcement | undefined> {
-  if (!isAnnouncementId(id)) return undefined;
+  if (!isUuid(id)) return undefined;
   const [found] = await dbOrTx
     .select()
     .from(announcement)
@@ -58,21 +64,57 @@ export async function getAnnouncementForEdit(
   return found;
 }
 
-const organizerWarWeekColumns = {
-  id: warWeekTable.id,
-  edition: warWeekTable.edition,
-  status: warWeekTable.status,
-  organizerEmails: warWeekTable.organizerEmails,
-};
+/** A War Week's Participant emails, for `announcementAuthorName`'s match. */
+async function loadAuthorCandidates(
+  warWeekId: string,
+  dbOrTx: DBOrTx,
+): Promise<AuthorCandidate[]> {
+  return dbOrTx
+    .select({ email: participant.email, displayName: participant.displayName })
+    .from(participant)
+    .where(eq(participant.warWeekId, warWeekId));
+}
 
-/** The War Week an Announcement belongs to, for the Organizer check. */
-export async function getAnnouncementWarWeek(id: string, dbOrTx: DBOrTx = db) {
-  if (!isAnnouncementId(id)) return undefined;
-  const [found] = await dbOrTx
-    .select(organizerWarWeekColumns)
-    .from(announcement)
-    .innerJoin(warWeekTable, eq(warWeekTable.id, announcement.warWeekId))
-    .where(eq(announcement.id, id))
-    .limit(1);
-  return found;
+function toCardData(
+  row: Announcement,
+  participants: AuthorCandidate[],
+): AnnouncementCardData {
+  return {
+    id: row.id,
+    title: row.title,
+    body: row.body,
+    videoUrls: row.videoUrls,
+    pinned: row.pinned,
+    publishedAt: row.publishedAt,
+    authorName: announcementAuthorName(row.authorEmail, participants),
+  };
+}
+
+/**
+ * A War Week's Announcements as `AnnouncementCard` data (author display
+ * name, not email). `/news` and the home feed both use this; only the
+ * admin pages keep the email (MCP shows the handle before the `@`).
+ */
+export async function getAnnouncementCards(
+  warWeek: Pick<WarWeek, "id">,
+  options: { limit?: number } = {},
+  dbOrTx: DBOrTx = db,
+): Promise<AnnouncementCardData[]> {
+  const [rows, participants] = await Promise.all([
+    getAnnouncements(warWeek, options, dbOrTx),
+    loadAuthorCandidates(warWeek.id, dbOrTx),
+  ]);
+  return rows.map((row) => toCardData(row, participants));
+}
+
+/** The pinned Announcement's card data, if there is one. */
+export async function getPinnedAnnouncementCard(
+  warWeek: Pick<WarWeek, "id">,
+  dbOrTx: DBOrTx = db,
+): Promise<AnnouncementCardData | undefined> {
+  const [pinned, participants] = await Promise.all([
+    getPinnedAnnouncement(warWeek, dbOrTx),
+    loadAuthorCandidates(warWeek.id, dbOrTx),
+  ]);
+  return pinned ? toCardData(pinned, participants) : undefined;
 }

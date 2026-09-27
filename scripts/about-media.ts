@@ -6,12 +6,18 @@
  * anonymous visitor at 390px, desktop and with reduced motion into
  * `test-results/28-splash/`, with a log.
  *
- * Needs a production build, the seeded local Postgres (run `pnpm smoke`
- * first), Google Chrome and ffmpeg on PATH. Starts its own server on port
+ * Needs a production build and a freshly seeded local Postgres, the same
+ * prerequisite as `docs/maintainers-guide.md` (`pnpm build`, then
+ * `pnpm seed:load --reset seeds/*.json`), and Google Chrome; ffmpeg on
+ * PATH only without `--stills`. Starts its own server on port
  * 3202, signs in as a made-up Organizer (`about-demo@jahnelgroup.com`) that
- * it adds to XI's allowlist and lends XI's seeded Points Entries for the
+ * it adds to the Organizer list and lends XI's seeded Points Entries for the
  * run, so no real email is in any file, and restores everything after:
  *   pnpm tsx scripts/about-media.ts
+ *
+ * `--stills` rewrites only the feature-card stills and leaves the Finale
+ * recording alone, so it needs no ffmpeg:
+ *   pnpm tsx scripts/about-media.ts --stills
  */
 import { loadEnvConfig } from "@next/env";
 import { makeSignature } from "better-auth/crypto";
@@ -99,8 +105,8 @@ async function createSession(email: string): Promise<string> {
 function seededOrganizerEmail(): string {
   const seed = JSON.parse(
     readFileSync(path.resolve(process.cwd(), "seeds/xi.json"), "utf8"),
-  ) as { organizerEmails: string[] };
-  return seed.organizerEmails[0];
+  ) as { organizers: string[] };
+  return seed.organizers[0];
 }
 
 // ---------------------------------------------------------------------------
@@ -430,9 +436,9 @@ const BRACKET_COMP_NAME = "Capture the Flag";
 /**
  * Builds a small, already-finished single-elimination Bracket on XI (4
  * Participant Entrants, two Round 1 Heats and a decided final) directly in
- * SQL, the way `scripts/brackets-evidence.ts` sets its demo Bracket up. The
- * caller deletes the Competition (which cascades its Entrants and Heats)
- * when done.
+ * SQL: the Competition, its Entrants at Seed Positions 1–4, and each Heat
+ * with its slots and places. The caller deletes the Competition (which
+ * cascades its Entrants and Heats) when done.
  */
 async function setupBracketDemo(): Promise<string> {
   const [xiWarWeek] = await query<{ id: string }>(
@@ -686,8 +692,14 @@ async function evidence() {
 
 // ---------------------------------------------------------------------------
 
+/** Only the feature-card stills; the Finale video and poster stay as they are. */
+const STILLS_ONLY = process.argv.includes("--stills");
+
 async function main() {
-  if (spawnSync("ffmpeg", ["-version"], { stdio: "ignore" }).status !== 0) {
+  if (
+    !STILLS_ONLY &&
+    spawnSync("ffmpeg", ["-version"], { stdio: "ignore" }).status !== 0
+  ) {
     console.error("Install ffmpeg: brew install ffmpeg");
     process.exit(1);
   }
@@ -709,7 +721,7 @@ async function main() {
 
   const realOrganizer = seededOrganizerEmail();
   await query(
-    `update war_week set organizer_emails = array_append(organizer_emails, $1) where edition = 'xi' and not ($1 = any(organizer_emails))`,
+    `insert into organizer (email) values ($1) on conflict (email) do nothing`,
     [DEMO_EMAIL],
   );
   await query(
@@ -731,7 +743,6 @@ async function main() {
       GOOGLE_CLIENT_ID: "",
       GOOGLE_CLIENT_SECRET: "",
       MCP_TOKEN: "",
-      MCP_PUBLIC: "",
     },
     stdio: "ignore",
     detached: true,
@@ -751,7 +762,7 @@ async function main() {
     }
     await waitForChrome();
 
-    await recordFinale(cookie, "ffmpeg");
+    if (!STILLS_ONLY) await recordFinale(cookie, "ffmpeg");
 
     const slugs = ABOUT_FEATURES.map((f) => f.slug);
     await still("organizer-setup", cookie, "/admin/setup");
@@ -800,8 +811,7 @@ async function main() {
     await evidence();
 
     for (const name of [
-      "finale.mp4",
-      "finale-poster.png",
+      ...(STILLS_ONLY ? [] : ["finale.mp4", "finale-poster.png"]),
       ...slugs.map((s) => `${s}.png`),
     ]) {
       note(
@@ -817,10 +827,7 @@ async function main() {
     }
     await sleep(1_000);
     rmSync(chrome.dir, { recursive: true, force: true, maxRetries: 3 });
-    await query(
-      `update war_week set organizer_emails = array_remove(organizer_emails, $1) where edition = 'xi'`,
-      [DEMO_EMAIL],
-    );
+    await query(`delete from organizer where email = $1`, [DEMO_EMAIL]);
     await query(
       `update points_entry set entered_by_email = $1 where entered_by_email = $2`,
       [realOrganizer, DEMO_EMAIL],

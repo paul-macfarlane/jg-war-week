@@ -16,3 +16,12 @@ single maintainer to keep up to date.
 
 Before this, 15 components managed form state by hand with `useState` and
 `startTransition`, each validating in its own way.
+
+## Built
+
+Validation runs on the server only: the action parses its input with the
+Zod schema in `src/lib`, and the form imports that module's input type and
+shows the `fieldErrors` the action returns. A form reads `FormData` when
+every control posts a named input, and closes over React state when a field
+is rich text or a list (Announcement, Award participants, FAQ, Schedule
+description, the setup rows), so those survive a refusal unchanged.

@@ -33,9 +33,3 @@ if (process.env.DATABASE_DRIVER === "neon") {
 }
 
 export { db };
-
-export async function withTransaction<T>(
-  callback: (tx: DBTx) => Promise<T>,
-): Promise<T> {
-  return db.transaction(callback);
-}

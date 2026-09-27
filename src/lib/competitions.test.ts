@@ -6,7 +6,6 @@ import {
   describeScoring,
   formatMaxPoints,
   groupCompetitions,
-  isCompetitionId,
   placementLabel,
   pointsForPlacement,
 } from "@/lib/competitions";
@@ -89,17 +88,6 @@ describe("formatMaxPoints", () => {
   });
 });
 
-describe("isCompetitionId", () => {
-  it.each([
-    ["3f1c2b4a-5d6e-4f70-8a9b-0c1d2e3f4a5b", true],
-    ["not-a-uuid", false],
-    ["", false],
-    ["3f1c2b4a-5d6e-4f70-8a9b-0c1d2e3f4a5b; drop table", false],
-  ])("%s is %s", (id, expected) => {
-    expect(isCompetitionId(id)).toBe(expected);
-  });
-});
-
 describe("buildCompetitionLedger", () => {
   const red = { name: "Red", color: "#ff3b3b" };
   const rows: LedgerRow[] = [
@@ -156,6 +144,23 @@ describe("buildCompetitionLedger", () => {
 
   it("returns no entries for a Competition nobody has scored yet", () => {
     expect(buildCompetitionLedger({ rows: [] })).toEqual({ entries: [] });
+  });
+
+  it("keeps entries entered at the same moment in a stable order, by id", () => {
+    const sameMoment = new Date("2026-02-24T19:00:00-05:00");
+    const tied: LedgerRow[] = ["e-c", "e-a", "e-b"].map((id) => ({
+      id,
+      points: 1,
+      note: null,
+      enteredAt: sameMoment,
+      team: red,
+      participant: null,
+    }));
+    const order = (input: LedgerRow[]) =>
+      buildCompetitionLedger({ rows: input }).entries.map((e) => e.id);
+
+    expect(order(tied)).toEqual(["e-a", "e-b", "e-c"]);
+    expect(order([...tied].reverse())).toEqual(["e-a", "e-b", "e-c"]);
   });
 });
 

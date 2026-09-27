@@ -81,23 +81,8 @@ describe("finaleRows", () => {
 
   it("has every row shown and fully counted once the duration has passed", () => {
     const ranks = [1, 2, 3, 4, 5];
-    const rows = finaleRows(ranks, finaleDurationMs([ranks]));
+    const rows = finaleRows(ranks, finaleDurationMs(ranks));
     expect(rows.every((r) => r.shown && r.progress === 1)).toBe(true);
-  });
-
-  it("delays a shorter list so every list's first place lands at the end", () => {
-    const short = [1, 2];
-    const long = [1, 2, 3, 4, 5, 6];
-    const duration = finaleDurationMs([short, long]);
-    const firstStart = (ranks: number[]) =>
-      [...Array(duration + 1).keys()].find(
-        (t) => finaleRows(ranks, t, duration)[0].shown,
-      );
-    expect(firstStart(short)).toBe(firstStart(long));
-    expect(finaleRows(short, 0, duration)[1].shown).toBe(false);
-    expect(
-      finaleRows(short, duration, duration).every((r) => r.progress === 1),
-    ).toBe(true);
   });
 
   it("returns an empty list for no rows", () => {
@@ -107,20 +92,18 @@ describe("finaleRows", () => {
 
 describe("finaleDurationMs", () => {
   it("is 0 for no rows", () => {
-    expect(finaleDurationMs([[]])).toBe(0);
     expect(finaleDurationMs([])).toBe(0);
   });
 
   it("stays under the cap for a long list, so a 10 s poll never lands mid-Finale twice", () => {
     const ranks = Array.from({ length: 80 }, (_, i) => i + 1);
-    expect(finaleDurationMs([ranks])).toBeLessThanOrEqual(FINALE_MAX_MS);
+    expect(finaleDurationMs(ranks)).toBeLessThanOrEqual(FINALE_MAX_MS);
     expect(FINALE_MAX_MS).toBeLessThan(10_000);
   });
 
-  it("is the longest of several lists on one clock", () => {
+  it("grows with the number of distinct ranks", () => {
     const short = [1, 2];
     const long = [1, 2, 3, 4, 5, 6];
-    expect(finaleDurationMs([short, long])).toBe(finaleDurationMs([long]));
-    expect(finaleDurationMs([long])).toBeGreaterThan(finaleDurationMs([short]));
+    expect(finaleDurationMs(long)).toBeGreaterThan(finaleDurationMs(short));
   });
 });

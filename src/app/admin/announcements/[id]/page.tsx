@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { AnnouncementForm } from "@/components/announcement-form";
+import { can } from "@/lib/access";
 import { sanitizeContent } from "@/lib/rich-text/content";
 import { getAnnouncementForEdit } from "@/queries/announcements";
 
@@ -16,13 +17,18 @@ export default async function EditAnnouncementPage({
   params,
 }: PageProps<"/admin/announcements/[id]">) {
   const { id } = await params;
-  const { warWeek, email, isOrganizer, editions } = await loadAdminPage(
-    `/admin/announcements/${id}`,
-  );
-  if (!isOrganizer) return <AdminRefused warWeek={warWeek} email={email} />;
+  const { warWeek, email, actor, allowed, isOrganizer, editions } =
+    await loadAdminPage(`/admin/announcements/${id}`);
+  if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const announcement = await getAnnouncementForEdit(warWeek, id);
   if (!announcement) notFound();
+  const mayChange =
+    can(actor, "announcement.edit", {
+      warWeekId: warWeek.id,
+      authorEmail: announcement.authorEmail,
+    }) === null;
+  if (!mayChange) return <AdminRefused warWeek={warWeek} email={email} />;
 
   // The stored body was sanitized on write; sanitize again so the editor is
   // only ever handed the closed content set.
@@ -32,6 +38,7 @@ export default async function EditAnnouncementPage({
     <AdminShell
       warWeek={warWeek}
       email={email}
+      isOrganizer={isOrganizer}
       editions={editions}
       current="Announcements"
     >
@@ -41,7 +48,9 @@ export default async function EditAnnouncementPage({
           Posted by {announcement.authorEmail}.
         </p>
         <AnnouncementForm
+          warWeekId={warWeek.id}
           announcementId={announcement.id}
+          canPin={isOrganizer}
           initial={{
             title: announcement.title,
             body: body.ok ? body.content : { type: "doc", content: [] },

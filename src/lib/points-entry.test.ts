@@ -45,13 +45,13 @@ describe("parsePointsEntryInput", () => {
   it("rejects more than two decimal places and values the column can't hold", () => {
     expect(
       parsePointsEntryInput({ competitionId, targetId, points: "1.234" }),
-    ).toEqual({
+    ).toMatchObject({
       ok: false,
       error: "Points must have at most two decimal places.",
     });
     expect(
       parsePointsEntryInput({ competitionId, targetId, points: "1000000" }),
-    ).toEqual({ ok: false, error: "Points must be at most 999999.99." });
+    ).toMatchObject({ ok: false, error: "Points must be at most 999999.99." });
     expect(
       parsePointsEntryInput({ competitionId, targetId, points: "999999.99" })
         .ok,
@@ -166,5 +166,56 @@ describe("overMaxWarning", () => {
 
   it("treats a missing or unparseable amount as no warning", () => {
     expect(overMaxWarning(Number.NaN, 5)).toBeNull();
+  });
+});
+
+describe("parsePointsEntryInput given a malformed call", () => {
+  const MALFORMED: [string, unknown][] = [
+    ["{}", {}],
+    ["null", null],
+    ["undefined", undefined],
+    ["a string", "x"],
+    ["a number", 5],
+  ];
+  const valid = {
+    competitionId: "7d0f1c1e-3c1b-4a55-9a7e-2d3a4b5c6d7e",
+    targetId: "8e1f2d2f-4d2c-4b66-8b8f-3e4b5c6d7e8f",
+    points: "5",
+  };
+
+  it.each(MALFORMED)("returns an error for %s", (_label, value) => {
+    expect(parsePointsEntryInput(value as never)).toMatchObject({ ok: false });
+  });
+
+  it.each<[string, Record<string, unknown>]>([
+    ["points: 5", { points: 5 }],
+    ["points: null", { points: null }],
+    ['competitionId: ["x"]', { competitionId: ["x"] }],
+    ["targetId: 5", { targetId: 5 }],
+    ["note: 5", { note: 5 }],
+  ])("returns an error for %s", (_label, overrides) => {
+    expect(
+      parsePointsEntryInput({ ...valid, ...overrides } as never),
+    ).toMatchObject({ ok: false });
+  });
+});
+
+describe("parsePointsEntryInput field errors", () => {
+  it("names each refused field, worded as its error", () => {
+    expect(
+      parsePointsEntryInput({
+        competitionId: "",
+        targetId: "nope",
+        points: "9999999",
+      }),
+    ).toEqual({
+      ok: false,
+      error: "Choose a Competition.",
+      fieldErrors: {
+        competitionId: "Choose a Competition.",
+        targetId: "Choose a Team or Participant.",
+        points: "Points must be at most 999999.99.",
+      },
+    });
   });
 });

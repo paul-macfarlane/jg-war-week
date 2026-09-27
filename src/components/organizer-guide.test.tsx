@@ -11,7 +11,7 @@ describe("OrganizerGuide", () => {
 
   const topics = [
     "First-time setup order",
-    "Adding Organizers",
+    "Organizers and Hosts",
     "What a Participant email does",
     "Discretionary points",
     "Placement Points",
@@ -32,9 +32,11 @@ describe("OrganizerGuide", () => {
     expect(text).toContain("Squad");
   });
 
-  it("links to the setup and standings admin pages", () => {
+  it("links to the setup, standings and Organizers admin pages", () => {
     expect(html).toContain('href="/admin/setup/war-week"');
     expect(html).toContain('href="/admin/standings"');
+    expect(html).toContain('href="/admin/organizers"');
+    expect(html).toContain('href="/admin/setup/competitions"');
   });
 
   it("never uses banned vocabulary", () => {

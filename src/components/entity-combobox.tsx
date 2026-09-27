@@ -33,6 +33,8 @@ type CommonProps = {
   required?: boolean;
   id?: string;
   "aria-label"?: string;
+  /** Marks the control invalid when its field shows an error. */
+  "aria-invalid"?: boolean;
 };
 
 type SingleProps = CommonProps & {
@@ -90,6 +92,7 @@ export function EntityCombobox(props: EntityComboboxProps) {
     required,
     id,
     "aria-label": ariaLabel,
+    "aria-invalid": ariaInvalid,
   } = props;
   const itemsById = useMemo(
     () => new Map(items.map((item) => [item.id, item])),
@@ -130,6 +133,7 @@ export function EntityCombobox(props: EntityComboboxProps) {
           <ComboboxChipsInput
             id={id}
             aria-label={ariaLabel}
+            aria-invalid={ariaInvalid}
             placeholder={selected.length === 0 ? placeholder : undefined}
             disabled={disabled}
           />
@@ -176,6 +180,7 @@ export function EntityCombobox(props: EntityComboboxProps) {
       <ComboboxInput
         id={id}
         aria-label={ariaLabel}
+        aria-invalid={ariaInvalid}
         placeholder={placeholder}
         disabled={disabled}
         className="h-11 sm:h-9"

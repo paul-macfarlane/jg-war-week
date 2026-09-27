@@ -5,6 +5,7 @@ import {
   Megaphone,
   PlusCircle,
   Settings,
+  ShieldCheck,
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
@@ -15,17 +16,29 @@ import { SiteFooter } from "@/components/site-footer";
 import { ThemeRoot } from "@/components/theme-root";
 import { Toaster } from "@/components/ui/sonner";
 import type { WarWeek } from "@/db/schema";
-import type { AdminEdition } from "@/lib/access";
+import { ADMIN_REFUSAL, type AdminEdition } from "@/lib/access";
 import { warWeekThemeStyle } from "@/lib/theme";
 
+// `organizerOnly` sections are hidden from Hosts.
 const SECTIONS = [
   { label: "Overview", icon: LayoutDashboard, href: "/admin" },
   { label: "Guide", icon: BookOpen, href: "/admin/guide" },
   { label: "Points Entries", icon: PlusCircle, href: "/admin/points" },
   { label: "Finale", icon: Sparkles, href: "/admin/standings" },
   { label: "Announcements", icon: Megaphone, href: "/admin/announcements" },
-  { label: "Awards", icon: Medal, href: "/admin/awards" },
+  {
+    label: "Awards",
+    icon: Medal,
+    href: "/admin/awards",
+    organizerOnly: true,
+  },
   { label: "Setup", icon: Settings, href: "/admin/setup" },
+  {
+    label: "Organizers",
+    icon: ShieldCheck,
+    href: "/admin/organizers",
+    organizerOnly: true,
+  },
 ] as const;
 
 /** A section an admin page can be: only sections that have a page. */
@@ -51,20 +64,23 @@ export function editingBanner(
 }
 
 /**
- * Frame for every Organizer page: header (with the edition switcher), nav
+ * Frame for every `/admin` page: header (with the edition switcher), nav
  * and content. The nav is a side column on desktop and a scrolling row on a
- * phone.
+ * phone; a Host doesn't see the Organizer-only sections.
  */
 export function AdminShell({
   warWeek,
   email,
+  isOrganizer,
   editions = [],
   current,
   children,
 }: {
   warWeek: WarWeek;
   email: string;
-  /** Editions the Organizer may administer, for the switcher. */
+  /** False for a Host: hides the Organizer-only sections. */
+  isOrganizer: boolean;
+  /** Editions the Organizer or Host may open, for the switcher. */
   editions?: AdminEdition[];
   current: AdminSection;
   children: React.ReactNode;
@@ -111,7 +127,9 @@ export function AdminShell({
           className="border-border shrink-0 overflow-x-auto border-b p-2 md:w-56 md:border-r md:border-b-0 md:p-3"
         >
           <ul className="flex gap-1 md:flex-col">
-            {SECTIONS.map(({ label, icon: Icon, href }) => {
+            {SECTIONS.filter(
+              (section) => isOrganizer || !("organizerOnly" in section),
+            ).map(({ label, icon: Icon, href }) => {
               const content = (
                 <>
                   <Icon aria-hidden className="size-4 shrink-0" />
@@ -154,7 +172,11 @@ export function AdminShell({
   );
 }
 
-/** Shown to a signed-in Jahnel Group user who isn't on the allowlist. */
+/**
+ * Shown to a signed-in Jahnel Group user who may not use an `/admin` page:
+ * neither an Organizer nor a Host there, or a Host on an Organizer-only
+ * page.
+ */
 export function AdminRefused({
   warWeek,
   email,
@@ -165,11 +187,11 @@ export function AdminRefused({
   return (
     <>
       <main className="mx-auto flex max-w-md flex-1 flex-col items-center justify-center gap-4 px-4 text-center">
-        <h1 className="text-2xl font-bold">Organizers only</h1>
+        <h1 className="text-2xl font-bold">{ADMIN_REFUSAL}</h1>
         <p className="text-foreground/70">
-          {email} is not an Organizer for War Week{" "}
-          {warWeek.edition.toUpperCase()}. Ask an Organizer to add you to the
-          allowlist if you should have access.
+          {email} can&apos;t use this page for War Week{" "}
+          {warWeek.edition.toUpperCase()}. Ask an Organizer if you should have
+          access.
         </p>
         <div className="flex items-center gap-3">
           <Link

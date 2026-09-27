@@ -58,7 +58,7 @@ describe("War Week history", () => {
       expect(seed.startDate.startsWith(String(year))).toBe(true);
       expect(seed.wikiUrl).toMatch(/^https:\/\//);
       expect(seed.pointsEntries).toEqual([]);
-      expect(seed.organizerEmails).toEqual([]);
+      expect(seed.organizers).toEqual([]);
     },
   );
 });
@@ -120,6 +120,6 @@ describe("War Week XI demo", () => {
     expect(xi.announcements.filter((a) => a.pinned)).toHaveLength(1);
     expect(xi.announcements.some((a) => a.videoUrls.length > 0)).toBe(true);
     expect(xi.awards.length).toBeGreaterThanOrEqual(2);
-    expect(xi.organizerEmails.length).toBeGreaterThan(0);
+    expect(xi.organizers.length).toBeGreaterThan(0);
   });
 });

@@ -16,17 +16,24 @@ export default async function BracketResultsPage({
   params,
 }: PageProps<"/admin/brackets/[id]">) {
   const { id } = await params;
-  const { warWeek, email, isOrganizer } = await loadAdminPage(
-    `/admin/brackets/${id}`,
-  );
-  if (!isOrganizer) return <AdminRefused warWeek={warWeek} email={email} />;
+  const { warWeek, email, allowed, isOrganizer, editions, runs } =
+    await loadAdminPage(`/admin/brackets/${id}`);
+  if (!allowed || !runs(id)) {
+    return <AdminRefused warWeek={warWeek} email={email} />;
+  }
 
   const view = await getBracket(id);
   if (!view || view.competition.warWeekId !== warWeek.id) notFound();
   const { competition } = view;
 
   return (
-    <AdminShell warWeek={warWeek} email={email} current="Points Entries">
+    <AdminShell
+      warWeek={warWeek}
+      email={email}
+      isOrganizer={isOrganizer}
+      editions={editions}
+      current="Points Entries"
+    >
       <section className="flex max-w-xl min-w-0 flex-col gap-4">
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
           <Link
