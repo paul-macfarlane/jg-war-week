@@ -12,6 +12,7 @@ import {
   pointsEntry,
   team,
 } from "@/db/schema";
+import { type HeatsConfig, configOf } from "@/lib/bracket/config";
 import {
   applyResult,
   finalPlacings,
@@ -19,12 +20,14 @@ import {
   hasResults,
   isComplete,
   resetByResult,
-} from "@/lib/bracket/engine";
+  validateConfig,
+} from "@/lib/bracket/formats";
 import { pointsFor } from "@/lib/bracket/points";
 import { shuffleSeedPositions } from "@/lib/bracket/seeding";
 import {
   type Bracket,
   BracketError,
+  type BracketFormat,
   HAS_RESULTS_ERROR,
   type HeatResult,
 } from "@/lib/bracket/types";
@@ -41,8 +44,17 @@ export const FROM_BRACKET_NOTE = "From bracket";
 
 type BracketCompetition = Pick<
   Competition,
-  "id" | "name" | "scoring" | "format" | "placementPoints" | "finalizedAt"
+  | "id"
+  | "name"
+  | "scoring"
+  | "format"
+  | "bracketConfig"
+  | "placementPoints"
+  | "finalizedAt"
 >;
+
+/** A Competition run as a Bracket (its Format isn't points). */
+type BracketRun = BracketCompetition & { format: BracketFormat };
 
 /**
  * Locks a Competition of this War Week for a Bracket write, so two writes
@@ -60,6 +72,7 @@ async function lockedCompetition(
       name: competition.name,
       scoring: competition.scoring,
       format: competition.format,
+      bracketConfig: competition.bracketConfig,
       placementPoints: competition.placementPoints,
       finalizedAt: competition.finalizedAt,
     })
@@ -83,6 +96,27 @@ function bracketRefusal(
   if (found.format === "points") return NOT_A_BRACKET;
   if (found.finalizedAt && !allowFinalized) return FINALIZED;
   return null;
+}
+
+/** The Competition's Bracket, its Format and config already in hand. */
+function bracketOf(tx: DBOrTx, found: BracketRun): Promise<Bracket> {
+  return loadBracket(found.id, tx, {
+    format: found.format,
+    bracketConfig: found.bracketConfig,
+  });
+}
+
+function isBracketRun(
+  found: BracketCompetition | undefined,
+): found is BracketRun {
+  return found !== undefined && found.format !== "points";
+}
+
+function sameConfig(a: HeatsConfig | null, b: HeatsConfig | null): boolean {
+  return (
+    a?.entrantsPerHeat === b?.entrantsPerHeat &&
+    a?.advancePerHeat === b?.advancePerHeat
+  );
 }
 
 function refuse(error: string): { ok: false; error: string } {
@@ -164,17 +198,29 @@ async function saveBracket(tx: DBOrTx, before: Bracket, after: Bracket) {
   await insertSlots(tx, changed);
 }
 
-/** Sets how a Competition is run. Its Format can't change while it has Entrants. */
+/**
+ * Sets how a Competition is run, and the heats Format's config. Its Format
+ * can't change while it has Entrants, nor either while it's finalized.
+ * Saving a different heats config clears the Heats (keeping the Entrants);
+ * once a Heat has a Heat Result, only with `force`. Omitting the config
+ * keeps the saved one, unless the Format changes; the default then applies.
+ */
 export async function setCompetitionFormat(
   competitionId: string,
-  values: { format: Competition["format"] },
+  values: {
+    format: Competition["format"];
+    config?: HeatsConfig | null;
+    force?: boolean;
+  },
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedCompetition(tx, competitionId, ctx);
     if (!found) return refuse(COMPETITION_NOT_FOUND);
-    if (found.format !== values.format) {
+    if (found.finalizedAt) return refuse(FINALIZED);
+    const formatChanges = found.format !== values.format;
+    if (formatChanges) {
       const [entrants] = await tx
         .select({ count: count() })
         .from(entrant)
@@ -186,10 +232,29 @@ export async function setCompetitionFormat(
       );
       if (refusal) return refuse(refusal);
     }
+
+    let bracketConfig: HeatsConfig | null = null;
+    if (values.format === "heats") {
+      bracketConfig =
+        values.config ?? (formatChanges ? null : found.bracketConfig);
+    }
+    const configChanges =
+      !formatChanges &&
+      isBracketRun(found) &&
+      values.config != null &&
+      !sameConfig(configOf(found), values.config);
+    if (configChanges) {
+      if (!values.force && hasResults(await bracketOf(tx, found))) {
+        return refuse(HAS_RESULTS_ERROR);
+      }
+      await tx.delete(heat).where(eq(heat.competitionId, competitionId));
+    }
+
     await tx
       .update(competition)
       .set({
         format: values.format,
+        bracketConfig,
         updatedAt: sql`now()`,
       })
       .where(eq(competition.id, competitionId));
@@ -211,7 +276,9 @@ export async function replaceEntrants(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedCompetition(tx, competitionId, ctx);
     const refusal = bracketRefusal(found);
-    if (refusal || !found) return refuse(refusal ?? COMPETITION_NOT_FOUND);
+    if (refusal || !isBracketRun(found)) {
+      return refuse(refusal ?? NOT_A_BRACKET);
+    }
     if (new Set(targetIds).size !== targetIds.length) {
       return refuse("Enter each Team or Participant only once.");
     }
@@ -231,7 +298,7 @@ export async function replaceEntrants(
           : `"${found.name}" is an individual Competition, so its Entrants must be Participants of this War Week.`,
       );
     }
-    if (!force && hasResults(await loadBracket(competitionId, tx))) {
+    if (!force && hasResults(await bracketOf(tx, found))) {
       return refuse(HAS_RESULTS_ERROR);
     }
 
@@ -265,10 +332,15 @@ export async function generateBracket(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedCompetition(tx, competitionId, ctx);
     const refusal = bracketRefusal(found);
-    if (refusal) return refuse(refusal);
+    if (refusal || !isBracketRun(found)) {
+      return refuse(refusal ?? NOT_A_BRACKET);
+    }
     const entrants = await getBracketEntrants(competitionId, tx);
     if (entrants.length < 2) return refuse("Add at least 2 Entrants first.");
-    if (!options.force && hasResults(await loadBracket(competitionId, tx))) {
+    const config = configOf(found);
+    const configRefusal = validateConfig(found.format, config, entrants.length);
+    if (configRefusal) return refuse(configRefusal);
+    if (!options.force && hasResults(await bracketOf(tx, found))) {
       return refuse(HAS_RESULTS_ERROR);
     }
 
@@ -289,6 +361,8 @@ export async function generateBracket(
     }
 
     const bracket = generate(
+      found.format,
+      config,
       seeded.map(({ entrantId, seedPosition }) => ({
         id: entrantId,
         seedPosition,
@@ -303,9 +377,10 @@ export async function generateBracket(
 }
 
 /**
- * Records a Heat Result and advances the winner. Changing a decided Heat's
- * winner resets the later Heats that followed from it; the ids of those
- * that had a Heat Result are returned. A score-only edit resets nothing.
+ * Records a Heat Result and advances who goes on, per the Format. Changing
+ * who advances from a decided Heat resets the later Heats that followed
+ * from it; the ids of those that had a Heat Result are returned. A
+ * score-only edit resets nothing.
  */
 export async function recordHeatResult(
   competitionId: string,
@@ -319,17 +394,17 @@ export async function recordHeatResult(
   return dbOrTx.transaction(async (tx) => {
     const found = await lockedCompetition(tx, competitionId, ctx);
     const refusal = bracketRefusal(found);
-    if (refusal) return refuse(refusal);
-    const bracket = await loadBracket(competitionId, tx);
+    if (refusal || !isBracketRun(found)) {
+      return refuse(refusal ?? NOT_A_BRACKET);
+    }
+    const bracket = await bracketOf(tx, found);
     const target = bracket.heats.find((h) => h.id === heatId);
     if (!target) return refuse(HEAT_NOT_FOUND);
 
     let next: Bracket;
     let resetHeatIds: string[];
     try {
-      const forfeits = result.forfeits ?? [];
-      const winner = result.order.find((id) => !forfeits.includes(id));
-      resetHeatIds = resetByResult(bracket, heatId, winner ?? null);
+      resetHeatIds = resetByResult(bracket, heatId, result);
       next = applyResult(bracket, heatId, result);
     } catch (error) {
       if (error instanceof BracketError) return refuse(error.message);
@@ -353,8 +428,10 @@ export async function finalizeBracket(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedCompetition(tx, competitionId, ctx);
     const refusal = bracketRefusal(found, { allowFinalized: true });
-    if (refusal || !found) return refuse(refusal ?? COMPETITION_NOT_FOUND);
-    const bracket = await loadBracket(competitionId, tx);
+    if (refusal || !isBracketRun(found)) {
+      return refuse(refusal ?? NOT_A_BRACKET);
+    }
+    const bracket = await bracketOf(tx, found);
     if (!isComplete(bracket)) {
       return refuse("Finish every Heat before finalizing.");
     }

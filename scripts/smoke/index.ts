@@ -25,7 +25,7 @@ import {
   assertAwardsPage,
   assertFaqPage,
 } from "./awards";
-import { assertBracketLoop } from "./brackets";
+import { assertBracketLoop, assertHeatsLoop } from "./brackets";
 import { assertFinale } from "./finale";
 import {
   BASE_URL,
@@ -208,6 +208,7 @@ async function main() {
       await assertSetupTeamsAndCompetitions(sessions);
       await assertSetupScheduleFaq(sessions);
       await assertBracketLoop(sessions);
+      await assertHeatsLoop(sessions);
       await assertHostChecks(sessions);
       await assertParticipantRefused(sessions);
       await assertPostedWarWeekWins(sessions);

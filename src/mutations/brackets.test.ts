@@ -133,6 +133,76 @@ function heatAt(
   return { heat, labels: heat.slots.map((s) => label(s.entrantId)) };
 }
 
+/**
+ * The fixture plus an individual Competition, "Relay Heats", with eight
+ * Participants and Placement Points 5 · 3 · 1, still single elimination.
+ */
+async function heatsFixture(tx: DBTx) {
+  const f = await fixture(tx);
+  const { schema } = f;
+  const runners = await tx
+    .insert(schema.participant)
+    .values(
+      ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"].map((displayName) => ({
+        warWeekId: f.ctx.warWeekId,
+        displayName,
+      })),
+    )
+    .returning({ id: schema.participant.id });
+  const [relay] = await tx
+    .insert(schema.competition)
+    .values({
+      warWeekId: f.ctx.warWeekId,
+      name: "Relay Heats",
+      scoring: "individual",
+      format: "single-elimination",
+      placementPoints: [5, 3, 1],
+    })
+    .returning({ id: schema.competition.id });
+  return { ...f, relayId: relay.id, runners: runners.map((r) => r.id) };
+}
+
+const fourTwo = { entrantsPerHeat: 4, advancePerHeat: 2 };
+
+/** Relay Heats set to 4 per Heat, 2 advancing, entered and generated. */
+async function generatedHeats(tx: DBTx) {
+  const { mutations } = await modules();
+  const f = await heatsFixture(tx);
+  expect(
+    await mutations.setCompetitionFormat(
+      f.relayId,
+      { format: "heats", config: fourTwo },
+      f.ctx,
+      tx,
+    ),
+  ).toEqual({ ok: true });
+  expect(
+    await mutations.replaceEntrants(
+      f.relayId,
+      { targetIds: f.runners },
+      f.ctx,
+      tx,
+    ),
+  ).toEqual({ ok: true });
+  expect(
+    await mutations.generateBracket(f.relayId, { rng: rngZero }, f.ctx, tx),
+  ).toEqual({ ok: true });
+  return f;
+}
+
+/** A Competition's saved `bracket_config`. */
+async function savedConfig(
+  tx: DBTx,
+  f: Awaited<ReturnType<typeof fixture>>,
+  competitionId: string,
+) {
+  const [row] = await tx
+    .select({ bracketConfig: f.schema.competition.bracketConfig })
+    .from(f.schema.competition)
+    .where(eq(f.schema.competition.id, competitionId));
+  return row.bracketConfig;
+}
+
 describe.skipIf(!isLocalDatabase)("brackets", () => {
   it("enters Teams, generates a randomly seeded Bracket and shows it", async () => {
     await inRolledBackTransaction(async (tx) => {
@@ -674,6 +744,296 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         error:
           "This Competition has 2 Entrants. Remove them before changing its Format.",
       });
+    });
+  });
+
+  it("runs a heats Bracket from Generate to generated Points Entries", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations, queries } = await modules();
+      const f = await generatedHeats(tx);
+      const { schema } = f;
+
+      expect(await savedConfig(tx, f, f.relayId)).toEqual(fourTwo);
+      const rows = await tx
+        .select({
+          round: schema.heat.round,
+          slotCount: schema.heat.slotCount,
+          winnerToHeatId: schema.heat.winnerToHeatId,
+        })
+        .from(schema.heat)
+        .where(eq(schema.heat.competitionId, f.relayId))
+        .orderBy(schema.heat.round, schema.heat.position);
+      // Two Heats of four, then a final of the four who advance.
+      expect(rows).toEqual([
+        { round: 1, slotCount: 4, winnerToHeatId: null },
+        { round: 1, slotCount: 4, winnerToHeatId: null },
+        { round: 2, slotCount: 4, winnerToHeatId: null },
+      ]);
+
+      let view = (await queries.getBracket(f.relayId, tx))!;
+      const first = heatAt(view, 1, 1).heat;
+      const second = heatAt(view, 1, 2).heat;
+      const final = heatAt(view, 2, 1).heat;
+      const [a0, a1, a2, a3] = first.slots.map((s) => s.entrantId!);
+      const [b0, b1, b2, b3] = second.slots.map((s) => s.entrantId!);
+      expect(final.slots.every((s) => s.entrantId === null)).toBe(true);
+
+      expect(
+        await mutations.recordHeatResult(
+          f.relayId,
+          first.id,
+          { order: [a0, a1, a2, a3] },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true, resetHeatIds: [] });
+      // The forfeiter, listed first, finishes last.
+      expect(
+        await mutations.recordHeatResult(
+          f.relayId,
+          second.id,
+          { order: [b0, b1, b2, b3], forfeits: [b0] },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true, resetHeatIds: [] });
+
+      view = (await queries.getBracket(f.relayId, tx))!;
+      const played = heatAt(view, 1, 2).heat;
+      expect(played.status).toBe("forfeit");
+      expect(
+        played.slots.map((s) => [s.entrantId, s.place, s.forfeited]),
+      ).toEqual([
+        [b0, 4, true],
+        [b1, 1, false],
+        [b2, 2, false],
+        [b3, 3, false],
+      ]);
+      const filled = heatAt(view, 2, 1).heat;
+      expect(filled.status).toBe("ready");
+      expect(filled.slots.map((s) => s.entrantId).sort()).toEqual(
+        [a0, a1, b1, b2].sort(),
+      );
+      expect(view.champion).toBeNull();
+
+      expect(
+        await mutations.recordHeatResult(
+          f.relayId,
+          final.id,
+          { order: [a1, b1, a0, b2] },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true, resetHeatIds: [] });
+      view = (await queries.getBracket(f.relayId, tx))!;
+      expect(view.champion).toBe(a1);
+
+      expect(await mutations.finalizeBracket(f.relayId, f.ctx, tx)).toEqual({
+        ok: true,
+      });
+      const entrants = await tx
+        .select({
+          id: schema.entrant.id,
+          participantId: schema.entrant.participantId,
+        })
+        .from(schema.entrant)
+        .where(eq(schema.entrant.competitionId, f.relayId));
+      const participantOf = (id: string) =>
+        entrants.find((e) => e.id === id)!.participantId;
+      const generated = await tx
+        .select({
+          participantId: schema.pointsEntry.participantId,
+          points: schema.pointsEntry.points,
+          note: schema.pointsEntry.note,
+        })
+        .from(schema.pointsEntry)
+        .where(
+          and(
+            eq(schema.pointsEntry.competitionId, f.relayId),
+            eq(schema.pointsEntry.generatedByBracket, true),
+          ),
+        );
+      expect(generated.sort((x, y) => y.points - x.points)).toEqual([
+        { participantId: participantOf(a1), points: 5, note: "From bracket" },
+        { participantId: participantOf(b1), points: 3, note: "From bracket" },
+        { participantId: participantOf(a0), points: 1, note: "From bracket" },
+      ]);
+
+      // A finalized Bracket's Format and config can't change.
+      expect(
+        await mutations.setCompetitionFormat(
+          f.relayId,
+          {
+            format: "heats",
+            config: { entrantsPerHeat: 4, advancePerHeat: 1 },
+          },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({
+        ok: false,
+        error: "Un-finalize the Bracket before changing it.",
+      });
+      expect(await savedConfig(tx, f, f.relayId)).toEqual(fourTwo);
+    });
+  });
+
+  it("empties a decided heats final when a re-recorded Heat changes who advances", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations, queries } = await modules();
+      const f = await generatedHeats(tx);
+      let view = (await queries.getBracket(f.relayId, tx))!;
+      const first = heatAt(view, 1, 1).heat;
+      const second = heatAt(view, 1, 2).heat;
+      const final = heatAt(view, 2, 1).heat;
+      const [a0, a1, a2, a3] = first.slots.map((s) => s.entrantId!);
+      const [b0, b1, b2, b3] = second.slots.map((s) => s.entrantId!);
+      await mutations.recordHeatResult(
+        f.relayId,
+        first.id,
+        { order: [a0, a1, a2, a3] },
+        f.ctx,
+        tx,
+      );
+      await mutations.recordHeatResult(
+        f.relayId,
+        second.id,
+        { order: [b0, b1, b2, b3] },
+        f.ctx,
+        tx,
+      );
+      await mutations.recordHeatResult(
+        f.relayId,
+        final.id,
+        { order: [a0, b0, a1, b1] },
+        f.ctx,
+        tx,
+      );
+      view = (await queries.getBracket(f.relayId, tx))!;
+      expect(view.champion).toBe(a0);
+
+      // a2 now advances in place of a0.
+      expect(
+        await mutations.recordHeatResult(
+          f.relayId,
+          first.id,
+          { order: [a2, a1, a0, a3] },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true, resetHeatIds: [final.id] });
+      view = (await queries.getBracket(f.relayId, tx))!;
+      const after = heatAt(view, 2, 1).heat;
+      expect(after.slots.every((s) => s.place === null)).toBe(true);
+      expect(after.slots.map((s) => s.entrantId)).not.toContain(a0);
+      expect(after.status).not.toBe("played");
+      expect(view.champion).toBeNull();
+    });
+  });
+
+  it("refuses to generate Heats that would never end", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations, queries } = await modules();
+      const f = await fixture(tx);
+      await mutations.setCompetitionFormat(
+        f.competitionId,
+        { format: "heats", config: { entrantsPerHeat: 3, advancePerHeat: 2 } },
+        f.ctx,
+        tx,
+      );
+      await mutations.replaceEntrants(
+        f.competitionId,
+        { targetIds: [f.red, f.blue, f.green, f.gold] },
+        f.ctx,
+        tx,
+      );
+      expect(
+        await mutations.generateBracket(
+          f.competitionId,
+          { rng: rngZero },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({
+        ok: false,
+        error:
+          "With 4 Entrants, 3 per Heat and 2 advancing, Round 1 would never end. Lower how many advance.",
+      });
+      expect(
+        (await queries.getBracket(f.competitionId, tx))!.bracket.heats,
+      ).toEqual([]);
+    });
+  });
+
+  it("saves a heats config, and a different one clears the Heats (with force once there are results)", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations, queries } = await modules();
+      const f = await generatedHeats(tx);
+
+      // Omitting the config keeps the saved one.
+      expect(
+        await mutations.setCompetitionFormat(
+          f.relayId,
+          { format: "heats" },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+      expect(await savedConfig(tx, f, f.relayId)).toEqual(fourTwo);
+
+      let view = (await queries.getBracket(f.relayId, tx))!;
+      const first = heatAt(view, 1, 1).heat;
+      await mutations.recordHeatResult(
+        f.relayId,
+        first.id,
+        { order: first.slots.map((s) => s.entrantId!) },
+        f.ctx,
+        tx,
+      );
+
+      const fourOne = { entrantsPerHeat: 4, advancePerHeat: 1 };
+      expect(
+        await mutations.setCompetitionFormat(
+          f.relayId,
+          { format: "heats", config: fourOne },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({
+        ok: false,
+        error:
+          "This Bracket has Heat Results. Confirm to clear them and start over.",
+      });
+      expect(await savedConfig(tx, f, f.relayId)).toEqual(fourTwo);
+      expect(
+        (await queries.getBracket(f.relayId, tx))!.bracket.heats,
+      ).toHaveLength(3);
+
+      expect(
+        await mutations.setCompetitionFormat(
+          f.relayId,
+          { format: "heats", config: fourOne, force: true },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+      expect(await savedConfig(tx, f, f.relayId)).toEqual(fourOne);
+      view = (await queries.getBracket(f.relayId, tx))!;
+      expect(view.bracket.heats).toEqual([]);
+      expect(view.bracket.config).toEqual(fourOne);
+      expect(view.entrants).toHaveLength(8);
+
+      // Back to single elimination once the Entrants are gone: no config.
+      await mutations.replaceEntrants(f.relayId, { targetIds: [] }, f.ctx, tx);
+      expect(
+        await mutations.setCompetitionFormat(
+          f.relayId,
+          { format: "single-elimination" },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+      expect(await savedConfig(tx, f, f.relayId)).toBeNull();
     });
   });
 

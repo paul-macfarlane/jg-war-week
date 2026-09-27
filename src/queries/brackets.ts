@@ -13,7 +13,7 @@ import {
   team,
 } from "@/db/schema";
 import { configOf } from "@/lib/bracket/config";
-import { champion } from "@/lib/bracket/engine";
+import { champion } from "@/lib/bracket/formats";
 import type { Bracket, Entrant, Heat } from "@/lib/bracket/types";
 import { isUuid } from "@/lib/uuid";
 
@@ -185,7 +185,8 @@ export async function getBracket(
     competition: shown,
     entrants,
     bracket,
-    champion: champion(bracket),
+    // A points Competition has no Bracket, so no champion.
+    champion: found.format === "points" ? null : champion(bracket),
     finalized: found.finalizedAt !== null,
   };
 }

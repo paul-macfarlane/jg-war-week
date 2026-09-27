@@ -4,11 +4,12 @@
  */
 import { z } from "zod";
 
-import type { HeatResult } from "@/lib/bracket/types";
+import { type HeatsConfig, bracketConfigSchema } from "@/lib/bracket/config";
+import type { Format, HeatResult } from "@/lib/bracket/types";
 import { COMPETITION_FORMATS } from "@/lib/enums";
 import type { Parsed } from "@/lib/result";
 
-function parse<T>(schema: z.ZodType<T>, input: unknown): Parsed<T> {
+function parse<T>(schema: z.ZodType<T, unknown>, input: unknown): Parsed<T> {
   const result = schema.safeParse(input);
   if (result.success) return { ok: true, value: result.data };
   return { ok: false, error: result.error.issues[0].message };
@@ -19,13 +20,42 @@ const id = (error: string) => z.uuid({ error });
 /** The most Entrants a Bracket takes. */
 export const MAX_ENTRANTS = 64;
 
-const formatSchema = z.object({
-  format: z.enum(COMPETITION_FORMATS, {
-    error: "Choose a Format.",
-  }),
-});
+export type FormatInput = {
+  format: Format;
+  /** The heats Format's config; omitted keeps (or defaults) the saved one. */
+  config?: HeatsConfig | null;
+  /** Clears Heat Results when a different config clears the Heats. */
+  force?: boolean;
+};
 
-export type FormatInput = z.infer<typeof formatSchema>;
+const formatSchema = z
+  .object({
+    format: z.enum(COMPETITION_FORMATS, {
+      error: "Choose a Format.",
+    }),
+    config: z.unknown().optional(),
+    force: z.boolean().optional(),
+  })
+  .transform((value, ctx): FormatInput => {
+    const out: FormatInput = { format: value.format };
+    if (value.config !== undefined) {
+      const config = bracketConfigSchema(value.format).safeParse(value.config);
+      if (!config.success) {
+        ctx.addIssue({
+          code: "custom",
+          message:
+            value.format === "heats"
+              ? config.error.issues[0].message
+              : "Only the heats Format takes Heat settings.",
+          path: ["config"],
+        });
+        return z.NEVER;
+      }
+      if (config.data !== undefined) out.config = config.data;
+    }
+    if (value.force !== undefined) out.force = value.force;
+    return out;
+  });
 
 export function parseFormatInput(input: unknown): Parsed<FormatInput> {
   return parse(formatSchema, input);
