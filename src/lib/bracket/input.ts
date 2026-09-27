@@ -23,12 +23,6 @@ const formatSchema = z.object({
   format: z.enum(COMPETITION_FORMATS, {
     error: "Choose a Format.",
   }),
-  bracketPoints: z
-    // Only placings is built; per-heat and both are deferred.
-    .enum(["placings"], {
-      error: "Choose how the Bracket awards points.",
-    })
-    .optional(),
 });
 
 export type FormatInput = z.infer<typeof formatSchema>;

@@ -12,6 +12,7 @@ import {
   participant,
   team,
 } from "@/db/schema";
+import { configOf } from "@/lib/bracket/config";
 import { champion } from "@/lib/bracket/engine";
 import type { Bracket, Entrant, Heat } from "@/lib/bracket/types";
 import { isUuid } from "@/lib/uuid";
@@ -31,7 +32,6 @@ export type BracketCompetition = Pick<
   | "name"
   | "scoring"
   | "format"
-  | "bracketPoints"
   | "placementPoints"
   | "finalizedAt"
 >;
@@ -83,11 +83,32 @@ export async function getBracketEntrants(
   }));
 }
 
-/** A Competition's Bracket from its Heat rows; no Heats before Generate. */
+/**
+ * A Competition's Bracket from its Format, config and Heat rows; no Heats
+ * before Generate. Pass `known` when the Competition's `format` and
+ * `bracketConfig` are already loaded, to skip reading them again.
+ */
 export async function loadBracket(
   competitionId: string,
   dbOrTx: DBOrTx = db,
+  known?: Pick<Competition, "format" | "bracketConfig">,
 ): Promise<Bracket> {
+  const found =
+    known ??
+    (
+      await dbOrTx
+        .select({
+          format: competition.format,
+          bracketConfig: competition.bracketConfig,
+        })
+        .from(competition)
+        .where(eq(competition.id, competitionId))
+        .limit(1)
+    )[0];
+  if (!found || found.format === "points") {
+    // A points Competition (or a missing one) has no Bracket.
+    return { format: "single-elimination", config: null, heats: [] };
+  }
   const heats = await dbOrTx
     .select()
     .from(heat)
@@ -105,6 +126,8 @@ export async function loadBracket(
         )
     : [];
   return {
+    format: found.format,
+    config: configOf(found),
     heats: heats.map((row): Heat => ({
       id: row.id,
       round: row.round,
@@ -114,7 +137,7 @@ export async function loadBracket(
         row.winnerToHeatId !== null && row.winnerToSlot !== null
           ? { heatId: row.winnerToHeatId, slot: row.winnerToSlot }
           : null,
-      slots: [0, 1].map((slot) => {
+      slots: Array.from({ length: row.slotCount }, (_, slot) => {
         const found = slots.find((s) => s.heatId === row.id && s.slot === slot);
         return {
           entrantId: found?.entrantId ?? null,
@@ -144,7 +167,7 @@ export async function getBracket(
       name: competition.name,
       scoring: competition.scoring,
       format: competition.format,
-      bracketPoints: competition.bracketPoints,
+      bracketConfig: competition.bracketConfig,
       placementPoints: competition.placementPoints,
       finalizedAt: competition.finalizedAt,
     })
@@ -152,12 +175,14 @@ export async function getBracket(
     .where(eq(competition.id, competitionId))
     .limit(1);
   if (!found) return undefined;
+  // The config reaches the view through the Bracket, not the Competition.
+  const { bracketConfig, ...shown } = found;
   const [entrants, bracket] = await Promise.all([
     getBracketEntrants(competitionId, dbOrTx),
-    loadBracket(competitionId, dbOrTx),
+    loadBracket(competitionId, dbOrTx, { format: found.format, bracketConfig }),
   ]);
   return {
-    competition: found,
+    competition: shown,
     entrants,
     bracket,
     champion: champion(bracket),

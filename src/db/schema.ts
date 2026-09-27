@@ -16,6 +16,7 @@ import {
   pgEnum,
   pgTable,
   primaryKey,
+  smallint,
   text,
   time,
   timestamp,
@@ -25,6 +26,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
+import type { HeatsConfig } from "@/lib/bracket/config";
 import {
   BRACKET_POINTS,
   COMPETITION_FORMATS,
@@ -197,6 +199,9 @@ export const competition = pgTable(
     countsTowardTeam: boolean("counts_toward_team").notNull().default(false),
     competitionGroup: varchar("competition_group", { length: 120 }),
     format: competitionFormat("format").notNull().default("points"),
+    // The Format's settings (`src/lib/bracket/config.ts`); null means the
+    // Format's default, and single elimination has none.
+    bracketConfig: jsonb("bracket_config").$type<HeatsConfig | null>(),
     bracketPoints: bracketPoints("bracket_points")
       .notNull()
       .default("placings"),
@@ -313,7 +318,11 @@ export const entrant = pgTable(
   ],
 );
 
-/** One game of a single-stage Bracket; its winner feeds `winnerToHeatId`. */
+/**
+ * One game of a Bracket, with `slotCount` places (two in single elimination;
+ * a Heats Format's Heats may hold more). A single-elimination winner feeds
+ * `winnerToHeatId`.
+ */
 export const heat = pgTable(
   "heat",
   {
@@ -324,6 +333,8 @@ export const heat = pgTable(
     round: integer("round").notNull(),
     position: integer("position").notNull(),
     status: heatStatus("status").notNull().default("pending"),
+    // Fixed at Generate; `heat_entrant.slot` runs 0…slotCount-1.
+    slotCount: smallint("slot_count").notNull().default(2),
     winnerToHeatId: uuid("winner_to_heat_id").references(
       (): AnyPgColumn => heat.id,
       { onDelete: "set null" },
@@ -358,7 +369,7 @@ export const heatEntrant = pgTable(
     unique().on(table.heatId, table.entrantId),
     index("heat_entrant_entrant_id_idx").on(table.entrantId),
     // The engine's slots are 0-based and its places 1-based.
-    check("heat_entrant_slot_0_or_1", sql`${table.slot} in (0, 1)`),
+    check("heat_entrant_slot_from_0", sql`${table.slot} >= 0`),
     check(
       "heat_entrant_place_from_1",
       sql`${table.place} is null or ${table.place} >= 1`,

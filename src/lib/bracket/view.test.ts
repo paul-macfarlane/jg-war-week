@@ -51,7 +51,9 @@ describe("groupRounds", () => {
   });
 
   it("has no Rounds before Generate", () => {
-    expect(groupRounds({ heats: [] })).toEqual([]);
+    expect(
+      groupRounds({ format: "single-elimination", config: null, heats: [] }),
+    ).toEqual([]);
   });
 });
 

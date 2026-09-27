@@ -103,15 +103,16 @@ async function insertBracket(
       round: h.round,
       position: h.position,
       status: h.status,
+      slotCount: h.slots.length,
       winnerToHeatId: h.winnerTo?.heatId ?? null,
       winnerToSlot: h.winnerTo?.slot ?? null,
     })),
   );
-  await insertSlots(tx, bracket);
+  await insertSlots(tx, bracket.heats);
 }
 
-async function insertSlots(tx: DBOrTx, bracket: Bracket) {
-  const rows = bracket.heats.flatMap((h) =>
+async function insertSlots(tx: DBOrTx, heats: Bracket["heats"]) {
+  const rows = heats.flatMap((h) =>
     h.slots.flatMap((slot, i) =>
       slot.entrantId
         ? [
@@ -130,10 +131,22 @@ async function insertSlots(tx: DBOrTx, bracket: Bracket) {
   if (rows.length) await tx.insert(heatEntrant).values(rows);
 }
 
-/** Writes an existing Bracket's Heat statuses and slots back. */
+/**
+ * Writes an existing Bracket's Heat statuses and slots back, matching Heats
+ * by id. Only Generate adds or removes Heats (and sets their slot counts),
+ * so a different set of Heat ids here is a programming error.
+ */
 async function saveBracket(tx: DBOrTx, before: Bracket, after: Bracket) {
+  const beforeById = new Map(before.heats.map((h) => [h.id, h]));
+  if (
+    after.heats.length !== before.heats.length ||
+    new Set(after.heats.map((h) => h.id)).size !== after.heats.length ||
+    after.heats.some((h) => !beforeById.has(h.id))
+  ) {
+    throw new Error("saveBracket: the Bracket's Heat ids changed.");
+  }
   const changed = after.heats.filter(
-    (h, i) => JSON.stringify(h) !== JSON.stringify(before.heats[i]),
+    (h) => JSON.stringify(h) !== JSON.stringify(beforeById.get(h.id)),
   );
   if (changed.length === 0) return;
   for (const h of changed) {
@@ -148,16 +161,13 @@ async function saveBracket(tx: DBOrTx, before: Bracket, after: Bracket) {
       changed.map((h) => h.id),
     ),
   );
-  await insertSlots(tx, { heats: changed });
+  await insertSlots(tx, changed);
 }
 
 /** Sets how a Competition is run. Its Format can't change while it has Entrants. */
 export async function setCompetitionFormat(
   competitionId: string,
-  values: {
-    format: Competition["format"];
-    bracketPoints?: Competition["bracketPoints"];
-  },
+  values: { format: Competition["format"] },
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
@@ -180,9 +190,6 @@ export async function setCompetitionFormat(
       .update(competition)
       .set({
         format: values.format,
-        ...(values.bracketPoints
-          ? { bracketPoints: values.bracketPoints }
-          : {}),
         updatedAt: sql`now()`,
       })
       .where(eq(competition.id, competitionId));

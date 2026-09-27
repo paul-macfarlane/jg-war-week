@@ -3,13 +3,19 @@
  * the Heat an Entrant plays next. Pure, like the engine.
  */
 import { isBye, isDecided } from "@/lib/bracket/engine";
-import type { Bracket, Heat } from "@/lib/bracket/types";
+import type { Bracket, Format, Heat } from "@/lib/bracket/types";
 
-export type Format = "points" | "single-elimination";
+export type { Format } from "@/lib/bracket/types";
+
+const FORMAT_LABELS: Record<Format, string> = {
+  points: "Points",
+  "single-elimination": "Single elimination",
+  heats: "Heats",
+};
 
 /** A Format as Organizers read it. */
 export function formatLabel(format: Format): string {
-  return format === "points" ? "Points" : "Single elimination";
+  return FORMAT_LABELS[format];
 }
 
 /** "Final", "Semifinal", or "Round N", by distance from the final Round. */

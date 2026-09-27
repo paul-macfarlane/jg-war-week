@@ -22,7 +22,11 @@ export const SCHEDULE_ITEM_CATEGORIES = [
 
 export const COMPETITION_SCORINGS = ["team", "individual"] as const;
 
-export const COMPETITION_FORMATS = ["points", "single-elimination"] as const;
+export const COMPETITION_FORMATS = [
+  "points",
+  "single-elimination",
+  "heats",
+] as const;
 
 export const BRACKET_POINTS = ["placings", "per-heat", "both"] as const;
 

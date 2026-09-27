@@ -1,6 +1,7 @@
 import { type ZodType, z } from "zod";
 
 import type { Competition, Participant, Team, WarWeek } from "@/db/schema";
+import { bracketConfigSchema, heatsConfigSchema } from "@/lib/bracket/config";
 import { HEX_COLOR } from "@/lib/color";
 import { MAX_PLACEMENTS } from "@/lib/competitions";
 import { dayOutsideRangeError } from "@/lib/day-range";
@@ -97,6 +98,8 @@ export const competitionSeedSchema = z
     group: z.string().min(1).max(120).nullish(),
     /** How the Competition is run; a Bracket's Entrants aren't seeded yet. */
     format: z.enum(COMPETITION_FORMATS).default("points"),
+    /** The Format's settings; a heats Competition without one gets the default. */
+    bracketConfig: heatsConfigSchema.nullish(),
   })
   .refine(
     (c) =>
@@ -111,6 +114,19 @@ export const competitionSeedSchema = z
   .refine((c) => !c.countsTowardTeam || c.scoring === "individual", {
     message: "countsTowardTeam can only be set on an individual Competition",
     path: ["countsTowardTeam"],
+  })
+  .superRefine((c, ctx) => {
+    // A heats config is checked by its field; any other Format takes none.
+    if (
+      c.bracketConfig != null &&
+      !bracketConfigSchema(c.format).safeParse(c.bracketConfig).success
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "bracketConfig is only for a heats Competition",
+        path: ["bracketConfig"],
+      });
+    }
   });
 
 /** The War Week settings form's raw fields, all as the inputs hold them. */
@@ -486,9 +502,10 @@ export function parseCompetitionInput(
     },
   );
   if (!parsed.ok) return parsed;
-  // The Format is set through the Bracket actions, never a setup save.
+  // The Format and its config are set through the Bracket actions, never a
+  // setup save.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { group, format, ...value } = parsed.value;
+  const { group, format, bracketConfig, ...value } = parsed.value;
   return {
     ok: true,
     value: {

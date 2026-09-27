@@ -729,7 +729,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
     });
   });
 
-  it("refuses a Heat slot other than 0 or 1, or a place below 1", async () => {
+  it("refuses a Heat slot below 0, or a place below 1", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations } = await modules();
       const f = await fixture(tx);
@@ -770,7 +770,8 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
           );
 
       // 23514 is Postgres's check_violation.
-      expect(await insertError({ entrantId: red.id, slot: 2 })).toBe("23514");
+      // A Heat may hold more than two Entrants (the heats Format).
+      expect(await insertError({ entrantId: red.id, slot: 2 })).toBeNull();
       expect(await insertError({ entrantId: red.id, slot: -1 })).toBe("23514");
       expect(await insertError({ entrantId: red.id, slot: 0, place: 0 })).toBe(
         "23514",
