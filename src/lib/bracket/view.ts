@@ -199,7 +199,9 @@ export function nextHeatFor(
 }
 
 /**
- * Your Entrant under the You rules: the Participant themselves in an
+ * Your Entrant under the You rules: Your Squad's Entrant when it's entered;
+ * none when the Entrants are Squads and Yours isn't one of them (Your Team
+ * isn't entered as such); otherwise the Participant themselves in an
  * individual Competition, their Team in a team one.
  */
 export function entrantForYou(
@@ -207,11 +209,21 @@ export function entrantForYou(
     id: string;
     teamId: string | null;
     participantId: string | null;
+    squadId?: string | null;
   }[],
-  you: { participantId: string; teamId: string | null } | null,
+  you: {
+    participantId: string;
+    teamId: string | null;
+    squadId?: string | null;
+  } | null,
   scoring: "team" | "individual",
 ): string | null {
   if (!you) return null;
+  if (you.squadId) {
+    const squad = entrants.find((e) => e.squadId === you.squadId);
+    if (squad) return squad.id;
+  }
+  if (entrants.some((e) => e.squadId)) return null;
   const found =
     scoring === "team"
       ? you.teamId && entrants.find((e) => e.teamId === you.teamId)

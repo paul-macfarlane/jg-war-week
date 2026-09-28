@@ -21,6 +21,9 @@ function bracketEntrantFixture(entrant: Entrant, teamName: string | null) {
     label: entrant.label,
     teamId: null,
     participantId: null,
+    squadId: null,
+    participantNames: [],
+    pointsTeamId: null,
     color: null,
     teamName,
   } satisfies BracketEntrant;
@@ -57,6 +60,7 @@ describe("toBracketResult", () => {
         format: "points",
         placementPoints: null,
         finalizedAt: null,
+        selfReport: false,
       },
       entrants: [],
       bracket: { format: "single-elimination", config: null, heats: [] },
@@ -94,6 +98,7 @@ describe("toBracketResult", () => {
         format: "single-elimination",
         placementPoints: [10, 6],
         finalizedAt: null,
+        selfReport: false,
       },
       entrants: entrants.map((e) =>
         bracketEntrantFixture(e, `${e.label} Squad`),
@@ -114,9 +119,24 @@ describe("toBracketResult", () => {
       finalized: false,
     });
     expect(result.entrants).toEqual([
-      { seedPosition: 1, name: "Alpha", team: "Alpha Squad" },
-      { seedPosition: 2, name: "Bravo", team: "Bravo Squad" },
-      { seedPosition: 3, name: "Charlie", team: "Charlie Squad" },
+      {
+        seedPosition: 1,
+        name: "Alpha",
+        team: "Alpha Squad",
+        participants: null,
+      },
+      {
+        seedPosition: 2,
+        name: "Bravo",
+        team: "Bravo Squad",
+        participants: null,
+      },
+      {
+        seedPosition: 3,
+        name: "Charlie",
+        team: "Charlie Squad",
+        participants: null,
+      },
     ]);
     expect(result.champion).toBeNull();
 
@@ -162,6 +182,7 @@ describe("toBracketResult", () => {
         format: "single-elimination",
         placementPoints: [10, 6],
         finalizedAt: null,
+        selfReport: false,
       },
       entrants: entrants.map((e) =>
         bracketEntrantFixture(e, `${e.label} Squad`),
@@ -199,6 +220,7 @@ describe("toBracketResult", () => {
         format: "single-elimination",
         placementPoints: [10, 6],
         finalizedAt: new Date(),
+        selfReport: false,
       },
       entrants: entrants.map((e) =>
         bracketEntrantFixture(e, `${e.label} Squad`),
@@ -216,12 +238,88 @@ describe("toBracketResult", () => {
     expect(result.champion).toBe("Alpha");
   });
 
+  it("lists a Squad's Participants by name", () => {
+    const view: BracketView = {
+      competition: {
+        id: "c1",
+        warWeekId: "w1",
+        name: "Cypher",
+        scoring: "team",
+        format: "single-elimination",
+        placementPoints: [3, 2, 1],
+        finalizedAt: null,
+        selfReport: true,
+      },
+      entrants: [
+        {
+          id: "e1",
+          seedPosition: 1,
+          label: "Red Alpha",
+          teamId: null,
+          participantId: null,
+          squadId: "s1",
+          participantNames: ["Ashley Schuliger", "Sam Schantz"],
+          pointsTeamId: "red",
+          color: "#f00",
+          teamName: "Red",
+        },
+        {
+          id: "e2",
+          seedPosition: 2,
+          label: "Blue Bravo",
+          teamId: null,
+          participantId: null,
+          squadId: "s2",
+          participantNames: ["Alec Haring"],
+          pointsTeamId: "blue",
+          color: "#00f",
+          teamName: "Blue",
+        },
+      ],
+      bracket: generate([
+        { id: "e1", seedPosition: 1, label: "Red Alpha" },
+        { id: "e2", seedPosition: 2, label: "Blue Bravo" },
+      ]),
+      champion: null,
+      finalized: false,
+    };
+
+    const result = toBracketResult(view, days, "Cypher");
+
+    if (!result.found || "bracket" in result) throw new Error("unreachable");
+    expect(result.entrants).toEqual([
+      {
+        seedPosition: 1,
+        name: "Red Alpha",
+        team: "Red",
+        participants: ["Ashley Schuliger", "Sam Schantz"],
+      },
+      {
+        seedPosition: 2,
+        name: "Blue Bravo",
+        team: "Blue",
+        participants: ["Alec Haring"],
+      },
+    ]);
+  });
+
   it("serializes only whitelisted keys, even when the Entrant carries an email and Hosts", () => {
     const bracket = bracketFixture();
-    const entrantsWithExtras = entrants.map((e) => ({
+    // A self-reported Heat: its reporter must never reach the payload.
+    for (const heat of bracket.heats) {
+      Object.assign(heat, {
+        reportedByEmail: "reporter@jahnelgroup.com",
+        reportedByParticipantId: "p-reporter",
+      });
+    }
+    const entrantsWithExtras = entrants.map((e, i) => ({
       ...bracketEntrantFixture(e, `${e.label} Squad`),
+      ...(i === 0
+        ? { squadId: "s1", participantNames: ["Ashley Schuliger"] }
+        : {}),
       email: `${e.label.toLowerCase()}@jahnelgroup.com`,
       hosts: ["Some Host"],
+      reportedByEmail: "reporter@jahnelgroup.com",
     })) as unknown as BracketEntrant[];
 
     const view: BracketView = {
@@ -233,6 +331,7 @@ describe("toBracketResult", () => {
         format: "single-elimination",
         placementPoints: [10, 6],
         finalizedAt: null,
+        selfReport: false,
       },
       entrants: entrantsWithExtras,
       bracket,
@@ -247,10 +346,17 @@ describe("toBracketResult", () => {
     expect(serialized).not.toContain("email");
     expect(serialized).not.toContain("hosts");
     expect(serialized).not.toContain("Some Host");
+    expect(serialized.toLowerCase()).not.toContain("report");
     if (!result.found || "bracket" in result) throw new Error("unreachable");
     for (const entrant of result.entrants) {
       expect(Object.keys(entrant).sort()).toEqual(
-        ["name", "seedPosition", "team"].sort(),
+        ["name", "participants", "seedPosition", "team"].sort(),
+      );
+    }
+    expect(result.entrants[0].participants).toEqual(["Ashley Schuliger"]);
+    for (const heat of result.rounds.flatMap((r) => r.heats)) {
+      expect(Object.keys(heat).sort()).toEqual(
+        ["date", "entrants", "location", "name", "startTime", "status"].sort(),
       );
     }
   });

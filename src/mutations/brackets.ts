@@ -43,16 +43,16 @@ import type { MutationContext, MutationResult } from "@/mutations/types";
 import { getBracketEntrants, loadBracket } from "@/queries/brackets";
 import { getStandings } from "@/queries/standings";
 
-const COMPETITION_NOT_FOUND = "That Competition no longer exists.";
-const HEAT_NOT_FOUND = "That Heat no longer exists.";
+export const COMPETITION_NOT_FOUND = "That Competition no longer exists.";
+export const HEAT_NOT_FOUND = "That Heat no longer exists.";
 const DAY_NOT_FOUND = "That Day no longer exists.";
-const BYE_NOT_PLAYED = "A bye isn't played.";
-const NOT_A_BRACKET = "This Competition isn't run as a Bracket.";
-const FINALIZED = "Un-finalize the Bracket before changing it.";
+export const BYE_NOT_PLAYED = "A bye isn't played.";
+export const NOT_A_BRACKET = "This Competition isn't run as a Bracket.";
+export const FINALIZED = "Un-finalize the Bracket before changing it.";
 /** The note on every Points Entry a finalized Bracket generates. */
 export const FROM_BRACKET_NOTE = "From bracket";
 
-type BracketCompetition = Pick<
+export type BracketCompetition = Pick<
   Competition,
   | "id"
   | "name"
@@ -64,14 +64,14 @@ type BracketCompetition = Pick<
 >;
 
 /** A Competition run as a Bracket (its Format isn't points). */
-type BracketRun = BracketCompetition & { format: BracketFormat };
+export type BracketRun = BracketCompetition & { format: BracketFormat };
 
 /**
  * Locks a Competition of this War Week for a Bracket write, so two writes
  * to the same Bracket run one after the other. A scoring change
  * (`updateCompetition`) and a Points Entry create take the same row lock.
  */
-async function lockedCompetition(
+export async function lockedCompetition(
   tx: DBOrTx,
   competitionId: string,
   ctx: MutationContext,
@@ -98,7 +98,7 @@ async function lockedCompetition(
 }
 
 /** Why this Competition's Bracket can't change right now, or null. */
-function bracketRefusal(
+export function bracketRefusal(
   found: BracketCompetition | undefined,
   { allowFinalized = false } = {},
 ): string | null {
@@ -109,14 +109,14 @@ function bracketRefusal(
 }
 
 /** The Competition's Bracket, its Format and config already in hand. */
-function bracketOf(tx: DBOrTx, found: BracketRun): Promise<Bracket> {
+export function bracketOf(tx: DBOrTx, found: BracketRun): Promise<Bracket> {
   return loadBracket(found.id, tx, {
     format: found.format,
     bracketConfig: found.bracketConfig,
   });
 }
 
-function isBracketRun(
+export function isBracketRun(
   found: BracketCompetition | undefined,
 ): found is BracketRun {
   return found !== undefined && found.format !== "points";
@@ -129,7 +129,7 @@ function sameConfig(a: HeatsConfig | null, b: HeatsConfig | null): boolean {
   );
 }
 
-function refuse(error: string): { ok: false; error: string } {
+export function refuse(error: string): { ok: false; error: string } {
   return { ok: false, error };
 }
 
@@ -179,12 +179,25 @@ async function insertSlots(tx: DBOrTx, heats: Bracket["heats"]) {
   if (rows.length) await tx.insert(heatEntrant).values(rows);
 }
 
+/** Who self-reported a Heat's result; null for a Host or Organizer. */
+export type HeatReporter = { email: string; participantId: string };
+
 /**
  * Writes an existing Bracket's Heat statuses and slots back, looking each
  * Heat up by id. Only Generate adds or removes Heats (and sets their slot counts),
  * so a different set of Heat ids here is a programming error.
+ *
+ * Every changed Heat's reporter columns are rewritten too: `reporter`'s for
+ * `reporter.heatId`, null for every other changed Heat. So a save that
+ * changes a self-reported result (or refills or empties a later Heat)
+ * clears its reporter, and an identical re-save, changing no Heat, keeps it.
  */
-async function saveBracket(tx: DBOrTx, before: Bracket, after: Bracket) {
+async function saveBracket(
+  tx: DBOrTx,
+  before: Bracket,
+  after: Bracket,
+  reporter: (HeatReporter & { heatId: string }) | null,
+) {
   const beforeById = new Map(before.heats.map((h) => [h.id, h]));
   if (
     after.heats.length !== before.heats.length ||
@@ -200,7 +213,13 @@ async function saveBracket(tx: DBOrTx, before: Bracket, after: Bracket) {
   for (const h of changed) {
     await tx
       .update(heat)
-      .set({ status: h.status, updatedAt: sql`now()` })
+      .set({
+        status: h.status,
+        reportedByEmail: reporter?.heatId === h.id ? reporter.email : null,
+        reportedByParticipantId:
+          reporter?.heatId === h.id ? reporter.participantId : null,
+        updatedAt: sql`now()`,
+      })
       .where(eq(heat.id, h.id));
   }
   await tx.delete(heatEntrant).where(
@@ -436,26 +455,45 @@ export async function recordHeatResult(
 > {
   return dbOrTx.transaction(async (tx) => {
     const found = await lockedCompetition(tx, competitionId, ctx);
-    const refusal = bracketRefusal(found);
-    if (refusal || !isBracketRun(found)) {
-      return refuse(refusal ?? NOT_A_BRACKET);
-    }
-    const bracket = await bracketOf(tx, found);
-    const target = bracket.heats.find((h) => h.id === heatId);
-    if (!target) return refuse(HEAT_NOT_FOUND);
-
-    let next: Bracket;
-    let resetHeatIds: string[];
-    try {
-      resetHeatIds = resetByResult(bracket, heatId, result);
-      next = applyResult(bracket, heatId, result);
-    } catch (error) {
-      if (error instanceof BracketError) return refuse(error.message);
-      throw error;
-    }
-    await saveBracket(tx, bracket, next);
-    return { ok: true as const, resetHeatIds };
+    return writeHeatResult(tx, found, heatId, result, null);
   });
+}
+
+/**
+ * The one Heat Result write, shared by a Host's `recordHeatResult` and a
+ * Participant's self-report, run with the Competition's row lock already
+ * held: refuses a Competition that can't change, finds the Heat in its own
+ * Bracket, resets and applies the result per the Format, and saves it with
+ * its reporter (null for a Host or Organizer).
+ */
+export async function writeHeatResult(
+  tx: DBOrTx,
+  found: BracketCompetition | undefined,
+  heatId: string,
+  result: HeatResult,
+  reporter: HeatReporter | null,
+): Promise<
+  { ok: true; resetHeatIds: string[] } | { ok: false; error: string }
+> {
+  const refusal = bracketRefusal(found);
+  if (refusal || !isBracketRun(found)) {
+    return refuse(refusal ?? NOT_A_BRACKET);
+  }
+  const bracket = await bracketOf(tx, found);
+  const target = bracket.heats.find((h) => h.id === heatId);
+  if (!target) return refuse(HEAT_NOT_FOUND);
+
+  let next: Bracket;
+  let resetHeatIds: string[];
+  try {
+    resetHeatIds = resetByResult(bracket, heatId, result);
+    next = applyResult(bracket, heatId, result);
+  } catch (error) {
+    if (error instanceof BracketError) return refuse(error.message);
+    throw error;
+  }
+  await saveBracket(tx, bracket, next, reporter && { ...reporter, heatId });
+  return { ok: true as const, resetHeatIds };
 }
 
 /**

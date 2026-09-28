@@ -10,6 +10,8 @@ import {
   heat,
   heatEntrant,
   participant,
+  squad,
+  squadParticipant,
   team,
 } from "@/db/schema";
 import { configOf } from "@/lib/bracket/config";
@@ -19,11 +21,20 @@ import { isUuid } from "@/lib/uuid";
 
 /** An Entrant with what the Bracket view shows and finalizing needs. */
 export type BracketEntrant = Entrant & {
+  /** The Entrant row's own Team: null for a Participant or a Squad. */
   teamId: string | null;
   participantId: string | null;
-  /** The Team's color (a Participant's Team), or null without one. */
+  squadId: string | null;
+  /** A Squad's Participants' display names, by name; [] otherwise. */
+  participantNames: string[];
+  /**
+   * The Team a Placement Points Entry goes to: the Team itself, or a
+   * Squad's Team; null for a Participant.
+   */
+  pointsTeamId: string | null;
+  /** The Team's color (a Participant's or Squad's Team), or null without one. */
   color: string | null;
-  /** A Participant Entrant's Team name, for `get_bracket`; null without one. */
+  /** A Participant or Squad Entrant's Team name, for `get_bracket`; null without one. */
   teamName: string | null;
 };
 
@@ -36,6 +47,7 @@ export type BracketCompetition = Pick<
   | "format"
   | "placementPoints"
   | "finalizedAt"
+  | "selfReport"
 >;
 
 export type BracketView = {
@@ -49,10 +61,36 @@ export type BracketView = {
 };
 
 const participantTeam = alias(team, "participant_team");
+const squadTeam = alias(team, "squad_team");
+
+/** Each Squad's Participants' display names, by name. */
+async function squadParticipantNames(
+  squadIds: string[],
+  dbOrTx: DBOrTx,
+): Promise<Map<string, string[]>> {
+  const names = new Map<string, string[]>();
+  if (squadIds.length === 0) return names;
+  const rows = await dbOrTx
+    .select({
+      squadId: squadParticipant.squadId,
+      displayName: participant.displayName,
+    })
+    .from(squadParticipant)
+    .innerJoin(participant, eq(participant.id, squadParticipant.participantId))
+    .where(inArray(squadParticipant.squadId, squadIds))
+    .orderBy(asc(participant.displayName));
+  for (const row of rows) {
+    names.set(row.squadId, [
+      ...(names.get(row.squadId) ?? []),
+      row.displayName,
+    ]);
+  }
+  return names;
+}
 
 /**
- * A Competition's Entrants by Seed Position, labelled with the Team name or
- * the Participant's display name.
+ * A Competition's Entrants by Seed Position, labelled with the Team name,
+ * the Participant's display name or the Squad's name.
  */
 export async function getBracketEntrants(
   competitionId: string,
@@ -64,27 +102,43 @@ export async function getBracketEntrants(
       seedPosition: entrant.seedPosition,
       teamId: entrant.teamId,
       participantId: entrant.participantId,
+      squadId: entrant.squadId,
       teamName: team.name,
       teamColor: team.color,
       participantName: participant.displayName,
       participantTeamColor: participantTeam.color,
       participantTeamName: participantTeam.name,
+      squadName: squad.name,
+      squadTeamId: squad.teamId,
+      squadTeamColor: squadTeam.color,
+      squadTeamName: squadTeam.name,
     })
     .from(entrant)
     .leftJoin(team, eq(team.id, entrant.teamId))
     .leftJoin(participant, eq(participant.id, entrant.participantId))
     .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))
+    .leftJoin(squad, eq(squad.id, entrant.squadId))
+    .leftJoin(squadTeam, eq(squadTeam.id, squad.teamId))
     .where(eq(entrant.competitionId, competitionId))
     .orderBy(asc(entrant.seedPosition));
+  const names = await squadParticipantNames(
+    rows.flatMap((row) => (row.squadId ? [row.squadId] : [])),
+    dbOrTx,
+  );
   return rows.map((row) => ({
     id: row.id,
     seedPosition: row.seedPosition,
-    label: row.teamName ?? row.participantName ?? "Unknown",
+    label: row.teamName ?? row.participantName ?? row.squadName ?? "Unknown",
     teamId: row.teamId,
     participantId: row.participantId,
-    color: row.teamColor ?? row.participantTeamColor ?? null,
-    // A Team Entrant's own name, or a Participant Entrant's Team name.
-    teamName: row.teamName ?? row.participantTeamName ?? null,
+    squadId: row.squadId,
+    participantNames: row.squadId ? (names.get(row.squadId) ?? []) : [],
+    pointsTeamId: row.teamId ?? row.squadTeamId ?? null,
+    color:
+      row.teamColor ?? row.participantTeamColor ?? row.squadTeamColor ?? null,
+    // A Team Entrant's own name, or a Participant or Squad Entrant's Team name.
+    teamName:
+      row.teamName ?? row.participantTeamName ?? row.squadTeamName ?? null,
   }));
 }
 
@@ -117,8 +171,21 @@ export async function loadBracket(
     // for a points Competition.
     return { format: "single-elimination", config: null, heats: [] };
   }
+  // An explicit list: the reporter columns (an email among them) are never
+  // read into a Bracket, which feeds pages and MCP.
   const heats = await dbOrTx
-    .select()
+    .select({
+      id: heat.id,
+      round: heat.round,
+      position: heat.position,
+      status: heat.status,
+      slotCount: heat.slotCount,
+      winnerToHeatId: heat.winnerToHeatId,
+      winnerToSlot: heat.winnerToSlot,
+      dayId: heat.dayId,
+      startTime: heat.startTime,
+      location: heat.location,
+    })
     .from(heat)
     .where(eq(heat.competitionId, competitionId))
     .orderBy(asc(heat.round), asc(heat.position));
@@ -181,6 +248,7 @@ export async function getBracket(
       bracketConfig: competition.bracketConfig,
       placementPoints: competition.placementPoints,
       finalizedAt: competition.finalizedAt,
+      selfReport: competition.selfReport,
     })
     .from(competition)
     .where(eq(competition.id, competitionId))
@@ -244,4 +312,103 @@ export async function getParticipantTeamIds(
       and(eq(participant.warWeekId, warWeek.id), isNotNull(participant.teamId)),
     );
   return Object.fromEntries(rows.map((row) => [row.id, row.teamId!]));
+}
+
+/** A Squad of a Competition, with its Team and Participants by name. */
+export type SquadRow = {
+  id: string;
+  name: string;
+  teamId: string;
+  teamName: string;
+  teamColor: string;
+  participants: { id: string; displayName: string }[];
+};
+
+/** A Competition's Squads by name, each with its Participants by name. */
+export async function getSquads(
+  competitionId: string,
+  dbOrTx: DBOrTx = db,
+): Promise<SquadRow[]> {
+  const squads = await dbOrTx
+    .select({
+      id: squad.id,
+      name: squad.name,
+      teamId: squad.teamId,
+      teamName: team.name,
+      teamColor: team.color,
+    })
+    .from(squad)
+    .innerJoin(team, eq(team.id, squad.teamId))
+    .where(eq(squad.competitionId, competitionId))
+    .orderBy(asc(squad.name));
+  if (squads.length === 0) return [];
+  const rows = await dbOrTx
+    .select({
+      squadId: squadParticipant.squadId,
+      id: participant.id,
+      displayName: participant.displayName,
+    })
+    .from(squadParticipant)
+    .innerJoin(participant, eq(participant.id, squadParticipant.participantId))
+    .where(
+      inArray(
+        squadParticipant.squadId,
+        squads.map((s) => s.id),
+      ),
+    )
+    .orderBy(asc(participant.displayName));
+  return squads.map((s) => ({
+    ...s,
+    participants: rows
+      .filter((row) => row.squadId === s.id)
+      .map(({ id, displayName }) => ({ id, displayName })),
+  }));
+}
+
+/**
+ * Each Participant's Squad in a Competition (a Participant is in at most
+ * one), so the Bracket view can find Your Squad's Entrant.
+ */
+export async function getParticipantSquadIds(
+  competitionId: string,
+  dbOrTx: DBOrTx = db,
+): Promise<Record<string, string>> {
+  const rows = await dbOrTx
+    .select({
+      participantId: squadParticipant.participantId,
+      squadId: squadParticipant.squadId,
+    })
+    .from(squadParticipant)
+    .innerJoin(squad, eq(squad.id, squadParticipant.squadId))
+    .where(eq(squad.competitionId, competitionId));
+  return Object.fromEntries(
+    rows.map((row) => [row.participantId, row.squadId]),
+  );
+}
+
+/** What the results screen says when a reporter's Participant is gone. */
+export const UNKNOWN_REPORTER = "a Participant";
+
+/**
+ * Who self-reported each Heat's current result, by Heat id: the reporter's
+ * Participant name, or "a Participant" once that row is deleted. Never the
+ * email, which stays on the Heat for audit only.
+ */
+export async function getHeatReporters(
+  competitionId: string,
+  dbOrTx: DBOrTx = db,
+): Promise<Record<string, string>> {
+  const rows = await dbOrTx
+    .select({ heatId: heat.id, name: participant.displayName })
+    .from(heat)
+    .leftJoin(participant, eq(participant.id, heat.reportedByParticipantId))
+    .where(
+      and(
+        eq(heat.competitionId, competitionId),
+        isNotNull(heat.reportedByEmail),
+      ),
+    );
+  return Object.fromEntries(
+    rows.map((row) => [row.heatId, row.name ?? UNKNOWN_REPORTER]),
+  );
 }

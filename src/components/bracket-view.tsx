@@ -22,7 +22,13 @@ import type { BracketEntrant } from "@/queries/brackets";
 
 export type BracketViewEntrant = Pick<
   BracketEntrant,
-  "id" | "label" | "color" | "teamId" | "participantId"
+  | "id"
+  | "label"
+  | "color"
+  | "teamId"
+  | "participantId"
+  | "squadId"
+  | "participantNames"
 >;
 
 type Scoring = "team" | "individual";
@@ -157,11 +163,24 @@ export function HeatRows({
               scoring={scoring}
               primaryColor={primaryColor}
             />
-            <span
-              className={`min-w-0 truncate ${won ? "font-semibold" : decided ? "text-foreground/70" : ""}`}
-            >
-              {entrant.label}
-            </span>
+            {entrant.squadId && entrant.participantNames.length > 0 ? (
+              <span className="flex min-w-0 flex-col">
+                <span
+                  className={`min-w-0 truncate ${won ? "font-semibold" : decided ? "text-foreground/70" : ""}`}
+                >
+                  {entrant.label}
+                </span>
+                <span className="text-foreground/60 min-w-0 text-xs break-words">
+                  {entrant.participantNames.join(", ")}
+                </span>
+              </span>
+            ) : (
+              <span
+                className={`min-w-0 truncate ${won ? "font-semibold" : decided ? "text-foreground/70" : ""}`}
+              >
+                {entrant.label}
+              </span>
+            )}
             {won && !ranked && (
               <span aria-label="Winner" className="text-primary font-bold">
                 ✓
@@ -223,6 +242,8 @@ export function BracketView({
       ? {
           participantId: you.participantId,
           teamId: participantTeams[you.participantId] ?? null,
+          // Your Squad arrives with the self-report slice.
+          squadId: null,
         }
       : null,
     scoring,

@@ -40,6 +40,8 @@ const props = {
     color: "#f00",
     teamId: `t${e.id}`,
     participantId: null,
+    squadId: null,
+    participantNames: [],
   })),
   bracket,
   champion: null,

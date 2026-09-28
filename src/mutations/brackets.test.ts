@@ -1527,3 +1527,244 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
     });
   });
 });
+
+describe.skipIf(!isLocalDatabase)("Heat reporters", () => {
+  const reporterEmail = "neo@jahnelgroup.com";
+
+  /** A Heat's reporter columns, straight from the row. */
+  async function reporterOf(
+    tx: DBTx,
+    f: Awaited<ReturnType<typeof fixture>>,
+    heatId: string,
+  ) {
+    const [row] = await tx
+      .select({
+        email: f.schema.heat.reportedByEmail,
+        participantId: f.schema.heat.reportedByParticipantId,
+      })
+      .from(f.schema.heat)
+      .where(eq(f.schema.heat.id, heatId));
+    return row;
+  }
+
+  const NONE = { email: null, participantId: null };
+
+  /** Marks a Heat as self-reported by Neo, as a report would. */
+  async function markReported(
+    tx: DBTx,
+    f: Awaited<ReturnType<typeof fixture>>,
+    heatId: string,
+  ) {
+    await tx
+      .update(f.schema.heat)
+      .set({ reportedByEmail: reporterEmail, reportedByParticipantId: f.neo })
+      .where(eq(f.schema.heat.id, heatId));
+  }
+
+  /** Captain Clash entered and drawn: Blue v Red, Green v Gold. */
+  async function drawn(tx: DBTx) {
+    const { mutations, queries } = await modules();
+    const f = await fixture(tx);
+    await mutations.replaceEntrants(
+      f.competitionId,
+      { targetIds: [f.red, f.blue, f.green, f.gold] },
+      f.ctx,
+      tx,
+    );
+    await mutations.generateBracket(
+      f.competitionId,
+      { rng: rngZero },
+      f.ctx,
+      tx,
+    );
+    const view = (await queries.getBracket(f.competitionId, tx))!;
+    const id = (label: string) =>
+      view.entrants.find((e) => e.label === label)!.id;
+    return {
+      f,
+      id,
+      semi1: heatAt(view, 1, 1).heat.id,
+      semi2: heatAt(view, 1, 2).heat.id,
+      final: heatAt(view, 2, 1).heat.id,
+    };
+  }
+
+  it("a Host result leaves both reporter columns null", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations } = await modules();
+      const { f, id, semi1, final } = await drawn(tx);
+
+      await mutations.recordHeatResult(
+        f.competitionId,
+        semi1,
+        { order: [id("Red"), id("Blue")] },
+        f.ctx,
+        tx,
+      );
+      expect(await reporterOf(tx, f, semi1)).toEqual(NONE);
+      expect(await reporterOf(tx, f, final)).toEqual(NONE);
+    });
+  });
+
+  it("a reported result records its reporter on that Heat only", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations } = await modules();
+      const { f, id, semi1, semi2, final } = await drawn(tx);
+
+      await mutations.recordHeatResult(
+        f.competitionId,
+        semi2,
+        { order: [id("Gold"), id("Green")] },
+        f.ctx,
+        tx,
+      );
+      const result = await tx.transaction(async (lockTx) => {
+        const found = await mutations.lockedCompetition(
+          lockTx,
+          f.competitionId,
+          f.ctx,
+        );
+        return mutations.writeHeatResult(
+          lockTx,
+          found,
+          semi1,
+          { order: [id("Red"), id("Blue")] },
+          { email: reporterEmail, participantId: f.neo },
+        );
+      });
+      expect(result).toEqual({ ok: true, resetHeatIds: [] });
+      expect(await reporterOf(tx, f, semi1)).toEqual({
+        email: reporterEmail,
+        participantId: f.neo,
+      });
+      // The Final it filled changed too, but wasn't reported.
+      expect(await reporterOf(tx, f, final)).toEqual(NONE);
+    });
+  });
+
+  it("a Host overwrite with a different result clears the reporter; an identical re-save keeps it", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations } = await modules();
+      const { f, id, semi1 } = await drawn(tx);
+      await mutations.recordHeatResult(
+        f.competitionId,
+        semi1,
+        { order: [id("Red"), id("Blue")] },
+        f.ctx,
+        tx,
+      );
+      await markReported(tx, f, semi1);
+
+      // The same result again changes no Heat: it's still the reporter's.
+      expect(
+        await mutations.recordHeatResult(
+          f.competitionId,
+          semi1,
+          { order: [id("Red"), id("Blue")] },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true, resetHeatIds: [] });
+      expect(await reporterOf(tx, f, semi1)).toEqual({
+        email: reporterEmail,
+        participantId: f.neo,
+      });
+
+      // A different result is the Host's now.
+      await mutations.recordHeatResult(
+        f.competitionId,
+        semi1,
+        { order: [id("Blue"), id("Red")] },
+        f.ctx,
+        tx,
+      );
+      expect(await reporterOf(tx, f, semi1)).toEqual(NONE);
+    });
+  });
+
+  it("single elimination: re-recording an earlier Heat clears the reporter of a later Heat it refills", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations } = await modules();
+      const { f, id, semi1, semi2, final } = await drawn(tx);
+      await mutations.recordHeatResult(
+        f.competitionId,
+        semi1,
+        { order: [id("Red"), id("Blue")] },
+        f.ctx,
+        tx,
+      );
+      await mutations.recordHeatResult(
+        f.competitionId,
+        semi2,
+        { order: [id("Gold"), id("Green")] },
+        f.ctx,
+        tx,
+      );
+      await mutations.recordHeatResult(
+        f.competitionId,
+        final,
+        { order: [id("Gold"), id("Red")] },
+        f.ctx,
+        tx,
+      );
+      await markReported(tx, f, final);
+
+      expect(
+        await mutations.recordHeatResult(
+          f.competitionId,
+          semi1,
+          { order: [id("Blue"), id("Red")] },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true, resetHeatIds: [final] });
+      expect(await reporterOf(tx, f, final)).toEqual(NONE);
+    });
+  });
+
+  it("Heats: re-recording an earlier Heat clears the reporter of the Final it refills", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations, queries } = await modules();
+      const f = await generatedHeats(tx);
+      const view = (await queries.getBracket(f.relayId, tx))!;
+      const first = heatAt(view, 1, 1).heat;
+      const second = heatAt(view, 1, 2).heat;
+      const final = heatAt(view, 2, 1).heat;
+      const [a0, a1, a2, a3] = first.slots.map((s) => s.entrantId!);
+      const [b0, b1, b2, b3] = second.slots.map((s) => s.entrantId!);
+      await mutations.recordHeatResult(
+        f.relayId,
+        first.id,
+        { order: [a0, a1, a2, a3] },
+        f.ctx,
+        tx,
+      );
+      await mutations.recordHeatResult(
+        f.relayId,
+        second.id,
+        { order: [b0, b1, b2, b3] },
+        f.ctx,
+        tx,
+      );
+      await mutations.recordHeatResult(
+        f.relayId,
+        final.id,
+        { order: [a0, b0, a1, b1] },
+        f.ctx,
+        tx,
+      );
+      await markReported(tx, f, final.id);
+
+      expect(
+        await mutations.recordHeatResult(
+          f.relayId,
+          first.id,
+          { order: [a2, a1, a0, a3] },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true, resetHeatIds: [final.id] });
+      expect(await reporterOf(tx, f, final.id)).toEqual(NONE);
+    });
+  });
+});

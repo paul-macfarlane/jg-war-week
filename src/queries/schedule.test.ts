@@ -286,6 +286,61 @@ describe.skipIf(!isLocalDatabase)("getTimedHeats", () => {
     });
   });
 
+  it("labels a timed Squad Heat by its Squads' names", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations, queries } = await modules();
+      const f = await fixture(tx);
+      const [cypher] = await tx
+        .insert(f.schema.competition)
+        .values({
+          warWeekId: f.ctx.warWeekId,
+          name: "Cypher",
+          scoring: "team",
+          format: "single-elimination",
+        })
+        .returning({ id: f.schema.competition.id });
+      const squads = await tx
+        .insert(f.schema.squad)
+        .values([
+          { competitionId: cypher.id, teamId: f.teamIds[0], name: "Red Alpha" },
+          {
+            competitionId: cypher.id,
+            teamId: f.teamIds[1],
+            name: "Blue Bravo",
+          },
+        ])
+        .returning({ id: f.schema.squad.id });
+      await tx.insert(f.schema.entrant).values(
+        squads.map((squad, i) => ({
+          competitionId: cypher.id,
+          squadId: squad.id,
+          seedPosition: i + 1,
+        })),
+      );
+      expect(
+        await mutations.generateBracket(cypher.id, { rng: rngKeep }, f.ctx, tx),
+      ).toEqual({ ok: true });
+      const [final] = await tx
+        .select({ id: f.schema.heat.id })
+        .from(f.schema.heat)
+        .where(eq(f.schema.heat.competitionId, cypher.id));
+      await mutations.setHeatSchedule(
+        cypher.id,
+        final.id,
+        { dayId: f.dayId, startTime: "19:00", location: null },
+        f.ctx,
+        tx,
+      );
+
+      const [row] = await queries.getTimedHeats({ id: f.ctx.warWeekId }, tx);
+      expect(
+        row.heat.slots.map((s) =>
+          s.entrantId ? row.labels[s.entrantId] : null,
+        ),
+      ).toEqual(["Red Alpha", "Blue Bravo"]);
+    });
+  });
+
   it("returns nothing for a War Week with no timed Heats", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { queries } = await modules();

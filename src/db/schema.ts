@@ -192,6 +192,8 @@ export const competition = pgTable(
     // The Format's settings (`src/lib/bracket/config.ts`); null means the
     // Format's default, and single elimination has none.
     bracketConfig: jsonb("bracket_config").$type<HeatsConfig | null>(),
+    // Participants in a Heat may enter its result themselves (ADR 0005).
+    selfReport: boolean("self_report").notNull().default(false),
     // Set while the Bracket's generated Points Entries exist.
     finalizedAt: timestamp("finalized_at", { withTimezone: true }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -277,7 +279,48 @@ export const pointsEntry = pgTable(
   ],
 );
 
-/** A Team or Participant entered in a Competition's Bracket. */
+/**
+ * A named group of Participants of one Team, entered as one Entrant in a
+ * team-scoring Bracket; its Placement Points go to its Team.
+ */
+export const squad = pgTable(
+  "squad",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competition.id, { onDelete: "cascade" }),
+    teamId: uuid("team_id")
+      .notNull()
+      .references(() => team.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 80 }).notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    unique().on(table.competitionId, table.name),
+    index("squad_team_id_idx").on(table.teamId),
+  ],
+);
+
+/** A Participant in a Squad. */
+export const squadParticipant = pgTable(
+  "squad_participant",
+  {
+    squadId: uuid("squad_id")
+      .notNull()
+      .references(() => squad.id, { onDelete: "cascade" }),
+    participantId: uuid("participant_id")
+      .notNull()
+      .references(() => participant.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.squadId, table.participantId] }),
+    index("squad_participant_participant_id_idx").on(table.participantId),
+  ],
+);
+
+/** A Team, Participant or Squad entered in a Competition's Bracket. */
 export const entrant = pgTable(
   "entrant",
   {
@@ -291,16 +334,20 @@ export const entrant = pgTable(
     participantId: uuid("participant_id").references(() => participant.id, {
       onDelete: "cascade",
     }),
+    squadId: uuid("squad_id").references(() => squad.id, {
+      onDelete: "cascade",
+    }),
     seedPosition: integer("seed_position").notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => [
     unique().on(table.competitionId, table.teamId),
     unique().on(table.competitionId, table.participantId),
+    unique().on(table.competitionId, table.squadId),
     unique().on(table.competitionId, table.seedPosition),
     check(
       "entrant_exactly_one_target",
-      sql`num_nonnulls(${table.teamId}, ${table.participantId}) = 1`,
+      sql`num_nonnulls(${table.teamId}, ${table.participantId}, ${table.squadId}) = 1`,
     ),
   ],
 );
@@ -333,6 +380,14 @@ export const heat = pgTable(
     // Wall-clock time in ET, like a Schedule Item's.
     startTime: time("start_time"),
     location: varchar("location", { length: 200 }),
+    // Set when a Participant self-reported the current result; cleared when
+    // a later save changes the Heat. The email is kept for audit and never
+    // read back to a page or MCP (see CONTEXT.md, Access rules).
+    reportedByEmail: varchar("reported_by_email", { length: 254 }),
+    reportedByParticipantId: uuid("reported_by_participant_id").references(
+      () => participant.id,
+      { onDelete: "set null" },
+    ),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -340,6 +395,9 @@ export const heat = pgTable(
     unique().on(table.competitionId, table.round, table.position),
     index("heat_winner_to_heat_id_idx").on(table.winnerToHeatId),
     index("heat_day_id_idx").on(table.dayId),
+    index("heat_reported_by_participant_id_idx").on(
+      table.reportedByParticipantId,
+    ),
   ],
 );
 
@@ -670,6 +728,8 @@ export type Award = InferSelectModel<typeof award>;
 export type AwardParticipant = InferSelectModel<typeof awardParticipant>;
 export type Announcement = InferSelectModel<typeof announcement>;
 export type FaqItem = InferSelectModel<typeof faqItem>;
+export type Squad = InferSelectModel<typeof squad>;
+export type SquadParticipant = InferSelectModel<typeof squadParticipant>;
 export type EntrantRow = InferSelectModel<typeof entrant>;
 export type HeatRow = InferSelectModel<typeof heat>;
 export type HeatEntrantRow = InferSelectModel<typeof heatEntrant>;

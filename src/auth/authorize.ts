@@ -10,6 +10,10 @@ import {
 import { isUuid } from "@/lib/uuid";
 import type { MutationContext } from "@/mutations/types";
 import {
+  type HeatReportFacts,
+  getHeatReportFacts,
+} from "@/queries/heat-reports";
+import {
   type LoadedTarget,
   type TargetWarWeek,
   loadAnnouncementTarget,
@@ -100,6 +104,55 @@ export async function authorize(
     warWeek: target.warWeek,
     target,
     ctx: { warWeekId: target.warWeek.id, actorEmail: actor.email },
+  };
+}
+
+/**
+ * The authorize step for self-report, the one Participant write (ADR 0005),
+ * in ADR 0003's order: authenticate; both ids shaped like row ids; load the
+ * Competition and its War Week; load the Heat's facts for the actor's email
+ * (account linking, never the pick); run `can("bracket.heat-report")`,
+ * which binds Organizers and Hosts too. The caller parses its input only
+ * after this. Never throws on a refusal.
+ */
+export async function authorizeHeatReport(
+  competitionId: unknown,
+  heatId: unknown,
+): Promise<
+  | {
+      ok: true;
+      actor: NonNullable<Actor>;
+      warWeek: TargetWarWeek;
+      ctx: MutationContext;
+      linked: NonNullable<HeatReportFacts["linked"]>;
+    }
+  | Refused
+> {
+  const actor = await getActor();
+  if (!actor) return { ok: false, error: SIGN_IN_REFUSAL };
+  const [competitionNotFound, load] = TARGETS.competition;
+  if (!isUuid(competitionId)) return { ok: false, error: competitionNotFound };
+  if (!isUuid(heatId)) {
+    return { ok: false, error: "That Heat no longer exists." };
+  }
+  const target = await load(competitionId);
+  if (!target) return { ok: false, error: competitionNotFound };
+
+  const facts = await getHeatReportFacts(competitionId, heatId, actor.email);
+  const refusal = can(actor, "bracket.heat-report", {
+    warWeekId: target.warWeek.id,
+    competitionId: target.competitionId,
+    heatReport: facts.heatReport,
+  });
+  if (refusal) return { ok: false, error: refusal };
+  // `can` refuses an unlinked actor, so this is only for the type.
+  if (!facts.linked) return { ok: false, error: SIGN_IN_REFUSAL };
+  return {
+    ok: true,
+    actor,
+    warWeek: target.warWeek,
+    ctx: { warWeekId: target.warWeek.id, actorEmail: actor.email },
+    linked: facts.linked,
   };
 }
 
