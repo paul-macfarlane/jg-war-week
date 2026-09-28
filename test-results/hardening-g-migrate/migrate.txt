@@ -1,0 +1,104 @@
+Migration proof — Epic G, migration 0013 (tickets 18, 19: drop
+war_week.organizer_emails and competition.bracket_points)
+================================================================================
+
+Method: `test-results/hardening-g-migrate/before.json` was dumped from the
+unmodified (pre-0013) checkout (HEAD d4e333f) by creating a team Competition
+("SMOKE TEST G Migration") on War Week XI with its existing Teams as
+Entrants, generating a single-elimination Bracket and recording one Heat
+Result, then calling `loadBracket` and `getBracketEntrants` for that
+Competition. After removing `organizerEmails`/`bracketPoints` from
+`src/db/schema.ts` and `BRACKET_POINTS` from `src/lib/enums.ts`, generating
+migration 0013 and applying it, `after-0013.json` was dumped for the same
+Competition id with the same calls. Neither `loadBracket` nor
+`getBracketEntrants` reads either dropped column, so nothing in this
+migration should change the dump. The Competition was then deleted
+(cascading its Entrants and Heat), so the local database is left as it was
+before this proof ran.
+
+Comparison (`diff` of the two JSON files):
+
+    $ diff test-results/hardening-g-migrate/before.json test-results/hardening-g-migrate/after-0013.json
+    (no output — the files are byte-identical)
+    $ echo $?
+    0
+
+Generated migration SQL (`drizzle/0013_chief_the_initiative.sql`), never
+hand-edited:
+--------------------------------------------------------------------------------
+ALTER TABLE "competition" DROP COLUMN "bracket_points";--> statement-breakpoint
+ALTER TABLE "war_week" DROP COLUMN "organizer_emails";--> statement-breakpoint
+DROP TYPE "public"."bracket_points";
+--------------------------------------------------------------------------------
+
+Exactly the three statements the plan calls for: the two column drops and
+the enum type drop. `drizzle-kit` DID emit `DROP TYPE` for the removed
+`bracket_points` pgEnum here, so there is no orphan-type finding to report
+for this run.
+
+Column and type checks after 0013 (via `docker exec war-weeker-postgres
+psql -U postgres -d war_weeker`):
+
+$ docker exec war-weeker-postgres psql -U postgres -d war_weeker -c "select organizer_emails from war_week limit 1"
+ERROR:  column "organizer_emails" does not exist
+LINE 1: select organizer_emails from war_week limit 1
+               ^
+
+$ docker exec war-weeker-postgres psql -U postgres -d war_weeker -c "select bracket_points from competition limit 1"
+ERROR:  column "bracket_points" does not exist
+LINE 1: select bracket_points from competition limit 1
+               ^
+
+$ docker exec war-weeker-postgres psql -U postgres -d war_weeker -c "select 1 from pg_type where typname = 'bracket_points'"
+ ?column?
+----------
+(0 rows)
+
+All three outcomes match the plan: both columns are gone and the
+`bracket_points` enum no longer exists in `pg_type`.
+
+Cleanup: the proof Competition ("SMOKE TEST G Migration",
+388ae05a-370d-4f4a-b380-4497d91e70d8) was deleted from the local database
+after the after-0013.json dump (cascading its Entrant and Heat rows via
+`on delete cascade`).
+
+Seeds load twice on 0013 (proves the seed loader is unaffected by the
+dropped columns):
+
+$ pnpm seed:load --reset seeds/*.json
+
+> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/war-weeker
+> tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xi.json
+
+Loaded War Week i (reset)
+Loaded War Week ii (reset)
+Loaded War Week iii (reset)
+Loaded War Week iv (reset)
+Loaded War Week ix (reset)
+Loaded War Week v (reset)
+Loaded War Week vi (reset)
+Loaded War Week vii (reset)
+Loaded War Week viii (reset)
+Loaded War Week x (reset)
+Loaded War Week xi (reset)
+
+$ pnpm seed:all
+
+> war-weeker@0.1.0 seed:all /Users/paulmacfarlane/Code/war-weeker
+> tsx scripts/seed-load.ts seeds/*.json
+
+Loaded War Week i
+Loaded War Week ii
+Loaded War Week iii
+Loaded War Week iv
+Loaded War Week ix
+Loaded War Week v
+Loaded War Week vi
+Loaded War Week vii
+Loaded War Week viii
+Loaded War Week x
+Loaded War Week xi
+
+Migration drift check (CI's logic, run locally): `pnpm db:generate` again
+after 0013 printed "No schema changes, nothing to migrate" and produced no
+new migration file — the schema and the last snapshot agree.

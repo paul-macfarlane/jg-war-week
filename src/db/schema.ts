@@ -28,7 +28,6 @@ import {
 
 import type { HeatsConfig } from "@/lib/bracket/config";
 import {
-  BRACKET_POINTS,
   COMPETITION_FORMATS,
   COMPETITION_SCORINGS,
   FONT_PRESETS,
@@ -62,8 +61,6 @@ export const competitionFormat = pgEnum(
   COMPETITION_FORMATS,
 );
 
-export const bracketPoints = pgEnum("bracket_points", BRACKET_POINTS);
-
 export const heatStatus = pgEnum("heat_status", HEAT_STATUSES);
 
 export const warWeek = pgTable(
@@ -92,13 +89,6 @@ export const warWeek = pgTable(
     bannerUrl: varchar("banner_url", { length: 500 }),
     fontPreset: fontPreset("font_preset").notNull(),
     wikiUrl: varchar("wiki_url", { length: 500 }),
-    // Deprecated: Organizers are global now (the `organizer` table). Kept,
-    // unread by the new access rule, so a rollback still works; ticket 18
-    // drops it.
-    organizerEmails: varchar("organizer_emails", { length: 254 })
-      .array()
-      .notNull()
-      .default([]),
     winner: varchar("winner", { length: 200 }),
     highlights: varchar("highlights", { length: 500 })
       .array()
@@ -202,9 +192,6 @@ export const competition = pgTable(
     // The Format's settings (`src/lib/bracket/config.ts`); null means the
     // Format's default, and single elimination has none.
     bracketConfig: jsonb("bracket_config").$type<HeatsConfig | null>(),
-    bracketPoints: bracketPoints("bracket_points")
-      .notNull()
-      .default("placings"),
     // Set while the Bracket's generated Points Entries exist.
     finalizedAt: timestamp("finalized_at", { withTimezone: true }),
     createdAt: timestamp("created_at").notNull().defaultNow(),

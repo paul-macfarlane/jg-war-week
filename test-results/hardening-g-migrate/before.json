@@ -1,0 +1,53 @@
+{
+  "competitionId": "388ae05a-370d-4f4a-b380-4497d91e70d8",
+  "bracket": {
+    "format": "single-elimination",
+    "config": null,
+    "heats": [
+      {
+        "id": "9a05f529-f77f-40f3-9151-747e25b49f8d",
+        "round": 1,
+        "position": 1,
+        "status": "played",
+        "winnerTo": null,
+        "dayId": null,
+        "startTime": null,
+        "location": null,
+        "slots": [
+          {
+            "entrantId": "278669c9-3a8b-44ac-8f70-c20534910d6f",
+            "place": 1,
+            "score": null,
+            "forfeited": false
+          },
+          {
+            "entrantId": "6eae0f34-099d-4379-9651-f742e753512f",
+            "place": 2,
+            "score": null,
+            "forfeited": false
+          }
+        ]
+      }
+    ]
+  },
+  "entrants": [
+    {
+      "id": "278669c9-3a8b-44ac-8f70-c20534910d6f",
+      "seedPosition": 1,
+      "label": "Blue",
+      "teamId": "d981350c-4a69-4f3a-b27d-cb3fd5aa899d",
+      "participantId": null,
+      "color": "#3b82f6",
+      "teamName": "Blue"
+    },
+    {
+      "id": "6eae0f34-099d-4379-9651-f742e753512f",
+      "seedPosition": 2,
+      "label": "Red",
+      "teamId": "7903f765-cbee-4dc3-9ecf-a1997e31ac5a",
+      "participantId": null,
+      "color": "#ff3b3b",
+      "teamName": "Red"
+    }
+  ]
+}

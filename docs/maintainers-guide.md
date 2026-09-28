@@ -219,10 +219,12 @@ signed in is a **Participant** (`CONTEXT.md`, "Access rules").
   with `--reset`. After that, manage them in the app. Hosts never come from
   seeds; a plain reload leaves them alone, and `--reset` deletes them along
   with the War Week's Competitions.
-- **Expand/contract.** The old per-edition `organizer_emails` column on
-  `war_week` is still in the database, unused, so a rollback stays safe.
-  Ticket 18 (`.scratch/hardening/issues/18-drop-war-week-organizer-emails.md`)
-  drops it in a later release; don't build on it.
+- **Expand/contract.** `war_week.organizer_emails` and
+  `competition.bracket_points` were dropped in migration 0013 once Epics B
+  and E had run on `main` long enough that rolling back past them was no
+  longer a concern. The same expand-then-contract shape applies to any
+  future column removal: land the column unused first, wait out the
+  rollback window, then drop it in its own migration.
 
 ### Run a knockout Competition as a Bracket
 

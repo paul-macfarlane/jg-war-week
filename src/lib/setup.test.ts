@@ -98,14 +98,6 @@ describe("parseWarWeekSettingsInput", () => {
     expect(result.ok && "status" in result.value).toBe(false);
   });
 
-  it("never carries Organizer emails, since Organizers are global", () => {
-    const result = parseWarWeekSettingsInput({
-      ...input,
-      organizerEmails: "someone@jahnelgroup.com",
-    } as WarWeekSettingsInput);
-    expect(result.ok && "organizerEmails" in result.value).toBe(false);
-  });
-
   it.each<[Partial<WarWeekSettingsInput>, string]>([
     [{ storyTheme: " " }, "Story Theme must not be empty."],
     [

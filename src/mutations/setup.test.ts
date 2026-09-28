@@ -48,7 +48,6 @@ async function fixture(tx: DBTx) {
         edition: `s${n}`,
         editionNumber: 9200 + n,
         year: 9200 + n,
-        organizerEmails: [actorEmail],
       })
       .returning({ id: schema.warWeek.id });
     return row.id;

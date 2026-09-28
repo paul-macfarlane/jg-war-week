@@ -32,7 +32,6 @@ function warWeekFixture(overrides: Partial<WarWeek>): WarWeek {
     bannerUrl: null,
     fontPreset: "sans",
     wikiUrl: null,
-    organizerEmails: [],
     winner: null,
     highlights: [],
     createdAt: new Date(),

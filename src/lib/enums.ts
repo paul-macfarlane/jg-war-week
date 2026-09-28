@@ -28,6 +28,4 @@ export const COMPETITION_FORMATS = [
   "heats",
 ] as const;
 
-export const BRACKET_POINTS = ["placings", "per-heat", "both"] as const;
-
 export const HEAT_STATUSES = ["pending", "ready", "played", "forfeit"] as const;
