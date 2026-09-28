@@ -9,12 +9,12 @@ import {
   unfinalizeBracket,
 } from "@/actions/brackets";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { HeatRows } from "@/components/bracket-view";
+import { ConfirmActionButton } from "@/components/confirm-dialog";
 import {
   type BracketViewEntrant,
   EntrantMark,
-  HeatRows,
-} from "@/components/bracket-view";
-import { ConfirmActionButton } from "@/components/confirm-dialog";
+} from "@/components/entrant-mark";
 import {
   HeatResultForm,
   type HeatResultFormProps,

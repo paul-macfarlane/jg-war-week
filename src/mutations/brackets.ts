@@ -851,8 +851,10 @@ export async function createSquad(
 
 /**
  * Edits a Squad of this Competition (never another's: a Squad id of another
- * Competition is "no longer exists"). An entered Squad may be edited; its
- * Entrant and Heats are untouched.
+ * Competition is "no longer exists"). An entered Squad may be renamed or
+ * have its Participants changed; its Team is fixed while it's an Entrant
+ * (decision 4), so a roster change can't move its points. Its Entrant and
+ * Heats are untouched.
  */
 export async function updateSquad(
   competitionId: string,
@@ -864,8 +866,24 @@ export async function updateSquad(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const locked = await lockedForSquads(tx, competitionId, ctx);
     if (!locked.ok) return locked;
-    if (!(await squadOf(tx, competitionId, squadId))) {
-      return refuse(SQUAD_NOT_FOUND);
+    const [current] = await tx
+      .select({ teamId: squad.teamId })
+      .from(squad)
+      .where(
+        and(eq(squad.id, squadId), eq(squad.competitionId, competitionId)),
+      );
+    if (!current) return refuse(SQUAD_NOT_FOUND);
+    if (
+      values.teamId !== current.teamId &&
+      (await tx.$count(entrant, eq(entrant.squadId, squadId))) > 0
+    ) {
+      const [warWeekRow] = await tx
+        .select({ teamLabel: warWeek.teamLabel })
+        .from(warWeek)
+        .where(eq(warWeek.id, ctx.warWeekId));
+      const teamLabel = warWeekRow?.teamLabel ?? "Team";
+      const error = `This Squad is an Entrant. Remove it from the Entrants before changing its ${teamLabel}.`;
+      return { ok: false, error, fieldErrors: { teamId: error } };
     }
     const refusal = await squadRefusal(tx, competitionId, values, ctx, squadId);
     if (refusal) return refusal;

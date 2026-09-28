@@ -5,11 +5,11 @@ import { useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import type { HeatResultActionResult } from "@/actions/brackets";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
   type BracketViewEntrant,
   EntrantMark,
-} from "@/components/bracket-view";
-import { ConfirmDialog } from "@/components/confirm-dialog";
+} from "@/components/entrant-mark";
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";

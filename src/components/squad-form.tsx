@@ -55,6 +55,7 @@ export function SquadForm({
   participants,
   taken,
   teamLabel,
+  entered = false,
   onDone,
 }: {
   competitionId: string;
@@ -65,6 +66,8 @@ export function SquadForm({
   /** Participant id → the other Squad of this Competition they're in. */
   taken: Record<string, string>;
   teamLabel: string;
+  /** Whether the Squad being edited is an Entrant: its Team is fixed. */
+  entered?: boolean;
   /** Closes the Sheet: after a save, or on Cancel. */
   onDone: () => void;
 }) {
@@ -146,6 +149,7 @@ export function SquadForm({
             aria-invalid={!!fieldErrors.teamId}
             options={teamOptions}
             value={teamId}
+            disabled={entered}
             onValueChange={(next) => {
               setTeamId(next);
               // A Squad's Participants are all on its Team.
@@ -157,6 +161,11 @@ export function SquadForm({
               );
             }}
           />
+          {entered && (
+            <FieldDescription>
+              An entered Squad keeps its {teamLabel}.
+            </FieldDescription>
+          )}
           <FieldError>{fieldErrors.teamId}</FieldError>
         </Field>
         <Field data-invalid={!!fieldErrors.participantIds}>

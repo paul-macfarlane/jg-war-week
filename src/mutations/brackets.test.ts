@@ -2266,6 +2266,78 @@ describe.skipIf(!isLocalDatabase)("Squads", () => {
     });
   });
 
+  it("refuses changing an entered Squad's Team, but not one that isn't entered", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations, queries } = await modules();
+      const f = await squadFixture(tx);
+      const squad = await fourSquads(tx, f);
+
+      expect(
+        await mutations.replaceEntrants(
+          f.competitionId,
+          {
+            kind: "squad",
+            targetIds: [squad("Red Alpha"), squad("Blue Alpha")],
+          },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+      const before = await queries.getSquads(f.competitionId, tx);
+
+      const teamChange = {
+        ok: false,
+        error:
+          "This Squad is an Entrant. Remove it from the Entrants before changing its Team.",
+        fieldErrors: {
+          teamId:
+            "This Squad is an Entrant. Remove it from the Entrants before changing its Team.",
+        },
+      };
+      expect(
+        await mutations.updateSquad(
+          f.competitionId,
+          squad("Red Alpha"),
+          {
+            name: "Red Alpha",
+            teamId: f.blue,
+            participantIds: [f.p("Ashley Schuliger"), f.p("Sam Schantz")],
+          },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual(teamChange);
+      expect(await queries.getSquads(f.competitionId, tx)).toEqual(before);
+
+      // A Squad that isn't entered (Red Bravo) may have its Team changed,
+      // moved along with its Participants onto that Team.
+      const [greta, gary] = await tx
+        .insert(f.schema.participant)
+        .values([
+          { warWeekId: f.ctx.warWeekId, displayName: "Greta", teamId: f.green },
+          { warWeekId: f.ctx.warWeekId, displayName: "Gary", teamId: f.green },
+        ])
+        .returning({ id: f.schema.participant.id });
+      expect(
+        await mutations.updateSquad(
+          f.competitionId,
+          squad("Red Bravo"),
+          {
+            name: "Red Bravo",
+            teamId: f.green,
+            participantIds: [greta.id, gary.id],
+          },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+      const [redBravo] = (await queries.getSquads(f.competitionId, tx)).filter(
+        (s) => s.name === "Red Bravo",
+      );
+      expect(redBravo.teamId).toBe(f.green);
+    });
+  });
+
   it("refuses setting the Format to points while the Competition has Squads", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations } = await modules();

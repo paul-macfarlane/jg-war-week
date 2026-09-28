@@ -110,7 +110,7 @@ async function fixture(tx: DBTx) {
     })
     .returning({ id: schema.competition.id });
   const squadIds: Record<string, string> = {};
-  for (const [name, teamId, members] of [
+  for (const [name, teamId, participantNames] of [
     ["Red Alpha", red, ["Ashley Schuliger", "Sam Schantz"]],
     ["Red Bravo", red, ["Ryan Shendler", "Alex Kelly"]],
     ["Blue Alpha", blue, ["Graham Macbeth", "Brandon Badgett"]],
@@ -121,9 +121,12 @@ async function fixture(tx: DBTx) {
       .values({ competitionId: cypher.id, teamId, name })
       .returning({ id: schema.squad.id });
     squadIds[name] = row.id;
-    await tx
-      .insert(schema.squadParticipant)
-      .values(members.map((m) => ({ squadId: row.id, participantId: p(m) })));
+    await tx.insert(schema.squadParticipant).values(
+      participantNames.map((name) => ({
+        squadId: row.id,
+        participantId: p(name),
+      })),
+    );
   }
   await tx.insert(schema.entrant).values(
     ["Red Alpha", "Red Bravo", "Blue Alpha", "Blue Bravo"].map((name, i) => ({

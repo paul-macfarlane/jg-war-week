@@ -5,7 +5,10 @@ import { useState } from "react";
 
 import { reportHeatResult } from "@/actions/heat-reports";
 import { AutoRefresh } from "@/components/auto-refresh";
-import { Avatar } from "@/components/avatar";
+import {
+  type BracketViewEntrant,
+  EntrantMark,
+} from "@/components/entrant-mark";
 import { HeatResultForm } from "@/components/heat-result-form";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -24,48 +27,8 @@ import {
   nextHeatFor,
 } from "@/lib/bracket/view";
 import { YOU_ROW_CLASS } from "@/lib/you";
-import type { BracketEntrant } from "@/queries/brackets";
-
-export type BracketViewEntrant = Pick<
-  BracketEntrant,
-  | "id"
-  | "label"
-  | "color"
-  | "teamId"
-  | "participantId"
-  | "squadId"
-  | "participantNames"
->;
 
 type Scoring = "team" | "individual";
-
-/** A Team's color dot, or a Participant's Avatar. */
-export function EntrantMark({
-  entrant,
-  scoring,
-  primaryColor,
-}: {
-  entrant: BracketViewEntrant;
-  scoring: Scoring;
-  primaryColor: string;
-}) {
-  if (scoring === "individual") {
-    return (
-      <Avatar
-        name={entrant.label}
-        teamColor={entrant.color}
-        primaryColor={primaryColor}
-      />
-    );
-  }
-  return (
-    <span
-      aria-hidden
-      className="size-3 shrink-0 rounded-full"
-      style={{ backgroundColor: entrant.color ?? primaryColor }}
-    />
-  );
-}
 
 function YouMark() {
   return (

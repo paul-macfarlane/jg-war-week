@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 
 import { generate } from "@/lib/bracket/engine";
 
-import { type BracketViewEntrant, HeatRows } from "./bracket-view";
+import { HeatRows } from "./bracket-view";
+import { type BracketViewEntrant } from "./entrant-mark";
 
 const entrant = (
   id: string,

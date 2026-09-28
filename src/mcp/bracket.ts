@@ -58,8 +58,8 @@ export type BracketResult =
 /**
  * Serializes a Bracket (or its absence, or a points Competition) into the
  * `get_bracket` MCP tool payload. Names only: never an email, the Organizer
- * list, Hosts or who self-reported a Heat. Pure: the route resolves the Competition by name and loads
- * `view` and `days`.
+ * list, Hosts or who self-reported a Heat. Pure: the route resolves the
+ * Competition by name and loads `view` and `days`.
  */
 export function toBracketResult(
   view: BracketView | undefined,

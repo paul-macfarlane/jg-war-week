@@ -732,3 +732,87 @@ describe.skipIf(!isLocalDatabase)(
     );
   },
 );
+
+describe.skipIf(!isLocalDatabase)(
+  "Squad create races on two connections",
+  () => {
+    const edition = "zz-r-sq";
+    beforeEach(() => clearWarWeek(edition));
+    afterEach(() => clearWarWeek(edition));
+
+    it.each([["Red Alpha"], ["Red Bravo"]])(
+      "gives two Squad creates naming the same Participant exactly one ok; the other is told they're already in it (%s first)",
+      async (first) => {
+        const { createSquad } = await import("@/mutations/brackets");
+        const f = await committedWarWeek(edition, 8);
+        const { competition, participant, squad } = f.schema;
+        const [clash] = await f.db
+          .insert(competition)
+          .values({
+            warWeekId: f.ctx.warWeekId,
+            name: "Captain Clash",
+            scoring: "team",
+            format: "single-elimination",
+          })
+          .returning({ id: competition.id });
+        const [neo] = await f.db
+          .insert(participant)
+          .values({
+            warWeekId: f.ctx.warWeekId,
+            displayName: "Neo",
+            teamId: f.teamId,
+          })
+          .returning({ id: participant.id });
+
+        const results = await withConnections(2, async ([a, b]) => {
+          const alpha = () =>
+            createSquad(
+              clash.id,
+              {
+                name: "Red Alpha",
+                teamId: f.teamId,
+                participantIds: [neo.id],
+              },
+              f.ctx,
+              a,
+            );
+          const bravo = () =>
+            createSquad(
+              clash.id,
+              {
+                name: "Red Bravo",
+                teamId: f.teamId,
+                participantIds: [neo.id],
+              },
+              f.ctx,
+              b,
+            );
+          const lockRow = (tx: ConnectionTx) =>
+            tx
+              .select({ id: competition.id })
+              .from(competition)
+              .where(eq(competition.id, clash.id))
+              .for("update");
+          return first === "Red Alpha"
+            ? staggered(lockRow, alpha, bravo)
+            : (await staggered(lockRow, bravo, alpha)).reverse();
+        });
+
+        // [Red Alpha's, Red Bravo's]: the one that queued first wins.
+        const takenBy = (name: string) => ({
+          ok: false,
+          error: `Neo is already in ${name}.`,
+          fieldErrors: { participantIds: `Neo is already in ${name}.` },
+        });
+        expect(results).toEqual(
+          first === "Red Alpha"
+            ? [{ ok: true }, takenBy("Red Alpha")]
+            : [takenBy("Red Bravo"), { ok: true }],
+        );
+        expect(
+          await f.db.$count(squad, eq(squad.competitionId, clash.id)),
+        ).toBe(1);
+      },
+    );
+  },
+);

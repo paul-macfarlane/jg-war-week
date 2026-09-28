@@ -795,6 +795,10 @@ export function BracketBuilder({
               }))}
               taken={taken}
               teamLabel={teamLabel}
+              entered={
+                editing !== undefined &&
+                entrants.some((e) => e.squadId === editing.id)
+              }
               onDone={() => setSquadSheet(null)}
             />
           )}
