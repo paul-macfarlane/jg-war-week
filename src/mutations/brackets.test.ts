@@ -1768,3 +1768,540 @@ describe.skipIf(!isLocalDatabase)("Heat reporters", () => {
     });
   });
 });
+
+describe.skipIf(!isLocalDatabase)("Squads", () => {
+  /**
+   * The fixture plus four Participants on Red (Ashley, Sam, Ryan, Alex) and
+   * four on Blue (Graham, Brandon, Alec, Victoria); Tug, another team
+   * Bracket; Stairs, a team Competition run on Points Entries; and a
+   * Participant of the other War Week.
+   */
+  async function squadFixture(tx: DBTx) {
+    const f = await fixture(tx);
+    const { schema } = f;
+    const people = await tx
+      .insert(schema.participant)
+      .values(
+        [
+          ["Ashley Schuliger", f.red],
+          ["Sam Schantz", f.red],
+          ["Ryan Shendler", f.red],
+          ["Alex Kelly", f.red],
+          ["Graham Macbeth", f.blue],
+          ["Brandon Badgett", f.blue],
+          ["Alec Haring", f.blue],
+          ["Victoria Campbell", f.blue],
+        ].map(([displayName, teamId]) => ({
+          warWeekId: f.ctx.warWeekId,
+          displayName,
+          teamId,
+        })),
+      )
+      .returning({
+        id: schema.participant.id,
+        name: schema.participant.displayName,
+      });
+    const p = (name: string) => people.find((x) => x.name === name)!.id;
+    const [tug, stairs] = await tx
+      .insert(schema.competition)
+      .values([
+        {
+          warWeekId: f.ctx.warWeekId,
+          name: "Tug",
+          scoring: "team",
+          format: "single-elimination",
+        },
+        {
+          warWeekId: f.ctx.warWeekId,
+          name: "Stairs",
+          scoring: "team",
+          format: "points",
+        },
+      ])
+      .returning({ id: schema.competition.id });
+    const [stranger] = await tx
+      .insert(schema.participant)
+      .values({
+        warWeekId: f.otherCtx.warWeekId,
+        displayName: "Stranger",
+        teamId: f.outsider,
+      })
+      .returning({ id: schema.participant.id });
+    return {
+      ...f,
+      p,
+      tugId: tug.id,
+      stairsId: stairs.id,
+      stranger: stranger.id,
+    };
+  }
+
+  type SquadFixture = Awaited<ReturnType<typeof squadFixture>>;
+
+  /** Red Alpha, Red Bravo, Blue Alpha and Blue Bravo on Captain Clash. */
+  async function fourSquads(tx: DBTx, f: SquadFixture) {
+    const { mutations } = await modules();
+    for (const [name, teamId, a, b] of [
+      ["Red Alpha", f.red, "Ashley Schuliger", "Sam Schantz"],
+      ["Red Bravo", f.red, "Ryan Shendler", "Alex Kelly"],
+      ["Blue Alpha", f.blue, "Graham Macbeth", "Brandon Badgett"],
+      ["Blue Bravo", f.blue, "Alec Haring", "Victoria Campbell"],
+    ] as const) {
+      expect(
+        await mutations.createSquad(
+          f.competitionId,
+          { name, teamId, participantIds: [f.p(a), f.p(b)] },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+    }
+    const { getSquads } = await modules().then((m) => m.queries);
+    const squads = await getSquads(f.competitionId, tx);
+    return (name: string) => squads.find((s) => s.name === name)!.id;
+  }
+
+  it("creates, edits and deletes a Squad", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations, queries } = await modules();
+      const f = await squadFixture(tx);
+
+      expect(
+        await mutations.createSquad(
+          f.competitionId,
+          {
+            name: "Red Alpha",
+            teamId: f.red,
+            participantIds: [f.p("Sam Schantz"), f.p("Ashley Schuliger")],
+          },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+      let [squad] = await queries.getSquads(f.competitionId, tx);
+      expect(squad).toMatchObject({
+        name: "Red Alpha",
+        teamId: f.red,
+        teamName: "Red",
+        participants: [
+          { id: f.p("Ashley Schuliger"), displayName: "Ashley Schuliger" },
+          { id: f.p("Sam Schantz"), displayName: "Sam Schantz" },
+        ],
+      });
+
+      expect(
+        await mutations.updateSquad(
+          f.competitionId,
+          squad.id,
+          {
+            name: "Red Prime",
+            teamId: f.red,
+            participantIds: [f.p("Ryan Shendler")],
+          },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+      [squad] = await queries.getSquads(f.competitionId, tx);
+      expect(squad).toMatchObject({
+        name: "Red Prime",
+        participants: [{ displayName: "Ryan Shendler" }],
+      });
+
+      expect(
+        await mutations.deleteSquad(f.competitionId, squad.id, f.ctx, tx),
+      ).toEqual({ ok: true });
+      expect(await queries.getSquads(f.competitionId, tx)).toEqual([]);
+    });
+  });
+
+  it("refuses a Squad spanning Teams, a Participant already in one, a name taken, more than 16 and a Participant of another War Week", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations, queries } = await modules();
+      const f = await squadFixture(tx);
+      await fourSquads(tx, f);
+      const create = (
+        name: string,
+        teamId: string | null,
+        participantIds: string[],
+      ) =>
+        mutations.createSquad(
+          f.competitionId,
+          { name, teamId, participantIds },
+          f.ctx,
+          tx,
+        );
+      const participantsRefusal = (error: string) => ({
+        ok: false,
+        error,
+        fieldErrors: { participantIds: error },
+      });
+
+      expect(
+        await create("Mixed", f.red, [f.neo, f.p("Graham Macbeth")]),
+      ).toEqual(
+        participantsRefusal(
+          "Every Participant in a Squad must be on the same Team.",
+        ),
+      );
+      expect(
+        await create("Red Charlie", f.red, [f.neo, f.p("Sam Schantz")]),
+      ).toEqual(participantsRefusal("Sam Schantz is already in Red Alpha."));
+      expect(await create("Red Alpha", f.red, [f.neo])).toEqual({
+        ok: false,
+        error: 'A Squad named "Red Alpha" already exists.',
+        fieldErrors: { name: 'A Squad named "Red Alpha" already exists.' },
+      });
+      expect(await create("Red Charlie", f.red, [f.stranger])).toEqual(
+        participantsRefusal("Choose Participants of this War Week."),
+      );
+      expect(await create("Nobody", f.red, [])).toEqual(
+        participantsRefusal("Add at least one Participant."),
+      );
+      expect(await create("Teamless", null, [f.neo])).toEqual({
+        ok: false,
+        error: "Choose a Team.",
+        fieldErrors: { teamId: "Choose a Team." },
+      });
+
+      const crowd = await tx
+        .insert(f.schema.participant)
+        .values(
+          Array.from({ length: 17 }, (_, i) => ({
+            warWeekId: f.ctx.warWeekId,
+            displayName: `Red ${i}`,
+            teamId: f.red,
+          })),
+        )
+        .returning({ id: f.schema.participant.id });
+      expect(
+        await create(
+          "Red Crowd",
+          f.red,
+          crowd.map((c) => c.id),
+        ),
+      ).toEqual(participantsRefusal("A Squad has at most 16 Participants."));
+
+      // Another Competition's Squad doesn't count: Sam may be in Tug's.
+      expect(
+        await mutations.createSquad(
+          f.tugId,
+          {
+            name: "Red Alpha",
+            teamId: f.red,
+            participantIds: [f.p("Sam Schantz")],
+          },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+      expect(await queries.getSquads(f.competitionId, tx)).toHaveLength(4);
+    });
+  });
+
+  it("refuses Squads on an individual, a points or a finalized Competition", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations } = await modules();
+      const f = await squadFixture(tx);
+      const values = { name: "Solo", teamId: f.red, participantIds: [f.neo] };
+
+      expect(await mutations.createSquad(f.chessId, values, f.ctx, tx)).toEqual(
+        { ok: false, error: "Squads are only for team Competitions." },
+      );
+      expect(
+        await mutations.createSquad(f.stairsId, values, f.ctx, tx),
+      ).toEqual({
+        ok: false,
+        error: "This Competition isn't run as a Bracket.",
+      });
+      expect(
+        await mutations.createSquad(f.competitionId, values, f.otherCtx, tx),
+      ).toEqual({ ok: false, error: "That Competition no longer exists." });
+
+      await mutations.createSquad(f.competitionId, values, f.ctx, tx);
+      const [squad] = await (
+        await modules()
+      ).queries.getSquads(f.competitionId, tx);
+      await tx
+        .update(f.schema.competition)
+        .set({ finalizedAt: new Date() })
+        .where(eq(f.schema.competition.id, f.competitionId));
+      const finalized = {
+        ok: false,
+        error: "Un-finalize the Bracket before changing it.",
+      };
+      expect(
+        await mutations.createSquad(
+          f.competitionId,
+          { ...values, name: "Duo" },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual(finalized);
+      expect(
+        await mutations.updateSquad(
+          f.competitionId,
+          squad.id,
+          values,
+          f.ctx,
+          tx,
+        ),
+      ).toEqual(finalized);
+      expect(
+        await mutations.deleteSquad(f.competitionId, squad.id, f.ctx, tx),
+      ).toEqual(finalized);
+    });
+  });
+
+  it("won't touch a Squad through another Competition's id", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations, queries } = await modules();
+      const f = await squadFixture(tx);
+      const squadId = (await fourSquads(tx, f))("Red Alpha");
+      const before = await queries.getSquads(f.competitionId, tx);
+      const gone = { ok: false, error: "That Squad no longer exists." };
+
+      expect(
+        await mutations.updateSquad(
+          f.tugId,
+          squadId,
+          { name: "Hijacked", teamId: f.red, participantIds: [f.neo] },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual(gone);
+      expect(await mutations.deleteSquad(f.tugId, squadId, f.ctx, tx)).toEqual(
+        gone,
+      );
+      expect(await queries.getSquads(f.competitionId, tx)).toEqual(before);
+      expect(await queries.getSquads(f.tugId, tx)).toEqual([]);
+    });
+  });
+
+  it("enters Squads only as a team Competition's whole Entrant list", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations } = await modules();
+      const f = await squadFixture(tx);
+      const squad = await fourSquads(tx, f);
+      await mutations.createSquad(
+        f.tugId,
+        { name: "Tug Red", teamId: f.red, participantIds: [f.neo] },
+        f.ctx,
+        tx,
+      );
+      const [tugSquad] = await (await modules()).queries.getSquads(f.tugId, tx);
+
+      expect(
+        await mutations.replaceEntrants(
+          f.chessId,
+          { kind: "squad", targetIds: [squad("Red Alpha")] },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({
+        ok: false,
+        error: "An individual Competition's Entrants are Participants.",
+      });
+      expect(
+        await mutations.replaceEntrants(
+          f.competitionId,
+          { kind: "participant", targetIds: [f.neo] },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({
+        ok: false,
+        error: "A team Competition's Entrants are Teams or Squads.",
+      });
+      expect(
+        await mutations.replaceEntrants(
+          f.competitionId,
+          { kind: "squad", targetIds: [squad("Red Alpha"), tugSquad.id] },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: false, error: "Enter Squads of this Competition." });
+      expect(
+        await mutations.replaceEntrants(
+          f.competitionId,
+          { kind: "squad", targetIds: [squad("Red Alpha"), f.red] },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: false, error: "Enter Squads of this Competition." });
+      expect(
+        await tx.$count(
+          f.schema.entrant,
+          eq(f.schema.entrant.competitionId, f.competitionId),
+        ),
+      ).toBe(0);
+    });
+  });
+
+  it("four Squads of two Teams generate, play out and finalize into two Team Points Entries per Team", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations, queries } = await modules();
+      const setup = await import("@/mutations/setup");
+      const f = await squadFixture(tx);
+      const squad = await fourSquads(tx, f);
+      const { schema } = f;
+
+      expect(
+        await mutations.replaceEntrants(
+          f.competitionId,
+          {
+            kind: "squad",
+            targetIds: [
+              "Red Alpha",
+              "Red Bravo",
+              "Blue Alpha",
+              "Blue Bravo",
+            ].map(squad),
+          },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+      expect(
+        await mutations.generateBracket(
+          f.competitionId,
+          { seeding: "standings" },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: false, error: "Squads are seeded at random." });
+      expect(
+        await mutations.generateBracket(
+          f.competitionId,
+          { rng: rngZero },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+
+      // An entered Squad can't be deleted, but can be renamed.
+      expect(
+        await mutations.deleteSquad(
+          f.competitionId,
+          squad("Red Alpha"),
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({
+        ok: false,
+        error: "This Squad is an Entrant. Remove it from the Entrants first.",
+      });
+
+      // Seeded Red Bravo 1, Blue Alpha 2, Blue Bravo 3, Red Alpha 4: Red
+      // Bravo and Blue Alpha win the semifinals, Red Bravo the final.
+      let view = (await queries.getBracket(f.competitionId, tx))!;
+      expect(heatAt(view, 1, 1).labels).toEqual(["Red Bravo", "Red Alpha"]);
+      expect(heatAt(view, 1, 2).labels).toEqual(["Blue Alpha", "Blue Bravo"]);
+      const id = (label: string) =>
+        view.entrants.find((e) => e.label === label)!.id;
+      for (const [position, round, winner] of [
+        [1, 1, "Red Bravo"],
+        [2, 1, "Blue Alpha"],
+        [1, 2, "Red Bravo"],
+      ] as const) {
+        view = (await queries.getBracket(f.competitionId, tx))!;
+        const heat = heatAt(view, round, position).heat;
+        const ids = heat.slots.map((s) => s.entrantId!);
+        expect(
+          await mutations.recordHeatResult(
+            f.competitionId,
+            heat.id,
+            { order: [id(winner), ...ids.filter((i) => i !== id(winner))] },
+            f.ctx,
+            tx,
+          ),
+        ).toMatchObject({ ok: true });
+      }
+
+      const generated = async () =>
+        (
+          await tx
+            .select({
+              teamId: schema.pointsEntry.teamId,
+              participantId: schema.pointsEntry.participantId,
+              points: schema.pointsEntry.points,
+            })
+            .from(schema.pointsEntry)
+            .where(
+              and(
+                eq(schema.pointsEntry.competitionId, f.competitionId),
+                eq(schema.pointsEntry.generatedByBracket, true),
+              ),
+            )
+        ).sort(
+          (a, b) => b.points - a.points || a.teamId!.localeCompare(b.teamId!),
+        );
+      const expected = [
+        { teamId: f.red, participantId: null, points: 10 },
+        { teamId: f.blue, participantId: null, points: 6 },
+        ...[
+          { teamId: f.red, participantId: null, points: 3 },
+          { teamId: f.blue, participantId: null, points: 3 },
+        ].sort((a, b) => a.teamId.localeCompare(b.teamId)),
+      ];
+
+      expect(
+        await mutations.finalizeBracket(f.competitionId, f.ctx, tx),
+      ).toEqual({ ok: true });
+      expect(await generated()).toEqual(expected);
+
+      expect(
+        await mutations.unfinalizeBracket(f.competitionId, f.ctx, tx),
+      ).toEqual({ ok: true });
+      expect(await generated()).toEqual([]);
+      expect(
+        await mutations.finalizeBracket(f.competitionId, f.ctx, tx),
+      ).toEqual({ ok: true });
+      expect(await generated()).toEqual(expected);
+
+      // Red's Squads and their generated Points Entries hold its Team.
+      expect(await setup.deleteTeam(f.red, f.ctx, tx)).toMatchObject({
+        ok: false,
+      });
+    });
+  });
+
+  it("refuses setting the Format to points while the Competition has Squads", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations } = await modules();
+      const f = await squadFixture(tx);
+      for (const [name, person] of [
+        ["Red Alpha", "Ashley Schuliger"],
+        ["Red Bravo", "Sam Schantz"],
+      ] as const) {
+        await mutations.createSquad(
+          f.competitionId,
+          { name, teamId: f.red, participantIds: [f.p(person)] },
+          f.ctx,
+          tx,
+        );
+      }
+
+      expect(
+        await mutations.setCompetitionFormat(
+          f.competitionId,
+          { format: "points" },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({
+        ok: false,
+        error:
+          "This Competition has 2 Squads. Delete them before changing its Format.",
+      });
+      expect(
+        await mutations.setCompetitionFormat(
+          f.competitionId,
+          { format: "heats" },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+    });
+  });
+});

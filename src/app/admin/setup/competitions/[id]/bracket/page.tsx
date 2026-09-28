@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { BracketBuilder } from "@/components/bracket-builder";
-import { getBracket } from "@/queries/brackets";
+import { getBracket, getSquads } from "@/queries/brackets";
 import { getPointsEntryFormOptions } from "@/queries/points-entries";
 
 import { loadAdminPage } from "../../../../gate";
@@ -29,6 +29,7 @@ export default async function BracketBuilderPage({
   ]);
   if (!view || view.competition.warWeekId !== warWeek.id) notFound();
   const { competition } = view;
+  const squads = await getSquads(competition.id);
 
   return (
     <AdminShell
@@ -53,11 +54,13 @@ export default async function BracketBuilderPage({
             scoring: competition.scoring,
             format: competition.format,
             finalized: view.finalized,
+            selfReport: competition.selfReport,
           }}
           entrants={view.entrants}
           bracket={view.bracket}
           teams={options.teams}
           participants={options.participants}
+          squads={squads}
           teamLabel={warWeek.teamLabel}
         />
       </section>

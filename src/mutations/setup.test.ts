@@ -889,3 +889,155 @@ describe.skipIf(!isLocalDatabase)("setCompetitionHosts", () => {
     });
   });
 });
+
+describe.skipIf(!isLocalDatabase)(
+  "Squads guard their Participants and Team",
+  () => {
+    /**
+     * The roster fixture plus Squads: Relay has Red Alpha (Neo) and Blue
+     * Alpha; Tug, another team Competition, has Red Bravo (Neo) and Blue
+     * Bravo. So Neo is in 2 Squads, Blue has 2, Relay has 2.
+     */
+    async function squadFixture(tx: DBTx) {
+      const f = await rosterFixture(tx);
+      const { schema } = f;
+      const [tug] = await tx
+        .insert(schema.competition)
+        .values({
+          warWeekId: f.home,
+          name: "Tug",
+          scoring: "team",
+          format: "single-elimination",
+        })
+        .returning({ id: schema.competition.id });
+      const squads = await tx
+        .insert(schema.squad)
+        .values([
+          { competitionId: f.relayId, teamId: f.redId, name: "Red Alpha" },
+          { competitionId: f.relayId, teamId: f.blueId, name: "Blue Alpha" },
+          { competitionId: tug.id, teamId: f.redId, name: "Red Bravo" },
+          { competitionId: tug.id, teamId: f.blueId, name: "Blue Bravo" },
+        ])
+        .returning({ id: schema.squad.id, name: schema.squad.name });
+      const byName = (name: string) => squads.find((s) => s.name === name)!.id;
+      await tx.insert(schema.squadParticipant).values([
+        { squadId: byName("Red Alpha"), participantId: f.neoId },
+        { squadId: byName("Red Bravo"), participantId: f.neoId },
+      ]);
+      return { ...f, tugId: tug.id };
+    }
+
+    const neoValues = (teamId: string | null) => ({
+      displayName: "Neo",
+      companyTag: null,
+      email: "neo@jahnelgroup.com",
+      teamId,
+      isLeader: false,
+    });
+
+    it("refuses changing a Participant's Team while they're in a Squad, but not other edits", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { updateParticipant } = await import("@/mutations/setup");
+        const { ctx, neoId, redId, blueId } = await squadFixture(tx);
+        const refusal = {
+          ok: false,
+          error:
+            "This Participant has 2 Squads. Remove them from the Squads before changing their Team.",
+        };
+
+        expect(
+          await updateParticipant(neoId, neoValues(blueId), ctx, tx),
+        ).toEqual(refusal);
+        expect(
+          await updateParticipant(neoId, neoValues(null), ctx, tx),
+        ).toEqual(refusal);
+        expect(
+          await updateParticipant(
+            neoId,
+            { ...neoValues(redId), displayName: "The One" },
+            ctx,
+            tx,
+          ),
+        ).toEqual({ ok: true });
+      });
+    });
+
+    it("counts Squads when refusing to delete a Participant or Team", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { deleteParticipant, deleteTeam } =
+          await import("@/mutations/setup");
+        const { ctx, neoId, blueId } = await squadFixture(tx);
+
+        expect(await deleteParticipant(neoId, ctx, tx)).toEqual({
+          ok: false,
+          error:
+            "This Participant has 1 Points Entry, 1 Award and 2 Squads. Delete them or remove the Participant from them first.",
+        });
+        expect(await deleteTeam(blueId, ctx, tx)).toEqual({
+          ok: false,
+          error: "This Team has 2 Squads. Move or delete them first.",
+        });
+      });
+    });
+
+    it("refuses a scoring change while the Competition has Squads", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { updateCompetition } = await import("@/mutations/setup");
+        const { ctx, relayId } = await squadFixture(tx);
+
+        expect(
+          await updateCompetition(
+            relayId,
+            { ...competitionValues, name: "Relay", scoring: "individual" },
+            ctx,
+            tx,
+          ),
+        ).toEqual({
+          ok: false,
+          error:
+            "This Competition has 2 Squads. Delete them before changing its scoring.",
+        });
+        expect(
+          await updateCompetition(
+            relayId,
+            {
+              ...competitionValues,
+              name: "Relay",
+              scoring: "team",
+              countsTowardTeam: false,
+            },
+            ctx,
+            tx,
+          ),
+        ).toEqual({ ok: true });
+      });
+    });
+
+    it("lists each Team's and Participant's Squad count for the setup screens", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { getSetupTeams, getSetupParticipants } =
+          await import("@/queries/setup");
+        const { home } = await squadFixture(tx);
+
+        expect(
+          (await getSetupTeams({ id: home }, tx)).map((t) => [
+            t.name,
+            t.squadCount,
+          ]),
+        ).toEqual([
+          ["Blue", 2],
+          ["Red", 2],
+        ]);
+        expect(
+          (await getSetupParticipants({ id: home }, tx)).map((p) => [
+            p.displayName,
+            p.squadCount,
+          ]),
+        ).toEqual([
+          ["Neo", 2],
+          ["Trinity", 0],
+        ]);
+      });
+    });
+  },
+);
