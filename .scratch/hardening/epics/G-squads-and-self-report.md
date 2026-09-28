@@ -8,7 +8,7 @@
 
 **Blocked by:** Epic F (its PR merged into `staging`, since both touch the bracket builder, results screen and participant view); Paul confirming the human preconditions on tickets 18 and 19 (Epics B and E on `main` long enough that no rollback goes past them), which moves both to `ready-for-agent`. If Paul wants Squads and self-report before that, tickets 18 and 19 leave this epic for their own `chore/` PR and nothing else changes.
 
-**Status:** in-progress (`/atlas-implement`, work package `hardening-g`, branch `feat/hardening-g-squads-and-self-report`; plan in [`G-execution.md`](./G-execution.md))
+**Status:** ai-review (`/atlas-implement`, work package `hardening-g`, branch `feat/hardening-g-squads-and-self-report`; plan in [`G-execution.md`](./G-execution.md))
 
 **Red-team:** required. Squads, self-report and both drops change the Drizzle schema, and self-report is the first write by a plain Participant (`docs/agents/planning.md`).
 
@@ -79,3 +79,4 @@ Brackets spec stories 8 and 22 for Squads, and decisions 1–14 above, plus:
 - 2026-09-27 (Paul): decisions confirmed. Decision 2 kept with a note (XII is free-for-all). Decision 9 overruled: a self-report is trusted and becomes the Heat Result at once; a Host who doesn't trust reports turns self-report off. Decisions 10–13 and the ACs rewritten to follow (no pending state, no confirm/reject, no End War Week pending-report warning). Any `/atlas-plan` draft written before this is stale in its self-report half and must be re-planned and re-red-teamed.
 - 2026-09-27: `/atlas-plan` — technical plan in [`G-execution.md`](./G-execution.md) (`planning` → `plan-review`). Red-team: pass 1 BLOCKED on the first design (B1 stale pending reports on refilled Heats, B2 banned term), pass 2 PASS; after Paul's decision-9 change the self-report half was rewritten (a report is the Heat Result at once, through the same code as a Host result, with its reporter recorded on the Heat) and pass 3 PASS (0 blocking, 6 warnings, 8 minors, all applied). Open plan decisions keep their defaults (Team change and delete refused for a Squad's Participant; one-Participant Squads allowed; entered Squads can't be deleted; the pick-only sentence; one PR, `staging → main` promoted by Paul at a quiet time). Approved by Paul.
 - 2026-09-27: `/atlas-implement` (work package `hardening-g`) — `plan-review → in-progress`. Branch `feat/hardening-g-squads-and-self-report` from `staging` at `d4e333f`; tickets 18 and 19 claimed beside it. Execution structure, worker slices and the verification map: [`G-execution.md`](./G-execution.md) `[EXECUTION PLAN]`; progress under its `[PROGRESS]`.
+- 2026-09-27: `in-progress → ai-review` — all six deliverables integrated at `526535e`; aggregate AI code review started.
