@@ -656,4 +656,4 @@ now records Paul's acceptance (M4).
 
 ## [CLOSEOUT]
 
-(none yet)
+See the epic file's `[AI CODE REVIEW]` and `[CLOSEOUT]`. PR https://github.com/paul-macfarlane/jg-war-week/pull/88. Review fixes `fe6bf6d`; final gate on `fe6bf6d`.
