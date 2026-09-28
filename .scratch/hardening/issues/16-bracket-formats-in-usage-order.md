@@ -4,7 +4,7 @@
 
 **Blocked by:** 03 (Hosts), 13 (test net)
 
-**Status:** ready-for-agent (T9 and T10 before the 2027-01-21 milestone; the rest as time allows, never delaying it)
+**Status:** done
 
 ## Order
 
@@ -53,3 +53,7 @@
 **[PROGRESS] 2026-09-27 (Epic F, PR https://github.com/paul-macfarlane/jg-war-week/pull/88):** delivered T13 Heat time and place with Now/Next (stories 13, 22, 24), T14's live refresh (story 25) and MCP `get_bracket` (story 26), the Finale for a Bracket, and W2 seeding by Standings (story 9, no drag). Still open here: Epic G (T11 Squads, T12 self-report).
 
 - 2026-09-27: Epic G (`../epics/G-squads-and-self-report.md`) claimed T11 Squads and T12 self-report on branch `feat/hardening-g-squads-and-self-report` (`/atlas-implement`, work package `hardening-g`); `[PROGRESS]` and closeout follow with its PR.
+
+**[PROGRESS] 2026-09-27 (Epic G, PR https://github.com/paul-macfarlane/jg-war-week/pull/89):** delivered T11 Squads (named groups of one Team's Participants entered as one Entrant, points to the Team) and T12 self-report as redefined (a Participant in a Heat reports its result, which counts at once like a Host's; ADR 0005). Details and evidence in `../epics/G-squads-and-self-report.md`.
+
+**[CLOSEOUT] 2026-09-27:** `ready-for-agent → done`. Delivered across Epics E (PR #84), F (PR #88) and G (PR https://github.com/paul-macfarlane/jg-war-week/pull/89): T9 Heats, T13 Heat time and place with Now/Next, T14 live refresh and `get_bracket`, the Finale for a Bracket, W2 seeding by Standings, T11 Squads, T12 self-report, the End War Week warning, and the `per-heat`/`both` removal. Cut by decision: T10, T7 round robin, the Archive bracket view, drag seeding. Left open outside this ticket: T8 double elimination (a new ticket only on request) and the Slack champion post (ticket 17).
