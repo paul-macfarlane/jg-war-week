@@ -51,3 +51,5 @@
 - **Left out of both:** T8 double elimination (build only on request; a new ticket if someone asks) and the Slack champion post (waits on Slack posting, ticket 17). After Epic G this ticket has nothing else open and closes.
 
 **[PROGRESS] 2026-09-27 (Epic F, PR https://github.com/paul-macfarlane/jg-war-week/pull/88):** delivered T13 Heat time and place with Now/Next (stories 13, 22, 24), T14's live refresh (story 25) and MCP `get_bracket` (story 26), the Finale for a Bracket, and W2 seeding by Standings (story 9, no drag). Still open here: Epic G (T11 Squads, T12 self-report).
+
+- 2026-09-27: Epic G (`../epics/G-squads-and-self-report.md`) claimed T11 Squads and T12 self-report on branch `feat/hardening-g-squads-and-self-report` (`/atlas-implement`, work package `hardening-g`); `[PROGRESS]` and closeout follow with its PR.

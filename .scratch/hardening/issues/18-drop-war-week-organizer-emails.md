@@ -4,7 +4,7 @@
 
 **Blocked by:** 03
 
-**Status:** needs-triage
+**Status:** in-progress
 
 ## Precondition (human)
 
@@ -25,3 +25,5 @@ Epic B's code is on `main` and has run in production long enough that rolling ba
 ## Comments
 
 - 2026-09-27: grouped with ticket 19 into `../epics/G-squads-and-self-report.md`. The precondition above still gates it; if G is wanted earlier, 18 and 19 leave the epic for their own `chore/` PR.
+- 2026-09-27 (Paul): precondition confirmed — Epic B has run on `main` long enough that rolling back past it is off the table. Moved to `ready-for-agent`; delivered inside Epic G (`../epics/G-squads-and-self-report.md`).
+- 2026-09-27: `ready-for-agent → in-progress` — delivered as D1 of Epic G on branch `feat/hardening-g-squads-and-self-report` (`/atlas-implement`, work package `hardening-g`).

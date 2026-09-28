@@ -4,7 +4,7 @@
 
 **Blocked by:** none (Epic E is `done`); see the human precondition
 
-**Status:** needs-triage
+**Status:** in-progress
 
 ## Precondition (human)
 
@@ -25,3 +25,5 @@ Epic E's code (PR #84) is on `main` and has run in production long enough that r
 ## Comments
 
 - 2026-09-27: created from Epic E's closeout follow-up and grouped with ticket 18 into `../epics/G-squads-and-self-report.md`.
+- 2026-09-27 (Paul): precondition confirmed — Epic E (PR #84) has run on `main` long enough that rolling back past it is off the table. Moved to `ready-for-agent`; delivered inside Epic G (`../epics/G-squads-and-self-report.md`).
+- 2026-09-27: `ready-for-agent → in-progress` — delivered as D1 of Epic G on branch `feat/hardening-g-squads-and-self-report` (`/atlas-implement`, work package `hardening-g`).
