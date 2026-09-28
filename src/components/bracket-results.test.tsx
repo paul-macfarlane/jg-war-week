@@ -100,4 +100,19 @@ describe("BracketResultsView", () => {
     );
     expect(html).toMatch(/<a[^>]*href="\/xi\/finale\/c1"[^>]*>Play the Finale/);
   });
+
+  it("names who self-reported a Heat's result on its card", () => {
+    const html = renderToStaticMarkup(
+      <BracketResultsView
+        {...props}
+        reporters={{ r1h2: "Ashley Schuliger" }}
+        openSheet={null}
+      />,
+    );
+    expect(html).toContain("Reported by Ashley Schuliger");
+  });
+
+  it("shows no reporter on a Heat the Host entered", () => {
+    expect(render(null)).not.toContain("Reported by");
+  });
 });

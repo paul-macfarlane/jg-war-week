@@ -1,15 +1,21 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 
+import { reportHeatResult } from "@/actions/heat-reports";
+import { AutoRefresh } from "@/components/auto-refresh";
 import { Avatar } from "@/components/avatar";
+import { HeatResultForm } from "@/components/heat-result-form";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useYou } from "@/components/you";
 import { isBye } from "@/lib/bracket/formats";
 import type { Bracket, Heat } from "@/lib/bracket/types";
 import {
+  type NextHeat,
   entrantForYou,
   formatHeatWhen,
   groupRounds,
@@ -208,20 +214,117 @@ export function HeatRows({
 }
 
 /**
+ * The "Your next Heat" card (props only): the Heat You play next, when and
+ * against whom, or the Round You advanced to. `canReport` adds **Report
+ * result** (the server found the Heat reportable by You, known by account
+ * linking); `pickOnly` says how to report when You are known only by the
+ * "Which one is you?" pick.
+ */
+export function YourNextHeatCard({
+  next,
+  bracket,
+  entrantsById,
+  when,
+  canReport,
+  pickOnly,
+  onReport,
+}: {
+  next: NextHeat;
+  bracket: Bracket;
+  entrantsById: Map<string, BracketViewEntrant>;
+  /** The Heat's Day, time and place, when it has them. */
+  when: string | null;
+  canReport: boolean;
+  pickOnly: boolean;
+  onReport: () => void;
+}) {
+  return (
+    <Card size="sm" aria-label="Your next Heat" className="ring-accent ring-2">
+      <CardContent className="flex min-w-0 flex-col gap-1">
+        {next.kind === "advanced" ? (
+          <>
+            <span className="text-foreground/60 text-xs font-medium uppercase">
+              Your next Heat
+            </span>
+            <span className="font-semibold">
+              Advanced to Round {next.round} · waiting for Round{" "}
+              {next.round - 1} to finish
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="text-foreground/60 text-xs font-medium uppercase">
+              Your next Heat · {heatName(bracket, next.heat)}
+            </span>
+            {when && <span className="text-foreground/70 text-sm">{when}</span>}
+            {next.opponentIds.length > 0 ? (
+              <span className="font-semibold break-words">
+                vs{" "}
+                {listNames(
+                  next.opponentIds.map(
+                    (id) => entrantsById.get(id)?.label ?? "Unknown",
+                  ),
+                )}
+              </span>
+            ) : (
+              <span className="text-foreground/70">
+                {next.waitingFor
+                  ? `Waiting for ${heatName(bracket, next.waitingFor)}`
+                  : "Waiting for an opponent"}
+              </span>
+            )}
+            {canReport ? (
+              <Button
+                type="button"
+                size="lg"
+                className="mt-2 min-h-11 w-fit"
+                onClick={onReport}
+              >
+                Report result
+              </Button>
+            ) : pickOnly ? (
+              <p className="text-foreground/70 text-sm">
+                To report results, ask an Organizer to add your email to the
+                roster.
+              </p>
+            ) : null}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/** What the page decided about self-report for this Bracket. */
+export type BracketViewSelfReport = {
+  on: boolean;
+  /** The Participant the session email links to, or null. */
+  linkedParticipantId: string | null;
+  /** Your next Heat, when the server found it reportable by You; else null. */
+  reportableHeatId: string | null;
+};
+
+/**
  * The phone Bracket view: a vertical list of Heats grouped by Round, with
- * (single elimination) "Winner → …" chips, the champion and Your next Heat pinned on top, and
- * Your Entrant highlighted under the You rules.
+ * (single elimination) "Winner → …" chips, the champion and Your next Heat
+ * pinned on top, and Your Entrant highlighted under the You rules. Owns the
+ * report Sheet, and refreshes live while it's closed (a Bracket not drawn
+ * yet too, so the draw appears).
  */
 export function BracketView({
+  competitionId,
   entrants,
   bracket,
   champion,
   scoring,
   primaryColor,
   participantTeams,
+  participantSquads,
   days,
   finaleHref,
+  selfReport,
 }: {
+  competitionId: string;
   entrants: BracketViewEntrant[];
   bracket: Bracket;
   champion: string | null;
@@ -229,12 +332,16 @@ export function BracketView({
   primaryColor: string;
   /** Each Participant's Team id, for finding Your Team's Entrant. */
   participantTeams: Record<string, string>;
+  /** Each Participant's Squad id in this Competition, for Your Squad's Entrant. */
+  participantSquads: Record<string, string>;
   /** The War Week's Days, for a timed Heat's Day, time and place. */
   days: { id: string; date: string }[];
   /** The Bracket Finale, once the Bracket is finalized; null before. */
   finaleHref: string | null;
+  selfReport: BracketViewSelfReport;
 }) {
   const you = useYou();
+  const [reporting, setReporting] = useState<string | null>(null);
   const entrantsById = new Map(entrants.map((e) => [e.id, e]));
   const youEntrantId = entrantForYou(
     entrants,
@@ -242,8 +349,7 @@ export function BracketView({
       ? {
           participantId: you.participantId,
           teamId: participantTeams[you.participantId] ?? null,
-          // Your Squad arrives with the self-report slice.
-          squadId: null,
+          squadId: participantSquads[you.participantId] ?? null,
         }
       : null,
     scoring,
@@ -253,6 +359,15 @@ export function BracketView({
     next && next.kind === "heat" ? formatHeatWhen(next.heat, days) : null;
   const winner = champion ? entrantsById.get(champion) : undefined;
   const heatsById = new Map(bracket.heats.map((h) => [h.id, h]));
+  const canReport =
+    selfReport.on &&
+    you?.via === "email" &&
+    you.participantId === selfReport.linkedParticipantId &&
+    next?.kind === "heat" &&
+    next.heat.id === selfReport.reportableHeatId;
+  const pickOnly = selfReport.on && you?.via === "pick";
+  const reportHeat = reporting ? heatsById.get(reporting) : undefined;
+  const close = () => setReporting(null);
 
   if (bracket.heats.length === 0) {
     return (
@@ -261,6 +376,7 @@ export function BracketView({
         <p className="text-foreground/70 text-sm">
           The Bracket hasn&apos;t been drawn yet.
         </p>
+        <AutoRefresh />
       </section>
     );
   }
@@ -304,50 +420,17 @@ export function BracketView({
       )}
 
       {next && (
-        <Card
-          size="sm"
-          aria-label="Your next Heat"
-          className="ring-accent ring-2"
-        >
-          <CardContent className="flex min-w-0 flex-col gap-1">
-            {next.kind === "advanced" ? (
-              <>
-                <span className="text-foreground/60 text-xs font-medium uppercase">
-                  Your next Heat
-                </span>
-                <span className="font-semibold">
-                  Advanced to Round {next.round} · waiting for Round{" "}
-                  {next.round - 1} to finish
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="text-foreground/60 text-xs font-medium uppercase">
-                  Your next Heat · {heatName(bracket, next.heat)}
-                </span>
-                {nextWhen && (
-                  <span className="text-foreground/70 text-sm">{nextWhen}</span>
-                )}
-                {next.opponentIds.length > 0 ? (
-                  <span className="font-semibold break-words">
-                    vs{" "}
-                    {listNames(
-                      next.opponentIds.map(
-                        (id) => entrantsById.get(id)?.label ?? "Unknown",
-                      ),
-                    )}
-                  </span>
-                ) : (
-                  <span className="text-foreground/70">
-                    {next.waitingFor
-                      ? `Waiting for ${heatName(bracket, next.waitingFor)}`
-                      : "Waiting for an opponent"}
-                  </span>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
+        <YourNextHeatCard
+          next={next}
+          bracket={bracket}
+          entrantsById={entrantsById}
+          when={nextWhen}
+          canReport={canReport}
+          pickOnly={pickOnly}
+          onReport={() => {
+            if (next.kind === "heat") setReporting(next.heat.id);
+          }}
+        />
       )}
 
       {groupRounds(bracket).map((round) => (
@@ -397,6 +480,34 @@ export function BracketView({
           </ul>
         </section>
       ))}
+
+      <Sheet
+        open={reportHeat !== undefined}
+        onOpenChange={(open) => {
+          if (!open) close();
+        }}
+      >
+        <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto">
+          {reportHeat && (
+            <HeatResultForm
+              key={reportHeat.id}
+              heat={reportHeat}
+              bracket={bracket}
+              entrantsById={entrantsById}
+              scoring={scoring}
+              primaryColor={primaryColor}
+              submit={(result) =>
+                reportHeatResult(competitionId, reportHeat.id, result)
+              }
+              confirmResets={false}
+              successToast={() => "Result reported."}
+              onSaved={close}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {reportHeat === undefined && <AutoRefresh />}
     </section>
   );
 }

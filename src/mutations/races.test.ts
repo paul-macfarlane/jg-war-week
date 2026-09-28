@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -543,6 +543,191 @@ describe.skipIf(!isLocalDatabase)(
             generatedByBracket: true,
           },
         ]);
+      },
+    );
+  },
+);
+
+/**
+ * A committed single-elimination Competition with self-report on: Red v
+ * Blue in its one Heat, the Final, with Neo (Red) and Trinity (Blue)
+ * linked by email.
+ */
+async function committedReportable(edition: string, n: number) {
+  const brackets = await import("@/mutations/brackets");
+  const { setSelfReport } = await import("@/mutations/heat-reports");
+  const { getBracket } = await import("@/queries/brackets");
+  const f = await committedWarWeek(edition, n);
+  const { competition, participant, team } = f.schema;
+  const [blue] = await f.db
+    .insert(team)
+    .values({ warWeekId: f.ctx.warWeekId, name: "Blue", color: "#00f" })
+    .returning({ id: team.id });
+  await f.db.insert(participant).values([
+    {
+      warWeekId: f.ctx.warWeekId,
+      displayName: "Neo",
+      email: "neo@jahnelgroup.com",
+      teamId: f.teamId,
+    },
+    {
+      warWeekId: f.ctx.warWeekId,
+      displayName: "Trinity",
+      email: "trinity@jahnelgroup.com",
+      teamId: blue.id,
+    },
+  ]);
+  const [clash] = await f.db
+    .insert(competition)
+    .values({
+      warWeekId: f.ctx.warWeekId,
+      name: "Captain Clash",
+      scoring: "team",
+      format: "single-elimination",
+    })
+    .returning({ id: competition.id });
+  await brackets.replaceEntrants(
+    clash.id,
+    { targetIds: [f.teamId, blue.id] },
+    f.ctx,
+    f.db,
+  );
+  await brackets.generateBracket(clash.id, {}, f.ctx, f.db);
+  await setSelfReport(clash.id, { on: true }, f.ctx, f.db);
+  const view = (await getBracket(clash.id, f.db))!;
+  const [final] = view.bracket.heats;
+  const red = view.entrants.find((e) => e.label === "Red")!.id;
+  const blueEntrant = view.entrants.find((e) => e.label === "Blue")!.id;
+  const lockRow = (tx: ConnectionTx) =>
+    tx
+      .select({ id: competition.id })
+      .from(competition)
+      .where(eq(competition.id, clash.id))
+      .for("update");
+  /** The Final's winner and its reporter's email, as committed. */
+  const saved = async () => {
+    const { heat, heatEntrant } = f.schema;
+    const [winner] = await f.db
+      .select({ entrantId: heatEntrant.entrantId })
+      .from(heatEntrant)
+      .where(and(eq(heatEntrant.heatId, final.id), eq(heatEntrant.place, 1)));
+    const [row] = await f.db
+      .select({ email: heat.reportedByEmail })
+      .from(heat)
+      .where(eq(heat.id, final.id));
+    return { winner: winner?.entrantId ?? null, reporter: row.email };
+  };
+  return {
+    ...f,
+    brackets,
+    competitionId: clash.id,
+    finalId: final.id,
+    red,
+    blue: blueEntrant,
+    lockRow,
+    saved,
+    as: (actorEmail: string) => ({ warWeekId: f.ctx.warWeekId, actorEmail }),
+  };
+}
+
+describe.skipIf(!isLocalDatabase)(
+  "Heat Result reports on two connections",
+  () => {
+    const edition = "zz-r-hr";
+    beforeEach(() => clearWarWeek(edition));
+    afterEach(() => clearWarWeek(edition));
+
+    it.each([["Neo"], ["Trinity"]])(
+      "gives two reports of one Heat exactly one result; the other is told it's decided (%s first)",
+      async (first) => {
+        const { submitHeatReport } = await import("@/mutations/heat-reports");
+        const f = await committedReportable(edition, 6);
+
+        const results = await withConnections(2, async ([a, b]) => {
+          const neo = () =>
+            submitHeatReport(
+              f.competitionId,
+              f.finalId,
+              { order: [f.red, f.blue] },
+              f.as("neo@jahnelgroup.com"),
+              a,
+            );
+          const trinity = () =>
+            submitHeatReport(
+              f.competitionId,
+              f.finalId,
+              { order: [f.blue, f.red] },
+              f.as("trinity@jahnelgroup.com"),
+              b,
+            );
+          return first === "Neo"
+            ? staggered(f.lockRow, neo, trinity)
+            : (await staggered(f.lockRow, trinity, neo)).reverse();
+        });
+
+        // [Neo's, Trinity's]: the one that queued first wins.
+        const decided = {
+          ok: false,
+          error: "This Heat already has a result.",
+        };
+        expect(results).toEqual(
+          first === "Neo"
+            ? [{ ok: true, resetHeatIds: [] }, decided]
+            : [decided, { ok: true, resetHeatIds: [] }],
+        );
+        expect(await f.saved()).toEqual(
+          first === "Neo"
+            ? { winner: f.red, reporter: "neo@jahnelgroup.com" }
+            : { winner: f.blue, reporter: "trinity@jahnelgroup.com" },
+        );
+      },
+    );
+  },
+);
+
+describe.skipIf(!isLocalDatabase)(
+  "Heat Result report beside a Host's result on two connections",
+  () => {
+    const edition = "zz-r-hh";
+    beforeEach(() => clearWarWeek(edition));
+    afterEach(() => clearWarWeek(edition));
+
+    it.each([["Host"], ["report"]])(
+      "never lets a report overwrite the Host's result (%s first)",
+      async (first) => {
+        const { submitHeatReport } = await import("@/mutations/heat-reports");
+        const f = await committedReportable(edition, 7);
+
+        const [hosted, reported] = await withConnections(2, async ([a, b]) => {
+          const host = () =>
+            f.brackets.recordHeatResult(
+              f.competitionId,
+              f.finalId,
+              { order: [f.blue, f.red] },
+              f.ctx,
+              a,
+            );
+          const report = () =>
+            submitHeatReport(
+              f.competitionId,
+              f.finalId,
+              { order: [f.red, f.blue] },
+              f.as("neo@jahnelgroup.com"),
+              b,
+            );
+          return first === "Host"
+            ? staggered(f.lockRow, host, report)
+            : (await staggered(f.lockRow, report, host)).reverse();
+        });
+
+        expect(hosted).toEqual({ ok: true, resetHeatIds: [] });
+        expect(reported).toEqual(
+          first === "Host"
+            ? { ok: false, error: "This Heat already has a result." }
+            : { ok: true, resetHeatIds: [] },
+        );
+        // The Host's result stands either way, and it's the Host's: no reporter.
+        expect(await f.saved()).toEqual({ winner: f.blue, reporter: null });
       },
     );
   },
