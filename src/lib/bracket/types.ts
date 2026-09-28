@@ -39,6 +39,11 @@ export type Heat = {
   slots: HeatSlot[];
   winnerTo: WinnerTo | null;
   status: HeatStatus;
+  /** Optional time and place, set from the results screen; both null until set. */
+  dayId: string | null;
+  /** A wall-clock ET time, `HH:MM` or `HH:MM:SS` as the row returns it. */
+  startTime: string | null;
+  location: string | null;
 };
 
 export type Bracket = {

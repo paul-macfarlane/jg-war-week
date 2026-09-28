@@ -1,0 +1,81 @@
+Migration proof — Epic F, migration 0012 (heat.day_id / start_time / location)
+================================================================================
+
+Method: `test-results/hardening-f-migrate/before.json` was dumped from the
+unmodified (pre-0012) checkout by creating a team Competition ("SMOKE TEST F
+Migration") on War Week XI with 4 Teams, generating a Bracket and recording
+one Heat Result, then calling `queries.getBracket`. After implementing the
+schema, migrating and completing the D1 code (`loadBracket`,
+`getBracketEntrants`, `Heat` types), `after.json` was dumped for the same
+Competition id with the same call. The Competition and its 4 Teams were then
+deleted (leftover proof rows removed; see below).
+
+Comparison (script run against both JSON files):
+
+    before === after-with-added-fields-stripped: true
+    every after Heat has dayId/startTime/location === null: true
+    every after Entrant has a teamName key: true
+    after Heat count: 3 before Heat count: 3
+
+The comparison strips exactly the fields the migration and D1 add before
+comparing: `dayId`, `startTime`, `location` (added to every `Heat`) and
+`teamName` (added to every `BracketEntrant`, for `get_bracket`). With those
+fields removed, `after.json` is byte-identical (as JSON) to `before.json`;
+every `Heat` in `after.json` carries `dayId: null, startTime: null,
+location: null`, and every Entrant carries a `teamName` key. Heat counts
+match (3 = 3). This is the "before.json equals after.json plus the three
+null Heat fields" proof required by the plan.
+
+Cleanup: the proof Competition ("SMOKE TEST F Migration",
+723d8f01-d121-4bdb-b95b-2da53d9b2d40) and its 4 Teams ("SMOKE F Red/Blue/
+Green/Gold") were deleted from the local database after the after.json dump.
+Deleting the Competition cascades its Entrant and Heat rows (`on delete
+cascade` on `entrant.competition_id` and `heat.competition_id`).
+
+Generated migration SQL (`drizzle/0012_lean_sprite.sql`), never hand-edited:
+--------------------------------------------------------------------------------
+ALTER TABLE "heat" ADD COLUMN "day_id" uuid;--> statement-breakpoint
+ALTER TABLE "heat" ADD COLUMN "start_time" time;--> statement-breakpoint
+ALTER TABLE "heat" ADD COLUMN "location" varchar(200);--> statement-breakpoint
+ALTER TABLE "heat" ADD CONSTRAINT "heat_day_id_day_id_fk" FOREIGN KEY ("day_id") REFERENCES "public"."day"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "heat_day_id_idx" ON "heat" USING btree ("day_id");
+--------------------------------------------------------------------------------
+
+Only the three column adds, one foreign key and one index, as required.
+
+Seeds load twice on 0012 (proves the seed loader is unaffected by the new
+nullable columns):
+
+$ pnpm seed:load --reset seeds/*.json
+
+> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/war-weeker
+> tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xi.json
+
+Loaded War Week i (reset)
+Loaded War Week ii (reset)
+Loaded War Week iii (reset)
+Loaded War Week iv (reset)
+Loaded War Week ix (reset)
+Loaded War Week v (reset)
+Loaded War Week vi (reset)
+Loaded War Week vii (reset)
+Loaded War Week viii (reset)
+Loaded War Week x (reset)
+Loaded War Week xi (reset)
+
+$ pnpm seed:all
+
+> war-weeker@0.1.0 seed:all /Users/paulmacfarlane/Code/war-weeker
+> tsx scripts/seed-load.ts seeds/*.json
+
+Loaded War Week i
+Loaded War Week ii
+Loaded War Week iii
+Loaded War Week iv
+Loaded War Week ix
+Loaded War Week v
+Loaded War Week vi
+Loaded War Week vii
+Loaded War Week viii
+Loaded War Week x
+Loaded War Week xi

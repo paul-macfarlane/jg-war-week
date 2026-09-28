@@ -1,13 +1,17 @@
 "use client";
 
+import Link from "next/link";
+
 import { Avatar } from "@/components/avatar";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useYou } from "@/components/you";
 import { isBye } from "@/lib/bracket/formats";
 import type { Bracket, Heat } from "@/lib/bracket/types";
 import {
   entrantForYou,
+  formatHeatWhen,
   groupRounds,
   heatName,
   isDecided,
@@ -196,6 +200,8 @@ export function BracketView({
   scoring,
   primaryColor,
   participantTeams,
+  days,
+  finaleHref,
 }: {
   entrants: BracketViewEntrant[];
   bracket: Bracket;
@@ -204,6 +210,10 @@ export function BracketView({
   primaryColor: string;
   /** Each Participant's Team id, for finding Your Team's Entrant. */
   participantTeams: Record<string, string>;
+  /** The War Week's Days, for a timed Heat's Day, time and place. */
+  days: { id: string; date: string }[];
+  /** The Bracket Finale, once the Bracket is finalized; null before. */
+  finaleHref: string | null;
 }) {
   const you = useYou();
   const entrantsById = new Map(entrants.map((e) => [e.id, e]));
@@ -218,6 +228,8 @@ export function BracketView({
     scoring,
   );
   const next = youEntrantId ? nextHeatFor(bracket, youEntrantId) : null;
+  const nextWhen =
+    next && next.kind === "heat" ? formatHeatWhen(next.heat, days) : null;
   const winner = champion ? entrantsById.get(champion) : undefined;
   const heatsById = new Map(bracket.heats.map((h) => [h.id, h]));
 
@@ -258,6 +270,14 @@ export function BracketView({
                 {winner.id === youEntrantId && <YouMark />}
               </span>
             </div>
+            {finaleHref && (
+              <Link
+                href={finaleHref}
+                className={`${buttonVariants({ variant: "outline", size: "sm" })} ml-auto shrink-0`}
+              >
+                Play the Finale
+              </Link>
+            )}
           </CardContent>
         </Card>
       )}
@@ -284,6 +304,9 @@ export function BracketView({
                 <span className="text-foreground/60 text-xs font-medium uppercase">
                   Your next Heat · {heatName(bracket, next.heat)}
                 </span>
+                {nextWhen && (
+                  <span className="text-foreground/70 text-sm">{nextWhen}</span>
+                )}
                 {next.opponentIds.length > 0 ? (
                   <span className="font-semibold break-words">
                     vs{" "}
@@ -319,6 +342,7 @@ export function BracketView({
                 bracket.format === "single-elimination" && heat.winnerTo
                   ? heatsById.get(heat.winnerTo.heatId)
                   : undefined;
+              const when = formatHeatWhen(heat, days);
               return (
                 <li key={heat.id}>
                   <Card size="sm">
@@ -326,6 +350,11 @@ export function BracketView({
                       <span className="text-foreground/60 text-xs font-medium">
                         {heatName(bracket, heat)}
                       </span>
+                      {when && (
+                        <span className="text-foreground/70 text-xs">
+                          {when}
+                        </span>
+                      )}
                       <HeatRows
                         heat={heat}
                         bracket={bracket}

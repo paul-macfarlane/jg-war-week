@@ -493,6 +493,14 @@ async function setupBracketDemo(): Promise<string> {
        ($11, $2, 0, 1), ($11, $7, 1, 2), ($11, $3, 2, 3), ($11, $8, 3, 4)`,
     [heatA.id, e1, e2, e3, e4, heatB.id, e5, e6, e7, e8, finalHeat.id],
   );
+  // One Heat's time and place, so the still shows a when-line
+  // ("Sunday, Feb 22 · 7:00 PM ET · Main room") on its card.
+  await query(
+    `update heat set day_id = (select id from day where war_week_id = $2 order by date limit 1),
+       start_time = '19:00', location = 'Main room'
+     where id = $1`,
+    [heatA.id, xiWarWeek.id],
+  );
   note(`bracket demo: competition ${competitionId}, champion entrant ${e1}`);
   return competitionId;
 }

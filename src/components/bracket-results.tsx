@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useId, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -9,6 +10,7 @@ import {
   recordHeatResult,
   unfinalizeBracket,
 } from "@/actions/brackets";
+import { AutoRefresh } from "@/components/auto-refresh";
 import {
   type BracketViewEntrant,
   EntrantMark,
@@ -18,6 +20,7 @@ import {
   ConfirmActionButton,
   ConfirmDialog,
 } from "@/components/confirm-dialog";
+import { HeatScheduleForm } from "@/components/heat-schedule-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -31,9 +34,14 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
-import { isRecordable, resetByResult } from "@/lib/bracket/formats";
+import { isBye, isRecordable, resetByResult } from "@/lib/bracket/formats";
 import type { Bracket, Heat, HeatResult } from "@/lib/bracket/types";
-import { groupRounds, heatName, isDecided } from "@/lib/bracket/view";
+import {
+  formatHeatWhen,
+  groupRounds,
+  heatName,
+  isDecided,
+} from "@/lib/bracket/view";
 
 type Scoring = "team" | "individual";
 
@@ -430,19 +438,10 @@ function HeatResultSheet(props: HeatResultFormProps) {
   );
 }
 
-/**
- * Runs a Bracket on a phone: Heats by Round as Cards, a tap opens the Heat
- * Result Sheet; the champion and Finalize / Un-finalize sit on top.
- */
-export function BracketResults({
-  competitionId,
-  scoring,
-  entrants,
-  bracket,
-  champion,
-  finalized,
-  primaryColor,
-}: {
+/** Which Sheet is open, for which Heat: a Heat Result or its time and place. */
+export type OpenSheet = { kind: "result" | "schedule"; heatId: string } | null;
+
+type BracketResultsProps = {
   competitionId: string;
   scoring: Scoring;
   entrants: BracketViewEntrant[];
@@ -450,11 +449,58 @@ export function BracketResults({
   champion: string | null;
   finalized: boolean;
   primaryColor: string;
+  /** The War Week's Days, for a Heat's time and place. */
+  days: { id: string; date: string }[];
+  /** The Bracket Finale, once the Bracket is finalized; null before. */
+  finaleHref: string | null;
+};
+
+/**
+ * Runs a Bracket on a phone: Heats by Round as Cards, a tap opens the Heat
+ * Result Sheet, "Time & place" opens the Heat's time Sheet; the champion
+ * and Finalize / Un-finalize sit on top. Refreshes live while no Sheet is
+ * open.
+ */
+export function BracketResults(props: BracketResultsProps) {
+  const [openSheet, setOpenSheet] = useState<OpenSheet>(null);
+  return (
+    <BracketResultsView
+      {...props}
+      openSheet={openSheet}
+      onOpenSheetChange={setOpenSheet}
+    />
+  );
+}
+
+/**
+ * The results screen for a given open Sheet (props only). Live refresh runs
+ * only while no Sheet is open, so it never interrupts an unsaved Heat
+ * Result or time.
+ */
+export function BracketResultsView({
+  competitionId,
+  scoring,
+  entrants,
+  bracket,
+  champion,
+  finalized,
+  primaryColor,
+  days,
+  finaleHref,
+  openSheet,
+  onOpenSheetChange,
+}: BracketResultsProps & {
+  openSheet: OpenSheet;
+  onOpenSheetChange: (openSheet: OpenSheet) => void;
 }) {
-  const [openHeatId, setOpenHeatId] = useState<string | null>(null);
   const entrantsById = new Map(entrants.map((e) => [e.id, e]));
-  const openHeat = bracket.heats.find((h) => h.id === openHeatId);
+  const sheetHeat = openSheet
+    ? bracket.heats.find((h) => h.id === openSheet.heatId)
+    : undefined;
+  const resultHeat = openSheet?.kind === "result" ? sheetHeat : undefined;
+  const scheduleHeat = openSheet?.kind === "schedule" ? sheetHeat : undefined;
   const winner = champion ? entrantsById.get(champion) : undefined;
+  const close = () => onOpenSheetChange(null);
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
@@ -487,6 +533,17 @@ export function BracketResults({
             <p className="text-foreground/70 text-sm">
               Finalized: its Points Entries are in the ledger. Un-finalize to
               change a Heat Result.
+              {finaleHref && (
+                <>
+                  {" "}
+                  <Link
+                    href={finaleHref}
+                    className="text-primary underline underline-offset-4"
+                  >
+                    Play the Finale
+                  </Link>
+                </>
+              )}
             </p>
             <ConfirmActionButton
               title="Delete the Points Entries this Bracket created?"
@@ -541,6 +598,8 @@ export function BracketResults({
             {round.heats.map((heat) => {
               const name = heatName(bracket, heat);
               const tappable = !finalized && isRecordable(bracket, heat.id);
+              const schedulable = !finalized && !isBye(bracket, heat);
+              const when = formatHeatWhen(heat, days);
               const rows = (
                 <HeatRows
                   heat={heat}
@@ -554,14 +613,40 @@ export function BracketResults({
                 <li key={heat.id}>
                   <Card size="sm" className="relative">
                     <CardContent className="flex min-w-0 flex-col gap-2">
-                      <span className="text-foreground/60 flex justify-between gap-2 text-xs font-medium">
+                      <div className="text-foreground/60 flex min-h-8 items-center justify-between gap-2 text-xs font-medium">
                         <span>{name}</span>
-                        {tappable && (
-                          <span className="text-primary">
-                            {isDecided(heat) ? "Edit" : "Record result"}
-                          </span>
-                        )}
-                      </span>
+                        <span className="flex items-center gap-2">
+                          {tappable && (
+                            <span className="text-primary">
+                              {isDecided(heat) ? "Edit" : "Record result"}
+                            </span>
+                          )}
+                          {schedulable && (
+                            // Above the full-card overlay, so it opens its
+                            // own Sheet rather than the Heat Result.
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              aria-label={`Time & place for ${name}`}
+                              className="relative z-10 min-h-11 sm:min-h-8"
+                              onClick={() =>
+                                onOpenSheetChange({
+                                  kind: "schedule",
+                                  heatId: heat.id,
+                                })
+                              }
+                            >
+                              Time &amp; place
+                            </Button>
+                          )}
+                        </span>
+                      </div>
+                      {when && (
+                        <span className="text-foreground/70 text-xs">
+                          {when}
+                        </span>
+                      )}
                       {rows}
                     </CardContent>
                     {tappable && (
@@ -571,7 +656,9 @@ export function BracketResults({
                         variant="ghost"
                         aria-label={`${isDecided(heat) ? "Edit" : "Record"} ${name}`}
                         className="focus-visible:ring-ring/50 absolute inset-0 size-auto rounded-xl border-0 bg-transparent p-0 outline-none hover:bg-transparent focus-visible:ring-3 active:translate-y-0"
-                        onClick={() => setOpenHeatId(heat.id)}
+                        onClick={() =>
+                          onOpenSheetChange({ kind: "result", heatId: heat.id })
+                        }
                       />
                     )}
                   </Card>
@@ -583,26 +670,48 @@ export function BracketResults({
       ))}
 
       <Sheet
-        open={openHeat !== undefined}
+        open={resultHeat !== undefined}
         onOpenChange={(open) => {
-          if (!open) setOpenHeatId(null);
+          if (!open) close();
         }}
       >
         <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto">
-          {openHeat && (
+          {resultHeat && (
             <HeatResultSheet
-              key={openHeat.id}
+              key={resultHeat.id}
               competitionId={competitionId}
-              heat={openHeat}
+              heat={resultHeat}
               bracket={bracket}
               entrantsById={entrantsById}
               scoring={scoring}
               primaryColor={primaryColor}
-              onSaved={() => setOpenHeatId(null)}
+              onSaved={close}
             />
           )}
         </SheetContent>
       </Sheet>
+
+      <Sheet
+        open={scheduleHeat !== undefined}
+        onOpenChange={(open) => {
+          if (!open) close();
+        }}
+      >
+        <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto">
+          {scheduleHeat && (
+            <HeatScheduleForm
+              key={scheduleHeat.id}
+              competitionId={competitionId}
+              heat={scheduleHeat}
+              name={heatName(bracket, scheduleHeat)}
+              days={days}
+              onSaved={close}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {openSheet === null && <AutoRefresh />}
     </div>
   );
 }

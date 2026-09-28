@@ -6,6 +6,7 @@ import { heatsConfig } from "@/lib/bracket/config";
 import { isBye } from "@/lib/bracket/formats";
 import { isDecided } from "@/lib/bracket/heat-status";
 import type { Bracket, Format, Heat } from "@/lib/bracket/types";
+import { formatDayHeading, formatEtTime } from "@/lib/schedule";
 
 export type { Format } from "@/lib/bracket/types";
 export { isDecided };
@@ -26,12 +27,31 @@ export function finalRoundOf(bracket: Bracket): number {
   return bracket.heats.reduce((max, h) => Math.max(max, h.round), 0);
 }
 
-/** Whether `round` is the one before the Final of a single-elimination Bracket. */
-function isSemifinal(bracket: Bracket, round: number): boolean {
-  return (
-    bracket.format === "single-elimination" &&
-    round === finalRoundOf(bracket) - 1
-  );
+/**
+ * "Final", "Round N", or (single elimination only) "Semifinal", by distance
+ * from the final Round; with a `position`, "Round N Heat P" or
+ * "Semifinal P" instead of the bare Round name.
+ */
+export function heatNameAt({
+  format,
+  finalRound,
+  round,
+  position,
+}: {
+  format: Format;
+  finalRound: number;
+  round: number;
+  position?: number;
+}): string {
+  if (round === finalRound) return "Final";
+  const isSemifinal =
+    format === "single-elimination" && round === finalRound - 1;
+  if (isSemifinal) {
+    return position === undefined ? "Semifinal" : `Semifinal ${position}`;
+  }
+  return position === undefined
+    ? `Round ${round}`
+    : `Round ${round} Heat ${position}`;
 }
 
 /**
@@ -39,9 +59,11 @@ function isSemifinal(bracket: Bracket, round: number): boolean {
  * from the final Round.
  */
 export function roundName(bracket: Bracket, round: number): string {
-  if (round === finalRoundOf(bracket)) return "Final";
-  if (isSemifinal(bracket, round)) return "Semifinal";
-  return `Round ${round}`;
+  return heatNameAt({
+    format: bracket.format,
+    finalRound: finalRoundOf(bracket),
+    round,
+  });
 }
 
 /** "Final", "Round 1 Heat 4", or (single elimination only) "Semifinal 2". */
@@ -49,9 +71,51 @@ export function heatName(
   bracket: Bracket,
   heat: Pick<Heat, "round" | "position">,
 ): string {
-  if (heat.round === finalRoundOf(bracket)) return "Final";
-  if (isSemifinal(bracket, heat.round)) return `Semifinal ${heat.position}`;
-  return `Round ${heat.round} Heat ${heat.position}`;
+  return heatNameAt({
+    format: bracket.format,
+    finalRound: finalRoundOf(bracket),
+    round: heat.round,
+    position: heat.position,
+  });
+}
+
+/** A Heat with both a Day and a start time: the only Heats Now/Next shows. */
+export function isTimed(heat: Pick<Heat, "dayId" | "startTime">): boolean {
+  return heat.dayId !== null && heat.startTime !== null;
+}
+
+/**
+ * A Heat's Entrants as one line: "A vs B" for two, "A, B, C and D" for more.
+ * An empty slot (waiting for an Entrant, or a bye) is skipped.
+ */
+export function heatEntrantLabels(
+  heat: Pick<Heat, "slots">,
+  entrantsById: Record<string, string>,
+): string {
+  const names = heat.slots
+    .map((slot) => (slot.entrantId ? entrantsById[slot.entrantId] : undefined))
+    .filter((name): name is string => name !== undefined);
+  if (names.length === 2) return `${names[0]} vs ${names[1]}`;
+  if (names.length <= 1) return names[0] ?? "";
+  return `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+}
+
+/**
+ * A Heat's time and place, like "Sunday, Feb 22 · 7:00 PM ET · Main room";
+ * just the location when only that is set; "" when neither is.
+ */
+export function formatHeatWhen(
+  heat: Pick<Heat, "dayId" | "startTime" | "location">,
+  days: { id: string; date: string }[],
+): string {
+  const day = heat.dayId ? days.find((d) => d.id === heat.dayId) : undefined;
+  const parts: string[] = [];
+  if (day && heat.startTime) {
+    parts.push(formatDayHeading(day.date));
+    parts.push(`${formatEtTime(heat.startTime)} ET`);
+  }
+  if (heat.location) parts.push(heat.location);
+  return parts.join(" · ");
 }
 
 export type BracketRound = { round: number; name: string; heats: Heat[] };

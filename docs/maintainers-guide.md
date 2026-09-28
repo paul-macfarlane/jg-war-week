@@ -169,7 +169,7 @@ Organizer screens cover it. Sign in and go to `/admin`:
   their Hosts), Schedule and FAQ.
 - **`/admin/organizers`**: the Organizer list (see
   [Add an Organizer or assign Hosts](#add-an-organizer-or-assign-hosts)).
-- **`/admin/points`**, **`/admin/standings`** (Run the Finale: "Open Finale" at closing ceremonies),
+- **`/admin/points`**, **`/admin/standings`** (Run the Finale: "Open Finale" at closing ceremonies, and "Finale: <Competition>" for each finalized Bracket),
   **`/admin/announcements`**, **`/admin/awards`**.
 
 To start next year's edition in the app:
@@ -234,6 +234,19 @@ screen (`/admin/brackets/<id>`) and Finalize to write its placings as Points
 Entries. No code needed for any of that. While a Bracket is finalized, its
 Competition's scoring and Placement Points can't change ("Un-finalize the
 Bracket first."); its name and description still can.
+
+On the day: the builder's **By Standings** button draws Seed Positions
+from the current Standings (ties at random) instead of Generate's random
+draw. On the results screen, each Heat's **Time & place** button sets its
+Day, start time (ET) and location; Hosts can do it for their own
+Competitions. A timed Heat shows its when-line ("Sunday, Feb 22 · 7:00 PM
+ET · Main room") on its card and in the Participant's "Your next Heat", and
+joins the home page's Now/Next once its Entrants are known. A re-draw
+clears every time, so the builder asks first. Once finalized, the Bracket
+has its own **Bracket Finale** at `/<edition>/finale/<competitionId>` for
+the projector, linked from its champion card, the results screen and
+`/admin/standings` ("Finale: <Competition>"). The rules are under "Bracket
+rules", "Schedule display rules" and "Finale rules" in `CONTEXT.md`.
 
 Single elimination is a straight 1v1 knockout. Heats plays several Entrants
 at once: its builder shows a "Heat settings" form for Entrants per Heat and
@@ -353,7 +366,12 @@ README tool list. It must only return what a signed-in Participant sees: no
 emails.
 ```
 
-`/llms.txt` picks the new tool up from `src/mcp/tools.ts`.
+`/llms.txt` picks the new tool up from `src/mcp/tools.ts`. The tools today
+are `get_current_war_week`, `get_leaderboard`, `get_schedule`,
+`get_announcements`, `get_awards`, `get_faq`, `list_history`,
+`get_history` and `get_bracket` (a Competition's Bracket by name, with each
+Heat's time and place). `get_bracket` (`src/mcp/bracket.ts`) is the model
+for a tool that looks something up by name and whitelists what it returns.
 
 ### Add or fix history
 

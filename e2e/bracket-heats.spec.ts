@@ -1,5 +1,4 @@
 import {
-  type Browser,
   type Locator,
   type Page,
   type TestInfo,
@@ -7,9 +6,8 @@ import {
   test,
 } from "@playwright/test";
 
-import { runQuery, xiCompetitionId } from "./db";
-import { E2E_BASE_URL } from "./env";
-import { E2E_PARTICIPANT_EMAIL, asOrganizer, signIn } from "./session";
+import { xiCompetitionId } from "./db";
+import { asOrganizer, participantPageAs } from "./session";
 
 // Settlers of Catan is an individual War Week XI Competition with Placement
 // Points 5 / 3 / 1. None of these eight has a hand-entered Catan Points
@@ -101,33 +99,6 @@ async function recordHeat(
   await expect(page.getByText(`${order[0]} wins ${heat}`)).toBeVisible();
   await expect(sheet).toBeHidden();
   return order;
-}
-
-/** A War Week XI Participant's id, by display name. */
-async function xiParticipantId(displayName: string): Promise<string> {
-  const [row] = await runQuery<{ id: string }>(
-    `select p.id from participant p join war_week w on w.id = p.war_week_id
-     where w.edition = 'xi' and p.display_name = $1`,
-    [displayName],
-  );
-  if (!row)
-    throw new Error(`No War Week XI Participant named "${displayName}"`);
-  return row.id;
-}
-
-/**
- * A signed-in Participant's page, with "Which one is you?" already picked
- * as `displayName` (XI's Participants have no emails to link by).
- */
-async function participantPageAs(browser: Browser, displayName: string) {
-  const participantId = await xiParticipantId(displayName);
-  const context = await browser.newContext({ baseURL: E2E_BASE_URL });
-  await signIn(context, E2E_PARTICIPANT_EMAIL);
-  await context.addInitScript(
-    ([key, id]) => window.localStorage.setItem(key, id),
-    ["ww:you:xi", participantId] as const,
-  );
-  return { context, page: await context.newPage() };
 }
 
 test("a Heats Bracket is built, run and finalized into Points Entries", async ({

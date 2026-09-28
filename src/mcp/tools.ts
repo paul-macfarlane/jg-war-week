@@ -44,4 +44,9 @@ export const MCP_TOOLS = {
     description:
       "Returns one past War Week by year: Story Theme, dates, Teams and colors, the stored winner, Awards with recipients, highlights and the original wiki link. A year not in the Archive returns found: false.",
   },
+  get_bracket: {
+    title: "Get Bracket",
+    description:
+      "Returns a Competition's Bracket by name: Entrants by Seed Position, each Round's Heats with status, time and place, and the champion once finalized. A Competition run by points instead returns bracket: null; an unknown Competition returns found: false.",
+  },
 } satisfies Record<string, { title: string; description: string }>;

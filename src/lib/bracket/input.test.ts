@@ -84,6 +84,20 @@ describe("Bracket action input", () => {
     ).toEqual({ ok: false, error: "Scores are at most 40 characters." });
   });
 
+  it("accepts a Generate with seeding, and defaults it to nothing", () => {
+    expect(parseGenerateInput({ seeding: "standings" })).toEqual({
+      ok: true,
+      value: { seeding: "standings" },
+    });
+    expect(parseGenerateInput({})).toEqual({ ok: true, value: {} });
+  });
+
+  it("refuses an unknown seeding", () => {
+    expect(parseGenerateInput({ seeding: "drag" })).toMatchObject({
+      ok: false,
+    });
+  });
+
   it("refuses Entrants that aren't row ids", () => {
     expect(parseEntrantsInput({ targetIds: [a, "nope"] })).toEqual({
       ok: false,

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Finale } from "@/components/finale";
 import { getStandings } from "@/queries/standings";
 
-import { getWarWeekForEdition } from "../war-week";
+import { getWarWeekForEdition } from "../../war-week";
 
 export const dynamic = "force-dynamic";
 

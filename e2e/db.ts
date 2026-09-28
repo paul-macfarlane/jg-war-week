@@ -17,10 +17,16 @@ export async function runQuery<T extends Record<string, unknown>>(
   }
 }
 
-/** Deletes every e2e user (their sessions cascade) and Organizer row. */
+/**
+ * Deletes every e2e user (their sessions cascade), Organizer row and Host
+ * row (the e2e Host's `competition_host` rows).
+ */
 export async function deleteE2eUsers() {
   await runQuery(`delete from "user" where email like $1`, [E2E_EMAIL_PATTERN]);
   await runQuery(`delete from organizer where email like $1`, [
+    E2E_EMAIL_PATTERN,
+  ]);
+  await runQuery(`delete from competition_host where email like $1`, [
     E2E_EMAIL_PATTERN,
   ]);
 }
@@ -33,5 +39,17 @@ export async function xiCompetitionId(name: string): Promise<string> {
     [name],
   );
   if (!row) throw new Error(`No War Week XI Competition named "${name}"`);
+  return row.id;
+}
+
+/** A War Week XI Participant's id, by display name. */
+export async function xiParticipantId(displayName: string): Promise<string> {
+  const [row] = await runQuery<{ id: string }>(
+    `select p.id from participant p join war_week w on w.id = p.war_week_id
+     where w.edition = 'xi' and p.display_name = $1`,
+    [displayName],
+  );
+  if (!row)
+    throw new Error(`No War Week XI Participant named "${displayName}"`);
   return row.id;
 }

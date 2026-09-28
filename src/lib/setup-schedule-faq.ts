@@ -16,7 +16,7 @@ import { optional, parseWith, trimmed } from "@/lib/setup";
 
 const httpsUrl = z.url({ protocol: /^https$/ }).max(500);
 
-const clockTime = z
+export const clockTime = z
   .string()
   .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "must be a 24-hour HH:MM time");
 

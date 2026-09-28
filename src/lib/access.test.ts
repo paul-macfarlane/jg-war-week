@@ -200,6 +200,7 @@ describe("can: a Competition's setup and Bracket", () => {
           "bracket.entrants",
           "bracket.generate",
           "bracket.heat-result",
+          "bracket.heat-schedule",
           "bracket.finalize",
           "bracket.unfinalize",
         ] as WarWeekAction[]

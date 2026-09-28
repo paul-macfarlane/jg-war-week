@@ -9,10 +9,11 @@ import { HomeStandings } from "@/components/standings";
 import { Button } from "@/components/ui/button";
 import { WarWeekHero } from "@/components/war-week-hero";
 import { isArchived } from "@/lib/archive";
-import { computeNowNext, resolveClock } from "@/lib/schedule";
+import { heatEntries } from "@/lib/bracket/now-next";
+import { computeNowNext, resolveClock, withHeats } from "@/lib/schedule";
 import { getPinnedAnnouncementCard } from "@/queries/announcements";
 import { getArchiveDetail } from "@/queries/archive";
-import { getSchedule } from "@/queries/schedule";
+import { getSchedule, getTimedHeats } from "@/queries/schedule";
 import { getStandings } from "@/queries/standings";
 
 import { getWarWeekForEdition } from "../war-week";
@@ -32,12 +33,18 @@ export default async function EditionHomePage({
     return <ArchiveDetailView detail={await getArchiveDetail(warWeek)} />;
   }
 
-  const [standings, schedule, pinnedAnnouncement] = await Promise.all([
-    getStandings(warWeek),
-    getSchedule(warWeek.id),
-    getPinnedAnnouncementCard(warWeek),
-  ]);
-  const nowNext = computeNowNext(schedule, resolveClock(at, new Date()));
+  const [standings, schedule, pinnedAnnouncement, timedHeats] =
+    await Promise.all([
+      getStandings(warWeek),
+      getSchedule(warWeek.id),
+      getPinnedAnnouncementCard(warWeek),
+      getTimedHeats(warWeek),
+    ]);
+  // Timed Heats join Now/Next only, not the full schedule.
+  const nowNext = computeNowNext(
+    withHeats(schedule, heatEntries(timedHeats)),
+    resolveClock(at, new Date()),
+  );
 
   return (
     <main className="mx-auto flex max-w-md flex-col md:max-w-3xl md:py-8">

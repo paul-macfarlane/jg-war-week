@@ -1,165 +1,3 @@
-# pnpm format:check && pnpm gate — final, commit cf80839
-Environment: local Postgres 17 (docker compose, port 2345), DATABASE_DRIVER=pg, Chromium. EXIT 0.
-The 'ELIFECYCLE … exit code 143' line is smoke stopping its own server; the same line is in Epic D's gate log on staging.
-
-
-> war-weeker@0.1.0 format:check /Users/paulmacfarlane/Code/war-weeker
-> prettier --check .
-
-Checking formatting...
-All matched files use Prettier code style!
-
-> war-weeker@0.1.0 gate /Users/paulmacfarlane/Code/war-weeker
-> pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm smoke && pnpm e2e
-
-
-> war-weeker@0.1.0 typecheck /Users/paulmacfarlane/Code/war-weeker
-> next typegen && tsc --noEmit
-
-Generating route types...
-✓ Types generated successfully
-
-> war-weeker@0.1.0 lint /Users/paulmacfarlane/Code/war-weeker
-> eslint .
-
-
-/Users/paulmacfarlane/Code/war-weeker/src/app/sign-in/page.tsx
-  49:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
-  60:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
-
-/Users/paulmacfarlane/Code/war-weeker/src/components/about-feature-grid.tsx
-  20:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
-
-/Users/paulmacfarlane/Code/war-weeker/src/components/about-finale-demo.tsx
-  28:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
-
-/Users/paulmacfarlane/Code/war-weeker/src/components/roster.tsx
-  76:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
-
-/Users/paulmacfarlane/Code/war-weeker/src/components/war-week-hero.tsx
-  15:9   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
-  29:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
-
-✖ 7 problems (0 errors, 7 warnings)
-
-
-> war-weeker@0.1.0 test /Users/paulmacfarlane/Code/war-weeker
-> vitest run
-
-(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
-  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
-Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
-
- RUN  v4.1.11 /Users/paulmacfarlane/Code/war-weeker
-
-(node:80807) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:80814) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:80818) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-
- Test Files  86 passed (86)
-      Tests  2247 passed (2247)
-   Start at  01:22:01
-   Duration  16.36s (transform 4.47s, setup 0ms, import 61.61s, tests 59.14s, environment 9ms)
-
-
-> war-weeker@0.1.0 build /Users/paulmacfarlane/Code/war-weeker
-> next build
-
-▲ Next.js 16.3.6 (Turbopack)
-✓ Running next.config.ts took 73ms
-
-  Creating an optimized production build ...
-✓ Compiled successfully in 1472ms
-  Running TypeScript ...
-  Finished TypeScript in 3.6s ...
-  Collecting page data using 9 workers ...
-2026-09-27T05:22:25.660Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-27T05:22:25.742Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-2026-09-27T05:22:25.743Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-27T05:22:25.772Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-27T05:22:25.803Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-27T05:22:25.841Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-2026-09-27T05:22:25.855Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-2026-09-27T05:22:25.871Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-27T05:22:26.019Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-27T05:22:26.041Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-  Generating static pages using 9 workers (0/8) ...
-  Generating static pages using 9 workers (2/8) 
-  Generating static pages using 9 workers (4/8) 
-  Generating static pages using 9 workers (6/8) 
-✓ Generating static pages using 9 workers (8/8) in 182ms
-  Finalizing page optimization ...
-
-Route (app)
-┌ ƒ /
-├ ○ /_not-found
-├ ƒ /[edition]
-├ ƒ /[edition]/awards
-├ ƒ /[edition]/competitions
-├ ƒ /[edition]/competitions/[id]
-├ ƒ /[edition]/faq
-├ ƒ /[edition]/finale
-├ ƒ /[edition]/leaderboard
-├ ƒ /[edition]/more
-├ ƒ /[edition]/news
-├ ƒ /[edition]/schedule
-├ ƒ /[edition]/teams
-├ ○ /about
-├ ƒ /admin
-├ ƒ /admin/announcements
-├ ƒ /admin/announcements/[id]
-├ ƒ /admin/announcements/new
-├ ƒ /admin/awards
-├ ƒ /admin/awards/[id]
-├ ƒ /admin/awards/new
-├ ƒ /admin/brackets/[id]
-├ ƒ /admin/guide
-├ ƒ /admin/organizers
-├ ƒ /admin/points
-├ ƒ /admin/points/[id]
-├ ƒ /admin/setup
-├ ƒ /admin/setup/competitions
-├ ƒ /admin/setup/competitions/[id]/bracket
-├ ƒ /admin/setup/days
-├ ƒ /admin/setup/faq
-├ ƒ /admin/setup/faq/[id]
-├ ƒ /admin/setup/faq/new
-├ ƒ /admin/setup/next
-├ ƒ /admin/setup/schedule
-├ ƒ /admin/setup/schedule/[id]
-├ ƒ /admin/setup/schedule/new
-├ ƒ /admin/setup/teams
-├ ƒ /admin/setup/war-week
-├ ƒ /admin/standings
-├ ƒ /api/auth/[...all]
-├ ƒ /api/mcp
-├ ƒ /history
-├ ƒ /install
-├ ƒ /llms.txt
-├ ○ /manifest.webmanifest
-├ ○ /privacy
-├ ƒ /sign-in
-└ ○ /terms
-
-
-ƒ Proxy (Middleware)
-
-○  (Static)   prerendered as static content
-ƒ  (Dynamic)  server-rendered on demand
-
 
 > war-weeker@0.1.0 smoke /Users/paulmacfarlane/Code/war-weeker
 > tsx scripts/smoke/index.ts
@@ -222,9 +60,9 @@ ok - the XI seed loads 5/3/1 Placement Points for Catan and none for Beast Mode
 
 ▲ Next.js 16.3.6
 - Local:         http://localhost:3100
-- Network:       http://192.168.1.186:3100
-✓ Ready in 87ms
-✓ Running next.config.ts took 20ms
+- Network:       http://192.168.1.184:3100
+✓ Ready in 117ms
+✓ Running next.config.ts took 22ms
 ok - server ready
 ok - signed-in GET / redirects to /xi
 ok - GET /xi renders War Week XI with the Team Standings
@@ -298,7 +136,7 @@ ok - GET /admin/guide as a signed-in non-Organizer shows the refusal
 ok - GET /admin/points as an Organizer shows the form with every Competition, the ledger with entered-by, and the current standings (16 unscheduled Competitions offered)
 ok - GET /admin/points as a non-Organizer shows the refusal
 ok - createPointsEntry rejects a signed-in JG user off the allowlist
-(node:81136) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:45526) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
 ok - createPointsEntry rejects a Participant in a team Competition and a Team in an individual one
 ok - createPointsEntry as an Organizer saves an over-max decimal entry with entered-by
@@ -385,19 +223,20 @@ ok - createAward as a Participant is refused (Award) with 'Only an Organizer can
 ok - createAnnouncement as a Participant is refused (Announcement) with 'Only an Organizer or a Host of this War Week can post Announcements.'
 ok - createPointsEntry as a Participant is refused (Points Entry) with 'You're not a Host of that Competition.'
 ok - generateBracket as a Participant is refused (Bracket) with 'You're not a Host of that Competition.'
+ok - setHeatSchedule as a Participant is refused (Heat time) with 'You're not a Host of that Competition.'
 ok - startWarWeek as a Participant is refused (lifecycle) with 'Only an Organizer can start a War Week.'
 ok - removeOrganizer as a Participant is refused (Organizer list) with 'Only an Organizer can remove an Organizer.'
 ok - the Participant's refused calls wrote nothing
 ok - createFaqItem posting XI's warWeekId with admin_edition=x in the cookie writes to XI and leaves X unchanged
 ok - lifecycle: create XII, end XI with a Winner, start XII; an Organizer corrects XI but a Participant can't reopen it; then restore
 ⨯ Error: Failed query: select "id", "war_week_id", "question", "answer", "sort_order", "created_at", "updated_at" from "faq_item" where "faq_item"."war_week_id" = $1 order by "faq_item"."sort_order" asc, "faq_item"."id" asc
-params: f3d09157-db25-4892-bf98-b6e4013643d1
+params: d4c9a809-33f5-4fbd-a440-e7be06ee612d
     at o.queryWithCache (.next/server/chunks/ssr/_1pxfdpz._.js:25:37181)
     at async (.next/server/chunks/ssr/_1pxfdpz._.js:18:6014)
     at async k (.next/server/chunks/ssr/[root-of-the-server]__1w3cl-j._.js:1:5635) {
   query: 'select "id", "war_week_id", "question", "answer", "sort_order", "created_at", "updated_at" from "faq_item" where "faq_item"."war_week_id" = $1 order by "faq_item"."sort_order" asc, "faq_item"."id" asc',
-  params: [ 'f3d09157-db25-4892-bf98-b6e4013643d1' ],
-  digest: '3891036799',
+  params: [ 'd4c9a809-33f5-4fbd-a440-e7be06ee612d' ],
+  digest: '3606784575',
   [cause]: error: relation "faq_item" does not exist
       at async (.next/server/chunks/ssr/_1pxfdpz._.js:18:6229)
       at async o.queryWithCache (.next/server/chunks/ssr/_1pxfdpz._.js:25:37156)
@@ -425,67 +264,3 @@ params: f3d09157-db25-4892-bf98-b6e4013643d1
   /xi/faq with faq_item missing answered 200
 ok - GET /xi/faq with its table missing streams the edition error boundary (ErrorScreen copy), not Next's default error page
  ELIFECYCLE  Command failed with exit code 143.
-
-> war-weeker@0.1.0 e2e /Users/paulmacfarlane/Code/war-weeker
-> playwright test
-
-
-> war-weeker@0.1.0 db:migrate /Users/paulmacfarlane/Code/war-weeker
-> drizzle-kit migrate
-
-No config path provided, using default 'drizzle.config.ts'
-Reading config file '/Users/paulmacfarlane/Code/war-weeker/drizzle.config.ts'
-Using 'pg' driver for database querying
-[⣷] applying migrations...[2K[1G[✓] migrations applied successfully!
-> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/war-weeker
-> tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xi.json
-
-Loaded War Week i (reset)
-Loaded War Week ii (reset)
-Loaded War Week iii (reset)
-Loaded War Week iv (reset)
-Loaded War Week ix (reset)
-Loaded War Week v (reset)
-Loaded War Week vi (reset)
-Loaded War Week vii (reset)
-Loaded War Week viii (reset)
-Loaded War Week x (reset)
-Loaded War Week xi (reset)
-
-Running 23 tests using 1 worker
-
-[WebServer] ⨯ Error: The destination stream closed early.
-[WebServer]     at ignore-listed frames {
-[WebServer]   digest: '2687744626'
-[WebServer] }
-  ✓   1 [chromium] › e2e/archive.spec.ts:23:5 › the Archive lists every past War Week (479ms)
-  ✓   2 [chromium] › e2e/archive.spec.ts:44:7 › past edition /i renders (303ms)
-[WebServer] ⨯ Error: The destination stream closed early.
-[WebServer]     at ignore-listed frames {
-[WebServer]   digest: '2687744626'
-[WebServer] }
-  ✓   3 [chromium] › e2e/archive.spec.ts:44:7 › past edition /ii renders (235ms)
-  ✓   4 [chromium] › e2e/archive.spec.ts:44:7 › past edition /iii renders (244ms)
-  ✓   5 [chromium] › e2e/archive.spec.ts:44:7 › past edition /iv renders (295ms)
-  ✓   6 [chromium] › e2e/archive.spec.ts:44:7 › past edition /ix renders (277ms)
-  ✓   7 [chromium] › e2e/archive.spec.ts:44:7 › past edition /v renders (248ms)
-  ✓   8 [chromium] › e2e/archive.spec.ts:44:7 › past edition /vi renders (267ms)
-  ✓   9 [chromium] › e2e/archive.spec.ts:44:7 › past edition /vii renders (311ms)
-  ✓  10 [chromium] › e2e/archive.spec.ts:44:7 › past edition /viii renders (276ms)
-  ✓  11 [chromium] › e2e/archive.spec.ts:44:7 › past edition /x renders (254ms)
-  ✓  12 [chromium] › e2e/bracket-heats.spec.ts:133:5 › a Heats Bracket is built, run and finalized into Points Entries (6.3s)
-  ✓  13 [chromium] › e2e/bracket.spec.ts:35:5 › a Bracket is built, run and finalized into Points Entries (15.5s)
-  ✓  14 [chromium] › e2e/finale.spec.ts:5:5 › the Finale plays from Start and ends on first place (3.3s)
-  ✓  15 [chromium] › e2e/forms.spec.ts:6:7 › forms › a Points Entry refused on the server shows under Points and focuses it (866ms)
-  ✓  16 [chromium] › e2e/forms.spec.ts:45:7 › forms › the settings form refused on the server shows under Slack URL and focuses it (517ms)
-[WebServer] (node:81223) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-[WebServer] (Use `node --trace-deprecation ...` to show where the warning was created)
-  ✓  17 [chromium] › e2e/points-entry.spec.ts:6:5 › an Organizer's Points Entry raises the Team's total on the leaderboard (1.1s)
-  ✓  18 [chromium] › e2e/sign-in.spec.ts:5:5 › an anonymous visit to /xi lands on /sign-in (212ms)
-  ✓  19 [chromium] › e2e/sign-in.spec.ts:20:5 › a session with a non-JG email is refused /xi (241ms)
-  ✓  20 [chromium] › e2e/sign-in.spec.ts:38:5 › a JG session opens /xi (1.8s)
-  ✓  21 [chromium] › e2e/theme.spec.ts:16:5 › a dark Appearance Theme makes the whole page dark, scrollbar included (249ms)
-  ✓  22 [chromium] › e2e/theme.spec.ts:25:5 › a light Appearance Theme keeps the page light (187ms)
-  ✓  23 [chromium] › e2e/theme.spec.ts:31:5 › the Archive stays light though its cards wear dark themes (436ms)
-
-  23 passed (46.9s)

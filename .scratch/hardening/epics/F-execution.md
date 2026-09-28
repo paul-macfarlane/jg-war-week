@@ -638,8 +638,22 @@ now records Paul's acceptance (M4).
 
 ## [PROGRESS]
 
-(none yet)
+- 2026-09-27 Wave 1: D1 (sonnet; the first worker was interrupted and a
+  fresh one finished from its WIP) accepted as `6908906`. Migration proof in
+  `test-results/hardening-f-migrate/`.
+- 2026-09-27 Wave 2: D2 (sonnet), D3 (opus) and D4 (sonnet) ran in parallel
+  worktrees under `.claude/worktrees/hardening-f/war-weeker/` and were
+  cherry-picked in the order D4 `2bf8b40`, D3 `9c50a26`, D2 `af5df62`. The
+  orchestrator fixed D2's confirm copy to say "1 Heat time" for a single
+  timed Heat. No conflicts. At `af5df62`, typecheck and lint are clean, 2307
+  tests pass, and `pnpm smoke` passes (179 ok) on the local DB at 0012,
+  including `get_bracket` over the bearer token and the `setHeatSchedule`
+  refusals (`test-results/hardening-f-gate/wave2-smoke.txt`).
+  Worker choices the screen accepted: a "No Day" option and a Clear button
+  in the Time & place Sheet (Clear posts an empty form); the admin results
+  page now refreshes live; the builder's confirm title drops "Clear every
+  Heat Result and" when only times are cleared.
 
 ## [CLOSEOUT]
 
-(none yet)
+See the epic file's `[AI CODE REVIEW]` and `[CLOSEOUT]`. PR https://github.com/paul-macfarlane/jg-war-week/pull/88. Review fixes `fe6bf6d`; final gate on `fe6bf6d`.

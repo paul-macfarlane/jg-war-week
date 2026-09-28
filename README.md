@@ -79,8 +79,9 @@ build and local database: it refuses a non-local `DATABASE_URL` and a missing
 `.next`, applies migrations, reloads every seed with `--reset`, starts the app
 with `pnpm start -p 3200`, and signs its own JG sessions (no Google). The flows:
 anonymous and non-JG visitors are sent to `/sign-in`; an Organizer's Points
-Entry shows on `/xi/leaderboard`; a Bracket is built, recorded, advanced and
-finalized into Points Entries; a Heats Bracket is run to Points Entries,
+Entry shows on `/xi/leaderboard`; a Bracket is built, timed by its Host
+(shown in "Your next Heat" and Now/Next), recorded, advanced, finalized into
+Points Entries and played as a Bracket Finale (also under reduced motion); a Heats Bracket is run to Points Entries,
 with the End War Week warning; the Finale plays to first place; `/history`
 and every past edition render; server-refused form fields show their error
 and take focus; an edition's Appearance Theme darkens the whole page while
@@ -97,8 +98,8 @@ lint, vitest, production build, the smoke test, then the Playwright flows —
 The app exposes a read-only Model Context Protocol server over Streamable
 HTTP at `/api/mcp` (production: `https://jg-war-week.vercel.app/api/mcp`).
 Its tools are `get_current_war_week`, `get_leaderboard`, `get_schedule`,
-`get_announcements`, `get_awards`, `get_faq`, `list_history` and
-`get_history`. Every tool is read-only and returns only what a signed-in
+`get_announcements`, `get_awards`, `get_faq`, `list_history`,
+`get_history` and `get_bracket`. Every tool is read-only and returns only what a signed-in
 Participant sees, and no tool returns an email
 or the Organizer list (Announcement authors come back as the handle
 before the `@`).

@@ -31,13 +31,14 @@ import {
   entrantsPerHeatLabel,
   heatsConfig as heatsConfigOf,
 } from "@/lib/bracket/config";
-import { isBye, validateConfig } from "@/lib/bracket/formats";
+import { hasResults, isBye, validateConfig } from "@/lib/bracket/formats";
 import { type Bracket, HAS_RESULTS_ERROR } from "@/lib/bracket/types";
 import {
   type Format,
   formatLabel,
   groupRounds,
   heatName,
+  isTimed,
 } from "@/lib/bracket/view";
 import { COMPETITION_FORMATS } from "@/lib/enums";
 import type { BracketEntrant } from "@/queries/brackets";
@@ -54,7 +55,45 @@ type ForceableAction = {
   run: (force: boolean) => Promise<BracketActionResult>;
   success: string;
   title: string;
+  /** Overrides the confirm's body text; defaults to `HAS_RESULTS_ERROR`. */
+  description?: string;
+  /** Overrides the confirm button's label; defaults to "Clear results". */
+  confirmLabel?: string;
 };
+
+/** The builder's confirm copy for a re-draw that would clear timed Heats. */
+function timedHeatsMessage(count: number, hasExistingResults: boolean): string {
+  const times = count === 1 ? "1 Heat time" : `${count} Heat times`;
+  return hasExistingResults
+    ? `This clears every Heat Result and ${times}.`
+    : `This clears ${times}.`;
+}
+
+/** Drops the "Clear every Heat Result and " prefix when there are no results. */
+function confirmTitle(title: string, hasExistingResults: boolean): string {
+  if (hasExistingResults) return title;
+  const rest = title.replace(/^Clear every Heat Result and /, "");
+  return rest.charAt(0).toUpperCase() + rest.slice(1);
+}
+
+/**
+ * The confirm's title, description and button label for a write that would
+ * clear timed Heats (and, once there are Heat Results, clear those too):
+ * null when there's nothing timed to warn about. Pure, so it's unit-tested
+ * without rendering the builder.
+ */
+export function forceableConfirmCopy(
+  timedHeatsCount: number,
+  hasExistingResults: boolean,
+  title: string,
+): { title: string; description: string; confirmLabel: string } | null {
+  if (timedHeatsCount === 0) return null;
+  return {
+    title: confirmTitle(title, hasExistingResults),
+    description: timedHeatsMessage(timedHeatsCount, hasExistingResults),
+    confirmLabel: hasExistingResults ? "Clear results" : "Clear times",
+  };
+}
 
 /**
  * The Heats Format's settings: how many Entrants play in each Heat and how
@@ -67,12 +106,17 @@ function HeatSettingsForm({
   config,
   entrantCount,
   disabled,
+  timedHeatsCount,
+  hasExistingResults,
   onRefused,
 }: {
   competitionId: string;
   config: HeatsConfig;
   entrantCount: number;
   disabled: boolean;
+  /** How many of the Bracket's Heats are timed; a re-draw would clear them. */
+  timedHeatsCount: number;
+  hasExistingResults: boolean;
   /** A save refused for clearing Heat Results: confirm, then force it. */
   onRefused: (action: ForceableAction) => void;
 }) {
@@ -95,16 +139,26 @@ function HeatSettingsForm({
           config: next,
           force,
         });
+      const title = "Clear every Heat Result and save the Heat settings?";
+      // Saving Heat settings rebuilds the Heats, clearing any set times: ask
+      // first, whether or not there are Heat Results too (decision 3). An
+      // unchanged save doesn't touch the Heats, so it skips the confirm.
+      const settingsChange =
+        next.entrantsPerHeat !== config.entrantsPerHeat ||
+        next.advancePerHeat !== config.advancePerHeat;
+      const copy = settingsChange
+        ? forceableConfirmCopy(timedHeatsCount, hasExistingResults, title)
+        : null;
+      if (copy) {
+        onRefused({ run, success: "Heat settings saved", ...copy });
+        return _previous ?? { ok: true };
+      }
       const result = await run(false);
       if (result.ok) {
         toast.success("Heat settings saved");
         router.refresh();
       } else if (result.error === HAS_RESULTS_ERROR) {
-        onRefused({
-          run,
-          success: "Heat settings saved",
-          title: "Clear every Heat Result and save the Heat settings?",
-        });
+        onRefused({ run, success: "Heat settings saved", title });
       } else {
         toast.error(result.error);
       }
@@ -238,6 +292,8 @@ export function BracketBuilder({
   const dirty = !sameSet(selected, saved);
   const locked = competition.finalized;
   const generated = bracket.heats.length > 0;
+  const timedHeatsCount = bracket.heats.filter(isTimed).length;
+  const existingResults = hasResults(bracket);
 
   function runAction(action: ForceableAction, force = false) {
     startTransition(async () => {
@@ -255,6 +311,25 @@ export function BracketBuilder({
       setConfirm(null);
       toast.error(result.error);
     });
+  }
+
+  /**
+   * Generate / Re-roll / By Standings / Save Entrants rebuild the Heats, so
+   * they clear any set Heat times: ask first when there are any, whether or
+   * not the Bracket also has Heat Results (decision 3). Without a timed
+   * Heat, this runs the write directly, as today.
+   */
+  function startAction(action: ForceableAction) {
+    const copy = forceableConfirmCopy(
+      timedHeatsCount,
+      existingResults,
+      action.title,
+    );
+    if (copy) {
+      setConfirm({ ...action, ...copy });
+      return;
+    }
+    runAction(action);
   }
 
   function changeFormat(format: string) {
@@ -313,6 +388,8 @@ export function BracketBuilder({
           config={heatsConfig}
           entrantCount={entrants.length}
           disabled={pending || locked}
+          timedHeatsCount={timedHeatsCount}
+          hasExistingResults={existingResults}
           onRefused={setConfirm}
         />
       )}
@@ -365,7 +442,7 @@ export function BracketBuilder({
                 className="min-h-11 w-fit"
                 disabled={pending || locked || !dirty}
                 onClick={() =>
-                  runAction({
+                  startAction({
                     run: (force) =>
                       replaceEntrants(competition.id, {
                         targetIds: selected,
@@ -384,7 +461,8 @@ export function BracketBuilder({
           <section className="flex flex-col gap-3" aria-label="Seed Positions">
             <h2 className="text-lg font-semibold">Seed Positions</h2>
             <p className="text-foreground/70 text-sm">
-              Random. Re-roll for a new draw; top Seed Positions get any byes.
+              Random, or by the current Standings (ties drawn at random). Top
+              Seed Positions get any byes.
             </p>
             {entrants.length === 0 ? (
               <p className="text-foreground/70 text-sm">
@@ -415,24 +493,47 @@ export function BracketBuilder({
                 Save the Entrants before generating.
               </p>
             )}
-            <Button
-              type="button"
-              size="lg"
-              variant={generated ? "outline" : "default"}
-              className="min-h-11 w-fit"
-              disabled={pending || locked || dirty || entrants.length < 2}
-              onClick={() =>
-                runAction({
-                  run: (force) => generateBracket(competition.id, { force }),
-                  success: generated
-                    ? "Bracket re-rolled"
-                    : "Bracket generated",
-                  title: "Clear every Heat Result and draw again?",
-                })
-              }
-            >
-              {generated ? "Re-roll" : "Generate"}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="lg"
+                variant={generated ? "outline" : "default"}
+                className="min-h-11 w-fit"
+                disabled={pending || locked || dirty || entrants.length < 2}
+                onClick={() =>
+                  startAction({
+                    run: (force) => generateBracket(competition.id, { force }),
+                    success: generated
+                      ? "Bracket re-rolled"
+                      : "Bracket generated",
+                    title: "Clear every Heat Result and draw again?",
+                  })
+                }
+              >
+                {generated ? "Re-roll" : "Generate"}
+              </Button>
+              <Button
+                type="button"
+                size="lg"
+                variant="outline"
+                className="min-h-11 w-fit"
+                disabled={pending || locked || dirty || entrants.length < 2}
+                onClick={() =>
+                  startAction({
+                    run: (force) =>
+                      generateBracket(competition.id, {
+                        seeding: "standings",
+                        force,
+                      }),
+                    success: "Seed Positions drawn by Standings",
+                    title:
+                      "Clear every Heat Result and draw Seed Positions by Standings?",
+                  })
+                }
+              >
+                By Standings
+              </Button>
+            </div>
           </section>
 
           {firstRound && (
@@ -479,8 +580,8 @@ export function BracketBuilder({
           if (!open) setConfirm(null);
         }}
         title={confirm?.title ?? ""}
-        description={HAS_RESULTS_ERROR}
-        confirmLabel="Clear results"
+        description={confirm?.description ?? HAS_RESULTS_ERROR}
+        confirmLabel={confirm?.confirmLabel ?? "Clear results"}
         pending={pending}
         onConfirm={() => confirm && runAction(confirm, true)}
       />

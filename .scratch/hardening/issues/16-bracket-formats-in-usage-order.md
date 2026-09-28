@@ -49,3 +49,5 @@
 - **Cut:** T7 round robin with Group tables and ties (2 past uses), the Archive bracket view from T14 (no past Brackets to show), and drag seeding from W2 (deferred in the brackets spec). None has a named need.
 - **Grouped:** `../epics/F-brackets-on-the-day.md` takes T13 Heat times and Now/Next, T14 live refresh and MCP `get_bracket`, the Finale for a Bracket, and seeding by Standings. `../epics/G-squads-and-self-report.md` takes T11 Squads and T12 self-report (with proposed decisions that replace the brackets spec's stories 19–21), together with tickets 18 and 19.
 - **Left out of both:** T8 double elimination (build only on request; a new ticket if someone asks) and the Slack champion post (waits on Slack posting, ticket 17). After Epic G this ticket has nothing else open and closes.
+
+**[PROGRESS] 2026-09-27 (Epic F, PR https://github.com/paul-macfarlane/jg-war-week/pull/88):** delivered T13 Heat time and place with Now/Next (stories 13, 22, 24), T14's live refresh (story 25) and MCP `get_bracket` (story 26), the Finale for a Bracket, and W2 seeding by Standings (story 9, no drag). Still open here: Epic G (T11 Squads, T12 self-report).

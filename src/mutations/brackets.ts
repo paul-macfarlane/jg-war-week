@@ -5,12 +5,14 @@ import { DBOrTx, db } from "@/db";
 import {
   type Competition,
   competition,
+  day,
   entrant,
   heat,
   heatEntrant,
   participant,
   pointsEntry,
   team,
+  warWeek,
 } from "@/db/schema";
 import { type HeatsConfig, configOf } from "@/lib/bracket/config";
 import {
@@ -18,12 +20,17 @@ import {
   finalPlacings,
   generate,
   hasResults,
+  isBye,
   isComplete,
   resetByResult,
   validateConfig,
 } from "@/lib/bracket/formats";
+import { type HeatScheduleValues } from "@/lib/bracket/heat-schedule";
 import { pointsFor } from "@/lib/bracket/points";
-import { shuffleSeedPositions } from "@/lib/bracket/seeding";
+import {
+  shuffleSeedPositions,
+  standingsSeedPositions,
+} from "@/lib/bracket/seeding";
 import {
   type Bracket,
   BracketError,
@@ -34,9 +41,12 @@ import {
 import { inUseError } from "@/lib/setup";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 import { getBracketEntrants, loadBracket } from "@/queries/brackets";
+import { getStandings } from "@/queries/standings";
 
 const COMPETITION_NOT_FOUND = "That Competition no longer exists.";
 const HEAT_NOT_FOUND = "That Heat no longer exists.";
+const DAY_NOT_FOUND = "That Day no longer exists.";
+const BYE_NOT_PLAYED = "A bye isn't played.";
 const NOT_A_BRACKET = "This Competition isn't run as a Bracket.";
 const FINALIZED = "Un-finalize the Bracket before changing it.";
 /** The note on every Points Entry a finalized Bracket generates. */
@@ -140,6 +150,10 @@ async function insertBracket(
       slotCount: h.slots.length,
       winnerToHeatId: h.winnerTo?.heatId ?? null,
       winnerToSlot: h.winnerTo?.slot ?? null,
+      // A freshly generated Heat is never timed: a re-draw clears times.
+      dayId: h.dayId,
+      startTime: h.startTime,
+      location: h.location,
     })),
   );
   await insertSlots(tx, bracket.heats);
@@ -328,13 +342,18 @@ export async function replaceEntrants(
 }
 
 /**
- * Seeds the Entrants randomly (by `rng`) and builds the Bracket, byes
- * included. Once a Heat has a Heat Result, regenerating needs `force`,
- * which clears every result.
+ * Draws the Seed Positions — randomly (by `rng`), or by the current
+ * Standings — and builds the Bracket, byes included. Once a Heat has a Heat
+ * Result, regenerating needs `force`, which clears every result.
  */
 export async function generateBracket(
   competitionId: string,
-  options: { rng?: () => number; force?: boolean },
+  options: {
+    rng?: () => number;
+    force?: boolean;
+    /** "random" (default) or "standings"; see `standingsSeedPositions`. */
+    seeding?: "random" | "standings";
+  },
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
@@ -353,10 +372,25 @@ export async function generateBracket(
       return refuse(HAS_RESULTS_ERROR);
     }
 
-    const seeded = shuffleSeedPositions(
-      entrants.map((e) => e.id),
-      options.rng ?? Math.random,
-    );
+    const rng = options.rng ?? Math.random;
+    let seeded: { entrantId: string; seedPosition: number }[];
+    if (options.seeding === "standings") {
+      const [warWeekRow] = await tx
+        .select({ mode: warWeek.mode })
+        .from(warWeek)
+        .where(eq(warWeek.id, ctx.warWeekId))
+        .limit(1);
+      const standings = await getStandings(
+        { id: ctx.warWeekId, mode: warWeekRow!.mode },
+        tx,
+      );
+      seeded = standingsSeedPositions(entrants, standings, found.scoring, rng);
+    } else {
+      seeded = shuffleSeedPositions(
+        entrants.map((e) => e.id),
+        rng,
+      );
+    }
     // Seed Positions are unique per Competition: move them aside first.
     await tx
       .update(entrant)
@@ -421,6 +455,53 @@ export async function recordHeatResult(
     }
     await saveBracket(tx, bracket, next);
     return { ok: true as const, resetHeatIds };
+  });
+}
+
+/**
+ * Sets, or clears, one Heat's Day, start time and location, so "Your next
+ * Heat" and Now/Next can show when and where it plays. A decided Heat may
+ * still be edited (it never shows in Now/Next); a bye is never played, so
+ * it's refused; a Day deleted between the check and the update fails the
+ * foreign key and surfaces as the generic refusal (decision 2).
+ */
+export async function setHeatSchedule(
+  competitionId: string,
+  heatId: string,
+  values: HeatScheduleValues,
+  ctx: MutationContext,
+  dbOrTx: DBOrTx = db,
+): Promise<MutationResult> {
+  return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
+    const found = await lockedCompetition(tx, competitionId, ctx);
+    const refusal = bracketRefusal(found);
+    if (refusal || !isBracketRun(found)) {
+      return refuse(refusal ?? NOT_A_BRACKET);
+    }
+    const bracket = await bracketOf(tx, found);
+    const target = bracket.heats.find((h) => h.id === heatId);
+    if (!target) return refuse(HEAT_NOT_FOUND);
+    if (isBye(bracket, target)) return refuse(BYE_NOT_PLAYED);
+
+    if (values.dayId !== null) {
+      const [foundDay] = await tx
+        .select({ id: day.id })
+        .from(day)
+        .where(and(eq(day.id, values.dayId), eq(day.warWeekId, ctx.warWeekId)))
+        .limit(1);
+      if (!foundDay) return refuse(DAY_NOT_FOUND);
+    }
+
+    await tx
+      .update(heat)
+      .set({
+        dayId: values.dayId,
+        startTime: values.startTime,
+        location: values.location,
+        updatedAt: sql`now()`,
+      })
+      .where(eq(heat.id, heatId));
+    return { ok: true };
   });
 }
 

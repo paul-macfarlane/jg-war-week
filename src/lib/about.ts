@@ -55,8 +55,8 @@ export const ABOUT_FEATURES = [
   {
     slug: "brackets",
     title: "Brackets for knockouts and Heats",
-    text: "Set a Competition's Format to Heats or single elimination, pick its Entrants (Teams or Participants) and Generate a Bracket. Single elimination is straight 1v1; Heats plays several Entrants at once, with the top few of each advancing. Tap in each Heat's result as it's played; Finalize turns the Bracket's placings straight into Points Entries.",
-    alt: "A Participant's Heats Bracket view: Heats grouped by Round, with the champion card at the end.",
+    text: "Set a Competition's Format to Heats or single elimination, pick its Entrants (Teams or Participants) and Generate a Bracket, or draw its Seed Positions By Standings. Single elimination is straight 1v1; Heats plays several Entrants at once, with the top few of each advancing. Give each Heat a Time & place and it shows in Now / Next and in each Entrant's next Heat. Tap in each Heat's result as it's played; Finalize turns the Bracket's placings straight into Points Entries, and the Bracket gets its own Finale for the projector.",
+    alt: "A Participant's Heats Bracket view: the champion card, then Heats grouped by Round, one showing its Day, time and place.",
   },
   {
     slug: "lifecycle",

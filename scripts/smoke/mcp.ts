@@ -48,26 +48,42 @@ export async function mcpRequest(
   };
 }
 
-/** Calls MCP `get_leaderboard` and returns its raw text and parsed payload. */
-export async function mcpLeaderboard(kind: "team" | "individual") {
-  const init = await mcpRequest({
-    jsonrpc: "2.0",
-    id: 1,
-    method: "initialize",
-    params: {
-      protocolVersion: "2025-06-18",
-      capabilities: {},
-      clientInfo: { name: "smoke-test", version: "0.1.0" },
+/**
+ * Calls an MCP tool through a fresh `initialize` and `tools/call`, and
+ * returns its raw text and parsed payload.
+ */
+export async function mcpTool(
+  name: string,
+  args: Record<string, unknown> = {},
+  sessionId?: string,
+  cookie = state.viewerCookie,
+  extraHeaders: Record<string, string> = {},
+) {
+  const init = await mcpRequest(
+    {
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: {
+        protocolVersion: "2025-06-18",
+        capabilities: {},
+        clientInfo: { name: "smoke-test", version: "0.1.0" },
+      },
     },
-  });
+    sessionId,
+    cookie,
+    extraHeaders,
+  );
   const call = await mcpRequest(
     {
       jsonrpc: "2.0",
       id: 2,
       method: "tools/call",
-      params: { name: "get_leaderboard", arguments: { kind } },
+      params: { name, arguments: args },
     },
     init.sessionId,
+    cookie,
+    extraHeaders,
   );
   const text =
     (
@@ -75,6 +91,11 @@ export async function mcpLeaderboard(kind: "team" | "individual") {
         { content?: { type: string; text: string }[] } | undefined
     )?.content?.[0]?.text ?? "";
   return { text, parsed: text ? JSON.parse(text) : undefined };
+}
+
+/** Calls MCP `get_leaderboard` and returns its raw text and parsed payload. */
+export async function mcpLeaderboard(kind: "team" | "individual") {
+  return mcpTool("get_leaderboard", { kind });
 }
 
 /** Without a session, `/api/mcp` takes `Authorization: Bearer <MCP_TOKEN>`. */
