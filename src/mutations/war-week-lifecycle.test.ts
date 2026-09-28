@@ -38,7 +38,6 @@ function warWeekValues(
     logoUrl: "/themes/t/logo.svg",
     bannerUrl: "/themes/t/banner.svg",
     wikiUrl: "https://example.com/wiki",
-    organizerEmails: ["lead@jahnelgroup.com", "other@jahnelgroup.com"],
     ...overrides,
   };
 }
@@ -401,8 +400,6 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
         fontPreset: "serif",
         logoUrl: "/themes/t/logo.svg",
         bannerUrl: "/themes/t/banner.svg",
-        // Deprecated column, left at its default: Organizers are global.
-        organizerEmails: [],
       });
       expect(await counts(created.id)).toEqual({
         team: 0,

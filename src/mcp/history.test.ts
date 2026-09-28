@@ -27,7 +27,6 @@ function warWeekFixture(overrides: Partial<WarWeek>): WarWeek {
     bannerUrl: null,
     fontPreset: "serif",
     wikiUrl: "https://wiki.example/war-week-2023",
-    organizerEmails: ["organizer@jahnelgroup.com"],
     winner: "Slytherin",
     highlights: ["Slytherin won the House Cup."],
     createdAt: new Date(),

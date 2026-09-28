@@ -228,6 +228,59 @@ describe("entrantForYou", () => {
   });
 });
 
+describe("entrantForYou with Squads", () => {
+  // Red Alpha and Red Bravo are both Red's; Blue Alpha is Blue's.
+  const squads = [
+    { id: "e-red-alpha", teamId: null, participantId: null, squadId: "ra" },
+    { id: "e-red-bravo", teamId: null, participantId: null, squadId: "rb" },
+    { id: "e-blue-alpha", teamId: null, participantId: null, squadId: "ba" },
+  ];
+
+  it("is Your Squad's Entrant, not the first Squad of Your Team", () => {
+    expect(
+      entrantForYou(
+        squads,
+        { participantId: "sam", teamId: "red", squadId: "rb" },
+        "team",
+      ),
+    ).toBe("e-red-bravo");
+  });
+
+  it("is null when the Entrants are Squads and You aren't in one", () => {
+    expect(
+      entrantForYou(
+        squads,
+        { participantId: "ashley", teamId: "red", squadId: null },
+        "team",
+      ),
+    ).toBeNull();
+  });
+
+  it("is null when Your Squad isn't entered", () => {
+    expect(
+      entrantForYou(
+        squads,
+        { participantId: "ashley", teamId: "red", squadId: "unentered" },
+        "team",
+      ),
+    ).toBeNull();
+  });
+
+  it("falls back to Your Team when the Entrants are Teams, even if You're in a Squad", () => {
+    const teams = [
+      { id: "e-red", teamId: "red", participantId: null, squadId: null },
+      { id: "e-blue", teamId: "blue", participantId: null, squadId: null },
+    ];
+    expect(
+      entrantForYou(
+        teams,
+        { participantId: "ashley", teamId: "red", squadId: "ra" },
+        "team",
+      ),
+    ).toBe("e-red");
+  });
+});
+
 describe("formatLabel", () => {
   it("names each Format for Organizers", () => {
     expect(formatLabel("points")).toBe("Points");

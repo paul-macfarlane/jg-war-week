@@ -7,22 +7,28 @@ import { toast } from "sonner";
 
 import {
   type BracketActionResult,
+  deleteSquad,
   generateBracket,
   replaceEntrants,
   setCompetitionFormat,
 } from "@/actions/brackets";
+import { setSelfReport } from "@/actions/heat-reports";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { EntityCombobox } from "@/components/entity-combobox";
 import { OptionSelect } from "@/components/option-select";
+import { SquadForm } from "@/components/squad-form";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Field,
+  FieldContent,
   FieldDescription,
   FieldGroup,
   FieldLabel,
   FieldLegend,
   FieldSet,
 } from "@/components/ui/field";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Switch } from "@/components/ui/switch";
 import {
   ADVANCE_PER_HEAT_OPTIONS,
   ENTRANTS_PER_HEAT_OPTIONS,
@@ -32,6 +38,7 @@ import {
   heatsConfig as heatsConfigOf,
 } from "@/lib/bracket/config";
 import { hasResults, isBye, validateConfig } from "@/lib/bracket/formats";
+import { type EntrantKind, squadLabel } from "@/lib/bracket/squads";
 import { type Bracket, HAS_RESULTS_ERROR } from "@/lib/bracket/types";
 import {
   type Format,
@@ -41,9 +48,15 @@ import {
   isTimed,
 } from "@/lib/bracket/view";
 import { COMPETITION_FORMATS } from "@/lib/enums";
-import type { BracketEntrant } from "@/queries/brackets";
+import type { BracketEntrant, SquadRow } from "@/queries/brackets";
 
-type Target = { id: string; name: string; team: string | null };
+type Target = {
+  id: string;
+  name: string;
+  team: string | null;
+  /** A Participant's Team id, for the Squad form's Team filter. */
+  teamId?: string | null;
+};
 
 const FORMAT_OPTIONS = COMPETITION_FORMATS.map((format) => ({
   value: format,
@@ -256,10 +269,16 @@ function sameSet(a: string[], b: string[]) {
   return a.length === b.length && a.every((id) => set.has(id));
 }
 
+/** "Red · Ashley Schuliger, Sam Schantz": a Squad's detail in a list. */
+function squadDetail(squad: SquadRow): string {
+  return squadLabel({ ...squad, name: "" });
+}
+
 /**
- * The Bracket builder: the Format, the Entrants ("All Teams" or picked
- * Teams for team scoring, picked Participants for individual), their
- * Seed Positions with Generate / Re-roll, and a preview of Round 1.
+ * The Bracket builder: the Format, a team Competition's Squads, the
+ * Entrants ("All Teams", "All Squads" or picked ones for team scoring,
+ * picked Participants for individual), their Seed Positions with Generate /
+ * Re-roll, whether Participants may self-report, and a preview of Round 1.
  */
 export function BracketBuilder({
   competition,
@@ -267,6 +286,7 @@ export function BracketBuilder({
   bracket,
   teams,
   participants,
+  squads,
   teamLabel,
 }: {
   competition: {
@@ -275,21 +295,40 @@ export function BracketBuilder({
     scoring: "team" | "individual";
     format: Format;
     finalized: boolean;
+    selfReport: boolean;
   };
   /** The saved Entrants, by Seed Position. */
   entrants: BracketEntrant[];
   bracket: Bracket;
   teams: Target[];
   participants: Target[];
+  /** The Competition's Squads, by name. */
+  squads: SquadRow[];
   teamLabel: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const saved = entrants.map((e) => (e.teamId ?? e.participantId)!);
+  const isTeam = competition.scoring === "team";
+  const saved = entrants.map(
+    (e) => (e.teamId ?? e.participantId ?? e.squadId)!,
+  );
+  const savedKind: EntrantKind = entrants.some((e) => e.squadId !== null)
+    ? "squad"
+    : isTeam
+      ? "team"
+      : "participant";
+  const [kind, setKind] = useState<EntrantKind>(savedKind);
   const [selected, setSelected] = useState<string[]>(saved);
   const [confirm, setConfirm] = useState<ForceableAction | null>(null);
-  const isTeam = competition.scoring === "team";
-  const dirty = !sameSet(selected, saved);
+  const [squadSheet, setSquadSheet] = useState<SquadRow | "new" | null>(null);
+  const [deleting, setDeleting] = useState<SquadRow | null>(null);
+  const [selfReport, setSelfReportOn] = useState(competition.selfReport);
+  const dirty =
+    !sameSet(selected, saved) || (kind !== savedKind && selected.length > 0);
+  const bySquads = kind === "squad";
+  // "Entrants are" shows once there's a Squad to choose, or Squads are saved.
+  const showKind = isTeam && (squads.length > 0 || savedKind === "squad");
+  const standingsOffered = savedKind !== "squad" && !bySquads;
   const locked = competition.finalized;
   const generated = bracket.heats.length > 0;
   const timedHeatsCount = bracket.heats.filter(isTimed).length;
@@ -332,6 +371,38 @@ export function BracketBuilder({
     runAction(action);
   }
 
+  function changeKind(next: string) {
+    const nextKind = next as EntrantKind;
+    setKind(nextKind);
+    setSelected(nextKind === savedKind ? saved : []);
+  }
+
+  function toggleSelfReport(on: boolean) {
+    startTransition(async () => {
+      const result = await setSelfReport(competition.id, { on });
+      if (result.ok) {
+        setSelfReportOn(on);
+        toast.success(on ? "Self-report on" : "Self-report off");
+        router.refresh();
+      } else {
+        toast.error(result.error);
+      }
+    });
+  }
+
+  function removeSquad(squad: SquadRow) {
+    startTransition(async () => {
+      const result = await deleteSquad(competition.id, squad.id);
+      setDeleting(null);
+      if (result.ok) {
+        toast.success("Squad deleted");
+        router.refresh();
+      } else {
+        toast.error(result.error);
+      }
+    });
+  }
+
   function changeFormat(format: string) {
     startTransition(async () => {
       const result = await setCompetitionFormat(competition.id, { format });
@@ -344,11 +415,24 @@ export function BracketBuilder({
     });
   }
 
-  const items = (isTeam ? teams : participants).map((t) => ({
-    id: t.id,
-    label: t.name,
-    detail: t.team ?? undefined,
-  }));
+  const items = bySquads
+    ? squads.map((squad) => ({
+        id: squad.id,
+        label: squad.name,
+        detail: squadDetail(squad),
+      }))
+    : (isTeam ? teams : participants).map((t) => ({
+        id: t.id,
+        label: t.name,
+        detail: t.team ?? undefined,
+      }));
+  const editing = squadSheet === "new" ? undefined : (squadSheet ?? undefined);
+  // Participant id → the other Squad they're in, for the Squad form.
+  const taken: Record<string, string> = Object.fromEntries(
+    squads
+      .filter((squad) => squad.id !== editing?.id)
+      .flatMap((squad) => squad.participants.map((p) => [p.id, squad.name])),
+  );
   const firstRound = groupRounds(bracket)[0];
   const labelOf = (entrantId: string | null) =>
     entrants.find((e) => e.id === entrantId)?.label ?? "Unknown";
@@ -396,15 +480,102 @@ export function BracketBuilder({
 
       {competition.format !== "points" && (
         <>
+          {isTeam && (
+            <section className="flex flex-col gap-3" aria-label="Squads">
+              <h2 className="text-lg font-semibold">Squads</h2>
+              <p className="text-foreground/70 text-sm">
+                A Squad is a named group of Participants from one {teamLabel},
+                entered as one Entrant. Its Placement Points go to its{" "}
+                {teamLabel}.
+              </p>
+              {squads.length === 0 ? (
+                <p className="text-foreground/70 text-sm">No Squads yet.</p>
+              ) : (
+                <ul className="flex flex-col gap-2">
+                  {squads.map((squad) => (
+                    <li
+                      key={squad.id}
+                      className="flex min-w-0 flex-wrap items-center gap-2 text-sm"
+                    >
+                      <span
+                        aria-hidden
+                        className="size-3 shrink-0 rounded-full"
+                        style={{
+                          backgroundColor: squad.teamColor ?? "transparent",
+                        }}
+                      />
+                      <span className="min-w-0 flex-1 break-words">
+                        {squadLabel(squad)}
+                      </span>
+                      <span className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="lg"
+                          className="min-h-11 sm:min-h-9"
+                          disabled={pending || locked}
+                          aria-label={`Edit ${squad.name}`}
+                          onClick={() => setSquadSheet(squad)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="lg"
+                          className="min-h-11 sm:min-h-9"
+                          disabled={pending || locked}
+                          aria-label={`Delete ${squad.name}`}
+                          onClick={() => setDeleting(squad)}
+                        >
+                          Delete
+                        </Button>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="min-h-11 w-fit"
+                disabled={pending || locked}
+                onClick={() => setSquadSheet("new")}
+              >
+                Add Squad
+              </Button>
+            </section>
+          )}
+
           <FieldSet>
             <FieldLegend>Entrants</FieldLegend>
             <FieldDescription>
-              {isTeam
-                ? `A ${teamLabel} Competition, so its Entrants are ${teamLabel}s.`
-                : "An individual Competition, so its Entrants are Participants."}{" "}
+              {!isTeam
+                ? "An individual Competition, so its Entrants are Participants."
+                : bySquads
+                  ? `A ${teamLabel} Competition entering Squads; each Squad's points go to its ${teamLabel}.`
+                  : `A ${teamLabel} Competition, so its Entrants are ${teamLabel}s.`}{" "}
               Saving new Entrants clears the Bracket.
             </FieldDescription>
             <FieldGroup className="gap-3">
+              {showKind && (
+                <Field className="max-w-xs">
+                  <FieldLabel htmlFor="bracket-entrant-kind">
+                    Entrants are
+                  </FieldLabel>
+                  <OptionSelect
+                    id="bracket-entrant-kind"
+                    options={[
+                      { value: "team", label: `${teamLabel}s` },
+                      { value: "squad", label: "Squads" },
+                    ]}
+                    value={kind}
+                    disabled={pending || locked}
+                    onValueChange={changeKind}
+                  />
+                </Field>
+              )}
               {isTeam && (
                 <Button
                   type="button"
@@ -412,15 +583,21 @@ export function BracketBuilder({
                   size="lg"
                   className="min-h-11 w-fit"
                   disabled={pending || locked}
-                  onClick={() => setSelected(teams.map((t) => t.id))}
+                  onClick={() =>
+                    setSelected((bySquads ? squads : teams).map((t) => t.id))
+                  }
                 >
-                  All {teamLabel}s
+                  {bySquads ? "All Squads" : `All ${teamLabel}s`}
                 </Button>
               )}
               <Field>
                 <FieldLabel htmlFor="bracket-entrants">
-                  {isTeam ? `${teamLabel}s` : "Pick Participants"} (
-                  {selected.length} chosen)
+                  {bySquads
+                    ? "Squads"
+                    : isTeam
+                      ? `${teamLabel}s`
+                      : "Pick Participants"}{" "}
+                  ({selected.length} chosen)
                 </FieldLabel>
                 <EntityCombobox
                   id="bracket-entrants"
@@ -430,9 +607,11 @@ export function BracketBuilder({
                   onValueChange={setSelected}
                   disabled={pending || locked}
                   placeholder={
-                    isTeam
-                      ? `Find a ${teamLabel}`
-                      : `Find by name or ${teamLabel}`
+                    bySquads
+                      ? "Find a Squad"
+                      : isTeam
+                        ? `Find a ${teamLabel}`
+                        : `Find by name or ${teamLabel}`
                   }
                 />
               </Field>
@@ -445,6 +624,7 @@ export function BracketBuilder({
                   startAction({
                     run: (force) =>
                       replaceEntrants(competition.id, {
+                        kind,
                         targetIds: selected,
                         force,
                       }),
@@ -461,8 +641,10 @@ export function BracketBuilder({
           <section className="flex flex-col gap-3" aria-label="Seed Positions">
             <h2 className="text-lg font-semibold">Seed Positions</h2>
             <p className="text-foreground/70 text-sm">
-              Random, or by the current Standings (ties drawn at random). Top
-              Seed Positions get any byes.
+              {standingsOffered
+                ? "Random, or by the current Standings (ties drawn at random)."
+                : "Squads are seeded at random."}{" "}
+              Top Seed Positions get any byes.
             </p>
             {entrants.length === 0 ? (
               <p className="text-foreground/70 text-sm">
@@ -512,29 +694,48 @@ export function BracketBuilder({
               >
                 {generated ? "Re-roll" : "Generate"}
               </Button>
-              <Button
-                type="button"
-                size="lg"
-                variant="outline"
-                className="min-h-11 w-fit"
-                disabled={pending || locked || dirty || entrants.length < 2}
-                onClick={() =>
-                  startAction({
-                    run: (force) =>
-                      generateBracket(competition.id, {
-                        seeding: "standings",
-                        force,
-                      }),
-                    success: "Seed Positions drawn by Standings",
-                    title:
-                      "Clear every Heat Result and draw Seed Positions by Standings?",
-                  })
-                }
-              >
-                By Standings
-              </Button>
+              {standingsOffered && (
+                <Button
+                  type="button"
+                  size="lg"
+                  variant="outline"
+                  className="min-h-11 w-fit"
+                  disabled={pending || locked || dirty || entrants.length < 2}
+                  onClick={() =>
+                    startAction({
+                      run: (force) =>
+                        generateBracket(competition.id, {
+                          seeding: "standings",
+                          force,
+                        }),
+                      success: "Seed Positions drawn by Standings",
+                      title:
+                        "Clear every Heat Result and draw Seed Positions by Standings?",
+                    })
+                  }
+                >
+                  By Standings
+                </Button>
+              )}
             </div>
           </section>
+
+          <Field orientation="horizontal" className="max-w-xl">
+            <Switch
+              id="bracket-self-report"
+              checked={selfReport}
+              disabled={pending}
+              onCheckedChange={toggleSelfReport}
+            />
+            <FieldContent>
+              <FieldLabel htmlFor="bracket-self-report">Self-report</FieldLabel>
+              <FieldDescription>
+                Participants in a Heat can enter its result from their phone. It
+                counts at once; you can still change any result on the results
+                screen.
+              </FieldDescription>
+            </FieldContent>
+          </Field>
 
           {firstRound && (
             <section className="flex flex-col gap-3" aria-label="Preview">
@@ -573,6 +774,47 @@ export function BracketBuilder({
           )}
         </>
       )}
+
+      <Sheet
+        open={squadSheet !== null}
+        onOpenChange={(open) => {
+          if (!open) setSquadSheet(null);
+        }}
+      >
+        <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto">
+          {squadSheet !== null && (
+            <SquadForm
+              key={editing?.id ?? "new"}
+              competitionId={competition.id}
+              squad={editing}
+              teams={teams}
+              participants={participants.map((p) => ({
+                id: p.id,
+                name: p.name,
+                teamId: p.teamId ?? null,
+              }))}
+              taken={taken}
+              teamLabel={teamLabel}
+              entered={
+                editing !== undefined &&
+                entrants.some((e) => e.squadId === editing.id)
+              }
+              onDone={() => setSquadSheet(null)}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+
+      <ConfirmDialog
+        open={deleting !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleting(null);
+        }}
+        title={deleting ? `Delete Squad "${deleting.name}"?` : ""}
+        description="Its Participants stay on the roster. A Squad that is an Entrant can't be deleted."
+        pending={pending}
+        onConfirm={() => deleting && removeSquad(deleting)}
+      />
 
       <ConfirmDialog
         open={confirm !== null}

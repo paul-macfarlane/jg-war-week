@@ -219,10 +219,12 @@ signed in is a **Participant** (`CONTEXT.md`, "Access rules").
   with `--reset`. After that, manage them in the app. Hosts never come from
   seeds; a plain reload leaves them alone, and `--reset` deletes them along
   with the War Week's Competitions.
-- **Expand/contract.** The old per-edition `organizer_emails` column on
-  `war_week` is still in the database, unused, so a rollback stays safe.
-  Ticket 18 (`.scratch/hardening/issues/18-drop-war-week-organizer-emails.md`)
-  drops it in a later release; don't build on it.
+- **Expand/contract.** `war_week.organizer_emails` and
+  `competition.bracket_points` were dropped in migration 0013 once Epics B
+  and E had run on `main` long enough that rolling back past them was no
+  longer a concern. The same expand-then-contract shape applies to any
+  future column removal: land the column unused first, wait out the
+  rollback window, then drop it in its own migration.
 
 ### Run a knockout Competition as a Bracket
 
@@ -253,6 +255,19 @@ at once: its builder shows a "Heat settings" form for Entrants per Heat and
 how many advance from each, and its results screen has Organizers tap the
 whole finishing order instead of just a winner once a Heat holds more than
 two.
+
+A team Competition can enter **Squads** instead of whole Teams: in the
+builder's Squads section, **Add Squad** names a group of one Team's
+Participants (each Participant in one Squad per Competition), then
+"Entrants are: Squads" and **All Squads** make them the Entrants. Each
+Squad's Placement Points go to its Team when the Bracket is finalized, and
+Squads are always seeded at random. The builder's **Self-report** switch
+(off by default) lets a Participant whose roster email matches their
+sign-in report the result of their own Heat from "Your next Heat"
+(**Report result**) while it has no result; it counts at once. The results
+screen shows "Reported by <name>" on that Heat, and the Host or an
+Organizer can still change any result there (which clears the line). ADR
+0005 explains why this is the one Participant write.
 
 Format behavior goes through `src/lib/bracket/formats.ts`: it dispatches
 every Bracket operation (generate, record a result, finalize…) to that
@@ -370,7 +385,8 @@ emails.
 are `get_current_war_week`, `get_leaderboard`, `get_schedule`,
 `get_announcements`, `get_awards`, `get_faq`, `list_history`,
 `get_history` and `get_bracket` (a Competition's Bracket by name, with each
-Heat's time and place). `get_bracket` (`src/mcp/bracket.ts`) is the model
+Heat's time and place, and a Squad's `participants` by name; never who
+reported a result). `get_bracket` (`src/mcp/bracket.ts`) is the model
 for a tool that looks something up by name and whitelists what it returns.
 
 ### Add or fix history

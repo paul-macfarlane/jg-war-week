@@ -57,7 +57,7 @@ are always the current Standings, live or complete. The Finale
 (\`/<edition>/finale\`) is a closing-ceremony playback of those Standings, not
 a separate result — it changes nothing. Some Competitions run as a Bracket
 (single elimination or Heats) instead of plain points; \`get_bracket\` reads
-one by Competition name.
+one by Competition name, with its Squads by name.
 
 ## Pages
 

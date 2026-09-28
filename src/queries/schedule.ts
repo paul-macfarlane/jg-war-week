@@ -10,6 +10,7 @@ import {
   heatEntrant,
   participant,
   scheduleItem,
+  squad,
   team,
 } from "@/db/schema";
 import type { TimedHeatRow } from "@/lib/bracket/now-next";
@@ -120,11 +121,13 @@ export async function getTimedHeats(
         entrantId: heatEntrant.entrantId,
         teamName: team.name,
         participantName: participant.displayName,
+        squadName: squad.name,
       })
       .from(heatEntrant)
       .innerJoin(entrant, eq(entrant.id, heatEntrant.entrantId))
       .leftJoin(team, eq(team.id, entrant.teamId))
       .leftJoin(participant, eq(participant.id, entrant.participantId))
+      .leftJoin(squad, eq(squad.id, entrant.squadId))
       .where(
         inArray(
           heatEntrant.heatId,
@@ -162,7 +165,7 @@ export async function getTimedHeats(
       labels: Object.fromEntries(
         own.map((s) => [
           s.entrantId,
-          s.teamName ?? s.participantName ?? "Unknown",
+          s.teamName ?? s.participantName ?? s.squadName ?? "Unknown",
         ]),
       ),
     };

@@ -10,12 +10,16 @@ import {
   parseFormatInput,
   parseGenerateInput,
   parseHeatResultInput,
+  parseSquadInput,
 } from "@/lib/bracket/input";
 import { isUuid } from "@/lib/uuid";
 import * as mutations from "@/mutations/brackets";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 
 export type BracketActionResult = MutationResult;
+
+// Not imported from the mutations: a "use server" module's tests mock them.
+const SQUAD_NOT_FOUND = "That Squad no longer exists.";
 
 export type HeatResultActionResult =
   { ok: true; resetHeatIds: string[] } | { ok: false; error: string };
@@ -139,4 +143,45 @@ export async function unfinalizeBracket(
     competitionId,
     mutations.unfinalizeBracket,
   );
+}
+
+/**
+ * Adds a Squad to a team Bracket. JSON, not `FormData` (decision 13): the
+ * form closes over its Participant list; refusals carry `fieldErrors` for
+ * `name`, `teamId` and `participantIds`.
+ */
+export async function createSquad(
+  competitionId: string,
+  input: unknown,
+): Promise<BracketActionResult> {
+  return bracketWrite("bracket.squads", competitionId, async (id, ctx) => {
+    const parsed = parseSquadInput(input);
+    if (!parsed.ok) return parsed;
+    return mutations.createSquad(id, parsed.value, ctx);
+  });
+}
+
+/** Edits a Squad of this Competition; its input is `createSquad`'s. */
+export async function updateSquad(
+  competitionId: string,
+  squadId: string,
+  input: unknown,
+): Promise<BracketActionResult> {
+  return bracketWrite("bracket.squads", competitionId, async (id, ctx) => {
+    if (!isUuid(squadId)) return { ok: false, error: SQUAD_NOT_FOUND };
+    const parsed = parseSquadInput(input);
+    if (!parsed.ok) return parsed;
+    return mutations.updateSquad(id, squadId, parsed.value, ctx);
+  });
+}
+
+/** Deletes a Squad that isn't an Entrant. */
+export async function deleteSquad(
+  competitionId: string,
+  squadId: string,
+): Promise<BracketActionResult> {
+  return bracketWrite("bracket.squads", competitionId, async (id, ctx) => {
+    if (!isUuid(squadId)) return { ok: false, error: SQUAD_NOT_FOUND };
+    return mutations.deleteSquad(id, squadId, ctx);
+  });
 }

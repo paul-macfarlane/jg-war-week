@@ -92,6 +92,20 @@
       "when": 1790547195452,
       "tag": "0012_lean_sprite",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790563503170,
+      "tag": "0013_chief_the_initiative",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790564063012,
+      "tag": "0014_wakeful_namora",
+      "breakpoints": true
     }
   ]
 }

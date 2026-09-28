@@ -5,6 +5,7 @@ import {
   parseFormatInput,
   parseGenerateInput,
   parseHeatResultInput,
+  parseSquadInput,
 } from "@/lib/bracket/input";
 
 const a = "8b0a4f0e-2a4e-4c1a-9a57-2f7c7b6f5d11";
@@ -110,6 +111,74 @@ describe("Bracket action input", () => {
   });
 });
 
+describe("Entrants input kind", () => {
+  it("accepts a kind of Entrant, and leaves it out when not given", () => {
+    expect(parseEntrantsInput({ kind: "squad", targetIds: [a, b] })).toEqual({
+      ok: true,
+      value: { kind: "squad", targetIds: [a, b] },
+    });
+    expect(parseEntrantsInput({ targetIds: [a] })).toEqual({
+      ok: true,
+      value: { targetIds: [a] },
+    });
+  });
+
+  it("refuses an unknown kind", () => {
+    expect(parseEntrantsInput({ kind: "crew", targetIds: [a] })).toEqual({
+      ok: false,
+      error: "Choose Teams, Participants or Squads.",
+    });
+  });
+});
+
+describe("parseSquadInput", () => {
+  it("trims the name, keeps the Team and drops repeated Participants", () => {
+    expect(
+      parseSquadInput({
+        name: "  Red Alpha ",
+        teamId: a,
+        participantIds: [a, b, a],
+      }),
+    ).toEqual({
+      ok: true,
+      value: { name: "Red Alpha", teamId: a, participantIds: [a, b] },
+    });
+  });
+
+  it("reads an unchosen Team as none, leaving the Squad rules to say so", () => {
+    expect(
+      parseSquadInput({ name: "", teamId: "", participantIds: [] }),
+    ).toEqual({
+      ok: true,
+      value: { name: "", teamId: null, participantIds: [] },
+    });
+  });
+
+  it("names the field of a malformed value", () => {
+    expect(
+      parseSquadInput({ name: "Red", teamId: "nope", participantIds: [] }),
+    ).toEqual({
+      ok: false,
+      error: "Choose a Team.",
+      fieldErrors: { teamId: "Choose a Team." },
+    });
+    expect(
+      parseSquadInput({ name: "Red", teamId: a, participantIds: ["x"] }),
+    ).toEqual({
+      ok: false,
+      error: "Choose Participants.",
+      fieldErrors: { participantIds: "Choose Participants." },
+    });
+    expect(parseSquadInput({ name: 5, teamId: a, participantIds: [] })).toEqual(
+      {
+        ok: false,
+        error: "Enter the Squad's name.",
+        fieldErrors: { name: "Enter the Squad's name." },
+      },
+    );
+  });
+});
+
 describe("Bracket parsers given a malformed call", () => {
   const MALFORMED: [string, unknown][] = [
     ["{}", {}],
@@ -122,6 +191,7 @@ describe("Bracket parsers given a malformed call", () => {
     ["parseFormatInput", parseFormatInput],
     ["parseEntrantsInput", parseEntrantsInput],
     ["parseHeatResultInput", parseHeatResultInput],
+    ["parseSquadInput", parseSquadInput],
   ];
 
   it.each(

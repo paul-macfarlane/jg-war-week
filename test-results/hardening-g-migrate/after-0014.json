@@ -1,0 +1,73 @@
+{
+  "competitionId": "c41f61f0-15c3-49c8-b5a3-ba8ba0c0da0d",
+  "competition": {
+    "id": "c41f61f0-15c3-49c8-b5a3-ba8ba0c0da0d",
+    "warWeekId": "dc24362f-bf99-4a0b-ba7b-b39659100067",
+    "name": "SMOKE TEST G Migration",
+    "scoring": "team",
+    "format": "single-elimination",
+    "placementPoints": [
+      10,
+      6,
+      3
+    ],
+    "finalizedAt": null,
+    "selfReport": false
+  },
+  "bracket": {
+    "format": "single-elimination",
+    "config": null,
+    "heats": [
+      {
+        "id": "ee1599e3-2cdd-4294-82a1-1cf36aaf8b61",
+        "round": 1,
+        "position": 1,
+        "status": "played",
+        "winnerTo": null,
+        "dayId": null,
+        "startTime": null,
+        "location": null,
+        "slots": [
+          {
+            "entrantId": "6b2d88a8-b32c-406b-873d-88796c2ae962",
+            "place": 1,
+            "score": null,
+            "forfeited": false
+          },
+          {
+            "entrantId": "be0e5354-08b4-480b-9675-c0ddb9ed0574",
+            "place": 2,
+            "score": null,
+            "forfeited": false
+          }
+        ]
+      }
+    ]
+  },
+  "entrants": [
+    {
+      "id": "6b2d88a8-b32c-406b-873d-88796c2ae962",
+      "seedPosition": 1,
+      "label": "Blue",
+      "teamId": "f7a96f57-f8f1-4cbe-8d85-3c7680411275",
+      "participantId": null,
+      "squadId": null,
+      "participantNames": [],
+      "pointsTeamId": "f7a96f57-f8f1-4cbe-8d85-3c7680411275",
+      "color": "#3b82f6",
+      "teamName": "Blue"
+    },
+    {
+      "id": "be0e5354-08b4-480b-9675-c0ddb9ed0574",
+      "seedPosition": 2,
+      "label": "Red",
+      "teamId": "0b47bff7-ac2a-481c-8dda-e58bda800ffb",
+      "participantId": null,
+      "squadId": null,
+      "participantNames": [],
+      "pointsTeamId": "0b47bff7-ac2a-481c-8dda-e58bda800ffb",
+      "color": "#ff3b3b",
+      "teamName": "Red"
+    }
+  ]
+}

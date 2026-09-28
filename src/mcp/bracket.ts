@@ -17,7 +17,13 @@ export type BracketResult =
         format: Exclude<Competition["format"], "points">;
         finalized: boolean;
       };
-      entrants: { seedPosition: number; name: string; team: string | null }[];
+      entrants: {
+        seedPosition: number;
+        name: string;
+        team: string | null;
+        /** A Squad's Participants by name; null for a Team or Participant. */
+        participants: string[] | null;
+      }[];
       rounds: {
         round: number;
         name: string;
@@ -52,8 +58,8 @@ export type BracketResult =
 /**
  * Serializes a Bracket (or its absence, or a points Competition) into the
  * `get_bracket` MCP tool payload. Names only: never an email, the Organizer
- * list or Hosts. Pure: the route resolves the Competition by name and loads
- * `view` and `days`.
+ * list, Hosts or who self-reported a Heat. Pure: the route resolves the
+ * Competition by name and loads `view` and `days`.
  */
 export function toBracketResult(
   view: BracketView | undefined,
@@ -96,6 +102,7 @@ export function toBracketResult(
       seedPosition: entrant.seedPosition,
       name: entrant.label,
       team: entrant.teamName,
+      participants: entrant.squadId ? [...entrant.participantNames] : null,
     })),
     rounds: groupRounds(view.bracket).map((round) => ({
       round: round.round,

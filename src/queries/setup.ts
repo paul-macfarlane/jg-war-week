@@ -14,6 +14,8 @@ import {
   participant,
   pointsEntry,
   scheduleItem,
+  squad,
+  squadParticipant,
   team,
 } from "@/db/schema";
 
@@ -50,6 +52,7 @@ export type SetupTeam = Pick<Team, "id" | "name" | "color" | "logoUrl"> & {
   pointsEntryCount: number;
   awardCount: number;
   entrantCount: number;
+  squadCount: number;
 };
 
 /** A War Week's Teams by name. */
@@ -73,6 +76,7 @@ export async function getSetupTeams(
       ),
       awardCount: dbOrTx.$count(award, eq(award.teamId, team.id)),
       entrantCount: dbOrTx.$count(entrant, eq(entrant.teamId, team.id)),
+      squadCount: dbOrTx.$count(squad, eq(squad.teamId, team.id)),
     })
     .from(team)
     .where(eq(team.warWeekId, warWeek.id))
@@ -83,7 +87,12 @@ export async function getSetupTeams(
 export type SetupParticipant = Pick<
   Participant,
   "id" | "displayName" | "companyTag" | "email" | "teamId" | "isLeader"
-> & { pointsEntryCount: number; awardCount: number; entrantCount: number };
+> & {
+  pointsEntryCount: number;
+  awardCount: number;
+  entrantCount: number;
+  squadCount: number;
+};
 
 /** A War Week's Participants by display name. */
 export async function getSetupParticipants(
@@ -109,6 +118,10 @@ export async function getSetupParticipants(
       entrantCount: dbOrTx.$count(
         entrant,
         eq(entrant.participantId, participant.id),
+      ),
+      squadCount: dbOrTx.$count(
+        squadParticipant,
+        eq(squadParticipant.participantId, participant.id),
       ),
     })
     .from(participant)

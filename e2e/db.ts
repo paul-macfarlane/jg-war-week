@@ -53,3 +53,25 @@ export async function xiParticipantId(displayName: string): Promise<string> {
     throw new Error(`No War Week XI Participant named "${displayName}"`);
   return row.id;
 }
+
+/** A War Week XI Team's id, by name. */
+export async function xiTeamId(name: string): Promise<string> {
+  const [row] = await runQuery<{ id: string }>(
+    `select t.id from team t join war_week w on w.id = t.war_week_id
+     where w.edition = 'xi' and t.name = $1`,
+    [name],
+  );
+  if (!row) throw new Error(`No War Week XI Team named "${name}"`);
+  return row.id;
+}
+
+/**
+ * Sets (or, with null, clears) a Participant's roster email: how a flow
+ * links a stub e2e session to a Participant by account, without the pick.
+ */
+export async function setParticipantEmail(id: string, email: string | null) {
+  await runQuery(`update participant set email = $1 where id = $2`, [
+    email,
+    id,
+  ]);
+}

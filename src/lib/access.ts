@@ -1,4 +1,8 @@
 import type { WarWeek } from "@/db/schema";
+import {
+  type HeatReportFacet,
+  heatReportError,
+} from "@/lib/bracket/heat-report-rule";
 
 /** The only Google Workspace domain allowed to sign in. */
 export const JG_EMAIL_DOMAIN = "jahnelgroup.com";
@@ -54,6 +58,10 @@ export type WarWeekAction =
   | "bracket.heat-schedule"
   | "bracket.finalize"
   | "bracket.unfinalize"
+  | "bracket.squads"
+  | "competition.self-report"
+  /** Self-report: the one Participant write (ADR 0005). */
+  | "bracket.heat-report"
   | `points-entry.${Crud}`
   | `schedule-item.${Crud}`
   | `announcement.${Crud | "pin" | "unpin"}`;
@@ -62,13 +70,15 @@ export type WarWeekAction =
  * What a War Week action is checked against: the War Week, plus where the
  * family needs it the row's current Competition (`competitionId`, null for
  * an unlinked Schedule Item), the Competition the request posts
- * (`postedCompetitionId`, null to unlink) and an Announcement's author.
+ * (`postedCompetitionId`, null to unlink), an Announcement's author and,
+ * for reporting a Heat's result, the Heat's facts (`heatReport`).
  */
 export type AccessTarget = {
   warWeekId: string;
   competitionId?: string | null;
   postedCompetitionId?: string | null;
   authorEmail?: string;
+  heatReport?: HeatReportFacet;
 };
 
 export const SIGN_IN_REFUSAL = "Sign in to continue.";
@@ -142,8 +152,9 @@ export const sameEmail = (a: string | null | undefined, b: string) =>
  * War Week. A Host runs their own Competitions (setup, Bracket, Points
  * Entries, linked Schedule Items) and posts Announcements in a War Week
  * where they host, editing or deleting their own. Everyone else signed in
- * is a Participant and can't write. Pure: the caller loads the actor and
- * the target.
+ * is a Participant, whose one write is reporting the result of a Heat
+ * they're in when self-report is on (ADR 0005); that rule binds everyone,
+ * Organizers included. Pure: the caller loads the actor and the target.
  */
 export function can(actor: Actor, action: OrganizerListAction): string | null;
 export function can(
@@ -156,6 +167,14 @@ export function can(
   action: OrganizerListAction | WarWeekAction,
   target?: AccessTarget,
 ): string | null {
+  if (action === "bracket.heat-report") {
+    // Before the Organizer shortcut: the Heat facts bind everyone. A non-JG
+    // session already counts as anonymous upstream; checked again here.
+    if (!actor || !isJahnelGroupEmail(actor.email)) return SIGN_IN_REFUSAL;
+    // A caller that forgot to load the facts can never grant.
+    if (!target?.heatReport) return ADMIN_REFUSAL;
+    return heatReportError(target.heatReport);
+  }
   if (!actor) return SIGN_IN_REFUSAL;
   if (actor.isOrganizer) return null;
 

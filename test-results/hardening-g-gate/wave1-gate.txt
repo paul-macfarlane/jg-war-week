@@ -1,3 +1,104 @@
+== pnpm build
+
+> war-weeker@0.1.0 build /Users/paulmacfarlane/Code/war-weeker
+> next build
+
+▲ Next.js 16.3.6 (Turbopack)
+✓ Running next.config.ts took 59ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 2.5s
+  Running TypeScript ...
+  Finished TypeScript in 6.1s ...
+  Collecting page data using 9 workers ...
+2026-09-28T03:08:27.171Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-09-28T03:08:27.211Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-09-28T03:08:27.217Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-09-28T03:08:27.226Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-09-28T03:08:27.242Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-09-28T03:08:27.250Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-09-28T03:08:27.251Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-09-28T03:08:27.299Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-09-28T03:08:27.352Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-09-28T03:08:27.366Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+  Generating static pages using 9 workers (0/8) ...
+  Generating static pages using 9 workers (2/8) 
+  Generating static pages using 9 workers (4/8) 
+  Generating static pages using 9 workers (6/8) 
+✓ Generating static pages using 9 workers (8/8) in 123ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[edition]
+├ ƒ /[edition]/awards
+├ ƒ /[edition]/competitions
+├ ƒ /[edition]/competitions/[id]
+├ ƒ /[edition]/faq
+├ ƒ /[edition]/finale
+├ ƒ /[edition]/finale/[competition]
+├ ƒ /[edition]/leaderboard
+├ ƒ /[edition]/more
+├ ƒ /[edition]/news
+├ ƒ /[edition]/schedule
+├ ƒ /[edition]/teams
+├ ○ /about
+├ ƒ /admin
+├ ƒ /admin/announcements
+├ ƒ /admin/announcements/[id]
+├ ƒ /admin/announcements/new
+├ ƒ /admin/awards
+├ ƒ /admin/awards/[id]
+├ ƒ /admin/awards/new
+├ ƒ /admin/brackets/[id]
+├ ƒ /admin/guide
+├ ƒ /admin/organizers
+├ ƒ /admin/points
+├ ƒ /admin/points/[id]
+├ ƒ /admin/setup
+├ ƒ /admin/setup/competitions
+├ ƒ /admin/setup/competitions/[id]/bracket
+├ ƒ /admin/setup/days
+├ ƒ /admin/setup/faq
+├ ƒ /admin/setup/faq/[id]
+├ ƒ /admin/setup/faq/new
+├ ƒ /admin/setup/next
+├ ƒ /admin/setup/schedule
+├ ƒ /admin/setup/schedule/[id]
+├ ƒ /admin/setup/schedule/new
+├ ƒ /admin/setup/teams
+├ ƒ /admin/setup/war-week
+├ ƒ /admin/standings
+├ ƒ /api/auth/[...all]
+├ ƒ /api/mcp
+├ ƒ /history
+├ ƒ /install
+├ ƒ /llms.txt
+├ ○ /manifest.webmanifest
+├ ○ /privacy
+├ ƒ /sign-in
+└ ○ /terms
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+build exit 0
+
+== pnpm smoke
 
 > war-weeker@0.1.0 smoke /Users/paulmacfarlane/Code/war-weeker
 > tsx scripts/smoke/index.ts
@@ -61,8 +162,8 @@ ok - the XI seed loads 5/3/1 Placement Points for Catan and none for Beast Mode
 ▲ Next.js 16.3.6
 - Local:         http://localhost:3100
 - Network:       http://192.168.1.184:3100
-✓ Ready in 117ms
-✓ Running next.config.ts took 22ms
+✓ Ready in 95ms
+✓ Running next.config.ts took 21ms
 ok - server ready
 ok - signed-in GET / redirects to /xi
 ok - GET /xi renders War Week XI with the Team Standings
@@ -136,7 +237,7 @@ ok - GET /admin/guide as a signed-in non-Organizer shows the refusal
 ok - GET /admin/points as an Organizer shows the form with every Competition, the ledger with entered-by, and the current standings (16 unscheduled Competitions offered)
 ok - GET /admin/points as a non-Organizer shows the refusal
 ok - createPointsEntry rejects a signed-in JG user off the allowlist
-(node:45526) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:24724) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
 ok - createPointsEntry rejects a Participant in a team Competition and a Team in an individual one
 ok - createPointsEntry as an Organizer saves an over-max decimal entry with entered-by
@@ -194,7 +295,7 @@ ok - createScheduleItem refuses an end before the start and a non-Organizer
 ok - an Organizer adds a Schedule Item; GET /xi/schedule lists it, GET /xi shows it in Now/Next while it's on, and a duplicate is refused
 ok - an Organizer adds an FAQ Item and GET /xi/faq lists it last
 ok - an Organizer deletes the new Schedule Item and FAQ Item
-ok - bracket loop: an Organizer sets single elimination on a Competition, enters 4 Teams, generates, records 3 Heat Results, finalizes; GET /xi/competitions/<id> shows the champion and /xi/leaderboard includes the generated points; un-finalize removes them; then cleans up
+ok - bracket loop: an Organizer sets single elimination on a Competition, enters 4 Teams, generates, records 3 Heat Results, finalizes; GET /xi/competitions/<id> shows the champion and /xi/leaderboard includes the generated points and /xi/finale/<id> answers 200; un-finalize removes them and /xi/finale/<id> answers 404; then cleans up
 ok - heats loop: an Organizer sets heats (4 per Heat, 2 advance) on a Competition, enters 4 Teams, generates one Heat of four, records its four-Entrant Heat Result, finalizes; GET /xi/competitions/<id> shows the champion and /xi/leaderboard includes the generated points; un-finalize removes them; then cleans up
 ok - the smoke Host hosts one XI Competition
 ok - createPointsEntry as a Host saves an entry on their Competition, entered by the Host
@@ -230,13 +331,13 @@ ok - the Participant's refused calls wrote nothing
 ok - createFaqItem posting XI's warWeekId with admin_edition=x in the cookie writes to XI and leaves X unchanged
 ok - lifecycle: create XII, end XI with a Winner, start XII; an Organizer corrects XI but a Participant can't reopen it; then restore
 ⨯ Error: Failed query: select "id", "war_week_id", "question", "answer", "sort_order", "created_at", "updated_at" from "faq_item" where "faq_item"."war_week_id" = $1 order by "faq_item"."sort_order" asc, "faq_item"."id" asc
-params: d4c9a809-33f5-4fbd-a440-e7be06ee612d
+params: d42f2bb0-c8b7-481c-a54e-b126b7a4288b
     at o.queryWithCache (.next/server/chunks/ssr/_1pxfdpz._.js:25:37181)
     at async (.next/server/chunks/ssr/_1pxfdpz._.js:18:6014)
     at async k (.next/server/chunks/ssr/[root-of-the-server]__1w3cl-j._.js:1:5635) {
   query: 'select "id", "war_week_id", "question", "answer", "sort_order", "created_at", "updated_at" from "faq_item" where "faq_item"."war_week_id" = $1 order by "faq_item"."sort_order" asc, "faq_item"."id" asc',
-  params: [ 'd4c9a809-33f5-4fbd-a440-e7be06ee612d' ],
-  digest: '3606784575',
+  params: [ 'd42f2bb0-c8b7-481c-a54e-b126b7a4288b' ],
+  digest: '2676436031',
   [cause]: error: relation "faq_item" does not exist
       at async (.next/server/chunks/ssr/_1pxfdpz._.js:18:6229)
       at async o.queryWithCache (.next/server/chunks/ssr/_1pxfdpz._.js:25:37156)
@@ -264,3 +365,79 @@ params: d4c9a809-33f5-4fbd-a440-e7be06ee612d
   /xi/faq with faq_item missing answered 200
 ok - GET /xi/faq with its table missing streams the edition error boundary (ErrorScreen copy), not Next's default error page
  ELIFECYCLE  Command failed with exit code 143.
+smoke exit 0
+
+== pnpm e2e
+
+> war-weeker@0.1.0 e2e /Users/paulmacfarlane/Code/war-weeker
+> playwright test
+
+
+> war-weeker@0.1.0 db:migrate /Users/paulmacfarlane/Code/war-weeker
+> drizzle-kit migrate
+
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/Users/paulmacfarlane/Code/war-weeker/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] applying migrations...[2K[1G[✓] migrations applied successfully!
+> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/war-weeker
+> tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xi.json
+
+Loaded War Week i (reset)
+Loaded War Week ii (reset)
+Loaded War Week iii (reset)
+Loaded War Week iv (reset)
+Loaded War Week ix (reset)
+Loaded War Week v (reset)
+Loaded War Week vi (reset)
+Loaded War Week vii (reset)
+Loaded War Week viii (reset)
+Loaded War Week x (reset)
+Loaded War Week xi (reset)
+
+Running 23 tests using 1 worker
+
+  ✓   1 [chromium] › e2e/archive.spec.ts:23:5 › the Archive lists every past War Week (453ms)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '2687744626'
+[WebServer] }
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '2687744626'
+[WebServer] }
+  ✓   2 [chromium] › e2e/archive.spec.ts:44:7 › past edition /i renders (283ms)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '2687744626'
+[WebServer] }
+  ✓   3 [chromium] › e2e/archive.spec.ts:44:7 › past edition /ii renders (220ms)
+  ✓   4 [chromium] › e2e/archive.spec.ts:44:7 › past edition /iii renders (258ms)
+  ✓   5 [chromium] › e2e/archive.spec.ts:44:7 › past edition /iv renders (311ms)
+  ✓   6 [chromium] › e2e/archive.spec.ts:44:7 › past edition /ix renders (267ms)
+  ✓   7 [chromium] › e2e/archive.spec.ts:44:7 › past edition /v renders (257ms)
+  ✓   8 [chromium] › e2e/archive.spec.ts:44:7 › past edition /vi renders (234ms)
+  ✓   9 [chromium] › e2e/archive.spec.ts:44:7 › past edition /vii renders (292ms)
+  ✓  10 [chromium] › e2e/archive.spec.ts:44:7 › past edition /viii renders (293ms)
+  ✓  11 [chromium] › e2e/archive.spec.ts:44:7 › past edition /x renders (259ms)
+  ✓  12 [chromium] › e2e/bracket-heats.spec.ts:104:5 › a Heats Bracket is built, run and finalized into Points Entries (6.3s)
+  ✓  13 [chromium] › e2e/bracket.spec.ts:106:5 › a Bracket is built, run and finalized into Points Entries (23.1s)
+  ✓  14 [chromium] › e2e/finale.spec.ts:5:5 › the Finale plays from Start and ends on first place (3.2s)
+  ✓  15 [chromium] › e2e/forms.spec.ts:6:7 › forms › a Points Entry refused on the server shows under Points and focuses it (955ms)
+  ✓  16 [chromium] › e2e/forms.spec.ts:45:7 › forms › the settings form refused on the server shows under Slack URL and focuses it (478ms)
+[WebServer] (node:25157) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+[WebServer] (Use `node --trace-deprecation ...` to show where the warning was created)
+  ✓  17 [chromium] › e2e/points-entry.spec.ts:6:5 › an Organizer's Points Entry raises the Team's total on the leaderboard (1.2s)
+  ✓  18 [chromium] › e2e/sign-in.spec.ts:5:5 › an anonymous visit to /xi lands on /sign-in (209ms)
+  ✓  19 [chromium] › e2e/sign-in.spec.ts:20:5 › a session with a non-JG email is refused /xi (234ms)
+  ✓  20 [chromium] › e2e/sign-in.spec.ts:38:5 › a JG session opens /xi (612ms)
+  ✓  21 [chromium] › e2e/theme.spec.ts:16:5 › a dark Appearance Theme makes the whole page dark, scrollbar included (234ms)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '2687744626'
+[WebServer] }
+  ✓  22 [chromium] › e2e/theme.spec.ts:25:5 › a light Appearance Theme keeps the page light (164ms)
+  ✓  23 [chromium] › e2e/theme.spec.ts:31:5 › the Archive stays light though its cards wear dark themes (430ms)
+
+  23 passed (53.4s)
+e2e exit 0
