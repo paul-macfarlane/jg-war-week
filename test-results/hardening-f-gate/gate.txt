@@ -42,57 +42,57 @@ Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
 
  RUN  v4.1.11 /Users/paulmacfarlane/Code/war-weeker
 
-(node:60175) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:77051) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:60174) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:77043) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:60190) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:77044) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:60188) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:77056) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
 
- Test Files  94 passed (94)
-      Tests  2314 passed (2314)
-   Start at  19:58:24
-   Duration  11.58s (transform 5.32s, setup 0ms, import 45.98s, tests 40.56s, environment 6ms)
+ Test Files  95 passed (95)
+      Tests  2319 passed (2319)
+   Start at  20:16:31
+   Duration  12.48s (transform 4.55s, setup 0ms, import 48.55s, tests 39.23s, environment 7ms)
 
 
 > war-weeker@0.1.0 build /Users/paulmacfarlane/Code/war-weeker
 > next build
 
 ▲ Next.js 16.3.6 (Turbopack)
-✓ Running next.config.ts took 57ms
+✓ Running next.config.ts took 58ms
 
   Creating an optimized production build ...
-✓ Compiled successfully in 1236ms
+✓ Compiled successfully in 1265ms
   Running TypeScript ...
-  Finished TypeScript in 2.7s ...
+  Finished TypeScript in 2.4s ...
   Collecting page data using 9 workers ...
-2026-09-27T23:58:41.817Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-09-28T00:16:49.997Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-27T23:58:41.865Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-09-28T00:16:50.063Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-27T23:58:41.900Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-09-28T00:16:50.087Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-27T23:58:41.904Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-09-28T00:16:50.131Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-27T23:58:41.905Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-09-28T00:16:50.139Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-27T23:58:41.912Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-09-28T00:16:50.137Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-27T23:58:41.936Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-09-28T00:16:50.171Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-27T23:58:41.944Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-09-28T00:16:50.174Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-27T23:58:41.999Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-09-28T00:16:50.205Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-09-27T23:58:42.040Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-09-28T00:16:50.275Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
   Generating static pages using 9 workers (0/8) ...
   Generating static pages using 9 workers (2/8) 
   Generating static pages using 9 workers (4/8) 
   Generating static pages using 9 workers (6/8) 
-✓ Generating static pages using 9 workers (8/8) in 126ms
+✓ Generating static pages using 9 workers (8/8) in 140ms
   Finalizing page optimization ...
 
 Route (app)
@@ -216,8 +216,8 @@ ok - the XI seed loads 5/3/1 Placement Points for Catan and none for Beast Mode
 ▲ Next.js 16.3.6
 - Local:         http://localhost:3100
 - Network:       http://192.168.1.184:3100
-✓ Ready in 94ms
-✓ Running next.config.ts took 19ms
+✓ Ready in 83ms
+✓ Running next.config.ts took 18ms
 ok - server ready
 ok - signed-in GET / redirects to /xi
 ok - GET /xi renders War Week XI with the Team Standings
@@ -291,7 +291,7 @@ ok - GET /admin/guide as a signed-in non-Organizer shows the refusal
 ok - GET /admin/points as an Organizer shows the form with every Competition, the ledger with entered-by, and the current standings (16 unscheduled Competitions offered)
 ok - GET /admin/points as a non-Organizer shows the refusal
 ok - createPointsEntry rejects a signed-in JG user off the allowlist
-(node:60512) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:77378) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
 ok - createPointsEntry rejects a Participant in a team Competition and a Team in an individual one
 ok - createPointsEntry as an Organizer saves an over-max decimal entry with entered-by
@@ -385,13 +385,13 @@ ok - the Participant's refused calls wrote nothing
 ok - createFaqItem posting XI's warWeekId with admin_edition=x in the cookie writes to XI and leaves X unchanged
 ok - lifecycle: create XII, end XI with a Winner, start XII; an Organizer corrects XI but a Participant can't reopen it; then restore
 ⨯ Error: Failed query: select "id", "war_week_id", "question", "answer", "sort_order", "created_at", "updated_at" from "faq_item" where "faq_item"."war_week_id" = $1 order by "faq_item"."sort_order" asc, "faq_item"."id" asc
-params: d2a5fe9c-8792-4f88-896d-94bda32875f8
+params: ae63d93f-f300-4fcd-8960-b91fe841fd66
     at o.queryWithCache (.next/server/chunks/ssr/_1pxfdpz._.js:25:37181)
     at async (.next/server/chunks/ssr/_1pxfdpz._.js:18:6014)
     at async k (.next/server/chunks/ssr/[root-of-the-server]__1w3cl-j._.js:1:5635) {
   query: 'select "id", "war_week_id", "question", "answer", "sort_order", "created_at", "updated_at" from "faq_item" where "faq_item"."war_week_id" = $1 order by "faq_item"."sort_order" asc, "faq_item"."id" asc',
-  params: [ 'd2a5fe9c-8792-4f88-896d-94bda32875f8' ],
-  digest: '3846630719',
+  params: [ 'ae63d93f-f300-4fcd-8960-b91fe841fd66' ],
+  digest: '1828840383',
   [cause]: error: relation "faq_item" does not exist
       at async (.next/server/chunks/ssr/_1pxfdpz._.js:18:6229)
       at async o.queryWithCache (.next/server/chunks/ssr/_1pxfdpz._.js:25:37156)
@@ -448,38 +448,30 @@ Loaded War Week xi (reset)
 
 Running 23 tests using 1 worker
 
-  ✓   1 [chromium] › e2e/archive.spec.ts:23:5 › the Archive lists every past War Week (466ms)
-[WebServer] ⨯ Error: The destination stream closed early.
-[WebServer]     at ignore-listed frames {
-[WebServer]   digest: '2687744626'
-[WebServer] }
-[WebServer] ⨯ Error: The destination stream closed early.
-[WebServer]     at ignore-listed frames {
-[WebServer]   digest: '2687744626'
-[WebServer] }
-  ✓   2 [chromium] › e2e/archive.spec.ts:44:7 › past edition /i renders (279ms)
-  ✓   3 [chromium] › e2e/archive.spec.ts:44:7 › past edition /ii renders (226ms)
-  ✓   4 [chromium] › e2e/archive.spec.ts:44:7 › past edition /iii renders (235ms)
-  ✓   5 [chromium] › e2e/archive.spec.ts:44:7 › past edition /iv renders (288ms)
-  ✓   6 [chromium] › e2e/archive.spec.ts:44:7 › past edition /ix renders (267ms)
-  ✓   7 [chromium] › e2e/archive.spec.ts:44:7 › past edition /v renders (268ms)
-  ✓   8 [chromium] › e2e/archive.spec.ts:44:7 › past edition /vi renders (230ms)
-  ✓   9 [chromium] › e2e/archive.spec.ts:44:7 › past edition /vii renders (303ms)
-  ✓  10 [chromium] › e2e/archive.spec.ts:44:7 › past edition /viii renders (279ms)
-  ✓  11 [chromium] › e2e/archive.spec.ts:44:7 › past edition /x renders (249ms)
-  ✓  12 [chromium] › e2e/bracket-heats.spec.ts:104:5 › a Heats Bracket is built, run and finalized into Points Entries (6.3s)
-  ✓  13 [chromium] › e2e/bracket.spec.ts:106:5 › a Bracket is built, run and finalized into Points Entries (22.6s)
-  ✓  14 [chromium] › e2e/finale.spec.ts:5:5 › the Finale plays from Start and ends on first place (3.2s)
-  ✓  15 [chromium] › e2e/forms.spec.ts:6:7 › forms › a Points Entry refused on the server shows under Points and focuses it (996ms)
-  ✓  16 [chromium] › e2e/forms.spec.ts:45:7 › forms › the settings form refused on the server shows under Slack URL and focuses it (478ms)
-[WebServer] (node:60599) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  ✓   1 [chromium] › e2e/archive.spec.ts:23:5 › the Archive lists every past War Week (451ms)
+  ✓   2 [chromium] › e2e/archive.spec.ts:44:7 › past edition /i renders (282ms)
+  ✓   3 [chromium] › e2e/archive.spec.ts:44:7 › past edition /ii renders (228ms)
+  ✓   4 [chromium] › e2e/archive.spec.ts:44:7 › past edition /iii renders (224ms)
+  ✓   5 [chromium] › e2e/archive.spec.ts:44:7 › past edition /iv renders (283ms)
+  ✓   6 [chromium] › e2e/archive.spec.ts:44:7 › past edition /ix renders (266ms)
+  ✓   7 [chromium] › e2e/archive.spec.ts:44:7 › past edition /v renders (249ms)
+  ✓   8 [chromium] › e2e/archive.spec.ts:44:7 › past edition /vi renders (265ms)
+  ✓   9 [chromium] › e2e/archive.spec.ts:44:7 › past edition /vii renders (302ms)
+  ✓  10 [chromium] › e2e/archive.spec.ts:44:7 › past edition /viii renders (284ms)
+  ✓  11 [chromium] › e2e/archive.spec.ts:44:7 › past edition /x renders (263ms)
+  ✓  12 [chromium] › e2e/bracket-heats.spec.ts:104:5 › a Heats Bracket is built, run and finalized into Points Entries (6.1s)
+  ✓  13 [chromium] › e2e/bracket.spec.ts:106:5 › a Bracket is built, run and finalized into Points Entries (22.8s)
+  ✓  14 [chromium] › e2e/finale.spec.ts:5:5 › the Finale plays from Start and ends on first place (3.3s)
+  ✓  15 [chromium] › e2e/forms.spec.ts:6:7 › forms › a Points Entry refused on the server shows under Points and focuses it (1.0s)
+  ✓  16 [chromium] › e2e/forms.spec.ts:45:7 › forms › the settings form refused on the server shows under Slack URL and focuses it (475ms)
+[WebServer] (node:77465) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 [WebServer] (Use `node --trace-deprecation ...` to show where the warning was created)
   ✓  17 [chromium] › e2e/points-entry.spec.ts:6:5 › an Organizer's Points Entry raises the Team's total on the leaderboard (1.1s)
-  ✓  18 [chromium] › e2e/sign-in.spec.ts:5:5 › an anonymous visit to /xi lands on /sign-in (211ms)
-  ✓  19 [chromium] › e2e/sign-in.spec.ts:20:5 › a session with a non-JG email is refused /xi (236ms)
-  ✓  20 [chromium] › e2e/sign-in.spec.ts:38:5 › a JG session opens /xi (670ms)
-  ✓  21 [chromium] › e2e/theme.spec.ts:16:5 › a dark Appearance Theme makes the whole page dark, scrollbar included (239ms)
-  ✓  22 [chromium] › e2e/theme.spec.ts:25:5 › a light Appearance Theme keeps the page light (168ms)
+  ✓  18 [chromium] › e2e/sign-in.spec.ts:5:5 › an anonymous visit to /xi lands on /sign-in (210ms)
+  ✓  19 [chromium] › e2e/sign-in.spec.ts:20:5 › a session with a non-JG email is refused /xi (235ms)
+  ✓  20 [chromium] › e2e/sign-in.spec.ts:38:5 › a JG session opens /xi (712ms)
+  ✓  21 [chromium] › e2e/theme.spec.ts:16:5 › a dark Appearance Theme makes the whole page dark, scrollbar included (675ms)
+  ✓  22 [chromium] › e2e/theme.spec.ts:25:5 › a light Appearance Theme keeps the page light (167ms)
   ✓  23 [chromium] › e2e/theme.spec.ts:31:5 › the Archive stays light though its cards wear dark themes (433ms)
 [WebServer] ⨯ Error: The destination stream closed early.
 [WebServer]     at ignore-listed frames {
@@ -493,5 +485,9 @@ Running 23 tests using 1 worker
 [WebServer]     at ignore-listed frames {
 [WebServer]   digest: '2687744626'
 [WebServer] }
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '2687744626'
+[WebServer] }
 
-  23 passed (52.8s)
+  23 passed (53.3s)
