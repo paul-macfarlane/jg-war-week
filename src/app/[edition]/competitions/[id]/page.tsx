@@ -9,6 +9,7 @@ import {
   type BracketViewSelfReport,
 } from "@/components/bracket-view";
 import { CompetitionFacts, PointsEntryList } from "@/components/competitions";
+import { Toaster } from "@/components/ui/sonner";
 import { can } from "@/lib/access";
 import { entrantForYou, nextHeatFor } from "@/lib/bracket/view";
 import { resolveYou } from "@/lib/you";
@@ -159,6 +160,8 @@ export default async function CompetitionPage({
       </section>
       {/* A Bracket's view refreshes itself, pausing while a report is open. */}
       {isBracket ? null : <AutoRefresh />}
+      {/* A report's result and refusals toast here, as on the admin screens. */}
+      {isBracket ? <Toaster position="bottom-center" closeButton /> : null}
     </main>
   );
 }

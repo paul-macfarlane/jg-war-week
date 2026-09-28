@@ -256,6 +256,19 @@ how many advance from each, and its results screen has Organizers tap the
 whole finishing order instead of just a winner once a Heat holds more than
 two.
 
+A team Competition can enter **Squads** instead of whole Teams: in the
+builder's Squads section, **Add Squad** names a group of one Team's
+Participants (each Participant in one Squad per Competition), then
+"Entrants are: Squads" and **All Squads** make them the Entrants. Each
+Squad's Placement Points go to its Team when the Bracket is finalized, and
+Squads are always seeded at random. The builder's **Self-report** switch
+(off by default) lets a Participant whose roster email matches their
+sign-in report the result of their own Heat from "Your next Heat"
+(**Report result**) while it has no result; it counts at once. The results
+screen shows "Reported by <name>" on that Heat, and the Host or an
+Organizer can still change any result there (which clears the line). ADR
+0005 explains why this is the one Participant write.
+
 Format behavior goes through `src/lib/bracket/formats.ts`: it dispatches
 every Bracket operation (generate, record a result, finalize…) to that
 Format's `FormatEngine`, defined in `engine.ts` (single elimination) or
@@ -372,7 +385,8 @@ emails.
 are `get_current_war_week`, `get_leaderboard`, `get_schedule`,
 `get_announcements`, `get_awards`, `get_faq`, `list_history`,
 `get_history` and `get_bracket` (a Competition's Bracket by name, with each
-Heat's time and place). `get_bracket` (`src/mcp/bracket.ts`) is the model
+Heat's time and place, and a Squad's `participants` by name; never who
+reported a result). `get_bracket` (`src/mcp/bracket.ts`) is the model
 for a tool that looks something up by name and whitelists what it returns.
 
 ### Add or fix history

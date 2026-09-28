@@ -163,6 +163,20 @@ export function OrganizerGuide({
           finalize again. While it&apos;s finalized, the Competition&apos;s
           scoring and Placement Points can&apos;t change: un-finalize first.
         </p>
+        <h3 className="font-semibold">Squads and self-report</h3>
+        <p className="text-foreground/70">
+          A {teamLower} Competition can enter Squads instead of whole{" "}
+          {teamLower}s. In the builder&apos;s Squads section, Add Squad names a
+          group of one {teamLower}&apos;s Participants (each in one Squad per
+          Competition); then set Entrants are to Squads and press All Squads.
+          Each Squad&apos;s Placement Points go to its {teamLower}, and Squads
+          are seeded at random. Turn on Self-report and a Participant whose
+          roster email matches their sign-in can report their own Heat from Your
+          next Heat while it has no result; it counts at once. The results
+          screen shows &quot;Reported by&quot; on that Heat, and you can still
+          change any result there. Turn Self-report off to stop new reports;
+          results already reported stand.
+        </p>
       </section>
 
       <section className="flex flex-col gap-2">

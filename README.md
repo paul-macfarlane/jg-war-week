@@ -82,7 +82,9 @@ anonymous and non-JG visitors are sent to `/sign-in`; an Organizer's Points
 Entry shows on `/xi/leaderboard`; a Bracket is built, timed by its Host
 (shown in "Your next Heat" and Now/Next), recorded, advanced, finalized into
 Points Entries and played as a Bracket Finale (also under reduced motion); a Heats Bracket is run to Points Entries,
-with the End War Week warning; the Finale plays to first place; `/history`
+with the End War Week warning; a Host builds a Squad Bracket with self-report on,
+a Participant reports their Heat and their Squad advances, a second report on it is
+refused, and the Host sees "Reported by" and overwrites it; the Finale plays to first place; `/history`
 and every past edition render; server-refused form fields show their error
 and take focus; an edition's Appearance Theme darkens the whole page while
 the Archive stays light. Each flow saves full-page screenshots under `test-results/e2e/<test>/`; a failing flow also keeps a

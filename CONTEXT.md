@@ -42,7 +42,9 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Bracket**                   | The Rounds and Heats of a non-`points` Competition.                                                                               |
 | **Round**                     | One step of a Bracket, holding Heats that can be played at the same time. Round 1 is the first.                                   |
 | **Heat**                      | One game between Entrants in a Bracket. Covers 1v1 and multi-entrant games. May have a time and place: a Day and a start time (ET) together, and a location. |
-| **Entrant**                   | A Team or Participant entered in a Bracket.                                                                                       |
+| **Entrant**                   | A Team, Participant or Squad entered in a Bracket.                                                                                |
+| **Squad**                     | A named group of Participants of one Team, entered as one Entrant in a team-scoring Bracket. Belongs to one Competition; a Participant is in at most one Squad per Competition. |
+| **Self-report**               | A Participant in a Heat entering its Heat Result themselves, when the Competition allows it. It counts at once, like the Host's; the Host or an Organizer can overwrite it. |
 | **Seed Position**             | An Entrant's starting rank in a Bracket. Say "seed position" or "seeding", never bare "seed" (that means seed files).             |
 | **Heat Result**               | The finishing order of a Heat's Entrants, with an optional score for each.                                                        |
 
@@ -153,7 +155,8 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
     Competition, so a Host of one War Week's Competition has no say in
     another War Week's.
   - Everyone else signed in is a **Participant** for access purposes and
-    can't write anything.
+    has one write: reporting the result of a Heat they're in when
+    self-report is on (ADR 0005).
 - `can(actor, action, target)` in `src/lib/access.ts` is the one access
   rule: it returns why the actor can't take the action, or null. It's pure;
   the caller loads the actor and the target. A Points Entry or Schedule Item
@@ -206,13 +209,34 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   Participant sees: never an email, the Organizer list or Hosts.
   `get_leaderboard` always returns the Standings. `get_bracket` returns one
   Competition's Bracket of the current War Week by name: Entrants and Heats
-  by name, with places, scores, time and place, and the champion.
+  by name, with places, scores, time and place, and the champion; a
+  Squad's Participants by name, and never who reported a result.
 - Standings are always visible to every signed-in user. `/<edition>/finale`
   and a finalized Bracket's `/<edition>/finale/<competitionId>` are readable
   by any signed-in JG user; Organizers and Hosts see the links to them in
   `/admin/standings`.
 - A Heat's time and place is set by an Organizer or that Competition's Host
   (`bracket.heat-schedule`, through `authorize` like every Bracket write).
+- **Self-report** (`bracket.heat-report`, ADR 0005) is the one Participant
+  write. The report action runs `authorizeHeatReport`: sign-in, the
+  Competition and Heat ids, the Competition row, then the Heat's facts, then
+  `can`, and only then parses its input. `can` checks it before the
+  Organizer shortcut, so the Heat's facts bind everyone, and refuses in this
+  order: not signed in with a JG email ("Sign in to continue."); the facts
+  weren't loaded ("Organizers and Hosts only."); "Self-report is off for
+  this Competition."; "Your sign-in doesn't match a Participant of this War
+  Week." (linked by the roster email, ignoring case — never the "Which one
+  is you?" pick); "That Heat no longer exists."; "You're not in this
+  Heat." (not its Participant, not on its Team Entrant, not in its Squad);
+  "A bye isn't played."; "This Heat is still waiting for its Entrants.";
+  "This Heat already has a result.". The mutation checks the Heat's facts
+  again under the Competition row lock, so of two reports at once the
+  second is refused.
+- Only the Competition's Host or an Organizer changes a result already
+  entered, turns self-report on or off, or writes Squads. The reporter's
+  email is stored on the Heat and never sent to the client or MCP; the
+  results screen shows their Participant name ("Reported by Ashley
+  Schuliger").
 
 ## War Week lifecycle rules
 
@@ -263,8 +287,28 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 
 - A Competition's **Format** is `points`, `single-elimination` or `heats`.
   Only a single-elimination or Heats Competition has Entrants and a
-  Bracket. A team Competition's Entrants are Teams, an individual one's
-  Participants of the same War Week.
+  Bracket. A team Competition's Entrants are Teams or Squads, an
+  individual one's Participants of the same War Week. All of a Bracket's
+  Entrants are one kind.
+- **Squads.** A Host or Organizer names Squads in the builder: 1–16
+  Participants of one Team, a name unique within the Competition, and a
+  Participant in at most one Squad per Competition. Squads are only for
+  team-scoring Brackets. A Squad's Placement Points go to its Team, so two
+  Squads of one Team each earn their own Points Entry. Squads are seeded at
+  random only (no By Standings). Changing a Participant's Team, or deleting
+  them or their Team, is refused while they're in a Squad; deleting a Squad
+  that is an Entrant is refused, and no Squad changes while the Bracket is
+  finalized. Changing a Competition's scoring, or its Format to `points`,
+  is refused while it has Squads.
+- **Self-report** is off by default; an Organizer or the Competition's Host
+  turns it on per Competition in the builder. A Participant linked by email
+  then sees **Report result** on "Your next Heat" and enters the result of
+  a Heat they're in that has no result yet. It counts at once and advances
+  Entrants exactly as the Host's does. Turning it off refuses new reports
+  and keeps the results already reported. A Host save that changes a
+  reported result clears its reporter (the result is now the Host's), as
+  does a later Heat being reset or refilled; re-saving the identical result
+  keeps it. A re-draw takes the reports with the Heats.
 - **Generate** gives the Entrants random Seed Positions and builds the
   Bracket; **By Standings** builds it with Seed Positions in the order of
   the current Standings (Team Standings for a team Competition, individual
@@ -380,6 +424,9 @@ same rows with the same values (only `updated_at` moves).
 - **Organizers** in a seed's `organizers` list are added to the global
   Organizer list when missing, ignoring case. A load only ever inserts
   them: it never removes an Organizer, even with `--reset`.
+- **Squads** and reporters aren't in seeds, and neither is a Competition's
+  self-report setting. A reload that removes or moves a Participant leaves
+  their Squads to the Organizer.
 - **Hosts** aren't in seeds. A plain reload never touches the Hosts of a
   Competition the seed keeps; `--reset` deletes the War Week's
   Competitions, and their Hosts go with them.
