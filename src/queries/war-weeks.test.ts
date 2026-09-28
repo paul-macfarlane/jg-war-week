@@ -27,7 +27,6 @@ function warWeekFixture(overrides: Partial<WarWeek>): WarWeek {
     bannerUrl: overrides.bannerUrl ?? null,
     fontPreset: overrides.fontPreset ?? "sans",
     wikiUrl: overrides.wikiUrl ?? null,
-    organizerEmails: overrides.organizerEmails ?? [],
     winner: overrides.winner ?? null,
     highlights: overrides.highlights ?? [],
     createdAt: overrides.createdAt ?? new Date(),

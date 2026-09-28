@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { WarWeekLifecycleControls } from "@/components/war-week-lifecycle-controls";
 import { STATUS_LABELS, defaultWinner } from "@/lib/war-week-lifecycle";
 import { getStandings } from "@/queries/standings";
+import { getUnfinalizedBrackets } from "@/queries/unfinalized-brackets";
 
 import { loadAdminPage } from "../gate";
 import { SETUP_SECTIONS } from "./sections";
@@ -27,10 +28,17 @@ export default async function AdminSetupPage() {
     await loadAdminPage("/admin/setup");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
+  const isLiveOrganizer = isOrganizer && warWeek.status === "live";
+  const [standings, unfinalizedBrackets] = isLiveOrganizer
+    ? await Promise.all([
+        getStandings(warWeek),
+        getUnfinalizedBrackets(warWeek),
+      ])
+    : [undefined, []];
   const suggestedWinner = !isOrganizer
     ? ""
-    : warWeek.status === "live"
-      ? defaultWinner(await getStandings(warWeek))
+    : isLiveOrganizer
+      ? defaultWinner(standings!)
       : (warWeek.winner ?? "");
 
   return (
@@ -68,6 +76,7 @@ export default async function AdminSetupPage() {
                 status={warWeek.status}
                 suggestedWinner={suggestedWinner}
                 highlights={warWeek.highlights}
+                unfinalizedBrackets={unfinalizedBrackets.map((c) => c.name)}
               />
               <Link
                 href="/admin/setup/next"

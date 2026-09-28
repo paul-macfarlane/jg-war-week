@@ -33,7 +33,6 @@ const fixture: WarWeek = {
   bannerUrl: "/themes/xi/banner.svg",
   fontPreset: "mono",
   wikiUrl: null,
-  organizerEmails: ["pmacfarlane@jahnelgroup.com"],
   winner: null,
   highlights: [],
   createdAt: new Date("2026-01-01T00:00:00Z"),

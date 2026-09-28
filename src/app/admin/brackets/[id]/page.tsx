@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { BracketResults } from "@/components/bracket-results";
-import { getBracket } from "@/queries/brackets";
+import { getBracket, getHeatReporters } from "@/queries/brackets";
+import { getSetupDays } from "@/queries/setup";
 
 import { loadAdminPage } from "../../gate";
 
@@ -22,8 +23,13 @@ export default async function BracketResultsPage({
     return <AdminRefused warWeek={warWeek} email={email} />;
   }
 
-  const view = await getBracket(id);
+  const [view, days] = await Promise.all([
+    getBracket(id),
+    getSetupDays(warWeek),
+  ]);
   if (!view || view.competition.warWeekId !== warWeek.id) notFound();
+  // After the 404: the id is a Competition's now, so it's a well-formed uuid.
+  const reporters = await getHeatReporters(id);
   const { competition } = view;
 
   return (
@@ -70,6 +76,13 @@ export default async function BracketResultsPage({
             champion={view.champion}
             finalized={view.finalized}
             primaryColor={warWeek.primaryColor}
+            days={days}
+            reporters={reporters}
+            finaleHref={
+              view.finalized
+                ? `/${warWeek.edition}/finale/${competition.id}`
+                : null
+            }
           />
         )}
       </section>

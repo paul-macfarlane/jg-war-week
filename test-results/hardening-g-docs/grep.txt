@@ -1,0 +1,35 @@
+# Criteria 11 and 16 — docs, showcase and ADR (at 3a34427)
+
+$ grep -c Squad per file
+CONTEXT.md: 15
+docs/maintainers-guide.md: 7
+src/lib/about.ts: 1
+src/components/organizer-guide.tsx: 6
+
+$ grep -c 'Self-report\|self-report' per file
+CONTEXT.md: 7
+docs/maintainers-guide.md: 1
+src/lib/about.ts: 1
+src/components/organizer-guide.tsx: 3
+
+$ grep -n "organizer_emails" docs/maintainers-guide.md
+222:- **Expand/contract.** `war_week.organizer_emails` and
+
+$ grep -rn "Heat Report\|pending report\|Waiting for the Host" CONTEXT.md docs src   (expect empty)
+exit 1
+
+$ grep -n "0005" docs/adr/0002-*.md CONTEXT.md
+CONTEXT.md:159:    self-report is on (ADR 0005).
+CONTEXT.md:220:- **Self-report** (`bracket.heat-report`, ADR 0005) is the one Participant
+docs/adr/0002-global-organizers-and-competition-hosts.md:33:| **Participant** | Any signed-in JG user | Read; one write, self-report (ADR 0005) |
+
+$ grep -n "can't write anything" CONTEXT.md   (expect empty)
+exit 1
+
+$ ls docs/adr/0005*
+docs/adr/0005-self-report-the-one-participant-write.md
+
+# Banned-term scan ("Member", word-initial, case-insensitive) over src scripts e2e drizzle: staging vs HEAD
+d4e333f: 4 hit(s); HEAD: 4 hit(s)
+
+# /about media: not regenerated. The 'brackets' still (scripts/about-media.ts) shoots an unlinked viewer's page of a finished Heats Bracket without Squads, which this epic does not change for an unlinked viewer (plan, Repository areas > Docs and showcase).

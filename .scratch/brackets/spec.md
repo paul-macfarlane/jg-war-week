@@ -120,6 +120,9 @@ Remove **Reveal** and the "Reveal rules" section. Remove "Standings hidden" from
 18. As an Organizer, generated Points Entries appear in `/admin/points` marked "From bracket". They can't be edited there, and the bracket is where they change.
 
 ### Self-report (opt-in per Competition)
+
+> Superseded 2026-09-27: a Participant reports and the Competition's Host confirms. See `.scratch/hardening/epics/G-squads-and-self-report.md`, decisions 7–14.
+
 19. As a Participant who is an Entrant in a Heat, directly or through my Team or Squad, and whose sign-in links to my roster entry by email, I can submit that Heat's Result when self-report is on.
 20. As another Entrant in that Heat (any linked Participant of another Entrant) or an Organizer, I can confirm or dispute a pending Result.
     - Only a confirmed Result advances anyone.

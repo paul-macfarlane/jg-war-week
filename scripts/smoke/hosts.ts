@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import {
   SMOKE_ANNOUNCEMENT_PREFIX,
   deleteSmokeAnnouncements,
@@ -30,6 +32,11 @@ import {
 const HOST_COMPETITION = "Tuesday Stairs";
 const OTHER_COMPETITION = "Cypher";
 const NOT_HOST_REFUSAL = "You're not a Host of that Competition.";
+// Both fixture Competitions default to `format: "points"` (the seed sets no
+// Format), so a Bracket-only action refuses them with this before it ever
+// reaches a Host check.
+const NOT_A_BRACKET = "This Competition isn't run as a Bracket.";
+const SELF_REPORT_OFF = "Self-report is off for this Competition.";
 
 /** Removes every `competition_host` row the smoke Host has. */
 export async function deleteSmokeHosts() {
@@ -225,6 +232,45 @@ async function assertHostAllowedAndRefused(fixture: HostFixture) {
         return !result.ok && result.error === expected && same
           ? null
           : `result=${JSON.stringify(result)} unchanged=${same}`;
+      },
+    );
+  }
+
+  // Squads and self-report are Bracket-only actions. The hosted Competition
+  // (Tuesday Stairs) is a `points` Competition, so access passes (it's the
+  // Host's own) and the Bracket rule refuses it; the other Competition
+  // (Cypher, not hosted by this Host) refuses on access first.
+  for (const [action, args] of [
+    ["setSelfReport", { on: true }],
+    [
+      "createSquad",
+      { name: "SMOKE Host Squad", teamId: fixture.teamId, participantIds: [] },
+    ],
+  ] as const) {
+    await runCheck(
+      `${action} as a Host on their own points Competition is refused with '${NOT_A_BRACKET}'`,
+      async () => {
+        const result = await callAction(
+          ids[action],
+          [fixture.hostCompetitionId, args],
+          session,
+        );
+        return !result.ok && result.error === NOT_A_BRACKET
+          ? null
+          : `result=${JSON.stringify(result)}`;
+      },
+    );
+    await runCheck(
+      `${action} as a Host on another Competition is refused with '${NOT_HOST_REFUSAL}'`,
+      async () => {
+        const result = await callAction(
+          ids[action],
+          [fixture.otherCompetitionId, args],
+          session,
+        );
+        return !result.ok && result.error === NOT_HOST_REFUSAL
+          ? null
+          : `result=${JSON.stringify(result)}`;
       },
     );
   }
@@ -517,6 +563,29 @@ async function assertAccessBeforeValidation(
       host: NOT_HOST_REFUSAL,
     },
     {
+      family: "Heat time",
+      action: "setHeatSchedule",
+      args: [other, randomUUID(), null, {}],
+      participant: NOT_HOST_REFUSAL,
+      host: NOT_HOST_REFUSAL,
+    },
+    {
+      family: "Squad",
+      action: "createSquad",
+      args: [other, "junk"],
+      participant: NOT_HOST_REFUSAL,
+      host: NOT_HOST_REFUSAL,
+    },
+    {
+      // `authorizeHeatReport`'s Heat facts bind self-report-off before any
+      // Host/Participant distinction, so both get the same refusal.
+      family: "Heat report",
+      action: "reportHeatResult",
+      args: [other, randomUUID(), "junk"],
+      participant: SELF_REPORT_OFF,
+      host: SELF_REPORT_OFF,
+    },
+    {
       family: "lifecycle",
       action: "endWarWeek",
       args: [fixture.xiId, "no Winner"],
@@ -721,6 +790,32 @@ export async function assertParticipantRefused(sessions: {
       NOT_HOST_REFUSAL,
     ],
     ["Bracket", "generateBracket", [competition.id, {}], NOT_HOST_REFUSAL],
+    [
+      "Heat time",
+      "setHeatSchedule",
+      [competition.id, randomUUID(), null, {}],
+      NOT_HOST_REFUSAL,
+    ],
+    [
+      "Squad",
+      "createSquad",
+      [competition.id, { name: "x", teamId: team.id, participantIds: [] }],
+      NOT_HOST_REFUSAL,
+    ],
+    [
+      "Self-report",
+      "setSelfReport",
+      [competition.id, { on: true }],
+      NOT_HOST_REFUSAL,
+    ],
+    [
+      // The seeded Competitions default to self-report off, which
+      // `heatReportError` refuses before the Heat itself is even loaded.
+      "Heat report",
+      "reportHeatResult",
+      [competition.id, randomUUID(), {}],
+      SELF_REPORT_OFF,
+    ],
     ["lifecycle", "startWarWeek", [xi], organizerOnly("start a War Week")],
     [
       "Organizer list",
@@ -761,7 +856,9 @@ export async function assertParticipantRefused(sessions: {
          (select count(*) from day where day_theme = 'smoke-participant') as days,
          (select count(*) from war_week where story_theme = 'smoke-participant') as settings,
          (select count(*) from war_week where edition = 'xi' and status = 'live') as xi_live,
-         (select count(*) from organizer where email = $3) as smoke_organizer`,
+         (select count(*) from organizer where email = $3) as smoke_organizer,
+         (select count(*) from squad) as squads,
+         (select count(*) from heat where reported_by_email is not null) as reported_heats`,
       [
         `${SMOKE_NOTE_PREFIX}participant`,
         `${SMOKE_ANNOUNCEMENT_PREFIX}participant`,

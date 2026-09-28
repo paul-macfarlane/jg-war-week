@@ -1,0 +1,21 @@
+# Criterion 10 — existing checks unchanged in what they assert (at 3a34427, vs staging d4e333f)
+
+$ git diff --stat d4e333f -- src/lib/bracket/{engine,heats,formats,seeding,points}.test.ts src/lib/bracket/{engine,heats,formats,seeding,points,types}.ts
+(empty = byte-identical)
+
+$ git diff --stat d4e333f -- e2e/bracket.spec.ts e2e/bracket-heats.spec.ts
+(empty = byte-identical)
+
+# Removed lines ("-" hunks) in existing bracket test files and the existing smoke loops:
+--- src/lib/bracket/view.test.ts: 0 removed line(s)
+--- src/mutations/brackets.test.ts: 0 removed line(s)
+--- src/components/bracket-results.test.tsx: 0 removed line(s)
+--- src/mcp/bracket.test.ts: 5 removed line(s)
+-      { seedPosition: 1, name: "Alpha", team: "Alpha Squad" },
+-      { seedPosition: 2, name: "Bravo", team: "Bravo Squad" },
+-      { seedPosition: 3, name: "Charlie", team: "Charlie Squad" },
+-    const entrantsWithExtras = entrants.map((e) => ({
+-        ["name", "seedPosition", "team"].sort(),
+--- scripts/smoke/brackets.ts: 0 removed line(s)
+--- scripts/smoke/hosts.ts: 1 removed line(s)
+-         (select count(*) from organizer where email = $3) as smoke_organizer`,

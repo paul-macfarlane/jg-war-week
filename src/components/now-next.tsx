@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { CategoryBadge } from "@/components/schedule-item";
+import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import {
   type NowNext,
@@ -9,13 +10,40 @@ import {
   formatTimeRange,
 } from "@/lib/schedule";
 
-function CompactItem({ item }: { item: ScheduleEntry }) {
+/**
+ * One Now/Next entry. A timed Heat shows a "Heat" badge and its Entrants,
+ * and links to its Competition.
+ */
+function CompactItem({
+  item,
+  edition,
+}: {
+  item: ScheduleEntry;
+  edition: string;
+}) {
+  const isHeat = item.kind === "heat";
   return (
     <li className="flex flex-col gap-1">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="font-semibold">{item.title}</span>
-        <CategoryBadge category={item.category} />
+        {isHeat && item.competition ? (
+          <Link
+            href={`/${edition}/competitions/${item.competition.id}`}
+            className="font-semibold underline-offset-4 hover:underline"
+          >
+            {item.title}
+          </Link>
+        ) : (
+          <span className="font-semibold">{item.title}</span>
+        )}
+        {isHeat ? (
+          <Badge variant="secondary">Heat</Badge>
+        ) : (
+          <CategoryBadge category={item.category} />
+        )}
       </div>
+      {isHeat && item.entrants ? (
+        <span className="text-sm break-words">{item.entrants}</span>
+      ) : null}
       <span className="text-foreground/70 text-sm">
         {formatTimeRange(item)}
         {item.location ? ` · ${item.location}` : null}
@@ -73,7 +101,7 @@ export function NowNextSection({
           {now.length > 0 ? (
             <ul className="flex flex-col gap-3">
               {now.map((item) => (
-                <CompactItem key={item.id} item={item} />
+                <CompactItem key={item.id} item={item} edition={edition} />
               ))}
             </ul>
           ) : (
@@ -92,7 +120,7 @@ export function NowNextSection({
           </h2>
           <ul className="flex flex-col gap-3">
             {next.items.map((item) => (
-              <CompactItem key={item.id} item={item} />
+              <CompactItem key={item.id} item={item} edition={edition} />
             ))}
           </ul>
         </div>

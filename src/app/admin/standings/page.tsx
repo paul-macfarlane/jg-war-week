@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { buttonVariants } from "@/components/ui/button";
+import { getBracketCompetitions } from "@/queries/brackets";
 
 import { loadAdminPage } from "../gate";
 
@@ -14,9 +15,8 @@ export const metadata: Metadata = {
 };
 
 /**
- * The Organizer's way into the Finale. Finalized brackets add a
- * "Finale: <Competition>" option here once they exist (brackets ticket 6);
- * add them to the list below.
+ * The Organizer's way into the Finale, and into each finalized Bracket's
+ * Bracket Finale ("Finale: <Competition>").
  */
 export default async function AdminFinalePage() {
   const { warWeek, email, allowed, isOrganizer, editions } =
@@ -24,6 +24,9 @@ export default async function AdminFinalePage() {
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const edition = warWeek.edition;
+  const finalized = (await getBracketCompetitions(warWeek)).filter(
+    (competition) => competition.finalizedAt !== null,
+  );
 
   return (
     <AdminShell
@@ -58,9 +61,29 @@ export default async function AdminFinalePage() {
             Open Finale
           </Link>
         </div>
-        <p className="text-foreground/70 text-sm">
-          Finalized brackets will appear here later, each with its own Finale.
-        </p>
+        <section className="flex flex-col gap-2">
+          <h2 className="text-lg font-semibold">Bracket Finales</h2>
+          {finalized.length === 0 ? (
+            <p className="text-foreground/70 text-sm">
+              Each finalized Bracket gets its own Finale, counting its placings
+              in to the champion. None is finalized yet.
+            </p>
+          ) : (
+            <ul className="flex flex-wrap gap-2">
+              {finalized.map((competition) => (
+                <li key={competition.id}>
+                  <Link
+                    href={`/${edition}/finale/${competition.id}`}
+                    className={buttonVariants({ variant: "outline" })}
+                  >
+                    <Sparkles aria-hidden />
+                    Finale: {competition.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
     </AdminShell>
   );

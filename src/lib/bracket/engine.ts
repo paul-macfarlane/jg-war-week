@@ -2,10 +2,12 @@
  * The single-elimination Bracket engine. Every function is pure: it takes a
  * Bracket and returns a new one, never changing its input.
  */
+import { isDecided } from "@/lib/bracket/heat-status";
 import {
   type Bracket,
   BracketError,
   type Entrant,
+  type FormatEngine,
   type Heat,
   type HeatResult,
   type HeatSlot,
@@ -47,10 +49,6 @@ export function isBye(heat: Heat): boolean {
   return heat.round === 1 && heat.slots.some((s) => s.entrantId === null);
 }
 
-export function isDecided(heat: Heat): boolean {
-  return heat.status === "played" || heat.status === "forfeit";
-}
-
 /**
  * Moves a Heat's winner into the Heat it feeds. A winner already there is
  * left alone, keeping that Heat's own result.
@@ -86,7 +84,11 @@ export function generate(
     }
   }
 
-  const bracket: Bracket = { heats: [] };
+  const bracket: Bracket = {
+    format: "single-elimination",
+    config: null,
+    heats: [],
+  };
   for (let round = 1; round <= rounds; round++) {
     for (let position = 1; position <= size / 2 ** round; position++) {
       bracket.heats.push({
@@ -102,6 +104,9 @@ export function generate(
               }
             : null,
         status: "pending",
+        dayId: null,
+        startTime: null,
+        location: null,
       });
     }
   }
@@ -289,3 +294,32 @@ export function finalPlacings(
     }))
     .sort((a, b) => a.place - b.place);
 }
+
+/**
+ * Single elimination as a Format: two Entrants a Heat, the winner advances.
+ * It has no config.
+ */
+export const singleElimination: FormatEngine = {
+  validateConfig: () => null,
+  generate: (_config, entrants, newId) => generate(entrants, newId),
+  applyResult,
+  resetByResult(bracket, heatId, result) {
+    // A forfeiting Entrant loses, so the winner is the first who didn't.
+    const forfeits = result.forfeits ?? [];
+    const winner = result.order.find((id) => !forfeits.includes(id));
+    return resetByResult(bracket, heatId, winner ?? null);
+  },
+  isRecordable(bracket, heatId) {
+    const heat = bracket.heats.find((h) => h.id === heatId);
+    return (
+      heat !== undefined &&
+      !isBye(heat) &&
+      heat.slots.every((s) => s.entrantId !== null)
+    );
+  },
+  isBye: (_bracket, heat) => isBye(heat),
+  hasResults,
+  isComplete,
+  champion,
+  finalPlacings,
+};

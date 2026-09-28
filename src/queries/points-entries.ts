@@ -31,10 +31,15 @@ export type PointsEntryFormTarget = {
   team: string | null;
 };
 
+/** A Participant as the forms offer one, with their Team's id (or null). */
+export type PointsEntryFormParticipant = PointsEntryFormTarget & {
+  teamId: string | null;
+};
+
 export type PointsEntryFormOptions = {
   competitions: PointsEntryFormCompetition[];
   teams: PointsEntryFormTarget[];
-  participants: PointsEntryFormTarget[];
+  participants: PointsEntryFormParticipant[];
 };
 
 const participantTeam = alias(team, "participant_team");
@@ -69,6 +74,7 @@ export async function getPointsEntryFormOptions(
         id: participant.id,
         name: participant.displayName,
         team: participantTeam.name,
+        teamId: participant.teamId,
       })
       .from(participant)
       .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))

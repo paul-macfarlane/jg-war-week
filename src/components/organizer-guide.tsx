@@ -132,23 +132,50 @@ export function OrganizerGuide({
       <section className="flex flex-col gap-2">
         <h2 className="text-lg font-semibold">Running a Bracket</h2>
         <p className="text-foreground/70">
-          Set a Competition&apos;s Format to single elimination under{" "}
+          Set a Competition&apos;s Format to Single elimination or Heats under{" "}
           <Link
             href="/admin/setup/competitions"
             className="text-primary underline underline-offset-4"
           >
             Competitions
           </Link>
-          , then open its Bracket builder to pick Entrants — all {teamLower}s,
-          or specific Participants — and Generate the Bracket (Seed Positions
-          are random; Re-roll before any Heat is played to try again). From the
-          results screen, tap a Heat to record its winner, score or a forfeit;
-          changing a decided Heat&apos;s winner resets the later Heats that
+          . Single elimination is one against one: the winner of each Heat
+          advances. Heats puts 2 to 8 Entrants in each Heat (you choose how
+          many, and how many advance); the top few of each Heat go on, Round
+          after Round, until one Heat is left. The final placings are the final
+          Heat&apos;s order, then everyone else tied by the Round they went out
+          in; a forfeiter finishes behind the rest of their Heat. Open the
+          Bracket builder to pick Entrants — all {teamLower}s, or specific
+          Participants — and Generate the Bracket (Seed Positions are random;
+          Re-roll before any Heat is played to try again). Press By Standings
+          instead to draw its Seed Positions from the current Standings, ties
+          drawn at random. On the results screen, a Heat&apos;s Time &amp; place
+          sets its Day, start time (ET) and location; the Competition&apos;s
+          Hosts can set it too. A timed Heat shows on its card, in each
+          Entrant&apos;s next Heat and, once its Entrants are known, in the home
+          page&apos;s Now / Next. A re-draw clears every Heat time, so the
+          builder asks first. From the results screen, tap a Heat to record it:
+          its winner, or for a bigger Heat its Entrants in finishing order, with
+          scores or forfeits; changing who advances resets the later Heats that
           followed from it, while a score-only edit keeps them. Finalize turns
           the Bracket&apos;s placings into Points Entries marked &quot;From
           bracket&quot;; un-finalize removes them so you can fix a Heat and
           finalize again. While it&apos;s finalized, the Competition&apos;s
           scoring and Placement Points can&apos;t change: un-finalize first.
+        </p>
+        <h3 className="font-semibold">Squads and self-report</h3>
+        <p className="text-foreground/70">
+          A {teamLower} Competition can enter Squads instead of whole{" "}
+          {teamLower}s. In the builder&apos;s Squads section, Add Squad names a
+          group of one {teamLower}&apos;s Participants (each in one Squad per
+          Competition); then set Entrants are to Squads and press All Squads.
+          Each Squad&apos;s Placement Points go to its {teamLower}, and Squads
+          are seeded at random. Turn on Self-report and a Participant whose
+          roster email matches their sign-in can report their own Heat from Your
+          next Heat while it has no result; it counts at once. The results
+          screen shows &quot;Reported by&quot; on that Heat, and you can still
+          change any result there. Turn Self-report off to stop new reports;
+          results already reported stand.
         </p>
       </section>
 
@@ -168,6 +195,12 @@ export function OrganizerGuide({
           on the projector and press Start: the Standings count in from last
           place to first. Replay runs it again. The Finale never changes the
           Standings, it only plays them.
+        </p>
+        <p className="text-foreground/70">
+          A finalized Bracket has its own Finale: open it from the same page
+          (&quot;Finale:&quot; and the Competition&apos;s name) or from
+          &quot;Play the Finale&quot; on its champion card, and press Start to
+          count its placings in to the champion.
         </p>
       </section>
 
@@ -189,9 +222,11 @@ export function OrganizerGuide({
           next can Start. Create next War Week copies what you choose (settings
           by default; Competitions, with their Hosts, and the FAQ are off) and
           opens the new edition as upcoming, so you can set it up while this one
-          stays live. The header&apos;s edition switcher moves the admin between
-          editions you may administer — a banner marks the Archive so you
-          don&apos;t mistake it for the live one.
+          stays live. The End confirm names any Bracket that isn&apos;t
+          finalized: finalize it first so its placings count (it warns, it
+          doesn&apos;t stop you). The header&apos;s edition switcher moves the
+          admin between editions you may administer — a banner marks the Archive
+          so you don&apos;t mistake it for the live one.
         </p>
       </section>
 

@@ -52,7 +52,6 @@ async function fixture(tx: DBTx) {
         backgroundColor: "#ffffff",
         foregroundColor: "#000000",
         fontPreset: "sans",
-        organizerEmails: [actorEmail],
       })
       .returning({ id: schema.warWeek.id });
     const [d] = await tx

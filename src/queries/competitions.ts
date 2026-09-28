@@ -3,6 +3,7 @@ import { alias } from "drizzle-orm/pg-core";
 
 import { DBOrTx, db } from "@/db";
 import {
+  type Competition,
   WarWeek,
   competition,
   participant,
@@ -26,6 +27,30 @@ const competitionColumns = {
   countsTowardTeam: competition.countsTowardTeam,
   competitionGroup: competition.competitionGroup,
 } satisfies Record<keyof CompetitionListItem, unknown>;
+
+/**
+ * Finds a War Week's Competition by name for `get_bracket`: an exact name
+ * wins; else a case-insensitive (trimmed) name when exactly one Competition
+ * has it; else `undefined` (names are unique per War Week only
+ * case-sensitively).
+ */
+export async function getCompetitionByName(
+  warWeek: Pick<WarWeek, "id">,
+  name: string,
+  dbOrTx: DBOrTx = db,
+): Promise<Pick<Competition, "id"> | undefined> {
+  const rows = await dbOrTx
+    .select({ id: competition.id, name: competition.name })
+    .from(competition)
+    .where(eq(competition.warWeekId, warWeek.id));
+  const exact = rows.find((row) => row.name === name);
+  if (exact) return exact;
+  const target = name.trim().toLowerCase();
+  const sameName = rows.filter(
+    (row) => row.name.trim().toLowerCase() === target,
+  );
+  return sameName.length === 1 ? sameName[0] : undefined;
+}
 
 /** Loads a War Week's Competitions, grouped by `groupCompetitions`. */
 export async function getCompetitions(

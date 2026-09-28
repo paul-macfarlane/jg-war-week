@@ -4,7 +4,7 @@
 
 **Blocked by:** 03 (Hosts), 13 (test net)
 
-**Status:** ready-for-agent (T9 and T10 before the 2027-01-21 milestone; the rest as time allows, never delaying it)
+**Status:** done
 
 ## Order
 
@@ -32,4 +32,28 @@
 
 ## Comments
 
-- 2026-09-27: items 1 (Heats) and 2 (groups → knockout), the End War Week unfinalized-Bracket warning and the XI demo seed's new Brackets are grouped as `../epics/E-bracket-formats-milestone.md`. The rest stays here.
+- 2026-09-27: items 1 (Heats) and 2 (groups → knockout), the End War Week unfinalized-Bracket warning and the XI demo seed's new Brackets are grouped as `../epics/E-bracket-formats-milestone.md`. The rest stays here. *(Superseded the same day by the [DECISION] below: T10 and the demo seed were dropped.)*
+
+**[DECISION] 2026-09-26 (Paul, during `/atlas-plan` of Epic E):**
+
+- **T10 dropped.** No new Format needed: Pool is plain single elimination, and Bouncy Ping Pong ran as two Competitions (a points qualifier, then a four-Entrant single-elimination Bracket of the top finishers, teams of 2). Two Competitions stay the answer. The "~14 uses" came from wiki mentions of qualifiers and finals nights, not from Group play. Round-robin Groups and tiebreaks stay under T7.
+- **`per-heat` and `both` points removed.** No Competition needs points per Heat; past multi-entrant games paid only 1st place, which Placement Points express. Epic E removes the code; a later migration drops `competition.bracket_points` and its type after Epic E is on `main`.
+- **No seeded XI Bracket:** there is no history to seed one from.
+- Epic E (`../epics/E-bracket-formats-milestone.md`) is the End War Week warning, T9 Heats and the points-mode code removal.
+
+**[PROGRESS] 2026-09-27 (Epic E, PR https://github.com/paul-macfarlane/jg-war-week/pull/84):** delivered item 1 (T9 Heats), the End War Week warning (T6 extra) and the `per-heat`/`both` points removal from the code (the column drop follows after `main`). T10 dropped (see the decision above). Still open here: T11 Squads, T12 self-report, T13 Heat times and Now/Next, T7 round robin, T8 double elimination, the other T6/T14 extras, W2 seeding.
+
+
+**[SCOPE CHANGE] 2026-09-27 (Paul):**
+
+- **Cut:** T7 round robin with Group tables and ties (2 past uses), the Archive bracket view from T14 (no past Brackets to show), and drag seeding from W2 (deferred in the brackets spec). None has a named need.
+- **Grouped:** `../epics/F-brackets-on-the-day.md` takes T13 Heat times and Now/Next, T14 live refresh and MCP `get_bracket`, the Finale for a Bracket, and seeding by Standings. `../epics/G-squads-and-self-report.md` takes T11 Squads and T12 self-report (with proposed decisions that replace the brackets spec's stories 19–21), together with tickets 18 and 19.
+- **Left out of both:** T8 double elimination (build only on request; a new ticket if someone asks) and the Slack champion post (waits on Slack posting, ticket 17). After Epic G this ticket has nothing else open and closes.
+
+**[PROGRESS] 2026-09-27 (Epic F, PR https://github.com/paul-macfarlane/jg-war-week/pull/88):** delivered T13 Heat time and place with Now/Next (stories 13, 22, 24), T14's live refresh (story 25) and MCP `get_bracket` (story 26), the Finale for a Bracket, and W2 seeding by Standings (story 9, no drag). Still open here: Epic G (T11 Squads, T12 self-report).
+
+- 2026-09-27: Epic G (`../epics/G-squads-and-self-report.md`) claimed T11 Squads and T12 self-report on branch `feat/hardening-g-squads-and-self-report` (`/atlas-implement`, work package `hardening-g`); `[PROGRESS]` and closeout follow with its PR.
+
+**[PROGRESS] 2026-09-27 (Epic G, PR https://github.com/paul-macfarlane/jg-war-week/pull/89):** delivered T11 Squads (named groups of one Team's Participants entered as one Entrant, points to the Team) and T12 self-report as redefined (a Participant in a Heat reports its result, which counts at once like a Host's; ADR 0005). Details and evidence in `../epics/G-squads-and-self-report.md`.
+
+**[CLOSEOUT] 2026-09-27:** `ready-for-agent → done`. Delivered across Epics E (PR #84), F (PR #88) and G (PR https://github.com/paul-macfarlane/jg-war-week/pull/89): T9 Heats, T13 Heat time and place with Now/Next, T14 live refresh and `get_bracket`, the Finale for a Bracket, W2 seeding by Standings, T11 Squads, T12 self-report, the End War Week warning, and the `per-heat`/`both` removal. Cut by decision: T10, T7 round robin, the Archive bracket view, drag seeding. Left open outside this ticket: T8 double elimination (a new ticket only on request) and the Slack champion post (ticket 17).

@@ -11,6 +11,8 @@ import {
   participant,
   pointsEntry,
   scheduleItem,
+  squad,
+  squadParticipant,
   team,
   warWeek,
 } from "@/db/schema";
@@ -331,6 +333,7 @@ export async function deleteTeam(
           "Bracket Entrant",
           "Bracket Entrants",
         ],
+        [await tx.$count(squad, eq(squad.teamId, id)), "Squad", "Squads"],
       ],
       "Move or delete them first.",
     );
@@ -416,6 +419,34 @@ export async function updateParticipant(
     dbOrTx.transaction(async (tx): Promise<MutationResult> => {
       const refusal = await participantRefusal(values, ctx, tx, id);
       if (refusal) return { ok: false, error: refusal };
+      // A Squad write takes this row `for share`, so a Team change and a
+      // Squad write on the same Participant run one after the other.
+      const [current] = await tx
+        .select({ teamId: participant.teamId })
+        .from(participant)
+        .where(
+          and(eq(participant.id, id), eq(participant.warWeekId, ctx.warWeekId)),
+        )
+        .for("update");
+      if (!current) return { ok: false, error: PARTICIPANT_NOT_FOUND };
+      if ((values.teamId ?? null) !== current.teamId) {
+        // A Squad's Participants are all on its Team.
+        const squadRefusal = inUseError(
+          "Participant",
+          [
+            [
+              await tx.$count(
+                squadParticipant,
+                eq(squadParticipant.participantId, id),
+              ),
+              "Squad",
+              "Squads",
+            ],
+          ],
+          "Remove them from the Squads before changing their Team.",
+        );
+        if (squadRefusal) return { ok: false, error: squadRefusal };
+      }
       const updated = await tx
         .update(participant)
         .set({ ...values, updatedAt: sql`now()` })
@@ -463,6 +494,14 @@ export async function deleteParticipant(
           await tx.$count(entrant, eq(entrant.participantId, id)),
           "Bracket Entrant",
           "Bracket Entrants",
+        ],
+        [
+          await tx.$count(
+            squadParticipant,
+            eq(squadParticipant.participantId, id),
+          ),
+          "Squad",
+          "Squads",
         ],
       ],
       "Delete them or remove the Participant from them first.",
@@ -530,7 +569,7 @@ async function competitionRefusal(
     return refusal;
   }
   // A Bracket's Entrants are Teams or Participants by its scoring.
-  return inUseError(
+  const entrantRefusal = inUseError(
     "Competition",
     [
       [
@@ -540,6 +579,19 @@ async function competitionRefusal(
       ],
     ],
     "Remove them before changing its scoring.",
+  );
+  if (entrantRefusal) return entrantRefusal;
+  // Squads are only for team Competitions.
+  return inUseError(
+    "Competition",
+    [
+      [
+        await tx.$count(squad, eq(squad.competitionId, exceptId)),
+        "Squad",
+        "Squads",
+      ],
+    ],
+    "Delete them before changing its scoring.",
   );
 }
 

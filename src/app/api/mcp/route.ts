@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { toAnnouncementsResult } from "@/mcp/announcements";
 import { toAwardsResult } from "@/mcp/awards";
+import { toBracketResult } from "@/mcp/bracket";
 import { toFaqResult } from "@/mcp/faq";
 import { toHistoryListResult, toHistoryResult } from "@/mcp/history";
 import { toLeaderboardResult } from "@/mcp/leaderboard";
@@ -12,8 +13,11 @@ import { toCurrentWarWeekResult } from "@/mcp/war-week";
 import { getAnnouncements } from "@/queries/announcements";
 import { getArchiveDetailByYear, listArchive } from "@/queries/archive";
 import { getAwards } from "@/queries/awards";
+import { getBracket } from "@/queries/brackets";
+import { getCompetitionByName } from "@/queries/competitions";
 import { getFaqItems } from "@/queries/faq";
 import { getSchedule } from "@/queries/schedule";
+import { getSetupDays } from "@/queries/setup";
 import { getStandings } from "@/queries/standings";
 import { getCurrentWarWeek } from "@/queries/war-weeks";
 
@@ -188,6 +192,40 @@ const handler = createMcpHandler(
           year,
           await getArchiveDetailByYear(year),
         );
+
+        return {
+          content: [{ type: "text", text: JSON.stringify(result) }],
+        };
+      },
+    );
+
+    server.registerTool(
+      "get_bracket",
+      {
+        ...MCP_TOOLS.get_bracket,
+        inputSchema: z.object({
+          competition: z
+            .string()
+            .trim()
+            .min(1)
+            .describe("The Competition's name, in the current War Week."),
+        }),
+      },
+      async ({ competition }) => {
+        const warWeek = await getCurrentWarWeek();
+        if (!warWeek) {
+          return {
+            content: [
+              { type: "text", text: JSON.stringify({ warWeek: null }) },
+            ],
+          };
+        }
+        const found = await getCompetitionByName(warWeek, competition);
+        const [view, days] = await Promise.all([
+          found ? getBracket(found.id) : Promise.resolve(undefined),
+          getSetupDays(warWeek),
+        ]);
+        const result = toBracketResult(view, days, competition);
 
         return {
           content: [{ type: "text", text: JSON.stringify(result) }],

@@ -12,6 +12,10 @@ const PAGES: [path: string, purpose: string][] = [
     "/<edition>/finale",
     "The closing-ceremony playback of the Standings, last place to first.",
   ],
+  [
+    "/<edition>/finale/<competitionId>",
+    "A finalized Bracket's Finale: its final placings, last place to the champion.",
+  ],
   ["/<edition>/schedule", "The schedule, grouped by Day with each Day Theme."],
   ["/<edition>/news", "Announcements, pinned first then newest first."],
   ["/<edition>/teams", "Teams and their rosters."],
@@ -23,7 +27,7 @@ const PAGES: [path: string, purpose: string][] = [
   ["/install", "How to install JG War Week as an app."],
   [
     "/admin",
-    "Organizer-only: Points Entry, Standings, Announcements, Awards, and Setup (War Week settings, Appearance Theme, Days).",
+    "For Organizers and Hosts: Points Entry, Bracket builder and results (with each Heat's time and place), Standings, Announcements, Awards, and Setup (War Week settings, Appearance Theme, Days).",
   ],
   ["/sign-in", "Google sign-in with a @jahnelgroup.com account."],
 ];
@@ -42,7 +46,7 @@ export function llmsTxt(origin: string): string {
 
   return `# JG War Week
 
-> The JG War Week app is where Jahnel Group organizers run War Week, the company's annual week of team competitions, and where participants follow it: themes, schedule, teams, competitions (points-based or single-elimination Brackets), points, awards and announcements, the Finale, plus a history of past War Weeks.
+> The JG War Week app is where Jahnel Group organizers run War Week, the company's annual week of team competitions, and where participants follow it: themes, schedule, teams, competitions (points-based, or Brackets run single elimination or Heats), points, awards and announcements, the Finale, plus a history of past War Weeks.
 
 Every page and API route except sign-in needs a signed-in Jahnel Group account.
 
@@ -51,9 +55,9 @@ live one, else the next upcoming one, else the latest complete one). Complete
 editions stay in the Archive at \`/history\`. Standings are never hidden: they
 are always the current Standings, live or complete. The Finale
 (\`/<edition>/finale\`) is a closing-ceremony playback of those Standings, not
-a separate result — it changes nothing. Some Competitions run as a
-single-elimination Bracket instead of plain points; there is no MCP tool for
-Bracket detail yet, so ask about a Competition's Standings, not its Bracket.
+a separate result — it changes nothing. Some Competitions run as a Bracket
+(single elimination or Heats) instead of plain points; \`get_bracket\` reads
+one by Competition name, with its Squads by name.
 
 ## Pages
 

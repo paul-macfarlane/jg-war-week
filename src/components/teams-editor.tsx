@@ -69,6 +69,7 @@ function TeamRow({
         [team.pointsEntryCount, "Points Entry", "Points Entries"],
         [team.awardCount, "Award", "Awards"],
         [team.entrantCount, "Bracket Entrant", "Bracket Entrants"],
+        [team.squadCount, "Squad", "Squads"],
       ])
     : "";
 
@@ -207,6 +208,7 @@ function ParticipantRow({
         [participant.pointsEntryCount, "Points Entry", "Points Entries"],
         [participant.awardCount, "Award", "Awards"],
         [participant.entrantCount, "Bracket Entrant", "Bracket Entrants"],
+        [participant.squadCount, "Squad", "Squads"],
       ])
     : "";
 
@@ -315,7 +317,8 @@ function ParticipantRow({
       {participant &&
         (participant.pointsEntryCount > 0 ||
           participant.awardCount > 0 ||
-          participant.entrantCount > 0) && (
+          participant.entrantCount > 0 ||
+          participant.squadCount > 0) && (
           <p className="text-foreground/60 mt-1 text-xs">{usage}</p>
         )}
       <SetupRowError error={error} />

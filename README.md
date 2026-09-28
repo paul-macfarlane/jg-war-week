@@ -1,7 +1,7 @@
 # jg-war-week
 
 War Week: themes, schedule, teams, competitions (including single-elimination
-Brackets), points, awards, announcements, and a closing-ceremony Finale, for
+or Heats Brackets), points, awards, announcements, and a closing-ceremony Finale, for
 Jahnel Group's annual War Week — one live edition at a time, with a curated
 Archive of every past one. See `CONTEXT.md` for the domain glossary.
 
@@ -77,12 +77,17 @@ production build (`pnpm build`) before running `pnpm smoke`.
 `pnpm e2e` runs the Playwright flows in Chromium against the same production
 build and local database: it refuses a non-local `DATABASE_URL` and a missing
 `.next`, applies migrations, reloads every seed with `--reset`, starts the app
-with `pnpm start -p 3200`, and signs its own JG sessions (no Google). The five
-flows: anonymous and non-JG visitors are sent to `/sign-in`; an Organizer's
-Points Entry shows on `/xi/leaderboard`; a Bracket is built, recorded,
-advanced and finalized into Points Entries; the Finale plays to first place;
-`/history` and every past edition render. Each flow saves full-page
-screenshots under `test-results/e2e/<test>/`; a failing flow also keeps a
+with `pnpm start -p 3200`, and signs its own JG sessions (no Google). The flows:
+anonymous and non-JG visitors are sent to `/sign-in`; an Organizer's Points
+Entry shows on `/xi/leaderboard`; a Bracket is built, timed by its Host
+(shown in "Your next Heat" and Now/Next), recorded, advanced, finalized into
+Points Entries and played as a Bracket Finale (also under reduced motion); a Heats Bracket is run to Points Entries,
+with the End War Week warning; a Host builds a Squad Bracket with self-report on,
+a Participant reports their Heat and their Squad advances, a second report on it is
+refused, and the Host sees "Reported by" and overwrites it; the Finale plays to first place; `/history`
+and every past edition render; server-refused form fields show their error
+and take focus; an edition's Appearance Theme darkens the whole page while
+the Archive stays light. Each flow saves full-page screenshots under `test-results/e2e/<test>/`; a failing flow also keeps a
 trace there (`pnpm exec playwright show-trace <path>/trace.zip`). The first
 time, install the browser with `pnpm exec playwright install chromium`.
 
@@ -95,8 +100,8 @@ lint, vitest, production build, the smoke test, then the Playwright flows —
 The app exposes a read-only Model Context Protocol server over Streamable
 HTTP at `/api/mcp` (production: `https://jg-war-week.vercel.app/api/mcp`).
 Its tools are `get_current_war_week`, `get_leaderboard`, `get_schedule`,
-`get_announcements`, `get_awards`, `get_faq`, `list_history` and
-`get_history`. Every tool is read-only and returns only what a signed-in
+`get_announcements`, `get_awards`, `get_faq`, `list_history`,
+`get_history` and `get_bracket`. Every tool is read-only and returns only what a signed-in
 Participant sees, and no tool returns an email
 or the Organizer list (Announcement authors come back as the handle
 before the `@`).

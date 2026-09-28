@@ -200,6 +200,7 @@ describe("can: a Competition's setup and Bracket", () => {
           "bracket.entrants",
           "bracket.generate",
           "bracket.heat-result",
+          "bracket.heat-schedule",
           "bracket.finalize",
           "bracket.unfinalize",
         ] as WarWeekAction[]
@@ -220,6 +221,182 @@ describe("can: a Competition's setup and Bracket", () => {
         competitionId: CATAN,
       }),
     ).toBe(NOT_HOST);
+  });
+});
+
+describe("can: Squads and the self-report toggle", () => {
+  it.each(
+    cases(
+      (
+        [
+          "bracket.squads",
+          "competition.self-report",
+          "bracket.heat-result",
+        ] as WarWeekAction[]
+      ).map((action) => [
+        action,
+        { warWeekId: XI, competitionId: CATAN },
+        catanHostOr(),
+      ]),
+    ),
+  )("%s", (_, action, target, actor, expected) => {
+    expect(can(ACTORS[actor], action, target)).toBe(expected);
+  });
+});
+
+describe("can: reporting a Heat's result (self-report)", () => {
+  const RED = "team-red";
+  const BLUE = "team-blue";
+  const RED_ALPHA = "squad-red-alpha";
+  const RED_BRAVO = "squad-red-bravo";
+  const ME = "participant-me";
+  const OFF = "Self-report is off for this Competition.";
+  const NOT_LINKED =
+    "Your sign-in doesn't match a Participant of this War Week.";
+  const NOT_IN_HEAT = "You're not in this Heat.";
+  const ADMIN = "Organizers and Hosts only.";
+
+  type Facet = NonNullable<
+    NonNullable<Parameters<typeof can>[2]>["heatReport"]
+  >;
+  const teamHeat = [
+    { teamId: RED, participantId: null, squadId: null },
+    { teamId: BLUE, participantId: null, squadId: null },
+  ];
+  const sameTeamSquadHeat = [
+    { teamId: null, participantId: null, squadId: RED_ALPHA },
+    { teamId: null, participantId: null, squadId: RED_BRAVO },
+  ];
+  const linkedRed = { participantId: ME, teamId: RED, squadId: null };
+  /** An open Red vs Blue Heat of Catan, self-report on, linked to Red. */
+  const facet = (over: Partial<Facet> = {}): Facet => ({
+    selfReport: true,
+    heat: "open",
+    linked: linkedRed,
+    entrants: teamHeat,
+    ...over,
+  });
+  const target = (over: Partial<Facet> = {}) => ({
+    warWeekId: XI,
+    competitionId: CATAN,
+    heatReport: facet(over),
+  });
+
+  it.each<[string, Partial<Facet>, string | null]>([
+    ["self-report off", { selfReport: false }, OFF],
+    ["not linked to any Participant", { linked: null }, NOT_LINKED],
+    [
+      "linked but on none of the Entrants",
+      { linked: { participantId: ME, teamId: "team-gold", squadId: null } },
+      NOT_IN_HEAT,
+    ],
+    [
+      "linked as the Participant Entrant",
+      {
+        linked: { participantId: ME, teamId: null, squadId: null },
+        entrants: [
+          { teamId: null, participantId: ME, squadId: null },
+          { teamId: null, participantId: "participant-other", squadId: null },
+        ],
+      },
+      null,
+    ],
+    ["linked through their Team", {}, null],
+    [
+      "linked through their Squad",
+      {
+        linked: { participantId: ME, teamId: RED, squadId: RED_ALPHA },
+        entrants: [
+          { teamId: null, participantId: null, squadId: RED_ALPHA },
+          { teamId: null, participantId: null, squadId: "squad-blue-alpha" },
+        ],
+      },
+      null,
+    ],
+    [
+      "on the Squads' Team but in neither Squad of Red Alpha vs Red Bravo",
+      { linked: linkedRed, entrants: sameTeamSquadHeat },
+      NOT_IN_HEAT,
+    ],
+    [
+      "in the opposing same-Team Squad (Red Bravo) of Red Alpha vs Red Bravo",
+      {
+        linked: { participantId: ME, teamId: RED, squadId: RED_BRAVO },
+        entrants: sameTeamSquadHeat,
+      },
+      null,
+    ],
+    ["a decided Heat", { heat: "decided" }, "This Heat already has a result."],
+    [
+      "an unfilled Heat",
+      { heat: "unfilled" },
+      "This Heat is still waiting for its Entrants.",
+    ],
+    ["a bye", { heat: "bye" }, "A bye isn't played."],
+    [
+      "a missing Heat",
+      { heat: "missing", entrants: [] },
+      "That Heat no longer exists.",
+    ],
+  ])("a Participant: %s", (_, over, expected) => {
+    expect(can(ACTORS.participant, "bracket.heat-report", target(over))).toBe(
+      expected,
+    );
+  });
+
+  it("refuses an anonymous visitor", () => {
+    expect(can(null, "bracket.heat-report", target())).toBe(SIGN_IN);
+  });
+
+  it("refuses a non-JG email even with a matching linked Participant", () => {
+    const outsider = {
+      email: "someone@gmail.com",
+      isOrganizer: false,
+      hosts: [],
+    };
+    // The facet alone would allow it: the domain rule refuses, not linkage.
+    expect(can(ACTORS.participant, "bracket.heat-report", target())).toBeNull();
+    expect(can(outsider, "bracket.heat-report", target())).toBe(SIGN_IN);
+  });
+
+  it("refuses when the Heat facts weren't loaded, whoever asks", () => {
+    for (const actor of [ACTORS.participant, ACTORS.organizer, ACTORS.host]) {
+      expect(
+        can(actor, "bracket.heat-report", {
+          warWeekId: XI,
+          competitionId: CATAN,
+        }),
+      ).toBe(ADMIN);
+    }
+  });
+
+  it("binds an Organizer and the Host by the Heat facts too", () => {
+    for (const actor of [ACTORS.organizer, ACTORS.host]) {
+      expect(can(actor, "bracket.heat-report", target({ linked: null }))).toBe(
+        NOT_LINKED,
+      );
+      expect(
+        can(actor, "bracket.heat-report", target({ heat: "decided" })),
+      ).toBe("This Heat already has a result.");
+      expect(
+        can(actor, "bracket.heat-report", target({ selfReport: false })),
+      ).toBe(OFF);
+      expect(can(actor, "bracket.heat-report", target())).toBeNull();
+    }
+  });
+
+  it("never lets a Participant in the Heat change a result or the toggle", () => {
+    // The facet says they're in this open Heat; the direct paths ignore it.
+    for (const action of [
+      "bracket.heat-result",
+      "competition.self-report",
+      "bracket.squads",
+    ] as WarWeekAction[]) {
+      expect(can(ACTORS.participant, action, target())).toBe(NOT_HOST);
+      expect(can(ACTORS.otherHost, action, target())).toBe(NOT_HOST);
+      expect(can(ACTORS.host, action, target())).toBeNull();
+      expect(can(ACTORS.organizer, action, target())).toBeNull();
+    }
   });
 });
 
