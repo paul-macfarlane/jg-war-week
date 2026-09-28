@@ -1,0 +1,1193 @@
+diff --git a/e2e/bracket-heats.spec.ts b/e2e/bracket-heats.spec.ts
+index 8a07a53..c2c37b5 100644
+--- a/e2e/bracket-heats.spec.ts
++++ b/e2e/bracket-heats.spec.ts
+@@ -1,5 +1,4 @@
+ import {
+-  type Browser,
+   type Locator,
+   type Page,
+   type TestInfo,
+@@ -7,9 +6,8 @@ import {
+   test,
+ } from "@playwright/test";
+ 
+-import { runQuery, xiCompetitionId } from "./db";
+-import { E2E_BASE_URL } from "./env";
+-import { E2E_PARTICIPANT_EMAIL, asOrganizer, signIn } from "./session";
++import { xiCompetitionId } from "./db";
++import { asOrganizer, participantPageAs } from "./session";
+ 
+ // Settlers of Catan is an individual War Week XI Competition with Placement
+ // Points 5 / 3 / 1. None of these eight has a hand-entered Catan Points
+@@ -103,33 +101,6 @@ async function recordHeat(
+   return order;
+ }
+ 
+-/** A War Week XI Participant's id, by display name. */
+-async function xiParticipantId(displayName: string): Promise<string> {
+-  const [row] = await runQuery<{ id: string }>(
+-    `select p.id from participant p join war_week w on w.id = p.war_week_id
+-     where w.edition = 'xi' and p.display_name = $1`,
+-    [displayName],
+-  );
+-  if (!row)
+-    throw new Error(`No War Week XI Participant named "${displayName}"`);
+-  return row.id;
+-}
+-
+-/**
+- * A signed-in Participant's page, with "Which one is you?" already picked
+- * as `displayName` (XI's Participants have no emails to link by).
+- */
+-async function participantPageAs(browser: Browser, displayName: string) {
+-  const participantId = await xiParticipantId(displayName);
+-  const context = await browser.newContext({ baseURL: E2E_BASE_URL });
+-  await signIn(context, E2E_PARTICIPANT_EMAIL);
+-  await context.addInitScript(
+-    ([key, id]) => window.localStorage.setItem(key, id),
+-    ["ww:you:xi", participantId] as const,
+-  );
+-  return { context, page: await context.newPage() };
+-}
+-
+ test("a Heats Bracket is built, run and finalized into Points Entries", async ({
+   browser,
+   context,
+diff --git a/scripts/smoke/brackets.ts b/scripts/smoke/brackets.ts
+index b29e95b..677e080 100644
+--- a/scripts/smoke/brackets.ts
++++ b/scripts/smoke/brackets.ts
+@@ -2,6 +2,7 @@ import type { WriteResult } from "@/lib/result";
+ 
+ import {
+   BASE_URL,
++  MCP_TOKEN,
+   type SmokeSession,
+   callAction,
+   fail,
+@@ -12,6 +13,7 @@ import {
+   signedInFetch,
+   xiWarWeekId,
+ } from "./harness";
++import { mcpTool } from "./mcp";
+ 
+ // The bracket loop check's own Competition and extra Teams (XI has two
+ // Teams), deleted after the check and before it, so it's rerunnable.
+@@ -35,7 +37,7 @@ export async function deleteSmokeBracket() {
+ 
+ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
+   const check =
+-    "bracket loop: an Organizer sets single elimination on a Competition, enters 4 Teams, generates, records 3 Heat Results, finalizes; GET /xi/competitions/<id> shows the champion and /xi/leaderboard includes the generated points; un-finalize removes them; then cleans up";
++    "bracket loop: an Organizer sets single elimination on a Competition, enters 4 Teams, generates, records 3 Heat Results, finalizes; GET /xi/competitions/<id> shows the champion and /xi/leaderboard includes the generated points and /xi/finale/<id> answers 200; un-finalize removes them and /xi/finale/<id> answers 404; then cleans up";
+   const ids = serverActionIds();
+   const missing = [
+     "createCompetition",
+@@ -186,6 +188,49 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
+     if (before === null || finalized !== before + 10) {
+       problems.push(`Red total ${before} → ${finalized}, expected +10`);
+     }
++    const finale = await get(`/xi/finale/${id}`);
++    const finaleBody = await finale.text();
++    if (
++      finale.status !== 200 ||
++      !finaleBody.includes('data-finale="ready"') ||
++      !finaleBody.includes(SMOKE_BRACKET_COMPETITION)
++    ) {
++      problems.push(`/xi/finale/<id> after finalize status=${finale.status}`);
++    }
++
++    // get_bracket over /api/mcp, with the bearer token and no session.
++    const bearer = { Authorization: `Bearer ${MCP_TOKEN}` };
++    const bracket = await mcpTool(
++      "get_bracket",
++      { competition: SMOKE_BRACKET_COMPETITION },
++      undefined,
++      "",
++      bearer,
++    );
++    const bracketPayload = bracket.parsed as
++      | { found: boolean; champion?: string | null; entrants?: unknown[] }
++      | undefined;
++    if (
++      bracketPayload?.found !== true ||
++      bracketPayload.champion !== "Red" ||
++      bracketPayload.entrants?.length !== 4 ||
++      bracket.text.includes("@")
++    ) {
++      problems.push(`get_bracket result=${JSON.stringify(bracket.parsed)}`);
++    }
++    const missingBracket = await mcpTool(
++      "get_bracket",
++      { competition: "no such competition" },
++      undefined,
++      "",
++      bearer,
++    );
++    if (missingBracket.parsed?.found !== false) {
++      problems.push(
++        `get_bracket(no such competition) result=${JSON.stringify(missingBracket.parsed)}`,
++      );
++    }
++
+     const ledger = await (await get("/admin/points")).text();
+     if (!ledger.includes("From bracket")) {
+       problems.push("/admin/points shows no From bracket row");
+@@ -199,6 +244,12 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
+     if (unfinalized !== before) {
+       problems.push(`Red total after un-finalize ${unfinalized} != ${before}`);
+     }
++    const unfinalizedFinale = await get(`/xi/finale/${id}`);
++    if (unfinalizedFinale.status !== 404) {
++      problems.push(
++        `/xi/finale/<id> after un-finalize status=${unfinalizedFinale.status}`,
++      );
++    }
+     const [{ count }] = await runQuery<{ count: string }>(
+       `select count(*) from points_entry where competition_id = $1`,
+       [id],
+diff --git a/src/lib/bracket/finale.test.ts b/src/lib/bracket/finale.test.ts
+new file mode 100644
+index 0000000..4385084
+--- /dev/null
++++ b/src/lib/bracket/finale.test.ts
+@@ -0,0 +1,42 @@
++import { describe, expect, it } from "vitest";
++
++import { bracketFinaleRanks, bracketFinaleRows } from "@/lib/bracket/finale";
++
++const entrants = [
++  { id: "red", seedPosition: 1, label: "Red", color: "#f00" },
++  { id: "blue", seedPosition: 2, label: "Blue", color: "#00f" },
++  { id: "gold", seedPosition: 3, label: "Gold", color: null },
++  { id: "green", seedPosition: 4, label: "Green", color: "#0f0" },
++];
++
++// A four-Entrant single elimination: Gold beat Red in the final; Blue and
++// Green lost their semifinals, so they share 3rd.
++const placings = [
++  { entrantId: "green", place: 3 },
++  { entrantId: "red", place: 2 },
++  { entrantId: "blue", place: 3 },
++  { entrantId: "gold", place: 1 },
++];
++
++describe("bracketFinaleRows", () => {
++  it("lists each Entrant with its label, color and place, by place then Seed Position", () => {
++    expect(bracketFinaleRows(placings, entrants)).toEqual([
++      { entrantId: "gold", label: "Gold", color: null, place: 1 },
++      { entrantId: "red", label: "Red", color: "#f00", place: 2 },
++      { entrantId: "blue", label: "Blue", color: "#00f", place: 3 },
++      { entrantId: "green", label: "Green", color: "#0f0", place: 3 },
++    ]);
++  });
++
++  it("is empty with no placings", () => {
++    expect(bracketFinaleRows([], entrants)).toEqual([]);
++  });
++});
++
++describe("bracketFinaleRanks", () => {
++  it("is each row's place, so tied 3rds share a step and the champion comes last", () => {
++    expect(bracketFinaleRanks(bracketFinaleRows(placings, entrants))).toEqual([
++      1, 2, 3, 3,
++    ]);
++  });
++});
+diff --git a/src/lib/bracket/heat-schedule.test.ts b/src/lib/bracket/heat-schedule.test.ts
+new file mode 100644
+index 0000000..93edb6e
+--- /dev/null
++++ b/src/lib/bracket/heat-schedule.test.ts
+@@ -0,0 +1,102 @@
++import { describe, expect, it } from "vitest";
++
++import { parseHeatScheduleInput } from "@/lib/bracket/heat-schedule";
++
++const DAY_ID = "8b0a4f0e-2a4e-4c1a-9a57-2f7c7b6f5d11";
++
++function formData(fields: Record<string, string>): FormData {
++  const data = new FormData();
++  for (const [key, value] of Object.entries(fields)) data.set(key, value);
++  return data;
++}
++
++describe("parseHeatScheduleInput", () => {
++  it("accepts a Day, start time and location together", () => {
++    expect(
++      parseHeatScheduleInput(
++        formData({ dayId: DAY_ID, startTime: "19:00", location: "Main room" }),
++      ),
++    ).toEqual({
++      ok: true,
++      value: { dayId: DAY_ID, startTime: "19:00", location: "Main room" },
++    });
++  });
++
++  it("accepts clearing every field", () => {
++    expect(
++      parseHeatScheduleInput(
++        formData({ dayId: "", startTime: "", location: "" }),
++      ),
++    ).toEqual({
++      ok: true,
++      value: { dayId: null, startTime: null, location: null },
++    });
++  });
++
++  it("accepts a location on its own, with no Day or start time", () => {
++    expect(
++      parseHeatScheduleInput(
++        formData({ dayId: "", startTime: "", location: "Table 3" }),
++      ),
++    ).toEqual({
++      ok: true,
++      value: { dayId: null, startTime: null, location: "Table 3" },
++    });
++  });
++
++  it("refuses a Day without a start time", () => {
++    expect(
++      parseHeatScheduleInput(
++        formData({ dayId: DAY_ID, startTime: "", location: "" }),
++      ),
++    ).toEqual({
++      ok: false,
++      error: "Pick a Day and a start time together, or clear both.",
++      fieldErrors: {
++        startTime: "Pick a Day and a start time together, or clear both.",
++      },
++    });
++  });
++
++  it("refuses a start time without a Day", () => {
++    expect(
++      parseHeatScheduleInput(
++        formData({ dayId: "", startTime: "19:00", location: "" }),
++      ),
++    ).toEqual({
++      ok: false,
++      error: "Pick a Day and a start time together, or clear both.",
++      fieldErrors: {
++        startTime: "Pick a Day and a start time together, or clear both.",
++      },
++    });
++  });
++
++  it("refuses an invalid Day id", () => {
++    const result = parseHeatScheduleInput(
++      formData({ dayId: "not-a-uuid", startTime: "19:00", location: "" }),
++    );
++    expect(result.ok).toBe(false);
++    expect(!result.ok && result.fieldErrors?.dayId).toBe("Pick a Day.");
++  });
++
++  it("refuses a start time that isn't 24-hour HH:MM", () => {
++    const result = parseHeatScheduleInput(
++      formData({ dayId: DAY_ID, startTime: "7:00 PM", location: "" }),
++    );
++    expect(result.ok).toBe(false);
++    expect(!result.ok && result.fieldErrors?.startTime).toBe(
++      "Start time must be a 24-hour HH:MM time.",
++    );
++  });
++
++  it("refuses a location over 200 characters", () => {
++    const result = parseHeatScheduleInput(
++      formData({ dayId: "", startTime: "", location: "x".repeat(201) }),
++    );
++    expect(result.ok).toBe(false);
++    expect(!result.ok && result.fieldErrors?.location).toBe(
++      "Location must be at most 200 characters.",
++    );
++  });
++});
+diff --git a/src/lib/bracket/input.test.ts b/src/lib/bracket/input.test.ts
+index 8f583be..1fc172d 100644
+--- a/src/lib/bracket/input.test.ts
++++ b/src/lib/bracket/input.test.ts
+@@ -84,6 +84,20 @@ describe("Bracket action input", () => {
+     ).toEqual({ ok: false, error: "Scores are at most 40 characters." });
+   });
+ 
++  it("accepts a Generate with seeding, and defaults it to nothing", () => {
++    expect(parseGenerateInput({ seeding: "standings" })).toEqual({
++      ok: true,
++      value: { seeding: "standings" },
++    });
++    expect(parseGenerateInput({})).toEqual({ ok: true, value: {} });
++  });
++
++  it("refuses an unknown seeding", () => {
++    expect(parseGenerateInput({ seeding: "drag" })).toMatchObject({
++      ok: false,
++    });
++  });
++
+   it("refuses Entrants that aren't row ids", () => {
+     expect(parseEntrantsInput({ targetIds: [a, "nope"] })).toEqual({
+       ok: false,
+diff --git a/src/lib/bracket/now-next.test.ts b/src/lib/bracket/now-next.test.ts
+new file mode 100644
+index 0000000..ed4fd41
+--- /dev/null
++++ b/src/lib/bracket/now-next.test.ts
+@@ -0,0 +1,263 @@
++import { describe, expect, it } from "vitest";
++
++import { applyResult, generate } from "@/lib/bracket/engine";
++import { type TimedHeatRow, heatEntries } from "@/lib/bracket/now-next";
++import type { Bracket, Entrant } from "@/lib/bracket/types";
++import { finalRoundOf } from "@/lib/bracket/view";
++import {
++  type ScheduleDay,
++  type ScheduleEntry,
++  computeNowNext,
++  withHeats,
++} from "@/lib/schedule";
++
++const beyblades = {
++  id: "c-beyblades",
++  name: "Beyblades",
++  format: "single-elimination" as const,
++};
++
++/** Entrants s1…sN at Seed Positions 1…N. */
++function entrants(count: number): Entrant[] {
++  return Array.from({ length: count }, (_, i) => ({
++    id: `s${i + 1}`,
++    seedPosition: i + 1,
++    label: `Seed Position ${i + 1}`,
++  }));
++}
++
++const labels: Record<string, string> = {
++  s1: "Ashley Schuliger",
++  s2: "Blue",
++  s3: "Gold",
++  s4: "Sam Schantz",
++  s5: "Green",
++  s6: "Purple",
++  s7: "Orange",
++  s8: "Silver",
++};
++
++/** Sets the same Day and time on the Heats named, or every Heat. */
++function timed(
++  bracket: Bracket,
++  when: { dayId: string | null; startTime: string | null },
++  ids?: string[],
++): Bracket {
++  return {
++    ...bracket,
++    heats: bracket.heats.map((h) =>
++      !ids || ids.includes(h.id) ? { ...h, ...when, location: null } : h,
++    ),
++  };
++}
++
++/** One row per Heat, as `getTimedHeats` would return them unfiltered. */
++function rowsOf(bracket: Bracket): TimedHeatRow[] {
++  return bracket.heats.map((heat) => ({
++    competition: beyblades,
++    finalRound: finalRoundOf(bracket),
++    heat,
++    labels,
++  }));
++}
++
++/** An empty Sunday of War Week. */
++const sunday: ScheduleDay[] = [
++  { id: "d1", date: "2026-02-22", dayTheme: "Kickoff", items: [] },
++];
++
++/** An instant given as an ET wall-clock time in February (EST, UTC-5). */
++function est(time: string): Date {
++  return new Date(`2026-02-22T${time}-05:00`);
++}
++
++function nowNextAt(
++  rows: TimedHeatRow[],
++  time: string,
++  days: ScheduleDay[] = sunday,
++) {
++  const { now, next } = computeNowNext(
++    withHeats(days, heatEntries(rows)),
++    est(time),
++  );
++  return {
++    now: now.map((e) => e.title),
++    next: next?.items.map((e) => e.title) ?? [],
++  };
++}
++
++describe("heatEntries", () => {
++  // 4 Entrants: r1h1 is s1 v s4 (Semifinal 1), r1h2 s2 v s3, r2h1 the Final.
++  const fourUp = generate(entrants(4));
++
++  it("turns a timed ready Heat into a Now/Next entry named for its Competition", () => {
++    const bracket = timed(fourUp, { dayId: "d1", startTime: "19:00:00" }, [
++      "r1h1",
++    ]);
++    const rows = rowsOf(bracket).map((row) =>
++      row.heat.id === "r1h1"
++        ? { ...row, heat: { ...row.heat, location: "Main room" } }
++        : row,
++    );
++
++    expect(heatEntries(rows)).toEqual([
++      {
++        dayId: "d1",
++        entry: {
++          id: "r1h1",
++          kind: "heat",
++          title: "Beyblades · Semifinal 1",
++          entrants: "Ashley Schuliger vs Sam Schantz",
++          startTime: "19:00:00",
++          endTime: null,
++          host: null,
++          location: "Main room",
++          virtualLink: null,
++          description: null,
++          category: "competition",
++          competition: { id: "c-beyblades", name: "Beyblades" },
++        } satisfies ScheduleEntry,
++      },
++    ]);
++  });
++
++  it("is up next before its start, on now for 60 minutes, then gone", () => {
++    const rows = rowsOf(
++      timed(fourUp, { dayId: "d1", startTime: "19:00:00" }, ["r1h1"]),
++    );
++
++    expect(nowNextAt(rows, "18:59:00")).toEqual({
++      now: [],
++      next: ["Beyblades · Semifinal 1"],
++    });
++    expect(nowNextAt(rows, "19:00:00")).toEqual({
++      now: ["Beyblades · Semifinal 1"],
++      next: [],
++    });
++    expect(nowNextAt(rows, "19:59:59")).toEqual({
++      now: ["Beyblades · Semifinal 1"],
++      next: [],
++    });
++    expect(nowNextAt(rows, "20:00:00")).toEqual({ now: [], next: [] });
++  });
++
++  it("never shows a Heat with no Day or no start time", () => {
++    const noDay = rowsOf(
++      timed(fourUp, { dayId: null, startTime: "19:00:00" }, ["r1h1"]),
++    );
++    const noTime = rowsOf(
++      timed(fourUp, { dayId: "d1", startTime: null }, ["r1h1"]),
++    );
++
++    expect(heatEntries(noDay)).toEqual([]);
++    expect(heatEntries(noTime)).toEqual([]);
++    expect(nowNextAt(noDay, "18:00:00")).toEqual({ now: [], next: [] });
++    expect(nowNextAt(noTime, "18:00:00")).toEqual({ now: [], next: [] });
++  });
++
++  it("shows a Heat and a Schedule Item on the same Competition, both", () => {
++    const rows = rowsOf(
++      timed(fourUp, { dayId: "d1", startTime: "19:00:00" }, ["r1h1"]),
++    );
++    const withItem: ScheduleDay[] = [
++      {
++        ...sunday[0],
++        items: [
++          {
++            id: "item-1",
++            startTime: "19:00:00",
++            endTime: "21:00:00",
++            title: "Beyblades",
++            host: null,
++            location: "Main room",
++            virtualLink: null,
++            description: null,
++            category: "competition",
++            competition: { id: "c-beyblades", name: "Beyblades" },
++          },
++        ],
++      },
++    ];
++
++    expect(nowNextAt(rows, "18:30:00", withItem)).toEqual({
++      now: [],
++      next: ["Beyblades", "Beyblades · Semifinal 1"],
++    });
++    expect(nowNextAt(rows, "19:30:00", withItem)).toEqual({
++      now: ["Beyblades", "Beyblades · Semifinal 1"],
++      next: [],
++    });
++  });
++
++  it("hides a played and a forfeit Heat", () => {
++    let bracket = applyResult(fourUp, "r1h1", { order: ["s1", "s4"] });
++    bracket = applyResult(bracket, "r1h2", {
++      order: ["s2", "s3"],
++      forfeits: ["s3"],
++    });
++    const rows = rowsOf(
++      timed(bracket, { dayId: "d1", startTime: "19:00:00" }, ["r1h1", "r1h2"]),
++    );
++
++    expect(rows.map((r) => r.heat.status)).toEqual([
++      "played",
++      "forfeit",
++      "ready",
++    ]);
++    expect(nowNextAt(rows, "19:30:00")).toEqual({ now: [], next: [] });
++  });
++
++  it("hides a bye", () => {
++    // 3 Entrants: r1h1 is s1's bye.
++    const bracket = timed(
++      generate(entrants(3)),
++      { dayId: "d1", startTime: "19:00:00" },
++      ["r1h1"],
++    );
++
++    expect(bracket.heats[0].slots.map((s) => s.entrantId)).toEqual([
++      "s1",
++      null,
++    ]);
++    expect(nowNextAt(rowsOf(bracket), "19:30:00")).toEqual({
++      now: [],
++      next: [],
++    });
++  });
++
++  it("shows the Semifinal a re-recorded Quarterfinal refills, not the reset Final", () => {
++    // 8 Entrants, every Heat played by the higher Seed Position.
++    let bracket = generate(entrants(8));
++    for (const [heatId, order] of [
++      ["r1h1", ["s1", "s8"]],
++      ["r1h2", ["s4", "s5"]],
++      ["r1h3", ["s2", "s7"]],
++      ["r1h4", ["s3", "s6"]],
++      ["r2h1", ["s1", "s4"]],
++      ["r2h2", ["s2", "s3"]],
++      ["r3h1", ["s1", "s2"]],
++    ] as const) {
++      bracket = applyResult(bracket, heatId, { order: [...order] });
++    }
++    // The first Quarterfinal goes to s8 instead.
++    bracket = applyResult(bracket, "r1h1", { order: ["s8", "s1"] });
++    const rows = rowsOf(timed(bracket, { dayId: "d1", startTime: "19:00:00" }));
++
++    expect(
++      rows
++        .filter((r) => r.heat.round > 1)
++        .map((r) => [r.heat.id, r.heat.status]),
++    ).toEqual([
++      ["r2h1", "ready"],
++      ["r2h2", "played"],
++      ["r3h1", "pending"],
++    ]);
++    expect(nowNextAt(rows, "19:30:00")).toEqual({
++      now: ["Beyblades · Semifinal 1"],
++      next: [],
++    });
++    expect(heatEntries(rows).map((e) => e.entry.entrants)).toEqual([
++      "Silver vs Sam Schantz",
++    ]);
++  });
++});
+diff --git a/src/lib/bracket/seeding.test.ts b/src/lib/bracket/seeding.test.ts
+index 10e3f2b..faf0b05 100644
+--- a/src/lib/bracket/seeding.test.ts
++++ b/src/lib/bracket/seeding.test.ts
+@@ -1,6 +1,40 @@
+ import { describe, expect, it } from "vitest";
+ 
+-import { shuffleSeedPositions } from "@/lib/bracket/seeding";
++import { generate } from "@/lib/bracket/formats";
++import {
++  type StandingsSeedEntrant,
++  shuffleSeedPositions,
++  standingsSeedPositions,
++} from "@/lib/bracket/seeding";
++import type { Entrant } from "@/lib/bracket/types";
++import type { Standings } from "@/lib/standings";
++
++/** A minimal Standings with only the rows a test needs. */
++function standingsOf(
++  team: { id: string; rank: number; total?: number }[],
++  individual: { id: string; rank: number; total?: number }[] = [],
++): Standings {
++  return {
++    main: "team",
++    team: team.map((t) => ({
++      id: t.id,
++      name: t.id,
++      color: "#000",
++      total: t.total ?? 0,
++      rank: t.rank,
++    })),
++    individual: individual.map((p) => ({
++      id: p.id,
++      name: p.id,
++      team: null,
++      total: p.total ?? 0,
++      rank: p.rank,
++    })),
++  };
++}
++
++const keepOrder = () => 0.999;
++const newId = (round: number, position: number) => `r${round}h${position}`;
+ 
+ describe("shuffleSeedPositions", () => {
+   it("shuffles with the given random numbers", () => {
+@@ -28,3 +62,186 @@ describe("shuffleSeedPositions", () => {
+     expect(ids).toEqual(["a", "b", "c"]);
+   });
+ });
++
++describe("standingsSeedPositions", () => {
++  const team = (id: string, teamId: string): StandingsSeedEntrant => ({
++    id,
++    teamId,
++    participantId: null,
++  });
++  const solo = (id: string, participantId: string): StandingsSeedEntrant => ({
++    id,
++    teamId: null,
++    participantId,
++  });
++
++  it("orders Teams by their rank in the Team Standings", () => {
++    const standings = standingsOf([
++      { id: "t1", rank: 2 },
++      { id: "t2", rank: 1 },
++      { id: "t3", rank: 3 },
++    ]);
++    const entrants = [team("e1", "t1"), team("e2", "t2"), team("e3", "t3")];
++
++    expect(
++      standingsSeedPositions(entrants, standings, "team", keepOrder),
++    ).toEqual([
++      { entrantId: "e2", seedPosition: 1 },
++      { entrantId: "e1", seedPosition: 2 },
++      { entrantId: "e3", seedPosition: 3 },
++    ]);
++  });
++
++  it("orders Participants by their rank in the individual Standings", () => {
++    const standings = standingsOf(
++      [],
++      [
++        { id: "p1", rank: 2 },
++        { id: "p2", rank: 1 },
++      ],
++    );
++    const entrants = [solo("e1", "p1"), solo("e2", "p2")];
++
++    expect(
++      standingsSeedPositions(entrants, standings, "individual", keepOrder),
++    ).toEqual([
++      { entrantId: "e2", seedPosition: 1 },
++      { entrantId: "e1", seedPosition: 2 },
++    ]);
++  });
++
++  it("shuffles Entrants that share a rank among themselves only", () => {
++    const standings = standingsOf([
++      { id: "t1", rank: 1 },
++      { id: "t2", rank: 1 },
++      { id: "t3", rank: 2 },
++    ]);
++    const entrants = [team("e1", "t1"), team("e2", "t2"), team("e3", "t3")];
++
++    // The rank-1 pair [e1, e2] reverses under rng 0 (shuffleSeedPositions);
++    // e3, the only rank-2 Entrant, is untouched and comes after.
++    expect(
++      standingsSeedPositions(entrants, standings, "team", () => 0).map(
++        (p) => p.entrantId,
++      ),
++    ).toEqual(["e2", "e1", "e3"]);
++  });
++
++  it("shuffles every zero-point Entrant together, tied at zero", () => {
++    const standings = standingsOf([
++      { id: "t1", rank: 1, total: 0 },
++      { id: "t2", rank: 1, total: 0 },
++      { id: "t3", rank: 1, total: 0 },
++      { id: "t4", rank: 1, total: 0 },
++    ]);
++    const entrants = [
++      team("e1", "t1"),
++      team("e2", "t2"),
++      team("e3", "t3"),
++      team("e4", "t4"),
++    ];
++
++    // Fisher–Yates by hand with every draw 0: [e1 e2 e3 e4] → [e2 e3 e4 e1].
++    expect(
++      standingsSeedPositions(entrants, standings, "team", () => 0).map(
++        (p) => p.entrantId,
++      ),
++    ).toEqual(["e2", "e3", "e4", "e1"]);
++  });
++
++  it("puts an Entrant missing from the Standings last, shuffled", () => {
++    const standings = standingsOf([
++      { id: "t1", rank: 1 },
++      { id: "t2", rank: 2 },
++    ]);
++    // e3 and e4 have no matching Team row in the Standings.
++    const entrants = [
++      team("e1", "t1"),
++      team("e2", "t2"),
++      team("e3", "t3"),
++      team("e4", "t4"),
++    ];
++
++    const result = standingsSeedPositions(
++      entrants,
++      standings,
++      "team",
++      keepOrder,
++    ).map((p) => p.entrantId);
++    expect(result.slice(0, 2)).toEqual(["e1", "e2"]);
++    expect(new Set(result.slice(2))).toEqual(new Set(["e3", "e4"]));
++  });
++
++  it("seeds a single-elimination Bracket with the top-ranked Entrant at Seed Position 1, byes included", () => {
++    const standings = standingsOf([
++      { id: "t1", rank: 3 },
++      { id: "t2", rank: 1 },
++      { id: "t3", rank: 2 },
++    ]);
++    const entrants = [team("e1", "t1"), team("e2", "t2"), team("e3", "t3")];
++    const seeded = standingsSeedPositions(
++      entrants,
++      standings,
++      "team",
++      keepOrder,
++    );
++
++    const bracketEntrants: Entrant[] = seeded.map(
++      ({ entrantId, seedPosition }) => ({
++        id: entrantId,
++        seedPosition,
++        label: entrantId,
++      }),
++    );
++    const bracket = generate(
++      "single-elimination",
++      null,
++      bracketEntrants,
++      newId,
++    );
++
++    // 3 Entrants: the top Seed Position (the top-ranked Entrant, e2) gets
++    // the bye straight into the final.
++    const bye = bracket.heats.find((h) => h.id === "r1h1")!;
++    expect(bye.slots.map((s) => s.entrantId)).toEqual(["e2", null]);
++  });
++
++  it("seeds a Heats Bracket with the top-ranked Entrant at Seed Position 1, byes included", () => {
++    const standings = standingsOf([
++      { id: "t1", rank: 5 },
++      { id: "t2", rank: 4 },
++      { id: "t3", rank: 3 },
++      { id: "t4", rank: 2 },
++      { id: "t5", rank: 1 },
++    ]);
++    const entrants = [
++      team("e1", "t1"),
++      team("e2", "t2"),
++      team("e3", "t3"),
++      team("e4", "t4"),
++      team("e5", "t5"),
++    ];
++    const seeded = standingsSeedPositions(
++      entrants,
++      standings,
++      "team",
++      keepOrder,
++    );
++
++    const bracketEntrants: Entrant[] = seeded.map(
++      ({ entrantId, seedPosition }) => ({
++        id: entrantId,
++        seedPosition,
++        label: entrantId,
++      }),
++    );
++    const bracket = generate("heats", null, bracketEntrants, newId);
++
++    // The top-ranked Entrant (e5, Seed Position 1) is in the first Round's
++    // first Heat.
++    const firstHeat = bracket.heats.find(
++      (h) => h.round === 1 && h.position === 1,
++    )!;
++    expect(firstHeat.slots.map((s) => s.entrantId)).toContain("e5");
++  });
++});
+diff --git a/src/mutations/brackets.test.ts b/src/mutations/brackets.test.ts
+index 653f8ba..943ffd0 100644
+--- a/src/mutations/brackets.test.ts
++++ b/src/mutations/brackets.test.ts
+@@ -244,6 +244,68 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
+     });
+   });
+ 
++  it("seeds by the current Standings, with the top-ranked Entrant first", async () => {
++    await inRolledBackTransaction(async (tx) => {
++      const { mutations, queries } = await modules();
++      const f = await fixture(tx);
++
++      await mutations.replaceEntrants(
++        f.competitionId,
++        { targetIds: [f.red, f.blue, f.green, f.gold] },
++        f.ctx,
++        tx,
++      );
++      // Red ranks 1st; Blue and Green tie for 2nd (a rank shared by three
++      // Points Entries); Gold has none, so it ties Standings' zero-point
++      // teams and comes last.
++      await tx.insert(f.schema.pointsEntry).values([
++        {
++          competitionId: f.competitionId,
++          teamId: f.red,
++          points: 30,
++          enteredByEmail: actorEmail,
++        },
++        {
++          competitionId: f.competitionId,
++          teamId: f.blue,
++          points: 20,
++          enteredByEmail: actorEmail,
++        },
++        {
++          competitionId: f.competitionId,
++          teamId: f.green,
++          points: 20,
++          enteredByEmail: actorEmail,
++        },
++      ]);
++
++      expect(
++        await mutations.generateBracket(
++          f.competitionId,
++          { rng: rngZero, seeding: "standings" },
++          f.ctx,
++          tx,
++        ),
++      ).toEqual({ ok: true });
++
++      const view = (await queries.getBracket(f.competitionId, tx))!;
++      expect(view.entrants[0]).toMatchObject({
++        label: "Red",
++        seedPosition: 1,
++      });
++      expect(view.entrants.map((e) => e.label).slice(1)).toEqual(
++        expect.arrayContaining(["Blue", "Green", "Gold"]),
++      );
++      // Gold, with no Points Entry, comes after Blue and Green's tied rank.
++      expect(
++        view.entrants.findIndex((e) => e.label === "Gold"),
++      ).toBeGreaterThan(view.entrants.findIndex((e) => e.label === "Blue"));
++      expect(
++        view.entrants.findIndex((e) => e.label === "Gold"),
++      ).toBeGreaterThan(view.entrants.findIndex((e) => e.label === "Green"));
++    });
++  });
++
+   it("labels Participant Entrants with their Team color", async () => {
+     await inRolledBackTransaction(async (tx) => {
+       const { mutations, queries } = await modules();
+@@ -1180,4 +1242,288 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
+       ).toBeNull();
+     });
+   });
++
++  describe("setHeatSchedule", () => {
++    /** A Day of the fixture's War Week (or, with `other`, its otherCtx). */
++    async function makeDay(
++      tx: DBTx,
++      f: Awaited<ReturnType<typeof fixture>>,
++      warWeekId: string,
++    ) {
++      const [row] = await tx
++        .insert(f.schema.day)
++        .values({ warWeekId, date: "2099-01-01", dayTheme: "Kickoff" })
++        .returning({ id: f.schema.day.id });
++      return row.id;
++    }
++
++    it("sets, keeps through a Heat Result, and clears a Heat's time and place", async () => {
++      await inRolledBackTransaction(async (tx) => {
++        const { mutations, queries } = await modules();
++        const f = await fixture(tx);
++        await mutations.replaceEntrants(
++          f.competitionId,
++          { targetIds: [f.red, f.blue, f.green, f.gold] },
++          f.ctx,
++          tx,
++        );
++        await mutations.generateBracket(
++          f.competitionId,
++          { rng: rngZero },
++          f.ctx,
++          tx,
++        );
++        const dayId = await makeDay(tx, f, f.ctx.warWeekId);
++        let view = (await queries.getBracket(f.competitionId, tx))!;
++        const semi1 = heatAt(view, 1, 1).heat.id;
++
++        expect(
++          await mutations.setHeatSchedule(
++            f.competitionId,
++            semi1,
++            { dayId, startTime: "19:00", location: "Main room" },
++            f.ctx,
++            tx,
++          ),
++        ).toEqual({ ok: true });
++        view = (await queries.getBracket(f.competitionId, tx))!;
++        expect(heatAt(view, 1, 1).heat).toMatchObject({
++          dayId,
++          startTime: "19:00:00",
++          location: "Main room",
++        });
++
++        // Recording a Heat Result keeps the time and place.
++        const id = (label: string) =>
++          view.entrants.find((e) => e.label === label)!.id;
++        await mutations.recordHeatResult(
++          f.competitionId,
++          semi1,
++          { order: [id("Red"), id("Blue")] },
++          f.ctx,
++          tx,
++        );
++        view = (await queries.getBracket(f.competitionId, tx))!;
++        expect(heatAt(view, 1, 1).heat).toMatchObject({
++          dayId,
++          startTime: "19:00:00",
++          location: "Main room",
++        });
++
++        // Clearing sets every field back to null.
++        expect(
++          await mutations.setHeatSchedule(
++            f.competitionId,
++            semi1,
++            { dayId: null, startTime: null, location: null },
++            f.ctx,
++            tx,
++          ),
++        ).toEqual({ ok: true });
++        view = (await queries.getBracket(f.competitionId, tx))!;
++        expect(heatAt(view, 1, 1).heat).toMatchObject({
++          dayId: null,
++          startTime: null,
++          location: null,
++        });
++      });
++    });
++
++    it("a re-generate drops a Heat's time and place", async () => {
++      await inRolledBackTransaction(async (tx) => {
++        const { mutations, queries } = await modules();
++        const f = await fixture(tx);
++        await mutations.replaceEntrants(
++          f.competitionId,
++          { targetIds: [f.red, f.blue, f.green, f.gold] },
++          f.ctx,
++          tx,
++        );
++        await mutations.generateBracket(
++          f.competitionId,
++          { rng: rngZero },
++          f.ctx,
++          tx,
++        );
++        const dayId = await makeDay(tx, f, f.ctx.warWeekId);
++        let view = (await queries.getBracket(f.competitionId, tx))!;
++        const semi1 = heatAt(view, 1, 1).heat.id;
++        await mutations.setHeatSchedule(
++          f.competitionId,
++          semi1,
++          { dayId, startTime: "19:00", location: "Main room" },
++          f.ctx,
++          tx,
++        );
++
++        await mutations.generateBracket(
++          f.competitionId,
++          { rng: rngZero },
++          f.ctx,
++          tx,
++        );
++        view = (await queries.getBracket(f.competitionId, tx))!;
++        expect(heatAt(view, 1, 1).heat).toMatchObject({
++          dayId: null,
++          startTime: null,
++          location: null,
++        });
++      });
++    });
++
++    it("refuses a Heat not in this Competition", async () => {
++      await inRolledBackTransaction(async (tx) => {
++        const { mutations } = await modules();
++        const f = await fixture(tx);
++        await mutations.replaceEntrants(
++          f.competitionId,
++          { targetIds: [f.red, f.blue, f.green, f.gold] },
++          f.ctx,
++          tx,
++        );
++        await mutations.generateBracket(
++          f.competitionId,
++          { rng: rngZero },
++          f.ctx,
++          tx,
++        );
++        expect(
++          await mutations.setHeatSchedule(
++            f.competitionId,
++            "00000000-0000-4000-8000-000000000000",
++            { dayId: null, startTime: null, location: "Table 3" },
++            f.ctx,
++            tx,
++          ),
++        ).toEqual({ ok: false, error: "That Heat no longer exists." });
++      });
++    });
++
++    it("refuses a Day outside the Competition's War Week", async () => {
++      await inRolledBackTransaction(async (tx) => {
++        const { mutations, queries } = await modules();
++        const f = await fixture(tx);
++        await mutations.replaceEntrants(
++          f.competitionId,
++          { targetIds: [f.red, f.blue, f.green, f.gold] },
++          f.ctx,
++          tx,
++        );
++        await mutations.generateBracket(
++          f.competitionId,
++          { rng: rngZero },
++          f.ctx,
++          tx,
++        );
++        const otherDayId = await makeDay(tx, f, f.otherCtx.warWeekId);
++        const view = (await queries.getBracket(f.competitionId, tx))!;
++        const semi1 = heatAt(view, 1, 1).heat.id;
++
++        expect(
++          await mutations.setHeatSchedule(
++            f.competitionId,
++            semi1,
++            { dayId: otherDayId, startTime: "19:00", location: null },
++            f.ctx,
++            tx,
++          ),
++        ).toEqual({ ok: false, error: "That Day no longer exists." });
++      });
++    });
++
++    it("refuses a bye", async () => {
++      await inRolledBackTransaction(async (tx) => {
++        const { mutations, queries } = await modules();
++        const f = await fixture(tx);
++        // Three Teams: one gets a bye into the Final.
++        await mutations.replaceEntrants(
++          f.competitionId,
++          { targetIds: [f.red, f.blue, f.green] },
++          f.ctx,
++          tx,
++        );
++        await mutations.generateBracket(
++          f.competitionId,
++          { rng: rngZero },
++          f.ctx,
++          tx,
++        );
++        const view = (await queries.getBracket(f.competitionId, tx))!;
++        const bye = view.bracket.heats.find(
++          (h) => h.round === 1 && h.slots.some((s) => s.entrantId === null),
++        )!;
++
++        expect(
++          await mutations.setHeatSchedule(
++            f.competitionId,
++            bye.id,
++            { dayId: null, startTime: null, location: "Table 3" },
++            f.ctx,
++            tx,
++          ),
++        ).toEqual({ ok: false, error: "A bye isn't played." });
++      });
++    });
++
++    it("refuses changing a finalized Bracket's Heat times", async () => {
++      await inRolledBackTransaction(async (tx) => {
++        const { mutations, queries } = await modules();
++        const f = await fixture(tx);
++        await mutations.replaceEntrants(
++          f.competitionId,
++          { targetIds: [f.red, f.blue, f.green, f.gold] },
++          f.ctx,
++          tx,
++        );
++        await mutations.generateBracket(
++          f.competitionId,
++          { rng: rngZero },
++          f.ctx,
++          tx,
++        );
++        let view = (await queries.getBracket(f.competitionId, tx))!;
++        const id = (label: string) =>
++          view.entrants.find((e) => e.label === label)!.id;
++        const semi1 = heatAt(view, 1, 1).heat.id;
++        const semi2 = heatAt(view, 1, 2).heat.id;
++        const final = heatAt(view, 2, 1).heat.id;
++        await mutations.recordHeatResult(
++          f.competitionId,
++          semi1,
++          { order: [id("Red"), id("Blue")] },
++          f.ctx,
++          tx,
++        );
++        await mutations.recordHeatResult(
++          f.competitionId,
++          semi2,
++          { order: [id("Gold"), id("Green")] },
++          f.ctx,
++          tx,
++        );
++        view = (await queries.getBracket(f.competitionId, tx))!;
++        await mutations.recordHeatResult(
++          f.competitionId,
++          final,
++          { order: [id("Red"), id("Gold")] },
++          f.ctx,
++          tx,
++        );
++        await mutations.finalizeBracket(f.competitionId, f.ctx, tx);
++
++        expect(
++          await mutations.setHeatSchedule(
++            f.competitionId,
++            final,
++            { dayId: null, startTime: null, location: "Table 3" },
++            f.ctx,
++            tx,
++          ),
++        ).toEqual({
++          ok: false,
++          error: "Un-finalize the Bracket before changing it.",
++        });
++      });
++    });
++  });
+ });

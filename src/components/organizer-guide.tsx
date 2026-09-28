@@ -147,15 +147,21 @@ export function OrganizerGuide({
           in; a forfeiter finishes behind the rest of their Heat. Open the
           Bracket builder to pick Entrants — all {teamLower}s, or specific
           Participants — and Generate the Bracket (Seed Positions are random;
-          Re-roll before any Heat is played to try again). From the results
-          screen, tap a Heat to record it: its winner, or for a bigger Heat its
-          Entrants in finishing order, with scores or forfeits; changing who
-          advances resets the later Heats that followed from it, while a
-          score-only edit keeps them. Finalize turns the Bracket&apos;s placings
-          into Points Entries marked &quot;From bracket&quot;; un-finalize
-          removes them so you can fix a Heat and finalize again. While it&apos;s
-          finalized, the Competition&apos;s scoring and Placement Points
-          can&apos;t change: un-finalize first.
+          Re-roll before any Heat is played to try again). Press{" "}
+          {"By Standings"} instead to seed it from the current Standings, ties
+          drawn at random. On the results screen, a Heat&apos;s {"Time & place"}{" "}
+          sets its Day, start time (ET) and location; the Competition&apos;s
+          Hosts can set it too. A timed Heat shows on its card, in each
+          Entrant&apos;s next Heat and, once its Entrants are known, in the home
+          page&apos;s Now / Next. A re-draw clears every Heat time, so the
+          builder asks first. From the results screen, tap a Heat to record it:
+          its winner, or for a bigger Heat its Entrants in finishing order, with
+          scores or forfeits; changing who advances resets the later Heats that
+          followed from it, while a score-only edit keeps them. Finalize turns
+          the Bracket&apos;s placings into Points Entries marked &quot;From
+          bracket&quot;; un-finalize removes them so you can fix a Heat and
+          finalize again. While it&apos;s finalized, the Competition&apos;s
+          scoring and Placement Points can&apos;t change: un-finalize first.
         </p>
       </section>
 
@@ -175,6 +181,12 @@ export function OrganizerGuide({
           on the projector and press Start: the Standings count in from last
           place to first. Replay runs it again. The Finale never changes the
           Standings, it only plays them.
+        </p>
+        <p className="text-foreground/70">
+          A finalized Bracket has its own Finale: open it from the same page
+          (&quot;Finale:&quot; and the Competition&apos;s name) or from
+          &quot;Play the Finale&quot; on its champion card, and press Start to
+          count its placings in to the champion.
         </p>
       </section>
 

@@ -33,7 +33,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Placement Points**          | A Competition's optional preset points for 1st, 2nd, 3rd… (up to 5 places, highest first), offered as buttons on Points Entry.  |
 | **Counts Toward Team**        | Whether an individual competition's points also go to the participant's team.                                                     |
 | **Standings**                 | The main leaderboard, computed from Points Entries.                                                                               |
-| **Finale**                    | The closing-ceremony screen at `/<edition>/finale`: press Start and the Standings count in from last place to first.             |
+| **Finale**                    | The closing-ceremony screen at `/<edition>/finale`: press Start and the Standings count in from last place to first. A finalized Bracket has its own **Bracket Finale** at `/<edition>/finale/<competitionId>`. |
 | **Award**                     | A named honor given to participants or a team. It doesn't affect points.                                                          |
 | **Announcement**              | A post by an Organizer or Host (rich text plus video links).                                                                      |
 | **FAQ Item**                  | A question and answer pair for a War Week.                                                                                        |
@@ -41,7 +41,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Format**                    | How a Competition is run: `points` (Points Entries only), `single-elimination` or `heats` (a Bracket).                            |
 | **Bracket**                   | The Rounds and Heats of a non-`points` Competition.                                                                               |
 | **Round**                     | One step of a Bracket, holding Heats that can be played at the same time. Round 1 is the first.                                   |
-| **Heat**                      | One game between Entrants in a Bracket. Covers 1v1 and multi-entrant games.                                                       |
+| **Heat**                      | One game between Entrants in a Bracket. Covers 1v1 and multi-entrant games. May have a time and place: a Day and a start time (ET) together, and a location. |
 | **Entrant**                   | A Team or Participant entered in a Bracket.                                                                                       |
 | **Seed Position**             | An Entrant's starting rank in a Bracket. Say "seed position" or "seeding", never bare "seed" (that means seed files).             |
 | **Heat Result**               | The finishing order of a Heat's Entrants, with an optional score for each.                                                        |
@@ -79,6 +79,14 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   time at or before the start time runs past midnight into the next day.
 - **Up next** is every item sharing the earliest start time after now, on
   today's Day or a later one.
+- Timed Heats (a Day and a start time, every slot filled, no Heat Result
+  yet) join now/next under the same rules, 60 minutes long, alongside any
+  Schedule Item on the same Competition; a decided Heat, and a Heat still
+  waiting for its Entrants, drops out. A Heat whose earlier Heat was
+  re-recorded shows again once it's refilled with its new Entrants. Now/next
+  shows a Heat as "<Competition> · <Heat name>" with a "Heat" badge and its
+  Entrants, linked to the Competition. The schedule page and `get_schedule`
+  list Schedule Items only.
 - Home and schedule pages accept `?at=<ISO instant>` to show the schedule as
   of that moment, for demos of a War Week that isn't on right now.
 - A Schedule Item has one of six categories, each with its own fixed color
@@ -196,10 +204,15 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   `MCP_TOKEN` is unset or blank). `canUseMcp` in `src/lib/access.ts` is the
   one check. Every MCP tool is read-only and returns only what a signed-in
   Participant sees: never an email, the Organizer list or Hosts.
-  `get_leaderboard` always returns the Standings.
+  `get_leaderboard` always returns the Standings. `get_bracket` returns one
+  Competition's Bracket of the current War Week by name: Entrants and Heats
+  by name, with places, scores, time and place, and the champion.
 - Standings are always visible to every signed-in user. `/<edition>/finale`
-  is readable by any signed-in JG user; Organizers and Hosts see the link
-  to it in `/admin/standings`.
+  and a finalized Bracket's `/<edition>/finale/<competitionId>` are readable
+  by any signed-in JG user; Organizers and Hosts see the links to them in
+  `/admin/standings`.
+- A Heat's time and place is set by an Organizer or that Competition's Host
+  (`bracket.heat-schedule`, through `authorize` like every Bracket write).
 
 ## War Week lifecycle rules
 
@@ -252,12 +265,25 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   Only a single-elimination or Heats Competition has Entrants and a
   Bracket. A team Competition's Entrants are Teams, an individual one's
   Participants of the same War Week.
-- **Generate** seeds the Entrants randomly and builds the Bracket. In
-  single elimination, when the count isn't a power of two, the top Seed
-  Positions get byes and advance straight away; a bye is never a played
-  Heat.
+- **Generate** gives the Entrants random Seed Positions and builds the
+  Bracket; **By Standings** builds it with Seed Positions in the order of
+  the current Standings (Team Standings for a team Competition, individual
+  Standings for an individual one), Entrants on equal points, including
+  every Entrant with none, in random order among themselves. In single
+  elimination, when the count isn't a power of two, the top Seed Positions
+  get byes and advance straight away; a bye is never a played Heat.
 - Regenerating, or replacing the Entrants, before any Heat Result is free.
   After one, it needs a confirmation and clears every Heat Result.
+- **Time and place.** An Organizer or that Competition's Host sets a Heat's
+  time and place from the results screen ("Time & place"): a Day of the
+  War Week and a start time (ET) together, and an optional location, which
+  can also stand alone ("Table 3"). Any Heat but a bye can have one while
+  the Bracket isn't finalized, a decided Heat included. Heat cards and
+  "Your next Heat" show it as "Sunday, Feb 22 · 7:00 PM ET · Main room".
+  Deleting a Day leaves its Heats untimed.
+- A re-draw (Generate, Re-roll, By Standings, saving Entrants or Heat
+  settings) rebuilds every Heat, so it clears every Heat time too; while
+  any Heat is timed, the builder asks first ("This clears N Heat times.").
 - A Heat Result needs a clear finishing order (a knockout Heat's is just its
   winner). A forfeiting Entrant loses in a knockout Heat, and in a Heat of
   more than two finishes behind everyone who didn't forfeit. A forfeiter
@@ -316,6 +342,15 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   `getStandings` rows the leaderboard shows.
 - The home and leaderboard pages keep refreshing about every 10 s while the
   tab is visible, and always show the plain Standings.
+- **Bracket Finale.** A finalized Bracket has its own Finale at
+  `/<edition>/finale/<competitionId>`, readable by any signed-in JG user and
+  not found for any other Competition. It plays the Bracket's final placings
+  (places and names, no points) from last place to first, tied places
+  together, and ends on the champion card ("Champion of <Competition>").
+  Start, Replay and reduced motion work as in the Finale. It reads nothing
+  from the Standings and changes nothing. It's linked from the Bracket's
+  champion card ("Play the Finale"), the results screen once finalized, and
+  `/admin/standings` ("Finale: <Competition>").
 
 ## Seed idempotence rules
 

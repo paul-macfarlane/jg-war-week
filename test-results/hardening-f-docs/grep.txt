@@ -1,0 +1,68 @@
+$ grep -n "for Bracket detail yet\|will appear here later" src/mcp/llms-txt.ts src/app/admin/standings/page.tsx  (expect empty)
+exit=1
+
+$ grep -n "get_bracket" CONTEXT.md docs/maintainers-guide.md src/mcp/tools.ts
+docs/maintainers-guide.md:372:`get_history` and `get_bracket` (a Competition's Bracket by name, with each
+docs/maintainers-guide.md:373:Heat's time and place). `get_bracket` (`src/mcp/bracket.ts`) is the model
+CONTEXT.md:207:  `get_leaderboard` always returns the Standings. `get_bracket` returns one
+src/mcp/tools.ts:47:  get_bracket: {
+exit=0
+
+$ grep -n "Time & place\|By Standings" src/lib/about.ts src/components/organizer-guide.tsx docs/maintainers-guide.md
+src/lib/about.ts:58:    text: "Set a Competition's Format to Heats or single elimination, pick its Entrants (Teams or Participants) and Generate a Bracket, or seed it By Standings. Single elimination is straight 1v1; Heats plays several Entrants at once, with the top few of each advancing. Give each Heat a Time & place and it shows in Now / Next and in each Entrant's next Heat. Tap in each Heat's result as it's played; Finalize turns the Bracket's placings straight into Points Entries, and the Bracket gets its own Finale for the projector.",
+docs/maintainers-guide.md:238:On the day: the builder's **By Standings** button draws Seed Positions
+docs/maintainers-guide.md:240:draw. On the results screen, each Heat's **Time & place** button sets its
+src/components/organizer-guide.tsx:151:          {"By Standings"} instead to seed it from the current Standings, ties
+src/components/organizer-guide.tsx:153:          {"Time & place"} sets its Day, start time (ET) and location; the
+exit=0
+
+$ grep -n "finale/" CONTEXT.md docs/maintainers-guide.md
+CONTEXT.md:36:| **Finale**                    | The closing-ceremony screen at `/<edition>/finale`: press Start and the Standings count in from last place to first. A finalized Bracket has its own **Bracket Finale** at `/<edition>/finale/<competitionId>`. |
+CONTEXT.md:211:  and a finalized Bracket's `/<edition>/finale/<competitionId>` are readable
+CONTEXT.md:346:  `/<edition>/finale/<competitionId>`, readable by any signed-in JG user and
+docs/maintainers-guide.md:246:has its own **Bracket Finale** at `/<edition>/finale/<competitionId>` for
+exit=0
+
+$ git diff --stat a5a6507 -- public/about/brackets.png
+ public/about/brackets.png | Bin 140404 -> 141078 bytes
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+
+$ banned-term scan (case-insensitive, whole word: Event League Member Match ELO Placeholder Tournament) hit counts per term, working tree vs a5a6507, over src scripts drizzle
+Event: now=90 base=82
+League: now=4 base=4
+Member: now=4 base=4
+Match: now=35 base=28
+ELO: now=0 base=0
+Placeholder: now=36 base=35
+Tournament: now=7 base=7
+
+$ banned-term hits in lines this branch adds (git diff a5a6507 -- src scripts drizzle, added lines only)
+3009:+    const onKey = (event: KeyboardEvent) => {
+3011:+      if (event.key !== " " || event.target instanceof HTMLButtonElement) {
+3014:+      event.preventDefault();
+3115:+              onClick={(event) => {
+3116:+                event.stopPropagation();
+3196:+                  onClick={(event) => {
+3197:+                    event.stopPropagation();
+3638:+            placeholder="e.g. Main room or Table 3"
+3642:+            onChange={(event) => set("location", event.target.value)}
+5656:+  it("finds an exact match", async () => {
+5671:+  it("prefers an exact match over a case-insensitive one", async () => {
+5691:+  it("falls back to a case-insensitive match when exactly one matches", async () => {
+5706:+  it("returns undefined when two case-variants match and neither is exact", async () => {
+5757:+  it("returns undefined for no match", async () => {
+5769:+ * Finds a War Week's Competition by name for `get_bracket`: an exact match
+5770:+ * wins; else a case-insensitive (trimmed) match when exactly one Competition
+exit=0
+
+$ banned-term hits in lines D6 adds (git diff 46b5414 -- src scripts drizzle, added lines only)
+exit=1
+
+$ case-sensitive capitalized banned terms (domain sense), counts now vs a5a6507
+Event: now=3 base=3
+League: now=0 base=0
+Member: now=0 base=0
+Match: now=0 base=0
+ELO: now=0 base=0
+Placeholder: now=0 base=0
+Tournament: now=3 base=3
