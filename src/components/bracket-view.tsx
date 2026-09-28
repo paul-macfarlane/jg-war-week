@@ -228,6 +228,8 @@ export function BracketView({
     scoring,
   );
   const next = youEntrantId ? nextHeatFor(bracket, youEntrantId) : null;
+  const nextWhen =
+    next && next.kind === "heat" ? formatHeatWhen(next.heat, days) : null;
   const winner = champion ? entrantsById.get(champion) : undefined;
   const heatsById = new Map(bracket.heats.map((h) => [h.id, h]));
 
@@ -302,10 +304,8 @@ export function BracketView({
                 <span className="text-foreground/60 text-xs font-medium uppercase">
                   Your next Heat · {heatName(bracket, next.heat)}
                 </span>
-                {formatHeatWhen(next.heat, days) && (
-                  <span className="text-foreground/70 text-sm">
-                    {formatHeatWhen(next.heat, days)}
-                  </span>
+                {nextWhen && (
+                  <span className="text-foreground/70 text-sm">{nextWhen}</span>
                 )}
                 {next.opponentIds.length > 0 ? (
                   <span className="font-semibold break-words">

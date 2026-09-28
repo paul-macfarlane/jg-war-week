@@ -142,6 +142,43 @@ describe("toBracketResult", () => {
     expect(timed.location).toBe("Main room");
   });
 
+  it("returns champion: null for a decided but unfinalized Bracket", () => {
+    let bracket = bracketFixture();
+    const round1Heat = bracket.heats.find(
+      (h) => h.round === 1 && h.slots.every((s) => s.entrantId !== null),
+    )!;
+    bracket = applyResult(bracket, round1Heat.id, { order: ["e2", "e3"] });
+    const final = bracket.heats.find((h) => h.round === 2)!;
+    bracket = applyResult(bracket, final.id, { order: ["e1", "e2"] });
+    const championId = championOf(bracket);
+    expect(championId).toBe("e1");
+
+    const view: BracketView = {
+      competition: {
+        id: "c1",
+        warWeekId: "w1",
+        name: "Beyblades",
+        scoring: "team",
+        format: "single-elimination",
+        placementPoints: [10, 6],
+        finalizedAt: null,
+      },
+      entrants: entrants.map((e) =>
+        bracketEntrantFixture(e, `${e.label} Squad`),
+      ),
+      bracket,
+      champion: championId,
+      finalized: false,
+    };
+
+    const result = toBracketResult(view, days, "Beyblades");
+
+    expect(result.found).toBe(true);
+    if (!result.found || "bracket" in result) throw new Error("unreachable");
+    expect(result.competition.finalized).toBe(false);
+    expect(result.champion).toBeNull();
+  });
+
   it("shows a finalized Bracket's champion", () => {
     let bracket = bracketFixture();
     const round1Heat = bracket.heats.find(

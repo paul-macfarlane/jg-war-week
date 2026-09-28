@@ -147,9 +147,9 @@ export function OrganizerGuide({
           in; a forfeiter finishes behind the rest of their Heat. Open the
           Bracket builder to pick Entrants — all {teamLower}s, or specific
           Participants — and Generate the Bracket (Seed Positions are random;
-          Re-roll before any Heat is played to try again). Press{" "}
-          {"By Standings"} instead to seed it from the current Standings, ties
-          drawn at random. On the results screen, a Heat&apos;s {"Time & place"}{" "}
+          Re-roll before any Heat is played to try again). Press By Standings
+          instead to draw its Seed Positions from the current Standings, ties
+          drawn at random. On the results screen, a Heat&apos;s Time &amp; place
           sets its Day, start time (ET) and location; the Competition&apos;s
           Hosts can set it too. A timed Heat shows on its card, in each
           Entrant&apos;s next Heat and, once its Entrants are known, in the home

@@ -41,7 +41,7 @@ async function fixture(tx: DBTx) {
 }
 
 describe.skipIf(!isLocalDatabase)("getCompetitionByName", () => {
-  it("finds an exact match", async () => {
+  it("finds the exact name", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { schema, warWeek } = await fixture(tx);
       const [pool] = await tx
@@ -56,7 +56,7 @@ describe.skipIf(!isLocalDatabase)("getCompetitionByName", () => {
     });
   });
 
-  it("prefers an exact match over a case-insensitive one", async () => {
+  it("prefers the exact name over a case-insensitive one", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { schema, warWeek } = await fixture(tx);
       const [exact] = await tx
@@ -76,7 +76,7 @@ describe.skipIf(!isLocalDatabase)("getCompetitionByName", () => {
     });
   });
 
-  it("falls back to a case-insensitive match when exactly one matches", async () => {
+  it("falls back to the one case-insensitive name", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { schema, warWeek } = await fixture(tx);
       const [pool] = await tx
@@ -91,7 +91,7 @@ describe.skipIf(!isLocalDatabase)("getCompetitionByName", () => {
     });
   });
 
-  it("returns undefined when two case-variants match and neither is exact", async () => {
+  it("returns undefined when two names differ only by case", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { schema, warWeek } = await fixture(tx);
       await tx.insert(schema.competition).values([
@@ -142,7 +142,7 @@ describe.skipIf(!isLocalDatabase)("getCompetitionByName", () => {
     });
   });
 
-  it("returns undefined for no match", async () => {
+  it("returns undefined for an unknown name", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { warWeek } = await fixture(tx);
 

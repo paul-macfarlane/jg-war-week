@@ -24,12 +24,15 @@ export type StandingsSeedEntrant = {
 };
 
 /**
- * Seed Positions (1…N) ordered by the Entrants' rank in the Team Standings
- * (a team Competition) or individual Standings (an individual one), best
- * rank first. Entrants sharing a rank — ties, and every Entrant with no
- * Points Entries, who all tie at zero — are shuffled among themselves with
- * `rng` (Fisher–Yates, `shuffleSeedPositions`); an Entrant with no matching
- * Team or Participant row in the Standings goes last, shuffled the same way.
+ * Seed Positions (1…N) ordered by the Entrants' total in the Team Standings
+ * (a team Competition) or individual Standings (an individual one), highest
+ * total first. Entrants sharing a total — ties — are shuffled among
+ * themselves with `rng` (Fisher–Yates, `shuffleSeedPositions`). The
+ * individual Standings list only Participants with a Points Entry, so a
+ * Participant Entrant with none isn't "missing": it scores 0, tying with any
+ * row whose total is also 0. A Team Standing lists every Team, so a Team
+ * Entrant missing here means the Team itself is gone; that (and a genuinely
+ * unmatched Participant) goes last, shuffled the same way.
  */
 export function standingsSeedPositions(
   entrants: StandingsSeedEntrant[],
@@ -38,28 +41,30 @@ export function standingsSeedPositions(
   rng: () => number,
 ): { entrantId: string; seedPosition: number }[] {
   const rows = scoring === "team" ? standings.team : standings.individual;
-  const rankById = new Map(rows.map((row) => [row.id, row.rank]));
+  const totalById = new Map(rows.map((row) => [row.id, row.total]));
   const keyOf = (entrant: StandingsSeedEntrant) =>
     scoring === "team" ? entrant.teamId : entrant.participantId;
 
-  const byRank = new Map<number, string[]>();
+  const byTotal = new Map<number, string[]>();
   const missing: string[] = [];
   for (const entrant of entrants) {
     const key = keyOf(entrant);
-    const rank = key !== null ? rankById.get(key) : undefined;
-    if (rank === undefined) {
+    const total = key !== null ? totalById.get(key) : undefined;
+    const zeroed =
+      total === undefined && scoring === "individual" && key !== null;
+    if (total === undefined && !zeroed) {
       missing.push(entrant.id);
       continue;
     }
-    const group = byRank.get(rank);
+    const group = byTotal.get(zeroed ? 0 : total!);
     if (group) group.push(entrant.id);
-    else byRank.set(rank, [entrant.id]);
+    else byTotal.set(zeroed ? 0 : total!, [entrant.id]);
   }
 
-  const ordered = [...byRank.keys()]
-    .sort((a, b) => a - b)
-    .flatMap((rank) =>
-      shuffleSeedPositions(byRank.get(rank)!, rng).map((p) => p.entrantId),
+  const ordered = [...byTotal.keys()]
+    .sort((a, b) => b - a)
+    .flatMap((total) =>
+      shuffleSeedPositions(byTotal.get(total)!, rng).map((p) => p.entrantId),
     );
   ordered.push(...shuffleSeedPositions(missing, rng).map((p) => p.entrantId));
 

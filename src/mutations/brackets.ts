@@ -342,9 +342,9 @@ export async function replaceEntrants(
 }
 
 /**
- * Seeds the Entrants — randomly (by `rng`), or by the current Standings —
- * and builds the Bracket, byes included. Once a Heat has a Heat Result,
- * regenerating needs `force`, which clears every result.
+ * Draws the Seed Positions — randomly (by `rng`), or by the current
+ * Standings — and builds the Bracket, byes included. Once a Heat has a Heat
+ * Result, regenerating needs `force`, which clears every result.
  */
 export async function generateBracket(
   competitionId: string,

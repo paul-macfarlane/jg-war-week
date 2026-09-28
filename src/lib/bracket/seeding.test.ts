@@ -75,11 +75,11 @@ describe("standingsSeedPositions", () => {
     participantId,
   });
 
-  it("orders Teams by their rank in the Team Standings", () => {
+  it("orders Teams by their total in the Team Standings", () => {
     const standings = standingsOf([
-      { id: "t1", rank: 2 },
-      { id: "t2", rank: 1 },
-      { id: "t3", rank: 3 },
+      { id: "t1", rank: 2, total: 20 },
+      { id: "t2", rank: 1, total: 30 },
+      { id: "t3", rank: 3, total: 10 },
     ]);
     const entrants = [team("e1", "t1"), team("e2", "t2"), team("e3", "t3")];
 
@@ -92,12 +92,12 @@ describe("standingsSeedPositions", () => {
     ]);
   });
 
-  it("orders Participants by their rank in the individual Standings", () => {
+  it("orders Participants by their total in the individual Standings", () => {
     const standings = standingsOf(
       [],
       [
-        { id: "p1", rank: 2 },
-        { id: "p2", rank: 1 },
+        { id: "p1", rank: 2, total: 10 },
+        { id: "p2", rank: 1, total: 20 },
       ],
     );
     const entrants = [solo("e1", "p1"), solo("e2", "p2")];
@@ -110,11 +110,11 @@ describe("standingsSeedPositions", () => {
     ]);
   });
 
-  it("shuffles Entrants that share a rank among themselves only", () => {
+  it("shuffles Entrants that share a total among themselves only", () => {
     const standings = standingsOf([
-      { id: "t1", rank: 1 },
-      { id: "t2", rank: 1 },
-      { id: "t3", rank: 2 },
+      { id: "t1", rank: 1, total: 10 },
+      { id: "t2", rank: 1, total: 10 },
+      { id: "t3", rank: 2, total: 5 },
     ]);
     const entrants = [team("e1", "t1"), team("e2", "t2"), team("e3", "t3")];
 
@@ -149,6 +149,30 @@ describe("standingsSeedPositions", () => {
     ).toEqual(["e2", "e3", "e4", "e1"]);
   });
 
+  it("ties a Participant with no entries with a net-0 Participant, above a net-negative one", () => {
+    // The individual Standings list only Participants with a Points Entry:
+    // p3 has none, so it has no row here, but it isn't "missing" — it
+    // scores 0, tying with p1's net-0 row, above p2's net-negative one.
+    const standings = standingsOf(
+      [],
+      [
+        { id: "p1", rank: 1, total: 0 },
+        { id: "p2", rank: 2, total: -5 },
+      ],
+    );
+    const entrants = [solo("e1", "p1"), solo("e2", "p2"), solo("e3", "p3")];
+
+    const result = standingsSeedPositions(
+      entrants,
+      standings,
+      "individual",
+      keepOrder,
+    ).map((p) => p.entrantId);
+
+    expect(new Set(result.slice(0, 2))).toEqual(new Set(["e1", "e3"]));
+    expect(result[2]).toBe("e2");
+  });
+
   it("puts an Entrant missing from the Standings last, shuffled", () => {
     const standings = standingsOf([
       { id: "t1", rank: 1 },
@@ -174,9 +198,9 @@ describe("standingsSeedPositions", () => {
 
   it("seeds a single-elimination Bracket with the top-ranked Entrant at Seed Position 1, byes included", () => {
     const standings = standingsOf([
-      { id: "t1", rank: 3 },
-      { id: "t2", rank: 1 },
-      { id: "t3", rank: 2 },
+      { id: "t1", rank: 3, total: 10 },
+      { id: "t2", rank: 1, total: 30 },
+      { id: "t3", rank: 2, total: 20 },
     ]);
     const entrants = [team("e1", "t1"), team("e2", "t2"), team("e3", "t3")];
     const seeded = standingsSeedPositions(
@@ -208,11 +232,11 @@ describe("standingsSeedPositions", () => {
 
   it("seeds a Heats Bracket with the top-ranked Entrant at Seed Position 1, byes included", () => {
     const standings = standingsOf([
-      { id: "t1", rank: 5 },
-      { id: "t2", rank: 4 },
-      { id: "t3", rank: 3 },
-      { id: "t4", rank: 2 },
-      { id: "t5", rank: 1 },
+      { id: "t1", rank: 5, total: 10 },
+      { id: "t2", rank: 4, total: 20 },
+      { id: "t3", rank: 3, total: 30 },
+      { id: "t4", rank: 2, total: 40 },
+      { id: "t5", rank: 1, total: 50 },
     ]);
     const entrants = [
       team("e1", "t1"),

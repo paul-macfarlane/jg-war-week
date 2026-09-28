@@ -166,7 +166,7 @@ test("a Bracket is built, run and finalized into Points Entries", async ({
     await startTime.press("Enter");
     await form.getByLabel("Location (optional)").fill("Main room");
     await form.getByRole("button", { name: "Save", exact: true }).click();
-    await expect(host.getByText("Time and place saved.")).toBeVisible();
+    await expect(host.getByText("Time and place saved")).toBeVisible();
     await expect(form).toBeHidden();
     await expect(host.getByText(when, { exact: true })).toBeVisible();
     await checkViewports(host, testInfo, "results-timed");

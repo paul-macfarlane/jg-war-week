@@ -58,8 +58,10 @@ export function HeatScheduleForm({
   const formRef = useRef<HTMLFormElement>(null);
   const [fields, setFields] = useState<HeatScheduleInput>({
     dayId: heat.dayId ?? "",
+    // A deleted Day nulls dayId but keeps startTime (orphaned): without a
+    // Day there's nothing to show it against, so the field starts empty.
     // Postgres returns `HH:MM:SS`; the time field works in `HH:MM`.
-    startTime: heat.startTime?.slice(0, 5) ?? "",
+    startTime: heat.dayId ? (heat.startTime?.slice(0, 5) ?? "") : "",
     location: heat.location ?? "",
   });
 
@@ -84,9 +86,7 @@ export function HeatScheduleForm({
         return saved;
       }
       if (clear) setFields(CLEARED);
-      toast.success(
-        clear ? "Time and place cleared." : "Time and place saved.",
-      );
+      toast.success(clear ? "Time and place cleared" : "Time and place saved");
       onSaved();
       router.refresh();
       return saved;
@@ -104,7 +104,8 @@ export function HeatScheduleForm({
       label: formatDayHeading(day.date),
     })),
   ];
-  const isSet = heat.dayId !== null || heat.location !== null;
+  const isSet =
+    heat.dayId !== null || heat.startTime !== null || heat.location !== null;
 
   return (
     <form

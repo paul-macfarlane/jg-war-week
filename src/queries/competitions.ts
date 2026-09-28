@@ -29,9 +29,9 @@ const competitionColumns = {
 } satisfies Record<keyof CompetitionListItem, unknown>;
 
 /**
- * Finds a War Week's Competition by name for `get_bracket`: an exact match
- * wins; else a case-insensitive (trimmed) match when exactly one Competition
- * matches; else `undefined` (names are unique per War Week only
+ * Finds a War Week's Competition by name for `get_bracket`: an exact name
+ * wins; else a case-insensitive (trimmed) name when exactly one Competition
+ * has it; else `undefined` (names are unique per War Week only
  * case-sensitively).
  */
 export async function getCompetitionByName(
@@ -46,10 +46,10 @@ export async function getCompetitionByName(
   const exact = rows.find((row) => row.name === name);
   if (exact) return exact;
   const target = name.trim().toLowerCase();
-  const matches = rows.filter(
+  const sameName = rows.filter(
     (row) => row.name.trim().toLowerCase() === target,
   );
-  return matches.length === 1 ? matches[0] : undefined;
+  return sameName.length === 1 ? sameName[0] : undefined;
 }
 
 /** Loads a War Week's Competitions, grouped by `groupCompetitions`. */

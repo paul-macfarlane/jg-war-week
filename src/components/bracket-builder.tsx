@@ -57,6 +57,8 @@ type ForceableAction = {
   title: string;
   /** Overrides the confirm's body text; defaults to `HAS_RESULTS_ERROR`. */
   description?: string;
+  /** Overrides the confirm button's label; defaults to "Clear results". */
+  confirmLabel?: string;
 };
 
 /** The builder's confirm copy for a re-draw that would clear timed Heats. */
@@ -72,6 +74,25 @@ function confirmTitle(title: string, hasExistingResults: boolean): string {
   if (hasExistingResults) return title;
   const rest = title.replace(/^Clear every Heat Result and /, "");
   return rest.charAt(0).toUpperCase() + rest.slice(1);
+}
+
+/**
+ * The confirm's title, description and button label for a write that would
+ * clear timed Heats (and, once there are Heat Results, clear those too):
+ * null when there's nothing timed to warn about. Pure, so it's unit-tested
+ * without rendering the builder.
+ */
+export function forceableConfirmCopy(
+  timedHeatsCount: number,
+  hasExistingResults: boolean,
+  title: string,
+): { title: string; description: string; confirmLabel: string } | null {
+  if (timedHeatsCount === 0) return null;
+  return {
+    title: confirmTitle(title, hasExistingResults),
+    description: timedHeatsMessage(timedHeatsCount, hasExistingResults),
+    confirmLabel: hasExistingResults ? "Clear results" : "Clear times",
+  };
 }
 
 /**
@@ -120,14 +141,16 @@ function HeatSettingsForm({
         });
       const title = "Clear every Heat Result and save the Heat settings?";
       // Saving Heat settings rebuilds the Heats, clearing any set times: ask
-      // first, whether or not there are Heat Results too (decision 3).
-      if (timedHeatsCount > 0) {
-        onRefused({
-          run,
-          success: "Heat settings saved",
-          title: confirmTitle(title, hasExistingResults),
-          description: timedHeatsMessage(timedHeatsCount, hasExistingResults),
-        });
+      // first, whether or not there are Heat Results too (decision 3). An
+      // unchanged save doesn't touch the Heats, so it skips the confirm.
+      const settingsChange =
+        next.entrantsPerHeat !== config.entrantsPerHeat ||
+        next.advancePerHeat !== config.advancePerHeat;
+      const copy = settingsChange
+        ? forceableConfirmCopy(timedHeatsCount, hasExistingResults, title)
+        : null;
+      if (copy) {
+        onRefused({ run, success: "Heat settings saved", ...copy });
         return _previous ?? { ok: true };
       }
       const result = await run(false);
@@ -297,12 +320,13 @@ export function BracketBuilder({
    * Heat, this runs the write directly, as today.
    */
   function startAction(action: ForceableAction) {
-    if (timedHeatsCount > 0) {
-      setConfirm({
-        ...action,
-        title: confirmTitle(action.title, existingResults),
-        description: timedHeatsMessage(timedHeatsCount, existingResults),
-      });
+    const copy = forceableConfirmCopy(
+      timedHeatsCount,
+      existingResults,
+      action.title,
+    );
+    if (copy) {
+      setConfirm({ ...action, ...copy });
       return;
     }
     runAction(action);
@@ -501,8 +525,9 @@ export function BracketBuilder({
                         seeding: "standings",
                         force,
                       }),
-                    success: "Bracket seeded by Standings",
-                    title: "Clear every Heat Result and seed by Standings?",
+                    success: "Seed Positions drawn by Standings",
+                    title:
+                      "Clear every Heat Result and draw Seed Positions by Standings?",
                   })
                 }
               >
@@ -555,8 +580,8 @@ export function BracketBuilder({
           if (!open) setConfirm(null);
         }}
         title={confirm?.title ?? ""}
-        description={HAS_RESULTS_ERROR}
-        confirmLabel="Clear results"
+        description={confirm?.description ?? HAS_RESULTS_ERROR}
+        confirmLabel={confirm?.confirmLabel ?? "Clear results"}
         pending={pending}
         onConfirm={() => confirm && runAction(confirm, true)}
       />

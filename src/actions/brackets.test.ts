@@ -35,8 +35,9 @@ const { ID, boom, authorized } = vi.hoisted(() => {
 const AUTHORIZED_OK = { ...authorized.current };
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+const authorize = vi.hoisted(() => vi.fn(async () => authorized.current));
 vi.mock("@/auth/authorize", () => ({
-  authorize: vi.fn(async () => authorized.current),
+  authorize,
   postedCompetitionId: () => null,
 }));
 vi.mock("@/mutations/brackets", () => ({
@@ -85,6 +86,7 @@ describe("setHeatSchedule", () => {
       ok: false,
       error: "You're not a Host of that Competition.",
     };
+    const mutations = await import("@/mutations/brackets");
     // A Day with no start time (the form's zod refine would refuse this),
     // and a Heat id that isn't a UUID: neither ever gets checked.
     const formData = new FormData();
@@ -98,5 +100,11 @@ describe("setHeatSchedule", () => {
       ok: false,
       error: "You're not a Host of that Competition.",
     });
+    expect(authorize).toHaveBeenCalledWith(
+      "bracket.heat-schedule",
+      "competition",
+      ID,
+    );
+    expect(mutations.setHeatSchedule).not.toHaveBeenCalled();
   });
 });
