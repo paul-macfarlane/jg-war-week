@@ -8,7 +8,7 @@
 
 **Blocked by:** Epic E (its PR #84 merged into `staging`)
 
-**Status:** in-progress
+**Status:** ai-review
 
 **Red-team:** required. Heat times add columns to `heat`, a Drizzle schema change (`docs/agents/planning.md`).
 
@@ -54,3 +54,4 @@ Brackets spec (`.scratch/brackets/spec.md`) stories 9 (by Standings only), 13, 2
 ## Comments
 - 2026-09-27 [EXECUTION PLAN]: written to `./F-execution.md`. Red-teamed three times: pass 1 blocked (2 blocking, resolved), pass 2 blocked (1 blocking, resolved), pass 3 `ATLAS_RED_TEAM_PASS` (4 minors, applied). Paul accepted every open-decision default, including refilled reset Heats showing in Now/Next. Ready for `/atlas-implement`.
 - 2026-09-27 [PROGRESS]: `/atlas-implement` started on `feat/hardening-f-brackets-on-the-day` from `staging` at `a5a6507`; status `in-progress`. Execution follows `./F-execution.md` (waves D1; D2–D4 in parallel worktrees; D5; D6).
+- 2026-09-27 [PROGRESS]: D1–D6 integrated at `ae65010`; status `ai-review`. Aggregate AI code review started.
