@@ -50,20 +50,22 @@ export default async function EditionLayout({
     <ThemeRoot
       style={themeStyle}
       pageColorScheme={themeStyle.colorScheme}
-      className="bg-background text-foreground min-h-dvh pb-20 font-sans lg:pb-0"
+      className="bg-background text-foreground flex min-h-dvh flex-col pb-20 font-sans lg:pb-0"
     >
       <TopNav
         edition={warWeek.edition}
         storyTheme={warWeek.storyTheme}
         account={account}
       />
-      <YouProvider
-        edition={warWeek.edition}
-        linkedId={linked?.participantId ?? null}
-        participantIds={candidates.map((c) => c.id)}
-      >
-        {children}
-      </YouProvider>
+      <div className="flex flex-1 flex-col">
+        <YouProvider
+          edition={warWeek.edition}
+          linkedId={linked?.participantId ?? null}
+          participantIds={candidates.map((c) => c.id)}
+        >
+          {children}
+        </YouProvider>
+      </div>
       <SiteFooter />
       <BottomTabBar
         edition={warWeek.edition}
