@@ -190,6 +190,24 @@ export function formatDayHeading(date: string): string {
 }
 
 /**
+ * The Schedule page's `?day=` filter: picks the Day matching a `YYYY-MM-DD`
+ * search param and filters `days` down to it, or leaves `days` unchanged
+ * (the "All" view) when `day` is missing, not a string, or doesn't match any
+ * Day in the War Week.
+ */
+export function filterScheduleByDay(
+  days: ScheduleDay[],
+  day: string | string[] | undefined,
+): { selected: string | null; days: ScheduleDay[] } {
+  const selected =
+    typeof day === "string" && days.some((d) => d.date === day) ? day : null;
+  return {
+    selected,
+    days: selected === null ? days : days.filter((d) => d.date === selected),
+  };
+}
+
+/**
  * The clock pages compute now/next from: the `?at=` search param when it is
  * a valid ISO 8601 instant (for demos of a War Week that isn't on right now),
  * otherwise `now`, the real time the page read (lib never reads the clock).

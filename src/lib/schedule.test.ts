@@ -4,6 +4,7 @@ import {
   type ScheduleDay,
   type ScheduleEntry,
   computeNowNext,
+  filterScheduleByDay,
   formatDayHeading,
   formatEtTime,
   formatTimeRange,
@@ -294,6 +295,32 @@ describe("formatDayHeading", () => {
   it("formats a Day date without shifting it by the viewer's timezone", () => {
     expect(formatDayHeading("2026-02-23")).toBe("Monday, Feb 23");
   });
+});
+
+describe("filterScheduleByDay", () => {
+  it("returns every Day, unselected, when day is missing", () => {
+    expect(filterScheduleByDay(week, undefined)).toEqual({
+      selected: null,
+      days: week,
+    });
+  });
+
+  it("filters to the matching Day when day is a valid date", () => {
+    expect(filterScheduleByDay(week, "2026-02-24")).toEqual({
+      selected: "2026-02-24",
+      days: [week[1]],
+    });
+  });
+
+  it.each(["2026-02-25", "not-a-date", ["2026-02-23"] as unknown as string[]])(
+    "falls back to All for an unknown or invalid day %s",
+    (day) => {
+      expect(filterScheduleByDay(week, day)).toEqual({
+        selected: null,
+        days: week,
+      });
+    },
+  );
 });
 
 describe("resolveClock", () => {
