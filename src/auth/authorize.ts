@@ -7,8 +7,10 @@ import {
   type WarWeekAction,
   can,
 } from "@/lib/access";
+import { SQUAD_MISSING } from "@/lib/games/enroll-rule";
 import { isUuid } from "@/lib/uuid";
 import type { MutationContext } from "@/mutations/types";
+import { type EnrollFacts, getEnrollFacts } from "@/queries/enrollment";
 import {
   type HeatReportFacts,
   getHeatReportFacts,
@@ -143,6 +145,58 @@ export async function authorizeHeatReport(
     warWeekId: target.warWeek.id,
     competitionId: target.competitionId,
     heatReport: facts.heatReport,
+  });
+  if (refusal) return { ok: false, error: refusal };
+  // `can` refuses an unlinked actor, so this is only for the type.
+  if (!facts.linked) return { ok: false, error: SIGN_IN_REFUSAL };
+  return {
+    ok: true,
+    actor,
+    warWeek: target.warWeek,
+    ctx: { warWeekId: target.warWeek.id, actorEmail: actor.email },
+    linked: facts.linked,
+  };
+}
+
+/**
+ * The authorize step for self-enrollment (ADR 0006): enroll or withdraw,
+ * or with a `squadId` join or leave that Squad. In ADR 0003's order:
+ * authenticate; the ids shaped like row ids; load the Competition and its
+ * War Week; load the enrollment facts for the actor's email (account
+ * linking, never the pick); run `can`, which binds Organizers and Hosts
+ * too. Never throws on a refusal.
+ */
+export async function authorizeEnroll(
+  action: "competition.enroll" | "competition.withdraw",
+  competitionId: unknown,
+  squadId?: unknown,
+): Promise<
+  | {
+      ok: true;
+      actor: NonNullable<Actor>;
+      warWeek: TargetWarWeek;
+      ctx: MutationContext;
+      linked: NonNullable<EnrollFacts["linked"]>;
+    }
+  | Refused
+> {
+  const actor = await getActor();
+  if (!actor) return { ok: false, error: SIGN_IN_REFUSAL };
+  const [competitionNotFound, load] = TARGETS.competition;
+  if (!isUuid(competitionId)) return { ok: false, error: competitionNotFound };
+  if (squadId !== undefined && !isUuid(squadId)) {
+    return { ok: false, error: SQUAD_MISSING };
+  }
+  const target = await load(competitionId);
+  if (!target) return { ok: false, error: competitionNotFound };
+
+  const facts = await getEnrollFacts(competitionId, actor.email, {
+    squadId: squadId as string | undefined,
+  });
+  const refusal = can(actor, action, {
+    warWeekId: target.warWeek.id,
+    competitionId: target.competitionId,
+    enroll: facts.enroll,
   });
   if (refusal) return { ok: false, error: refusal };
   // `can` refuses an unlinked actor, so this is only for the type.
