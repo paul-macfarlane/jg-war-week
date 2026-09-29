@@ -181,10 +181,20 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     const edit = page.getByRole("dialog", { name: "Edit Game" });
     await expect(edit).toBeVisible();
     await shoot(page, testInfo, "host-edit");
-    await edit
-      .getByRole("group", { name: "Who won?" })
-      .getByRole("button", { name: `${OPPONENT.name} won` })
-      .click();
+    // Keyboard proof: arrow off the pressed item onto the other, Space to
+    // choose it, all without a mouse.
+    const editOutcome = edit.getByRole("group", { name: "Who won?" });
+    const editPlayerWon = editOutcome.getByRole("button", {
+      name: `${PLAYER.name} won`,
+    });
+    const editOpponentWon = editOutcome.getByRole("button", {
+      name: `${OPPONENT.name} won`,
+    });
+    await editPlayerWon.focus();
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("Space");
+    await expect(editOpponentWon).toHaveAttribute("aria-pressed", "true");
+    await expect(editPlayerWon).toHaveAttribute("aria-pressed", "false");
     await edit.getByRole("button", { name: "Save Game" }).click();
     await expect(page.getByText("Game updated")).toBeVisible();
     await expect(edit).toBeHidden();

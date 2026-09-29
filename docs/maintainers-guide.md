@@ -413,6 +413,10 @@ Notes:
   `<input type="time">`, or `<input type="color">`. Add a missing primitive
   with `pnpm dlx shadcn@latest add <name>`; don't hand-roll a control shadcn
   already has.
+- A single choice among a few options (who won, which Entrant) is a
+  `ToggleGroup` from `ui/toggle-group`: single-select, and kept
+  non-deselectable by ignoring an empty `onValueChange` — never `Button`s
+  with hand-rolled `aria-pressed`.
 - The app's own wrappers — `EntityCombobox`, `DatePicker`,
   `DateRangePicker`, `TimeCombobox`, `ColorField`, and `ResponsiveSheetDialog`
   (a centered Dialog at `lg` and up, a bottom Sheet below) — live in

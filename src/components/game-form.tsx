@@ -25,6 +25,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { GameType } from "@/lib/enums";
 import type {
   BestScoreConfig,
@@ -220,9 +221,15 @@ function GameFormBody({
               <span id={`${id}-outcome`} className="text-sm font-medium">
                 Who won?
               </span>
-              <div
-                role="group"
+              <ToggleGroup
                 aria-labelledby={`${id}-outcome`}
+                value={outcome ? [outcome] : []}
+                onValueChange={(value) => {
+                  // A choice can't be deselected: clicking the pressed item
+                  // again would otherwise clear the group.
+                  const [next] = value as ("a" | "b" | "draw")[];
+                  if (next) setOutcome(next);
+                }}
                 className="grid grid-cols-1 gap-2 sm:grid-cols-3"
               >
                 {(
@@ -232,18 +239,16 @@ function GameFormBody({
                     ...(drawsAllowed ? [["draw", "Draw"]] : []),
                   ] as ["a" | "b" | "draw", string][]
                 ).map(([value, label]) => (
-                  <Button
+                  <ToggleGroupItem
                     key={value}
-                    type="button"
-                    variant={outcome === value ? "default" : "outline"}
-                    aria-pressed={outcome === value}
-                    className="h-auto min-h-11 py-2 whitespace-normal sm:min-h-9"
-                    onClick={() => setOutcome(value)}
+                    value={value}
+                    variant="outline"
+                    className="aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary/80 data-pressed:border-primary data-pressed:bg-primary data-pressed:text-primary-foreground data-pressed:hover:bg-primary/80 h-auto min-h-11 py-2 whitespace-normal sm:min-h-9"
                   >
                     {label}
-                  </Button>
+                  </ToggleGroupItem>
                 ))}
-              </div>
+              </ToggleGroup>
               <FieldError>{errors.outcome}</FieldError>
             </Field>
           </>
