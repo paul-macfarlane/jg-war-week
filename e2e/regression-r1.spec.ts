@@ -333,6 +333,14 @@ async function xiDays(): Promise<string[]> {
   return rows.map((r) => r.date);
 }
 
+/**
+ * A Day's section. While a page streams, Next briefly keeps a hidden copy
+ * of it in the DOM, so a bare `#day-…` can match twice: take the shown one.
+ */
+function daySection(page: Page, date: string) {
+  return page.locator(`#day-${date}`).filter({ visible: true });
+}
+
 test("r1 08 the Schedule defaults to All and filters to one Day by URL", async ({
   page,
 }, testInfo) => {
@@ -346,7 +354,7 @@ test("r1 08 the Schedule defaults to All and filters to one Day by URL", async (
       page.getByRole("link", { name: "All", exact: true }),
     ).toHaveAttribute("aria-current", "true");
     for (const date of days) {
-      await expect(page.locator(`#day-${date}`)).toBeVisible();
+      await expect(daySection(page, date)).toBeVisible();
     }
     await page.screenshot({
       path: testInfo.outputPath(`schedule-all-${viewport.width}.png`),
@@ -357,7 +365,7 @@ test("r1 08 the Schedule defaults to All and filters to one Day by URL", async (
     await expect(page).toHaveURL(new RegExp(`\\?day=${targetDate}$`));
     for (const date of days) {
       if (date === targetDate) {
-        await expect(page.locator(`#day-${date}`)).toBeVisible();
+        await expect(daySection(page, date)).toBeVisible();
       } else {
         await expect(page.locator(`#day-${date}`)).toHaveCount(0);
       }
@@ -377,7 +385,7 @@ test("r1 08 the Schedule defaults to All and filters to one Day by URL", async (
       page.getByRole("link", { name: "All", exact: true }),
     ).toHaveAttribute("aria-current", "true");
     for (const date of days) {
-      await expect(page.locator(`#day-${date}`)).toBeVisible();
+      await expect(daySection(page, date)).toBeVisible();
     }
   }
 });
