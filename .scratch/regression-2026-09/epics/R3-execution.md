@@ -595,3 +595,20 @@ export the `.env.example` values first (`set -a; . ./.env.example; set +a`).
 
 ## [PROGRESS]
 
+
+- 2026-09-29 **Waves 0–2 integrated** at `aceab78`:
+  - D0 `7a2124d`: Foundation (Opus): migrations 0015/0016 (the CHECK uses `format::text`; `pnpm db:migrate` from 0014 applied both in one run), the Format sweep, the three XI conversions, the smoke Host fixture moved to AI Survey Completion.
+  - D1b `014621d`: access rules (Opus).
+  - D1a `07061c4`: ranking, input and view helpers (Sonnet).
+  - D2b `1b49e93`: enrollment (Opus). Orchestrator fix: local `members` → `inSquad` (banned term).
+  - D2a `aceab78`: Games data, actions, Close/Reopen (Opus). Orchestrator integration: the `src/auth/authorize.ts` merge (the predicted collision; disjoint functions, conflicting import hunks), and the Best-of and open-list enrollment refusals unified onto `src/mutations/enrollment.ts`'s copy.
+
+  All were accepted at the acceptance screen. Integrated `pnpm typecheck && pnpm lint && pnpm test`: 119 files, 2780 tests, exit 0. `pnpm build` was green on D0.
+
+  Candidate evidence for 17-1, 17-2, 17-3 and 15-1: vitest on the local Postgres.
+
+  Deviations accepted (recorded in the state file and the closeout):
+  - an Entrant with no Game is unranked for every Game Type;
+  - the facet shape tightenings in D1b;
+  - D2b's facet hides the enroll switch where enrollment isn't offered;
+  - D2a's player validation binds Hosts too.
