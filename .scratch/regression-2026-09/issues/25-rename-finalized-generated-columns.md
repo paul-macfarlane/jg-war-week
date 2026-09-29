@@ -1,4 +1,4 @@
-# 25: Rename finalized_at and generated_by_bracket
+# 25: Rename finalized_at and generated_by_bracket (backlog)
 
 **What to build:** Give the two columns names that fit both Brackets and `games` Competitions.
 
@@ -20,3 +20,4 @@
 - [ ] `pnpm gate` passes.
 
 ## Comments
+- 2026-09-29 (Paul): backlog. Internal naming only, no user-facing effect; a schema change that needs a red-team. Do it alongside a future schema change that is red-teamed anyway.

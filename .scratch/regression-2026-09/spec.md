@@ -53,14 +53,14 @@ correctness, then design, then fun.
 
 - `20` A person across War Weeks (nice-to-have; needs grilling)
 
-### Follow-ups from Epic R3 (needs-triage)
+### Follow-ups from Epic R3
 
-- `21` Forms keep their input across the Sheet/Dialog switch (bug)
-- `22` A disabled Enroll button looks disabled
-- `23` Result choices use shadcn toggle-group
-- `24` End War Week warns about open Games Competitions
-- `25` Rename `finalized_at` and `generated_by_bracket` (schema: red-team)
-- `26` The /about Games still shows its Competition title
+- `21` Forms keep their input across the Sheet/Dialog switch (bug), epic R4
+- `22` A disabled Enroll button looks disabled, epic R2
+- `23` Result choices use shadcn toggle-group, epic R4
+- `24` End War Week warns about open Games Competitions, epic R4
+- `25` Rename `finalized_at` and `generated_by_bracket` (backlog: pair it with a future red-teamed schema change)
+- `26` The /about Games still shows its Competition title, epic R2
 
 ## Decisions (grilling, 2026-09-28)
 
@@ -81,7 +81,8 @@ Each epic is one `/atlas-implement` run, one branch and one PR into
 |---|---|---|
 | `R1` Fixes and quick wins | 01–10, 16 | Paul's decisions on 02, 04, 05, 06 |
 | `R3` The `games` Format and self-enrollment | 17, 15 | R1 merged; plan red-teamed |
-| `R2` Light and dark Appearance Themes | 12 (13 checked) | R3 merged; plan red-teamed |
+| `R4` Follow-ups from R3 | 21, 23, 24 | R3 merged |
+| `R2` Light and dark Appearance Themes | 12, 22, 26 (13 checked) | R3 and R4 merged; plan red-teamed |
 
 Outside the epics: `11` (Paul, with Claude in Chrome), `14` (after R2; ticket
 17 of hardening), `18` (a regression pass after R1), `19` (backlog),

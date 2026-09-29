@@ -19,3 +19,4 @@
 - [ ] `pnpm gate` passes.
 
 ## Comments
+- 2026-09-29 (Paul): folded into Epic R2 (`../epics/R2-light-and-dark-themes.md`): R2 reworks colors and contrast in both modes and regenerates the /about media, so this is done there rather than twice.
