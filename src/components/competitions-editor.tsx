@@ -35,7 +35,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { WarWeek } from "@/db/schema";
-import { type Format, formatLabel } from "@/lib/bracket/view";
+import { type Format, formatLabel, isBracketFormat } from "@/lib/bracket/view";
 import { COMPETITION_FORMATS } from "@/lib/enums";
 import type { CompetitionInput } from "@/lib/setup";
 import type { SetupCompetition } from "@/queries/setup";
@@ -45,7 +45,7 @@ const FORMAT_DESCRIPTIONS: Record<Format, string> = {
   points: "Only Points Entries; no Bracket.",
   "single-elimination": "A knockout Bracket: one loss and an Entrant is out.",
   heats:
-    "A Bracket where Entrants play in Heats; a set number advance each round.",
+    "A Bracket where Entrants play in Heats; a set number advance each Round.",
 };
 
 function emptyCompetition(mode: WarWeek["mode"]): CompetitionInput {
@@ -161,7 +161,7 @@ function CompetitionRow({
         if (competition) return updateCompetition(competition.id, input);
         const result = await createCompetition(warWeekId, input);
         // A Bracket Format links straight to its Bracket setup.
-        if (result.ok && input.format && input.format !== "points") {
+        if (result.ok && isBracketFormat(input.format)) {
           router.push(`/admin/setup/competitions/${result.id}/bracket`);
         }
         return result;

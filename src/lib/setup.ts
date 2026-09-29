@@ -1,7 +1,7 @@
 import { type ZodType, z } from "zod";
 
 import type { Competition, Participant, Team, WarWeek } from "@/db/schema";
-import { defaultConfig, heatsConfigSchema } from "@/lib/bracket/config";
+import { heatsConfigSchema } from "@/lib/bracket/config";
 import { HEX_COLOR } from "@/lib/color";
 import { MAX_PLACEMENTS } from "@/lib/competitions";
 import { dayOutsideRangeError } from "@/lib/day-range";
@@ -322,11 +322,12 @@ export type CompetitionValues = Pick<
 
 /**
  * A new Competition's fields, with the Format an Organizer chose on create.
- * Both default in `createCompetition` when omitted (a direct mutation call
- * that predates the create form's Format field), to "points" with none.
+ * Defaults in `createCompetition` when omitted (a direct mutation call that
+ * predates the create form's Format field), to "points". `createCompetition`
+ * alone owns the Format's `bracketConfig` default (`defaultConfig`).
  */
 export type CompetitionCreateValues = CompetitionValues &
-  Partial<Pick<Competition, "format" | "bracketConfig">>;
+  Partial<Pick<Competition, "format">>;
 
 const FIELD_LABELS: Record<string, string> = {
   storyTheme: "Story Theme",
@@ -536,10 +537,11 @@ const formatFieldSchema = z.object({
 
 /**
  * Validates a new Competition's form, adding the Format an Organizer chose
- * on create. A heats Format gets the Bracket builder's default config
- * (`defaultConfig`, `src/lib/bracket/config.ts`); points and single
- * elimination take none. The edit form never sends a Format: its Format
- * changes only through the Bracket actions (`setCompetitionFormat`).
+ * on create. Only validates and returns the Format; `createCompetition`
+ * (`src/mutations/setup.ts`) alone owns defaulting a heats Format's
+ * `bracketConfig` (`defaultConfig`, `src/lib/bracket/config.ts`). The edit
+ * form never sends a Format: its Format changes only through the Bracket
+ * actions (`setCompetitionFormat`).
  */
 export function parseCreateCompetitionInput(
   input: CompetitionInput,
@@ -547,14 +549,14 @@ export function parseCreateCompetitionInput(
   const base = parseCompetitionInput(input);
   if (!base.ok) return base;
   const formatParsed = parseWith(formatFieldSchema, {
-    format: input.format?.trim() || "points",
+    format:
+      typeof input.format === "string"
+        ? input.format.trim() || "points"
+        : (input.format ?? "points"),
   });
   if (!formatParsed.ok) return formatParsed;
   const { format } = formatParsed.value;
-  return {
-    ok: true,
-    value: { ...base.value, format, bracketConfig: defaultConfig(format) },
-  };
+  return { ok: true, value: { ...base.value, format } };
 }
 
 const FREE_FOR_ALL_HAS_NO_TEAMS = "A free-for-all War Week has no Teams.";

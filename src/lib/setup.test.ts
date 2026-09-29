@@ -404,14 +404,14 @@ describe("parseCreateCompetitionInput", () => {
     group: "",
   };
 
-  it("defaults to the points Format with no config", () => {
+  it("defaults to the points Format", () => {
     expect(parseCreateCompetitionInput(competition)).toMatchObject({
       ok: true,
-      value: { format: "points", bracketConfig: null },
+      value: { format: "points" },
     });
   });
 
-  it("takes a Bracket Format, with a heats default config", () => {
+  it("takes a Bracket Format; bracketConfig defaulting is createCompetition's job, not the parser's", () => {
     expect(
       parseCreateCompetitionInput({
         ...competition,
@@ -419,22 +419,29 @@ describe("parseCreateCompetitionInput", () => {
       }),
     ).toMatchObject({
       ok: true,
-      value: { format: "single-elimination", bracketConfig: null },
+      value: { format: "single-elimination" },
     });
     expect(
       parseCreateCompetitionInput({ ...competition, format: "heats" }),
     ).toMatchObject({
       ok: true,
-      value: {
-        format: "heats",
-        bracketConfig: { entrantsPerHeat: 4, advancePerHeat: 2 },
-      },
+      value: { format: "heats" },
     });
   });
 
   it("refuses an unknown Format", () => {
     expectRefused(
       parseCreateCompetitionInput({ ...competition, format: "games" }),
+      "Format must be one of points, single-elimination, heats.",
+    );
+  });
+
+  it("refuses a non-string format as a field error instead of throwing", () => {
+    expectRefused(
+      parseCreateCompetitionInput({
+        ...competition,
+        format: 123 as unknown as string,
+      }),
       "Format must be one of points, single-elimination, heats.",
     );
   });

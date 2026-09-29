@@ -626,7 +626,7 @@ export async function createCompetition(
             warWeekId: ctx.warWeekId,
             ...values,
             format,
-            bracketConfig: values.bracketConfig ?? defaultConfig(format),
+            bracketConfig: defaultConfig(format),
           })
           .returning({ id: competition.id });
         return { ok: true, id: created.id };
