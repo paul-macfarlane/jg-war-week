@@ -53,8 +53,7 @@ export function Finale({
     return () => window.removeEventListener("keydown", onKey);
   }, [phase, start]);
 
-  const title =
-    main === "team" ? `${teamLabel} standings` : "Individual leaderboard";
+  const title = main === "team" ? `${teamLabel} standings` : "Standings";
 
   return (
     <div
