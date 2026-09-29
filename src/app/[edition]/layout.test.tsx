@@ -45,4 +45,16 @@ describe("EditionLayout", () => {
     expect(html).toMatch(/class="[^"]*\bflex\b[^"]*\bflex-col\b[^"]*"/);
     expect(html).toContain('data-testid="content"');
   });
+
+  it("wraps children in a plain block flex-1 div so page content can stretch to its own max-width instead of shrinking to content width", async () => {
+    const { default: EditionLayout } = await import("./layout");
+
+    const element = await EditionLayout({
+      params: Promise.resolve({ edition: "xi" }),
+      children: <main data-testid="content">short page</main>,
+    });
+    const html = renderToStaticMarkup(element);
+
+    expect(html).toMatch(/<div class="flex-1"><main data-testid="content">/);
+  });
 });

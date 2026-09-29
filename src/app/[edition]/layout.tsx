@@ -57,7 +57,7 @@ export default async function EditionLayout({
         storyTheme={warWeek.storyTheme}
         account={account}
       />
-      <div className="flex flex-1 flex-col">
+      <div className="flex-1">
         <YouProvider
           edition={warWeek.edition}
           linkedId={linked?.participantId ?? null}
