@@ -12,11 +12,13 @@ import {
   type ClosingValues,
   DEFAULT_SETTINGS,
   type NextWarWeekValues,
+  defaultWinner,
   moveError,
   transitionError,
 } from "@/lib/war-week-lifecycle";
 import { isUniqueViolation } from "@/mutations/setup";
 import type { MutationContext, MutationResult } from "@/mutations/types";
+import { getStandings } from "@/queries/standings";
 
 const WAR_WEEK_NOT_FOUND = "That War Week no longer exists.";
 
@@ -33,24 +35,32 @@ async function liveEdition(
   return live?.edition ?? null;
 }
 
+type LifecycleRow = Pick<WarWeek, "status" | "mode">;
+
 /**
  * Moves a War Week to `to` when `transitionError` (and, for Start or
  * Reopen, `moveError`) allows it. A second
  * `live` War Week is refused by the check and, for a concurrent Start that
  * slipped past it, by the `war_week_one_live` index: both read
  * "End <EDITION> first."
+ *
+ * `set` is either the columns to write, or (for End, which must compute the
+ * Winner from the Standings rather than trust client input) a function that
+ * derives them from the locked row inside the same transaction.
  */
 async function transition(
   warWeekId: string,
   to: WarWeek["status"],
-  set: Partial<ClosingValues>,
+  set:
+    | Partial<WarWeek>
+    | ((tx: DBOrTx, row: LifecycleRow) => Promise<Partial<WarWeek>>),
   dbOrTx: DBOrTx,
   action?: "start" | "reopen",
 ): Promise<MutationResult> {
   try {
     return await dbOrTx.transaction(async (tx): Promise<MutationResult> => {
       const [row] = await tx
-        .select({ status: warWeek.status })
+        .select({ status: warWeek.status, mode: warWeek.mode })
         .from(warWeek)
         .where(eq(warWeek.id, warWeekId))
         .for("update");
@@ -61,9 +71,10 @@ async function transition(
           liveEdition: await liveEdition(tx, warWeekId),
         });
       if (refusal) return { ok: false, error: refusal };
+      const resolvedSet = typeof set === "function" ? await set(tx, row) : set;
       await tx
         .update(warWeek)
-        .set({ ...set, status: to, updatedAt: sql`now()` })
+        .set({ ...resolvedSet, status: to, updatedAt: sql`now()` })
         .where(eq(warWeek.id, warWeekId));
       return { ok: true };
     });
@@ -87,13 +98,29 @@ export function startWarWeek(
   return transition(ctx.warWeekId, "live", {}, dbOrTx, "start");
 }
 
-/** End War Week: `live → complete`, recording the Winner and highlights. */
+/**
+ * End War Week: `live → complete`, recording highlights and the Winner.
+ * The Winner is never taken from `closing` (there is no override): it is
+ * `defaultWinner()` over the Standings as of End, computed inside the same
+ * transaction that locks the row.
+ */
 export function endWarWeek(
   closing: ClosingValues,
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
-  return transition(ctx.warWeekId, "complete", closing, dbOrTx);
+  return transition(
+    ctx.warWeekId,
+    "complete",
+    async (tx, row) => ({
+      ...closing,
+      winner:
+        defaultWinner(
+          await getStandings({ id: ctx.warWeekId, mode: row.mode }, tx),
+        ) || null,
+    }),
+    dbOrTx,
+  );
 }
 
 /** Reopen: `complete → live` for corrections, when nothing else is live. */

@@ -68,16 +68,15 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed lifecycle fields", () => {
       const first = await loadWarWeekSeed(await seed("sa", 1, "live"), tx);
       expect(first.status).toBe("live");
 
-      await endWarWeek(
-        { winner: "Red", highlights: ["gg"] },
-        ctxOf(first.id),
-        tx,
-      );
+      // No Teams or points are seeded here, so the computed Winner is blank;
+      // the point of this test is that a reload never overwrites either
+      // field once End War Week has set them.
+      await endWarWeek({ highlights: ["gg"] }, ctxOf(first.id), tx);
       const reloaded = await loadWarWeekSeed(await seed("sa", 1, "live"), tx);
 
       expect(reloaded).toMatchObject({
         status: "complete",
-        winner: "Red",
+        winner: null,
         highlights: ["gg"],
       });
     });

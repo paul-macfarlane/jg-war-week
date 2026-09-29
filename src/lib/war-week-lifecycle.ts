@@ -3,7 +3,6 @@ import { z } from "zod";
 import type { WarWeek } from "@/db/schema";
 import type { Parsed } from "@/lib/result";
 import {
-  optional,
   parseWith,
   warWeekSettingsSeedShape as seed,
   splitLines,
@@ -160,27 +159,28 @@ export function nextEditionDefaults(
 }
 
 /**
- * The Winner to prefill on End: first place on the main leaderboard (Team
- * Standings, or individual Standings in free-for-all). Tied first places
- * are joined with " & ". Blank when nobody has points.
+ * The Winner, computed on End: first place on the main leaderboard (Team
+ * Standings, or individual Standings in free-for-all), read-only and never
+ * an Organizer override. A single first place is its name; a shared first
+ * place is a tie, formatted "Tie: A & B" ("Tie: A & B & C" for three or
+ * more). Blank when nobody has points.
  */
 export function defaultWinner(standings: Standings): string {
   const rows =
     standings.main === "team" ? standings.team : standings.individual;
-  return rows
-    .filter((row) => row.rank === 1)
-    .map((row) => row.name)
-    .join(" & ");
+  const names = rows.filter((row) => row.rank === 1).map((row) => row.name);
+  if (names.length <= 1) return names.join("");
+  return `Tie: ${names.join(" & ")}`;
 }
 
 const closingSchema = z.object({
-  winner: optional(seed.winner),
   highlights: z.preprocess(splitLines, seed.highlights),
 });
 
-/** What End War Week records, as the dialog holds it. */
-export type ClosingInput = { winner: string; highlights: string };
-export type ClosingValues = Pick<WarWeek, "winner" | "highlights">;
+/** What the End War Week dialog submits: highlights only. The Winner is
+ * computed server-side from the Standings and is never client input. */
+export type ClosingInput = { highlights: string };
+export type ClosingValues = Pick<WarWeek, "highlights">;
 
 /** Validates the End War Week dialog. Never throws; returns the first error. */
 export function parseClosingInput(input: ClosingInput): Parsed<ClosingValues> {
