@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** in-progress
+**Status:** ai-review
 
 **Source:** regression feedback item 6
 
@@ -22,3 +22,4 @@ The edition layout wrapper has `min-h-dvh` (`src/app/[edition]/layout.tsx:53`) b
 
 - 2026-09-28 (Paul, via `/atlas-implement` of Epic R1): `needs-triage → ready-for-agent`.
 - 2026-09-28: `ready-for-agent → in-progress` — delivered inside Epic R1 on branch `feat/regression-r1-quick-wins` (`/atlas-implement`, work package `regression-r1`).
+- 2026-09-29: `in-progress → ai-review` — implementation integrated on `feat/regression-r1-quick-wins`; aggregate AI code review and verification started.

@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** in-progress
+**Status:** ai-review
 
 **Source:** regression feedback item 16
 
@@ -22,3 +22,4 @@ The home heading already switches on `warWeek.mode` (`src/app/[edition]/(home)/p
 
 - 2026-09-28 (Paul): no repro to hand. Fix defensively: every standings heading switches on `mode` (free-for-all reads "Standings"), covered by a component test; note in closeout that the sighting was most likely a War Week set to `teams` mode. `needs-info → ready-for-agent`.
 - 2026-09-28: `ready-for-agent → in-progress` — delivered inside Epic R1 on branch `feat/regression-r1-quick-wins` (`/atlas-implement`, work package `regression-r1`).
+- 2026-09-29: `in-progress → ai-review` — implementation integrated on `feat/regression-r1-quick-wins`; aggregate AI code review and verification started.

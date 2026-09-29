@@ -89,4 +89,9 @@ Human gates: none. CI on the PR is an automated post-PR check.
   permission guard; R1's evidence goes into new, R1-named directories and
   the Epic G files are left for Paul to decide.
 
+- 2026-09-29: wave 1 integrated (cherry-picked in order): D6 `067a729`, D1 `cb181ff`, D2 `34787a2` `748250e`, D3 `ac876eb` + orchestrator fix `4ab12f9` (no Winner when every Team is on 0 points — Teams at 0 all share rank 1), D4 `2c30575` `11410c4`, D5 `45a3441` `46d2115`. D5 ran its Bracket e2e flows (5/5) in its worktree.
+- 2026-09-29: E1 (fresh agent, independent evidence) `b059496`: `e2e/regression-r1.spec.ts`, 6/6 pass; screenshots under `test-results/e2e/regression-r1-*/`.
+- 2026-09-29: wave 2, D7 `86f4469` `b64f077` `7e97704`: /about follows `getCurrentWarWeek` (now dynamic), Standings-after-a-Points-Entry hero stills, showcase copy and guide for every R1 ticket, media regenerated. D7 installed ffmpeg via Homebrew on this machine to run the media script.
+- 2026-09-29: aggregate AI code review started; records `in-progress → ai-review`.
+
 ## [CLOSEOUT]

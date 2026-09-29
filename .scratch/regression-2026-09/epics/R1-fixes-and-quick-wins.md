@@ -8,7 +8,7 @@
 
 **Blocked by:** none — Paul decided 02 (fix defensively, no repro), 04 (Standings moving after a Points Entry), 05 (read-only, no override) and 06 (keep, add help text) on 2026-09-28; recorded in each ticket.
 
-**Status:** in-progress (`/atlas-implement` work package `regression-r1`, branch `feat/regression-r1-quick-wins`)
+**Status:** ai-review (`/atlas-implement` work package `regression-r1`, branch `feat/regression-r1-quick-wins`)
 
 ## Order and parallelism
 
