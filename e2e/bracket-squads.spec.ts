@@ -106,6 +106,17 @@ function heatCard(page: Page, heat: string): Locator {
     .filter({ has: page.getByText(heat, { exact: true }) });
 }
 
+/**
+ * Switches the Competition page's Bracket from its default tree to the
+ * List, whose Heat Cards `heatCard` finds.
+ */
+async function showList(page: Page) {
+  await page
+    .getByRole("region", { name: "Bracket" })
+    .getByRole("tab", { name: "List" })
+    .click();
+}
+
 /** The Squad named in a Winner button's text. */
 function squadIn(text: string): string {
   const name = SQUAD_NAMES.find((squad) => text.includes(squad));
@@ -238,6 +249,7 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     const second = await secondContext.newPage();
     for (const you of [first, second]) {
       await you.goto(`/xi/competitions/${id}`);
+      await showList(you);
       const nextHeat = you
         .getByRole("region", { name: "Bracket" })
         .getByLabel("Your next Heat");
@@ -287,6 +299,7 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await second.keyboard.press("Escape");
     await expect(secondSheet).toBeHidden();
     await second.reload();
+    await showList(second);
     await expect(
       heatCard(second, semifinal)
         .getByRole("listitem")

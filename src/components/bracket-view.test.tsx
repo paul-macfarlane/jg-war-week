@@ -94,4 +94,12 @@ describe("BracketView", () => {
       renderToStaticMarkup(<BracketView {...props} bracket={bracket} />),
     ).toContain("data-auto-refresh");
   });
+
+  it("shows the Bracket as a tree by default, with a List toggle", () => {
+    const html = renderToStaticMarkup(
+      <BracketView {...props} bracket={bracket} />,
+    );
+    expect(html).toContain("data-bracket-tree");
+    expect(html).toMatch(/<button[^>]*role="tab"[^>]*>List<\/button>/);
+  });
 });
