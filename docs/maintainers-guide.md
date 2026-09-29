@@ -162,9 +162,10 @@ Without `--stills` it also re-records the Finale video, which needs
 
 Organizer screens cover it. Sign in and go to `/admin`:
 
-- **`/admin/setup`**: the **Lifecycle** box (Start, End with the Winner and
-  highlights, Reopen), War Week settings (Story Theme, dates, mode, Team
-  Label, Leader Title, links, Winner and highlights), the Appearance Theme
+- **`/admin/setup`**: the **Lifecycle** box (Start, End with the computed
+  Winner and highlights, Reopen), War Week settings (Story Theme, dates,
+  mode, Team Label, Leader Title, links, Winner and highlights, editable
+  directly for corrections), the Appearance Theme
   (colors, font, logo, banner), Days, Teams and roster, Competitions (with
   their Hosts), Schedule and FAQ.
 - **`/admin/organizers`**: the Organizer list (see
@@ -181,10 +182,12 @@ To start next year's edition in the app:
    nothing to copy for them. It starts `upcoming`, and the admin
    switches to it so you can set it up while XI stays current.
 2. When XI is over, switch back to XI in the header's edition switcher and
-   press **End War Week**: confirm the Winner (prefilled from first place)
-   and any highlights. XI moves to the Archive. The confirm names any
-   Bracket that isn't finalized; finalize it first so its placings count
-   (it warns, it doesn't stop you).
+   press **End War Week**: the dialog shows the Winner it will record —
+   whoever is first in the Standings, "Tie: A & B" when two or more Teams
+   or Participants tie for first, blank when nobody scored — and lets you
+   add any highlights. There is no way to type a different Winner. XI moves
+   to the Archive. The confirm names any Bracket that isn't finalized;
+   finalize it first so its placings count (it warns, it doesn't stop you).
 3. Switch to XII and press **Start War Week**. `/` and `/admin` now go to
    XII. Only one War Week can be live, so XI must end first.
 
@@ -228,14 +231,27 @@ signed in is a **Participant** (`CONTEXT.md`, "Access rules").
 
 ### Run a knockout Competition as a Bracket
 
-Organizer screens cover setting one up and running it: set the Competition's
-**Format** to single elimination or Heats under `/admin/setup/competitions`,
-open its Bracket builder to pick Entrants (all Teams, or specific
-Participants) and Generate; then record each Heat's result from the results
-screen (`/admin/brackets/<id>`) and Finalize to write its placings as Points
-Entries. No code needed for any of that. While a Bracket is finalized, its
-Competition's scoring and Placement Points can't change ("Un-finalize the
-Bracket first."); its name and description still can.
+Organizer screens cover setting one up and running it. Under
+**Setup → Competitions**, **Add a Competition** and choose its **Format**:
+"Single elimination" ("A knockout Bracket: one loss and an Entrant is out.")
+or "Heats" ("A Bracket where Entrants play in Heats; a set number advance
+each round."). **Add**, and you land straight on that Competition's Bracket
+setup page. There, pick Entrants (all Teams, or specific Participants) and
+Generate; then record each Heat's result — from the results screen
+(`/admin/brackets/<id>`) or straight from the Competition page, either one
+opening a dialog centered on a screen and a bottom sheet on a phone — and
+Finalize to write its placings as Points Entries. No code needed for any of
+that. While a Bracket is finalized, its Competition's scoring and Placement
+Points can't change ("Un-finalize the Bracket first."); its name and
+description still can. Changing an existing Competition's Format happens on
+its Bracket page, not the Setup form.
+
+A Bracket reads as a tree by default on its Competition page: single
+elimination shows its Rounds left to right joined by lines; Heats shows one
+box per Heat with the advancers highlighted. On a phone it's one Round at a
+time, with Round tabs. Results fill in live as they're recorded, and a
+**List** toggle switches back to the plain list. `/admin/brackets/<id>` (the
+results screen) still shows the list.
 
 On the day: the builder's **By Standings** button draws Seed Positions
 from the current Standings (ties at random) instead of Generate's random
