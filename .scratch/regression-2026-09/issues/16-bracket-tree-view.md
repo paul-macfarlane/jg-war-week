@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** regression feedback item 14
 
@@ -24,3 +24,5 @@
 - [ ] `pnpm gate` passes.
 
 ## Comments
+
+- 2026-09-28: `ready-for-agent → in-progress` — delivered inside Epic R1 on branch `feat/regression-r1-quick-wins` (`/atlas-implement`, work package `regression-r1`).

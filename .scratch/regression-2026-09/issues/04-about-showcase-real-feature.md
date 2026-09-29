@@ -4,7 +4,7 @@
 
 **Blocked by:** 03
 
-**Status:** needs-triage
+**Status:** in-progress
 
 **Source:** regression feedback item 1
 
@@ -18,3 +18,6 @@ Pick the showcase during triage. Keep /about static (stills or recording) unless
 - [ ] `pnpm gate` passes.
 
 ## Comments
+
+- 2026-09-28 (Paul): the hero shows **Standings moving after a Points Entry** (an Organizer records Placement Points, the home Standings reorder), as static stills captured by `scripts/about-media.ts`. The Finale demo leaves the hero and stays as a still lower down. `needs-triage → ready-for-agent`.
+- 2026-09-28: `ready-for-agent → in-progress` — delivered inside Epic R1 on branch `feat/regression-r1-quick-wins` (`/atlas-implement`, work package `regression-r1`).

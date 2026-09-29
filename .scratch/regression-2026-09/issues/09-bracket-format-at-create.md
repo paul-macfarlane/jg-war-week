@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** needs-triage
+**Status:** in-progress
 
 **Source:** regression feedback item 10
 
@@ -21,3 +21,6 @@ Show Format on the create form, with a short explanation of each option.
 ## Comments
 
 **2026-09-28, Claude (grill-with-docs):** The create form's Format choice includes `games` once ticket 17 lands (Epic R3 adds it; Epic R1 ships the existing Formats). One-off contests are `games` Competitions, not Brackets (grilling Q17).
+
+- 2026-09-28 (Paul, via `/atlas-implement` of Epic R1): `needs-triage → ready-for-agent`.
+- 2026-09-28: `ready-for-agent → in-progress` — delivered inside Epic R1 on branch `feat/regression-r1-quick-wins` (`/atlas-implement`, work package `regression-r1`).

@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** needs-triage
+**Status:** in-progress
 
 **Source:** regression feedback item 11
 
@@ -18,3 +18,6 @@ Per the scope rule, prefer removing it. If it stays, it needs help text saying e
 - [ ] `pnpm gate` passes.
 
 ## Comments
+
+- 2026-09-28 (Paul): **keep the field, explain it.** Help text states exactly what Max points bounds (1st place's Placement Points and any single Points Entry for the Competition). No schema change. `needs-triage → ready-for-agent`.
+- 2026-09-28: `ready-for-agent → in-progress` — delivered inside Epic R1 on branch `feat/regression-r1-quick-wins` (`/atlas-implement`, work package `regression-r1`).

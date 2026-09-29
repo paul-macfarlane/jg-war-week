@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** needs-triage
+**Status:** in-progress
 
 **Source:** regression feedback item 6
 
@@ -19,3 +19,6 @@ The edition layout wrapper has `min-h-dvh` (`src/app/[edition]/layout.tsx:53`) b
 - [ ] `pnpm gate` passes.
 
 ## Comments
+
+- 2026-09-28 (Paul, via `/atlas-implement` of Epic R1): `needs-triage → ready-for-agent`.
+- 2026-09-28: `ready-for-agent → in-progress` — delivered inside Epic R1 on branch `feat/regression-r1-quick-wins` (`/atlas-implement`, work package `regression-r1`).
