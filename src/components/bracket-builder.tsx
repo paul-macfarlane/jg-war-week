@@ -611,7 +611,7 @@ export function BracketBuilder({
                 {teamLabel}.
               </p>
               <p className="text-foreground/60 text-xs">
-                Squad: a pair or group from one Team, playing as one entrant.
+                Squad: a pair or group from one Team, playing as one entrant
               </p>
               {squads.length === 0 ? (
                 <p className="text-foreground/70 text-sm">No Squads yet.</p>

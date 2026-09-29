@@ -41,7 +41,7 @@ describe("BracketBuilder", () => {
   it("shows the Squad help text under the Squads heading", () => {
     const html = renderToStaticMarkup(<BracketBuilder {...baseProps} />);
     expect(html).toContain(
-      "Squad: a pair or group from one Team, playing as one entrant.",
+      "Squad: a pair or group from one Team, playing as one entrant",
     );
   });
 
