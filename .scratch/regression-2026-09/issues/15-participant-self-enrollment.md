@@ -1,22 +1,28 @@
 # 15: Participants enroll themselves in Competitions
 
-**What to build:** Organizers and Hosts add every entrant by hand. Participants should be able to enroll themselves; manual add stays.
+**What to build:** A per-Competition switch that lets Participants enter (and withdraw from) fixed-list Competitions themselves, so the Organizer and Host don't add every Entrant by hand. Manual add stays. Decisions: `../grilling-2026-09-28.md` (Q32–Q38); access: ADR 0006.
 
-**Blocked by:** none
+**Blocked by:** 17 (fixed-list `games` Competitions are one of the targets)
 
-**Status:** needs-triage
+**Status:** ready-for-agent
 
 **Source:** regression feedback item 12
 
-## Notes
+## Scope
 
-Touches access (who can write entrants), so red-team the plan. Decide per-Competition opt-in and an enrollment close time.
+- "Participants can enroll" switch, off by default, on Brackets and fixed-list `games` Competitions.
+- Enrollment closes at the first of: Bracket built, optional Entrant limit reached, optional close time, closed by the Host, first Game logged (`games`). Best of X is never self-enrolled.
+- Team scoring: any Participant on a Team enters or withdraws their Team. Squads Brackets: join or leave a Squad the Host created.
+- Withdraw until enrollment closes; afterwards only the Host or an Organizer removes an Entrant.
+- **Squad** help text wherever Squads appear: "a pair or group from one Team, playing as one entrant".
 
 ## Acceptance criteria
 
-- [ ] A Participant can join and leave an open Competition.
-- [ ] Hosts can still add and remove entrants.
-- [ ] Enrollment closes when the Competition starts or its Bracket is seeded.
+- [ ] Access unit tests per ADR 0006: switch off refuses; account linking required (pick grants nothing); each close condition refuses; team and Squad cases; withdraw before and after close.
+- [ ] Playwright: a Participant enrolls in a Bracket, withdraws, re-enrolls; the Host builds the Bracket and enrollment is refused afterwards. Screenshots under `test-results/e2e/<test>/`.
+- [ ] Squad help text shows in setup and on the Competition page.
+- [ ] Schema change and demo seed updated together; plan red-teamed.
+- [ ] `/about` and `docs/maintainers-guide.md` updated.
 - [ ] `pnpm gate` passes.
 
 ## Comments

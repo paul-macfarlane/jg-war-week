@@ -1,6 +1,7 @@
 ---
 title: Regression feedback, September 2026
 status: needs-triage
+grilled: 2026-09-28 (see grilling-2026-09-28.md)
 created: 2026-09-28
 source: Paul's regression pass of JG War Week after hardening Epics A–G
 ---
@@ -49,3 +50,30 @@ correctness, then design, then fun.
 - `11` Refresh War Week XI and historical seed data (ready-for-human)
 - `18` Full regression pass on Competition setup and the day
 - `19` Stairs app integration (backlog, needs-info: owner and access)
+
+- `20` A person across War Weeks (nice-to-have; needs grilling)
+
+## Decisions (grilling, 2026-09-28)
+
+Full record: `grilling-2026-09-28.md`. Glossary: `CONTEXT.md`. Access: ADR 0006.
+
+- Tickets 12, 15, 16 and 17 are settled and `ready-for-agent`.
+- One-off contests are **not** Brackets: a Bracket is a tournament. A new
+  Format, `games`, covers the one-off showdown, a best of X and recurring
+  play, with three Game Types (`head-to-head`, `best-score`, `ranked`).
+- Participants log their own Games and can enroll themselves (ADR 0006).
+
+## Delivery epics
+
+Each epic is one `/atlas-implement` run, one branch and one PR into
+`staging`. Epic files live in `epics/`.
+
+| Epic | Tickets | Waits on |
+|---|---|---|
+| `R1` Fixes and quick wins | 01–10, 16 | Paul's decisions on 02, 04, 05, 06 |
+| `R3` The `games` Format and self-enrollment | 17, 15 | R1 merged; plan red-teamed |
+| `R2` Light and dark Appearance Themes | 12 (13 checked) | R3 merged; plan red-teamed |
+
+Outside the epics: `11` (Paul, with Claude in Chrome), `14` (after R2; ticket
+17 of hardening), `18` (a regression pass after R1), `19` (backlog),
+`20` (grilling first).
