@@ -11,8 +11,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { formatLabel } from "@/lib/bracket/view";
 import { formatPoints, formatPointsLabel } from "@/lib/points";
-import { formatLedgerTime } from "@/lib/points-entry";
-import { getBracketCompetitions } from "@/queries/brackets";
+import { formatLedgerTime, generatedNote } from "@/lib/points-entry";
+import {
+  getBracketCompetitions,
+  getGamesCompetitions,
+} from "@/queries/brackets";
 import {
   getAdminLedger,
   getPointsEntryFormOptions,
@@ -30,12 +33,14 @@ export default async function AdminPointsPage() {
     await loadAdminPage("/admin/points");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
-  const [allOptions, allLedger, standings, allBrackets] = await Promise.all([
-    getPointsEntryFormOptions(warWeek),
-    getAdminLedger(warWeek),
-    getStandings(warWeek),
-    getBracketCompetitions(warWeek),
-  ]);
+  const [allOptions, allLedger, standings, allBrackets, allGames] =
+    await Promise.all([
+      getPointsEntryFormOptions(warWeek),
+      getAdminLedger(warWeek),
+      getStandings(warWeek),
+      getBracketCompetitions(warWeek),
+      getGamesCompetitions(warWeek),
+    ]);
   // A Host sees only their own Competitions in the form, ledger and Brackets.
   const options = {
     ...allOptions,
@@ -43,6 +48,7 @@ export default async function AdminPointsPage() {
   };
   const ledger = allLedger.filter((entry) => runs(entry.competitionId));
   const brackets = allBrackets.filter((b) => runs(b.id));
+  const games = allGames.filter((g) => runs(g.id));
 
   return (
     <AdminShell
@@ -69,6 +75,29 @@ export default async function AdminPointsPage() {
                   <span className="text-foreground/60 text-xs font-normal">
                     {formatLabel(b.format)}
                     {b.finalizedAt ? " · finalized" : ""}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {games.length > 0 && (
+        <section
+          className="mb-8 flex max-w-6xl flex-col gap-2"
+          aria-label="Games"
+        >
+          <h2 className="text-lg font-semibold">Games</h2>
+          <ul className="flex flex-wrap gap-2">
+            {games.map((g) => (
+              <li key={g.id}>
+                <Link
+                  href={`/admin/setup/competitions/${g.id}/games`}
+                  className="border-border hover:bg-muted inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium"
+                >
+                  {g.name}
+                  <span className="text-foreground/60 text-xs font-normal">
+                    {g.finalizedAt ? "closed" : "open"}
                   </span>
                 </Link>
               </li>
@@ -142,7 +171,9 @@ export default async function AdminPointsPage() {
                     </td>
                     <td className="text-foreground/70 py-2 pr-4">
                       {entry.generatedByBracket ? (
-                        <Badge variant="secondary">From bracket</Badge>
+                        <Badge variant="secondary">
+                          {generatedNote(entry.competitionFormat)}
+                        </Badge>
                       ) : (
                         entry.note
                       )}
@@ -158,12 +189,21 @@ export default async function AdminPointsPage() {
                     </td>
                     <td className="py-2">
                       {entry.generatedByBracket ? (
-                        <Link
-                          href={`/admin/brackets/${entry.competitionId}`}
-                          className="text-primary text-xs whitespace-nowrap underline-offset-4 hover:underline"
-                        >
-                          Change in the Bracket
-                        </Link>
+                        entry.competitionFormat === "games" ? (
+                          <Link
+                            href={`/admin/setup/competitions/${entry.competitionId}/games`}
+                            className="text-primary text-xs whitespace-nowrap underline-offset-4 hover:underline"
+                          >
+                            Change in Games
+                          </Link>
+                        ) : (
+                          <Link
+                            href={`/admin/brackets/${entry.competitionId}`}
+                            className="text-primary text-xs whitespace-nowrap underline-offset-4 hover:underline"
+                          >
+                            Change in the Bracket
+                          </Link>
+                        )
                       ) : (
                         <div className="flex items-center gap-2">
                           <Link

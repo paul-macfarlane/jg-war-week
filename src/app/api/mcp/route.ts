@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { toAnnouncementsResult } from "@/mcp/announcements";
 import { toAwardsResult } from "@/mcp/awards";
-import { toBracketResult } from "@/mcp/bracket";
+import { toBracketResult, toGamesBracketResult } from "@/mcp/bracket";
 import { toFaqResult } from "@/mcp/faq";
 import { toHistoryListResult, toHistoryResult } from "@/mcp/history";
 import { toLeaderboardResult } from "@/mcp/leaderboard";
@@ -221,6 +221,17 @@ const handler = createMcpHandler(
           };
         }
         const found = await getCompetitionByName(warWeek, competition);
+        // A `games` Competition is never a Bracket: point to `get_games`.
+        if (found?.format === "games") {
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(toGamesBracketResult(found)),
+              },
+            ],
+          };
+        }
         const [view, days] = await Promise.all([
           found ? getBracket(found.id) : Promise.resolve(undefined),
           getSetupDays(warWeek),

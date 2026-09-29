@@ -58,7 +58,10 @@ type Target = {
   teamId?: string | null;
 };
 
-const FORMAT_OPTIONS = COMPETITION_FORMATS.map((format) => ({
+// Never `games`: a Competition is `games` from creation, and stays so.
+const FORMAT_OPTIONS = COMPETITION_FORMATS.filter(
+  (format) => format !== "games",
+).map((format) => ({
   value: format,
   label: formatLabel(format),
 }));

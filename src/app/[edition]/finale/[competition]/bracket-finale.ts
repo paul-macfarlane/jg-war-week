@@ -1,6 +1,7 @@
 import { cache } from "react";
 
 import { isComplete } from "@/lib/bracket/formats";
+import { isBracketFormat } from "@/lib/bracket/view";
 import { getBracket } from "@/queries/brackets";
 
 import { getWarWeekForEdition } from "../../war-week";
@@ -19,7 +20,7 @@ export const getBracketFinalePage = cache(
     if (
       !view ||
       view.competition.warWeekId !== warWeek.id ||
-      view.competition.format === "points" ||
+      !isBracketFormat(view.competition.format) ||
       !view.finalized ||
       !isComplete(view.bracket)
     ) {

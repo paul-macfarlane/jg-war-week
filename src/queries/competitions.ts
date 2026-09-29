@@ -29,7 +29,8 @@ const competitionColumns = {
 } satisfies Record<keyof CompetitionListItem, unknown>;
 
 /**
- * Finds a War Week's Competition by name for `get_bracket`: an exact name
+ * Finds a War Week's Competition by name for `get_bracket`, with its Format
+ * and scoring so the tool can answer a `games` Competition: an exact name
  * wins; else a case-insensitive (trimmed) name when exactly one Competition
  * has it; else `undefined` (names are unique per War Week only
  * case-sensitively).
@@ -38,9 +39,16 @@ export async function getCompetitionByName(
   warWeek: Pick<WarWeek, "id">,
   name: string,
   dbOrTx: DBOrTx = db,
-): Promise<Pick<Competition, "id"> | undefined> {
+): Promise<
+  Pick<Competition, "id" | "name" | "format" | "scoring"> | undefined
+> {
   const rows = await dbOrTx
-    .select({ id: competition.id, name: competition.name })
+    .select({
+      id: competition.id,
+      name: competition.name,
+      format: competition.format,
+      scoring: competition.scoring,
+    })
     .from(competition)
     .where(eq(competition.warWeekId, warWeek.id));
   const exact = rows.find((row) => row.name === name);

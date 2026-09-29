@@ -9,9 +9,11 @@ import {
   COMPETITION_FORMATS,
   COMPETITION_SCORINGS,
   FONT_PRESETS,
+  GAME_TYPES,
   WAR_WEEK_MODES,
 } from "@/lib/enums";
 import { fieldErrorsFrom } from "@/lib/form-errors";
+import { gamesConfigSchema } from "@/lib/games/config";
 import { POINTS_NUMBER, pointsSchema as points } from "@/lib/points-entry";
 import type { Parsed } from "@/lib/result";
 
@@ -100,6 +102,12 @@ export const competitionSeedSchema = z
     format: z.enum(COMPETITION_FORMATS).default("points"),
     /** The Format's settings; a heats Competition without one gets the default. */
     bracketConfig: heatsConfigSchema.nullish(),
+    /** A `games` Competition's Game Type: required for `games`, else absent. */
+    gameType: z.enum(GAME_TYPES).nullish(),
+    /** The Game Type's settings (`src/lib/games/config.ts`); omitted for the default. */
+    gameConfig: z.unknown().optional(),
+    /** A `games` Competition open to everyone eligible; omitted means a fixed list. */
+    entrantsOpen: z.boolean().optional(),
   })
   .refine(
     (c) =>
@@ -123,6 +131,36 @@ export const competitionSeedSchema = z
         message: "bracketConfig is only for a heats Competition",
         path: ["bracketConfig"],
       });
+    }
+    // A Game Type exactly when the Format is games (the database CHECK
+    // `competition_game_type_iff_games`), so a bad seed is a zod error.
+    if (c.format === "games") {
+      if (c.gameType == null) {
+        ctx.addIssue({
+          code: "custom",
+          message: "gameType is required for a games Competition",
+          path: ["gameType"],
+        });
+      } else if (c.gameConfig != null) {
+        const config = gamesConfigSchema(c.gameType).safeParse(c.gameConfig);
+        if (!config.success) {
+          ctx.addIssue({
+            code: "custom",
+            message: `gameConfig: ${config.error.issues[0].message}`,
+            path: ["gameConfig"],
+          });
+        }
+      }
+      return;
+    }
+    for (const key of ["gameType", "gameConfig", "entrantsOpen"] as const) {
+      if (c[key] != null) {
+        ctx.addIssue({
+          code: "custom",
+          message: `${key} is only for a games Competition`,
+          path: [key],
+        });
+      }
     }
   });
 
@@ -308,6 +346,8 @@ export type CompetitionInput = {
    * Blank (or omitted) means "points".
    */
   format?: string;
+  /** The Game Type, read only when the Format is `games`. */
+  gameType?: string;
 };
 export type CompetitionValues = Pick<
   Competition,
@@ -327,7 +367,7 @@ export type CompetitionValues = Pick<
  * alone owns the Format's `bracketConfig` default (`defaultConfig`).
  */
 export type CompetitionCreateValues = CompetitionValues &
-  Partial<Pick<Competition, "format">>;
+  Partial<Pick<Competition, "format" | "gameType">>;
 
 const FIELD_LABELS: Record<string, string> = {
   storyTheme: "Story Theme",
@@ -515,18 +555,19 @@ export function parseCompetitionInput(
     },
   );
   if (!parsed.ok) return parsed;
-  // The Format and its config are set through the Bracket actions, never a
-  // setup save.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { group, format, bracketConfig, ...value } = parsed.value;
+  // Only the setup fields: the Format and its settings (Bracket or Games)
+  // are set through their own actions, never a setup save.
+  const value = parsed.value;
   return {
     ok: true,
     value: {
-      ...value,
+      name: value.name,
       description: value.description ?? null,
+      scoring: value.scoring,
       maxPoints: value.maxPoints ?? null,
       placementPoints: value.placementPoints ?? null,
-      competitionGroup: group ?? null,
+      countsTowardTeam: value.countsTowardTeam,
+      competitionGroup: value.group ?? null,
     },
   };
 }
@@ -556,7 +597,16 @@ export function parseCreateCompetitionInput(
   });
   if (!formatParsed.ok) return formatParsed;
   const { format } = formatParsed.value;
-  return { ok: true, value: { ...base.value, format } };
+  if (format !== "games") return { ok: true, value: { ...base.value, format } };
+  const gameType = z.enum(GAME_TYPES).safeParse(input.gameType);
+  if (!gameType.success) {
+    const error = "Choose a Game Type.";
+    return { ok: false, error, fieldErrors: { gameType: error } };
+  }
+  return {
+    ok: true,
+    value: { ...base.value, format, gameType: gameType.data },
+  };
 }
 
 const FREE_FOR_ALL_HAS_NO_TEAMS = "A free-for-all War Week has no Teams.";
@@ -633,6 +683,8 @@ export function competitionGuardError(
       placementPoints: Competition["placementPoints"];
       pointsEntryCount: number;
       finalizedAt: Competition["finalizedAt"];
+      /** Omitted for a Competition that predates Formats: not `games`. */
+      format?: Competition["format"];
     } | null;
   },
 ): string | null {
@@ -649,7 +701,10 @@ export function competitionGuardError(
     (existing.scoring !== values.scoring ||
       placementPointsChanged(existing.placementPoints, values.placementPoints))
   ) {
-    return "This Competition's Bracket is finalized. Un-finalize the Bracket first.";
+    // A closed `games` Competition reuses `finalized_at` (R3 decision 1).
+    return existing.format === "games"
+      ? "This Competition is closed. Reopen the Competition first."
+      : "This Competition's Bracket is finalized. Un-finalize the Bracket first.";
   }
   if (
     existing &&

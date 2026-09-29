@@ -23,6 +23,13 @@ describe("Bracket action input", () => {
     });
   });
 
+  it("never offers games: a Competition is games from creation only", () => {
+    expect(parseFormatInput({ format: "games" })).toEqual({
+      ok: false,
+      error: "Choose a Format.",
+    });
+  });
+
   it("accepts a heats Format with a valid config and force", () => {
     expect(
       parseFormatInput({

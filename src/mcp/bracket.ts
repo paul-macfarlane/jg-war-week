@@ -14,7 +14,7 @@ export type BracketResult =
       competition: {
         name: string;
         scoring: Competition["scoring"];
-        format: Exclude<Competition["format"], "points">;
+        format: Exclude<Competition["format"], "points" | "games">;
         finalized: boolean;
       };
       entrants: {
@@ -53,7 +53,36 @@ export type BracketResult =
       bracket: null;
       message: string;
     }
+  | {
+      found: true;
+      competition: {
+        name: string;
+        scoring: Competition["scoring"];
+        format: "games";
+      };
+      bracket: null;
+      message: string;
+    }
   | { found: false; message: string };
+
+/**
+ * The `get_bracket` answer for a `games` Competition, which is never a
+ * Bracket: no Bracket, and a pointer to `get_games`. Pure.
+ */
+export function toGamesBracketResult(
+  competition: Pick<Competition, "name" | "scoring">,
+): BracketResult {
+  return {
+    found: true,
+    competition: {
+      name: competition.name,
+      scoring: competition.scoring,
+      format: "games",
+    },
+    bracket: null,
+    message: `${competition.name} isn't run as a Bracket; it's run as Games. Call get_games instead.`,
+  };
+}
 
 /**
  * Serializes a Bracket (or its absence, or a points Competition) into the
@@ -71,6 +100,10 @@ export function toBracketResult(
       found: false,
       message: `No Competition named "${name}" found for the current War Week. Call get_current_war_week or ask about its Standings.`,
     };
+  }
+
+  if (view.competition.format === "games") {
+    return toGamesBracketResult(view.competition);
   }
 
   if (view.competition.format === "points") {

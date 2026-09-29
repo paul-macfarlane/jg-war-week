@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { applyResult, generate } from "@/lib/bracket/engine";
 import { champion as championOf } from "@/lib/bracket/formats";
 import type { Entrant } from "@/lib/bracket/types";
-import { toBracketResult } from "@/mcp/bracket";
+import { toBracketResult, toGamesBracketResult } from "@/mcp/bracket";
 import type { BracketEntrant, BracketView } from "@/queries/brackets";
 
 const days = [{ id: "d1", date: "2026-02-22" }];
@@ -40,6 +40,24 @@ function bracketFixture() {
   return generate(entrants);
 }
 
+describe("toGamesBracketResult", () => {
+  it("answers bracket: null and points to get_games for a games Competition", () => {
+    expect(
+      toGamesBracketResult({ name: "Bouncy Pong", scoring: "individual" }),
+    ).toEqual({
+      found: true,
+      competition: {
+        name: "Bouncy Pong",
+        scoring: "individual",
+        format: "games",
+      },
+      bracket: null,
+      message:
+        "Bouncy Pong isn't run as a Bracket; it's run as Games. Call get_games instead.",
+    });
+  });
+});
+
 describe("toBracketResult", () => {
   it("returns found: false for an unknown Competition", () => {
     const result = toBracketResult(undefined, days, "Nonexistent");
@@ -61,6 +79,9 @@ describe("toBracketResult", () => {
         placementPoints: null,
         finalizedAt: null,
         selfReport: false,
+        selfEnroll: false,
+        entrantLimit: null,
+        enrollClosesAt: null,
       },
       entrants: [],
       bracket: { format: "single-elimination", config: null, heats: [] },
@@ -99,6 +120,9 @@ describe("toBracketResult", () => {
         placementPoints: [10, 6],
         finalizedAt: null,
         selfReport: false,
+        selfEnroll: false,
+        entrantLimit: null,
+        enrollClosesAt: null,
       },
       entrants: entrants.map((e) =>
         bracketEntrantFixture(e, `${e.label} Squad`),
@@ -183,6 +207,9 @@ describe("toBracketResult", () => {
         placementPoints: [10, 6],
         finalizedAt: null,
         selfReport: false,
+        selfEnroll: false,
+        entrantLimit: null,
+        enrollClosesAt: null,
       },
       entrants: entrants.map((e) =>
         bracketEntrantFixture(e, `${e.label} Squad`),
@@ -221,6 +248,9 @@ describe("toBracketResult", () => {
         placementPoints: [10, 6],
         finalizedAt: new Date(),
         selfReport: false,
+        selfEnroll: false,
+        entrantLimit: null,
+        enrollClosesAt: null,
       },
       entrants: entrants.map((e) =>
         bracketEntrantFixture(e, `${e.label} Squad`),
@@ -249,6 +279,9 @@ describe("toBracketResult", () => {
         placementPoints: [3, 2, 1],
         finalizedAt: null,
         selfReport: true,
+        selfEnroll: false,
+        entrantLimit: null,
+        enrollClosesAt: null,
       },
       entrants: [
         {
@@ -332,6 +365,9 @@ describe("toBracketResult", () => {
         placementPoints: [10, 6],
         finalizedAt: null,
         selfReport: false,
+        selfEnroll: false,
+        entrantLimit: null,
+        enrollClosesAt: null,
       },
       entrants: entrantsWithExtras,
       bracket,

@@ -6,6 +6,7 @@ import {
   type ParticipantInput,
   type WarWeekSettingsInput,
   competitionGuardError,
+  competitionSeedSchema,
   dayDeleteGuardError,
   dayGuardError,
   dayOutsideRangeError,
@@ -431,9 +432,47 @@ describe("parseCreateCompetitionInput", () => {
 
   it("refuses an unknown Format", () => {
     expectRefused(
-      parseCreateCompetitionInput({ ...competition, format: "games" }),
-      "Format must be one of points, single-elimination, heats.",
+      parseCreateCompetitionInput({ ...competition, format: "swiss" }),
+      "Format must be one of points, single-elimination, heats, games.",
     );
+  });
+
+  it("takes the games Format with its Game Type", () => {
+    expect(
+      parseCreateCompetitionInput({
+        ...competition,
+        format: "games",
+        gameType: "best-score",
+      }),
+    ).toMatchObject({
+      ok: true,
+      value: { format: "games", gameType: "best-score" },
+    });
+  });
+
+  it("refuses the games Format without a Game Type", () => {
+    expectRefused(
+      parseCreateCompetitionInput({ ...competition, format: "games" }),
+      "Choose a Game Type.",
+    );
+    expectRefused(
+      parseCreateCompetitionInput({
+        ...competition,
+        format: "games",
+        gameType: "darts",
+      }),
+      "Choose a Game Type.",
+    );
+  });
+
+  it("ignores a Game Type sent with another Format", () => {
+    const parsed = parseCreateCompetitionInput({
+      ...competition,
+      format: "heats",
+      gameType: "ranked",
+    });
+    expect(parsed).toMatchObject({ ok: true, value: { format: "heats" } });
+    expect(parsed.ok && parsed.value.gameType).toBeFalsy();
   });
 
   it("refuses a non-string format as a field error instead of throwing", () => {
@@ -442,8 +481,60 @@ describe("parseCreateCompetitionInput", () => {
         ...competition,
         format: 123 as unknown as string,
       }),
-      "Format must be one of points, single-elimination, heats.",
+      "Format must be one of points, single-elimination, heats, games.",
     );
+  });
+});
+
+describe("competitionSeedSchema, games", () => {
+  const base = { name: "Bouncy Pong", scoring: "individual" as const };
+  const issues = (input: unknown) => {
+    const result = competitionSeedSchema.safeParse(input);
+    return result.success ? [] : result.error.issues.map((i) => i.message);
+  };
+
+  it("takes a games Competition with its Game Type, settings and Entrants open", () => {
+    expect(
+      issues({
+        ...base,
+        format: "games",
+        gameType: "head-to-head",
+        gameConfig: { drawsAllowed: false, bestOf: null },
+        entrantsOpen: true,
+      }),
+    ).toEqual([]);
+    expect(issues({ ...base, format: "games", gameType: "ranked" })).toEqual(
+      [],
+    );
+  });
+
+  it("needs a gameType exactly when the Format is games", () => {
+    expect(issues({ ...base, format: "games" })).toEqual([
+      "gameType is required for a games Competition",
+    ]);
+    expect(issues({ ...base, gameType: "ranked" })).toEqual([
+      "gameType is only for a games Competition",
+    ]);
+  });
+
+  it("takes gameConfig and entrantsOpen only on a games Competition", () => {
+    expect(issues({ ...base, format: "heats", entrantsOpen: true })).toEqual([
+      "entrantsOpen is only for a games Competition",
+    ]);
+    expect(issues({ ...base, gameConfig: { finishPoints: [] } })).toEqual([
+      "gameConfig is only for a games Competition",
+    ]);
+  });
+
+  it("checks gameConfig against the Game Type", () => {
+    expect(
+      issues({
+        ...base,
+        format: "games",
+        gameType: "best-score",
+        gameConfig: { drawsAllowed: true, bestOf: null },
+      }),
+    ).not.toEqual([]);
   });
 });
 
@@ -582,6 +673,20 @@ describe("competitionGuardError", () => {
         { ...ctx, existing: { ...finalized, placementPoints: [] } },
       ),
     ).toBeNull();
+  });
+
+  it("asks to reopen a closed games Competition before a scoring or Placement Points change", () => {
+    const closed = {
+      ...existingBase,
+      format: "games" as const,
+      finalizedAt: new Date(),
+    };
+    expect(
+      competitionGuardError(
+        { ...values, placementPoints: [10, 5] },
+        { ...ctx, existing: closed },
+      ),
+    ).toBe("This Competition is closed. Reopen the Competition first.");
   });
 });
 

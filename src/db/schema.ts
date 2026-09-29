@@ -31,11 +31,13 @@ import {
   COMPETITION_FORMATS,
   COMPETITION_SCORINGS,
   FONT_PRESETS,
+  GAME_TYPES,
   HEAT_STATUSES,
   SCHEDULE_ITEM_CATEGORIES,
   WAR_WEEK_MODES,
   WAR_WEEK_STATUSES,
 } from "@/lib/enums";
+import type { GamesConfig } from "@/lib/games/config";
 import type { Content } from "@/lib/rich-text/content";
 
 // The value lists live in `src/lib/enums.ts`, so client code can use them
@@ -62,6 +64,8 @@ export const competitionFormat = pgEnum(
 );
 
 export const heatStatus = pgEnum("heat_status", HEAT_STATUSES);
+
+export const gameType = pgEnum("game_type", GAME_TYPES);
 
 export const warWeek = pgTable(
   "war_week",
@@ -194,8 +198,27 @@ export const competition = pgTable(
     bracketConfig: jsonb("bracket_config").$type<HeatsConfig | null>(),
     // Participants in a Heat may enter its result themselves (ADR 0005).
     selfReport: boolean("self_report").notNull().default(false),
-    // Set while the Bracket's generated Points Entries exist.
+    // Set while the Competition's generated Points Entries exist: a
+    // finalized Bracket, or a closed `games` Competition (the name predates
+    // `games`; R3 decision 1 keeps it).
     finalizedAt: timestamp("finalized_at", { withTimezone: true }),
+    // `games` only: how its Games are decided; set exactly when the Format
+    // is `games` (the CHECK below).
+    gameType: gameType("game_type"),
+    // The Game Type's settings (`src/lib/games/config.ts`); null means the
+    // Game Type's default.
+    gameConfig: jsonb("game_config").$type<GamesConfig | null>(),
+    // `games` only: true lets everyone eligible play; false keeps a fixed
+    // Entrant list (`entrant` rows).
+    entrantsOpen: boolean("entrants_open").notNull().default(false),
+    // `games` only: Participants can't log Games after it. Awards nothing.
+    loggingClosesAt: timestamp("logging_closes_at", { withTimezone: true }),
+    // Participants may enroll themselves as Entrants (ticket 15).
+    selfEnroll: boolean("self_enroll").notNull().default(false),
+    // Enrollment closes once this many Entrants are in; null for no limit.
+    entrantLimit: integer("entrant_limit"),
+    // Enrollment closes after this time; null for no close time.
+    enrollClosesAt: timestamp("enroll_closes_at", { withTimezone: true }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -204,6 +227,16 @@ export const competition = pgTable(
     check(
       "competition_counts_toward_team_individual_only",
       sql`not ${table.countsTowardTeam} or ${table.scoring} = 'individual'`,
+    ),
+    // On the text form, never the enum literal: the migration adding the
+    // `games` value runs in the same transaction (R3 decision 13).
+    check(
+      "competition_game_type_iff_games",
+      sql`(${table.gameType} is not null) = (${table.format}::text = 'games')`,
+    ),
+    check(
+      "competition_entrant_limit_above_1",
+      sql`${table.entrantLimit} is null or ${table.entrantLimit} > 1`,
     ),
   ],
 );
@@ -261,7 +294,9 @@ export const pointsEntry = pgTable(
       .defaultNow(),
     // Set only on rows that came from a seed file; see CONTEXT.md.
     seedKey: varchar("seed_key", { length: 80 }),
-    // Written by finalizing a Bracket; changed only through the Bracket.
+    // Written by finalizing a Bracket or closing a `games` Competition;
+    // changed only through that Competition. The name predates `games`
+    // (R3 decision 1 keeps it).
     generatedByBracket: boolean("generated_by_bracket")
       .notNull()
       .default(false),
@@ -424,6 +459,75 @@ export const heatEntrant = pgTable(
     check("heat_entrant_slot_from_0", sql`${table.slot} >= 0`),
     check(
       "heat_entrant_place_from_1",
+      sql`${table.place} is null or ${table.place} >= 1`,
+    ),
+  ],
+);
+
+/**
+ * One recorded contest in a `games` Competition, logged by a player in it or
+ * by a Host or Organizer. Games have no scheduled time: `logged_at` orders
+ * the log.
+ */
+export const game = pgTable(
+  "game",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competition.id, { onDelete: "cascade" }),
+    loggedAt: timestamp("logged_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    // Kept for audit and never read back to a page or MCP (CONTEXT.md,
+    // Access rules).
+    loggedByEmail: varchar("logged_by_email", { length: 254 }).notNull(),
+    // The linked Participant who logged it; null for a Host or Organizer.
+    loggedByParticipantId: uuid("logged_by_participant_id").references(
+      () => participant.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("game_competition_id_idx").on(table.competitionId),
+    index("game_logged_by_participant_id_idx").on(table.loggedByParticipantId),
+  ],
+);
+
+/**
+ * A Team or Participant in a Game, never an Entrant row (an open Competition
+ * has none): its place (head-to-head 1/2, 1/1 for a draw; ranked 1-based
+ * with ties) or its score (best-score).
+ */
+export const gamePlayer = pgTable(
+  "game_player",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    gameId: uuid("game_id")
+      .notNull()
+      .references(() => game.id, { onDelete: "cascade" }),
+    teamId: uuid("team_id").references(() => team.id, {
+      onDelete: "cascade",
+    }),
+    participantId: uuid("participant_id").references(() => participant.id, {
+      onDelete: "cascade",
+    }),
+    place: integer("place"),
+    score: numeric("score", { precision: 10, scale: 2, mode: "number" }),
+  },
+  (table) => [
+    unique().on(table.gameId, table.teamId),
+    unique().on(table.gameId, table.participantId),
+    index("game_player_team_id_idx").on(table.teamId),
+    index("game_player_participant_id_idx").on(table.participantId),
+    check(
+      "game_player_exactly_one_target",
+      sql`num_nonnulls(${table.teamId}, ${table.participantId}) = 1`,
+    ),
+    check(
+      "game_player_place_from_1",
       sql`${table.place} is null or ${table.place} >= 1`,
     ),
   ],
@@ -733,5 +837,7 @@ export type SquadParticipant = InferSelectModel<typeof squadParticipant>;
 export type EntrantRow = InferSelectModel<typeof entrant>;
 export type HeatRow = InferSelectModel<typeof heat>;
 export type HeatEntrantRow = InferSelectModel<typeof heatEntrant>;
+export type GameRow = InferSelectModel<typeof game>;
+export type GamePlayerRow = InferSelectModel<typeof gamePlayer>;
 export type Organizer = InferSelectModel<typeof organizer>;
 export type CompetitionHost = InferSelectModel<typeof competitionHost>;

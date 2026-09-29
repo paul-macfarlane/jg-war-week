@@ -5,7 +5,8 @@
 import { heatsConfig } from "@/lib/bracket/config";
 import { isBye } from "@/lib/bracket/formats";
 import { isDecided } from "@/lib/bracket/heat-status";
-import type { Bracket, Format, Heat } from "@/lib/bracket/types";
+import type { Bracket, BracketFormat, Format, Heat } from "@/lib/bracket/types";
+import { COMPETITION_FORMATS } from "@/lib/enums";
 import { formatDayHeading, formatEtTime } from "@/lib/schedule";
 
 export type { Format } from "@/lib/bracket/types";
@@ -15,6 +16,7 @@ const FORMAT_LABELS: Record<Format, string> = {
   points: "Points",
   "single-elimination": "Single elimination",
   heats: "Heats",
+  games: "Games",
 };
 
 /** A Format as Organizers read it. */
@@ -22,10 +24,16 @@ export function formatLabel(format: Format): string {
   return FORMAT_LABELS[format];
 }
 
-/** Whether a Format runs as a Bracket (anything but "points"). */
-export function isBracketFormat(format: string | null | undefined): boolean {
-  return format != null && format !== "points";
+/** Whether a Format runs as a Bracket (anything but "points" or "games"). */
+export function isBracketFormat(
+  format: string | null | undefined,
+): format is BracketFormat {
+  return format != null && format !== "points" && format !== "games";
 }
+
+/** Every Format that runs as a Bracket. */
+export const BRACKET_FORMATS: BracketFormat[] =
+  COMPETITION_FORMATS.filter(isBracketFormat);
 
 /** The final's Round number; 0 before Generate. */
 export function finalRoundOf(bracket: Bracket): number {
