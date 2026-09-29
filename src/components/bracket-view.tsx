@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { reportHeatResult } from "@/actions/heat-reports";
 import { AutoRefresh } from "@/components/auto-refresh";
-import { BracketTree, YouMark } from "@/components/bracket-tree";
+import { BracketTree } from "@/components/bracket-tree";
 import {
   type BracketViewEntrant,
   EntrantMark,
@@ -31,6 +31,18 @@ import {
 import { YOU_ROW_CLASS } from "@/lib/you";
 
 type Scoring = "team" | "individual";
+
+/** The "You" pill beside Your Entrant. */
+export function YouMark() {
+  return (
+    <span
+      data-you
+      className="bg-accent text-accent-foreground shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold"
+    >
+      You
+    </span>
+  );
+}
 
 /** The Heat whose winner fills `slot` of `heat`, if any. */
 function feederOf(bracket: Bracket, heat: Heat, slot: number) {

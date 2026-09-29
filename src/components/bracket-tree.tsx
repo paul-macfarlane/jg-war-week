@@ -18,18 +18,6 @@ import { YOU_ROW_CLASS } from "@/lib/you";
 
 type Scoring = "team" | "individual";
 
-/** The "You" pill beside Your Entrant. */
-export function YouMark() {
-  return (
-    <span
-      data-you
-      className="bg-accent text-accent-foreground shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold"
-    >
-      You
-    </span>
-  );
-}
-
 const LINE =
   "pointer-events-none absolute hidden border-foreground/30 md:block";
 

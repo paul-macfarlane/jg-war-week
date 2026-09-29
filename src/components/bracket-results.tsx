@@ -23,7 +23,6 @@ import { HeatScheduleForm } from "@/components/heat-schedule-form";
 import { ResponsiveSheetDialog } from "@/components/responsive-sheet-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { isBye, isRecordable } from "@/lib/bracket/formats";
 import type { Bracket } from "@/lib/bracket/types";
 import {
@@ -78,9 +77,10 @@ type BracketResultsProps = {
 
 /**
  * Runs a Bracket on a phone: Heats by Round as Cards, a tap opens the Heat
- * Result Sheet (a centered Dialog on large screens), "Time & place" opens the Heat's time Sheet; the champion
- * and Finalize / Un-finalize sit on top. Refreshes live while no Sheet is
- * open.
+ * Result popup, "Time & place" opens the Heat's time popup — both a bottom
+ * Sheet on a phone and a centered Dialog on large screens
+ * (`ResponsiveSheetDialog`); the champion and Finalize / Un-finalize sit on
+ * top. Refreshes live while no popup is open.
  */
 export function BracketResults(props: BracketResultsProps) {
   const [openSheet, setOpenSheet] = useState<OpenSheet>(null);
@@ -317,25 +317,23 @@ export function BracketResultsView({
         )}
       </ResponsiveSheetDialog>
 
-      <Sheet
+      <ResponsiveSheetDialog
         open={scheduleHeat !== undefined}
         onOpenChange={(open) => {
           if (!open) close();
         }}
       >
-        <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto">
-          {scheduleHeat && (
-            <HeatScheduleForm
-              key={scheduleHeat.id}
-              competitionId={competitionId}
-              heat={scheduleHeat}
-              name={heatName(bracket, scheduleHeat)}
-              days={days}
-              onSaved={close}
-            />
-          )}
-        </SheetContent>
-      </Sheet>
+        {scheduleHeat && (
+          <HeatScheduleForm
+            key={scheduleHeat.id}
+            competitionId={competitionId}
+            heat={scheduleHeat}
+            name={heatName(bracket, scheduleHeat)}
+            days={days}
+            onSaved={close}
+          />
+        )}
+      </ResponsiveSheetDialog>
 
       {openSheet === null && <AutoRefresh />}
     </div>
