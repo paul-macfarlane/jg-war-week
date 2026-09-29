@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** in-progress (claimed by Atlas `/atlas-implement`, work package `regression-r3`)
+**Status:** ai-review (claimed by Atlas `/atlas-implement`, work package `regression-r3`)
 
 **Source:** regression feedback items 15 and 20
 
@@ -42,3 +42,4 @@
 
 - 2026-09-29: Technical plan and red-team record for Epic R3 (tickets 17 and 15) in [`../epics/R3-execution.md`](../epics/R3-execution.md); approved by Paul. Ready to implement.
 - 2026-09-29: claimed by Atlas (`/atlas-implement`, work package `regression-r3`, Epic R3) — `ready-for-agent → in-progress` on `feat/regression-r3-games`.
+- 2026-09-29: `in-progress → ai-review`: every deliverable integrated on `feat/regression-r3-games`; `pnpm gate` exit 0 at `0e90972a7b0eecb1920e0046a79db37d5be79366`; aggregate AI code review started.

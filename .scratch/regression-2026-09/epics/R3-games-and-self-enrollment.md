@@ -8,7 +8,7 @@
 
 **Blocked by:** none — R1 merged into `staging` (PR #91, `5067e46`); the plan is written and red-teamed ([`R3-execution.md`](./R3-execution.md)). Inside this epic, ticket 15's `Blocked by: 17` is ordering, not availability: the epic is one branch, so 15 starts once 17's access facets are integrated on it.
 
-**Status:** in-progress (claimed by Atlas `/atlas-implement`, work package `regression-r3`)
+**Status:** ai-review (claimed by Atlas `/atlas-implement`, work package `regression-r3`)
 
 ## Order and parallelism
 
@@ -29,3 +29,4 @@ Each ticket's own acceptance criteria, plus:
 - 2026-09-29: `/atlas-implement` stopped at the content gate without claiming or creating state: no technical plan or red-team record existed (schema + access change, `docs/agents/planning.md`).
 - 2026-09-29: `/atlas-plan` — technical plan, verification map and red-team record in [`R3-execution.md`](./R3-execution.md). Red-team pass 1: 4 blocking findings (enum value in the one-transaction migration, Format change to/from `games`, logger edit bound, 15-2 fixture), all resolved; pass 2 PASS with packet-level notes applied. Approved by Paul; epic set `ready-for-agent` (ready to implement: plan written under `.scratch/regression-2026-09/`).
 - 2026-09-29 [EXECUTION PLAN]: `/atlas-implement` (work package `regression-r3`) — `ready-for-agent → in-progress`. Branch `feat/regression-r3-games` from `staging` at `5067e46`; tickets 17 and 15 claimed beside it. Execution structure, worker slices and the verification map: [`R3-execution.md`](./R3-execution.md) `[EXECUTION PLAN]`; progress under its `[PROGRESS]`.
+- 2026-09-29: `in-progress → ai-review`: every deliverable integrated on `feat/regression-r3-games`; `pnpm gate` exit 0 at `0e90972a7b0eecb1920e0046a79db37d5be79366`; aggregate AI code review started.

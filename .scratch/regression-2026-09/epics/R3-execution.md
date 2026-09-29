@@ -612,3 +612,22 @@ export the `.env.example` values first (`set -a; . ./.env.example; set +a`).
   - the facet shape tightenings in D1b;
   - D2b's facet hides the enroll switch where enrollment isn't offered;
   - D2a's player validation binds Hosts too.
+
+- 2026-09-29 **Waves 3–4 integrated**:
+  - D3c `d7685fb` (get_games, Sonnet).
+  - D3b `f498b21` (Competition page, Game form, enroll, home, Opus).
+  - D3a `52161ea` (Games setup page, enroll switch, Squad help, Sonnet), plus orchestrator fix `a619f17`: the Squad help line has the same copy in all three places.
+  - D4b `2bd3d8f` (docs and /about, Sonnet).
+  - D4a `b7e8c72` (e2e and smoke proof, Opus; no product fix needed).
+  - Orchestrator: `/about` media regenerated `0b4408b`. The first run failed its own /about image check because `games.png` was written after the build; after a rebuild it passed.
+
+  **`pnpm gate` exit 0** at `0b4408b` (`test-results/r3-gate/gate.txt`): vitest 126 files / 2841 tests; smoke 198 ok; e2e 35 passed. R3 evidence was committed in `0e90972`; the other epics' screenshots re-rendered by the run were restored, not committed.
+
+  Parallelism re-check:
+  - The one predicted collision, `src/auth/authorize.ts` between D2a and D2b, materialized as conflicting import hunks and was merged by hand.
+  - Wave 3 had no conflicts. D3b reached two files outside its list (`src/lib/competitions.ts`, `src/queries/competitions.ts`), both disjoint from D3a and D3c.
+  - Wave 4 had no conflicts.
+
+  Review-carried item: the Game form resets when the viewport crosses the Sheet/Dialog breakpoint (`ResponsiveSheetDialog` remounts), found by D4a.
+- 2026-09-29: `in-progress → ai-review` (epic and tickets 17, 15).
+
