@@ -94,4 +94,92 @@ Human gates: none. CI on the PR is an automated post-PR check.
 - 2026-09-29: wave 2, D7 `86f4469` `b64f077` `7e97704`: /about follows `getCurrentWarWeek` (now dynamic), Standings-after-a-Points-Entry hero stills, showcase copy and guide for every R1 ticket, media regenerated. D7 installed ffmpeg via Homebrew on this machine to run the media script.
 - 2026-09-29: aggregate AI code review started; records `in-progress → ai-review`.
 
+## [AI CODE REVIEW]
+
+Two fresh frontier-grade reviewers (Opus), one per axis, read `git diff 1b448f5..7e97704`; the orchestrator adjudicated each candidate against the cited hunks.
+
+**Axis 1: technical implementation and spec conformity** (13 candidates)
+
+| Id | Severity | Paths | Finding | Disposition |
+|---|---|---|---|---|
+| F1 | blocking | `src/app/[edition]/layout.tsx` | The ticket 01 flex-column wrapper shrank every edition page's `main` to content width at desktop (leaderboard ≈340px at 1280; confirmed on the committed screenshot) | resolved `83246ca` (block `flex-1` wrapper) + e2e guard: main ≥ 700px at 1280 |
+| F2 | non-blocking | `war-week-settings-form.tsx` | Settings Winner still editable after End | approved deviation (Paul, 2026-09-29: keep as a correction path); help text now "Tie: Red & Blue" |
+| F3 | non-blocking | `src/lib/war-week-lifecycle.ts` | The 0-points filter blanked a unique rank 1 with a total ≤ 0 | resolved `5dcaaf4`: blank only when every total is 0 |
+| F4–F6 | non-blocking | lifecycle tests, `seed/load.test.ts`, `scripts/smoke/lifecycle.ts` | Winner coverage weakened by 05 | resolved: 0-point Teams case kept, reload preserves a computed Winner, smoke asserts it on /history |
+| F7 | non-blocking | `src/app/admin/points/page.tsx` | Free-for-all admin list still "Individual leaderboard" | resolved: "Standings" |
+| F8 | non-blocking | `e2e/db.ts` | Breakdown SQL lacked the app's id tie-break (flaky order) | resolved `d00bcf7` |
+| F9 | non-blocking | `src/lib/setup.ts` | Non-string Format threw instead of a field error | resolved `1498a28` + unit test |
+| F10 | non-blocking | `war-week-lifecycle-controls.tsx` | Winner label pointed at a `<p>` | resolved: read-only unnamed Input, "No Winner" |
+| F11 | non-blocking | `src/components/standings.tsx` | `aria-label` hid rank and total | resolved: sr-only suffix |
+| F12 | non-blocking | `public/about/finale.mp4`, about test | Dead video; per-still assertion dropped | resolved `0b6e502` |
+| F13 | non-blocking | End dialog | Winner shown is computed at page render | approved deviation (orchestrator): the recorded Winner is always the server's value at End |
+
+ACs judged met after fixes: every ticket's; the epic's closeout and CI items were pending at review time.
+
+**Axis 2: coding standards** (18 candidates)
+
+| Id | Severity | Finding | Disposition |
+|---|---|---|---|
+| S1 | non-blocking | `CONTEXT.md` End Winner stale | resolved `7357b39` |
+| S2, S3 | non-blocking | Tautological /about install check; lost ABOUT_THEME ↔ seed sync test | resolved: assert on html; `STATIC_PAGE_THEME` + `src/lib/about.test.ts` |
+| S4, S17 | non-blocking | Stale comment; weakened reload/smoke Winner tests | resolved (with F4–F6) |
+| S5, S9, S10 | non-blocking | Default bracket config in two layers; "each round" casing; Format rule in component | resolved: mutation owns defaulting; "each Round"; `isBracketFormat` in `src/lib/bracket/view.ts` |
+| S6 | non-blocking | Unchecked cast in `refusingDuplicate` | approved deviation (local helper; callers typecheck) |
+| S7 | non-blocking | `defaultWinner`/`suggestedWinner` names | approved deviation (deferred rename) |
+| S8 | non-blocking | Label association, "No Winner" casing | resolved (with F10) |
+| S11 | non-blocking | New `ui/dialog` and `ResponsiveSheetDialog` undocumented | resolved: guide + CLAUDE.md wrapper list |
+| S12 | non-blocking | Orphaned mp4 | resolved (with F12) |
+| S13, S15, S16 | non-blocking | Inline breakdown type; misplaced `YouMark`; comment wrapping | resolved |
+| S14 | non-blocking | `openRound`/"out" rule in `bracket-tree.tsx` | approved deviation (display-only, covered by e2e) |
+| S18 | non-blocking | `067a729` trailer lacks blank line; mixed ticket-number style | approved deviation (no history rewrite) |
+
+Remaining risks: the tree/List choice isn't remembered across reloads; the result popup switches between Dialog and Sheet if the window crosses `lg` mid-entry.
+
 ## [CLOSEOUT]
+
+PR: https://github.com/paul-macfarlane/jg-war-week/pull/91 (`feat/regression-r1-quick-wins` → `staging`). One repository delivery, `war-weeker`; base `staging` at `c85d5e5`, comparison point `1b448f5`.
+
+### Deliverables
+
+| Deliverable | Tickets | Worker model | Commits on the branch |
+|---|---|---|---|
+| D1 Footer | 01 | Sonnet (worktree) | `cb181ff` |
+| D2 Standings | 02, 10 | Sonnet (worktree) | `34787a2` `748250e` |
+| D3 End War Week | 05 | Sonnet (worktree) | `ac876eb` + orchestrator fix `4ab12f9` |
+| D4 Competition form | 06, 09 | Sonnet (worktree) | `2c30575` `11410c4` |
+| D5 Brackets | 07, 16 | Opus (worktree) | `45a3441` `46d2115` |
+| D6 Schedule | 08 | Sonnet (worktree) | `067a729` |
+| E1 Independent browser evidence | 01, 02, 05, 06, 08, 09, 10 | Sonnet | `b059496` |
+| D7 /about and showcase | 03, 04, showcase for all | Sonnet | `86f4469` `b64f077` `7e97704` |
+| R1-fix Review findings + Time & place dialog | review | Sonnet | `83246ca`…`42cfa66` |
+| Orchestrator | gate test fixes | Opus (orchestrator) | `968c733` |
+
+Isolation: the predicted file collisions (`standings.tsx` 02/10, `competitions-editor.tsx` 06/09, `bracket-view.tsx` 07/16) were real and stayed inside single deliverables; the predicted `package.json` overlap from `shadcn add` never happened (no dependency change). Wave 1 cherry-picked without conflicts.
+
+### Verification (verified run command: `pnpm gate`, local Postgres, at `968c733`, exit 0)
+
+| Criterion | Verdict | Evidence |
+|---|---|---|
+| 01 footer at bottom (phone, desktop) / follows long pages | PASS | `test-results/e2e/regression-r1-r1-01-*/` (+ main width guard) |
+| 02 free-for-all reads "Standings"; test covers it | PASS | e2e r1 02; `src/components/standings.test.tsx` |
+| 03 /about follows live → next → latest completed | PASS | `src/app/about/page.test.tsx`; smoke anonymous /about |
+| 04 hero shows Standings after a Points Entry | PASS | `public/about/standings-*.png`, `test-results/28-splash/about-desktop.png`; smoke |
+| 05 Winner read-only; tie recorded "Tie: A & B"; unit tests | PASS | `test-results/e2e/regression-r1-r1-05-*/`; lifecycle lib and DB tests |
+| 06 form explains Max points | PASS | `test-results/e2e/regression-r1-r1-06-09-*/competition-form.png` |
+| 07 dialog at desktop, sheet at phone; Bracket flows pass | PASS | `test-results/e2e/bracket-tree-*/result-*.png`; gate e2e |
+| 08 All default; day in URL | PASS | `test-results/e2e/regression-r1-r1-08-*/`; `src/lib/schedule.test.ts` |
+| 09 Format at create; Bracket links to setup | PASS | `test-results/e2e/regression-r1-r1-06-09-*/`; setup tests |
+| 10 breakdown newest first; totals match | PASS | `test-results/e2e/regression-r1-r1-10-*/`; `src/lib/points-breakdown.test.ts` |
+| 16 view-model tests; screenshots; no h-scroll at 375; List toggle; /about + guide | PASS | `src/lib/bracket/tree.test.ts`; `test-results/e2e/bracket-tree-*/`; guide and about diff |
+| Every ticket: `pnpm gate` / epic: gate passes locally | PASS | `test-results/r1-gate/gate.txt` |
+| Epic: each ticket closeout + `done` | PASS | this commit |
+| Epic: CI on the PR runs smoke and e2e and passes | pending at closeout | https://github.com/paul-macfarlane/jg-war-week/pull/91 checks |
+
+The first two gate runs failed on e2e only: `finale` and `points-entry` read the new sr-only breakdown text in `innerText`, and then `r1 08` hit Next's hidden streamed copy of the page. Both were fixed in the tests (`968c733`); no app code changed. No deploy in this epic.
+
+### Deviations
+
+- Proof root not cleared: the local permission guard refused removing Epic G's committed evidence; Paul chose to keep it. R1's evidence sits in R1-named directories.
+- Settings Winner stays editable (Paul); End never takes an override.
+- Ticket 07 extended to the Host's Time & place popup (Paul, 2026-09-29).
+- D7 installed `ffmpeg` with Homebrew on this machine to run the media script; the final script no longer needs it.
