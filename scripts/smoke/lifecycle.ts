@@ -108,6 +108,9 @@ export async function assertWarWeekLifecycle(sessions: {
       problems.push(`start XII while XI is live: ${JSON.stringify(early)}`);
     }
     await expectOk("end XI", "endWarWeek", [xiId, { highlights: "" }]);
+    const [xiEnded] = await runQuery<{ winner: string | null }>(
+      "select winner from war_week where edition = 'xi'",
+    );
     await expectRefused("non-Organizer starts XII", "startWarWeek", [xiiId]);
     await expectOk("start XII", "startWarWeek", [xiiId]);
     await expectRefused("non-Organizer ends XII", "endWarWeek", [
@@ -122,6 +125,11 @@ export async function assertWarWeekLifecycle(sessions: {
     const history = await (await signedInFetch(`${BASE_URL}/history`)).text();
     if (!history.includes('href="/xi"')) {
       problems.push("/history lacks XI");
+    }
+    if (xiEnded.winner && !history.includes(xiEnded.winner)) {
+      problems.push(
+        `/history lacks the computed Winner ${JSON.stringify(xiEnded.winner)}`,
+      );
     }
     const archiveAdmin = await (
       await fetch(`${BASE_URL}/admin/setup`, {

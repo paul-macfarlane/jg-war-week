@@ -283,9 +283,35 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
       const { endWarWeek } = await import("@/mutations/war-week-lifecycle");
       const { live, schema, byId } = await fixture(tx);
       const { eq } = await import("drizzle-orm");
-      // No Team at all, not just no points: a Team with 0 points still
-      // ranks first, so the blank case needs the main leaderboard empty.
+      // No Team at all, not just no points: an empty leaderboard is one way
+      // to get a blank Winner (a Team left on 0 points is the other, covered
+      // below).
       await tx.delete(schema.team).where(eq(schema.team.warWeekId, live.id));
+
+      const result = await endWarWeek({ highlights: [] }, ctxOf(live.id), tx);
+
+      expect(result).toEqual({ ok: true });
+      expect(await byId(live.id)).toMatchObject({
+        status: "complete",
+        winner: null,
+      });
+    });
+  });
+
+  it("records no Winner when every Team is left on 0 points", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { endWarWeek } = await import("@/mutations/war-week-lifecycle");
+      const { live, schema, byId } = await fixture(tx);
+      const { eq } = await import("drizzle-orm");
+      const [red] = await tx
+        .select({ id: schema.team.id })
+        .from(schema.team)
+        .where(eq(schema.team.warWeekId, live.id));
+      // Fixture's Red Team already has a Points Entry; strip it back to 0
+      // points so the only Team on the board is tied at the bottom.
+      await tx
+        .delete(schema.pointsEntry)
+        .where(eq(schema.pointsEntry.teamId, red.id));
 
       const result = await endWarWeek({ highlights: [] }, ctxOf(live.id), tx);
 

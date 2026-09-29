@@ -169,6 +169,18 @@ describe("defaultWinner", () => {
     };
     expect(defaultWinner(standings)).toBe("");
   });
+
+  it("a unique rank 1 with a non-positive total still wins when others are lower (0 vs -3)", () => {
+    const standings: Standings = {
+      main: "team",
+      team: [
+        { ...team("Blue", 1), total: 0 },
+        { ...team("Red", 2), total: -3 },
+      ],
+      individual: [],
+    };
+    expect(defaultWinner(standings)).toBe("Blue");
+  });
 });
 
 describe("parseClosingInput", () => {

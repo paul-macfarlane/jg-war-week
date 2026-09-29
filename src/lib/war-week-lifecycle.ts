@@ -163,14 +163,15 @@ export function nextEditionDefaults(
  * Standings, or individual Standings in free-for-all), read-only and never
  * an Organizer override. A single first place is its name; a shared first
  * place is a tie, formatted "Tie: A & B" ("Tie: A & B & C" for three or
- * more). Blank when nobody has points.
+ * more). Blank when every row is on 0 points (or there are no rows) —
+ * otherwise a unique rank 1 wins even with a non-positive total, as long as
+ * it is strictly ahead of the rest (0 beats -3).
  */
 export function defaultWinner(standings: Standings): string {
   const rows =
     standings.main === "team" ? standings.team : standings.individual;
-  const names = rows
-    .filter((row) => row.rank === 1 && row.total > 0)
-    .map((row) => row.name);
+  if (rows.length === 0 || rows.every((row) => row.total === 0)) return "";
+  const names = rows.filter((row) => row.rank === 1).map((row) => row.name);
   if (names.length <= 1) return names.join("");
   return `Tie: ${names.join(" & ")}`;
 }

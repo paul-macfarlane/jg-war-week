@@ -27,6 +27,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { WarWeek } from "@/db/schema";
 
@@ -191,12 +192,12 @@ function EndWarWeekButton({
           <FieldGroup className="gap-4">
             <Field>
               <FieldLabel htmlFor="end-winner">Winner</FieldLabel>
-              <p
+              <Input
                 id="end-winner"
-                className="text-foreground flex h-11 items-center rounded-md border px-3 text-sm sm:h-9"
-              >
-                {trimmed || "No winner"}
-              </p>
+                readOnly
+                className="h-11 sm:h-9"
+                value={trimmed || "No Winner"}
+              />
               <FieldDescription>First place in the Standings.</FieldDescription>
             </Field>
             <Field data-invalid={!!fieldErrors.highlights}>

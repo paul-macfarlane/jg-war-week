@@ -65,18 +65,38 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed lifecycle fields", () => {
       const { loadWarWeekSeed } = await import("@/seed/load");
       const { endWarWeek } = await import("@/mutations/war-week-lifecycle");
       await clearLive(tx);
-      const first = await loadWarWeekSeed(await seed("sa", 1, "live"), tx);
+      // A Team with a Points Entry, so End records a non-null Winner; the
+      // point of this test is that a reload never overwrites either field
+      // once End War Week has set them.
+      const seeded = await seed("sa", 1, "live", {
+        teams: [{ name: "Red", color: "#ff0000" }],
+        competitions: [
+          {
+            name: "Chess",
+            scoring: "team",
+            placementPoints: [10],
+          },
+        ],
+        pointsEntries: [
+          {
+            key: "sa-chess-red",
+            competition: "Chess",
+            team: "Red",
+            points: 10,
+            enteredByEmail: "organizer@jahnelgroup.com",
+            enteredAt: "2099-01-02T00:00:00Z",
+          },
+        ],
+      });
+      const first = await loadWarWeekSeed(seeded, tx);
       expect(first.status).toBe("live");
 
-      // No Teams or points are seeded here, so the computed Winner is blank;
-      // the point of this test is that a reload never overwrites either
-      // field once End War Week has set them.
       await endWarWeek({ highlights: ["gg"] }, ctxOf(first.id), tx);
-      const reloaded = await loadWarWeekSeed(await seed("sa", 1, "live"), tx);
+      const reloaded = await loadWarWeekSeed(seeded, tx);
 
       expect(reloaded).toMatchObject({
         status: "complete",
-        winner: null,
+        winner: "Red",
         highlights: ["gg"],
       });
     });
