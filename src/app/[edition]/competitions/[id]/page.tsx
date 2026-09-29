@@ -9,6 +9,8 @@ import {
   type BracketViewSelfReport,
 } from "@/components/bracket-view";
 import { CompetitionFacts, PointsEntryList } from "@/components/competitions";
+import { EnrollButton } from "@/components/enroll-button";
+import { GamesView } from "@/components/games-view";
 import { Toaster } from "@/components/ui/sonner";
 import { can } from "@/lib/access";
 import { entrantForYou, nextHeatFor } from "@/lib/bracket/view";
@@ -19,11 +21,13 @@ import {
   getParticipantSquadIds,
   getParticipantTeamIds,
 } from "@/queries/brackets";
+import { getGamesView } from "@/queries/games";
 import { getHeatReportFacts } from "@/queries/heat-reports";
 import { getYouCandidates } from "@/queries/roster";
 import { getSetupDays } from "@/queries/setup";
 
 import { getCompetitionPage } from "./competition";
+import { enrollOfferFor } from "./enrollment";
 
 const SELF_REPORT_OFF: BracketViewSelfReport = {
   on: false,
@@ -90,8 +94,10 @@ async function selfReportFor(
 
 export default async function CompetitionPage({
   params,
+  searchParams,
 }: PageProps<"/[edition]/competitions/[id]">) {
   const { edition, id } = await params;
+  const { log } = await searchParams;
   // The layout already answered 404 for a missing one, above `loading.tsx`.
   const found = await getCompetitionPage(edition, id);
   if (!found) notFound();
@@ -110,6 +116,16 @@ export default async function CompetitionPage({
   const selfReport = isBracket
     ? await selfReportFor(warWeek, bracket, participantTeams, participantSquads)
     : SELF_REPORT_OFF;
+  const isGames = competition.format === "games";
+  // The viewer's email stays on the server: the page gets names, ids and
+  // booleans computed from it (R3 decision 17).
+  const email = (await getActor())?.email ?? null;
+  const [games, enrollOffer] = await Promise.all([
+    isGames ? getGamesView(competition.id, email) : Promise.resolve(null),
+    isBracket || isGames
+      ? enrollOfferFor(competition, email)
+      : Promise.resolve(null),
+  ]);
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-6 px-4 py-6 md:max-w-3xl">
@@ -132,6 +148,28 @@ export default async function CompetitionPage({
           teamLabel={warWeek.teamLabel}
         />
       </div>
+      {enrollOffer ? <EnrollButton offer={enrollOffer} /> : null}
+      {games ? (
+        <GamesView
+          competitionId={competition.id}
+          gameType={games.competition.gameType}
+          config={games.competition.config}
+          scoring={games.competition.scoring}
+          closed={games.competition.closed}
+          loggingOpen={games.loggingOpen}
+          leaderboard={games.leaderboard}
+          games={games.games}
+          linked={games.linked}
+          runs={games.runs}
+          viewerCanLog={games.viewerCanLog}
+          bestOfDecided={games.bestOfDecided}
+          bestOfWinner={games.bestOfWinner}
+          entrantOptions={games.entrantOptions}
+          primaryColor={warWeek.primaryColor}
+          now={new Date()}
+          openLog={log === "1"}
+        />
+      ) : null}
       {isBracket ? (
         <BracketView
           competitionId={competition.id}
@@ -160,8 +198,10 @@ export default async function CompetitionPage({
       </section>
       {/* A Bracket's view refreshes itself, pausing while a report is open. */}
       {isBracket ? null : <AutoRefresh />}
-      {/* A report's result and refusals toast here, as on the admin screens. */}
-      {isBracket ? <Toaster position="bottom-center" closeButton /> : null}
+      {/* Results and refusals toast here, as on the admin screens. */}
+      {isBracket || isGames || enrollOffer ? (
+        <Toaster position="bottom-center" closeButton />
+      ) : null}
     </main>
   );
 }
