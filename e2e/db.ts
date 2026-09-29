@@ -31,6 +31,15 @@ export async function deleteE2eUsers() {
   ]);
 }
 
+/** Deletes a War Week XI Competition by name, if it exists. Test cleanup. */
+export async function deleteXiCompetition(name: string) {
+  await runQuery(
+    `delete from competition c using war_week w
+     where c.war_week_id = w.id and w.edition = 'xi' and c.name = $1`,
+    [name],
+  );
+}
+
 /** A War Week XI Competition's id, by name. */
 export async function xiCompetitionId(name: string): Promise<string> {
   const [row] = await runQuery<{ id: string }>(
@@ -74,4 +83,48 @@ export async function setParticipantEmail(id: string, email: string | null) {
     email,
     id,
   ]);
+}
+
+/**
+ * A Team's Points Entries as the Points breakdown rule computes them
+ * (`src/lib/points-breakdown.ts`), reimplemented directly in SQL so it's an
+ * independent check of what the UI shows: entries targeting the Team
+ * directly, plus entries targeting its Participants in individual
+ * Competitions with Counts Toward Team on. Newest first.
+ */
+export async function xiTeamPointsBreakdown(
+  teamName: string,
+): Promise<{ competition: string; points: number; when: Date }[]> {
+  const teamId = await xiTeamId(teamName);
+  return runQuery<{ competition: string; points: number; when: Date }>(
+    `select c.name as competition, pe.points::float as points, pe.entered_at as "when"
+     from points_entry pe join competition c on c.id = pe.competition_id
+     where pe.team_id = $1
+     union all
+     select c.name as competition, pe.points::float as points, pe.entered_at as "when"
+     from points_entry pe
+     join competition c on c.id = pe.competition_id
+     join participant p on p.id = pe.participant_id
+     where c.counts_toward_team and p.team_id = $1
+     order by "when" desc`,
+    [teamId],
+  );
+}
+
+/**
+ * A Participant's Points Entries as the Points breakdown rule computes
+ * them: entries targeting the Participant directly in individual
+ * Competitions. Newest first. Independent SQL, not the app's function.
+ */
+export async function xiParticipantPointsBreakdown(
+  displayName: string,
+): Promise<{ competition: string; points: number; when: Date }[]> {
+  const participantId = await xiParticipantId(displayName);
+  return runQuery<{ competition: string; points: number; when: Date }>(
+    `select c.name as competition, pe.points::float as points, pe.entered_at as "when"
+     from points_entry pe join competition c on c.id = pe.competition_id
+     where pe.participant_id = $1 and c.scoring = 'individual'
+     order by pe.entered_at desc`,
+    [participantId],
+  );
 }
