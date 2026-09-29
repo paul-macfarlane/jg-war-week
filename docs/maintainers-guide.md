@@ -155,8 +155,10 @@ by hand, after `pnpm build` with a freshly loaded seed
 pnpm tsx scripts/about-media.ts --stills
 ```
 
-Without `--stills` it also re-records the Finale video, which needs
-`ffmpeg`; only do that when the Finale itself changed.
+Without `--stills` it also re-records the Finale poster still
+(`finale-poster.png`); only do that when the Finale screen itself changed.
+`--stills` also rewrites the home Standings hero's three stills
+(`standings-before.png`, `standings-entry.png`, `standings-after.png`).
 
 ### Run a new War Week or change this year's theme (no code first)
 
@@ -235,7 +237,7 @@ Organizer screens cover setting one up and running it. Under
 **Setup → Competitions**, **Add a Competition** and choose its **Format**:
 "Single elimination" ("A knockout Bracket: one loss and an Entrant is out.")
 or "Heats" ("A Bracket where Entrants play in Heats; a set number advance
-each round."). **Add**, and you land straight on that Competition's Bracket
+each Round."). **Add**, and you land straight on that Competition's Bracket
 setup page. There, pick Entrants (all Teams, or specific Participants) and
 Generate; then record each Heat's result — from the results screen
 (`/admin/brackets/<id>`) or straight from the Competition page, either one
@@ -352,12 +354,13 @@ Notes:
   with `pnpm dlx shadcn@latest add <name>`; don't hand-roll a control shadcn
   already has.
 - The app's own wrappers — `EntityCombobox`, `DatePicker`,
-  `DateRangePicker`, `TimeCombobox`, and `ColorField` — live in
+  `DateRangePicker`, `TimeCombobox`, `ColorField`, and `ResponsiveSheetDialog`
+  (a centered Dialog at `lg` and up, a bottom Sheet below) — live in
   `src/components/`. Reach for one of those before building a new control.
   Only `EntityCombobox` does search and chips.
 - Popups portal into the themed root through `ThemeRoot`, which is wired
-  into `ui/popover`, `ui/select`, `ui/combobox`, `ui/alert-dialog` and
-  `ui/sheet`, so they keep the War Week's Appearance Theme.
+  into `ui/popover`, `ui/select`, `ui/combobox`, `ui/alert-dialog`,
+  `ui/dialog` and `ui/sheet`, so they keep the War Week's Appearance Theme.
 - Lay out every field with `Field` / `FieldLabel htmlFor` /
   `FieldDescription` from `ui/field`, and show a form's server error in a
   `FieldError` under its buttons.

@@ -248,9 +248,11 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 - Status changes only through the lifecycle actions in `/admin/setup`, each
   behind a confirm, never through the settings form:
   - **Start**: `upcoming → live`
-  - **End**: `live → complete`, recording the **Winner** (prefilled from
-    first place in the main Standings; a tie reads "Red & Blue") and
-    highlights. Both show in the Archive and stay editable in the settings.
+  - **End**: `live → complete`, recording the **Winner**: computed
+    read-only from first place in the main Standings at End (a tie reads
+    "Tie: Red & Blue"; blank when nobody has points), correctable
+    afterwards in Settings. Both the Winner and highlights show in the
+    Archive.
   - **Reopen**: `complete → live`, for corrections in the live view.
   There's no way back to `upcoming`.
 - Every lifecycle action is Organizer-only: `can` refuses anyone else
