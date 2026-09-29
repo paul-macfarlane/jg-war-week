@@ -189,6 +189,8 @@ export async function assertMcp() {
       "get_faq",
       "list_history",
       "get_history",
+      "get_bracket",
+      "get_games",
     ]) {
       if (tools.some((tool) => tool.name === name)) {
         ok(`MCP tools/list includes ${name}`);
@@ -382,6 +384,41 @@ export async function assertMcp() {
       });
     if (sameAwards) ok(awardsCheck);
     else fail(awardsCheck, `result=${JSON.stringify(awards.raw)}`);
+
+    // 17-M: a `games` Competition by name, never an email; get_bracket
+    // points to get_games.
+    const games = await callTool(16, "get_games", {
+      competition: "Bouncy Pong",
+    });
+    const gamesCheck =
+      "MCP get_games(Bouncy Pong) returns its head-to-head settings, leaderboard and Games with no @";
+    if (
+      games.parsed?.found === true &&
+      games.parsed.competition?.name === "Bouncy Pong" &&
+      games.parsed.competition?.gameType === "head-to-head" &&
+      Array.isArray(games.parsed.leaderboard) &&
+      Array.isArray(games.parsed.games) &&
+      !JSON.stringify(games.parsed).includes("@")
+    ) {
+      ok(gamesCheck);
+    } else {
+      fail(gamesCheck, `result=${JSON.stringify(games.raw)}`);
+    }
+    const gamesBracket = await callTool(17, "get_bracket", {
+      competition: "Bouncy Pong",
+    });
+    const gamesBracketCheck =
+      "MCP get_bracket(Bouncy Pong) answers bracket: null, run as Games, pointing to get_games";
+    if (
+      gamesBracket.parsed?.found === true &&
+      gamesBracket.parsed.bracket === null &&
+      String(gamesBracket.parsed.message).includes("run as Games") &&
+      String(gamesBracket.parsed.message).includes("get_games")
+    ) {
+      ok(gamesBracketCheck);
+    } else {
+      fail(gamesBracketCheck, `result=${JSON.stringify(gamesBracket.raw)}`);
+    }
 
     const faq = await callTool(15, "get_faq", {});
     const faqCheck =
