@@ -1,13 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
 
 import { deleteGame } from "@/actions/games";
 import { Avatar } from "@/components/avatar";
-import { ConfirmDialog } from "@/components/confirm-dialog";
+import { ConfirmActionButton } from "@/components/confirm-dialog";
 import { GameForm, type GameFormGame } from "@/components/game-form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -87,7 +85,7 @@ function statValue(row: GamesViewRow, key: string): string {
   return value === null || value === undefined ? "—" : String(value);
 }
 
-/** The leaderboard: rank, player, and the Game Type's stats (Q20). */
+/** The leaderboard: rank, player, and the Game Type's stats (Games rules). */
 export function GamesLeaderboard({
   gameType,
   config,
@@ -250,11 +248,16 @@ export function GameLog({
                     </Button>
                   ) : null}
                   {g.canDelete ? (
-                    <DeleteGameButton
-                      competitionId={competitionId}
-                      gameId={g.id}
-                      summary={summary}
-                    />
+                    <ConfirmActionButton
+                      title="Delete this Game?"
+                      description={`${summary}. The leaderboard updates at once.`}
+                      confirmLabel="Delete"
+                      ariaLabel={`Delete Game: ${summary}`}
+                      action={() => deleteGame(competitionId, g.id)}
+                      successMessage="Game deleted"
+                    >
+                      Delete
+                    </ConfirmActionButton>
                   ) : null}
                 </span>
               ) : null}
@@ -263,55 +266,6 @@ export function GameLog({
         })}
       </ol>
     </Card>
-  );
-}
-
-function DeleteGameButton({
-  competitionId,
-  gameId,
-  summary,
-}: {
-  competitionId: string;
-  gameId: string;
-  summary: string;
-}) {
-  const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [pending, startTransition] = useTransition();
-
-  function confirm() {
-    startTransition(async () => {
-      const result = await deleteGame(competitionId, gameId);
-      if (result.ok) toast.success("Game deleted.");
-      else toast.error(result.error);
-      setOpen(false);
-      router.refresh();
-    });
-  }
-
-  return (
-    <>
-      <Button
-        type="button"
-        variant="destructive"
-        size="xs"
-        className="min-h-11 min-w-11 sm:min-h-0 sm:min-w-0"
-        aria-label={`Delete Game: ${summary}`}
-        disabled={pending}
-        onClick={() => setOpen(true)}
-      >
-        Delete
-      </Button>
-      <ConfirmDialog
-        open={open}
-        onOpenChange={setOpen}
-        title="Delete this Game?"
-        description={`${summary}. The leaderboard updates at once.`}
-        confirmLabel="Delete"
-        pending={pending}
-        onConfirm={confirm}
-      />
-    </>
   );
 }
 

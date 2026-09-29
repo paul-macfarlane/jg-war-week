@@ -105,6 +105,7 @@ export function ConfirmActionButton({
   variant = "destructive",
   size = "xs",
   className,
+  ariaLabel,
   children,
 }: {
   title: string;
@@ -115,6 +116,8 @@ export function ConfirmActionButton({
   variant?: React.ComponentProps<typeof Button>["variant"];
   size?: React.ComponentProps<typeof Button>["size"];
   className?: string;
+  /** Screen-reader label for the trigger, e.g. "Delete Game: <summary>". */
+  ariaLabel?: string;
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -143,6 +146,7 @@ export function ConfirmActionButton({
         // At least 44px on phones, whatever the size.
         className={cn("min-h-11 min-w-11 sm:min-h-0 sm:min-w-0", className)}
         disabled={pending}
+        aria-label={ariaLabel}
         onClick={() => setOpen(true)}
       >
         {children}

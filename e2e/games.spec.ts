@@ -145,7 +145,7 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
       .getByRole("button", { name: `${PLAYER.name} won` })
       .click();
     await form.getByRole("button", { name: "Log Game" }).click();
-    await expect(you.getByText("Game logged.")).toBeVisible();
+    await expect(you.getByText("Game logged")).toBeVisible();
     await expect(form).toBeHidden();
 
     // The leaderboard shows the win: W 1, L 0 against L 1.
@@ -180,7 +180,7 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
       .getByRole("button", { name: `${OPPONENT.name} won` })
       .click();
     await edit.getByRole("button", { name: "Save Game" }).click();
-    await expect(page.getByText("Game updated.")).toBeVisible();
+    await expect(page.getByText("Game updated")).toBeVisible();
     await expect(edit).toBeHidden();
     await expect(leaderboardRow(page, OPPONENT.name)).toHaveText([
       "1",
@@ -251,7 +251,7 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
       .getByRole("alertdialog")
       .getByRole("button", { name: "Delete" })
       .click();
-    await expect(page.getByText("Game deleted.")).toBeVisible();
+    await expect(page.getByText("Game deleted")).toBeVisible();
     await expect(
       page.getByRole("region", { name: "Games" }).getByText("No Games yet."),
     ).toBeVisible();

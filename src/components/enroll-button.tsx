@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { WriteResult } from "@/lib/result";
 
-/** The Squad help line (Q38), shown wherever Squads appear. */
+/** The Squad help line (Enrollment rules), shown wherever Squads appear. */
 export const SQUAD_HELP =
   "a pair or group from one Team, playing as one entrant";
 
@@ -111,7 +111,7 @@ function EntrantOffer({
         onClick={() =>
           run(
             () => enroll(offer.competitionId),
-            team ? "Your Team is enrolled." : "You're enrolled.",
+            team ? "Your Team is enrolled" : "You're enrolled",
           )
         }
       />
@@ -143,7 +143,7 @@ function EntrantOffer({
         onConfirm={() =>
           run(
             () => withdraw(offer.competitionId),
-            team ? "Your Team has withdrawn." : "You've withdrawn.",
+            team ? "Your Team has withdrawn" : "You've withdrawn",
             () => setConfirming(false),
           )
         }
@@ -196,7 +196,7 @@ function SquadOffers({
                   onClick={() =>
                     run(
                       () => joinSquad(offer.competitionId, squad.id),
-                      `You joined ${squad.name}.`,
+                      `You joined ${squad.name}`,
                     )
                   }
                 />
@@ -218,7 +218,7 @@ function SquadOffers({
           if (!leaving) return;
           run(
             () => leaveSquad(offer.competitionId, leaving.id),
-            `You left ${leaving.name}.`,
+            `You left ${leaving.name}`,
             () => setLeaving(null),
           );
         }}

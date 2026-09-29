@@ -164,7 +164,7 @@ function GameFormBody({
         toast.error(result.error);
         return;
       }
-      toast.success(game ? "Game updated." : "Game logged.");
+      toast.success(game ? "Game updated" : "Game logged");
       onOpenChange(false);
       router.refresh();
     });

@@ -112,7 +112,7 @@ test("enrollment: a Participant enrolls, withdraws and enrolls again; once the H
 
     // Enroll → an Entrant row.
     await card.getByRole("button", { name: "Enroll" }).click();
-    await expect(you.getByText("You're enrolled.")).toBeVisible();
+    await expect(you.getByText("You're enrolled")).toBeVisible();
     await expect(card.getByText("You're entered.")).toBeVisible();
     expect(await isEntrant(id, enrolleeId)).toBe(true);
     await shoot(you, testInfo, "enrolled");
@@ -124,7 +124,7 @@ test("enrollment: a Participant enrolls, withdraws and enrolls again; once the H
     });
     await shoot(you, testInfo, "withdraw-confirm");
     await confirm.getByRole("button", { name: "Withdraw" }).click();
-    await expect(you.getByText("You've withdrawn.")).toBeVisible();
+    await expect(you.getByText("You've withdrawn")).toBeVisible();
     await expect(card.getByRole("button", { name: "Enroll" })).toBeEnabled();
     expect(await isEntrant(id, enrolleeId)).toBe(false);
 
