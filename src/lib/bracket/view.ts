@@ -22,6 +22,11 @@ export function formatLabel(format: Format): string {
   return FORMAT_LABELS[format];
 }
 
+/** Whether a Format runs as a Bracket (anything but "points"). */
+export function isBracketFormat(format: string | null | undefined): boolean {
+  return format != null && format !== "points";
+}
+
 /** The final's Round number; 0 before Generate. */
 export function finalRoundOf(bracket: Bracket): number {
   return bracket.heats.reduce((max, h) => Math.max(max, h.round), 0);

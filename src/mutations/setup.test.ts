@@ -567,9 +567,9 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
         await import("@/mutations/setup");
       const { schema, relayId, ctx } = await rosterFixture(tx);
 
-      expect(await createCompetition(competitionValues, ctx, tx)).toEqual({
-        ok: true,
-      });
+      expect(await createCompetition(competitionValues, ctx, tx)).toMatchObject(
+        { ok: true },
+      );
       const [chess] = await tx
         .select()
         .from(schema.competition)
@@ -579,6 +579,8 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
         maxPoints: 10,
         countsTowardTeam: true,
         competitionGroup: "Board games",
+        format: "points",
+        bracketConfig: null,
       });
 
       // Relay has no Points Entries, so its scoring can change.
@@ -591,6 +593,58 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
         ),
       ).toEqual({ ok: true });
       expect(await deleteCompetition(relayId, ctx, tx)).toEqual({ ok: true });
+    });
+  });
+
+  it("creates a single-elimination Competition with the Format and no config", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { createCompetition } = await import("@/mutations/setup");
+      const { schema, ctx } = await rosterFixture(tx);
+
+      const created = await createCompetition(
+        {
+          ...competitionValues,
+          name: "Chess Bracket",
+          format: "single-elimination",
+        },
+        ctx,
+        tx,
+      );
+      expect(created).toMatchObject({ ok: true });
+      const [row] = await tx
+        .select()
+        .from(schema.competition)
+        .where(eq(schema.competition.name, "Chess Bracket"));
+      expect(row).toMatchObject({
+        format: "single-elimination",
+        bracketConfig: null,
+      });
+    });
+  });
+
+  it("creates a heats Competition with the Bracket builder's default config", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { createCompetition } = await import("@/mutations/setup");
+      const { schema, ctx } = await rosterFixture(tx);
+
+      const created = await createCompetition(
+        {
+          ...competitionValues,
+          name: "Chess Heats",
+          format: "heats",
+        },
+        ctx,
+        tx,
+      );
+      expect(created).toMatchObject({ ok: true });
+      const [row] = await tx
+        .select()
+        .from(schema.competition)
+        .where(eq(schema.competition.name, "Chess Heats"));
+      expect(row).toMatchObject({
+        format: "heats",
+        bracketConfig: { entrantsPerHeat: 4, advancePerHeat: 2 },
+      });
     });
   });
 

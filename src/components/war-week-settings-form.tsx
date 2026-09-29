@@ -317,7 +317,8 @@ export function WarWeekSettingsForm({
               onChange={set("winner")}
             />
             <FieldDescription>
-              Shown in the Archive. A tie can be &ldquo;Red &amp; Blue&rdquo;.
+              Shown in the Archive. A tie reads &ldquo;Tie: Red &amp;
+              Blue&rdquo;.
             </FieldDescription>
             <FieldError>{fieldErrors.winner}</FieldError>
           </Field>

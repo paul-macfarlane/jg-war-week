@@ -11,6 +11,12 @@ import {
   useFocusFirstInvalid,
 } from "@/components/form-field-errors";
 import { OptionSelect } from "@/components/option-select";
+import {
+  ResponsiveSheetDialogDescription,
+  ResponsiveSheetDialogFooter,
+  ResponsiveSheetDialogHeader,
+  ResponsiveSheetDialogTitle,
+} from "@/components/responsive-sheet-dialog";
 import { TimeCombobox } from "@/components/time-combobox";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,12 +27,6 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import type { HeatScheduleInput } from "@/lib/bracket/heat-schedule";
 import type { Heat } from "@/lib/bracket/types";
 import { formatDayHeading } from "@/lib/schedule";
@@ -34,10 +34,10 @@ import { formatDayHeading } from "@/lib/schedule";
 const CLEARED: HeatScheduleInput = { dayId: "", startTime: "", location: "" };
 
 /**
- * A Heat's time and place, in a Sheet on the results screen: a Day and a
- * start time (ET) together, and an optional location. Save stores them;
- * Clear empties all three. The server validates; a refused field shows its
- * error and takes focus (ADR 0004).
+ * A Heat's time and place, in a `ResponsiveSheetDialog` on the results
+ * screen: a Day and a start time (ET) together, and an optional location.
+ * Save stores them; Clear empties all three. The server validates; a
+ * refused field shows its error and takes focus (ADR 0004).
  */
 export function HeatScheduleForm({
   competitionId,
@@ -114,13 +114,15 @@ export function HeatScheduleForm({
       aria-label={`Time & place for ${name}`}
       className="flex flex-col gap-4"
     >
-      <SheetHeader>
-        <SheetTitle>Time &amp; place · {name}</SheetTitle>
-        <SheetDescription>
+      <ResponsiveSheetDialogHeader>
+        <ResponsiveSheetDialogTitle>
+          Time &amp; place · {name}
+        </ResponsiveSheetDialogTitle>
+        <ResponsiveSheetDialogDescription>
           When and where it&apos;s played. A timed Heat shows in Now/Next once
           its Entrants are known.
-        </SheetDescription>
-      </SheetHeader>
+        </ResponsiveSheetDialogDescription>
+      </ResponsiveSheetDialogHeader>
       <FieldGroup className="gap-4 px-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field data-invalid={!!fieldErrors.dayId}>
@@ -170,7 +172,7 @@ export function HeatScheduleForm({
         </Field>
         {formError && !pending && <FieldError>{formError}</FieldError>}
       </FieldGroup>
-      <SheetFooter className="flex-row flex-wrap">
+      <ResponsiveSheetDialogFooter className="flex-row flex-wrap">
         <Button type="submit" size="lg" className="min-h-11" disabled={pending}>
           {pending ? "Saving…" : "Save"}
         </Button>
@@ -187,7 +189,7 @@ export function HeatScheduleForm({
             Clear
           </Button>
         )}
-      </SheetFooter>
+      </ResponsiveSheetDialogFooter>
     </form>
   );
 }

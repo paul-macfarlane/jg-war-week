@@ -7,6 +7,7 @@ import {
   formatLabel,
   groupRounds,
   heatName,
+  isBracketFormat,
   nextHeatFor,
   roundName,
 } from "@/lib/bracket/view";
@@ -286,5 +287,18 @@ describe("formatLabel", () => {
     expect(formatLabel("points")).toBe("Points");
     expect(formatLabel("single-elimination")).toBe("Single elimination");
     expect(formatLabel("heats")).toBe("Heats");
+  });
+});
+
+describe("isBracketFormat", () => {
+  it("is false for points or no Format chosen", () => {
+    expect(isBracketFormat("points")).toBe(false);
+    expect(isBracketFormat(null)).toBe(false);
+    expect(isBracketFormat(undefined)).toBe(false);
+  });
+
+  it("is true for a Bracket Format", () => {
+    expect(isBracketFormat("single-elimination")).toBe(true);
+    expect(isBracketFormat("heats")).toBe(true);
   });
 });

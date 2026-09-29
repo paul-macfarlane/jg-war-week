@@ -1,30 +1,33 @@
 /**
- * Writes the About page's media (ticket 28) from the seeded demo, never by
- * hand: `public/about/finale.mp4` and `finale-poster.png` (War Week XI's
- * Finale on a phone: the Start screen, then the countdown) and one still per feature
- * card at `public/about/<slug>.png`. Afterwards it screenshots `/about` as an
- * anonymous visitor at 390px, desktop and with reduced motion into
- * `test-results/28-splash/`, with a log.
+ * Writes the About page's media (tickets 28, 03, 04) from the seeded demo,
+ * never by hand: `public/about/finale-poster.png` (War Week XI's Finale on
+ * a phone, mid-countdown; a still only — no Finale video is written or
+ * shown), the hero's `standings-before.png` / `standings-entry.png` /
+ * `standings-after.png` (an Organizer's real Points Entry moving the home
+ * Standings), and one still per feature card at `public/about/<slug>.png`.
+ * Afterwards it screenshots `/about` as an anonymous visitor at 390px,
+ * desktop and with reduced motion into `test-results/28-splash/`, with a
+ * log.
  *
  * Needs a production build and a freshly seeded local Postgres, the same
  * prerequisite as `docs/maintainers-guide.md` (`pnpm build`, then
- * `pnpm seed:load --reset seeds/*.json`), and Google Chrome; ffmpeg on
- * PATH only without `--stills`. Starts its own server on port
- * 3202, signs in as a made-up Organizer (`about-demo@jahnelgroup.com`) that
- * it adds to the Organizer list and lends XI's seeded Points Entries for the
- * run, so no real email is in any file, and restores everything after:
+ * `pnpm seed:load --reset seeds/*.json`), and Google Chrome. Starts its own
+ * server on port 3202, signs in as a made-up Organizer
+ * (`about-demo@jahnelgroup.com`) that it adds to the Organizer list and
+ * lends XI's seeded Points Entries for the run, so no real email is in any
+ * file, and restores everything after, including the one Points Entry the
+ * Standings hero saves:
  *   pnpm tsx scripts/about-media.ts
  *
- * `--stills` rewrites only the feature-card stills and leaves the Finale
- * recording alone, so it needs no ffmpeg:
+ * `--stills` rewrites the feature-card and Standings-hero stills and
+ * leaves the Finale poster alone:
  *   pnpm tsx scripts/about-media.ts --stills
  */
 import { loadEnvConfig } from "@next/env";
 import { makeSignature } from "better-auth/crypto";
-import { type ChildProcess, spawn, spawnSync } from "node:child_process";
+import { type ChildProcess, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import {
-  copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -37,7 +40,7 @@ import os from "node:os";
 import path from "node:path";
 import { Client } from "pg";
 
-import { ABOUT_FEATURES, ABOUT_THEME } from "@/lib/about";
+import { ABOUT_FEATURES, STATIC_PAGE_THEME } from "@/lib/about";
 import { FINALE_MAX_MS } from "@/lib/finale";
 import type { LeaderboardResult } from "@/mcp/leaderboard";
 
@@ -308,7 +311,7 @@ async function assertNoRealEmail(page: Page, what: string) {
 
 type Frame = { at: number; data: string };
 
-async function recordFinale(cookie: string, ffmpeg: string) {
+async function recordFinale(cookie: string) {
   const page = await Page.open();
   // The screencast sends CSS-pixel frames whatever the device scale, so
   // the page is laid out at 390px inside a doubled viewport, zoomed 2x.
@@ -370,62 +373,11 @@ async function recordFinale(cookie: string, ffmpeg: string) {
   }
   note(`finale: ${frames.length} frames captured, ${kept.length} kept`);
 
-  const dir = mkdtempSync(path.join(os.tmpdir(), "about-frames-"));
-  try {
-    const list: string[] = [];
-    kept.forEach((frame, i) => {
-      const file = path.join(dir, `${String(i).padStart(4, "0")}.png`);
-      writeFileSync(file, Buffer.from(frame.data, "base64"));
-      const next = kept[i + 1];
-      const duration = next ? (next.at - frame.at) / 1000 : HOLD_MS / 1000;
-      list.push(`file '${file}'`, `duration ${duration.toFixed(3)}`);
-    });
-    // The concat demuxer needs the last file repeated to honour its duration.
-    list.push(
-      `file '${path.join(dir, `${String(kept.length - 1).padStart(4, "0")}.png`)}'`,
-    );
-    const listFile = path.join(dir, "frames.txt");
-    writeFileSync(listFile, list.join("\n") + "\n");
-    copyFileSync(
-      path.join(dir, "0000.png"),
-      path.join(MEDIA, "finale-poster.png"),
-    );
-
-    const result = spawnSync(
-      ffmpeg,
-      [
-        "-y",
-        "-loglevel",
-        "error",
-        "-f",
-        "concat",
-        "-safe",
-        "0",
-        "-i",
-        listFile,
-        "-vf",
-        "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p",
-        "-r",
-        "30",
-        "-c:v",
-        "libx264",
-        "-preset",
-        "slow",
-        "-crf",
-        "24",
-        "-movflags",
-        "+faststart",
-        "-an",
-        path.join(MEDIA, "finale.mp4"),
-      ],
-      { stdio: ["ignore", "inherit", "pipe"] },
-    );
-    if (result.status !== 0) {
-      throw new Error(`ffmpeg failed: ${result.stderr?.toString()}`);
-    }
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
+  // Only the poster still is kept; no Finale video is written or shown.
+  writeFileSync(
+    path.join(MEDIA, "finale-poster.png"),
+    Buffer.from(kept[0].data, "base64"),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -517,9 +469,10 @@ async function still(
   cookie: string | null,
   target: string,
   prepare?: (page: Page) => Promise<void>,
+  viewport: { width: number; height: number } = STILL,
 ) {
   const page = await Page.open();
-  await page.viewport(STILL, false);
+  await page.viewport(viewport, viewport === PHONE);
   if (cookie) await page.cookie(cookie);
   await page.goto(target);
   if (prepare) await prepare(page);
@@ -532,12 +485,17 @@ async function still(
 }
 
 /**
- * Picks a Competition in the Points Entry form's combobox the way a person
- * does: focus it, type the name, and choose the option.
+ * Picks an option in one of the Points Entry form's `EntityCombobox`
+ * fields the way a person does: focus it by its `aria-label`, type the
+ * name, and choose the matching option.
  */
-async function selectCompetition(page: Page, name: string): Promise<string> {
+async function selectComboboxOption(
+  page: Page,
+  ariaLabel: string,
+  name: string,
+): Promise<string> {
   await page.evaluate(
-    `document.querySelector('input[aria-label="Competition"]').focus()`,
+    `document.querySelector('input[aria-label="${ariaLabel}"]').focus()`,
   );
   await page.send("Input.insertText", { text: name });
   await sleep(500);
@@ -546,8 +504,13 @@ async function selectCompetition(page: Page, name: string): Promise<string> {
     option?.click();
     return option ? option.innerText : null;
   })()`);
-  if (!picked) throw new Error(`no Competition option for ${name}`);
+  if (!picked) throw new Error(`no ${ariaLabel} option for ${name}`);
   return picked;
+}
+
+/** Picks a Competition in the Points Entry form's combobox. */
+async function selectCompetition(page: Page, name: string): Promise<string> {
+  return selectComboboxOption(page, "Competition", name);
 }
 
 const scrollToText = (text: string) => `(() => {
@@ -632,7 +595,7 @@ function chatCardUrl(result: LeaderboardResult): string {
     .join(
       "",
     )}</ol><p>${escapeHtml(result.standings[0]?.name ?? "")} lead${result.standings.length > 1 ? `, ${result.standings[0].total - result.standings[1].total} points ahead of ${escapeHtml(result.standings[1].name)}` : ""}.</p>`;
-  const t = ABOUT_THEME;
+  const t = STATIC_PAGE_THEME;
   return `data:text/html;charset=utf-8,${encodeURIComponent(`<!doctype html><html><head><meta charset="utf-8"><style>
   html,body{margin:0;height:100%;background:${t.backgroundColor};color:${t.foregroundColor};font:16px/1.5 ui-monospace,"JetBrains Mono",Menlo,monospace}
   body{display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at top,color-mix(in oklch,${t.primaryColor} 18%,transparent),transparent 60%),${t.backgroundColor}}
@@ -649,6 +612,107 @@ function chatCardUrl(result: LeaderboardResult): string {
   <div class="msg you"><div class="who">You</div>Who's winning War Week XI?</div>
   <div class="msg claude"><div class="who">Claude</div>${answer}<div class="tool">jg-war-week · get_leaderboard(kind: "team")</div></div>
   </div></body></html>`)}`;
+}
+
+// ---------------------------------------------------------------------------
+// The About hero: Standings moving after a Points Entry (ticket 04)
+
+/**
+ * The competition the hero uses to move the home Standings: team-scored,
+ * with no Max points cap, so any margin needed to move the last-place Team
+ * into first saves without a warning.
+ */
+const STANDINGS_DEMO_COMPETITION = "Beast Mode Workout";
+
+/**
+ * Three stills for the About page's hero (ticket 04): the home Standings
+ * before, the Points Entry form about to save a big win for the Team
+ * currently in last place, and the same home Standings right after,
+ * reordered. Uses the real Points Entry form and the real `get_leaderboard`
+ * MCP tool to read the Team Standings, not a hand-crafted fixture.
+ */
+async function captureStandingsDemo(cookie: string): Promise<string> {
+  await still(
+    "standings-before",
+    cookie,
+    "/xi/leaderboard",
+    () => sleep(500),
+    PHONE,
+  );
+
+  const before = await askMcp(cookie);
+  const last = before.standings.at(-1);
+  const first = before.standings[0];
+  if (!last || !first || before.standings.length < 2) {
+    throw new Error("need at least two Teams for the Standings demo");
+  }
+  // Enough to overtake first place outright, so the reorder is unmistakable.
+  const margin = Math.max(first.total - last.total + 15, 15);
+  note(
+    `standings demo: moving ${JSON.stringify(last.name)} from last (${last.total}) past first (${first.total}) with +${margin}`,
+  );
+
+  const page = await Page.open();
+  await page.viewport(PHONE, true);
+  await page.cookie(cookie);
+  await page.goto("/admin/points");
+  await selectCompetition(page, STANDINGS_DEMO_COMPETITION);
+  await sleep(300);
+  await selectComboboxOption(page, before.teamLabel, last.name);
+  await page.evaluate(`document.querySelector('#points-entry-points').focus()`);
+  await page.send("Input.insertText", { text: String(margin) });
+  await sleep(400);
+  await assertNoRealEmail(page, "standings-entry");
+  await page.screenshot(path.join(MEDIA, "standings-entry.png"));
+  note("still: standings-entry from /admin/points, filled in");
+
+  await page.evaluate(
+    `document.querySelector('form[aria-label="Points Entry"] button[type="submit"]').click()`,
+  );
+  let saved = false;
+  for (let i = 0; i < 40; i++) {
+    await sleep(200);
+    const text = await page.evaluate<string>(
+      `document.querySelector('form[aria-label="Points Entry"] button[type="submit"]')?.innerText ?? ""`,
+    );
+    if (text === "Add Points Entry") {
+      saved = true;
+      break;
+    }
+  }
+  if (!saved) throw new Error("the demo Points Entry never finished saving");
+  await page.close();
+
+  await still(
+    "standings-after",
+    cookie,
+    "/xi/leaderboard",
+    () => sleep(500),
+    PHONE,
+  );
+
+  const after = await askMcp(cookie);
+  const lastAfter = after.standings.find((row) => row.name === last.name);
+  note(
+    `standings demo: ${JSON.stringify(last.name)} is now #${
+      after.standings.findIndex((row) => row.name === last.name) + 1
+    } of ${after.standings.length} (${lastAfter?.total} pts)`,
+  );
+  if (after.standings[0]?.name !== last.name) {
+    throw new Error("the demo Points Entry did not move the Team to first");
+  }
+
+  const [entry] = await query<{ id: string }>(
+    `select id from points_entry where entered_by_email = $1 order by created_at desc limit 1`,
+    [DEMO_EMAIL],
+  );
+  if (!entry) throw new Error("could not find the demo Points Entry to undo");
+  return entry.id;
+}
+
+/** Undoes the one Points Entry `captureStandingsDemo` created. */
+async function teardownStandingsDemo(entryId: string) {
+  await query(`delete from points_entry where id = $1`, [entryId]);
 }
 
 // ---------------------------------------------------------------------------
@@ -673,48 +737,43 @@ async function evidence() {
   const desktop = await Page.open();
   await desktop.viewport({ width: 1440, height: 900 }, false, 1);
   await desktop.goto("/about", 3_000);
-  const video = await desktop.evaluate<Record<string, unknown>>(
-    `(() => { const v = document.querySelector("video"); return { readyState: v.readyState, paused: v.paused, muted: v.muted, loop: v.loop, poster: v.poster.endsWith("/about/finale-poster.png"), videoWidth: v.videoWidth, videoHeight: v.videoHeight, duration: v.duration }; })()`,
+  const hero = await desktop.evaluate<Record<string, unknown>>(
+    `(() => { const imgs = Array.from(document.querySelectorAll('[data-standings-step]')); return { steps: imgs.map((i) => i.dataset.standingsStep), loaded: imgs.every((i) => i.complete && i.naturalWidth > 0), finalePoster: document.querySelector('img[src="/about/finale-poster.png"]') !== null, noVideo: document.querySelector("video") === null }; })()`,
   );
-  note(`evidence: desktop hero video ${JSON.stringify(video)}`);
+  note(`evidence: desktop hero ${JSON.stringify(hero)}`);
+  if (!hero.noVideo)
+    throw new Error("the About page hero must be stills, not a video");
   await desktop.screenshot(path.join(EVIDENCE, "about-desktop.png"), true);
 
   await desktop.send("Emulation.setEmulatedMedia", {
     features: [{ name: "prefers-reduced-motion", value: "reduce" }],
   });
   await sleep(500);
-  const reduced = await desktop.evaluate<Record<string, unknown>>(
-    `(() => { const v = document.querySelector("video"); const img = document.querySelector('img[src="/about/finale-poster.png"]'); return { videoHidden: getComputedStyle(v).display === "none", posterShown: getComputedStyle(img).display !== "none" }; })()`,
-  );
-  note(`evidence: reduced motion ${JSON.stringify(reduced)}`);
   await desktop.screenshot(
     path.join(EVIDENCE, "about-desktop-reduced-motion.png"),
   );
   await desktop.close();
 
+  // /about now reads the current War Week (ticket 03), so it must be
+  // dynamic, not prerendered at build with a stale one.
   const prerendered = existsSync(
     path.resolve(process.cwd(), ".next/server/app/about.html"),
   );
   note(
     `evidence: /about prerendered at build (.next/server/app/about.html exists): ${prerendered}`,
   );
-  if (!prerendered)
-    throw new Error("/about was not prerendered: it must stay static");
+  if (prerendered)
+    throw new Error(
+      "/about was statically prerendered: it must read the current War Week dynamically",
+    );
 }
 
 // ---------------------------------------------------------------------------
 
-/** Only the feature-card stills; the Finale video and poster stay as they are. */
+/** Only the feature-card and Standings-hero stills; the Finale poster stays as it is. */
 const STILLS_ONLY = process.argv.includes("--stills");
 
 async function main() {
-  if (
-    !STILLS_ONLY &&
-    spawnSync("ffmpeg", ["-version"], { stdio: "ignore" }).status !== 0
-  ) {
-    console.error("Install ffmpeg: brew install ffmpeg");
-    process.exit(1);
-  }
   if (!existsSync(path.resolve(process.cwd(), ".next/BUILD_ID"))) {
     console.error("No production build in .next: run `pnpm build` first.");
     process.exit(1);
@@ -760,6 +819,7 @@ async function main() {
     detached: true,
   });
   const chrome = launchChrome();
+  let standingsEntryId: string | undefined;
 
   try {
     for (let i = 0; i < 60; i++) {
@@ -774,7 +834,9 @@ async function main() {
     }
     await waitForChrome();
 
-    if (!STILLS_ONLY) await recordFinale(cookie, "ffmpeg");
+    standingsEntryId = await captureStandingsDemo(cookie);
+
+    if (!STILLS_ONLY) await recordFinale(cookie);
 
     const slugs = ABOUT_FEATURES.map((f) => f.slug);
     await still("organizer-setup", cookie, "/admin/setup");
@@ -823,7 +885,10 @@ async function main() {
     await evidence();
 
     for (const name of [
-      ...(STILLS_ONLY ? [] : ["finale.mp4", "finale-poster.png"]),
+      ...(STILLS_ONLY ? [] : ["finale-poster.png"]),
+      "standings-before.png",
+      "standings-entry.png",
+      "standings-after.png",
       ...slugs.map((s) => `${s}.png`),
     ]) {
       note(
@@ -839,6 +904,7 @@ async function main() {
     }
     await sleep(1_000);
     rmSync(chrome.dir, { recursive: true, force: true, maxRetries: 3 });
+    if (standingsEntryId) await teardownStandingsDemo(standingsEntryId);
     await query(`delete from organizer where email = $1`, [DEMO_EMAIL]);
     await query(
       `update points_entry set entered_by_email = $1 where entered_by_email = $2`,

@@ -47,7 +47,10 @@ export function WarWeekLifecycleControls({
   warWeekId: string;
   edition: string;
   status: WarWeek["status"];
-  /** First place in the main Standings, to prefill the Winner. */
+  /**
+   * The Winner End War Week will record: first place in the main
+   * Standings, read-only (there is no Organizer override).
+   */
   suggestedWinner: string;
   highlights: string[];
   /** Names of Brackets not yet finalized, to warn about when ending. */
@@ -117,7 +120,6 @@ function EndWarWeekButton({
   const formId = useId();
   const formRef = useRef<HTMLFormElement>(null);
   const [open, setOpen] = useState(false);
-  const [winner, setWinner] = useState(suggestedWinner);
   const [highlights, setHighlights] = useState(initialHighlights.join("\n"));
 
   // Validation runs on the server; a refusal names its fields.
@@ -127,7 +129,6 @@ function EndWarWeekButton({
       formData: FormData,
     ): Promise<LifecycleActionResult> => {
       const input = {
-        winner: String(formData.get("winner") ?? ""),
         highlights: String(formData.get("highlights") ?? ""),
       };
       const saved = await endWarWeek(warWeekId, input);
@@ -152,7 +153,7 @@ function EndWarWeekButton({
   const formError = formErrorOf(shown);
   useFocusFirstInvalid(formRef, result);
 
-  const trimmed = winner.trim();
+  const trimmed = suggestedWinner.trim();
   const endDescription = trimmed
     ? `${name} moves to the Archive with ${trimmed} as Winner.`
     : `${name} moves to the Archive with no Winner.`;
@@ -189,22 +190,15 @@ function EndWarWeekButton({
           aria-label="End War Week"
         >
           <FieldGroup className="gap-4">
-            <Field data-invalid={!!fieldErrors.winner}>
+            <Field>
               <FieldLabel htmlFor="end-winner">Winner</FieldLabel>
               <Input
                 id="end-winner"
-                name="winner"
+                readOnly
                 className="h-11 sm:h-9"
-                maxLength={200}
-                aria-invalid={!!fieldErrors.winner}
-                value={winner}
-                onChange={(event) => setWinner(event.target.value)}
+                value={trimmed || "No Winner"}
               />
-              <FieldDescription>
-                First place in the Standings. A tie can be &ldquo;Red &amp;
-                Blue&rdquo;.
-              </FieldDescription>
-              <FieldError>{fieldErrors.winner}</FieldError>
+              <FieldDescription>First place in the Standings.</FieldDescription>
             </Field>
             <Field data-invalid={!!fieldErrors.highlights}>
               <FieldLabel htmlFor="end-highlights">Highlights</FieldLabel>

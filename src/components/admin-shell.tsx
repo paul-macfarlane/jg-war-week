@@ -203,7 +203,7 @@ export function AdminRefused({
           <SignOutButton />
         </div>
       </main>
-      <SiteFooter />
+      <SiteFooter className="mt-auto" />
     </>
   );
 }

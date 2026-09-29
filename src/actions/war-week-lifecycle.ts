@@ -72,7 +72,11 @@ export async function startWarWeek(
   });
 }
 
-/** End War Week: `live → complete`, recording the Winner and highlights. */
+/**
+ * End War Week: `live → complete`, recording highlights and the Winner.
+ * The Winner is never taken from `input`: it is computed server-side from
+ * the Standings (no Organizer override).
+ */
 export async function endWarWeek(
   warWeekId: string,
   input: ClosingInput,

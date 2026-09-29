@@ -4,17 +4,16 @@ import Link from "next/link";
 
 import { AboutFeatureGrid } from "@/components/about-feature-grid";
 import { AboutFinaleDemo } from "@/components/about-finale-demo";
+import { AboutStandingsDemo } from "@/components/about-standings-demo";
 import { SiteFooter } from "@/components/site-footer";
 import { ThemeRoot } from "@/components/theme-root";
 import { buttonVariants } from "@/components/ui/button";
-import {
-  ABOUT_THEME,
-  CURRENT_EDITION,
-  MAINTAINERS_GUIDE_URL,
-} from "@/lib/about";
+import type { WarWeek } from "@/db/schema";
+import { ABOUT_FALLBACK_THEME, MAINTAINERS_GUIDE_URL } from "@/lib/about";
 import { REPO_URL } from "@/lib/site";
 import { warWeekThemeStyle } from "@/lib/theme";
 import { cn } from "@/lib/utils";
+import { getCurrentWarWeek } from "@/queries/war-weeks";
 
 export const metadata: Metadata = {
   title: "About · JG War Week",
@@ -22,20 +21,30 @@ export const metadata: Metadata = {
     "The JG War Week app is where Jahnel Group runs War Week: setup, schedule, Teams, Competitions, points, the Finale, and every War Week since 2016.",
 };
 
+/** Never statically prerendered: it reads the current War Week (ticket 03). */
+export const dynamic = "force-dynamic";
+
 /**
  * The public About page (ticket 28): what War Week is, the problem, the
  * features and the history, for Jason first, then Organizers, then
- * Participants. Static on purpose: copy, stills and the Finale recording
- * only. It reads nothing from the database or the session, wears War Week
- * XI's theme from `ABOUT_THEME`, and is one of the pages an anonymous
- * visitor can open (`PUBLIC_PATHS` in `src/lib/access.ts`).
+ * Participants. Mostly static copy and stills, but it wears and links to
+ * the *current* War Week's Appearance Theme (ticket 03): the live one, else
+ * the next upcoming one, else the most recently completed one — the same
+ * resolution the root page uses (`getCurrentWarWeek`). With no War Week at
+ * all it falls back to `ABOUT_FALLBACK_THEME` and drops the "Open War
+ * Week" button so the page stays readable either way. It is one of the
+ * pages an anonymous visitor can open (`PUBLIC_PATHS` in
+ * `src/lib/access.ts`).
  * The entrance fade is tw-animate-css's `animate-in`, turned off with
  * `motion-reduce:animate-none` for visitors who asked for no motion.
  */
-export default function AboutPage() {
+export default async function AboutPage() {
+  const current = await getCurrentWarWeek();
+  const theme = current ?? ABOUT_FALLBACK_THEME;
+
   return (
     <ThemeRoot
-      style={warWeekThemeStyle(ABOUT_THEME)}
+      style={warWeekThemeStyle(theme)}
       className="bg-background text-foreground relative flex min-h-dvh flex-col overflow-hidden font-sans"
     >
       <div
@@ -69,7 +78,7 @@ export default function AboutPage() {
               with no code, and every War Week since 2016 is still here.
             </p>
             <div className="flex flex-wrap items-center gap-3">
-              <OpenCurrentEdition />
+              <OpenCurrentEdition current={current} />
               <a
                 href="#features"
                 className={buttonVariants({ size: "lg", variant: "outline" })}
@@ -78,7 +87,7 @@ export default function AboutPage() {
               </a>
             </div>
           </div>
-          <AboutFinaleDemo />
+          <AboutStandingsDemo />
         </section>
 
         <section className="flex flex-col gap-6">
@@ -119,6 +128,14 @@ export default function AboutPage() {
             </p>
           </div>
           <AboutFeatureGrid />
+          <div className="border-border bg-background/60 flex flex-col items-center gap-4 rounded-xl border p-6 sm:flex-row sm:justify-center sm:gap-10">
+            <AboutFinaleDemo />
+            <p className="text-foreground/75 max-w-sm text-sm leading-relaxed">
+              And at closing ceremonies, the Finale plays every Team&apos;s
+              Standings counting up into place on the projector, from last to
+              first.
+            </p>
+          </div>
           <p className="text-foreground/75 max-w-3xl leading-relaxed">
             Sign in and the JG War Week app finds you on the roster, so your
             Team is highlighted wherever it appears. Once you&apos;re signed in,{" "}
@@ -153,7 +170,7 @@ export default function AboutPage() {
             Ready when you are.
           </h2>
           <div className="flex flex-wrap items-center gap-3">
-            <OpenCurrentEdition />
+            <OpenCurrentEdition current={current} />
             <a
               href={MAINTAINERS_GUIDE_URL}
               target="_blank"
@@ -182,14 +199,31 @@ export default function AboutPage() {
   );
 }
 
-/** The page's one call to action, in the hero and at the end. */
-function OpenCurrentEdition() {
+/**
+ * The page's one call to action, in the hero and at the end: opens the
+ * current War Week (live, else next upcoming, else most recently
+ * completed). With no War Week at all there is nothing to open, so this
+ * renders a neutral, non-interactive stand-in instead of a live button.
+ */
+function OpenCurrentEdition({ current }: { current: WarWeek | undefined }) {
+  if (!current) {
+    return (
+      <span
+        className={cn(
+          buttonVariants({ size: "lg", variant: "outline" }),
+          "pointer-events-none opacity-60",
+        )}
+      >
+        No War Week yet
+      </span>
+    );
+  }
   return (
     <Link
-      href={CURRENT_EDITION.href}
+      href={`/${current.edition}`}
       className={cn(buttonVariants({ size: "lg" }), "gap-2")}
     >
-      Open War Week {CURRENT_EDITION.label}
+      Open War Week {current.edition.toUpperCase()}
       <ArrowRight aria-hidden className="size-4" />
     </Link>
   );

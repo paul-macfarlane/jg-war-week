@@ -88,14 +88,18 @@ export default async function AdminPointsPage() {
         >
           <h2 className="text-lg font-semibold">Current standings</h2>
           <div className="grid gap-6 xl:grid-cols-2">
-            {(standings.main === "team" || standings.team.length > 0) && (
+            {standings.main === "team" && (
               <div className="flex flex-col gap-2">
                 <h3 className="font-medium">{warWeek.teamLabel} standings</h3>
                 <TeamStandingsList rows={standings.team} />
               </div>
             )}
             <div className="flex flex-col gap-2">
-              <h3 className="font-medium">Individual leaderboard</h3>
+              <h3 className="font-medium">
+                {standings.main === "individual"
+                  ? "Standings"
+                  : "Individual leaderboard"}
+              </h3>
               <IndividualStandingsList rows={standings.individual} />
             </div>
           </div>

@@ -118,13 +118,22 @@ describe("defaultWinner", () => {
     expect(defaultWinner(standings)).toBe("Red");
   });
 
-  it("joins tied first places with ' & '", () => {
+  it("formats a tie of two shared first places as 'Tie: A & B'", () => {
     const standings: Standings = {
       main: "team",
       team: [team("Blue", 1), team("Red", 1), team("Green", 3)],
       individual: [],
     };
-    expect(defaultWinner(standings)).toBe("Blue & Red");
+    expect(defaultWinner(standings)).toBe("Tie: Blue & Red");
+  });
+
+  it("formats a tie of three shared first places as 'Tie: A & B & C'", () => {
+    const standings: Standings = {
+      main: "team",
+      team: [team("Blue", 1), team("Green", 1), team("Red", 1)],
+      individual: [],
+    };
+    expect(defaultWinner(standings)).toBe("Tie: Blue & Green & Red");
   });
 
   it("is first place in individual Standings in free-for-all", () => {
@@ -136,35 +145,61 @@ describe("defaultWinner", () => {
     expect(defaultWinner(standings)).toBe("Alice");
   });
 
-  it("is blank with no Standings", () => {
+  it("formats a tied first place in free-for-all the same way", () => {
+    const standings: Standings = {
+      main: "individual",
+      team: [],
+      individual: [person("Alice", 1), person("Bob", 1)],
+    };
+    expect(defaultWinner(standings)).toBe("Tie: Alice & Bob");
+  });
+
+  it("is blank when nobody has points", () => {
     expect(defaultWinner({ main: "team", team: [], individual: [] })).toBe("");
+  });
+
+  it("is blank when every Team is on 0 points (all share rank 1)", () => {
+    const standings: Standings = {
+      main: "team",
+      team: [
+        { ...team("Blue", 1), total: 0 },
+        { ...team("Red", 1), total: 0 },
+      ],
+      individual: [],
+    };
+    expect(defaultWinner(standings)).toBe("");
+  });
+
+  it("a unique rank 1 with a non-positive total still wins when others are lower (0 vs -3)", () => {
+    const standings: Standings = {
+      main: "team",
+      team: [
+        { ...team("Blue", 1), total: 0 },
+        { ...team("Red", 2), total: -3 },
+      ],
+      individual: [],
+    };
+    expect(defaultWinner(standings)).toBe("Blue");
   });
 });
 
 describe("parseClosingInput", () => {
-  it("trims the Winner and keeps one highlight per non-blank line", () => {
-    expect(
-      parseClosingInput({ winner: " Red ", highlights: "a\n\n b \n" }),
-    ).toEqual({ ok: true, value: { winner: "Red", highlights: ["a", "b"] } });
-  });
-
-  it("allows no Winner", () => {
-    expect(parseClosingInput({ winner: "  ", highlights: "" })).toEqual({
+  it("keeps one highlight per non-blank line", () => {
+    expect(parseClosingInput({ highlights: "a\n\n b \n" })).toEqual({
       ok: true,
-      value: { winner: null, highlights: [] },
+      value: { highlights: ["a", "b"] },
     });
   });
 
-  it("refuses an over-long Winner or highlight", () => {
-    expect(
-      parseClosingInput({ winner: "x".repeat(201), highlights: "" }),
-    ).toMatchObject({
-      ok: false,
-      error: "Winner must be at most 200 characters.",
+  it("allows no highlights", () => {
+    expect(parseClosingInput({ highlights: "" })).toEqual({
+      ok: true,
+      value: { highlights: [] },
     });
-    expect(
-      parseClosingInput({ winner: "Red", highlights: "y".repeat(501) }),
-    ).toMatchObject({
+  });
+
+  it("refuses an over-long highlight", () => {
+    expect(parseClosingInput({ highlights: "y".repeat(501) })).toMatchObject({
       ok: false,
       error: "Highlights must be at most 500 characters.",
     });
@@ -309,7 +344,7 @@ describe("lifecycle parsers given a malformed call", () => {
   it.each(MALFORMED)(
     "parseClosingInput returns an error for %s",
     (label, value) => {
-      // {} and undefined are a blank Winner and no highlights: valid.
+      // {} and undefined are no highlights: valid.
       if (label === "{}") return;
       expect(parseClosingInput(value as never)).toMatchObject({ ok: false });
     },
@@ -325,8 +360,7 @@ describe("lifecycle parsers given a malformed call", () => {
   );
 
   it.each<[string, Record<string, unknown>]>([
-    ["winner: 5", { winner: 5, highlights: "" }],
-    ["highlights: 5", { winner: "", highlights: 5 }],
+    ["highlights: 5", { highlights: 5 }],
   ])("parseClosingInput returns an error for %s", (_label, value) => {
     expect(parseClosingInput(value as never)).toMatchObject({ ok: false });
   });
@@ -334,12 +368,10 @@ describe("lifecycle parsers given a malformed call", () => {
 
 describe("lifecycle parsers' field errors", () => {
   it("names the refused End War Week field", () => {
-    expect(
-      parseClosingInput({ winner: "x".repeat(201), highlights: "" }),
-    ).toEqual({
+    expect(parseClosingInput({ highlights: "y".repeat(501) })).toEqual({
       ok: false,
-      error: "Winner must be at most 200 characters.",
-      fieldErrors: { winner: "Winner must be at most 200 characters." },
+      error: "Highlights must be at most 500 characters.",
+      fieldErrors: { highlights: "Highlights must be at most 500 characters." },
     });
   });
 
