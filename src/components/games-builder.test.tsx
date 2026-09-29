@@ -4,11 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { GameType } from "@/lib/enums";
 import type { GamesConfig } from "@/lib/games/config";
 
-import {
-  GamesBuilder,
-  bestOfForcesFixed,
-  placementPointsList,
-} from "./games-builder";
+import { GamesBuilder } from "./games-builder";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: () => {}, push: () => {} }),
@@ -52,29 +48,6 @@ function render(
     />,
   );
 }
-
-describe("placementPointsList", () => {
-  it("lists the Placement Points in order", () => {
-    expect(placementPointsList([3, 2, 1])).toBe("3, 2, 1");
-  });
-
-  it("says none set when there are none", () => {
-    expect(placementPointsList(null)).toBe("none set");
-    expect(placementPointsList([])).toBe("none set");
-  });
-});
-
-describe("bestOfForcesFixed", () => {
-  it("is false when Best of is off", () => {
-    expect(bestOfForcesFixed("off")).toBe(false);
-  });
-
-  it("is true for 3, 5 or 7", () => {
-    expect(bestOfForcesFixed("3")).toBe(true);
-    expect(bestOfForcesFixed("5")).toBe(true);
-    expect(bestOfForcesFixed("7")).toBe(true);
-  });
-});
 
 describe("GamesBuilder", () => {
   it("shows the Best of select only for head-to-head", () => {

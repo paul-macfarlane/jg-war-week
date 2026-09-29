@@ -43,6 +43,8 @@ import {
   bestOfLabel,
   gameTypeLabel,
 } from "@/lib/games/config";
+import { enrollmentUnavailable } from "@/lib/games/enroll-rule";
+import { placementPointsList } from "@/lib/games/view";
 import { fromEasternClock, toEasternClock } from "@/lib/schedule";
 import type { MutationResult } from "@/mutations/types";
 
@@ -138,21 +140,6 @@ function rawSettingsOf(gameType: GameType, fields: SettingsFields) {
 }
 
 /**
- * The leaderboard's top places, listed for the Close confirm: "3, 2, 1", or
- * a Competition with none set.
- */
-export function placementPointsList(placementPoints: number[] | null): string {
-  return placementPoints && placementPoints.length > 0
-    ? placementPoints.join(", ")
-    : "none set";
-}
-
-/** Whether the Best of has a fixed list forced on it (Q25). */
-export function bestOfForcesFixed(bestOf: SettingsFields["bestOf"]): boolean {
-  return bestOf !== "off";
-}
-
-/**
  * The `games` Competition's setup: its Game Type (fixed) and settings, its
  * Entrants (open or a fixed list, R3 decision 11), the logging close time,
  * self-enrollment (decision 12) and Close / Reopen (decision 1).
@@ -236,9 +223,22 @@ export function GamesBuilder({
     (t) => ({ id: t.id, label: t.name, detail: t.team ?? undefined }),
   );
 
-  const fixedForced = bestOfForcesFixed(fields.bestOf);
+  // A Best of is played between a fixed list's two Entrants.
+  const fixedForced = fields.bestOf !== "off";
   const entrantsFixed = !fields.entrantsOpen;
-  const showsEnroll = entrantsFixed && fields.bestOf === "off";
+  const showsEnroll =
+    enrollmentUnavailable({
+      format: "games",
+      entrantsOpen: fields.entrantsOpen,
+      gameType,
+      gameConfig:
+        gameType === "head-to-head"
+          ? {
+              drawsAllowed: fields.drawsAllowed,
+              bestOf: fixedForced ? (Number(fields.bestOf) as 3 | 5 | 7) : null,
+            }
+          : null,
+    }) === null;
   const locked = competition.closed;
 
   async function saveEntrants() {
@@ -307,9 +307,8 @@ export function GamesBuilder({
                     setFields((current) => ({
                       ...current,
                       bestOf,
-                      entrantsOpen: bestOfForcesFixed(bestOf)
-                        ? false
-                        : current.entrantsOpen,
+                      entrantsOpen:
+                        bestOf !== "off" ? false : current.entrantsOpen,
                     }));
                   }}
                 />

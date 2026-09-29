@@ -5,6 +5,7 @@ import {
   gameSummary,
   isMine,
   leaderboardColumns,
+  placementPointsList,
   recordLabel,
 } from "@/lib/games/view";
 
@@ -130,5 +131,16 @@ describe("isMine", () => {
     expect(isMine([{ id: "t1" }], { participantId: "p1", teamId: null })).toBe(
       false,
     );
+  });
+});
+
+describe("placementPointsList", () => {
+  it("lists the Placement Points in order", () => {
+    expect(placementPointsList([3, 2, 1])).toBe("3, 2, 1");
+  });
+
+  it("says none set when there are none", () => {
+    expect(placementPointsList(null)).toBe("none set");
+    expect(placementPointsList([])).toBe("none set");
   });
 });

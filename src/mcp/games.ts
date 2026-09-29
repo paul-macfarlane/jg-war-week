@@ -6,6 +6,7 @@ import type {
   RankedConfig,
 } from "@/lib/games/config";
 import { gameSummary } from "@/lib/games/view";
+import { notFoundMessage } from "@/mcp/not-found";
 import type { GamesView, GamesViewRow } from "@/queries/games";
 
 /** The found Competition's basic facts, before deciding whether to load its Games. */
@@ -95,7 +96,7 @@ export function toGamesResult(
   if (!found) {
     return {
       found: false,
-      message: `No Competition named "${name}" found for the current War Week. Call get_current_war_week or ask about its Standings.`,
+      message: notFoundMessage(name),
     };
   }
 
@@ -104,7 +105,7 @@ export function toGamesResult(
       // Format says games but the Competition is gone by the time it loaded.
       return {
         found: false,
-        message: `No Competition named "${name}" found for the current War Week. Call get_current_war_week or ask about its Standings.`,
+        message: notFoundMessage(name),
       };
     }
     return {

@@ -5,7 +5,6 @@ import { notFound } from "next/navigation";
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { GamesBuilder } from "@/components/games-builder";
 import { getBracketEntrants } from "@/queries/brackets";
-import { getEnrollFacts } from "@/queries/enrollment";
 import { getGamesView } from "@/queries/games";
 import { getPointsEntryFormOptions } from "@/queries/points-entries";
 
@@ -25,11 +24,10 @@ export default async function GamesBuilderPage({
     return <AdminRefused warWeek={warWeek} email={email} />;
   }
 
-  const [view, options, entrants, enrollFacts] = await Promise.all([
+  const [view, options, entrants] = await Promise.all([
     getGamesView(id, email),
     getPointsEntryFormOptions(warWeek),
     getBracketEntrants(id),
-    getEnrollFacts(id, email),
   ]);
   if (!view || view.competition.warWeekId !== warWeek.id) notFound();
   const { competition } = view;
@@ -70,9 +68,9 @@ export default async function GamesBuilderPage({
           teams={options.teams}
           participants={options.participants}
           enroll={{
-            selfEnroll: enrollFacts.enroll.selfEnroll,
-            entrantLimit: enrollFacts.enroll.entrantLimit,
-            enrollClosesAt: enrollFacts.enroll.enrollClosesAt,
+            selfEnroll: competition.selfEnroll,
+            entrantLimit: competition.entrantLimit,
+            enrollClosesAt: competition.enrollClosesAt,
           }}
         />
       </section>

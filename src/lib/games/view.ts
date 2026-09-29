@@ -9,9 +9,11 @@ import type { LeaderboardRow } from "@/lib/games/leaderboard";
 export type LeaderboardColumn = { key: string; label: string };
 
 /**
- * The leaderboard's columns per Q20. Takes `config` (not just `gameType`)
- * because best-score's column label names its counted value ("Best" or
- * "Total") and unit.
+ * The leaderboard's columns per Game Type: head-to-head shows Played and
+ * W/L/D; best-score its counted value then Played; ranked Finish Points,
+ * Played and Wins. Takes `config` (not just `gameType`) because
+ * best-score's column label names its counted value ("Best" or "Total")
+ * and unit.
  */
 export function leaderboardColumns<T extends GameType>(
   gameType: T,
@@ -103,4 +105,14 @@ export function isMine(
       p.id === linked.participantId ||
       (linked.teamId !== null && p.id === linked.teamId),
   );
+}
+
+/**
+ * The leaderboard's top places, listed for the Close confirm: "3, 2, 1", or
+ * "none set" for a Competition with none.
+ */
+export function placementPointsList(placementPoints: number[] | null): string {
+  return placementPoints && placementPoints.length > 0
+    ? placementPoints.join(", ")
+    : "none set";
 }

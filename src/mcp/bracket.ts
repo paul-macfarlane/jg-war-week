@@ -1,6 +1,7 @@
 import type { Competition } from "@/db/schema";
 import { isBye } from "@/lib/bracket/formats";
 import { groupRounds, heatName } from "@/lib/bracket/view";
+import { notFoundMessage } from "@/mcp/not-found";
 import type { BracketView } from "@/queries/brackets";
 
 /** `HH:MM:SS` (or `HH:MM`) as `HH:MM`. */
@@ -98,7 +99,7 @@ export function toBracketResult(
   if (!view) {
     return {
       found: false,
-      message: `No Competition named "${name}" found for the current War Week. Call get_current_war_week or ask about its Standings.`,
+      message: notFoundMessage(name),
     };
   }
 
