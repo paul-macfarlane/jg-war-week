@@ -424,6 +424,16 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   and its page keeps showing the leaderboard and log in the Archive.
 - Games aren't seeded (like Squads and reporters); every Game comes from
   logging, in the app or through the smoke and e2e flows.
+- A new `games` Competition starts **open to everyone**: any linked
+  Participant (or their Team, in team scoring) may log without enrolling,
+  until the Host switches it to a fixed list.
+- A Games setting that would change the meaning of Games already logged is
+  refused: switching to a fixed list while a player who's logged a Game
+  isn't on it, turning Draws off while a logged Game is a draw, or turning
+  Best of on when the logged Games don't fit it (more than two Entrants, or
+  a decision already past what the chosen length allows).
+- A Competition with any Game logged can't be deleted; delete its Games
+  first, or leave the Competition in place.
 
 ## Enrollment rules
 
@@ -507,9 +517,10 @@ same rows with the same values (only `updated_at` moves).
   Organizer list when missing, ignoring case. A load only ever inserts
   them: it never removes an Organizer, even with `--reset`.
 - **Squads**, reporters and Games aren't in seeds, and neither is a
-  Competition's self-report setting, its Games settings, or a `games`
-  Competition's Entrants. A reload that removes or moves a Participant
-  leaves their Squads to the Organizer.
+  Competition's self-report setting, a `games` Competition's Entrants or its
+  logging close time, or the enrollment switch, Entrant limit and close
+  time. A reload that removes or moves a Participant leaves their Squads to
+  the Organizer.
 - **Hosts** aren't in seeds. A plain reload never touches the Hosts of a
   Competition the seed keeps; `--reset` deletes the War Week's
   Competitions, and their Hosts go with them.
@@ -524,8 +535,11 @@ same rows with the same values (only `updated_at` moves).
     create in the app have no key and are never touched by a load. Adding a
     new keyed record to a seed and reloading adds just that record.
   - A Competition's `format` is applied only on insert, like `bracketConfig`
-    (its Heats settings): a reload never turns an Organizer's Bracket back
-    into `points`, changes its Format, or undoes its Heats settings.
+    (its Heats settings), `gameType`, `gameConfig` and `entrantsOpen`: a
+    reload never turns an Organizer's Bracket back into `points`, changes
+    its Format, undoes its Heats settings, or touches a `games`
+    Competition's Game Type, Games settings, or open-to-everyone switch
+    once it exists.
 
 **Setup in the UI.** Organizers can also edit setup in `/admin/setup`
 (War Week settings, the Appearance Theme, Days, Teams, the roster,
