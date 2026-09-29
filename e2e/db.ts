@@ -97,16 +97,20 @@ export async function xiTeamPointsBreakdown(
 ): Promise<{ competition: string; points: number; when: Date }[]> {
   const teamId = await xiTeamId(teamName);
   return runQuery<{ competition: string; points: number; when: Date }>(
-    `select c.name as competition, pe.points::float as points, pe.entered_at as "when"
-     from points_entry pe join competition c on c.id = pe.competition_id
-     where pe.team_id = $1
-     union all
-     select c.name as competition, pe.points::float as points, pe.entered_at as "when"
-     from points_entry pe
-     join competition c on c.id = pe.competition_id
-     join participant p on p.id = pe.participant_id
-     where c.counts_toward_team and p.team_id = $1
-     order by "when" desc`,
+    `select competition, points, "when" from (
+       select c.name as competition, pe.points::float as points,
+         pe.entered_at as "when", pe.id::text collate "C" as id
+       from points_entry pe join competition c on c.id = pe.competition_id
+       where pe.team_id = $1
+       union all
+       select c.name as competition, pe.points::float as points,
+         pe.entered_at as "when", pe.id::text collate "C" as id
+       from points_entry pe
+       join competition c on c.id = pe.competition_id
+       join participant p on p.id = pe.participant_id
+       where c.counts_toward_team and p.team_id = $1
+     ) rows
+     order by "when" desc, id asc`,
     [teamId],
   );
 }
@@ -124,7 +128,7 @@ export async function xiParticipantPointsBreakdown(
     `select c.name as competition, pe.points::float as points, pe.entered_at as "when"
      from points_entry pe join competition c on c.id = pe.competition_id
      where pe.participant_id = $1 and c.scoring = 'individual'
-     order by pe.entered_at desc`,
+     order by pe.entered_at desc, pe.id::text collate "C" asc`,
     [participantId],
   );
 }

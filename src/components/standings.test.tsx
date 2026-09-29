@@ -95,7 +95,7 @@ describe("LeaderboardStandings", () => {
       />,
     );
 
-    expect(html).toContain('aria-label="Zion points breakdown"');
-    expect(html).toContain('aria-label="Neo points breakdown"');
+    expect(html).toMatch(/Zion[\s\S]*?show points breakdown/);
+    expect(html).toMatch(/Neo[\s\S]*?show points breakdown/);
   });
 });

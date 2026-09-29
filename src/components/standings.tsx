@@ -8,7 +8,10 @@ import {
 import { YouTag } from "@/components/you";
 import { type RowFinale, countUpTotal } from "@/lib/finale";
 import { formatPoints } from "@/lib/points";
-import type { PointsBreakdownRow } from "@/lib/points-breakdown";
+import type {
+  PointsBreakdown,
+  PointsBreakdownRow,
+} from "@/lib/points-breakdown";
 import { formatLedgerTime } from "@/lib/points-entry";
 import type {
   IndividualStanding,
@@ -106,11 +109,9 @@ export function TeamStandingsList({
             {rowBreakdown ? (
               <Collapsible>
                 <Card size="sm" className="flex flex-col gap-2 px-4 py-3">
-                  <CollapsibleTrigger
-                    className="flex w-full items-center gap-3 text-left"
-                    aria-label={`${row.name} points breakdown`}
-                  >
+                  <CollapsibleTrigger className="flex w-full items-center gap-3 text-left">
                     {content}
+                    <span className="sr-only">, show points breakdown</span>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <PointsBreakdownList rows={rowBreakdown} />
@@ -195,11 +196,9 @@ export function IndividualStandingsList({
               {rowBreakdown ? (
                 <Collapsible>
                   <div className="flex flex-col gap-2">
-                    <CollapsibleTrigger
-                      className="flex w-full items-center gap-3 text-left"
-                      aria-label={`${row.name} points breakdown`}
-                    >
+                    <CollapsibleTrigger className="flex w-full items-center gap-3 text-left">
                       {content}
+                      <span className="sr-only">, show points breakdown</span>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <PointsBreakdownList rows={rowBreakdown} />
@@ -229,10 +228,7 @@ export function HomeStandings({
   individualLimit: number;
   /** The Appearance Theme primary color, for Avatars with no Team. */
   primaryColor: string;
-  breakdown?: {
-    byTeam: Map<string, PointsBreakdownRow[]>;
-    byParticipant: Map<string, PointsBreakdownRow[]>;
-  };
+  breakdown?: PointsBreakdown;
 }) {
   return standings.main === "team" ? (
     <TeamStandingsList rows={standings.team} breakdown={breakdown?.byTeam} />
@@ -256,10 +252,7 @@ export function LeaderboardStandings({
   teamLabel: string;
   /** The Appearance Theme primary color, for Avatars with no Team. */
   primaryColor: string;
-  breakdown?: {
-    byTeam: Map<string, PointsBreakdownRow[]>;
-    byParticipant: Map<string, PointsBreakdownRow[]>;
-  };
+  breakdown?: PointsBreakdown;
 }) {
   const teamSection = (
     <StandingsSection key="team" title={`${teamLabel} standings`}>

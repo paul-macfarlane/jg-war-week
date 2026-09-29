@@ -95,7 +95,11 @@ export default async function AdminPointsPage() {
               </div>
             )}
             <div className="flex flex-col gap-2">
-              <h3 className="font-medium">Individual leaderboard</h3>
+              <h3 className="font-medium">
+                {standings.main === "individual"
+                  ? "Standings"
+                  : "Individual leaderboard"}
+              </h3>
               <IndividualStandingsList rows={standings.individual} />
             </div>
           </div>
