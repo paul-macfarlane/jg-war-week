@@ -27,7 +27,7 @@ const PAGES: [path: string, purpose: string][] = [
   ["/install", "How to install JG War Week as an app."],
   [
     "/admin",
-    "For Organizers and Hosts: Points Entry, Bracket builder and results (with each Heat's time and place), Standings, Announcements, Awards, and Setup (War Week settings, Appearance Theme, Days).",
+    "For Organizers and Hosts: Points Entry, Bracket builder and results (with each Heat's time and place), Games settings and log, Standings, Announcements, Awards, and Setup (War Week settings, Appearance Theme, Days).",
   ],
   ["/sign-in", "Google sign-in with a @jahnelgroup.com account."],
 ];

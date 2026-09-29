@@ -5,6 +5,7 @@ import { toAnnouncementsResult } from "@/mcp/announcements";
 import { toAwardsResult } from "@/mcp/awards";
 import { toBracketResult, toGamesBracketResult } from "@/mcp/bracket";
 import { toFaqResult } from "@/mcp/faq";
+import { toGamesResult } from "@/mcp/games";
 import { toHistoryListResult, toHistoryResult } from "@/mcp/history";
 import { toLeaderboardResult } from "@/mcp/leaderboard";
 import { toScheduleResult } from "@/mcp/schedule";
@@ -16,6 +17,7 @@ import { getAwards } from "@/queries/awards";
 import { getBracket } from "@/queries/brackets";
 import { getCompetitionByName } from "@/queries/competitions";
 import { getFaqItems } from "@/queries/faq";
+import { getGamesView } from "@/queries/games";
 import { getSchedule } from "@/queries/schedule";
 import { getSetupDays } from "@/queries/setup";
 import { getStandings } from "@/queries/standings";
@@ -237,6 +239,40 @@ const handler = createMcpHandler(
           getSetupDays(warWeek),
         ]);
         const result = toBracketResult(view, days, competition);
+
+        return {
+          content: [{ type: "text", text: JSON.stringify(result) }],
+        };
+      },
+    );
+
+    server.registerTool(
+      "get_games",
+      {
+        ...MCP_TOOLS.get_games,
+        inputSchema: z.object({
+          competition: z
+            .string()
+            .trim()
+            .min(1)
+            .describe("The Competition's name, in the current War Week."),
+        }),
+      },
+      async ({ competition }) => {
+        const warWeek = await getCurrentWarWeek();
+        if (!warWeek) {
+          return {
+            content: [
+              { type: "text", text: JSON.stringify({ warWeek: null }) },
+            ],
+          };
+        }
+        const found = await getCompetitionByName(warWeek, competition);
+        const view =
+          found?.format === "games"
+            ? await getGamesView(found.id, null)
+            : undefined;
+        const result = toGamesResult(found, view ?? undefined, competition);
 
         return {
           content: [{ type: "text", text: JSON.stringify(result) }],
