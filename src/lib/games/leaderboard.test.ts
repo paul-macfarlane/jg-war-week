@@ -133,6 +133,64 @@ describe("rankGames best-score", () => {
     expect(sam.rank).toBe(1);
     expect(ashley.rank).toBe(2);
   });
+
+  it("ranks best, lower is better", () => {
+    const config: BestScoreConfig = {
+      count: "best",
+      betterIs: "lower",
+      unit: "seconds",
+    };
+    const games: GameFact[] = [
+      score("ashley", 30),
+      score("ashley", 18),
+      score("sam", 20),
+    ];
+    const rows = rankGames("best-score", config, games, null);
+    expect(rows.map((r) => ({ id: r.id, best: r.best, rank: r.rank }))).toEqual(
+      [
+        { id: "ashley", best: 18, rank: 1 },
+        { id: "sam", best: 20, rank: 2 },
+      ],
+    );
+  });
+
+  it("ranks total, higher is better", () => {
+    const config: BestScoreConfig = {
+      count: "total",
+      betterIs: "higher",
+      unit: "trips",
+    };
+    const games: GameFact[] = [
+      score("ashley", 10),
+      score("ashley", 5),
+      score("sam", 12),
+    ];
+    const rows = rankGames("best-score", config, games, null);
+    expect(
+      rows.map((r) => ({ id: r.id, total: r.total, rank: r.rank })),
+    ).toEqual([
+      { id: "ashley", total: 15, rank: 1 },
+      { id: "sam", total: 12, rank: 2 },
+    ]);
+  });
+
+  it("shares the higher rank for a best-score tie", () => {
+    const config: BestScoreConfig = {
+      count: "best",
+      betterIs: "higher",
+      unit: "",
+    };
+    const games: GameFact[] = [
+      score("ashley", 25),
+      score("sam", 25),
+      score("kim", 10),
+    ];
+    const rows = rankGames("best-score", config, games, null);
+    const rankOf = (id: string) => rows.find((r) => r.id === id)!.rank;
+    expect(rankOf("ashley")).toBe(1);
+    expect(rankOf("sam")).toBe(1);
+    expect(rankOf("kim")).toBe(3);
+  });
 });
 
 describe("rankGames ranked", () => {
