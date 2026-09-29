@@ -10,15 +10,15 @@ import {
   type BracketViewEntrant,
   EntrantMark,
 } from "@/components/entrant-mark";
+import {
+  ResponsiveSheetDialogDescription,
+  ResponsiveSheetDialogFooter,
+  ResponsiveSheetDialogHeader,
+  ResponsiveSheetDialogTitle,
+} from "@/components/responsive-sheet-dialog";
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { resetByResult } from "@/lib/bracket/formats";
 import type { Bracket, Heat, HeatResult } from "@/lib/bracket/types";
@@ -105,7 +105,7 @@ function useSaveHeatResult(
   }
 
   const saveButton = (
-    <SheetFooter>
+    <ResponsiveSheetDialogFooter>
       <Button
         type="button"
         size="lg"
@@ -115,7 +115,7 @@ function useSaveHeatResult(
       >
         {pending ? "Saving…" : "Save Heat Result"}
       </Button>
-    </SheetFooter>
+    </ResponsiveSheetDialogFooter>
   );
   const confirm = (
     <ConfirmDialog
@@ -230,12 +230,12 @@ export function WinnerForm(props: HeatResultFormProps) {
 
   return (
     <>
-      <SheetHeader>
-        <SheetTitle>{name}</SheetTitle>
-        <SheetDescription>
+      <ResponsiveSheetDialogHeader>
+        <ResponsiveSheetDialogTitle>{name}</ResponsiveSheetDialogTitle>
+        <ResponsiveSheetDialogDescription>
           Tap the winner. Scores are optional.
-        </SheetDescription>
-      </SheetHeader>
+        </ResponsiveSheetDialogDescription>
+      </ResponsiveSheetDialogHeader>
       <div className="flex flex-col gap-4 px-4">
         <div
           role="group"
@@ -342,13 +342,13 @@ export function FinishingOrderForm(props: HeatResultFormProps) {
 
   return (
     <>
-      <SheetHeader>
-        <SheetTitle>{name}</SheetTitle>
-        <SheetDescription>
+      <ResponsiveSheetDialogHeader>
+        <ResponsiveSheetDialogTitle>{name}</ResponsiveSheetDialogTitle>
+        <ResponsiveSheetDialogDescription>
           Tap the Entrants in finishing order, 1st first. Forfeiters finish
           last. Scores are optional.
-        </SheetDescription>
-      </SheetHeader>
+        </ResponsiveSheetDialogDescription>
+      </ResponsiveSheetDialogHeader>
       <div className="flex flex-col gap-4 px-4">
         <div
           role="group"

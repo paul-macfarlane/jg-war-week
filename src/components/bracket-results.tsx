@@ -20,6 +20,7 @@ import {
   type HeatResultFormProps,
 } from "@/components/heat-result-form";
 import { HeatScheduleForm } from "@/components/heat-schedule-form";
+import { ResponsiveSheetDialog } from "@/components/responsive-sheet-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -77,7 +78,7 @@ type BracketResultsProps = {
 
 /**
  * Runs a Bracket on a phone: Heats by Round as Cards, a tap opens the Heat
- * Result Sheet, "Time & place" opens the Heat's time Sheet; the champion
+ * Result Sheet (a centered Dialog on large screens), "Time & place" opens the Heat's time Sheet; the champion
  * and Finalize / Un-finalize sit on top. Refreshes live while no Sheet is
  * open.
  */
@@ -296,27 +297,25 @@ export function BracketResultsView({
         </section>
       ))}
 
-      <Sheet
+      <ResponsiveSheetDialog
         open={resultHeat !== undefined}
         onOpenChange={(open) => {
           if (!open) close();
         }}
       >
-        <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto">
-          {resultHeat && (
-            <HeatResultSheet
-              key={resultHeat.id}
-              competitionId={competitionId}
-              heat={resultHeat}
-              bracket={bracket}
-              entrantsById={entrantsById}
-              scoring={scoring}
-              primaryColor={primaryColor}
-              onSaved={close}
-            />
-          )}
-        </SheetContent>
-      </Sheet>
+        {resultHeat && (
+          <HeatResultSheet
+            key={resultHeat.id}
+            competitionId={competitionId}
+            heat={resultHeat}
+            bracket={bracket}
+            entrantsById={entrantsById}
+            scoring={scoring}
+            primaryColor={primaryColor}
+            onSaved={close}
+          />
+        )}
+      </ResponsiveSheetDialog>
 
       <Sheet
         open={scheduleHeat !== undefined}

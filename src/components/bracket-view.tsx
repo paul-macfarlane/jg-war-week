@@ -10,10 +10,10 @@ import {
   EntrantMark,
 } from "@/components/entrant-mark";
 import { HeatResultForm } from "@/components/heat-result-form";
+import { ResponsiveSheetDialog } from "@/components/responsive-sheet-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useYou } from "@/components/you";
 import { isBye } from "@/lib/bracket/formats";
 import type { Bracket, Heat } from "@/lib/bracket/types";
@@ -271,8 +271,8 @@ export type BracketViewSelfReport = {
  * The phone Bracket view: a vertical list of Heats grouped by Round, with
  * (single elimination) "Winner → …" chips, the champion and Your next Heat
  * pinned on top, and Your Entrant highlighted under the You rules. Owns the
- * report Sheet, and refreshes live while it's closed (a Bracket not drawn
- * yet too, so the draw appears).
+ * report Sheet (a centered Dialog on large screens), and refreshes live
+ * while it's closed (a Bracket not drawn yet too, so the draw appears).
  */
 export function BracketView({
   competitionId,
@@ -444,31 +444,29 @@ export function BracketView({
         </section>
       ))}
 
-      <Sheet
+      <ResponsiveSheetDialog
         open={reportHeat !== undefined}
         onOpenChange={(open) => {
           if (!open) close();
         }}
       >
-        <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto">
-          {reportHeat && (
-            <HeatResultForm
-              key={reportHeat.id}
-              heat={reportHeat}
-              bracket={bracket}
-              entrantsById={entrantsById}
-              scoring={scoring}
-              primaryColor={primaryColor}
-              submit={(result) =>
-                reportHeatResult(competitionId, reportHeat.id, result)
-              }
-              confirmResets={false}
-              successToast={() => "Result reported."}
-              onSaved={close}
-            />
-          )}
-        </SheetContent>
-      </Sheet>
+        {reportHeat && (
+          <HeatResultForm
+            key={reportHeat.id}
+            heat={reportHeat}
+            bracket={bracket}
+            entrantsById={entrantsById}
+            scoring={scoring}
+            primaryColor={primaryColor}
+            submit={(result) =>
+              reportHeatResult(competitionId, reportHeat.id, result)
+            }
+            confirmResets={false}
+            successToast={() => "Result reported."}
+            onSaved={close}
+          />
+        )}
+      </ResponsiveSheetDialog>
 
       {reportHeat === undefined && <AutoRefresh />}
     </section>
