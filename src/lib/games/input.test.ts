@@ -5,7 +5,11 @@ import type {
   HeadToHeadConfig,
   RankedConfig,
 } from "@/lib/games/config";
-import { parseGameInput, parseGamesSettingsInput } from "@/lib/games/input";
+import {
+  parseGameInput,
+  parseGamesSettingsInput,
+  postedGamePlayerIds,
+} from "@/lib/games/input";
 
 const A = "11111111-1111-4111-8111-111111111111";
 const B = "22222222-2222-4222-8222-222222222222";
@@ -273,5 +277,19 @@ describe("parseGamesSettingsInput", () => {
     const result = parseGamesSettingsInput({ gameType: "not-a-type" });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toBe("Choose a Game Type.");
+  });
+});
+
+describe("postedGamePlayerIds", () => {
+  it("reads the player ids each Game Type's form posts, ignoring anything else", () => {
+    expect(
+      postedGamePlayerIds({ playerA: "a", playerB: "b", outcome: "a" }),
+    ).toEqual(["a", "b"]);
+    expect(postedGamePlayerIds({ player: "p", score: 4 })).toEqual(["p"]);
+    expect(
+      postedGamePlayerIds({ order: [{ id: "x", place: 1 }, { id: "y" }, 3] }),
+    ).toEqual(["x", "y"]);
+    expect(postedGamePlayerIds("junk")).toEqual([]);
+    expect(postedGamePlayerIds({ playerA: 7, player: "" })).toEqual([]);
   });
 });

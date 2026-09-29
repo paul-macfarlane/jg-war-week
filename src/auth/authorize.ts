@@ -7,10 +7,14 @@ import {
   type WarWeekAction,
   can,
 } from "@/lib/access";
+import type { GameType } from "@/lib/enums";
+import type { GamesConfig } from "@/lib/games/config";
 import { SQUAD_MISSING } from "@/lib/games/enroll-rule";
+import { GAME_MISSING } from "@/lib/games/log-rule";
 import { isUuid } from "@/lib/uuid";
 import type { MutationContext } from "@/mutations/types";
 import { type EnrollFacts, getEnrollFacts } from "@/queries/enrollment";
+import { NOT_GAMES, getGameLogFacts } from "@/queries/games";
 import {
   type HeatReportFacts,
   getHeatReportFacts,
@@ -207,6 +211,69 @@ export async function authorizeEnroll(
     warWeek: target.warWeek,
     ctx: { warWeekId: target.warWeek.id, actorEmail: actor.email },
     linked: facts.linked,
+  };
+}
+
+/**
+ * The authorize step for logging, editing and deleting a Game (ADR 0006),
+ * in ADR 0003's order: authenticate; the ids shaped like row ids; load the
+ * Competition and its War Week; load the Game facts for the actor's email
+ * (whether they run this Competition, account linking, never the pick) with
+ * the posted player ids (`postedGamePlayerIds`; none for a delete); run
+ * `can`, which binds Organizers and Hosts too when closed. Returns the
+ * Competition's Game Type and config, which the caller parses its input
+ * with only after this. Never throws on a refusal.
+ */
+export async function authorizeGameWrite(
+  action: "games.log" | "games.edit" | "games.delete",
+  competitionId: unknown,
+  gameId: unknown,
+  playerIds: string[] = [],
+): Promise<
+  | {
+      ok: true;
+      actor: NonNullable<Actor>;
+      warWeek: TargetWarWeek;
+      ctx: MutationContext;
+      competition: { gameType: GameType; config: GamesConfig };
+    }
+  | Refused
+> {
+  const actor = await getActor();
+  if (!actor) return { ok: false, error: SIGN_IN_REFUSAL };
+  const [competitionNotFound, load] = TARGETS.competition;
+  if (!isUuid(competitionId)) return { ok: false, error: competitionNotFound };
+  const isLog = action === "games.log";
+  if (!isLog && !isUuid(gameId)) return { ok: false, error: GAME_MISSING };
+  const target = await load(competitionId);
+  if (!target) return { ok: false, error: competitionNotFound };
+
+  const facts = await getGameLogFacts(
+    competitionId,
+    isLog ? null : (gameId as string),
+    actor.email,
+    { playerIds: action === "games.delete" ? [] : playerIds },
+  );
+  if (!facts.competition) return { ok: false, error: NOT_GAMES };
+  const refusal = can(actor, action, {
+    warWeekId: target.warWeek.id,
+    competitionId: target.competitionId,
+    gameLog: facts.gameLog,
+  });
+  if (refusal) return { ok: false, error: refusal };
+  // A Host or Organizer passes the rule before the Game is looked up.
+  if (facts.gameLog.game === "missing") {
+    return { ok: false, error: GAME_MISSING };
+  }
+  return {
+    ok: true,
+    actor,
+    warWeek: target.warWeek,
+    ctx: { warWeekId: target.warWeek.id, actorEmail: actor.email },
+    competition: {
+      gameType: facts.competition.gameType,
+      config: facts.competition.config,
+    },
   };
 }
 

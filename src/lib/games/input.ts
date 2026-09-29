@@ -330,3 +330,24 @@ export function parseGamesSettingsInput(
     },
   };
 }
+
+/**
+ * The player ids a Game request posts, read before the input is parsed so
+ * the authorize step can check the posted player set (like
+ * `postedCompetitionId`): head-to-head's `playerA` and `playerB`,
+ * best-score's `player`, ranked's `order[].id`. Anything else is ignored;
+ * the parser owns the shape.
+ */
+export function postedGamePlayerIds(input: unknown): string[] {
+  if (typeof input !== "object" || input === null) return [];
+  const raw = input as Record<string, unknown>;
+  const ids: unknown[] = [raw.playerA, raw.playerB, raw.player];
+  if (Array.isArray(raw.order)) {
+    for (const entry of raw.order) {
+      if (typeof entry === "object" && entry !== null) {
+        ids.push((entry as { id?: unknown }).id);
+      }
+    }
+  }
+  return ids.filter((id): id is string => typeof id === "string" && id !== "");
+}

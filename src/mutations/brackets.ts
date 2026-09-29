@@ -69,7 +69,7 @@ export const GAMES_KEEP_FORMAT =
 /** A closed `games` Competition's Entrants can't change. */
 export const GAMES_CLOSED = "Reopen the Competition first.";
 const NO_SQUADS_IN_GAMES = "Squads aren't entered in a Games Competition.";
-const BEST_OF_NEEDS_TWO = "A Best of needs exactly 2 Entrants.";
+export const BEST_OF_NEEDS_TWO = "A Best of needs exactly 2 Entrants.";
 /** The note on every Points Entry a finalized Bracket generates. */
 export const FROM_BRACKET_NOTE = "From bracket";
 
