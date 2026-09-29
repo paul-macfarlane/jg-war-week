@@ -162,7 +162,7 @@ test("r1 10 expanding a Team or Participant row on the leaderboard shows its Poi
 
   // Team row: Red.
   const teamTrigger = page.getByRole("button", {
-    name: "Red points breakdown",
+    name: /\bRed\b.*points breakdown/,
   });
   const teamTotalText = await teamTrigger
     .locator("span.tabular-nums")
@@ -206,8 +206,11 @@ test("r1 10 expanding a Team or Participant row on the leaderboard shows its Poi
   await expect(teamPanel.locator("li").first()).toBeVisible();
 
   // Individual row: Anthony Conway (untouched by any Bracket flow).
+  // The team name is concatenated straight after the Participant's name
+  // with no separator ("Anthony ConwayRed"), so the match can't require a
+  // word boundary right after "Conway".
   const participantTrigger = page.getByRole("button", {
-    name: "Anthony Conway points breakdown",
+    name: /\bAnthony Conway.*points breakdown/,
   });
   const participantTotalText = await participantTrigger
     .locator("span.tabular-nums")
@@ -250,9 +253,9 @@ test("r1 05 the End War Week dialog shows the computed Winner read-only", async 
 
   const winner = dialog.locator("#end-winner");
   await expect(winner).toBeVisible();
-  expect(await winner.evaluate((el) => el.tagName)).not.toBe("INPUT");
-  expect(await winner.evaluate((el) => el.tagName)).not.toBe("TEXTAREA");
-  const winnerText = (await winner.innerText()).trim();
+  await expect(winner).toHaveAttribute("readonly", "");
+  expect(await winner.getAttribute("name")).toBeNull();
+  const winnerText = (await winner.inputValue()).trim();
   expect(winnerText.length).toBeGreaterThan(0);
   await page.screenshot({
     path: testInfo.outputPath("end-war-week-dialog.png"),
