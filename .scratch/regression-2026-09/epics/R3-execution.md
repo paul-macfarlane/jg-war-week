@@ -631,3 +631,58 @@ export the `.env.example` values first (`set -a; . ./.env.example; set +a`).
   Review-carried item: the Game form resets when the viewport crosses the Sheet/Dialog breakpoint (`ResponsiveSheetDialog` remounts), found by D4a.
 - 2026-09-29: `in-progress → ai-review` (epic and tickets 17, 15).
 
+
+## [AI CODE REVIEW]
+
+2026-09-29. There were two fresh Opus reviewers, one per axis. Each was given only the diff `5067e46..f0c1fc9`, the contract, this record and the approved deviations. The orchestrator ruled on every finding after reading the hunk it cites.
+
+### Axis 1: technical implementation and spec conformity
+
+The reviewer confirmed the ADR 0006 bounds in the code:
+- linking is by email only;
+- a facet-bound rule runs before the Organizer shortcut;
+- `runs` is loaded in the transaction;
+- every write is re-checked in the lock;
+- a closed Competition refuses everyone.
+
+It also confirmed that no email reaches a page or MCP, that the Close/Reopen ledger is intact, and that the Format sweep and the one-transaction migration are sound.
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| F1 | **blocking** | A new `games` Competition starts as a fixed list with no Entrants (`createCompetition` never sets `entrants_open`), against plan decision 11 and Q25 (the default is open). Participants can't log until the Host opens the settings. | resolve |
+| F2 | non-blocking | `setGamesSettings` can switch open → fixed, draws off, or Best of on under existing Games, which silently empties the leaderboard and Close | resolve: refuse |
+| F3 | non-blocking | `postedGamePlayerIds` ignores the Game Type, so `can` in authorize reads extra fields (the in-lock re-check catches it) | resolve |
+| F4 | non-blocking | Deleting a `games` Competition cascades away its Game log | resolve: refuse while Games exist |
+| F5 | non-blocking | A malformed id on the Games setup page answers 500, not 404 | resolve |
+| F6 | non-blocking | AC 17-1 "best and total in both directions" isn't fully covered | resolve: add cases |
+| F7 | non-blocking | The Entrant-limit test is sequential, not concurrent | deviation approved: the recount runs under `lockedCompetition` `FOR UPDATE`, the lock Epic G's red-team confirmed |
+| F8 | non-blocking | The Games and Bracket Entrant actions each accept the other Format | resolve |
+| minor | non-blocking | The logging close time uses `>` while enrollment uses `>=` | resolve: align to `>=` |
+| carried | non-blocking | The Game form resets across the Sheet/Dialog breakpoint | deviation approved: existing `ResponsiveSheetDialog` behavior shared by every form; follow-up |
+
+### Axis 2: coding standards
+
+Lint shows 0 errors. The nine new actions follow the ADR 0003 order. There is no `window.confirm`, every confirm uses `ConfirmDialog`, and every result is a toast. No real personal data or secrets were found in any committed file.
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| S1 | non-blocking | The log rule is re-derived in queries (`viewerCanLog`, `getLoggableCompetitions`, `loggingState`, `enrollable`) instead of lib (ADR 0001), so it can drift from `can` | resolve |
+| S2 | non-blocking | The rule for where enrollment is offered is written in four places | resolve: one lib function |
+| S3 | non-blocking | `isEntered` is duplicated in the app layer | resolve |
+| S4 | non-blocking | Entrant limit and close-time parsing are duplicated | resolve |
+| S5 | non-blocking | Pure player validation sits in the mutation | resolve: move it to lib |
+| S6 | non-blocking | `DeleteGameButton` re-implements `ConfirmActionButton` | resolve |
+| S7 | non-blocking | Success toasts end with a period, against the house style | resolve |
+| S8 | non-blocking | Comments cite grilling `Qnn` ids | resolve |
+| S9 | non-blocking | Trivial helpers are exported only so tests can reach them | resolve |
+| S10 | non-blocking | The "Who won?" `aria-pressed` group is hand-rolled | deviation approved: it follows the `heat-result-form.tsx` precedent; follow-up to migrate both to `toggle-group` |
+| S11 | non-blocking | `NOT_GAMES` lives in a query module | resolve |
+| S12 | non-blocking | `getGamesCompetitions` sits in `queries/brackets.ts` | resolve |
+| S13 | non-blocking | The Games setup page loads authorization facts to read three columns | resolve |
+| S14 | non-blocking | The MCP not-found message is duplicated | resolve |
+| S15 | non-blocking | CONTEXT.md's seed rules contradict the seed and loader | resolve |
+| S16 | non-blocking | `docs/agents/testing.md`'s smoke and e2e rows omit the R3 flows | resolve |
+
+Remediation goes to two parallel fix workers:
+- **RA (Opus):** backend and rules: F1–F6, F8, the minor, S1–S5, S9, S11–S14.
+- **RB (Sonnet):** UI copy and docs: S6–S8, S15, S16, and the e2e text they change.
