@@ -525,3 +525,73 @@ by Team/Participant id (decision 11); Squad join/leave refuse on a
 finalized Competition (decision 12); the open-after-War-Week consequence
 goes into CONTEXT.md (decision 15); 17-5's ended-XI step runs alone and
 restores `live`/`winner = null`; 15-2 adds its second Entrant by SQL.
+
+## [EXECUTION PLAN]
+
+`/atlas-implement` work package `regression-r3`, 2026-09-29. The Plan
+above is the approved technical plan; this section is how it is delivered.
+Branch `feat/regression-r3-games` from `staging` at `5067e46`; every diff
+is against that SHA.
+
+### Structure: five waves, dependency-ordered
+
+| Wave | Deliverable | Plan step | Owns (predicted files) | Checkout |
+|---|---|---|---|---|
+| 0 | D0 Foundation | 0 | enums, schema, migrations 0015/0016, seed loader + `seeds/xi.json`, `competitionSeedSchema`, `src/lib/games/config.ts`, the Format sweep, `createCompetition`, `replaceEntrants` for `games`, `lockedCompetition`/`getBracket` fields, `deleteGenerated` export, Games-aware refusals, smoke Host fixture | direct checkout (serial, clean tree) |
+| 1 | D1a Pure games rules | 1a | `src/lib/games/leaderboard.ts`, `input.ts`, `view.ts` + tests | worktree |
+| 1 | D1b Access rules | 1b | `src/lib/games/log-rule.ts`, `enroll-rule.ts` + tests, `src/lib/access.ts` + test | worktree |
+| 2 | D2a Games data and actions | 2a | `src/queries/games.ts`, `src/mutations/games.ts`, `src/actions/games.ts`, `src/auth/authorize.ts` (`authorizeGameWrite`), Format-aware generated copy | worktree |
+| 2 | D2b Enrollment data and actions | 2b | `src/queries/enrollment.ts`, `src/mutations/enrollment.ts`, `src/actions/enrollment.ts`, `src/auth/authorize.ts` (`authorizeEnroll`) | worktree |
+| 3 | D3a Setup UI | 3a | `entrants-picker.tsx`, `games-builder.tsx`, `games` setup page, `competitions-editor.tsx`, `bracket-builder.tsx`, setup list link | worktree |
+| 3 | D3b Participant surfaces | 3b | `games-view.tsx`, `game-form.tsx`, `enroll-button.tsx`, `log-a-game.tsx`, `src/app/[edition]/**`, `competitions.tsx`, `archive.tsx` | worktree |
+| 3 | D3c MCP | 3c | `src/mcp/games.ts` + test, `tools.ts`, route, README, `llms-txt.ts` | worktree |
+| 4 | D4a Proof | 4 (proof) | `e2e/games.spec.ts`, `e2e/enrollment.spec.ts`, `e2e/bracket-squads.spec.ts`, `scripts/smoke/games.ts`, `scripts/smoke/mcp.ts`, `scripts/smoke/index.ts` | worktree |
+| 4 | D4b Docs and showcase | 4 (showcase) | CONTEXT.md, ADRs 0006/0002, `docs/maintainers-guide.md`, `src/lib/about.ts`, `src/app/about/*`, `scripts/about-media.ts`, `public/about/games.png`, `e2e/about-games.spec.ts` (the /about Games-card screenshot, run by the orchestrator at integration) | worktree |
+
+Worktrees live under `.claude/worktrees/regression-r3/war-weeker/<D>` on
+branch `feat/regression-r3-games-<D>`, cut from the integrated head at
+dispatch; accepted commits are cherry-picked onto
+`feat/regression-r3-games` in wave order and the worktrees removed at
+closeout. D0 is serial because everything depends on its schema and sweep;
+it runs directly on the work-package branch.
+
+Predicted collisions (re-checked at closeout against the real diffs):
+wave 2 — `src/auth/authorize.ts` (D2a adds `authorizeGameWrite`, D2b adds
+`authorizeEnroll`; disjoint functions, merged mechanically); wave 3 —
+none intended (D3a owns both builders and the editor, D3b owns
+`src/app/[edition]/**` and the participant components, D3c the MCP files);
+`package.json`/`pnpm-lock.yaml` if a `shadcn add` lands in D3a or D3b;
+wave 4 — none (D4a owns `e2e/` flows and `scripts/smoke/`, D4b owns docs,
+about and its own `e2e/about-games.spec.ts`).
+
+Shared mutable state: one local Postgres (`localhost:2345`); vitest DB
+tests roll back and tolerate parallel worktrees. `pnpm smoke` and `pnpm
+e2e` reset every seeded War Week and bind port 3200, so **only D4a** runs
+them inside a worktree; D4b never runs e2e (the orchestrator captures its
+/about screenshot at integration). Every other smoke/e2e run is serial, by
+the orchestrator on the integrated branch.
+
+Worker models (placement heuristic): D0, D1b, D2a, D2b, D3b, D4a — Opus
+(schema, access, mutations under the lock, the Competition page, and the
+proof flows are judgment-dense); D1a, D3a, D3c, D4b — Sonnet (tightly
+specified pure rules, a form page mirroring the Bracket builder, a
+read-only MCP tool mirroring `get_bracket`, docs).
+
+### Verification
+
+The criterion map is the Plan's "Verification map" above, unchanged; the
+ledger in `.claude/atlas-state/regression-r3.json` seeds every criterion
+`unproven`. Earliest checkpoints: 17-6/15-4 after D0; 17-1 after D1a;
+17-2/15-1 (pure halves) after D1b, (DB halves) after D2a/D2b; 17-3 after
+D2a; 17-M after D3c; 17-4, 17-5, 17-A, 15-2, 15-3 after D4a; 17-7, 15-5,
+E-1 after D4b; 17-8/15-6/E-4 after wave 4; E-2 at closeout; E-3 after the
+PR. Human gates: none. Proof root: not cleared, per Paul's R1 decision to
+keep earlier epics' committed evidence; R3's evidence lives in R3-named
+directories (`test-results/e2e/games-*`, `enrollment-*`,
+`bracket-squads-*`, `regression-r3-about/`, `test-results/r3-gate/`).
+
+Environment: this checkout has no `.env.local`; DB, smoke and e2e commands
+export the `.env.example` values first (`set -a; . ./.env.example; set +a`).
+
+## [PROGRESS]
+
