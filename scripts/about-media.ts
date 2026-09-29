@@ -1,33 +1,33 @@
 /**
  * Writes the About page's media (tickets 28, 03, 04) from the seeded demo,
  * never by hand: `public/about/finale-poster.png` (War Week XI's Finale on
- * a phone, mid-countdown; `finale.mp4` too, unless `--stills`), the hero's
- * `standings-before.png` / `standings-entry.png` / `standings-after.png`
- * (an Organizer's real Points Entry moving the home Standings), and one
- * still per feature card at `public/about/<slug>.png`. Afterwards it
- * screenshots `/about` as an anonymous visitor at 390px, desktop and with
- * reduced motion into `test-results/28-splash/`, with a log.
+ * a phone, mid-countdown; a still only — no Finale video is written or
+ * shown), the hero's `standings-before.png` / `standings-entry.png` /
+ * `standings-after.png` (an Organizer's real Points Entry moving the home
+ * Standings), and one still per feature card at `public/about/<slug>.png`.
+ * Afterwards it screenshots `/about` as an anonymous visitor at 390px,
+ * desktop and with reduced motion into `test-results/28-splash/`, with a
+ * log.
  *
  * Needs a production build and a freshly seeded local Postgres, the same
  * prerequisite as `docs/maintainers-guide.md` (`pnpm build`, then
- * `pnpm seed:load --reset seeds/*.json`), and Google Chrome; ffmpeg on
- * PATH only without `--stills`. Starts its own server on port
- * 3202, signs in as a made-up Organizer (`about-demo@jahnelgroup.com`) that
- * it adds to the Organizer list and lends XI's seeded Points Entries for the
- * run, so no real email is in any file, and restores everything after,
- * including the one Points Entry the Standings hero saves:
+ * `pnpm seed:load --reset seeds/*.json`), and Google Chrome. Starts its own
+ * server on port 3202, signs in as a made-up Organizer
+ * (`about-demo@jahnelgroup.com`) that it adds to the Organizer list and
+ * lends XI's seeded Points Entries for the run, so no real email is in any
+ * file, and restores everything after, including the one Points Entry the
+ * Standings hero saves:
  *   pnpm tsx scripts/about-media.ts
  *
  * `--stills` rewrites the feature-card and Standings-hero stills and
- * leaves the Finale recording alone, so it needs no ffmpeg:
+ * leaves the Finale poster alone:
  *   pnpm tsx scripts/about-media.ts --stills
  */
 import { loadEnvConfig } from "@next/env";
 import { makeSignature } from "better-auth/crypto";
-import { type ChildProcess, spawn, spawnSync } from "node:child_process";
+import { type ChildProcess, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import {
-  copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -40,7 +40,7 @@ import os from "node:os";
 import path from "node:path";
 import { Client } from "pg";
 
-import { ABOUT_FEATURES, ABOUT_THEME } from "@/lib/about";
+import { ABOUT_FEATURES, STATIC_PAGE_THEME } from "@/lib/about";
 import { FINALE_MAX_MS } from "@/lib/finale";
 import type { LeaderboardResult } from "@/mcp/leaderboard";
 
@@ -311,7 +311,7 @@ async function assertNoRealEmail(page: Page, what: string) {
 
 type Frame = { at: number; data: string };
 
-async function recordFinale(cookie: string, ffmpeg: string) {
+async function recordFinale(cookie: string) {
   const page = await Page.open();
   // The screencast sends CSS-pixel frames whatever the device scale, so
   // the page is laid out at 390px inside a doubled viewport, zoomed 2x.
@@ -373,62 +373,11 @@ async function recordFinale(cookie: string, ffmpeg: string) {
   }
   note(`finale: ${frames.length} frames captured, ${kept.length} kept`);
 
-  const dir = mkdtempSync(path.join(os.tmpdir(), "about-frames-"));
-  try {
-    const list: string[] = [];
-    kept.forEach((frame, i) => {
-      const file = path.join(dir, `${String(i).padStart(4, "0")}.png`);
-      writeFileSync(file, Buffer.from(frame.data, "base64"));
-      const next = kept[i + 1];
-      const duration = next ? (next.at - frame.at) / 1000 : HOLD_MS / 1000;
-      list.push(`file '${file}'`, `duration ${duration.toFixed(3)}`);
-    });
-    // The concat demuxer needs the last file repeated to honour its duration.
-    list.push(
-      `file '${path.join(dir, `${String(kept.length - 1).padStart(4, "0")}.png`)}'`,
-    );
-    const listFile = path.join(dir, "frames.txt");
-    writeFileSync(listFile, list.join("\n") + "\n");
-    copyFileSync(
-      path.join(dir, "0000.png"),
-      path.join(MEDIA, "finale-poster.png"),
-    );
-
-    const result = spawnSync(
-      ffmpeg,
-      [
-        "-y",
-        "-loglevel",
-        "error",
-        "-f",
-        "concat",
-        "-safe",
-        "0",
-        "-i",
-        listFile,
-        "-vf",
-        "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p",
-        "-r",
-        "30",
-        "-c:v",
-        "libx264",
-        "-preset",
-        "slow",
-        "-crf",
-        "24",
-        "-movflags",
-        "+faststart",
-        "-an",
-        path.join(MEDIA, "finale.mp4"),
-      ],
-      { stdio: ["ignore", "inherit", "pipe"] },
-    );
-    if (result.status !== 0) {
-      throw new Error(`ffmpeg failed: ${result.stderr?.toString()}`);
-    }
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
+  // Only the poster still is kept; no Finale video is written or shown.
+  writeFileSync(
+    path.join(MEDIA, "finale-poster.png"),
+    Buffer.from(kept[0].data, "base64"),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -646,7 +595,7 @@ function chatCardUrl(result: LeaderboardResult): string {
     .join(
       "",
     )}</ol><p>${escapeHtml(result.standings[0]?.name ?? "")} lead${result.standings.length > 1 ? `, ${result.standings[0].total - result.standings[1].total} points ahead of ${escapeHtml(result.standings[1].name)}` : ""}.</p>`;
-  const t = ABOUT_THEME;
+  const t = STATIC_PAGE_THEME;
   return `data:text/html;charset=utf-8,${encodeURIComponent(`<!doctype html><html><head><meta charset="utf-8"><style>
   html,body{margin:0;height:100%;background:${t.backgroundColor};color:${t.foregroundColor};font:16px/1.5 ui-monospace,"JetBrains Mono",Menlo,monospace}
   body{display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at top,color-mix(in oklch,${t.primaryColor} 18%,transparent),transparent 60%),${t.backgroundColor}}
@@ -821,17 +770,10 @@ async function evidence() {
 
 // ---------------------------------------------------------------------------
 
-/** Only the feature-card stills; the Finale video and poster stay as they are. */
+/** Only the feature-card and Standings-hero stills; the Finale poster stays as it is. */
 const STILLS_ONLY = process.argv.includes("--stills");
 
 async function main() {
-  if (
-    !STILLS_ONLY &&
-    spawnSync("ffmpeg", ["-version"], { stdio: "ignore" }).status !== 0
-  ) {
-    console.error("Install ffmpeg: brew install ffmpeg");
-    process.exit(1);
-  }
   if (!existsSync(path.resolve(process.cwd(), ".next/BUILD_ID"))) {
     console.error("No production build in .next: run `pnpm build` first.");
     process.exit(1);
@@ -894,7 +836,7 @@ async function main() {
 
     standingsEntryId = await captureStandingsDemo(cookie);
 
-    if (!STILLS_ONLY) await recordFinale(cookie, "ffmpeg");
+    if (!STILLS_ONLY) await recordFinale(cookie);
 
     const slugs = ABOUT_FEATURES.map((f) => f.slug);
     await still("organizer-setup", cookie, "/admin/setup");
@@ -943,7 +885,7 @@ async function main() {
     await evidence();
 
     for (const name of [
-      ...(STILLS_ONLY ? [] : ["finale.mp4", "finale-poster.png"]),
+      ...(STILLS_ONLY ? [] : ["finale-poster.png"]),
       "standings-before.png",
       "standings-entry.png",
       "standings-after.png",

@@ -8,7 +8,7 @@ import type { ThemeColors } from "@/lib/theme";
  * the current War Week; update this together with `seeds/xi.json` if XI's
  * look changes.
  */
-export const ABOUT_THEME: ThemeColors = {
+export const STATIC_PAGE_THEME: ThemeColors = {
   primaryColor: "#00ff41",
   primaryForegroundColor: "#000000",
   accentColor: "#008f11",

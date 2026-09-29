@@ -117,6 +117,7 @@ describe("AboutPage", () => {
 
     for (const feature of ABOUT_FEATURES) {
       expect(html).toContain(`data-feature="${feature.slug}"`);
+      expect(html).toContain(`src="/about/${feature.slug}.png"`);
       expect(text).toContain(feature.title);
     }
   });
@@ -130,7 +131,7 @@ describe("AboutPage", () => {
 
   it("tells the team's story and mentions the one-sentence features", async () => {
     getCurrentWarWeek.mockResolvedValue(warWeekFixture());
-    const { text } = await renderAbout();
+    const { html, text } = await renderAbout();
 
     expect(text).toContain("Why we built this");
     expect(text).toContain("Jahnel Group War Week · since 2016");
@@ -142,7 +143,7 @@ describe("AboutPage", () => {
     expect(text).not.toContain("Paul Macfarlane");
     expect(text).not.toContain("Appearance Theme");
     expect(text).not.toMatch(/\blost\b/i);
-    expect(text.toLowerCase()).not.toContain('href="/install"');
+    expect(html.toLowerCase()).not.toContain('href="/install"');
   });
 
   it("mentions no build tooling and no banned terms", async () => {
