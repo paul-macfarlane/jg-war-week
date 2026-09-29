@@ -26,6 +26,7 @@ import { SuggestionCombobox } from "@/components/suggestion-combobox";
 import { Button } from "@/components/ui/button";
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -278,6 +279,11 @@ function CompetitionRow({
               value={values.maxPoints}
               onChange={set("maxPoints")}
             />
+            <FieldDescription>
+              Optional. The most points 1st place&rsquo;s Placement Points can
+              be worth. A single Points Entry over it still saves, with a
+              warning.
+            </FieldDescription>
             <FieldError>{fieldErrors.maxPoints}</FieldError>
           </Field>
           <Field data-invalid={!!fieldErrors.placementPoints}>
