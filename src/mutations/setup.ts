@@ -16,8 +16,11 @@ import {
   team,
   warWeek,
 } from "@/db/schema";
+import { defaultConfig } from "@/lib/bracket/config";
 import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
+import type { FieldErrors } from "@/lib/result";
 import {
+  type CompetitionCreateValues,
   type CompetitionValues,
   type DayValues,
   type ParticipantValues,
@@ -48,15 +51,15 @@ export function isUniqueViolation(error: unknown): boolean {
 }
 
 /** Runs a write, turning a lost race for a unique value into `refusal`. */
-export async function refusingDuplicate(
+export async function refusingDuplicate<R extends MutationResult>(
   refusal: string,
-  write: () => Promise<MutationResult>,
-): Promise<MutationResult> {
+  write: () => Promise<R>,
+): Promise<R> {
   try {
     return await write();
   } catch (error) {
     if (!isUniqueViolation(error)) throw error;
-    return { ok: false, error: refusal };
+    return { ok: false, error: refusal } as R;
   }
 }
 
@@ -595,21 +598,38 @@ async function competitionRefusal(
   );
 }
 
+/** What `createCompetition` returns: the new row's id, or a refusal. */
+export type CreateCompetitionResult =
+  | { ok: true; id: string }
+  | { ok: false; error: string; fieldErrors?: FieldErrors };
+
+/**
+ * Creates a Competition, with the Format an Organizer chose (default
+ * "points") and, for a heats Format with none given, the Bracket builder's
+ * default config (`defaultConfig`).
+ */
 export async function createCompetition(
-  values: CompetitionValues,
+  values: CompetitionCreateValues,
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
-): Promise<MutationResult> {
+): Promise<CreateCompetitionResult> {
   return refusingDuplicate(
     `There's already a Competition named "${values.name}".`,
     () =>
-      dbOrTx.transaction(async (tx): Promise<MutationResult> => {
+      dbOrTx.transaction(async (tx): Promise<CreateCompetitionResult> => {
         const refusal = await competitionRefusal(values, ctx, tx);
         if (refusal) return { ok: false, error: refusal };
-        await tx
+        const format = values.format ?? "points";
+        const [created] = await tx
           .insert(competition)
-          .values({ warWeekId: ctx.warWeekId, ...values });
-        return { ok: true };
+          .values({
+            warWeekId: ctx.warWeekId,
+            ...values,
+            format,
+            bracketConfig: values.bracketConfig ?? defaultConfig(format),
+          })
+          .returning({ id: competition.id });
+        return { ok: true, id: created.id };
       }),
   );
 }

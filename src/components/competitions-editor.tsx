@@ -35,9 +35,18 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { WarWeek } from "@/db/schema";
-import { formatLabel } from "@/lib/bracket/view";
+import { type Format, formatLabel } from "@/lib/bracket/view";
+import { COMPETITION_FORMATS } from "@/lib/enums";
 import type { CompetitionInput } from "@/lib/setup";
 import type { SetupCompetition } from "@/queries/setup";
+
+/** How each Format runs a Competition, shown on the create form. */
+const FORMAT_DESCRIPTIONS: Record<Format, string> = {
+  points: "Only Points Entries; no Bracket.",
+  "single-elimination": "A knockout Bracket: one loss and an Entrant is out.",
+  heats:
+    "A Bracket where Entrants play in Heats; a set number advance each round.",
+};
 
 function emptyCompetition(mode: WarWeek["mode"]): CompetitionInput {
   return {
@@ -48,6 +57,7 @@ function emptyCompetition(mode: WarWeek["mode"]): CompetitionInput {
     placementPoints: "",
     countsTowardTeam: false,
     group: "",
+    format: "points",
   };
 }
 
@@ -135,21 +145,26 @@ function CompetitionRow({
   groupSuggestions: string[];
 }) {
   const id = useId();
+  const router = useRouter();
   const [values, setValues] = useState(
     competition ? inputFrom(competition) : emptyCompetition(mode),
   );
   const { pending, formRef, formAction, fieldErrors, error, remove } =
     useSetupRow(
-      () => {
+      async () => {
         // Only an individual Competition can count toward the Team.
         const input = {
           ...values,
           countsTowardTeam:
             values.scoring === "individual" && values.countsTowardTeam,
         };
-        return competition
-          ? updateCompetition(competition.id, input)
-          : createCompetition(warWeekId, input);
+        if (competition) return updateCompetition(competition.id, input);
+        const result = await createCompetition(warWeekId, input);
+        // A Bracket Format links straight to its Bracket setup.
+        if (result.ok && input.format && input.format !== "points") {
+          router.push(`/admin/setup/competitions/${result.id}/bracket`);
+        }
+        return result;
       },
       "Competition saved",
       competition ? undefined : () => setValues(emptyCompetition(mode)),
@@ -262,6 +277,33 @@ function CompetitionRow({
               <FieldLabel htmlFor={`${id}-counts`}>
                 Counts toward the {teamLabel}
               </FieldLabel>
+            </Field>
+          )}
+          {!competition && (
+            <Field
+              className="sm:col-span-2"
+              data-invalid={!!fieldErrors.format}
+            >
+              <FieldLabel htmlFor={`${id}-format`}>Format</FieldLabel>
+              <OptionSelect
+                id={`${id}-format`}
+                name="format"
+                options={COMPETITION_FORMATS.map((format) => ({
+                  value: format,
+                  label: formatLabel(format),
+                }))}
+                value={values.format ?? "points"}
+                onValueChange={(format) => setValues((v) => ({ ...v, format }))}
+              />
+              <FieldDescription>
+                {COMPETITION_FORMATS.map((format) => (
+                  <span key={format} className="block">
+                    <strong>{formatLabel(format)}:</strong>{" "}
+                    {FORMAT_DESCRIPTIONS[format]}
+                  </span>
+                ))}
+              </FieldDescription>
+              <FieldError>{fieldErrors.format}</FieldError>
             </Field>
           )}
           <Field

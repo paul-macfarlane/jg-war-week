@@ -1,7 +1,7 @@
 import { type ZodType, z } from "zod";
 
 import type { Competition, Participant, Team, WarWeek } from "@/db/schema";
-import { heatsConfigSchema } from "@/lib/bracket/config";
+import { defaultConfig, heatsConfigSchema } from "@/lib/bracket/config";
 import { HEX_COLOR } from "@/lib/color";
 import { MAX_PLACEMENTS } from "@/lib/competitions";
 import { dayOutsideRangeError } from "@/lib/day-range";
@@ -302,6 +302,12 @@ export type CompetitionInput = {
   placementPoints: string;
   countsTowardTeam: boolean;
   group: string;
+  /**
+   * How to run the Competition, chosen only on create; the edit form never
+   * sends one (the Format changes only through the Bracket actions).
+   * Blank (or omitted) means "points".
+   */
+  format?: string;
 };
 export type CompetitionValues = Pick<
   Competition,
@@ -313,6 +319,14 @@ export type CompetitionValues = Pick<
   | "countsTowardTeam"
   | "competitionGroup"
 >;
+
+/**
+ * A new Competition's fields, with the Format an Organizer chose on create.
+ * Both default in `createCompetition` when omitted (a direct mutation call
+ * that predates the create form's Format field), to "points" with none.
+ */
+export type CompetitionCreateValues = CompetitionValues &
+  Partial<Pick<Competition, "format" | "bracketConfig">>;
 
 const FIELD_LABELS: Record<string, string> = {
   storyTheme: "Story Theme",
@@ -345,6 +359,7 @@ const FIELD_LABELS: Record<string, string> = {
   maxPoints: "Max points",
   placementPoints: "Placement Points",
   group: "Group",
+  format: "Format",
 };
 
 /** A zod issue worded as "must …", or null when it is already a sentence. */
@@ -512,6 +527,33 @@ export function parseCompetitionInput(
       placementPoints: value.placementPoints ?? null,
       competitionGroup: group ?? null,
     },
+  };
+}
+
+const formatFieldSchema = z.object({
+  format: z.enum(COMPETITION_FORMATS).default("points"),
+});
+
+/**
+ * Validates a new Competition's form, adding the Format an Organizer chose
+ * on create. A heats Format gets the Bracket builder's default config
+ * (`defaultConfig`, `src/lib/bracket/config.ts`); points and single
+ * elimination take none. The edit form never sends a Format: its Format
+ * changes only through the Bracket actions (`setCompetitionFormat`).
+ */
+export function parseCreateCompetitionInput(
+  input: CompetitionInput,
+): Parsed<CompetitionCreateValues> {
+  const base = parseCompetitionInput(input);
+  if (!base.ok) return base;
+  const formatParsed = parseWith(formatFieldSchema, {
+    format: input.format?.trim() || "points",
+  });
+  if (!formatParsed.ok) return formatParsed;
+  const { format } = formatParsed.value;
+  return {
+    ok: true,
+    value: { ...base.value, format, bracketConfig: defaultConfig(format) },
   };
 }
 

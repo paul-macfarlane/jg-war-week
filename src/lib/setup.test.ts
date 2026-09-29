@@ -11,6 +11,7 @@ import {
   dayOutsideRangeError,
   inUseError,
   parseCompetitionInput,
+  parseCreateCompetitionInput,
   parseDayInput,
   parseParticipantInput,
   parseTeamInput,
@@ -388,6 +389,53 @@ describe("parseCompetitionInput", () => {
     expectRefused(
       parseCompetitionInput({ ...competition, ...overrides }),
       error,
+    );
+  });
+});
+
+describe("parseCreateCompetitionInput", () => {
+  const competition: CompetitionInput = {
+    name: " Catan ",
+    description: "",
+    scoring: "individual",
+    maxPoints: "",
+    placementPoints: "",
+    countsTowardTeam: false,
+    group: "",
+  };
+
+  it("defaults to the points Format with no config", () => {
+    expect(parseCreateCompetitionInput(competition)).toMatchObject({
+      ok: true,
+      value: { format: "points", bracketConfig: null },
+    });
+  });
+
+  it("takes a Bracket Format, with a heats default config", () => {
+    expect(
+      parseCreateCompetitionInput({
+        ...competition,
+        format: "single-elimination",
+      }),
+    ).toMatchObject({
+      ok: true,
+      value: { format: "single-elimination", bracketConfig: null },
+    });
+    expect(
+      parseCreateCompetitionInput({ ...competition, format: "heats" }),
+    ).toMatchObject({
+      ok: true,
+      value: {
+        format: "heats",
+        bracketConfig: { entrantsPerHeat: 4, advancePerHeat: 2 },
+      },
+    });
+  });
+
+  it("refuses an unknown Format", () => {
+    expectRefused(
+      parseCreateCompetitionInput({ ...competition, format: "games" }),
+      "Format must be one of points, single-elimination, heats.",
     );
   });
 });
