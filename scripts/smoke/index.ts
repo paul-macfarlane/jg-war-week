@@ -31,6 +31,7 @@ import {
   assertSquadSelfReportLoop,
 } from "./brackets";
 import { assertFinale } from "./finale";
+import { assertGamesLoop } from "./games";
 import {
   BASE_URL,
   PORT,
@@ -216,6 +217,8 @@ async function main() {
       await assertSquadSelfReportLoop(sessions);
       await assertHostChecks(sessions);
       await assertParticipantRefused(sessions);
+      // Ends XI by SQL in its own step, then restores it.
+      await assertGamesLoop(sessions);
       await assertPostedWarWeekWins(sessions);
       // It changes which War Week is current, then restores XI.
       await assertWarWeekLifecycle(sessions);

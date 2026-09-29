@@ -1,0 +1,236 @@
+/**
+ * Leaderboard ranking for a `games` Competition, per Game Type (CONTEXT.md,
+ * R3 decision 4). Pure: no database, no framework.
+ */
+import type { Placing } from "@/lib/bracket/types";
+import type { GameType } from "@/lib/enums";
+import type {
+  BestScoreConfig,
+  GamesConfigFor,
+  HeadToHeadConfig,
+  RankedConfig,
+} from "@/lib/games/config";
+import { finishPointsFor } from "@/lib/games/config";
+
+/** One player of one Game: an opaque Team or Participant id (never an Entrant row). */
+export type GamePlayerFact = {
+  id: string;
+  place: number | null;
+  score: number | null;
+};
+
+export type GameFact = {
+  id: string;
+  loggedAt: Date;
+  players: GamePlayerFact[];
+};
+
+export type LeaderboardRow = {
+  id: string;
+  /** Standard competition ranking (1, 1, 3); null when the id has no Game. */
+  rank: number | null;
+  played: number;
+  /** Head-to-head: Games won. Ranked: Games finished in place 1 (display only). */
+  wins: number;
+  losses: number;
+  draws: number;
+  best: number | null;
+  total: number | null;
+  finishPoints: number;
+};
+
+function uniqueIdsOf(games: GameFact[]): string[] {
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  for (const game of games) {
+    for (const player of game.players) {
+      if (!seen.has(player.id)) {
+        seen.add(player.id);
+        ids.push(player.id);
+      }
+    }
+  }
+  return ids;
+}
+
+function emptyRow(id: string): LeaderboardRow {
+  return {
+    id,
+    rank: null,
+    played: 0,
+    wins: 0,
+    losses: 0,
+    draws: 0,
+    best: null,
+    total: null,
+    finishPoints: 0,
+  };
+}
+
+function applyHeadToHead(rows: Map<string, LeaderboardRow>, games: GameFact[]) {
+  for (const game of games) {
+    const [a, b] = game.players;
+    if (!a || !b) continue;
+    for (const [player, opponent] of [
+      [a, b],
+      [b, a],
+    ] as const) {
+      const row = rows.get(player.id);
+      if (!row) continue;
+      row.played += 1;
+      if (player.place === 1 && opponent.place === 2) row.wins += 1;
+      else if (player.place === 2 && opponent.place === 1) row.losses += 1;
+      else if (player.place === 1 && opponent.place === 1) row.draws += 1;
+    }
+  }
+}
+
+function applyBestScore(
+  rows: Map<string, LeaderboardRow>,
+  games: GameFact[],
+  config: BestScoreConfig,
+) {
+  for (const game of games) {
+    for (const player of game.players) {
+      const row = rows.get(player.id);
+      if (!row || player.score === null) continue;
+      row.played += 1;
+      row.total = (row.total ?? 0) + player.score;
+      row.best =
+        row.best === null
+          ? player.score
+          : config.betterIs === "higher"
+            ? Math.max(row.best, player.score)
+            : Math.min(row.best, player.score);
+    }
+  }
+}
+
+function applyRanked(
+  rows: Map<string, LeaderboardRow>,
+  games: GameFact[],
+  config: RankedConfig,
+) {
+  for (const game of games) {
+    const places = game.players.map((p) => p.place ?? 0);
+    const points = finishPointsFor(config, places);
+    game.players.forEach((player, i) => {
+      const row = rows.get(player.id);
+      if (!row) return;
+      row.played += 1;
+      row.finishPoints += points[i];
+      if (player.place === 1) row.wins += 1;
+    });
+  }
+}
+
+function rankKeyOf<T extends GameType>(
+  gameType: T,
+  config: GamesConfigFor<T>,
+  row: LeaderboardRow,
+): number | null {
+  if (row.played === 0) return null;
+  if (gameType === "head-to-head") return row.wins;
+  if (gameType === "best-score") {
+    const cfg = config as BestScoreConfig;
+    return cfg.count === "best" ? row.best : row.total;
+  }
+  return row.finishPoints;
+}
+
+/**
+ * Rank Games per Game Type: `entrantIds` is the fixed Entrant list (a row
+ * for every id, even with no Game) or `null` for open-to-everyone (rows
+ * only for ids that appear in a Game). Sorted best first; ties share the
+ * higher rank (standard competition ranking); an id with no Game is
+ * unranked (`rank: null`) and sorts last.
+ */
+export function rankGames<T extends GameType>(
+  gameType: T,
+  config: GamesConfigFor<T>,
+  games: GameFact[],
+  entrantIds: string[] | null,
+): LeaderboardRow[] {
+  const ids = entrantIds ?? uniqueIdsOf(games);
+  const rows = new Map<string, LeaderboardRow>();
+  for (const id of ids) rows.set(id, emptyRow(id));
+
+  if (gameType === "head-to-head") applyHeadToHead(rows, games);
+  else if (gameType === "best-score")
+    applyBestScore(rows, games, config as BestScoreConfig);
+  else applyRanked(rows, games, config as RankedConfig);
+
+  const direction: "desc" | "asc" =
+    gameType === "best-score" &&
+    (config as BestScoreConfig).betterIs === "lower"
+      ? "asc"
+      : "desc";
+
+  const all = [...rows.values()];
+  const ranked = all.filter((row) => rankKeyOf(gameType, config, row) !== null);
+  const unranked = all
+    .filter((row) => rankKeyOf(gameType, config, row) === null)
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  ranked.sort((x, y) => {
+    const kx = rankKeyOf(gameType, config, x)!;
+    const ky = rankKeyOf(gameType, config, y)!;
+    if (kx !== ky) return direction === "desc" ? ky - kx : kx - ky;
+    return x.id.localeCompare(y.id);
+  });
+
+  let rank = 0;
+  let prevKey: number | null = null;
+  for (const [i, row] of ranked.entries()) {
+    const key = rankKeyOf(gameType, config, row);
+    if (key !== prevKey) rank = i + 1;
+    row.rank = rank;
+    prevKey = key;
+  }
+
+  return [...ranked, ...unranked];
+}
+
+/**
+ * The leaderboard's rows as Placings, the input to `pointsFor`
+ * (`src/lib/bracket/points.ts`) so Close awards Placement Points with the
+ * Bracket's tie rule. Rows with no rank (no Game) are omitted.
+ */
+export function placingsOf(rows: LeaderboardRow[]): Placing[] {
+  return rows.flatMap((row) =>
+    row.rank === null ? [] : [{ entrantId: row.id, place: row.rank }],
+  );
+}
+
+/**
+ * The id with a majority of `bestOf` Games won (a draw counts for nobody);
+ * `null` when nobody has a majority yet, or `bestOf` is off.
+ */
+export function bestOfWinner(
+  config: HeadToHeadConfig,
+  games: GameFact[],
+): string | null {
+  if (config.bestOf === null) return null;
+  const wins = new Map<string, number>();
+  for (const game of games) {
+    const [a, b] = game.players;
+    if (!a || !b) continue;
+    if (a.place === 1 && b.place === 2)
+      wins.set(a.id, (wins.get(a.id) ?? 0) + 1);
+    else if (b.place === 1 && a.place === 2)
+      wins.set(b.id, (wins.get(b.id) ?? 0) + 1);
+  }
+  const majority = Math.floor(config.bestOf / 2) + 1;
+  for (const [id, count] of wins) {
+    if (count >= majority) return id;
+  }
+  return null;
+}
+
+/** Whether a Best of has reached its decided moment. */
+export function isBestOfDecided(
+  config: HeadToHeadConfig,
+  games: GameFact[],
+): boolean {
+  return bestOfWinner(config, games) !== null;
+}

@@ -1,0 +1,194 @@
+import { type Page, type TestInfo, expect, test } from "@playwright/test";
+import path from "node:path";
+
+import {
+  runQuery,
+  setParticipantEmail,
+  xiCompetitionId,
+  xiParticipantId,
+} from "./db";
+import { E2E_BASE_URL } from "./env";
+import {
+  E2E_HOST_EMAIL,
+  E2E_PARTICIPANT_EMAIL,
+  asHost,
+  signIn,
+} from "./session";
+
+// Pool is an individual War Week XI Competition (counts toward Team) that
+// no other flow touches: the flow runs it as a single-elimination Bracket
+// with "Participants can enroll" on, then puts it back.
+const COMPETITION = "Pool";
+/** Enrolls, withdraws and enrolls again; linked by email. */
+const ENROLLEE = "Alex Nikolis";
+/** The second Entrant, added by SQL (Generate needs two). */
+const SECOND = "Andrew Bushey";
+/** A linked Participant who never enrolled, refused once it's built. */
+const LATECOMER = "Awad Khawaja";
+/** A second stub JG address, cleared with every e2e user (`e2e-%`). */
+const E2E_PARTICIPANT_2_EMAIL = "e2e-participant-2@jahnelgroup.com";
+const BUILT = "Enrollment is closed: the Bracket is built.";
+
+/** Screenshots at 375 and 1280 under `test-results/e2e/enrollment-<step>/`. */
+async function shoot(page: Page, testInfo: TestInfo, step: string) {
+  for (const width of [375, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth <=
+          document.documentElement.clientWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: path.join(
+        testInfo.project.outputDir,
+        `enrollment-${step}`,
+        `${width}.png`,
+      ),
+      fullPage: true,
+      animations: "disabled",
+    });
+  }
+  await page.setViewportSize({ width: 1280, height: 900 });
+}
+
+/** Whether `participantId` is one of the Competition's Entrants. */
+async function isEntrant(competitionId: string, participantId: string) {
+  const rows = await runQuery(
+    `select 1 from entrant where competition_id = $1 and participant_id = $2`,
+    [competitionId, participantId],
+  );
+  return rows.length === 1;
+}
+
+function enrollmentCard(page: Page) {
+  return page
+    .locator("[data-slot=card]")
+    .filter({ has: page.getByRole("heading", { name: "Enrollment" }) });
+}
+
+test("enrollment: a Participant enrolls, withdraws and enrolls again; once the Host builds the Bracket, enrollment is refused", async ({
+  browser,
+  context,
+  page,
+}, testInfo) => {
+  test.setTimeout(180_000);
+  const id = await xiCompetitionId(COMPETITION);
+  const enrolleeId = await xiParticipantId(ENROLLEE);
+  const secondId = await xiParticipantId(SECOND);
+  const latecomerId = await xiParticipantId(LATECOMER);
+  const [original] = await runQuery<{
+    format: string;
+    bracket_config: unknown;
+    self_enroll: boolean;
+    finalized_at: Date | null;
+  }>(
+    `select format::text as format, bracket_config, self_enroll, finalized_at
+     from competition where id = $1`,
+    [id],
+  );
+  await runQuery(
+    `update competition set format = 'single-elimination', self_enroll = true
+     where id = $1`,
+    [id],
+  );
+  await runQuery(
+    `insert into competition_host (competition_id, email) values ($1, $2)
+     on conflict do nothing`,
+    [id, E2E_HOST_EMAIL],
+  );
+  await setParticipantEmail(enrolleeId, E2E_PARTICIPANT_EMAIL);
+  await setParticipantEmail(latecomerId, E2E_PARTICIPANT_2_EMAIL);
+  const youContext = await browser.newContext({ baseURL: E2E_BASE_URL });
+  const lateContext = await browser.newContext({ baseURL: E2E_BASE_URL });
+  try {
+    await signIn(youContext, E2E_PARTICIPANT_EMAIL);
+    const you = await youContext.newPage();
+    await you.goto(`/xi/competitions/${id}`);
+    const card = enrollmentCard(you);
+    await expect(card).toBeVisible();
+    await shoot(you, testInfo, "open");
+
+    // Enroll → an Entrant row.
+    await card.getByRole("button", { name: "Enroll" }).click();
+    await expect(you.getByText("You're enrolled")).toBeVisible();
+    await expect(card.getByText("You're entered.")).toBeVisible();
+    expect(await isEntrant(id, enrolleeId)).toBe(true);
+    await shoot(you, testInfo, "enrolled");
+
+    // Withdraw (confirmed) → gone.
+    await card.getByRole("button", { name: "Withdraw" }).click();
+    const confirm = you.getByRole("alertdialog", {
+      name: `Withdraw from ${COMPETITION}?`,
+    });
+    await shoot(you, testInfo, "withdraw-confirm");
+    await confirm.getByRole("button", { name: "Withdraw" }).click();
+    await expect(you.getByText("You've withdrawn")).toBeVisible();
+    await expect(card.getByRole("button", { name: "Enroll" })).toBeEnabled();
+    expect(await isEntrant(id, enrolleeId)).toBe(false);
+
+    // Enroll again → back.
+    await card.getByRole("button", { name: "Enroll" }).click();
+    await expect(card.getByText("You're entered.")).toBeVisible();
+    expect(await isEntrant(id, enrolleeId)).toBe(true);
+
+    // A second Entrant by SQL, never through the Host's picker.
+    await runQuery(
+      `insert into entrant (competition_id, participant_id, seed_position)
+       select $1, $2, coalesce(max(seed_position), 0) + 1
+       from entrant where competition_id = $1`,
+      [id, secondId],
+    );
+
+    // The Host generates the Bracket.
+    await asHost(context);
+    await page.goto(`/admin/setup/competitions/${id}/bracket`);
+    await page.getByRole("button", { name: "Generate" }).click();
+    await expect(page.getByText("Bracket generated")).toBeVisible();
+    await shoot(page, testInfo, "generated");
+
+    // Enrollment is closed: Withdraw for the Entrant, Enroll for a
+    // latecomer, both refused with the rule's reason.
+    await you.reload();
+    await expect(card.getByText(BUILT)).toBeVisible();
+    await expect(card.getByRole("button", { name: "Withdraw" })).toBeDisabled();
+    await shoot(you, testInfo, "closed-entered");
+
+    await signIn(lateContext, E2E_PARTICIPANT_2_EMAIL);
+    const late = await lateContext.newPage();
+    await late.goto(`/xi/competitions/${id}`);
+    const lateCard = enrollmentCard(late);
+    await expect(lateCard.getByText(BUILT)).toBeVisible();
+    await expect(
+      lateCard.getByRole("button", { name: "Enroll" }),
+    ).toBeDisabled();
+    expect(await isEntrant(id, latecomerId)).toBe(false);
+    await shoot(late, testInfo, "closed-refused");
+  } finally {
+    await youContext.close();
+    await lateContext.close();
+    await runQuery(`delete from heat where competition_id = $1`, [id]);
+    await runQuery(`delete from entrant where competition_id = $1`, [id]);
+    await runQuery(
+      `update competition set format = $2::competition_format,
+         bracket_config = $3, self_enroll = $4, finalized_at = $5
+       where id = $1`,
+      [
+        id,
+        original.format,
+        original.bracket_config === null
+          ? null
+          : JSON.stringify(original.bracket_config),
+        original.self_enroll,
+        original.finalized_at,
+      ],
+    );
+    await setParticipantEmail(enrolleeId, null);
+    await setParticipantEmail(latecomerId, null);
+    await runQuery(
+      `delete from competition_host where competition_id = $1 and email = $2`,
+      [id, E2E_HOST_EMAIL],
+    );
+  }
+});

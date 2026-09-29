@@ -64,7 +64,11 @@ export async function replaceEntrants(
   return bracketWrite("bracket.entrants", competitionId, async (id, ctx) => {
     const parsed = parseEntrantsInput(input);
     if (!parsed.ok) return parsed;
-    return mutations.replaceEntrants(id, parsed.value, ctx);
+    return mutations.replaceEntrants(
+      id,
+      { ...parsed.value, format: "bracket" },
+      ctx,
+    );
   });
 }
 

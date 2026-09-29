@@ -57,6 +57,28 @@ export function toEasternClock(instant: Date): EasternClock {
   return { date: format(et, "yyyy-MM-dd"), time: format(et, "HH:mm:ss") };
 }
 
+/**
+ * An ET wall-clock date (`YYYY-MM-DD`) and time (`HH:MM`) as the instant
+ * they name, for a close time picked with a `DatePicker` and
+ * `TimeCombobox`. Null for a blank date or time, or one that doesn't parse.
+ */
+export function fromEasternClock(date: string, time: string): Date | null {
+  if (!date || !time) return null;
+  const parsedDate = parse(date, "yyyy-MM-dd", new Date());
+  const parsedTime = parse(time, "HH:mm", new Date());
+  if (!isValid(parsedDate) || !isValid(parsedTime)) return null;
+  const instant = new TZDate(
+    parsedDate.getFullYear(),
+    parsedDate.getMonth(),
+    parsedDate.getDate(),
+    parsedTime.getHours(),
+    parsedTime.getMinutes(),
+    0,
+    WAR_WEEK_TIME_ZONE,
+  );
+  return Number.isNaN(instant.getTime()) ? null : new Date(instant);
+}
+
 function compareItems(a: ScheduleEntry, b: ScheduleEntry): number {
   return (
     a.startTime.localeCompare(b.startTime) || a.title.localeCompare(b.title)

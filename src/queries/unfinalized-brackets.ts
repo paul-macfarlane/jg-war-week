@@ -1,11 +1,12 @@
-import { and, eq, exists, isNull, ne } from "drizzle-orm";
+import { and, eq, exists, inArray, isNull } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import { type WarWeek, competition, heat } from "@/db/schema";
+import { BRACKET_FORMATS } from "@/lib/bracket/view";
 
 /**
- * A War Week's unfinalized Brackets: Competitions with a Format other than
- * `points`, not finalized, that have been generated (at least one Heat), by
+ * A War Week's unfinalized Brackets: Competitions with a Bracket Format
+ * (not `points` or `games`), not finalized, that have been generated (at least one Heat), by
  * name. Used to warn when ending a War Week with Brackets whose placings
  * aren't yet in the Standings.
  */
@@ -19,7 +20,7 @@ export async function getUnfinalizedBrackets(
     .where(
       and(
         eq(competition.warWeekId, warWeek.id),
-        ne(competition.format, "points"),
+        inArray(competition.format, BRACKET_FORMATS),
         isNull(competition.finalizedAt),
         exists(
           dbOrTx

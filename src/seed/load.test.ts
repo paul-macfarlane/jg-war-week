@@ -102,6 +102,60 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed lifecycle fields", () => {
     });
   });
 
+  it("sets a games Competition's Game Type, settings and Entrants open on insert only", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { loadWarWeekSeed } = await import("@/seed/load");
+      const schema = await import("@/db/schema");
+      const { eq } = await import("drizzle-orm");
+      await clearLive(tx);
+      const seeded = await seed("sg", 3, "upcoming", {
+        competitions: [
+          {
+            name: "Stairs",
+            scoring: "team",
+            format: "games",
+            gameType: "best-score",
+            gameConfig: { count: "total", betterIs: "higher", unit: "trips" },
+            entrantsOpen: true,
+          },
+        ],
+      });
+      const first = await loadWarWeekSeed(seeded, tx);
+      const read = async () =>
+        (
+          await tx
+            .select({
+              format: schema.competition.format,
+              gameType: schema.competition.gameType,
+              gameConfig: schema.competition.gameConfig,
+              entrantsOpen: schema.competition.entrantsOpen,
+            })
+            .from(schema.competition)
+            .where(eq(schema.competition.warWeekId, first.id))
+        )[0];
+      expect(await read()).toEqual({
+        format: "games",
+        gameType: "best-score",
+        gameConfig: { count: "total", betterIs: "higher", unit: "trips" },
+        entrantsOpen: true,
+      });
+
+      // A Host's change survives a reload.
+      await tx
+        .update(schema.competition)
+        .set({
+          gameConfig: { count: "best", betterIs: "lower", unit: "s" },
+          entrantsOpen: false,
+        })
+        .where(eq(schema.competition.warWeekId, first.id));
+      await loadWarWeekSeed(seeded, tx);
+      expect(await read()).toMatchObject({
+        gameConfig: { count: "best", betterIs: "lower", unit: "s" },
+        entrantsOpen: false,
+      });
+    });
+  });
+
   it("refuses a seed that would insert a second live War Week", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { loadWarWeekSeed } = await import("@/seed/load");

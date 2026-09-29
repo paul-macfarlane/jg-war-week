@@ -1,4 +1,4 @@
-import { ArrowLeft, ExternalLink, Trophy } from "lucide-react";
+import { ArrowLeft, ChevronRight, ExternalLink, Trophy } from "lucide-react";
 import Link from "next/link";
 
 import { ThemeRoot } from "@/components/theme-root";
@@ -116,6 +116,14 @@ export function ArchiveDetailView({ detail }: { detail: ArchiveDetail }) {
             ) : null}
 
             <Highlights highlights={warWeek.highlights} />
+
+            <Link
+              href={`/${warWeek.edition}/competitions`}
+              className="text-primary-text flex items-center gap-1 text-sm font-medium"
+            >
+              Competitions
+              <ChevronRight aria-hidden className="size-4" />
+            </Link>
 
             {awards.length > 0 ? (
               <section className="flex flex-col gap-2">

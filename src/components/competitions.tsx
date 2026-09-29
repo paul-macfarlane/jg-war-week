@@ -8,6 +8,7 @@ import {
   describeScoring,
   formatMaxPoints,
 } from "@/lib/competitions";
+import { gameTypeLabel } from "@/lib/games/config";
 import { formatPoints } from "@/lib/points";
 
 export function CompetitionFacts({
@@ -28,6 +29,11 @@ export function CompetitionFacts({
       >
         {describeScoring(competition, teamLabel)}
       </Badge>
+      {competition.format === "games" && competition.gameType ? (
+        <Badge variant="outline" className="text-foreground/70">
+          Games · {gameTypeLabel(competition.gameType)}
+        </Badge>
+      ) : null}
     </div>
   );
 }

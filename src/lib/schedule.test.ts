@@ -8,6 +8,7 @@ import {
   formatDayHeading,
   formatEtTime,
   formatTimeRange,
+  fromEasternClock,
   groupSchedule,
   resolveClock,
   toEasternClock,
@@ -78,6 +79,38 @@ describe("toEasternClock", () => {
     expect(toEasternClock(new Date("2026-02-23T05:00:00Z")).time).toBe(
       "00:00:00",
     );
+  });
+});
+
+describe("fromEasternClock", () => {
+  it("reads an ET date and time in winter (EST) as that instant", () => {
+    expect(fromEasternClock("2026-02-23", "22:30")).toEqual(
+      new Date("2026-02-24T03:30:00Z"),
+    );
+  });
+
+  it("reads an ET date and time in summer (EDT) as that instant", () => {
+    expect(fromEasternClock("2026-07-04", "12:05")).toEqual(
+      new Date("2026-07-04T16:05:00Z"),
+    );
+  });
+
+  it("round-trips through toEasternClock", () => {
+    const instant = fromEasternClock("2026-02-23", "22:30")!;
+    expect(toEasternClock(instant)).toEqual({
+      date: "2026-02-23",
+      time: "22:30:00",
+    });
+  });
+
+  it("is null for a blank date or time", () => {
+    expect(fromEasternClock("", "22:30")).toBeNull();
+    expect(fromEasternClock("2026-02-23", "")).toBeNull();
+  });
+
+  it("is null for an unparseable date or time", () => {
+    expect(fromEasternClock("2026-02-30", "22:30")).toBeNull();
+    expect(fromEasternClock("2026-02-23", "not-a-time")).toBeNull();
   });
 });
 

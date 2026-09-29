@@ -99,6 +99,7 @@ export async function getAdminLedger(
       id: pointsEntry.id,
       competition: competition.name,
       competitionId: competition.id,
+      competitionFormat: competition.format,
       teamName: team.name,
       participantName: participant.displayName,
       points: pointsEntry.points,

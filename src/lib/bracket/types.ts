@@ -9,8 +9,11 @@ import type { COMPETITION_FORMATS } from "@/lib/enums";
 /** How a Competition is run; see CONTEXT.md. */
 export type Format = (typeof COMPETITION_FORMATS)[number];
 
-/** A Format that runs as a Bracket: every Format but `points`. */
-export type BracketFormat = Exclude<Format, "points">;
+/**
+ * A Format that runs as a Bracket: every Format but `points` and `games`
+ * (a `games` Competition is decided by logged Games, never Heats).
+ */
+export type BracketFormat = Exclude<Format, "points" | "games">;
 
 /** A Team or Participant entered in a Bracket, at its Seed Position. */
 export type Entrant = { id: string; seedPosition: number; label: string };

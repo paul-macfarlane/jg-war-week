@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   type AdminLedgerRow,
   buildAdminLedger,
+  generatedNote,
+  generatedRefusal,
   overMaxWarning,
   parsePointsEntryInput,
   pointsEntryTarget,
@@ -120,6 +122,7 @@ describe("buildAdminLedger", () => {
     id: "a",
     competition: "Tug of War",
     competitionId: "c",
+    competitionFormat: "points",
     teamName: "Red",
     participantName: null,
     points: 3,
@@ -152,6 +155,29 @@ describe("buildAdminLedger", () => {
     ]).sort((x, y) => x.id.localeCompare(y.id));
     expect(changed.editedAt).toEqual(edited);
     expect(seeded.editedAt).toBeNull();
+  });
+
+  it("carries the Competition's Format into the ledger", () => {
+    const [entry] = buildAdminLedger([
+      row({ competitionFormat: "games", generatedByBracket: true }),
+    ]);
+    expect(entry.competitionFormat).toBe("games");
+  });
+});
+
+describe("generated Points Entries", () => {
+  it("keep the Bracket wording for a Bracket", () => {
+    expect(generatedNote("single-elimination")).toBe("From bracket");
+    expect(generatedRefusal("heats")).toBe(
+      "This Points Entry comes from a bracket. Change it there.",
+    );
+  });
+
+  it("say games for a games Competition", () => {
+    expect(generatedNote("games")).toBe("From games");
+    expect(generatedRefusal("games")).toBe(
+      "This Points Entry comes from a Games Competition. Change it there.",
+    );
   });
 });
 

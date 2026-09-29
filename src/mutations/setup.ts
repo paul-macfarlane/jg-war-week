@@ -8,6 +8,8 @@ import {
   competitionHost,
   day,
   entrant,
+  game,
+  gamePlayer,
   participant,
   pointsEntry,
   scheduleItem,
@@ -17,6 +19,7 @@ import {
   warWeek,
 } from "@/db/schema";
 import { defaultConfig } from "@/lib/bracket/config";
+import { defaultGamesConfig } from "@/lib/games/config";
 import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
 import type { FieldErrors } from "@/lib/result";
 import {
@@ -337,6 +340,11 @@ export async function deleteTeam(
           "Bracket Entrants",
         ],
         [await tx.$count(squad, eq(squad.teamId, id)), "Squad", "Squads"],
+        [
+          await tx.$count(gamePlayer, eq(gamePlayer.teamId, id)),
+          "Game",
+          "Games",
+        ],
       ],
       "Move or delete them first.",
     );
@@ -506,6 +514,11 @@ export async function deleteParticipant(
           "Squad",
           "Squads",
         ],
+        [
+          await tx.$count(gamePlayer, eq(gamePlayer.participantId, id)),
+          "Game",
+          "Games",
+        ],
       ],
       "Delete them or remove the Participant from them first.",
     );
@@ -538,6 +551,7 @@ async function competitionRefusal(
         scoring: competition.scoring,
         placementPoints: competition.placementPoints,
         finalizedAt: competition.finalizedAt,
+        format: competition.format,
       })
       .from(competition)
       .where(
@@ -551,6 +565,7 @@ async function competitionRefusal(
       scoring: found.scoring,
       placementPoints: found.placementPoints,
       finalizedAt: found.finalizedAt,
+      format: found.format,
       pointsEntryCount: await tx.$count(
         pointsEntry,
         eq(pointsEntry.competitionId, exceptId),
@@ -584,6 +599,19 @@ async function competitionRefusal(
     "Remove them before changing its scoring.",
   );
   if (entrantRefusal) return entrantRefusal;
+  // A Game's players are Teams or Participants by its scoring.
+  const gameRefusal = inUseError(
+    "Competition",
+    [
+      [
+        await tx.$count(game, eq(game.competitionId, exceptId)),
+        "Game",
+        "Games",
+      ],
+    ],
+    "Delete them before changing its scoring.",
+  );
+  if (gameRefusal) return gameRefusal;
   // Squads are only for team Competitions.
   return inUseError(
     "Competition",
@@ -606,7 +634,8 @@ export type CreateCompetitionResult =
 /**
  * Creates a Competition, with the Format an Organizer chose (default
  * "points") and, for a heats Format with none given, the Bracket builder's
- * default config (`defaultConfig`).
+ * default config (`defaultConfig`). A `games` Competition stores its Game
+ * Type and that type's default settings; any other Format has no Game Type.
  */
 export async function createCompetition(
   values: CompetitionCreateValues,
@@ -620,6 +649,10 @@ export async function createCompetition(
         const refusal = await competitionRefusal(values, ctx, tx);
         if (refusal) return { ok: false, error: refusal };
         const format = values.format ?? "points";
+        const gameType = format === "games" ? (values.gameType ?? null) : null;
+        if (format === "games" && !gameType) {
+          return { ok: false, error: "Choose a Game Type." };
+        }
         const [created] = await tx
           .insert(competition)
           .values({
@@ -627,6 +660,10 @@ export async function createCompetition(
             ...values,
             format,
             bracketConfig: defaultConfig(format),
+            gameType,
+            gameConfig: gameType ? defaultGamesConfig(gameType) : null,
+            // A new `games` Competition is open to everyone (Best of is off).
+            entrantsOpen: format === "games",
           })
           .returning({ id: competition.id });
         return { ok: true, id: created.id };
@@ -669,8 +706,8 @@ export async function updateCompetition(
 }
 
 /**
- * Deletes a Competition of this War Week, refusing one with Points Entries
- * or Schedule Items.
+ * Deletes a Competition of this War Week, refusing one with Points Entries,
+ * Schedule Items or Games.
  */
 export async function deleteCompetition(
   id: string,
@@ -694,6 +731,7 @@ export async function deleteCompetition(
           "Schedule Item",
           "Schedule Items",
         ],
+        [await tx.$count(game, eq(game.competitionId, id)), "Game", "Games"],
       ],
       "Delete or move them first.",
     );

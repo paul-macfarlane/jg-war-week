@@ -1024,12 +1024,21 @@
       "scoring": "individual",
       "countsTowardTeam": true,
       "maxPoints": 3,
+      "placementPoints": [3, 2, 1],
+      "format": "games",
+      "gameType": "head-to-head",
+      "gameConfig": { "drawsAllowed": false, "bestOf": null },
+      "entrantsOpen": true,
       "description": "The inaugural Bouncy Ping Pong, run by Casey Snow."
     },
     {
       "name": "Tuesday Stairs",
       "scoring": "team",
       "maxPoints": 3,
+      "format": "games",
+      "gameType": "best-score",
+      "gameConfig": { "count": "total", "betterIs": "higher", "unit": "trips" },
+      "entrantsOpen": true,
       "description": "Stairway to Heaven: of course stairs on Tuesday counts."
     },
     {
@@ -1084,6 +1093,9 @@
       "name": "Electric City Matrix",
       "scoring": "team",
       "maxPoints": 5,
+      "format": "games",
+      "gameType": "ranked",
+      "entrantsOpen": true,
       "group": "Team Night Events"
     },
     {

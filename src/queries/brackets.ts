@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNotNull, ne } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import { DBOrTx, db } from "@/db";
@@ -17,6 +17,7 @@ import {
 import { configOf } from "@/lib/bracket/config";
 import { champion } from "@/lib/bracket/formats";
 import type { Bracket, Entrant, Heat } from "@/lib/bracket/types";
+import { BRACKET_FORMATS, isBracketFormat } from "@/lib/bracket/view";
 import { isUuid } from "@/lib/uuid";
 
 /** An Entrant with what the Bracket view shows and finalizing needs. */
@@ -48,6 +49,9 @@ export type BracketCompetition = Pick<
   | "placementPoints"
   | "finalizedAt"
   | "selfReport"
+  | "selfEnroll"
+  | "entrantLimit"
+  | "enrollClosesAt"
 >;
 
 export type BracketView = {
@@ -96,6 +100,7 @@ export async function getBracketEntrants(
   competitionId: string,
   dbOrTx: DBOrTx = db,
 ): Promise<BracketEntrant[]> {
+  if (!isUuid(competitionId)) return [];
   const rows = await dbOrTx
     .select({
       id: entrant.id,
@@ -164,11 +169,11 @@ export async function loadBracket(
         .where(eq(competition.id, competitionId))
         .limit(1)
     )[0];
-  if (!found || found.format === "points") {
-    // A points Competition (or a missing one) has no Bracket and so no
-    // Heats: the Format returned here is arbitrary, since nothing reads
-    // its rules for an empty Bracket, and getBracket shows no champion
-    // for a points Competition.
+  if (!found || !isBracketFormat(found.format)) {
+    // A points or games Competition (or a missing one) has no Bracket and
+    // so no Heats: the Format returned here is arbitrary, since nothing
+    // reads its rules for an empty Bracket, and getBracket shows no
+    // champion for a points Competition.
     return { format: "single-elimination", config: null, heats: [] };
   }
   // An explicit list: the reporter columns (an email among them) are never
@@ -231,7 +236,8 @@ export async function loadBracket(
 /**
  * A Competition's Bracket for display: its Entrants with labels and colors,
  * its Heats, the champion and whether it's finalized. Undefined when there's
- * no such Competition.
+ * no such Competition, or it's run as Games (a `games` Competition is never
+ * a Bracket). A points Competition returns an empty Bracket.
  */
 export async function getBracket(
   competitionId: string,
@@ -249,11 +255,14 @@ export async function getBracket(
       placementPoints: competition.placementPoints,
       finalizedAt: competition.finalizedAt,
       selfReport: competition.selfReport,
+      selfEnroll: competition.selfEnroll,
+      entrantLimit: competition.entrantLimit,
+      enrollClosesAt: competition.enrollClosesAt,
     })
     .from(competition)
     .where(eq(competition.id, competitionId))
     .limit(1);
-  if (!found) return undefined;
+  if (!found || found.format === "games") return undefined;
   // The config reaches the view through the Bracket, not the Competition.
   const { bracketConfig, ...shown } = found;
   const [entrants, bracket] = await Promise.all([
@@ -265,7 +274,7 @@ export async function getBracket(
     entrants,
     bracket,
     // A points Competition has no Bracket, so no champion.
-    champion: found.format === "points" ? null : champion(bracket),
+    champion: isBracketFormat(found.format) ? champion(bracket) : null,
     finalized: found.finalizedAt !== null,
   };
 }
@@ -275,10 +284,18 @@ export type BracketCompetitionLink = Pick<
   "id" | "name" | "format" | "finalizedAt"
 >;
 
-/** A War Week's Competitions run as a Bracket, by name. */
+/** A War Week's Competitions run as a Bracket (never `games`), by name. */
 export async function getBracketCompetitions(
   warWeek: Pick<WarWeek, "id">,
   dbOrTx: DBOrTx = db,
+): Promise<BracketCompetitionLink[]> {
+  return competitionLinks(warWeek, BRACKET_FORMATS, dbOrTx);
+}
+
+function competitionLinks(
+  warWeek: Pick<WarWeek, "id">,
+  formats: Competition["format"][],
+  dbOrTx: DBOrTx,
 ): Promise<BracketCompetitionLink[]> {
   return dbOrTx
     .select({
@@ -291,7 +308,7 @@ export async function getBracketCompetitions(
     .where(
       and(
         eq(competition.warWeekId, warWeek.id),
-        ne(competition.format, "points"),
+        inArray(competition.format, formats),
       ),
     )
     .orderBy(asc(competition.name));

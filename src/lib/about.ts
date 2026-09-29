@@ -38,7 +38,7 @@ export const ABOUT_FALLBACK_THEME: ThemeColors = {
 export const MAINTAINERS_GUIDE_URL = `${REPO_URL}/blob/main/docs/maintainers-guide.md`;
 
 /**
- * The eight feature cards, in order. Each `slug` names a still at
+ * The feature cards, in order. Each `slug` names a still at
  * `public/about/<slug>.png`, written by `scripts/about-media.ts`; the
  * Finale is the video hero, not a card.
  */
@@ -70,8 +70,14 @@ export const ABOUT_FEATURES = [
   {
     slug: "brackets",
     title: "Brackets for knockouts and Heats",
-    text: "Choose a Competition's Format — Single elimination or Heats — when you add it, land straight on its Bracket setup, pick its Entrants (Teams, Participants, or Squads: named groups from one Team whose points go to that Team) and Generate a Bracket, or draw its Seed Positions By Standings. The Bracket reads as a tree on the Competition page: Rounds left to right for single elimination, or a box per Heat with advancers highlighted, one Round at a time on a phone; a List toggle keeps the old view. Recording or reporting a Heat's result opens a dialog centered on a screen and a bottom sheet on a phone. Finalize turns the Bracket's placings straight into Points Entries, and the Bracket gets its own Finale for the projector.",
+    text: "Choose a Competition's Format — Single elimination or Heats — when you add it, land straight on its Bracket setup, pick its Entrants (Teams, Participants, or Squads: named groups from one Team whose points go to that Team) and Generate a Bracket, or draw its Seed Positions By Standings. The Bracket reads as a tree on the Competition page: Rounds left to right for single elimination, or a box per Heat with advancers highlighted, one Round at a time on a phone; a List toggle keeps the old view. Recording or reporting a Heat's result opens a dialog centered on a screen and a bottom sheet on a phone. Finalize turns the Bracket's placings straight into Points Entries, and the Bracket gets its own Finale for the projector. Flip on \"Participants can enroll\" and players add themselves as Entrants instead of the Host typing every name in.",
     alt: "A Bracket shown as a tree on its Competition page: Rounds joined by lines, with results filled in live.",
+  },
+  {
+    slug: "games",
+    title: "Games you log yourself",
+    text: "Not every Competition is a knockout. Choose the Games Format for a showdown, a best of 5, or ping pong running all week, pick a Game Type — Head-to-head, Best score or Ranked — and players log their own results from a phone in seconds. The Competition page shows the leaderboard and every Game logged, newest first; Close turns the standings into Placement Points, the same as finalizing a Bracket.",
+    alt: "A Games Competition's leaderboard and Game log on its Competition page, with a Game just logged.",
   },
   {
     slug: "lifecycle",

@@ -339,11 +339,18 @@ export function BracketView({
   const pickOnly = selfReport.on && you?.via === "pick";
   const reportHeat = reporting ? heatsById.get(reporting) : undefined;
   const close = () => setReporting(null);
+  const squadHelp = entrants.some((e) => e.squadId) ? (
+    <p className="text-foreground/70 text-sm">
+      <span className="font-medium">Squad</span>: a pair or group from one Team,
+      playing as one entrant
+    </p>
+  ) : null;
 
   if (bracket.heats.length === 0) {
     return (
       <section className="flex flex-col gap-2" aria-label="Bracket">
         <h2 className="text-lg font-semibold">Bracket</h2>
+        {squadHelp}
         <p className="text-foreground/70 text-sm">
           The Bracket hasn&apos;t been drawn yet.
         </p>
@@ -370,6 +377,7 @@ export function BracketView({
           </TabsList>
         </Tabs>
       </div>
+      {squadHelp}
 
       {winner && (
         <Card size="sm" aria-label="Champion" className="ring-primary ring-2">

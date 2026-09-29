@@ -102,4 +102,35 @@ describe("BracketView", () => {
     expect(html).toContain("data-bracket-tree");
     expect(html).toMatch(/<button[^>]*role="tab"[^>]*>List<\/button>/);
   });
+
+  it("explains Squads beside a Squads Bracket's Entrants", () => {
+    const squads = entrants.map((e) => ({
+      ...e,
+      teamId: null,
+      squadId: `s${e.id}`,
+      participantNames: ["Ashley", "Sam"],
+    }));
+    const text = (html: string) => html.replace(/<[^>]+>/g, "");
+    expect(
+      text(
+        renderToStaticMarkup(
+          <BracketView {...props} entrants={squads} bracket={bracket} />,
+        ),
+      ),
+    ).toContain("Squad: a pair or group from one Team, playing as one entrant");
+    expect(
+      text(
+        renderToStaticMarkup(
+          <BracketView
+            {...props}
+            entrants={squads}
+            bracket={{ ...bracket, heats: [] }}
+          />,
+        ),
+      ),
+    ).toContain("a pair or group from one Team, playing as one entrant");
+    expect(
+      renderToStaticMarkup(<BracketView {...props} bracket={bracket} />),
+    ).not.toContain("a pair or group");
+  });
 });

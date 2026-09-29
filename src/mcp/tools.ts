@@ -49,4 +49,9 @@ export const MCP_TOOLS = {
     description:
       "Returns a Competition's Bracket by name: Entrants by Seed Position, each Round's Heats with status, time and place, and the champion once finalized. A Competition run by points instead returns bracket: null; an unknown Competition returns found: false.",
   },
+  get_games: {
+    title: "Get Games",
+    description:
+      "Returns a Competition run as Games by name: its settings, leaderboard ranked by Game Type, and its logged Games newest first. A Competition run another way instead returns games: null; an unknown Competition returns found: false.",
+  },
 } satisfies Record<string, { title: string; description: string }>;

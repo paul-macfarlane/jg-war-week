@@ -30,7 +30,7 @@ Three roles:
 |---|---|---|
 | **Organizer** | Global: one list across every War Week, stored in the database and managed by Organizers in `/admin` | Everything, in every War Week |
 | **Host** | Per Competition: an Organizer assigns JG emails to a Competition | Everything on that Competition (setup including scoring and Placement Points, its Bracket, its Points Entries, its Schedule Items); post Announcements and edit or delete their own |
-| **Participant** | Any signed-in JG user | Read; one write, self-report (ADR 0005) |
+| **Participant** | Any signed-in JG user | Read; self-report (ADR 0005); logging, editing and deleting their own Games, and enrolling or withdrawing (themselves, their Team, or a Squad) in a Competition that allows it (ADR 0006) |
 
 - The per-edition `organizerEmails` list is removed. The migration seeds the
   global list from the current War Week's `organizerEmails`.

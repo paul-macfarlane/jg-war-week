@@ -85,6 +85,46 @@ describe("War Week XI demo", () => {
     expect(xi.competitions.length).toBeGreaterThan(15);
   });
 
+  it("runs one Competition of each Game Type as Games", () => {
+    const games = xi.competitions
+      .filter((c) => c.format === "games")
+      .map((c) => ({
+        name: c.name,
+        scoring: c.scoring,
+        gameType: c.gameType,
+        gameConfig: c.gameConfig,
+        entrantsOpen: c.entrantsOpen,
+      }));
+    expect(games).toEqual([
+      {
+        name: "Bouncy Pong",
+        scoring: "individual",
+        gameType: "head-to-head",
+        gameConfig: { drawsAllowed: false, bestOf: null },
+        entrantsOpen: true,
+      },
+      {
+        name: "Tuesday Stairs",
+        scoring: "team",
+        gameType: "best-score",
+        gameConfig: { count: "total", betterIs: "higher", unit: "trips" },
+        entrantsOpen: true,
+      },
+      {
+        name: "Electric City Matrix",
+        scoring: "team",
+        gameType: "ranked",
+        gameConfig: undefined,
+        entrantsOpen: true,
+      },
+    ]);
+    const pong = xi.competitions.find((c) => c.name === "Bouncy Pong")!;
+    expect(pong).toMatchObject({
+      countsTowardTeam: true,
+      placementPoints: [3, 2, 1],
+    });
+  });
+
   it("has a close mid-week race with a fractional and a Counts-Toward-Team-off entry", () => {
     const competitions = new Map(xi.competitions.map((c) => [c.name, c]));
     const teamOf = new Map(xi.participants.map((p) => [p.displayName, p.team]));

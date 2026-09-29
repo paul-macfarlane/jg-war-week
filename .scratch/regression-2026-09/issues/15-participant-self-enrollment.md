@@ -4,7 +4,7 @@
 
 **Blocked by:** 17 (fixed-list `games` Competitions are one of the targets)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Source:** regression feedback item 12
 
@@ -18,11 +18,16 @@
 
 ## Acceptance criteria
 
-- [ ] Access unit tests per ADR 0006: switch off refuses; account linking required (pick grants nothing); each close condition refuses; team and Squad cases; withdraw before and after close.
-- [ ] Playwright: a Participant enrolls in a Bracket, withdraws, re-enrolls; the Host builds the Bracket and enrollment is refused afterwards. Screenshots under `test-results/e2e/<test>/`.
-- [ ] Squad help text shows in setup and on the Competition page.
-- [ ] Schema change and demo seed updated together; plan red-teamed.
-- [ ] `/about` and `docs/maintainers-guide.md` updated.
-- [ ] `pnpm gate` passes.
+- [x] Access unit tests per ADR 0006: switch off refuses; account linking required (pick grants nothing); each close condition refuses; team and Squad cases; withdraw before and after close.
+- [x] Playwright: a Participant enrolls in a Bracket, withdraws, re-enrolls; the Host builds the Bracket and enrollment is refused afterwards. Screenshots under `test-results/e2e/<test>/`.
+- [x] Squad help text shows in setup and on the Competition page.
+- [x] Schema change and demo seed updated together; plan red-teamed.
+- [x] `/about` and `docs/maintainers-guide.md` updated.
+- [x] `pnpm gate` passes.
 
 ## Comments
+
+- 2026-09-29: Technical plan and red-team record for Epic R3 (tickets 17 and 15) in [`../epics/R3-execution.md`](../epics/R3-execution.md); approved by Paul. Ready to implement.
+- 2026-09-29: claimed by Atlas (`/atlas-implement`, work package `regression-r3`, Epic R3) — `ready-for-agent → in-progress` on `feat/regression-r3-games`; starts after ticket 17's access facets are integrated on the branch.
+- 2026-09-29: `in-progress → ai-review`: every deliverable integrated on `feat/regression-r3-games`; `pnpm gate` exit 0 at `0e90972a7b0eecb1920e0046a79db37d5be79366`; aggregate AI code review started.
+- 2026-09-29: [CLOSEOUT] `ai-review → done`. Verified at `5b007ad` (`pnpm gate`, exit 0; `test-results/r3-gate/gate.txt`). Evidence per criterion, the AI Code Review (both axes, every finding and disposition) and deviations: `../epics/R3-execution.md` ([AI CODE REVIEW], [CLOSEOUT]). PR: https://github.com/paul-macfarlane/jg-war-week/pull/92

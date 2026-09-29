@@ -12,6 +12,18 @@ import {
   isPublicPath,
   safeCallbackPath,
 } from "@/lib/access";
+import {
+  ENROLL_CLOSED_BUILT,
+  ENROLL_OFF,
+  type EnrollFacet,
+} from "@/lib/games/enroll-rule";
+import {
+  COMPETITION_CLOSED,
+  type GameLogFacet,
+  NOT_A_PLAYER,
+  NOT_LINKED,
+  NOT_THE_LOGGER,
+} from "@/lib/games/log-rule";
 
 describe("isJahnelGroupEmail", () => {
   it.each([
@@ -397,6 +409,279 @@ describe("can: reporting a Heat's result (self-report)", () => {
       expect(can(ACTORS.host, action, target())).toBeNull();
       expect(can(ACTORS.organizer, action, target())).toBeNull();
     }
+  });
+});
+
+describe("can: running a games Competition and the enroll switch", () => {
+  it.each(
+    cases(
+      (
+        [
+          "games.settings",
+          "games.entrants",
+          "games.close",
+          "games.reopen",
+          "competition.self-enroll",
+        ] as WarWeekAction[]
+      ).map((action) => [
+        action,
+        { warWeekId: XI, competitionId: CATAN },
+        catanHostOr(),
+      ]),
+    ),
+  )("%s", (_, action, target, actor, expected) => {
+    expect(can(ACTORS[actor], action, target)).toBe(expected);
+  });
+});
+
+describe("can: logging, editing and deleting a Game (ADR 0006)", () => {
+  const ME = "participant-me";
+  const RIVAL = "participant-rival";
+  const THIRD = "participant-third";
+  const ADMIN = "Organizers and Hosts only.";
+  const player = (participantId: string) => ({ teamId: null, participantId });
+
+  type Facet = GameLogFacet;
+  /** Open, individual scoring; I'm linked, a player, and logged the Game. */
+  const facet = (over: Partial<Facet> = {}): Facet => ({
+    runs: false,
+    closed: false,
+    loggingOpen: true,
+    bestOfDecided: false,
+    linked: { participantId: ME, teamId: null },
+    scoring: "individual",
+    entrantsOpen: true,
+    entrants: [],
+    players: [player(ME), player(RIVAL)],
+    game: { loggedByParticipantId: ME, players: [player(ME), player(RIVAL)] },
+    ...over,
+  });
+  const target = (over: Partial<Facet> = {}) => ({
+    warWeekId: XI,
+    competitionId: CATAN,
+    gameLog: facet(over),
+  });
+  const writes = ["games.log", "games.edit", "games.delete"] as const;
+
+  it("lets a linked Participant who is a player log the Game", () => {
+    expect(can(ACTORS.participant, "games.log", target())).toBeNull();
+  });
+
+  it('the "Which one is you?" pick grants nothing: no linked Participant', () => {
+    for (const action of writes) {
+      expect(
+        can(ACTORS.participant, action, target({ linked: null })),
+        action,
+      ).toBe(NOT_LINKED);
+    }
+  });
+
+  it("refuses a Participant who isn't a player in the Game", () => {
+    expect(
+      can(
+        ACTORS.participant,
+        "games.log",
+        target({ players: [player(RIVAL), player(THIRD)] }),
+      ),
+    ).toBe(NOT_A_PLAYER);
+  });
+
+  it("lets the logger edit or delete their own Game until close", () => {
+    expect(can(ACTORS.participant, "games.edit", target())).toBeNull();
+    expect(
+      can(ACTORS.participant, "games.delete", target({ players: [] })),
+    ).toBeNull();
+    for (const action of ["games.edit", "games.delete"] as const) {
+      expect(
+        can(ACTORS.participant, action, target({ closed: true })),
+        action,
+      ).toBe(COMPETITION_CLOSED);
+    }
+  });
+
+  it("refuses another player in the Game an edit or delete", () => {
+    const game = {
+      loggedByParticipantId: RIVAL,
+      players: [player(ME), player(RIVAL)],
+    };
+    for (const action of ["games.edit", "games.delete"] as const) {
+      expect(can(ACTORS.participant, action, target({ game })), action).toBe(
+        NOT_THE_LOGGER,
+      );
+    }
+  });
+
+  it("refuses an edit that moves the Game off its logger", () => {
+    expect(
+      can(
+        ACTORS.participant,
+        "games.edit",
+        target({ players: [player(RIVAL), player(THIRD)] }),
+      ),
+    ).toBe(NOT_A_PLAYER);
+  });
+
+  it("lets a Host or Organizer who runs it log, edit or delete any Game", () => {
+    const game = {
+      loggedByParticipantId: RIVAL,
+      players: [player(RIVAL), player(THIRD)],
+    };
+    for (const actor of [ACTORS.organizer, ACTORS.host]) {
+      for (const action of writes) {
+        expect(
+          can(
+            actor,
+            action,
+            target({ runs: true, linked: null, game, loggingOpen: false }),
+          ),
+          action,
+        ).toBeNull();
+      }
+    }
+  });
+
+  it("a closed Competition refuses everyone, an Organizer included", () => {
+    for (const actor of [ACTORS.organizer, ACTORS.host, ACTORS.participant]) {
+      for (const action of writes) {
+        expect(
+          can(actor, action, target({ runs: true, closed: true })),
+          action,
+        ).toBe(COMPETITION_CLOSED);
+      }
+    }
+  });
+
+  it("binds an Organizer by the facet: `runs` is the caller's to load", () => {
+    expect(
+      can(ACTORS.organizer, "games.log", target({ linked: null, runs: false })),
+    ).toBe(NOT_LINKED);
+  });
+
+  it("refuses when the Game facts weren't loaded, whoever asks", () => {
+    for (const actor of [ACTORS.participant, ACTORS.organizer, ACTORS.host]) {
+      for (const action of writes) {
+        expect(
+          can(actor, action, { warWeekId: XI, competitionId: CATAN }),
+          action,
+        ).toBe(ADMIN);
+      }
+    }
+  });
+
+  it("refuses an anonymous visitor and a non-JG email", () => {
+    const outsider = {
+      email: "someone@gmail.com",
+      isOrganizer: false,
+      hosts: [],
+    };
+    for (const action of writes) {
+      expect(can(null, action, target()), action).toBe(SIGN_IN);
+      expect(can(outsider, action, target()), action).toBe(SIGN_IN);
+    }
+  });
+
+  it("never lets a player change the settings, the list or close it", () => {
+    for (const action of [
+      "games.settings",
+      "games.entrants",
+      "games.close",
+      "games.reopen",
+    ] as WarWeekAction[]) {
+      expect(can(ACTORS.participant, action, target()), action).toBe(NOT_HOST);
+    }
+  });
+});
+
+describe("can: enrolling and withdrawing (ADR 0006)", () => {
+  const ME = "participant-me";
+  const RED = "team-red";
+  const ADMIN = "Organizers and Hosts only.";
+  const NOW = new Date("2027-02-22T15:00:00Z");
+
+  type Facet = EnrollFacet;
+  /** Individual scoring, switch on, open; I'm linked and not entered. */
+  const facet = (over: Partial<Facet> = {}): Facet => ({
+    selfEnroll: true,
+    closed: false,
+    built: false,
+    hasGames: false,
+    entrantLimit: null,
+    entrantCount: 0,
+    enrollClosesAt: null,
+    now: NOW,
+    scoring: "individual",
+    linked: { participantId: ME, teamId: RED, squadId: null },
+    entrants: [],
+    hasSquads: false,
+    squad: null,
+    ...over,
+  });
+  const entered = { entrants: [{ teamId: null, participantId: ME }] };
+  const target = (over: Partial<Facet> = {}) => ({
+    warWeekId: XI,
+    competitionId: CATAN,
+    enroll: facet(over),
+  });
+
+  it("lets a linked Participant enroll, then withdraw before close", () => {
+    expect(can(ACTORS.participant, "competition.enroll", target())).toBeNull();
+    expect(
+      can(ACTORS.participant, "competition.withdraw", target(entered)),
+    ).toBeNull();
+  });
+
+  it("refuses a withdrawal after enrollment closes: the Host removes them", () => {
+    expect(
+      can(
+        ACTORS.participant,
+        "competition.withdraw",
+        target({ ...entered, built: true }),
+      ),
+    ).toBe(ENROLL_CLOSED_BUILT);
+  });
+
+  it("the pick grants nothing: no linked Participant", () => {
+    for (const action of [
+      "competition.enroll",
+      "competition.withdraw",
+    ] as const) {
+      expect(
+        can(ACTORS.participant, action, target({ linked: null })),
+        action,
+      ).toBe(NOT_LINKED);
+    }
+  });
+
+  it("binds an Organizer and the Host too: switch off refuses", () => {
+    for (const actor of [ACTORS.organizer, ACTORS.host]) {
+      expect(
+        can(actor, "competition.enroll", target({ selfEnroll: false })),
+      ).toBe(ENROLL_OFF);
+    }
+  });
+
+  it("refuses when the enrollment facts weren't loaded, whoever asks", () => {
+    for (const actor of [ACTORS.participant, ACTORS.organizer]) {
+      for (const action of [
+        "competition.enroll",
+        "competition.withdraw",
+      ] as const) {
+        expect(
+          can(actor, action, { warWeekId: XI, competitionId: CATAN }),
+          action,
+        ).toBe(ADMIN);
+      }
+    }
+  });
+
+  it("refuses an anonymous visitor", () => {
+    expect(can(null, "competition.enroll", target())).toBe(SIGN_IN);
+  });
+
+  it("never lets a Participant flip the enroll switch", () => {
+    expect(can(ACTORS.participant, "competition.self-enroll", target())).toBe(
+      NOT_HOST,
+    );
   });
 });
 

@@ -1,7 +1,8 @@
 import { ABOUT_FEATURES } from "@/lib/about";
 
 /**
- * The About page's eight feature cards (ticket 28). Each shows the still that
+ * The About page's feature cards (ticket 28), one per `ABOUT_FEATURES`
+ * entry. Each shows the still that
  * `scripts/about-media.ts` wrote into `public/about/<slug>.png` from the
  * seeded demo: no hand-captured screenshot anywhere on the page.
  */

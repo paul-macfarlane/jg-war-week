@@ -615,6 +615,146 @@ function chatCardUrl(result: LeaderboardResult): string {
 }
 
 // ---------------------------------------------------------------------------
+// A logged Game for the "games" still (R3)
+
+/** The seeded head-to-head, open-to-everyone `games` Competition on XI. */
+const GAMES_COMP_NAME = "Bouncy Pong";
+
+/** Bouncy Pong's id and two Participant names to log a Game between. */
+async function findGamesDemo(): Promise<{
+  competitionId: string;
+  playerA: string;
+  playerB: string;
+}> {
+  const [comp] = await query<{ id: string }>(
+    `select c.id from competition c
+     join war_week w on w.id = c.war_week_id
+     where w.edition = 'xi' and c.name = $1`,
+    [GAMES_COMP_NAME],
+  );
+  if (!comp) {
+    throw new Error(`no seeded "${GAMES_COMP_NAME}" Competition on XI`);
+  }
+  const [xiWarWeek] = await query<{ id: string }>(
+    `select id from war_week where edition = 'xi'`,
+  );
+  const participants = await query<{ display_name: string }>(
+    `select display_name from participant where war_week_id = $1
+     order by display_name limit 2`,
+    [xiWarWeek.id],
+  );
+  if (participants.length < 2) {
+    throw new Error("XI needs at least 2 Participants for the Games demo");
+  }
+  return {
+    competitionId: comp.id,
+    playerA: participants[0].display_name,
+    playerB: participants[1].display_name,
+  };
+}
+
+/**
+ * Picks `name` in a combobox found by its `<label for>` text (the Game
+ * form's fields have no `aria-label`, unlike the Points Entry form's).
+ */
+async function selectLabeledCombobox(
+  page: Page,
+  labelText: string,
+  name: string,
+): Promise<string> {
+  const inputId = await page.evaluate<string | null>(`(() => {
+    const label = Array.from(document.querySelectorAll("label")).find((l) => l.textContent?.trim() === ${JSON.stringify(labelText)});
+    return label ? label.getAttribute("for") : null;
+  })()`);
+  if (!inputId) throw new Error(`no field labeled "${labelText}"`);
+  await page.evaluate(
+    `document.getElementById(${JSON.stringify(inputId)})?.focus()`,
+  );
+  await page.send("Input.insertText", { text: name });
+  await sleep(500);
+  const picked = await page.evaluate<string | null>(`(() => {
+    const option = Array.from(document.querySelectorAll('[role="option"]')).find((o) => o.innerText.includes(${JSON.stringify(name)}));
+    option?.click();
+    return option ? option.innerText : null;
+  })()`);
+  if (!picked) throw new Error(`no "${labelText}" option for ${name}`);
+  return picked;
+}
+
+/**
+ * Logs one head-to-head Game on Bouncy Pong through the real Game form (the
+ * `logGame` action, as the demo Organizer): opens "Log a Game" from the
+ * Competition page, picks both players and who won, and saves. Returns the
+ * logged Game's id so the caller can undo it in `finally`.
+ */
+async function captureGamesDemo(cookie: string): Promise<{
+  gameId: string;
+  competitionId: string;
+}> {
+  const { competitionId, playerA, playerB } = await findGamesDemo();
+  const page = await Page.open();
+  await page.viewport(STILL, false);
+  await page.cookie(cookie);
+  await page.goto(`/xi/competitions/${competitionId}`);
+
+  const opened = await page.evaluate<boolean>(
+    `(() => { const b = Array.from(document.querySelectorAll("button")).find((b) => b.innerText.trim() === "Log a Game"); b?.click(); return Boolean(b); })()`,
+  );
+  if (!opened) throw new Error('no "Log a Game" button on Bouncy Pong');
+  await sleep(500);
+
+  await selectLabeledCombobox(page, "Player A", playerA);
+  await selectLabeledCombobox(page, "Player B", playerB);
+  const wonLabel = `${playerA} won`;
+  const wonPicked = await page.evaluate<boolean>(`(() => {
+    const button = Array.from(document.querySelectorAll("button")).find((b) => b.innerText.trim() === ${JSON.stringify(wonLabel)});
+    button?.click();
+    return Boolean(button);
+  })()`);
+  if (!wonPicked) throw new Error(`no "${wonLabel}" button in the Game form`);
+  await sleep(300);
+
+  const submitted = await page.evaluate<boolean>(
+    `(() => { const b = Array.from(document.querySelectorAll('button[type="submit"]')).find((b) => b.innerText.trim() === "Log Game"); b?.click(); return Boolean(b); })()`,
+  );
+  if (!submitted) throw new Error('no "Log Game" submit button');
+
+  let saved = false;
+  for (let i = 0; i < 40; i++) {
+    await sleep(200);
+    const stillOpen = await page.evaluate<boolean>(
+      `document.body.innerText.includes("Choose both players and who won.")`,
+    );
+    if (!stillOpen) {
+      saved = true;
+      break;
+    }
+  }
+  if (!saved) throw new Error("the demo Game never finished saving");
+
+  const scrolled = await page.evaluate<boolean>(scrollToText("Leaderboard"));
+  await sleep(300);
+  if (!scrolled) throw new Error("no Leaderboard section on Bouncy Pong");
+  await assertNoRealEmail(page, "games");
+  await page.screenshot(path.join(MEDIA, "games.png"));
+  note(`still: games from /xi/competitions/${competitionId}, one Game logged`);
+  await page.close();
+
+  const [row] = await query<{ id: string }>(
+    `select id from game where competition_id = $1 and logged_by_email = $2
+     order by created_at desc limit 1`,
+    [competitionId, DEMO_EMAIL],
+  );
+  if (!row) throw new Error("could not find the demo Game to undo");
+  return { gameId: row.id, competitionId };
+}
+
+/** Undoes the one Game `captureGamesDemo` logged. */
+async function teardownGamesDemo(gameId: string) {
+  await query(`delete from game where id = $1`, [gameId]);
+}
+
+// ---------------------------------------------------------------------------
 // The About hero: Standings moving after a Points Entry (ticket 04)
 
 /**
@@ -820,6 +960,7 @@ async function main() {
   });
   const chrome = launchChrome();
   let standingsEntryId: string | undefined;
+  let gamesDemoGameId: string | undefined;
 
   try {
     for (let i = 0; i < 60; i++) {
@@ -872,6 +1013,8 @@ async function main() {
         if (!found) throw new Error("no champion card on the Bracket view");
       },
     );
+    const gamesDemo = await captureGamesDemo(cookie);
+    gamesDemoGameId = gamesDemo.gameId;
     await still("lifecycle", cookie, "/admin/setup", async (page) => {
       const found = await page.evaluate<boolean>(scrollToText("Lifecycle"));
       await sleep(300);
@@ -905,6 +1048,7 @@ async function main() {
     await sleep(1_000);
     rmSync(chrome.dir, { recursive: true, force: true, maxRetries: 3 });
     if (standingsEntryId) await teardownStandingsDemo(standingsEntryId);
+    if (gamesDemoGameId) await teardownGamesDemo(gamesDemoGameId);
     await query(`delete from organizer where email = $1`, [DEMO_EMAIL]);
     await query(
       `update points_entry set entered_by_email = $1 where entered_by_email = $2`,

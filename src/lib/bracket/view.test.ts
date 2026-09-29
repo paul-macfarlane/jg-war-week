@@ -287,12 +287,14 @@ describe("formatLabel", () => {
     expect(formatLabel("points")).toBe("Points");
     expect(formatLabel("single-elimination")).toBe("Single elimination");
     expect(formatLabel("heats")).toBe("Heats");
+    expect(formatLabel("games")).toBe("Games");
   });
 });
 
 describe("isBracketFormat", () => {
-  it("is false for points or no Format chosen", () => {
+  it("is false for points, games or no Format chosen", () => {
     expect(isBracketFormat("points")).toBe(false);
+    expect(isBracketFormat("games")).toBe(false);
     expect(isBracketFormat(null)).toBe(false);
     expect(isBracketFormat(undefined)).toBe(false);
   });

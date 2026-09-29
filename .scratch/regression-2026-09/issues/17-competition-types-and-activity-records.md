@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Source:** regression feedback items 15 and 20
 
@@ -29,13 +29,18 @@
 
 ## Acceptance criteria
 
-- [ ] Leaderboard ranking is unit-tested per Game Type: head-to-head wins with draws, best-score best and total in both directions, ranked Finish Points with ties sharing the higher finish; Best of detects the decided moment.
-- [ ] Access is unit-tested per ADR 0006: a linked Participant in the Game can log; the "Which one is you?" pick grants nothing; a non-player is refused; the logger edits or deletes their own Game until close; another player can't; Host and Organizer can; a closed Competition refuses everyone.
-- [ ] Close awards Placement Points from the leaderboard as Points Entries and the Standings change; Reopen withdraws them (DB-backed test).
-- [ ] Playwright: a Participant logs a head-to-head Game from the home shortcut, the leaderboard updates, the Host edits it, closes the Competition, and the Standings move. Screenshots under `test-results/e2e/<test>/`.
-- [ ] Smoke covers the seeded `games` Competitions' pages and one Game logged over HTTP.
-- [ ] Schema change and demo seed updated together; plan red-teamed.
-- [ ] `/about`, `docs/maintainers-guide.md` and CONTEXT.md's rule sections updated; ADR 0006 set to accepted.
-- [ ] `pnpm gate` passes.
+- [x] Leaderboard ranking is unit-tested per Game Type: head-to-head wins with draws, best-score best and total in both directions, ranked Finish Points with ties sharing the higher finish; Best of detects the decided moment.
+- [x] Access is unit-tested per ADR 0006: a linked Participant in the Game can log; the "Which one is you?" pick grants nothing; a non-player is refused; the logger edits or deletes their own Game until close; another player can't; Host and Organizer can; a closed Competition refuses everyone.
+- [x] Close awards Placement Points from the leaderboard as Points Entries and the Standings change; Reopen withdraws them (DB-backed test).
+- [x] Playwright: a Participant logs a head-to-head Game from the home shortcut, the leaderboard updates, the Host edits it, closes the Competition, and the Standings move. Screenshots under `test-results/e2e/<test>/`.
+- [x] Smoke covers the seeded `games` Competitions' pages and one Game logged over HTTP.
+- [x] Schema change and demo seed updated together; plan red-teamed.
+- [x] `/about`, `docs/maintainers-guide.md` and CONTEXT.md's rule sections updated; ADR 0006 set to accepted.
+- [x] `pnpm gate` passes.
 
 ## Comments
+
+- 2026-09-29: Technical plan and red-team record for Epic R3 (tickets 17 and 15) in [`../epics/R3-execution.md`](../epics/R3-execution.md); approved by Paul. Ready to implement.
+- 2026-09-29: claimed by Atlas (`/atlas-implement`, work package `regression-r3`, Epic R3) — `ready-for-agent → in-progress` on `feat/regression-r3-games`.
+- 2026-09-29: `in-progress → ai-review`: every deliverable integrated on `feat/regression-r3-games`; `pnpm gate` exit 0 at `0e90972a7b0eecb1920e0046a79db37d5be79366`; aggregate AI code review started.
+- 2026-09-29: [CLOSEOUT] `ai-review → done`. Verified at `5b007ad` (`pnpm gate`, exit 0; `test-results/r3-gate/gate.txt`). Evidence per criterion, the AI Code Review (both axes, every finding and disposition) and deviations: `../epics/R3-execution.md` ([AI CODE REVIEW], [CLOSEOUT]). PR: https://github.com/paul-macfarlane/jg-war-week/pull/92

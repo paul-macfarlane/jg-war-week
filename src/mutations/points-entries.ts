@@ -4,6 +4,7 @@ import { DBOrTx, db } from "@/db";
 import { competition, pointsEntry } from "@/db/schema";
 import {
   type PointsEntryValues,
+  generatedRefusal as generatedRefusalFor,
   pointsEntryTarget,
   pointsEntryTargetError,
 } from "@/lib/points-entry";
@@ -15,7 +16,6 @@ import {
 } from "@/queries/points-entries";
 
 const NOT_FOUND = "That Points Entry no longer exists.";
-const FROM_BRACKET = "This Points Entry comes from a bracket. Change it there.";
 
 /**
  * The columns to write for a Points Entry of this War Week: the Competition
@@ -71,17 +71,26 @@ function inWarWeek(id: string, warWeekId: string, dbOrTx: DBOrTx) {
   );
 }
 
-/** Refuses a Points Entry a finalized Bracket generated. */
+/**
+ * Refuses a Points Entry a finalized Bracket or a closed `games`
+ * Competition generated, worded for its Competition's Format.
+ */
 async function generatedRefusal(
   id: string,
   warWeekId: string,
   dbOrTx: DBOrTx,
 ): Promise<MutationResult | null> {
   const [found] = await dbOrTx
-    .select({ generatedByBracket: pointsEntry.generatedByBracket })
+    .select({
+      generatedByBracket: pointsEntry.generatedByBracket,
+      format: competition.format,
+    })
     .from(pointsEntry)
+    .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
     .where(inWarWeek(id, warWeekId, dbOrTx));
-  return found?.generatedByBracket ? { ok: false, error: FROM_BRACKET } : null;
+  return found?.generatedByBracket
+    ? { ok: false, error: generatedRefusalFor(found.format) }
+    : null;
 }
 
 /**
