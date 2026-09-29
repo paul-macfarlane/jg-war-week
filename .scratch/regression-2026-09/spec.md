@@ -53,6 +53,15 @@ correctness, then design, then fun.
 
 - `20` A person across War Weeks (nice-to-have; needs grilling)
 
+### Follow-ups from Epic R3 (needs-triage)
+
+- `21` Forms keep their input across the Sheet/Dialog switch (bug)
+- `22` A disabled Enroll button looks disabled
+- `23` Result choices use shadcn toggle-group
+- `24` End War Week warns about open Games Competitions
+- `25` Rename `finalized_at` and `generated_by_bracket` (schema: red-team)
+- `26` The /about Games still shows its Competition title
+
 ## Decisions (grilling, 2026-09-28)
 
 Full record: `grilling-2026-09-28.md`. Glossary: `CONTEXT.md`. Access: ADR 0006.

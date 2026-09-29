@@ -47,7 +47,7 @@ async function enterAndGenerate(page: Page, entrants: string[]) {
   await expect(page.getByText(`(${entrants.length} chosen)`)).toBeVisible();
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Save Entrants" }).click();
-  await expect(page.getByText("Entrants saved")).toBeVisible();
+  await expect(page.getByText("Entrants saved", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Generate" }).click();
   await expect(page.getByText("Bracket generated")).toBeVisible();
 }

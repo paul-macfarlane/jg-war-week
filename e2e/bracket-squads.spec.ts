@@ -226,7 +226,7 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await page.getByRole("button", { name: "All Squads" }).click();
     await expect(page.getByText("Squads (4 chosen)")).toBeVisible();
     await page.getByRole("button", { name: "Save Entrants" }).click();
-    await expect(page.getByText("Entrants saved")).toBeVisible();
+    await expect(page.getByText("Entrants saved", { exact: true })).toBeVisible();
 
     const selfReport = page.getByRole("switch", { name: "Self-report" });
     await selfReport.click();

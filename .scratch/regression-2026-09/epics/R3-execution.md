@@ -788,3 +788,6 @@ The worktree plan was right about where the conflicts would be.
 - End War Week warning for an open Games Competition (decision 18).
 - Rename `finalized_at` and `generated_by_bracket` (decision 1).
 
+Follow-ups are tracked as tickets `21`–`26` under `../issues/` (`needs-triage`).
+
+- 2026-09-29: CI on PR #92 failed on `026a856`: `e2e/bracket-tree.spec.ts` matched `getByText("Entrants saved")` against both the toast and the builder's existing "No Entrants saved yet." line, a timing-dependent strict-mode violation. The same run passed on `9024a7c`. The loose locator predates R3 (Epic E) and appears in four Bracket specs. Fixed by matching the toast text exactly (`{ exact: true }`) in `bracket.spec.ts`, `bracket-heats.spec.ts`, `bracket-squads.spec.ts` and `bracket-tree.spec.ts`.
