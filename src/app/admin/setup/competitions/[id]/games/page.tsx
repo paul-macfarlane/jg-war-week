@@ -3,33 +3,36 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
-import { BracketBuilder } from "@/components/bracket-builder";
-import { getBracket, getSquads } from "@/queries/brackets";
+import { GamesBuilder } from "@/components/games-builder";
+import { getBracketEntrants } from "@/queries/brackets";
+import { getEnrollFacts } from "@/queries/enrollment";
+import { getGamesView } from "@/queries/games";
 import { getPointsEntryFormOptions } from "@/queries/points-entries";
 
 import { loadAdminPage } from "../../../../gate";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = { title: "Bracket · JG War Week" };
+export const metadata: Metadata = { title: "Games · JG War Week" };
 
-export default async function BracketBuilderPage({
+export default async function GamesBuilderPage({
   params,
-}: PageProps<"/admin/setup/competitions/[id]/bracket">) {
+}: PageProps<"/admin/setup/competitions/[id]/games">) {
   const { id } = await params;
   const { warWeek, email, allowed, isOrganizer, editions, runs } =
-    await loadAdminPage(`/admin/setup/competitions/${id}/bracket`);
+    await loadAdminPage(`/admin/setup/competitions/${id}/games`);
   if (!allowed || !runs(id)) {
     return <AdminRefused warWeek={warWeek} email={email} />;
   }
 
-  const [view, options] = await Promise.all([
-    getBracket(id),
+  const [view, options, entrants, enrollFacts] = await Promise.all([
+    getGamesView(id, email),
     getPointsEntryFormOptions(warWeek),
+    getBracketEntrants(id),
+    getEnrollFacts(id, email),
   ]);
   if (!view || view.competition.warWeekId !== warWeek.id) notFound();
   const { competition } = view;
-  const squads = await getSquads(competition.id);
 
   return (
     <AdminShell
@@ -46,25 +49,31 @@ export default async function BracketBuilderPage({
         >
           ← Competitions
         </Link>
-        <h1 className="text-2xl font-bold">{competition.name} · Bracket</h1>
-        <BracketBuilder
+        <GamesBuilder
           competition={{
             id: competition.id,
             name: competition.name,
             scoring: competition.scoring,
-            format: competition.format,
-            finalized: view.finalized,
-            selfReport: competition.selfReport,
-            selfEnroll: competition.selfEnroll,
-            entrantLimit: competition.entrantLimit,
-            enrollClosesAt: competition.enrollClosesAt,
+            gameType: competition.gameType,
+            config: competition.config,
+            entrantsOpen: competition.entrantsOpen,
+            loggingClosesAt: competition.loggingClosesAt,
+            closed: competition.closed,
+            placementPoints: competition.placementPoints,
+            bestOfDecided: view.bestOfDecided,
+            bestOfWinner: view.bestOfWinner,
           }}
-          entrants={view.entrants}
-          bracket={view.bracket}
+          entrants={entrants.map(({ teamId, participantId }) => ({
+            teamId,
+            participantId,
+          }))}
           teams={options.teams}
           participants={options.participants}
-          squads={squads}
-          teamLabel={warWeek.teamLabel}
+          enroll={{
+            selfEnroll: enrollFacts.enroll.selfEnroll,
+            entrantLimit: enrollFacts.enroll.entrantLimit,
+            enrollClosesAt: enrollFacts.enroll.enrollClosesAt,
+          }}
         />
       </section>
     </AdminShell>

@@ -1,8 +1,55 @@
-import { describe, expect, it } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
 
-import { forceableConfirmCopy } from "./bracket-builder";
+import type { Bracket } from "@/lib/bracket/types";
+
+import { BracketBuilder, forceableConfirmCopy } from "./bracket-builder";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: () => {}, push: () => {} }),
+}));
 
 const TITLE = "Clear every Heat Result and draw again?";
+
+const emptyBracket: Bracket = {
+  format: "single-elimination",
+  config: null,
+  heats: [],
+};
+
+const baseProps = {
+  competition: {
+    id: "c1",
+    name: "Tug of War",
+    scoring: "team" as const,
+    format: "single-elimination" as const,
+    finalized: false,
+    selfReport: false,
+    selfEnroll: false,
+    entrantLimit: null,
+    enrollClosesAt: null,
+  },
+  entrants: [],
+  bracket: emptyBracket,
+  teams: [],
+  participants: [],
+  squads: [],
+  teamLabel: "Team",
+};
+
+describe("BracketBuilder", () => {
+  it("shows the Squad help text under the Squads heading", () => {
+    const html = renderToStaticMarkup(<BracketBuilder {...baseProps} />);
+    expect(html).toContain(
+      "Squad: a pair or group from one Team, playing as one entrant.",
+    );
+  });
+
+  it("shows the Participants can enroll switch", () => {
+    const html = renderToStaticMarkup(<BracketBuilder {...baseProps} />);
+    expect(html).toContain("Participants can enroll");
+  });
+});
 
 describe("forceableConfirmCopy", () => {
   it("returns null when no Heat is timed", () => {
