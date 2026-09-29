@@ -1,19 +1,19 @@
-bracket demo: competition b4a8adc2-e0f0-4e0f-8be4-6c1aafa96462, champion entrant 23f50f9f-0e35-4c38-ad79-adbff3284eb6
+bracket demo: competition 09e5e155-c8ca-4b8f-8892-008ca245c400, champion entrant d94235d6-8602-406e-add5-da195752994e
 still: standings-before from /xi/leaderboard
 standings demo: moving "Red" from last (19.5) past first (20) with +15.5
 still: standings-entry from /admin/points, filled in
 still: standings-after from /xi/leaderboard
 standings demo: "Red" is now #1 of 2 (35 pts)
 finale: countdown started 4 ms after Start
-finale: 158 frames captured, 158 kept
+finale: 159 frames captured, 159 kept
 still: organizer-setup from /admin/setup
 points: picked Settlers of Catan
 Individual · Max 5 pts, "1st" preset buttons on screen: 1
 still: points from /admin/points
 still: schedule from /xi?at=2026-02-24T12%3A15%3A00-05%3A00
 still: announcements from /xi/news
-still: brackets from /xi/competitions/b4a8adc2-e0f0-4e0f-8be4-6c1aafa96462
-still: games from /xi/competitions/99eadae5-73eb-4bbb-a439-5c8457f94025, one Game logged
+still: brackets from /xi/competitions/09e5e155-c8ca-4b8f-8892-008ca245c400
+still: games from /xi/competitions/192b11fe-90e5-4ebe-91f6-c3c1f6921f16, one Game logged
 still: lifecycle from /admin/setup
 still: archive from /history
 ask-claude: get_leaderboard rows=2
