@@ -3,6 +3,16 @@ import {
   type HeatReportFacet,
   heatReportError,
 } from "@/lib/bracket/heat-report-rule";
+import {
+  type EnrollFacet,
+  enrollError,
+  withdrawError,
+} from "@/lib/games/enroll-rule";
+import {
+  type GameLogFacet,
+  gameChangeError,
+  gameLogError,
+} from "@/lib/games/log-rule";
 
 /** The only Google Workspace domain allowed to sign in. */
 export const JG_EMAIL_DOMAIN = "jahnelgroup.com";
@@ -60,8 +70,20 @@ export type WarWeekAction =
   | "bracket.unfinalize"
   | "bracket.squads"
   | "competition.self-report"
-  /** Self-report: the one Participant write (ADR 0005). */
+  | "games.settings"
+  | "games.entrants"
+  | "games.close"
+  | "games.reopen"
+  | "competition.self-enroll"
+  /** Self-report (ADR 0005). */
   | "bracket.heat-report"
+  /** Logging, editing and deleting a Game (ADR 0006). */
+  | "games.log"
+  | "games.edit"
+  | "games.delete"
+  /** Self-enrollment (ADR 0006). */
+  | "competition.enroll"
+  | "competition.withdraw"
   | `points-entry.${Crud}`
   | `schedule-item.${Crud}`
   | `announcement.${Crud | "pin" | "unpin"}`;
@@ -71,7 +93,8 @@ export type WarWeekAction =
  * family needs it the row's current Competition (`competitionId`, null for
  * an unlinked Schedule Item), the Competition the request posts
  * (`postedCompetitionId`, null to unlink), an Announcement's author and,
- * for reporting a Heat's result, the Heat's facts (`heatReport`).
+ * for the Participant writes, their facts: a Heat's (`heatReport`), a
+ * Game's (`gameLog`) or enrollment's (`enroll`).
  */
 export type AccessTarget = {
   warWeekId: string;
@@ -79,6 +102,8 @@ export type AccessTarget = {
   postedCompetitionId?: string | null;
   authorEmail?: string;
   heatReport?: HeatReportFacet;
+  gameLog?: GameLogFacet;
+  enroll?: EnrollFacet;
 };
 
 export const SIGN_IN_REFUSAL = "Sign in to continue.";
@@ -152,9 +177,13 @@ export const sameEmail = (a: string | null | undefined, b: string) =>
  * War Week. A Host runs their own Competitions (setup, Bracket, Points
  * Entries, linked Schedule Items) and posts Announcements in a War Week
  * where they host, editing or deleting their own. Everyone else signed in
- * is a Participant, whose one write is reporting the result of a Heat
- * they're in when self-report is on (ADR 0005); that rule binds everyone,
- * Organizers included. Pure: the caller loads the actor and the target.
+ * is a Participant, whose writes are reporting the result of a Heat
+ * they're in when self-report is on (ADR 0005), and logging Games,
+ * changing the Games they logged, and enrolling or withdrawing (ADR 0006).
+ * Those facet-bound rules bind everyone, Organizers included: a Host or
+ * Organizer runs a `games` Competition through the Game facet's `runs`,
+ * and adds Entrants through the picker. Pure: the caller loads the actor
+ * and the target.
  */
 export function can(actor: Actor, action: OrganizerListAction): string | null;
 export function can(
@@ -174,6 +203,27 @@ export function can(
     // A caller that forgot to load the facts can never grant.
     if (!target?.heatReport) return ADMIN_REFUSAL;
     return heatReportError(target.heatReport);
+  }
+  if (
+    action === "games.log" ||
+    action === "games.edit" ||
+    action === "games.delete"
+  ) {
+    // Before the Organizer shortcut: a closed Competition binds everyone,
+    // and the facet's `runs` (loaded by the caller) is the Host's way in.
+    if (!actor || !isJahnelGroupEmail(actor.email)) return SIGN_IN_REFUSAL;
+    if (!target?.gameLog) return ADMIN_REFUSAL;
+    return action === "games.log"
+      ? gameLogError(target.gameLog)
+      : gameChangeError(target.gameLog);
+  }
+  if (action === "competition.enroll" || action === "competition.withdraw") {
+    // Before the Organizer shortcut: enrollment binds everyone.
+    if (!actor || !isJahnelGroupEmail(actor.email)) return SIGN_IN_REFUSAL;
+    if (!target?.enroll) return ADMIN_REFUSAL;
+    return action === "competition.enroll"
+      ? enrollError(target.enroll)
+      : withdrawError(target.enroll);
   }
   if (!actor) return SIGN_IN_REFUSAL;
   if (actor.isOrganizer) return null;
@@ -216,6 +266,14 @@ export function can(
       return hostsIn(actor, warWeekId)
         ? null
         : "Only an Organizer or a Host of this War Week can change Announcements.";
+    case "games.settings":
+    case "games.entrants":
+    case "games.close":
+    case "games.reopen":
+    case "competition.self-enroll":
+      // A `games` Competition's setup, Entrants and close, and the enroll
+      // switch: the Host of this Competition, beside their Bracket twins.
+      return hostsCurrent ? null : NOT_HOST;
     default:
       // A Competition's setup and Bracket, and deleting a Points Entry or
       // Schedule Item: the Host of the row's current Competition.
