@@ -312,6 +312,63 @@ The engine is deliberately separate from the UI: `src/lib/bracket/` has no
 React imports and never reads or writes the database itself, so a new
 Format's rules are unit-testable on their own before any screen uses them.
 
+### Run a Competition as Games
+
+For a showdown, a best of X, or a week-long ladder of casual games — no code
+needed. Under **Setup → Competitions**, **Add a Competition** and choose its
+**Format**: "Games". A **Game Type** select appears — Head-to-head (a
+winner, or a draw when allowed), Best score (each Game records a score;
+best or total, higher or lower is better) or Ranked (a finishing order,
+with Finish Points per place). **A `games` Competition's Format and Game
+Type are fixed once it's created**: add a new Competition to run it a
+different way.
+
+**Add**, and you land on that Competition's Games setup page (the twin of a
+Bracket's), where the Host or an Organizer sets:
+
+- The Game Type's own settings (draws and Best of off/3/5/7 for
+  head-to-head; count best or total, direction and a unit label for
+  best-score; a Finish Points table for ranked).
+- **Entrants**: open to everyone eligible, or a fixed list (pick Teams or
+  Participants, as for a Bracket). A Best of needs a fixed list of exactly
+  two Entrants.
+- **Participants can enroll**, with an optional limit and close time (see
+  [Let Participants enroll themselves](#let-participants-enroll-themselves)
+  below) — off, and unavailable, once the Competition is open to everyone
+  or has a Best of.
+- An optional **logging close time**, after which only the Host or an
+  Organizer can log, edit or delete a Game.
+- **Close** / **Reopen**, behind a confirm: Close turns the leaderboard's
+  places into Placement Points Entries, the same tie rule as finalizing a
+  Bracket; Reopen withdraws them. A closed Competition refuses every Game
+  write, even the Host's, until it's reopened.
+
+Participants log, edit or delete Games straight from the Competition page —
+there's no separate results page. A **Log a Game** card on the home page
+lists every open `games` Competition the signed-in Participant may log in
+right now, straight to the form. The leaderboard and Game log (newest
+first, with a "Mine" filter) live on the Competition page for everyone, in
+the Archive too once the War Week ends: a `games` Competition left open
+when its War Week ends keeps taking Games until the Host closes it.
+
+### Let Participants enroll themselves
+
+The **"Participants can enroll"** switch (off by default) is on a
+Bracket's builder and a fixed-list `games` Competition's settings — never
+on a `points` Competition, an open-to-everyone `games` Competition, or a
+Best of (the Host sets those two Entrants by hand). Turn it on, and
+optionally set an Entrant limit and a close time; enrollment also closes
+the moment the Bracket is built, or (for `games`) the first Game is
+logged, or whenever the Host closes the Competition.
+
+In team scoring, any Participant on a Team enters or withdraws the whole
+Team. Once the Host has added any Squad to a team-scoring Bracket
+("Squad: a pair or group from one Team, playing as one entrant"),
+Participants join or leave a Squad instead — their own Team's, up to 16
+Participants — and Team enrollment turns off. Withdrawing (or leaving a
+Squad) works any time before enrollment closes; after that, only the Host
+or an Organizer removes an Entrant.
+
 ### Add a field
 
 ```text
@@ -403,10 +460,13 @@ emails.
 `/llms.txt` picks the new tool up from `src/mcp/tools.ts`. The tools today
 are `get_current_war_week`, `get_leaderboard`, `get_schedule`,
 `get_announcements`, `get_awards`, `get_faq`, `list_history`,
-`get_history` and `get_bracket` (a Competition's Bracket by name, with each
+`get_history`, `get_bracket` (a Competition's Bracket by name, with each
 Heat's time and place, and a Squad's `participants` by name; never who
-reported a result). `get_bracket` (`src/mcp/bracket.ts`) is the model
-for a tool that looks something up by name and whitelists what it returns.
+reported a result) and `get_games` (a Competition run as Games, by name:
+its settings, leaderboard ranked by Game Type and its Games newest first;
+never an email or who logged one). `get_bracket` (`src/mcp/bracket.ts`) is
+the model for a tool that looks something up by name and whitelists what
+it returns.
 
 ### Add or fix history
 

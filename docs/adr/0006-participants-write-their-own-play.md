@@ -1,6 +1,6 @@
 # ADR 0006: Participants write their own play
 
-- Status: proposed (from the regression grilling, `.scratch/regression-2026-09/`; built with tickets 15 and 17)
+- Status: accepted (built in Epic R3, work package regression-r3)
 - Date: 2026-09-28
 - Extends: ADR 0005 (Self-report stays as decided; it is no longer the only Participant write)
 
