@@ -4,7 +4,7 @@
 
 **Blocked by:** 17 (fixed-list `games` Competitions are one of the targets)
 
-**Status:** ready-for-agent
+**Status:** in-progress (claimed by Atlas `/atlas-implement`, work package `regression-r3`)
 
 **Source:** regression feedback item 12
 
@@ -28,3 +28,4 @@
 ## Comments
 
 - 2026-09-29: Technical plan and red-team record for Epic R3 (tickets 17 and 15) in [`../epics/R3-execution.md`](../epics/R3-execution.md); approved by Paul. Ready to implement.
+- 2026-09-29: claimed by Atlas (`/atlas-implement`, work package `regression-r3`, Epic R3) — `ready-for-agent → in-progress` on `feat/regression-r3-games`; starts after ticket 17's access facets are integrated on the branch.
