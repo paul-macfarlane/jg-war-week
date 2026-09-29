@@ -157,6 +157,18 @@ describe("defaultWinner", () => {
   it("is blank when nobody has points", () => {
     expect(defaultWinner({ main: "team", team: [], individual: [] })).toBe("");
   });
+
+  it("is blank when every Team is on 0 points (all share rank 1)", () => {
+    const standings: Standings = {
+      main: "team",
+      team: [
+        { ...team("Blue", 1), total: 0 },
+        { ...team("Red", 1), total: 0 },
+      ],
+      individual: [],
+    };
+    expect(defaultWinner(standings)).toBe("");
+  });
 });
 
 describe("parseClosingInput", () => {

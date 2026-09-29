@@ -168,7 +168,9 @@ export function nextEditionDefaults(
 export function defaultWinner(standings: Standings): string {
   const rows =
     standings.main === "team" ? standings.team : standings.individual;
-  const names = rows.filter((row) => row.rank === 1).map((row) => row.name);
+  const names = rows
+    .filter((row) => row.rank === 1 && row.total > 0)
+    .map((row) => row.name);
   if (names.length <= 1) return names.join("");
   return `Tie: ${names.join(" & ")}`;
 }
