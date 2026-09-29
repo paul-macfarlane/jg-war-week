@@ -662,6 +662,8 @@ export async function createCompetition(
             bracketConfig: defaultConfig(format),
             gameType,
             gameConfig: gameType ? defaultGamesConfig(gameType) : null,
+            // A new `games` Competition is open to everyone (Best of is off).
+            entrantsOpen: format === "games",
           })
           .returning({ id: competition.id });
         return { ok: true, id: created.id };
@@ -704,8 +706,8 @@ export async function updateCompetition(
 }
 
 /**
- * Deletes a Competition of this War Week, refusing one with Points Entries
- * or Schedule Items.
+ * Deletes a Competition of this War Week, refusing one with Points Entries,
+ * Schedule Items or Games.
  */
 export async function deleteCompetition(
   id: string,
@@ -729,6 +731,7 @@ export async function deleteCompetition(
           "Schedule Item",
           "Schedule Items",
         ],
+        [await tx.$count(game, eq(game.competitionId, id)), "Game", "Games"],
       ],
       "Delete or move them first.",
     );

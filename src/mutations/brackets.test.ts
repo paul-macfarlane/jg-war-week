@@ -2449,8 +2449,22 @@ describe.skipIf(!isLocalDatabase)("games Competitions", () => {
         format: "games",
         gameType: "head-to-head",
         gameConfig: { drawsAllowed: false, bestOf: null },
-        entrantsOpen: false,
+        entrantsOpen: true,
         bracketConfig: null,
+      });
+    });
+  });
+
+  it("won't delete a games Competition that has Games", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const f = await gamesFixture(tx);
+      await f.logGame(f.stairsId, [{ teamId: f.blue }]);
+      expect(await f.setup.deleteCompetition(f.stairsId, f.ctx, tx)).toEqual({
+        ok: false,
+        error: "This Competition has 1 Game. Delete or move them first.",
+      });
+      expect(await f.setup.deleteCompetition(f.pongId, f.ctx, tx)).toEqual({
+        ok: true,
       });
     });
   });
