@@ -14,7 +14,7 @@ import { computeNowNext, resolveClock, withHeats } from "@/lib/schedule";
 import { getPinnedAnnouncementCard } from "@/queries/announcements";
 import { getArchiveDetail } from "@/queries/archive";
 import { getSchedule, getTimedHeats } from "@/queries/schedule";
-import { getStandings } from "@/queries/standings";
+import { getPointsBreakdown, getStandings } from "@/queries/standings";
 
 import { getWarWeekForEdition } from "../war-week";
 
@@ -33,9 +33,10 @@ export default async function EditionHomePage({
     return <ArchiveDetailView detail={await getArchiveDetail(warWeek)} />;
   }
 
-  const [standings, schedule, pinnedAnnouncement, timedHeats] =
+  const [standings, breakdown, schedule, pinnedAnnouncement, timedHeats] =
     await Promise.all([
       getStandings(warWeek),
+      getPointsBreakdown(warWeek),
       getSchedule(warWeek.id),
       getPinnedAnnouncementCard(warWeek),
       getTimedHeats(warWeek),
@@ -91,7 +92,7 @@ export default async function EditionHomePage({
             <h2 className="text-lg font-semibold">
               {warWeek.mode === "teams"
                 ? `${warWeek.teamLabel} standings`
-                : "Individual leaderboard"}
+                : "Standings"}
             </h2>
             <Link
               href={`/${warWeek.edition}/leaderboard`}
@@ -104,6 +105,7 @@ export default async function EditionHomePage({
             standings={standings}
             individualLimit={HOME_INDIVIDUAL_ROWS}
             primaryColor={warWeek.primaryColor}
+            breakdown={breakdown}
           />
         </section>
       </div>

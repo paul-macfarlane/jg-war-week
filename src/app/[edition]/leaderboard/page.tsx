@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { AutoRefresh } from "@/components/auto-refresh";
 import { LeaderboardStandings } from "@/components/standings";
-import { getStandings } from "@/queries/standings";
+import { getPointsBreakdown, getStandings } from "@/queries/standings";
 
 import { getWarWeekForEdition } from "../war-week";
 
@@ -13,7 +13,10 @@ export default async function LeaderboardPage({
   const warWeek = await getWarWeekForEdition(edition);
   if (!warWeek) notFound();
 
-  const standings = await getStandings(warWeek);
+  const [standings, breakdown] = await Promise.all([
+    getStandings(warWeek),
+    getPointsBreakdown(warWeek),
+  ]);
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-6 px-4 py-6 md:max-w-3xl">
@@ -22,6 +25,7 @@ export default async function LeaderboardPage({
         standings={standings}
         teamLabel={warWeek.teamLabel}
         primaryColor={warWeek.primaryColor}
+        breakdown={breakdown}
       />
       <AutoRefresh />
     </main>

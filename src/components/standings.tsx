@@ -1,8 +1,15 @@
 import { Avatar } from "@/components/avatar";
 import { Card } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { YouTag } from "@/components/you";
 import { type RowFinale, countUpTotal } from "@/lib/finale";
 import { formatPoints } from "@/lib/points";
+import type { PointsBreakdownRow } from "@/lib/points-breakdown";
+import { formatLedgerTime } from "@/lib/points-entry";
 import type {
   IndividualStanding,
   Standings,
@@ -29,13 +36,47 @@ function finaleRow(total: number, finale: RowFinale | undefined) {
   };
 }
 
+/** The Points Entries behind a row's total, shown once its disclosure opens. */
+function PointsBreakdownList({ rows }: { rows: PointsBreakdownRow[] }) {
+  if (rows.length === 0) {
+    return (
+      <p className="text-foreground/60 border-t pt-2 text-xs">
+        No Points Entries yet.
+      </p>
+    );
+  }
+  return (
+    <ol className="flex flex-col gap-1.5 border-t pt-2 text-xs">
+      {rows.map((row) => (
+        <li
+          key={row.id}
+          className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5"
+        >
+          <span className="text-foreground/80 min-w-0">{row.competition}</span>
+          <span className="flex items-baseline gap-3">
+            <span className="text-foreground/60 whitespace-nowrap">
+              {formatLedgerTime(row.when)}
+            </span>
+            <span className="font-medium whitespace-nowrap tabular-nums">
+              {formatPoints(row.points)}
+            </span>
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 export function TeamStandingsList({
   rows,
   finale,
+  breakdown,
 }: {
   rows: TeamStanding[];
   /** Each row's Finale state, in row order, while the Finale plays. */
   finale?: RowFinale[];
+  /** Each Team's Points Entries by id; when given, rows expand to show them. */
+  breakdown?: Map<string, PointsBreakdownRow[]>;
 }) {
   if (rows.length === 0) return <NoPointsYet />;
 
@@ -43,22 +84,44 @@ export function TeamStandingsList({
     <ol className="flex flex-col gap-2">
       {rows.map((row, i) => {
         const shown = finaleRow(row.total, finale?.[i]);
+        const rowBreakdown = breakdown?.get(row.id);
+        const content = (
+          <>
+            <span className="text-foreground/60 w-6 text-sm font-medium tabular-nums">
+              {row.rank}
+            </span>
+            <span
+              aria-hidden
+              className="size-4 shrink-0 rounded-full"
+              style={{ backgroundColor: row.color }}
+            />
+            <span className="flex-1 font-semibold">{row.name}</span>
+            <span className="text-xl font-bold tabular-nums">
+              {formatPoints(shown.total)}
+            </span>
+          </>
+        );
         return (
           <li key={row.id} className={shown.className || undefined}>
-            <Card size="sm" className="flex-row items-center gap-3 px-4 py-3">
-              <span className="text-foreground/60 w-6 text-sm font-medium tabular-nums">
-                {row.rank}
-              </span>
-              <span
-                aria-hidden
-                className="size-4 shrink-0 rounded-full"
-                style={{ backgroundColor: row.color }}
-              />
-              <span className="flex-1 font-semibold">{row.name}</span>
-              <span className="text-xl font-bold tabular-nums">
-                {formatPoints(shown.total)}
-              </span>
-            </Card>
+            {rowBreakdown ? (
+              <Collapsible>
+                <Card size="sm" className="flex flex-col gap-2 px-4 py-3">
+                  <CollapsibleTrigger
+                    className="flex w-full items-center gap-3 text-left"
+                    aria-label={`${row.name} points breakdown`}
+                  >
+                    {content}
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <PointsBreakdownList rows={rowBreakdown} />
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            ) : (
+              <Card size="sm" className="flex-row items-center gap-3 px-4 py-3">
+                {content}
+              </Card>
+            )}
           </li>
         );
       })}
@@ -70,6 +133,7 @@ export function IndividualStandingsList({
   rows,
   finale,
   primaryColor,
+  breakdown,
 }: {
   rows: IndividualStanding[];
   /** Each row's Finale state, in row order, while the Finale plays. */
@@ -79,6 +143,11 @@ export function IndividualStandingsList({
    * Participant's Avatar (admin omits it).
    */
   primaryColor?: string;
+  /**
+   * Each Participant's Points Entries by id; when given, rows expand to
+   * show them.
+   */
+  breakdown?: Map<string, PointsBreakdownRow[]>;
 }) {
   if (rows.length === 0) return <NoPointsYet />;
 
@@ -88,11 +157,9 @@ export function IndividualStandingsList({
         {rows.map((row, i) => {
           const { team } = row;
           const shown = finaleRow(row.total, finale?.[i]);
-          return (
-            <li
-              key={row.id}
-              className={`flex items-center gap-3 px-2 py-2 ${YOU_ROW_CLASS} ${shown.className}`}
-            >
+          const rowBreakdown = breakdown?.get(row.id);
+          const content = (
+            <>
               <span className="text-foreground/60 w-6 text-sm font-medium tabular-nums">
                 {row.rank}
               </span>
@@ -118,6 +185,30 @@ export function IndividualStandingsList({
               <span className="font-semibold tabular-nums">
                 {formatPoints(shown.total)}
               </span>
+            </>
+          );
+          return (
+            <li
+              key={row.id}
+              className={`px-2 py-2 ${YOU_ROW_CLASS} ${shown.className}`}
+            >
+              {rowBreakdown ? (
+                <Collapsible>
+                  <div className="flex flex-col gap-2">
+                    <CollapsibleTrigger
+                      className="flex w-full items-center gap-3 text-left"
+                      aria-label={`${row.name} points breakdown`}
+                    >
+                      {content}
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <PointsBreakdownList rows={rowBreakdown} />
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
+              ) : (
+                <div className="flex items-center gap-3">{content}</div>
+              )}
             </li>
           );
         })}
@@ -131,19 +222,25 @@ export function HomeStandings({
   standings,
   individualLimit,
   primaryColor,
+  breakdown,
 }: {
   standings: Standings;
   /** How many individual rows the home page shows. */
   individualLimit: number;
   /** The Appearance Theme primary color, for Avatars with no Team. */
   primaryColor: string;
+  breakdown?: {
+    byTeam: Map<string, PointsBreakdownRow[]>;
+    byParticipant: Map<string, PointsBreakdownRow[]>;
+  };
 }) {
   return standings.main === "team" ? (
-    <TeamStandingsList rows={standings.team} />
+    <TeamStandingsList rows={standings.team} breakdown={breakdown?.byTeam} />
   ) : (
     <IndividualStandingsList
       rows={standings.individual.slice(0, individualLimit)}
       primaryColor={primaryColor}
+      breakdown={breakdown?.byParticipant}
     />
   );
 }
@@ -153,22 +250,35 @@ export function LeaderboardStandings({
   standings,
   teamLabel,
   primaryColor,
+  breakdown,
 }: {
   standings: Standings;
   teamLabel: string;
   /** The Appearance Theme primary color, for Avatars with no Team. */
   primaryColor: string;
+  breakdown?: {
+    byTeam: Map<string, PointsBreakdownRow[]>;
+    byParticipant: Map<string, PointsBreakdownRow[]>;
+  };
 }) {
   const teamSection = (
     <StandingsSection key="team" title={`${teamLabel} standings`}>
-      <TeamStandingsList rows={standings.team} />
+      <TeamStandingsList rows={standings.team} breakdown={breakdown?.byTeam} />
     </StandingsSection>
   );
   const individualSection = (
-    <StandingsSection key="individual" title="Individual leaderboard">
+    <StandingsSection
+      key="individual"
+      // A free-for-all War Week's main list is titled "Standings"; in
+      // `teams` mode this is the secondary, individual list.
+      title={
+        standings.main === "individual" ? "Standings" : "Individual leaderboard"
+      }
+    >
       <IndividualStandingsList
         rows={standings.individual}
         primaryColor={primaryColor}
+        breakdown={breakdown?.byParticipant}
       />
     </StandingsSection>
   );
@@ -176,10 +286,7 @@ export function LeaderboardStandings({
   const sections =
     standings.main === "team"
       ? [teamSection, individualSection]
-      : [
-          individualSection,
-          ...(standings.team.length > 0 ? [teamSection] : []),
-        ];
+      : [individualSection];
 
   return <div className="flex flex-col gap-6">{sections}</div>;
 }
