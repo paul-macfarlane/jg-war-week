@@ -686,3 +686,105 @@ Lint shows 0 errors. The nine new actions follow the ADR 0003 order. There is no
 Remediation goes to two parallel fix workers:
 - **RA (Opus):** backend and rules: F1–F6, F8, the minor, S1–S5, S9, S11–S14.
 - **RB (Sonnet):** UI copy and docs: S6–S8, S15, S16, and the e2e text they change.
+
+Remediation integrated:
+- RB (Sonnet) `ec30779` `5c25b58`: S6, S7, S8 (components), S15, S16.
+- RA (Opus) `4ec0455` `410e8ad` `85ce26f` `f985d96`: F1–F6, F8, the minor, S1–S5, S8 (builder and view), S9, S11–S14.
+
+RA's approved deviations:
+- F3 is proven at the `getGameLogFacts` + `gameLogError` seam, because `authorizeGameWrite` reads the session outside the test transaction.
+- The Best-of misfit check runs whenever Best of is on.
+- `setSelfEnroll`'s redundant limit re-check was removed; the parser and the column CHECK cover it.
+
+Every blocking finding is resolved; every other finding is resolved or carries its approved deviation.
+
+## [CLOSEOUT]
+
+2026-09-29. `/atlas-implement` work package `regression-r3`, one repository delivery: `war-weeker`, branch `feat/regression-r3-games` from `staging` `5067e46`, PR https://github.com/paul-macfarlane/jg-war-week/pull/92.
+
+### Deliverables
+
+| Deliverable | Plan step | Worker | Integrated |
+|---|---|---|---|
+| D0 Foundation | 0 | Opus (direct checkout) | `7a2124d` |
+| D1b Access rules | 1b | Opus (worktree) | `014621d` |
+| D1a Pure Games rules | 1a | Sonnet (worktree) | `07061c4` |
+| D2b Enrollment data and actions | 2b | Opus (worktree) | `1b49e93` (orchestrator fix: `members` → `inSquad`) |
+| D2a Games data and actions | 2a | Opus (worktree) | `aceab78` (orchestrator merge: `authorize.ts`; refusal copy unified) |
+| D3c MCP `get_games` | 3c | Sonnet (worktree) | `d7685fb` |
+| D3b Participant surfaces | 3b | Opus (worktree) | `f498b21` |
+| D3a Setup UI | 3a | Sonnet (worktree) | `52161ea` + orchestrator fix `a619f17` (Squad help copy) |
+| D4b Docs and showcase | 4 | Sonnet (worktree) | `2bd3d8f` |
+| D4a Proof (e2e, smoke) | 4 | Opus (worktree) | `b7e8c72` |
+| RB Review fixes: UI copy, docs | review | Sonnet (worktree) | `ec30779` `5c25b58` |
+| RA Review fixes: rules, data | review | Opus (worktree) | `4ec0455` `410e8ad` `85ce26f` `f985d96` |
+
+The orchestrator produced the `/about` media (`0b4408b`, `5b007ad`) and the evidence commits (`0e90972`, `9024a7c`).
+
+### Verified run command
+
+`set -a; . ./.env.example; set +a; pnpm gate` (typecheck, lint, test, build, smoke, e2e) returned **exit 0** at `5b007ad`:
+- vitest: 127 files, 2883 tests.
+- smoke: 198 ok.
+- e2e: 35 passed.
+
+Raw output: `test-results/r3-gate/gate.txt` (committed in `9024a7c`). `pnpm db:generate`: no schema changes.
+
+### Criteria
+
+| Id | Verdict | Evidence |
+|---|---|---|
+| 17-1 Leaderboard ranking per Game Type; Best of decided moment | PASS | vitest in `gate.txt`; `src/lib/games/leaderboard.test.ts` (best/lower, total/higher and a tie added in review) |
+| 17-2 Access per ADR 0006 (log; pick grants nothing; non-player refused; logger edits/deletes until close; other player refused; Host and Organizer can; closed refuses everyone) | PASS | vitest: `src/lib/games/log-rule.test.ts`, `src/lib/access.test.ts`, `src/mutations/games.test.ts` (in-lock re-check, a Game of another Competition, another War Week's player, close time for a Participant vs a Host) |
+| 17-3 Close awards Placement Points, Standings move; Reopen withdraws | PASS | `src/mutations/games.test.ts` (literal 10/10/3 with a tie; `getStandings` before and after; hand-entered row untouched) |
+| 17-4 Playwright: log from home, leaderboard, Host edits, closes, Standings move | PASS | `e2e/games.spec.ts` passed in `gate.txt`; `test-results/e2e/games-*/` (375, 1280) |
+| 17-5 Smoke: seeded Games pages and one Game over HTTP | PASS | `gate.txt` smoke `ok - games: …` (3 pages; unlinked refused; linked logged; ended War Week render; cleanup) |
+| 17-6 Schema and demo seed together; plan red-teamed | PASS | 0015/0016 applied from 0014 in one run (D0); no drift; seeds load `--reset` then plain (smoke); red-team record above |
+| 17-7 `/about`, guide and CONTEXT.md rules updated; ADR 0006 accepted | PASS | `test-results/e2e/regression-r3-about/about-games.png`; `public/about/games.png`; CONTEXT.md "Games rules" and "Enrollment rules"; guide recipe; ADR 0006 `accepted` |
+| 17-8 `pnpm gate` passes | PASS | `gate.txt` (exit 0) |
+| 17-M MCP `games` readable without emails | PASS | smoke `get_games` (no `@`) and `get_bracket` → `get_games`; `src/mcp/games.test.ts` |
+| 17-A Archive shows a past Games Competition | PASS | smoke: closed Competition with XI ended still renders its leaderboard and log, with no Log button |
+| 15-1 Access: switch off; linking; each close condition; team and Squad; withdraw before and after close | PASS | vitest: `src/lib/games/enroll-rule.test.ts`, `access.test.ts`, `src/mutations/enrollment.test.ts` (limit test sequential: approved deviation F7) |
+| 15-2 Playwright: enroll, withdraw, re-enroll; Host builds; refused after | PASS | `e2e/enrollment.spec.ts` passed; `test-results/e2e/enrollment-*/` |
+| 15-3 Squad help text in setup and on the Competition page | PASS | `e2e/bracket-squads.spec.ts` passed; `test-results/e2e/bracket-squads-help/` |
+| 15-4 Schema and seed together; red-teamed | PASS | as 17-6 |
+| 15-5 `/about` and guide updated | PASS | Brackets card enrollment sentence; guide enrollment paragraph; `about-games.png` run |
+| 15-6 `pnpm gate` passes | PASS | `gate.txt` |
+| E-1 ADR 0006 accepted | PASS | `docs/adr/0006-participants-write-their-own-play.md` |
+| E-2 Each ticket records its closeout and is `done` in this branch | PASS | this commit: tickets 17 and 15 and the epic, `[CLOSEOUT]` and `Status: done` |
+| E-3 CI on the PR runs smoke and e2e and passes | pending at closeout | https://github.com/paul-macfarlane/jg-war-week/pull/92: checks not yet reported when this record was written; the app monitors the PR |
+| E-4 `pnpm gate` passes locally | PASS | `gate.txt` |
+
+### Deviations
+
+All were approved at integration or review and recorded above and in the state file:
+- An Entrant with no Game is unranked for every Game Type.
+- The facet-shape tightenings in D1b.
+- D2b's facet hides the enroll switch where enrollment isn't offered.
+- Player validation binds Hosts too.
+- The smoke's "no email but the viewer's own" check (a signed-in page shows the viewer's own email).
+- F7 (sequential limit test).
+- S10 (hand-rolled choice group, precedent).
+- The Game form reset on the Sheet/Dialog breakpoint (existing `ResponsiveSheetDialog` behavior).
+- RA's F3 seam and Best-of misfit scope.
+- The review-driven rule additions: a new Games Competition starts open; refusals for settings that change logged Games; delete refused with Games.
+
+Proof root: not cleared, per Paul's R1 decision to keep earlier epics' committed evidence. R3's evidence sits in R3-named directories, and the screenshots of earlier specs re-rendered by the gate were restored, not committed.
+
+### Isolation re-check
+
+- **Wave 2:** the one predicted collision, `src/auth/authorize.ts` (D2a and D2b), materialized as conflicting import hunks and was merged by hand.
+- **Wave 3:** no conflicts.
+- **Wave 4:** no conflicts.
+- **Review wave (RA and RB):** zero shared files.
+
+The worktree plan was right about where the conflicts would be.
+
+### Follow-ups (not in this PR)
+
+- `ResponsiveSheetDialog` forms reset across the breakpoint.
+- Migrate "Who won?" and the Heat result choice to shadcn `toggle-group`.
+- Make the disabled Enroll button look disabled.
+- End War Week warning for an open Games Competition (decision 18).
+- Rename `finalized_at` and `generated_by_bracket` (decision 1).
+
