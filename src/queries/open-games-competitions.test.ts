@@ -1,0 +1,248 @@
+import { eq } from "drizzle-orm";
+import { describe, expect, it } from "vitest";
+
+import type { DBTx } from "@/db";
+import { isLocalDatabaseUrl } from "@/db/local-url";
+import { inRolledBackTransaction } from "@/db/test-transaction";
+
+// Runs only against a local Postgres (CI's service or docker compose; see
+// vitest.config.ts), never a hosted database.
+const isLocalDatabase = isLocalDatabaseUrl(
+  process.env.DATABASE_URL,
+  process.env.DATABASE_DRIVER,
+);
+
+const actorEmail = "organizer@jahnelgroup.com";
+
+/**
+ * A War Week with two Teams, plus a Team of another War Week, for building
+ * `games` Competitions in various states.
+ */
+async function fixture(tx: DBTx) {
+  const schema = await import("@/db/schema");
+  const warWeek = async (n: number) => {
+    const [row] = await tx
+      .insert(schema.warWeek)
+      .values({
+        edition: `o${n}`,
+        editionNumber: 9200 + n,
+        year: 9200 + n,
+        startDate: "2099-01-01",
+        endDate: "2099-01-05",
+        storyTheme: "Open Games Competitions test",
+        status: "upcoming",
+        mode: "teams",
+        teamLabel: "Team",
+        leaderTitle: "Captain",
+        slackChannelUrl: "https://example.slack.com/archives/x",
+        primaryColor: "#000",
+        primaryForegroundColor: "#fff",
+        accentColor: "#000",
+        backgroundColor: "#fff",
+        foregroundColor: "#000",
+        fontPreset: "sans",
+      })
+      .returning({ id: schema.warWeek.id });
+    return row.id;
+  };
+  const warWeekId = await warWeek(1);
+  const otherWarWeekId = await warWeek(2);
+  const [red, blue] = await tx
+    .insert(schema.team)
+    .values([
+      { warWeekId, name: "Red", color: "#f00" },
+      { warWeekId, name: "Blue", color: "#00f" },
+    ])
+    .returning({ id: schema.team.id });
+  const [otherTeam] = await tx
+    .insert(schema.team)
+    .values({ warWeekId: otherWarWeekId, name: "Red", color: "#f00" })
+    .returning({ id: schema.team.id });
+  await tx
+    .insert(schema.organizer)
+    .values({ email: actorEmail })
+    .onConflictDoNothing();
+  return {
+    schema,
+    ctx: { warWeekId, actorEmail },
+    otherCtx: { warWeekId: otherWarWeekId, actorEmail },
+    red: red.id,
+    blue: blue.id,
+    otherTeam: otherTeam.id,
+  };
+}
+
+async function modules() {
+  return {
+    mutations: await import("@/mutations/games"),
+    queries: await import("@/queries/open-games-competitions"),
+  };
+}
+
+/** A head-to-head Game the Red Team won against Blue. */
+const redBeatsBlue = (red: string, blue: string) => ({
+  players: [
+    { id: red, place: 1, score: null },
+    { id: blue, place: 2, score: null },
+  ],
+});
+
+describe.skipIf(!isLocalDatabase)("getOpenGamesCompetitions", () => {
+  it("lists an open games Competition with a Game", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations, queries } = await modules();
+      const f = await fixture(tx);
+      const [pong] = await tx
+        .insert(f.schema.competition)
+        .values({
+          warWeekId: f.ctx.warWeekId,
+          name: "Pong",
+          scoring: "team",
+          format: "games",
+          gameType: "head-to-head",
+          gameConfig: { drawsAllowed: false, bestOf: null },
+          entrantsOpen: true,
+        })
+        .returning({ id: f.schema.competition.id });
+      await mutations.logGame(pong.id, redBeatsBlue(f.red, f.blue), f.ctx, tx);
+
+      expect(
+        await queries.getOpenGamesCompetitions({ id: f.ctx.warWeekId }, tx),
+      ).toEqual([{ id: pong.id, name: "Pong" }]);
+    });
+  });
+
+  it("excludes a games Competition with no Game", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { queries } = await modules();
+      const f = await fixture(tx);
+      await tx.insert(f.schema.competition).values({
+        warWeekId: f.ctx.warWeekId,
+        name: "Pong",
+        scoring: "team",
+        format: "games",
+        gameType: "head-to-head",
+        gameConfig: { drawsAllowed: false, bestOf: null },
+        entrantsOpen: true,
+      });
+
+      expect(
+        await queries.getOpenGamesCompetitions({ id: f.ctx.warWeekId }, tx),
+      ).toEqual([]);
+    });
+  });
+
+  it("excludes a closed games Competition", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations, queries } = await modules();
+      const f = await fixture(tx);
+      const [pong] = await tx
+        .insert(f.schema.competition)
+        .values({
+          warWeekId: f.ctx.warWeekId,
+          name: "Pong",
+          scoring: "team",
+          format: "games",
+          gameType: "head-to-head",
+          gameConfig: { drawsAllowed: false, bestOf: null },
+          entrantsOpen: true,
+          placementPoints: [10, 6],
+        })
+        .returning({ id: f.schema.competition.id });
+      await mutations.logGame(pong.id, redBeatsBlue(f.red, f.blue), f.ctx, tx);
+      await tx
+        .update(f.schema.competition)
+        .set({ finalizedAt: new Date() })
+        .where(eq(f.schema.competition.id, pong.id));
+
+      expect(
+        await queries.getOpenGamesCompetitions({ id: f.ctx.warWeekId }, tx),
+      ).toEqual([]);
+    });
+  });
+
+  it("excludes a games Competition of another War Week", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations, queries } = await modules();
+      const f = await fixture(tx);
+      const [pong] = await tx
+        .insert(f.schema.competition)
+        .values({
+          warWeekId: f.otherCtx.warWeekId,
+          name: "Pong",
+          scoring: "team",
+          format: "games",
+          gameType: "head-to-head",
+          gameConfig: { drawsAllowed: false, bestOf: null },
+          entrantsOpen: true,
+        })
+        .returning({ id: f.schema.competition.id });
+      await mutations.logGame(
+        pong.id,
+        redBeatsBlue(f.red, f.otherTeam),
+        f.otherCtx,
+        tx,
+      );
+
+      expect(
+        await queries.getOpenGamesCompetitions({ id: f.ctx.warWeekId }, tx),
+      ).toEqual([]);
+    });
+  });
+
+  it("excludes a Bracket-Format Competition", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { queries } = await modules();
+      const f = await fixture(tx);
+      await tx.insert(f.schema.competition).values({
+        warWeekId: f.ctx.warWeekId,
+        name: "Pool",
+        scoring: "team",
+        format: "single-elimination",
+      });
+
+      expect(
+        await queries.getOpenGamesCompetitions({ id: f.ctx.warWeekId }, tx),
+      ).toEqual([]);
+    });
+  });
+
+  it("orders by name", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations, queries } = await modules();
+      const f = await fixture(tx);
+      const [zed, alpha] = await tx
+        .insert(f.schema.competition)
+        .values([
+          {
+            warWeekId: f.ctx.warWeekId,
+            name: "Zed Games",
+            scoring: "team",
+            format: "games",
+            gameType: "head-to-head",
+            gameConfig: { drawsAllowed: false, bestOf: null },
+            entrantsOpen: true,
+          },
+          {
+            warWeekId: f.ctx.warWeekId,
+            name: "Alpha Games",
+            scoring: "team",
+            format: "games",
+            gameType: "head-to-head",
+            gameConfig: { drawsAllowed: false, bestOf: null },
+            entrantsOpen: true,
+          },
+        ])
+        .returning({ id: f.schema.competition.id });
+      await mutations.logGame(zed.id, redBeatsBlue(f.red, f.blue), f.ctx, tx);
+      await mutations.logGame(alpha.id, redBeatsBlue(f.red, f.blue), f.ctx, tx);
+
+      expect(
+        await queries.getOpenGamesCompetitions({ id: f.ctx.warWeekId }, tx),
+      ).toEqual([
+        { id: alpha.id, name: "Alpha Games" },
+        { id: zed.id, name: "Zed Games" },
+      ]);
+    });
+  });
+});

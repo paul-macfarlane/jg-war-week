@@ -14,6 +14,7 @@ import {
   E2E_HOST_EMAIL,
   E2E_PARTICIPANT_EMAIL,
   asHost,
+  asOrganizer,
   signIn,
 } from "./session";
 import { teamTotal } from "./standings";
@@ -205,6 +206,29 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     await expect(
       page.getByRole("region", { name: "Games" }).getByText(edited),
     ).toBeVisible();
+
+    // An Organizer ending the War Week while it's still open is warned, and
+    // never blocked; Cancel leaves it open for the Host to close below.
+    const organizerContext = await browser.newContext({
+      baseURL: E2E_BASE_URL,
+    });
+    try {
+      await asOrganizer(organizerContext);
+      const organizerPage = await organizerContext.newPage();
+      await organizerPage.goto("/admin/setup");
+      await organizerPage.getByRole("button", { name: "End War Week" }).click();
+      const endDialog = organizerPage.getByRole("alertdialog");
+      await expect(endDialog).toContainText("Still open:");
+      await expect(endDialog).toContainText(COMPETITION);
+      await expect(
+        endDialog.getByRole("link", { name: COMPETITION }),
+      ).toHaveAttribute("href", `/admin/setup/competitions/${id}/games`);
+      await shoot(organizerPage, testInfo, "end-warning");
+      await endDialog.getByRole("button", { name: "Cancel" }).click();
+      await expect(endDialog).toBeHidden();
+    } finally {
+      await organizerContext.close();
+    }
 
     // The Host closes it from the Games setup page.
     await page.goto(`/admin/setup/competitions/${id}/games`);
