@@ -39,3 +39,5 @@
 - [ ] `pnpm gate` passes.
 
 ## Comments
+
+- 2026-09-29: Technical plan and red-team record for Epic R3 (tickets 17 and 15) in [`../epics/R3-execution.md`](../epics/R3-execution.md); approved by Paul. Ready to implement.
