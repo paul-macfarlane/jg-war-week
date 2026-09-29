@@ -10,8 +10,11 @@ import {
   NOT_A_PLAYER,
   NOT_LINKED,
   NOT_THE_LOGGER,
+  canLogSomething,
   gameChangeError,
   gameLogError,
+  onEntrantList,
+  playersRuleError,
 } from "@/lib/games/log-rule";
 
 const ME = "participant-me";
@@ -261,5 +264,209 @@ describe("gameChangeError: editing or deleting a Game", () => {
     expect(gameChangeError(change({ closed: true, runs: true }))).toBe(
       COMPETITION_CLOSED,
     );
+  });
+});
+
+describe("onEntrantList", () => {
+  const linked = { participantId: ME, teamId: RED };
+
+  it("individual: the linked Participant is among the sides", () => {
+    expect(onEntrantList("individual", linked, [player(ME)])).toBe(true);
+    expect(onEntrantList("individual", linked, [player(RIVAL)])).toBe(false);
+    expect(onEntrantList("individual", linked, [team(RED)])).toBe(false);
+  });
+
+  it("team: the linked Participant's Team is among the sides", () => {
+    expect(onEntrantList("team", linked, [team(BLUE), team(RED)])).toBe(true);
+    expect(onEntrantList("team", linked, [team(BLUE)])).toBe(false);
+    expect(onEntrantList("team", linked, [player(ME)])).toBe(false);
+  });
+
+  it("team: a Participant on no Team is never on the list", () => {
+    expect(
+      onEntrantList("team", { participantId: ME, teamId: null }, [
+        { teamId: null, participantId: ME },
+      ]),
+    ).toBe(false);
+  });
+});
+
+describe("canLogSomething: whether a Log button shows", () => {
+  it("lets a linked Participant log in an open Competition", () => {
+    expect(canLogSomething(facet({ players: [] }))).toBe(true);
+  });
+
+  it("lets a Host log, but nobody once closed", () => {
+    expect(canLogSomething(facet({ runs: true, linked: null }))).toBe(true);
+    expect(canLogSomething(facet({ runs: true, closed: true }))).toBe(false);
+  });
+
+  it("refuses no link, logging closed, no Team in team scoring and off the fixed list", () => {
+    expect(canLogSomething(facet({ linked: null }))).toBe(false);
+    expect(canLogSomething(facet({ loggingOpen: false }))).toBe(false);
+    expect(
+      canLogSomething(
+        teamFacet({ linked: { participantId: ME, teamId: null } }),
+      ),
+    ).toBe(false);
+    expect(canLogSomething(teamFacet({ entrants: [team(BLUE)] }))).toBe(false);
+    expect(canLogSomething(teamFacet())).toBe(true);
+  });
+
+  /**
+   * Every facet in the table, checked against `gameLogError`: a Log button
+   * shows exactly when some player set could be logged.
+   */
+  it("is true exactly when some player set passes gameLogError", () => {
+    const subsets = <T>(items: T[]): T[][] =>
+      items
+        .reduce<T[][]>(
+          (acc, item) => [...acc, ...acc.map((s) => [...s, item])],
+          [[]],
+        )
+        .filter((s) => s.length > 0);
+    const linkedOptions: GameLogFacet["linked"][] = [
+      null,
+      { participantId: ME, teamId: RED },
+      { participantId: ME, teamId: null },
+    ];
+    let checked = 0;
+    for (const scoring of ["individual", "team"] as const) {
+      const sides: GameLogFacet["players"] =
+        scoring === "team"
+          ? [team(RED), team(BLUE), team(GREEN)]
+          : [player(ME), player(RIVAL), player(THIRD)];
+      const sets = subsets(sides);
+      const entrantLists = [[], [sides[0]], [sides[1], sides[2]], sides];
+      for (const closed of [false, true])
+        for (const runs of [false, true])
+          for (const loggingOpen of [false, true])
+            for (const entrantsOpen of [false, true])
+              for (const linked of linkedOptions)
+                for (const entrants of entrantLists) {
+                  const base: GameLogFacet = facet({
+                    closed,
+                    runs,
+                    loggingOpen,
+                    bestOfDecided: !loggingOpen,
+                    linked,
+                    scoring,
+                    entrantsOpen,
+                    entrants: entrantsOpen ? [] : entrants,
+                    players: [],
+                  });
+                  const someSet = sets.some(
+                    (players) => gameLogError({ ...base, players }) === null,
+                  );
+                  expect(canLogSomething(base), JSON.stringify(base)).toBe(
+                    someSet,
+                  );
+                  checked++;
+                }
+    }
+    expect(checked).toBe(2 * 2 * 2 * 2 * 2 * 3 * 4);
+  });
+});
+
+describe("playersRuleError: the posted players' shape", () => {
+  const ok = {
+    gameType: "head-to-head" as const,
+    scoring: "individual" as const,
+    ids: [ME, RIVAL],
+    allInWarWeek: true,
+    bestOf: false,
+    entrantsOpen: true,
+    entrants: [],
+  };
+
+  it.each([
+    ["accepts two distinct players, open to everyone", ok, null],
+    [
+      "refuses a repeated player",
+      { ...ok, ids: [ME, ME] },
+      "Choose each player only once.",
+    ],
+    [
+      "refuses a head-to-head Game without exactly 2 players",
+      { ...ok, ids: [ME, RIVAL, THIRD] },
+      "A head-to-head Game has exactly 2 players.",
+    ],
+    [
+      "refuses a best-score Game without exactly 1 player",
+      { ...ok, gameType: "best-score" as const },
+      "A best-score Game has exactly 1 player.",
+    ],
+    [
+      "refuses a ranked Game with fewer than 2 players",
+      { ...ok, gameType: "ranked" as const, ids: [ME] },
+      "A ranked Game has at least 2 players.",
+    ],
+    [
+      "accepts a ranked Game of 3",
+      { ...ok, gameType: "ranked" as const, ids: [ME, RIVAL, THIRD] },
+      null,
+    ],
+    [
+      "refuses a Participant of another War Week",
+      { ...ok, allInWarWeek: false },
+      "Every player must be a Participant of this War Week.",
+    ],
+    [
+      "refuses a Team of another War Week",
+      {
+        ...ok,
+        scoring: "team" as const,
+        ids: [RED, BLUE],
+        allInWarWeek: false,
+      },
+      "Every player must be a Team of this War Week.",
+    ],
+    [
+      "refuses a Best of open to everyone",
+      { ...ok, bestOf: true },
+      "A Best of is played between its 2 Entrants.",
+    ],
+    [
+      "refuses a Best of without exactly 2 Entrants",
+      {
+        ...ok,
+        bestOf: true,
+        entrantsOpen: false,
+        entrants: [player(ME), player(RIVAL), player(THIRD)],
+      },
+      "A Best of is played between its 2 Entrants.",
+    ],
+    [
+      "accepts a Best of between its 2 Entrants",
+      {
+        ...ok,
+        bestOf: true,
+        entrantsOpen: false,
+        entrants: [player(ME), player(RIVAL)],
+      },
+      null,
+    ],
+    [
+      "refuses a player off the fixed list",
+      {
+        ...ok,
+        entrantsOpen: false,
+        entrants: [player(ME), player(THIRD)],
+      },
+      "Every player must be an Entrant of this Competition.",
+    ],
+    [
+      "team: refuses a Team off the fixed list",
+      {
+        ...ok,
+        scoring: "team" as const,
+        ids: [RED, GREEN],
+        entrantsOpen: false,
+        entrants: [team(RED), team(BLUE)],
+      },
+      "Every player must be an Entrant of this Competition.",
+    ],
+  ])("%s", (_, facts, expected) => {
+    expect(playersRuleError(facts)).toBe(expected);
   });
 });

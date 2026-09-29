@@ -2,6 +2,7 @@ import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import {
+  type WarWeek,
   competition,
   competitionHost,
   entrant,
@@ -20,17 +21,17 @@ import {
 import {
   type GameFact,
   type LeaderboardRow,
-  bestOfWinner,
   rankGames,
 } from "@/lib/games/leaderboard";
 import {
   type GameLogFacet,
   type GameSide,
+  canLogSomething,
   gameChangeError,
 } from "@/lib/games/log-rule";
-
-/** Logging, or a Games settings write, on a Competition of another Format. */
-export const NOT_GAMES = "This Competition isn't run as Games.";
+import { loggingStateOf } from "@/lib/games/log-state";
+import { isUuid } from "@/lib/uuid";
+import type { BracketCompetitionLink } from "@/queries/brackets";
 
 type Scoring = GameLogFacet["scoring"];
 type Linked = GameLogFacet["linked"];
@@ -47,6 +48,10 @@ export type GamesCompetition = {
   loggingClosesAt: Date | null;
   closed: boolean;
   placementPoints: number[] | null;
+  /** The "Participants can enroll" switch, Entrant limit and close time. */
+  selfEnroll: boolean;
+  entrantLimit: number | null;
+  enrollClosesAt: Date | null;
 };
 
 /** A Game with its logger's Participant (never the email) and its players. */
@@ -71,6 +76,7 @@ async function loadGamesCompetition(
   competitionId: string,
   dbOrTx: DBOrTx,
 ): Promise<GamesCompetition | null> {
+  if (!isUuid(competitionId)) return null;
   const [found] = await dbOrTx
     .select({
       id: competition.id,
@@ -84,6 +90,9 @@ async function loadGamesCompetition(
       loggingClosesAt: competition.loggingClosesAt,
       finalizedAt: competition.finalizedAt,
       placementPoints: competition.placementPoints,
+      selfEnroll: competition.selfEnroll,
+      entrantLimit: competition.entrantLimit,
+      enrollClosesAt: competition.enrollClosesAt,
     })
     .from(competition)
     .where(eq(competition.id, competitionId))
@@ -103,6 +112,9 @@ async function loadGamesCompetition(
     loggingClosesAt: found.loggingClosesAt,
     closed: found.finalizedAt !== null,
     placementPoints: found.placementPoints,
+    selfEnroll: found.selfEnroll,
+    entrantLimit: found.entrantLimit,
+    enrollClosesAt: found.enrollClosesAt,
   };
 }
 
@@ -236,20 +248,19 @@ function bestOfOf(found: GamesCompetition): HeadToHeadConfig | null {
   return config.bestOf === null ? null : config;
 }
 
-/** Whether logging is open for a Participant: the close time and Best of. */
-function loggingState(
-  found: GamesCompetition,
-  games: LoadedGame[],
-  now: Date,
-): { loggingOpen: boolean; bestOfDecided: boolean; winnerId: string | null } {
-  const bestOf = bestOfOf(found);
-  const winnerId = bestOf ? bestOfWinner(bestOf, factsOf(games)) : null;
-  const bestOfDecided = winnerId !== null;
-  const pastClose =
-    found.loggingClosesAt !== null &&
-    now.getTime() > found.loggingClosesAt.getTime();
-  return { loggingOpen: !pastClose && !bestOfDecided, bestOfDecided, winnerId };
+/** Whether logging is open for a Participant now (`loggingStateOf`). */
+function loggingState(found: GamesCompetition, games: LoadedGame[]) {
+  return loggingStateOf({
+    loggingClosesAt: found.loggingClosesAt,
+    bestOf: bestOfOf(found),
+    games: factsOf(games),
+    now: new Date(),
+  });
 }
+
+/** Entrant rows as Game sides, without their Competition. */
+const sidesOf = (entrants: GameSide[]): GameSide[] =>
+  entrants.map(({ teamId, participantId }) => ({ teamId, participantId }));
 
 export type GameLogFacts = {
   /** What `can("games.log" | "games.edit" | "games.delete", …)` checks. */
@@ -279,14 +290,17 @@ const REFUSING_FACET: GameLogFacet = {
  * `competition_host` tables, read in `dbOrTx`), whether it's closed,
  * whether logging is open for a Participant, the linked Participant of the
  * Competition's War Week, its Entrants, the posted players (`playerIds`,
- * as Teams or Participants by scoring; none for a delete) and, for an edit
- * or delete, the Game loaded by its id within this Competition.
+ * as Teams or Participants by scoring; none for a delete; a function picks
+ * them by the Competition's Game Type) and, for an edit or delete, the
+ * Game loaded by its id within this Competition.
  */
 export async function getGameLogFacts(
   competitionId: string,
   gameId: string | null,
   email: string | null | undefined,
-  { playerIds = [] }: { playerIds?: string[] } = {},
+  {
+    playerIds = [],
+  }: { playerIds?: string[] | ((gameType: GameType) => string[]) } = {},
   dbOrTx: DBOrTx = db,
 ): Promise<GameLogFacts> {
   const found = await loadGamesCompetition(competitionId, dbOrTx);
@@ -300,8 +314,10 @@ export async function getGameLogFacts(
     entrantsOf([competitionId], dbOrTx),
     gamesOf([competitionId], dbOrTx),
   ]);
-  const { loggingOpen, bestOfDecided } = loggingState(found, games, new Date());
+  const { loggingOpen, bestOfDecided } = loggingState(found, games);
   const loaded = gameId ? games.find((g) => g.id === gameId) : undefined;
+  const posted =
+    typeof playerIds === "function" ? playerIds(found.gameType) : playerIds;
   return {
     gameLog: {
       runs,
@@ -311,11 +327,8 @@ export async function getGameLogFacts(
       linked,
       scoring: found.scoring,
       entrantsOpen: found.entrantsOpen,
-      entrants: entrants.map(({ teamId, participantId }) => ({
-        teamId,
-        participantId,
-      })),
-      players: playerIds.map((id) => sideOf(found.scoring, id)),
+      entrants: sidesOf(entrants),
+      players: posted.map((id) => sideOf(found.scoring, id)),
       game:
         gameId === null
           ? null
@@ -451,15 +464,7 @@ export async function getGamesView(
   const nameOf = (id: string): GamesViewName =>
     names.get(id) ?? { id, name: "Unknown", color: null };
 
-  const { loggingOpen, bestOfDecided, winnerId } = loggingState(
-    found,
-    games,
-    new Date(),
-  );
-  const entrantSides = entrants.map(({ teamId, participantId }) => ({
-    teamId,
-    participantId,
-  }));
+  const { loggingOpen, bestOfDecided, winnerId } = loggingState(found, games);
   const facet: GameLogFacet = {
     runs,
     closed: found.closed,
@@ -468,25 +473,10 @@ export async function getGamesView(
     linked,
     scoring: found.scoring,
     entrantsOpen: found.entrantsOpen,
-    entrants: entrantSides,
+    entrants: sidesOf(entrants),
     players: [],
     game: null,
   };
-
-  const onList =
-    linked !== null &&
-    entrantSides.some((e) =>
-      found.scoring === "team"
-        ? linked.teamId !== null && e.teamId === linked.teamId
-        : e.participantId === linked.participantId,
-    );
-  const viewerCanLog =
-    !found.closed &&
-    (runs ||
-      (linked !== null &&
-        loggingOpen &&
-        (found.scoring === "individual" || linked.teamId !== null) &&
-        (found.entrantsOpen || onList)));
 
   const rows = rankGames(
     found.gameType,
@@ -532,7 +522,7 @@ export async function getGamesView(
     }),
     linked,
     runs,
-    viewerCanLog,
+    viewerCanLog: canLogSomething(facet),
     loggingOpen,
     bestOfDecided,
     bestOfWinner: winnerId ? nameOf(winnerId).name : null,
@@ -577,22 +567,48 @@ export async function getLoggableCompetitions(
     entrantsOf(ids, dbOrTx),
     gamesOf(ids, dbOrTx),
   ]);
-  const now = new Date();
   return found.flatMap((c) => {
-    if (!c || c.closed) return [];
-    if (c.scoring === "team" && linked.teamId === null) return [];
-    const own = games.filter((g) => g.competitionId === c.id);
-    if (!loggingState(c, own, now).loggingOpen) return [];
-    if (!c.entrantsOpen) {
-      const onList = entrants.some(
-        (e) =>
-          e.competitionId === c.id &&
-          (c.scoring === "team"
-            ? e.teamId === linked.teamId
-            : e.participantId === linked.participantId),
-      );
-      if (!onList) return [];
-    }
-    return [{ id: c.id, name: c.name, gameType: c.gameType }];
+    if (!c) return [];
+    const { loggingOpen, bestOfDecided } = loggingState(
+      c,
+      games.filter((g) => g.competitionId === c.id),
+    );
+    const facet: GameLogFacet = {
+      runs: false,
+      closed: c.closed,
+      loggingOpen,
+      bestOfDecided,
+      linked,
+      scoring: c.scoring,
+      entrantsOpen: c.entrantsOpen,
+      entrants: sidesOf(entrants.filter((e) => e.competitionId === c.id)),
+      players: [],
+      game: null,
+    };
+    return canLogSomething(facet)
+      ? [{ id: c.id, name: c.name, gameType: c.gameType }]
+      : [];
   });
+}
+
+/** A War Week's `games` Competitions, by name. */
+export async function getGamesCompetitions(
+  warWeek: Pick<WarWeek, "id">,
+  dbOrTx: DBOrTx = db,
+): Promise<BracketCompetitionLink[]> {
+  return dbOrTx
+    .select({
+      id: competition.id,
+      name: competition.name,
+      format: competition.format,
+      finalizedAt: competition.finalizedAt,
+    })
+    .from(competition)
+    .where(
+      and(
+        eq(competition.warWeekId, warWeek.id),
+        eq(competition.format, "games"),
+      ),
+    )
+    .orderBy(asc(competition.name));
 }

@@ -22,6 +22,7 @@ import {
   TEAM_ALREADY_ENTERED,
   TEAM_NOT_ENTERED,
   enrollError,
+  enrollmentUnavailable,
   withdrawError,
 } from "@/lib/games/enroll-rule";
 
@@ -309,5 +310,64 @@ describe("withdrawError: leaving a Squad", () => {
     expect(withdrawError(squadFacet({ linked: inAlpha, closed: true }))).toBe(
       ENROLL_CLOSED_BY_HOST,
     );
+  });
+});
+
+describe("enrollmentUnavailable: where enrollment is offered", () => {
+  const h2h = { drawsAllowed: false, bestOf: null };
+
+  it.each([
+    [
+      "a points Competition has no Entrant list",
+      {
+        format: "points" as const,
+        entrantsOpen: false,
+        gameType: null,
+        gameConfig: null,
+      },
+      "Participants enroll only in a Bracket or a Games Competition.",
+    ],
+    [
+      "a Bracket offers it",
+      {
+        format: "single-elimination" as const,
+        entrantsOpen: false,
+        gameType: null,
+        gameConfig: null,
+      },
+      null,
+    ],
+    [
+      "a Games Competition open to everyone has no list",
+      {
+        format: "games" as const,
+        entrantsOpen: true,
+        gameType: "head-to-head" as const,
+        gameConfig: h2h,
+      },
+      "Everyone can play already; there's no list to enroll in.",
+    ],
+    [
+      "a Best of is set by the Host",
+      {
+        format: "games" as const,
+        entrantsOpen: false,
+        gameType: "head-to-head" as const,
+        gameConfig: { drawsAllowed: false, bestOf: 5 as const },
+      },
+      "A Best of is set by the Host; enrollment is off.",
+    ],
+    [
+      "a fixed-list Games Competition offers it",
+      {
+        format: "games" as const,
+        entrantsOpen: false,
+        gameType: "ranked" as const,
+        gameConfig: { finishPoints: [] },
+      },
+      null,
+    ],
+  ])("%s", (_, competition, expected) => {
+    expect(enrollmentUnavailable(competition)).toBe(expected);
   });
 });

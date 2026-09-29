@@ -84,10 +84,13 @@ describe("logGame", () => {
     await expect(
       logGame(ID, { playerA: A, playerB: B, outcome: "sideways" }),
     ).resolves.toEqual(REFUSED);
-    expect(authorizeGameWrite).toHaveBeenCalledWith("games.log", ID, null, [
-      A,
-      B,
-    ]);
+    // The raw input goes to authorize, which reads its players by the
+    // Competition's Game Type.
+    expect(authorizeGameWrite).toHaveBeenCalledWith("games.log", ID, null, {
+      playerA: A,
+      playerB: B,
+      outcome: "sideways",
+    });
     expect(mutations.logGame).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
   });
@@ -123,10 +126,12 @@ describe("updateGame and deleteGame", () => {
     const mutations = await import("@/mutations/games");
 
     await expect(updateGame(ID, GAME, win)).resolves.toEqual({ ok: true });
-    expect(authorizeGameWrite).toHaveBeenCalledWith("games.edit", ID, GAME, [
-      A,
-      B,
-    ]);
+    expect(authorizeGameWrite).toHaveBeenCalledWith(
+      "games.edit",
+      ID,
+      GAME,
+      win,
+    );
     expect(mutations.updateGame).toHaveBeenCalledWith(ID, GAME, parsedWin, CTX);
   });
 
@@ -139,7 +144,7 @@ describe("updateGame and deleteGame", () => {
       "games.delete",
       ID,
       GAME,
-      [],
+      null,
     );
     expect(mutations.deleteGame).not.toHaveBeenCalled();
 
@@ -196,7 +201,7 @@ describe("Host and Organizer Games writes", () => {
     expect(authorize).toHaveBeenCalledWith("games.entrants", "competition", ID);
     expect(brackets.replaceEntrants).toHaveBeenCalledWith(
       ID,
-      { targetIds: [A, B] },
+      { targetIds: [A, B], format: "games" },
       CTX,
     );
   });

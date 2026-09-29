@@ -11,7 +11,10 @@ import {
   squadParticipant,
 } from "@/db/schema";
 import { gamesConfigOf } from "@/lib/games/config";
-import type { EnrollFacet } from "@/lib/games/enroll-rule";
+import {
+  type EnrollFacet,
+  enrollmentUnavailable,
+} from "@/lib/games/enroll-rule";
 import { isUuid } from "@/lib/uuid";
 
 export type EnrollFacts = {
@@ -38,27 +41,6 @@ function refusingFacet(): EnrollFacet {
     hasSquads: false,
     squad: null,
   };
-}
-
-/**
- * Whether this Competition offers enrollment at all, whatever its switch
- * says: a Bracket, or a fixed-list `games` Competition without Best of
- * (R3 decision 12). A points Competition has no Entrant list.
- */
-function enrollable(found: {
-  format: string;
-  entrantsOpen: boolean;
-  gameType: (typeof competition.$inferSelect)["gameType"];
-  gameConfig: unknown;
-}): boolean {
-  if (found.format === "points") return false;
-  if (found.format !== "games") return true;
-  if (found.entrantsOpen || !found.gameType) return false;
-  if (found.gameType !== "head-to-head") return true;
-  return (
-    gamesConfigOf({ gameType: found.gameType, gameConfig: found.gameConfig })
-      .bestOf === null
-  );
 }
 
 /**
@@ -116,7 +98,20 @@ export async function getEnrollFacts(
   ]);
 
   const enroll: EnrollFacet = {
-    selfEnroll: found.selfEnroll && enrollable(found),
+    // The switch reads as off where enrollment isn't offered (R3 decision 12).
+    selfEnroll:
+      found.selfEnroll &&
+      enrollmentUnavailable({
+        format: found.format,
+        entrantsOpen: found.entrantsOpen,
+        gameType: found.gameType,
+        gameConfig: found.gameType
+          ? gamesConfigOf({
+              gameType: found.gameType,
+              gameConfig: found.gameConfig,
+            })
+          : null,
+      }) === null,
     closed: found.finalizedAt !== null,
     built: heats > 0,
     hasGames: games > 0,

@@ -10,11 +10,12 @@ import {
 import type { GameType } from "@/lib/enums";
 import type { GamesConfig } from "@/lib/games/config";
 import { SQUAD_MISSING } from "@/lib/games/enroll-rule";
-import { GAME_MISSING } from "@/lib/games/log-rule";
+import { postedGamePlayerIds } from "@/lib/games/input";
+import { GAME_MISSING, NOT_GAMES } from "@/lib/games/log-rule";
 import { isUuid } from "@/lib/uuid";
 import type { MutationContext } from "@/mutations/types";
 import { type EnrollFacts, getEnrollFacts } from "@/queries/enrollment";
-import { NOT_GAMES, getGameLogFacts } from "@/queries/games";
+import { getGameLogFacts } from "@/queries/games";
 import {
   type HeatReportFacts,
   getHeatReportFacts,
@@ -219,7 +220,9 @@ export async function authorizeEnroll(
  * in ADR 0003's order: authenticate; the ids shaped like row ids; load the
  * Competition and its War Week; load the Game facts for the actor's email
  * (whether they run this Competition, account linking, never the pick) with
- * the posted player ids (`postedGamePlayerIds`; none for a delete); run
+ * the player ids `input` posts for the Competition's Game Type
+ * (`postedGamePlayerIds`, so another type's keys never reach `can`; none
+ * for a delete); run
  * `can`, which binds Organizers and Hosts too when closed. Returns the
  * Competition's Game Type and config, which the caller parses its input
  * with only after this. Never throws on a refusal.
@@ -228,7 +231,7 @@ export async function authorizeGameWrite(
   action: "games.log" | "games.edit" | "games.delete",
   competitionId: unknown,
   gameId: unknown,
-  playerIds: string[] = [],
+  input: unknown = null,
 ): Promise<
   | {
       ok: true;
@@ -252,7 +255,10 @@ export async function authorizeGameWrite(
     competitionId,
     isLog ? null : (gameId as string),
     actor.email,
-    { playerIds: action === "games.delete" ? [] : playerIds },
+    {
+      playerIds: (gameType) =>
+        action === "games.delete" ? [] : postedGamePlayerIds(gameType, input),
+    },
   );
   if (!facts.competition) return { ok: false, error: NOT_GAMES };
   const refusal = can(actor, action, {

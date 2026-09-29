@@ -12,10 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { formatLabel } from "@/lib/bracket/view";
 import { formatPoints, formatPointsLabel } from "@/lib/points";
 import { formatLedgerTime, generatedNote } from "@/lib/points-entry";
-import {
-  getBracketCompetitions,
-  getGamesCompetitions,
-} from "@/queries/brackets";
+import { getBracketCompetitions } from "@/queries/brackets";
+import { getGamesCompetitions } from "@/queries/games";
 import {
   getAdminLedger,
   getPointsEntryFormOptions,

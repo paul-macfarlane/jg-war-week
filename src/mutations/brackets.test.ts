@@ -2479,9 +2479,11 @@ describe.skipIf(!isLocalDatabase)("games Competitions", () => {
       ).map((c) => c.name);
       expect(names).toEqual(["Captain Clash", "Speed Chess"]);
       expect(
-        (await queries.getGamesCompetitions({ id: f.ctx.warWeekId }, tx)).map(
-          (c) => c.name,
-        ),
+        (
+          await (
+            await import("@/queries/games")
+          ).getGamesCompetitions({ id: f.ctx.warWeekId }, tx)
+        ).map((c) => c.name),
       ).toEqual(["Bouncy Pong", "Stairs"]);
     });
   });
@@ -2519,6 +2521,47 @@ describe.skipIf(!isLocalDatabase)("games Competitions", () => {
           tx,
         ),
       ).toEqual(keeps);
+    });
+  });
+
+  it("sets Entrants only for the Format the caller names", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations } = await modules();
+      const f = await gamesFixture(tx);
+      expect(
+        await mutations.replaceEntrants(
+          f.pongId,
+          { targetIds: [f.neo, f.trinity], format: "bracket" },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({
+        ok: false,
+        error: "This Competition isn't run as a Bracket.",
+      });
+      expect(
+        await mutations.replaceEntrants(
+          f.competitionId,
+          { targetIds: [], format: "games" },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: false, error: "This Competition isn't run as Games." });
+      expect(
+        await mutations.replaceEntrants(
+          f.pongId,
+          { targetIds: [f.neo, f.trinity], format: "games" },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+    });
+  });
+
+  it("has no Entrants for an id that isn't a row id", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { queries } = await modules();
+      expect(await queries.getBracketEntrants("not-a-uuid", tx)).toEqual([]);
     });
   });
 

@@ -5,8 +5,12 @@
  * reaches the client bundle.
  */
 import { NOT_LINKED } from "@/lib/bracket/heat-report-rule";
+import type { GameType } from "@/lib/enums";
 
 export { NOT_LINKED };
+
+/** Logging, or a Games write, on a Competition of another Format. */
+export const NOT_GAMES = "This Competition isn't run as Games.";
 
 /** A player in a Game, or an Entrant: a Team or a Participant by id. */
 export type GameSide = { teamId: string | null; participantId: string | null };
@@ -55,22 +59,33 @@ export const NOT_AN_ENTRANT =
 export const GAME_MISSING = "That Game no longer exists.";
 export const NOT_THE_LOGGER =
   "Only the player who logged this Game can change it. Ask the Host.";
+export const REPEATED_PLAYER = "Choose each player only once.";
+export const NOT_A_WAR_WEEK_TEAM =
+  "Every player must be a Team of this War Week.";
+export const NOT_A_WAR_WEEK_PARTICIPANT =
+  "Every player must be a Participant of this War Week.";
+export const BEST_OF_BETWEEN_ENTRANTS =
+  "A Best of is played between its 2 Entrants.";
 
-type Linked = NonNullable<GameLogFacet["linked"]>;
-
-/** Whether the linked Participant plays in `players`: as themselves or their Team. */
-function plays(
+/**
+ * Whether the linked Participant is among `sides` (Entrants or a Game's
+ * players): as themselves (individual scoring) or their Team (team
+ * scoring; a Participant on no Team never is).
+ */
+export function onEntrantList(
   scoring: GameLogFacet["scoring"],
-  linked: Linked,
-  players: GameSide[],
+  linked: { participantId: string; teamId: string | null },
+  sides: GameSide[],
 ): boolean {
   if (scoring === "team") {
     return (
-      linked.teamId !== null && players.some((p) => p.teamId === linked.teamId)
+      linked.teamId !== null && sides.some((s) => s.teamId === linked.teamId)
     );
   }
-  return players.some((p) => p.participantId === linked.participantId);
+  return sides.some((s) => s.participantId === linked.participantId);
 }
+
+const plays = onEntrantList;
 
 /** Why a player set breaks a fixed Entrant list, or null. */
 function entrantError(facet: GameLogFacet, players: GameSide[]): string | null {
@@ -105,6 +120,75 @@ export function gameLogError(facet: GameLogFacet): string | null {
   if (logging) return logging;
   if (!plays(facet.scoring, linked, facet.players)) return NOT_A_PLAYER;
   return entrantError(facet, facet.players);
+}
+
+/**
+ * Whether the actor could log some Game right now (a Log button):
+ * `gameLogError` without the posted players. Closed binds everyone; a Host
+ * or Organizer may; else a linked Participant while logging is open, on a
+ * Team in team scoring, and on the fixed Entrant list unless it's open.
+ */
+export function canLogSomething(facet: GameLogFacet): boolean {
+  if (facet.closed) return false;
+  if (facet.runs) return true;
+  const { linked } = facet;
+  if (!linked || !facet.loggingOpen) return false;
+  if (facet.scoring === "team" && linked.teamId === null) return false;
+  return (
+    facet.entrantsOpen || onEntrantList(facet.scoring, linked, facet.entrants)
+  );
+}
+
+const PLAYER_COUNT: Record<GameType, [(n: number) => boolean, string]> = {
+  "head-to-head": [
+    (n) => n === 2,
+    "A head-to-head Game has exactly 2 players.",
+  ],
+  "best-score": [(n) => n === 1, "A best-score Game has exactly 1 player."],
+  ranked: [(n) => n >= 2, "A ranked Game has at least 2 players."],
+};
+
+/**
+ * What a posted player set is checked against, for everyone (Hosts
+ * included): the posted Team or Participant `ids`, whether they are all of
+ * this War Week (`allInWarWeek`, counted by the caller), whether Best of is
+ * on, and the Entrant list.
+ */
+export type PlayersFacts = {
+  gameType: GameType;
+  scoring: GameLogFacet["scoring"];
+  ids: string[];
+  allInWarWeek: boolean;
+  bestOf: boolean;
+  entrantsOpen: boolean;
+  entrants: GameSide[];
+};
+
+/**
+ * Why the posted players can't be a Game here, or null. In order: a
+ * repeated player; not as many as the Game Type takes; a Team or
+ * Participant of another War Week; a Best of not between its 2 Entrants; a
+ * player off the fixed Entrant list.
+ */
+export function playersRuleError(facts: PlayersFacts): string | null {
+  const { ids } = facts;
+  if (new Set(ids).size !== ids.length) return REPEATED_PLAYER;
+  const [countOk, countError] = PLAYER_COUNT[facts.gameType];
+  if (!countOk(ids.length)) return countError;
+  const isTeam = facts.scoring === "team";
+  if (!facts.allInWarWeek) {
+    return isTeam ? NOT_A_WAR_WEEK_TEAM : NOT_A_WAR_WEEK_PARTICIPANT;
+  }
+  if (facts.bestOf && (facts.entrantsOpen || facts.entrants.length !== 2)) {
+    return BEST_OF_BETWEEN_ENTRANTS;
+  }
+  if (!facts.entrantsOpen) {
+    const entered = new Set(
+      facts.entrants.map((e) => (isTeam ? e.teamId : e.participantId)),
+    );
+    if (!ids.every((id) => entered.has(id))) return NOT_AN_ENTRANT;
+  }
+  return null;
 }
 
 /**

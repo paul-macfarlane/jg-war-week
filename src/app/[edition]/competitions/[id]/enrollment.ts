@@ -4,20 +4,9 @@ import {
   enrollError,
   withdrawError,
 } from "@/lib/games/enroll-rule";
+import { onEntrantList } from "@/lib/games/log-rule";
 import { getSquads } from "@/queries/brackets";
 import { getEnrollFacts } from "@/queries/enrollment";
-
-/** Whether the linked Participant (or their Team) is an Entrant. */
-function isEntered(
-  facet: EnrollFacet,
-  linked: NonNullable<EnrollFacet["linked"]>,
-): boolean {
-  return facet.entrants.some((e) =>
-    facet.scoring === "team"
-      ? e.teamId !== null && e.teamId === linked.teamId
-      : e.participantId === linked.participantId,
-  );
-}
 
 /**
  * What the Participant linked to `email` may do about entering this
@@ -35,7 +24,7 @@ export async function enrollOfferFor(
   const { enroll: facet, linked } = await getEnrollFacts(competition.id, email);
   if (!facet.selfEnroll || !linked) return null;
 
-  const entered = isEntered(facet, linked);
+  const entered = onEntrantList(facet.scoring, linked, facet.entrants);
   const bySquads =
     facet.scoring === "team" &&
     facet.hasSquads &&

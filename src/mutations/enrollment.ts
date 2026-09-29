@@ -11,13 +11,11 @@ import {
 } from "@/db/schema";
 import { squadError } from "@/lib/bracket/squads";
 import { gamesConfigOf } from "@/lib/games/config";
-import {
-  ENTRANT_LIMIT_TOO_LOW,
-  type SelfEnrollInput,
-} from "@/lib/games/enroll-input";
+import type { SelfEnrollInput } from "@/lib/games/enroll-input";
 import {
   NOT_LINKED,
   enrollError,
+  enrollmentUnavailable,
   withdrawError,
 } from "@/lib/games/enroll-rule";
 import {
@@ -30,15 +28,6 @@ import {
 import type { MutationContext, MutationResult } from "@/mutations/types";
 import { getEnrollFacts } from "@/queries/enrollment";
 
-/** The enroll switch on a points Competition: it has no Entrant list. */
-export const POINTS_NO_ENROLL =
-  "Participants enroll only in a Bracket or a Games Competition.";
-/** The enroll switch on a Best of: the Host sets its two Entrants. */
-export const BEST_OF_NO_ENROLL =
-  "A Best of is set by the Host; enrollment is off.";
-/** The enroll switch on an open-to-everyone `games` Competition. */
-export const OPEN_NO_ENROLL =
-  "Everyone can play already; there's no list to enroll in.";
 export type SelfEnrollValues = SelfEnrollInput;
 
 /**
@@ -46,7 +35,9 @@ export type SelfEnrollValues = SelfEnrollInput;
  * close time (ADR 0006), under the Competition's row lock so an enrollment
  * in flight runs before or after it. Refused on a points Competition, a
  * finalized (closed) one, and, when turning it on, a Best of or an
- * open-to-everyone `games` Competition (R3 decision 12).
+ * open-to-everyone `games` Competition (R3 decision 12;
+ * `enrollmentUnavailable`). The parser and the column's CHECK bound the
+ * Entrant limit.
  */
 export async function setSelfEnroll(
   competitionId: string,
@@ -54,35 +45,26 @@ export async function setSelfEnroll(
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
-  if (
-    entrantLimit !== null &&
-    !(Number.isInteger(entrantLimit) && entrantLimit > 1)
-  ) {
-    return {
-      ok: false,
-      error: ENTRANT_LIMIT_TOO_LOW,
-      fieldErrors: { entrantLimit: ENTRANT_LIMIT_TOO_LOW },
-    };
-  }
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedCompetition(tx, competitionId, ctx);
     if (!found) return refuse(COMPETITION_NOT_FOUND);
-    if (found.format === "points") return refuse(POINTS_NO_ENROLL);
+    const unavailable = enrollmentUnavailable({
+      format: found.format,
+      entrantsOpen: found.entrantsOpen,
+      gameType: found.gameType,
+      gameConfig: found.gameType
+        ? gamesConfigOf({
+            gameType: found.gameType,
+            gameConfig: found.gameConfig,
+          })
+        : null,
+    });
+    // A points Competition refuses the switch either way.
+    if (unavailable && found.format === "points") return refuse(unavailable);
     if (found.finalizedAt) {
       return refuse(found.format === "games" ? GAMES_CLOSED : FINALIZED);
     }
-    if (on && found.format === "games" && found.gameType) {
-      if (found.entrantsOpen) return refuse(OPEN_NO_ENROLL);
-      if (
-        found.gameType === "head-to-head" &&
-        gamesConfigOf({
-          gameType: found.gameType,
-          gameConfig: found.gameConfig,
-        }).bestOf !== null
-      ) {
-        return refuse(BEST_OF_NO_ENROLL);
-      }
-    }
+    if (on && unavailable) return refuse(unavailable);
     await tx
       .update(competition)
       .set({

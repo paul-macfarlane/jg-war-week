@@ -100,6 +100,7 @@ export async function getBracketEntrants(
   competitionId: string,
   dbOrTx: DBOrTx = db,
 ): Promise<BracketEntrant[]> {
+  if (!isUuid(competitionId)) return [];
   const rows = await dbOrTx
     .select({
       id: entrant.id,
@@ -289,14 +290,6 @@ export async function getBracketCompetitions(
   dbOrTx: DBOrTx = db,
 ): Promise<BracketCompetitionLink[]> {
   return competitionLinks(warWeek, BRACKET_FORMATS, dbOrTx);
-}
-
-/** A War Week's `games` Competitions, by name. */
-export async function getGamesCompetitions(
-  warWeek: Pick<WarWeek, "id">,
-  dbOrTx: DBOrTx = db,
-): Promise<BracketCompetitionLink[]> {
-  return competitionLinks(warWeek, ["games"], dbOrTx);
 }
 
 function competitionLinks(

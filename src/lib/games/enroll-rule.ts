@@ -7,6 +7,9 @@
  * Entrants through the picker.
  */
 import { NOT_LINKED } from "@/lib/bracket/heat-report-rule";
+import type { COMPETITION_FORMATS, GameType } from "@/lib/enums";
+import type { GamesConfig } from "@/lib/games/config";
+import { onEntrantList } from "@/lib/games/log-rule";
 
 export { NOT_LINKED };
 
@@ -85,6 +88,47 @@ export const ALREADY_IN_A_SQUAD =
 export const NOT_IN_SQUAD = "You're not in that Squad.";
 export const LAST_IN_SQUAD =
   "You're the last Participant in this Squad. Ask the Host to remove the Squad.";
+/** The enroll switch on a points Competition: it has no Entrant list. */
+export const POINTS_NO_ENROLL =
+  "Participants enroll only in a Bracket or a Games Competition.";
+/** The enroll switch on a Best of: the Host sets its two Entrants. */
+export const BEST_OF_NO_ENROLL =
+  "A Best of is set by the Host; enrollment is off.";
+/** The enroll switch on an open-to-everyone `games` Competition. */
+export const OPEN_NO_ENROLL =
+  "Everyone can play already; there's no list to enroll in.";
+
+/**
+ * Why this Competition offers no enrollment whatever its switch says, or
+ * null when it does: a points Competition has no Entrant list; a `games`
+ * Competition open to everyone needs none; a Best of's two Entrants are
+ * set by the Host. A Bracket and a fixed-list `games` Competition offer it.
+ * `gameConfig` is the parsed config (null for any other Format).
+ */
+export function enrollmentUnavailable({
+  format,
+  entrantsOpen,
+  gameType,
+  gameConfig,
+}: {
+  format: (typeof COMPETITION_FORMATS)[number];
+  entrantsOpen: boolean;
+  gameType: GameType | null;
+  gameConfig: GamesConfig | null;
+}): string | null {
+  if (format === "points") return POINTS_NO_ENROLL;
+  if (format !== "games") return null;
+  if (entrantsOpen) return OPEN_NO_ENROLL;
+  if (
+    gameType === "head-to-head" &&
+    gameConfig !== null &&
+    "bestOf" in gameConfig &&
+    gameConfig.bestOf !== null
+  ) {
+    return BEST_OF_NO_ENROLL;
+  }
+  return null;
+}
 
 /**
  * Why enrollment is closed, or null, in order: Bracket built, Entrant
@@ -111,13 +155,8 @@ function closeError(facet: EnrollFacet, addsEntrant: boolean): string | null {
 type Linked = NonNullable<EnrollFacet["linked"]>;
 
 /** Whether the linked Participant (or their Team) is an Entrant. */
-function isEntered(facet: EnrollFacet, linked: Linked): boolean {
-  return facet.entrants.some((e) =>
-    facet.scoring === "team"
-      ? e.teamId !== null && e.teamId === linked.teamId
-      : e.participantId === linked.participantId,
-  );
-}
+const isEntered = (facet: EnrollFacet, linked: Linked) =>
+  onEntrantList(facet.scoring, linked, facet.entrants);
 
 /**
  * Why the linked Participant can't enroll, or null when they can. In

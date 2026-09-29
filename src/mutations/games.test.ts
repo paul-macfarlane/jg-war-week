@@ -971,7 +971,183 @@ describe.skipIf(!isLocalDatabase)("setGamesSettings", () => {
   });
 });
 
+describe.skipIf(!isLocalDatabase)("setGamesSettings under logged Games", () => {
+  const settings = {
+    entrantsOpen: true,
+    loggingClosesAt: null,
+    selfEnroll: false,
+    entrantLimit: null,
+    enrollClosesAt: null,
+  };
+  const h2h = { drawsAllowed: false, bestOf: null };
+
+  it("won't fix the list while someone off it has logged Games", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { logGame, setGamesSettings } = await load();
+      const f = await fixture(tx);
+      await logGame(
+        f.ids.pong,
+        beat(f.ids.neo, f.ids.trinity),
+        f.ctx(HOST),
+        tx,
+      );
+      await tx.insert(f.schema.entrant).values({
+        competitionId: f.ids.pong,
+        participantId: f.ids.neo,
+        seedPosition: 1,
+      });
+      const fixed = { ...settings, gameConfig: h2h, entrantsOpen: false };
+
+      expect(
+        await setGamesSettings(f.ids.pong, fixed, f.ctx(HOST), tx),
+      ).toEqual({
+        ok: false,
+        error:
+          "Trinity has logged Games. Add them as an Entrant or delete their Games first.",
+      });
+      await tx.insert(f.schema.entrant).values({
+        competitionId: f.ids.pong,
+        participantId: f.ids.trinity,
+        seedPosition: 2,
+      });
+      expect(
+        await setGamesSettings(f.ids.pong, fixed, f.ctx(HOST), tx),
+      ).toEqual({ ok: true });
+    });
+  });
+
+  it("won't turn draws off while a Game is a draw", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { logGame, setGamesSettings } = await load();
+      const f = await fixture(tx);
+      await f.setCompetition(f.ids.pong, {
+        gameConfig: { drawsAllowed: true, bestOf: null },
+      });
+      await logGame(
+        f.ids.pong,
+        {
+          players: [
+            { id: f.ids.neo, place: 1, score: null },
+            { id: f.ids.trinity, place: 1, score: null },
+          ],
+        },
+        f.ctx(HOST),
+        tx,
+      );
+
+      expect(
+        await setGamesSettings(
+          f.ids.pong,
+          { ...settings, gameConfig: h2h },
+          f.ctx(HOST),
+          tx,
+        ),
+      ).toEqual({
+        ok: false,
+        error:
+          "A Game here is a draw. Delete or edit it before turning draws off.",
+      });
+      expect(
+        await setGamesSettings(
+          f.ids.pong,
+          { ...settings, gameConfig: { drawsAllowed: true, bestOf: null } },
+          f.ctx(HOST),
+          tx,
+        ),
+      ).toEqual({ ok: true });
+    });
+  });
+
+  it("won't turn a Best of on when the Games exceed it or aren't between its Entrants", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { logGame, setGamesSettings } = await load();
+      const f = await fixture(tx);
+      await f.setCompetition(f.ids.duel, { gameConfig: h2h });
+      for (const [winner, loser] of [
+        [f.ids.neo, f.ids.trinity],
+        [f.ids.trinity, f.ids.neo],
+        [f.ids.neo, f.ids.trinity],
+        [f.ids.trinity, f.ids.neo],
+      ]) {
+        await logGame(f.ids.duel, beat(winner, loser), f.ctx(HOST), tx);
+      }
+      const bestOf = (n: 3 | 5) => ({
+        ...settings,
+        entrantsOpen: false,
+        gameConfig: { drawsAllowed: false, bestOf: n },
+      });
+
+      expect(
+        await setGamesSettings(f.ids.duel, bestOf(3), f.ctx(HOST), tx),
+      ).toEqual({ ok: false, error: "These Games don't fit a Best of 3." });
+      expect(
+        await setGamesSettings(f.ids.duel, bestOf(5), f.ctx(HOST), tx),
+      ).toEqual({ ok: true });
+
+      // Pong: a Game with Morpheus, who isn't one of the two Entrants.
+      await logGame(
+        f.ids.pong,
+        beat(f.ids.neo, f.ids.morpheus),
+        f.ctx(HOST),
+        tx,
+      );
+      await tx.insert(f.schema.entrant).values([
+        {
+          competitionId: f.ids.pong,
+          participantId: f.ids.neo,
+          seedPosition: 1,
+        },
+        {
+          competitionId: f.ids.pong,
+          participantId: f.ids.trinity,
+          seedPosition: 2,
+        },
+      ]);
+      expect(
+        await setGamesSettings(f.ids.pong, bestOf(3), f.ctx(HOST), tx),
+      ).toEqual({ ok: false, error: "These Games don't fit a Best of 3." });
+    });
+  });
+});
+
+describe.skipIf(!isLocalDatabase)("getGameLogFacts", () => {
+  it("reads only the Game Type's player keys, so an extra player id can't make a non-player a player", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { getGameLogFacts } = await import("@/queries/games");
+      const { postedGamePlayerIds } = await import("@/lib/games/input");
+      const { gameLogError } = await import("@/lib/games/log-rule");
+      const f = await fixture(tx);
+      const posted = {
+        playerA: f.ids.neo,
+        playerB: f.ids.trinity,
+        outcome: "a",
+        player: f.ids.morpheus,
+      };
+
+      const facts = await getGameLogFacts(
+        f.ids.pong,
+        null,
+        MORPHEUS,
+        { playerIds: (gameType) => postedGamePlayerIds(gameType, posted) },
+        tx,
+      );
+      expect(facts.gameLog.players).toEqual([
+        { teamId: null, participantId: f.ids.neo },
+        { teamId: null, participantId: f.ids.trinity },
+      ]);
+      expect(gameLogError(facts.gameLog)).toBe(NOT_A_PLAYER);
+    });
+  });
+});
+
 describe.skipIf(!isLocalDatabase)("getGamesView", () => {
+  it("is null for an id that isn't a row id", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { getGamesView } = await import("@/queries/games");
+      expect(await getGamesView("not-a-uuid", NEO, tx)).toBeNull();
+    });
+  });
+
   it("shows names, per-Game permissions for the viewer, and never an email", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { logGame } = await load();

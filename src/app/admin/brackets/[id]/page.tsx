@@ -4,11 +4,8 @@ import { notFound } from "next/navigation";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { BracketResults } from "@/components/bracket-results";
-import {
-  getBracket,
-  getGamesCompetitions,
-  getHeatReporters,
-} from "@/queries/brackets";
+import { getBracket, getHeatReporters } from "@/queries/brackets";
+import { getGamesCompetitions } from "@/queries/games";
 import { getSetupDays } from "@/queries/setup";
 
 import { loadAdminPage } from "../../gate";

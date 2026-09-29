@@ -660,12 +660,9 @@ describe.skipIf(!isLocalDatabase)("setSelfEnroll", () => {
 
   it("refuses a points, a Best of, an open-to-everyone and a finalized Competition", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const {
-        setSelfEnroll,
-        BEST_OF_NO_ENROLL,
-        OPEN_NO_ENROLL,
-        POINTS_NO_ENROLL,
-      } = await mutations();
+      const { setSelfEnroll } = await mutations();
+      const { BEST_OF_NO_ENROLL, OPEN_NO_ENROLL, POINTS_NO_ENROLL } =
+        await import("@/lib/games/enroll-rule");
       const f = await fixture(tx);
       const on = { on: true, entrantLimit: null, enrollClosesAt: null };
 
@@ -705,18 +702,19 @@ describe.skipIf(!isLocalDatabase)("setSelfEnroll", () => {
     });
   });
 
-  it("refuses an Entrant limit below 2", async () => {
+  it("never stores an Entrant limit below 2: the column's CHECK backs the parser", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { setSelfEnroll } = await mutations();
       const f = await fixture(tx);
 
-      const result = await setSelfEnroll(
-        f.cypher,
-        { on: true, entrantLimit: 1, enrollClosesAt: null },
-        f.as(HOST),
-        tx,
-      );
-      expect(result).toMatchObject({ ok: false });
+      await expect(
+        setSelfEnroll(
+          f.cypher,
+          { on: true, entrantLimit: 1, enrollClosesAt: null },
+          f.as(HOST),
+          tx,
+        ),
+      ).rejects.toThrow();
       expect((await f.competitionRow(f.cypher)).entrantLimit).toBeNull();
     });
   });

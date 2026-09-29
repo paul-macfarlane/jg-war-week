@@ -15,6 +15,11 @@ import {
   headToHeadConfigSchema,
   rankedConfigSchema,
 } from "@/lib/games/config";
+import {
+  ENTRANT_LIMIT_TOO_LOW,
+  closesAtOf,
+  limitOf,
+} from "@/lib/games/enroll-input";
 import type { Parsed } from "@/lib/result";
 
 function firstError<T>(result: z.ZodSafeParseResult<T>): Parsed<never> & {
@@ -250,30 +255,25 @@ function parseGameConfig(
   return { ok: true, value: parsed.data };
 }
 
-/** An ISO string from `<input type="datetime-local">`, or empty/absent for none. */
+/** An optional close time (`closesAtOf`), refused with `error`. */
 function parseOptionalDateTime(
   value: unknown,
   error: string,
 ): Parsed<Date | null> {
-  if (value === null || value === undefined || value === "") {
-    return { ok: true, value: null };
-  }
-  if (typeof value !== "string") return { ok: false, error };
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return { ok: false, error };
-  return { ok: true, value: date };
+  const parsed = closesAtOf(value);
+  return parsed.ok ? { ok: true, value: parsed.value } : { ok: false, error };
 }
 
+/** An optional Entrant limit (`limitOf`), as the enroll switch reads it. */
 function parseOptionalEntrantLimit(value: unknown): Parsed<number | null> {
-  if (value === null || value === undefined || value === "") {
-    return { ok: true, value: null };
-  }
-  const n = typeof value === "number" ? value : Number(value);
-  const error = "An Entrant limit is at least 2.";
-  if (Number.isNaN(n) || !Number.isInteger(n) || n <= 1) {
-    return { ok: false, error, fieldErrors: { entrantLimit: error } };
-  }
-  return { ok: true, value: n };
+  const parsed = limitOf(value);
+  return parsed.ok
+    ? { ok: true, value: parsed.value }
+    : {
+        ok: false,
+        error: ENTRANT_LIMIT_TOO_LOW,
+        fieldErrors: { entrantLimit: ENTRANT_LIMIT_TOO_LOW },
+      };
 }
 
 /**
@@ -332,17 +332,22 @@ export function parseGamesSettingsInput(
 }
 
 /**
- * The player ids a Game request posts, read before the input is parsed so
- * the authorize step can check the posted player set (like
- * `postedCompetitionId`): head-to-head's `playerA` and `playerB`,
- * best-score's `player`, ranked's `order[].id`. Anything else is ignored;
- * the parser owns the shape.
+ * The player ids a Game request posts for this Game Type, read before the
+ * input is parsed so the authorize step can check the posted player set
+ * (like `postedCompetitionId`): head-to-head's `playerA` and `playerB`,
+ * best-score's `player`, ranked's `order[].id`. Another type's keys and
+ * anything else are ignored; the parser owns the shape.
  */
-export function postedGamePlayerIds(input: unknown): string[] {
+export function postedGamePlayerIds(
+  gameType: GameType,
+  input: unknown,
+): string[] {
   if (typeof input !== "object" || input === null) return [];
   const raw = input as Record<string, unknown>;
-  const ids: unknown[] = [raw.playerA, raw.playerB, raw.player];
-  if (Array.isArray(raw.order)) {
+  const ids: unknown[] = [];
+  if (gameType === "head-to-head") ids.push(raw.playerA, raw.playerB);
+  if (gameType === "best-score") ids.push(raw.player);
+  if (gameType === "ranked" && Array.isArray(raw.order)) {
     for (const entry of raw.order) {
       if (typeof entry === "object" && entry !== null) {
         ids.push((entry as { id?: unknown }).id);

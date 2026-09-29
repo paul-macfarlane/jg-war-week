@@ -49,6 +49,7 @@ import {
 } from "@/lib/bracket/types";
 import { isBracketFormat } from "@/lib/bracket/view";
 import { gamesConfigOf } from "@/lib/games/config";
+import { NOT_GAMES } from "@/lib/games/log-rule";
 import { inUseError } from "@/lib/setup";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 import { getBracketEntrants, loadBracket } from "@/queries/brackets";
@@ -375,6 +376,9 @@ export async function setCompetitionFormat(
  * Participants (never Squads), in the order added; it has no Heats to
  * clear. While Best of is on it takes exactly 2, and an Entrant who has
  * logged Games can't be removed until they're deleted.
+ *
+ * `format` says which the caller sets: a Bracket's Entrants refuse a
+ * `games` Competition, a `games` Competition's refuse any other Format.
  */
 export async function replaceEntrants(
   competitionId: string,
@@ -382,13 +386,21 @@ export async function replaceEntrants(
     targetIds,
     force,
     kind: givenKind,
-  }: { targetIds: string[]; force?: boolean; kind?: EntrantKind },
+    format,
+  }: {
+    targetIds: string[];
+    force?: boolean;
+    kind?: EntrantKind;
+    format?: "bracket" | "games";
+  },
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedCompetition(tx, competitionId, ctx);
     const isGames = found?.format === "games";
+    if (found && format === "games" && !isGames) return refuse(NOT_GAMES);
+    if (found && format === "bracket" && isGames) return refuse(NOT_A_BRACKET);
     if (isGames) {
       if (found.finalizedAt) return refuse(GAMES_CLOSED);
       if (givenKind === "squad") return refuse(NO_SQUADS_IN_GAMES);

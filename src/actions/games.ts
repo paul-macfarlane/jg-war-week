@@ -5,11 +5,7 @@ import { revalidateWarWeek } from "@/actions/revalidate";
 import { authorize, authorizeGameWrite } from "@/auth/authorize";
 import type { WarWeekAction } from "@/lib/access";
 import { parseEntrantsInput } from "@/lib/bracket/input";
-import {
-  parseGameInput,
-  parseGamesSettingsInput,
-  postedGamePlayerIds,
-} from "@/lib/games/input";
+import { parseGameInput, parseGamesSettingsInput } from "@/lib/games/input";
 import { replaceEntrants } from "@/mutations/brackets";
 import * as mutations from "@/mutations/games";
 import type { MutationContext, MutationResult } from "@/mutations/types";
@@ -25,7 +21,7 @@ function asRecord(input: unknown): Record<string, unknown> {
 
 /**
  * Runs a Game write (ADR 0006): authorizes the actor with the Game facts
- * and the posted players first, so a refusal wins over malformed input,
+ * and the posted input (its players read by the Game Type) first, so a refusal wins over malformed input,
  * then parses the input by the Competition's Game Type. The mutation
  * checks the facts again under the Competition's lock.
  */
@@ -44,7 +40,7 @@ async function gameWrite<R extends { ok: boolean }>(
       action,
       competitionId,
       gameId,
-      action === "games.delete" ? [] : postedGamePlayerIds(input),
+      action === "games.delete" ? null : input,
     );
     if (!authorized.ok) return authorized;
     let players: Parameters<typeof mutations.logGame>[1] = { players: [] };
@@ -130,7 +126,11 @@ export async function setGamesEntrants(
   return hostWrite("games.entrants", competitionId, async (ctx) => {
     const parsed = parseEntrantsInput(input);
     if (!parsed.ok) return parsed;
-    return replaceEntrants(competitionId, parsed.value, ctx);
+    return replaceEntrants(
+      competitionId,
+      { ...parsed.value, format: "games" },
+      ctx,
+    );
   });
 }
 

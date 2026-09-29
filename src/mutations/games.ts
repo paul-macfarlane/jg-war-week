@@ -13,15 +13,21 @@ import {
 import { pointsFor } from "@/lib/bracket/points";
 import type { GameType } from "@/lib/enums";
 import { gamesConfigSchema } from "@/lib/games/config";
+import { enrollmentUnavailable } from "@/lib/games/enroll-rule";
 import type { GameInput, GamesSettingsInput } from "@/lib/games/input";
 import { placingsOf } from "@/lib/games/leaderboard";
 import {
   GAME_MISSING,
-  NOT_AN_ENTRANT,
+  NOT_GAMES,
   NOT_LINKED,
   gameChangeError,
   gameLogError,
+  playersRuleError,
 } from "@/lib/games/log-rule";
+import {
+  type LoggedGame,
+  loggedGamesSettingsError,
+} from "@/lib/games/settings-rule";
 import { generatedNote } from "@/lib/points-entry";
 import {
   BEST_OF_NEEDS_TWO,
@@ -32,32 +38,18 @@ import {
   lockedCompetition,
   refuse,
 } from "@/mutations/brackets";
-import { BEST_OF_NO_ENROLL, OPEN_NO_ENROLL } from "@/mutations/enrollment";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 import {
   type GameLogFacts,
-  NOT_GAMES,
   getGameLogFacts,
   getGamesLeaderboard,
   sideOf,
 } from "@/queries/games";
 
 export const ALREADY_CLOSED = "This Competition is already closed.";
-export const REPEATED_PLAYER = "Choose each player only once.";
 export const GAME_TYPE_FIXED =
   "A Games Competition keeps its Game Type; add a new Competition to play another.";
 export const BEST_OF_NEEDS_FIXED = "A Best of needs a fixed Entrant list.";
-export const BEST_OF_BETWEEN_ENTRANTS =
-  "A Best of is played between its 2 Entrants.";
-
-const PLAYER_COUNT: Record<GameType, [(n: number) => boolean, string]> = {
-  "head-to-head": [
-    (n) => n === 2,
-    "A head-to-head Game has exactly 2 players.",
-  ],
-  "best-score": [(n) => n === 1, "A best-score Game has exactly 1 player."],
-  ranked: [(n) => n >= 2, "A ranked Game has at least 2 players."],
-};
 
 type GamesRun = BracketCompetition & { gameType: GameType };
 
@@ -79,10 +71,10 @@ async function lockedGames(
 }
 
 /**
- * Why the posted players can't be a Game here, or null (R3 decision 10):
- * distinct; as many as the Game Type takes; Teams (team scoring) or
- * Participants (individual) of this War Week; on a fixed list, Entrants;
- * in a Best of, the two Entrants. Checked for everyone, Hosts included.
+ * Why the posted players can't be a Game here, or null (R3 decision 10;
+ * `playersRuleError`), with whether they're all Teams (team scoring) or
+ * Participants (individual) of this War Week counted here. Checked for
+ * everyone, Hosts included.
  */
 async function playersError(
   tx: DBOrTx,
@@ -92,36 +84,56 @@ async function playersError(
   ctx: MutationContext,
 ): Promise<string | null> {
   const ids = input.players.map((p) => p.id);
-  if (new Set(ids).size !== ids.length) return REPEATED_PLAYER;
-  const [countOk, countError] = PLAYER_COUNT[found.gameType];
-  if (!countOk(ids.length)) return countError;
-
-  const isTeam = found.scoring === "team";
-  const table = isTeam ? team : participant;
-  const valid = await tx.$count(
-    table,
-    and(inArray(table.id, ids), eq(table.warWeekId, ctx.warWeekId)),
-  );
-  if (valid !== ids.length) {
-    return isTeam
-      ? "Every player must be a Team of this War Week."
-      : "Every player must be a Participant of this War Week.";
-  }
-
-  const { entrants } = facts.gameLog;
+  const table = found.scoring === "team" ? team : participant;
+  const valid = ids.length
+    ? await tx.$count(
+        table,
+        and(inArray(table.id, ids), eq(table.warWeekId, ctx.warWeekId)),
+      )
+    : 0;
   const config = facts.competition?.config;
-  if (config && "bestOf" in config && config.bestOf !== null) {
-    if (found.entrantsOpen || entrants.length !== 2) {
-      return BEST_OF_BETWEEN_ENTRANTS;
-    }
+  return playersRuleError({
+    gameType: found.gameType,
+    scoring: found.scoring,
+    ids,
+    allInWarWeek: valid === ids.length,
+    bestOf: !!config && "bestOf" in config && config.bestOf !== null,
+    entrantsOpen: found.entrantsOpen,
+    entrants: facts.gameLog.entrants,
+  });
+}
+
+/** This Competition's Games, each with its players' ids, names and places. */
+async function loggedGames(
+  tx: DBOrTx,
+  competitionId: string,
+): Promise<LoggedGame[]> {
+  const rows = await tx
+    .select({
+      gameId: gamePlayer.gameId,
+      teamId: gamePlayer.teamId,
+      participantId: gamePlayer.participantId,
+      place: gamePlayer.place,
+      teamName: team.name,
+      participantName: participant.displayName,
+    })
+    .from(gamePlayer)
+    .innerJoin(game, eq(game.id, gamePlayer.gameId))
+    .leftJoin(team, eq(team.id, gamePlayer.teamId))
+    .leftJoin(participant, eq(participant.id, gamePlayer.participantId))
+    .where(eq(game.competitionId, competitionId))
+    .orderBy(game.loggedAt, gamePlayer.id);
+  const byGame = new Map<string, LoggedGame>();
+  for (const row of rows) {
+    const loaded = byGame.get(row.gameId) ?? { players: [] };
+    loaded.players.push({
+      id: (row.teamId ?? row.participantId)!,
+      name: row.teamName ?? row.participantName ?? "Unknown",
+      place: row.place,
+    });
+    byGame.set(row.gameId, loaded);
   }
-  if (!found.entrantsOpen) {
-    const entered = new Set(
-      entrants.map((e) => (isTeam ? e.teamId : e.participantId)),
-    );
-    if (!ids.every((id) => entered.has(id))) return NOT_AN_ENTRANT;
-  }
-  return null;
+  return [...byGame.values()];
 }
 
 async function insertPlayers(
@@ -254,7 +266,8 @@ export async function deleteGame(
  * Saves a `games` Competition's settings (R3 decision 11). Its Game Type
  * is fixed: only that type's settings change. A Best of needs a fixed list
  * of exactly two Entrants and takes no enrollment; enrollment is for a
- * fixed list only. Refused while closed.
+ * fixed list only (`enrollmentUnavailable`). The logged Games must still
+ * fit (`loggedGamesSettingsError`). Refused while closed.
  */
 export async function setGamesSettings(
   competitionId: string,
@@ -271,17 +284,41 @@ export async function setGamesSettings(
     );
     if (!config.success) return refuse(GAME_TYPE_FIXED);
 
-    const bestOf = "bestOf" in config.data && config.data.bestOf !== null;
-    if (bestOf) {
-      if (input.entrantsOpen) return refuse(BEST_OF_NEEDS_FIXED);
-      if (input.selfEnroll) return refuse(BEST_OF_NO_ENROLL);
-      const entrants = await tx.$count(
-        entrant,
-        eq(entrant.competitionId, competitionId),
-      );
-      if (entrants !== 2) return refuse(BEST_OF_NEEDS_TWO);
+    const h2h = "bestOf" in config.data ? config.data : null;
+    const bestOf = h2h?.bestOf ?? null;
+    if (bestOf !== null && input.entrantsOpen) {
+      return refuse(BEST_OF_NEEDS_FIXED);
     }
-    if (input.entrantsOpen && input.selfEnroll) return refuse(OPEN_NO_ENROLL);
+    if (input.selfEnroll) {
+      const unavailable = enrollmentUnavailable({
+        format: "games",
+        entrantsOpen: input.entrantsOpen,
+        gameType: found.gameType,
+        gameConfig: config.data,
+      });
+      if (unavailable) return refuse(unavailable);
+    }
+    const entrantIds = (
+      await tx
+        .select({
+          teamId: entrant.teamId,
+          participantId: entrant.participantId,
+        })
+        .from(entrant)
+        .where(eq(entrant.competitionId, competitionId))
+    ).flatMap((e) => e.teamId ?? e.participantId ?? []);
+    if (bestOf !== null && entrantIds.length !== 2) {
+      return refuse(BEST_OF_NEEDS_TWO);
+    }
+    const misfit = loggedGamesSettingsError({
+      wasOpen: found.entrantsOpen,
+      entrantsOpen: input.entrantsOpen,
+      bestOf,
+      drawsAllowed: h2h ? h2h.drawsAllowed : null,
+      entrantIds,
+      games: await loggedGames(tx, competitionId),
+    });
+    if (misfit) return refuse(misfit);
 
     await tx
       .update(competition)

@@ -24,8 +24,15 @@ const schema = z.object({
   enrollClosesAt: z.union([z.string(), z.date(), z.null()]).optional(),
 });
 
-function limitOf(value: string | number | null | undefined) {
+/**
+ * An Entrant limit: blank or absent is none; else a whole number of at
+ * least 2 (`ok: false` otherwise, including a value of another type).
+ */
+export function limitOf(value: unknown): { ok: boolean; value: number | null } {
   if (value === null || value === undefined) return { ok: true, value: null };
+  if (typeof value !== "string" && typeof value !== "number") {
+    return { ok: false, value: null };
+  }
   if (typeof value === "string" && value.trim() === "") {
     return { ok: true, value: null };
   }
@@ -35,8 +42,18 @@ function limitOf(value: string | number | null | undefined) {
     : { ok: false, value: null };
 }
 
-function closesAtOf(value: string | Date | null | undefined) {
+/**
+ * A close time: blank or absent is none; else a date string or a Date that
+ * is a real time (`ok: false` otherwise, including a value of another type).
+ */
+export function closesAtOf(value: unknown): {
+  ok: boolean;
+  value: Date | null;
+} {
   if (value === null || value === undefined) return { ok: true, value: null };
+  if (typeof value !== "string" && !(value instanceof Date)) {
+    return { ok: false, value: null };
+  }
   if (typeof value === "string" && value.trim() === "") {
     return { ok: true, value: null };
   }

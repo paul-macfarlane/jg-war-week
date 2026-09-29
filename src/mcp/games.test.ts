@@ -17,6 +17,9 @@ function baseView(
     loggingClosesAt: null,
     closed: false,
     placementPoints: null,
+    selfEnroll: false,
+    entrantLimit: null,
+    enrollClosesAt: null,
     ...overrides,
   };
 }
