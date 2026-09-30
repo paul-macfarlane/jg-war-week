@@ -607,3 +607,40 @@ outline and foreground-on-muted figures corrected to 5.36 and 10.52
 the wiped folder and committed (W-g); the CONTEXT.md section named "Light
 and dark Display rules" with a display-name note (W-h); `ww:display`
 pinned with `addScriptToEvaluateOnNewDocument` (decision 10).
+
+## Execution
+
+Claimed 2026-09-30 by `/atlas-implement` (work package `regression-r2`;
+state `.claude/atlas-state/regression-r2.json`). Epic and tickets 12, 22, 26
+`ready-for-agent` → `in-progress`; 13 stays `needs-info` until closeout
+(E-1, answered "moot" at plan approval). Comparison SHA `a74d4df`.
+
+**Checkout and isolation:** direct checkout on
+`feat/regression-r2-light-dark`, sequential, no worktrees. Every
+deliverable runs `pnpm e2e` (port 3200, resets every seed in the one local
+Postgres), so no two can run their proofs at once; and the predicted file
+collisions between neighbours are real: D1 and D2 both edit
+`src/lib/theme.ts` (D1 emits the `--light-*`/`--dark-*` tokens, D2 maps
+them in CSS and adds `--warning`), `src/components/war-week-settings-form.tsx`
+(D1 the override group, D2 `--warning`) and `scripts/smoke/setup.ts` (D1
+the override columns in the input, D2 the `--<scheme>-primary` rewrite and
+round-trip). D3 and D4 touch disjoint files (`button.tsx` /
+`enrollment.spec.ts` vs `about-media.ts`, `/about`, docs) and are
+serialized only by the shared e2e port and database — re-checked at
+closeout.
+
+**Deliverables** (one worker each; plan steps in brackets):
+
+| Id | Slice | Steps | Model |
+|---|---|---|---|
+| D0 | axe dependency and baseline on the unchanged app | 0 | Sonnet |
+| D1 | derivation, schema + seed, Setup form (decisions 2, 6, 7) | 1–3 | Opus |
+| D2 | CSS and roots, Display control, smoke + e2e proofs (decisions 3, 4, 5, 12) | 4–6 | Opus |
+| D3 | Button disabled look, ticket 22 (decision 8) | 7 | Sonnet |
+| D4 | showcase stills, copy, docs, ticket 13 closure (decisions 9, 10, 11, 16) | 8 | Sonnet |
+
+Edges: D0 → D1 → D2 → D3 → D4; the gate (step 9) and closeout are the
+orchestrator's. The verification map above is the criterion-level mapping;
+the ledger in the state record seeds every criterion `unproven`.
+Human gates: E-1 only, already answered (post-check at closeout).
+Proof root not cleared (Paul's R1 decision, kept since).

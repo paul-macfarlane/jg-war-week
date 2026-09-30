@@ -10,7 +10,7 @@
 
 **Blocked by:** R3 merged (both change the schema; run them one after the other); R4 merged (it replaces the form controls R2 themes)
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 ## Order and parallelism
 
@@ -30,3 +30,4 @@ Each ticket's own acceptance criteria, plus:
 - 2026-09-29 (Paul): added tickets 22 and 26 from Epic R3's follow-ups; both are colour or media work R2 already does. R2 now waits on R4 too, so it themes the final form controls.
 - 2026-09-29 [EXECUTION PLAN]: written by `/atlas-plan` and red-teamed (schema change), one revision cycle plus a re-review; approved by Paul. Plan: `../epics/R2-execution.md`.
 - 2026-09-29 (Paul): triaged `needs-triage` → `ready-for-agent` with the R2 plan approval.
+- 2026-09-30: claimed by `/atlas-implement` (work package `regression-r2`), `ready-for-agent` → `in-progress`; branch `feat/regression-r2-light-dark` from `staging` `a74d4df` (R3 merged, PR #92; R4 merged, PR #93). Execution record: `../epics/R2-execution.md`.

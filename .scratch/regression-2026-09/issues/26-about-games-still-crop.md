@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** Epic R3 follow-up (`../epics/R3-execution.md` [CLOSEOUT]), 2026-09-29
 
@@ -21,3 +21,4 @@
 - 2026-09-29 (Paul): folded into Epic R2 (`../epics/R2-light-and-dark-themes.md`): R2 reworks colors and contrast in both modes and regenerates the /about media, so this is done there rather than twice.
 - 2026-09-29 [EXECUTION PLAN]: written by `/atlas-plan` and red-teamed (schema change), one revision cycle plus a re-review; approved by Paul. Plan: `../epics/R2-execution.md`.
 - 2026-09-29 (Paul): triaged `needs-triage` → `ready-for-agent` with the R2 plan approval.
+- 2026-09-30: claimed by `/atlas-implement` (work package `regression-r2`), `ready-for-agent` → `in-progress`; branch `feat/regression-r2-light-dark` from `staging` `a74d4df` (R3 merged, PR #92; R4 merged, PR #93). Execution record: `../epics/R2-execution.md`.
