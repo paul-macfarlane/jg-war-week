@@ -75,7 +75,9 @@ export default async function AboutPage() {
               The JG War Week app is where Jahnel Group runs War Week: the Story
               Theme, the schedule, the Teams, the Competitions, the points and
               the Finale, on every phone in the building. Organizers set it up
-              with no code, and every War Week since 2016 is still here.
+              with no code, and every War Week since 2016 is still here. Every
+              edition works in light and dark, and each viewer picks Light, Dark
+              or System.
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <OpenCurrentEdition current={current} />

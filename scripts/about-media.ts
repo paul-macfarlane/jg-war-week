@@ -41,7 +41,9 @@ import path from "node:path";
 import { Client } from "pg";
 
 import { ABOUT_FEATURES, STATIC_PAGE_THEME } from "@/lib/about";
+import { DISPLAY_STORAGE_KEY } from "@/lib/display";
 import { FINALE_MAX_MS } from "@/lib/finale";
+import { backgroundColorScheme } from "@/lib/theme";
 import type { LeaderboardResult } from "@/mcp/leaderboard";
 
 loadEnvConfig(process.cwd());
@@ -58,6 +60,15 @@ const AUTH_SECRET = `about-media-secret-${randomUUID()}`;
 const DEMO_EMAIL = "about-demo@jahnelgroup.com";
 const STILL = { width: 1280, height: 720 };
 const PHONE = { width: 390, height: 844 };
+/**
+ * Every still and the Finale poster wear XI's base palette, the scheme its
+ * Organizer designed, not whatever this Chrome's OS happens to be set to
+ * (it has no stored `ww:display`, so under System it would follow the Mac).
+ * Pinned per page via `Page.addScriptToEvaluateOnNewDocument`, never
+ * `Emulation.setEmulatedMedia` (the reduced-motion capture below replaces
+ * its feature list wholesale, which would drop an earlier media pin).
+ */
+const PINNED_DISPLAY = backgroundColorScheme(STATIC_PAGE_THEME.backgroundColor);
 /** Around the Finale: this much of the Start screen before, and after. */
 const LEAD_IN_MS = 2_500;
 const HOLD_MS = 3_500;
@@ -147,7 +158,7 @@ class Page {
     });
   }
 
-  static async open(): Promise<Page> {
+  static async open(display: "light" | "dark" = PINNED_DISPLAY): Promise<Page> {
     const target = (await (
       await fetch(`http://127.0.0.1:${DEBUG_PORT}/json/new?about:blank`, {
         method: "PUT",
@@ -162,6 +173,9 @@ class Page {
     await page.send("Page.enable");
     await page.send("Network.enable");
     await page.send("Runtime.enable");
+    await page.send("Page.addScriptToEvaluateOnNewDocument", {
+      source: `try{localStorage.setItem(${JSON.stringify(DISPLAY_STORAGE_KEY)},${JSON.stringify(display)})}catch(e){}`,
+    });
     return page;
   }
 
@@ -732,9 +746,64 @@ async function captureGamesDemo(cookie: string): Promise<{
   }
   if (!saved) throw new Error("the demo Game never finished saving");
 
-  const scrolled = await page.evaluate<boolean>(scrollToText("Leaderboard"));
+  // The TopNav is `sticky top-0` (`primary-nav.tsx:164`), so scrolling the
+  // Competition's `h1` to the frame's top hides it under the header; scroll
+  // to the very top instead and frame wide enough to hold the title, the
+  // Leaderboard and the first Game row together (ticket 26).
+  await page.evaluate(`window.scrollTo(0, 0)`);
   await sleep(300);
-  if (!scrolled) throw new Error("no Leaderboard section on Bouncy Pong");
+
+  const measureGamesFrame = `(() => {
+    const h1 = document.querySelector("h1");
+    const header = document.querySelector("header");
+    const gamesHeading = Array.from(document.querySelectorAll("h2")).find(
+      (h) => h.textContent?.trim() === "Games",
+    );
+    const row = gamesHeading?.parentElement?.nextElementSibling?.querySelector("li");
+    if (!h1 || !header || !row) return null;
+    return {
+      h1Top: h1.getBoundingClientRect().top,
+      headerBottom: header.getBoundingClientRect().bottom,
+      rowBottom: row.getBoundingClientRect().bottom,
+      innerHeight: window.innerHeight,
+    };
+  })()`;
+
+  const gamesFrames = [
+    { width: 1600, height: 900, scale: 1.6 },
+    { width: 1920, height: 1080, scale: 1.3333 },
+  ];
+  let usedGamesFrame: (typeof gamesFrames)[number] | null = null;
+  let gamesMeasurement: Record<string, number> | null = null;
+  for (const frame of gamesFrames) {
+    await page.viewport(
+      { width: frame.width, height: frame.height },
+      false,
+      frame.scale,
+    );
+    await sleep(300);
+    gamesMeasurement = await page.evaluate<Record<string, number> | null>(
+      measureGamesFrame,
+    );
+    if (
+      gamesMeasurement &&
+      gamesMeasurement.h1Top >= gamesMeasurement.headerBottom &&
+      gamesMeasurement.rowBottom <= gamesMeasurement.innerHeight
+    ) {
+      usedGamesFrame = frame;
+      break;
+    }
+  }
+  if (!usedGamesFrame) {
+    throw new Error(
+      `games still: the Competition name or first Game row never fit either frame: ${JSON.stringify(gamesMeasurement)}`,
+    );
+  }
+  note(
+    `games: frame ${usedGamesFrame.width}x${usedGamesFrame.height}@${usedGamesFrame.scale} used ` +
+      `(h1 top ${gamesMeasurement?.h1Top}, header bottom ${gamesMeasurement?.headerBottom}, ` +
+      `first Game row bottom ${gamesMeasurement?.rowBottom}, viewport height ${gamesMeasurement?.innerHeight})`,
+  );
   await assertNoRealEmail(page, "games");
   await page.screenshot(path.join(MEDIA, "games.png"));
   note(`still: games from /xi/competitions/${competitionId}, one Game logged`);
@@ -884,6 +953,17 @@ async function evidence() {
   if (!hero.noVideo)
     throw new Error("the About page hero must be stills, not a video");
   await desktop.screenshot(path.join(EVIDENCE, "about-desktop.png"), true);
+
+  const desktopLight = await Page.open("light");
+  await desktopLight.viewport({ width: 1440, height: 900 }, false, 1);
+  await desktopLight.goto("/about", 3_000);
+  await assertNoRealEmail(desktopLight, "about-light");
+  await desktopLight.screenshot(
+    path.join(EVIDENCE, "about-desktop-light.png"),
+    true,
+  );
+  await desktopLight.close();
+  note("evidence: /about desktop captured under the light Display");
 
   await desktop.send("Emulation.setEmulatedMedia", {
     features: [{ name: "prefers-reduced-motion", value: "reduce" }],

@@ -14,7 +14,12 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Edition**                   | The War Week's number (XI = 11). Used in URLs (`/xi`).                                                                            |
 | **Story Theme**               | The year's narrative (The Matrix, Survivor).                                                                                      |
 | **Day Theme**                 | A single day's theme ("Tournament Day").                                                                                          |
-| **Appearance Theme**          | Colors, logo, banner and font preset for a War Week.                                                                              |
+| **Appearance Theme**          | Colors, logo, banner and font preset for a War Week, in both color schemes: the Organizer's five colors plus whatever the other scheme derives or overrides. |
+| **Display**                   | A viewer's own choice of Light, Dark or System (the default), stored per device (`ww:display`) and never synced to their account. Not a Participant's display name — see **Participant**. |
+| **Color scheme**              | `light` or `dark`, the CSS term for which of a War Week's two palettes a page renders.                                            |
+| **Base palette**              | An Appearance Theme's five Organizer-set colors, for whichever scheme its background reads as.                                   |
+| **Derived palette**           | The other color scheme's five colors, computed from the base palette (`derivePalette`) unless overridden.                        |
+| **Override**                  | An Organizer's per-color replacement of one derived-palette color in Setup.                                                       |
 | **Mode**                      | `teams` or `free-for-all`. Decides which leaderboard is the main one.                                                             |
 | **Team**                      | A competing group. Displayed using the War Week's **Team Label**.                                                                 |
 | **Team Label**                | What teams are called this year (House / Tribe / Team).                                                                           |
@@ -132,6 +137,28 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   display name when the author's email matches a Participant's (account
   linking), else the part of the email before the `@`. Only the admin pages
   show the author's email.
+
+## Light and dark Display rules
+
+- A viewer picks a **Display** — Light, Dark or System — from the control in
+  the header (the phone More Sheet, the desktop TopNav, and the AdminShell
+  header). **System** is the default and follows the OS's
+  `prefers-color-scheme`. The choice is stored per device, in
+  `localStorage["ww:display"]`, never on the account and never synced across
+  devices.
+- An Appearance Theme's five Organizer-set colors are the **base palette**,
+  for whichever color scheme its background reads as. The **derived
+  palette**, for the other scheme, is computed from it: background and
+  foreground swap, and the primary and accent colors keep their hue but move
+  toward the new text color only as far as WCAG AA (4.5:1) needs. An
+  Organizer may **override** any of the derived palette's five colors in
+  Setup; a background change across light and dark clears every override
+  that hasn't itself been touched.
+- Every themed surface follows the viewer's Display: the edition pages, the
+  Finale, the Archive, `/about`, `/admin`, sign-in, install, privacy and
+  terms. The installed app's chrome color does not follow it (it stays
+  fixed). A Participant's **Avatar** fill is always the base palette's
+  primary color, whichever scheme is showing.
 
 ## Slack rules
 
