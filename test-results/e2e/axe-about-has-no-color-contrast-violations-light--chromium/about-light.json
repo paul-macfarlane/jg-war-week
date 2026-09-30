@@ -420,31 +420,6 @@
               "id": "color-contrast",
               "data": {
                 "contrastRatio": 0,
-                "fontSize": "10.5pt (14px)",
-                "fontWeight": "normal",
-                "messageKey": "elmPartiallyObscuring",
-                "expectedContrastRatio": "4.5:1"
-              },
-              "relatedNodes": [],
-              "impact": "serious",
-              "message": "Element's background color could not be determined because it partially overlaps other elements"
-            }
-          ],
-          "all": [],
-          "none": [],
-          "impact": "serious",
-          "html": "<p class=\"text-foreground/75 text-sm leading-relaxed\">An earlier attempt: a general-purpose scoring platform, built for any kind of competition, that never quite fit how War Week works.</p>",
-          "target": [
-            ".p-5.rounded-xl.border:nth-child(1) > .text-foreground\\/75.leading-relaxed.text-sm"
-          ],
-          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
-        },
-        {
-          "any": [
-            {
-              "id": "color-contrast",
-              "data": {
-                "contrastRatio": 0,
                 "fontSize": "12.0pt (16px)",
                 "fontWeight": "normal",
                 "messageKey": "bgGradient",
@@ -468,38 +443,6 @@
           "html": "<h3 class=\"text-primary font-semibold\">The history is scattered.</h3>",
           "target": [
             ".p-5.rounded-xl.border:nth-child(2) > h3"
-          ],
-          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
-        },
-        {
-          "any": [
-            {
-              "id": "color-contrast",
-              "data": {
-                "contrastRatio": 0,
-                "fontSize": "10.5pt (14px)",
-                "fontWeight": "normal",
-                "messageKey": "bgGradient",
-                "expectedContrastRatio": "4.5:1"
-              },
-              "relatedNodes": [
-                {
-                  "html": "<div aria-hidden=\"true\" class=\"pointer-events-none absolute inset-x-0 top-0 h-[60rem] bg-[radial-gradient(ellipse_at_top,color-mix(in_oklch,var(--primary)_18%,transparent),transparent_60%)]\"></div>",
-                  "target": [
-                    ".pointer-events-none"
-                  ]
-                }
-              ],
-              "impact": "serious",
-              "message": "Element's background color could not be determined due to a background gradient"
-            }
-          ],
-          "all": [],
-          "none": [],
-          "impact": "serious",
-          "html": "<p class=\"text-foreground/75 text-sm leading-relaxed\">Ten years of War Week lived only in old wiki pages, one per year, each a little harder to find than the last.</p>",
-          "target": [
-            ".p-5.rounded-xl.border:nth-child(2) > .text-foreground\\/75.leading-relaxed.text-sm"
           ],
           "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
         },
@@ -534,31 +477,6 @@
             ".p-5.rounded-xl.border:nth-child(3) > h3"
           ],
           "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
-        },
-        {
-          "any": [
-            {
-              "id": "color-contrast",
-              "data": {
-                "contrastRatio": 0,
-                "fontSize": "10.5pt (14px)",
-                "fontWeight": "normal",
-                "messageKey": "elmPartiallyObscuring",
-                "expectedContrastRatio": "4.5:1"
-              },
-              "relatedNodes": [],
-              "impact": "serious",
-              "message": "Element's background color could not be determined because it partially overlaps other elements"
-            }
-          ],
-          "all": [],
-          "none": [],
-          "impact": "serious",
-          "html": "<p class=\"text-foreground/75 text-sm leading-relaxed\">Organizers juggled spreadsheets, Slack and wikis, and answered the same questions all week: what's on, where, and who's winning.</p>",
-          "target": [
-            ".p-5.rounded-xl.border:nth-child(3) > .text-foreground\\/75.leading-relaxed.text-sm"
-          ],
-          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
         }
       ]
     }
