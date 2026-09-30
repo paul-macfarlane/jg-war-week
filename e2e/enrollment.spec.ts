@@ -7,6 +7,8 @@ import {
 } from "@playwright/test";
 import path from "node:path";
 
+import { DISPLAY_STORAGE_KEY } from "@/lib/display";
+
 import {
   runQuery,
   setParticipantEmail,
@@ -84,6 +86,29 @@ async function assertDisabledButtonStyle(button: Locator) {
   });
   expect(styles.background).toBe(styles.muted);
   expect(styles.background).not.toBe(styles.primary);
+  expect(styles.borderTopStyle).toBe("dashed");
+}
+
+/**
+ * A disabled outline button reads as disabled: muted text, as
+ * `--muted-foreground` resolves in its themed root, and a dashed border.
+ */
+async function assertDisabledOutlineButtonStyle(button: Locator) {
+  const styles = await button.evaluate((el) => {
+    const root = el.closest("[data-theme-root]") ?? document.documentElement;
+    const probe = document.createElement("div");
+    root.appendChild(probe);
+    probe.style.color = "var(--muted-foreground)";
+    const mutedForeground = getComputedStyle(probe).color;
+    root.removeChild(probe);
+    const computed = getComputedStyle(el);
+    return {
+      color: computed.color,
+      borderTopStyle: computed.borderTopStyle,
+      mutedForeground,
+    };
+  });
+  expect(styles.color).toBe(styles.mutedForeground);
   expect(styles.borderTopStyle).toBe("dashed");
 }
 
@@ -186,7 +211,9 @@ test("enrollment: a Participant enrolls, withdraws and enrolls again; once the H
     // latecomer, both refused with the rule's reason.
     await you.reload();
     await expect(card.getByText(BUILT)).toBeVisible();
-    await expect(card.getByRole("button", { name: "Withdraw" })).toBeDisabled();
+    const withdrawButton = card.getByRole("button", { name: "Withdraw" });
+    await expect(withdrawButton).toBeDisabled();
+    await assertDisabledOutlineButtonStyle(withdrawButton);
     await shoot(you, testInfo, "closed-entered");
 
     await signIn(lateContext, E2E_PARTICIPANT_2_EMAIL);
@@ -201,12 +228,12 @@ test("enrollment: a Participant enrolls, withdraws and enrolls again; once the H
     await shoot(late, testInfo, "closed-refused");
 
     // Same disabled Enroll, pinned to the Dark scheme, in a fresh context
-    // (ww:display must be set before the first page load).
+    // (the stored Display must be set before the first page load).
     const darkContext = await browser.newContext({ baseURL: E2E_BASE_URL });
     try {
       await darkContext.addInitScript(
-        (value) => window.localStorage.setItem("ww:display", value),
-        "dark",
+        ([key, value]) => window.localStorage.setItem(key, value),
+        [DISPLAY_STORAGE_KEY, "dark"] as const,
       );
       await signIn(darkContext, E2E_PARTICIPANT_2_EMAIL);
       const darkPage = await darkContext.newPage();

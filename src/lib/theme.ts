@@ -116,7 +116,7 @@ export function derivePalette(
 }
 
 /** Whether every color of a palette is hex, so it can be derived from. */
-function isHexPalette(palette: Palette): boolean {
+export function isHexPalette(palette: Palette): boolean {
   return Object.values(palette).every((color) => normalizeHex(color) !== null);
 }
 

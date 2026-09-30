@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { SiteFooter } from "@/components/site-footer";
+import { ThemeRoot } from "@/components/theme-root";
 import { STATIC_PAGE_THEME } from "@/lib/about";
 import { warWeekThemeStyle } from "@/lib/theme";
 
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
  */
 export default function TermsPage() {
   return (
-    <div
+    <ThemeRoot
       style={warWeekThemeStyle(STATIC_PAGE_THEME)}
       className="bg-background text-foreground flex min-h-dvh flex-col font-sans"
     >
@@ -91,6 +92,6 @@ export default function TermsPage() {
         </section>
       </main>
       <SiteFooter />
-    </div>
+    </ThemeRoot>
   );
 }

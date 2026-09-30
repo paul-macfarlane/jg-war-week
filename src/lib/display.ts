@@ -10,7 +10,7 @@ export const DISPLAY_STORAGE_KEY = "ww:display";
 /** Fired on `window` when this tab changes the Display. */
 export const DISPLAY_CHANGE_EVENT = "ww:display-change";
 
-/** A stored value as a Display; anything but light or dark is System. */
+/** A stored value as a Display; anything but light, dark or system is System. */
 export function parseDisplay(stored: string | null): Display {
   return stored === "light" || stored === "dark" || stored === "system"
     ? stored

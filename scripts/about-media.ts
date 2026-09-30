@@ -804,6 +804,16 @@ async function captureGamesDemo(cookie: string): Promise<{
       `(h1 top ${gamesMeasurement?.h1Top}, header bottom ${gamesMeasurement?.headerBottom}, ` +
       `first Game row bottom ${gamesMeasurement?.rowBottom}, viewport height ${gamesMeasurement?.innerHeight})`,
   );
+  // The "Game logged" toast would sit over the still: wait it out.
+  let toastGone = false;
+  for (let i = 0; i < 75; i++) {
+    toastGone = await page.evaluate<boolean>(
+      `document.querySelector("[data-sonner-toast]") === null`,
+    );
+    if (toastGone) break;
+    await sleep(200);
+  }
+  if (!toastGone) throw new Error('the "Game logged" toast never went away');
   await assertNoRealEmail(page, "games");
   await page.screenshot(path.join(MEDIA, "games.png"));
   note(`still: games from /xi/competitions/${competitionId}, one Game logged`);

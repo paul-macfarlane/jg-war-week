@@ -32,11 +32,14 @@ import { normalizeHex } from "@/lib/color";
 import type { OverrideColumn, WarWeekSettingsInput } from "@/lib/setup";
 import {
   type ColorScheme,
+  OVERRIDE_FIELDS,
   type Palette,
   backgroundColorScheme,
   basePalette,
   derivePalette,
+  isHexPalette,
   otherScheme,
+  paletteOverrides,
   themeContrastWarnings,
   themeSwatches,
   warWeekThemeStyle,
@@ -57,54 +60,31 @@ const COLOR_FIELDS: { field: ThemeColorField; label: string }[] = [
   { field: "foregroundColor", label: "Text" },
 ];
 
-// The derived palette's fields: each palette color, its override column
-// (posted by a hidden input) and label.
-const OVERRIDE_FIELDS: {
-  color: keyof Palette;
-  field: OverrideColumn;
-  label: string;
-}[] = [
-  { color: "primary", field: "overridePrimaryColor", label: "Primary" },
-  {
-    color: "primaryForeground",
-    field: "overridePrimaryForegroundColor",
-    label: "Primary text",
-  },
-  { color: "accent", field: "overrideAccentColor", label: "Accent" },
-  {
-    color: "background",
-    field: "overrideBackgroundColor",
-    label: "Background",
-  },
-  { color: "foreground", field: "overrideForegroundColor", label: "Text" },
-];
-
-const NO_OVERRIDES: Record<OverrideColumn, string> = {
-  overridePrimaryColor: "",
-  overridePrimaryForegroundColor: "",
-  overrideAccentColor: "",
-  overrideBackgroundColor: "",
-  overrideForegroundColor: "",
+// The derived palette's labels; its colors and their override columns
+// (each posted by a hidden input) are `theme.ts`'s `OVERRIDE_FIELDS`.
+const OVERRIDE_LABEL: Record<keyof Palette, string> = {
+  primary: "Primary",
+  primaryForeground: "Primary text",
+  accent: "Accent",
+  background: "Background",
+  foreground: "Text",
 };
+
+/** Each override column of `values`, or blank for all of them. */
+function overrideValues(
+  values?: WarWeekSettingsInput,
+): Record<OverrideColumn, string> {
+  return Object.fromEntries(
+    OVERRIDE_FIELDS.map(([, field]) => [field, values?.[field] ?? ""]),
+  ) as Record<OverrideColumn, string>;
+}
+
+const NO_OVERRIDES = overrideValues();
 
 const SCHEME_LABEL: Record<ColorScheme, string> = {
   light: "Light",
   dark: "Dark",
 };
-
-/** The overrides the form holds, as `derivePalette` takes them. */
-function overridesFrom(values: WarWeekSettingsInput): Partial<Palette> {
-  const overrides: Partial<Palette> = {};
-  for (const { color, field } of OVERRIDE_FIELDS) {
-    if (values[field]) overrides[color] = values[field];
-  }
-  return overrides;
-}
-
-/** Whether all five base colors are hex, so the other scheme can derive. */
-function isHexPalette(palette: Palette): boolean {
-  return Object.values(palette).every((color) => normalizeHex(color) !== null);
-}
 
 const MODE_OPTIONS: SelectOption[] = [
   { value: "teams", label: "Teams" },
@@ -143,18 +123,29 @@ export function WarWeekSettingsForm({
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [values, setValues] = useState(initial);
+  const initialScheme = backgroundColorScheme(initial.backgroundColor);
 
   function setValue(field: keyof WarWeekSettingsInput, value: string) {
     setValues((v) => {
       const next = { ...v, [field]: value };
-      // A background across light and dark makes the overrides belong to
-      // the scheme the base now dresses: they go back to derived at once,
-      // so any set after the flip, in the same save, are kept.
-      return field === "backgroundColor" &&
-        backgroundColorScheme(value) !==
-          backgroundColorScheme(v.backgroundColor)
-        ? { ...next, ...NO_OVERRIDES }
-        : next;
+      const nextScheme = backgroundColorScheme(value);
+      if (
+        field !== "backgroundColor" ||
+        nextScheme === backgroundColorScheme(v.backgroundColor)
+      ) {
+        return next;
+      }
+      // Measured against the saved background, not the last edit (a hex
+      // typed key by key can pass through the other scheme): away from
+      // the saved scheme the overrides go back to derived, so any set
+      // after the flip, in the same save, are kept; back to it, the
+      // saved overrides return.
+      return {
+        ...next,
+        ...(nextScheme === initialScheme
+          ? overrideValues(initial)
+          : NO_OVERRIDES),
+      };
     });
   }
   const set =
@@ -166,7 +157,7 @@ export function WarWeekSettingsForm({
   const other = otherScheme(scheme);
   // The base background crossed light and dark since the last save.
   const flipNotice =
-    scheme !== backgroundColorScheme(initial.backgroundColor)
+    scheme !== initialScheme
       ? `Changing the background to a ${scheme} one clears the ${other} mode colors (they'll be derived again).`
       : null;
 
@@ -228,7 +219,7 @@ export function WarWeekSettingsForm({
   };
   const warnings = themeContrastWarnings(preview);
   const base = basePalette(preview);
-  const overrides = overridesFrom(values);
+  const overrides = paletteOverrides(preview);
   const derived = isHexPalette(base) ? derivePalette(base, overrides) : null;
 
   /** Sets one override; the color it would derive to anyway is none. */
@@ -377,16 +368,17 @@ export function WarWeekSettingsForm({
             Change one to override it.
           </FieldDescription>
           {flipNotice && (
-            <p role="status" className="text-sm">
+            <p role="status" className="text-warning text-sm">
               {flipNotice}
             </p>
           )}
           {derived && (
             <FieldGroup className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {OVERRIDE_FIELDS.map(({ color, field, label }) => (
+              {OVERRIDE_FIELDS.map(([color, field]) => (
                 <Field key={field} data-invalid={!!fieldErrors[field]}>
                   <FieldLabel htmlFor={`settings-${field}`}>
-                    {SCHEME_LABEL[other]} {label.toLowerCase()} color
+                    {SCHEME_LABEL[other]} {OVERRIDE_LABEL[color].toLowerCase()}{" "}
+                    color
                   </FieldLabel>
                   <ColorField
                     id={`settings-${field}`}

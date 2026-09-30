@@ -211,7 +211,9 @@ export type OverrideColumn =
 
 /**
  * Validated settings, keyed by the `war_week` columns they update. The
- * overrides are optional: a save without them leaves them as they were.
+ * overrides are optional here: the mutation leaves an omitted key's column
+ * as it was. Through the action, though, `settingsSchema` turns a missing
+ * override key into null, so callers of the action must send all five.
  */
 export type WarWeekSettingsValues = Partial<Pick<WarWeek, OverrideColumn>> &
   Pick<

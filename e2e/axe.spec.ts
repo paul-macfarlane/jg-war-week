@@ -2,9 +2,10 @@ import AxeBuilder from "@axe-core/playwright";
 import { type Page, expect, test } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 
-import { E2E_PARTICIPANT_EMAIL, signIn } from "./session";
+import { DISPLAY_STORAGE_KEY } from "@/lib/display";
+import type { ColorScheme } from "@/lib/theme";
 
-type ColorScheme = "light" | "dark";
+import { E2E_PARTICIPANT_EMAIL, signIn } from "./session";
 
 const PAGES: { slug: string; path: string; signIn: boolean }[] = [
   { slug: "xi", path: "/xi", signIn: true },
@@ -42,8 +43,8 @@ for (const { slug, path, signIn: needsSignIn } of PAGES) {
       // The scheme is chosen through the Display, as a viewer would; the
       // system setting is the opposite one so it can't be what applies.
       await context.addInitScript(
-        (value) => window.localStorage.setItem("ww:display", value),
-        scheme,
+        ([key, value]) => window.localStorage.setItem(key, value),
+        [DISPLAY_STORAGE_KEY, scheme] as const,
       );
       await page.emulateMedia({
         colorScheme: scheme === "dark" ? "light" : "dark",

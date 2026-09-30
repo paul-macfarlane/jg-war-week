@@ -22,11 +22,25 @@ const OPTIONS = [
   icon: typeof Sun;
 }[];
 
+/** Applies a Display to `<html>` (System: no attribute). */
+function applyDisplay(display: Display) {
+  const html = document.documentElement;
+  if (display === "system") delete html.dataset.display;
+  else html.dataset.display = display;
+}
+
 function subscribe(onChange: () => void) {
-  window.addEventListener("storage", onChange);
+  // Another tab changed the Display: the page follows, not only the control.
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === DISPLAY_STORAGE_KEY) {
+      applyDisplay(parseDisplay(event.newValue));
+    }
+    onChange();
+  };
+  window.addEventListener("storage", onStorage);
   window.addEventListener(DISPLAY_CHANGE_EVENT, onChange);
   return () => {
-    window.removeEventListener("storage", onChange);
+    window.removeEventListener("storage", onStorage);
     window.removeEventListener(DISPLAY_CHANGE_EVENT, onChange);
   };
 }
@@ -35,20 +49,20 @@ function readDisplay(): Display {
   try {
     return parseDisplay(window.localStorage.getItem(DISPLAY_STORAGE_KEY));
   } catch {
-    return "system";
+    // Storage blocked: the Display this page applied is the one it shows.
+    const applied = document.documentElement.dataset.display;
+    return applied === "light" || applied === "dark" ? applied : "system";
   }
 }
 
-/** Stores the Display and applies it to `<html>` (System: no attribute). */
+/** Stores the Display and applies it to `<html>`. */
 function chooseDisplay(display: Display) {
   try {
     window.localStorage.setItem(DISPLAY_STORAGE_KEY, display);
   } catch {
     // Storage refused (private mode): the choice lasts until reload.
   }
-  const html = document.documentElement;
-  if (display === "system") delete html.dataset.display;
-  else html.dataset.display = display;
+  applyDisplay(display);
   window.dispatchEvent(new Event(DISPLAY_CHANGE_EVENT));
 }
 

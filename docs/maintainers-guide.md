@@ -436,11 +436,12 @@ Notes:
   the viewer's Display — the Setup form's two previews use it so an
   Organizer sees both the light and the dark palette rendered live, side by
   side, regardless of their own Display.
-- A warning that still lets the save through (going over a Max points cap,
-  an Organizer override that's about to be replaced) uses the `--warning`
-  token (`text-warning`), not a hardcoded amber — it's tuned to pass AA
-  against each color scheme's background, unlike a raw Tailwind amber
-  class.
+- A warning that still lets the save through uses the `--warning` token
+  (`text-warning`), not a hardcoded amber — it's tuned to pass AA against
+  each color scheme's background, unlike a raw Tailwind amber class. Its
+  users today: Setup's contrast warnings and its flip notice (an Organizer
+  override about to be cleared), the Points Entry form's Max points
+  warning, and the Announcement form's hint.
 - Lay out every field with `Field` / `FieldLabel htmlFor` /
   `FieldDescription` from `ui/field`, and show a form's server error in a
   `FieldError` under its buttons.

@@ -6,13 +6,12 @@ import {
   test,
 } from "@playwright/test";
 
+import { DISPLAY_STORAGE_KEY, type Display } from "@/lib/display";
 import { type ColorScheme, themePalettes } from "@/lib/theme";
 
 import { runQuery } from "./db";
 import { E2E_BASE_URL } from "./env";
 import { E2E_PARTICIPANT_EMAIL, asOrganizer, signIn } from "./session";
-
-type Display = "light" | "dark" | "system";
 
 /** `#rrggbb` as Chrome reports a computed color. */
 function rgb(hex: string): string {
@@ -83,15 +82,18 @@ function htmlColorScheme(page: Page) {
 }
 
 function storedDisplay(page: Page) {
-  return page.evaluate(() => window.localStorage.getItem("ww:display"));
+  return page.evaluate(
+    (key) => window.localStorage.getItem(key),
+    DISPLAY_STORAGE_KEY,
+  );
 }
 
-/** A fresh context whose `ww:display` is `display` before the first page. */
+/** A fresh context whose stored Display is `display` before the first page. */
 async function contextWithDisplay(browser: Browser, display: Display) {
   const context = await browser.newContext({ baseURL: E2E_BASE_URL });
   await context.addInitScript(
-    (value) => window.localStorage.setItem("ww:display", value),
-    display,
+    ([key, value]) => window.localStorage.setItem(key, value),
+    [DISPLAY_STORAGE_KEY, display] as const,
   );
   return context;
 }
@@ -218,7 +220,7 @@ test("a stored Dark applies before any client JavaScript loads: no flash", async
   }
 });
 
-test("every themed surface follows the Display: the Finale, the Archive, /about, sign-in and /admin", async ({
+test("every themed surface follows the Display: the Finale, the Archive, /about, /privacy, /terms, sign-in and /admin", async ({
   browser,
 }, testInfo) => {
   const xi = await palettesOf("xi");
@@ -265,6 +267,12 @@ test("every themed surface follows the Display: the Finale, the Archive, /about,
       expect(await rootBackground(anon), `/about ${scheme}`).toBe(
         rgb(xi[scheme].background),
       );
+      for (const path of ["/privacy", "/terms"]) {
+        await anon.goto(path);
+        expect(await rootBackground(anon), `${path} ${scheme}`).toBe(
+          rgb(xi[scheme].background),
+        );
+      }
       await anon.goto("/sign-in");
       expect(await rootBackground(anon), `/sign-in ${scheme}`).toBe(
         rgb(xi[scheme].background),
@@ -342,18 +350,37 @@ test("Setup: the other scheme's colors are derived, overridable and reset; an un
     await saveSettings(page);
     expect(await readXiOverrides()).toEqual(before);
 
-    // Open and dismiss the Light primary picker, save: still unchanged.
+    // A background typed through a light 3-digit prefix (#1a1 is #11aa11)
+    // to a dark one, then back to the saved one: the overrides survive.
+    // One open picker throughout: Chromium can drop the color grid's
+    // layout boxes when the contrast warnings appear mid-edit.
+    const background = form.getByLabel("Background color", { exact: true });
+    let hex = page.getByRole("textbox", { name: "Hex color" });
+    await background.click();
+    await hex.fill("");
+    await hex.pressSequentially("#1a1a1a");
+    await expect(background).toContainText("#1a1a1a");
+    await hex.fill("#000000");
+    await page.keyboard.press("Escape");
+    await expect(background).toContainText("#000000");
+    await saveSettings(page);
+    expect(await readXiOverrides()).toEqual(before);
+    await page.close();
+
+    // Open and dismiss a derived color's picker (the Light accent), save:
+    // it isn't frozen into an override, and every override is unchanged.
+    ({ page, form } = await openSetup(context));
+    hex = page.getByRole("textbox", { name: "Hex color" });
+    await form.getByLabel("Light accent color", { exact: true }).click();
+    await expect(hex).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(hex).toBeHidden();
+    await saveSettings(page);
+    expect(await readXiOverrides()).toEqual(before);
+
     const lightPrimary = form.getByLabel("Light primary color", {
       exact: true,
     });
-    await lightPrimary.click();
-    await expect(
-      page.getByRole("textbox", { name: "Hex color" }),
-    ).toBeVisible();
-    await page.keyboard.press("Escape");
-    await expect(page.getByRole("textbox", { name: "Hex color" })).toBeHidden();
-    await saveSettings(page);
-    expect(await readXiOverrides()).toEqual(before);
 
     // Set it through the form: the row and /xi carry it in the light set.
     await lightPrimary.click();

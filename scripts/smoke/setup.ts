@@ -18,7 +18,7 @@ import {
   xiWarWeekId,
 } from "./harness";
 
-/** XI's seeded light-mode primary override (`seeds/xi.json`). */
+/** XI's seeded light scheme primary override (`seeds/xi.json`). */
 const XI_SEEDED_OVERRIDE_PRIMARY = "#0a7a1f";
 
 /**
@@ -28,7 +28,7 @@ const XI_SEEDED_OVERRIDE_PRIMARY = "#0a7a1f";
  */
 export async function assertXiSeededOverride() {
   const check =
-    "War Week XI's seeded light-mode primary override is stored and GET /xi carries it as --light-primary";
+    "War Week XI's seeded light scheme primary override is stored and GET /xi carries it as --light-primary";
   try {
     const [row] = await runQuery<{ override_primary_color: string | null }>(
       "select override_primary_color from war_week where edition = 'xi'",

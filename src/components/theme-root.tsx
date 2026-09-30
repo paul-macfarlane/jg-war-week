@@ -9,6 +9,8 @@ import {
   useState,
 } from "react";
 
+import type { ColorScheme } from "@/lib/theme";
+
 const ThemeContainerContext = createContext<HTMLElement | null>(null);
 
 /**
@@ -33,7 +35,7 @@ type ThemeRootProps = {
    * Pins the root to one color scheme whatever the viewer's Display, for
    * the Setup form's two previews. Rendered as `data-scheme`.
    */
-  scheme?: "dark" | "light";
+  scheme?: ColorScheme;
   className?: string;
   children?: ReactNode;
 };

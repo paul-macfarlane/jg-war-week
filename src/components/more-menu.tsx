@@ -51,7 +51,7 @@ export function MoreMenu({
           </li>
         ))}
       </ul>
-      <div className="border-border flex items-center gap-3 rounded-lg border px-4 py-3 text-sm">
+      <div className="border-border flex flex-wrap items-center gap-3 gap-y-2 rounded-lg border px-4 py-3 text-sm">
         <span className="flex-1 font-medium">Display</span>
         <DisplayMenu />
       </div>

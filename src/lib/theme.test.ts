@@ -287,7 +287,7 @@ describe("themeContrastWarnings", () => {
   });
 
   it("warns about the derived palette under its scheme's name", () => {
-    // A light base; the Organizer's dark-mode primary text is unreadable.
+    // A light base; the Organizer's dark scheme primary text is unreadable.
     expect(
       themeContrastWarnings({
         ...fixture,
