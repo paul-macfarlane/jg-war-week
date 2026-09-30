@@ -2,14 +2,17 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { DEMO_SEED } from "@/seed/local-files";
 import { type WarWeekSeed, warWeekSeedSchema } from "@/seed/schema";
 
 /**
- * Content checks on the committed seeds: ten years of history plus the War
- * Week XI demo. Schema validity itself is covered in schema.test.ts.
+ * Content checks on the committed seeds: eleven years of history, plus the
+ * War Week XI demo that local test databases load in its place. Schema
+ * validity itself is covered in schema.test.ts.
  */
 
 const SEEDS_DIR = path.resolve(__dirname, "../../seeds");
+const DEMO_SEED_PATH = path.resolve(__dirname, "../..", DEMO_SEED);
 
 function load(file: string): WarWeekSeed {
   return warWeekSeedSchema.parse(
@@ -19,6 +22,7 @@ function load(file: string): WarWeekSeed {
 
 const files = readdirSync(SEEDS_DIR).filter((f) => f.endsWith(".json"));
 const seeds = files.map(load).sort((a, b) => a.year - b.year);
+const demo = load(path.relative(SEEDS_DIR, DEMO_SEED_PATH));
 
 describe("War Week history", () => {
   it("has one seed per year from 2016 to 2026", () => {
@@ -51,20 +55,58 @@ describe("War Week history", () => {
     }
   });
 
-  it.each(seeds.filter((s) => s.year < 2026).map((s) => [s.year, s] as const))(
-    "%i is complete, with its dates in its year and a wiki URL",
+  it.each(seeds.map((s) => [s.year, s] as const))(
+    "%i is complete, with its dates in its year and its wiki page",
     (year, seed) => {
       expect(seed.status).toBe("complete");
       expect(seed.startDate.startsWith(String(year))).toBe(true);
-      expect(seed.wikiUrl).toMatch(/^https:\/\//);
-      expect(seed.pointsEntries).toEqual([]);
+      expect(seed.wikiUrl).toBe(
+        `https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/home/war-week/war-week-${year}`,
+      );
+      expect(seed.announcements).toEqual([]);
       expect(seed.organizers).toEqual([]);
     },
   );
+
+  it("has Points Entries only for War Week XI, the first scored in the app's terms", () => {
+    expect(
+      seeds.filter((s) => s.pointsEntries.length > 0).map((s) => s.edition),
+    ).toEqual(["xi"]);
+  });
+});
+
+describe("War Week XI", () => {
+  const xi = seeds.find((s) => s.edition === "xi")!;
+
+  it("matches the wiki's final scoreboard: Red 38.5, Blue 31", () => {
+    const totals = new Map<string, number>();
+    for (const entry of xi.pointsEntries) {
+      expect(entry.team).not.toBeNull();
+      totals.set(entry.team!, (totals.get(entry.team!) ?? 0) + entry.points);
+    }
+    expect(Object.fromEntries(totals)).toEqual({ Red: 38.5, Blue: 31 });
+    expect(xi.winner).toBe("Red");
+  });
+
+  it("keeps the demo's schedule, roster and Appearance Theme", () => {
+    const { days, participants, teams, primary, background, storyTheme } = demo;
+    expect(xi).toMatchObject({
+      days,
+      participants,
+      teams,
+      primary,
+      background,
+      storyTheme,
+    });
+  });
 });
 
 describe("War Week XI demo", () => {
-  const xi = seeds.find((s) => s.edition === "xi")!;
+  const xi = demo;
+
+  it("is the XI Edition", () => {
+    expect(path.basename(DEMO_SEED)).toBe(`${xi.edition}.json`);
+  });
 
   it("is live, The Matrix, Red vs. Blue, in green on black", () => {
     expect(xi).toMatchObject({

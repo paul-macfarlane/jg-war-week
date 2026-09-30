@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { readdirSync } from "node:fs";
-import path from "node:path";
+
+import { localSeedFiles } from "@/seed/local-files";
 
 import { deleteE2eUsers } from "./db";
 
@@ -13,15 +13,12 @@ function run(args: string[]) {
 
 /**
  * Puts the local database in a known state before the flows run: current
- * migrations, every seed reloaded with `--reset` (this wipes those War
- * Weeks), and no e2e users left from an interrupted run. The local-database
+ * migrations, every seed (with the XI demo in place of the real XI)
+ * reloaded with `--reset` (this wipes those War Weeks), and no e2e users left from an interrupted run. The local-database
  * and build checks run earlier, when `playwright.config.ts` loads.
  */
 export default async function globalSetup() {
   run(["db:migrate"]);
-  const seedFiles = readdirSync(path.resolve(process.cwd(), "seeds"))
-    .filter((f) => f.endsWith(".json"))
-    .map((f) => `seeds/${f}`);
-  run(["seed:load", "--reset", ...seedFiles]);
+  run(["seed:load", "--reset", ...localSeedFiles()]);
   await deleteE2eUsers();
 }

@@ -5,7 +5,7 @@
   "startDate": "2026-02-22",
   "endDate": "2026-02-27",
   "storyTheme": "The Matrix",
-  "status": "complete",
+  "status": "live",
   "mode": "teams",
   "teamLabel": "Team",
   "leaderTitle": "Captain",
@@ -19,15 +19,8 @@
   "fontPreset": "mono",
   "logoUrl": "/themes/xi/logo.svg",
   "bannerUrl": "/themes/xi/banner.svg",
-  "organizers": [],
-  "highlights": [
-    "Red beat Blue 38.5 to 31 in the Red vs. Blue team competition.",
-    "Red took the pre-week points: HQ Attendance, the AI Survey and 6 Subjective Points to Blue's 4. Blue won Black Midnight.",
-    "In the tournaments, Red won Settlers of Catan, Speed Chess and Pool; Blue won Beyblades in the new Terrordome, Super Smash Bros and the inaugural Bouncy Ping Pong.",
-    "Tuesday's Matrix-themed Team Night Events: Red won This is Zion, Electric City Matrix, Deja Vu and Guns, Lots of Guns; Blue won Red Pill / Blue Pill, There is No Spoon and The Keymaker.",
-    "Thursday was Rise of the Machines AI Day, closing with an AI Round Table.",
-    "The Centurion and Four Score Clubs stayed retired, keeping War Week hours about quality over quantity."
-  ],
+  "organizers": ["pmacfarlane@jahnelgroup.com"],
+  "highlights": [],
   "days": [
     {
       "date": "2026-02-22",
@@ -986,8 +979,10 @@
     },
     {
       "name": "Settlers of Catan",
-      "scoring": "team",
+      "scoring": "individual",
+      "countsTowardTeam": true,
       "maxPoints": 5,
+      "placementPoints": [5, 3, 1],
       "description": "The 9th annual Catan tournament hosted by Tony Mercadante."
     },
     {
@@ -998,38 +993,53 @@
     },
     {
       "name": "Speed Chess",
-      "scoring": "team",
+      "scoring": "individual",
+      "countsTowardTeam": true,
       "maxPoints": 1.5,
       "description": "Run by Ben Sadick in a new format. Finals Monday night."
     },
     {
       "name": "Beyblades",
-      "scoring": "team",
+      "scoring": "individual",
+      "countsTowardTeam": true,
       "maxPoints": 5,
+      "placementPoints": [5, 3, 1],
       "description": "Finals Monday night in Team Room 4's new Beyblade Terrordome."
     },
     {
       "name": "Pool",
-      "scoring": "team",
+      "scoring": "individual",
+      "countsTowardTeam": true,
       "maxPoints": 3,
       "description": "Organized by Dom Favata. Preliminaries before War Week, finals Monday night."
     },
     {
       "name": "Super Smash Bros",
-      "scoring": "team",
+      "scoring": "individual",
+      "countsTowardTeam": true,
       "maxPoints": 3,
       "description": "Paul Macfarlane runs back this classic JG gaming competition."
     },
     {
       "name": "Bouncy Pong",
-      "scoring": "team",
+      "scoring": "individual",
+      "countsTowardTeam": true,
       "maxPoints": 3,
+      "placementPoints": [3, 2, 1],
+      "format": "games",
+      "gameType": "head-to-head",
+      "gameConfig": { "drawsAllowed": false, "bestOf": null },
+      "entrantsOpen": true,
       "description": "The inaugural Bouncy Ping Pong, run by Casey Snow."
     },
     {
       "name": "Tuesday Stairs",
       "scoring": "team",
       "maxPoints": 3,
+      "format": "games",
+      "gameType": "best-score",
+      "gameConfig": { "count": "total", "betterIs": "higher", "unit": "trips" },
+      "entrantsOpen": true,
       "description": "Stairway to Heaven: of course stairs on Tuesday counts."
     },
     {
@@ -1084,6 +1094,9 @@
       "name": "Electric City Matrix",
       "scoring": "team",
       "maxPoints": 5,
+      "format": "games",
+      "gameType": "ranked",
+      "entrantsOpen": true,
       "group": "Team Night Events"
     },
     {
@@ -1098,221 +1111,288 @@
       "key": "hq-attendance-red",
       "competition": "HQ Attendance",
       "team": "Red",
-      "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
+      "points": 2,
       "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
+      "enteredAt": "2026-02-22T09:00:00-05:00"
     },
     {
-      "key": "ai-survey-completion-red",
-      "competition": "AI Survey Completion",
-      "team": "Red",
-      "points": 1,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "subjective-points-red",
-      "competition": "Subjective Points",
-      "team": "Red",
-      "points": 6,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "subjective-points-blue",
-      "competition": "Subjective Points",
+      "key": "hq-attendance-blue",
+      "competition": "HQ Attendance",
       "team": "Blue",
-      "points": 4,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
+      "points": 1,
       "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
+      "enteredAt": "2026-02-22T09:01:00-05:00"
     },
     {
       "key": "black-midnight-blue",
       "competition": "Black Midnight",
       "team": "Blue",
       "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
+      "note": "Most finishers",
       "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
+      "enteredAt": "2026-02-22T12:30:00-05:00"
     },
     {
-      "key": "settlers-of-catan-red",
+      "key": "catan-anthony-conway",
       "competition": "Settlers of Catan",
-      "team": "Red",
+      "participant": "Anthony Conway",
       "points": 5,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
+      "note": "Catan champion",
       "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
+      "enteredAt": "2026-02-22T21:00:00-05:00"
     },
     {
-      "key": "speed-chess-red",
+      "key": "beast-mode-red",
+      "competition": "Beast Mode Workout",
+      "team": "Red",
+      "points": 3,
+      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
+      "enteredAt": "2026-02-23T08:30:00-05:00"
+    },
+    {
+      "key": "ai-survey-blue",
+      "competition": "AI Survey Completion",
+      "team": "Blue",
+      "points": 1,
+      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
+      "enteredAt": "2026-02-24T09:00:00-05:00"
+    },
+    {
+      "key": "speed-chess-james-novak",
       "competition": "Speed Chess",
-      "team": "Red",
+      "participant": "James Novak",
       "points": 1.5,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
+      "note": "Tied for first",
       "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
+      "enteredAt": "2026-02-23T21:30:00-05:00"
     },
     {
-      "key": "beyblades-blue",
+      "key": "beyblades-jory-hutchins",
       "competition": "Beyblades",
-      "team": "Blue",
+      "participant": "Jory Hutchins",
       "points": 5,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
       "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
+      "enteredAt": "2026-02-23T21:45:00-05:00"
     },
     {
-      "key": "pool-red",
+      "key": "pool-peter-hodges",
       "competition": "Pool",
-      "team": "Red",
+      "participant": "Peter Hodges",
       "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
+      "note": "Won on the last ball",
       "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
+      "enteredAt": "2026-02-23T22:00:00-05:00"
     },
     {
-      "key": "super-smash-bros-blue",
+      "key": "smash-tommy-kneeland",
       "competition": "Super Smash Bros",
-      "team": "Blue",
+      "participant": "Tommy Kneeland",
       "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
       "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
+      "enteredAt": "2026-02-23T22:10:00-05:00"
     },
     {
-      "key": "bouncy-pong-blue",
+      "key": "bouncy-pong-nick-brown",
       "competition": "Bouncy Pong",
-      "team": "Blue",
+      "participant": "Nick Brown",
       "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
       "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
+      "enteredAt": "2026-02-23T22:20:00-05:00"
     },
     {
       "key": "tuesday-stairs-red",
       "competition": "Tuesday Stairs",
       "team": "Red",
       "points": 2,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
       "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
+      "enteredAt": "2026-02-24T17:00:00-05:00"
     },
     {
       "key": "tuesday-stairs-blue",
       "competition": "Tuesday Stairs",
       "team": "Blue",
       "points": 1,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
       "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
+      "enteredAt": "2026-02-24T17:01:00-05:00"
     },
     {
       "key": "this-is-zion-red",
       "competition": "This is Zion",
       "team": "Red",
       "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
       "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
+      "enteredAt": "2026-02-24T19:00:00-05:00"
     },
     {
-      "key": "hard-line-white-rabbit-red",
-      "competition": "Hard Line / White Rabbit",
-      "team": "Red",
-      "points": 1,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "hard-line-white-rabbit-blue",
+      "key": "hard-line-blue",
       "competition": "Hard Line / White Rabbit",
       "team": "Blue",
-      "points": 2,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
+      "points": 3,
       "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
+      "enteredAt": "2026-02-24T19:30:00-05:00"
     },
     {
-      "key": "electric-city-matrix-red",
-      "competition": "Electric City Matrix",
-      "team": "Red",
-      "points": 5,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "cypher-red",
-      "competition": "Cypher",
-      "team": "Red",
-      "points": 2,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "cypher-blue",
-      "competition": "Cypher",
-      "team": "Blue",
+      "key": "winning-the-day-dani-milliken",
+      "competition": "Winning the Day Challenge",
+      "participant": "Dani Milliken",
       "points": 1,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
+      "note": "First to finish all 10 wellness tasks",
       "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "red-pill-blue-pill-blue",
-      "competition": "Red Pill / Blue Pill",
-      "team": "Blue",
-      "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "there-is-no-spoon-blue",
-      "competition": "There is No Spoon",
-      "team": "Blue",
-      "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "the-keymaker-blue",
-      "competition": "The Keymaker",
-      "team": "Blue",
-      "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "deja-vu-red",
-      "competition": "Deja Vu",
-      "team": "Red",
-      "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "guns-lots-of-guns-red",
-      "competition": "Guns, Lots of Guns",
-      "team": "Red",
-      "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
+      "enteredAt": "2026-02-25T13:00:00-05:00"
     }
   ],
-  "awards": [],
-  "announcements": [],
+  "awards": [
+    {
+      "key": "black-midnight",
+      "name": "Black Midnight",
+      "description": "Went from 12:01 AM Sunday until noon with no nonsense.",
+      "participants": [
+        "Ian Ballard",
+        "Joshua Jameson",
+        "Bich Dudla",
+        "Steven Vickers"
+      ]
+    },
+    {
+      "key": "catan-champion",
+      "name": "Catan Champion",
+      "description": "Winner of the 9th annual Settlers of Catan tournament.",
+      "participants": ["Anthony Conway"]
+    },
+    {
+      "key": "terrordome-champion",
+      "name": "Terrordome Champion",
+      "description": "Last Beyblade spinning in the Terrordome.",
+      "participants": ["Jory Hutchins"]
+    }
+  ],
+  "announcements": [
+    {
+      "key": "welcome",
+      "title": "Welcome to War Week XI",
+      "pinned": true,
+      "authorEmail": "pmacfarlane@jahnelgroup.com",
+      "publishedAt": "2026-02-22T09:00:00-05:00",
+      "body": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "heading",
+            "attrs": {
+              "level": 2
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "The Matrix has you"
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Choose your pill. Standings are "
+              },
+              {
+                "type": "text",
+                "text": "hidden",
+                "marks": [
+                  {
+                    "type": "bold"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " until closing ceremonies."
+              }
+            ]
+          }
+        ]
+      },
+      "videoUrls": ["https://www.youtube.com/watch?v=vKQi3bBA1y8"]
+    },
+    {
+      "key": "tournament-night-recap",
+      "title": "Tournament Night recap",
+      "authorEmail": "pmacfarlane@jahnelgroup.com",
+      "publishedAt": "2026-02-24T08:00:00-05:00",
+      "body": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "bulletList",
+            "content": [
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Pool finals went to the last ball."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Speed Chess ended in a tie for first."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Blue swept the Terrordome and Bouncy Pong."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "key": "wellness-wednesday",
+      "title": "Wellness Wednesday is here",
+      "authorEmail": "pmacfarlane@jahnelgroup.com",
+      "publishedAt": "2026-02-25T07:00:00-05:00",
+      "body": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Hot yoga at 7:30, massages from 10 to 2, and the Winning the Day Challenge all day. Ryder Cup tee time is 5:00 at Mohawk."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
   "faqItems": [
     {
       "question": "I have some great pics and videos. Where do I put them?",
@@ -1418,5 +1498,5 @@
     }
   ],
   "wikiUrl": "https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/home/war-week/war-week-2026",
-  "winner": "Red"
+  "winner": null
 }

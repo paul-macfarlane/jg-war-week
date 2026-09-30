@@ -1,17 +1,19 @@
 import { expect, test } from "@playwright/test";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
+
+import { localSeedFiles } from "@/seed/local-files";
 
 import { E2E_PARTICIPANT_EMAIL, signIn } from "./session";
 
-/** Every past edition in `seeds/`: the ones not `live` or `upcoming`. */
-const PAST_EDITIONS = readdirSync(path.resolve(process.cwd(), "seeds"))
-  .filter((f) => f.endsWith(".json"))
+/** Every past edition the e2e database loads: the ones not `live` or `upcoming`. */
+const PAST_EDITIONS = localSeedFiles()
   .map(
     (f) =>
-      JSON.parse(
-        readFileSync(path.resolve(process.cwd(), "seeds", f), "utf-8"),
-      ) as { edition: string; status: string },
+      JSON.parse(readFileSync(path.resolve(process.cwd(), f), "utf-8")) as {
+        edition: string;
+        status: string;
+      },
   )
   .filter((seed) => seed.status === "complete")
   .map((seed) => seed.edition);

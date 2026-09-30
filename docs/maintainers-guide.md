@@ -83,7 +83,7 @@ before it says it's done.
 | Bracket builder and results screens                | `src/app/admin/setup/competitions/[id]/bracket/`, `src/app/admin/brackets/[id]/` |
 | Database schema                            | `src/db/schema.ts`                                                     |
 | Migrations (generated, never hand-edited)  | `drizzle/`                                                             |
-| Seed data, one file per War Week           | `seeds/i.json` … `seeds/xi.json`                                       |
+| Seed data, one file per War Week           | `seeds/i.json` … `seeds/xi.json`; the live XI demo in `seeds/demo/xi.json` |
 | Seed format and loader                     | `src/seed/schema.ts`, `src/seed/load.ts`                               |
 | Appearance Theme → CSS                     | `src/lib/theme.ts`                                                     |
 | Shared UI pieces                           | `src/components/` (shadcn primitives in `src/components/ui/`)          |
@@ -149,7 +149,7 @@ A change people can see also updates `/about` in the same PR: its copy
 (`src/app/about/page.tsx`, `src/lib/about.ts`) and, when a feature card's
 screen changed, its still. Regenerate the stills from the seeded demo, never
 by hand, after `pnpm build` with a freshly loaded seed
-(`pnpm seed:load --reset seeds/*.json`):
+(`pnpm seed:load --reset seeds/*.json && pnpm seed:demo`):
 
 ```bash
 pnpm tsx scripts/about-media.ts --stills
@@ -499,8 +499,10 @@ it returns.
 missing or wrong>.
 ```
 
-Competiscore data is gone; `old-wikis/` and what you remember are the only
-sources. Load locally with `pnpm seed:load seeds/<edition>.json`, then check
+Competiscore data is gone; `old-wikis/`, the live wiki pages (and the Drive
+folders they link to) and what you remember are the only sources. For
+Claude to read the wiki, sign in to it in the Claude Code browser first.
+Leave `seeds/demo/xi.json` alone unless a test needs different demo data. Load locally with `pnpm seed:load seeds/<edition>.json`, then check
 `/history` and `/<edition>`.
 
 ## Guardrails

@@ -7,7 +7,9 @@ import { warWeekSeedSchema } from "@/seed/schema";
 const SEEDS_DIR = path.resolve(__dirname, "../../seeds");
 
 function loadFixture() {
-  return JSON.parse(readFileSync(path.join(SEEDS_DIR, "xi.json"), "utf-8"));
+  return JSON.parse(
+    readFileSync(path.join(SEEDS_DIR, "demo", "xi.json"), "utf-8"),
+  );
 }
 
 /** Parses a seed that must fail and returns its issues as "path: message". */

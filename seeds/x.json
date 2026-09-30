@@ -18,7 +18,7 @@
   "fontPreset": "serif",
   "logoUrl": null,
   "bannerUrl": null,
-  "wikiUrl": "https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/war-week-2025",
+  "wikiUrl": "https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/home/war-week/war-week-2025",
   "winner": null,
   "highlights": [
     "War Week X marked 10 years of War Week, with a Survivor theme.",
@@ -39,7 +39,11 @@
       "dayTheme": "Tech & Learning Day",
       "scheduleItems": []
     },
-    { "date": "2025-02-25", "dayTheme": "Immunity Day", "scheduleItems": [] },
+    {
+      "date": "2025-02-25",
+      "dayTheme": "Immunity Day",
+      "scheduleItems": []
+    },
     {
       "date": "2025-02-26",
       "dayTheme": "Wellness Wednesday with Dani Milliken",
@@ -57,9 +61,18 @@
     }
   ],
   "teams": [
-    { "name": "Red - Steady", "color": "#dc2626" },
-    { "name": "Blue - Consistent", "color": "#2563eb" },
-    { "name": "Yellow - Pressure", "color": "#eab308" }
+    {
+      "name": "Red - Steady",
+      "color": "#dc2626"
+    },
+    {
+      "name": "Blue - Consistent",
+      "color": "#2563eb"
+    },
+    {
+      "name": "Yellow - Pressure",
+      "color": "#eab308"
+    }
   ],
   "participants": [
     {
@@ -68,14 +81,421 @@
       "isLeader": true
     },
     {
+      "displayName": "Ant Conway",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Austin Gage",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Austin Marcum",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Bob Strubel",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Bryan Sambrook",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Charles Safiran",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Chelsea Merrill",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Darrin Jahnel",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Dean Brzac",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Emily Smith",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Ethan Schoen",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Eva Trimboli",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Gio Ortega",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Graham Macbeth",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Harsha Bindana",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "James Heffernan",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Janelle Olsen",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Joe Chiavaroli",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Jory Hutchins",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Joshua Cantor-Stone",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Linda Martin",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Marc Matsen",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Matt Bessler",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Matthew Wonkovich",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Michael Young",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Nonato Sousa",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Peter Hodges",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Steven Vickers",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Sydney Murauskas",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Tonya Sutphin",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Zac Harvey",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Zach Phillips-Gary",
+      "team": "Red - Steady"
+    },
+    {
+      "displayName": "Daler Khamidov",
+      "companyTag": "LTI",
+      "team": "Red - Steady"
+    },
+    {
       "displayName": "Dani Milliken",
       "team": "Blue - Consistent",
       "isLeader": true
     },
     {
+      "displayName": "Adam Wilson-Hwang",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Alex Nikolis",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Alexander Schnackenberg",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Alvaro Gil",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Ashley Schuliger",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Cameron Lynch",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Casey Snow",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Charles Bancroft",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Dan Kollar",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Greg Westover",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Ian Ballard",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Isaiah Mori",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Jesse Lucier",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Joe Alien",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Jon Keller",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Kari Skinner",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Kyle Gancarz",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Laura Jahnel",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Matt Anderson",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Michael Prete",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Michael Shirk",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Millie Elliott",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Morné Botha",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Nick Brown",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Nick Nigro",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Oliver Murillo",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Ryan Shendler",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Sam Schantz",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Samantha Potter",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Solomon Mori",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Tom O'Neill",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Tony Mercadante",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Zachary Hartman",
+      "team": "Blue - Consistent"
+    },
+    {
+      "displayName": "Alberto Hernandez",
+      "companyTag": "LTI",
+      "team": "Blue - Consistent"
+    },
+    {
       "displayName": "Brandon Badgett",
       "team": "Yellow - Pressure",
       "isLeader": true
+    },
+    {
+      "displayName": "Abby Rivera",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Alec Haring",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Andrew Hyeon",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Ashvin Gokhool",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Ben Sadick",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Bich Dudla",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Chris Pence",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Chris Warner",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Christopher Nyberg",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Colby Beach",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Colin Walsh",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Dan Bedian",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Dan Dragon",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Dom Favata",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Ethan Ferguson",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Frank Nardone",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Gary Arrington",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "James Murphy",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "James Novak",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Jenn Jahnel",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Jet Breuer",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "John Higgins",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Joshua Jameson",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Lucas Fernandes",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Luke Prescott",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Nicholas Carson",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Paul Carnivale",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Paul Macfarlane",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Sean Mullen",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Sean Warner",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Steve Nguyen",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Steven Zgaljic",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Thomas Kneeland",
+      "team": "Yellow - Pressure"
+    },
+    {
+      "displayName": "Ryan Greenman",
+      "companyTag": "LTI",
+      "team": "Yellow - Pressure"
     }
   ],
   "competitions": [

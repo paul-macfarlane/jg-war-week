@@ -6,6 +6,7 @@ import { ABOUT_FEATURES } from "@/lib/about";
 import { DISPLAY_SCRIPT } from "@/lib/display";
 import { YOU_ROW_CLASS } from "@/lib/you";
 import { MCP_TOOLS } from "@/mcp/tools";
+import { DEMO_SEED } from "@/seed/local-files";
 
 import {
   BASE_URL,
@@ -18,10 +19,10 @@ import {
   teamTotalIn,
 } from "./harness";
 
-/** Rows each table should hold for War Week XI after loading its seed. */
+/** Rows each table should hold for War Week XI after loading the demo seed. */
 function expectedXiCounts(): Record<string, number> {
   const seed = JSON.parse(
-    readFileSync(path.resolve(process.cwd(), "seeds/xi.json"), "utf-8"),
+    readFileSync(path.resolve(process.cwd(), DEMO_SEED), "utf-8"),
   );
   const count = (list: unknown[] | undefined) => list?.length ?? 0;
   return {

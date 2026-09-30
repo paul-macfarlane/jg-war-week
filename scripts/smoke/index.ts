@@ -1,8 +1,9 @@
 import { loadEnvConfig } from "@next/env";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
 
 import { isLocalDatabaseUrl } from "@/db/local-url";
+import { localSeedFiles } from "@/seed/local-files";
 
 import {
   assertAdminGate,
@@ -123,11 +124,9 @@ async function main() {
   if (!runStep("pnpm", ["db:migrate"], "pnpm db:migrate")) {
     process.exit(1);
   }
-  // Load every seed twice: the first load resets each War Week so the counts
+  // Load every seed (the XI demo in place of the real XI) twice: the first load resets each War Week so the counts
   // below match the seeds exactly; the second proves loading is idempotent.
-  const seedFiles = readdirSync(path.resolve(process.cwd(), "seeds"))
-    .filter((f) => f.endsWith(".json"))
-    .map((f) => `seeds/${f}`);
+  const seedFiles = localSeedFiles();
   for (const [attempt, flags] of [
     [1, ["--reset"]],
     [2, []],
