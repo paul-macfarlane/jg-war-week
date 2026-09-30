@@ -244,12 +244,13 @@ export function WinnerForm(props: HeatResultFormProps) {
           onValueChange={(value) => {
             // A choice can't be deselected: clicking the pressed item again
             // would otherwise clear the group.
-            const [next] = value;
+            const [next] = value as string[];
             if (!next) return;
             setWinner(next);
             if (forfeit === next) setForfeit(null);
           }}
-          className="grid grid-cols-1 gap-2 sm:grid-cols-2"
+          variant="outline"
+          className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2"
         >
           {ids.map((entrantId) => {
             const entrant = entrantsById.get(entrantId)!;
@@ -258,8 +259,7 @@ export function WinnerForm(props: HeatResultFormProps) {
               <ToggleGroupItem
                 key={entrantId}
                 value={entrantId}
-                variant="outline"
-                className="aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary/80 data-pressed:border-primary data-pressed:bg-primary data-pressed:text-primary-foreground data-pressed:hover:bg-primary/80 h-auto min-h-11 justify-start gap-2 py-2"
+                className="aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary/80 h-auto min-h-11 justify-start gap-2 py-2"
               >
                 <EntrantMark
                   entrant={entrant}

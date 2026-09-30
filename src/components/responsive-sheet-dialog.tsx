@@ -1,6 +1,7 @@
 "use client";
 
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
+import { cn } from "cn";
 import { XIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -16,9 +17,8 @@ import {
 /**
  * A form that opens as a bottom Sheet on phones and tablets and as a
  * centered Dialog at `lg` and up, where a bottom Sheet stretches awkwardly
- * across the screen. It is one Dialog styled per breakpoint, not two
- * components swapped by a media query, so crossing `lg` while it is open
- * keeps the form mounted and what the person typed. It portals into the
+ * across the screen. One Dialog, styled per breakpoint, so crossing `lg`
+ * while it's open keeps the form and what the person typed. It portals into the
  * themed root. Lay the content out with the `ResponsiveSheetDialog*` parts.
  */
 export function ResponsiveSheetDialog({
@@ -39,14 +39,14 @@ export function ResponsiveSheetDialog({
         />
         <DialogPrimitive.Popup
           data-slot="responsive-sheet-dialog-content"
-          className={[
+          className={cn(
             // Below `lg`: a bottom Sheet that slides up.
             "bg-popover text-popover-foreground fixed inset-x-0 bottom-0 z-50 flex h-auto max-h-[90dvh] flex-col gap-4 overflow-y-auto border-t bg-clip-padding text-sm shadow-lg outline-none",
             "transition duration-200 ease-in-out data-ending-style:translate-y-[2.5rem] data-ending-style:opacity-0 data-starting-style:translate-y-[2.5rem] data-starting-style:opacity-0",
             // From `lg`: a centered Dialog that zooms and fades.
             "lg:ring-foreground/10 lg:inset-x-auto lg:top-1/2 lg:bottom-auto lg:left-1/2 lg:w-full lg:max-w-lg lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-xl lg:border-t-0 lg:shadow-none lg:ring-1 lg:duration-100",
             "lg:data-ending-style:-translate-y-1/2 lg:data-ending-style:scale-95 lg:data-starting-style:-translate-y-1/2 lg:data-starting-style:scale-95",
-          ].join(" ")}
+          )}
         >
           {children}
           <DialogPrimitive.Close

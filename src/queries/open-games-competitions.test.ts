@@ -62,8 +62,25 @@ async function fixture(tx: DBTx) {
     .insert(schema.organizer)
     .values({ email: actorEmail })
     .onConflictDoNothing();
+  /** A head-to-head, team-scored `games` Competition open to everyone. */
+  const pong = async (inWarWeek: string, name = "Pong") => {
+    const [row] = await tx
+      .insert(schema.competition)
+      .values({
+        warWeekId: inWarWeek,
+        name,
+        scoring: "team",
+        format: "games",
+        gameType: "head-to-head",
+        gameConfig: { drawsAllowed: false, bestOf: null },
+        entrantsOpen: true,
+      })
+      .returning({ id: schema.competition.id });
+    return row.id;
+  };
   return {
     schema,
+    pong,
     ctx: { warWeekId, actorEmail },
     otherCtx: { warWeekId: otherWarWeekId, actorEmail },
     red: red.id,
@@ -92,23 +109,12 @@ describe.skipIf(!isLocalDatabase)("getOpenGamesCompetitions", () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await fixture(tx);
-      const [pong] = await tx
-        .insert(f.schema.competition)
-        .values({
-          warWeekId: f.ctx.warWeekId,
-          name: "Pong",
-          scoring: "team",
-          format: "games",
-          gameType: "head-to-head",
-          gameConfig: { drawsAllowed: false, bestOf: null },
-          entrantsOpen: true,
-        })
-        .returning({ id: f.schema.competition.id });
-      await mutations.logGame(pong.id, redBeatsBlue(f.red, f.blue), f.ctx, tx);
+      const pong = await f.pong(f.ctx.warWeekId);
+      await mutations.logGame(pong, redBeatsBlue(f.red, f.blue), f.ctx, tx);
 
       expect(
         await queries.getOpenGamesCompetitions({ id: f.ctx.warWeekId }, tx),
-      ).toEqual([{ id: pong.id, name: "Pong" }]);
+      ).toEqual([{ id: pong, name: "Pong" }]);
     });
   });
 
@@ -116,15 +122,7 @@ describe.skipIf(!isLocalDatabase)("getOpenGamesCompetitions", () => {
     await inRolledBackTransaction(async (tx) => {
       const { queries } = await modules();
       const f = await fixture(tx);
-      await tx.insert(f.schema.competition).values({
-        warWeekId: f.ctx.warWeekId,
-        name: "Pong",
-        scoring: "team",
-        format: "games",
-        gameType: "head-to-head",
-        gameConfig: { drawsAllowed: false, bestOf: null },
-        entrantsOpen: true,
-      });
+      await f.pong(f.ctx.warWeekId);
 
       expect(
         await queries.getOpenGamesCompetitions({ id: f.ctx.warWeekId }, tx),
@@ -136,24 +134,12 @@ describe.skipIf(!isLocalDatabase)("getOpenGamesCompetitions", () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await fixture(tx);
-      const [pong] = await tx
-        .insert(f.schema.competition)
-        .values({
-          warWeekId: f.ctx.warWeekId,
-          name: "Pong",
-          scoring: "team",
-          format: "games",
-          gameType: "head-to-head",
-          gameConfig: { drawsAllowed: false, bestOf: null },
-          entrantsOpen: true,
-          placementPoints: [10, 6],
-        })
-        .returning({ id: f.schema.competition.id });
-      await mutations.logGame(pong.id, redBeatsBlue(f.red, f.blue), f.ctx, tx);
+      const pong = await f.pong(f.ctx.warWeekId);
+      await mutations.logGame(pong, redBeatsBlue(f.red, f.blue), f.ctx, tx);
       await tx
         .update(f.schema.competition)
         .set({ finalizedAt: new Date() })
-        .where(eq(f.schema.competition.id, pong.id));
+        .where(eq(f.schema.competition.id, pong));
 
       expect(
         await queries.getOpenGamesCompetitions({ id: f.ctx.warWeekId }, tx),
@@ -165,20 +151,9 @@ describe.skipIf(!isLocalDatabase)("getOpenGamesCompetitions", () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await fixture(tx);
-      const [pong] = await tx
-        .insert(f.schema.competition)
-        .values({
-          warWeekId: f.otherCtx.warWeekId,
-          name: "Pong",
-          scoring: "team",
-          format: "games",
-          gameType: "head-to-head",
-          gameConfig: { drawsAllowed: false, bestOf: null },
-          entrantsOpen: true,
-        })
-        .returning({ id: f.schema.competition.id });
+      const pong = await f.pong(f.otherCtx.warWeekId);
       await mutations.logGame(
-        pong.id,
+        pong,
         redBeatsBlue(f.red, f.otherTeam),
         f.otherCtx,
         tx,
@@ -194,12 +169,19 @@ describe.skipIf(!isLocalDatabase)("getOpenGamesCompetitions", () => {
     await inRolledBackTransaction(async (tx) => {
       const { queries } = await modules();
       const f = await fixture(tx);
-      await tx.insert(f.schema.competition).values({
-        warWeekId: f.ctx.warWeekId,
-        name: "Pool",
-        scoring: "team",
-        format: "single-elimination",
-      });
+      const [pool] = await tx
+        .insert(f.schema.competition)
+        .values({
+          warWeekId: f.ctx.warWeekId,
+          name: "Pool",
+          scoring: "team",
+          format: "single-elimination",
+        })
+        .returning({ id: f.schema.competition.id });
+      // A Game row no mutation would write, so the Format is what excludes it.
+      await tx
+        .insert(f.schema.game)
+        .values({ competitionId: pool.id, loggedByEmail: actorEmail });
 
       expect(
         await queries.getOpenGamesCompetitions({ id: f.ctx.warWeekId }, tx),
@@ -211,37 +193,16 @@ describe.skipIf(!isLocalDatabase)("getOpenGamesCompetitions", () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await fixture(tx);
-      const [zed, alpha] = await tx
-        .insert(f.schema.competition)
-        .values([
-          {
-            warWeekId: f.ctx.warWeekId,
-            name: "Zed Games",
-            scoring: "team",
-            format: "games",
-            gameType: "head-to-head",
-            gameConfig: { drawsAllowed: false, bestOf: null },
-            entrantsOpen: true,
-          },
-          {
-            warWeekId: f.ctx.warWeekId,
-            name: "Alpha Games",
-            scoring: "team",
-            format: "games",
-            gameType: "head-to-head",
-            gameConfig: { drawsAllowed: false, bestOf: null },
-            entrantsOpen: true,
-          },
-        ])
-        .returning({ id: f.schema.competition.id });
-      await mutations.logGame(zed.id, redBeatsBlue(f.red, f.blue), f.ctx, tx);
-      await mutations.logGame(alpha.id, redBeatsBlue(f.red, f.blue), f.ctx, tx);
+      const zed = await f.pong(f.ctx.warWeekId, "Zed Games");
+      const alpha = await f.pong(f.ctx.warWeekId, "Alpha Games");
+      await mutations.logGame(zed, redBeatsBlue(f.red, f.blue), f.ctx, tx);
+      await mutations.logGame(alpha, redBeatsBlue(f.red, f.blue), f.ctx, tx);
 
       expect(
         await queries.getOpenGamesCompetitions({ id: f.ctx.warWeekId }, tx),
       ).toEqual([
-        { id: alpha.id, name: "Alpha Games" },
-        { id: zed.id, name: "Zed Games" },
+        { id: alpha, name: "Alpha Games" },
+        { id: zed, name: "Zed Games" },
       ]);
     });
   });

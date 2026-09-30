@@ -31,6 +31,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { WarWeek } from "@/db/schema";
+import type { OpenGamesCompetition } from "@/queries/open-games-competitions";
 
 /**
  * The lifecycle action for a War Week's status, behind a confirm that says
@@ -57,8 +58,8 @@ export function WarWeekLifecycleControls({
   highlights: string[];
   /** Names of Brackets not yet finalized, to warn about when ending. */
   unfinalizedBrackets: string[];
-  /** Open `games` Competitions to warn about when ending, each linked to its Games setup page. */
-  openGamesCompetitions: { id: string; name: string }[];
+  /** Open `games` Competitions with Games, to warn about when ending. */
+  openGamesCompetitions: OpenGamesCompetition[];
 }) {
   const name = edition.toUpperCase();
 
@@ -121,7 +122,7 @@ function EndWarWeekButton({
   suggestedWinner: string;
   highlights: string[];
   unfinalizedBrackets: string[];
-  openGamesCompetitions: { id: string; name: string }[];
+  openGamesCompetitions: OpenGamesCompetition[];
 }) {
   const router = useRouter();
   const formId = useId();

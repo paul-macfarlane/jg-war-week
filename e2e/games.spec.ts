@@ -217,8 +217,9 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
       page.getByRole("region", { name: "Games" }).getByText(edited),
     ).toBeVisible();
 
-    // An Organizer ending the War Week while it's still open is warned, and
-    // never blocked; Cancel leaves it open for the Host to close below.
+    // Ending the War Week while this Competition is still open warns an
+    // Organizer, naming it with a link to its Games setup page, and never
+    // refuses; Cancel, so the Host can close it below.
     const organizerContext = await browser.newContext({
       baseURL: E2E_BASE_URL,
     });

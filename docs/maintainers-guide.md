@@ -188,11 +188,10 @@ To start next year's edition in the app:
    whoever is first in the Standings, "Tie: A & B" when two or more Teams
    or Participants tie for first, blank when nobody scored — and lets you
    add any highlights. There is no way to type a different Winner. XI moves
-   to the Archive. The confirm names any Bracket that isn't finalized, and any
-   `games` Competition that's still open and has Games, linking to its Games
-   setup page; finalize the Bracket, or close the Games Competition, first so
-   its placings — or its Placement Points — count (it warns, it doesn't stop
-   you).
+   to the Archive. The confirm also names any Bracket that isn't finalized
+   and any open `games` Competition with Games, each `games` one linked to
+   its Games setup page. Finalize or close them first so their placings
+   count; it warns, it doesn't stop you.
 3. Switch to XII and press **Start War Week**. `/` and `/admin` now go to
    XII. Only one War Week can be live, so XI must end first.
 
