@@ -9,8 +9,6 @@ it the week of 2026-10-05).
 
 - [ ] **Regression pass**: walk the app end to end, especially creating and running Competitions; record findings as new tickets. [`regression-2026-09/issues/18`](./regression-2026-09/issues/18-regression-pass.md) (`needs-triage`)
 - [ ] **Production baseline leftovers**: PWA install on a real phone; decide on past-year Slack links pointing at the workspace root; send `/privacy` and `/terms` for review or record that none is needed. [`hardening/issues/01`](./hardening/issues/01-production-baseline-checklist.md) (`ready-for-human`)
-- [ ] **Actions on Node 24 / Ubuntu 26.04**: PR #98 merged; confirm Migrate passed on `staging` and the next Seed run passes, then set the ticket `done`. [`regression-2026-09/issues/28`](./regression-2026-09/issues/28-actions-node24-ubuntu-2604.md) (`in-progress`)
-- [ ] **War Week XII seed**: after PR #100 merges, run the Seed workflow with `xii.json` (no `confirm_reset`) on staging, then production. `/` then opens XII's upcoming page. [`regression-2026-09/issues/29`](./regression-2026-09/issues/29-war-week-xii-tentative-seed.md) (lands with PR #100)
 
 ## Ready, waiting on someone else
 
@@ -18,7 +16,7 @@ it the week of 2026-10-05).
 
 ## Needs a decision, info or grilling before a plan
 
-- [ ] **Move to Jahnel Group ownership**: GitHub, Vercel, Neon, the GCP OAuth project, the domain and any other secret or bill; who owns and pays for each, cutover order, whether Paul keeps admin. [`hardening/issues/20`](./hardening/issues/20-transfer-to-jahnel-group-ownership.md) (`needs-triage`, lands with PR #100)
+- [ ] **Move to Jahnel Group ownership**: GitHub, Vercel, Neon, the GCP OAuth project, the domain and any other secret or bill; who owns and pays for each, cutover order, whether Paul keeps admin. [`hardening/issues/20`](./hardening/issues/20-transfer-to-jahnel-group-ownership.md) (`needs-triage`)
 - [ ] **Stairs app integration**: needs the Stairs owner and access, then a named need, before any spec. Plan it with `/grill-with-docs` once those are known. [`regression-2026-09/issues/19`](./regression-2026-09/issues/19-stairs-integration.md) (`needs-info`)
 - [ ] **"A twist of fun" for War Week XII**: grill a small set of engagement features; candidates are the Slack, portraits and AI-theme tickets. [`hardening/issues/17`](./hardening/issues/17-grill-a-twist-of-fun.md) (`needs-triage`)
 - [ ] **Themed Participant portraits and bios**: photo source, image model and cost, storage, bios, moderation. [`war-weeker/issues/19`](./war-weeker/issues/19-themed-portraits-and-bios.md) (`needs-info`)
