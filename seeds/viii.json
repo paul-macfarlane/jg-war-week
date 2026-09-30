@@ -664,9 +664,7 @@
       "name": "Tri-Wizard Tournament Champion",
       "description": "Ravenclaw won with Ashley Schuliger.",
       "team": "Ravenclaw",
-      "participants": [
-        "Ashley Schuliger"
-      ]
+      "participants": ["Ashley Schuliger"]
     },
     {
       "key": "battle-of-the-memes-champion",
@@ -676,75 +674,53 @@
     {
       "key": "wizards-chess-champion",
       "name": "Wizard's Chess Champion",
-      "participants": [
-        "Solomon Mori"
-      ]
+      "participants": ["Solomon Mori"]
     },
     {
       "key": "wizards-chess-runner-up",
       "name": "Wizard's Chess Runner-Up",
       "description": "Three-way tie for 2nd.",
-      "participants": [
-        "Carson O'Neill",
-        "Kyle Gancarz",
-        "Ashvin Gokhool"
-      ]
+      "participants": ["Carson O'Neill", "Kyle Gancarz", "Ashvin Gokhool"]
     },
     {
       "key": "catan-premier-champion",
       "name": "Settlers of Catan Premier Champion",
-      "participants": [
-        "Dan Kollar"
-      ]
+      "participants": ["Dan Kollar"]
     },
     {
       "key": "catan-second-table-champion",
       "name": "Settlers of Catan Second Table Champion",
-      "participants": [
-        "Sean Mullen"
-      ]
+      "participants": ["Sean Mullen"]
     },
     {
       "key": "magic-advanced-champion",
       "name": "Magic the Gathering Advanced Champion",
-      "participants": [
-        "Carson O'Neill"
-      ]
+      "participants": ["Carson O'Neill"]
     },
     {
       "key": "magic-beginner-champion",
       "name": "Magic the Gathering Beginner Champion",
-      "participants": [
-        "Alex Nikolis"
-      ]
+      "participants": ["Alex Nikolis"]
     },
     {
       "key": "beer-and-cards-advanced-champion",
       "name": "Beer & Cards Advanced Champion",
-      "participants": [
-        "James Murphy"
-      ]
+      "participants": ["James Murphy"]
     },
     {
       "key": "beer-and-cards-beginner-champion",
       "name": "Beer & Cards Beginner Champion",
-      "participants": [
-        "Tristin Knapp"
-      ]
+      "participants": ["Tristin Knapp"]
     },
     {
       "key": "super-smash-bros-champion",
       "name": "Super Smash Bros. Champion",
-      "participants": [
-        "Dom Favata"
-      ]
+      "participants": ["Dom Favata"]
     },
     {
       "key": "mario-kart-champion",
       "name": "Mario Kart Champion",
-      "participants": [
-        "Dom Favata"
-      ]
+      "participants": ["Dom Favata"]
     },
     {
       "key": "csgo-champion",
@@ -755,10 +731,7 @@
       "key": "beer-pong-finals-champion",
       "name": "Beer Pong Finals Champion",
       "description": "The Splash Bros.",
-      "participants": [
-        "Lucas Fernandes",
-        "Dom Favata"
-      ]
+      "participants": ["Lucas Fernandes", "Dom Favata"]
     }
   ],
   "announcements": [],
