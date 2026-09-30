@@ -8,7 +8,7 @@
 
 **Blocked by:** R3 merged (PR https://github.com/paul-macfarlane/jg-war-week/pull/92): 21 and 23 change the Game form and 24 the Games Competitions R3 adds. Branch from `staging` after it merges.
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Red-team:** not required (no schema, auth or access change; `docs/agents/planning.md`).
 
@@ -29,3 +29,6 @@ Each ticket's own acceptance criteria, plus:
 ## Comments
 
 - 2026-09-29: created from Epic R3's follow-ups (`R3-execution.md` [CLOSEOUT]). 22 and 26 went to R2; 25 is backlog.
+- 2026-09-29: claimed by `/atlas-implement` (work package `regression-r4`), `ready-for-agent` → `in-progress`; branch `feat/regression-r4-follow-ups` from `staging` `8c57be6` (R3 merged, PR #92). Execution record: `../epics/R4-execution.md`.
+- 2026-09-29 [AI CODE REVIEW]: Both axes: 1 blocking finding (T1) resolved, 0 open. Full tables: `../epics/R4-execution.md` [AI CODE REVIEW].
+- 2026-09-29 [CLOSEOUT]: E-1, E-2, E-4 PASS; E-3 (CI) pending at closeout; `pnpm format:check && pnpm gate` exit 0 at `ba3b657` (`test-results/r4-gate/gate.txt`). PR https://github.com/paul-macfarlane/jg-war-week/pull/93. `ai-review` → `done`. Details: `../epics/R4-execution.md` [CLOSEOUT].
