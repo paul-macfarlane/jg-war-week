@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 import { SignOutButton } from "@/components/auth-buttons";
+import { DisplayMenu } from "@/components/display-menu";
 import { MoreMenu } from "@/components/more-menu";
 import {
   Sheet,
@@ -204,6 +205,7 @@ export function TopNav({
               Admin
             </Link>
           )}
+          <DisplayMenu iconOnly />
           <span
             title={account.email}
             className="text-muted-foreground hidden max-w-56 truncate lg:inline"

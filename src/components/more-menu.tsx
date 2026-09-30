@@ -4,6 +4,7 @@ import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 import { SignOutButton } from "@/components/auth-buttons";
+import { DisplayMenu } from "@/components/display-menu";
 import { MoreLinkIcon } from "@/components/more-link-icon";
 import type { NavAccount } from "@/components/primary-nav";
 import { type MoreLinksInput, moreLinks } from "@/lib/more-links";
@@ -50,6 +51,10 @@ export function MoreMenu({
           </li>
         ))}
       </ul>
+      <div className="border-border flex items-center gap-3 rounded-lg border px-4 py-3 text-sm">
+        <span className="flex-1 font-medium">Display</span>
+        <DisplayMenu />
+      </div>
       <div className="border-border flex items-center gap-3 rounded-lg border px-4 py-3 text-sm">
         <span className="text-foreground/70 min-w-0 flex-1 truncate">
           Signed in as {account.email}

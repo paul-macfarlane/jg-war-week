@@ -451,7 +451,7 @@ export function WarWeekSettingsForm({
         {warnings.length > 0 && (
           <ul
             aria-label="Contrast warnings"
-            className="flex flex-col gap-1 text-sm text-amber-700 dark:text-amber-400"
+            className="text-warning flex flex-col gap-1 text-sm"
           >
             {warnings.map((warning) => (
               <li key={warning}>⚠ {warning}</li>

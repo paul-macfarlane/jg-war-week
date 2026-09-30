@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono, Lora } from "next/font/google";
 
 import { PwaSetup } from "@/components/pwa-setup";
+import { DISPLAY_SCRIPT } from "@/lib/display";
 import { APP_DESCRIPTION, APP_NAME, APP_THEME_COLOR } from "@/lib/pwa";
 
 import "./globals.css";
@@ -42,7 +43,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       className={`${fontPresetSans.variable} ${fontPresetSerif.variable} ${fontPresetMono.variable} h-full antialiased`}
+      // The inline script sets data-display before React hydrates.
+      suppressHydrationWarning
     >
+      <head>
+        {/* Before any content, so a stored Light or Dark never flashes. */}
+        <script dangerouslySetInnerHTML={{ __html: DISPLAY_SCRIPT }} />
+      </head>
       <body className="flex min-h-dvh flex-col">
         {children}
         <PwaSetup />

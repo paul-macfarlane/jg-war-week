@@ -5,7 +5,7 @@ import { BottomTabBar, TopNav } from "@/components/primary-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { ThemeRoot } from "@/components/theme-root";
 import { YouProvider } from "@/components/you";
-import { backgroundColorScheme, warWeekThemeStyle } from "@/lib/theme";
+import { warWeekThemeStyle } from "@/lib/theme";
 import { resolveYou } from "@/lib/you";
 import { getYouCandidates } from "@/queries/roster";
 
@@ -49,7 +49,6 @@ export default async function EditionLayout({
   return (
     <ThemeRoot
       style={themeStyle}
-      pageColorScheme={backgroundColorScheme(warWeek.backgroundColor)}
       className="bg-background text-foreground flex min-h-dvh flex-col pb-20 font-sans lg:pb-0"
     >
       <TopNav

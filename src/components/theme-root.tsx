@@ -30,14 +30,6 @@ type ThemeRootProps = {
   as?: "div" | "li";
   style?: CSSProperties;
   /**
-   * The page's color scheme, for the one root that dresses the whole page
-   * (the edition layout). Rendered as `data-color-scheme`, which
-   * `globals.css` lifts onto `<html>` so the viewport's scrollbar follows
-   * a dark Appearance Theme. Leave it unset on roots that theme only part
-   * of a page, like each `ArchiveCard` on `/history`.
-   */
-  pageColorScheme?: "dark" | "light";
-  /**
    * Pins the root to one color scheme whatever the viewer's Display, for
    * the Setup form's two previews. Rendered as `data-scheme`.
    */
@@ -54,7 +46,6 @@ type ThemeRootProps = {
 export function ThemeRoot({
   as = "div",
   style,
-  pageColorScheme,
   scheme,
   className,
   children,
@@ -72,7 +63,6 @@ export function ThemeRoot({
       style={style}
       data-theme-root={style ? "" : undefined}
       data-scheme={scheme}
-      data-color-scheme={pageColorScheme}
       className={className}
     >
       <ThemeContainerContext.Provider value={container}>
