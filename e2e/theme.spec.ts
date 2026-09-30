@@ -161,16 +161,16 @@ test.describe("Display: Light, Dark and System", () => {
     expect(scriptWarnings).toEqual([]);
   });
 
-  test("X (light base) follows it in reverse", async ({ page }) => {
-    const palettes = await palettesOf("x");
+  test("VII (light base) follows it in reverse", async ({ page }) => {
+    const palettes = await palettesOf("vii");
     expect(palettes.scheme).toBe("light");
-    const base = rgb("#fdf6e3");
+    const base = rgb("#f1e6cc");
     const derived = rgb(palettes.dark.background);
-    // X's derived dark background is its base text color.
-    expect(derived).toBe(rgb("#1c1917"));
+    // VII's derived dark background is its base text color.
+    expect(derived).toBe(rgb("#2b2b30"));
 
     await page.emulateMedia({ colorScheme: "light" });
-    await page.goto("/x");
+    await page.goto("/vii");
     await expect.poll(() => rootBackground(page)).toBe(base);
 
     await chooseDisplay(page, "Dark");

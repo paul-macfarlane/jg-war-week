@@ -27,11 +27,11 @@
   "faqItems": [],
   "startDate": "2017-02-26",
   "endDate": "2017-03-04",
-  "storyTheme": "War Week 2017",
-  "primary": "#1d4ed8",
+  "storyTheme": "We Can Do It!",
+  "primary": "#1f4e9c",
   "primaryForeground": "#ffffff",
-  "accent": "#f59e0b",
-  "background": "#111827",
-  "foreground": "#f3f4f6",
+  "accent": "#f4c430",
+  "background": "#fbf5dc",
+  "foreground": "#14213d",
   "fontPreset": "sans"
 }

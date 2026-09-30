@@ -1,0 +1,46 @@
+
+> war-weeker@0.1.0 e2e /Users/paulmacfarlane/Code/jg-war-week
+> playwright test e2e/archive.spec.ts
+
+
+> war-weeker@0.1.0 db:migrate /Users/paulmacfarlane/Code/jg-war-week
+> drizzle-kit migrate
+
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/Users/paulmacfarlane/Code/jg-war-week/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] applying migrations...[2K[1G[✓] migrations applied successfully!
+> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week
+> tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/demo/xi.json
+
+Loaded War Week i (reset)
+Loaded War Week ii (reset)
+Loaded War Week iii (reset)
+Loaded War Week iv (reset)
+Loaded War Week ix (reset)
+Loaded War Week v (reset)
+Loaded War Week vi (reset)
+Loaded War Week vii (reset)
+Loaded War Week viii (reset)
+Loaded War Week x (reset)
+Loaded War Week xi (reset)
+
+Running 11 tests using 1 worker
+
+  ✓   1 [chromium] › e2e/archive.spec.ts:25:5 › the Archive lists every past War Week (524ms)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓   2 [chromium] › e2e/archive.spec.ts:46:7 › past edition /i renders (297ms)
+  ✓   3 [chromium] › e2e/archive.spec.ts:46:7 › past edition /ii renders (362ms)
+  ✓   4 [chromium] › e2e/archive.spec.ts:46:7 › past edition /iii renders (279ms)
+  ✓   5 [chromium] › e2e/archive.spec.ts:46:7 › past edition /iv renders (301ms)
+  ✓   6 [chromium] › e2e/archive.spec.ts:46:7 › past edition /ix renders (378ms)
+  ✓   7 [chromium] › e2e/archive.spec.ts:46:7 › past edition /v renders (345ms)
+  ✓   8 [chromium] › e2e/archive.spec.ts:46:7 › past edition /vi renders (275ms)
+  ✓   9 [chromium] › e2e/archive.spec.ts:46:7 › past edition /vii renders (310ms)
+  ✓  10 [chromium] › e2e/archive.spec.ts:46:7 › past edition /viii renders (301ms)
+  ✓  11 [chromium] › e2e/archive.spec.ts:46:7 › past edition /x renders (276ms)
+
+  11 passed (17.2s)

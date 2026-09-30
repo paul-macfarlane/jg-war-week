@@ -82,11 +82,11 @@
   "faqItems": [],
   "startDate": "2018-02-25",
   "endDate": "2018-03-03",
-  "storyTheme": "War Week 2018",
-  "primary": "#047857",
-  "primaryForeground": "#ffffff",
-  "accent": "#facc15",
-  "background": "#111827",
-  "foreground": "#f3f4f6",
-  "fontPreset": "serif"
+  "storyTheme": "Blue Label",
+  "primary": "#a9cdf2",
+  "primaryForeground": "#0b1f4d",
+  "accent": "#6fa8e8",
+  "background": "#142c6b",
+  "foreground": "#ffffff",
+  "fontPreset": "sans"
 }
