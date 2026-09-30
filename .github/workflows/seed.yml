@@ -37,7 +37,7 @@ concurrency:
 
 jobs:
   seed:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     env:
       STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
       PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
@@ -65,7 +65,7 @@ jobs:
 
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
       - uses: actions/setup-node@v5
         with:
