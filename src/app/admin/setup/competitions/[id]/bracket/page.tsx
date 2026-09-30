@@ -55,6 +55,9 @@ export default async function BracketBuilderPage({
             format: competition.format,
             finalized: view.finalized,
             selfReport: competition.selfReport,
+            selfEnroll: competition.selfEnroll,
+            entrantLimit: competition.entrantLimit,
+            enrollClosesAt: competition.enrollClosesAt,
           }}
           entrants={view.entrants}
           bracket={view.bracket}

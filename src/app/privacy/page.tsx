@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { SiteFooter } from "@/components/site-footer";
-import { ABOUT_THEME } from "@/lib/about";
+import { ThemeRoot } from "@/components/theme-root";
+import { STATIC_PAGE_THEME } from "@/lib/about";
 import { warWeekThemeStyle } from "@/lib/theme";
 
 export const metadata: Metadata = {
@@ -17,8 +18,8 @@ export const metadata: Metadata = {
  */
 export default function PrivacyPage() {
   return (
-    <div
-      style={warWeekThemeStyle(ABOUT_THEME)}
+    <ThemeRoot
+      style={warWeekThemeStyle(STATIC_PAGE_THEME)}
       className="bg-background text-foreground flex min-h-dvh flex-col font-sans"
     >
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-5 sm:px-6">
@@ -126,6 +127,6 @@ export default function PrivacyPage() {
         </section>
       </main>
       <SiteFooter />
-    </div>
+    </ThemeRoot>
   );
 }

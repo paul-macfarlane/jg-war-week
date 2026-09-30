@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { WarWeek } from "@/db/schema";
 
-import { AdminShell, editingBanner } from "./admin-shell";
+import { AdminRefused, AdminShell, editingBanner } from "./admin-shell";
 
 vi.mock("@/components/auth-buttons", () => ({
   SignOutButton: () => null,
@@ -70,6 +70,33 @@ describe("AdminShell", () => {
     expect(html).not.toContain('href="/admin/organizers"');
     expect(html).toContain('href="/admin/points"');
     expect(html).toContain('href="/admin/setup"');
+  });
+});
+
+describe("AdminShell footer", () => {
+  it("stacks the themed root as a flex column so the footer sits at the bottom on short pages", () => {
+    const html = renderToStaticMarkup(
+      <AdminShell
+        warWeek={fakeWarWeek}
+        email="o@jahnelgroup.com"
+        isOrganizer
+        current="Overview"
+      >
+        x
+      </AdminShell>,
+    );
+
+    expect(html).toMatch(/class="[^"]*\bflex\b[^"]*\bflex-col\b[^"]*"/);
+  });
+});
+
+describe("AdminRefused", () => {
+  it("pins the footer to the bottom of the viewport on a short page", () => {
+    const html = renderToStaticMarkup(
+      <AdminRefused warWeek={fakeWarWeek} email="host@jahnelgroup.com" />,
+    );
+
+    expect(html).toMatch(/<footer class="[^"]*\bmt-auto\b[^"]*"/);
   });
 });
 

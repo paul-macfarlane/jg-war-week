@@ -4,9 +4,11 @@ import {
   type ScheduleDay,
   type ScheduleEntry,
   computeNowNext,
+  filterScheduleByDay,
   formatDayHeading,
   formatEtTime,
   formatTimeRange,
+  fromEasternClock,
   groupSchedule,
   resolveClock,
   toEasternClock,
@@ -77,6 +79,38 @@ describe("toEasternClock", () => {
     expect(toEasternClock(new Date("2026-02-23T05:00:00Z")).time).toBe(
       "00:00:00",
     );
+  });
+});
+
+describe("fromEasternClock", () => {
+  it("reads an ET date and time in winter (EST) as that instant", () => {
+    expect(fromEasternClock("2026-02-23", "22:30")).toEqual(
+      new Date("2026-02-24T03:30:00Z"),
+    );
+  });
+
+  it("reads an ET date and time in summer (EDT) as that instant", () => {
+    expect(fromEasternClock("2026-07-04", "12:05")).toEqual(
+      new Date("2026-07-04T16:05:00Z"),
+    );
+  });
+
+  it("round-trips through toEasternClock", () => {
+    const instant = fromEasternClock("2026-02-23", "22:30")!;
+    expect(toEasternClock(instant)).toEqual({
+      date: "2026-02-23",
+      time: "22:30:00",
+    });
+  });
+
+  it("is null for a blank date or time", () => {
+    expect(fromEasternClock("", "22:30")).toBeNull();
+    expect(fromEasternClock("2026-02-23", "")).toBeNull();
+  });
+
+  it("is null for an unparseable date or time", () => {
+    expect(fromEasternClock("2026-02-30", "22:30")).toBeNull();
+    expect(fromEasternClock("2026-02-23", "not-a-time")).toBeNull();
   });
 });
 
@@ -294,6 +328,32 @@ describe("formatDayHeading", () => {
   it("formats a Day date without shifting it by the viewer's timezone", () => {
     expect(formatDayHeading("2026-02-23")).toBe("Monday, Feb 23");
   });
+});
+
+describe("filterScheduleByDay", () => {
+  it("returns every Day, unselected, when day is missing", () => {
+    expect(filterScheduleByDay(week, undefined)).toEqual({
+      selected: null,
+      days: week,
+    });
+  });
+
+  it("filters to the matching Day when day is a valid date", () => {
+    expect(filterScheduleByDay(week, "2026-02-24")).toEqual({
+      selected: "2026-02-24",
+      days: [week[1]],
+    });
+  });
+
+  it.each(["2026-02-25", "not-a-date", ["2026-02-23"] as unknown as string[]])(
+    "falls back to All for an unknown or invalid day %s",
+    (day) => {
+      expect(filterScheduleByDay(week, day)).toEqual({
+        selected: null,
+        days: week,
+      });
+    },
+  );
 });
 
 describe("resolveClock", () => {

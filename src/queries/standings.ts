@@ -8,6 +8,7 @@ import {
   pointsEntry,
   team,
 } from "@/db/schema";
+import { PointsBreakdown, buildPointsBreakdown } from "@/lib/points-breakdown";
 import { Standings, computeStandings } from "@/lib/standings";
 
 /**
@@ -53,6 +54,54 @@ export async function getStandings(
 
   return computeStandings({
     mode: warWeek.mode,
+    teams,
+    participants,
+    competitions,
+    pointsEntries,
+  });
+}
+
+/**
+ * The Points Entries behind every Standings total, for the row disclosures
+ * on the leaderboard and home page. Mirrors `getStandings`'s joins.
+ */
+export async function getPointsBreakdown(
+  warWeek: Pick<WarWeek, "id">,
+  dbOrTx: DBOrTx = db,
+): Promise<PointsBreakdown> {
+  const [teams, participants, competitions, pointsEntries] = await Promise.all([
+    dbOrTx
+      .select({ id: team.id })
+      .from(team)
+      .where(eq(team.warWeekId, warWeek.id)),
+    dbOrTx
+      .select({ id: participant.id, teamId: participant.teamId })
+      .from(participant)
+      .where(eq(participant.warWeekId, warWeek.id)),
+    dbOrTx
+      .select({
+        id: competition.id,
+        name: competition.name,
+        scoring: competition.scoring,
+        countsTowardTeam: competition.countsTowardTeam,
+      })
+      .from(competition)
+      .where(eq(competition.warWeekId, warWeek.id)),
+    dbOrTx
+      .select({
+        id: pointsEntry.id,
+        competitionId: pointsEntry.competitionId,
+        teamId: pointsEntry.teamId,
+        participantId: pointsEntry.participantId,
+        points: pointsEntry.points,
+        enteredAt: pointsEntry.enteredAt,
+      })
+      .from(pointsEntry)
+      .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
+      .where(eq(competition.warWeekId, warWeek.id)),
+  ]);
+
+  return buildPointsBreakdown({
     teams,
     participants,
     competitions,

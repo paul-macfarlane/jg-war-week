@@ -132,36 +132,43 @@ export function OrganizerGuide({
       <section className="flex flex-col gap-2">
         <h2 className="text-lg font-semibold">Running a Bracket</h2>
         <p className="text-foreground/70">
-          Set a Competition&apos;s Format to Single elimination or Heats under{" "}
+          Choose a Competition&apos;s Format — Single elimination or Heats —
+          when you add it under{" "}
           <Link
             href="/admin/setup/competitions"
             className="text-primary underline underline-offset-4"
           >
             Competitions
-          </Link>
-          . Single elimination is one against one: the winner of each Heat
-          advances. Heats puts 2 to 8 Entrants in each Heat (you choose how
-          many, and how many advance); the top few of each Heat go on, Round
-          after Round, until one Heat is left. The final placings are the final
-          Heat&apos;s order, then everyone else tied by the Round they went out
-          in; a forfeiter finishes behind the rest of their Heat. Open the
-          Bracket builder to pick Entrants — all {teamLower}s, or specific
-          Participants — and Generate the Bracket (Seed Positions are random;
-          Re-roll before any Heat is played to try again). Press By Standings
-          instead to draw its Seed Positions from the current Standings, ties
-          drawn at random. On the results screen, a Heat&apos;s Time &amp; place
-          sets its Day, start time (ET) and location; the Competition&apos;s
-          Hosts can set it too. A timed Heat shows on its card, in each
-          Entrant&apos;s next Heat and, once its Entrants are known, in the home
-          page&apos;s Now / Next. A re-draw clears every Heat time, so the
-          builder asks first. From the results screen, tap a Heat to record it:
-          its winner, or for a bigger Heat its Entrants in finishing order, with
-          scores or forfeits; changing who advances resets the later Heats that
-          followed from it, while a score-only edit keeps them. Finalize turns
-          the Bracket&apos;s placings into Points Entries marked &quot;From
-          bracket&quot;; un-finalize removes them so you can fix a Heat and
-          finalize again. While it&apos;s finalized, the Competition&apos;s
-          scoring and Placement Points can&apos;t change: un-finalize first.
+          </Link>{" "}
+          and you land straight on its Bracket setup; changing the Format on an
+          existing Competition happens on that Bracket page instead. Single
+          elimination is one against one: the winner of each Heat advances.
+          Heats puts 2 to 8 Entrants in each Heat (you choose how many, and how
+          many advance); the top few of each Heat go on, Round after Round,
+          until one Heat is left. The final placings are the final Heat&apos;s
+          order, then everyone else tied by the Round they went out in; a
+          forfeiter finishes behind the rest of their Heat. Open the Bracket
+          builder to pick Entrants — all {teamLower}s, or specific Participants
+          — and Generate the Bracket (Seed Positions are random; Re-roll before
+          any Heat is played to try again). Press By Standings instead to draw
+          its Seed Positions from the current Standings, ties drawn at random.
+          On the results screen, a Heat&apos;s Time &amp; place sets its Day,
+          start time (ET) and location; the Competition&apos;s Hosts can set it
+          too. A timed Heat shows on its card, in each Entrant&apos;s next Heat
+          and, once its Entrants are known, in the home page&apos;s Now / Next.
+          A re-draw clears every Heat time, so the builder asks first. From the
+          results screen, or straight from the Competition page&apos;s Bracket
+          (which reads as a tree by default — Rounds left to right for Single
+          elimination, one box per Heat for Heats, with a List toggle back to
+          the plain list), tap a Heat to record it: its winner, or for a bigger
+          Heat its Entrants in finishing order, with scores or forfeits, in a
+          dialog centered on a screen or a bottom sheet on a phone. Changing who
+          advances resets the later Heats that followed from it, while a
+          score-only edit keeps them. Finalize turns the Bracket&apos;s placings
+          into Points Entries marked &quot;From bracket&quot;; un-finalize
+          removes them so you can fix a Heat and finalize again. While it&apos;s
+          finalized, the Competition&apos;s scoring and Placement Points
+          can&apos;t change: un-finalize first.
         </p>
         <h3 className="font-semibold">Squads and self-report</h3>
         <p className="text-foreground/70">
@@ -217,12 +224,14 @@ export function OrganizerGuide({
             Setup
           </Link>{" "}
           page&apos;s Lifecycle box moves a War Week through Start, End and
-          Reopen. Only one War Week is ever live: End this one (confirming the
-          Winner, prefilled from first place, and any highlights) before the
-          next can Start. Create next War Week copies what you choose (settings
-          by default; Competitions, with their Hosts, and the FAQ are off) and
-          opens the new edition as upcoming, so you can set it up while this one
-          stays live. The End confirm names any Bracket that isn&apos;t
+          Reopen. Only one War Week is ever live: End this one (it shows the
+          Winner it will record — first place in the Standings, a &quot;Tie: A
+          &amp; B&quot; when Teams or Participants tie, blank when nobody
+          scored, with no way to type a different one — and any highlights)
+          before the next can Start. Create next War Week copies what you choose
+          (settings by default; Competitions, with their Hosts, and the FAQ are
+          off) and opens the new edition as upcoming, so you can set it up while
+          this one stays live. The End confirm names any Bracket that isn&apos;t
           finalized: finalize it first so its placings count (it warns, it
           doesn&apos;t stop you). The header&apos;s edition switcher moves the
           admin between editions you may administer — a banner marks the Archive

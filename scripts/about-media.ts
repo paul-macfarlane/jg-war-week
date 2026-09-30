@@ -1,30 +1,33 @@
 /**
- * Writes the About page's media (ticket 28) from the seeded demo, never by
- * hand: `public/about/finale.mp4` and `finale-poster.png` (War Week XI's
- * Finale on a phone: the Start screen, then the countdown) and one still per feature
- * card at `public/about/<slug>.png`. Afterwards it screenshots `/about` as an
- * anonymous visitor at 390px, desktop and with reduced motion into
- * `test-results/28-splash/`, with a log.
+ * Writes the About page's media (tickets 28, 03, 04) from the seeded demo,
+ * never by hand: `public/about/finale-poster.png` (War Week XI's Finale on
+ * a phone, mid-countdown; a still only — no Finale video is written or
+ * shown), the hero's `standings-before.png` / `standings-entry.png` /
+ * `standings-after.png` (an Organizer's real Points Entry moving the home
+ * Standings), and one still per feature card at `public/about/<slug>.png`.
+ * Afterwards it screenshots `/about` as an anonymous visitor at 390px,
+ * desktop and with reduced motion into `test-results/28-splash/`, with a
+ * log.
  *
  * Needs a production build and a freshly seeded local Postgres, the same
  * prerequisite as `docs/maintainers-guide.md` (`pnpm build`, then
- * `pnpm seed:load --reset seeds/*.json`), and Google Chrome; ffmpeg on
- * PATH only without `--stills`. Starts its own server on port
- * 3202, signs in as a made-up Organizer (`about-demo@jahnelgroup.com`) that
- * it adds to the Organizer list and lends XI's seeded Points Entries for the
- * run, so no real email is in any file, and restores everything after:
+ * `pnpm seed:load --reset seeds/*.json && pnpm seed:demo`), and Google
+ * Chrome. Starts its own server on port 3202, signs in as a made-up Organizer
+ * (`about-demo@jahnelgroup.com`) that it adds to the Organizer list and
+ * lends XI's seeded Points Entries for the run, so no real email is in any
+ * file, and restores everything after, including the one Points Entry the
+ * Standings hero saves:
  *   pnpm tsx scripts/about-media.ts
  *
- * `--stills` rewrites only the feature-card stills and leaves the Finale
- * recording alone, so it needs no ffmpeg:
+ * `--stills` rewrites the feature-card and Standings-hero stills and
+ * leaves the Finale poster alone:
  *   pnpm tsx scripts/about-media.ts --stills
  */
 import { loadEnvConfig } from "@next/env";
 import { makeSignature } from "better-auth/crypto";
-import { type ChildProcess, spawn, spawnSync } from "node:child_process";
+import { type ChildProcess, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import {
-  copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -37,9 +40,12 @@ import os from "node:os";
 import path from "node:path";
 import { Client } from "pg";
 
-import { ABOUT_FEATURES, ABOUT_THEME } from "@/lib/about";
+import { ABOUT_FEATURES, STATIC_PAGE_THEME } from "@/lib/about";
+import { DISPLAY_STORAGE_KEY } from "@/lib/display";
 import { FINALE_MAX_MS } from "@/lib/finale";
+import { backgroundColorScheme } from "@/lib/theme";
 import type { LeaderboardResult } from "@/mcp/leaderboard";
+import { DEMO_SEED } from "@/seed/local-files";
 
 loadEnvConfig(process.cwd());
 
@@ -55,6 +61,15 @@ const AUTH_SECRET = `about-media-secret-${randomUUID()}`;
 const DEMO_EMAIL = "about-demo@jahnelgroup.com";
 const STILL = { width: 1280, height: 720 };
 const PHONE = { width: 390, height: 844 };
+/**
+ * Every still and the Finale poster wear XI's base palette, the scheme its
+ * Organizer designed, not whatever this Chrome's OS happens to be set to
+ * (it has no stored `ww:display`, so under System it would follow the Mac).
+ * Pinned per page via `Page.addScriptToEvaluateOnNewDocument`, never
+ * `Emulation.setEmulatedMedia` (the reduced-motion capture below replaces
+ * its feature list wholesale, which would drop an earlier media pin).
+ */
+const PINNED_DISPLAY = backgroundColorScheme(STATIC_PAGE_THEME.backgroundColor);
 /** Around the Finale: this much of the Start screen before, and after. */
 const LEAD_IN_MS = 2_500;
 const HOLD_MS = 3_500;
@@ -104,7 +119,7 @@ async function createSession(email: string): Promise<string> {
 /** The seeded Organizer, whose email must not appear in any file written. */
 function seededOrganizerEmail(): string {
   const seed = JSON.parse(
-    readFileSync(path.resolve(process.cwd(), "seeds/xi.json"), "utf8"),
+    readFileSync(path.resolve(process.cwd(), DEMO_SEED), "utf8"),
   ) as { organizers: string[] };
   return seed.organizers[0];
 }
@@ -144,7 +159,7 @@ class Page {
     });
   }
 
-  static async open(): Promise<Page> {
+  static async open(display: "light" | "dark" = PINNED_DISPLAY): Promise<Page> {
     const target = (await (
       await fetch(`http://127.0.0.1:${DEBUG_PORT}/json/new?about:blank`, {
         method: "PUT",
@@ -159,6 +174,9 @@ class Page {
     await page.send("Page.enable");
     await page.send("Network.enable");
     await page.send("Runtime.enable");
+    await page.send("Page.addScriptToEvaluateOnNewDocument", {
+      source: `try{localStorage.setItem(${JSON.stringify(DISPLAY_STORAGE_KEY)},${JSON.stringify(display)})}catch(e){}`,
+    });
     return page;
   }
 
@@ -308,7 +326,7 @@ async function assertNoRealEmail(page: Page, what: string) {
 
 type Frame = { at: number; data: string };
 
-async function recordFinale(cookie: string, ffmpeg: string) {
+async function recordFinale(cookie: string) {
   const page = await Page.open();
   // The screencast sends CSS-pixel frames whatever the device scale, so
   // the page is laid out at 390px inside a doubled viewport, zoomed 2x.
@@ -370,62 +388,11 @@ async function recordFinale(cookie: string, ffmpeg: string) {
   }
   note(`finale: ${frames.length} frames captured, ${kept.length} kept`);
 
-  const dir = mkdtempSync(path.join(os.tmpdir(), "about-frames-"));
-  try {
-    const list: string[] = [];
-    kept.forEach((frame, i) => {
-      const file = path.join(dir, `${String(i).padStart(4, "0")}.png`);
-      writeFileSync(file, Buffer.from(frame.data, "base64"));
-      const next = kept[i + 1];
-      const duration = next ? (next.at - frame.at) / 1000 : HOLD_MS / 1000;
-      list.push(`file '${file}'`, `duration ${duration.toFixed(3)}`);
-    });
-    // The concat demuxer needs the last file repeated to honour its duration.
-    list.push(
-      `file '${path.join(dir, `${String(kept.length - 1).padStart(4, "0")}.png`)}'`,
-    );
-    const listFile = path.join(dir, "frames.txt");
-    writeFileSync(listFile, list.join("\n") + "\n");
-    copyFileSync(
-      path.join(dir, "0000.png"),
-      path.join(MEDIA, "finale-poster.png"),
-    );
-
-    const result = spawnSync(
-      ffmpeg,
-      [
-        "-y",
-        "-loglevel",
-        "error",
-        "-f",
-        "concat",
-        "-safe",
-        "0",
-        "-i",
-        listFile,
-        "-vf",
-        "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p",
-        "-r",
-        "30",
-        "-c:v",
-        "libx264",
-        "-preset",
-        "slow",
-        "-crf",
-        "24",
-        "-movflags",
-        "+faststart",
-        "-an",
-        path.join(MEDIA, "finale.mp4"),
-      ],
-      { stdio: ["ignore", "inherit", "pipe"] },
-    );
-    if (result.status !== 0) {
-      throw new Error(`ffmpeg failed: ${result.stderr?.toString()}`);
-    }
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
+  // Only the poster still is kept; no Finale video is written or shown.
+  writeFileSync(
+    path.join(MEDIA, "finale-poster.png"),
+    Buffer.from(kept[0].data, "base64"),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -517,9 +484,10 @@ async function still(
   cookie: string | null,
   target: string,
   prepare?: (page: Page) => Promise<void>,
+  viewport: { width: number; height: number } = STILL,
 ) {
   const page = await Page.open();
-  await page.viewport(STILL, false);
+  await page.viewport(viewport, viewport === PHONE);
   if (cookie) await page.cookie(cookie);
   await page.goto(target);
   if (prepare) await prepare(page);
@@ -532,12 +500,17 @@ async function still(
 }
 
 /**
- * Picks a Competition in the Points Entry form's combobox the way a person
- * does: focus it, type the name, and choose the option.
+ * Picks an option in one of the Points Entry form's `EntityCombobox`
+ * fields the way a person does: focus it by its `aria-label`, type the
+ * name, and choose the matching option.
  */
-async function selectCompetition(page: Page, name: string): Promise<string> {
+async function selectComboboxOption(
+  page: Page,
+  ariaLabel: string,
+  name: string,
+): Promise<string> {
   await page.evaluate(
-    `document.querySelector('input[aria-label="Competition"]').focus()`,
+    `document.querySelector('input[aria-label="${ariaLabel}"]').focus()`,
   );
   await page.send("Input.insertText", { text: name });
   await sleep(500);
@@ -546,8 +519,13 @@ async function selectCompetition(page: Page, name: string): Promise<string> {
     option?.click();
     return option ? option.innerText : null;
   })()`);
-  if (!picked) throw new Error(`no Competition option for ${name}`);
+  if (!picked) throw new Error(`no ${ariaLabel} option for ${name}`);
   return picked;
+}
+
+/** Picks a Competition in the Points Entry form's combobox. */
+async function selectCompetition(page: Page, name: string): Promise<string> {
+  return selectComboboxOption(page, "Competition", name);
 }
 
 const scrollToText = (text: string) => `(() => {
@@ -632,7 +610,7 @@ function chatCardUrl(result: LeaderboardResult): string {
     .join(
       "",
     )}</ol><p>${escapeHtml(result.standings[0]?.name ?? "")} lead${result.standings.length > 1 ? `, ${result.standings[0].total - result.standings[1].total} points ahead of ${escapeHtml(result.standings[1].name)}` : ""}.</p>`;
-  const t = ABOUT_THEME;
+  const t = STATIC_PAGE_THEME;
   return `data:text/html;charset=utf-8,${encodeURIComponent(`<!doctype html><html><head><meta charset="utf-8"><style>
   html,body{margin:0;height:100%;background:${t.backgroundColor};color:${t.foregroundColor};font:16px/1.5 ui-monospace,"JetBrains Mono",Menlo,monospace}
   body{display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at top,color-mix(in oklch,${t.primaryColor} 18%,transparent),transparent 60%),${t.backgroundColor}}
@@ -649,6 +627,312 @@ function chatCardUrl(result: LeaderboardResult): string {
   <div class="msg you"><div class="who">You</div>Who's winning War Week XI?</div>
   <div class="msg claude"><div class="who">Claude</div>${answer}<div class="tool">jg-war-week · get_leaderboard(kind: "team")</div></div>
   </div></body></html>`)}`;
+}
+
+// ---------------------------------------------------------------------------
+// A logged Game for the "games" still (R3)
+
+/** The seeded head-to-head, open-to-everyone `games` Competition on XI. */
+const GAMES_COMP_NAME = "Bouncy Pong";
+
+/** Bouncy Pong's id and two Participant names to log a Game between. */
+async function findGamesDemo(): Promise<{
+  competitionId: string;
+  playerA: string;
+  playerB: string;
+}> {
+  const [comp] = await query<{ id: string }>(
+    `select c.id from competition c
+     join war_week w on w.id = c.war_week_id
+     where w.edition = 'xi' and c.name = $1`,
+    [GAMES_COMP_NAME],
+  );
+  if (!comp) {
+    throw new Error(`no seeded "${GAMES_COMP_NAME}" Competition on XI`);
+  }
+  const [xiWarWeek] = await query<{ id: string }>(
+    `select id from war_week where edition = 'xi'`,
+  );
+  const participants = await query<{ display_name: string }>(
+    `select display_name from participant where war_week_id = $1
+     order by display_name limit 2`,
+    [xiWarWeek.id],
+  );
+  if (participants.length < 2) {
+    throw new Error("XI needs at least 2 Participants for the Games demo");
+  }
+  return {
+    competitionId: comp.id,
+    playerA: participants[0].display_name,
+    playerB: participants[1].display_name,
+  };
+}
+
+/**
+ * Picks `name` in a combobox found by its `<label for>` text (the Game
+ * form's fields have no `aria-label`, unlike the Points Entry form's).
+ */
+async function selectLabeledCombobox(
+  page: Page,
+  labelText: string,
+  name: string,
+): Promise<string> {
+  const inputId = await page.evaluate<string | null>(`(() => {
+    const label = Array.from(document.querySelectorAll("label")).find((l) => l.textContent?.trim() === ${JSON.stringify(labelText)});
+    return label ? label.getAttribute("for") : null;
+  })()`);
+  if (!inputId) throw new Error(`no field labeled "${labelText}"`);
+  await page.evaluate(
+    `document.getElementById(${JSON.stringify(inputId)})?.focus()`,
+  );
+  await page.send("Input.insertText", { text: name });
+  await sleep(500);
+  const picked = await page.evaluate<string | null>(`(() => {
+    const option = Array.from(document.querySelectorAll('[role="option"]')).find((o) => o.innerText.includes(${JSON.stringify(name)}));
+    option?.click();
+    return option ? option.innerText : null;
+  })()`);
+  if (!picked) throw new Error(`no "${labelText}" option for ${name}`);
+  return picked;
+}
+
+/**
+ * Logs one head-to-head Game on Bouncy Pong through the real Game form (the
+ * `logGame` action, as the demo Organizer): opens "Log a Game" from the
+ * Competition page, picks both players and who won, and saves. Returns the
+ * logged Game's id so the caller can undo it in `finally`.
+ */
+async function captureGamesDemo(cookie: string): Promise<{
+  gameId: string;
+  competitionId: string;
+}> {
+  const { competitionId, playerA, playerB } = await findGamesDemo();
+  const page = await Page.open();
+  await page.viewport(STILL, false);
+  await page.cookie(cookie);
+  await page.goto(`/xi/competitions/${competitionId}`);
+
+  const opened = await page.evaluate<boolean>(
+    `(() => { const b = Array.from(document.querySelectorAll("button")).find((b) => b.innerText.trim() === "Log a Game"); b?.click(); return Boolean(b); })()`,
+  );
+  if (!opened) throw new Error('no "Log a Game" button on Bouncy Pong');
+  await sleep(500);
+
+  await selectLabeledCombobox(page, "Player A", playerA);
+  await selectLabeledCombobox(page, "Player B", playerB);
+  const wonLabel = `${playerA} won`;
+  const wonPicked = await page.evaluate<boolean>(`(() => {
+    const button = Array.from(document.querySelectorAll("button")).find((b) => b.innerText.trim() === ${JSON.stringify(wonLabel)});
+    button?.click();
+    return Boolean(button);
+  })()`);
+  if (!wonPicked) throw new Error(`no "${wonLabel}" button in the Game form`);
+  await sleep(300);
+
+  const submitted = await page.evaluate<boolean>(
+    `(() => { const b = Array.from(document.querySelectorAll('button[type="submit"]')).find((b) => b.innerText.trim() === "Log Game"); b?.click(); return Boolean(b); })()`,
+  );
+  if (!submitted) throw new Error('no "Log Game" submit button');
+
+  let saved = false;
+  for (let i = 0; i < 40; i++) {
+    await sleep(200);
+    const stillOpen = await page.evaluate<boolean>(
+      `document.body.innerText.includes("Choose both players and who won.")`,
+    );
+    if (!stillOpen) {
+      saved = true;
+      break;
+    }
+  }
+  if (!saved) throw new Error("the demo Game never finished saving");
+
+  // The TopNav is `sticky top-0` (`primary-nav.tsx:164`), so scrolling the
+  // Competition's `h1` to the frame's top hides it under the header; scroll
+  // to the very top instead and frame wide enough to hold the title, the
+  // Leaderboard and the first Game row together (ticket 26).
+  await page.evaluate(`window.scrollTo(0, 0)`);
+  await sleep(300);
+
+  const measureGamesFrame = `(() => {
+    const h1 = document.querySelector("h1");
+    const header = document.querySelector("header");
+    const gamesHeading = Array.from(document.querySelectorAll("h2")).find(
+      (h) => h.textContent?.trim() === "Games",
+    );
+    const row = gamesHeading?.parentElement?.nextElementSibling?.querySelector("li");
+    if (!h1 || !header || !row) return null;
+    return {
+      h1Top: h1.getBoundingClientRect().top,
+      headerBottom: header.getBoundingClientRect().bottom,
+      rowBottom: row.getBoundingClientRect().bottom,
+      innerHeight: window.innerHeight,
+    };
+  })()`;
+
+  const gamesFrames = [
+    { width: 1600, height: 900, scale: 1.6 },
+    { width: 1920, height: 1080, scale: 1.3333 },
+  ];
+  let usedGamesFrame: (typeof gamesFrames)[number] | null = null;
+  let gamesMeasurement: Record<string, number> | null = null;
+  for (const frame of gamesFrames) {
+    await page.viewport(
+      { width: frame.width, height: frame.height },
+      false,
+      frame.scale,
+    );
+    await sleep(300);
+    gamesMeasurement = await page.evaluate<Record<string, number> | null>(
+      measureGamesFrame,
+    );
+    if (
+      gamesMeasurement &&
+      gamesMeasurement.h1Top >= gamesMeasurement.headerBottom &&
+      gamesMeasurement.rowBottom <= gamesMeasurement.innerHeight
+    ) {
+      usedGamesFrame = frame;
+      break;
+    }
+  }
+  if (!usedGamesFrame) {
+    throw new Error(
+      `games still: the Competition name or first Game row never fit either frame: ${JSON.stringify(gamesMeasurement)}`,
+    );
+  }
+  note(
+    `games: frame ${usedGamesFrame.width}x${usedGamesFrame.height}@${usedGamesFrame.scale} used ` +
+      `(h1 top ${gamesMeasurement?.h1Top}, header bottom ${gamesMeasurement?.headerBottom}, ` +
+      `first Game row bottom ${gamesMeasurement?.rowBottom}, viewport height ${gamesMeasurement?.innerHeight})`,
+  );
+  // The "Game logged" toast would sit over the still: wait it out.
+  let toastGone = false;
+  for (let i = 0; i < 75; i++) {
+    toastGone = await page.evaluate<boolean>(
+      `document.querySelector("[data-sonner-toast]") === null`,
+    );
+    if (toastGone) break;
+    await sleep(200);
+  }
+  if (!toastGone) throw new Error('the "Game logged" toast never went away');
+  await assertNoRealEmail(page, "games");
+  await page.screenshot(path.join(MEDIA, "games.png"));
+  note(`still: games from /xi/competitions/${competitionId}, one Game logged`);
+  await page.close();
+
+  const [row] = await query<{ id: string }>(
+    `select id from game where competition_id = $1 and logged_by_email = $2
+     order by created_at desc limit 1`,
+    [competitionId, DEMO_EMAIL],
+  );
+  if (!row) throw new Error("could not find the demo Game to undo");
+  return { gameId: row.id, competitionId };
+}
+
+/** Undoes the one Game `captureGamesDemo` logged. */
+async function teardownGamesDemo(gameId: string) {
+  await query(`delete from game where id = $1`, [gameId]);
+}
+
+// ---------------------------------------------------------------------------
+// The About hero: Standings moving after a Points Entry (ticket 04)
+
+/**
+ * The competition the hero uses to move the home Standings: team-scored,
+ * with no Max points cap, so any margin needed to move the last-place Team
+ * into first saves without a warning.
+ */
+const STANDINGS_DEMO_COMPETITION = "Beast Mode Workout";
+
+/**
+ * Three stills for the About page's hero (ticket 04): the home Standings
+ * before, the Points Entry form about to save a big win for the Team
+ * currently in last place, and the same home Standings right after,
+ * reordered. Uses the real Points Entry form and the real `get_leaderboard`
+ * MCP tool to read the Team Standings, not a hand-crafted fixture.
+ */
+async function captureStandingsDemo(cookie: string): Promise<string> {
+  await still(
+    "standings-before",
+    cookie,
+    "/xi/leaderboard",
+    () => sleep(500),
+    PHONE,
+  );
+
+  const before = await askMcp(cookie);
+  const last = before.standings.at(-1);
+  const first = before.standings[0];
+  if (!last || !first || before.standings.length < 2) {
+    throw new Error("need at least two Teams for the Standings demo");
+  }
+  // Enough to overtake first place outright, so the reorder is unmistakable.
+  const margin = Math.max(first.total - last.total + 15, 15);
+  note(
+    `standings demo: moving ${JSON.stringify(last.name)} from last (${last.total}) past first (${first.total}) with +${margin}`,
+  );
+
+  const page = await Page.open();
+  await page.viewport(PHONE, true);
+  await page.cookie(cookie);
+  await page.goto("/admin/points");
+  await selectCompetition(page, STANDINGS_DEMO_COMPETITION);
+  await sleep(300);
+  await selectComboboxOption(page, before.teamLabel, last.name);
+  await page.evaluate(`document.querySelector('#points-entry-points').focus()`);
+  await page.send("Input.insertText", { text: String(margin) });
+  await sleep(400);
+  await assertNoRealEmail(page, "standings-entry");
+  await page.screenshot(path.join(MEDIA, "standings-entry.png"));
+  note("still: standings-entry from /admin/points, filled in");
+
+  await page.evaluate(
+    `document.querySelector('form[aria-label="Points Entry"] button[type="submit"]').click()`,
+  );
+  let saved = false;
+  for (let i = 0; i < 40; i++) {
+    await sleep(200);
+    const text = await page.evaluate<string>(
+      `document.querySelector('form[aria-label="Points Entry"] button[type="submit"]')?.innerText ?? ""`,
+    );
+    if (text === "Add Points Entry") {
+      saved = true;
+      break;
+    }
+  }
+  if (!saved) throw new Error("the demo Points Entry never finished saving");
+  await page.close();
+
+  await still(
+    "standings-after",
+    cookie,
+    "/xi/leaderboard",
+    () => sleep(500),
+    PHONE,
+  );
+
+  const after = await askMcp(cookie);
+  const lastAfter = after.standings.find((row) => row.name === last.name);
+  note(
+    `standings demo: ${JSON.stringify(last.name)} is now #${
+      after.standings.findIndex((row) => row.name === last.name) + 1
+    } of ${after.standings.length} (${lastAfter?.total} pts)`,
+  );
+  if (after.standings[0]?.name !== last.name) {
+    throw new Error("the demo Points Entry did not move the Team to first");
+  }
+
+  const [entry] = await query<{ id: string }>(
+    `select id from points_entry where entered_by_email = $1 order by created_at desc limit 1`,
+    [DEMO_EMAIL],
+  );
+  if (!entry) throw new Error("could not find the demo Points Entry to undo");
+  return entry.id;
+}
+
+/** Undoes the one Points Entry `captureStandingsDemo` created. */
+async function teardownStandingsDemo(entryId: string) {
+  await query(`delete from points_entry where id = $1`, [entryId]);
 }
 
 // ---------------------------------------------------------------------------
@@ -673,48 +957,54 @@ async function evidence() {
   const desktop = await Page.open();
   await desktop.viewport({ width: 1440, height: 900 }, false, 1);
   await desktop.goto("/about", 3_000);
-  const video = await desktop.evaluate<Record<string, unknown>>(
-    `(() => { const v = document.querySelector("video"); return { readyState: v.readyState, paused: v.paused, muted: v.muted, loop: v.loop, poster: v.poster.endsWith("/about/finale-poster.png"), videoWidth: v.videoWidth, videoHeight: v.videoHeight, duration: v.duration }; })()`,
+  const hero = await desktop.evaluate<Record<string, unknown>>(
+    `(() => { const imgs = Array.from(document.querySelectorAll('[data-standings-step]')); return { steps: imgs.map((i) => i.dataset.standingsStep), loaded: imgs.every((i) => i.complete && i.naturalWidth > 0), finalePoster: document.querySelector('img[src="/about/finale-poster.png"]') !== null, noVideo: document.querySelector("video") === null }; })()`,
   );
-  note(`evidence: desktop hero video ${JSON.stringify(video)}`);
+  note(`evidence: desktop hero ${JSON.stringify(hero)}`);
+  if (!hero.noVideo)
+    throw new Error("the About page hero must be stills, not a video");
   await desktop.screenshot(path.join(EVIDENCE, "about-desktop.png"), true);
+
+  const desktopLight = await Page.open("light");
+  await desktopLight.viewport({ width: 1440, height: 900 }, false, 1);
+  await desktopLight.goto("/about", 3_000);
+  await assertNoRealEmail(desktopLight, "about-light");
+  await desktopLight.screenshot(
+    path.join(EVIDENCE, "about-desktop-light.png"),
+    true,
+  );
+  await desktopLight.close();
+  note("evidence: /about desktop captured under the light Display");
 
   await desktop.send("Emulation.setEmulatedMedia", {
     features: [{ name: "prefers-reduced-motion", value: "reduce" }],
   });
   await sleep(500);
-  const reduced = await desktop.evaluate<Record<string, unknown>>(
-    `(() => { const v = document.querySelector("video"); const img = document.querySelector('img[src="/about/finale-poster.png"]'); return { videoHidden: getComputedStyle(v).display === "none", posterShown: getComputedStyle(img).display !== "none" }; })()`,
-  );
-  note(`evidence: reduced motion ${JSON.stringify(reduced)}`);
   await desktop.screenshot(
     path.join(EVIDENCE, "about-desktop-reduced-motion.png"),
   );
   await desktop.close();
 
+  // /about now reads the current War Week (ticket 03), so it must be
+  // dynamic, not prerendered at build with a stale one.
   const prerendered = existsSync(
     path.resolve(process.cwd(), ".next/server/app/about.html"),
   );
   note(
     `evidence: /about prerendered at build (.next/server/app/about.html exists): ${prerendered}`,
   );
-  if (!prerendered)
-    throw new Error("/about was not prerendered: it must stay static");
+  if (prerendered)
+    throw new Error(
+      "/about was statically prerendered: it must read the current War Week dynamically",
+    );
 }
 
 // ---------------------------------------------------------------------------
 
-/** Only the feature-card stills; the Finale video and poster stay as they are. */
+/** Only the feature-card and Standings-hero stills; the Finale poster stays as it is. */
 const STILLS_ONLY = process.argv.includes("--stills");
 
 async function main() {
-  if (
-    !STILLS_ONLY &&
-    spawnSync("ffmpeg", ["-version"], { stdio: "ignore" }).status !== 0
-  ) {
-    console.error("Install ffmpeg: brew install ffmpeg");
-    process.exit(1);
-  }
   if (!existsSync(path.resolve(process.cwd(), ".next/BUILD_ID"))) {
     console.error("No production build in .next: run `pnpm build` first.");
     process.exit(1);
@@ -760,6 +1050,8 @@ async function main() {
     detached: true,
   });
   const chrome = launchChrome();
+  let standingsEntryId: string | undefined;
+  let gamesDemoGameId: string | undefined;
 
   try {
     for (let i = 0; i < 60; i++) {
@@ -774,7 +1066,9 @@ async function main() {
     }
     await waitForChrome();
 
-    if (!STILLS_ONLY) await recordFinale(cookie, "ffmpeg");
+    standingsEntryId = await captureStandingsDemo(cookie);
+
+    if (!STILLS_ONLY) await recordFinale(cookie);
 
     const slugs = ABOUT_FEATURES.map((f) => f.slug);
     await still("organizer-setup", cookie, "/admin/setup");
@@ -810,6 +1104,8 @@ async function main() {
         if (!found) throw new Error("no champion card on the Bracket view");
       },
     );
+    const gamesDemo = await captureGamesDemo(cookie);
+    gamesDemoGameId = gamesDemo.gameId;
     await still("lifecycle", cookie, "/admin/setup", async (page) => {
       const found = await page.evaluate<boolean>(scrollToText("Lifecycle"));
       await sleep(300);
@@ -823,7 +1119,10 @@ async function main() {
     await evidence();
 
     for (const name of [
-      ...(STILLS_ONLY ? [] : ["finale.mp4", "finale-poster.png"]),
+      ...(STILLS_ONLY ? [] : ["finale-poster.png"]),
+      "standings-before.png",
+      "standings-entry.png",
+      "standings-after.png",
       ...slugs.map((s) => `${s}.png`),
     ]) {
       note(
@@ -839,6 +1138,8 @@ async function main() {
     }
     await sleep(1_000);
     rmSync(chrome.dir, { recursive: true, force: true, maxRetries: 3 });
+    if (standingsEntryId) await teardownStandingsDemo(standingsEntryId);
+    if (gamesDemoGameId) await teardownGamesDemo(gamesDemoGameId);
     await query(`delete from organizer where email = $1`, [DEMO_EMAIL]);
     await query(
       `update points_entry set entered_by_email = $1 where entered_by_email = $2`,

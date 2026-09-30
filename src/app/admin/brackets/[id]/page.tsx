@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { BracketResults } from "@/components/bracket-results";
 import { getBracket, getHeatReporters } from "@/queries/brackets";
+import { getGamesCompetitions } from "@/queries/games";
 import { getSetupDays } from "@/queries/setup";
 
 import { loadAdminPage } from "../../gate";
@@ -23,10 +24,44 @@ export default async function BracketResultsPage({
     return <AdminRefused warWeek={warWeek} email={email} />;
   }
 
-  const [view, days] = await Promise.all([
+  const [view, days, games] = await Promise.all([
     getBracket(id),
     getSetupDays(warWeek),
+    getGamesCompetitions(warWeek),
   ]);
+  // A `games` Competition is never a Bracket: point to its Games setup.
+  const runAsGames = games.find((competition) => competition.id === id);
+  if (runAsGames) {
+    return (
+      <AdminShell
+        warWeek={warWeek}
+        email={email}
+        isOrganizer={isOrganizer}
+        editions={editions}
+        current="Points Entries"
+      >
+        <section className="flex max-w-xl min-w-0 flex-col gap-4">
+          <Link
+            href="/admin/points"
+            className="text-primary text-sm underline-offset-4 hover:underline"
+          >
+            ← Points Entries
+          </Link>
+          <h1 className="text-2xl font-bold">{runAsGames.name}</h1>
+          <p className="text-foreground/70 text-sm">
+            This Competition is run as Games, not a Bracket.{" "}
+            <Link
+              href={`/admin/setup/competitions/${runAsGames.id}/games`}
+              className="text-primary underline-offset-4 hover:underline"
+            >
+              Open its Games
+            </Link>
+            .
+          </p>
+        </section>
+      </AdminShell>
+    );
+  }
   if (!view || view.competition.warWeekId !== warWeek.id) notFound();
   // After the 404: the id is a Competition's now, so it's a well-formed uuid.
   const reporters = await getHeatReporters(id);

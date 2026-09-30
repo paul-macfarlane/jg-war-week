@@ -9,13 +9,15 @@
   "slackChannelUrl": "https://jahnelgroup.slack.com",
   "logoUrl": null,
   "bannerUrl": null,
-  "wikiUrl": "https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/war-week-2019",
+  "wikiUrl": "https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/home/war-week/war-week-2019",
   "winner": "Ian Ballard (MVP 1st Place)",
   "highlights": [
     "Ian Ballard was MVP, ahead of Anthony Conway and Tony Mercadante.",
     "Eleven people made the Centurion Club (100+ hours) and eleven the Four Score Club (80+ hours).",
     "Anthony Conway stacked Yoda Cups 11 high and won Jedi Training with 133 M&M's.",
-    "JG Bake Off: Abby won Best Style (Darth Vader cake) and Alex E won Best Taste (cinnamon buns)."
+    "JG Bake Off: Abby won Best Style (Darth Vader cake) and Alex E won Best Taste (cinnamon buns).",
+    "War Week logged 4,361 hours, 75% more than an average week, including 2,155 billing hours (+28%).",
+    "The Non-Kelmar team won the Pot Luck Challenge."
   ],
   "days": [],
   "teams": [],
@@ -255,7 +257,7 @@
   "faqItems": [],
   "startDate": "2019-02-24",
   "endDate": "2019-03-02",
-  "storyTheme": "Star Wars",
+  "storyTheme": "Star Wars: A New War Begins",
   "primary": "#ffe81f",
   "primaryForeground": "#000000",
   "accent": "#4bd5ee",

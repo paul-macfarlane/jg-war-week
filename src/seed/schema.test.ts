@@ -7,7 +7,9 @@ import { warWeekSeedSchema } from "@/seed/schema";
 const SEEDS_DIR = path.resolve(__dirname, "../../seeds");
 
 function loadFixture() {
-  return JSON.parse(readFileSync(path.join(SEEDS_DIR, "xi.json"), "utf-8"));
+  return JSON.parse(
+    readFileSync(path.join(SEEDS_DIR, "demo", "xi.json"), "utf-8"),
+  );
 }
 
 /** Parses a seed that must fail and returns its issues as "path: message". */
@@ -64,6 +66,18 @@ describe("warWeekSeedSchema", () => {
 
   it("rejects a non-hex appearance color", () => {
     rejectionOf({ ...loadFixture(), primary: "not-a-color" });
+  });
+
+  it("accepts a hex override of a derived palette color", () => {
+    const seed = warWeekSeedSchema.parse({
+      ...loadFixture(),
+      overrideAccent: "#123abc",
+    });
+    expect(seed.overrideAccent).toBe("#123abc");
+  });
+
+  it("rejects a non-hex override", () => {
+    rejectionOf({ ...loadFixture(), overrideBackground: "light-green" });
   });
 
   it("rejects duplicate day dates", () => {

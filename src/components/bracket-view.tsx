@@ -5,15 +5,17 @@ import { useState } from "react";
 
 import { reportHeatResult } from "@/actions/heat-reports";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { BracketTree } from "@/components/bracket-tree";
 import {
   type BracketViewEntrant,
   EntrantMark,
 } from "@/components/entrant-mark";
 import { HeatResultForm } from "@/components/heat-result-form";
+import { ResponsiveSheetDialog } from "@/components/responsive-sheet-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useYou } from "@/components/you";
 import { isBye } from "@/lib/bracket/formats";
 import type { Bracket, Heat } from "@/lib/bracket/types";
@@ -30,7 +32,8 @@ import { YOU_ROW_CLASS } from "@/lib/you";
 
 type Scoring = "team" | "individual";
 
-function YouMark() {
+/** The "You" pill beside Your Entrant. */
+export function YouMark() {
   return (
     <span
       data-you
@@ -267,12 +270,16 @@ export type BracketViewSelfReport = {
   reportableHeatId: string | null;
 };
 
+type BracketLayout = "tree" | "list";
+
 /**
- * The phone Bracket view: a vertical list of Heats grouped by Round, with
- * (single elimination) "Winner → …" chips, the champion and Your next Heat
- * pinned on top, and Your Entrant highlighted under the You rules. Owns the
- * report Sheet, and refreshes live while it's closed (a Bracket not drawn
- * yet too, so the draw appears).
+ * The Competition page's Bracket: the champion and Your next Heat pinned on
+ * top, then the Bracket as a tree (the default) or, with the List toggle, a
+ * vertical list of Heats grouped by Round with (single elimination)
+ * "Winner → …" chips; Your Entrant highlighted under the You rules. Owns
+ * the report Sheet (a centered Dialog on large screens), and refreshes
+ * live while it's closed (a Bracket not drawn yet too, so the draw
+ * appears).
  */
 export function BracketView({
   competitionId,
@@ -305,6 +312,7 @@ export function BracketView({
 }) {
   const you = useYou();
   const [reporting, setReporting] = useState<string | null>(null);
+  const [layout, setLayout] = useState<BracketLayout>("tree");
   const entrantsById = new Map(entrants.map((e) => [e.id, e]));
   const youEntrantId = entrantForYou(
     entrants,
@@ -331,11 +339,18 @@ export function BracketView({
   const pickOnly = selfReport.on && you?.via === "pick";
   const reportHeat = reporting ? heatsById.get(reporting) : undefined;
   const close = () => setReporting(null);
+  const squadHelp = entrants.some((e) => e.squadId) ? (
+    <p className="text-foreground/70 text-sm">
+      <span className="font-medium">Squad</span>: a pair or group from one Team,
+      playing as one entrant
+    </p>
+  ) : null;
 
   if (bracket.heats.length === 0) {
     return (
       <section className="flex flex-col gap-2" aria-label="Bracket">
         <h2 className="text-lg font-semibold">Bracket</h2>
+        {squadHelp}
         <p className="text-foreground/70 text-sm">
           The Bracket hasn&apos;t been drawn yet.
         </p>
@@ -346,7 +361,23 @@ export function BracketView({
 
   return (
     <section className="flex min-w-0 flex-col gap-4" aria-label="Bracket">
-      <h2 className="text-lg font-semibold">Bracket</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-lg font-semibold">Bracket</h2>
+        <Tabs
+          value={layout}
+          onValueChange={(value) => setLayout(value as BracketLayout)}
+        >
+          <TabsList aria-label="Bracket view" className="h-11 sm:h-8">
+            <TabsTrigger value="tree" className="px-3">
+              Tree
+            </TabsTrigger>
+            <TabsTrigger value="list" className="px-3">
+              List
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+      {squadHelp}
 
       {winner && (
         <Card size="sm" aria-label="Champion" className="ring-primary ring-2">
@@ -396,79 +427,89 @@ export function BracketView({
         />
       )}
 
-      {groupRounds(bracket).map((round) => (
-        <section
-          key={round.round}
-          className="flex flex-col gap-2"
-          aria-label={round.name}
-        >
-          <h3 className="font-semibold">{round.name}</h3>
-          <ul className="flex flex-col gap-2">
-            {round.heats.map((heat) => {
-              const to =
-                bracket.format === "single-elimination" && heat.winnerTo
-                  ? heatsById.get(heat.winnerTo.heatId)
-                  : undefined;
-              const when = formatHeatWhen(heat, days);
-              return (
-                <li key={heat.id}>
-                  <Card size="sm">
-                    <CardContent className="flex min-w-0 flex-col gap-2">
-                      <span className="text-foreground/60 text-xs font-medium">
-                        {heatName(bracket, heat)}
-                      </span>
-                      {when && (
-                        <span className="text-foreground/70 text-xs">
-                          {when}
-                        </span>
-                      )}
-                      <HeatRows
-                        heat={heat}
-                        bracket={bracket}
-                        entrantsById={entrantsById}
-                        scoring={scoring}
-                        primaryColor={primaryColor}
-                        youEntrantId={youEntrantId}
-                      />
-                      {to && (
-                        <Badge variant="secondary">
-                          Winner → {heatName(bracket, to)}
-                        </Badge>
-                      )}
-                    </CardContent>
-                  </Card>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ))}
+      {layout === "tree" ? (
+        <BracketTree
+          bracket={bracket}
+          entrantsById={entrantsById}
+          scoring={scoring}
+          primaryColor={primaryColor}
+          youEntrantId={youEntrantId}
+        />
+      ) : (
+        <div className="flex flex-col gap-4">
+          {groupRounds(bracket).map((round) => (
+            <section
+              key={round.round}
+              className="flex flex-col gap-2"
+              aria-label={round.name}
+            >
+              <h3 className="font-semibold">{round.name}</h3>
+              <ul className="flex flex-col gap-2">
+                {round.heats.map((heat) => {
+                  const to =
+                    bracket.format === "single-elimination" && heat.winnerTo
+                      ? heatsById.get(heat.winnerTo.heatId)
+                      : undefined;
+                  const when = formatHeatWhen(heat, days);
+                  return (
+                    <li key={heat.id}>
+                      <Card size="sm">
+                        <CardContent className="flex min-w-0 flex-col gap-2">
+                          <span className="text-foreground/60 text-xs font-medium">
+                            {heatName(bracket, heat)}
+                          </span>
+                          {when && (
+                            <span className="text-foreground/70 text-xs">
+                              {when}
+                            </span>
+                          )}
+                          <HeatRows
+                            heat={heat}
+                            bracket={bracket}
+                            entrantsById={entrantsById}
+                            scoring={scoring}
+                            primaryColor={primaryColor}
+                            youEntrantId={youEntrantId}
+                          />
+                          {to && (
+                            <Badge variant="secondary">
+                              Winner → {heatName(bracket, to)}
+                            </Badge>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
+        </div>
+      )}
 
-      <Sheet
+      <ResponsiveSheetDialog
         open={reportHeat !== undefined}
         onOpenChange={(open) => {
           if (!open) close();
         }}
       >
-        <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto">
-          {reportHeat && (
-            <HeatResultForm
-              key={reportHeat.id}
-              heat={reportHeat}
-              bracket={bracket}
-              entrantsById={entrantsById}
-              scoring={scoring}
-              primaryColor={primaryColor}
-              submit={(result) =>
-                reportHeatResult(competitionId, reportHeat.id, result)
-              }
-              confirmResets={false}
-              successToast={() => "Result reported."}
-              onSaved={close}
-            />
-          )}
-        </SheetContent>
-      </Sheet>
+        {reportHeat && (
+          <HeatResultForm
+            key={reportHeat.id}
+            heat={reportHeat}
+            bracket={bracket}
+            entrantsById={entrantsById}
+            scoring={scoring}
+            primaryColor={primaryColor}
+            submit={(result) =>
+              reportHeatResult(competitionId, reportHeat.id, result)
+            }
+            confirmResets={false}
+            successToast={() => "Result reported."}
+            onSaved={close}
+          />
+        )}
+      </ResponsiveSheetDialog>
 
       {reportHeat === undefined && <AutoRefresh />}
     </section>

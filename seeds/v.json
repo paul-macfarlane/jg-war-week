@@ -9,7 +9,7 @@
   "slackChannelUrl": "https://jahnelgroup.slack.com",
   "logoUrl": null,
   "bannerUrl": null,
-  "wikiUrl": "https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/war-week-2020",
+  "wikiUrl": "https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/home/war-week/war-week-2020",
   "winner": "Anthony Conway (MVP 1st Place)",
   "highlights": [
     "Anthony Conway was MVP, ahead of Dylan Mann and Dani Milliken."
@@ -58,11 +58,11 @@
   "faqItems": [],
   "startDate": "2020-02-23",
   "endDate": "2020-02-29",
-  "storyTheme": "War Week 2020",
-  "primary": "#7c3aed",
-  "primaryForeground": "#ffffff",
-  "accent": "#22d3ee",
-  "background": "#111827",
-  "foreground": "#f3f4f6",
-  "fontPreset": "sans"
+  "storyTheme": "Pirates",
+  "primary": "#e8dcc0",
+  "primaryForeground": "#111111",
+  "accent": "#8b1e1e",
+  "background": "#0e0e0e",
+  "foreground": "#f2ecdf",
+  "fontPreset": "serif"
 }

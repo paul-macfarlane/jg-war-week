@@ -14,7 +14,12 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Edition**                   | The War Week's number (XI = 11). Used in URLs (`/xi`).                                                                            |
 | **Story Theme**               | The year's narrative (The Matrix, Survivor).                                                                                      |
 | **Day Theme**                 | A single day's theme ("Tournament Day").                                                                                          |
-| **Appearance Theme**          | Colors, logo, banner and font preset for a War Week.                                                                              |
+| **Appearance Theme**          | Colors, logo, banner and font preset for a War Week, in both color schemes: the Organizer's five colors plus whatever the other scheme derives or overrides. |
+| **Display**                   | A viewer's own choice of Light, Dark or System (the default), stored per device (`ww:display`) and never synced to their account. Not a Participant's display name — see **Participant**. |
+| **Color scheme**              | `light` or `dark`, the CSS term for which of a War Week's two palettes a page renders.                                            |
+| **Base palette**              | An Appearance Theme's five Organizer-set colors, for whichever scheme its background reads as.                                   |
+| **Derived palette**           | The other color scheme's five colors, computed from the base palette (`derivePalette`) unless overridden.                        |
+| **Override**                  | An Organizer's per-color replacement of one derived-palette color in Setup.                                                       |
 | **Mode**                      | `teams` or `free-for-all`. Decides which leaderboard is the main one.                                                             |
 | **Team**                      | A competing group. Displayed using the War Week's **Team Label**.                                                                 |
 | **Team Label**                | What teams are called this year (House / Tribe / Team).                                                                           |
@@ -38,15 +43,22 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Announcement**              | A post by an Organizer or Host (rich text plus video links).                                                                      |
 | **FAQ Item**                  | A question and answer pair for a War Week.                                                                                        |
 | **Archive**                   | The past War Weeks shown at `/history`.                                                                                           |
-| **Format**                    | How a Competition is run: `points` (Points Entries only), `single-elimination` or `heats` (a Bracket).                            |
+| **Format**                    | How a Competition is run: `points` (Points Entries only), `games` (decided by Games, once or recurring; not a Bracket), or `single-elimination` or `heats` (a Bracket, for tournaments).                            |
 | **Bracket**                   | The Rounds and Heats of a non-`points` Competition.                                                                               |
 | **Round**                     | One step of a Bracket, holding Heats that can be played at the same time. Round 1 is the first.                                   |
 | **Heat**                      | One game between Entrants in a Bracket. Covers 1v1 and multi-entrant games. May have a time and place: a Day and a start time (ET) together, and a location. |
-| **Entrant**                   | A Team, Participant or Squad entered in a Bracket.                                                                                |
-| **Squad**                     | A named group of Participants of one Team, entered as one Entrant in a team-scoring Bracket. Belongs to one Competition; a Participant is in at most one Squad per Competition. |
+| **Entrant**                   | A Team, Participant or Squad entered in a Bracket or a fixed-list `games` Competition.                                           |
+| **Squad**                     | A named group of Participants of one Team, entered as one Entrant in a team-scoring Bracket — "a pair or group from one Team, playing as one entrant". Belongs to one Competition; a Participant is in at most one Squad per Competition. |
 | **Self-report**               | A Participant in a Heat entering its Heat Result themselves, when the Competition allows it. It counts at once, like the Host's; the Host or an Organizer can overwrite it. |
 | **Seed Position**             | An Entrant's starting rank in a Bracket. Say "seed position" or "seeding", never bare "seed" (that means seed files).             |
 | **Heat Result**               | The finishing order of a Heat's Entrants, with an optional score for each.                                                        |
+| **Game**                      | One recorded contest in a `games` Competition, logged by a player in it or by the Host: a head-to-head result, a score, or a finishing order. A Game is never part of a Bracket; that is a Heat. |
+| **Game Type**                 | How a `games` Competition's Games are decided, one per Competition: `head-to-head` (a winner, or a draw when allowed), `best-score` (each Game records a score; higher or lower is better, counted as best or total) or `ranked` (a finishing order). |
+| **Finish Points**             | A `ranked` `games` Competition's points per finishing position within one Game, set by the Host. Summed across Games for its leaderboard. Not Placement Points, which go to the Standings. |
+| **Log a Game**                | A Participant's write, recording one Game they played in a `games` Competition, in seconds, from their phone.                    |
+| **Close** / **Reopen**        | A `games` Competition's Finalize / Un-finalize: Close turns its leaderboard's places into Placement Points Entries; Reopen withdraws them. |
+| **Entrants open** / **fixed Entrant list** | A `games` Competition's Entrants are either open (anyone eligible may log a Game) or a fixed list the Host sets, like a Bracket's. |
+| **Enroll** / **Withdraw**     | A Participant's writes entering or leaving a fixed-list Competition themselves, when its "Participants can enroll" switch is on. |
 
 **Reveal** is retired: Standings are never hidden any more, and the
 countdown it played is now the **Finale**.
@@ -126,6 +138,28 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   linking), else the part of the email before the `@`. Only the admin pages
   show the author's email.
 
+## Light and dark Display rules
+
+- A viewer picks a **Display** — Light, Dark or System — from the control in
+  the header (the phone More Sheet, the desktop TopNav, and the AdminShell
+  header). **System** is the default and follows the OS's
+  `prefers-color-scheme`. The choice is stored per device, in
+  `localStorage["ww:display"]`, never on the account and never synced across
+  devices.
+- An Appearance Theme's five Organizer-set colors are the **base palette**,
+  for whichever color scheme its background reads as. The **derived
+  palette**, for the other scheme, is computed from it: background and
+  foreground swap, and the primary and accent colors keep their hue but move
+  toward the new text color only as far as WCAG AA (4.5:1) needs. An
+  Organizer may **override** any of the derived palette's five colors in
+  Setup; a background change across light and dark clears every override
+  that hasn't itself been touched.
+- Every themed surface follows the viewer's Display: the edition pages, the
+  Finale, the Archive, `/about`, `/admin`, sign-in, install, privacy and
+  terms. The installed app's chrome color does not follow it (it stays
+  fixed). A Participant's **Avatar** fill is always the base palette's
+  primary color, whichever scheme is showing.
+
 ## Slack rules
 
 - When a Slack webhook is configured, creating an Announcement can also post
@@ -154,9 +188,15 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
     where they host, and edit or delete their own. Hosting is per
     Competition, so a Host of one War Week's Competition has no say in
     another War Week's.
-  - Everyone else signed in is a **Participant** for access purposes and
-    has one write: reporting the result of a Heat they're in when
-    self-report is on (ADR 0005).
+  - Everyone else signed in is a **Participant** for access purposes. They
+    have four writes, each found by account linking (never the "Which one
+    is you?" pick), checked in `can` and again in the mutation: reporting
+    the result of a Heat they're in when self-report is on (ADR 0005);
+    logging a Game they're a player in (or on a Team that is), and editing
+    or deleting a Game they logged, in a `games` Competition until it
+    closes (ADR 0006); and enrolling or withdrawing — themselves, their
+    Team, or a Squad they join or leave — in a Competition whose
+    "Participants can enroll" switch is on (ADR 0006).
 - `can(actor, action, target)` in `src/lib/access.ts` is the one access
   rule: it returns why the actor can't take the action, or null. It's pure;
   the caller loads the actor and the target. A Points Entry or Schedule Item
@@ -245,9 +285,11 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 - Status changes only through the lifecycle actions in `/admin/setup`, each
   behind a confirm, never through the settings form:
   - **Start**: `upcoming → live`
-  - **End**: `live → complete`, recording the **Winner** (prefilled from
-    first place in the main Standings; a tie reads "Red & Blue") and
-    highlights. Both show in the Archive and stay editable in the settings.
+  - **End**: `live → complete`, recording the **Winner**: computed
+    read-only from first place in the main Standings at End (a tie reads
+    "Tie: Red & Blue"; blank when nobody has points), correctable
+    afterwards in Settings. Both the Winner and highlights show in the
+    Archive.
   - **Reopen**: `complete → live`, for corrections in the live view.
   There's no way back to `upcoming`.
 - Every lifecycle action is Organizer-only: `can` refuses anyone else
@@ -366,6 +408,83 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   naming it, because its placings aren't in the Standings until it's
   finalized.
 
+## Games rules
+
+- A `games` Competition is decided by Games its players log, never a
+  Bracket. Its Format is **fixed at create**: choosing `games` on the
+  create form asks for a Game Type (`head-to-head`, `best-score` or
+  `ranked`) and neither ever changes afterwards — add a new Competition to
+  run it another way.
+- The leaderboard ranks per Game Type, ties sharing the higher rank
+  (standard competition ranking): head-to-head by most Games won (a draw,
+  when allowed, counts for neither side); best-score by each player's best
+  or total score, in the configured direction; ranked by Finish Points
+  summed across Games. An Entrant with no Game is unranked, listed last
+  with "—", and gets no Placement Points at Close.
+- **Best of** (head-to-head only, off or 3/5/7) needs a fixed list of
+  exactly two Entrants; it's decided the instant one side has a majority
+  of the wins, which stops a Participant's logging (a Host or Organizer
+  can still correct a Game). **Draws** are allowed or not, set per
+  Competition; when off, every head-to-head Game needs a winner.
+- An optional **logging close time**: after it, a Participant can no
+  longer log, edit or delete a Game. A **Host or Organizer** may log, edit
+  or delete any Game at any time the Competition is open, even after the
+  logging close time and after a Best of is decided — they're the
+  correction path, as with Bracket results.
+- **Who may log, edit or delete a Game.** To log: a Participant linked by
+  email (never the "Which one is you?" pick) who is a player in the posted
+  Game, or on a Team that is, while logging is open for them; or a Host or
+  Organizer, always. To edit or delete: the Participant who logged it,
+  while logging is still open for them and, for an edit, still a player of
+  the edited set; or a Host or Organizer. Another player in the Game can't
+  touch it — they ask the Host.
+- **Close** turns the leaderboard's places into Placement Points Entries
+  with the Bracket's tie rule (tied places share that place's points),
+  marked generated and un-editable in the ledger; **Reopen** deletes them
+  again (hand-entered Points Entries on the same Competition are never
+  touched). A Best of prompts Close once it's decided.
+- A **closed** `games` Competition refuses every Game write, from
+  everyone, Organizers included: Reopen it, make the correction, Close it
+  again.
+- A War Week ending is not a rule here either: a `games` Competition left
+  open when its War Week ends still takes Games until the Host closes it,
+  and its page keeps showing the leaderboard and log in the Archive.
+- Games aren't seeded (like Squads and reporters); every Game comes from
+  logging, in the app or through the smoke and e2e flows.
+- A new `games` Competition starts **open to everyone**: any linked
+  Participant (or their Team, in team scoring) may log without enrolling,
+  until the Host switches it to a fixed list.
+- A Games setting that would change the meaning of Games already logged is
+  refused: switching to a fixed list while a player who's logged a Game
+  isn't on it, turning Draws off while a logged Game is a draw, or turning
+  Best of on when the logged Games don't fit it (more than two Entrants, or
+  a decision already past what the chosen length allows).
+- A Competition with any Game logged can't be deleted; delete its Games
+  first, or leave the Competition in place.
+
+## Enrollment rules
+
+- **"Participants can enroll"** is a per-Competition switch, off by
+  default, offered only on a Bracket or a fixed-list `games` Competition —
+  never on a `points` Competition, an open-to-everyone `games`
+  Competition, or a Best of (the Host sets those two Entrants by hand).
+- Enrollment closes at the first of five conditions: the Bracket is built
+  (has Heats); an optional Entrant limit is reached; an optional close
+  time passes; the Competition is closed by the Host; or, for a `games`
+  Competition, its first Game is logged.
+- **Team scoring.** Any Participant on a Team can enter or withdraw their
+  whole Team (a Leader is a label, never a permission). In a Squads
+  Bracket (one with at least one Host-created Squad), Participants join or
+  leave a Squad the Host created instead of entering a Team: their own
+  Team's Squad only, at most 16 Participants, one Squad per Competition
+  per Participant; the last Participant in a Squad can't leave it ("Ask
+  the Host to remove the Squad."). Once any Squad exists, Team enrollment
+  is refused, so an enrolled Team can never block the Host's Squads.
+- **Individual scoring.** A Participant enters or withdraws themselves.
+- A Participant may withdraw (or leave a Squad) any time before enrollment
+  closes. After it closes, only the Host or an Organizer removes an
+  Entrant.
+
 ## Finale rules
 
 - The Finale is the closing-ceremony screen at `/<edition>/finale`, for the
@@ -424,9 +543,11 @@ same rows with the same values (only `updated_at` moves).
 - **Organizers** in a seed's `organizers` list are added to the global
   Organizer list when missing, ignoring case. A load only ever inserts
   them: it never removes an Organizer, even with `--reset`.
-- **Squads** and reporters aren't in seeds, and neither is a Competition's
-  self-report setting. A reload that removes or moves a Participant leaves
-  their Squads to the Organizer.
+- **Squads**, reporters and Games aren't in seeds, and neither is a
+  Competition's self-report setting, a `games` Competition's Entrants or its
+  logging close time, or the enrollment switch, Entrant limit and close
+  time. A reload that removes or moves a Participant leaves their Squads to
+  the Organizer.
 - **Hosts** aren't in seeds. A plain reload never touches the Hosts of a
   Competition the seed keeps; `--reset` deletes the War Week's
   Competitions, and their Hosts go with them.
@@ -441,8 +562,11 @@ same rows with the same values (only `updated_at` moves).
     create in the app have no key and are never touched by a load. Adding a
     new keyed record to a seed and reloading adds just that record.
   - A Competition's `format` is applied only on insert, like `bracketConfig`
-    (its Heats settings): a reload never turns an Organizer's Bracket back
-    into `points`, changes its Format, or undoes its Heats settings.
+    (its Heats settings), `gameType`, `gameConfig` and `entrantsOpen`: a
+    reload never turns an Organizer's Bracket back into `points`, changes
+    its Format, undoes its Heats settings, or touches a `games`
+    Competition's Game Type, Games settings, or open-to-everyone switch
+    once it exists.
 
 **Setup in the UI.** Organizers can also edit setup in `/admin/setup`
 (War Week settings, the Appearance Theme, Days, Teams, the roster,

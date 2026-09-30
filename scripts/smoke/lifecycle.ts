@@ -12,8 +12,9 @@ import {
 } from "./harness";
 
 /**
- * Creates XII from XI, ends XI with a Winner and starts XII through the
- * lifecycle actions, checks the site follows, that an Organizer can still
+ * Creates XII from XI, ends XI (the Winner is computed from its Standings,
+ * never sent by the caller) and starts XII through the lifecycle actions,
+ * checks the site follows, that an Organizer can still
  * pick and correct XI once it's in the Archive, and that a Participant
  * can't reopen XI or create the next War Week. Then puts XI back (`live`,
  * no Winner) and deletes XII by SQL so the smoke can run again.
@@ -77,7 +78,7 @@ export async function assertWarWeekLifecycle(sessions: {
 
     await expectRefused("non-Organizer ends XI", "endWarWeek", [
       xiId,
-      { winner: "Nope", highlights: "" },
+      { highlights: "" },
     ]);
     await expectRefused(
       "non-Organizer reopens X (forged id)",
@@ -106,15 +107,15 @@ export async function assertWarWeekLifecycle(sessions: {
     if (early.ok || early.error !== "End XI first.") {
       problems.push(`start XII while XI is live: ${JSON.stringify(early)}`);
     }
-    await expectOk("end XI", "endWarWeek", [
-      xiId,
-      { winner: "Smoke Winner", highlights: "" },
-    ]);
+    await expectOk("end XI", "endWarWeek", [xiId, { highlights: "" }]);
+    const [xiEnded] = await runQuery<{ winner: string | null }>(
+      "select winner from war_week where edition = 'xi'",
+    );
     await expectRefused("non-Organizer starts XII", "startWarWeek", [xiiId]);
     await expectOk("start XII", "startWarWeek", [xiiId]);
     await expectRefused("non-Organizer ends XII", "endWarWeek", [
       xiiId,
-      { winner: "Nope", highlights: "" },
+      { highlights: "" },
     ]);
 
     const root = await signedInFetch(`${BASE_URL}/`, { redirect: "manual" });
@@ -122,8 +123,13 @@ export async function assertWarWeekLifecycle(sessions: {
       problems.push(`/ goes to ${root.headers.get("location")}`);
     }
     const history = await (await signedInFetch(`${BASE_URL}/history`)).text();
-    if (!history.includes('href="/xi"') || !history.includes("Smoke Winner")) {
-      problems.push("/history lacks XI with Smoke Winner");
+    if (!history.includes('href="/xi"')) {
+      problems.push("/history lacks XI");
+    }
+    if (xiEnded.winner && !history.includes(xiEnded.winner)) {
+      problems.push(
+        `/history lacks the computed Winner ${JSON.stringify(xiEnded.winner)}`,
+      );
     }
     const archiveAdmin = await (
       await fetch(`${BASE_URL}/admin/setup`, {
@@ -161,8 +167,10 @@ export async function assertWarWeekLifecycle(sessions: {
       `select story_theme, start_date::text, end_date::text, mode,
          team_label, leader_title, slack_channel_url, wiki_url,
          primary_color, primary_foreground_color,
-         accent_color, background_color, foreground_color, logo_url,
-         banner_url, font_preset, winner
+         accent_color, background_color, foreground_color,
+         override_primary_color, override_primary_foreground_color,
+         override_accent_color, override_background_color,
+         override_foreground_color, logo_url, banner_url, font_preset, winner
        from war_week where edition = 'xi'`,
     );
     const saved = await callAction(
@@ -183,6 +191,13 @@ export async function assertWarWeekLifecycle(sessions: {
           accentColor: xi.accent_color,
           backgroundColor: xi.background_color,
           foregroundColor: xi.foreground_color,
+          // Sent as read, so this save never clears one.
+          overridePrimaryColor: xi.override_primary_color ?? "",
+          overridePrimaryForegroundColor:
+            xi.override_primary_foreground_color ?? "",
+          overrideAccentColor: xi.override_accent_color ?? "",
+          overrideBackgroundColor: xi.override_background_color ?? "",
+          overrideForegroundColor: xi.override_foreground_color ?? "",
           logoUrl: xi.logo_url ?? "",
           bannerUrl: xi.banner_url ?? "",
           fontPreset: xi.font_preset,

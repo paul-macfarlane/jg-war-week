@@ -26,6 +26,12 @@ export const COMPETITION_FORMATS = [
   "points",
   "single-elimination",
   "heats",
+  "games",
 ] as const;
+
+/** How a `games` Competition's Games are decided (CONTEXT.md, Game Type). */
+export const GAME_TYPES = ["head-to-head", "best-score", "ranked"] as const;
+
+export type GameType = (typeof GAME_TYPES)[number];
 
 export const HEAT_STATUSES = ["pending", "ready", "played", "forfeit"] as const;

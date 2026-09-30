@@ -1,0 +1,1502 @@
+{
+  "edition": "xi",
+  "editionNumber": 11,
+  "year": 2026,
+  "startDate": "2026-02-22",
+  "endDate": "2026-02-27",
+  "storyTheme": "The Matrix",
+  "status": "live",
+  "mode": "teams",
+  "teamLabel": "Team",
+  "leaderTitle": "Captain",
+  "slackChannelUrl": "https://jahnelgroup.slack.com/archives/war-week-xi",
+  "primary": "#00ff41",
+  "primaryForeground": "#000000",
+  "accent": "#008f11",
+  "background": "#000000",
+  "foreground": "#d1ffd6",
+  "overridePrimary": "#0a7a1f",
+  "fontPreset": "mono",
+  "logoUrl": "/themes/xi/logo.svg",
+  "bannerUrl": "/themes/xi/banner.svg",
+  "organizers": ["pmacfarlane@jahnelgroup.com"],
+  "highlights": [],
+  "days": [
+    {
+      "date": "2026-02-22",
+      "dayTheme": "The Matrix Has You",
+      "scheduleItems": [
+        {
+          "startTime": "00:01",
+          "title": "Black Midnight",
+          "category": "competition",
+          "competition": "Black Midnight",
+          "endTime": "12:00",
+          "description": {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Start at midnight and go 12 hours with no nonsense. Get ahead of the week."
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "startTime": "10:00",
+          "title": "Competition qualifiers",
+          "category": "competition",
+          "description": {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Various competition organizers host qualifiers throughout Sunday."
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "startTime": "11:00",
+          "title": "I Know Kung Fu Learning Symposium Part I",
+          "category": "education",
+          "location": "JGHQ",
+          "description": {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Quick 10-12 minute learning sessions on a variety of topics hosted by various JGers."
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "startTime": "13:00",
+          "title": "I Know Kung Fu Learning Symposium Part II",
+          "category": "education",
+          "location": "JGHQ"
+        },
+        {
+          "startTime": "15:00",
+          "title": "9th Annual Settlers of Catan Tourney",
+          "category": "competition",
+          "competition": "Settlers of Catan",
+          "host": "Tony Mercadante",
+          "location": "JGHQ"
+        },
+        {
+          "startTime": "19:00",
+          "title": "Beer and Cards, MTG with Tom",
+          "category": "social",
+          "location": "JGHQ"
+        },
+        {
+          "startTime": "08:30",
+          "title": "Breakfast: Bagels",
+          "category": "meal",
+          "location": "JGHQ"
+        },
+        {
+          "startTime": "12:00",
+          "title": "Lunch: Jersey Mike's Subs",
+          "category": "meal"
+        },
+        {
+          "startTime": "18:00",
+          "title": "Dinner: Chipotle",
+          "category": "meal"
+        }
+      ]
+    },
+    {
+      "date": "2026-02-23",
+      "dayTheme": "Tournament Day",
+      "scheduleItems": [
+        {
+          "startTime": "07:00",
+          "title": "BeastMode Workout",
+          "category": "competition",
+          "competition": "Beast Mode Workout",
+          "host": "Jesse Lucier",
+          "location": "JGHQ"
+        },
+        {
+          "startTime": "11:00",
+          "title": "Headshot Photoshoot",
+          "category": "social",
+          "host": "Jet Breuer",
+          "location": "JGHQ"
+        },
+        {
+          "startTime": "12:00",
+          "title": "Electric City Matrix - Day 1",
+          "category": "competition",
+          "competition": "Electric City Matrix"
+        },
+        {
+          "startTime": "14:00",
+          "title": "Guest - KCS",
+          "category": "work",
+          "location": "Main Conference Room"
+        },
+        {
+          "startTime": "18:00",
+          "title": "Tournament Night",
+          "category": "competition",
+          "endTime": "22:00",
+          "location": "JGHQ",
+          "description": {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Major team points on the line with Pool, Speed Chess, Bouncy Ping Pong, Smash Bros. and Bey Blades."
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "startTime": "08:30",
+          "title": "Breakfast: Tasty Wheat (Overnight Oats)",
+          "category": "meal",
+          "location": "JGHQ"
+        },
+        {
+          "startTime": "12:00",
+          "title": "Lunch: Connections / Scavenger Lunch Out of Office",
+          "category": "meal"
+        },
+        {
+          "startTime": "18:00",
+          "title": "Dinner: Ramen Bar",
+          "category": "meal"
+        }
+      ]
+    },
+    {
+      "date": "2026-02-24",
+      "dayTheme": "Red vs. Blue",
+      "scheduleItems": [
+        {
+          "startTime": "07:00",
+          "title": "Stairs Workout",
+          "category": "competition",
+          "competition": "Tuesday Stairs"
+        },
+        {
+          "startTime": "11:00",
+          "title": "Headshot Photoshoot",
+          "category": "social",
+          "host": "Jet Breuer",
+          "location": "JGHQ"
+        },
+        {
+          "startTime": "12:00",
+          "title": "Electric City Matrix - Day 2",
+          "category": "competition",
+          "competition": "Electric City Matrix"
+        },
+        {
+          "startTime": "18:00",
+          "title": "A Glitch in the Matrix Team Challenge",
+          "category": "competition",
+          "location": "JGHQ",
+          "description": {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "The head-to-head Team Night Events that decide this year's contest."
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "startTime": "08:30",
+          "title": "Breakfast: Continental / Yogurt Bar",
+          "category": "meal",
+          "location": "JGHQ"
+        },
+        {
+          "startTime": "12:00",
+          "title": "Lunch: Connections / Scavenger Lunch Out of Office",
+          "category": "meal"
+        },
+        {
+          "startTime": "18:00",
+          "title": "Dinner: Pizza",
+          "category": "meal"
+        }
+      ]
+    },
+    {
+      "date": "2026-02-25",
+      "dayTheme": "Wellness Wednesday with Dani Milliken",
+      "scheduleItems": [
+        {
+          "startTime": "07:30",
+          "title": "Hot Yoga",
+          "category": "social",
+          "location": "Studio 4"
+        },
+        {
+          "startTime": "09:00",
+          "title": "Winning the Day Challenge",
+          "category": "competition",
+          "competition": "Winning the Day Challenge"
+        },
+        {
+          "startTime": "10:00",
+          "title": "Massage Sessions",
+          "category": "social",
+          "endTime": "14:00",
+          "location": "JGHQ"
+        },
+        {
+          "startTime": "11:00",
+          "title": "Headshot Photoshoot",
+          "category": "social",
+          "host": "Jet Breuer",
+          "location": "JGHQ"
+        },
+        {
+          "startTime": "14:00",
+          "title": "Build Your Wellness Bag",
+          "category": "social",
+          "host": "Dani Milliken",
+          "location": "JGHQ"
+        },
+        {
+          "startTime": "17:00",
+          "title": "Athena Event",
+          "category": "social",
+          "host": "Emily"
+        },
+        {
+          "startTime": "17:00",
+          "title": "Red vs. Blue Ryder Cup",
+          "category": "social",
+          "location": "Mohawk Country Club"
+        },
+        {
+          "startTime": "08:30",
+          "title": "Breakfast: Bowled",
+          "category": "meal",
+          "location": "JGHQ"
+        },
+        {
+          "startTime": "12:00",
+          "title": "Lunch: Simone's Kitchen",
+          "category": "meal"
+        },
+        {
+          "startTime": "18:00",
+          "title": "Dinner: Ladies - 9 Miles East @ Athena Event",
+          "category": "meal"
+        },
+        {
+          "startTime": "18:00",
+          "title": "Dinner: Guys - Ryder Cup Golf Buffet",
+          "category": "meal"
+        }
+      ]
+    },
+    {
+      "date": "2026-02-26",
+      "dayTheme": "Rise of the Machines AI Day",
+      "scheduleItems": [
+        {
+          "startTime": "07:30",
+          "title": "Hardwired Crossfit Workout",
+          "category": "social"
+        },
+        {
+          "startTime": "11:00",
+          "title": "Headshot Photoshoot",
+          "category": "social",
+          "host": "Jet Breuer",
+          "location": "JGHQ"
+        },
+        {
+          "startTime": "12:00",
+          "title": "Service Delivery Community of Practice",
+          "category": "education"
+        },
+        {
+          "startTime": "18:00",
+          "title": "AI Round Table",
+          "category": "education",
+          "location": "JGHQ"
+        },
+        {
+          "startTime": "08:30",
+          "title": "Breakfast: Continental / Egg Bake / Random",
+          "category": "meal",
+          "location": "JGHQ"
+        },
+        {
+          "startTime": "12:00",
+          "title": "Lunch: Salad Bar / Buffet",
+          "category": "meal"
+        },
+        {
+          "startTime": "18:00",
+          "title": "Dinner: JG Breakfast Club - Dinner for Breakfast",
+          "category": "meal"
+        }
+      ]
+    },
+    {
+      "date": "2026-02-27",
+      "dayTheme": "Closing Ceremonies (Guests Welcome)",
+      "scheduleItems": [
+        {
+          "startTime": "15:00",
+          "title": "Closing Ceremonies",
+          "category": "social",
+          "location": "JGHQ"
+        },
+        {
+          "startTime": "17:00",
+          "title": "In Office Paintball Shooting Gallery",
+          "category": "social",
+          "location": "JGHQ"
+        },
+        {
+          "startTime": "08:30",
+          "title": "Breakfast: Continental / Clear the Decks",
+          "category": "meal",
+          "location": "JGHQ"
+        },
+        {
+          "startTime": "08:30",
+          "title": "Breakfast: Coffee Bar",
+          "category": "meal",
+          "location": "JGHQ"
+        },
+        {
+          "startTime": "12:00",
+          "title": "Lunch: Grill-fest",
+          "category": "meal"
+        }
+      ]
+    }
+  ],
+  "teams": [
+    {
+      "name": "Red",
+      "color": "#ff3b3b"
+    },
+    {
+      "name": "Blue",
+      "color": "#3b82f6"
+    }
+  ],
+  "participants": [
+    {
+      "displayName": "Ashley Schuliger",
+      "team": "Red",
+      "isLeader": true
+    },
+    {
+      "displayName": "MAP",
+      "team": "Red",
+      "isLeader": true
+    },
+    {
+      "displayName": "Sam Schantz",
+      "team": "Red",
+      "isLeader": true
+    },
+    {
+      "displayName": "Ryan Shendler",
+      "team": "Red",
+      "isLeader": true
+    },
+    {
+      "displayName": "Adam Wilson-Hwang",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Albert Hernandez",
+      "companyTag": "LTI",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Alex Kelly",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Alex Nikolis",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Andrew Bushey",
+      "companyTag": "LTI",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Anthony Conway",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Austin Gage",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Awad Khawaja",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Ben Sadick",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Brian France",
+      "companyTag": "LTI",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Bryan Sambrook",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Chara Meidani",
+      "companyTag": "IL",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Charles Clarke",
+      "companyTag": "LTI",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Chelsea Merrill",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Colin Walsh",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Dan Byrnes",
+      "companyTag": "LTI",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Dave Stevens",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Dillon Power",
+      "companyTag": "LTI",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Emily Smith",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Frank Nardone",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Fred the New Guy",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Jakub Synowiec",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "James Murphy",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "James Novak",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Jessie Zweigenthal",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Joe the Alien",
+      "companyTag": "IN",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Joshua Burt",
+      "companyTag": "LTI",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Joshua Jameson",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Laura Jahnel",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Linda Martin",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Luke Prescott",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Matt Bessler",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Millie Elliott",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Paige Snyder",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Paul Carnivale",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Paul Macfarlane",
+      "team": "Red",
+      "email": "pmacfarlane@jahnelgroup.com",
+      "isLeader": false
+    },
+    {
+      "displayName": "Rebecca Congi",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Sam Colebourn",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Scott Shipley",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Sean Warner",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Steven Vickers",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Steven Zgaljic",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Sydney Murauskas",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Thomas O'Neill",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Tommy Kneeland",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Tony Mercadante",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Zach Hartman",
+      "team": "Red",
+      "isLeader": false
+    },
+    {
+      "displayName": "Graham Macbeth",
+      "team": "Blue",
+      "isLeader": true
+    },
+    {
+      "displayName": "Brandon Badgett",
+      "team": "Blue",
+      "isLeader": true
+    },
+    {
+      "displayName": "Alec Haring",
+      "companyTag": "IL",
+      "team": "Blue",
+      "isLeader": true
+    },
+    {
+      "displayName": "Victoria Campbell",
+      "companyTag": "IL",
+      "team": "Blue",
+      "isLeader": true
+    },
+    {
+      "displayName": "Abby Rivera",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Aleksandr Molchagin",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Alvaro Gil",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Anthony Crisafulli",
+      "companyTag": "LTI",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Bich Dudla",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Bob Strubel",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Brandon Thivierge",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Bucky the Horse",
+      "companyTag": "IN",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Cameron Lynch",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Casey Snow",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Chris Pence",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Christopher Nyberg",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Dan Bedian",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Dani Milliken",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Darrin Jahnel",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Debbie Schermerhorn",
+      "companyTag": "LTI",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Dom Favata",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Eva Trimboli",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Gabe Colon",
+      "companyTag": "LTI",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Glenn Easton",
+      "companyTag": "LTI",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Greg Westover",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Harsha Bindana",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Ian Ballard",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Jacob Hand",
+      "companyTag": "LTI",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "James Heffernan",
+      "companyTag": "IL",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Janelle Olsen",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Jesse Lucier",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "John Healey",
+      "companyTag": "LTI",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "John Higgins",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Jon Keller",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Jory Hutchins",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Joshua Cantor-Stone",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Justin Gillespie",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Kari Skinner",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Marc Matsen",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Matt Anderson",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Michael Shirk",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Michael Young",
+      "companyTag": "LTI",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Mike Hamilton",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Morgan Canion",
+      "companyTag": "IL",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Nick Brown",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Nick Sprague",
+      "companyTag": "IL",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Peter Hodges",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Ryan Greenman",
+      "companyTag": "LTI",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Sean Mullen",
+      "team": "Blue",
+      "isLeader": false
+    },
+    {
+      "displayName": "Steve Nguyen",
+      "team": "Blue",
+      "isLeader": false
+    }
+  ],
+  "competitions": [
+    {
+      "name": "HQ Attendance",
+      "scoring": "team",
+      "maxPoints": 3,
+      "group": "Pre-War Week and General",
+      "description": "Attendance at JGHQ over the 14 business days before War Week, tracked with the stairs app."
+    },
+    {
+      "name": "AI Survey Completion",
+      "scoring": "team",
+      "maxPoints": 1,
+      "group": "Pre-War Week and General",
+      "description": "The team with the highest completion rate of the AI questionnaire by Tuesday morning."
+    },
+    {
+      "name": "Subjective Points",
+      "scoring": "team",
+      "maxPoints": 6,
+      "group": "Pre-War Week and General",
+      "description": "One-point bonuses for each of six secret categories. Not head to head: done or not done."
+    },
+    {
+      "name": "Black Midnight",
+      "scoring": "team",
+      "maxPoints": 3,
+      "description": "The team with the most people who go from 12:01 AM Sunday to noon with no nonsense."
+    },
+    {
+      "name": "Settlers of Catan",
+      "scoring": "individual",
+      "countsTowardTeam": true,
+      "maxPoints": 5,
+      "placementPoints": [5, 3, 1],
+      "description": "The 9th annual Catan tournament hosted by Tony Mercadante."
+    },
+    {
+      "name": "Beast Mode Workout",
+      "scoring": "team",
+      "maxPoints": null,
+      "description": "The team with the most people who complete Lucier's workout, at JGHQ or virtually."
+    },
+    {
+      "name": "Speed Chess",
+      "scoring": "individual",
+      "countsTowardTeam": true,
+      "maxPoints": 1.5,
+      "description": "Run by Ben Sadick in a new format. Finals Monday night."
+    },
+    {
+      "name": "Beyblades",
+      "scoring": "individual",
+      "countsTowardTeam": true,
+      "maxPoints": 5,
+      "placementPoints": [5, 3, 1],
+      "description": "Finals Monday night in Team Room 4's new Beyblade Terrordome."
+    },
+    {
+      "name": "Pool",
+      "scoring": "individual",
+      "countsTowardTeam": true,
+      "maxPoints": 3,
+      "description": "Organized by Dom Favata. Preliminaries before War Week, finals Monday night."
+    },
+    {
+      "name": "Super Smash Bros",
+      "scoring": "individual",
+      "countsTowardTeam": true,
+      "maxPoints": 3,
+      "description": "Paul Macfarlane runs back this classic JG gaming competition."
+    },
+    {
+      "name": "Bouncy Pong",
+      "scoring": "individual",
+      "countsTowardTeam": true,
+      "maxPoints": 3,
+      "placementPoints": [3, 2, 1],
+      "format": "games",
+      "gameType": "head-to-head",
+      "gameConfig": { "drawsAllowed": false, "bestOf": null },
+      "entrantsOpen": true,
+      "description": "The inaugural Bouncy Ping Pong, run by Casey Snow."
+    },
+    {
+      "name": "Tuesday Stairs",
+      "scoring": "team",
+      "maxPoints": 3,
+      "format": "games",
+      "gameType": "best-score",
+      "gameConfig": { "count": "total", "betterIs": "higher", "unit": "trips" },
+      "entrantsOpen": true,
+      "description": "Stairway to Heaven: of course stairs on Tuesday counts."
+    },
+    {
+      "name": "This is Zion",
+      "scoring": "team",
+      "maxPoints": 3,
+      "group": "Team Night Events"
+    },
+    {
+      "name": "Hard Line / White Rabbit",
+      "scoring": "team",
+      "maxPoints": 3,
+      "group": "Team Night Events"
+    },
+    {
+      "name": "Cypher",
+      "scoring": "team",
+      "maxPoints": 3,
+      "group": "Team Night Events"
+    },
+    {
+      "name": "Red Pill / Blue Pill",
+      "scoring": "team",
+      "maxPoints": 3,
+      "group": "Team Night Events"
+    },
+    {
+      "name": "There is No Spoon",
+      "scoring": "team",
+      "maxPoints": 3,
+      "group": "Team Night Events"
+    },
+    {
+      "name": "The Keymaker",
+      "scoring": "team",
+      "maxPoints": 3,
+      "group": "Team Night Events"
+    },
+    {
+      "name": "Deja Vu",
+      "scoring": "team",
+      "maxPoints": 3,
+      "group": "Team Night Events"
+    },
+    {
+      "name": "Guns, Lots of Guns",
+      "scoring": "team",
+      "maxPoints": 3,
+      "group": "Team Night Events"
+    },
+    {
+      "name": "Electric City Matrix",
+      "scoring": "team",
+      "maxPoints": 5,
+      "format": "games",
+      "gameType": "ranked",
+      "entrantsOpen": true,
+      "group": "Team Night Events"
+    },
+    {
+      "name": "Winning the Day Challenge",
+      "scoring": "individual",
+      "countsTowardTeam": false,
+      "description": "Complete 10 wellness tasks to have the best day possible. Recognition only; does not count toward team totals."
+    }
+  ],
+  "pointsEntries": [
+    {
+      "key": "hq-attendance-red",
+      "competition": "HQ Attendance",
+      "team": "Red",
+      "points": 2,
+      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
+      "enteredAt": "2026-02-22T09:00:00-05:00"
+    },
+    {
+      "key": "hq-attendance-blue",
+      "competition": "HQ Attendance",
+      "team": "Blue",
+      "points": 1,
+      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
+      "enteredAt": "2026-02-22T09:01:00-05:00"
+    },
+    {
+      "key": "black-midnight-blue",
+      "competition": "Black Midnight",
+      "team": "Blue",
+      "points": 3,
+      "note": "Most finishers",
+      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
+      "enteredAt": "2026-02-22T12:30:00-05:00"
+    },
+    {
+      "key": "catan-anthony-conway",
+      "competition": "Settlers of Catan",
+      "participant": "Anthony Conway",
+      "points": 5,
+      "note": "Catan champion",
+      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
+      "enteredAt": "2026-02-22T21:00:00-05:00"
+    },
+    {
+      "key": "beast-mode-red",
+      "competition": "Beast Mode Workout",
+      "team": "Red",
+      "points": 3,
+      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
+      "enteredAt": "2026-02-23T08:30:00-05:00"
+    },
+    {
+      "key": "ai-survey-blue",
+      "competition": "AI Survey Completion",
+      "team": "Blue",
+      "points": 1,
+      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
+      "enteredAt": "2026-02-24T09:00:00-05:00"
+    },
+    {
+      "key": "speed-chess-james-novak",
+      "competition": "Speed Chess",
+      "participant": "James Novak",
+      "points": 1.5,
+      "note": "Tied for first",
+      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
+      "enteredAt": "2026-02-23T21:30:00-05:00"
+    },
+    {
+      "key": "beyblades-jory-hutchins",
+      "competition": "Beyblades",
+      "participant": "Jory Hutchins",
+      "points": 5,
+      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
+      "enteredAt": "2026-02-23T21:45:00-05:00"
+    },
+    {
+      "key": "pool-peter-hodges",
+      "competition": "Pool",
+      "participant": "Peter Hodges",
+      "points": 3,
+      "note": "Won on the last ball",
+      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
+      "enteredAt": "2026-02-23T22:00:00-05:00"
+    },
+    {
+      "key": "smash-tommy-kneeland",
+      "competition": "Super Smash Bros",
+      "participant": "Tommy Kneeland",
+      "points": 3,
+      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
+      "enteredAt": "2026-02-23T22:10:00-05:00"
+    },
+    {
+      "key": "bouncy-pong-nick-brown",
+      "competition": "Bouncy Pong",
+      "participant": "Nick Brown",
+      "points": 3,
+      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
+      "enteredAt": "2026-02-23T22:20:00-05:00"
+    },
+    {
+      "key": "tuesday-stairs-red",
+      "competition": "Tuesday Stairs",
+      "team": "Red",
+      "points": 2,
+      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
+      "enteredAt": "2026-02-24T17:00:00-05:00"
+    },
+    {
+      "key": "tuesday-stairs-blue",
+      "competition": "Tuesday Stairs",
+      "team": "Blue",
+      "points": 1,
+      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
+      "enteredAt": "2026-02-24T17:01:00-05:00"
+    },
+    {
+      "key": "this-is-zion-red",
+      "competition": "This is Zion",
+      "team": "Red",
+      "points": 3,
+      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
+      "enteredAt": "2026-02-24T19:00:00-05:00"
+    },
+    {
+      "key": "hard-line-blue",
+      "competition": "Hard Line / White Rabbit",
+      "team": "Blue",
+      "points": 3,
+      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
+      "enteredAt": "2026-02-24T19:30:00-05:00"
+    },
+    {
+      "key": "winning-the-day-dani-milliken",
+      "competition": "Winning the Day Challenge",
+      "participant": "Dani Milliken",
+      "points": 1,
+      "note": "First to finish all 10 wellness tasks",
+      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
+      "enteredAt": "2026-02-25T13:00:00-05:00"
+    }
+  ],
+  "awards": [
+    {
+      "key": "black-midnight",
+      "name": "Black Midnight",
+      "description": "Went from 12:01 AM Sunday until noon with no nonsense.",
+      "participants": [
+        "Ian Ballard",
+        "Joshua Jameson",
+        "Bich Dudla",
+        "Steven Vickers"
+      ]
+    },
+    {
+      "key": "catan-champion",
+      "name": "Catan Champion",
+      "description": "Winner of the 9th annual Settlers of Catan tournament.",
+      "participants": ["Anthony Conway"]
+    },
+    {
+      "key": "terrordome-champion",
+      "name": "Terrordome Champion",
+      "description": "Last Beyblade spinning in the Terrordome.",
+      "participants": ["Jory Hutchins"]
+    }
+  ],
+  "announcements": [
+    {
+      "key": "welcome",
+      "title": "Welcome to War Week XI",
+      "pinned": true,
+      "authorEmail": "pmacfarlane@jahnelgroup.com",
+      "publishedAt": "2026-02-22T09:00:00-05:00",
+      "body": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "heading",
+            "attrs": {
+              "level": 2
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "The Matrix has you"
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Choose your pill. Standings are "
+              },
+              {
+                "type": "text",
+                "text": "hidden",
+                "marks": [
+                  {
+                    "type": "bold"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " until closing ceremonies."
+              }
+            ]
+          }
+        ]
+      },
+      "videoUrls": ["https://www.youtube.com/watch?v=vKQi3bBA1y8"]
+    },
+    {
+      "key": "tournament-night-recap",
+      "title": "Tournament Night recap",
+      "authorEmail": "pmacfarlane@jahnelgroup.com",
+      "publishedAt": "2026-02-24T08:00:00-05:00",
+      "body": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "bulletList",
+            "content": [
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Pool finals went to the last ball."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Speed Chess ended in a tie for first."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Blue swept the Terrordome and Bouncy Pong."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "key": "wellness-wednesday",
+      "title": "Wellness Wednesday is here",
+      "authorEmail": "pmacfarlane@jahnelgroup.com",
+      "publishedAt": "2026-02-25T07:00:00-05:00",
+      "body": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Hot yoga at 7:30, massages from 10 to 2, and the Winning the Day Challenge all day. Ryder Cup tee time is 5:00 at Mohawk."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "faqItems": [
+    {
+      "question": "I have some great pics and videos. Where do I put them?",
+      "answer": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Share to #war-week-xi on Slack, and get anything really good to Jet Breuer."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "question": "How do I record War Week time in Tense?",
+      "answer": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Billable work and learning time are recorded as always. Other productive time goes to JG - Admin; nonsense (video games, Beyblades) goes to JG - Team Building."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "question": "When are the hours cutoffs this year?",
+      "answer": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "The billable hours cutoff is Thursday at midnight. There are no honor societies for overall hours this year."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "question": "What are the awards at this year's War Week?",
+      "answer": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Black Midnight, War Week MVPs (voted by each team) and Billable Hours Champs. There are no Centurion or Four Score Clubs this year."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "question": "Are we allowed to have personal guests at War Week?",
+      "answer": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Limit guests during working hours (Mon-Fri, 9 to 5). Evenings and Sunday are open, and Closing Ceremonies on Friday is the best time to bring a guest."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "question": "What about client or prospect guests?",
+      "answer": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "They're very welcome. Let Jason know so the proper arrangements can be made."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "wikiUrl": "https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/home/war-week/war-week-2026",
+  "winner": null
+}

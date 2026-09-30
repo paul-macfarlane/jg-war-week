@@ -9,26 +9,84 @@
   "slackChannelUrl": "https://jahnelgroup.slack.com",
   "logoUrl": null,
   "bannerUrl": null,
-  "wikiUrl": "https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/war-week-2018",
+  "wikiUrl": "https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/home/war-week/war-week-2018",
   "winner": null,
   "highlights": [
-    "Participants made slides for \"Your Place in War Week History\"."
+    "Participants made slides for \"Your Place in War Week History\".",
+    "The War Week finale doubled as the annual company meeting: a Saturday breakfast at The Stockade Inn, with family and friends welcome.",
+    "Presentations became optional: everyone chose a presentation, a technical or non-technical project, a Betterment of JG project, a War Week event or a push on billable work.",
+    "Joshua Cantor-Stone was crowned Lord of Catan at a 20-player Settlers of Catan night.",
+    "The first-ever JG Hidden Talent Show (and Tell), headlined by Chadd's own keyboard composition with fog machine and lasers.",
+    "International Day brought 33 dishes from 11 countries; Grandma's Perogies won best dish and Jason Jahnel won the outfit challenge.",
+    "Michael Shirk won Code Wars by finishing all four kata first, ahead of Jakub Synowiec and Jason Musits."
   ],
   "days": [],
   "teams": [],
-  "participants": [],
+  "participants": [
+    {
+      "displayName": "Joshua Cantor-Stone"
+    },
+    {
+      "displayName": "James Kurtak"
+    },
+    {
+      "displayName": "Michael Shirk"
+    },
+    {
+      "displayName": "Jakub Synowiec"
+    },
+    {
+      "displayName": "Jason Musits"
+    },
+    {
+      "displayName": "Jason Jahnel"
+    }
+  ],
   "competitions": [],
   "pointsEntries": [],
-  "awards": [],
+  "awards": [
+    {
+      "key": "settlers-of-catan",
+      "name": "Settlers of Catan",
+      "description": "Lord of Catan at the 20-player board game night.",
+      "participants": ["Joshua Cantor-Stone"]
+    },
+    {
+      "key": "chess-tourney",
+      "name": "Chess Tourney Champion",
+      "participants": ["James Kurtak"]
+    },
+    {
+      "key": "code-wars-1st",
+      "name": "Code Wars 1st Place",
+      "description": "First to complete all four kata.",
+      "participants": ["Michael Shirk"]
+    },
+    {
+      "key": "code-wars-2nd",
+      "name": "Code Wars 2nd Place",
+      "participants": ["Jakub Synowiec"]
+    },
+    {
+      "key": "code-wars-3rd",
+      "name": "Code Wars 3rd Place",
+      "participants": ["Jason Musits"]
+    },
+    {
+      "key": "international-day-outfit",
+      "name": "International Day Outfit Challenge",
+      "participants": ["Jason Jahnel"]
+    }
+  ],
   "announcements": [],
   "faqItems": [],
   "startDate": "2018-02-25",
   "endDate": "2018-03-03",
-  "storyTheme": "War Week 2018",
-  "primary": "#047857",
-  "primaryForeground": "#ffffff",
-  "accent": "#facc15",
-  "background": "#111827",
-  "foreground": "#f3f4f6",
-  "fontPreset": "serif"
+  "storyTheme": "Blue Label",
+  "primary": "#a9cdf2",
+  "primaryForeground": "#0b1f4d",
+  "accent": "#6fa8e8",
+  "background": "#142c6b",
+  "foreground": "#ffffff",
+  "fontPreset": "sans"
 }

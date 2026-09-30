@@ -6,11 +6,13 @@ import {
   type ParticipantInput,
   type WarWeekSettingsInput,
   competitionGuardError,
+  competitionSeedSchema,
   dayDeleteGuardError,
   dayGuardError,
   dayOutsideRangeError,
   inUseError,
   parseCompetitionInput,
+  parseCreateCompetitionInput,
   parseDayInput,
   parseParticipantInput,
   parseTeamInput,
@@ -42,6 +44,11 @@ const input: WarWeekSettingsInput = {
   accentColor: "#008f11",
   backgroundColor: "#000",
   foregroundColor: "#d1ffd6",
+  overridePrimaryColor: " #0a7a1f ",
+  overridePrimaryForegroundColor: "",
+  overrideAccentColor: "",
+  overrideBackgroundColor: "",
+  overrideForegroundColor: "",
   logoUrl: "/themes/xi/logo.svg",
   bannerUrl: " ",
   fontPreset: "mono",
@@ -54,7 +61,7 @@ function parsed(overrides: Partial<WarWeekSettingsInput> = {}) {
 }
 
 describe("parseWarWeekSettingsInput", () => {
-  it("trims text and blanks optional URLs to null", () => {
+  it("trims text and blanks optional URLs and derived colors to null", () => {
     expect(parsed()).toEqual({
       ok: true,
       value: {
@@ -71,6 +78,11 @@ describe("parseWarWeekSettingsInput", () => {
         accentColor: "#008f11",
         backgroundColor: "#000",
         foregroundColor: "#d1ffd6",
+        overridePrimaryColor: "#0a7a1f",
+        overridePrimaryForegroundColor: null,
+        overrideAccentColor: null,
+        overrideBackgroundColor: null,
+        overrideForegroundColor: null,
         logoUrl: "/themes/xi/logo.svg",
         bannerUrl: null,
         fontPreset: "mono",
@@ -106,6 +118,7 @@ describe("parseWarWeekSettingsInput", () => {
     ],
     [{ primaryColor: "green" }, "Primary color must be a hex color."],
     [{ backgroundColor: "#12345" }, "Background color must be a hex color."],
+    [{ overrideAccentColor: "teal" }, "Accent override must be a hex color."],
     [
       { slackChannelUrl: "http://slack.com/x" },
       "Slack URL must be an https URL.",
@@ -392,6 +405,150 @@ describe("parseCompetitionInput", () => {
   });
 });
 
+describe("parseCreateCompetitionInput", () => {
+  const competition: CompetitionInput = {
+    name: " Catan ",
+    description: "",
+    scoring: "individual",
+    maxPoints: "",
+    placementPoints: "",
+    countsTowardTeam: false,
+    group: "",
+  };
+
+  it("defaults to the points Format", () => {
+    expect(parseCreateCompetitionInput(competition)).toMatchObject({
+      ok: true,
+      value: { format: "points" },
+    });
+  });
+
+  it("takes a Bracket Format; bracketConfig defaulting is createCompetition's job, not the parser's", () => {
+    expect(
+      parseCreateCompetitionInput({
+        ...competition,
+        format: "single-elimination",
+      }),
+    ).toMatchObject({
+      ok: true,
+      value: { format: "single-elimination" },
+    });
+    expect(
+      parseCreateCompetitionInput({ ...competition, format: "heats" }),
+    ).toMatchObject({
+      ok: true,
+      value: { format: "heats" },
+    });
+  });
+
+  it("refuses an unknown Format", () => {
+    expectRefused(
+      parseCreateCompetitionInput({ ...competition, format: "swiss" }),
+      "Format must be one of points, single-elimination, heats, games.",
+    );
+  });
+
+  it("takes the games Format with its Game Type", () => {
+    expect(
+      parseCreateCompetitionInput({
+        ...competition,
+        format: "games",
+        gameType: "best-score",
+      }),
+    ).toMatchObject({
+      ok: true,
+      value: { format: "games", gameType: "best-score" },
+    });
+  });
+
+  it("refuses the games Format without a Game Type", () => {
+    expectRefused(
+      parseCreateCompetitionInput({ ...competition, format: "games" }),
+      "Choose a Game Type.",
+    );
+    expectRefused(
+      parseCreateCompetitionInput({
+        ...competition,
+        format: "games",
+        gameType: "darts",
+      }),
+      "Choose a Game Type.",
+    );
+  });
+
+  it("ignores a Game Type sent with another Format", () => {
+    const parsed = parseCreateCompetitionInput({
+      ...competition,
+      format: "heats",
+      gameType: "ranked",
+    });
+    expect(parsed).toMatchObject({ ok: true, value: { format: "heats" } });
+    expect(parsed.ok && parsed.value.gameType).toBeFalsy();
+  });
+
+  it("refuses a non-string format as a field error instead of throwing", () => {
+    expectRefused(
+      parseCreateCompetitionInput({
+        ...competition,
+        format: 123 as unknown as string,
+      }),
+      "Format must be one of points, single-elimination, heats, games.",
+    );
+  });
+});
+
+describe("competitionSeedSchema, games", () => {
+  const base = { name: "Bouncy Pong", scoring: "individual" as const };
+  const issues = (input: unknown) => {
+    const result = competitionSeedSchema.safeParse(input);
+    return result.success ? [] : result.error.issues.map((i) => i.message);
+  };
+
+  it("takes a games Competition with its Game Type, settings and Entrants open", () => {
+    expect(
+      issues({
+        ...base,
+        format: "games",
+        gameType: "head-to-head",
+        gameConfig: { drawsAllowed: false, bestOf: null },
+        entrantsOpen: true,
+      }),
+    ).toEqual([]);
+    expect(issues({ ...base, format: "games", gameType: "ranked" })).toEqual(
+      [],
+    );
+  });
+
+  it("needs a gameType exactly when the Format is games", () => {
+    expect(issues({ ...base, format: "games" })).toEqual([
+      "gameType is required for a games Competition",
+    ]);
+    expect(issues({ ...base, gameType: "ranked" })).toEqual([
+      "gameType is only for a games Competition",
+    ]);
+  });
+
+  it("takes gameConfig and entrantsOpen only on a games Competition", () => {
+    expect(issues({ ...base, format: "heats", entrantsOpen: true })).toEqual([
+      "entrantsOpen is only for a games Competition",
+    ]);
+    expect(issues({ ...base, gameConfig: { finishPoints: [] } })).toEqual([
+      "gameConfig is only for a games Competition",
+    ]);
+  });
+
+  it("checks gameConfig against the Game Type", () => {
+    expect(
+      issues({
+        ...base,
+        format: "games",
+        gameType: "best-score",
+        gameConfig: { drawsAllowed: true, bestOf: null },
+      }),
+    ).not.toEqual([]);
+  });
+});
+
 describe("teamGuardError", () => {
   it("allows a new name in teams mode", () => {
     expect(
@@ -527,6 +684,20 @@ describe("competitionGuardError", () => {
         { ...ctx, existing: { ...finalized, placementPoints: [] } },
       ),
     ).toBeNull();
+  });
+
+  it("asks to reopen a closed games Competition before a scoring or Placement Points change", () => {
+    const closed = {
+      ...existingBase,
+      format: "games" as const,
+      finalizedAt: new Date(),
+    };
+    expect(
+      competitionGuardError(
+        { ...values, placementPoints: [10, 5] },
+        { ...ctx, existing: closed },
+      ),
+    ).toBe("This Competition is closed. Reopen the Competition first.");
   });
 });
 

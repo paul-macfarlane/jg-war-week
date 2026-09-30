@@ -29,7 +29,9 @@ import {
 // seeded XI Competition. Both Competitions are picked by name from
 // seeds/xi.json; the smoke Organizer, the Participant and everyone else
 // never host anything.
-const HOST_COMPETITION = "Tuesday Stairs";
+// AI Survey Completion stays `points` (team scoring); Tuesday Stairs is
+// run as Games now.
+const HOST_COMPETITION = "AI Survey Completion";
 const OTHER_COMPETITION = "Cypher";
 const NOT_HOST_REFUSAL = "You're not a Host of that Competition.";
 // Both fixture Competitions default to `format: "points"` (the seed sets no
@@ -237,7 +239,7 @@ async function assertHostAllowedAndRefused(fixture: HostFixture) {
   }
 
   // Squads and self-report are Bracket-only actions. The hosted Competition
-  // (Tuesday Stairs) is a `points` Competition, so access passes (it's the
+  // (AI Survey Completion) is a `points` Competition, so access passes (it's the
   // Host's own) and the Bracket rule refuses it; the other Competition
   // (Cypher, not hosted by this Host) refuses on access first.
   for (const [action, args] of [

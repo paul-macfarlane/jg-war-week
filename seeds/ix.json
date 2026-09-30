@@ -10,15 +10,15 @@
   "teamLabel": "Genre",
   "leaderTitle": "Lead Singer",
   "slackChannelUrl": "https://jahnelgroup.slack.com",
-  "primary": "#ff2e88",
-  "primaryForeground": "#120d1f",
-  "accent": "#22d3ee",
-  "background": "#120d1f",
-  "foreground": "#f5f0ff",
+  "primary": "#c9c9c9",
+  "primaryForeground": "#0a0a0a",
+  "accent": "#5c5c5c",
+  "background": "#0a0a0a",
+  "foreground": "#ececec",
   "fontPreset": "sans",
   "logoUrl": null,
   "bannerUrl": null,
-  "wikiUrl": "https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/war-week-2024",
+  "wikiUrl": "https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/home/war-week/war-week-2024",
   "winner": "Rock & Country",
   "highlights": [
     "Rock & Country topped the Battle of the Bands standings posted on the wiki: Rock & Country 75, Pop & EDM 60, Hip Hop & RnB 59.",
@@ -39,8 +39,16 @@
       "dayTheme": "Rock & Country Day",
       "scheduleItems": []
     },
-    { "date": "2024-02-27", "dayTheme": "Black Tuesday", "scheduleItems": [] },
-    { "date": "2024-02-28", "dayTheme": "Pop & EDM Day", "scheduleItems": [] },
+    {
+      "date": "2024-02-27",
+      "dayTheme": "Black Tuesday",
+      "scheduleItems": []
+    },
+    {
+      "date": "2024-02-28",
+      "dayTheme": "Pop & EDM Day",
+      "scheduleItems": []
+    },
     {
       "date": "2024-02-29",
       "dayTheme": "Hip Hop & RnB Day",
@@ -53,26 +61,434 @@
     }
   ],
   "teams": [
-    { "name": "Rock & Country", "color": "#c2410c" },
-    { "name": "Pop & EDM", "color": "#ec4899" },
-    { "name": "Hip Hop & RnB", "color": "#8b5cf6" }
+    {
+      "name": "Rock & Country",
+      "color": "#c2410c"
+    },
+    {
+      "name": "Pop & EDM",
+      "color": "#ec4899"
+    },
+    {
+      "name": "Hip Hop & RnB",
+      "color": "#8b5cf6"
+    }
   ],
   "participants": [
-    { "displayName": "Sam Potter", "team": "Rock & Country", "isLeader": true },
-    { "displayName": "Chelsea Merrill", "team": "Pop & EDM", "isLeader": true },
+    {
+      "displayName": "Sam Potter",
+      "team": "Rock & Country",
+      "isLeader": true
+    },
+    {
+      "displayName": "Olivia Bowman",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Joshua Jameson",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Dan Schuldt",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Emily Smith",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Dan Bedian",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Matt Bessler",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Jethro Breuer",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Nick Brown",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Dean Brzac",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Paul Carnivale",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Anthony Conway",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Ethan Ferguson",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Kyle Gancarz",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Alvaro Gil",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Zac Harvey",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Peter Hodges",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Cameron Lynch",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Linda Martin",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Marc Matsen",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Tim Monroe",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "James Murphy",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Christopher Nyberg",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Abby Rivera",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Bryan Sambrook",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Alex Schnackenberg",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Casey Snow",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Matthew Spahr",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Tonya Sutphin",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Eva Trimboli",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Colin Walsh",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Greg Westover",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Matthew Wonkovich",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Michael Young",
+      "team": "Rock & Country"
+    },
+    {
+      "displayName": "Chelsea Merrill",
+      "team": "Pop & EDM",
+      "isLeader": true
+    },
+    {
+      "displayName": "Dani Milliken",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Michael Prete",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Dakota Rivera",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Jessie Zweigenthal",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Ian Ballard",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Joshua Cantor-Stone",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Joe Chiavaroli",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Daniel Dragon",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Bich Dudla",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Dom Favata",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Lucas Fernandes",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Emily Gorelik",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Greg Greenwald",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Alec Haring",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Andrew Hyeon",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Mildred Inma",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Jon Keller",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Tristin Knapp",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Dan Kollar",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Chris Mancuso",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Sydney Murauskas",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Chris Maria",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "James Novak",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Tom O'Neill",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Chris Pence",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Zach Phillips-Gary",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Ben Sadick",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Ashley Schuliger",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Bob Strubel",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Chris Warner",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Adam Wilson-Hwang",
+      "team": "Pop & EDM"
+    },
+    {
+      "displayName": "Maureen Wiseman",
+      "team": "Pop & EDM"
+    },
     {
       "displayName": "Jory Hutchins",
       "team": "Hip Hop & RnB",
       "isLeader": true
     },
-    { "displayName": "Brandon Badgett", "team": "Hip Hop & RnB" },
-    { "displayName": "Alec Haring", "team": "Pop & EDM" },
-    { "displayName": "Dan Schuldt", "team": "Rock & Country" },
-    { "displayName": "Casey Snow", "team": "Rock & Country" },
-    { "displayName": "James Murphy", "team": "Rock & Country" },
-    { "displayName": "Michael Shirk", "team": "Hip Hop & RnB" },
-    { "displayName": "Dom Favata", "team": "Pop & EDM" },
-    { "displayName": "Mark Zweigenthal" }
+    {
+      "displayName": "Brandon Badgett",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Graham Macbeth",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Devin O'Brien",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Matt Anderson",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Emily Gaito",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Ryan Godfrey",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Zachary Hartman",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "John Higgins",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Darrin Jahnel",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Jason Jahnel",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Laura Jahnel",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Davon Johnson",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "John Lee",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Jesse Lucier",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Luke MacDonald",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Paul Macfarlane",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Tony Mercadante",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Isaiah Mori",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Solomon Mori",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Sean Mullen",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Frank Nardone",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Alex Nikolis",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Carson O'Neill",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Janelle Olsen",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Victor Paredes",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Luke Prescott",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Sam Schantz",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Ryan Shendler",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Michael Shirk",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Kari Skinner",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Jakub Synowiec",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Steven Vickers",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Joshua Whelan",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Steven Zgaljic",
+      "team": "Hip Hop & RnB"
+    },
+    {
+      "displayName": "Mark Zweigenthal"
+    }
   ],
   "competitions": [
     {

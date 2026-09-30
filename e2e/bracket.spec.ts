@@ -138,7 +138,9 @@ test("a Bracket is built, run and finalized into Points Entries", async ({
     await expect(page.getByText("(4 chosen)")).toBeVisible();
     await page.keyboard.press("Escape");
     await page.getByRole("button", { name: "Save Entrants" }).click();
-    await expect(page.getByText("Entrants saved")).toBeVisible();
+    await expect(
+      page.getByText("Entrants saved", { exact: true }),
+    ).toBeVisible();
     await page.getByRole("button", { name: "Generate" }).click();
     await expect(page.getByText("Bracket generated")).toBeVisible();
     await page.screenshot({

@@ -14,6 +14,7 @@ import {
   team,
 } from "@/db/schema";
 import type { TimedHeatRow } from "@/lib/bracket/now-next";
+import { BRACKET_FORMATS } from "@/lib/bracket/view";
 import { type ScheduleDay, groupSchedule } from "@/lib/schedule";
 
 /**
@@ -97,6 +98,8 @@ export async function getTimedHeats(
     .where(
       and(
         eq(competition.warWeekId, warWeek.id),
+        // Only a Bracket has Heats; kept exact for the `games` Format.
+        inArray(competition.format, BRACKET_FORMATS),
         eq(heat.status, "ready"),
         isNotNull(heat.dayId),
         isNotNull(heat.startTime),

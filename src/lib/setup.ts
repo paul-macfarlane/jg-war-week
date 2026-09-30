@@ -9,9 +9,11 @@ import {
   COMPETITION_FORMATS,
   COMPETITION_SCORINGS,
   FONT_PRESETS,
+  GAME_TYPES,
   WAR_WEEK_MODES,
 } from "@/lib/enums";
 import { fieldErrorsFrom } from "@/lib/form-errors";
+import { gamesConfigSchema } from "@/lib/games/config";
 import { POINTS_NUMBER, pointsSchema as points } from "@/lib/points-entry";
 import type { Parsed } from "@/lib/result";
 
@@ -50,6 +52,13 @@ export const warWeekSettingsSeedShape = {
   accent: hexColor,
   background: hexColor,
   foreground: hexColor,
+  // The Organizer's overrides of the derived palette (the other color
+  // scheme's colors); absent or null means derived.
+  overridePrimary: hexColor.nullish(),
+  overridePrimaryForeground: hexColor.nullish(),
+  overrideAccent: hexColor.nullish(),
+  overrideBackground: hexColor.nullish(),
+  overrideForeground: hexColor.nullish(),
   fontPreset: z.enum(FONT_PRESETS),
   logoUrl: themeUrl.nullish(),
   bannerUrl: themeUrl.nullish(),
@@ -100,6 +109,12 @@ export const competitionSeedSchema = z
     format: z.enum(COMPETITION_FORMATS).default("points"),
     /** The Format's settings; a heats Competition without one gets the default. */
     bracketConfig: heatsConfigSchema.nullish(),
+    /** A `games` Competition's Game Type: required for `games`, else absent. */
+    gameType: z.enum(GAME_TYPES).nullish(),
+    /** The Game Type's settings (`src/lib/games/config.ts`); omitted for the default. */
+    gameConfig: z.unknown().optional(),
+    /** A `games` Competition open to everyone eligible; omitted means a fixed list. */
+    entrantsOpen: z.boolean().optional(),
   })
   .refine(
     (c) =>
@@ -124,6 +139,36 @@ export const competitionSeedSchema = z
         path: ["bracketConfig"],
       });
     }
+    // A Game Type exactly when the Format is games (the database CHECK
+    // `competition_game_type_iff_games`), so a bad seed is a zod error.
+    if (c.format === "games") {
+      if (c.gameType == null) {
+        ctx.addIssue({
+          code: "custom",
+          message: "gameType is required for a games Competition",
+          path: ["gameType"],
+        });
+      } else if (c.gameConfig != null) {
+        const config = gamesConfigSchema(c.gameType).safeParse(c.gameConfig);
+        if (!config.success) {
+          ctx.addIssue({
+            code: "custom",
+            message: `gameConfig: ${config.error.issues[0].message}`,
+            path: ["gameConfig"],
+          });
+        }
+      }
+      return;
+    }
+    for (const key of ["gameType", "gameConfig", "entrantsOpen"] as const) {
+      if (c[key] != null) {
+        ctx.addIssue({
+          code: "custom",
+          message: `${key} is only for a games Competition`,
+          path: [key],
+        });
+      }
+    }
   });
 
 /** The War Week settings form's raw fields, all as the inputs hold them. */
@@ -141,6 +186,12 @@ export type WarWeekSettingsInput = {
   accentColor: string;
   backgroundColor: string;
   foregroundColor: string;
+  /** The derived palette's overrides; blank means derived. */
+  overridePrimaryColor: string;
+  overridePrimaryForegroundColor: string;
+  overrideAccentColor: string;
+  overrideBackgroundColor: string;
+  overrideForegroundColor: string;
   logoUrl: string;
   bannerUrl: string;
   fontPreset: string;
@@ -150,28 +201,42 @@ export type WarWeekSettingsInput = {
   highlights: string;
 };
 
-/** Validated settings, keyed by the `war_week` columns they update. */
-export type WarWeekSettingsValues = Pick<
-  WarWeek,
-  | "storyTheme"
-  | "startDate"
-  | "endDate"
-  | "mode"
-  | "teamLabel"
-  | "leaderTitle"
-  | "slackChannelUrl"
-  | "wikiUrl"
-  | "primaryColor"
-  | "primaryForegroundColor"
-  | "accentColor"
-  | "backgroundColor"
-  | "foregroundColor"
-  | "logoUrl"
-  | "bannerUrl"
-  | "fontPreset"
-  | "winner"
-  | "highlights"
->;
+/** The derived palette's override columns. */
+export type OverrideColumn =
+  | "overridePrimaryColor"
+  | "overridePrimaryForegroundColor"
+  | "overrideAccentColor"
+  | "overrideBackgroundColor"
+  | "overrideForegroundColor";
+
+/**
+ * Validated settings, keyed by the `war_week` columns they update. The
+ * overrides are optional here: the mutation leaves an omitted key's column
+ * as it was. Through the action, though, `settingsSchema` turns a missing
+ * override key into null, so callers of the action must send all five.
+ */
+export type WarWeekSettingsValues = Partial<Pick<WarWeek, OverrideColumn>> &
+  Pick<
+    WarWeek,
+    | "storyTheme"
+    | "startDate"
+    | "endDate"
+    | "mode"
+    | "teamLabel"
+    | "leaderTitle"
+    | "slackChannelUrl"
+    | "wikiUrl"
+    | "primaryColor"
+    | "primaryForegroundColor"
+    | "accentColor"
+    | "backgroundColor"
+    | "foregroundColor"
+    | "logoUrl"
+    | "bannerUrl"
+    | "fontPreset"
+    | "winner"
+    | "highlights"
+  >;
 
 /** The form's starting fields from the War Week row. */
 export function settingsInputFrom(warWeek: WarWeek): WarWeekSettingsInput {
@@ -189,6 +254,12 @@ export function settingsInputFrom(warWeek: WarWeek): WarWeekSettingsInput {
     accentColor: warWeek.accentColor,
     backgroundColor: warWeek.backgroundColor,
     foregroundColor: warWeek.foregroundColor,
+    overridePrimaryColor: warWeek.overridePrimaryColor ?? "",
+    overridePrimaryForegroundColor:
+      warWeek.overridePrimaryForegroundColor ?? "",
+    overrideAccentColor: warWeek.overrideAccentColor ?? "",
+    overrideBackgroundColor: warWeek.overrideBackgroundColor ?? "",
+    overrideForegroundColor: warWeek.overrideForegroundColor ?? "",
     logoUrl: warWeek.logoUrl ?? "",
     bannerUrl: warWeek.bannerUrl ?? "",
     fontPreset: warWeek.fontPreset,
@@ -239,6 +310,11 @@ const settingsSchema = z
     accentColor: trimmed(seed.accent),
     backgroundColor: trimmed(seed.background),
     foregroundColor: trimmed(seed.foreground),
+    overridePrimaryColor: optional(seed.overridePrimary),
+    overridePrimaryForegroundColor: optional(seed.overridePrimaryForeground),
+    overrideAccentColor: optional(seed.overrideAccent),
+    overrideBackgroundColor: optional(seed.overrideBackground),
+    overrideForegroundColor: optional(seed.overrideForeground),
     logoUrl: optional(seed.logoUrl),
     bannerUrl: optional(seed.bannerUrl),
     fontPreset: seed.fontPreset,
@@ -302,6 +378,14 @@ export type CompetitionInput = {
   placementPoints: string;
   countsTowardTeam: boolean;
   group: string;
+  /**
+   * How to run the Competition, chosen only on create; the edit form never
+   * sends one (the Format changes only through the Bracket actions).
+   * Blank (or omitted) means "points".
+   */
+  format?: string;
+  /** The Game Type, read only when the Format is `games`. */
+  gameType?: string;
 };
 export type CompetitionValues = Pick<
   Competition,
@@ -313,6 +397,15 @@ export type CompetitionValues = Pick<
   | "countsTowardTeam"
   | "competitionGroup"
 >;
+
+/**
+ * A new Competition's fields, with the Format an Organizer chose on create.
+ * Defaults in `createCompetition` when omitted (a direct mutation call that
+ * predates the create form's Format field), to "points". `createCompetition`
+ * alone owns the Format's `bracketConfig` default (`defaultConfig`).
+ */
+export type CompetitionCreateValues = CompetitionValues &
+  Partial<Pick<Competition, "format" | "gameType">>;
 
 const FIELD_LABELS: Record<string, string> = {
   storyTheme: "Story Theme",
@@ -330,6 +423,11 @@ const FIELD_LABELS: Record<string, string> = {
   accentColor: "Accent color",
   backgroundColor: "Background color",
   foregroundColor: "Text color",
+  overridePrimaryColor: "Primary override",
+  overridePrimaryForegroundColor: "Primary text override",
+  overrideAccentColor: "Accent override",
+  overrideBackgroundColor: "Background override",
+  overrideForegroundColor: "Text override",
   logoUrl: "Logo URL",
   bannerUrl: "Banner URL",
   fontPreset: "Font",
@@ -345,6 +443,7 @@ const FIELD_LABELS: Record<string, string> = {
   maxPoints: "Max points",
   placementPoints: "Placement Points",
   group: "Group",
+  format: "Format",
 };
 
 /** A zod issue worded as "must …", or null when it is already a sentence. */
@@ -499,19 +598,57 @@ export function parseCompetitionInput(
     },
   );
   if (!parsed.ok) return parsed;
-  // The Format and its config are set through the Bracket actions, never a
-  // setup save.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { group, format, bracketConfig, ...value } = parsed.value;
+  // Only the setup fields: the Format and its settings (Bracket or Games)
+  // are set through their own actions, never a setup save.
+  const value = parsed.value;
   return {
     ok: true,
     value: {
-      ...value,
+      name: value.name,
       description: value.description ?? null,
+      scoring: value.scoring,
       maxPoints: value.maxPoints ?? null,
       placementPoints: value.placementPoints ?? null,
-      competitionGroup: group ?? null,
+      countsTowardTeam: value.countsTowardTeam,
+      competitionGroup: value.group ?? null,
     },
+  };
+}
+
+const formatFieldSchema = z.object({
+  format: z.enum(COMPETITION_FORMATS).default("points"),
+});
+
+/**
+ * Validates a new Competition's form, adding the Format an Organizer chose
+ * on create. Only validates and returns the Format; `createCompetition`
+ * (`src/mutations/setup.ts`) alone owns defaulting a heats Format's
+ * `bracketConfig` (`defaultConfig`, `src/lib/bracket/config.ts`). The edit
+ * form never sends a Format: its Format changes only through the Bracket
+ * actions (`setCompetitionFormat`).
+ */
+export function parseCreateCompetitionInput(
+  input: CompetitionInput,
+): Parsed<CompetitionCreateValues> {
+  const base = parseCompetitionInput(input);
+  if (!base.ok) return base;
+  const formatParsed = parseWith(formatFieldSchema, {
+    format:
+      typeof input.format === "string"
+        ? input.format.trim() || "points"
+        : (input.format ?? "points"),
+  });
+  if (!formatParsed.ok) return formatParsed;
+  const { format } = formatParsed.value;
+  if (format !== "games") return { ok: true, value: { ...base.value, format } };
+  const gameType = z.enum(GAME_TYPES).safeParse(input.gameType);
+  if (!gameType.success) {
+    const error = "Choose a Game Type.";
+    return { ok: false, error, fieldErrors: { gameType: error } };
+  }
+  return {
+    ok: true,
+    value: { ...base.value, format, gameType: gameType.data },
   };
 }
 
@@ -589,6 +726,8 @@ export function competitionGuardError(
       placementPoints: Competition["placementPoints"];
       pointsEntryCount: number;
       finalizedAt: Competition["finalizedAt"];
+      /** Omitted for a Competition that predates Formats: not `games`. */
+      format?: Competition["format"];
     } | null;
   },
 ): string | null {
@@ -605,7 +744,10 @@ export function competitionGuardError(
     (existing.scoring !== values.scoring ||
       placementPointsChanged(existing.placementPoints, values.placementPoints))
   ) {
-    return "This Competition's Bracket is finalized. Un-finalize the Bracket first.";
+    // A closed `games` Competition reuses `finalized_at` (R3 decision 1).
+    return existing.format === "games"
+      ? "This Competition is closed. Reopen the Competition first."
+      : "This Competition's Bracket is finalized. Un-finalize the Bracket first.";
   }
   if (
     existing &&

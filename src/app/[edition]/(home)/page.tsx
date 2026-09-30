@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { getActor } from "@/auth/actor";
 import { AnnouncementCard } from "@/components/announcement-card";
 import { ArchiveDetailView } from "@/components/archive";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { LogAGame } from "@/components/log-a-game";
 import { NowNextSection } from "@/components/now-next";
 import { HomeStandings } from "@/components/standings";
 import { Button } from "@/components/ui/button";
@@ -13,8 +15,9 @@ import { heatEntries } from "@/lib/bracket/now-next";
 import { computeNowNext, resolveClock, withHeats } from "@/lib/schedule";
 import { getPinnedAnnouncementCard } from "@/queries/announcements";
 import { getArchiveDetail } from "@/queries/archive";
+import { getLoggableCompetitions } from "@/queries/games";
 import { getSchedule, getTimedHeats } from "@/queries/schedule";
-import { getStandings } from "@/queries/standings";
+import { getPointsBreakdown, getStandings } from "@/queries/standings";
 
 import { getWarWeekForEdition } from "../war-week";
 
@@ -33,13 +36,24 @@ export default async function EditionHomePage({
     return <ArchiveDetailView detail={await getArchiveDetail(warWeek)} />;
   }
 
-  const [standings, schedule, pinnedAnnouncement, timedHeats] =
-    await Promise.all([
-      getStandings(warWeek),
-      getSchedule(warWeek.id),
-      getPinnedAnnouncementCard(warWeek),
-      getTimedHeats(warWeek),
-    ]);
+  const [
+    standings,
+    breakdown,
+    schedule,
+    pinnedAnnouncement,
+    timedHeats,
+    loggable,
+  ] = await Promise.all([
+    getStandings(warWeek),
+    getPointsBreakdown(warWeek),
+    getSchedule(warWeek.id),
+    getPinnedAnnouncementCard(warWeek),
+    getTimedHeats(warWeek),
+    // Only an email-linked Participant can log, so a pick-only You sees none.
+    getActor().then((actor) =>
+      getLoggableCompetitions(warWeek.id, actor?.email),
+    ),
+  ]);
   // Timed Heats join Now/Next only, not the full schedule.
   const nowNext = computeNowNext(
     withHeats(schedule, heatEntries(timedHeats)),
@@ -68,6 +82,8 @@ export default async function EditionHomePage({
 
         <NowNextSection nowNext={nowNext} edition={warWeek.edition} />
 
+        <LogAGame edition={warWeek.edition} competitions={loggable} />
+
         {pinnedAnnouncement ? (
           <section className="flex flex-col gap-3">
             <div className="flex items-baseline justify-between">
@@ -91,7 +107,7 @@ export default async function EditionHomePage({
             <h2 className="text-lg font-semibold">
               {warWeek.mode === "teams"
                 ? `${warWeek.teamLabel} standings`
-                : "Individual leaderboard"}
+                : "Standings"}
             </h2>
             <Link
               href={`/${warWeek.edition}/leaderboard`}
@@ -104,6 +120,7 @@ export default async function EditionHomePage({
             standings={standings}
             individualLimit={HOME_INDIVIDUAL_ROWS}
             primaryColor={warWeek.primaryColor}
+            breakdown={breakdown}
           />
         </section>
       </div>

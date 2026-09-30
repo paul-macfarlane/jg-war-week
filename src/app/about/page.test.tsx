@@ -1,31 +1,120 @@
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { WarWeek } from "@/db/schema";
 import {
+  ABOUT_FALLBACK_THEME,
   ABOUT_FEATURES,
-  ABOUT_THEME,
   MAINTAINERS_GUIDE_URL,
 } from "@/lib/about";
 
-import AboutPage from "./page";
+const { getCurrentWarWeek } = vi.hoisted(() => ({
+  getCurrentWarWeek: vi.fn(),
+}));
+vi.mock("@/queries/war-weeks", () => ({ getCurrentWarWeek }));
+
+function warWeekFixture(overrides: Partial<WarWeek> = {}): WarWeek {
+  return {
+    id: "ww-1",
+    edition: "xii",
+    editionNumber: 12,
+    year: 2027,
+    startDate: "2027-02-22",
+    endDate: "2027-02-26",
+    storyTheme: "Test Theme",
+    status: "live",
+    mode: "teams",
+    teamLabel: "Team",
+    leaderTitle: "Captain",
+    slackChannelUrl: "https://example.slack.com/archives/x",
+    primaryColor: "#00ff41",
+    primaryForegroundColor: "#000000",
+    accentColor: "#008f11",
+    backgroundColor: "#000000",
+    foregroundColor: "#d1ffd6",
+    logoUrl: null,
+    bannerUrl: null,
+    fontPreset: "mono",
+    wikiUrl: null,
+    winner: null,
+    highlights: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  } as WarWeek;
+}
+
+async function renderAbout() {
+  const { default: AboutPage } = await import("./page");
+  const element = await AboutPage();
+  const html = renderToStaticMarkup(element);
+  return { html, text: html.replace(/<[^>]+>/g, " ") };
+}
 
 describe("AboutPage", () => {
-  const html = renderToStaticMarkup(<AboutPage />);
-  const text = html.replace(/<[^>]+>/g, " ");
-
-  it("shows the Finale as a looping muted video with a poster fallback", () => {
-    expect(html).toContain('src="/about/finale.mp4"');
-    expect(html).toContain('poster="/about/finale-poster.png"');
-    expect(html).toMatch(/<video[^>]*\bautoplay\b/i);
-    expect(html).toMatch(/<video[^>]*\bmuted\b/i);
-    expect(html).toMatch(/<video[^>]*\bloop\b/i);
-    expect(html).toMatch(/<video[^>]*\bplaysinline\b/i);
-    expect(html).toContain('src="/about/finale-poster.png"');
+  afterEach(() => {
+    vi.resetAllMocks();
   });
 
-  it("has the eight feature cards, each with its still", () => {
-    expect(ABOUT_FEATURES).toHaveLength(8);
+  it("with a live War Week, wears its Appearance Theme and links its button to it", async () => {
+    const live = warWeekFixture({ edition: "xii", status: "live" });
+    getCurrentWarWeek.mockResolvedValue(live);
+
+    const { html, text } = await renderAbout();
+
+    expect(html).toContain('href="/xii"');
+    expect(text).toContain("Open War Week XII");
+    expect(html).toContain(live.primaryColor);
+    expect(html).toContain(live.backgroundColor);
+  });
+
+  it("with none live, falls back to the resolution getCurrentWarWeek already applies (next upcoming, else latest completed)", async () => {
+    const upcoming = warWeekFixture({ edition: "xiii", status: "upcoming" });
+    getCurrentWarWeek.mockResolvedValue(upcoming);
+
+    const { html, text } = await renderAbout();
+
+    expect(html).toContain('href="/xiii"');
+    expect(text).toContain("Open War Week XIII");
+  });
+
+  it("with no War Week at all, falls back to a neutral theme and drops the Open War Week button", async () => {
+    getCurrentWarWeek.mockResolvedValue(undefined);
+
+    const { html, text } = await renderAbout();
+
+    expect(html).not.toContain('href="/undefined"');
+    expect(text).not.toContain("Open War Week");
+    expect(text).toContain("No War Week yet");
+    expect(html).toContain(ABOUT_FALLBACK_THEME.primaryColor);
+  });
+
+  it("shows the Finale as a still lower down the page, not the hero", async () => {
+    getCurrentWarWeek.mockResolvedValue(warWeekFixture());
+    const { html } = await renderAbout();
+
+    expect(html).toContain('src="/about/finale-poster.png"');
+    expect(html).not.toContain("finale.mp4");
+    expect(html).not.toMatch(/<video/i);
+  });
+
+  it("shows the Standings-moving-after-a-Points-Entry stepper in the hero", async () => {
+    getCurrentWarWeek.mockResolvedValue(warWeekFixture());
+    const { html, text } = await renderAbout();
+
+    expect(html).toContain('src="/about/standings-before.png"');
+    expect(html).toContain('src="/about/standings-entry.png"');
+    expect(html).toContain('src="/about/standings-after.png"');
+    expect(text).toContain("Points Entry");
+    // Accessible alt text on every step.
+    expect(html).toMatch(/alt="[^"]*Standings[^"]*"/);
+  });
+
+  it("has a feature card for every entry in ABOUT_FEATURES", async () => {
+    getCurrentWarWeek.mockResolvedValue(warWeekFixture());
+    const { html, text } = await renderAbout();
+
     for (const feature of ABOUT_FEATURES) {
       expect(html).toContain(`data-feature="${feature.slug}"`);
       expect(html).toContain(`src="/about/${feature.slug}.png"`);
@@ -33,13 +122,17 @@ describe("AboutPage", () => {
     }
   });
 
-  it("ends on Open War Week XI and links the maintainer's guide", () => {
-    expect(html).toContain('href="/xi"');
-    expect(text).toContain("Open War Week XI");
+  it("links the maintainer's guide", async () => {
+    getCurrentWarWeek.mockResolvedValue(warWeekFixture());
+    const { html } = await renderAbout();
+
     expect(html).toContain(`href="${MAINTAINERS_GUIDE_URL}"`);
   });
 
-  it("tells the team's story and mentions the one-sentence features", () => {
+  it("tells the team's story and mentions the one-sentence features", async () => {
+    getCurrentWarWeek.mockResolvedValue(warWeekFixture());
+    const { html, text } = await renderAbout();
+
     expect(text).toContain("Why we built this");
     expect(text).toContain("Jahnel Group War Week · since 2016");
     expect(text).toContain("Install app");
@@ -50,33 +143,22 @@ describe("AboutPage", () => {
     expect(text).not.toContain("Paul Macfarlane");
     expect(text).not.toContain("Appearance Theme");
     expect(text).not.toMatch(/\blost\b/i);
-    expect(html).not.toContain('href="/install"');
+    expect(html.toLowerCase()).not.toContain('href="/install"');
   });
 
-  it("mentions no build tooling and no banned terms", () => {
+  it("mentions no build tooling and no banned terms", async () => {
+    getCurrentWarWeek.mockResolvedValue(warWeekFixture());
+    const { text } = await renderAbout();
+
     expect(text).not.toMatch(/claude code/i);
     expect(text).not.toMatch(/atlas/i);
     expect(text).not.toMatch(/\bagents?\b/i);
     expect(text).not.toMatch(/\b(event|tournament|member|match|league)s?\b/i);
   });
 
-  it("wears War Week XI's seeded Appearance Theme", () => {
-    const seed = JSON.parse(
-      readFileSync(new URL("../../../seeds/xi.json", import.meta.url), "utf8"),
-    );
-    expect(ABOUT_THEME).toEqual({
-      primaryColor: seed.primary,
-      primaryForegroundColor: seed.primaryForeground,
-      accentColor: seed.accent,
-      backgroundColor: seed.background,
-      foregroundColor: seed.foreground,
-      fontPreset: seed.fontPreset,
-    });
-  });
-
-  it("never reads the database or the session", () => {
+  it("is dynamic, not statically prerendered with a stale War Week", () => {
     const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
-    expect(source).not.toMatch(/@\/(queries|db|auth)/);
-    expect(source).not.toContain("force-dynamic");
+    expect(source).toContain('export const dynamic = "force-dynamic"');
+    expect(source).toMatch(/@\/queries\/war-weeks/);
   });
 });

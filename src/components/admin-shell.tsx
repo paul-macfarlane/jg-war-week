@@ -12,6 +12,7 @@ import Link from "next/link";
 
 import { AdminEditionSwitcher } from "@/components/admin-edition-switcher";
 import { SignOutButton } from "@/components/auth-buttons";
+import { DisplayMenu } from "@/components/display-menu";
 import { SiteFooter } from "@/components/site-footer";
 import { ThemeRoot } from "@/components/theme-root";
 import { Toaster } from "@/components/ui/sonner";
@@ -109,6 +110,7 @@ export function AdminShell({
           >
             Back to War Week {warWeek.edition.toUpperCase()}
           </Link>
+          <DisplayMenu iconOnly />
           <span className="text-foreground/70 truncate">{email}</span>
           <SignOutButton />
         </div>
@@ -203,7 +205,7 @@ export function AdminRefused({
           <SignOutButton />
         </div>
       </main>
-      <SiteFooter />
+      <SiteFooter className="mt-auto" />
     </>
   );
 }

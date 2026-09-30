@@ -22,7 +22,8 @@ const id = (error: string) => z.uuid({ error });
 export const MAX_ENTRANTS = 64;
 
 export type FormatInput = {
-  format: Format;
+  /** Never `games`: a Competition is `games` from creation, and stays so. */
+  format: Exclude<Format, "games">;
   /** The heats Format's config; omitted keeps (or defaults) the saved one. */
   config?: HeatsConfig | null;
   /** Clears Heat Results when a different config clears the Heats. */
@@ -31,9 +32,12 @@ export type FormatInput = {
 
 const formatSchema = z
   .object({
-    format: z.enum(COMPETITION_FORMATS, {
-      error: "Choose a Format.",
-    }),
+    format: z.enum(
+      COMPETITION_FORMATS.filter(
+        (format): format is Exclude<Format, "games"> => format !== "games",
+      ),
+      { error: "Choose a Format." },
+    ),
     config: z.unknown().optional(),
     force: z.boolean().optional(),
   })

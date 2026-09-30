@@ -120,6 +120,21 @@ export function overMaxWarning(
   return `${formatPoints(points)} is over this Competition's max of ${formatPoints(maxPoints)} points. It will still save.`;
 }
 
+/**
+ * The ledger's mark on a generated Points Entry: its Competition's Format
+ * says whether a Bracket or a `games` Competition wrote it.
+ */
+export function generatedNote(format: Competition["format"]): string {
+  return format === "games" ? "From games" : "From bracket";
+}
+
+/** Why a generated Points Entry can't be edited or deleted in the ledger. */
+export function generatedRefusal(format: Competition["format"]): string {
+  return format === "games"
+    ? "This Points Entry comes from a Games Competition. Change it there."
+    : "This Points Entry comes from a bracket. Change it there.";
+}
+
 export type AdminLedgerRow = Pick<
   PointsEntry,
   | "id"
@@ -133,6 +148,7 @@ export type AdminLedgerRow = Pick<
 > & {
   competition: string;
   competitionId: string;
+  competitionFormat: Competition["format"];
   teamName: string | null;
   participantName: string | null;
 };
@@ -142,6 +158,7 @@ export type AdminLedgerEntry = Pick<
   | "id"
   | "competition"
   | "competitionId"
+  | "competitionFormat"
   | "points"
   | "note"
   | "enteredByEmail"
@@ -169,6 +186,7 @@ export function buildAdminLedger(rows: AdminLedgerRow[]): AdminLedgerEntry[] {
       id: row.id,
       competition: row.competition,
       competitionId: row.competitionId,
+      competitionFormat: row.competitionFormat,
       target: row.participantName ?? row.teamName ?? "Unknown",
       points: row.points,
       note: row.note,

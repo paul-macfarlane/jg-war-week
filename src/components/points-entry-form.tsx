@@ -205,7 +205,7 @@ export function PointsEntryForm({
           {warning && (
             <FieldDescription
               role="status"
-              className="font-medium text-amber-600"
+              className="text-warning font-medium"
             >
               ⚠️ {warning}
             </FieldDescription>

@@ -1,0 +1,46 @@
+# 17: The `games` Format: Competitions decided by logged Games
+
+**What to build:** A fourth Format, `games`, for Competitions decided by one or many Games that players log themselves: a one-off showdown, a best of X, or ping pong all week. Its Game log is the War Week's record of what was played, not just who scored. Decisions: `../grilling-2026-09-28.md` (Q1–Q26); access: ADR 0006.
+
+**Blocked by:** none
+
+**Status:** done
+
+**Source:** regression feedback items 15 and 20
+
+## Needs
+
+- **Host:** runs a Competition that isn't a tournament (a showdown, a best of 5, a week-long ladder of casual games) without typing every result.
+- **Participant:** logs a Game in seconds from a phone and sees where they stand.
+- **Organizer:** keeps a record of what was played in the Archive.
+
+## Scope
+
+- `games` Format with one **Game Type** per Competition: `head-to-head`, `best-score`, `ranked` (CONTEXT.md).
+- Settings: Draws allowed (head-to-head), Best of off/3/5/7 with exactly 2 Entrants (head-to-head); Count best/total, Better is higher/lower, unit label (best-score); Finish Points table, default one per player beaten (ranked); Entrants open to everyone or a fixed list.
+- Logging, editing and deleting Games per ADR 0006. Host and Organizer edit or delete any Game.
+- Leaderboard and Game log (newest first, "Mine" filter) on the Competition page; columns per `../grilling-2026-09-28.md` Q20.
+- Close / Reopen with Placement Points, optional close time; Best of prompts Close when decided.
+- Home "Log a Game" shortcut.
+- Archive shows past `games` Competitions' leaderboard and log.
+- MCP: `games` Competitions readable (leaderboard, Games) without emails.
+- Seeds: at least one `games` Competition of each Game Type in the demo seed.
+- Out: Squads in `games`, times and places on Games, streaks and records, confirmations.
+
+## Acceptance criteria
+
+- [x] Leaderboard ranking is unit-tested per Game Type: head-to-head wins with draws, best-score best and total in both directions, ranked Finish Points with ties sharing the higher finish; Best of detects the decided moment.
+- [x] Access is unit-tested per ADR 0006: a linked Participant in the Game can log; the "Which one is you?" pick grants nothing; a non-player is refused; the logger edits or deletes their own Game until close; another player can't; Host and Organizer can; a closed Competition refuses everyone.
+- [x] Close awards Placement Points from the leaderboard as Points Entries and the Standings change; Reopen withdraws them (DB-backed test).
+- [x] Playwright: a Participant logs a head-to-head Game from the home shortcut, the leaderboard updates, the Host edits it, closes the Competition, and the Standings move. Screenshots under `test-results/e2e/<test>/`.
+- [x] Smoke covers the seeded `games` Competitions' pages and one Game logged over HTTP.
+- [x] Schema change and demo seed updated together; plan red-teamed.
+- [x] `/about`, `docs/maintainers-guide.md` and CONTEXT.md's rule sections updated; ADR 0006 set to accepted.
+- [x] `pnpm gate` passes.
+
+## Comments
+
+- 2026-09-29: Technical plan and red-team record for Epic R3 (tickets 17 and 15) in [`../epics/R3-execution.md`](../epics/R3-execution.md); approved by Paul. Ready to implement.
+- 2026-09-29: claimed by Atlas (`/atlas-implement`, work package `regression-r3`, Epic R3) — `ready-for-agent → in-progress` on `feat/regression-r3-games`.
+- 2026-09-29: `in-progress → ai-review`: every deliverable integrated on `feat/regression-r3-games`; `pnpm gate` exit 0 at `0e90972a7b0eecb1920e0046a79db37d5be79366`; aggregate AI code review started.
+- 2026-09-29: [CLOSEOUT] `ai-review → done`. Verified at `5b007ad` (`pnpm gate`, exit 0; `test-results/r3-gate/gate.txt`). Evidence per criterion, the AI Code Review (both axes, every finding and disposition) and deviations: `../epics/R3-execution.md` ([AI CODE REVIEW], [CLOSEOUT]). PR: https://github.com/paul-macfarlane/jg-war-week/pull/92

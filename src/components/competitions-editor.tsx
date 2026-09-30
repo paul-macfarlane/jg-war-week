@@ -26,6 +26,7 @@ import { SuggestionCombobox } from "@/components/suggestion-combobox";
 import { Button } from "@/components/ui/button";
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -34,9 +35,35 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { WarWeek } from "@/db/schema";
-import { formatLabel } from "@/lib/bracket/view";
+import { type Format, formatLabel, isBracketFormat } from "@/lib/bracket/view";
+import { COMPETITION_FORMATS, GAME_TYPES, type GameType } from "@/lib/enums";
+import { gameTypeLabel } from "@/lib/games/config";
 import type { CompetitionInput } from "@/lib/setup";
 import type { SetupCompetition } from "@/queries/setup";
+
+/** How each Format runs a Competition, shown on the create form. */
+const FORMAT_DESCRIPTIONS: Record<Format, string> = {
+  points: "Only Points Entries; no Bracket.",
+  "single-elimination": "A knockout Bracket: one loss and an Entrant is out.",
+  heats:
+    "A Bracket where Entrants play in Heats; a set number advance each Round.",
+  games:
+    "Players log Games themselves and a leaderboard ranks them. Chosen only here: a Games Competition keeps its Format.",
+};
+
+/** How each Game Type decides a Game, shown when Games is chosen. */
+const GAME_TYPE_DESCRIPTIONS: Record<GameType, string> = {
+  "head-to-head": "Two players; a winner, or a draw when allowed.",
+  "best-score": "Each Game records a score; the best or the total counts.",
+  ranked: "Each Game records a finishing order, worth Finish Points.",
+};
+
+/** Where a saved Competition of this Format is set up, or null for points. */
+function setupHref(competition: Pick<SetupCompetition, "id" | "format">) {
+  return competition.format === "games"
+    ? `/admin/setup/competitions/${competition.id}/games`
+    : `/admin/setup/competitions/${competition.id}/bracket`;
+}
 
 function emptyCompetition(mode: WarWeek["mode"]): CompetitionInput {
   return {
@@ -47,6 +74,8 @@ function emptyCompetition(mode: WarWeek["mode"]): CompetitionInput {
     placementPoints: "",
     countsTowardTeam: false,
     group: "",
+    format: "points",
+    gameType: "head-to-head",
   };
 }
 
@@ -134,21 +163,31 @@ function CompetitionRow({
   groupSuggestions: string[];
 }) {
   const id = useId();
+  const router = useRouter();
   const [values, setValues] = useState(
     competition ? inputFrom(competition) : emptyCompetition(mode),
   );
   const { pending, formRef, formAction, fieldErrors, error, remove } =
     useSetupRow(
-      () => {
+      async () => {
         // Only an individual Competition can count toward the Team.
         const input = {
           ...values,
           countsTowardTeam:
             values.scoring === "individual" && values.countsTowardTeam,
         };
-        return competition
-          ? updateCompetition(competition.id, input)
-          : createCompetition(warWeekId, input);
+        if (competition) return updateCompetition(competition.id, input);
+        const result = await createCompetition(warWeekId, input);
+        // A Bracket or Games Format links straight to its setup.
+        if (
+          result.ok &&
+          (isBracketFormat(input.format) || input.format === "games")
+        ) {
+          router.push(
+            setupHref({ id: result.id, format: input.format as Format }),
+          );
+        }
+        return result;
       },
       "Competition saved",
       competition ? undefined : () => setValues(emptyCompetition(mode)),
@@ -263,6 +302,63 @@ function CompetitionRow({
               </FieldLabel>
             </Field>
           )}
+          {!competition && (
+            <Field
+              className="sm:col-span-2"
+              data-invalid={!!fieldErrors.format}
+            >
+              <FieldLabel htmlFor={`${id}-format`}>Format</FieldLabel>
+              <OptionSelect
+                id={`${id}-format`}
+                name="format"
+                options={COMPETITION_FORMATS.map((format) => ({
+                  value: format,
+                  label: formatLabel(format),
+                }))}
+                value={values.format ?? "points"}
+                onValueChange={(format) => setValues((v) => ({ ...v, format }))}
+              />
+              <FieldDescription>
+                {COMPETITION_FORMATS.map((format) => (
+                  <span key={format} className="block">
+                    <strong>{formatLabel(format)}:</strong>{" "}
+                    {FORMAT_DESCRIPTIONS[format]}
+                  </span>
+                ))}
+              </FieldDescription>
+              <FieldError>{fieldErrors.format}</FieldError>
+            </Field>
+          )}
+          {!competition && values.format === "games" && (
+            <Field
+              className="sm:col-span-2"
+              data-invalid={!!fieldErrors.gameType}
+            >
+              <FieldLabel htmlFor={`${id}-game-type`}>Game Type</FieldLabel>
+              <OptionSelect
+                id={`${id}-game-type`}
+                name="gameType"
+                aria-invalid={!!fieldErrors.gameType}
+                options={GAME_TYPES.map((gameType) => ({
+                  value: gameType,
+                  label: gameTypeLabel(gameType),
+                }))}
+                value={values.gameType ?? "head-to-head"}
+                onValueChange={(gameType) =>
+                  setValues((v) => ({ ...v, gameType }))
+                }
+              />
+              <FieldDescription>
+                {GAME_TYPES.map((gameType) => (
+                  <span key={gameType} className="block">
+                    <strong>{gameTypeLabel(gameType)}:</strong>{" "}
+                    {GAME_TYPE_DESCRIPTIONS[gameType]}
+                  </span>
+                ))}
+              </FieldDescription>
+              <FieldError>{fieldErrors.gameType}</FieldError>
+            </Field>
+          )}
           <Field
             className="sm:col-start-1"
             data-invalid={!!fieldErrors.maxPoints}
@@ -278,6 +374,11 @@ function CompetitionRow({
               value={values.maxPoints}
               onChange={set("maxPoints")}
             />
+            <FieldDescription>
+              Optional. The most points 1st place&rsquo;s Placement Points can
+              be worth. A single Points Entry over it still saves, with a
+              warning.
+            </FieldDescription>
             <FieldError>{fieldErrors.maxPoints}</FieldError>
           </Field>
           <Field data-invalid={!!fieldErrors.placementPoints}>
@@ -297,12 +398,14 @@ function CompetitionRow({
                 <p className="text-sm">
                   Format: {formatLabel(competition.format)} ·{" "}
                   <Link
-                    href={`/admin/setup/competitions/${competition.id}/bracket`}
+                    href={setupHref(competition)}
                     className="text-primary inline-flex min-h-11 items-center underline-offset-4 hover:underline sm:min-h-0"
                   >
                     {competition.format === "points"
                       ? "Run as a Bracket"
-                      : "Bracket"}
+                      : competition.format === "games"
+                        ? "Games"
+                        : "Bracket"}
                   </Link>
                 </p>
               )}

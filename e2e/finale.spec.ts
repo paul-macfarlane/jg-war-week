@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { E2E_PARTICIPANT_EMAIL, signIn } from "./session";
+import { visibleRowText } from "./standings";
 
 test("the Finale plays from Start and ends on first place", async ({
   context,
@@ -15,7 +16,7 @@ test("the Finale plays from Start and ends on first place", async ({
     })
     .getByRole("listitem")
     .first();
-  const leaderText = (await leader.innerText()).trim();
+  const leaderText = visibleRowText(await leader.innerText());
 
   await page.goto("/xi/finale");
   await page.getByRole("button", { name: "Start" }).click();

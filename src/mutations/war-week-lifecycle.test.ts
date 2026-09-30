@@ -227,13 +227,13 @@ describe.skipIf(!isLocalDatabase)("war_week_one_live index", () => {
 });
 
 describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
-  it("ends a live War Week with its Winner and highlights", async () => {
+  it("ends a live War Week, computing the Winner from its Standings", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { endWarWeek } = await import("@/mutations/war-week-lifecycle");
       const { live, byId } = await fixture(tx);
 
       const result = await endWarWeek(
-        { winner: "Red & Blue", highlights: ["Red won Chess"] },
+        { highlights: ["Red won Chess"] },
         ctxOf(live.id),
         tx,
       );
@@ -241,8 +241,84 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
       expect(result).toEqual({ ok: true });
       expect(await byId(live.id)).toMatchObject({
         status: "complete",
-        winner: "Red & Blue",
+        winner: "Red",
         highlights: ["Red won Chess"],
+      });
+    });
+  });
+
+  it("records a shared rank 1 as a tie, ignoring any client-supplied Winner", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { endWarWeek } = await import("@/mutations/war-week-lifecycle");
+      const { live, chess, schema, byId } = await fixture(tx);
+      const [blue] = await tx
+        .insert(schema.team)
+        .values({ warWeekId: live.id, name: "Blue", color: "#00f" })
+        .returning();
+      await tx.insert(schema.pointsEntry).values({
+        competitionId: chess.id,
+        teamId: blue.id,
+        points: 10,
+        enteredByEmail: "lead@jahnelgroup.com",
+      });
+
+      const result = await endWarWeek(
+        // A client-supplied `winner` isn't part of the input type; casting
+        // stands in for a forged request that tries to send one anyway.
+        { winner: "Nope", highlights: [] } as never,
+        ctxOf(live.id),
+        tx,
+      );
+
+      expect(result).toEqual({ ok: true });
+      expect(await byId(live.id)).toMatchObject({
+        status: "complete",
+        winner: "Tie: Blue & Red",
+      });
+    });
+  });
+
+  it("records no Winner when nobody has points", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { endWarWeek } = await import("@/mutations/war-week-lifecycle");
+      const { live, schema, byId } = await fixture(tx);
+      const { eq } = await import("drizzle-orm");
+      // No Team at all, not just no points: an empty leaderboard is one way
+      // to get a blank Winner (a Team left on 0 points is the other, covered
+      // below).
+      await tx.delete(schema.team).where(eq(schema.team.warWeekId, live.id));
+
+      const result = await endWarWeek({ highlights: [] }, ctxOf(live.id), tx);
+
+      expect(result).toEqual({ ok: true });
+      expect(await byId(live.id)).toMatchObject({
+        status: "complete",
+        winner: null,
+      });
+    });
+  });
+
+  it("records no Winner when every Team is left on 0 points", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { endWarWeek } = await import("@/mutations/war-week-lifecycle");
+      const { live, schema, byId } = await fixture(tx);
+      const { eq } = await import("drizzle-orm");
+      const [red] = await tx
+        .select({ id: schema.team.id })
+        .from(schema.team)
+        .where(eq(schema.team.warWeekId, live.id));
+      // Fixture's Red Team already has a Points Entry; strip it back to 0
+      // points so the only Team on the board is tied at the bottom.
+      await tx
+        .delete(schema.pointsEntry)
+        .where(eq(schema.pointsEntry.teamId, red.id));
+
+      const result = await endWarWeek({ highlights: [] }, ctxOf(live.id), tx);
+
+      expect(result).toEqual({ ok: true });
+      expect(await byId(live.id)).toMatchObject({
+        status: "complete",
+        winner: null,
       });
     });
   });
@@ -274,7 +350,7 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
         .values(warWeekValues(2, "upcoming"))
         .returning();
 
-      await endWarWeek({ winner: "Red", highlights: [] }, ctxOf(live.id), tx);
+      await endWarWeek({ highlights: [] }, ctxOf(live.id), tx);
       expect(await startWarWeek(ctxOf(upcoming.id), tx)).toEqual({ ok: true });
       expect((await byId(upcoming.id)).status).toBe("live");
     });
@@ -289,7 +365,7 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
         .insert(schema.warWeek)
         .values(warWeekValues(2, "upcoming"))
         .returning();
-      await endWarWeek({ winner: "Red", highlights: [] }, ctxOf(live.id), tx);
+      await endWarWeek({ highlights: [] }, ctxOf(live.id), tx);
       await startWarWeek(ctxOf(upcoming.id), tx);
 
       expect(await reopenWarWeek(ctxOf(live.id), tx)).toEqual({
@@ -297,11 +373,7 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
         error: "End TII first.",
       });
 
-      await endWarWeek(
-        { winner: null, highlights: [] },
-        ctxOf(upcoming.id),
-        tx,
-      );
+      await endWarWeek({ highlights: [] }, ctxOf(upcoming.id), tx);
       expect(await reopenWarWeek(ctxOf(live.id), tx)).toEqual({ ok: true });
       expect(await byId(live.id)).toMatchObject({
         status: "live",
@@ -319,7 +391,7 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
         .insert(schema.warWeek)
         .values(warWeekValues(2, "upcoming"))
         .returning();
-      await endWarWeek({ winner: null, highlights: [] }, ctxOf(live.id), tx);
+      await endWarWeek({ highlights: [] }, ctxOf(live.id), tx);
 
       expect(await startWarWeek(ctxOf(live.id), tx)).toEqual({
         ok: false,
@@ -349,11 +421,7 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
         error: "This War Week is already live.",
       });
       expect(
-        await endWarWeek(
-          { winner: null, highlights: [] },
-          ctxOf(upcoming.id),
-          tx,
-        ),
+        await endWarWeek({ highlights: [] }, ctxOf(upcoming.id), tx),
       ).toEqual({ ok: false, error: "Start this War Week before ending it." });
       expect(
         await startWarWeek(ctxOf("00000000-0000-4000-8000-000000000000"), tx),
@@ -411,6 +479,32 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
         faqItem: 0,
         award: 0,
         announcement: 0,
+      });
+    });
+  });
+
+  it("copies the derived palette's overrides with the settings", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { createNextWarWeek } =
+        await import("@/mutations/war-week-lifecycle");
+      const { live, schema } = await fixture(tx);
+      const { eq } = await import("drizzle-orm");
+      await tx
+        .update(schema.warWeek)
+        .set({ overridePrimaryColor: "#0a7a1f" })
+        .where(eq(schema.warWeek.id, live.id));
+
+      await createNextWarWeek(next(), ctxOf(live.id), tx);
+      const [created] = await tx
+        .select()
+        .from(schema.warWeek)
+        .where(eq(schema.warWeek.edition, "tii"));
+      expect(created).toMatchObject({
+        overridePrimaryColor: "#0a7a1f",
+        overridePrimaryForegroundColor: null,
+        overrideAccentColor: null,
+        overrideBackgroundColor: null,
+        overrideForegroundColor: null,
       });
     });
   });

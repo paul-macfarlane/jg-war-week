@@ -1,3 +1,5 @@
+import { backgroundColorScheme } from "@/lib/theme";
+
 import { BASE_URL, fail, ok, runQuery, signedInFetch } from "./harness";
 
 export async function assertHistory() {
@@ -6,15 +8,25 @@ export async function assertHistory() {
   try {
     const res = await signedInFetch(`${BASE_URL}/history`);
     const body = await res.text();
-    const complete = await runQuery<{ edition: string; primary: string }>(
-      `select edition, primary_color as primary from war_week
+    const complete = await runQuery<{
+      edition: string;
+      primary: string;
+      background: string;
+    }>(
+      `select edition, primary_color as primary, background_color as background
+         from war_week
          where status = 'complete' order by year desc`,
     );
     const positions = complete.map((w) => body.indexOf(`href="/${w.edition}"`));
     const checks = {
       allListed: positions.every((p) => p >= 0),
       newestFirst: positions.every((p, i) => i === 0 || p > positions[i - 1]),
-      ownThemes: complete.every((w) => body.includes(`--primary:${w.primary}`)),
+      // Each base primary under its own scheme's prefix.
+      ownThemes: complete.every((w) =>
+        body.includes(
+          `--${backgroundColorScheme(w.background)}-primary:${w.primary}`,
+        ),
+      ),
       excludesLive: !body.includes("The Matrix"),
     };
     if (
@@ -40,8 +52,13 @@ export async function assertArchiveDetail() {
   try {
     const res = await signedInFetch(`${BASE_URL}/viii`);
     const body = await res.text();
+    const [viii] = await runQuery<{ background: string; primary: string }>(
+      "select background_color as background, primary_color as primary from war_week where edition = 'viii'",
+    );
     const checks = {
-      theme: body.includes("--primary:#740001"),
+      theme: body.includes(
+        `--${backgroundColorScheme(viii.background)}-primary:${viii.primary}`,
+      ),
       storyTheme: body.includes("Harry Potter: The Houses of Hogwarts"),
       winner: body.includes("Winner") && body.includes("Slytherin"),
       houses: ["Gryffindor", "Hufflepuff", "Ravenclaw"].every((h) =>
@@ -50,7 +67,7 @@ export async function assertArchiveDetail() {
       awards: body.includes("House Cup"),
       highlights: body.includes("Highlights"),
       wiki: body.includes(
-        'href="https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/war-week-2023"',
+        'href="https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/home/war-week/war-week-2023"',
       ),
       noSlack: !body.includes("Join the Slack channel"),
     };
@@ -64,7 +81,7 @@ export async function assertArchiveDetail() {
   }
 
   const linkOnlyCheck =
-    "GET /i, /ii, /iii render as link-only cards with the wiki link";
+    "GET /i and /ii render as link-only cards, /iii with its Awards, each with the wiki link";
   try {
     const results = await Promise.all(
       [
@@ -77,9 +94,14 @@ export async function assertArchiveDetail() {
         return {
           edition,
           status: res.status,
-          linkOnly: body.includes("lives on") && !body.includes("Awards</h2>"),
+          // 2018's Finale deck gave it Awards, so it's a full archive page.
+          linkOnly:
+            edition === "iii"
+              ? body.includes("Awards</h2>") &&
+                body.includes("Joshua Cantor-Stone")
+              : body.includes("lives on") && !body.includes("Awards</h2>"),
           wiki: body.includes(
-            `href="https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/war-week-${year}"`,
+            `href="https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/home/war-week/war-week-${year}"`,
           ),
         };
       }),

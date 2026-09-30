@@ -10,6 +10,8 @@ export type CompetitionListItem = Pick<
   | "scoring"
   | "countsTowardTeam"
   | "competitionGroup"
+  | "format"
+  | "gameType"
 >;
 
 /** The most places a Competition can preset Placement Points for. */

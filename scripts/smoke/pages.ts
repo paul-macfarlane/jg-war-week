@@ -3,8 +3,10 @@ import path from "node:path";
 import { Client } from "pg";
 
 import { ABOUT_FEATURES } from "@/lib/about";
+import { DISPLAY_SCRIPT } from "@/lib/display";
 import { YOU_ROW_CLASS } from "@/lib/you";
 import { MCP_TOOLS } from "@/mcp/tools";
+import { DEMO_SEED } from "@/seed/local-files";
 
 import {
   BASE_URL,
@@ -17,10 +19,10 @@ import {
   teamTotalIn,
 } from "./harness";
 
-/** Rows each table should hold for War Week XI after loading its seed. */
+/** Rows each table should hold for War Week XI after loading the demo seed. */
 function expectedXiCounts(): Record<string, number> {
   const seed = JSON.parse(
-    readFileSync(path.resolve(process.cwd(), "seeds/xi.json"), "utf-8"),
+    readFileSync(path.resolve(process.cwd(), DEMO_SEED), "utf-8"),
   );
   const count = (list: unknown[] | undefined) => list?.length ?? 0;
   return {
@@ -158,6 +160,39 @@ export async function assertXiHome() {
       fail(
         check,
         `status=${res.status} bodyIncludes=${body.includes("War Week XI")} standings=${standings}`,
+      );
+    }
+  } catch (error) {
+    fail(check, String(error));
+  }
+}
+
+/**
+ * The Display's pre-paint script is inline in `<head>`, before `<body>`, so
+ * a stored Light or Dark applies before anything paints (no flash).
+ */
+export async function assertDisplayScriptInHead() {
+  const check =
+    "GET /xi carries the Display's inline script inside <head>, before <body>";
+  try {
+    const res = await signedInFetch(`${BASE_URL}/xi`);
+    const html = await res.text();
+    const headOpen = html.indexOf("<head");
+    const headClose = html.indexOf("</head>");
+    const bodyOpen = html.indexOf("<body");
+    const script = html.indexOf(`<script>${DISPLAY_SCRIPT}</script>`);
+    if (
+      res.status === 200 &&
+      headOpen >= 0 &&
+      script > headOpen &&
+      script < headClose &&
+      headClose < bodyOpen
+    ) {
+      ok(check);
+    } else {
+      fail(
+        check,
+        `status=${res.status} head=${headOpen} script=${script} headClose=${headClose} body=${bodyOpen}`,
       );
     }
   } catch (error) {
@@ -580,13 +615,17 @@ export async function assertYouHighlight(sessions: {
 
 export async function assertAboutPage() {
   const check =
-    "anonymous GET /about is 200 with the Finale video, every feature card, the XI link and no sign-in redirect";
+    "anonymous GET /about is 200 with the Standings-hero stills, the Finale still, every feature card, the XI link and no sign-in redirect";
   try {
     const res = await fetch(`${BASE_URL}/about`, { redirect: "manual" });
     const body = await res.text();
     const checks = {
-      video: body.includes('src="/about/finale.mp4"'),
-      poster: body.includes('poster="/about/finale-poster.png"'),
+      noVideo: !/<video/i.test(body),
+      standingsHero:
+        body.includes('src="/about/standings-before.png"') &&
+        body.includes('src="/about/standings-entry.png"') &&
+        body.includes('src="/about/standings-after.png"'),
+      finalePoster: body.includes('src="/about/finale-poster.png"'),
       cards:
         (body.match(/data-feature="/g) ?? []).length === ABOUT_FEATURES.length,
       xi: body.includes('href="/xi"'),

@@ -65,20 +65,93 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed lifecycle fields", () => {
       const { loadWarWeekSeed } = await import("@/seed/load");
       const { endWarWeek } = await import("@/mutations/war-week-lifecycle");
       await clearLive(tx);
-      const first = await loadWarWeekSeed(await seed("sa", 1, "live"), tx);
+      // A Team with a Points Entry, so End records a non-null Winner; the
+      // point of this test is that a reload never overwrites either field
+      // once End War Week has set them.
+      const seeded = await seed("sa", 1, "live", {
+        teams: [{ name: "Red", color: "#ff0000" }],
+        competitions: [
+          {
+            name: "Chess",
+            scoring: "team",
+            placementPoints: [10],
+          },
+        ],
+        pointsEntries: [
+          {
+            key: "sa-chess-red",
+            competition: "Chess",
+            team: "Red",
+            points: 10,
+            enteredByEmail: "organizer@jahnelgroup.com",
+            enteredAt: "2099-01-02T00:00:00Z",
+          },
+        ],
+      });
+      const first = await loadWarWeekSeed(seeded, tx);
       expect(first.status).toBe("live");
 
-      await endWarWeek(
-        { winner: "Red", highlights: ["gg"] },
-        ctxOf(first.id),
-        tx,
-      );
-      const reloaded = await loadWarWeekSeed(await seed("sa", 1, "live"), tx);
+      await endWarWeek({ highlights: ["gg"] }, ctxOf(first.id), tx);
+      const reloaded = await loadWarWeekSeed(seeded, tx);
 
       expect(reloaded).toMatchObject({
         status: "complete",
         winner: "Red",
         highlights: ["gg"],
+      });
+    });
+  });
+
+  it("sets a games Competition's Game Type, settings and Entrants open on insert only", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { loadWarWeekSeed } = await import("@/seed/load");
+      const schema = await import("@/db/schema");
+      const { eq } = await import("drizzle-orm");
+      await clearLive(tx);
+      const seeded = await seed("sg", 3, "upcoming", {
+        competitions: [
+          {
+            name: "Stairs",
+            scoring: "team",
+            format: "games",
+            gameType: "best-score",
+            gameConfig: { count: "total", betterIs: "higher", unit: "trips" },
+            entrantsOpen: true,
+          },
+        ],
+      });
+      const first = await loadWarWeekSeed(seeded, tx);
+      const read = async () =>
+        (
+          await tx
+            .select({
+              format: schema.competition.format,
+              gameType: schema.competition.gameType,
+              gameConfig: schema.competition.gameConfig,
+              entrantsOpen: schema.competition.entrantsOpen,
+            })
+            .from(schema.competition)
+            .where(eq(schema.competition.warWeekId, first.id))
+        )[0];
+      expect(await read()).toEqual({
+        format: "games",
+        gameType: "best-score",
+        gameConfig: { count: "total", betterIs: "higher", unit: "trips" },
+        entrantsOpen: true,
+      });
+
+      // A Host's change survives a reload.
+      await tx
+        .update(schema.competition)
+        .set({
+          gameConfig: { count: "best", betterIs: "lower", unit: "s" },
+          entrantsOpen: false,
+        })
+        .where(eq(schema.competition.warWeekId, first.id));
+      await loadWarWeekSeed(seeded, tx);
+      expect(await read()).toMatchObject({
+        gameConfig: { count: "best", betterIs: "lower", unit: "s" },
+        entrantsOpen: false,
       });
     });
   });

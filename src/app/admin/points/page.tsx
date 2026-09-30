@@ -11,8 +11,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { formatLabel } from "@/lib/bracket/view";
 import { formatPoints, formatPointsLabel } from "@/lib/points";
-import { formatLedgerTime } from "@/lib/points-entry";
+import { formatLedgerTime, generatedNote } from "@/lib/points-entry";
 import { getBracketCompetitions } from "@/queries/brackets";
+import { getGamesCompetitions } from "@/queries/games";
 import {
   getAdminLedger,
   getPointsEntryFormOptions,
@@ -30,12 +31,14 @@ export default async function AdminPointsPage() {
     await loadAdminPage("/admin/points");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
-  const [allOptions, allLedger, standings, allBrackets] = await Promise.all([
-    getPointsEntryFormOptions(warWeek),
-    getAdminLedger(warWeek),
-    getStandings(warWeek),
-    getBracketCompetitions(warWeek),
-  ]);
+  const [allOptions, allLedger, standings, allBrackets, allGames] =
+    await Promise.all([
+      getPointsEntryFormOptions(warWeek),
+      getAdminLedger(warWeek),
+      getStandings(warWeek),
+      getBracketCompetitions(warWeek),
+      getGamesCompetitions(warWeek),
+    ]);
   // A Host sees only their own Competitions in the form, ledger and Brackets.
   const options = {
     ...allOptions,
@@ -43,6 +46,7 @@ export default async function AdminPointsPage() {
   };
   const ledger = allLedger.filter((entry) => runs(entry.competitionId));
   const brackets = allBrackets.filter((b) => runs(b.id));
+  const games = allGames.filter((g) => runs(g.id));
 
   return (
     <AdminShell
@@ -76,6 +80,29 @@ export default async function AdminPointsPage() {
           </ul>
         </section>
       )}
+      {games.length > 0 && (
+        <section
+          className="mb-8 flex max-w-6xl flex-col gap-2"
+          aria-label="Games"
+        >
+          <h2 className="text-lg font-semibold">Games</h2>
+          <ul className="flex flex-wrap gap-2">
+            {games.map((g) => (
+              <li key={g.id}>
+                <Link
+                  href={`/admin/setup/competitions/${g.id}/games`}
+                  className="border-border hover:bg-muted inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium"
+                >
+                  {g.name}
+                  <span className="text-foreground/60 text-xs font-normal">
+                    {g.finalizedAt ? "closed" : "open"}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <div className="grid max-w-6xl gap-8 lg:grid-cols-[minmax(0,24rem)_1fr]">
         <section className="flex flex-col gap-4">
           <h1 className="text-2xl font-bold">Add a Points Entry</h1>
@@ -88,14 +115,18 @@ export default async function AdminPointsPage() {
         >
           <h2 className="text-lg font-semibold">Current standings</h2>
           <div className="grid gap-6 xl:grid-cols-2">
-            {(standings.main === "team" || standings.team.length > 0) && (
+            {standings.main === "team" && (
               <div className="flex flex-col gap-2">
                 <h3 className="font-medium">{warWeek.teamLabel} standings</h3>
                 <TeamStandingsList rows={standings.team} />
               </div>
             )}
             <div className="flex flex-col gap-2">
-              <h3 className="font-medium">Individual leaderboard</h3>
+              <h3 className="font-medium">
+                {standings.main === "individual"
+                  ? "Standings"
+                  : "Individual leaderboard"}
+              </h3>
               <IndividualStandingsList rows={standings.individual} />
             </div>
           </div>
@@ -138,7 +169,9 @@ export default async function AdminPointsPage() {
                     </td>
                     <td className="text-foreground/70 py-2 pr-4">
                       {entry.generatedByBracket ? (
-                        <Badge variant="secondary">From bracket</Badge>
+                        <Badge variant="secondary">
+                          {generatedNote(entry.competitionFormat)}
+                        </Badge>
                       ) : (
                         entry.note
                       )}
@@ -154,12 +187,21 @@ export default async function AdminPointsPage() {
                     </td>
                     <td className="py-2">
                       {entry.generatedByBracket ? (
-                        <Link
-                          href={`/admin/brackets/${entry.competitionId}`}
-                          className="text-primary text-xs whitespace-nowrap underline-offset-4 hover:underline"
-                        >
-                          Change in the Bracket
-                        </Link>
+                        entry.competitionFormat === "games" ? (
+                          <Link
+                            href={`/admin/setup/competitions/${entry.competitionId}/games`}
+                            className="text-primary text-xs whitespace-nowrap underline-offset-4 hover:underline"
+                          >
+                            Change in Games
+                          </Link>
+                        ) : (
+                          <Link
+                            href={`/admin/brackets/${entry.competitionId}`}
+                            className="text-primary text-xs whitespace-nowrap underline-offset-4 hover:underline"
+                          >
+                            Change in the Bracket
+                          </Link>
+                        )
                       ) : (
                         <div className="flex items-center gap-2">
                           <Link

@@ -5,6 +5,7 @@ import {
   expect,
   test,
 } from "@playwright/test";
+import path from "node:path";
 
 import {
   runQuery,
@@ -55,6 +56,26 @@ const REPORTER = "Ashley Schuliger";
 /** A second stub JG address, cleared with every e2e user (`e2e-%`). */
 const E2E_PARTICIPANT_2_EMAIL = "e2e-participant-2@jahnelgroup.com";
 
+/** The Squad help line (Q38), wherever Squads appear. */
+const SQUAD_HELP = "a pair or group from one Team, playing as one entrant";
+
+/** Screenshots at 375 and 1280 under `test-results/e2e/bracket-squads-help/`. */
+async function shootHelp(page: Page, testInfo: TestInfo, name: string) {
+  for (const width of SCREENSHOT_WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.screenshot({
+      path: path.join(
+        testInfo.project.outputDir,
+        "bracket-squads-help",
+        `${name}-${width}.png`,
+      ),
+      fullPage: true,
+      animations: "disabled",
+    });
+  }
+  await page.setViewportSize({ width: 1280, height: 900 });
+}
+
 const VIEWPORT_WIDTHS = [375, 768, 1280] as const;
 /** Only these widths get a screenshot; 768 is checked for overflow only. */
 const SCREENSHOT_WIDTHS: readonly number[] = [375, 1280];
@@ -104,6 +125,17 @@ function heatCard(page: Page, heat: string): Locator {
   return page
     .getByRole("listitem")
     .filter({ has: page.getByText(heat, { exact: true }) });
+}
+
+/**
+ * Switches the Competition page's Bracket from its default tree to the
+ * List, whose Heat Cards `heatCard` finds.
+ */
+async function showList(page: Page) {
+  await page
+    .getByRole("region", { name: "Bracket" })
+    .getByRole("tab", { name: "List" })
+    .click();
 }
 
 /** The Squad named in a Winner button's text. */
@@ -183,13 +215,20 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     ).toBeVisible();
 
     for (const squad of SQUADS) await addSquad(page, squad);
+    // 15-3: the Squad help line in the builder's Squads section.
+    await expect(
+      page.getByRole("region", { name: "Squads" }).getByText(SQUAD_HELP),
+    ).toBeVisible();
+    await shootHelp(page, testInfo, "builder");
 
     await page.getByRole("combobox", { name: "Entrants are" }).click();
     await page.getByRole("option", { name: "Squads", exact: true }).click();
     await page.getByRole("button", { name: "All Squads" }).click();
     await expect(page.getByText("Squads (4 chosen)")).toBeVisible();
     await page.getByRole("button", { name: "Save Entrants" }).click();
-    await expect(page.getByText("Entrants saved")).toBeVisible();
+    await expect(
+      page.getByText("Entrants saved", { exact: true }),
+    ).toBeVisible();
 
     const selfReport = page.getByRole("switch", { name: "Self-report" });
     await selfReport.click();
@@ -236,8 +275,15 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     const secondContext = await browser.newContext({ baseURL: E2E_BASE_URL });
     await signIn(secondContext, E2E_PARTICIPANT_2_EMAIL);
     const second = await secondContext.newPage();
+    // 15-3: the Squad help line on the Competition page, by the Bracket.
+    await first.goto(`/xi/competitions/${id}`);
+    await expect(
+      first.getByRole("region", { name: "Bracket" }).getByText(SQUAD_HELP),
+    ).toBeVisible();
+    await shootHelp(first, testInfo, "competition-page");
     for (const you of [first, second]) {
       await you.goto(`/xi/competitions/${id}`);
+      await showList(you);
       const nextHeat = you
         .getByRole("region", { name: "Bracket" })
         .getByLabel("Your next Heat");
@@ -287,6 +333,7 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await second.keyboard.press("Escape");
     await expect(secondSheet).toBeHidden();
     await second.reload();
+    await showList(second);
     await expect(
       heatCard(second, semifinal)
         .getByRole("listitem")

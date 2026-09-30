@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useId, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -30,6 +31,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { WarWeek } from "@/db/schema";
+import type { OpenGamesCompetition } from "@/queries/open-games-competitions";
 
 /**
  * The lifecycle action for a War Week's status, behind a confirm that says
@@ -43,15 +45,21 @@ export function WarWeekLifecycleControls({
   suggestedWinner,
   highlights,
   unfinalizedBrackets,
+  openGamesCompetitions,
 }: {
   warWeekId: string;
   edition: string;
   status: WarWeek["status"];
-  /** First place in the main Standings, to prefill the Winner. */
+  /**
+   * The Winner End War Week will record: first place in the main
+   * Standings, read-only (there is no Organizer override).
+   */
   suggestedWinner: string;
   highlights: string[];
   /** Names of Brackets not yet finalized, to warn about when ending. */
   unfinalizedBrackets: string[];
+  /** Open `games` Competitions with Games, to warn about when ending. */
+  openGamesCompetitions: OpenGamesCompetition[];
 }) {
   const name = edition.toUpperCase();
 
@@ -96,6 +104,7 @@ export function WarWeekLifecycleControls({
       suggestedWinner={suggestedWinner}
       highlights={highlights}
       unfinalizedBrackets={unfinalizedBrackets}
+      openGamesCompetitions={openGamesCompetitions}
     />
   );
 }
@@ -106,18 +115,19 @@ function EndWarWeekButton({
   suggestedWinner,
   highlights: initialHighlights,
   unfinalizedBrackets,
+  openGamesCompetitions,
 }: {
   warWeekId: string;
   name: string;
   suggestedWinner: string;
   highlights: string[];
   unfinalizedBrackets: string[];
+  openGamesCompetitions: OpenGamesCompetition[];
 }) {
   const router = useRouter();
   const formId = useId();
   const formRef = useRef<HTMLFormElement>(null);
   const [open, setOpen] = useState(false);
-  const [winner, setWinner] = useState(suggestedWinner);
   const [highlights, setHighlights] = useState(initialHighlights.join("\n"));
 
   // Validation runs on the server; a refusal names its fields.
@@ -127,7 +137,6 @@ function EndWarWeekButton({
       formData: FormData,
     ): Promise<LifecycleActionResult> => {
       const input = {
-        winner: String(formData.get("winner") ?? ""),
         highlights: String(formData.get("highlights") ?? ""),
       };
       const saved = await endWarWeek(warWeekId, input);
@@ -152,14 +161,41 @@ function EndWarWeekButton({
   const formError = formErrorOf(shown);
   useFocusFirstInvalid(formRef, result);
 
-  const trimmed = winner.trim();
+  const trimmed = suggestedWinner.trim();
   const endDescription = trimmed
     ? `${name} moves to the Archive with ${trimmed} as Winner.`
     : `${name} moves to the Archive with no Winner.`;
-  const description =
-    unfinalizedBrackets.length > 0
-      ? `${endDescription} Not finalized: ${unfinalizedBrackets.join(", ")}. Their placings aren't in the Standings until you finalize them.`
-      : endDescription;
+  const description = (
+    <>
+      {endDescription}
+      {unfinalizedBrackets.length > 0 && (
+        <>
+          {" "}
+          Not finalized: {unfinalizedBrackets.join(", ")}. Their placings
+          aren&apos;t in the Standings until you finalize them.
+        </>
+      )}
+      {openGamesCompetitions.length > 0 && (
+        <>
+          {" "}
+          Still open:{" "}
+          {openGamesCompetitions.map((c, i) => (
+            <span key={c.id}>
+              {i > 0 && ", "}
+              <Link
+                href={`/admin/setup/competitions/${c.id}/games`}
+                className="text-primary underline underline-offset-4"
+              >
+                {c.name}
+              </Link>
+            </span>
+          ))}
+          . Their Placement Points aren&apos;t in the Standings until you close
+          them.
+        </>
+      )}
+    </>
+  );
   return (
     <>
       <Button
@@ -189,22 +225,15 @@ function EndWarWeekButton({
           aria-label="End War Week"
         >
           <FieldGroup className="gap-4">
-            <Field data-invalid={!!fieldErrors.winner}>
+            <Field>
               <FieldLabel htmlFor="end-winner">Winner</FieldLabel>
               <Input
                 id="end-winner"
-                name="winner"
+                readOnly
                 className="h-11 sm:h-9"
-                maxLength={200}
-                aria-invalid={!!fieldErrors.winner}
-                value={winner}
-                onChange={(event) => setWinner(event.target.value)}
+                value={trimmed || "No Winner"}
               />
-              <FieldDescription>
-                First place in the Standings. A tie can be &ldquo;Red &amp;
-                Blue&rdquo;.
-              </FieldDescription>
-              <FieldError>{fieldErrors.winner}</FieldError>
+              <FieldDescription>First place in the Standings.</FieldDescription>
             </Field>
             <Field data-invalid={!!fieldErrors.highlights}>
               <FieldLabel htmlFor="end-highlights">Highlights</FieldLabel>

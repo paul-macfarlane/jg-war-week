@@ -12,11 +12,14 @@ import {
   replaceEntrants,
   setCompetitionFormat,
 } from "@/actions/brackets";
+import { setSelfEnroll } from "@/actions/enrollment";
 import { setSelfReport } from "@/actions/heat-reports";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { EntityCombobox } from "@/components/entity-combobox";
+import { DatePicker } from "@/components/date-picker";
+import { EntrantsPicker } from "@/components/entrants-picker";
 import { OptionSelect } from "@/components/option-select";
 import { SquadForm } from "@/components/squad-form";
+import { TimeCombobox } from "@/components/time-combobox";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Field,
@@ -27,6 +30,7 @@ import {
   FieldLegend,
   FieldSet,
 } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -48,6 +52,7 @@ import {
   isTimed,
 } from "@/lib/bracket/view";
 import { COMPETITION_FORMATS } from "@/lib/enums";
+import { fromEasternClock, toEasternClock } from "@/lib/schedule";
 import type { BracketEntrant, SquadRow } from "@/queries/brackets";
 
 type Target = {
@@ -58,7 +63,10 @@ type Target = {
   teamId?: string | null;
 };
 
-const FORMAT_OPTIONS = COMPETITION_FORMATS.map((format) => ({
+// Never `games`: a Competition is `games` from creation, and stays so.
+const FORMAT_OPTIONS = COMPETITION_FORMATS.filter(
+  (format) => format !== "games",
+).map((format) => ({
   value: format,
   label: formatLabel(format),
 }));
@@ -275,6 +283,117 @@ function squadDetail(squad: SquadRow): string {
 }
 
 /**
+ * The "Participants can enroll" switch, Entrant limit and close time
+ * (`setSelfEnroll`, ADR 0006). The limit and close time save with the
+ * switch, in one write.
+ */
+function SelfEnrollFields({
+  competitionId,
+  selfEnroll,
+  entrantLimit,
+  enrollClosesAt,
+  disabled,
+}: {
+  competitionId: string;
+  selfEnroll: boolean;
+  entrantLimit: number | null;
+  enrollClosesAt: Date | null;
+  disabled: boolean;
+}) {
+  const router = useRouter();
+  const [on, setOn] = useState(selfEnroll);
+  const [limit, setLimit] = useState(
+    entrantLimit !== null ? String(entrantLimit) : "",
+  );
+  const initialClock = enrollClosesAt ? toEasternClock(enrollClosesAt) : null;
+  const [date, setDate] = useState(initialClock?.date ?? "");
+  const [time, setTime] = useState(initialClock?.time.slice(0, 5) ?? "");
+
+  const [, formAction, saving] = useActionState(
+    async (): Promise<BracketActionResult> => {
+      const closesAt = fromEasternClock(date, time);
+      const result = await setSelfEnroll(competitionId, {
+        on,
+        entrantLimit: limit.trim() === "" ? null : limit,
+        enrollClosesAt: closesAt ? closesAt.toISOString() : null,
+      });
+      if (result.ok) {
+        toast.success(on ? "Enrollment on" : "Enrollment off");
+        router.refresh();
+      } else {
+        toast.error(result.error);
+      }
+      return result;
+    },
+    null,
+  );
+  const off = disabled || saving;
+
+  return (
+    <form action={formAction} className="flex flex-col gap-4">
+      <Field orientation="horizontal" className="max-w-xl">
+        <Switch
+          id="bracket-self-enroll"
+          checked={on}
+          disabled={off}
+          onCheckedChange={setOn}
+        />
+        <FieldContent>
+          <FieldLabel htmlFor="bracket-self-enroll">
+            Participants can enroll
+          </FieldLabel>
+          <FieldDescription>
+            Participants enter themselves until the Bracket is built, the limit
+            is reached or the close time passes.
+          </FieldDescription>
+        </FieldContent>
+      </Field>
+      {on && (
+        <FieldGroup className="gap-4 sm:flex-row">
+          <Field className="sm:max-w-48">
+            <FieldLabel htmlFor="bracket-enroll-limit">
+              Entrant limit
+            </FieldLabel>
+            <Input
+              id="bracket-enroll-limit"
+              type="number"
+              inputMode="numeric"
+              min={2}
+              className="h-11 sm:h-9"
+              value={limit}
+              onChange={(event) => setLimit(event.target.value)}
+            />
+          </Field>
+          <Field className="sm:max-w-48">
+            <FieldLabel htmlFor="bracket-enroll-date">Close date</FieldLabel>
+            <DatePicker
+              id="bracket-enroll-date"
+              name="enrollClosesAtDate"
+              value={date}
+              onValueChange={setDate}
+            />
+          </Field>
+          <Field className="sm:max-w-40">
+            <FieldLabel htmlFor="bracket-enroll-time">
+              Close time (ET)
+            </FieldLabel>
+            <TimeCombobox
+              id="bracket-enroll-time"
+              name="enrollClosesAtTime"
+              value={time}
+              onValueChange={setTime}
+            />
+          </Field>
+        </FieldGroup>
+      )}
+      <Button type="submit" size="lg" className="min-h-11 w-fit" disabled={off}>
+        {saving ? "Saving…" : "Save enrollment settings"}
+      </Button>
+    </form>
+  );
+}
+
+/**
  * The Bracket builder: the Format, a team Competition's Squads, the
  * Entrants ("All Teams", "All Squads" or picked ones for team scoring,
  * picked Participants for individual), their Seed Positions with Generate /
@@ -296,6 +415,9 @@ export function BracketBuilder({
     format: Format;
     finalized: boolean;
     selfReport: boolean;
+    selfEnroll: boolean;
+    entrantLimit: number | null;
+    enrollClosesAt: Date | null;
   };
   /** The saved Entrants, by Seed Position. */
   entrants: BracketEntrant[];
@@ -488,6 +610,9 @@ export function BracketBuilder({
                 entered as one Entrant. Its Placement Points go to its{" "}
                 {teamLabel}.
               </p>
+              <p className="text-foreground/60 text-xs">
+                Squad: a pair or group from one Team, playing as one entrant
+              </p>
               {squads.length === 0 ? (
                 <p className="text-foreground/70 text-sm">No Squads yet.</p>
               ) : (
@@ -548,95 +673,73 @@ export function BracketBuilder({
             </section>
           )}
 
-          <FieldSet>
-            <FieldLegend>Entrants</FieldLegend>
-            <FieldDescription>
-              {!isTeam
-                ? "An individual Competition, so its Entrants are Participants."
-                : bySquads
-                  ? `A ${teamLabel} Competition entering Squads; each Squad's points go to its ${teamLabel}.`
-                  : `A ${teamLabel} Competition, so its Entrants are ${teamLabel}s.`}{" "}
-              Saving new Entrants clears the Bracket.
-            </FieldDescription>
-            <FieldGroup className="gap-3">
-              {showKind && (
-                <Field className="max-w-xs">
-                  <FieldLabel htmlFor="bracket-entrant-kind">
-                    Entrants are
-                  </FieldLabel>
-                  <OptionSelect
-                    id="bracket-entrant-kind"
-                    options={[
-                      { value: "team", label: `${teamLabel}s` },
-                      { value: "squad", label: "Squads" },
-                    ]}
-                    value={kind}
+          <EntrantsPicker
+            id="bracket-entrants"
+            description={
+              <>
+                {!isTeam
+                  ? "An individual Competition, so its Entrants are Participants."
+                  : bySquads
+                    ? `A ${teamLabel} Competition entering Squads; each Squad's points go to its ${teamLabel}.`
+                    : `A ${teamLabel} Competition, so its Entrants are ${teamLabel}s.`}{" "}
+                Saving new Entrants clears the Bracket.
+              </>
+            }
+            kind={kind}
+            kindLabel={teamLabel}
+            options={items}
+            selected={selected}
+            onChange={setSelected}
+            onSave={() =>
+              startAction({
+                run: (force) =>
+                  replaceEntrants(competition.id, {
+                    kind,
+                    targetIds: selected,
+                    force,
+                  }),
+                success: "Entrants saved",
+                title: "Clear every Heat Result and save the Entrants?",
+              })
+            }
+            disabled={pending || locked}
+            saveDisabled={!dirty}
+            note={
+              <>
+                {showKind && (
+                  <Field className="max-w-xs">
+                    <FieldLabel htmlFor="bracket-entrant-kind">
+                      Entrants are
+                    </FieldLabel>
+                    <OptionSelect
+                      id="bracket-entrant-kind"
+                      options={[
+                        { value: "team", label: `${teamLabel}s` },
+                        { value: "squad", label: "Squads" },
+                      ]}
+                      value={kind}
+                      disabled={pending || locked}
+                      onValueChange={changeKind}
+                    />
+                  </Field>
+                )}
+                {isTeam && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    className="min-h-11 w-fit"
                     disabled={pending || locked}
-                    onValueChange={changeKind}
-                  />
-                </Field>
-              )}
-              {isTeam && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="lg"
-                  className="min-h-11 w-fit"
-                  disabled={pending || locked}
-                  onClick={() =>
-                    setSelected((bySquads ? squads : teams).map((t) => t.id))
-                  }
-                >
-                  {bySquads ? "All Squads" : `All ${teamLabel}s`}
-                </Button>
-              )}
-              <Field>
-                <FieldLabel htmlFor="bracket-entrants">
-                  {bySquads
-                    ? "Squads"
-                    : isTeam
-                      ? `${teamLabel}s`
-                      : "Pick Participants"}{" "}
-                  ({selected.length} chosen)
-                </FieldLabel>
-                <EntityCombobox
-                  id="bracket-entrants"
-                  multiple
-                  items={items}
-                  value={selected}
-                  onValueChange={setSelected}
-                  disabled={pending || locked}
-                  placeholder={
-                    bySquads
-                      ? "Find a Squad"
-                      : isTeam
-                        ? `Find a ${teamLabel}`
-                        : `Find by name or ${teamLabel}`
-                  }
-                />
-              </Field>
-              <Button
-                type="button"
-                size="lg"
-                className="min-h-11 w-fit"
-                disabled={pending || locked || !dirty}
-                onClick={() =>
-                  startAction({
-                    run: (force) =>
-                      replaceEntrants(competition.id, {
-                        kind,
-                        targetIds: selected,
-                        force,
-                      }),
-                    success: "Entrants saved",
-                    title: "Clear every Heat Result and save the Entrants?",
-                  })
-                }
-              >
-                Save Entrants
-              </Button>
-            </FieldGroup>
-          </FieldSet>
+                    onClick={() =>
+                      setSelected((bySquads ? squads : teams).map((t) => t.id))
+                    }
+                  >
+                    {bySquads ? "All Squads" : `All ${teamLabel}s`}
+                  </Button>
+                )}
+              </>
+            }
+          />
 
           <section className="flex flex-col gap-3" aria-label="Seed Positions">
             <h2 className="text-lg font-semibold">Seed Positions</h2>
@@ -736,6 +839,15 @@ export function BracketBuilder({
               </FieldDescription>
             </FieldContent>
           </Field>
+
+          <SelfEnrollFields
+            key={`${competition.selfEnroll}-${competition.entrantLimit}-${competition.enrollClosesAt?.getTime()}`}
+            competitionId={competition.id}
+            selfEnroll={competition.selfEnroll}
+            entrantLimit={competition.entrantLimit}
+            enrollClosesAt={competition.enrollClosesAt}
+            disabled={pending || locked}
+          />
 
           {firstRound && (
             <section className="flex flex-col gap-3" aria-label="Preview">

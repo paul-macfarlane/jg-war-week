@@ -83,7 +83,7 @@ before it says it's done.
 | Bracket builder and results screens                | `src/app/admin/setup/competitions/[id]/bracket/`, `src/app/admin/brackets/[id]/` |
 | Database schema                            | `src/db/schema.ts`                                                     |
 | Migrations (generated, never hand-edited)  | `drizzle/`                                                             |
-| Seed data, one file per War Week           | `seeds/i.json` … `seeds/xi.json`                                       |
+| Seed data, one file per War Week           | `seeds/i.json` … `seeds/xi.json`; the live XI demo in `seeds/demo/xi.json` |
 | Seed format and loader                     | `src/seed/schema.ts`, `src/seed/load.ts`                               |
 | Appearance Theme → CSS                     | `src/lib/theme.ts`                                                     |
 | Shared UI pieces                           | `src/components/` (shadcn primitives in `src/components/ui/`)          |
@@ -149,24 +149,35 @@ A change people can see also updates `/about` in the same PR: its copy
 (`src/app/about/page.tsx`, `src/lib/about.ts`) and, when a feature card's
 screen changed, its still. Regenerate the stills from the seeded demo, never
 by hand, after `pnpm build` with a freshly loaded seed
-(`pnpm seed:load --reset seeds/*.json`):
+(`pnpm seed:load --reset seeds/*.json && pnpm seed:demo`):
 
 ```bash
 pnpm tsx scripts/about-media.ts --stills
 ```
 
-Without `--stills` it also re-records the Finale video, which needs
-`ffmpeg`; only do that when the Finale itself changed.
+Without `--stills` it also re-records the Finale poster still
+(`finale-poster.png`); only do that when the Finale screen itself changed.
+`--stills` also rewrites the home Standings hero's three stills
+(`standings-before.png`, `standings-entry.png`, `standings-after.png`).
 
 ### Run a new War Week or change this year's theme (no code first)
 
 Organizer screens cover it. Sign in and go to `/admin`:
 
-- **`/admin/setup`**: the **Lifecycle** box (Start, End with the Winner and
-  highlights, Reopen), War Week settings (Story Theme, dates, mode, Team
-  Label, Leader Title, links, Winner and highlights), the Appearance Theme
+- **`/admin/setup`**: the **Lifecycle** box (Start, End with the computed
+  Winner and highlights, Reopen), War Week settings (Story Theme, dates,
+  mode, Team Label, Leader Title, links, Winner and highlights, editable
+  directly for corrections), the Appearance Theme
   (colors, font, logo, banner), Days, Teams and roster, Competitions (with
-  their Hosts), Schedule and FAQ.
+  their Hosts), Schedule and FAQ. The Appearance Theme form shows both
+  color schemes: whichever one the five colors you set are the base
+  palette for, and the other scheme's colors, derived from them
+  automatically. Any of the derived scheme's five colors can be
+  overridden; changing a background across light and dark clears every
+  override you haven't touched yourself. Viewers never see your Setup
+  screen's scheme — each picks their own Display (Light, Dark or System)
+  from the header menu (the phone More Sheet, the desktop TopNav, or the
+  Admin header).
 - **`/admin/organizers`**: the Organizer list (see
   [Add an Organizer or assign Hosts](#add-an-organizer-or-assign-hosts)).
 - **`/admin/points`**, **`/admin/standings`** (Run the Finale: "Open Finale" at closing ceremonies, and "Finale: <Competition>" for each finalized Bracket),
@@ -181,10 +192,14 @@ To start next year's edition in the app:
    nothing to copy for them. It starts `upcoming`, and the admin
    switches to it so you can set it up while XI stays current.
 2. When XI is over, switch back to XI in the header's edition switcher and
-   press **End War Week**: confirm the Winner (prefilled from first place)
-   and any highlights. XI moves to the Archive. The confirm names any
-   Bracket that isn't finalized; finalize it first so its placings count
-   (it warns, it doesn't stop you).
+   press **End War Week**: the dialog shows the Winner it will record —
+   whoever is first in the Standings, "Tie: A & B" when two or more Teams
+   or Participants tie for first, blank when nobody scored — and lets you
+   add any highlights. There is no way to type a different Winner. XI moves
+   to the Archive. The confirm also names any Bracket that isn't finalized
+   and any open `games` Competition with Games, each `games` one linked to
+   its Games setup page. Finalize or close them first so their placings
+   count; it warns, it doesn't stop you.
 3. Switch to XII and press **Start War Week**. `/` and `/admin` now go to
    XII. Only one War Week can be live, so XI must end first.
 
@@ -228,14 +243,27 @@ signed in is a **Participant** (`CONTEXT.md`, "Access rules").
 
 ### Run a knockout Competition as a Bracket
 
-Organizer screens cover setting one up and running it: set the Competition's
-**Format** to single elimination or Heats under `/admin/setup/competitions`,
-open its Bracket builder to pick Entrants (all Teams, or specific
-Participants) and Generate; then record each Heat's result from the results
-screen (`/admin/brackets/<id>`) and Finalize to write its placings as Points
-Entries. No code needed for any of that. While a Bracket is finalized, its
-Competition's scoring and Placement Points can't change ("Un-finalize the
-Bracket first."); its name and description still can.
+Organizer screens cover setting one up and running it. Under
+**Setup → Competitions**, **Add a Competition** and choose its **Format**:
+"Single elimination" ("A knockout Bracket: one loss and an Entrant is out.")
+or "Heats" ("A Bracket where Entrants play in Heats; a set number advance
+each Round."). **Add**, and you land straight on that Competition's Bracket
+setup page. There, pick Entrants (all Teams, or specific Participants) and
+Generate; then record each Heat's result — from the results screen
+(`/admin/brackets/<id>`) or straight from the Competition page, either one
+opening a dialog centered on a screen and a bottom sheet on a phone — and
+Finalize to write its placings as Points Entries. No code needed for any of
+that. While a Bracket is finalized, its Competition's scoring and Placement
+Points can't change ("Un-finalize the Bracket first."); its name and
+description still can. Changing an existing Competition's Format happens on
+its Bracket page, not the Setup form.
+
+A Bracket reads as a tree by default on its Competition page: single
+elimination shows its Rounds left to right joined by lines; Heats shows one
+box per Heat with the advancers highlighted. On a phone it's one Round at a
+time, with Round tabs. Results fill in live as they're recorded, and a
+**List** toggle switches back to the plain list. `/admin/brackets/<id>` (the
+results screen) still shows the list.
 
 On the day: the builder's **By Standings** button draws Seed Positions
 from the current Standings (ties at random) instead of Generate's random
@@ -294,6 +322,63 @@ The engine is deliberately separate from the UI: `src/lib/bracket/` has no
 React imports and never reads or writes the database itself, so a new
 Format's rules are unit-testable on their own before any screen uses them.
 
+### Run a Competition as Games
+
+For a showdown, a best of X, or a week-long ladder of casual games — no code
+needed. Under **Setup → Competitions**, **Add a Competition** and choose its
+**Format**: "Games". A **Game Type** select appears — Head-to-head (a
+winner, or a draw when allowed), Best score (each Game records a score;
+best or total, higher or lower is better) or Ranked (a finishing order,
+with Finish Points per place). **A `games` Competition's Format and Game
+Type are fixed once it's created**: add a new Competition to run it a
+different way.
+
+**Add**, and you land on that Competition's Games setup page (the twin of a
+Bracket's), where the Host or an Organizer sets:
+
+- The Game Type's own settings (draws and Best of off/3/5/7 for
+  head-to-head; count best or total, direction and a unit label for
+  best-score; a Finish Points table for ranked).
+- **Entrants**: open to everyone eligible, or a fixed list (pick Teams or
+  Participants, as for a Bracket). A Best of needs a fixed list of exactly
+  two Entrants.
+- **Participants can enroll**, with an optional limit and close time (see
+  [Let Participants enroll themselves](#let-participants-enroll-themselves)
+  below) — off, and unavailable, once the Competition is open to everyone
+  or has a Best of.
+- An optional **logging close time**, after which only the Host or an
+  Organizer can log, edit or delete a Game.
+- **Close** / **Reopen**, behind a confirm: Close turns the leaderboard's
+  places into Placement Points Entries, the same tie rule as finalizing a
+  Bracket; Reopen withdraws them. A closed Competition refuses every Game
+  write, even the Host's, until it's reopened.
+
+Participants log, edit or delete Games straight from the Competition page —
+there's no separate results page. A **Log a Game** card on the home page
+lists every open `games` Competition the signed-in Participant may log in
+right now, straight to the form. The leaderboard and Game log (newest
+first, with a "Mine" filter) live on the Competition page for everyone, in
+the Archive too once the War Week ends: a `games` Competition left open
+when its War Week ends keeps taking Games until the Host closes it.
+
+### Let Participants enroll themselves
+
+The **"Participants can enroll"** switch (off by default) is on a
+Bracket's builder and a fixed-list `games` Competition's settings — never
+on a `points` Competition, an open-to-everyone `games` Competition, or a
+Best of (the Host sets those two Entrants by hand). Turn it on, and
+optionally set an Entrant limit and a close time; enrollment also closes
+the moment the Bracket is built, or (for `games`) the first Game is
+logged, or whenever the Host closes the Competition.
+
+In team scoring, any Participant on a Team enters or withdraws the whole
+Team. Once the Host has added any Squad to a team-scoring Bracket
+("Squad: a pair or group from one Team, playing as one entrant"),
+Participants join or leave a Squad instead — their own Team's, up to 16
+Participants — and Team enrollment turns off. Withdrawing (or leaving a
+Squad) works any time before enrollment closes; after that, only the Host
+or an Organizer removes an Entrant.
+
 ### Add a field
 
 ```text
@@ -335,13 +420,28 @@ Notes:
   `<input type="time">`, or `<input type="color">`. Add a missing primitive
   with `pnpm dlx shadcn@latest add <name>`; don't hand-roll a control shadcn
   already has.
+- A single choice among a few options (who won, which Entrant) is a
+  `ToggleGroup` from `ui/toggle-group`: single-select, and kept
+  non-deselectable by ignoring an empty `onValueChange` — never `Button`s
+  with hand-rolled `aria-pressed`.
 - The app's own wrappers — `EntityCombobox`, `DatePicker`,
-  `DateRangePicker`, `TimeCombobox`, and `ColorField` — live in
+  `DateRangePicker`, `TimeCombobox`, `ColorField`, and `ResponsiveSheetDialog`
+  (a centered Dialog at `lg` and up, a bottom Sheet below) — live in
   `src/components/`. Reach for one of those before building a new control.
   Only `EntityCombobox` does search and chips.
 - Popups portal into the themed root through `ThemeRoot`, which is wired
-  into `ui/popover`, `ui/select`, `ui/combobox`, `ui/alert-dialog` and
-  `ui/sheet`, so they keep the War Week's Appearance Theme.
+  into `ui/popover`, `ui/select`, `ui/combobox`, `ui/alert-dialog`,
+  `ui/dialog` and `ui/sheet`, so they keep the War Week's Appearance Theme.
+  `ThemeRoot`'s `scheme` prop pins its subtree to one color scheme whatever
+  the viewer's Display — the Setup form's two previews use it so an
+  Organizer sees both the light and the dark palette rendered live, side by
+  side, regardless of their own Display.
+- A warning that still lets the save through uses the `--warning` token
+  (`text-warning`), not a hardcoded amber — it's tuned to pass AA against
+  each color scheme's background, unlike a raw Tailwind amber class. Its
+  users today: Setup's contrast warnings and its flip notice (an Organizer
+  override about to be cleared), the Points Entry form's Max points
+  warning, and the Announcement form's hint.
 - Lay out every field with `Field` / `FieldLabel htmlFor` /
   `FieldDescription` from `ui/field`, and show a form's server error in a
   `FieldError` under its buttons.
@@ -384,10 +484,13 @@ emails.
 `/llms.txt` picks the new tool up from `src/mcp/tools.ts`. The tools today
 are `get_current_war_week`, `get_leaderboard`, `get_schedule`,
 `get_announcements`, `get_awards`, `get_faq`, `list_history`,
-`get_history` and `get_bracket` (a Competition's Bracket by name, with each
+`get_history`, `get_bracket` (a Competition's Bracket by name, with each
 Heat's time and place, and a Squad's `participants` by name; never who
-reported a result). `get_bracket` (`src/mcp/bracket.ts`) is the model
-for a tool that looks something up by name and whitelists what it returns.
+reported a result) and `get_games` (a Competition run as Games, by name:
+its settings, leaderboard ranked by Game Type and its Games newest first;
+never an email or who logged one). `get_bracket` (`src/mcp/bracket.ts`) is
+the model for a tool that looks something up by name and whitelists what
+it returns.
 
 ### Add or fix history
 
@@ -396,8 +499,10 @@ for a tool that looks something up by name and whitelists what it returns.
 missing or wrong>.
 ```
 
-Competiscore data is gone; `old-wikis/` and what you remember are the only
-sources. Load locally with `pnpm seed:load seeds/<edition>.json`, then check
+Competiscore data is gone; `old-wikis/`, the live wiki pages (and the Drive
+folders they link to) and what you remember are the only sources. For
+Claude to read the wiki, sign in to it in the Claude Code browser first.
+Leave `seeds/demo/xi.json` alone unless a test needs different demo data. Load locally with `pnpm seed:load seeds/<edition>.json`, then check
 `/history` and `/<edition>`.
 
 ## Guardrails

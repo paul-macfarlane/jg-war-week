@@ -8,6 +8,8 @@ import {
   competitionHost,
   day,
   entrant,
+  game,
+  gamePlayer,
   participant,
   pointsEntry,
   scheduleItem,
@@ -16,10 +18,15 @@ import {
   team,
   warWeek,
 } from "@/db/schema";
+import { defaultConfig } from "@/lib/bracket/config";
+import { defaultGamesConfig } from "@/lib/games/config";
 import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
+import type { FieldErrors } from "@/lib/result";
 import {
+  type CompetitionCreateValues,
   type CompetitionValues,
   type DayValues,
+  type OverrideColumn,
   type ParticipantValues,
   type TeamValues,
   type WarWeekSettingsValues,
@@ -31,6 +38,7 @@ import {
   settingsGuardError,
   teamGuardError,
 } from "@/lib/setup";
+import { backgroundColorScheme } from "@/lib/theme";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 
 const WAR_WEEK_NOT_FOUND = "That War Week no longer exists.";
@@ -48,15 +56,15 @@ export function isUniqueViolation(error: unknown): boolean {
 }
 
 /** Runs a write, turning a lost race for a unique value into `refusal`. */
-export async function refusingDuplicate(
+export async function refusingDuplicate<R extends MutationResult>(
   refusal: string,
-  write: () => Promise<MutationResult>,
-): Promise<MutationResult> {
+  write: () => Promise<R>,
+): Promise<R> {
   try {
     return await write();
   } catch (error) {
     if (!isUniqueViolation(error)) throw error;
-    return { ok: false, error: refusal };
+    return { ok: false, error: refusal } as R;
   }
 }
 
@@ -92,9 +100,45 @@ async function dayDates(
   return rows.map((row) => row.date);
 }
 
+const OVERRIDE_COLUMNS: OverrideColumn[] = [
+  "overridePrimaryColor",
+  "overridePrimaryForegroundColor",
+  "overrideAccentColor",
+  "overrideBackgroundColor",
+  "overrideForegroundColor",
+];
+
+/**
+ * The overrides a save clears: when the new background moves the base
+ * palette across light and dark, the overrides belonged to the scheme the
+ * base now dresses, so each one posted unchanged from the stored row (left
+ * untouched) goes back to derived. One posted with a new value was set
+ * after the flip, and stays.
+ */
+function overridesClearedByFlip(
+  values: WarWeekSettingsValues,
+  stored: Pick<WarWeekSettingsValues, "backgroundColor"> &
+    Record<OverrideColumn, string | null>,
+): Partial<Record<OverrideColumn, null>> {
+  if (
+    backgroundColorScheme(values.backgroundColor) ===
+    backgroundColorScheme(stored.backgroundColor)
+  ) {
+    return {};
+  }
+  const cleared: Partial<Record<OverrideColumn, null>> = {};
+  for (const column of OVERRIDE_COLUMNS) {
+    if (values[column] != null && values[column] === stored[column]) {
+      cleared[column] = null;
+    }
+  }
+  return cleared;
+}
+
 /**
  * Saves the War Week's settings and Appearance Theme, refusing a save that
- * would strand Teams or Days.
+ * would strand Teams or Days. A background that crosses light and dark
+ * clears the overrides the save left untouched (`overridesClearedByFlip`).
  */
 export async function updateWarWeekSettings(
   values: WarWeekSettingsValues,
@@ -112,9 +156,26 @@ export async function updateWarWeekSettings(
     });
     if (refusal) return { ok: false, error: refusal };
 
+    const [stored] = await tx
+      .select({
+        backgroundColor: warWeek.backgroundColor,
+        overridePrimaryColor: warWeek.overridePrimaryColor,
+        overridePrimaryForegroundColor: warWeek.overridePrimaryForegroundColor,
+        overrideAccentColor: warWeek.overrideAccentColor,
+        overrideBackgroundColor: warWeek.overrideBackgroundColor,
+        overrideForegroundColor: warWeek.overrideForegroundColor,
+      })
+      .from(warWeek)
+      .where(eq(warWeek.id, ctx.warWeekId));
+    if (!stored) return { ok: false, error: WAR_WEEK_NOT_FOUND };
+
     const updated = await tx
       .update(warWeek)
-      .set({ ...values, updatedAt: sql`now()` })
+      .set({
+        ...values,
+        ...overridesClearedByFlip(values, stored),
+        updatedAt: sql`now()`,
+      })
       .where(eq(warWeek.id, ctx.warWeekId))
       .returning({ id: warWeek.id });
     return updated.length > 0
@@ -334,6 +395,11 @@ export async function deleteTeam(
           "Bracket Entrants",
         ],
         [await tx.$count(squad, eq(squad.teamId, id)), "Squad", "Squads"],
+        [
+          await tx.$count(gamePlayer, eq(gamePlayer.teamId, id)),
+          "Game",
+          "Games",
+        ],
       ],
       "Move or delete them first.",
     );
@@ -503,6 +569,11 @@ export async function deleteParticipant(
           "Squad",
           "Squads",
         ],
+        [
+          await tx.$count(gamePlayer, eq(gamePlayer.participantId, id)),
+          "Game",
+          "Games",
+        ],
       ],
       "Delete them or remove the Participant from them first.",
     );
@@ -535,6 +606,7 @@ async function competitionRefusal(
         scoring: competition.scoring,
         placementPoints: competition.placementPoints,
         finalizedAt: competition.finalizedAt,
+        format: competition.format,
       })
       .from(competition)
       .where(
@@ -548,6 +620,7 @@ async function competitionRefusal(
       scoring: found.scoring,
       placementPoints: found.placementPoints,
       finalizedAt: found.finalizedAt,
+      format: found.format,
       pointsEntryCount: await tx.$count(
         pointsEntry,
         eq(pointsEntry.competitionId, exceptId),
@@ -581,6 +654,19 @@ async function competitionRefusal(
     "Remove them before changing its scoring.",
   );
   if (entrantRefusal) return entrantRefusal;
+  // A Game's players are Teams or Participants by its scoring.
+  const gameRefusal = inUseError(
+    "Competition",
+    [
+      [
+        await tx.$count(game, eq(game.competitionId, exceptId)),
+        "Game",
+        "Games",
+      ],
+    ],
+    "Delete them before changing its scoring.",
+  );
+  if (gameRefusal) return gameRefusal;
   // Squads are only for team Competitions.
   return inUseError(
     "Competition",
@@ -595,21 +681,47 @@ async function competitionRefusal(
   );
 }
 
+/** What `createCompetition` returns: the new row's id, or a refusal. */
+export type CreateCompetitionResult =
+  | { ok: true; id: string }
+  | { ok: false; error: string; fieldErrors?: FieldErrors };
+
+/**
+ * Creates a Competition, with the Format an Organizer chose (default
+ * "points") and, for a heats Format with none given, the Bracket builder's
+ * default config (`defaultConfig`). A `games` Competition stores its Game
+ * Type and that type's default settings; any other Format has no Game Type.
+ */
 export async function createCompetition(
-  values: CompetitionValues,
+  values: CompetitionCreateValues,
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
-): Promise<MutationResult> {
+): Promise<CreateCompetitionResult> {
   return refusingDuplicate(
     `There's already a Competition named "${values.name}".`,
     () =>
-      dbOrTx.transaction(async (tx): Promise<MutationResult> => {
+      dbOrTx.transaction(async (tx): Promise<CreateCompetitionResult> => {
         const refusal = await competitionRefusal(values, ctx, tx);
         if (refusal) return { ok: false, error: refusal };
-        await tx
+        const format = values.format ?? "points";
+        const gameType = format === "games" ? (values.gameType ?? null) : null;
+        if (format === "games" && !gameType) {
+          return { ok: false, error: "Choose a Game Type." };
+        }
+        const [created] = await tx
           .insert(competition)
-          .values({ warWeekId: ctx.warWeekId, ...values });
-        return { ok: true };
+          .values({
+            warWeekId: ctx.warWeekId,
+            ...values,
+            format,
+            bracketConfig: defaultConfig(format),
+            gameType,
+            gameConfig: gameType ? defaultGamesConfig(gameType) : null,
+            // A new `games` Competition is open to everyone (Best of is off).
+            entrantsOpen: format === "games",
+          })
+          .returning({ id: competition.id });
+        return { ok: true, id: created.id };
       }),
   );
 }
@@ -649,8 +761,8 @@ export async function updateCompetition(
 }
 
 /**
- * Deletes a Competition of this War Week, refusing one with Points Entries
- * or Schedule Items.
+ * Deletes a Competition of this War Week, refusing one with Points Entries,
+ * Schedule Items or Games.
  */
 export async function deleteCompetition(
   id: string,
@@ -674,6 +786,7 @@ export async function deleteCompetition(
           "Schedule Item",
           "Schedule Items",
         ],
+        [await tx.$count(game, eq(game.competitionId, id)), "Game", "Games"],
       ],
       "Delete or move them first.",
     );

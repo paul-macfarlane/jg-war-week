@@ -13,12 +13,14 @@ import {
   type TeamInput,
   type WarWeekSettingsInput,
   parseCompetitionInput,
+  parseCreateCompetitionInput,
   parseDayInput,
   parseParticipantInput,
   parseTeamInput,
   parseWarWeekSettingsInput,
 } from "@/lib/setup";
 import * as mutations from "@/mutations/setup";
+import type { CreateCompetitionResult } from "@/mutations/setup";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 
 export type SetupActionResult = MutationResult;
@@ -175,17 +177,31 @@ export async function deleteParticipant(
   );
 }
 
+/**
+ * Creates a Competition, with the Format an Organizer chose on the create
+ * form. Returns the new row's id, so the form can send a Bracket Format
+ * straight to its Bracket setup.
+ */
 export async function createCompetition(
   warWeekId: string,
   input: CompetitionInput,
-): Promise<SetupActionResult> {
-  return setupWrite(
-    "competition.create",
-    "warWeek",
-    warWeekId,
-    () => parseCompetitionInput(input),
-    mutations.createCompetition,
-  );
+): Promise<CreateCompetitionResult> {
+  return guarded(async () => {
+    const authorized = await authorize(
+      "competition.create",
+      "warWeek",
+      warWeekId,
+    );
+    if (!authorized.ok) return authorized;
+    const parsed = parseCreateCompetitionInput(input);
+    if (!parsed.ok) return parsed;
+    const result = await mutations.createCompetition(
+      parsed.value,
+      authorized.ctx,
+    );
+    if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
+    return result;
+  });
 }
 
 /** A Competition's setup: its Organizers, or a Host of that Competition. */
