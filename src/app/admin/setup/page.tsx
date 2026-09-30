@@ -6,6 +6,7 @@ import { SeedOverwriteWarning } from "@/components/seed-overwrite-warning";
 import { Badge } from "@/components/ui/badge";
 import { WarWeekLifecycleControls } from "@/components/war-week-lifecycle-controls";
 import { STATUS_LABELS, defaultWinner } from "@/lib/war-week-lifecycle";
+import { getOpenGamesCompetitions } from "@/queries/open-games-competitions";
 import { getStandings } from "@/queries/standings";
 import { getUnfinalizedBrackets } from "@/queries/unfinalized-brackets";
 
@@ -29,12 +30,14 @@ export default async function AdminSetupPage() {
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const isLiveOrganizer = isOrganizer && warWeek.status === "live";
-  const [standings, unfinalizedBrackets] = isLiveOrganizer
-    ? await Promise.all([
-        getStandings(warWeek),
-        getUnfinalizedBrackets(warWeek),
-      ])
-    : [undefined, []];
+  const [standings, unfinalizedBrackets, openGamesCompetitions] =
+    isLiveOrganizer
+      ? await Promise.all([
+          getStandings(warWeek),
+          getUnfinalizedBrackets(warWeek),
+          getOpenGamesCompetitions(warWeek),
+        ])
+      : [undefined, [], []];
   const suggestedWinner = !isOrganizer
     ? ""
     : isLiveOrganizer
@@ -77,6 +80,7 @@ export default async function AdminSetupPage() {
                 suggestedWinner={suggestedWinner}
                 highlights={warWeek.highlights}
                 unfinalizedBrackets={unfinalizedBrackets.map((c) => c.name)}
+                openGamesCompetitions={openGamesCompetitions}
               />
               <Link
                 href="/admin/setup/next"

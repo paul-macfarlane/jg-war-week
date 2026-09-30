@@ -188,8 +188,10 @@ To start next year's edition in the app:
    whoever is first in the Standings, "Tie: A & B" when two or more Teams
    or Participants tie for first, blank when nobody scored — and lets you
    add any highlights. There is no way to type a different Winner. XI moves
-   to the Archive. The confirm names any Bracket that isn't finalized;
-   finalize it first so its placings count (it warns, it doesn't stop you).
+   to the Archive. The confirm also names any Bracket that isn't finalized
+   and any open `games` Competition with Games, each `games` one linked to
+   its Games setup page. Finalize or close them first so their placings
+   count; it warns, it doesn't stop you.
 3. Switch to XII and press **Start War Week**. `/` and `/admin` now go to
    XII. Only one War Week can be live, so XI must end first.
 
@@ -410,6 +412,10 @@ Notes:
   `<input type="time">`, or `<input type="color">`. Add a missing primitive
   with `pnpm dlx shadcn@latest add <name>`; don't hand-roll a control shadcn
   already has.
+- A single choice among a few options (who won, which Entrant) is a
+  `ToggleGroup` from `ui/toggle-group`: single-select, and kept
+  non-deselectable by ignoring an empty `onValueChange` — never `Button`s
+  with hand-rolled `aria-pressed`.
 - The app's own wrappers — `EntityCombobox`, `DatePicker`,
   `DateRangePicker`, `TimeCombobox`, `ColorField`, and `ResponsiveSheetDialog`
   (a centered Dialog at `lg` and up, a bottom Sheet below) — live in

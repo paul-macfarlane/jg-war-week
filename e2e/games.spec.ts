@@ -14,6 +14,7 @@ import {
   E2E_HOST_EMAIL,
   E2E_PARTICIPANT_EMAIL,
   asHost,
+  asOrganizer,
   signIn,
 } from "./session";
 import { teamTotal } from "./standings";
@@ -134,16 +135,21 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     await expect(form.getByRole("combobox", { name: "Player A" })).toHaveValue(
       PLAYER.name,
     );
-    // Shot before filling in: resizing swaps the Sheet for the Dialog,
-    // which remounts the form.
-    await shoot(you, testInfo, "log-form");
+    // Filled in on a phone, then widened past `lg`: the form keeps its input.
+    await you.setViewportSize({ width: 375, height: 900 });
     await form.getByRole("combobox", { name: "Player B" }).click();
     await you.getByRole("option", { name: OPPONENT.name, exact: true }).click();
     await expect(you.getByRole("listbox")).toHaveCount(0);
-    await form
+    const won = form
       .getByRole("group", { name: "Who won?" })
-      .getByRole("button", { name: `${PLAYER.name} won` })
-      .click();
+      .getByRole("button", { name: `${PLAYER.name} won` });
+    await won.click();
+    await you.setViewportSize({ width: 1280, height: 900 });
+    await expect(form.getByRole("combobox", { name: "Player B" })).toHaveValue(
+      OPPONENT.name,
+    );
+    await expect(won).toHaveAttribute("aria-pressed", "true");
+    await shoot(you, testInfo, "log-form");
     await form.getByRole("button", { name: "Log Game" }).click();
     await expect(you.getByText("Game logged")).toBeVisible();
     await expect(form).toBeHidden();
@@ -175,10 +181,20 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     const edit = page.getByRole("dialog", { name: "Edit Game" });
     await expect(edit).toBeVisible();
     await shoot(page, testInfo, "host-edit");
-    await edit
-      .getByRole("group", { name: "Who won?" })
-      .getByRole("button", { name: `${OPPONENT.name} won` })
-      .click();
+    // Keyboard proof: arrow off the pressed item onto the other, Space to
+    // choose it, all without a mouse.
+    const editOutcome = edit.getByRole("group", { name: "Who won?" });
+    const editPlayerWon = editOutcome.getByRole("button", {
+      name: `${PLAYER.name} won`,
+    });
+    const editOpponentWon = editOutcome.getByRole("button", {
+      name: `${OPPONENT.name} won`,
+    });
+    await editPlayerWon.focus();
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("Space");
+    await expect(editOpponentWon).toHaveAttribute("aria-pressed", "true");
+    await expect(editPlayerWon).toHaveAttribute("aria-pressed", "false");
     await edit.getByRole("button", { name: "Save Game" }).click();
     await expect(page.getByText("Game updated")).toBeVisible();
     await expect(edit).toBeHidden();
@@ -200,6 +216,30 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     await expect(
       page.getByRole("region", { name: "Games" }).getByText(edited),
     ).toBeVisible();
+
+    // Ending the War Week while this Competition is still open warns an
+    // Organizer, naming it with a link to its Games setup page, and never
+    // refuses; Cancel, so the Host can close it below.
+    const organizerContext = await browser.newContext({
+      baseURL: E2E_BASE_URL,
+    });
+    try {
+      await asOrganizer(organizerContext);
+      const organizerPage = await organizerContext.newPage();
+      await organizerPage.goto("/admin/setup");
+      await organizerPage.getByRole("button", { name: "End War Week" }).click();
+      const endDialog = organizerPage.getByRole("alertdialog");
+      await expect(endDialog).toContainText("Still open:");
+      await expect(endDialog).toContainText(COMPETITION);
+      await expect(
+        endDialog.getByRole("link", { name: COMPETITION }),
+      ).toHaveAttribute("href", `/admin/setup/competitions/${id}/games`);
+      await shoot(organizerPage, testInfo, "end-warning");
+      await endDialog.getByRole("button", { name: "Cancel" }).click();
+      await expect(endDialog).toBeHidden();
+    } finally {
+      await organizerContext.close();
+    }
 
     // The Host closes it from the Games setup page.
     await page.goto(`/admin/setup/competitions/${id}/games`);

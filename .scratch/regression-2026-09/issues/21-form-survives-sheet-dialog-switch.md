@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Source:** Epic R3 follow-up (`../epics/R3-execution.md` [CLOSEOUT]), 2026-09-29
 
@@ -21,3 +21,6 @@
 
 ## Comments
 - 2026-09-29 (Paul): triaged `ready-for-agent`; delivered in Epic R4 (`../epics/R4-follow-ups-from-r3.md`).
+- 2026-09-29: claimed by `/atlas-implement` (work package `regression-r4`), `ready-for-agent` → `in-progress`; branch `feat/regression-r4-follow-ups` from `staging` `8c57be6` (R3 merged, PR #92). Execution record: `../epics/R4-execution.md`.
+- 2026-09-29 [AI CODE REVIEW]: no finding against 21 open. T7 parity: no finding. D21's attribute change is recorded as a deviation. Full tables: `../epics/R4-execution.md` [AI CODE REVIEW].
+- 2026-09-29 [CLOSEOUT]: criteria 21-1..21-4 PASS; `pnpm format:check && pnpm gate` exit 0 at `ba3b657` (`test-results/r4-gate/gate.txt`). PR https://github.com/paul-macfarlane/jg-war-week/pull/93. `ai-review` → `done`. Details: `../epics/R4-execution.md` [CLOSEOUT].

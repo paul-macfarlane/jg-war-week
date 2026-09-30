@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { resetByResult } from "@/lib/bracket/formats";
 import type { Bracket, Heat, HeatResult } from "@/lib/bracket/types";
 import { heatName, isDecided } from "@/lib/bracket/view";
@@ -237,25 +238,28 @@ export function WinnerForm(props: HeatResultFormProps) {
         </ResponsiveSheetDialogDescription>
       </ResponsiveSheetDialogHeader>
       <div className="flex flex-col gap-4 px-4">
-        <div
-          role="group"
+        <ToggleGroup
           aria-label="Winner"
-          className="grid grid-cols-1 gap-2 sm:grid-cols-2"
+          value={winner ? [winner] : []}
+          onValueChange={(value) => {
+            // A choice can't be deselected: clicking the pressed item again
+            // would otherwise clear the group.
+            const [next] = value as string[];
+            if (!next) return;
+            setWinner(next);
+            if (forfeit === next) setForfeit(null);
+          }}
+          variant="outline"
+          className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2"
         >
           {ids.map((entrantId) => {
             const entrant = entrantsById.get(entrantId)!;
             const chosen = winner === entrantId;
             return (
-              <Button
+              <ToggleGroupItem
                 key={entrantId}
-                type="button"
-                variant={chosen ? "default" : "outline"}
-                aria-pressed={chosen}
-                className="h-auto min-h-11 justify-start gap-2 py-2"
-                onClick={() => {
-                  setWinner(entrantId);
-                  if (forfeit === entrantId) setForfeit(null);
-                }}
+                value={entrantId}
+                className="aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary/80 h-auto min-h-11 justify-start gap-2 py-2"
               >
                 <EntrantMark
                   entrant={entrant}
@@ -264,10 +268,10 @@ export function WinnerForm(props: HeatResultFormProps) {
                 />
                 <span className="min-w-0 truncate">{entrant.label}</span>
                 {chosen && <span className="ml-auto">✓ Winner</span>}
-              </Button>
+              </ToggleGroupItem>
             );
           })}
-        </div>
+        </ToggleGroup>
         <FieldGroup className="gap-4">
           {ids.map((entrantId, i) => (
             <div key={entrantId} className="flex flex-col gap-2">

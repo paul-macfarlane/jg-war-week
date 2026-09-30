@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useId, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -30,6 +31,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { WarWeek } from "@/db/schema";
+import type { OpenGamesCompetition } from "@/queries/open-games-competitions";
 
 /**
  * The lifecycle action for a War Week's status, behind a confirm that says
@@ -43,6 +45,7 @@ export function WarWeekLifecycleControls({
   suggestedWinner,
   highlights,
   unfinalizedBrackets,
+  openGamesCompetitions,
 }: {
   warWeekId: string;
   edition: string;
@@ -55,6 +58,8 @@ export function WarWeekLifecycleControls({
   highlights: string[];
   /** Names of Brackets not yet finalized, to warn about when ending. */
   unfinalizedBrackets: string[];
+  /** Open `games` Competitions with Games, to warn about when ending. */
+  openGamesCompetitions: OpenGamesCompetition[];
 }) {
   const name = edition.toUpperCase();
 
@@ -99,6 +104,7 @@ export function WarWeekLifecycleControls({
       suggestedWinner={suggestedWinner}
       highlights={highlights}
       unfinalizedBrackets={unfinalizedBrackets}
+      openGamesCompetitions={openGamesCompetitions}
     />
   );
 }
@@ -109,12 +115,14 @@ function EndWarWeekButton({
   suggestedWinner,
   highlights: initialHighlights,
   unfinalizedBrackets,
+  openGamesCompetitions,
 }: {
   warWeekId: string;
   name: string;
   suggestedWinner: string;
   highlights: string[];
   unfinalizedBrackets: string[];
+  openGamesCompetitions: OpenGamesCompetition[];
 }) {
   const router = useRouter();
   const formId = useId();
@@ -157,10 +165,37 @@ function EndWarWeekButton({
   const endDescription = trimmed
     ? `${name} moves to the Archive with ${trimmed} as Winner.`
     : `${name} moves to the Archive with no Winner.`;
-  const description =
-    unfinalizedBrackets.length > 0
-      ? `${endDescription} Not finalized: ${unfinalizedBrackets.join(", ")}. Their placings aren't in the Standings until you finalize them.`
-      : endDescription;
+  const description = (
+    <>
+      {endDescription}
+      {unfinalizedBrackets.length > 0 && (
+        <>
+          {" "}
+          Not finalized: {unfinalizedBrackets.join(", ")}. Their placings
+          aren&apos;t in the Standings until you finalize them.
+        </>
+      )}
+      {openGamesCompetitions.length > 0 && (
+        <>
+          {" "}
+          Still open:{" "}
+          {openGamesCompetitions.map((c, i) => (
+            <span key={c.id}>
+              {i > 0 && ", "}
+              <Link
+                href={`/admin/setup/competitions/${c.id}/games`}
+                className="text-primary underline underline-offset-4"
+              >
+                {c.name}
+              </Link>
+            </span>
+          ))}
+          . Their Placement Points aren&apos;t in the Standings until you close
+          them.
+        </>
+      )}
+    </>
+  );
   return (
     <>
       <Button

@@ -111,7 +111,6 @@ async function checkResultPopup(page: Page, testInfo: TestInfo, heat: string) {
   await page.getByRole("button", { name: `Record ${heat}` }).click();
   const dialog = page.getByRole("dialog", { name: heat });
   await expect(dialog).toBeVisible();
-  await expect(dialog).toHaveAttribute("data-slot", "dialog-content");
   await expect
     .poll(async () => {
       const box = (await dialog.boundingBox())!;
@@ -133,8 +132,6 @@ async function checkResultPopup(page: Page, testInfo: TestInfo, heat: string) {
   await page.getByRole("button", { name: `Record ${heat}` }).click();
   const sheet = page.getByRole("dialog", { name: heat });
   await expect(sheet).toBeVisible();
-  await expect(sheet).toHaveAttribute("data-slot", "sheet-content");
-  await expect(sheet).toHaveAttribute("data-side", "bottom");
   await expect
     .poll(async () => {
       const box = (await sheet.boundingBox())!;

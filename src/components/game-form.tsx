@@ -25,6 +25,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { GameType } from "@/lib/enums";
 import type {
   BestScoreConfig,
@@ -35,6 +36,8 @@ import type { FieldErrors } from "@/lib/result";
 import type { GamesViewName, GamesViewPlayer } from "@/queries/games";
 
 type Scoring = "team" | "individual";
+/** Who won a head-to-head Game: Player A, Player B, or a draw. */
+type Outcome = "a" | "b" | "draw";
 type Linked = { participantId: string; teamId: string | null } | null;
 
 /** A Game being edited: its id and its players with places and scores. */
@@ -117,7 +120,7 @@ function GameFormBody({
   // Head-to-head.
   const [playerA, setPlayerA] = useState(players[0]?.id ?? you);
   const [playerB, setPlayerB] = useState(players[1]?.id ?? "");
-  const [outcome, setOutcome] = useState<"a" | "b" | "draw" | "">(() => {
+  const [outcome, setOutcome] = useState<Outcome | "">(() => {
     if (players.length !== 2) return "";
     if (players[0].place === players[1].place) return "draw";
     return players[0].place === 1 ? "a" : "b";
@@ -220,30 +223,34 @@ function GameFormBody({
               <span id={`${id}-outcome`} className="text-sm font-medium">
                 Who won?
               </span>
-              <div
-                role="group"
+              <ToggleGroup
                 aria-labelledby={`${id}-outcome`}
-                className="grid grid-cols-1 gap-2 sm:grid-cols-3"
+                value={outcome ? [outcome] : []}
+                onValueChange={(value) => {
+                  // A choice can't be deselected: clicking the pressed item
+                  // again would otherwise clear the group.
+                  const [next] = value as Outcome[];
+                  if (next) setOutcome(next);
+                }}
+                variant="outline"
+                className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3"
               >
                 {(
                   [
                     ["a", `${nameOf(playerA) ?? "Player A"} won`],
                     ["b", `${nameOf(playerB) ?? "Player B"} won`],
                     ...(drawsAllowed ? [["draw", "Draw"]] : []),
-                  ] as ["a" | "b" | "draw", string][]
+                  ] as [Outcome, string][]
                 ).map(([value, label]) => (
-                  <Button
+                  <ToggleGroupItem
                     key={value}
-                    type="button"
-                    variant={outcome === value ? "default" : "outline"}
-                    aria-pressed={outcome === value}
-                    className="h-auto min-h-11 py-2 whitespace-normal sm:min-h-9"
-                    onClick={() => setOutcome(value)}
+                    value={value}
+                    className="aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary/80 h-auto min-h-11 py-2 whitespace-normal sm:min-h-9"
                   >
                     {label}
-                  </Button>
+                  </ToggleGroupItem>
                 ))}
-              </div>
+              </ToggleGroup>
               <FieldError>{errors.outcome}</FieldError>
             </Field>
           </>
