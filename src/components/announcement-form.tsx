@@ -177,7 +177,7 @@ export function AnnouncementForm({
                       </Button>
                     </div>
                     {hint && (
-                      <FieldDescription className="font-medium text-amber-600">
+                      <FieldDescription className="text-warning font-medium">
                         {hint}
                       </FieldDescription>
                     )}

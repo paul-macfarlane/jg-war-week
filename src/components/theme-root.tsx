@@ -9,6 +9,8 @@ import {
   useState,
 } from "react";
 
+import type { ColorScheme } from "@/lib/theme";
+
 const ThemeContainerContext = createContext<HTMLElement | null>(null);
 
 /**
@@ -30,13 +32,10 @@ type ThemeRootProps = {
   as?: "div" | "li";
   style?: CSSProperties;
   /**
-   * The page's color scheme, for the one root that dresses the whole page
-   * (the edition layout). Rendered as `data-color-scheme`, which
-   * `globals.css` lifts onto `<html>` so the viewport's scrollbar follows
-   * a dark Appearance Theme. Leave it unset on roots that theme only part
-   * of a page, like each `ArchiveCard` on `/history`.
+   * Pins the root to one color scheme whatever the viewer's Display, for
+   * the Setup form's two previews. Rendered as `data-scheme`.
    */
-  pageColorScheme?: "dark" | "light";
+  scheme?: ColorScheme;
   className?: string;
   children?: ReactNode;
 };
@@ -49,7 +48,7 @@ type ThemeRootProps = {
 export function ThemeRoot({
   as = "div",
   style,
-  pageColorScheme,
+  scheme,
   className,
   children,
 }: ThemeRootProps) {
@@ -64,7 +63,8 @@ export function ThemeRoot({
     <Tag
       ref={containerRef}
       style={style}
-      data-color-scheme={pageColorScheme}
+      data-theme-root={style ? "" : undefined}
+      data-scheme={scheme}
       className={className}
     >
       <ThemeContainerContext.Provider value={container}>

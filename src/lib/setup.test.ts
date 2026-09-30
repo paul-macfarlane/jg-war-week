@@ -44,6 +44,11 @@ const input: WarWeekSettingsInput = {
   accentColor: "#008f11",
   backgroundColor: "#000",
   foregroundColor: "#d1ffd6",
+  overridePrimaryColor: " #0a7a1f ",
+  overridePrimaryForegroundColor: "",
+  overrideAccentColor: "",
+  overrideBackgroundColor: "",
+  overrideForegroundColor: "",
   logoUrl: "/themes/xi/logo.svg",
   bannerUrl: " ",
   fontPreset: "mono",
@@ -56,7 +61,7 @@ function parsed(overrides: Partial<WarWeekSettingsInput> = {}) {
 }
 
 describe("parseWarWeekSettingsInput", () => {
-  it("trims text and blanks optional URLs to null", () => {
+  it("trims text and blanks optional URLs and derived colors to null", () => {
     expect(parsed()).toEqual({
       ok: true,
       value: {
@@ -73,6 +78,11 @@ describe("parseWarWeekSettingsInput", () => {
         accentColor: "#008f11",
         backgroundColor: "#000",
         foregroundColor: "#d1ffd6",
+        overridePrimaryColor: "#0a7a1f",
+        overridePrimaryForegroundColor: null,
+        overrideAccentColor: null,
+        overrideBackgroundColor: null,
+        overrideForegroundColor: null,
         logoUrl: "/themes/xi/logo.svg",
         bannerUrl: null,
         fontPreset: "mono",
@@ -108,6 +118,7 @@ describe("parseWarWeekSettingsInput", () => {
     ],
     [{ primaryColor: "green" }, "Primary color must be a hex color."],
     [{ backgroundColor: "#12345" }, "Background color must be a hex color."],
+    [{ overrideAccentColor: "teal" }, "Accent override must be a hex color."],
     [
       { slackChannelUrl: "http://slack.com/x" },
       "Slack URL must be an https URL.",

@@ -49,7 +49,6 @@ export default async function EditionLayout({
   return (
     <ThemeRoot
       style={themeStyle}
-      pageColorScheme={themeStyle.colorScheme}
       className="bg-background text-foreground flex min-h-dvh flex-col pb-20 font-sans lg:pb-0"
     >
       <TopNav

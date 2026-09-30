@@ -15,6 +15,7 @@ export const STATIC_PAGE_THEME: ThemeColors = {
   backgroundColor: "#000000",
   foregroundColor: "#d1ffd6",
   fontPreset: "mono",
+  overridePrimaryColor: "#0a7a1f",
 };
 
 /**

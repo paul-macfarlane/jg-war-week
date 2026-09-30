@@ -120,6 +120,13 @@
       "when": 1790708054928,
       "tag": "0016_old_magus",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790732841577,
+      "tag": "0017_conscious_proudstar",
+      "breakpoints": true
     }
   ]
 }

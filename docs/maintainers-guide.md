@@ -169,7 +169,15 @@ Organizer screens cover it. Sign in and go to `/admin`:
   mode, Team Label, Leader Title, links, Winner and highlights, editable
   directly for corrections), the Appearance Theme
   (colors, font, logo, banner), Days, Teams and roster, Competitions (with
-  their Hosts), Schedule and FAQ.
+  their Hosts), Schedule and FAQ. The Appearance Theme form shows both
+  color schemes: whichever one the five colors you set are the base
+  palette for, and the other scheme's colors, derived from them
+  automatically. Any of the derived scheme's five colors can be
+  overridden; changing a background across light and dark clears every
+  override you haven't touched yourself. Viewers never see your Setup
+  screen's scheme — each picks their own Display (Light, Dark or System)
+  from the header menu (the phone More Sheet, the desktop TopNav, or the
+  Admin header).
 - **`/admin/organizers`**: the Organizer list (see
   [Add an Organizer or assign Hosts](#add-an-organizer-or-assign-hosts)).
 - **`/admin/points`**, **`/admin/standings`** (Run the Finale: "Open Finale" at closing ceremonies, and "Finale: <Competition>" for each finalized Bracket),
@@ -424,6 +432,16 @@ Notes:
 - Popups portal into the themed root through `ThemeRoot`, which is wired
   into `ui/popover`, `ui/select`, `ui/combobox`, `ui/alert-dialog`,
   `ui/dialog` and `ui/sheet`, so they keep the War Week's Appearance Theme.
+  `ThemeRoot`'s `scheme` prop pins its subtree to one color scheme whatever
+  the viewer's Display — the Setup form's two previews use it so an
+  Organizer sees both the light and the dark palette rendered live, side by
+  side, regardless of their own Display.
+- A warning that still lets the save through uses the `--warning` token
+  (`text-warning`), not a hardcoded amber — it's tuned to pass AA against
+  each color scheme's background, unlike a raw Tailwind amber class. Its
+  users today: Setup's contrast warnings and its flip notice (an Organizer
+  override about to be cleared), the Points Entry form's Max points
+  warning, and the Announcement form's hint.
 - Lay out every field with `Field` / `FieldLabel htmlFor` /
   `FieldDescription` from `ui/field`, and show a form's server error in a
   `FieldError` under its buttons.

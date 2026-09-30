@@ -26,6 +26,7 @@ import {
   type CompetitionCreateValues,
   type CompetitionValues,
   type DayValues,
+  type OverrideColumn,
   type ParticipantValues,
   type TeamValues,
   type WarWeekSettingsValues,
@@ -37,6 +38,7 @@ import {
   settingsGuardError,
   teamGuardError,
 } from "@/lib/setup";
+import { backgroundColorScheme } from "@/lib/theme";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 
 const WAR_WEEK_NOT_FOUND = "That War Week no longer exists.";
@@ -98,9 +100,45 @@ async function dayDates(
   return rows.map((row) => row.date);
 }
 
+const OVERRIDE_COLUMNS: OverrideColumn[] = [
+  "overridePrimaryColor",
+  "overridePrimaryForegroundColor",
+  "overrideAccentColor",
+  "overrideBackgroundColor",
+  "overrideForegroundColor",
+];
+
+/**
+ * The overrides a save clears: when the new background moves the base
+ * palette across light and dark, the overrides belonged to the scheme the
+ * base now dresses, so each one posted unchanged from the stored row (left
+ * untouched) goes back to derived. One posted with a new value was set
+ * after the flip, and stays.
+ */
+function overridesClearedByFlip(
+  values: WarWeekSettingsValues,
+  stored: Pick<WarWeekSettingsValues, "backgroundColor"> &
+    Record<OverrideColumn, string | null>,
+): Partial<Record<OverrideColumn, null>> {
+  if (
+    backgroundColorScheme(values.backgroundColor) ===
+    backgroundColorScheme(stored.backgroundColor)
+  ) {
+    return {};
+  }
+  const cleared: Partial<Record<OverrideColumn, null>> = {};
+  for (const column of OVERRIDE_COLUMNS) {
+    if (values[column] != null && values[column] === stored[column]) {
+      cleared[column] = null;
+    }
+  }
+  return cleared;
+}
+
 /**
  * Saves the War Week's settings and Appearance Theme, refusing a save that
- * would strand Teams or Days.
+ * would strand Teams or Days. A background that crosses light and dark
+ * clears the overrides the save left untouched (`overridesClearedByFlip`).
  */
 export async function updateWarWeekSettings(
   values: WarWeekSettingsValues,
@@ -118,9 +156,26 @@ export async function updateWarWeekSettings(
     });
     if (refusal) return { ok: false, error: refusal };
 
+    const [stored] = await tx
+      .select({
+        backgroundColor: warWeek.backgroundColor,
+        overridePrimaryColor: warWeek.overridePrimaryColor,
+        overridePrimaryForegroundColor: warWeek.overridePrimaryForegroundColor,
+        overrideAccentColor: warWeek.overrideAccentColor,
+        overrideBackgroundColor: warWeek.overrideBackgroundColor,
+        overrideForegroundColor: warWeek.overrideForegroundColor,
+      })
+      .from(warWeek)
+      .where(eq(warWeek.id, ctx.warWeekId));
+    if (!stored) return { ok: false, error: WAR_WEEK_NOT_FOUND };
+
     const updated = await tx
       .update(warWeek)
-      .set({ ...values, updatedAt: sql`now()` })
+      .set({
+        ...values,
+        ...overridesClearedByFlip(values, stored),
+        updatedAt: sql`now()`,
+      })
       .where(eq(warWeek.id, ctx.warWeekId))
       .returning({ id: warWeek.id });
     return updated.length > 0

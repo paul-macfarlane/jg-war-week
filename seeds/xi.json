@@ -15,6 +15,7 @@
   "accent": "#008f11",
   "background": "#000000",
   "foreground": "#d1ffd6",
+  "overridePrimary": "#0a7a1f",
   "fontPreset": "mono",
   "logoUrl": "/themes/xi/logo.svg",
   "bannerUrl": "/themes/xi/banner.svg",

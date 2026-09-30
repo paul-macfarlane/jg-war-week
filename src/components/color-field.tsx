@@ -21,7 +21,7 @@ export type ColorSwatch = {
 /**
  * A hex color field: a swatch + hex button that opens a Popover with a hex
  * `Input` (committing on a valid hex per `normalizeHex`) and a grid of theme
- * and Team swatches.
+ * and Team swatches. `onValueChange` fires only when the color changes.
  */
 export function ColorField({
   name,
@@ -44,6 +44,11 @@ export function ColorField({
   const [draft, setDraft] = useState(value);
   const [error, setError] = useState<string | null>(null);
 
+  // Only a real change: the hex input commits on blur even when untouched.
+  function change(hex: string) {
+    if (hex !== normalizeHex(value)) onValueChange(hex);
+  }
+
   function commit(input: string) {
     const normalized = normalizeHex(input);
     if (!normalized) {
@@ -52,7 +57,7 @@ export function ColorField({
     }
     setError(null);
     setDraft(normalized);
-    onValueChange(normalized);
+    change(normalized);
   }
 
   return (
@@ -93,7 +98,7 @@ export function ColorField({
               const normalized = normalizeHex(typed);
               if (normalized) {
                 setError(null);
-                onValueChange(normalized);
+                change(normalized);
               }
             }}
             onBlur={(event) => commit(event.target.value)}
@@ -116,7 +121,7 @@ export function ColorField({
                 onClick={() => {
                   setDraft(swatch.color);
                   setError(null);
-                  onValueChange(swatch.color);
+                  change(swatch.color);
                 }}
               />
             ))}
