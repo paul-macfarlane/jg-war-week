@@ -25,7 +25,7 @@ Paul signs in to the wiki in Chrome and has Claude read from there (Claude in Ch
 With Paul, while reading the wiki together (read-only, in the Claude Code browser signed in as Paul):
 
 - **XI records team points only.** The wiki's final scoreboard gives each event's points per Team, not individual winners, so every scored XI Competition becomes a plain team `points` Competition with one Points Entry per Team that scored. No invented names; no XI Awards or Announcements (the wiki lists none).
-- **Full rosters for 2022–2025**, names only (no emails), from the wiki's team lists. Award recipients not on a roster stay as teamless Participants (2022 Matt Salvatore, Joe C; 2024 Mark Zweigenthal). Aliases merged: 2023 roster "Bhuwan Gokhool" = Ashvin Gokhool; 2024 roster "Daniel Schuldt" = Dan Schuldt.
+- **Full rosters for 2022–2025**, names only (no emails), from the wiki's team lists. Award recipients not on a roster stay as teamless Participants (2022 Matt Salvatore, Joe C; 2024 Mark Zweigenthal). Alias merged: 2024 roster "Daniel Schuldt" = Dan Schuldt. Not merged (per Paul, may be different people): 2023 roster "Bhuwan Gokhool" and Stairs Challenge placer Ashvin Gokhool are separate Participants, both Gryffindor as the wiki lists them.
 - **The XI demo moves to `seeds/demo/xi.json`.** Smoke, e2e, `about-media` and the demo-dependent unit tests load it in place of the real XI (`src/seed/local-files.ts`); `pnpm seed:demo` loads it locally. The Seed workflow only loads `seeds/*.json`, so deployed databases get the real XI.
 
 ### [SOURCES] 2026-09-29
@@ -46,7 +46,7 @@ Seed loads only set `status`, `winner` and `highlights` on first insert and neve
 
 - Branch `chore/11-war-week-history-data-refresh`, base `staging`.
 - `seeds/xi.json`: complete, winner Red, 24 team Points Entries totalling Red 38.5 / Blue 31, highlights; demo moved to `seeds/demo/xi.json` (`src/seed/local-files.ts`, `pnpm seed:demo`).
-- `seeds/vii`–`x.json`: full rosters (125 / 116 / 103 / 104). `ii`, `iii`, `iv`: highlights; `iii`: 6 Awards. Every seed: real `wikiUrl`.
+- `seeds/vii`–`x.json`: full rosters (125 / 117 / 103 / 104). `ii`, `iii`, `iv`: highlights; `iii`: 6 Awards. Every seed: real `wikiUrl`.
 - Tests: `seeds.test.ts` checks the real XI scoreboard and that XI keeps the demo's schedule, roster and theme; archive smoke follows the new wiki URLs and III's Awards.
 - Gate: PASS. Full `pnpm gate` run (`test-results/11-gate/gate.txt`) passed typecheck, lint, unit and build, with two archive smoke checks failing on the old wiki URL and III being link-only; after fixing those, `test-results/11-gate/gate-rerun.txt` passed typecheck, lint, 3058 unit tests, 201 smoke checks and 43 e2e. Run with `DATABASE_URL` / `DATABASE_DRIVER` from `.env.example` (local Postgres).
 - Human follow-up: the Seed workflow reset runs in [DEPLOY NOTE]; hardening #01 can tick its "old wiki links" item (Slack root links still undecided).
