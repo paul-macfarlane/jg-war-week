@@ -52,12 +52,12 @@ export async function assertArchiveDetail() {
   try {
     const res = await signedInFetch(`${BASE_URL}/viii`);
     const body = await res.text();
-    const [viii] = await runQuery<{ background: string }>(
-      "select background_color as background from war_week where edition = 'viii'",
+    const [viii] = await runQuery<{ background: string; primary: string }>(
+      "select background_color as background, primary_color as primary from war_week where edition = 'viii'",
     );
     const checks = {
       theme: body.includes(
-        `--${backgroundColorScheme(viii.background)}-primary:#740001`,
+        `--${backgroundColorScheme(viii.background)}-primary:${viii.primary}`,
       ),
       storyTheme: body.includes("Harry Potter: The Houses of Hogwarts"),
       winner: body.includes("Winner") && body.includes("Slytherin"),

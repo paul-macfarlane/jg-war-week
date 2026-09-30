@@ -22,11 +22,11 @@
   "faqItems": [],
   "startDate": "2016-02-26",
   "endDate": "2016-03-04",
-  "storyTheme": "War Week 2016",
-  "primary": "#b91c1c",
+  "storyTheme": "I Want You",
+  "primary": "#b22234",
   "primaryForeground": "#ffffff",
-  "accent": "#f59e0b",
-  "background": "#111827",
-  "foreground": "#f3f4f6",
-  "fontPreset": "sans"
+  "accent": "#1f2a5c",
+  "background": "#f3ecdc",
+  "foreground": "#1c2340",
+  "fontPreset": "serif"
 }
