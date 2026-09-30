@@ -62,6 +62,7 @@ import {
   assertAboutPage,
   assertCompetitionDetail,
   assertCompetitions,
+  assertDisplayScriptInHead,
   assertEditionErrorBoundary,
   assertFreeForAllRoster,
   assertHomeNowNext,
@@ -90,6 +91,7 @@ import {
   assertSetup,
   assertSetupScheduleFaq,
   assertSetupTeamsAndCompetitions,
+  assertXiSeededOverride,
 } from "./setup";
 
 loadEnvConfig(process.cwd());
@@ -174,6 +176,9 @@ async function main() {
       ok("server ready");
       await assertRootRedirect();
       await assertXiHome();
+      await assertDisplayScriptInHead();
+      // Before any check edits XI.
+      await assertXiSeededOverride();
       await assertUnknownEdition404();
       await assertLeaderboard();
       await assertSchedule();

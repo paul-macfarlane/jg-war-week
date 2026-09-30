@@ -1,6 +1,7 @@
 import { TZDate } from "@date-fns/tz";
 
 import { WAR_WEEK_TIME_ZONE } from "@/lib/schedule";
+import { backgroundColorScheme, otherScheme } from "@/lib/theme";
 
 import { XI_FAQ_QUESTIONS } from "./awards";
 import {
@@ -16,6 +17,35 @@ import {
   signedInFetch,
   xiWarWeekId,
 } from "./harness";
+
+/** XI's seeded light-mode primary override (`seeds/xi.json`). */
+const XI_SEEDED_OVERRIDE_PRIMARY = "#0a7a1f";
+
+/**
+ * Right after the seed load, before any check edits XI: the seed's
+ * override landed in its column and GET /xi carries it in the light set
+ * (XI's base palette is dark, so its overrides dress the light scheme).
+ */
+export async function assertXiSeededOverride() {
+  const check =
+    "War Week XI's seeded light-mode primary override is stored and GET /xi carries it as --light-primary";
+  try {
+    const [row] = await runQuery<{ override_primary_color: string | null }>(
+      "select override_primary_color from war_week where edition = 'xi'",
+    );
+    const body = await (await signedInFetch(`${BASE_URL}/xi`)).text();
+    const themed = body.includes(
+      `--light-primary:${XI_SEEDED_OVERRIDE_PRIMARY}`,
+    );
+    if (row?.override_primary_color === XI_SEEDED_OVERRIDE_PRIMARY && themed) {
+      ok(check);
+    } else {
+      fail(check, `override=${row?.override_primary_color} themed=${themed}`);
+    }
+  } catch (error) {
+    fail(check, String(error));
+  }
+}
 
 export async function assertSetup(sessions: {
   organizer: SmokeSession;
@@ -116,6 +146,8 @@ export async function assertSetup(sessions: {
      where w.edition = 'xi' order by d.date limit 1`,
   );
   const smokePrimary = "#ab12cd";
+  const smokeOverride = "#1b4d2c";
+  const scheme = backgroundColorScheme(xi.background_color as string);
   const smokeDayTheme = "smoke-day-theme";
 
   try {
@@ -161,9 +193,33 @@ export async function assertSetup(sessions: {
           sessions.organizer,
         );
         const body = await (await signedInFetch(`${BASE_URL}/xi`)).text();
-        return result.ok && body.includes(`--primary:${smokePrimary}`)
+        return result.ok && body.includes(`--${scheme}-primary:${smokePrimary}`)
           ? null
           : `result=${JSON.stringify(result)} themed=${body.includes(smokePrimary)}`;
+      },
+    );
+
+    await run(
+      "an Organizer overrides the other scheme's primary color: the row stores it and GET /xi carries it under that scheme's prefix",
+      async () => {
+        const result = await callAction(
+          ids.updateWarWeekSettings,
+          [
+            await xiWarWeekId(),
+            { ...input, overridePrimaryColor: smokeOverride },
+          ],
+          sessions.organizer,
+        );
+        const [row] = await runQuery<{ override_primary_color: string | null }>(
+          "select override_primary_color from war_week where edition = 'xi'",
+        );
+        const body = await (await signedInFetch(`${BASE_URL}/xi`)).text();
+        const prefix = `--${otherScheme(scheme)}-primary:`;
+        return result.ok &&
+          row.override_primary_color === smokeOverride &&
+          body.includes(`${prefix}${smokeOverride}`)
+          ? null
+          : `result=${JSON.stringify(result)} row=${row.override_primary_color} themed=${body.includes(`${prefix}${smokeOverride}`)}`;
       },
     );
 
@@ -196,9 +252,22 @@ export async function assertSetup(sessions: {
       },
     );
   } finally {
+    // Every theme column back to what was read before the checks.
     await runQuery(
-      "update war_week set primary_color = $1, mode = $2 where edition = 'xi'",
-      [xi.primary_color, xi.mode],
+      `update war_week set primary_color = $1, mode = $2,
+         override_primary_color = $3, override_primary_foreground_color = $4,
+         override_accent_color = $5, override_background_color = $6,
+         override_foreground_color = $7
+       where edition = 'xi'`,
+      [
+        xi.primary_color,
+        xi.mode,
+        xi.override_primary_color,
+        xi.override_primary_foreground_color,
+        xi.override_accent_color,
+        xi.override_background_color,
+        xi.override_foreground_color,
+      ],
     );
     await runQuery("update day set day_theme = $1 where id = $2", [
       busyDay.day_theme,

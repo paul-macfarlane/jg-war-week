@@ -3,6 +3,7 @@ import path from "node:path";
 import { Client } from "pg";
 
 import { ABOUT_FEATURES } from "@/lib/about";
+import { DISPLAY_SCRIPT } from "@/lib/display";
 import { YOU_ROW_CLASS } from "@/lib/you";
 import { MCP_TOOLS } from "@/mcp/tools";
 
@@ -158,6 +159,39 @@ export async function assertXiHome() {
       fail(
         check,
         `status=${res.status} bodyIncludes=${body.includes("War Week XI")} standings=${standings}`,
+      );
+    }
+  } catch (error) {
+    fail(check, String(error));
+  }
+}
+
+/**
+ * The Display's pre-paint script is inline in `<head>`, before `<body>`, so
+ * a stored Light or Dark applies before anything paints (no flash).
+ */
+export async function assertDisplayScriptInHead() {
+  const check =
+    "GET /xi carries the Display's inline script inside <head>, before <body>";
+  try {
+    const res = await signedInFetch(`${BASE_URL}/xi`);
+    const html = await res.text();
+    const headOpen = html.indexOf("<head");
+    const headClose = html.indexOf("</head>");
+    const bodyOpen = html.indexOf("<body");
+    const script = html.indexOf(`<script>${DISPLAY_SCRIPT}</script>`);
+    if (
+      res.status === 200 &&
+      headOpen >= 0 &&
+      script > headOpen &&
+      script < headClose &&
+      headClose < bodyOpen
+    ) {
+      ok(check);
+    } else {
+      fail(
+        check,
+        `status=${res.status} head=${headOpen} script=${script} headClose=${headClose} body=${bodyOpen}`,
       );
     }
   } catch (error) {

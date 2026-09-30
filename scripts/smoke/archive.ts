@@ -1,3 +1,5 @@
+import { backgroundColorScheme } from "@/lib/theme";
+
 import { BASE_URL, fail, ok, runQuery, signedInFetch } from "./harness";
 
 export async function assertHistory() {
@@ -6,15 +8,25 @@ export async function assertHistory() {
   try {
     const res = await signedInFetch(`${BASE_URL}/history`);
     const body = await res.text();
-    const complete = await runQuery<{ edition: string; primary: string }>(
-      `select edition, primary_color as primary from war_week
+    const complete = await runQuery<{
+      edition: string;
+      primary: string;
+      background: string;
+    }>(
+      `select edition, primary_color as primary, background_color as background
+         from war_week
          where status = 'complete' order by year desc`,
     );
     const positions = complete.map((w) => body.indexOf(`href="/${w.edition}"`));
     const checks = {
       allListed: positions.every((p) => p >= 0),
       newestFirst: positions.every((p, i) => i === 0 || p > positions[i - 1]),
-      ownThemes: complete.every((w) => body.includes(`--primary:${w.primary}`)),
+      // Each base primary under its own scheme's prefix.
+      ownThemes: complete.every((w) =>
+        body.includes(
+          `--${backgroundColorScheme(w.background)}-primary:${w.primary}`,
+        ),
+      ),
       excludesLive: !body.includes("The Matrix"),
     };
     if (
@@ -40,8 +52,13 @@ export async function assertArchiveDetail() {
   try {
     const res = await signedInFetch(`${BASE_URL}/viii`);
     const body = await res.text();
+    const [viii] = await runQuery<{ background: string }>(
+      "select background_color as background from war_week where edition = 'viii'",
+    );
     const checks = {
-      theme: body.includes("--primary:#740001"),
+      theme: body.includes(
+        `--${backgroundColorScheme(viii.background)}-primary:#740001`,
+      ),
       storyTheme: body.includes("Harry Potter: The Houses of Hogwarts"),
       winner: body.includes("Winner") && body.includes("Slytherin"),
       houses: ["Gryffindor", "Hufflepuff", "Ravenclaw"].every((h) =>

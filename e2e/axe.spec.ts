@@ -14,10 +14,19 @@ const PAGES: { slug: string; path: string; signIn: boolean }[] = [
 
 const SCHEMES: ColorScheme[] = ["light", "dark"];
 
-async function analyze(page: Page, path: string, colorScheme: ColorScheme) {
-  await page.emulateMedia({ colorScheme });
+async function analyze(page: Page, path: string) {
   await page.goto(path);
   await expect(page.locator("h1").first()).toBeVisible();
+  // Let entrance fades and color transitions finish: mid-fade text is
+  // measured against a half-transparent surface.
+  await page.evaluate(() =>
+    Promise.allSettled(
+      document
+        .getAnimations()
+        .filter((a) => a.effect?.getTiming().iterations !== Infinity)
+        .map((a) => a.finished),
+    ),
+  );
   return new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
 }
 
@@ -30,8 +39,20 @@ for (const { slug, path, signIn: needsSignIn } of PAGES) {
       if (needsSignIn) {
         await signIn(context, E2E_PARTICIPANT_EMAIL);
       }
+      // The scheme is chosen through the Display, as a viewer would; the
+      // system setting is the opposite one so it can't be what applies.
+      await context.addInitScript(
+        (value) => window.localStorage.setItem("ww:display", value),
+        scheme,
+      );
+      await page.emulateMedia({
+        colorScheme: scheme === "dark" ? "light" : "dark",
+      });
 
-      const results = await analyze(page, path, scheme);
+      const results = await analyze(page, path);
+      expect(
+        await page.evaluate(() => document.documentElement.dataset.display),
+      ).toBe(scheme);
 
       await writeFile(
         testInfo.outputPath(`${slug}-${scheme}.json`),
@@ -48,9 +69,7 @@ for (const { slug, path, signIn: needsSignIn } of PAGES) {
       const contrastViolations = results.violations.filter(
         (violation) => violation.id === "color-contrast",
       );
-      // Baseline run on the unchanged app: soft so all six analyses run and
-      // record even when contrast fails. A later deliverable hardens this.
-      expect.soft(contrastViolations).toHaveLength(0);
+      expect(contrastViolations).toEqual([]);
     });
   }
 }
