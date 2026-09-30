@@ -8,7 +8,7 @@ it the week of 2026-10-05).
 ## Paul's manual steps
 
 - [ ] **Regression pass**: walk the app end to end, especially creating and running Competitions; record findings as new tickets. [`regression-2026-09/issues/18`](./regression-2026-09/issues/18-regression-pass.md) (`needs-triage`)
-- [ ] **Production baseline leftovers**: PWA install on a real phone; decide on past-year Slack links pointing at the workspace root; send `/privacy` and `/terms` for review or record that none is needed. [`hardening/issues/01`](./hardening/issues/01-production-baseline-checklist.md) (`ready-for-human`)
+- [ ] **Production baseline leftover**: decide whether past-year Slack links can keep pointing at the workspace root (keep, add real channel links, or hide the button on past War Weeks); also get the real `#war-week-xii` channel link, since `/archives/<name>` links likely need the channel ID. [`hardening/issues/01`](./hardening/issues/01-production-baseline-checklist.md) (`ready-for-human`)
 
 ## Ready, waiting on someone else
 

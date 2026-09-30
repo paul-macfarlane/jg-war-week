@@ -16,10 +16,10 @@ Each step lists the action, the expected result, and the check afterwards.
 - [x] **Confirm `MCP_PUBLIC` is unset or `false` on production and staging** (Vercel project env). Expected: an anonymous `POST /api/mcp` gets 401.
 - [x] **Real Google sign-in check** (from `.scratch/war-weeker/issues/08`). Expected: an `@jahnelgroup.com` account signs in; a personal Gmail is refused and no user row is created.
 - [x] **OAuth consent screen** (from `.scratch/admin-polish` AC-oauth-consent). Set the logo, home page and privacy/terms URLs on the `jg-war-week` domain (not the old `war-weeker` one), and keep the user type Internal.
-- [ ] **PWA install check on a real phone** (from `.scratch/war-weeker/issues/14`): install on iOS or Android; the app opens standalone with the right icon.
+- [x] **PWA install check on a real phone** (from `.scratch/war-weeker/issues/14`): install on iOS or Android; the app opens standalone with the right icon. Answer (2026-09-30): Paul confirmed it installs on iOS.
 - [x] **Old wiki links.** Spot-check the guessed `war-week-<year>` wiki links in the Archive. Answer (2026-09-30): the guesses were wrong; the real pages are `/home/war-week/war-week-<year>`, now in every seed (regression ticket 11, PR #95) and live on staging and production.
 - [ ] **Past-year Slack links.** Decide whether past-year Slack links pointing at the workspace root are acceptable. Record the answer here.
-- [ ] **Legal copy.** Send `/privacy` and `/terms` to whoever at JG should review them, or record that no review is needed.
+- [x] **Legal copy.** Send `/privacy` and `/terms` to whoever at JG should review them, or record that no review is needed. Answer (2026-09-30): no review needed (Paul).
 
 ## Comments
 
