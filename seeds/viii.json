@@ -18,7 +18,7 @@
   "fontPreset": "serif",
   "logoUrl": null,
   "bannerUrl": null,
-  "wikiUrl": "https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/war-week-2023",
+  "wikiUrl": "https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/home/war-week/war-week-2023",
   "winner": "Slytherin",
   "highlights": [
     "Slytherin won the House Cup with 58 points, edging Hufflepuff (57), Ravenclaw (55) and Gryffindor (41) in the final standings.",
@@ -29,34 +29,514 @@
     "Monday through Thursday were House Days, with each house providing all three meals for House Cup points."
   ],
   "days": [
-    { "date": "2023-02-27", "dayTheme": "Hufflepuff Day", "scheduleItems": [] },
-    { "date": "2023-02-28", "dayTheme": "Gryffindor Day", "scheduleItems": [] },
-    { "date": "2023-03-01", "dayTheme": "Ravenclaw Day", "scheduleItems": [] },
-    { "date": "2023-03-02", "dayTheme": "Slytherin Day", "scheduleItems": [] }
+    {
+      "date": "2023-02-27",
+      "dayTheme": "Hufflepuff Day",
+      "scheduleItems": []
+    },
+    {
+      "date": "2023-02-28",
+      "dayTheme": "Gryffindor Day",
+      "scheduleItems": []
+    },
+    {
+      "date": "2023-03-01",
+      "dayTheme": "Ravenclaw Day",
+      "scheduleItems": []
+    },
+    {
+      "date": "2023-03-02",
+      "dayTheme": "Slytherin Day",
+      "scheduleItems": []
+    }
   ],
   "teams": [
-    { "name": "Hufflepuff", "color": "#ecb939" },
-    { "name": "Gryffindor", "color": "#ae0001" },
-    { "name": "Ravenclaw", "color": "#222f5b" },
-    { "name": "Slytherin", "color": "#2a623d" }
+    {
+      "name": "Hufflepuff",
+      "color": "#ecb939"
+    },
+    {
+      "name": "Gryffindor",
+      "color": "#ae0001"
+    },
+    {
+      "name": "Ravenclaw",
+      "color": "#222f5b"
+    },
+    {
+      "name": "Slytherin",
+      "color": "#2a623d"
+    }
   ],
   "participants": [
-    { "displayName": "Linda Martin", "team": "Hufflepuff", "isLeader": true },
-    { "displayName": "Darrin Jahnel", "team": "Gryffindor", "isLeader": true },
-    { "displayName": "Steven Zgaljic", "team": "Ravenclaw", "isLeader": true },
-    { "displayName": "Jon Keller", "team": "Slytherin", "isLeader": true },
-    { "displayName": "Solomon Mori", "team": "Ravenclaw" },
-    { "displayName": "Carson O'Neill", "team": "Hufflepuff" },
-    { "displayName": "Kyle Gancarz", "team": "Slytherin" },
-    { "displayName": "Ashvin Gokhool", "team": "Gryffindor" },
-    { "displayName": "Dan Kollar", "team": "Hufflepuff" },
-    { "displayName": "Sean Mullen", "team": "Slytherin" },
-    { "displayName": "Alex Nikolis", "team": "Hufflepuff" },
-    { "displayName": "James Murphy", "team": "Hufflepuff" },
-    { "displayName": "Tristin Knapp", "team": "Slytherin" },
-    { "displayName": "Ashley Schuliger", "team": "Ravenclaw" },
-    { "displayName": "Dom Favata", "team": "Hufflepuff" },
-    { "displayName": "Lucas Fernandes", "team": "Ravenclaw" }
+    {
+      "displayName": "Linda Martin",
+      "team": "Hufflepuff",
+      "isLeader": true
+    },
+    {
+      "displayName": "Graham MacBeth",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Tom O'Neill",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Amanda Tran",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Dean Brzac",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Joshua Cantor-Stone",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Tim Carter",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Joe Chiavaroli",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Bill Cresanti",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Bich Dudla",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Dom Favata",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Greg Greenwald",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Dan Kollar",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Austin Marcum",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "James Murphy",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Alex Nikolis",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Carson O'Neill",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Janelle Olsen",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Chris Pence",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Luke Prescott",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Ben Sadick",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Sam Schantz",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Ethan Schoen",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Kari Skinner",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Tonya Sutphin",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Jakub Synowiec",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Sean Warner",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Jessie Zweigenthal",
+      "team": "Hufflepuff"
+    },
+    {
+      "displayName": "Darrin Jahnel",
+      "team": "Gryffindor",
+      "isLeader": true
+    },
+    {
+      "displayName": "Brandon Badgett",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Olivia Bowman",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Ryan Godfrey",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Matt Anderson",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Nathan Barss",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Jethro Breuer",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Nick Brown",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Jacob Coleman",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Daniel Dragon",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Ashvin Gokhool",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Zachary Hartman",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Zac Harvey",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Andrew Hyeon",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Christian Jahnel",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Paul Macfarlane",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Chris Mancuso",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Tony Mercadante",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Devin O'Brien",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Gio Ortega",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Dakota Rivera",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Christian Schmidt",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Alexander Schnackenberg",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Ryan Shendler",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Eva Trimboli",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Colin Walsh",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Eliza Whitfield",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Matthew Wonkovich",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Michael Young",
+      "team": "Gryffindor"
+    },
+    {
+      "displayName": "Steven Zgaljic",
+      "team": "Ravenclaw",
+      "isLeader": true
+    },
+    {
+      "displayName": "Jory Hutchins",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Chelsea Merrill",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Dani Milliken",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Dan Bedian",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Paul Carnivale",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Anthony Conway",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Lucas Fernandes",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Patrick Fogarty",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Alec Haring",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "John Higgins",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Peter Hodges",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Caleb Jahnel",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Dan Kaloustian",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "John Lee",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Tony Lombardi",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Brennon Loveless",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Jesse Lucier",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Marc Matsen",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Solomon Mori",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Christopher Nyberg",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Victor Paredes",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Matt Salvatore",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Scott Sargent",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Derek Schubert",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Daniel Schuldt",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Ashley Schuliger",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Chris Warner",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Greg Westover",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Maureen Wiseman",
+      "team": "Ravenclaw"
+    },
+    {
+      "displayName": "Jon Keller",
+      "team": "Slytherin",
+      "isLeader": true
+    },
+    {
+      "displayName": "Josh Jameson",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Grayce Mandsager",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Joshua Whelan",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Lou Ahola",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Ian Ballard",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Jen Brousseau",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Nicholas Carson",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Emily Gaito",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Kyle Gancarz",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Laura Jahnel",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Tristin Knapp",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Chris Maria",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Isaiah Mori",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Alex Morrow",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Sean Mullen",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Frank Nardone",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Zach Phillips-Gary",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Michael Prete",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Jay Reimers",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Abby Rivera",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Bryan Sambrook",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Nick Seney",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Michael Shirk",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Emily Smith",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Matthew Spahr",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Bob Strubel",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Steven Vickers",
+      "team": "Slytherin"
+    },
+    {
+      "displayName": "Weston Wieser",
+      "team": "Slytherin"
+    }
   ],
   "competitions": [
     {
@@ -238,7 +718,11 @@
       "name": "Mario Kart Champion",
       "participants": ["Dom Favata"]
     },
-    { "key": "csgo-champion", "name": "CS:GO Champion", "team": "Slytherin" },
+    {
+      "key": "csgo-champion",
+      "name": "CS:GO Champion",
+      "team": "Slytherin"
+    },
     {
       "key": "beer-pong-finals-champion",
       "name": "Beer Pong Finals Champion",

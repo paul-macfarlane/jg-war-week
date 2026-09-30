@@ -20,15 +20,19 @@ docker compose up -d          # starts local Postgres on localhost:2345
 pnpm install
 pnpm db:migrate
 pnpm seed:all                 # loads every War Week, 2016 (I) to 2026 (XI)
+pnpm seed:demo                # optional: replaces XI with the live demo
 pnpm dev                      # http://localhost:3000
 ```
 
 ### Seeds
 
 `seeds/<edition>.json` holds one War Week each: `i.json` (2016) through
-`x.json` (2025) are the history, extracted from `old-wikis/` and fixed by
-hand; `xi.json` is War Week XI with its real schedule, Teams, roster and
-Competitions plus fictional mid-week demo data (a close race). Edit a file and reload it; setup data follows the seed, while keyed
+`xi.json` (2026) are the history, from `old-wikis/`, the live wiki and the
+Drive documents it links to; XI holds its real final scoreboard.
+`seeds/demo/xi.json` is a live War Week XI with fictional mid-week demo
+data (a close race, Announcements, Awards and Games). Smoke, e2e and
+`pnpm seed:demo` load it in place of the real XI; the Seed workflow only
+loads `seeds/*.json`, so it never reaches a deployed database. Edit a file and reload it; setup data follows the seed, while keyed
 Points Entries, Awards and Announcements are only inserted once (see
 `CONTEXT.md`, "Seed idempotence rules"). Organizers can also edit War Week
 settings, the Appearance Theme, Days, Teams, the roster, Competitions,
@@ -40,7 +44,7 @@ or stop reloading it once organizers are editing in the app.
 - `pnpm seed:all` loads every seed. `pnpm seed:load <file> [<file> ...]`
   loads specific ones. Every file is validated before anything loads; each
   War Week then loads in its own transaction.
-- `--reset` (e.g. `pnpm seed:load --reset seeds/xi.json`) deletes each War
+- `--reset` (e.g. `pnpm seed:load --reset seeds/demo/xi.json`) deletes each War
   Week first, including organizer-entered points, Awards and Announcements,
   so the demo starts from exactly the seed. Never use it on a War Week
   organizers are running. Against a non-local `DATABASE_URL`, `--reset` also

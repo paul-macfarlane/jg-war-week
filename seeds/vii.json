@@ -18,7 +18,7 @@
   "fontPreset": "serif",
   "logoUrl": null,
   "bannerUrl": null,
-  "wikiUrl": "https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/war-week-2022",
+  "wikiUrl": "https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/home/war-week/war-week-2022",
   "winner": "Miyagi-Do",
   "highlights": [
     "Miyagi-Do beat Cobra Kai 65 to 49 in the final team standings.",
@@ -41,9 +41,100 @@
   ],
   "participants": [
     {
-      "displayName": "Jason Jahnel",
-      "team": "Cobra Kai",
-      "isLeader": true
+      "displayName": "Sean Alderdice",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Mollie August",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Ian Ballard",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Dan Bedian",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Matt Bessler",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Olivia Bowman",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Adam Britten",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Joshua Cantor-Stone",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Matt Cheung",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Jacob Coleman",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Bill Cresanti",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Lucas Culley",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Dan Dragon",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Luyang Du",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Bich Dudla",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Kyle Gancarz",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Sean Gibbons",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Matt Givney",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Zac Harvey",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Peter Hodges",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Kevin Holmes",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Cody Husek",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Jory Hutchins",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Andrew Hyeon",
+      "team": "Cobra Kai"
     },
     {
       "displayName": "Darrin Jahnel",
@@ -51,53 +142,49 @@
       "isLeader": true
     },
     {
-      "displayName": "Jon Keller",
-      "team": "Miyagi-Do",
+      "displayName": "Jason Jahnel",
+      "team": "Cobra Kai",
       "isLeader": true
     },
     {
-      "displayName": "Linda Martin",
-      "team": "Miyagi-Do",
-      "isLeader": true
+      "displayName": "Laura Jahnel",
+      "team": "Cobra Kai"
     },
     {
-      "displayName": "Steven Zgaljic",
-      "team": "Miyagi-Do",
-      "isLeader": true
+      "displayName": "Josh Jameson",
+      "team": "Cobra Kai"
     },
     {
-      "displayName": "Tristin Knapp",
-      "team": "Miyagi-Do"
+      "displayName": "Nick Knapp",
+      "team": "Cobra Kai"
     },
     {
-      "displayName": "Matt Salvatore"
+      "displayName": "Dan Kollar",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "James Kurtak",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "John Lee",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Brennon Loveless",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Jesse Lucier",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Ashleigh Mahoney",
+      "team": "Cobra Kai"
     },
     {
       "displayName": "Brian Mallen",
       "team": "Cobra Kai"
-    },
-    {
-      "displayName": "Alex Schnackenberg",
-      "team": "Cobra Kai"
-    },
-    {
-      "displayName": "Pooja Manjeshwar",
-      "team": "Miyagi-Do"
-    },
-    {
-      "displayName": "Bill Cresanti",
-      "team": "Cobra Kai"
-    },
-    {
-      "displayName": "Ant Conway",
-      "team": "Miyagi-Do"
-    },
-    {
-      "displayName": "Solomon Mori",
-      "team": "Miyagi-Do"
-    },
-    {
-      "displayName": "Joe C"
     },
     {
       "displayName": "Dylan Mann",
@@ -108,7 +195,51 @@
       "team": "Cobra Kai"
     },
     {
-      "displayName": "Lucas Culley",
+      "displayName": "James Murphy",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Nick Nigro",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "James Novak",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Tom O'Neill",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Janelle Olsen",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Stacy Olson",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Akshay Palekar",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Victor Paredes",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "DJ Patel",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Jessica Paull",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Chris Pence",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Alo Posillico",
       "team": "Cobra Kai"
     },
     {
@@ -116,23 +247,273 @@
       "team": "Cobra Kai"
     },
     {
+      "displayName": "Abby Rivera",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Ben Sadick",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Scott Sargent",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Christian Schmidt",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Alex Schnackenberg",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Nick Seney",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Michael Shirk",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Matt Spahr",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Maureen Wiseman",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Michael Young",
+      "team": "Cobra Kai"
+    },
+    {
+      "displayName": "Lou Ahola",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Brandon Badgett",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Jet Breuer",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Nick Brown",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Paul Carnivale",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Tim Carter",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Jared Coulombe",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Ant Conway",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Eric Coonradt",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Jared D'Aloia",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Ryan Frawley",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Emily Gaito",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Ryan Godfrey",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Ashvin Gokhool",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Yogu Gopal",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Mayank Govilla",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Greg Greenwald",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Evan Guby",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "James Heffernan",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Christian Jahnel",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Mike Jung",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Dan Kaloustian",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Jon Keller",
+      "team": "Miyagi-Do",
+      "isLeader": true
+    },
+    {
+      "displayName": "Tristin Knapp",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Ryan Lambert",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Tony Lombardi",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Tim Losito",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Kevin Lovely",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Pooja Manjeshwar",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Linda Martin",
+      "team": "Miyagi-Do",
+      "isLeader": true
+    },
+    {
+      "displayName": "Dani Milliken",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Isaiah Mori",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Solomon Mori",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Sean Mullen",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Frank Nardone",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Komal Narwekar",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Matt Nesbitt",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Alex Nikolis",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Chris Nyberg",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Carson O'Neill",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "John Paul Justice",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Thom Penningtion",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Zach Phillips-Gary",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Jay Reimers",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Ethan Schoen",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Dan Schuldt",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Kari Skinner",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Bob Strubel",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Nadia Suguitan",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Tonya Sutphin",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Jakub Synowiec",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Amanda Tran",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Mike Treiling",
+      "team": "Miyagi-Do"
+    },
+    {
       "displayName": "Eva Trimboli",
       "team": "Miyagi-Do"
     },
     {
-      "displayName": "Jacob Coleman",
-      "team": "Cobra Kai"
+      "displayName": "Steven Vickers",
+      "team": "Miyagi-Do"
     },
     {
-      "displayName": "Sean Gibbons",
-      "team": "Cobra Kai"
+      "displayName": "Colin Walsh",
+      "team": "Miyagi-Do"
     },
     {
-      "displayName": "Kevin Holmes",
-      "team": "Cobra Kai"
-    },
-    {
-      "displayName": "Dan Schuldt",
+      "displayName": "Chris Warner",
       "team": "Miyagi-Do"
     },
     {
@@ -140,12 +521,27 @@
       "team": "Miyagi-Do"
     },
     {
-      "displayName": "Matt Givney",
-      "team": "Cobra Kai"
+      "displayName": "Greg Westover",
+      "team": "Miyagi-Do"
     },
     {
-      "displayName": "Ian Ballard",
-      "team": "Cobra Kai"
+      "displayName": "Weston Wieser",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Steven Zgaljic",
+      "team": "Miyagi-Do",
+      "isLeader": true
+    },
+    {
+      "displayName": "Jessie Zweigenthal",
+      "team": "Miyagi-Do"
+    },
+    {
+      "displayName": "Matt Salvatore"
+    },
+    {
+      "displayName": "Joe C"
     }
   ],
   "competitions": [

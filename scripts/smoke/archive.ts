@@ -67,7 +67,7 @@ export async function assertArchiveDetail() {
       awards: body.includes("House Cup"),
       highlights: body.includes("Highlights"),
       wiki: body.includes(
-        'href="https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/war-week-2023"',
+        'href="https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/home/war-week/war-week-2023"',
       ),
       noSlack: !body.includes("Join the Slack channel"),
     };
@@ -81,7 +81,7 @@ export async function assertArchiveDetail() {
   }
 
   const linkOnlyCheck =
-    "GET /i, /ii, /iii render as link-only cards with the wiki link";
+    "GET /i and /ii render as link-only cards, /iii with its Awards, each with the wiki link";
   try {
     const results = await Promise.all(
       [
@@ -94,9 +94,14 @@ export async function assertArchiveDetail() {
         return {
           edition,
           status: res.status,
-          linkOnly: body.includes("lives on") && !body.includes("Awards</h2>"),
+          // 2018's Finale deck gave it Awards, so it's a full archive page.
+          linkOnly:
+            edition === "iii"
+              ? body.includes("Awards</h2>") &&
+                body.includes("Joshua Cantor-Stone")
+              : body.includes("lives on") && !body.includes("Awards</h2>"),
           wiki: body.includes(
-            `href="https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/war-week-${year}"`,
+            `href="https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/home/war-week/war-week-${year}"`,
           ),
         };
       }),

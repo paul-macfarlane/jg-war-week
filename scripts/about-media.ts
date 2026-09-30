@@ -11,8 +11,8 @@
  *
  * Needs a production build and a freshly seeded local Postgres, the same
  * prerequisite as `docs/maintainers-guide.md` (`pnpm build`, then
- * `pnpm seed:load --reset seeds/*.json`), and Google Chrome. Starts its own
- * server on port 3202, signs in as a made-up Organizer
+ * `pnpm seed:load --reset seeds/*.json && pnpm seed:demo`), and Google
+ * Chrome. Starts its own server on port 3202, signs in as a made-up Organizer
  * (`about-demo@jahnelgroup.com`) that it adds to the Organizer list and
  * lends XI's seeded Points Entries for the run, so no real email is in any
  * file, and restores everything after, including the one Points Entry the
@@ -45,6 +45,7 @@ import { DISPLAY_STORAGE_KEY } from "@/lib/display";
 import { FINALE_MAX_MS } from "@/lib/finale";
 import { backgroundColorScheme } from "@/lib/theme";
 import type { LeaderboardResult } from "@/mcp/leaderboard";
+import { DEMO_SEED } from "@/seed/local-files";
 
 loadEnvConfig(process.cwd());
 
@@ -118,7 +119,7 @@ async function createSession(email: string): Promise<string> {
 /** The seeded Organizer, whose email must not appear in any file written. */
 function seededOrganizerEmail(): string {
   const seed = JSON.parse(
-    readFileSync(path.resolve(process.cwd(), "seeds/xi.json"), "utf8"),
+    readFileSync(path.resolve(process.cwd(), DEMO_SEED), "utf8"),
   ) as { organizers: string[] };
   return seed.organizers[0];
 }
