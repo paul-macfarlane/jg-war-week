@@ -483,6 +483,32 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
     });
   });
 
+  it("copies the derived palette's overrides with the settings", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { createNextWarWeek } =
+        await import("@/mutations/war-week-lifecycle");
+      const { live, schema } = await fixture(tx);
+      const { eq } = await import("drizzle-orm");
+      await tx
+        .update(schema.warWeek)
+        .set({ overridePrimaryColor: "#0a7a1f" })
+        .where(eq(schema.warWeek.id, live.id));
+
+      await createNextWarWeek(next(), ctxOf(live.id), tx);
+      const [created] = await tx
+        .select()
+        .from(schema.warWeek)
+        .where(eq(schema.warWeek.edition, "tii"));
+      expect(created).toMatchObject({
+        overridePrimaryColor: "#0a7a1f",
+        overridePrimaryForegroundColor: null,
+        overrideAccentColor: null,
+        overrideBackgroundColor: null,
+        overrideForegroundColor: null,
+      });
+    });
+  });
+
   it("copies Competitions and the FAQ with new ids when chosen", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { createNextWarWeek } =

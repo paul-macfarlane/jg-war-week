@@ -12,9 +12,11 @@ import { warWeekSeedSchema } from "@/seed/schema";
 
 /**
  * Every past War Week renders in its own Appearance Theme (Archive cards on
- * /history, the edition pages). Each text-on-surface pair those pages draw
- * at normal size must reach WCAG AA against every seed's theme, resolved
- * from the same CSS custom properties `warWeekThemeStyle` sets.
+ * /history, the edition pages), in the viewer's light or dark Display. Each
+ * text-on-surface pair those pages draw at normal size must reach WCAG AA
+ * against every seed's theme in both color schemes (the base palette and
+ * the derived one), resolved from the same CSS custom properties
+ * `warWeekThemeStyle` sets.
  */
 
 const SEEDS_DIR = path.resolve(__dirname, "../../seeds");
@@ -33,6 +35,11 @@ const themes = readdirSync(SEEDS_DIR)
       backgroundColor: seed.background,
       foregroundColor: seed.foreground,
       fontPreset: seed.fontPreset,
+      overridePrimaryColor: seed.overridePrimary ?? null,
+      overridePrimaryForegroundColor: seed.overridePrimaryForeground ?? null,
+      overrideAccentColor: seed.overrideAccent ?? null,
+      overrideBackgroundColor: seed.overrideBackground ?? null,
+      overrideForegroundColor: seed.overrideForeground ?? null,
     };
     return [seed.edition, theme] as const;
   });
@@ -47,15 +54,36 @@ const PAIRS = [
   ["text-primary-text", "--primary-text", "--background"],
   ["text-primary-foreground", "--primary-foreground", "--primary"],
   ["text-accent-foreground", "--accent-foreground", "--accent"],
+  // A disabled Button's text on its muted surface.
+  ["text-foreground", "--foreground", "--muted"],
+  // Setup's contrast warnings and the form warnings.
+  ["text-warning", "--warning", "--background"],
   // The card footer's "Original wiki page" link sits on `bg-muted/50`.
   ["text-foreground", "--foreground", "card footer"],
 ] as const;
 
+const SCHEMES = ["light", "dark"] as const;
+
+/** One scheme's token value, e.g. `--dark-primary` for `--primary`. */
+function token(
+  style: Record<string, string>,
+  scheme: (typeof SCHEMES)[number],
+  name: string,
+) {
+  return style[name.replace("--", `--${scheme}-`)];
+}
+
 /** A surface's resolved hex; "card footer" is `bg-muted/50` over the card. */
-function surfaceColor(style: Record<string, string>, surface: string) {
-  if (surface !== "card footer") return resolveCssColor(style[surface]);
-  const muted = resolveCssColor(style["--muted"]);
-  const card = resolveCssColor(style["--card"]);
+function surfaceColor(
+  style: Record<string, string>,
+  scheme: (typeof SCHEMES)[number],
+  surface: string,
+) {
+  if (surface !== "card footer") {
+    return resolveCssColor(token(style, scheme, surface));
+  }
+  const muted = resolveCssColor(token(style, scheme, "--muted"));
+  const card = resolveCssColor(token(style, scheme, "--card"));
   return muted && card ? mixOklch(card, muted, 50) : null;
 }
 
@@ -64,15 +92,26 @@ describe("archive text contrast", () => {
     expect(themes.length).toBeGreaterThanOrEqual(11);
   });
 
+  it("carries War Week XI's seeded override into its light scheme", () => {
+    const [, xi] = themes.find(([edition]) => edition === "xi")!;
+    const style = warWeekThemeStyle(xi) as unknown as Record<string, string>;
+    expect(style["--light-primary"]).toBe("#0a7a1f");
+    expect(style["--dark-primary"]).toBe("#00ff41");
+  });
+
   describe.each(themes)("War Week %s", (_, theme) => {
     const style = warWeekThemeStyle(theme) as unknown as Record<string, string>;
 
-    it.each(PAIRS)("%s (%s on %s) reads at 4.5:1", (_, text, surface) => {
-      const fg = resolveCssColor(style[text]);
-      const bg = surfaceColor(style, surface);
-      expect(fg, text).not.toBeNull();
-      expect(bg, surface).not.toBeNull();
-      expect(contrastRatio(fg!, bg!)).toBeGreaterThanOrEqual(MIN_TEXT_CONTRAST);
+    describe.each(SCHEMES)("%s scheme", (scheme) => {
+      it.each(PAIRS)("%s (%s on %s) reads at 4.5:1", (_, text, surface) => {
+        const fg = resolveCssColor(token(style, scheme, text));
+        const bg = surfaceColor(style, scheme, surface);
+        expect(fg, text).not.toBeNull();
+        expect(bg, surface).not.toBeNull();
+        expect(contrastRatio(fg!, bg!)).toBeGreaterThanOrEqual(
+          MIN_TEXT_CONTRAST,
+        );
+      });
     });
   });
 });

@@ -37,6 +37,11 @@ type ThemeRootProps = {
    * of a page, like each `ArchiveCard` on `/history`.
    */
   pageColorScheme?: "dark" | "light";
+  /**
+   * Pins the root to one color scheme whatever the viewer's Display, for
+   * the Setup form's two previews. Rendered as `data-scheme`.
+   */
+  scheme?: "dark" | "light";
   className?: string;
   children?: ReactNode;
 };
@@ -50,6 +55,7 @@ export function ThemeRoot({
   as = "div",
   style,
   pageColorScheme,
+  scheme,
   className,
   children,
 }: ThemeRootProps) {
@@ -64,6 +70,8 @@ export function ThemeRoot({
     <Tag
       ref={containerRef}
       style={style}
+      data-theme-root={style ? "" : undefined}
+      data-scheme={scheme}
       data-color-scheme={pageColorScheme}
       className={className}
     >

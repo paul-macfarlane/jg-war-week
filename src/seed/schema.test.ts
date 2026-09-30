@@ -66,6 +66,18 @@ describe("warWeekSeedSchema", () => {
     rejectionOf({ ...loadFixture(), primary: "not-a-color" });
   });
 
+  it("accepts a hex override of a derived palette color", () => {
+    const seed = warWeekSeedSchema.parse({
+      ...loadFixture(),
+      overrideAccent: "#123abc",
+    });
+    expect(seed.overrideAccent).toBe("#123abc");
+  });
+
+  it("rejects a non-hex override", () => {
+    rejectionOf({ ...loadFixture(), overrideBackground: "light-green" });
+  });
+
   it("rejects duplicate day dates", () => {
     const fixture = loadFixture();
     rejectionOf({ ...fixture, days: [...fixture.days, fixture.days[0]] });

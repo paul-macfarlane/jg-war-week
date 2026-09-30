@@ -167,8 +167,10 @@ export async function assertWarWeekLifecycle(sessions: {
       `select story_theme, start_date::text, end_date::text, mode,
          team_label, leader_title, slack_channel_url, wiki_url,
          primary_color, primary_foreground_color,
-         accent_color, background_color, foreground_color, logo_url,
-         banner_url, font_preset, winner
+         accent_color, background_color, foreground_color,
+         override_primary_color, override_primary_foreground_color,
+         override_accent_color, override_background_color,
+         override_foreground_color, logo_url, banner_url, font_preset, winner
        from war_week where edition = 'xi'`,
     );
     const saved = await callAction(
@@ -189,6 +191,13 @@ export async function assertWarWeekLifecycle(sessions: {
           accentColor: xi.accent_color,
           backgroundColor: xi.background_color,
           foregroundColor: xi.foreground_color,
+          // Sent as read, so this save never clears one.
+          overridePrimaryColor: xi.override_primary_color ?? "",
+          overridePrimaryForegroundColor:
+            xi.override_primary_foreground_color ?? "",
+          overrideAccentColor: xi.override_accent_color ?? "",
+          overrideBackgroundColor: xi.override_background_color ?? "",
+          overrideForegroundColor: xi.override_foreground_color ?? "",
           logoUrl: xi.logo_url ?? "",
           bannerUrl: xi.banner_url ?? "",
           fontPreset: xi.font_preset,

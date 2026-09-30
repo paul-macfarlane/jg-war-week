@@ -89,6 +89,21 @@ export const warWeek = pgTable(
     accentColor: varchar("accent_color", { length: 32 }).notNull(),
     backgroundColor: varchar("background_color", { length: 32 }).notNull(),
     foregroundColor: varchar("foreground_color", { length: 32 }).notNull(),
+    // The Organizer's overrides of the derived palette (the other color
+    // scheme's colors); null means derived (CONTEXT.md, "Light and dark
+    // Display rules").
+    overridePrimaryColor: varchar("override_primary_color", { length: 32 }),
+    overridePrimaryForegroundColor: varchar(
+      "override_primary_foreground_color",
+      { length: 32 },
+    ),
+    overrideAccentColor: varchar("override_accent_color", { length: 32 }),
+    overrideBackgroundColor: varchar("override_background_color", {
+      length: 32,
+    }),
+    overrideForegroundColor: varchar("override_foreground_color", {
+      length: 32,
+    }),
     logoUrl: varchar("logo_url", { length: 500 }),
     bannerUrl: varchar("banner_url", { length: 500 }),
     fontPreset: fontPreset("font_preset").notNull(),

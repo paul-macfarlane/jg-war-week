@@ -195,6 +195,12 @@ export async function createNextWarWeek(
             accentColor: source.accentColor,
             backgroundColor: source.backgroundColor,
             foregroundColor: source.foregroundColor,
+            overridePrimaryColor: source.overridePrimaryColor,
+            overridePrimaryForegroundColor:
+              source.overridePrimaryForegroundColor,
+            overrideAccentColor: source.overrideAccentColor,
+            overrideBackgroundColor: source.overrideBackgroundColor,
+            overrideForegroundColor: source.overrideForegroundColor,
             fontPreset: source.fontPreset,
             logoUrl: source.logoUrl,
             bannerUrl: source.bannerUrl,

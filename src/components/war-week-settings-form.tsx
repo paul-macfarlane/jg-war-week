@@ -12,7 +12,9 @@ import {
   formErrorOf,
   useFocusFirstInvalid,
 } from "@/components/form-field-errors";
+import { FormValueInput } from "@/components/form-value-input";
 import { OptionSelect, type SelectOption } from "@/components/option-select";
+import { ThemeRoot } from "@/components/theme-root";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -26,8 +28,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { WarWeek } from "@/db/schema";
-import type { WarWeekSettingsInput } from "@/lib/setup";
+import { normalizeHex } from "@/lib/color";
+import type { OverrideColumn, WarWeekSettingsInput } from "@/lib/setup";
 import {
+  type ColorScheme,
+  type Palette,
+  backgroundColorScheme,
+  basePalette,
+  derivePalette,
+  otherScheme,
   themeContrastWarnings,
   themeSwatches,
   warWeekThemeStyle,
@@ -48,6 +57,55 @@ const COLOR_FIELDS: { field: ThemeColorField; label: string }[] = [
   { field: "foregroundColor", label: "Text" },
 ];
 
+// The derived palette's fields: each palette color, its override column
+// (posted by a hidden input) and label.
+const OVERRIDE_FIELDS: {
+  color: keyof Palette;
+  field: OverrideColumn;
+  label: string;
+}[] = [
+  { color: "primary", field: "overridePrimaryColor", label: "Primary" },
+  {
+    color: "primaryForeground",
+    field: "overridePrimaryForegroundColor",
+    label: "Primary text",
+  },
+  { color: "accent", field: "overrideAccentColor", label: "Accent" },
+  {
+    color: "background",
+    field: "overrideBackgroundColor",
+    label: "Background",
+  },
+  { color: "foreground", field: "overrideForegroundColor", label: "Text" },
+];
+
+const NO_OVERRIDES: Record<OverrideColumn, string> = {
+  overridePrimaryColor: "",
+  overridePrimaryForegroundColor: "",
+  overrideAccentColor: "",
+  overrideBackgroundColor: "",
+  overrideForegroundColor: "",
+};
+
+const SCHEME_LABEL: Record<ColorScheme, string> = {
+  light: "Light",
+  dark: "Dark",
+};
+
+/** The overrides the form holds, as `derivePalette` takes them. */
+function overridesFrom(values: WarWeekSettingsInput): Partial<Palette> {
+  const overrides: Partial<Palette> = {};
+  for (const { color, field } of OVERRIDE_FIELDS) {
+    if (values[field]) overrides[color] = values[field];
+  }
+  return overrides;
+}
+
+/** Whether all five base colors are hex, so the other scheme can derive. */
+function isHexPalette(palette: Palette): boolean {
+  return Object.values(palette).every((color) => normalizeHex(color) !== null);
+}
+
 const MODE_OPTIONS: SelectOption[] = [
   { value: "teams", label: "Teams" },
   { value: "free-for-all", label: "Free-for-all" },
@@ -61,9 +119,12 @@ const FONT_OPTIONS: SelectOption[] = [
 
 /**
  * Edit a War Week's settings, Appearance Theme and closing (Winner and
- * highlights). Status isn't here: Start, End and Reopen change it. The theme
- * preview and contrast warnings update as you type; validation runs on the
- * server, which returns a field error under its field on a refusal.
+ * highlights). Status isn't here: Start, End and Reopen change it. The
+ * Appearance Theme's five colors are the base palette; the other color
+ * scheme's colors are derived from them, and each can be overridden. The
+ * two previews (one per scheme) and the contrast warnings update as you
+ * type; validation runs on the server, which returns a field error under
+ * its field on a refusal.
  */
 export function WarWeekSettingsForm({
   warWeekId,
@@ -84,12 +145,30 @@ export function WarWeekSettingsForm({
   const [values, setValues] = useState(initial);
 
   function setValue(field: keyof WarWeekSettingsInput, value: string) {
-    setValues((v) => ({ ...v, [field]: value }));
+    setValues((v) => {
+      const next = { ...v, [field]: value };
+      // A background across light and dark makes the overrides belong to
+      // the scheme the base now dresses: they go back to derived at once,
+      // so any set after the flip, in the same save, are kept.
+      return field === "backgroundColor" &&
+        backgroundColorScheme(value) !==
+          backgroundColorScheme(v.backgroundColor)
+        ? { ...next, ...NO_OVERRIDES }
+        : next;
+    });
   }
   const set =
     (field: keyof WarWeekSettingsInput) =>
     (event: React.ChangeEvent<HTMLInputElement>) =>
       setValue(field, event.target.value);
+
+  const scheme = backgroundColorScheme(values.backgroundColor);
+  const other = otherScheme(scheme);
+  // The base background crossed light and dark since the last save.
+  const flipNotice =
+    scheme !== backgroundColorScheme(initial.backgroundColor)
+      ? `Changing the background to a ${scheme} one clears the ${other} mode colors (they'll be derived again).`
+      : null;
 
   // Validation runs on the server; a refusal names its fields.
   const [result, formAction, pending] = useActionState(
@@ -114,6 +193,11 @@ export function WarWeekSettingsForm({
         accentColor: read("accentColor"),
         backgroundColor: read("backgroundColor"),
         foregroundColor: read("foregroundColor"),
+        overridePrimaryColor: read("overridePrimaryColor"),
+        overridePrimaryForegroundColor: read("overridePrimaryForegroundColor"),
+        overrideAccentColor: read("overrideAccentColor"),
+        overrideBackgroundColor: read("overrideBackgroundColor"),
+        overrideForegroundColor: read("overrideForegroundColor"),
         logoUrl: read("logoUrl"),
         bannerUrl: read("bannerUrl"),
         fontPreset: read("fontPreset"),
@@ -125,7 +209,10 @@ export function WarWeekSettingsForm({
         toast.error(saved.error);
         return saved;
       }
-      toast.success("War Week settings saved");
+      toast.success(
+        "War Week settings saved",
+        flipNotice ? { description: flipNotice } : undefined,
+      );
       router.refresh();
       return saved;
     },
@@ -140,6 +227,19 @@ export function WarWeekSettingsForm({
     fontPreset: values.fontPreset as WarWeek["fontPreset"],
   };
   const warnings = themeContrastWarnings(preview);
+  const base = basePalette(preview);
+  const overrides = overridesFrom(values);
+  const derived = isHexPalette(base) ? derivePalette(base, overrides) : null;
+
+  /** Sets one override; the color it would derive to anyway is none. */
+  function setOverride(
+    color: keyof Palette,
+    field: OverrideColumn,
+    hex: string,
+  ) {
+    const without = derivePalette(base, { ...overrides, [color]: undefined });
+    setValue(field, hex === normalizeHex(without[color]) ? "" : hex);
+  }
   const swatches = [...themeSwatches(values), ...teamSwatches];
   const dateError = fieldErrors.startDate ?? fieldErrors.endDate;
 
@@ -268,26 +368,85 @@ export function WarWeekSettingsForm({
           })}
         </FieldGroup>
 
-        <div
-          aria-label="Theme preview"
-          style={warWeekThemeStyle(preview)}
-          className="bg-background text-foreground border-border flex flex-col gap-3 rounded-lg border p-4 font-sans"
-        >
-          <span className="text-foreground/60 text-xs font-medium tracking-wide uppercase">
-            Preview
-          </span>
-          <p className="text-primary text-xl font-semibold">
-            {values.storyTheme || "Story Theme"}
-          </p>
-          <p className="text-sm">Body text on the background.</p>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="bg-primary text-primary-foreground rounded-lg px-3 py-1.5 text-sm font-medium">
-              Primary button
-            </span>
-            <span className="bg-accent text-accent-foreground rounded-lg px-3 py-1.5 text-sm font-medium">
-              Accent
-            </span>
-          </div>
+        <FieldSet>
+          <FieldLegend variant="label">
+            {SCHEME_LABEL[other]} mode colors
+          </FieldLegend>
+          <FieldDescription>
+            Derived from the colors above for viewers who choose {other} mode.
+            Change one to override it.
+          </FieldDescription>
+          {flipNotice && (
+            <p role="status" className="text-sm">
+              {flipNotice}
+            </p>
+          )}
+          {derived && (
+            <FieldGroup className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {OVERRIDE_FIELDS.map(({ color, field, label }) => (
+                <Field key={field} data-invalid={!!fieldErrors[field]}>
+                  <FieldLabel htmlFor={`settings-${field}`}>
+                    {SCHEME_LABEL[other]} {label.toLowerCase()} color
+                  </FieldLabel>
+                  <ColorField
+                    id={`settings-${field}`}
+                    aria-invalid={!!fieldErrors[field]}
+                    value={derived[color]}
+                    swatches={swatches}
+                    onValueChange={(hex) => setOverride(color, field, hex)}
+                  />
+                  <FormValueInput name={field} value={values[field]} />
+                  {values[field] ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="xs"
+                      className="self-start"
+                      onClick={() => setValue(field, "")}
+                    >
+                      Reset to derived
+                    </Button>
+                  ) : (
+                    <FieldDescription>Derived</FieldDescription>
+                  )}
+                  <FieldError>{fieldErrors[field]}</FieldError>
+                </Field>
+              ))}
+            </FieldGroup>
+          )}
+        </FieldSet>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {(["light", "dark"] as const).map((previewScheme) => (
+            <ThemeRoot
+              key={previewScheme}
+              scheme={previewScheme}
+              style={warWeekThemeStyle(preview)}
+              className="bg-background text-foreground border-border flex flex-col gap-3 rounded-lg border p-4 font-sans"
+            >
+              <div
+                aria-label={`${SCHEME_LABEL[previewScheme]} mode preview`}
+                className="flex flex-col gap-3"
+              >
+                <span className="text-foreground/60 text-xs font-medium tracking-wide uppercase">
+                  {SCHEME_LABEL[previewScheme]} mode
+                  {previewScheme === scheme ? "" : " (derived)"}
+                </span>
+                <p className="text-primary text-xl font-semibold">
+                  {values.storyTheme || "Story Theme"}
+                </p>
+                <p className="text-sm">Body text on the background.</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="bg-primary text-primary-foreground rounded-lg px-3 py-1.5 text-sm font-medium">
+                    Primary button
+                  </span>
+                  <span className="bg-accent text-accent-foreground rounded-lg px-3 py-1.5 text-sm font-medium">
+                    Accent
+                  </span>
+                </div>
+              </div>
+            </ThemeRoot>
+          ))}
         </div>
         {warnings.length > 0 && (
           <ul

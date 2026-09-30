@@ -52,6 +52,13 @@ export const warWeekSettingsSeedShape = {
   accent: hexColor,
   background: hexColor,
   foreground: hexColor,
+  // The Organizer's overrides of the derived palette (the other color
+  // scheme's colors); absent or null means derived.
+  overridePrimary: hexColor.nullish(),
+  overridePrimaryForeground: hexColor.nullish(),
+  overrideAccent: hexColor.nullish(),
+  overrideBackground: hexColor.nullish(),
+  overrideForeground: hexColor.nullish(),
   fontPreset: z.enum(FONT_PRESETS),
   logoUrl: themeUrl.nullish(),
   bannerUrl: themeUrl.nullish(),
@@ -179,6 +186,12 @@ export type WarWeekSettingsInput = {
   accentColor: string;
   backgroundColor: string;
   foregroundColor: string;
+  /** The derived palette's overrides; blank means derived. */
+  overridePrimaryColor: string;
+  overridePrimaryForegroundColor: string;
+  overrideAccentColor: string;
+  overrideBackgroundColor: string;
+  overrideForegroundColor: string;
   logoUrl: string;
   bannerUrl: string;
   fontPreset: string;
@@ -188,28 +201,40 @@ export type WarWeekSettingsInput = {
   highlights: string;
 };
 
-/** Validated settings, keyed by the `war_week` columns they update. */
-export type WarWeekSettingsValues = Pick<
-  WarWeek,
-  | "storyTheme"
-  | "startDate"
-  | "endDate"
-  | "mode"
-  | "teamLabel"
-  | "leaderTitle"
-  | "slackChannelUrl"
-  | "wikiUrl"
-  | "primaryColor"
-  | "primaryForegroundColor"
-  | "accentColor"
-  | "backgroundColor"
-  | "foregroundColor"
-  | "logoUrl"
-  | "bannerUrl"
-  | "fontPreset"
-  | "winner"
-  | "highlights"
->;
+/** The derived palette's override columns. */
+export type OverrideColumn =
+  | "overridePrimaryColor"
+  | "overridePrimaryForegroundColor"
+  | "overrideAccentColor"
+  | "overrideBackgroundColor"
+  | "overrideForegroundColor";
+
+/**
+ * Validated settings, keyed by the `war_week` columns they update. The
+ * overrides are optional: a save without them leaves them as they were.
+ */
+export type WarWeekSettingsValues = Partial<Pick<WarWeek, OverrideColumn>> &
+  Pick<
+    WarWeek,
+    | "storyTheme"
+    | "startDate"
+    | "endDate"
+    | "mode"
+    | "teamLabel"
+    | "leaderTitle"
+    | "slackChannelUrl"
+    | "wikiUrl"
+    | "primaryColor"
+    | "primaryForegroundColor"
+    | "accentColor"
+    | "backgroundColor"
+    | "foregroundColor"
+    | "logoUrl"
+    | "bannerUrl"
+    | "fontPreset"
+    | "winner"
+    | "highlights"
+  >;
 
 /** The form's starting fields from the War Week row. */
 export function settingsInputFrom(warWeek: WarWeek): WarWeekSettingsInput {
@@ -227,6 +252,12 @@ export function settingsInputFrom(warWeek: WarWeek): WarWeekSettingsInput {
     accentColor: warWeek.accentColor,
     backgroundColor: warWeek.backgroundColor,
     foregroundColor: warWeek.foregroundColor,
+    overridePrimaryColor: warWeek.overridePrimaryColor ?? "",
+    overridePrimaryForegroundColor:
+      warWeek.overridePrimaryForegroundColor ?? "",
+    overrideAccentColor: warWeek.overrideAccentColor ?? "",
+    overrideBackgroundColor: warWeek.overrideBackgroundColor ?? "",
+    overrideForegroundColor: warWeek.overrideForegroundColor ?? "",
     logoUrl: warWeek.logoUrl ?? "",
     bannerUrl: warWeek.bannerUrl ?? "",
     fontPreset: warWeek.fontPreset,
@@ -277,6 +308,11 @@ const settingsSchema = z
     accentColor: trimmed(seed.accent),
     backgroundColor: trimmed(seed.background),
     foregroundColor: trimmed(seed.foreground),
+    overridePrimaryColor: optional(seed.overridePrimary),
+    overridePrimaryForegroundColor: optional(seed.overridePrimaryForeground),
+    overrideAccentColor: optional(seed.overrideAccent),
+    overrideBackgroundColor: optional(seed.overrideBackground),
+    overrideForegroundColor: optional(seed.overrideForeground),
     logoUrl: optional(seed.logoUrl),
     bannerUrl: optional(seed.bannerUrl),
     fontPreset: seed.fontPreset,
@@ -385,6 +421,11 @@ const FIELD_LABELS: Record<string, string> = {
   accentColor: "Accent color",
   backgroundColor: "Background color",
   foregroundColor: "Text color",
+  overridePrimaryColor: "Primary override",
+  overridePrimaryForegroundColor: "Primary text override",
+  overrideAccentColor: "Accent override",
+  overrideBackgroundColor: "Background override",
+  overrideForegroundColor: "Text override",
   logoUrl: "Logo URL",
   bannerUrl: "Banner URL",
   fontPreset: "Font",

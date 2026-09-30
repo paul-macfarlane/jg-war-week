@@ -16,6 +16,7 @@ describe("STATIC_PAGE_THEME", () => {
       backgroundColor: seed.background,
       foregroundColor: seed.foreground,
       fontPreset: seed.fontPreset,
+      overridePrimaryColor: seed.overridePrimary,
     });
   });
 });
