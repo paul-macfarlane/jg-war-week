@@ -38,7 +38,7 @@ repository keeps its own base SHA, branch, verification result, and pull request
 
 ### Structure
 
-- `.scratch/` — Local-markdown issue tracker: specs, tickets, and plans per feature
+- `.scratch/` — Local-markdown issue tracker: specs, tickets, and plans per feature; `.scratch/backlog.md` lists every open item
 - `old-wikis/` — Source text of past War Week wiki pages (2016-2026) for history seeding
 - `docs/agents/` — Agent guidance: issue tracker, triage labels, domain docs
 
