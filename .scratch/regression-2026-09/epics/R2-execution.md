@@ -644,3 +644,108 @@ orchestrator's. The verification map above is the criterion-level mapping;
 the ledger in the state record seeds every criterion `unproven`.
 Human gates: E-1 only, already answered (post-check at closeout).
 Proof root not cleared (Paul's R1 decision, kept since).
+
+## [AI CODE REVIEW]
+
+2026-09-30, aggregate review of `a74d4df..f00f355` by two fresh Opus
+reviewers (one per axis), adjudicated by the orchestrator against the cited
+hunks. Fixes in `f279858` (code) and `f7c85d5` (regenerated media and
+evidence); F1 and F2 were proved red first.
+
+**Technical implementation and spec conformity**
+
+| # | Severity | Paths | Finding | Disposition |
+|---|---|---|---|---|
+| F1 | blocking | `src/app/privacy/page.tsx`, `src/app/terms/page.tsx` | theme style on a plain `div`, no `data-theme-root`: both pages lost XI's theme | resolved: `ThemeRoot`; added to 12-8's e2e |
+| F2 | blocking | `src/components/war-week-settings-form.tsx` | every edit crossing light/dark cleared overrides, so a flip and back (e.g. typing `#1a1a1a` via `#1a1`) wiped them with no notice | resolved: clear on leaving the saved scheme, restore the saved overrides on return; e2e step types that case |
+| F3 | non-blocking | `e2e/theme.spec.ts` | "open and dismiss the picker" used an overridden field, so it couldn't catch a derived color freezing | resolved: uses a derived field |
+| F4 | non-blocking | `src/components/display-menu.tsx` | another tab's change updated the control, not the page | resolved: shared `applyDisplay` on the `storage` event |
+| F5 | non-blocking | `src/components/display-menu.tsx` | control ignored the page's scheme when storage throws | resolved: snapshot falls back to `html[data-display]` |
+| F6 | non-blocking | `src/lib/setup.ts` | comment said omitted override keys are kept; through the action they become null | resolved: comment states both paths |
+| F7 | non-blocking | `more-menu.tsx`, `[edition]/more/page.tsx` | labelled Display row could overflow at 320–360px | resolved: row wraps |
+| F8 | non-blocking | `src/components/ui/button.tsx` | decision 8's `disabled:cursor-not-allowed` omitted | deviation approved: the base keeps `disabled:pointer-events-none`, so a cursor never shows; the dashed border is the non-colour cue |
+| F9 | non-blocking | `e2e/enrollment.spec.ts` | outline (Withdraw / Leave) disabled look unasserted | resolved: Withdraw asserted (muted text, dashed border) |
+| F10 | non-blocking | `docs/maintainers-guide.md` | `--warning` users listed wrongly | resolved |
+| F11 | non-blocking | `scripts/about-media.ts` | "Game logged" toast in the Games still | resolved: waits for the toast; still regenerated |
+
+**Coding standards**
+
+| # | Severity | Paths | Finding | Disposition |
+|---|---|---|---|---|
+| S1 | non-blocking | form, `theme.ts`, `scripts/smoke/setup.ts` | "mode" meaning color scheme, beside CONTEXT's Mode | deviation approved: the UI copy ("Light mode colors", "Dark mode: …") is prescribed by decisions 2 and 7 and reads as plain English; comments and test names say "scheme" |
+| S2 | non-blocking | form | flip notice not `text-warning` | resolved |
+| S3 | non-blocking | form, `src/lib/theme.ts` | `isHexPalette` / override mapping duplicated in the form | resolved: imported from `theme.ts` |
+| S4 | non-blocking | e2e specs, `theme-root.tsx` | redeclared `ColorScheme` / `Display` and the `ww:display` literal | resolved: imported |
+| S5 | non-blocking | `src/lib/display.ts` | `parseDisplay` doc comment inaccurate | resolved |
+
+Coverage judged sufficient: the two axes together read every deliverable
+(D0–D4) and every plan decision; the spec axis listed each AC and
+decision with a verdict. Remaining risks: see Follow-ups.
+
+## [CLOSEOUT]
+
+2026-09-30. PR https://github.com/paul-macfarlane/jg-war-week/pull/94 into
+`staging`. Repository delivery `war-weeker`, branch
+`feat/regression-r2-light-dark`, comparison `a74d4df`, verified at
+`f7c85d5` (evidence commit `d4c8fac`).
+
+**Deliverables**
+
+| Id | Commit | Worker | Result |
+|---|---|---|---|
+| D0 | `afff8ea` | Sonnet | axe spec and baseline; committed by Paul (the Atlas secret-scrub hook denies `pnpm-lock.yaml` integrity hashes) |
+| D1 | `22d6cb1` | Opus | derivation, override columns (0017), seed, Setup form |
+| D2 | `ab66fb4`, `373f30e` | Opus | CSS, no-flash script, Display control, smoke and e2e |
+| D3 | `0fb29c5` | Sonnet | disabled button look (22) |
+| D4 | `f00f355` | Sonnet | Games still (26), `/about` copy, docs |
+| R1 | `f279858`, `f7c85d5` | Opus | review fixes |
+
+**Isolation re-check.** Sequential in one checkout. D1 and D2 did collide
+as predicted on `src/components/war-week-settings-form.tsx` and
+`scripts/smoke/setup.ts`, and also on `src/components/theme-root.tsx` and
+`src/app/[edition]/layout.tsx`; the predicted `src/lib/theme.ts` collision
+did not happen (D2 left it alone). D3 and D4 touched disjoint source files,
+as predicted, and were serialized only by the shared e2e port and database.
+
+**Verdicts** (command: `set -a; . ./.env.example; set +a; pnpm format:check && pnpm gate`,
+exit 0 at `f7c85d5`: 3053 unit tests, build, 201 smoke checks, 43
+Playwright tests; `test-results/r2-gate/gate.txt`)
+
+| Id | Verdict | Evidence |
+|---|---|---|
+| 12-1 | PASS | `theme.test.ts`, `archive-contrast.test.ts` (11 seeds × 2 schemes, every pair ≥ 4.5:1; lowest 4.53, the light warning on vii) in `gate.txt` |
+| 12-2 | PASS | `e2e/theme.spec.ts` XI and X Display tests in `gate.txt`; `test-results/e2e/theme-Display-*/xi-light.png`, `xi-dark.png` |
+| 12-3 | PASS | `e2e/axe.spec.ts`: zero `color-contrast` violations on `/xi`, `/history`, `/about` × 2 (`test-results/e2e/axe-*/`). `incomplete`: one `color-contrast` entry each on `/history` and `/about` (text over banner images and `/about`'s gradient, which axe can't measure), the same as the baseline (`test-results/r2-axe-baseline/`). `/xi`'s `aria-allowed-attr`, `aria-prohibited-attr`, `button-name` violations are inherited and out of scope (see Follow-ups) |
+| 12-4 | PASS | migration 0017 applies; `db:generate` reports no changes; smoke loads every seed twice and asserts XI's seeded override stored and served as `--light-primary`; red-team record above |
+| 12-5 | PASS | `/about` hero copy; the guide's theme recipe; `test-results/28-splash/` regenerated (incl. `about-desktop-light.png`) |
+| 12-6 | PASS | `gate.txt` |
+| 12-7 | PASS | no-flash e2e (scripts aborted, CSS loaded) and smoke's `<head>` script check in `gate.txt` |
+| 12-8 | PASS | e2e: the Finale, `/history` (body and X's card), `/about`, `/privacy`, `/terms`, sign-in, `/admin/setup` × 2 schemes; `theme-every-themed-surface-*/history-dark.png` |
+| 12-9 | PASS | e2e Setup path (untouched save, dismissed picker, flip-and-back, override, reset) and smoke round-trip in `gate.txt`; `theme-Setup-*/setup-overrides.png`; `src/mutations/setup.test.ts` |
+| 22-1 | PASS | computed style (muted fill ≠ primary, dashed) in Light and Dark, Withdraw muted and dashed; `test-results/e2e/enrollment-closed-refused/375.png`, `375-dark.png` |
+| 22-2 | PASS | as 22-1 |
+| 22-3 | PASS | `gate.txt` |
+| 26-1 | PASS | frame 1600×900 held (h1 top 125 ≥ header bottom 57; first Game row bottom 560 ≤ 900); card read in `test-results/e2e/regression-r3-about/about-games.png` |
+| 26-2 | PASS | `about-media.ts --stills` log in `test-results/28-splash/`; `public/about/games.png` |
+| E-1 | PASS | Paul answered decision 11 "moot" at plan approval; ticket 13 `wontfix` with a comment in this commit |
+| E-2 | PASS | 12, 22, 26 and the epic `done` with `[CLOSEOUT]` in this commit |
+| E-3 | pending | CI on PR #94 at closeout |
+| E-4 | PASS | `gate.txt` |
+
+**Deviations:** F8 and S1 above; the approved execution deviations
+recorded in the review packets (override keys read in the form; column-
+derived names; flip clearing keyed on stored values; axe waits for
+animations; `/history` body compared as `lab()`; `"system"` stored
+explicitly; `.dark` block folded into the dark rules). The committed e2e
+screenshots of other specs now show XI's derived light palette (Playwright's
+System is light).
+
+**Follow-ups (not in this epic):**
+- In Chromium, Setup's color `FieldGroup`s collapse to 0px when the
+  contrast-warnings list appears (container-query sizing,
+  `@container/field-group` in `src/components/ui/field.tsx`); the pieces
+  exist on `staging`. The e2e works around it. Pending Paul's call on a
+  ticket.
+- `/xi`'s inherited axe findings (`aria-allowed-attr`,
+  `aria-prohibited-attr`, `button-name`).
+- The Atlas secret-scrub hook blocks any commit touching `pnpm-lock.yaml`.

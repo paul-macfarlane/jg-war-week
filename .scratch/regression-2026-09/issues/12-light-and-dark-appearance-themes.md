@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** in-progress
+**Status:** done
 
 **Source:** regression feedback item 3
 
@@ -17,13 +17,15 @@
 
 ## Acceptance criteria
 
-- [ ] Unit tests: the derivation for every seed theme passes the contrast checks in both modes; an Organizer override wins.
-- [ ] Playwright: switching Light/Dark/System changes the page and survives reload; System follows emulated `prefers-color-scheme`. Screenshots of `/xi` in both modes under `test-results/e2e/<test>/`.
-- [ ] axe reports no contrast violations on `/xi`, `/history` and `/about` in both modes.
-- [ ] Schema change (overrides) and demo seed updated together; plan red-teamed.
-- [ ] `/about` and `docs/maintainers-guide.md` updated.
-- [ ] `pnpm gate` passes.
+- [x] Unit tests: the derivation for every seed theme passes the contrast checks in both modes; an Organizer override wins.
+- [x] Playwright: switching Light/Dark/System changes the page and survives reload; System follows emulated `prefers-color-scheme`. Screenshots of `/xi` in both modes under `test-results/e2e/<test>/`.
+- [x] axe reports no contrast violations on `/xi`, `/history` and `/about` in both modes.
+- [x] Schema change (overrides) and demo seed updated together; plan red-teamed.
+- [x] `/about` and `docs/maintainers-guide.md` updated.
+- [x] `pnpm gate` passes.
 
 ## Comments
 - 2026-09-29 [EXECUTION PLAN]: written by `/atlas-plan` and red-teamed (schema change), one revision cycle plus a re-review; approved by Paul. Plan: `../epics/R2-execution.md`.
 - 2026-09-30: claimed by `/atlas-implement` (work package `regression-r2`), `ready-for-agent` → `in-progress`; branch `feat/regression-r2-light-dark` from `staging` `a74d4df` (R3 merged, PR #92; R4 merged, PR #93). Execution record: `../epics/R2-execution.md`.
+- 2026-09-30 [AI CODE REVIEW]: two axes, 2 blocking findings (F1 privacy/terms theme, F2 Setup override flip) resolved, 0 open; 2 non-blocking deviations approved. Full tables: `../epics/R2-execution.md` [AI CODE REVIEW].
+- 2026-09-30 [CLOSEOUT]: all criteria PASS except E-3 (CI) pending at closeout; `pnpm format:check && pnpm gate` exit 0 at `f7c85d5` (`test-results/r2-gate/gate.txt`). PR https://github.com/paul-macfarlane/jg-war-week/pull/94. `ai-review` → `done`. Details: `../epics/R2-execution.md` [CLOSEOUT].
