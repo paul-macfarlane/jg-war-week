@@ -1,4 +1,10 @@
-import { type Page, type TestInfo, expect, test } from "@playwright/test";
+import {
+  type Locator,
+  type Page,
+  type TestInfo,
+  expect,
+  test,
+} from "@playwright/test";
 import path from "node:path";
 
 import {
@@ -51,6 +57,34 @@ async function shoot(page: Page, testInfo: TestInfo, step: string) {
     });
   }
   await page.setViewportSize({ width: 1280, height: 900 });
+}
+
+/**
+ * A disabled button's computed `background-color` equals the theme root's
+ * resolved `--muted` (not `--primary`), and its top border is dashed — the
+ * non-colour disabled cue (ticket 22).
+ */
+async function assertDisabledButtonStyle(button: Locator) {
+  const styles = await button.evaluate((el) => {
+    const root = el.closest("[data-theme-root]") ?? document.documentElement;
+    const probe = document.createElement("div");
+    root.appendChild(probe);
+    probe.style.backgroundColor = "var(--muted)";
+    const muted = getComputedStyle(probe).backgroundColor;
+    probe.style.backgroundColor = "var(--primary)";
+    const primary = getComputedStyle(probe).backgroundColor;
+    root.removeChild(probe);
+    const computed = getComputedStyle(el);
+    return {
+      background: computed.backgroundColor,
+      borderTopStyle: computed.borderTopStyle,
+      muted,
+      primary,
+    };
+  });
+  expect(styles.background).toBe(styles.muted);
+  expect(styles.background).not.toBe(styles.primary);
+  expect(styles.borderTopStyle).toBe("dashed");
 }
 
 /** Whether `participantId` is one of the Competition's Entrants. */
@@ -160,11 +194,43 @@ test("enrollment: a Participant enrolls, withdraws and enrolls again; once the H
     await late.goto(`/xi/competitions/${id}`);
     const lateCard = enrollmentCard(late);
     await expect(lateCard.getByText(BUILT)).toBeVisible();
-    await expect(
-      lateCard.getByRole("button", { name: "Enroll" }),
-    ).toBeDisabled();
+    const lateEnrollButton = lateCard.getByRole("button", { name: "Enroll" });
+    await expect(lateEnrollButton).toBeDisabled();
     expect(await isEntrant(id, latecomerId)).toBe(false);
+    await assertDisabledButtonStyle(lateEnrollButton);
     await shoot(late, testInfo, "closed-refused");
+
+    // Same disabled Enroll, pinned to the Dark scheme, in a fresh context
+    // (ww:display must be set before the first page load).
+    const darkContext = await browser.newContext({ baseURL: E2E_BASE_URL });
+    try {
+      await darkContext.addInitScript(
+        (value) => window.localStorage.setItem("ww:display", value),
+        "dark",
+      );
+      await signIn(darkContext, E2E_PARTICIPANT_2_EMAIL);
+      const darkPage = await darkContext.newPage();
+      await darkPage.goto(`/xi/competitions/${id}`);
+      const darkCard = enrollmentCard(darkPage);
+      await expect(darkCard.getByText(BUILT)).toBeVisible();
+      const darkEnrollButton = darkCard.getByRole("button", {
+        name: "Enroll",
+      });
+      await expect(darkEnrollButton).toBeDisabled();
+      await assertDisabledButtonStyle(darkEnrollButton);
+      await darkPage.setViewportSize({ width: 375, height: 900 });
+      await darkPage.screenshot({
+        path: path.join(
+          testInfo.project.outputDir,
+          "enrollment-closed-refused",
+          "375-dark.png",
+        ),
+        fullPage: true,
+        animations: "disabled",
+      });
+    } finally {
+      await darkContext.close();
+    }
   } finally {
     await youContext.close();
     await lateContext.close();
