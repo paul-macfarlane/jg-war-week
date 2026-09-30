@@ -19,3 +19,4 @@ Recommendation from triage: theme /admin by the War Week being edited (doubles a
 ## Comments
 
 **2026-09-28, Claude (grill-with-docs):** Likely moot once ticket 12 lands (every theme works in the viewer's preferred mode). Revisit after 12.
+- 2026-09-29 (Paul): confirmed moot at R2 plan approval: after R2, `/admin` follows the viewer's own light or dark Display like every other page. Closed as `wontfix` in R2's closeout (`../epics/R2-execution.md` decision 11, E-1).

@@ -2,13 +2,15 @@
 
 **What to build:** Ticket 12, then re-check ticket 13 (likely moot). Also 22 (a disabled Enroll button looks disabled, in both modes) and 26 (the /about Games still shows its title, when R2 regenerates the /about media).
 
+**Execution record:** `R2-execution.md`
+
 **Tickets:** `12`, `22`, `26` (`13` checked at closeout) (files under `../issues/`)
 
 **Branch:** `feat/regression-r2-light-dark`
 
 **Blocked by:** R3 merged (both change the schema; run them one after the other); R4 merged (it replaces the form controls R2 themes)
 
-**Status:** needs-triage
+**Status:** ready-for-agent
 
 ## Order and parallelism
 
@@ -26,3 +28,5 @@ Each ticket's own acceptance criteria, plus:
 
 ## Comments
 - 2026-09-29 (Paul): added tickets 22 and 26 from Epic R3's follow-ups; both are colour or media work R2 already does. R2 now waits on R4 too, so it themes the final form controls.
+- 2026-09-29 [EXECUTION PLAN]: written by `/atlas-plan` and red-teamed (schema change), one revision cycle plus a re-review; approved by Paul. Plan: `../epics/R2-execution.md`.
+- 2026-09-29 (Paul): triaged `needs-triage` → `ready-for-agent` with the R2 plan approval.

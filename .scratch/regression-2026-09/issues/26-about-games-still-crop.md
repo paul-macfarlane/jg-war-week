@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** needs-triage
+**Status:** ready-for-agent
 
 **Source:** Epic R3 follow-up (`../epics/R3-execution.md` [CLOSEOUT]), 2026-09-29
 
@@ -19,3 +19,5 @@
 
 ## Comments
 - 2026-09-29 (Paul): folded into Epic R2 (`../epics/R2-light-and-dark-themes.md`): R2 reworks colors and contrast in both modes and regenerates the /about media, so this is done there rather than twice.
+- 2026-09-29 [EXECUTION PLAN]: written by `/atlas-plan` and red-teamed (schema change), one revision cycle plus a re-review; approved by Paul. Plan: `../epics/R2-execution.md`.
+- 2026-09-29 (Paul): triaged `needs-triage` → `ready-for-agent` with the R2 plan approval.

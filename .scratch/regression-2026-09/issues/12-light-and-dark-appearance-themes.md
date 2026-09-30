@@ -25,3 +25,4 @@
 - [ ] `pnpm gate` passes.
 
 ## Comments
+- 2026-09-29 [EXECUTION PLAN]: written by `/atlas-plan` and red-teamed (schema change), one revision cycle plus a re-review; approved by Paul. Plan: `../epics/R2-execution.md`.
