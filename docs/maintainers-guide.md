@@ -83,7 +83,7 @@ before it says it's done.
 | Bracket builder and results screens                | `src/app/admin/setup/competitions/[id]/bracket/`, `src/app/admin/brackets/[id]/` |
 | Database schema                            | `src/db/schema.ts`                                                     |
 | Migrations (generated, never hand-edited)  | `drizzle/`                                                             |
-| Seed data, one file per War Week           | `seeds/i.json` … `seeds/xi.json`; the live XI demo in `seeds/demo/xi.json` |
+| Seed data, one file per War Week           | `seeds/i.json` … `seeds/xi.json`, the tentative upcoming `seeds/xii.json`; the live XI demo in `seeds/demo/xi.json` |
 | Seed format and loader                     | `src/seed/schema.ts`, `src/seed/load.ts`                               |
 | Appearance Theme → CSS                     | `src/lib/theme.ts`                                                     |
 | Shared UI pieces                           | `src/components/` (shadcn primitives in `src/components/ui/`)          |
