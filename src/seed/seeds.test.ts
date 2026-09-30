@@ -6,9 +6,10 @@ import { DEMO_SEED } from "@/seed/local-files";
 import { type WarWeekSeed, warWeekSeedSchema } from "@/seed/schema";
 
 /**
- * Content checks on the committed seeds: eleven years of history, plus the
- * War Week XI demo that local test databases load in its place. Schema
- * validity itself is covered in schema.test.ts.
+ * Content checks on the committed seeds: eleven years of history, the
+ * tentative upcoming War Week XII, plus the War Week XI demo that local test
+ * databases load in its place. Schema validity itself is covered in
+ * schema.test.ts.
  */
 
 const SEEDS_DIR = path.resolve(__dirname, "../../seeds");
@@ -21,7 +22,8 @@ function load(file: string): WarWeekSeed {
 }
 
 const files = readdirSync(SEEDS_DIR).filter((f) => f.endsWith(".json"));
-const seeds = files.map(load).sort((a, b) => a.year - b.year);
+const all = files.map(load).sort((a, b) => a.year - b.year);
+const seeds = all.filter((s) => s.status === "complete");
 const demo = load(path.relative(SEEDS_DIR, DEMO_SEED_PATH));
 
 describe("War Week history", () => {
@@ -29,6 +31,14 @@ describe("War Week history", () => {
     expect(seeds.map((s) => s.year)).toEqual([
       2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026,
     ]);
+  });
+
+  it("has only War Week XII beyond the history, and it is upcoming", () => {
+    expect(
+      all
+        .filter((s) => s.status !== "complete")
+        .map((s) => [s.edition, s.status]),
+    ).toEqual([["xii", "upcoming"]]);
   });
 
   it.each(files)("%s is named after its Edition", (file) => {
@@ -48,8 +58,9 @@ describe("War Week history", () => {
       "ix",
       "x",
       "xi",
+      "xii",
     ];
-    for (const seed of seeds) {
+    for (const seed of all) {
       expect(seed.editionNumber).toBe(seed.year - 2015);
       expect(seed.edition).toBe(romans[seed.editionNumber - 1]);
     }

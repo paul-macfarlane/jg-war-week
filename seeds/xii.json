@@ -1,0 +1,22 @@
+{
+  "edition": "xii",
+  "editionNumber": 12,
+  "year": 2027,
+  "startDate": "2027-02-21",
+  "endDate": "2027-02-26",
+  "storyTheme": "No Teams. Just You.",
+  "status": "upcoming",
+  "mode": "free-for-all",
+  "teamLabel": "Team",
+  "leaderTitle": "Captain",
+  "slackChannelUrl": "https://jahnelgroup.slack.com/archives/war-week-xii",
+  "primary": "#c2185b",
+  "primaryForeground": "#ffffff",
+  "accent": "#2f4fd8",
+  "background": "#ffffff",
+  "foreground": "#111111",
+  "fontPreset": "sans",
+  "organizers": [],
+  "highlights": [],
+  "days": []
+}
