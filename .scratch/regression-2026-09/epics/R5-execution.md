@@ -439,3 +439,12 @@ No finding against: shadcn usage, toasts/popups via `ThemeRoot`, ADR 0001 layeri
 ## [BLOCKED]
 
 2026-09-30: blocked at human gate H1 (ticket 37) after aggregate review and verification of everything else at `f79549c`. Branch `feat/regression-r5-admin-on-a-phone` (local, not pushed), state `.claude/atlas-state/regression-r5.json` (checkpoint `blocked`). Resume: answer H1 (staging `/xii` pinned Announcement `body` + `video_urls`, or a 375px devtools screenshot) or descope 37, then `/atlas-implement .scratch/regression-2026-09/epics/R5-admin-on-a-phone.md`. On resume: D37 (worker reapplies the draft spec patch from the orchestrator scratchpad, reproduces ≥160px with the supplied body, fixes at the cause), rerun the r5 spec and `pnpm gate`, then closeout: push, PR into `staging`, E-4 CI, tickets `done`.
+
+## [SCOPE CHANGE] Ticket 37 after human gate H1
+
+2026-09-30 (Paul): H1 answered by the orchestrator inspecting staging `/xii` at 375 in the browser pane (Paul signed in). The pinned Announcement is title-only with a YouTube video: card 309px = header 78 + body 0 + iframe 175 + padding and gaps. The ticket's "empty space" was the video embed. The one real defect: an empty body still renders `RichText`'s wrapper, adding a 12px gap above the video. Paul approved the small fix: `RichText` drops leading/trailing empty paragraphs and renders nothing for an empty body (supersedes decision 9's premise; same fix location). Resumed D37 on Sonnet.
+- 2026-09-30: D37 accepted (`4bee992`, Sonnet). `RichText` drops leading/trailing empty paragraphs and renders nothing for an empty body (unit tests red first: 3 failed). r5 37: one-line pinned, no video → 112px on `/xi` and `/xi/news`; title-only with empty body and a video → the card's content block's only child is the iframe (no empty wrapper, no extra 12px gap), 325px locally.
+
+## [PROGRESS] Final gate
+
+2026-09-30, at `4bee992`: `pnpm format:check && pnpm gate` exit 0 — `Tests 3118 passed`; smoke 201 `ok`, 0 `not ok`; e2e `52 passed (2.0m)`. `test-results/r5-gate/gate.txt`. Every criterion 30-1 … 38-4, D0-1, E-1, E-2, E-5 PASS at `4bee992` (37-1 … 37-3 now PASS); E-3 at closeout; E-4 on the PR.
