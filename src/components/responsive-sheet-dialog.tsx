@@ -13,6 +13,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { DismissToasts } from "@/components/ui/sonner";
 
 /**
  * A form that opens as a bottom Sheet on phones and tablets and as a
@@ -48,6 +49,8 @@ export function ResponsiveSheetDialog({
             "lg:data-ending-style:-translate-y-1/2 lg:data-ending-style:scale-95 lg:data-starting-style:-translate-y-1/2 lg:data-starting-style:scale-95",
           )}
         >
+          {/* Below `lg` it opens where toasts show. */}
+          <DismissToasts />
           {children}
           <DialogPrimitive.Close
             data-slot="responsive-sheet-dialog-close"

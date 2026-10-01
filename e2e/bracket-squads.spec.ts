@@ -165,6 +165,12 @@ async function recordHeat(page: Page, heat: string): Promise<string> {
 async function addSquad(page: Page, squad: (typeof SQUADS)[number]) {
   await page.getByRole("button", { name: "Add Squad" }).click();
   const sheet = page.getByRole("dialog", { name: "Add Squad" });
+  // The last save's toast goes as the Sheet opens: left at the bottom, it
+  // covers the Sheet's fields, and a pointer over it keeps it there.
+  // Under Sonner's 4s, so the toast was dismissed rather than expired.
+  await expect(
+    page.getByRole("region", { name: /^Notifications/ }).getByRole("listitem"),
+  ).toHaveCount(0, { timeout: 2_000 });
   await sheet.getByLabel("Name", { exact: true }).fill(squad.name);
   await sheet.getByRole("combobox", { name: "Team", exact: true }).click();
   await page.getByRole("option", { name: squad.team, exact: true }).click();

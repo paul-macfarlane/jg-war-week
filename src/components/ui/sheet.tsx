@@ -7,6 +7,7 @@ import * as React from "react";
 
 import { useThemeContainer } from "@/components/theme-root";
 import { Button } from "@/components/ui/button";
+import { DismissToasts } from "@/components/ui/sonner";
 
 function Sheet({ ...props }: SheetPrimitive.Root.Props) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />;
@@ -67,6 +68,8 @@ function SheetContent({
         )}
         {...props}
       >
+        {/* A bottom Sheet opens where toasts show. */}
+        {side === "bottom" && <DismissToasts />}
         {children}
         {showCloseButton && (
           <SheetPrimitive.Close
