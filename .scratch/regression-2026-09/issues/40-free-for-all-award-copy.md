@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** in-progress
+**Status:** done
 
 **Source:** Epic R5 follow-up (`../epics/R5-execution.md` [AI CODE REVIEW] R1), 2026-09-30
 
@@ -19,10 +19,11 @@
 
 ## Acceptance criteria
 
-- [ ] With the Team field hidden, the form's help and placeholder don't contain the Team Label; with it shown, they read as today.
-- [ ] `src/components/award-form.test.tsx` covers both cases.
-- [ ] `pnpm gate` passes.
+- [x] With the Team field hidden, the form's help and placeholder don't contain the Team Label; with it shown, they read as today.
+- [x] `src/components/award-form.test.tsx` covers both cases.
+- [x] `pnpm gate` passes.
 
 ## Comments
 - 2026-09-30 (Paul): triaged `needs-triage` → `ready-for-agent`; delivered in Epic R6 (`../epics/R6-follow-ups-from-r5.md`).
 - 2026-09-30: claimed, `ready-for-agent` → `in-progress`; branch `feat/regression-r6-follow-ups` from `staging` `d9b2a88`.
+- 2026-09-30 [CLOSEOUT]: `df579c3`: with the Team field hidden, the Recipients help reads "Participants only." and the placeholder "Find by name"; shown, as before. `award-form.test.tsx` (red first: 1 failed). Evidence `src/components/award-form.test.tsx`; `pnpm format:check && pnpm gate` exit 0 at `d9be4c4` (`test-results/r6-gate/gate.txt`: 3121 unit, smoke 201 ok, e2e 53 passed). Small-change route (no separate AI code review, per Paul). `in-progress` → `done`.

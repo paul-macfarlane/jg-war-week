@@ -11,7 +11,6 @@ it the week of 2026-10-05).
 
 ## Ready for an agent
 
-- [ ] **Follow-ups from R5**: refusal toast clears the sticky Save, free-for-all Award copy, Squad Bracket e2e cleans up. Tickets 39-41. [`regression-2026-09/epics/R6`](./regression-2026-09/epics/R6-follow-ups-from-r5.md) (`in-progress`)
 
 
 ## Ready, waiting on someone else

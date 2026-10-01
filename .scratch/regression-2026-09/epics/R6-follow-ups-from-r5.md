@@ -8,7 +8,7 @@
 
 **Blocked by:** none (R5 merged, PR #107)
 
-**Status:** in-progress
+**Status:** done
 
 **Red-team:** not required (no schema, auth or access change).
 
@@ -20,10 +20,11 @@ Independent files: 39 `admin-shell.tsx` + `sticky-form-actions.tsx`, 40 `award-f
 
 Each ticket's own, plus:
 
-- [ ] Each ticket file records its closeout and is `done` in this branch.
+- [x] Each ticket file records its closeout and is `done` in this branch.
 - [ ] CI on the PR passes.
-- [ ] `pnpm gate` passes.
+- [x] `pnpm gate` passes.
 
 ## Comments
 
 - 2026-09-30 (Paul): batch the R5 follow-ups (39–41) and implement them directly.
+- 2026-09-30 [CLOSEOUT]: 40 `df579c3`, 41 `685c9f3`, 39 `d9be4c4`, each red before its fix; `pnpm format:check && pnpm gate` exit 0 at `d9be4c4` (`test-results/r6-gate/gate.txt`). CI on the PR pending at closeout.

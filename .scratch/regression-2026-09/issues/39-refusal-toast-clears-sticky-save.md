@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** in-progress
+**Status:** done
 
 **Source:** Epic R5 follow-up (`../epics/R5-execution.md` [AI CODE REVIEW] T4), 2026-09-30
 
@@ -20,12 +20,13 @@
 
 ## Acceptance criteria
 
-- [ ] At 375px on `/admin/setup/war-week`, a refused save's toast is entirely above the sticky Save row (bounding boxes don't overlap), and the error line under the field stays visible.
-- [ ] The toast still sits above the section bar on admin pages with no sticky row (ticket 30's check still passes).
-- [ ] From `md`, toasts are where they are today (screenshot compare).
-- [ ] Playwright check and screenshot under `test-results/e2e/<test>/`.
-- [ ] `pnpm gate` passes.
+- [x] At 375px on `/admin/setup/war-week`, a refused save's toast is entirely above the sticky Save row (bounding boxes don't overlap), and the error line under the field stays visible.
+- [x] The toast still sits above the section bar on admin pages with no sticky row (ticket 30's check still passes).
+- [x] From `md`, toasts are where they are today (screenshot compare).
+- [x] Playwright check and screenshot under `test-results/e2e/<test>/`.
+- [x] `pnpm gate` passes.
 
 ## Comments
 - 2026-09-30 (Paul): triaged `needs-triage` → `ready-for-agent`; delivered in Epic R6 (`../epics/R6-follow-ups-from-r5.md`).
 - 2026-09-30: claimed, `ready-for-agent` → `in-progress`; branch `feat/regression-r6-follow-ups` from `staging` `d9b2a88`.
+- 2026-09-30 [CLOSEOUT]: `d9be4c4`: `StickyFormActions` publishes its height as `--admin-sticky-height` (ResizeObserver); the admin Toaster adds it to its offset below `md` (0 from `md`). r6 39 at 375: refusal toast bottom 655px, sticky Save row top 671px (red before: 773 vs 671); at 1280 the toast is at Sonner's default 24px. Toast-above-bar on other pages: r5 30 still passes. The setup Sheets' footer overlap (mentioned in Need) is not covered by the ACs and isn't changed. Evidence `test-results/e2e/regression-r6-r6-39-*/`; `pnpm format:check && pnpm gate` exit 0 at `d9be4c4` (`test-results/r6-gate/gate.txt`: 3121 unit, smoke 201 ok, e2e 53 passed). Small-change route (no separate AI code review, per Paul). `in-progress` → `done`.
