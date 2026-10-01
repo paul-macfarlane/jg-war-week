@@ -163,8 +163,10 @@ export function AwardForm({
         <FieldSet>
           <FieldLegend variant="label">Recipients</FieldLegend>
           <FieldDescription>
-            A {teamLabel}, Participants, or both. Awards don&apos;t affect the
-            Standings.
+            {showTeam
+              ? `A ${teamLabel}, Participants, or both.`
+              : "Participants only."}{" "}
+            Awards don&apos;t affect the Standings.
           </FieldDescription>
 
           <FieldGroup>
@@ -215,7 +217,9 @@ export function AwardForm({
                 items={participantItems}
                 value={participantIds}
                 onValueChange={setParticipantIds}
-                placeholder={`Find by name or ${teamLabel}`}
+                placeholder={
+                  showTeam ? `Find by name or ${teamLabel}` : "Find by name"
+                }
               />
               <FieldError>{fieldErrors.participantIds}</FieldError>
             </Field>
