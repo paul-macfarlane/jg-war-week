@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { ADD_ROW, setupRowFocusTarget } from "@/lib/setup-row-focus";
+import {
+  ADD_ROW,
+  setupRowFocusSelector,
+  setupRowFocusTarget,
+} from "@/lib/setup-row-focus";
 
 describe("setupRowFocusTarget", () => {
   it("moves to the next row after the deleted one", () => {
@@ -18,5 +22,20 @@ describe("setupRowFocusTarget", () => {
 
   it("moves to the add row when the deleted row isn't listed", () => {
     expect(setupRowFocusTarget(["a", "b"], "z")).toBe(ADD_ROW);
+  });
+
+  it("moves only between listed rows, never to an add row among them", () => {
+    expect(setupRowFocusTarget([ADD_ROW, "a", "b"], "b")).toBe("a");
+    expect(setupRowFocusTarget(["a", ADD_ROW, "b"], "a")).toBe("b");
+  });
+});
+
+describe("setupRowFocusSelector", () => {
+  it("focuses the add row's Add button", () => {
+    expect(setupRowFocusSelector(ADD_ROW)).toBe("[data-setup-add]");
+  });
+
+  it("leaves a row to its first control, its Edit button", () => {
+    expect(setupRowFocusSelector("a")).toBeNull();
   });
 });

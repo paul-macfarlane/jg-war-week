@@ -277,7 +277,11 @@ test("r1 06 09 the Competitions form explains Max points and offers Format inclu
   await asOrganizer(context);
   await page.goto("/admin/setup/competitions");
 
-  const addForm = page.getByRole("form", { name: "New Competition" });
+  // The empty form opens in a Sheet from the list's Add button.
+  await page.getByRole("button", { name: "Add Competition" }).click();
+  const addForm = page
+    .getByRole("dialog", { name: "Add Competition" })
+    .getByRole("form", { name: "New Competition" });
   await expect(
     addForm.getByText(
       "Optional. The most points 1st place’s Placement Points can be worth.",

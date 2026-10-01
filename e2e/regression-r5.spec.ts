@@ -6,7 +6,7 @@ import {
   test,
 } from "@playwright/test";
 
-import { runQuery, xiCompetitionId } from "./db";
+import { runQuery, xiCompetitionId, xiParticipantId } from "./db";
 import { E2E_BASE_URL } from "./env";
 import { E2E_HOST_EMAIL, asHost, asOrganizer } from "./session";
 
@@ -304,6 +304,8 @@ test("r5 34 admin controls are 44px on a phone", async ({
       [competitionId, hostEmail],
     );
     await page.goto("/admin/setup/competitions");
+    // The Hosts field is in the Competition's Sheet.
+    await page.getByRole("button", { name: "Edit Pool", exact: true }).click();
     await expectAfterTouchTarget(
       page.getByRole("button", { name: `Remove ${hostEmail}` }),
       "email chip remove",
@@ -372,8 +374,10 @@ test("r5 35 selects and the color picker on a phone", async ({
     (await rect(page.locator("#award-team"), "Award Team")).height,
   ).toBeCloseTo(44, 0);
   await page.goto("/admin/setup/teams");
+  // The add form opens in a Sheet from the roster's Add button.
   await page.getByRole("button", { name: "Add Participant" }).click();
   const rosterTeam = page
+    .getByRole("dialog", { name: "Add Participant" })
     .getByRole("form", { name: "New Participant" })
     .locator("[data-slot=select-trigger]")
     .first();
@@ -436,5 +440,148 @@ test("r5 35 selects and the color picker on a phone", async ({
     await shoot(phone, testInfo, "color-open-375");
   } finally {
     await touch.close();
+  }
+});
+
+/** The page's full height, logged so the run records it. */
+async function pageHeight(page: Page, what: string) {
+  const height = await page.evaluate(
+    () => document.documentElement.scrollHeight,
+  );
+  console.log(`${what} at ${page.viewportSize()?.width}px: ${height}px tall`);
+  return height;
+}
+
+test("r5 31 setup rows open in a Sheet", async ({
+  page,
+  context,
+}, testInfo) => {
+  const participant = "Abby Rivera";
+  const participantId = await xiParticipantId(participant);
+  const [{ team_id: originalTeamId }] = await runQuery<{ team_id: string }>(
+    `select team_id from participant where id = $1`,
+    [participantId],
+  );
+  // Teams list by name, so this one sits between Blue and Red.
+  const throwaway = "Green E2E R5";
+  try {
+    await asOrganizer(context);
+    await page.setViewportSize(PHONE);
+
+    // 31-5: Teams & roster is a quarter of its inline-forms height.
+    await page.goto("/admin/setup/teams");
+    const teams = page.getByRole("list", { name: "Teams" });
+    const roster = page.getByRole("list", { name: "Roster" });
+    await expect(roster).toBeVisible();
+    expect(await pageHeight(page, "Teams & roster")).toBeLessThan(11_000);
+
+    // 31-1: each row is one "Edit <name>" button, 44px tall on a phone.
+    await expectTouchTarget(
+      teams.getByRole("button", { name: "Edit Red", exact: true }),
+      "Team row",
+    );
+    const row = roster.getByRole("button", {
+      name: `Edit ${participant}`,
+      exact: true,
+    });
+    await expectTouchTarget(row, "Participant row");
+    await expect(row).toContainText("Blue");
+    await shoot(page, testInfo, "teams-list-375");
+
+    await row.click();
+    const sheet = page.getByRole("dialog", { name: `Edit ${participant}` });
+    await expect(sheet).toBeVisible();
+    await shoot(page, testInfo, "participant-sheet-375");
+
+    // 31-2: a refusal keeps the Sheet open, the typed value, the error
+    // under its field and focus on it.
+    const name = sheet.getByRole("textbox", { name: "Display name" });
+    await name.fill("   ");
+    await sheet.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(name).toBeFocused();
+    await expect(name).toHaveAttribute("aria-invalid", "true");
+    await expect(sheet.locator("[data-slot=field-error]")).toBeVisible();
+    await expect(sheet).toBeVisible();
+    await expect(name).toHaveValue("   ");
+
+    // 31-2: a save toasts, closes the Sheet and refreshes the row.
+    await name.fill(participant);
+    await sheet.getByRole("combobox", { name: "Team" }).click();
+    await page.getByRole("option", { name: "Red", exact: true }).click();
+    await sheet.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(page.getByText("Participant saved")).toBeVisible();
+    await expect(sheet).toBeHidden();
+    await expect(row).toContainText("Red");
+    await expect(row).not.toContainText("Blue");
+
+    // 31-3: add a Team through its Sheet, then delete it from its own:
+    // focus lands on the next row's Edit button.
+    await page.getByRole("button", { name: "Add Team", exact: true }).click();
+    const addSheet = page.getByRole("dialog", { name: "Add Team" });
+    await addSheet.getByRole("textbox", { name: "Name" }).fill(throwaway);
+    await addSheet.getByRole("button", { name: "Add Team" }).click();
+    await expect(page.getByText("Team saved")).toBeVisible();
+    await expect(addSheet).toBeHidden();
+    await teams
+      .getByRole("button", { name: `Edit ${throwaway}`, exact: true })
+      .click();
+    const teamSheet = page.getByRole("dialog", { name: `Edit ${throwaway}` });
+    await teamSheet
+      .getByRole("button", { name: "Delete", exact: true })
+      .click();
+    await page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "Delete", exact: true })
+      .click();
+    await expect(teamSheet).toBeHidden();
+    await expect(
+      teams.getByRole("button", { name: `Edit ${throwaway}`, exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      teams.getByRole("button", { name: "Edit Red", exact: true }),
+    ).toBeFocused();
+
+    // 31-1, 31-5: Competitions too; the Bracket/Games link stays on the row.
+    await page.goto("/admin/setup/competitions");
+    const competitions = page.getByRole("list", { name: "Competitions" });
+    await expect(competitions).toBeVisible();
+    expect(await pageHeight(page, "Competitions")).toBeLessThan(6_500);
+    const pool = competitions.getByRole("button", {
+      name: "Edit Pool",
+      exact: true,
+    });
+    await expectTouchTarget(pool, "Competition row");
+    await expect(
+      competitions
+        .getByRole("listitem")
+        .filter({
+          has: page.getByRole("button", { name: "Edit Pool", exact: true }),
+        })
+        .getByRole("link"),
+    ).toBeVisible();
+    await shoot(page, testInfo, "competitions-list-375");
+    await pool.click();
+    const poolSheet = page.getByRole("dialog", { name: "Edit Pool" });
+    await expect(poolSheet.getByText("Hosts", { exact: true })).toBeVisible();
+    await shoot(page, testInfo, "competition-sheet-375");
+
+    // 31-8: the same pattern at 1280.
+    await page.setViewportSize(DESKTOP);
+    await page.goto("/admin/setup/teams");
+    await expect(roster).toBeVisible();
+    await shoot(page, testInfo, "teams-list-1280");
+    await row.click();
+    await expect(sheet).toBeVisible();
+    await shoot(page, testInfo, "participant-sheet-1280");
+  } finally {
+    await runQuery(`update participant set team_id = $2 where id = $1`, [
+      participantId,
+      originalTeamId,
+    ]);
+    await runQuery(
+      `delete from team t using war_week w
+       where w.id = t.war_week_id and w.edition = 'xi' and t.name = $1`,
+      [throwaway],
+    );
   }
 });
