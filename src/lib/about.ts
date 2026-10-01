@@ -47,7 +47,7 @@ export const ABOUT_FEATURES = [
   {
     slug: "organizer-setup",
     title: "Organizer setup, no code",
-    text: "War Week, Days, Teams, roster, Competitions, schedule and FAQ are all Organizer screens under Admin. Organizers can hand a Competition to its Hosts, who see just that Competition and enter its points themselves. Next year's edition takes an afternoon, not a code editor.",
+    text: "War Week, Days, Teams, roster, Competitions, schedule and FAQ are all Organizer screens under Admin. Organizers can hand a Competition to its Hosts, who see just that Competition and enter its points themselves. Admin works from a phone too, with a bar of sections along the bottom and Teams, roster and Competitions rows opening in a Sheet. Next year's edition takes an afternoon, not a code editor.",
     alt: "The Admin Setup screen listing War Week, Days, Teams, Competitions, Schedule and FAQ.",
   },
   {
@@ -71,7 +71,7 @@ export const ABOUT_FEATURES = [
   {
     slug: "brackets",
     title: "Brackets for knockouts and Heats",
-    text: "Choose a Competition's Format — Single elimination or Heats — when you add it, land straight on its Bracket setup, pick its Entrants (Teams, Participants, or Squads: named groups from one Team whose points go to that Team) and Generate a Bracket, or draw its Seed Positions By Standings. The Bracket reads as a tree on the Competition page: Rounds left to right for single elimination, or a box per Heat with advancers highlighted, one Round at a time on a phone; a List toggle keeps the old view. Recording or reporting a Heat's result opens a dialog centered on a screen and a bottom sheet on a phone. Finalize turns the Bracket's placings straight into Points Entries, and the Bracket gets its own Finale for the projector. Flip on \"Participants can enroll\" and players add themselves as Entrants instead of the Host typing every name in.",
+    text: "Choose a Competition's Format — Single elimination or Heats — when you add it, land straight on its Bracket setup, pick its Entrants (Teams, Participants, or Squads: named groups from one Team whose points go to that Team) and Generate a Bracket, or draw its Seed Positions By Standings. The Bracket reads as a tree on the Competition page: Rounds left to right for single elimination, or a box per Heat with advancers highlighted and its time and place, one Round at a time on a phone; a List toggle keeps the old view. Recording or reporting a Heat's result opens a dialog centered on a screen and a bottom sheet on a phone. Finalize turns the Bracket's placings straight into Points Entries, and the Bracket gets its own Finale for the projector. Flip on \"Participants can enroll\" and players add themselves as Entrants instead of the Host typing every name in.",
     alt: "A Bracket shown as a tree on its Competition page: Rounds joined by lines, with results filled in live.",
   },
   {

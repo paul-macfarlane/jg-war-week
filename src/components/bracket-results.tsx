@@ -31,6 +31,7 @@ import {
   heatName,
   isDecided,
 } from "@/lib/bracket/view";
+import { hasPlacementPoints } from "@/lib/competitions";
 
 type Scoring = "team" | "individual";
 
@@ -56,11 +57,30 @@ function HeatResultSheet({
   );
 }
 
+/** Finalize's copy: Points Entries are only created with Placement Points. */
+export function finalizeCopy(placementPoints: number[] | null) {
+  return hasPlacementPoints(placementPoints)
+    ? {
+        confirmTitle: "Create Points Entries from the final placings?",
+        finalizedNote: "Finalized: its Points Entries are in the ledger.",
+        unfinalizeTitle: "Delete the Points Entries this Bracket created?",
+      }
+    : {
+        confirmTitle:
+          "Finalize the Bracket? It has no Placement Points, so no Points Entries are created.",
+        finalizedNote:
+          "Finalized: it has no Placement Points, so it made no Points Entries.",
+        unfinalizeTitle: "Un-finalize the Bracket?",
+      };
+}
+
 /** Which Sheet is open, for which Heat: a Heat Result or its time and place. */
 export type OpenSheet = { kind: "result" | "schedule"; heatId: string } | null;
 
 type BracketResultsProps = {
   competitionId: string;
+  /** The Competition's Placement Points; none means Finalize creates no Points Entries. */
+  placementPoints: number[] | null;
   scoring: Scoring;
   entrants: BracketViewEntrant[];
   bracket: Bracket;
@@ -100,6 +120,7 @@ export function BracketResults(props: BracketResultsProps) {
  */
 export function BracketResultsView({
   competitionId,
+  placementPoints,
   scoring,
   entrants,
   bracket,
@@ -123,6 +144,7 @@ export function BracketResultsView({
   const scheduleHeat = openSheet?.kind === "schedule" ? sheetHeat : undefined;
   const winner = champion ? entrantsById.get(champion) : undefined;
   const close = () => onOpenSheetChange(null);
+  const copy = finalizeCopy(placementPoints);
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
@@ -153,8 +175,7 @@ export function BracketResultsView({
         {finalized ? (
           <>
             <p className="text-foreground/70 text-sm">
-              Finalized: its Points Entries are in the ledger. Un-finalize to
-              change a Heat Result.
+              {copy.finalizedNote} Un-finalize to change a Heat Result.
               {finaleHref && (
                 <>
                   {" "}
@@ -168,7 +189,7 @@ export function BracketResultsView({
               )}
             </p>
             <ConfirmActionButton
-              title="Delete the Points Entries this Bracket created?"
+              title={copy.unfinalizeTitle}
               confirmLabel="Un-finalize"
               action={() => unfinalizeBracket(competitionId)}
               successMessage="Bracket un-finalized"
@@ -181,7 +202,7 @@ export function BracketResultsView({
           </>
         ) : winner ? (
           <ConfirmActionButton
-            title="Create Points Entries from the final placings?"
+            title={copy.confirmTitle}
             confirmLabel="Finalize"
             action={() => finalizeBracket(competitionId)}
             successMessage="Bracket finalized"

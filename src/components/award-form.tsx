@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import type { WarWeek } from "@/db/schema";
 import {
   AWARD_DESCRIPTION_MAX,
   AWARD_NAME_MAX,
@@ -56,6 +57,7 @@ export function AwardForm({
   initial,
   options,
   teamLabel,
+  mode,
 }: {
   /** The War Week this page was rendered for; creates post it. */
   warWeekId: string;
@@ -65,6 +67,8 @@ export function AwardForm({
   options: AwardFormOptions;
   /** The War Week's Team Label, e.g. "House". */
   teamLabel: string;
+  /** The War Week's Mode: a free-for-all has no Team field. */
+  mode: WarWeek["mode"];
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -74,6 +78,11 @@ export function AwardForm({
   const [participantIds, setParticipantIds] = useState<string[]>(
     initial?.participantIds ?? [],
   );
+
+  // A free-for-all War Week hides Team, unless the Award being edited has
+  // one, so it can be cleared.
+  const showTeam =
+    options.teams.length > 0 && (mode !== "free-for-all" || !!initial?.teamId);
 
   // Also lets SelectValue show the Team's name rather than its id.
   const teamItems = [
@@ -159,7 +168,7 @@ export function AwardForm({
           </FieldDescription>
 
           <FieldGroup>
-            {options.teams.length > 0 && (
+            {showTeam && (
               <Field data-invalid={!!fieldErrors.teamId}>
                 <FieldLabel htmlFor="award-team">{teamLabel}</FieldLabel>
                 <Select
@@ -172,7 +181,7 @@ export function AwardForm({
                   <SelectTrigger
                     id="award-team"
                     aria-invalid={!!fieldErrors.teamId}
-                    className="h-11 w-full sm:h-9"
+                    className="w-full"
                   >
                     <SelectValue />
                   </SelectTrigger>

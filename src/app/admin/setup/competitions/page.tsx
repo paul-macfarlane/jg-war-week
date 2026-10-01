@@ -3,7 +3,6 @@ import Link from "next/link";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { CompetitionsEditor } from "@/components/competitions-editor";
-import { SeedOverwriteWarning } from "@/components/seed-overwrite-warning";
 import { getWarWeekCompetitionHosts } from "@/queries/organizers";
 import {
   getCompetitionGroupSuggestions,
@@ -51,7 +50,6 @@ export default async function SetupCompetitionsPage() {
           Entries or Schedule Items can&apos;t be deleted, and its scoring
           can&apos;t change while it has Points Entries.
         </p>
-        <SeedOverwriteWarning />
         <CompetitionsEditor
           warWeekId={warWeek.id}
           isOrganizer={isOrganizer}

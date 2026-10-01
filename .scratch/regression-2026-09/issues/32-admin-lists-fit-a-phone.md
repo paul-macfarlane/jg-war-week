@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Source:** mobile regression pass 2026-09-30 (ticket 18)
 
@@ -39,3 +39,6 @@
 - [ ] `pnpm gate` passes.
 
 ## Comments
+- 2026-09-30: claimed by `/atlas-implement` (work package `regression-r5`), `ready-for-agent` → `in-progress`; branch `feat/regression-r5-admin-on-a-phone` from `staging` `50acefb`. Execution record: `../epics/R5-execution.md`.
+- 2026-09-30 [AI CODE REVIEW]: T6 (Change links), T10, T11, S5, S7 resolved; R1 (free-for-all Award help names the Team Label) accepted as a follow-up. Full tables: `../epics/R5-execution.md` [AI CODE REVIEW].
+- 2026-09-30 [CLOSEOUT]: D32 `8e814e8` (Sonnet); review fixes `f79549c`. Criteria 32-1 … 32-6 PASS; `pnpm format:check && pnpm gate` exit 0 at `4bee992` (`test-results/r5-gate/gate.txt`); screenshots `test-results/e2e/regression-r5-r5-32-*/`. PR https://github.com/paul-macfarlane/jg-war-week/pull/107. `in-progress` → `ai-review` → `done`. Details: `../epics/R5-execution.md` [CLOSEOUT].

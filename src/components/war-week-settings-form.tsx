@@ -14,6 +14,7 @@ import {
 } from "@/components/form-field-errors";
 import { FormValueInput } from "@/components/form-value-input";
 import { OptionSelect, type SelectOption } from "@/components/option-select";
+import { StickyFormActions } from "@/components/sticky-form-actions";
 import { ThemeRoot } from "@/components/theme-root";
 import { Button } from "@/components/ui/button";
 import {
@@ -258,7 +259,9 @@ export function WarWeekSettingsForm({
     <form
       ref={formRef}
       action={formAction}
-      className="flex flex-col gap-6"
+      // Below md a focused field scrolls clear of the section bar, the
+      // sticky Save row and its error line (7rem).
+      className="flex flex-col gap-6 pb-4 [--field-scroll-mb:calc(var(--admin-bar-inset)+7rem)] md:pb-0 md:[--field-scroll-mb:0px] [&_button]:scroll-mb-(--field-scroll-mb) [&_input]:scroll-mb-(--field-scroll-mb) [&_textarea]:scroll-mb-(--field-scroll-mb)"
       aria-label="War Week settings"
     >
       <FieldSet>
@@ -393,7 +396,7 @@ export function WarWeekSettingsForm({
                       type="button"
                       variant="ghost"
                       size="xs"
-                      className="self-start"
+                      className="min-h-11 self-start sm:min-h-6"
                       onClick={() => setValue(field, "")}
                     >
                       Reset to derived
@@ -491,7 +494,7 @@ export function WarWeekSettingsForm({
         </FieldGroup>
       </FieldSet>
 
-      <div className="flex flex-col gap-2">
+      <StickyFormActions className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-3">
           <Button
             type="submit"
@@ -503,7 +506,7 @@ export function WarWeekSettingsForm({
           </Button>
         </div>
         {formError && !pending && <FieldError>{formError}</FieldError>}
-      </div>
+      </StickyFormActions>
     </form>
   );
 }

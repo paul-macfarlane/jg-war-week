@@ -29,6 +29,14 @@ export function pointsForPlacement(
   return competition.placementPoints?.[place - 1] ?? null;
 }
 
+/**
+ * Whether a Competition has Placement Points, so finalizing its Bracket or
+ * closing its Games creates Points Entries.
+ */
+export function hasPlacementPoints(placementPoints: number[] | null): boolean {
+  return placementPoints !== null && placementPoints.length > 0;
+}
+
 const ORDINAL_SUFFIXES = ["st", "nd", "rd"];
 
 /** "1st", "2nd", "3rd", "4th", "5th". */

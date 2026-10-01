@@ -255,10 +255,14 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     await expect(page.getByRole("button", { name: "Reopen" })).toBeVisible();
 
     await page.goto(`/xi/competitions/${id}`);
+    // By role: until React reveals the streamed page, a hidden copy of it
+    // (Next's `<div hidden id="S:0">`) can still be in the document.
     await expect(
-      page.getByText(
-        "Closed — the leaderboard's Placement Points are in the Standings.",
-      ),
+      page
+        .getByRole("region", { name: "Games" })
+        .getByText(
+          "Closed — the leaderboard's Placement Points are in the Standings.",
+        ),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Log a Game" })).toHaveCount(
       0,

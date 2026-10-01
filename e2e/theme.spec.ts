@@ -306,9 +306,14 @@ function readXiOverrides() {
   ).then(([row]) => row);
 }
 
-/** Saves the form and waits for the server action's response. */
+/**
+ * Saves the form and waits for the server action's response, then for the
+ * refresh after it: the form is keyed on the War Week's `updatedAt`, so the
+ * refresh remounts it, closing any picker opened before it lands.
+ */
 async function saveSettings(page: Page) {
   const form = page.getByRole("form", { name: "War Week settings" });
+  const saved = await form.elementHandle();
   await Promise.all([
     page.waitForResponse(
       (response) =>
@@ -318,6 +323,8 @@ async function saveSettings(page: Page) {
     form.getByRole("button", { name: "Save settings" }).click(),
   ]);
   await expect(page.getByText("War Week settings saved").first()).toBeVisible();
+  await page.waitForFunction((element) => !element.isConnected, saved);
+  await saved.dispose();
 }
 
 async function openSetup(context: BrowserContext) {

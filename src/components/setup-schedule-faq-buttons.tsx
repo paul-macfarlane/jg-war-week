@@ -70,6 +70,7 @@ export function MoveFaqItemButtons({
       <Button
         variant="outline"
         size="xs"
+        className="min-h-11 min-w-11 sm:min-h-6 sm:min-w-0"
         disabled={pending || first}
         aria-label={`Move "${question}" up`}
         onClick={() => run(() => moveFaqItem(id, "up"))}
@@ -79,6 +80,7 @@ export function MoveFaqItemButtons({
       <Button
         variant="outline"
         size="xs"
+        className="min-h-11 min-w-11 sm:min-h-6 sm:min-w-0"
         disabled={pending || last}
         aria-label={`Move "${question}" down`}
         onClick={() => run(() => moveFaqItem(id, "down"))}

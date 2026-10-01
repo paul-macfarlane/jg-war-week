@@ -7,7 +7,8 @@ import {
   OctagonXIcon,
   TriangleAlertIcon,
 } from "lucide-react";
-import { Toaster as Sonner, type ToasterProps } from "sonner";
+import { useEffect } from "react";
+import { Toaster as Sonner, type ToasterProps, toast } from "sonner";
 
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
@@ -35,4 +36,17 @@ const Toaster = ({ ...props }: ToasterProps) => {
   );
 };
 
-export { Toaster };
+/**
+ * JG War Week edit: dismisses every toast when it mounts. Render it inside
+ * a popup that opens at the bottom of the screen, where the Toaster sits,
+ * so an earlier result's toast doesn't cover the popup's fields (Sonner
+ * keeps a hovered toast open, so one under the pointer would never go).
+ */
+function DismissToasts() {
+  useEffect(() => {
+    toast.dismiss();
+  }, []);
+  return null;
+}
+
+export { DismissToasts, Toaster };

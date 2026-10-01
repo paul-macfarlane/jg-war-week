@@ -149,6 +149,29 @@ describe("GamesBuilder", () => {
     expect(html).not.toContain(">Close<");
   });
 
+  it("says a closed Competition's Points Entries are in the ledger, with Placement Points", () => {
+    const html = render({
+      competition: competition(
+        "head-to-head",
+        { drawsAllowed: false, bestOf: null },
+        { closed: true },
+      ),
+    });
+    expect(html).toContain("Closed: its Points Entries are in the ledger.");
+  });
+
+  it("claims no Points Entries for a closed Competition without Placement Points", () => {
+    const html = render({
+      competition: competition(
+        "head-to-head",
+        { drawsAllowed: false, bestOf: null },
+        { closed: true, placementPoints: null },
+      ),
+    });
+    expect(html).toContain("it made no Points Entries");
+    expect(html).not.toContain("Points Entries are in the ledger");
+  });
+
   it("offers a Close button, not yet confirmed, when open", () => {
     const html = render({
       competition: competition("head-to-head", {

@@ -233,9 +233,10 @@ export function OrganizerGuide({
           off) and opens the new edition as upcoming, so you can set it up while
           this one stays live. The End confirm names any Bracket that isn&apos;t
           finalized: finalize it first so its placings count (it warns, it
-          doesn&apos;t stop you). The header&apos;s edition switcher moves the
-          admin between editions you may administer — a banner marks the Archive
-          so you don&apos;t mistake it for the live one.
+          doesn&apos;t stop you). The header&apos;s edition switcher (in More on
+          a phone) moves the admin between editions you may administer — a
+          banner marks the Archive so you don&apos;t mistake it for the live
+          one.
         </p>
       </section>
 

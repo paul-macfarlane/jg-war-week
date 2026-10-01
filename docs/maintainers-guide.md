@@ -178,6 +178,17 @@ Organizer screens cover it. Sign in and go to `/admin`:
   screen's scheme — each picks their own Display (Light, Dark or System)
   from the header menu (the phone More Sheet, the desktop TopNav, or the
   Admin header).
+- **On a phone**, the admin sections are a bar fixed to the bottom of the
+  screen (Overview, Points, Announcements, Setup, More); More opens a Sheet
+  with the other sections you can see, the edition switcher, Display and
+  your account. From `md` up it is the side column and header as before.
+  The sections live in `src/lib/admin-sections.ts`.
+- **Setup rows open in a Sheet.** On Teams & roster and Competitions, each
+  row is one "Edit <name>" button that opens its form in a
+  `ResponsiveSheetDialog`, with Save and Delete in a sticky footer; "Add …"
+  opens the empty form. A Team's row reads "Edit <Team Label> <name>". "Assign
+  Hosts" (the Hosts field) is inside the Competition's Sheet, and its one
+  Save saves the Hosts with the rest.
 - **`/admin/organizers`**: the Organizer list (see
   [Add an Organizer or assign Hosts](#add-an-organizer-or-assign-hosts)).
 - **`/admin/points`**, **`/admin/standings`** (Run the Finale: "Open Finale" at closing ceremonies, and "Finale: <Competition>" for each finalized Bracket),
@@ -222,9 +233,9 @@ signed in is a **Participant** (`CONTEXT.md`, "Access rules").
   in the Admin nav). Add a `@jahnelgroup.com` email; it works on their next
   page load. Any Organizer can remove any other, or themselves, as long as
   one Organizer is left. The list is global: one list for every War Week.
-- **Assign Hosts**: `/admin/setup/competitions`, the Hosts field on each
-  Competition (Organizers only). A Host needs no Participant record. They
-  get the Admin link and see only their Competitions in Admin: its Points
+- **Assign Hosts**: `/admin/setup/competitions`, the Hosts field in each
+  Competition's Sheet, saved with its Save (Organizers only). A Host needs
+  no Participant record. They get the Admin link and see only their Competitions in Admin: its Points
   Entries, Bracket, setup and linked Schedule Items, plus Announcements for
   that War Week. Remove the email to take it away; it applies on their next
   request. A Schedule Item's "host" text is only what the schedule shows;
@@ -244,11 +255,12 @@ signed in is a **Participant** (`CONTEXT.md`, "Access rules").
 ### Run a knockout Competition as a Bracket
 
 Organizer screens cover setting one up and running it. Under
-**Setup → Competitions**, **Add a Competition** and choose its **Format**:
-"Single elimination" ("A knockout Bracket: one loss and an Entrant is out.")
-or "Heats" ("A Bracket where Entrants play in Heats; a set number advance
-each Round."). **Add**, and you land straight on that Competition's Bracket
-setup page. There, pick Entrants (all Teams, or specific Participants) and
+**Setup → Competitions**, tap **Add Competition** (it opens a Sheet) and
+choose its **Format**: "Single elimination" ("A knockout Bracket: one loss
+and an Entrant is out.") or "Heats" ("A Bracket where Entrants play in
+Heats; a set number advance each Round."). **Add Competition**, and you land
+straight on that Competition's Bracket setup page. There, pick Entrants
+(all Teams, or specific Participants) and
 Generate; then record each Heat's result — from the results screen
 (`/admin/brackets/<id>`) or straight from the Competition page, either one
 opening a dialog centered on a screen and a bottom sheet on a phone — and
@@ -325,16 +337,16 @@ Format's rules are unit-testable on their own before any screen uses them.
 ### Run a Competition as Games
 
 For a showdown, a best of X, or a week-long ladder of casual games — no code
-needed. Under **Setup → Competitions**, **Add a Competition** and choose its
-**Format**: "Games". A **Game Type** select appears — Head-to-head (a
+needed. Under **Setup → Competitions**, tap **Add Competition** (it opens a
+Sheet) and choose its **Format**: "Games". A **Game Type** select appears — Head-to-head (a
 winner, or a draw when allowed), Best score (each Game records a score;
 best or total, higher or lower is better) or Ranked (a finishing order,
 with Finish Points per place). **A `games` Competition's Format and Game
 Type are fixed once it's created**: add a new Competition to run it a
 different way.
 
-**Add**, and you land on that Competition's Games setup page (the twin of a
-Bracket's), where the Host or an Organizer sets:
+**Add Competition**, and you land on that Competition's Games setup page
+(the twin of a Bracket's), where the Host or an Organizer sets:
 
 - The Game Type's own settings (draws and Best of off/3/5/7 for
   head-to-head; count best or total, direction and a unit label for
@@ -429,6 +441,22 @@ Notes:
   (a centered Dialog at `lg` and up, a bottom Sheet below) — live in
   `src/components/`. Reach for one of those before building a new control.
   Only `EntityCombobox` does search and chips.
+- Below `sm`, every admin control is at least 44px tall and wide: `min-h-11
+  min-w-11`, then from `sm` back to today's size — `sm:min-h-0 sm:min-w-0`,
+  or `sm:min-h-<the variant's height>` (e.g. `sm:min-h-6` for `xs`,
+  `sm:min-h-7` for `sm`, `sm:min-h-9` for `default`/`lg`) so desktop is
+  unchanged. `Input`, the combobox and the Setup buttons follow it. The shadcn select trigger's
+  default height is now 44px below `sm` and 36px from `sm` (an edit in
+  `ui/select.tsx`), so it sits level with an `Input`, and its list opens
+  below the trigger rather than over the field above it.
+- A bottom Sheet (`ui/sheet.tsx`) and `ResponsiveSheetDialog` dismiss any
+  open toast as they open (`DismissToasts` in `ui/sonner.tsx`), so a toast
+  never covers their fields.
+- A long admin form puts its submit row in `StickyFormActions`
+  (`src/components/sticky-form-actions.tsx`): below `md` it sticks above the
+  admin section bar so Save stays in reach; from `md` it sits in the flow.
+  Give the form `pb-*` and its fields `scroll-mb-*` so a focused field is
+  not hidden under it.
 - Popups portal into the themed root through `ThemeRoot`, which is wired
   into `ui/popover`, `ui/select`, `ui/combobox`, `ui/alert-dialog`,
   `ui/dialog` and `ui/sheet`, so they keep the War Week's Appearance Theme.

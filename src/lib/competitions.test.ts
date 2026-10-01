@@ -6,6 +6,7 @@ import {
   describeScoring,
   formatMaxPoints,
   groupCompetitions,
+  hasPlacementPoints,
   placementLabel,
   pointsForPlacement,
 } from "@/lib/competitions";
@@ -184,6 +185,18 @@ describe("pointsForPlacement", () => {
 
   it("returns null when the Competition has no presets", () => {
     expect(pointsForPlacement({ placementPoints: null }, 1)).toBeNull();
+  });
+});
+
+describe("hasPlacementPoints", () => {
+  it("is true when at least one place has points", () => {
+    expect(hasPlacementPoints([5, 3, 1])).toBe(true);
+    expect(hasPlacementPoints([0])).toBe(true);
+  });
+
+  it("is false with no Placement Points or an empty list", () => {
+    expect(hasPlacementPoints(null)).toBe(false);
+    expect(hasPlacementPoints([])).toBe(false);
   });
 });
 

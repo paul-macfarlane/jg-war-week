@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { FormValueInput } from "@/components/form-value-input";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ export function ColorField({
 }) {
   const [draft, setDraft] = useState(value);
   const [error, setError] = useState<string | null>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
 
   // Only a real change: the hex input commits on blur even when untouched.
   function change(hex: string) {
@@ -88,7 +89,17 @@ export function ColorField({
         />
         <span className="font-mono text-sm">{value}</span>
       </PopoverTrigger>
-      <PopoverContent className="max-w-[calc(100vw-2rem)]">
+      <PopoverContent
+        ref={popupRef}
+        className="max-w-[calc(100vw-2rem)]"
+        // Not the hex input on a touch screen: its keyboard would cover the
+        // swatches, which most people want.
+        initialFocus={() =>
+          window.matchMedia("(pointer: coarse)").matches
+            ? popupRef.current
+            : true
+        }
+      >
         <div className="flex flex-col gap-2">
           <Input
             value={draft}

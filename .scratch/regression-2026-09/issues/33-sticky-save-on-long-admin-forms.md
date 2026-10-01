@@ -4,7 +4,7 @@
 
 **Blocked by:** none (runs after 30 in Epic R5: the bar sits above 30's section bar)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Source:** mobile regression pass 2026-09-30 (ticket 18)
 
@@ -29,3 +29,6 @@
 - [ ] `pnpm gate` passes.
 
 ## Comments
+- 2026-09-30: claimed by `/atlas-implement` (work package `regression-r5`), `ready-for-agent` → `in-progress`; branch `feat/regression-r5-admin-on-a-phone` from `staging` `50acefb`. Execution record: `../epics/R5-execution.md`.
+- 2026-09-30 [AI CODE REVIEW]: T1 (scroll margin under the sticky row) resolved; T4 (refusal toast over sticky Save, 4s) accepted as a follow-up. Full tables: `../epics/R5-execution.md` [AI CODE REVIEW].
+- 2026-09-30 [CLOSEOUT]: D33 `5bea652` (Sonnet); review fixes `f79549c`. Criteria 33-1 … 33-6 PASS; `pnpm format:check && pnpm gate` exit 0 at `4bee992` (`test-results/r5-gate/gate.txt`); screenshots `test-results/e2e/regression-r5-r5-33-*/`. PR https://github.com/paul-macfarlane/jg-war-week/pull/107. `in-progress` → `ai-review` → `done`. Details: `../epics/R5-execution.md` [CLOSEOUT].

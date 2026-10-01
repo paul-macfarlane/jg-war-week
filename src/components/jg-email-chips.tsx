@@ -72,7 +72,8 @@ export function JgEmailChips({
                   type="button"
                   variant="ghost"
                   size="icon-xs"
-                  className="rounded-full"
+                  // A 44px hit area on phones around the small icon.
+                  className="relative rounded-full after:absolute after:-inset-2.5 sm:after:hidden"
                   aria-label={`Remove ${email}`}
                   disabled={disabled}
                   onClick={() => remove(email)}

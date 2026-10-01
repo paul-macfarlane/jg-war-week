@@ -1,16 +1,8 @@
-import {
-  BookOpen,
-  LayoutDashboard,
-  Medal,
-  Megaphone,
-  PlusCircle,
-  Settings,
-  ShieldCheck,
-  Sparkles,
-} from "lucide-react";
 import Link from "next/link";
 
+import { AdminBottomBar } from "@/components/admin-bottom-bar";
 import { AdminEditionSwitcher } from "@/components/admin-edition-switcher";
+import { AdminSectionIcon } from "@/components/admin-section-icon";
 import { SignOutButton } from "@/components/auth-buttons";
 import { DisplayMenu } from "@/components/display-menu";
 import { SiteFooter } from "@/components/site-footer";
@@ -18,35 +10,8 @@ import { ThemeRoot } from "@/components/theme-root";
 import { Toaster } from "@/components/ui/sonner";
 import type { WarWeek } from "@/db/schema";
 import { ADMIN_REFUSAL, type AdminEdition } from "@/lib/access";
+import { type AdminSection, adminSectionsFor } from "@/lib/admin-sections";
 import { warWeekThemeStyle } from "@/lib/theme";
-
-// `organizerOnly` sections are hidden from Hosts.
-const SECTIONS = [
-  { label: "Overview", icon: LayoutDashboard, href: "/admin" },
-  { label: "Guide", icon: BookOpen, href: "/admin/guide" },
-  { label: "Points Entries", icon: PlusCircle, href: "/admin/points" },
-  { label: "Finale", icon: Sparkles, href: "/admin/standings" },
-  { label: "Announcements", icon: Megaphone, href: "/admin/announcements" },
-  {
-    label: "Awards",
-    icon: Medal,
-    href: "/admin/awards",
-    organizerOnly: true,
-  },
-  { label: "Setup", icon: Settings, href: "/admin/setup" },
-  {
-    label: "Organizers",
-    icon: ShieldCheck,
-    href: "/admin/organizers",
-    organizerOnly: true,
-  },
-] as const;
-
-/** A section an admin page can be: only sections that have a page. */
-export type AdminSection = Extract<
-  (typeof SECTIONS)[number],
-  { href: string }
->["label"];
 
 /**
  * The banner under the admin header when the War Week being administered
@@ -66,8 +31,15 @@ export function editingBanner(
 
 /**
  * Frame for every `/admin` page: header (with the edition switcher), nav
- * and content. The nav is a side column on desktop and a scrolling row on a
- * phone; a Host doesn't see the Organizer-only sections.
+ * and content. From `md` the nav is a side column; below it the header is
+ * one row and the nav is `AdminBottomBar`, fixed to the bottom, whose More
+ * Sheet holds the rest of the header. A Host doesn't see the
+ * Organizer-only sections.
+ *
+ * `--admin-bar-height` is the bar's height (0 from `md`, where there's no
+ * bar) and `--admin-bar-inset` the space it takes at the bottom of the
+ * viewport, safe area included: the root's bottom padding, so `main` and
+ * the footer clear it, and the toasts' offset.
  */
 export function AdminShell({
   warWeek,
@@ -90,20 +62,28 @@ export function AdminShell({
   return (
     <ThemeRoot
       style={warWeekThemeStyle(warWeek)}
-      className="bg-background text-foreground flex min-h-dvh flex-col font-sans"
+      className="bg-background text-foreground flex min-h-dvh flex-col pb-(--admin-bar-inset) font-sans [--admin-bar-height:4.5rem] [--admin-bar-inset:calc(var(--admin-bar-height)+env(safe-area-inset-bottom))] md:[--admin-bar-height:0px] md:[--admin-bar-inset:0px]"
     >
-      <header className="border-border flex flex-wrap items-center gap-x-4 gap-y-1 border-b px-4 py-3 md:px-6">
-        <Link href="/admin" className="font-bold">
+      <header className="border-border flex items-center gap-x-4 gap-y-1 border-b px-4 py-3 md:flex-wrap md:px-6">
+        <Link
+          href="/admin"
+          className="min-w-0 truncate font-bold whitespace-nowrap"
+        >
           War Week {warWeek.edition.toUpperCase()} admin
         </Link>
-        <span className="text-foreground/60 text-sm">{warWeek.storyTheme}</span>
+        {/* Below `md` the rest of the header is in the bar's More Sheet. */}
+        <span className="text-foreground/60 hidden text-sm md:inline">
+          {warWeek.storyTheme}
+        </span>
         {editions.length > 1 && (
-          <AdminEditionSwitcher
-            editions={editions}
-            selected={warWeek.edition}
-          />
+          <span className="hidden md:contents">
+            <AdminEditionSwitcher
+              editions={editions}
+              selected={warWeek.edition}
+            />
+          </span>
         )}
-        <div className="flex min-w-0 flex-wrap items-center gap-3 text-sm md:ml-auto">
+        <div className="hidden min-w-0 flex-wrap items-center gap-3 text-sm md:ml-auto md:flex">
           <Link
             href={`/${warWeek.edition}`}
             className="text-primary underline-offset-4 hover:underline"
@@ -126,15 +106,13 @@ export function AdminShell({
       <div className="flex flex-1 flex-col md:flex-row">
         <nav
           aria-label="Admin sections"
-          className="border-border shrink-0 overflow-x-auto border-b p-2 md:w-56 md:border-r md:border-b-0 md:p-3"
+          className="border-border hidden shrink-0 overflow-x-auto border-r p-3 md:block md:w-56"
         >
-          <ul className="flex gap-1 md:flex-col">
-            {SECTIONS.filter(
-              (section) => isOrganizer || !("organizerOnly" in section),
-            ).map(({ label, icon: Icon, href }) => {
+          <ul className="flex flex-col gap-1">
+            {adminSectionsFor(isOrganizer).map(({ label, icon, href }) => {
               const content = (
                 <>
-                  <Icon aria-hidden className="size-4 shrink-0" />
+                  <AdminSectionIcon icon={icon} className="size-4 shrink-0" />
                   <span className="flex-1">{label}</span>
                   {!href && <span className="text-xs">Soon</span>}
                 </>
@@ -168,8 +146,23 @@ export function AdminShell({
         <main className="min-w-0 flex-1 p-4 md:p-8">{children}</main>
       </div>
       <SiteFooter className="border-border border-t" />
-      {/* Inside the themed root so the edition's colors apply to toasts. */}
-      <Toaster position="bottom-center" closeButton />
+      <AdminBottomBar
+        edition={warWeek.edition}
+        storyTheme={warWeek.storyTheme}
+        email={email}
+        isOrganizer={isOrganizer}
+        current={current}
+        editions={editions}
+      />
+      {/* Inside the themed root so the edition's colors apply to toasts.
+          The offsets are Sonner's defaults (24px, and 16px up to 600px
+          wide) plus the bar's inset, which is 0 from `md`. */}
+      <Toaster
+        position="bottom-center"
+        closeButton
+        offset={{ bottom: "calc(var(--admin-bar-inset) + 24px)" }}
+        mobileOffset={{ bottom: "calc(var(--admin-bar-inset) + 16px)" }}
+      />
     </ThemeRoot>
   );
 }

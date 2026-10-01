@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
-import { SeedOverwriteWarning } from "@/components/seed-overwrite-warning";
 import { WarWeekSettingsForm } from "@/components/war-week-settings-form";
 import { settingsInputFrom } from "@/lib/setup";
 import { teamSwatches } from "@/lib/theme";
@@ -40,7 +39,6 @@ export default async function WarWeekSettingsPage() {
           ← Setup
         </Link>
         <h1 className="text-2xl font-bold">War Week settings</h1>
-        <SeedOverwriteWarning />
         <WarWeekSettingsForm
           warWeekId={warWeek.id}
           key={warWeek.updatedAt.toISOString()}

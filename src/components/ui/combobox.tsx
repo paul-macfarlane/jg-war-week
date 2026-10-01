@@ -42,7 +42,11 @@ function ComboboxClear({ className, ...props }: ComboboxPrimitive.Clear.Props) {
     <ComboboxPrimitive.Clear
       data-slot="combobox-clear"
       render={<InputGroupButton variant="ghost" size="icon-xs" />}
-      className={cn(className)}
+      // JG War Week edit: a 44px hit area on phones around the small icon.
+      className={cn(
+        "relative after:absolute after:-inset-2.5 sm:after:hidden",
+        className,
+      )}
       {...props}
     >
       <XIcon className="pointer-events-none" />
@@ -74,7 +78,8 @@ function ComboboxInput({
             variant="ghost"
             render={<ComboboxTrigger />}
             data-slot="input-group-button"
-            className="group-has-data-[slot=combobox-clear]/input-group:hidden data-pressed:bg-transparent"
+            // JG War Week edit: a 44px hit area on phones around the small icon.
+            className="relative group-has-data-[slot=combobox-clear]/input-group:hidden after:absolute after:-inset-2.5 data-pressed:bg-transparent sm:after:hidden"
             disabled={disabled}
           />
         )}

@@ -1,8 +1,10 @@
 // Only client components import this; it holds their shared row plumbing.
+import { PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   type ReactNode,
   useActionState,
+  useId,
   useRef,
   useState,
   useTransition,
@@ -17,10 +19,21 @@ import {
   formErrorOf,
   useFocusFirstInvalid,
 } from "@/components/form-field-errors";
+import {
+  ResponsiveSheetDialog,
+  ResponsiveSheetDialogFooter,
+  ResponsiveSheetDialogHeader,
+  ResponsiveSheetDialogTitle,
+} from "@/components/responsive-sheet-dialog";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
 import type { UsageCount } from "@/lib/setup";
-import { ADD_ROW, setupRowFocusTarget } from "@/lib/setup-row-focus";
+import {
+  ADD_BUTTON_ATTR,
+  ADD_ROW,
+  setupRowFocusSelector,
+  setupRowFocusTarget,
+} from "@/lib/setup-row-focus";
 
 const ROW_ATTR = "data-setup-row";
 const EDITOR_ATTR = "data-setup-editor";
@@ -33,9 +46,13 @@ export function setupRowProps(id?: string) {
   return { [ROW_ATTR]: id ?? ADD_ROW };
 }
 
+/** Marks the add row's Add button, where focus goes once a list empties. */
+const ADD_BUTTON = { [ADD_BUTTON_ATTR]: "" };
+
 /**
  * Once `row` (a deleted setup row) leaves the page, focuses the first
- * control of its next row, else its previous row, else the Add button, so
+ * control of its next row (its Edit button in a list whose rows open in a
+ * Sheet), else its previous row, else the Add button, so
  * focus doesn't fall to `<body>`. The row goes when `router.refresh()`
  * lands, so this waits for it frame by frame (up to ten seconds).
  */
@@ -58,10 +75,9 @@ function focusNeighborOnceRemoved(row: HTMLElement) {
       `[${ROW_ATTR}="${CSS.escape(targetId)}"]`,
     );
     // An emptied list lands on the Add button; a row, on its first control.
-    (targetId === ADD_ROW
-      ? target?.querySelector<HTMLElement>("button[type=submit]")
-      : target?.querySelector<HTMLElement>(FOCUSABLE)
-    )?.focus();
+    target
+      ?.querySelector<HTMLElement>(setupRowFocusSelector(targetId) ?? FOCUSABLE)
+      ?.focus();
   }
   requestAnimationFrame(focusTarget);
 }
@@ -145,17 +161,21 @@ export function useSetupRow(
  * `ConfirmDialog` titled `deleteTitle` before calling `onDelete`; the dialog
  * stays open, pending, until the delete settles. After a delete, focus moves
  * to the next row (or the add row) of the `SETUP_EDITOR` holding this row,
- * each marked with `setupRowProps`.
+ * each marked with `setupRowProps`. In a Sheet, which is portalled out of
+ * the list, `rowId` names the row; inline, the buttons sit inside it.
  */
 export function SetupRowButtons({
   pending,
   addLabel,
+  rowId,
   onDelete,
   deleteTitle,
   deleteDescription,
 }: {
   pending: boolean;
   addLabel: string;
+  /** The row these buttons edit, when they're not inside it. */
+  rowId?: string;
   /** Absent on the add row. Runs once the Organizer confirms. */
   onDelete?: () => Promise<SetupActionResult>;
   /** Names what will be deleted, e.g. "Delete Team Red?". */
@@ -176,7 +196,11 @@ export function SetupRowButtons({
 
   async function confirmDelete() {
     if (!onDelete) return;
-    const row = buttonsRef.current?.closest<HTMLElement>(`[${ROW_ATTR}]`);
+    const row = rowId
+      ? document.querySelector<HTMLElement>(
+          `[${ROW_ATTR}="${CSS.escape(rowId)}"]`,
+        )
+      : buttonsRef.current?.closest<HTMLElement>(`[${ROW_ATTR}]`);
     const result = await onDelete();
     if (result.ok && row) focusNeighborOnceRemoved(row);
   }
@@ -188,6 +212,7 @@ export function SetupRowButtons({
         size="lg"
         className="min-h-11 sm:min-h-9"
         disabled={pending}
+        {...(onDelete ? {} : ADD_BUTTON)}
       >
         {pending ? "Saving…" : onDelete ? "Save" : addLabel}
       </Button>
@@ -214,6 +239,137 @@ export function SetupRowButtons({
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * A setup row's form in a `ResponsiveSheetDialog` titled `title`. The form
+ * mounts only while the Sheet is open, so each opening starts from the saved
+ * values; `form` gets `close`, for its `onSaved`.
+ */
+function SetupSheet({
+  open,
+  onOpenChange,
+  title,
+  form,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  form: (close: () => void) => ReactNode;
+}) {
+  return (
+    <ResponsiveSheetDialog open={open} onOpenChange={onOpenChange}>
+      {open ? (
+        <>
+          <ResponsiveSheetDialogHeader>
+            <ResponsiveSheetDialogTitle>{title}</ResponsiveSheetDialogTitle>
+          </ResponsiveSheetDialogHeader>
+          {form(() => onOpenChange(false))}
+        </>
+      ) : null}
+    </ResponsiveSheetDialog>
+  );
+}
+
+/**
+ * One row of a setup list: an "Edit <label>" button showing the row's name
+ * and `details`, then `aside` (a link of its own), opening `form` in a
+ * Sheet titled like the button.
+ */
+export function SetupListRow({
+  id,
+  name,
+  label = name,
+  details,
+  leading,
+  aside,
+  form,
+}: {
+  id: string;
+  name: string;
+  /** What "Edit …" calls the row, e.g. "Team Red"; the name by default. */
+  label?: string;
+  details: string;
+  /** Before the name, e.g. a Team's color. */
+  leading?: ReactNode;
+  aside?: ReactNode;
+  form: (close: () => void) => ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const detailsId = useId();
+  return (
+    <li
+      {...setupRowProps(id)}
+      className="border-border flex items-center gap-2 border-b py-1 last:border-b-0"
+    >
+      <Button
+        type="button"
+        variant="ghost"
+        aria-label={`Edit ${label}`}
+        aria-describedby={details ? detailsId : undefined}
+        className="h-auto min-h-11 min-w-0 flex-1 justify-start gap-2 px-2 py-1.5 text-left font-normal whitespace-normal sm:min-h-9"
+        onClick={() => setOpen(true)}
+      >
+        {leading}
+        <span className="flex min-w-0 flex-col">
+          <span className="font-medium">{name}</span>
+          {details && (
+            <span id={detailsId} className="text-foreground/60 text-xs">
+              {details}
+            </span>
+          )}
+        </span>
+      </Button>
+      {aside}
+      <SetupSheet
+        open={open}
+        onOpenChange={setOpen}
+        title={`Edit ${label}`}
+        form={form}
+      />
+    </li>
+  );
+}
+
+/** A setup list's add row: a `label` button opening the empty form. */
+export function SetupAddButton({
+  label,
+  form,
+}: {
+  label: string;
+  form: (close: () => void) => ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div {...setupRowProps()}>
+      <Button
+        type="button"
+        variant="outline"
+        size="lg"
+        className="min-h-11 sm:min-h-9"
+        onClick={() => setOpen(true)}
+        {...ADD_BUTTON}
+      >
+        <PlusIcon />
+        {label}
+      </Button>
+      <SetupSheet
+        open={open}
+        onOpenChange={setOpen}
+        title={label}
+        form={form}
+      />
+    </div>
+  );
+}
+
+/** A setup Sheet's buttons and error, kept in view while its fields scroll. */
+export function SetupSheetFooter({ children }: { children: ReactNode }) {
+  return (
+    <ResponsiveSheetDialogFooter className="bg-popover sticky bottom-0 border-t pb-[max(1rem,env(safe-area-inset-bottom))]">
+      {children}
+    </ResponsiveSheetDialogFooter>
   );
 }
 

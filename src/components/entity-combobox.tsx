@@ -61,6 +61,16 @@ function fitsQuery(item: EntityComboboxItem, query: string) {
   );
 }
 
+/**
+ * Whether a multiple combobox applies a value change. Base UI empties a
+ * multiple selection on Escape with the popup closed (reason
+ * "escape-key"); Escape should only close the popup, so that change is
+ * ignored and every chosen item stays.
+ */
+export function appliesMultipleChange(reason: string | undefined): boolean {
+  return reason !== "escape-key";
+}
+
 function isSameItem(a: EntityComboboxItem, b: EntityComboboxItem) {
   return a.id === b.id;
 }
@@ -110,9 +120,10 @@ export function EntityCombobox(props: EntityComboboxProps) {
         items={items}
         multiple
         value={selected}
-        onValueChange={(next) =>
-          props.onValueChange(next.map((item) => item.id))
-        }
+        onValueChange={(next, eventDetails) => {
+          if (!appliesMultipleChange(eventDetails.reason)) return;
+          props.onValueChange(next.map((item) => item.id));
+        }}
         isItemEqualToValue={isSameItem}
         itemToStringLabel={(item) => item.label}
         itemToStringValue={(item) => item.id}

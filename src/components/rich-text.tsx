@@ -22,13 +22,38 @@ export function RichText({ content }: { content: unknown }) {
     return null;
   }
 
+  const blocks = trimEmptyParagraphs(result.content.content);
+  if (blocks.length === 0) {
+    return null;
+  }
+
   return (
     <div className="flex flex-col gap-3 break-words [&_a]:underline [&_a]:underline-offset-4 [&_h1]:text-2xl [&_h1]:font-semibold [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-semibold [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-lg [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6">
-      {result.content.content.map((block, index) => (
+      {blocks.map((block, index) => (
         <BlockView key={index} block={block} />
       ))}
     </div>
   );
+}
+
+function isEmptyParagraph(block: Block) {
+  return (
+    block.type === "paragraph" &&
+    (block.content ?? []).every((element) => element.text.trim() === "")
+  );
+}
+
+/**
+ * Drops empty paragraphs at either end, which the editor saves and which would
+ * otherwise render as blank lines (and a gap) around the text. Empty paragraphs
+ * between text are the author's spacing and stay. Stored content is unchanged.
+ */
+function trimEmptyParagraphs(blocks: Block[]) {
+  let start = 0;
+  let end = blocks.length;
+  while (start < end && isEmptyParagraph(blocks[start])) start++;
+  while (end > start && isEmptyParagraph(blocks[end - 1])) end--;
+  return blocks.slice(start, end);
 }
 
 function BlockView({ block }: { block: Block }) {
