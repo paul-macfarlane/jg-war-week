@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** mobile regression pass 2026-09-30 (ticket 18), while building the `[Test] Pool`, `[Test] Settlers of Catan` and `[Test] Beyblades` fixtures in War Week XI on staging
 
@@ -24,3 +24,4 @@
 - [ ] `pnpm gate` passes.
 
 ## Comments
+- 2026-09-30: claimed by `/atlas-implement` (work package `regression-r5`), `ready-for-agent` → `in-progress`; branch `feat/regression-r5-admin-on-a-phone` from `staging` `50acefb`. Execution record: `../epics/R5-execution.md`.

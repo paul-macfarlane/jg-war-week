@@ -355,3 +355,7 @@ restored (31). Real employee data: none beyond seeded wiki names.
 - shadcn only: `Sheet`, `Card`, `Button`/`buttonVariants`,
   `ResponsiveSheetDialog`, `ConfirmDialog`, sonner; no new shadcn
   component and no new dependency is expected (decision 10 avoids jsdom).
+
+## [PROGRESS]
+
+- 2026-09-30: `/atlas-implement` started (work package `regression-r5`). Epic and tickets 30–38 claimed, `ready-for-agent` → `in-progress`. Direct checkout, sequential D0 → D30 → D34 → D35 → D31 → D32 → D33 → D36 → D37 → D38 → DE, one fresh worker per deliverable. Proof root `test-results/` not cleared (Paul's standing R1 decision; screenshots are committed evidence). Human gate H1 (37) announced for later; no gate actionable now.

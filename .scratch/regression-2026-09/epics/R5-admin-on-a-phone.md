@@ -8,7 +8,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Red-team:** not required (no schema, auth or access change; `docs/agents/planning.md`).
 
@@ -50,3 +50,4 @@ Each ticket's own acceptance criteria, plus:
 - 2026-09-30: created from the mobile regression pass (ticket 18). All nine tickets (30-38) `ready-for-agent`, for one `/atlas-implement` run.
 - 2026-09-30: `[EXECUTION PLAN]` in [`R5-execution.md`](./R5-execution.md) (`/atlas-plan`; red-team not required).
 - 2026-09-30: `[SCOPE CHANGE]` (Paul): fix the e2e flakes failing CI on `staging` as deliverable D0, first; see `R5-execution.md`.
+- 2026-09-30: claimed by `/atlas-implement` (work package `regression-r5`), `ready-for-agent` → `in-progress`; branch `feat/regression-r5-admin-on-a-phone` from `staging` `50acefb`. Execution record: `R5-execution.md`.
