@@ -26,6 +26,8 @@ export function PinAnnouncementButton({
     <Button
       variant="outline"
       size="xs"
+      // At least 44px on phones.
+      className="min-h-11 min-w-11 sm:min-h-6 sm:min-w-0"
       disabled={pending}
       onClick={() => {
         startTransition(async () => {

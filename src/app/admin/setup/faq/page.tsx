@@ -76,7 +76,11 @@ export default async function SetupFaqPage() {
                   />
                   <Link
                     href={`/admin/setup/faq/${item.id}`}
-                    className="text-primary text-xs underline-offset-4 hover:underline"
+                    className={buttonVariants({
+                      variant: "outline",
+                      size: "xs",
+                      className: "min-h-11 min-w-11 sm:min-h-6 sm:min-w-0",
+                    })}
                   >
                     Edit
                   </Link>

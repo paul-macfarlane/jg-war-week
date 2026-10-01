@@ -71,7 +71,7 @@ function ToolbarButton({
       size="sm"
       aria-label={label}
       aria-pressed={pressed}
-      className="aria-pressed:bg-muted"
+      className="aria-pressed:bg-muted min-h-11 min-w-11 sm:min-h-7 sm:min-w-0"
       onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
     >
@@ -371,13 +371,19 @@ export function RichTextEditor({
           )}
           {panelError && <FieldError>{panelError}</FieldError>}
           <div className="flex items-center gap-2">
-            <Button type="button" size="sm" onClick={applyPanel[panel]}>
+            <Button
+              type="button"
+              size="sm"
+              className="min-h-11 min-w-11 sm:min-h-7 sm:min-w-0"
+              onClick={applyPanel[panel]}
+            >
               {PANEL_ACTION[panel]}
             </Button>
             <Button
               type="button"
               variant="outline"
               size="sm"
+              className="min-h-11 min-w-11 sm:min-h-7 sm:min-w-0"
               onClick={cancelPanel}
             >
               Cancel

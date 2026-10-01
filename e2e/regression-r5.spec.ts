@@ -1,4 +1,10 @@
-import { type Page, type TestInfo, expect, test } from "@playwright/test";
+import {
+  type Locator,
+  type Page,
+  type TestInfo,
+  expect,
+  test,
+} from "@playwright/test";
 
 import { runQuery, xiCompetitionId } from "./db";
 import { E2E_BASE_URL } from "./env";
@@ -170,6 +176,143 @@ test("r5 30 admin header and section bar on a phone", async ({
     await runQuery(
       `delete from competition_host where competition_id = $1 and email = $2`,
       [competitionId, E2E_HOST_EMAIL],
+    );
+  }
+});
+
+/** A visible control's bounding box must be at least 44x44. */
+async function expectTouchTarget(locator: Locator, what: string) {
+  const rect = await locator.first().boundingBox();
+  if (!rect) throw new Error(`${what} isn't visible`);
+  expect(rect.width, `${what} width`).toBeGreaterThanOrEqual(44 - TOLERANCE);
+  expect(rect.height, `${what} height`).toBeGreaterThanOrEqual(44 - TOLERANCE);
+}
+
+/** An icon button's hit area: its box grown by its `::after` insets. */
+async function expectAfterTouchTarget(locator: Locator, what: string) {
+  const area = await locator.first().evaluate((el) => {
+    const rect = el.getBoundingClientRect();
+    const after = getComputedStyle(el, "::after");
+    const px = (v: string) => Number.parseFloat(v) || 0;
+    return {
+      position: after.position,
+      width: rect.width - px(after.left) - px(after.right),
+      height: rect.height - px(after.top) - px(after.bottom),
+    };
+  });
+  expect(area.position, `${what} ::after`).toBe("absolute");
+  expect(area.width, `${what} width`).toBeGreaterThanOrEqual(44 - TOLERANCE);
+  expect(area.height, `${what} height`).toBeGreaterThanOrEqual(44 - TOLERANCE);
+}
+
+test("r5 34 admin controls are 44px on a phone", async ({
+  page,
+  context,
+}, testInfo) => {
+  const hostEmail = "e2e-r5-chip@jahnelgroup.com";
+  const competitionId = await xiCompetitionId("Pool");
+  try {
+    await asOrganizer(context);
+
+    // 34-2: at 1280 the controls are as before (compare the before/after PNGs).
+    await page.setViewportSize(DESKTOP);
+    await page.goto("/admin/setup/faq");
+    await expect(
+      page.getByRole("link", { name: "Edit" }).first(),
+    ).toBeVisible();
+    await shoot(page, testInfo, "after-1280-faq", true);
+    await page.goto("/admin/announcements/new");
+    await expect(page.getByRole("toolbar")).toBeVisible();
+    await shoot(page, testInfo, "after-1280-announcements-new", true);
+
+    // 34-1, 34-3: at 375 one of each control measures at least 44x44.
+    await page.setViewportSize(PHONE);
+
+    await page.goto("/admin/points");
+    await expectTouchTarget(
+      page.getByRole("button", { name: /^Delete/ }),
+      "points Delete",
+    );
+    await expectAfterTouchTarget(
+      page.locator("[data-slot=input-group-button]"),
+      "combobox trigger",
+    );
+    await shoot(page, testInfo, "points-375");
+
+    await page.goto("/admin/announcements");
+    await expectTouchTarget(
+      page.getByRole("button", { name: /^(Pin|Unpin)$/ }),
+      "Pin/Unpin",
+    );
+    await expectTouchTarget(
+      page.getByRole("button", { name: "Delete", exact: true }),
+      "announcement Delete",
+    );
+    await shoot(page, testInfo, "announcements-375");
+
+    await page.goto("/admin/announcements/new");
+    const toolbar = page.getByRole("toolbar", { name: "Formatting" });
+    await expectTouchTarget(
+      toolbar.getByRole("button", { name: "Bold" }),
+      "toolbar Bold",
+    );
+    await toolbar.getByRole("button", { name: "Link" }).click();
+    await expectTouchTarget(
+      page.getByRole("button", { name: "Apply link" }),
+      "panel Apply link",
+    );
+    await expectTouchTarget(
+      page.getByRole("button", { name: "Cancel", exact: true }),
+      "panel Cancel",
+    );
+    await shoot(page, testInfo, "announcements-new-375");
+
+    await page.goto("/admin/setup/schedule");
+    await expectTouchTarget(
+      page.getByRole("link", { name: "Edit" }),
+      "schedule Edit",
+    );
+    await expectTouchTarget(
+      page.getByRole("button", { name: "Delete", exact: true }),
+      "schedule Delete",
+    );
+    await shoot(page, testInfo, "schedule-375");
+
+    await page.goto("/admin/setup/faq");
+    await expectTouchTarget(
+      page.getByRole("button", { name: /Move ".*" down/ }),
+      "FAQ down",
+    );
+    await expectTouchTarget(
+      page.getByRole("button", { name: /Move ".*" up/ }).last(),
+      "FAQ up",
+    );
+    await expectTouchTarget(
+      page.getByRole("link", { name: "Edit" }),
+      "FAQ Edit",
+    );
+    await expectTouchTarget(
+      page.getByRole("button", { name: "Delete", exact: true }),
+      "FAQ Delete",
+    );
+    await shoot(page, testInfo, "faq-375");
+
+    // The email chip's remove button, on the Competition's Hosts field.
+    await runQuery(
+      `insert into competition_host (competition_id, email) values ($1, $2)
+       on conflict do nothing`,
+      [competitionId, hostEmail],
+    );
+    await page.goto("/admin/setup/competitions");
+    await expectAfterTouchTarget(
+      page.getByRole("button", { name: `Remove ${hostEmail}` }),
+      "email chip remove",
+    );
+    await shoot(page, testInfo, "competition-hosts-375");
+  } finally {
+    await runQuery(
+      `delete from competition_host where competition_id = $1 and email = $2`,
+      [competitionId, hostEmail],
     );
   }
 });
