@@ -370,3 +370,68 @@ restored (31). Real employee data: none beyond seeded wiki names.
 - 2026-09-30: D37 `[BLOCKED]` at human gate H1. Reproduction through the real editor on XI at 375: stored body is one paragraph (`{"type":"doc","content":[{"type":"paragraph",…"Doors open at nine."}]}`), `video_urls` `[]`, card 112px on `/xi` and `/xi/news` (<160). The XII seed has no Announcements, so staging's was entered by hand. No code changed; draft spec kept in the orchestrator's scratchpad. Resume: Paul supplies staging `/xii`'s pinned Announcement `body` and `video_urls` (or a 375px devtools screenshot); a local Announcement with that body must reproduce ≥160px before any fix.
 - 2026-09-30: D38 accepted (`e9a87d5`, Sonnet). Escape fix proven red with the fix disabled. Deviation: the un-finalize confirm title also drops "and delete its Points Entries" wording when there are no Placement Points (same copy bug, one line). Squad and Award pickers share the fix but were not driven in e2e.
 - 2026-09-30: DE accepted (`623ee1c`, Sonnet). Epic test: Organizer shell on all 7 pages; Host shell on 4 and refusal on Teams, War Week settings and Awards; no horizontal scroll at 375. Guide and `/about` updated (37 not mentioned). Orchestrator follow-up: `organizer-setup.png` shows the shorter header (ticket 30), so per decision 13 it is regenerated and committed at verification.
+- 2026-09-30: DR accepted (`f79549c`, Opus): every adjudicated review finding below. Red check: with the pre-fix `war-week-settings-form.tsx`, `competitions-editor.tsx` and `admin/points/page.tsx`, r5 31/32/33 fail (Host gone after Save; Change link 16px; field 19.5px under the sticky row). The 1280 settings shot differs from the D33 baseline only by the seed warning removed in D36.
+
+## [AI CODE REVIEW]
+
+2026-09-30, over `50acefb..25cd730`. Two fresh Opus reviewers read the full diff (one per axis); the orchestrator adjudicated every candidate by reading the cited hunks. Fixed in DR `f79549c` unless marked accepted.
+
+### Axis 1 — technical implementation and spec conformity
+
+| # | Severity | Paths | Finding | Disposition |
+|---|---|---|---|---|
+| T1 | blocking | `war-week-settings-form.tsx` | `scroll-mb-24` (96px) is less than bar inset + sticky row (+ error line, ~141–169px): a focused field could sit under Save (33 AC) | resolved: `scroll-mb-[calc(var(--admin-bar-inset)+7rem)]` below `md`; r5 33 focuses a field in that band |
+| T2 | blocking | `setup-row.tsx`, `teams-editor.tsx` | Team rows read "Edit Red"; 31 AC says "Edit Team Red" | resolved: Team rows "Edit <Team Label> <name>" |
+| T3 | blocking | `competitions-editor.tsx` | Hosts moved into the Competition Sheet above a Save that didn't save them: added Hosts were silently lost | resolved: Save saves setup then Hosts when changed; "Save Hosts" button removed; r5 31 proves a Host survives Save |
+| T4 | non-blocking | `admin-shell.tsx`, `sticky-form-actions.tsx` | At 375 a refusal toast sits over the sticky Save for 4s | accepted: touch doesn't trigger Sonner's hover-pause; inline error carries the message. Follow-up candidate |
+| T5 | non-blocking | `games-builder.tsx`, `bracket-results.tsx` | Games Reopen confirm claimed Points Entries with no Placement Points | resolved (`hasPlacementPoints`); the finalized/closed note follows the current Placement Points, not what was generated — recorded risk |
+| T6 | blocking | `admin/points/page.tsx` | "Change in Games/Bracket" links ~16px; 34 covers every small admin link | resolved: 44px below `sm`, measured in r5 32 |
+| T7 | non-blocking | guide, `organizer-guide.tsx`, `about.ts` | Stale "Add a Competition"/header-switcher/"each Setup row" copy | resolved |
+| T8 | non-blocking | `setup-row.tsx` | Sheet footer ignored the safe area | resolved |
+| T9 | non-blocking | `regression-r5.spec.ts` | 35-1 levelness assertion could be skipped | resolved: unconditional, fails loudly if the pair isn't side by side |
+| T10 | non-blocking | `award-form.tsx` | Award Team rule untested in isolation | resolved: `award-form.test.tsx` |
+| T11 | non-blocking | `regression-r5.spec.ts` | Award fixtures inserted before `try` | resolved |
+| T12 | non-blocking | `setup-row.tsx` | Days: deleting the last Day now focuses Add Day, not its first field | accepted |
+| R1 | non-blocking | `award-form.tsx` | (DR risk) free-for-all Award help and placeholder still name the Team Label | accepted: outside 32's ACs; follow-up candidate |
+| R2 | non-blocking | `competitions-editor.tsx` | (DR risk) setup saved but Hosts refused: Sheet stays open with the Hosts error | accepted: visible, not silent |
+
+No finding against: the nav model and Host visibility, landmarks, hidden card/table duplicates, `DismissToasts`, select trigger, `ColorField` focus, `EntityCombobox` Escape, Tree Heat times, Points Entry label, seed warning, D0 test changes, fixture cleanup, r1 06 09.
+
+### Axis 2 — coding standards
+
+| # | Severity | Paths | Finding | Disposition |
+|---|---|---|---|---|
+| S1 | non-blocking | `ui/sheet.tsx`, `ui/sonner.tsx` | No "JG War Week edit" marker on `DismissToasts` | resolved |
+| S2 | non-blocking | `jg-email-chips.tsx` | Marker used outside `ui/` | resolved |
+| S3 | non-blocking | `admin-shell.tsx` | Dead `AdminSection` re-export | resolved |
+| S4 | non-blocking | `admin-sections.ts` | `ADMIN_SECTIONS` exported but unused | resolved |
+| S5 | non-blocking | points/announcements/awards pages | Edit-link class copied three times | resolved: `admin-edit-link.ts` |
+| S6 | non-blocking | games-builder, bracket-results | Placement Points predicate duplicated | resolved: `hasPlacementPoints` in `src/lib/competitions.ts` |
+| S7 | non-blocking | `enums.ts` | New `WarWeekMode` alias vs `WarWeek["mode"]` | resolved |
+| S8 | non-blocking | `bracket-tree.tsx` | IIFE in JSX | resolved |
+| S9 | blocking | `docs/maintainers-guide.md` | Guide misstated the 44px pattern (`sm:min-h-0` vs the variant height); toast dismissal undocumented | resolved |
+| S11 | non-blocking | `scripts/smoke/setup.ts` | Terse comments; merged failure message | resolved |
+
+No finding against: shadcn usage, toasts/popups via `ThemeRoot`, ADR 0001 layering, CONTEXT vocabulary, test style, e2e conventions.
+
+## [PROGRESS] Aggregate verification
+
+2026-09-30, at `f79549c` (local Postgres `war-weeker-postgres:2345`, Chromium, production build): `set -a; . ./.env.example; set +a; pnpm format:check && pnpm gate` → exit 0. Unit `Test Files 133 passed`, `Tests 3114 passed`; `pnpm smoke` 201 `ok`, 0 `not ok`; `pnpm e2e` `51 passed (2.0m)` — including the three former CI flakes (`bracket-squads`, `games`, `theme`). Logged: Teams & roster 6,705px, Competitions 2,463px at 375; form heights 703 / 1,190 / 873 / 509. Evidence `test-results/r5-gate/gate.txt` and `test-results/e2e/regression-r5-*/` (screenshots from this run; the before baselines kept).
+
+| Criteria | Verdict |
+|---|---|
+| D0-1 | PASS (`d0-repeat.txt`; the three specs pass again in the final gate) |
+| 30-1 … 30-9 | PASS |
+| 31-1 … 31-8 | PASS |
+| 32-1 … 32-6 | PASS (32-2 by eye: tables unchanged apart from outline Edit links) |
+| 33-1 … 33-6 | PASS |
+| 34-1 … 34-3 | PASS (combobox clear: class only, no live use) |
+| 35-1 … 35-3 | PASS |
+| 36-1 … 36-3 | PASS |
+| 37-1 … 37-3 | BLOCKED — human gate H1 |
+| 38-1 … 38-4 | PASS |
+| E-1 | PASS (guide, `/about` copy, `organizer-setup.png`, `brackets.png`, `standings-entry.png`) |
+| E-2 | PASS (`r5 epic` test) |
+| E-3 | pending closeout |
+| E-4 | pending PR CI |
+| E-5 | PASS |
