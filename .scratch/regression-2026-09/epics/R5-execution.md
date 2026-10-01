@@ -448,3 +448,33 @@ No finding against: shadcn usage, toasts/popups via `ThemeRoot`, ADR 0001 layeri
 ## [PROGRESS] Final gate
 
 2026-09-30, at `4bee992`: `pnpm format:check && pnpm gate` exit 0 — `Tests 3118 passed`; smoke 201 `ok`, 0 `not ok`; e2e `52 passed (2.0m)`. `test-results/r5-gate/gate.txt`. Every criterion 30-1 … 38-4, D0-1, E-1, E-2, E-5 PASS at `4bee992` (37-1 … 37-3 now PASS); E-3 at closeout; E-4 on the PR.
+
+## [CLOSEOUT]
+
+2026-09-30. Repository `war-weeker`, branch `feat/regression-r5-admin-on-a-phone` from `staging` `50acefb`, PR https://github.com/paul-macfarlane/jg-war-week/pull/107.
+
+| Deliverable | Commit | Worker model | Result |
+|---|---|---|---|
+| D0 CI flakes (scope change) | `c8c2363` | Opus | accepted |
+| D30 Admin header and section bar | `6f7307a` | Opus | accepted |
+| D34 44px controls | `0430954` | Sonnet | accepted |
+| D35 Selects and color picker | `c6f89d5` | Sonnet | accepted |
+| D31 Setup rows in a Sheet | `18c9c37` | Opus | accepted |
+| D32 Lists fit a phone | `8e814e8` | Sonnet | accepted |
+| D33 Sticky Save | `5bea652` | Sonnet | accepted (orchestrator fix amended in) |
+| D36 Seed warning | `dd9afe9` | Haiku | accepted |
+| D38 Bracket fixes | `e9a87d5` | Sonnet | accepted |
+| DE Epic check, guide, `/about` | `623ee1c` | Sonnet | accepted |
+| (stills) `organizer-setup.png`, `brackets.png` | `25cd730` | orchestrator | — |
+| DR Aggregate review fixes | `f79549c` | Opus | accepted |
+| D37 Pinned card (after H1) | `4bee992` | Sonnet | accepted |
+
+Verified run command: `set -a; . ./.env.example; set +a; pnpm format:check && pnpm gate` → exit 0 at `4bee992` (local Postgres, Chromium, production build): `Tests 3118 passed`, smoke 201 `ok` / 0 `not ok`, e2e `52 passed`. Evidence: `test-results/r5-gate/gate.txt`, `test-results/r5-gate/d0-repeat.txt`, `test-results/e2e/regression-r5-*/` (committed). No deployed target in scope (E-4 is CI on the PR).
+
+Verdicts: D0-1, 30-1 … 30-9, 31-1 … 31-8, 32-1 … 32-6, 33-1 … 33-6, 34-1 … 34-3, 35-1 … 35-3, 36-1 … 36-3, 37-1 … 37-3, 38-1 … 38-4, E-1, E-2, E-3, E-5 PASS. E-4 (CI on the PR): pending at closeout; check `gh pr checks 107`.
+
+Deviations and scope changes: D0 added (Paul); D0 edits `ui/sheet.tsx` and `responsive-sheet-dialog.tsx`; D30 icon keys (ADR 0001) and CSS-only toast offset; D38 un-finalize title copy; ticket 37 resolved per H1 (cause: title-only Announcement with a video; empty body added a 12px gap); review deviations T4, T12, R1, R2 accepted (see [AI CODE REVIEW]). Process: the `in-progress` → `ai-review` transition was recorded at closeout, not when the review started.
+
+Isolation re-check: sequential direct checkout was chosen for the shared port 3200 and seeded DB (still true: every deliverable ran `pnpm e2e`). The predicted file collisions materialised: `e2e/regression-r5.spec.ts` changed in 10 commits, `award-form.tsx` in 3 (D35, D32, DR), `ui/sheet.tsx`/`setup-row.tsx`/`admin-shell.tsx` in 2 each.
+
+Follow-up candidates (not ticketed): refusal toast over the sticky Save at 375 (T4); free-for-all Award help copy names the Team Label (R1); `bracket-squads.spec.ts` leaves its Squads behind, so it can't `--repeat-each` in one process.

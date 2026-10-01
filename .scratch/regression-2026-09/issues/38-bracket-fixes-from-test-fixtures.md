@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** in-progress
+**Status:** done
 
 **Source:** mobile regression pass 2026-09-30 (ticket 18), while building the `[Test] Pool`, `[Test] Settlers of Catan` and `[Test] Beyblades` fixtures in War Week XI on staging
 
@@ -25,3 +25,5 @@
 
 ## Comments
 - 2026-09-30: claimed by `/atlas-implement` (work package `regression-r5`), `ready-for-agent` → `in-progress`; branch `feat/regression-r5-admin-on-a-phone` from `staging` `50acefb`. Execution record: `../epics/R5-execution.md`.
+- 2026-09-30 [AI CODE REVIEW]: T5 (Games Reopen copy), S6 (`hasPlacementPoints`), S8 resolved. Full tables: `../epics/R5-execution.md` [AI CODE REVIEW].
+- 2026-09-30 [CLOSEOUT]: D38 `e9a87d5` (Sonnet); review fixes `f79549c`. Criteria 38-1 … 38-4 PASS; `pnpm format:check && pnpm gate` exit 0 at `4bee992` (`test-results/r5-gate/gate.txt`); screenshots `test-results/e2e/regression-r5-r5-38-*/`. PR https://github.com/paul-macfarlane/jg-war-week/pull/107. `in-progress` → `ai-review` → `done`. Details: `../epics/R5-execution.md` [CLOSEOUT].

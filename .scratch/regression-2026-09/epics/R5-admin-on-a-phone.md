@@ -8,7 +8,7 @@
 
 **Blocked by:** none
 
-**Status:** in-progress
+**Status:** done
 
 **Red-team:** not required (no schema, auth or access change; `docs/agents/planning.md`).
 
@@ -52,3 +52,4 @@ Each ticket's own acceptance criteria, plus:
 - 2026-09-30: `[SCOPE CHANGE]` (Paul): fix the e2e flakes failing CI on `staging` as deliverable D0, first; see `R5-execution.md`.
 - 2026-09-30: claimed by `/atlas-implement` (work package `regression-r5`), `ready-for-agent` → `in-progress`; branch `feat/regression-r5-admin-on-a-phone` from `staging` `50acefb`. Execution record: `R5-execution.md`.
 - 2026-09-30 [BLOCKED]: every deliverable except 37 is integrated, reviewed and verified at `f79549c` (`pnpm gate` exit 0; see `R5-execution.md`). Ticket 37 is blocked at human gate H1 (see its comment). No PR yet: closeout waits for 37's gate answer or Paul descoping it. Resume with `/atlas-implement .scratch/regression-2026-09/epics/R5-admin-on-a-phone.md`.
+- 2026-09-30 [CLOSEOUT]: tickets 30–38 `done`, plus D0 (CI flakes, scope change). Epic ACs: `/about` and guide updated (E-1 PASS); epic visual check (E-2 PASS); closeouts recorded (E-3 PASS); `pnpm gate` exit 0 at `4bee992` (E-5 PASS); CI on the PR (E-4) pending at closeout. PR https://github.com/paul-macfarlane/jg-war-week/pull/107. Details: `R5-execution.md` [CLOSEOUT].
