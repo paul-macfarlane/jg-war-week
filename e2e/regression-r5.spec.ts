@@ -950,3 +950,70 @@ test("r5 38 Escape keeps chosen Entrants; Tree shows a Heat's place; Format help
     await deleteXiCompetition(name);
   }
 });
+
+const EPIC_PAGES = [
+  { path: "/admin", slug: "overview", hostSees: true },
+  { path: "/admin/points", slug: "points", hostSees: true },
+  { path: "/admin/setup/teams", slug: "teams", hostSees: false },
+  { path: "/admin/setup/competitions", slug: "competitions", hostSees: true },
+  { path: "/admin/setup/war-week", slug: "war-week", hostSees: false },
+  { path: "/admin/announcements", slug: "announcements", hostSees: true },
+  { path: "/admin/awards", slug: "awards", hostSees: false },
+];
+
+test("r5 epic admin pages at 375 and 1280, as Organizer and Host", async ({
+  context,
+  page,
+}, testInfo) => {
+  test.setTimeout(180_000);
+  const competitionId = await xiCompetitionId("Pool");
+  const refusal = page.getByRole("heading", {
+    name: "Organizers and Hosts only.",
+  });
+
+  async function visit(role: "organizer" | "host") {
+    for (const viewport of [PHONE, DESKTOP]) {
+      await page.setViewportSize(viewport);
+      for (const { path, slug, hostSees } of EPIC_PAGES) {
+        await page.goto(path);
+        const sees = role === "organizer" || hostSees;
+        const label = `${role} ${path} at ${viewport.width}`;
+        if (sees) {
+          await expect(refusal, label).toHaveCount(0);
+          await expect(page.locator("main").first(), label).toBeVisible();
+          if (viewport.width === PHONE.width) {
+            await expect(adminBar(page), label).toHaveCount(1);
+            expect(
+              await page.evaluate(
+                () => document.documentElement.scrollWidth <= window.innerWidth,
+              ),
+              `${label} scrolls sideways`,
+            ).toBe(true);
+          }
+        } else {
+          await expect(refusal, label).toBeVisible();
+        }
+        await shoot(page, testInfo, `${role}-${slug}-${viewport.width}`, true);
+      }
+    }
+  }
+
+  try {
+    await asOrganizer(context);
+    await visit("organizer");
+
+    await runQuery(
+      `insert into competition_host (competition_id, email) values ($1, $2)
+       on conflict do nothing`,
+      [competitionId, E2E_HOST_EMAIL],
+    );
+    await context.clearCookies();
+    await asHost(context);
+    await visit("host");
+  } finally {
+    await runQuery(
+      `delete from competition_host where competition_id = $1 and email = $2`,
+      [competitionId, E2E_HOST_EMAIL],
+    );
+  }
+});

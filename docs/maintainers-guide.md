@@ -178,6 +178,16 @@ Organizer screens cover it. Sign in and go to `/admin`:
   screen's scheme — each picks their own Display (Light, Dark or System)
   from the header menu (the phone More Sheet, the desktop TopNav, or the
   Admin header).
+- **On a phone**, the admin sections are a bar fixed to the bottom of the
+  screen (Overview, Points, Announcements, Setup, More); More opens a Sheet
+  with the other sections you can see, the edition switcher, Display and
+  your account. From `md` up it is the side column and header as before.
+  The sections live in `src/lib/admin-sections.ts`.
+- **Setup rows open in a Sheet.** On Teams & roster and Competitions, each
+  row is one "Edit <name>" button that opens its form in a
+  `ResponsiveSheetDialog`, with Save and Delete in a sticky footer; "Add …"
+  opens the empty form. "Assign Hosts" (the Hosts field) is inside the
+  Competition's Sheet.
 - **`/admin/organizers`**: the Organizer list (see
   [Add an Organizer or assign Hosts](#add-an-organizer-or-assign-hosts)).
 - **`/admin/points`**, **`/admin/standings`** (Run the Finale: "Open Finale" at closing ceremonies, and "Finale: <Competition>" for each finalized Bracket),
@@ -429,6 +439,17 @@ Notes:
   (a centered Dialog at `lg` and up, a bottom Sheet below) — live in
   `src/components/`. Reach for one of those before building a new control.
   Only `EntityCombobox` does search and chips.
+- Below `sm`, every admin control is at least 44px tall and wide
+  (`min-h-11 min-w-11 sm:min-h-0 sm:min-w-0`), the pattern `Input`, the
+  combobox and the Setup buttons follow. The shadcn select trigger's
+  default height is now 44px below `sm` and 36px from `sm` (an edit in
+  `ui/select.tsx`), so it sits level with an `Input`, and its list opens
+  below the trigger rather than over the field above it.
+- A long admin form puts its submit row in `StickyFormActions`
+  (`src/components/sticky-form-actions.tsx`): below `md` it sticks above the
+  admin section bar so Save stays in reach; from `md` it sits in the flow.
+  Give the form `pb-*` and its fields `scroll-mb-*` so a focused field is
+  not hidden under it.
 - Popups portal into the themed root through `ThemeRoot`, which is wired
   into `ui/popover`, `ui/select`, `ui/combobox`, `ui/alert-dialog`,
   `ui/dialog` and `ui/sheet`, so they keep the War Week's Appearance Theme.
