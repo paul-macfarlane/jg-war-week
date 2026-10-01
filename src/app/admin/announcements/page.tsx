@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { adminEditLinkClass } from "@/components/admin-edit-link";
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import {
   DeleteAnnouncementButton,
@@ -18,12 +19,6 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Announcements · JG War Week" };
 
-const editLink = buttonVariants({
-  variant: "outline",
-  // At least 44px on phones.
-  className: "min-h-11 min-w-11 sm:min-h-0 sm:min-w-0",
-});
-
 export default async function AdminAnnouncementsPage() {
   const { warWeek, email, actor, allowed, isOrganizer, editions } =
     await loadAdminPage("/admin/announcements");
@@ -38,7 +33,10 @@ export default async function AdminAnnouncementsPage() {
   const rowActions = (row: (typeof announcements)[number]) => (
     <>
       {mayChange(row.authorEmail) && (
-        <Link href={`/admin/announcements/${row.id}`} className={editLink}>
+        <Link
+          href={`/admin/announcements/${row.id}`}
+          className={adminEditLinkClass}
+        >
           Edit
         </Link>
       )}

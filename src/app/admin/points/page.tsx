@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { adminEditLinkClass } from "@/components/admin-edit-link";
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { DeletePointsEntryButton } from "@/components/delete-points-entry-button";
 import { PointsEntryForm } from "@/components/points-entry-form";
@@ -9,7 +10,6 @@ import {
   TeamStandingsList,
 } from "@/components/standings";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatLabel } from "@/lib/bracket/view";
 import { formatPoints, formatPointsLabel } from "@/lib/points";
@@ -28,11 +28,9 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Points Entries · JG War Week" };
 
-const editLink = buttonVariants({
-  variant: "outline",
-  // At least 44px on phones.
-  className: "min-h-11 min-w-11 sm:min-h-0 sm:min-w-0",
-});
+// A text link, at least 44px tall on phones.
+const changeLink =
+  "text-primary inline-flex min-h-11 items-center text-xs whitespace-nowrap underline-offset-4 hover:underline sm:min-h-0";
 
 export default async function AdminPointsPage() {
   const { warWeek, email, allowed, isOrganizer, editions, runs } =
@@ -62,21 +60,21 @@ export default async function AdminPointsPage() {
       entry.competitionFormat === "games" ? (
         <Link
           href={`/admin/setup/competitions/${entry.competitionId}/games`}
-          className="text-primary text-xs whitespace-nowrap underline-offset-4 hover:underline"
+          className={changeLink}
         >
           Change in Games
         </Link>
       ) : (
         <Link
           href={`/admin/brackets/${entry.competitionId}`}
-          className="text-primary text-xs whitespace-nowrap underline-offset-4 hover:underline"
+          className={changeLink}
         >
           Change in the Bracket
         </Link>
       )
     ) : (
       <div className="flex items-center gap-2">
-        <Link href={`/admin/points/${entry.id}`} className={editLink}>
+        <Link href={`/admin/points/${entry.id}`} className={adminEditLinkClass}>
           Edit
         </Link>
         <DeletePointsEntryButton

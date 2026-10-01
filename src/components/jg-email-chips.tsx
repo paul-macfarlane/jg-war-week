@@ -72,7 +72,7 @@ export function JgEmailChips({
                   type="button"
                   variant="ghost"
                   size="icon-xs"
-                  // JG War Week edit: a 44px hit area on phones around the small icon.
+                  // A 44px hit area on phones around the small icon.
                   className="relative rounded-full after:absolute after:-inset-2.5 sm:after:hidden"
                   aria-label={`Remove ${email}`}
                   disabled={disabled}

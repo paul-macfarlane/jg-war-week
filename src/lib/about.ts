@@ -47,7 +47,7 @@ export const ABOUT_FEATURES = [
   {
     slug: "organizer-setup",
     title: "Organizer setup, no code",
-    text: "War Week, Days, Teams, roster, Competitions, schedule and FAQ are all Organizer screens under Admin. Organizers can hand a Competition to its Hosts, who see just that Competition and enter its points themselves. Admin works from a phone too, with a bar of sections along the bottom and each Setup row opening in a Sheet. Next year's edition takes an afternoon, not a code editor.",
+    text: "War Week, Days, Teams, roster, Competitions, schedule and FAQ are all Organizer screens under Admin. Organizers can hand a Competition to its Hosts, who see just that Competition and enter its points themselves. Admin works from a phone too, with a bar of sections along the bottom and Teams, roster and Competitions rows opening in a Sheet. Next year's edition takes an afternoon, not a code editor.",
     alt: "The Admin Setup screen listing War Week, Days, Teams, Competitions, Schedule and FAQ.",
   },
   {

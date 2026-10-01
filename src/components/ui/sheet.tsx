@@ -68,7 +68,7 @@ function SheetContent({
         )}
         {...props}
       >
-        {/* A bottom Sheet opens where toasts show. */}
+        {/* JG War Week edit: a bottom Sheet opens where toasts show, so it dismisses them. */}
         {side === "bottom" && <DismissToasts />}
         {children}
         {showCloseButton && (

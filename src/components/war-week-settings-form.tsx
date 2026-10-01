@@ -259,7 +259,9 @@ export function WarWeekSettingsForm({
     <form
       ref={formRef}
       action={formAction}
-      className="flex flex-col gap-6 pb-4 md:pb-0 [&_button]:scroll-mb-24 md:[&_button]:scroll-mb-0 [&_input]:scroll-mb-24 md:[&_input]:scroll-mb-0 [&_textarea]:scroll-mb-24 md:[&_textarea]:scroll-mb-0"
+      // Below md a focused field scrolls clear of the section bar, the
+      // sticky Save row and its error line (7rem).
+      className="flex flex-col gap-6 pb-4 [--field-scroll-mb:calc(var(--admin-bar-inset)+7rem)] md:pb-0 md:[--field-scroll-mb:0px] [&_button]:scroll-mb-(--field-scroll-mb) [&_input]:scroll-mb-(--field-scroll-mb) [&_textarea]:scroll-mb-(--field-scroll-mb)"
       aria-label="War Week settings"
     >
       <FieldSet>

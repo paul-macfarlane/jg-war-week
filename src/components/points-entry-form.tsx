@@ -24,12 +24,12 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import type { WarWeek } from "@/db/schema";
 import {
   formatMaxPoints,
   placementLabel,
   pointsForPlacement,
 } from "@/lib/competitions";
-import type { WarWeekMode } from "@/lib/enums";
 import { formatPoints } from "@/lib/points";
 import { overMaxWarning } from "@/lib/points-entry";
 import type { PointsEntryFormOptions } from "@/queries/points-entries";
@@ -57,7 +57,7 @@ export function PointsEntryForm({
   options: PointsEntryFormOptions;
   teamLabel: string;
   /** The War Week's Mode: a free-for-all has no Teams to ask about. */
-  mode: WarWeekMode;
+  mode: WarWeek["mode"];
   /** Set when editing an existing entry. */
   entryId?: string;
   initial?: Initial;

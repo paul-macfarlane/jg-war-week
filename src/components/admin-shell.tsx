@@ -13,8 +13,6 @@ import { ADMIN_REFUSAL, type AdminEdition } from "@/lib/access";
 import { type AdminSection, adminSectionsFor } from "@/lib/admin-sections";
 import { warWeekThemeStyle } from "@/lib/theme";
 
-export type { AdminSection };
-
 /**
  * The banner under the admin header when the War Week being administered
  * isn't the current one, or null.

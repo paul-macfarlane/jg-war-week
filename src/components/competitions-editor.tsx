@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useId, useState, useTransition } from "react";
-import { toast } from "sonner";
+import { useId, useState } from "react";
 
 import {
   createCompetition,
@@ -25,7 +24,6 @@ import {
   useSetupRow,
 } from "@/components/setup-row";
 import { SuggestionCombobox } from "@/components/suggestion-combobox";
-import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldDescription,
@@ -94,52 +92,27 @@ function inputFrom(competition: SetupCompetition): CompetitionInput {
 }
 
 /**
- * A Competition's Hosts, for Organizers: saved by their own "assign Hosts"
- * action, never with the Competition's setup.
+ * A Competition's Hosts, for Organizers. The Sheet's Save assigns them,
+ * through their own "assign Hosts" action, when they changed.
  */
 function HostsField({
-  competitionId,
-  initial,
+  value,
+  onChange,
+  disabled,
 }: {
-  competitionId: string;
-  initial: string[];
+  value: string[];
+  onChange: (emails: string[]) => void;
+  disabled: boolean;
 }) {
-  const router = useRouter();
-  const [emails, setEmails] = useState(initial);
-  const [pending, startTransition] = useTransition();
-  const changed = emails.join("\n") !== initial.join("\n");
-
   return (
     <div className="flex flex-col gap-2 sm:col-span-2">
       <JgEmailChips
         label="Hosts"
         description="A Host can change this Competition's setup, Bracket, Points Entries and linked Schedule Items."
-        value={emails}
-        onChange={setEmails}
-        disabled={pending}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
       />
-      <div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="min-h-11 sm:min-h-7"
-          disabled={pending || !changed}
-          onClick={() =>
-            startTransition(async () => {
-              const result = await setCompetitionHosts(competitionId, emails);
-              if (!result.ok) {
-                toast.error(result.error);
-                return;
-              }
-              toast.success("Hosts saved");
-              router.refresh();
-            })
-          }
-        >
-          {pending ? "Saving…" : "Save Hosts"}
-        </Button>
-      </div>
     </div>
   );
 }
@@ -154,7 +127,8 @@ function competitionUsage(competition: SetupCompetition): string {
 
 /**
  * One Competition's fields, saved on its own, in its Sheet. With no
- * `competition` it adds one. `onSaved` closes the Sheet.
+ * `competition` it adds one. Save also assigns the Hosts (Organizers only)
+ * when they changed. `onSaved` closes the Sheet.
  */
 function CompetitionForm({
   warWeekId,
@@ -182,6 +156,9 @@ function CompetitionForm({
   const [values, setValues] = useState(
     competition ? inputFrom(competition) : emptyCompetition(mode),
   );
+  const [hostEmails, setHostEmails] = useState(hosts ?? []);
+  const hostsChanged =
+    hosts !== undefined && hostEmails.join("\n") !== hosts.join("\n");
   const { pending, formRef, formAction, fieldErrors, error, remove } =
     useSetupRow(
       async () => {
@@ -191,7 +168,12 @@ function CompetitionForm({
           countsTowardTeam:
             values.scoring === "individual" && values.countsTowardTeam,
         };
-        if (competition) return updateCompetition(competition.id, input);
+        if (competition) {
+          const saved = await updateCompetition(competition.id, input);
+          // Hosts go only once the setup saved, so a refusal can't half-save.
+          if (!saved.ok || !hostsChanged) return saved;
+          return setCompetitionHosts(competition.id, hostEmails);
+        }
         const result = await createCompetition(warWeekId, input);
         // A Bracket or Games Format links straight to its setup.
         if (
@@ -397,9 +379,9 @@ function CompetitionForm({
         </Field>
         {competition && hosts && (
           <HostsField
-            key={hosts.join(",")}
-            competitionId={competition.id}
-            initial={hosts}
+            value={hostEmails}
+            onChange={setHostEmails}
+            disabled={pending}
           />
         )}
       </FieldGroup>

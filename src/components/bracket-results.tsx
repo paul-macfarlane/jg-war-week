@@ -31,6 +31,7 @@ import {
   heatName,
   isDecided,
 } from "@/lib/bracket/view";
+import { hasPlacementPoints } from "@/lib/competitions";
 
 type Scoring = "team" | "individual";
 
@@ -58,8 +59,7 @@ function HeatResultSheet({
 
 /** Finalize's copy: Points Entries are only created with Placement Points. */
 export function finalizeCopy(placementPoints: number[] | null) {
-  const hasPoints = placementPoints !== null && placementPoints.length > 0;
-  return hasPoints
+  return hasPlacementPoints(placementPoints)
     ? {
         confirmTitle: "Create Points Entries from the final placings?",
         finalizedNote: "Finalized: its Points Entries are in the ledger.",

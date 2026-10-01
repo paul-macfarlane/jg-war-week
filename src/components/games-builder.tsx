@@ -33,6 +33,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import type { EntrantKind } from "@/lib/bracket/squads";
+import { hasPlacementPoints } from "@/lib/competitions";
 import type { GameType } from "@/lib/enums";
 import {
   BEST_OF_OPTIONS,
@@ -536,15 +537,18 @@ export function GamesBuilder({
         {competition.closed ? (
           <>
             <p className="text-foreground/70 text-sm">
-              {competition.placementPoints &&
-              competition.placementPoints.length > 0
+              {hasPlacementPoints(competition.placementPoints)
                 ? "Closed: its Points Entries are in the ledger."
                 : "Closed: it has no Placement Points, so it made no Points Entries."}{" "}
               Reopen to log more Games.
             </p>
             <ConfirmActionButton
               title="Reopen this Competition?"
-              description="The generated Points Entries are withdrawn; hand-entered ones stay."
+              description={
+                hasPlacementPoints(competition.placementPoints)
+                  ? "The generated Points Entries are withdrawn; hand-entered ones stay."
+                  : "Players can log Games again."
+              }
               confirmLabel="Reopen"
               action={() => reopenGames(competition.id)}
               successMessage="Competition reopened"

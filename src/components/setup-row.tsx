@@ -273,13 +273,14 @@ function SetupSheet({
 }
 
 /**
- * One row of a setup list: an "Edit <name>" button showing the row's name
+ * One row of a setup list: an "Edit <label>" button showing the row's name
  * and `details`, then `aside` (a link of its own), opening `form` in a
  * Sheet titled like the button.
  */
 export function SetupListRow({
   id,
   name,
+  label = name,
   details,
   leading,
   aside,
@@ -287,6 +288,8 @@ export function SetupListRow({
 }: {
   id: string;
   name: string;
+  /** What "Edit …" calls the row, e.g. "Team Red"; the name by default. */
+  label?: string;
   details: string;
   /** Before the name, e.g. a Team's color. */
   leading?: ReactNode;
@@ -303,7 +306,7 @@ export function SetupListRow({
       <Button
         type="button"
         variant="ghost"
-        aria-label={`Edit ${name}`}
+        aria-label={`Edit ${label}`}
         aria-describedby={details ? detailsId : undefined}
         className="h-auto min-h-11 min-w-0 flex-1 justify-start gap-2 px-2 py-1.5 text-left font-normal whitespace-normal sm:min-h-9"
         onClick={() => setOpen(true)}
@@ -322,7 +325,7 @@ export function SetupListRow({
       <SetupSheet
         open={open}
         onOpenChange={setOpen}
-        title={`Edit ${name}`}
+        title={`Edit ${label}`}
         form={form}
       />
     </li>
@@ -364,7 +367,7 @@ export function SetupAddButton({
 /** A setup Sheet's buttons and error, kept in view while its fields scroll. */
 export function SetupSheetFooter({ children }: { children: ReactNode }) {
   return (
-    <ResponsiveSheetDialogFooter className="bg-popover sticky bottom-0 border-t">
+    <ResponsiveSheetDialogFooter className="bg-popover sticky bottom-0 border-t pb-[max(1rem,env(safe-area-inset-bottom))]">
       {children}
     </ResponsiveSheetDialogFooter>
   );

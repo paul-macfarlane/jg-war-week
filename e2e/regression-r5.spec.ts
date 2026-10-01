@@ -351,11 +351,16 @@ test("r5 35 selects and the color picker on a phone", async ({
   await expect(t.mode).toBeVisible();
   expect((await rect(t.mode, "Mode")).height).toBeCloseTo(36, 0);
   expect((await rect(t.font, "Font")).height).toBeCloseTo(36, 0);
+  // Mode and Team Label share a row at 1280; the trigger is level with the
+  // input beside it.
   const mode1280 = await rect(t.mode, "Mode");
   const label1280 = await rect(t.teamLabel, "Team Label");
-  if (Math.abs(mode1280.y + mode1280.height / 2 - (label1280.y + 18)) < 20) {
-    expect(mode1280.y).toBeCloseTo(label1280.y, 0);
-  }
+  expect(
+    label1280.x,
+    "Team Label sits beside Mode at 1280",
+  ).toBeGreaterThanOrEqual(mode1280.x + mode1280.width);
+  expect(mode1280.y).toBeCloseTo(label1280.y, 0);
+  expect(mode1280.height).toBeCloseTo(label1280.height, 0);
   await page.goto("/admin/awards/new");
   expect(
     (await rect(page.locator("#award-team"), "Award Team")).height,
@@ -470,6 +475,8 @@ test("r5 31 setup rows open in a Sheet", async ({
   );
   // Teams list by name, so this one sits between Blue and Red.
   const throwaway = "Green E2E R5";
+  const poolId = await xiCompetitionId("Pool");
+  const sheetHost = "e2e-r5-sheet-host@jahnelgroup.com";
   try {
     await asOrganizer(context);
     await page.setViewportSize(PHONE);
@@ -481,9 +488,10 @@ test("r5 31 setup rows open in a Sheet", async ({
     await expect(roster).toBeVisible();
     expect(await pageHeight(page, "Teams & roster")).toBeLessThan(11_000);
 
-    // 31-1: each row is one "Edit <name>" button, 44px tall on a phone.
+    // 31-1: each row is one "Edit <name>" button, 44px tall on a phone; a
+    // Team's reads its Team Label too.
     await expectTouchTarget(
-      teams.getByRole("button", { name: "Edit Red", exact: true }),
+      teams.getByRole("button", { name: "Edit Team Red", exact: true }),
       "Team row",
     );
     const row = roster.getByRole("button", {
@@ -529,9 +537,11 @@ test("r5 31 setup rows open in a Sheet", async ({
     await expect(page.getByText("Team saved")).toBeVisible();
     await expect(addSheet).toBeHidden();
     await teams
-      .getByRole("button", { name: `Edit ${throwaway}`, exact: true })
+      .getByRole("button", { name: `Edit Team ${throwaway}`, exact: true })
       .click();
-    const teamSheet = page.getByRole("dialog", { name: `Edit ${throwaway}` });
+    const teamSheet = page.getByRole("dialog", {
+      name: `Edit Team ${throwaway}`,
+    });
     await teamSheet
       .getByRole("button", { name: "Delete", exact: true })
       .click();
@@ -541,10 +551,13 @@ test("r5 31 setup rows open in a Sheet", async ({
       .click();
     await expect(teamSheet).toBeHidden();
     await expect(
-      teams.getByRole("button", { name: `Edit ${throwaway}`, exact: true }),
+      teams.getByRole("button", {
+        name: `Edit Team ${throwaway}`,
+        exact: true,
+      }),
     ).toHaveCount(0);
     await expect(
-      teams.getByRole("button", { name: "Edit Red", exact: true }),
+      teams.getByRole("button", { name: "Edit Team Red", exact: true }),
     ).toBeFocused();
 
     // 31-1, 31-5: Competitions too; the Bracket/Games link stays on the row.
@@ -571,6 +584,24 @@ test("r5 31 setup rows open in a Sheet", async ({
     await expect(poolSheet.getByText("Hosts", { exact: true })).toBeVisible();
     await shoot(page, testInfo, "competition-sheet-375");
 
+    // The Sheet's one Save assigns a Host added there, too.
+    await poolSheet
+      .getByRole("textbox", { name: "Hosts", exact: true })
+      .fill(sheetHost);
+    await page.keyboard.press("Enter");
+    const removeHost = poolSheet.getByRole("button", {
+      name: `Remove ${sheetHost}`,
+    });
+    await expect(removeHost).toBeVisible();
+    await poolSheet.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(page.getByText("Competition saved")).toBeVisible();
+    await expect(poolSheet).toBeHidden();
+    await pool.click();
+    await expect(removeHost).toBeVisible();
+    await shoot(page, testInfo, "competition-sheet-host-saved-375");
+    await page.keyboard.press("Escape");
+    await expect(poolSheet).toBeHidden();
+
     // 31-8: the same pattern at 1280.
     await page.setViewportSize(DESKTOP);
     await page.goto("/admin/setup/teams");
@@ -588,6 +619,10 @@ test("r5 31 setup rows open in a Sheet", async ({
       `delete from team t using war_week w
        where w.id = t.war_week_id and w.edition = 'xi' and t.name = $1`,
       [throwaway],
+    );
+    await runQuery(
+      `delete from competition_host where competition_id = $1 and email = $2`,
+      [poolId, sheetHost],
     );
   }
 });
@@ -615,23 +650,41 @@ test("r5 32 admin lists fit a phone; free-for-all drops Team", async ({
   );
   const teamId = await xiTeamId("Red");
   const participantId = await xiParticipantId("Abby Rivera");
-  await runQuery(
-    `insert into award (war_week_id, name, team_id)
-     select w.id, $1, $2 from war_week w where w.edition = 'xi'`,
-    [awardName, teamId],
-  );
-  await runQuery(
-    `insert into award_participant (award_id, participant_id)
-     select id, $2 from award where name = $1`,
-    [awardName, participantId],
-  );
-  await runQuery(
-    `insert into award (war_week_id, name)
-     select w.id, $1 from war_week w where w.edition = 'xii'`,
-    [ffaAwardName],
-  );
+  const poolId = await xiCompetitionId("Pool");
+  const awardIds: string[] = [];
+  const entryIds: string[] = [];
   const pages = ["points", "announcements", "awards"];
   try {
+    const [teamAward] = await runQuery<{ id: string }>(
+      `insert into award (war_week_id, name, team_id)
+       select w.id, $1, $2 from war_week w where w.edition = 'xi'
+       returning id`,
+      [awardName, teamId],
+    );
+    awardIds.push(teamAward.id);
+    await runQuery(
+      `insert into award_participant (award_id, participant_id)
+       values ($1, $2)`,
+      [teamAward.id, participantId],
+    );
+    const [ffaAward] = await runQuery<{ id: string }>(
+      `insert into award (war_week_id, name)
+       select w.id, $1 from war_week w where w.edition = 'xii'
+       returning id`,
+      [ffaAwardName],
+    );
+    awardIds.push(ffaAward.id);
+    // A Bracket-generated entry, so the ledger shows "Change in the Bracket"
+    // (the seed finalizes no Bracket).
+    const [entry] = await runQuery<{ id: string }>(
+      `insert into points_entry
+         (competition_id, team_id, points, note, entered_by_email,
+          generated_by_bracket)
+       values ($1, $2, 1, 'R5 32 generated', 'e2e-r5@jahnelgroup.com', true)
+       returning id`,
+      [poolId, teamId],
+    );
+    entryIds.push(entry.id);
     await asOrganizer(context);
 
     // 32-2, 32-6: at 1280 the tables render as today.
@@ -681,6 +734,13 @@ test("r5 32 admin lists fit a phone; free-for-all drops Team", async ({
       expect(await edits.count(), `${name} Edit links`).toBeGreaterThan(0);
       for (let i = 0; i < (await edits.count()); i++) {
         await expectTouchTarget(edits.nth(i), `${name} Edit`);
+      }
+      if (name === "points") {
+        // 34: the generated entry's text link is a 44px target too.
+        await expectTouchTarget(
+          list.getByRole("link", { name: "Change in the Bracket" }),
+          "Change in the Bracket",
+        );
       }
       await shoot(page, testInfo, `${name}-375`, true);
     }
@@ -737,9 +797,8 @@ test("r5 32 admin lists fit a phone; free-for-all drops Team", async ({
   } finally {
     await page.setViewportSize(DESKTOP);
     await administer(page, "XI").catch(() => {});
-    await runQuery(`delete from award where name = any($1)`, [
-      [awardName, ffaAwardName],
-    ]);
+    await runQuery(`delete from award where id = any($1)`, [awardIds]);
+    await runQuery(`delete from points_entry where id = any($1)`, [entryIds]);
   }
 });
 
@@ -815,6 +874,25 @@ test("r5 33 Save stays in reach on long admin forms", async ({
     stickyNow.y + TOLERANCE,
   );
   await shoot(page, testInfo, "settings-refused-375");
+
+  // 33-2: a field focused just above the sticky row's band (its bottom
+  // 120px above the screen's) scrolls clear of the row and its error line.
+  await page.evaluate(() => (document.activeElement as HTMLElement).blur());
+  await slackUrl.evaluate((el) =>
+    window.scrollBy(
+      0,
+      el.getBoundingClientRect().bottom - (window.innerHeight - 120),
+    ),
+  );
+  await slackUrl.focus();
+  await expect
+    .poll(async () => {
+      const field = await slackUrl.boundingBox();
+      const row = await sticky.boundingBox();
+      return field && row ? row.y + TOLERANCE - (field.y + field.height) : -1;
+    })
+    .toBeGreaterThanOrEqual(0);
+  await shoot(page, testInfo, "settings-focus-near-row-375");
 
   // 33-5: "Reset to derived" is a 44px target below sm.
   const reset = form.getByRole("button", { name: "Reset to derived" }).first();

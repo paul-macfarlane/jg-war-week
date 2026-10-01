@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { adminEditLinkClass } from "@/components/admin-edit-link";
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { DeleteAwardButton } from "@/components/delete-award-button";
 import { buttonVariants } from "@/components/ui/button";
@@ -12,12 +13,6 @@ import { loadAdminPage } from "../gate";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Awards · JG War Week" };
-
-const editLink = buttonVariants({
-  variant: "outline",
-  // At least 44px on phones.
-  className: "min-h-11 min-w-11 sm:min-h-0 sm:min-w-0",
-});
 
 export default async function AdminAwardsPage() {
   const { warWeek, email, allowed, isOrganizer, editions } =
@@ -70,7 +65,7 @@ export default async function AdminAwardsPage() {
                     <div className="flex items-center gap-2">
                       <Link
                         href={`/admin/awards/${row.id}`}
-                        className={editLink}
+                        className={adminEditLinkClass}
                       >
                         Edit
                       </Link>
@@ -112,7 +107,7 @@ export default async function AdminAwardsPage() {
                         <div className="flex items-center gap-2">
                           <Link
                             href={`/admin/awards/${row.id}`}
-                            className={editLink}
+                            className={adminEditLinkClass}
                           >
                             Edit
                           </Link>

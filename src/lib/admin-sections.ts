@@ -5,7 +5,7 @@
  * `icon` is a key; components map it to the icon (`AdminSectionIcon`), as
  * src/lib never imports icons (ADR 0001).
  */
-export const ADMIN_SECTIONS = [
+const ADMIN_SECTIONS = [
   { label: "Overview", icon: "overview", href: "/admin", tab: "Overview" },
   { label: "Guide", icon: "guide", href: "/admin/guide" },
   {

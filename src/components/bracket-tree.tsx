@@ -207,55 +207,55 @@ export function BracketTree({
               <div
                 className={`flex flex-1 flex-col ${knockout ? "" : "justify-center gap-3"}`}
               >
-                {round.heats.map((heat) => (
-                  <div
-                    key={heat.id}
-                    className={`relative flex items-center ${knockout ? "flex-1 py-2" : ""}`}
-                  >
-                    {knockout && (
-                      <Connectors
-                        incoming={heat.round > 1}
-                        out={outOf.get(heat.id)}
-                      />
-                    )}
+                {round.heats.map((heat) => {
+                  const source = heatsById.get(heat.id);
+                  const when = source ? formatHeatWhen(source, days) : "";
+                  return (
                     <div
-                      role="group"
-                      aria-label={heat.name}
-                      className="bg-card text-card-foreground ring-foreground/10 flex w-full min-w-0 flex-col gap-1 rounded-lg p-2 ring-1"
+                      key={heat.id}
+                      className={`relative flex items-center ${knockout ? "flex-1 py-2" : ""}`}
                     >
-                      <span className="text-foreground/60 px-1.5 text-xs font-medium">
-                        {heat.name}
-                      </span>
-                      {(() => {
-                        const source = heatsById.get(heat.id);
-                        const when = source ? formatHeatWhen(source, days) : "";
-                        return when ? (
+                      {knockout && (
+                        <Connectors
+                          incoming={heat.round > 1}
+                          out={outOf.get(heat.id)}
+                        />
+                      )}
+                      <div
+                        role="group"
+                        aria-label={heat.name}
+                        className="bg-card text-card-foreground ring-foreground/10 flex w-full min-w-0 flex-col gap-1 rounded-lg p-2 ring-1"
+                      >
+                        <span className="text-foreground/60 px-1.5 text-xs font-medium">
+                          {heat.name}
+                        </span>
+                        {when && (
                           <span className="text-foreground/70 px-1.5 text-xs">
                             {when}
                           </span>
-                        ) : null;
-                      })()}
-                      {heat.slots.map((slot, i) => (
-                        <SlotRow
-                          key={i}
-                          slot={slot}
-                          heat={heat}
-                          heatsFormat={heatsFormat}
-                          isFinal={heat.round === finalRound}
-                          entrantsById={entrantsById}
-                          scoring={scoring}
-                          primaryColor={primaryColor}
-                          youEntrantId={youEntrantId}
-                        />
-                      ))}
-                      {heat.bye && heatsFormat && (
-                        <span className="text-foreground/60 px-1.5 text-sm italic">
-                          Bye — advances
-                        </span>
-                      )}
+                        )}
+                        {heat.slots.map((slot, i) => (
+                          <SlotRow
+                            key={i}
+                            slot={slot}
+                            heat={heat}
+                            heatsFormat={heatsFormat}
+                            isFinal={heat.round === finalRound}
+                            entrantsById={entrantsById}
+                            scoring={scoring}
+                            primaryColor={primaryColor}
+                            youEntrantId={youEntrantId}
+                          />
+                        ))}
+                        {heat.bye && heatsFormat && (
+                          <span className="text-foreground/60 px-1.5 text-sm italic">
+                            Bye — advances
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}

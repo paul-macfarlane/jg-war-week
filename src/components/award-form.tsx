@@ -35,12 +35,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import type { WarWeek } from "@/db/schema";
 import {
   AWARD_DESCRIPTION_MAX,
   AWARD_NAME_MAX,
   type AwardInput,
 } from "@/lib/awards";
-import type { WarWeekMode } from "@/lib/enums";
 import type { AwardFormOptions } from "@/queries/awards";
 
 /** Base UI's Select won't accept `""` as an item value. */
@@ -68,7 +68,7 @@ export function AwardForm({
   /** The War Week's Team Label, e.g. "House". */
   teamLabel: string;
   /** The War Week's Mode: a free-for-all has no Team field. */
-  mode: WarWeekMode;
+  mode: WarWeek["mode"];
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);

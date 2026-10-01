@@ -358,6 +358,7 @@ export function TeamsEditor({
               key={team.id}
               id={team.id}
               name={team.name}
+              label={`${teamLabel} ${team.name}`}
               details={teamUsage(team)}
               leading={
                 <span

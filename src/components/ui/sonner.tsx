@@ -37,10 +37,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
 };
 
 /**
- * Dismisses every toast when it mounts. Render it inside a popup that opens
- * at the bottom of the screen, where the Toaster sits, so an earlier
- * result's toast doesn't cover the popup's fields (Sonner keeps a hovered
- * toast open, so one under the pointer would never go).
+ * JG War Week edit: dismisses every toast when it mounts. Render it inside
+ * a popup that opens at the bottom of the screen, where the Toaster sits,
+ * so an earlier result's toast doesn't cover the popup's fields (Sonner
+ * keeps a hovered toast open, so one under the pointer would never go).
  */
 function DismissToasts() {
   useEffect(() => {
