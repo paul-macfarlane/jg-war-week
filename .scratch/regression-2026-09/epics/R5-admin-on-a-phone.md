@@ -48,3 +48,5 @@ Each ticket's own acceptance criteria, plus:
 ## Comments
 
 - 2026-09-30: created from the mobile regression pass (ticket 18). All nine tickets (30-38) `ready-for-agent`, for one `/atlas-implement` run.
+- 2026-09-30: `[EXECUTION PLAN]` in [`R5-execution.md`](./R5-execution.md) (`/atlas-plan`; red-team not required).
+- 2026-09-30: `[SCOPE CHANGE]` (Paul): fix the e2e flakes failing CI on `staging` as deliverable D0, first; see `R5-execution.md`.
