@@ -172,7 +172,7 @@ export function AwardForm({
                   <SelectTrigger
                     id="award-team"
                     aria-invalid={!!fieldErrors.teamId}
-                    className="h-11 w-full sm:h-9"
+                    className="w-full"
                   >
                     <SelectValue />
                   </SelectTrigger>

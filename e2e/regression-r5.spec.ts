@@ -316,3 +316,125 @@ test("r5 34 admin controls are 44px on a phone", async ({
     );
   }
 });
+
+/** A visible trigger's bounding box. */
+async function rect(locator: Locator, what: string) {
+  const r = await locator.first().boundingBox();
+  if (!r) throw new Error(`${what} isn't visible`);
+  return r;
+}
+
+test("r5 35 selects and the color picker on a phone", async ({
+  page,
+  browser,
+  context,
+}, testInfo) => {
+  await asOrganizer(context);
+
+  // 35-1: at 1280 the triggers are 36px like Input; at 375, 44px.
+  const settingsTriggers = (p: Page) => ({
+    mode: p.locator("#settings-mode"),
+    font: p.locator("#settings-fontPreset"),
+    teamLabel: p.locator("#settings-teamLabel"),
+  });
+  await page.setViewportSize(DESKTOP);
+  await page.goto("/admin/setup/war-week");
+  let t = settingsTriggers(page);
+  await expect(t.mode).toBeVisible();
+  expect((await rect(t.mode, "Mode")).height).toBeCloseTo(36, 0);
+  expect((await rect(t.font, "Font")).height).toBeCloseTo(36, 0);
+  const mode1280 = await rect(t.mode, "Mode");
+  const label1280 = await rect(t.teamLabel, "Team Label");
+  if (Math.abs(mode1280.y + mode1280.height / 2 - (label1280.y + 18)) < 20) {
+    expect(mode1280.y).toBeCloseTo(label1280.y, 0);
+  }
+  await page.goto("/admin/awards/new");
+  expect(
+    (await rect(page.locator("#award-team"), "Award Team")).height,
+  ).toBeCloseTo(36, 0);
+  await page.goto("/admin");
+  const switcher = page.getByRole("combobox", {
+    name: "War Week to administer",
+  });
+  expect((await rect(switcher, "switcher")).height).toBeCloseTo(36, 0);
+
+  await page.setViewportSize(PHONE);
+  await page.goto("/admin");
+  // On a phone the switcher lives in the More sheet.
+  await adminBar(page).getByRole("button", { name: "More" }).click();
+  const sheetSwitcher = page
+    .getByRole("dialog", { name: "More" })
+    .getByRole("combobox", { name: "War Week to administer" });
+  expect((await rect(sheetSwitcher, "switcher")).height).toBeCloseTo(44, 0);
+  await page.keyboard.press("Escape");
+  await page.goto("/admin/awards/new");
+  expect(
+    (await rect(page.locator("#award-team"), "Award Team")).height,
+  ).toBeCloseTo(44, 0);
+  await page.goto("/admin/setup/teams");
+  await page.getByRole("button", { name: "Add Participant" }).click();
+  const rosterTeam = page
+    .getByRole("form", { name: "New Participant" })
+    .locator("[data-slot=select-trigger]")
+    .first();
+  expect((await rect(rosterTeam, "Roster Team")).height).toBeCloseTo(44, 0);
+
+  await page.goto("/admin/setup/war-week");
+  t = settingsTriggers(page);
+  const modeBox = await rect(t.mode, "Mode");
+  expect(modeBox.height).toBeCloseTo(44, 0);
+  expect((await rect(t.font, "Font")).height).toBeCloseTo(44, 0);
+  expect((await rect(t.teamLabel, "Team Label")).height).toBeCloseTo(44, 0);
+
+  // 35-2: the Mode list opens below the trigger, clear of the field above.
+  await t.mode.click();
+  const list = page.getByRole("listbox");
+  await expect(list).toBeVisible();
+  const above = await rect(
+    t.mode.locator(
+      "xpath=ancestor::*[@data-slot='field'][1]/preceding-sibling::*[1]",
+    ),
+    "field above Mode",
+  );
+  // The popup zooms in; wait for it to settle before measuring.
+  await expect
+    .poll(async () => (await rect(list, "Mode list")).y)
+    .toBeGreaterThanOrEqual(modeBox.y + modeBox.height - 1);
+  const listBox = await rect(list, "Mode list");
+  expect(listBox.y).toBeGreaterThanOrEqual(modeBox.y + modeBox.height - 1);
+  expect(listBox.y).toBeGreaterThanOrEqual(above.y + above.height - 1);
+  await expect
+    .poll(async () => (await rect(list, "Mode list")).width)
+    .toBeGreaterThanOrEqual(modeBox.width - 1);
+  await shoot(page, testInfo, "mode-open-375");
+  await page.keyboard.press("Escape");
+
+  // 35-3: a mouse at 1280 focuses the hex input as before.
+  await page.setViewportSize(DESKTOP);
+  await page.goto("/admin/setup/war-week");
+  await page.getByLabel("Background color", { exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "Hex color" })).toBeFocused();
+
+  // 35-3: a touch pointer opens it without focusing the hex input.
+  const touch = await browser.newContext({
+    baseURL: E2E_BASE_URL,
+    viewport: PHONE,
+    hasTouch: true,
+    isMobile: true,
+  });
+  try {
+    await asOrganizer(touch);
+    const phone = await touch.newPage();
+    await phone.goto("/admin/setup/war-week");
+    await phone.getByLabel("Background color", { exact: true }).tap();
+    const hex = phone.getByRole("textbox", { name: "Hex color" });
+    await expect(hex).toBeVisible();
+    await expect(hex).not.toBeFocused();
+    expect(
+      await phone.evaluate(() => document.activeElement?.tagName),
+    ).not.toBe("INPUT");
+    await shoot(phone, testInfo, "color-open-375");
+  } finally {
+    await touch.close();
+  }
+});
