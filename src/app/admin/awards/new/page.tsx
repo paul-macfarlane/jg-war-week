@@ -31,6 +31,7 @@ export default async function NewAwardPage() {
           warWeekId={warWeek.id}
           options={options}
           teamLabel={warWeek.teamLabel}
+          mode={warWeek.mode}
         />
       </section>
     </AdminShell>

@@ -6,7 +6,7 @@ import {
   test,
 } from "@playwright/test";
 
-import { runQuery, xiCompetitionId, xiParticipantId } from "./db";
+import { runQuery, xiCompetitionId, xiParticipantId, xiTeamId } from "./db";
 import { E2E_BASE_URL } from "./env";
 import { E2E_HOST_EMAIL, asHost, asOrganizer } from "./session";
 
@@ -583,5 +583,156 @@ test("r5 31 setup rows open in a Sheet", async ({
        where w.id = t.war_week_id and w.edition = 'xi' and t.name = $1`,
       [throwaway],
     );
+  }
+});
+
+/** Switches the admin header's War Week (at 1280, where it shows). */
+async function administer(page: Page, edition: "XI" | "XII") {
+  await page.goto("/admin");
+  await page.getByRole("combobox", { name: "War Week to administer" }).click();
+  await page
+    .getByRole("option", { name: new RegExp(`War Week ${edition} `) })
+    .click();
+  await expect(
+    page.getByRole("combobox", { name: "War Week to administer" }),
+  ).toContainText(`War Week ${edition}`);
+}
+
+test("r5 32 admin lists fit a phone; free-for-all drops Team", async ({
+  page,
+  context,
+}, testInfo) => {
+  const awardName = "R5 32 Award";
+  const ffaAwardName = "R5 32 free-for-all Award";
+  const [{ team_label: teamLabel }] = await runQuery<{ team_label: string }>(
+    `select team_label from war_week where edition = 'xi'`,
+  );
+  const teamId = await xiTeamId("Red");
+  const participantId = await xiParticipantId("Abby Rivera");
+  await runQuery(
+    `insert into award (war_week_id, name, team_id)
+     select w.id, $1, $2 from war_week w where w.edition = 'xi'`,
+    [awardName, teamId],
+  );
+  await runQuery(
+    `insert into award_participant (award_id, participant_id)
+     select id, $2 from award where name = $1`,
+    [awardName, participantId],
+  );
+  await runQuery(
+    `insert into award (war_week_id, name)
+     select w.id, $1 from war_week w where w.edition = 'xii'`,
+    [ffaAwardName],
+  );
+  const pages = ["points", "announcements", "awards"];
+  try {
+    await asOrganizer(context);
+
+    // 32-2, 32-6: at 1280 the tables render as today.
+    await page.setViewportSize(DESKTOP);
+    for (const name of pages) {
+      await page.goto(`/admin/${name}`);
+      await expect(page.getByRole("table")).toBeVisible();
+      await shoot(page, testInfo, `after-1280-${name}`, true);
+    }
+    await expect(
+      page.getByRole("columnheader", { name: teamLabel }),
+    ).toBeVisible();
+
+    // 32-1, 32-3, 32-6: at 375 each list is cards that fit, actions in view.
+    await page.setViewportSize(PHONE);
+    for (const name of pages) {
+      await page.goto(`/admin/${name}`);
+      const list = page.locator("ul:has(> li > [data-slot=card])").last();
+      await expect(list).toBeVisible();
+      await expect(page.getByRole("table")).toBeHidden();
+      expect(
+        await page.evaluate(
+          () =>
+            document.documentElement.scrollWidth <=
+            document.documentElement.clientWidth,
+        ),
+        `${name} page scrolls sideways`,
+      ).toBe(true);
+      expect(
+        await list.evaluate((el) => el.scrollWidth <= el.clientWidth),
+        `${name} list scrolls sideways`,
+      ).toBe(true);
+      const rows = list.getByRole("listitem");
+      for (let i = 0; i < (await rows.count()); i++) {
+        const row = rows.nth(i);
+        await row.scrollIntoViewIfNeeded();
+        const actions = row.locator("a, button");
+        expect(
+          await actions.count(),
+          `${name} row ${i} actions`,
+        ).toBeGreaterThan(0);
+        for (let j = 0; j < (await actions.count()); j++) {
+          await expect(actions.nth(j)).toBeInViewport();
+        }
+      }
+      const edits = list.getByRole("link", { name: "Edit", exact: true });
+      expect(await edits.count(), `${name} Edit links`).toBeGreaterThan(0);
+      for (let i = 0; i < (await edits.count()); i++) {
+        await expectTouchTarget(edits.nth(i), `${name} Edit`);
+      }
+      await shoot(page, testInfo, `${name}-375`, true);
+    }
+    const award = page
+      .locator("ul:has(> li > [data-slot=card])")
+      .last()
+      .getByRole("listitem")
+      .filter({ hasText: awardName });
+    await expect(award).toContainText(`${teamLabel}: Red`);
+    await expect(award).toContainText("Abby Rivera");
+
+    // 32-4: XI shows Team in the Award form.
+    await page.goto("/admin/awards/new");
+    await expect(page.locator("#award-team")).toBeVisible();
+    await shoot(page, testInfo, "award-form-xi-375", true);
+
+    // 32-5: the Points Entry target reads the Team Label on XI.
+    await page.goto("/admin/points");
+    await expect(
+      page.getByRole("combobox", { name: teamLabel, exact: true }),
+    ).toBeVisible();
+
+    // 32-4, 32-5: XII is free-for-all with no Team on any Award.
+    await page.setViewportSize(DESKTOP);
+    await administer(page, "XII");
+    await page.goto("/admin/awards");
+    await expect(page.getByRole("cell", { name: ffaAwardName })).toBeVisible();
+    await expect(page.getByRole("columnheader")).toHaveCount(3);
+    await expect(
+      page.getByRole("columnheader", { name: teamLabel }),
+    ).toHaveCount(0);
+    await shoot(page, testInfo, "awards-xii-1280", true);
+    await page.setViewportSize(PHONE);
+    await page.goto("/admin/awards");
+    await expect(
+      page.getByRole("listitem").filter({ hasText: ffaAwardName }),
+    ).not.toContainText(`${teamLabel}:`);
+    await shoot(page, testInfo, "awards-xii-375", true);
+    await page.goto("/admin/awards/new");
+    await expect(
+      page.getByRole("textbox", { name: "Name", exact: true }),
+    ).toBeVisible();
+    await expect(page.locator("#award-team")).toHaveCount(0);
+    await expect(page.getByText(teamLabel, { exact: true })).toHaveCount(0);
+    await shoot(page, testInfo, "award-form-xii-375", true);
+    await page.goto("/admin/points");
+    await expect(
+      page.getByRole("combobox", { name: "Participant", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("combobox", { name: teamLabel, exact: true }),
+    ).toHaveCount(0);
+    await shoot(page, testInfo, "points-xii-375", true);
+  } finally {
+    await page.setViewportSize(DESKTOP);
+    await administer(page, "XI").catch(() => {});
+    await runQuery(`delete from award where name = any($1)`, [
+      [awardName, ffaAwardName],
+    ]);
   }
 });

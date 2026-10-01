@@ -51,6 +51,7 @@ export default async function EditPointsEntryPage({
         <PointsEntryForm
           options={options}
           teamLabel={warWeek.teamLabel}
+          mode={warWeek.mode}
           entryId={entry.id}
           initial={{
             competitionId: entry.competitionId,

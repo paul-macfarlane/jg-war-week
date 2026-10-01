@@ -9,6 +9,8 @@ import {
   TeamStandingsList,
 } from "@/components/standings";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { formatLabel } from "@/lib/bracket/view";
 import { formatPoints, formatPointsLabel } from "@/lib/points";
 import { formatLedgerTime, generatedNote } from "@/lib/points-entry";
@@ -25,6 +27,12 @@ import { loadAdminPage } from "../gate";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Points Entries · JG War Week" };
+
+const editLink = buttonVariants({
+  variant: "outline",
+  // At least 44px on phones.
+  className: "min-h-11 min-w-11 sm:min-h-0 sm:min-w-0",
+});
 
 export default async function AdminPointsPage() {
   const { warWeek, email, allowed, isOrganizer, editions, runs } =
@@ -47,6 +55,44 @@ export default async function AdminPointsPage() {
   const ledger = allLedger.filter((entry) => runs(entry.competitionId));
   const brackets = allBrackets.filter((b) => runs(b.id));
   const games = allGames.filter((g) => runs(g.id));
+
+  // A Bracket- or Games-generated entry is changed where it is made.
+  const entryActions = (entry: (typeof ledger)[number]) =>
+    entry.generatedByBracket ? (
+      entry.competitionFormat === "games" ? (
+        <Link
+          href={`/admin/setup/competitions/${entry.competitionId}/games`}
+          className="text-primary text-xs whitespace-nowrap underline-offset-4 hover:underline"
+        >
+          Change in Games
+        </Link>
+      ) : (
+        <Link
+          href={`/admin/brackets/${entry.competitionId}`}
+          className="text-primary text-xs whitespace-nowrap underline-offset-4 hover:underline"
+        >
+          Change in the Bracket
+        </Link>
+      )
+    ) : (
+      <div className="flex items-center gap-2">
+        <Link href={`/admin/points/${entry.id}`} className={editLink}>
+          Edit
+        </Link>
+        <DeletePointsEntryButton
+          id={entry.id}
+          description={`${formatPointsLabel(entry.points)} to ${entry.target} in ${entry.competition}`}
+        />
+      </div>
+    );
+  const entryNote = (entry: (typeof ledger)[number]) =>
+    entry.generatedByBracket ? (
+      <Badge variant="secondary">
+        {generatedNote(entry.competitionFormat)}
+      </Badge>
+    ) : (
+      entry.note
+    );
 
   return (
     <AdminShell
@@ -106,7 +152,11 @@ export default async function AdminPointsPage() {
       <div className="grid max-w-6xl gap-8 lg:grid-cols-[minmax(0,24rem)_1fr]">
         <section className="flex flex-col gap-4">
           <h1 className="text-2xl font-bold">Add a Points Entry</h1>
-          <PointsEntryForm options={options} teamLabel={warWeek.teamLabel} />
+          <PointsEntryForm
+            options={options}
+            teamLabel={warWeek.teamLabel}
+            mode={warWeek.mode}
+          />
         </section>
 
         <section
@@ -144,84 +194,83 @@ export default async function AdminPointsPage() {
         {ledger.length === 0 ? (
           <p className="text-foreground/70 text-sm">No Points Entries yet.</p>
         ) : (
-          <div className="relative overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="text-foreground/60 border-border border-b">
-                <tr>
-                  <th className="py-2 pr-4 font-medium">Competition</th>
-                  <th className="py-2 pr-4 font-medium">Awarded to</th>
-                  <th className="py-2 pr-4 text-right font-medium">Points</th>
-                  <th className="py-2 pr-4 font-medium">Note</th>
-                  <th className="py-2 pr-4 font-medium">Entered by</th>
-                  <th className="py-2 pr-4 font-medium">Entered at (ET)</th>
-                  <th className="py-2 font-medium">
-                    <span className="sr-only">Actions</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {ledger.map((entry) => (
-                  <tr key={entry.id} className="border-border border-b">
-                    <td className="py-2 pr-4">{entry.competition}</td>
-                    <td className="py-2 pr-4 font-medium">{entry.target}</td>
-                    <td className="py-2 pr-4 text-right font-semibold tabular-nums">
-                      {formatPoints(entry.points)}
-                    </td>
-                    <td className="text-foreground/70 py-2 pr-4">
-                      {entry.generatedByBracket ? (
-                        <Badge variant="secondary">
-                          {generatedNote(entry.competitionFormat)}
-                        </Badge>
-                      ) : (
-                        entry.note
-                      )}
-                    </td>
-                    <td className="py-2 pr-4">{entry.enteredByEmail}</td>
-                    <td className="py-2 pr-4 whitespace-nowrap">
+          <>
+            <ul className="flex flex-col gap-3 md:hidden">
+              {ledger.map((entry) => (
+                <li key={entry.id}>
+                  <Card size="sm" className="gap-2 px-4 py-3">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <p className="min-w-0 font-medium">
+                        {entry.target}
+                        <span className="text-foreground/70 block text-xs font-normal">
+                          {entry.competition}
+                        </span>
+                      </p>
+                      <p className="text-lg font-semibold tabular-nums">
+                        {formatPoints(entry.points)}
+                      </p>
+                    </div>
+                    {(entry.generatedByBracket || entry.note) && (
+                      <p className="text-foreground/70 break-words">
+                        {entryNote(entry)}
+                      </p>
+                    )}
+                    <p className="text-foreground/60 text-xs break-words">
+                      Entered by {entry.enteredByEmail} ·{" "}
                       {formatLedgerTime(entry.enteredAt)}
                       {entry.editedAt && (
-                        <span className="text-foreground/60 block text-xs">
+                        <span className="block">
                           edited {formatLedgerTime(entry.editedAt)}
                         </span>
                       )}
-                    </td>
-                    <td className="py-2">
-                      {entry.generatedByBracket ? (
-                        entry.competitionFormat === "games" ? (
-                          <Link
-                            href={`/admin/setup/competitions/${entry.competitionId}/games`}
-                            className="text-primary text-xs whitespace-nowrap underline-offset-4 hover:underline"
-                          >
-                            Change in Games
-                          </Link>
-                        ) : (
-                          <Link
-                            href={`/admin/brackets/${entry.competitionId}`}
-                            className="text-primary text-xs whitespace-nowrap underline-offset-4 hover:underline"
-                          >
-                            Change in the Bracket
-                          </Link>
-                        )
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <Link
-                            href={`/admin/points/${entry.id}`}
-                            className="text-primary text-xs underline-offset-4 hover:underline"
-                          >
-                            Edit
-                          </Link>
-                          <DeletePointsEntryButton
-                            id={entry.id}
-                            description={`${formatPointsLabel(entry.points)} to ${entry.target} in ${entry.competition}`}
-                          />
-                        </div>
-                      )}
-                    </td>
+                    </p>
+                    <div>{entryActions(entry)}</div>
+                  </Card>
+                </li>
+              ))}
+            </ul>
+            <div className="relative hidden overflow-x-auto md:block">
+              <table className="w-full text-left text-sm">
+                <thead className="text-foreground/60 border-border border-b">
+                  <tr>
+                    <th className="py-2 pr-4 font-medium">Competition</th>
+                    <th className="py-2 pr-4 font-medium">Awarded to</th>
+                    <th className="py-2 pr-4 text-right font-medium">Points</th>
+                    <th className="py-2 pr-4 font-medium">Note</th>
+                    <th className="py-2 pr-4 font-medium">Entered by</th>
+                    <th className="py-2 pr-4 font-medium">Entered at (ET)</th>
+                    <th className="py-2 font-medium">
+                      <span className="sr-only">Actions</span>
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {ledger.map((entry) => (
+                    <tr key={entry.id} className="border-border border-b">
+                      <td className="py-2 pr-4">{entry.competition}</td>
+                      <td className="py-2 pr-4 font-medium">{entry.target}</td>
+                      <td className="py-2 pr-4 text-right font-semibold tabular-nums">
+                        {formatPoints(entry.points)}
+                      </td>
+                      <td className="text-foreground/70 py-2 pr-4">
+                        {entryNote(entry)}
+                      </td>
+                      <td className="py-2 pr-4">{entry.enteredByEmail}</td>
+                      <td className="py-2 pr-4 whitespace-nowrap">
+                        {formatLedgerTime(entry.enteredAt)}
+                        {entry.editedAt && (
+                          <span className="text-foreground/60 block text-xs">
+                            edited {formatLedgerTime(entry.editedAt)}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2">{entryActions(entry)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </section>
     </AdminShell>

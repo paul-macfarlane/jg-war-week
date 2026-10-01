@@ -7,6 +7,7 @@ import {
   PinAnnouncementButton,
 } from "@/components/announcement-admin-buttons";
 import { buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { can } from "@/lib/access";
 import { announcementVideoCount, formatPublishedAt } from "@/lib/announcements";
 import { getAnnouncements } from "@/queries/announcements";
@@ -16,6 +17,12 @@ import { loadAdminPage } from "../gate";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Announcements · JG War Week" };
+
+const editLink = buttonVariants({
+  variant: "outline",
+  // At least 44px on phones.
+  className: "min-h-11 min-w-11 sm:min-h-0 sm:min-w-0",
+});
 
 export default async function AdminAnnouncementsPage() {
   const { warWeek, email, actor, allowed, isOrganizer, editions } =
@@ -28,6 +35,19 @@ export default async function AdminAnnouncementsPage() {
   const mayChange = (authorEmail: string) =>
     can(actor, "announcement.edit", { warWeekId: warWeek.id, authorEmail }) ===
     null;
+  const rowActions = (row: (typeof announcements)[number]) => (
+    <>
+      {mayChange(row.authorEmail) && (
+        <Link href={`/admin/announcements/${row.id}`} className={editLink}>
+          Edit
+        </Link>
+      )}
+      {isOrganizer && <PinAnnouncementButton id={row.id} pinned={row.pinned} />}
+      {mayChange(row.authorEmail) && (
+        <DeleteAnnouncementButton id={row.id} title={row.title} />
+      )}
+    </>
+  );
 
   return (
     <AdminShell
@@ -51,66 +71,83 @@ export default async function AdminAnnouncementsPage() {
         {announcements.length === 0 ? (
           <p className="text-foreground/70 text-sm">No Announcements yet.</p>
         ) : (
-          <div className="relative overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="text-foreground/60 border-border border-b">
-                <tr>
-                  <th className="py-2 pr-4 font-medium">Title</th>
-                  <th className="py-2 pr-4 font-medium">Posted by</th>
-                  <th className="py-2 pr-4 font-medium">Published (ET)</th>
-                  <th className="py-2 pr-4 text-right font-medium">Videos</th>
-                  <th className="py-2 font-medium">
-                    <span className="sr-only">Actions</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {announcements.map((row) => (
-                  <tr key={row.id} className="border-border border-b">
-                    <td className="py-2 pr-4 font-medium">
-                      {row.title}
-                      {row.pinned && (
-                        <span className="bg-primary/10 text-primary ml-2 rounded px-1.5 py-0.5 text-xs font-medium">
-                          Pinned
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-2 pr-4">{row.authorEmail}</td>
-                    <td className="py-2 pr-4 whitespace-nowrap">
-                      {formatPublishedAt(row.publishedAt)}
-                    </td>
-                    <td className="py-2 pr-4 text-right tabular-nums">
-                      {announcementVideoCount(row)}
-                    </td>
-                    <td className="py-2">
-                      <div className="flex items-center gap-2">
-                        {mayChange(row.authorEmail) && (
-                          <Link
-                            href={`/admin/announcements/${row.id}`}
-                            className="text-primary text-xs underline-offset-4 hover:underline"
-                          >
-                            Edit
-                          </Link>
+          <>
+            <ul className="flex flex-col gap-3 md:hidden">
+              {announcements.map((row) => {
+                const videos = announcementVideoCount(row);
+                return (
+                  <li key={row.id}>
+                    <Card size="sm" className="gap-2 px-4 py-3">
+                      <p className="font-medium break-words">
+                        {row.title}
+                        {row.pinned && (
+                          <span className="bg-primary/10 text-primary ml-2 rounded px-1.5 py-0.5 text-xs font-medium">
+                            Pinned
+                          </span>
                         )}
-                        {isOrganizer && (
-                          <PinAnnouncementButton
-                            id={row.id}
-                            pinned={row.pinned}
-                          />
+                      </p>
+                      <p className="text-foreground/60 text-xs break-words">
+                        Posted by {row.authorEmail}
+                      </p>
+                      <p className="text-foreground/60 text-xs">
+                        Published {formatPublishedAt(row.publishedAt)} (ET)
+                        {videos > 0 && (
+                          <>
+                            {" · "}
+                            {videos} {videos === 1 ? "video" : "videos"}
+                          </>
                         )}
-                        {mayChange(row.authorEmail) && (
-                          <DeleteAnnouncementButton
-                            id={row.id}
-                            title={row.title}
-                          />
-                        )}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {rowActions(row)}
                       </div>
-                    </td>
+                    </Card>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="relative hidden overflow-x-auto md:block">
+              <table className="w-full text-left text-sm">
+                <thead className="text-foreground/60 border-border border-b">
+                  <tr>
+                    <th className="py-2 pr-4 font-medium">Title</th>
+                    <th className="py-2 pr-4 font-medium">Posted by</th>
+                    <th className="py-2 pr-4 font-medium">Published (ET)</th>
+                    <th className="py-2 pr-4 text-right font-medium">Videos</th>
+                    <th className="py-2 font-medium">
+                      <span className="sr-only">Actions</span>
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {announcements.map((row) => (
+                    <tr key={row.id} className="border-border border-b">
+                      <td className="py-2 pr-4 font-medium">
+                        {row.title}
+                        {row.pinned && (
+                          <span className="bg-primary/10 text-primary ml-2 rounded px-1.5 py-0.5 text-xs font-medium">
+                            Pinned
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2 pr-4">{row.authorEmail}</td>
+                      <td className="py-2 pr-4 whitespace-nowrap">
+                        {formatPublishedAt(row.publishedAt)}
+                      </td>
+                      <td className="py-2 pr-4 text-right tabular-nums">
+                        {announcementVideoCount(row)}
+                      </td>
+                      <td className="py-2">
+                        <div className="flex items-center gap-2">
+                          {rowActions(row)}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </section>
     </AdminShell>

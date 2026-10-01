@@ -29,6 +29,7 @@ import {
   placementLabel,
   pointsForPlacement,
 } from "@/lib/competitions";
+import type { WarWeekMode } from "@/lib/enums";
 import { formatPoints } from "@/lib/points";
 import { overMaxWarning } from "@/lib/points-entry";
 import type { PointsEntryFormOptions } from "@/queries/points-entries";
@@ -49,11 +50,14 @@ type Initial = {
 export function PointsEntryForm({
   options,
   teamLabel,
+  mode,
   entryId,
   initial,
 }: {
   options: PointsEntryFormOptions;
   teamLabel: string;
+  /** The War Week's Mode: a free-for-all has no Teams to ask about. */
+  mode: WarWeekMode;
   /** Set when editing an existing entry. */
   entryId?: string;
   initial?: Initial;
@@ -115,6 +119,15 @@ export function PointsEntryForm({
       : competition?.scoring === "individual"
         ? options.participants
         : [];
+  // Before a Competition is chosen, a free-for-all War Week can only mean a
+  // Participant; after, the Competition's scoring decides.
+  const targetLabel = competition
+    ? competition.scoring === "individual"
+      ? "Participant"
+      : teamLabel
+    : mode === "free-for-all"
+      ? "Participant"
+      : teamLabel;
   const places = (competition?.placementPoints ?? []).map((_, i) => i + 1);
   const warning = competition
     ? overMaxWarning(
@@ -158,15 +171,11 @@ export function PointsEntryForm({
         </Field>
 
         <Field data-invalid={!!fieldErrors.targetId}>
-          <FieldLabel htmlFor="points-entry-target">
-            {competition?.scoring === "individual" ? "Participant" : teamLabel}
-          </FieldLabel>
+          <FieldLabel htmlFor="points-entry-target">{targetLabel}</FieldLabel>
           <EntityCombobox
             id="points-entry-target"
             name="targetId"
-            aria-label={
-              competition?.scoring === "individual" ? "Participant" : teamLabel
-            }
+            aria-label={targetLabel}
             aria-invalid={!!fieldErrors.targetId}
             required
             disabled={!competition}

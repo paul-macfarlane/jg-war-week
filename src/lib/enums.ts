@@ -8,6 +8,7 @@
 export const WAR_WEEK_STATUSES = ["upcoming", "live", "complete"] as const;
 
 export const WAR_WEEK_MODES = ["teams", "free-for-all"] as const;
+export type WarWeekMode = (typeof WAR_WEEK_MODES)[number];
 
 export const FONT_PRESETS = ["sans", "serif", "mono"] as const;
 

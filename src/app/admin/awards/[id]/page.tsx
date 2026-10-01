@@ -40,6 +40,7 @@ export default async function EditAwardPage({
           awardId={award.id}
           options={options}
           teamLabel={warWeek.teamLabel}
+          mode={warWeek.mode}
           initial={{
             name: award.name,
             description: award.description,
