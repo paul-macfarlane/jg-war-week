@@ -62,14 +62,36 @@ export async function assertSetup(sessions: {
   };
 
   await run(
-    "GET /admin/setup, /admin/setup/war-week and /admin/setup/days show the setup pages to an Organizer and the refusal to a non-Organizer",
+    "GET /admin/setup, /admin/setup/war-week and /admin/setup/days show the setup pages to an Organizer and the refusal to a non-Organizer; warning is on /admin/setup only",
     async () => {
       const problems: string[] = [];
-      for (const [page, marker] of [
-        ["/admin/setup", 'href="/admin/setup/days"'],
+      const indexPage = "/admin/setup";
+      const subPages = [
         ["/admin/setup/war-week", 'aria-label="War Week settings"'],
         ["/admin/setup/days", 'aria-label="Days"'],
-      ] as const) {
+      ] as const;
+
+      // Check index has warning
+      const indexOrganizer = await fetch(`${BASE_URL}${indexPage}`, {
+        headers: { cookie: sessions.organizer.cookie },
+      });
+      const indexBody = await indexOrganizer.text();
+      if (
+        indexOrganizer.status !== 200 ||
+        !indexBody.includes('href="/admin/setup/days"') ||
+        !indexBody.includes("overwrites the setup")
+      ) {
+        problems.push(`${indexPage} organizer missing warning`);
+      }
+      const indexRefused = await fetch(`${BASE_URL}${indexPage}`, {
+        headers: { cookie: sessions.notOrganizer.cookie },
+      });
+      if (!(await indexRefused.text()).includes(ADMIN_REFUSAL_TEXT)) {
+        problems.push(`${indexPage} not refused`);
+      }
+
+      // Check subpages don't have warning
+      for (const [page, marker] of subPages) {
         const organizer = await fetch(`${BASE_URL}${page}`, {
           headers: { cookie: sessions.organizer.cookie },
         });
@@ -77,9 +99,9 @@ export async function assertSetup(sessions: {
         if (
           organizer.status !== 200 ||
           !body.includes(marker) ||
-          !body.includes("overwrites the setup")
+          body.includes("overwrites the setup")
         ) {
-          problems.push(`${page} organizer status=${organizer.status}`);
+          problems.push(`${page} organizer has warning or bad status`);
         }
         const refused = await fetch(`${BASE_URL}${page}`, {
           headers: { cookie: sessions.notOrganizer.cookie },

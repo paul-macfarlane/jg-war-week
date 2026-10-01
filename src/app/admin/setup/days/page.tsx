@@ -3,7 +3,6 @@ import Link from "next/link";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { DaysEditor } from "@/components/days-editor";
-import { SeedOverwriteWarning } from "@/components/seed-overwrite-warning";
 import { formatDateRange } from "@/lib/war-week-display";
 import { getSetupDays } from "@/queries/setup";
 
@@ -41,7 +40,6 @@ export default async function SetupDaysPage() {
           {formatDateRange(warWeek.startDate, warWeek.endDate)}). A Day with
           Schedule Items can&apos;t be deleted.
         </p>
-        <SeedOverwriteWarning />
         <DaysEditor
           warWeekId={warWeek.id}
           days={days}

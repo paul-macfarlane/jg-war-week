@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
-import { SeedOverwriteWarning } from "@/components/seed-overwrite-warning";
 import {
   DeleteSetupItemButton,
   MoveFaqItemButtons,
@@ -50,7 +49,6 @@ export default async function SetupFaqPage() {
         <p className="text-foreground/70 text-sm">
           FAQ Items show on the public FAQ in this order.
         </p>
-        <SeedOverwriteWarning />
 
         {items.length === 0 ? (
           <p className="text-foreground/70 text-sm">No FAQ Items yet.</p>

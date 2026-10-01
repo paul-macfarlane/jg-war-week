@@ -3,7 +3,6 @@ import Link from "next/link";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { CategoryBadge } from "@/components/schedule-item";
-import { SeedOverwriteWarning } from "@/components/seed-overwrite-warning";
 import { DeleteSetupItemButton } from "@/components/setup-schedule-faq-buttons";
 import { buttonVariants } from "@/components/ui/button";
 import { formatDayHeading, formatTimeRange } from "@/lib/schedule";
@@ -57,7 +56,6 @@ export default async function SetupSchedulePage() {
           Times are Eastern. Each Day&apos;s items are in time order, as on the
           public Schedule.
         </p>
-        <SeedOverwriteWarning />
 
         {days.length === 0 ? (
           <p className="text-foreground/70 text-sm">

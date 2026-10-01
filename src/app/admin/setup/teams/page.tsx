@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
-import { SeedOverwriteWarning } from "@/components/seed-overwrite-warning";
 import { RosterEditor, TeamsEditor } from "@/components/teams-editor";
 import { themeSwatches } from "@/lib/theme";
 import {
@@ -53,7 +52,6 @@ export default async function SetupTeamsPage() {
           or Awards can&apos;t be deleted.
           {isTeams && ` A ${teamLabel} with Participants can't be deleted.`}
         </p>
-        <SeedOverwriteWarning />
         {isTeams ? (
           <section className="flex flex-col gap-1">
             <h2 className="text-lg font-semibold">{teamLabel}s</h2>
