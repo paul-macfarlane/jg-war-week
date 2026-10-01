@@ -736,3 +736,103 @@ test("r5 32 admin lists fit a phone; free-for-all drops Team", async ({
     ]);
   }
 });
+
+test("r5 33 Save stays in reach on long admin forms", async ({
+  page,
+  context,
+}, testInfo) => {
+  await asOrganizer(context);
+  const form = page.getByRole("form", { name: "War Week settings" });
+  const save = form.getByRole("button", { name: "Save settings" });
+  const sticky = form.locator('[data-slot="sticky-form-actions"]');
+
+  // 33-3: from md the form looks as today (fullPage, same seeded data).
+  await page.setViewportSize(DESKTOP);
+  await page.goto("/admin/setup/war-week");
+  await expect(save).toBeVisible();
+  await shoot(page, testInfo, "settings-1280", true);
+  expect(await sticky.evaluate((el) => getComputedStyle(el).position)).toBe(
+    "static",
+  );
+
+  await page.setViewportSize(PHONE);
+  await page.goto("/admin/setup/war-week");
+  await expect(save).toBeVisible();
+  const bar = adminBar(page);
+
+  // 33-1: Save in view at the top and after scrolling to any field, and
+  // never over the section bar.
+  async function saveClearOfBar() {
+    await expect(save).toBeInViewport({ ratio: 1 });
+    const saveBox = await save.boundingBox();
+    const barBox = await bar.boundingBox();
+    if (!saveBox || !barBox) throw new Error("Save or the bar isn't visible");
+    expect(saveBox.y + saveBox.height).toBeLessThanOrEqual(
+      barBox.y + TOLERANCE,
+    );
+  }
+  await saveClearOfBar();
+  await shoot(page, testInfo, "settings-top-375");
+  const fields = [
+    form.getByLabel("Story Theme"),
+    form.getByLabel("Slack URL"),
+    form.getByRole("textbox").last(),
+  ];
+  for (const field of fields) {
+    await field.scrollIntoViewIfNeeded();
+    await saveClearOfBar();
+  }
+  await shoot(page, testInfo, "settings-last-field-375");
+
+  // 33-2: the last field scrolls clear of the sticky bar.
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  const lastBox = await form.getByRole("textbox").last().boundingBox();
+  const stickyBox = await sticky.boundingBox();
+  if (!lastBox || !stickyBox) throw new Error("Last field isn't visible");
+  expect(lastBox.y + lastBox.height).toBeLessThanOrEqual(
+    stickyBox.y + TOLERANCE,
+  );
+  await shoot(page, testInfo, "settings-bottom-375");
+
+  // 33-2: a refused save focuses a field that isn't under the bar.
+  const slackUrl = form.getByLabel("Slack URL");
+  await slackUrl.fill("http://slack.example.com/x");
+  await save.click();
+  await expect(slackUrl).toHaveAttribute("aria-invalid", "true");
+  await expect
+    .poll(() => page.evaluate(() => document.activeElement?.id))
+    .toBe("settings-slackChannelUrl");
+  const focused = await slackUrl.boundingBox();
+  const stickyNow = await sticky.boundingBox();
+  if (!focused || !stickyNow) throw new Error("Refused field isn't visible");
+  expect(focused.y + focused.height).toBeLessThanOrEqual(
+    stickyNow.y + TOLERANCE,
+  );
+  await shoot(page, testInfo, "settings-refused-375");
+
+  // 33-5: "Reset to derived" is a 44px target below sm.
+  const reset = form.getByRole("button", { name: "Reset to derived" }).first();
+  await reset.scrollIntoViewIfNeeded();
+  expect((await reset.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+
+  // 33-4: the other forms' heights at 375 on XI; each over two screens
+  // uses the sticky Save row.
+  const others = [
+    ["announcement", "/admin/announcements/new"],
+    ["schedule item", "/admin/setup/schedule/new"],
+    ["next War Week", "/admin/setup/next"],
+    ["award", "/admin/awards/new"],
+  ];
+  for (const [name, path] of others) {
+    await page.goto(path);
+    const other = page.locator("main form").first();
+    await expect(other).toBeVisible();
+    const height = (await other.boundingBox())?.height ?? 0;
+    console.log(`r5 33 ${name} form at 375: ${Math.round(height)}px`);
+    if (height > 1624) {
+      await expect(
+        other.locator('[data-slot="sticky-form-actions"]'),
+      ).toHaveCount(1);
+    }
+  }
+});
