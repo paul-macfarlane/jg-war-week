@@ -45,6 +45,14 @@ describe("BracketBuilder", () => {
     );
   });
 
+  it("doesn't describe Points as if it were the chosen Format", () => {
+    const html = renderToStaticMarkup(<BracketBuilder {...baseProps} />);
+    expect(html).toContain(
+      "A Format can&#x27;t change while the Competition has Entrants.",
+    );
+    expect(html).not.toContain("Points is Points Entries only");
+  });
+
   it("shows the Participants can enroll switch", () => {
     const html = renderToStaticMarkup(<BracketBuilder {...baseProps} />);
     expect(html).toContain("Participants can enroll");

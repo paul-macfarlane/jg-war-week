@@ -103,6 +103,25 @@ describe("BracketView", () => {
     expect(html).toMatch(/<button[^>]*role="tab"[^>]*>List<\/button>/);
   });
 
+  it("shows a timed Heat's Day, time and place in the default tree", () => {
+    const timed = {
+      ...bracket,
+      heats: bracket.heats.map((h, i) =>
+        i === 0
+          ? { ...h, dayId: "d1", startTime: "19:00:00", location: "Main room" }
+          : h,
+      ),
+    };
+    const html = renderToStaticMarkup(
+      <BracketView
+        {...props}
+        days={[{ id: "d1", date: "2026-02-22" }]}
+        bracket={timed}
+      />,
+    );
+    expect(html).toContain("Sunday, Feb 22 · 7:00 PM ET · Main room");
+  });
+
   it("explains Squads beside a Squads Bracket's Entrants", () => {
     const squads = entrants.map((e) => ({
       ...e,

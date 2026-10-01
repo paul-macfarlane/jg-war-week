@@ -6,7 +6,13 @@ import {
   test,
 } from "@playwright/test";
 
-import { runQuery, xiCompetitionId, xiParticipantId, xiTeamId } from "./db";
+import {
+  deleteXiCompetition,
+  runQuery,
+  xiCompetitionId,
+  xiParticipantId,
+  xiTeamId,
+} from "./db";
 import { E2E_BASE_URL } from "./env";
 import { E2E_HOST_EMAIL, asHost, asOrganizer } from "./session";
 
@@ -834,5 +840,113 @@ test("r5 33 Save stays in reach on long admin forms", async ({
         other.locator('[data-slot="sticky-form-actions"]'),
       ).toHaveCount(1);
     }
+  }
+});
+
+test("r5 38 Escape keeps chosen Entrants; Tree shows a Heat's place; Format help", async ({
+  context,
+  page,
+}, testInfo) => {
+  test.setTimeout(120_000);
+  const name = "R5 E2E Knockout";
+  // Individual Entrants: War Week XI seeds only two Teams.
+  const teams = [
+    "Ashley Schuliger",
+    "Sam Schantz",
+    "Ryan Shendler",
+    "Alex Kelly",
+  ].map((name) => ({ name }));
+  try {
+    await asOrganizer(context);
+    await page.setViewportSize(DESKTOP);
+    await page.goto("/admin/setup/competitions");
+    await page.getByRole("button", { name: "Add Competition" }).click();
+    const addForm = page
+      .getByRole("dialog", { name: "Add Competition" })
+      .getByRole("form", { name: "New Competition" });
+    await addForm.getByRole("textbox", { name: "Name" }).fill(name);
+    await addForm.getByRole("combobox", { name: "Format" }).click();
+    await page.getByRole("option", { name: "Single elimination" }).click();
+    await addForm.getByRole("button", { name: "Add Competition" }).click();
+    await expect(page).toHaveURL(
+      /\/admin\/setup\/competitions\/[0-9a-f-]+\/bracket$/,
+    );
+    const id = page.url().split("/").at(-2) ?? "";
+    await runQuery(
+      `update competition set scoring = 'individual' where id = $1`,
+      [id],
+    );
+    await page.reload();
+
+    // 38-3: the Format help text doesn't read as if Points were chosen.
+    await expect(
+      page.getByText(
+        "A Format can't change while the Competition has Entrants.",
+      ),
+    ).toBeVisible();
+    await expect(page.getByText("Points is Points Entries only")).toHaveCount(
+      0,
+    );
+
+    // 38-2: Escape with the popup closed keeps every chosen Entrant.
+    const find = page.locator("#bracket-entrants");
+    for (const team of teams.slice(0, 3)) {
+      await find.fill(team.name);
+      await page
+        .getByRole("option", { name: new RegExp(`^${team.name}`) })
+        .click();
+    }
+    await expect(page.getByText("(3 chosen)")).toBeVisible();
+    await page.keyboard.press("Escape"); // closes the popup
+    await find.focus();
+    await page.keyboard.press("Escape"); // the old bug emptied the picker
+    await expect(page.getByText("(3 chosen)")).toBeVisible();
+    await shoot(page, testInfo, "escape-keeps-entrants-1280");
+    await page.setViewportSize(PHONE);
+    await find.focus();
+    await page.keyboard.press("Escape");
+    await expect(page.getByText("(3 chosen)")).toBeVisible();
+    await shoot(page, testInfo, "escape-keeps-entrants-375");
+    await page.setViewportSize(DESKTOP);
+
+    // Build the Bracket and place a Heat, to see it in the Tree.
+    await find.fill(teams[3].name);
+    await page
+      .getByRole("option", { name: new RegExp(`^${teams[3].name}`) })
+      .click();
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Save Entrants" }).click();
+    await expect(
+      page.getByText("Entrants saved", { exact: true }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Generate" }).click();
+    await expect(page.getByText("Bracket generated")).toBeVisible();
+
+    await page.goto(`/admin/brackets/${id}`);
+    await page
+      .getByRole("button", { name: "Time & place for Semifinal 1" })
+      .click();
+    const form = page.getByRole("form", {
+      name: "Time & place for Semifinal 1",
+    });
+    await form.getByLabel("Location (optional)").fill("Team Room 4");
+    await form.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(page.getByText("Time and place saved")).toBeVisible();
+
+    // 38-1: the Tree (the default layout) shows the Heat's place.
+    for (const viewport of [PHONE, DESKTOP]) {
+      await page.setViewportSize(viewport);
+      await page.goto(`/xi/competitions/${id}`);
+      const tree = page.locator("[data-bracket-tree]").first();
+      await expect(tree).toBeVisible();
+      await expect(
+        tree
+          .getByRole("group", { name: "Semifinal 1" })
+          .getByText("Team Room 4"),
+      ).toBeVisible();
+      await shoot(page, testInfo, `tree-heat-place-${viewport.width}`, true);
+    }
+  } finally {
+    await deleteXiCompetition(name);
   }
 });

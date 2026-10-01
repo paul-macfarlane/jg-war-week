@@ -434,6 +434,7 @@ export function BracketView({
           scoring={scoring}
           primaryColor={primaryColor}
           youEntrantId={youEntrantId}
+          days={days}
         />
       ) : (
         <div className="flex flex-col gap-4">

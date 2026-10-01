@@ -581,8 +581,7 @@ export function BracketBuilder({
           onValueChange={changeFormat}
         />
         <FieldDescription>
-          Points is Points Entries only. A Format can&apos;t change while the
-          Competition has Entrants.
+          A Format can&apos;t change while the Competition has Entrants.
         </FieldDescription>
       </Field>
 

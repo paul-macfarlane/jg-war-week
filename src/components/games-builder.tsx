@@ -536,8 +536,11 @@ export function GamesBuilder({
         {competition.closed ? (
           <>
             <p className="text-foreground/70 text-sm">
-              Closed: its Points Entries are in the ledger. Reopen to log more
-              Games.
+              {competition.placementPoints &&
+              competition.placementPoints.length > 0
+                ? "Closed: its Points Entries are in the ledger."
+                : "Closed: it has no Placement Points, so it made no Points Entries."}{" "}
+              Reopen to log more Games.
             </p>
             <ConfirmActionButton
               title="Reopen this Competition?"

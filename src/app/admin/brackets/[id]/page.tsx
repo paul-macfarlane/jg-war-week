@@ -105,6 +105,7 @@ export default async function BracketResultsPage({
         ) : (
           <BracketResults
             competitionId={competition.id}
+            placementPoints={competition.placementPoints}
             scoring={competition.scoring}
             entrants={view.entrants}
             bracket={view.bracket}

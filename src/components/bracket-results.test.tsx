@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { generate } from "@/lib/bracket/engine";
 import type { Bracket, Entrant } from "@/lib/bracket/types";
 
-import { BracketResultsView } from "./bracket-results";
+import { BracketResultsView, finalizeCopy } from "./bracket-results";
 
 vi.mock("@/components/auto-refresh", () => ({
   AutoRefresh: () => <span data-auto-refresh />,
@@ -33,6 +33,7 @@ const bracket: Bracket = {
 
 const props = {
   competitionId: "c1",
+  placementPoints: [5, 3, 1] as number[] | null,
   scoring: "team" as const,
   entrants: seeds.map((e) => ({
     id: e.id,
@@ -99,6 +100,36 @@ describe("BracketResultsView", () => {
       />,
     );
     expect(html).toMatch(/<a[^>]*href="\/xi\/finale\/c1"[^>]*>Play the Finale/);
+  });
+
+  it("says a finalized Bracket's Points Entries are in the ledger with Placement Points", () => {
+    const html = renderToStaticMarkup(
+      <BracketResultsView {...props} finalized openSheet={null} />,
+    );
+    expect(html).toContain("Finalized: its Points Entries are in the ledger.");
+  });
+
+  it("claims no Points Entries for a finalized Bracket without Placement Points", () => {
+    const html = renderToStaticMarkup(
+      <BracketResultsView
+        {...props}
+        placementPoints={null}
+        finalized
+        openSheet={null}
+      />,
+    );
+    expect(html).toContain("it made no Points Entries");
+    expect(html).not.toContain("Points Entries are in the ledger");
+  });
+
+  it("words the Finalize confirm by whether Placement Points exist", () => {
+    expect(finalizeCopy([5, 3, 1]).confirmTitle).toBe(
+      "Create Points Entries from the final placings?",
+    );
+    expect(finalizeCopy(null).confirmTitle).toBe(
+      "Finalize the Bracket? It has no Placement Points, so no Points Entries are created.",
+    );
+    expect(finalizeCopy([]).confirmTitle).toBe(finalizeCopy(null).confirmTitle);
   });
 
   it("names who self-reported a Heat's result on its card", () => {

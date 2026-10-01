@@ -14,6 +14,7 @@ import {
   bracketTree,
 } from "@/lib/bracket/tree";
 import type { Bracket } from "@/lib/bracket/types";
+import { formatHeatWhen } from "@/lib/bracket/view";
 import { YOU_ROW_CLASS } from "@/lib/you";
 
 type Scoring = "team" | "individual";
@@ -154,13 +155,17 @@ export function BracketTree({
   scoring,
   primaryColor,
   youEntrantId = null,
+  days = [],
 }: {
   bracket: Bracket;
   entrantsById: Map<string, BracketViewEntrant>;
   scoring: Scoring;
   primaryColor: string;
   youEntrantId?: string | null;
+  /** The War Week's Days, for a timed Heat's Day, time and place. */
+  days?: { id: string; date: string }[];
 }) {
+  const heatsById = new Map(bracket.heats.map((h) => [h.id, h]));
   const tree = bracketTree(bracket);
   const [active, setActive] = useState(() => openRound(tree.rounds));
   const knockout = tree.format === "single-elimination";
@@ -221,6 +226,15 @@ export function BracketTree({
                       <span className="text-foreground/60 px-1.5 text-xs font-medium">
                         {heat.name}
                       </span>
+                      {(() => {
+                        const source = heatsById.get(heat.id);
+                        const when = source ? formatHeatWhen(source, days) : "";
+                        return when ? (
+                          <span className="text-foreground/70 px-1.5 text-xs">
+                            {when}
+                          </span>
+                        ) : null;
+                      })()}
                       {heat.slots.map((slot, i) => (
                         <SlotRow
                           key={i}
