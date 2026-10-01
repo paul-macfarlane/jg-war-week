@@ -150,4 +150,35 @@ describe("RichText", () => {
     expect(render("<b>hi</b>")).toBe("");
     expect(render(null)).toBe("");
   });
+
+  describe("empty paragraphs", () => {
+    const empty = { type: "paragraph" };
+    const blank = {
+      type: "paragraph",
+      content: [{ type: "text", text: "  " }],
+    };
+    const line = (text: string) => ({
+      type: "paragraph",
+      content: [{ type: "text", text }],
+    });
+
+    it("renders nothing for an empty document", () => {
+      expect(render(doc())).toBe("");
+    });
+
+    it("renders nothing when every paragraph is empty", () => {
+      expect(render(doc(empty, blank, empty))).toBe("");
+    });
+
+    it("drops leading and trailing empty paragraphs", () => {
+      const html = render(doc(empty, blank, line("Hello"), empty, blank));
+      expect(html.match(/<p>/g)).toHaveLength(1);
+      expect(html).toContain("<p><span>Hello</span></p>");
+    });
+
+    it("keeps empty paragraphs between text", () => {
+      const html = render(doc(line("One"), empty, line("Two")));
+      expect(html.match(/<p>/g)).toHaveLength(3);
+    });
+  });
 });

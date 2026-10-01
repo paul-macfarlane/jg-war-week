@@ -1095,3 +1095,93 @@ test("r5 epic admin pages at 375 and 1280, as Organizer and Host", async ({
     );
   }
 });
+
+test("r5 37 pinned Announcement card fits its content", async ({
+  page,
+  context,
+}, testInfo) => {
+  const title = "R5 37 pinned one-liner";
+  const videoTitle = "R5 37 pinned title only with video";
+  const deleteFixture = () =>
+    runQuery(`delete from announcement where title = any($1)`, [
+      [title, videoTitle],
+    ]);
+  await deleteFixture();
+  try {
+    await asOrganizer(context);
+    await page.setViewportSize(PHONE);
+
+    // Through the real editor, as an Organizer would: one line, pinned.
+    await page.goto("/admin/announcements/new");
+    await page.getByLabel("Title").fill(title);
+    await page.locator(".ProseMirror").click();
+    await page.keyboard.type("Doors open at nine.");
+    await page.getByRole("switch", { name: /Pinned/ }).click();
+    await page.getByRole("button", { name: "Post Announcement" }).click();
+    await expect(page).toHaveURL(/\/admin\/announcements$/);
+
+    const [stored] = await runQuery<{ body: unknown; video_urls: unknown }>(
+      `select body, video_urls from announcement where title = $1`,
+      [title],
+    );
+    console.log(
+      `r5 37 stored body: ${JSON.stringify(stored.body)} video_urls: ${JSON.stringify(stored.video_urls)}`,
+    );
+
+    // 37-1: the card is as tall as its header, the line and the padding.
+    for (const path of ["/xi", "/xi/news"]) {
+      await page.goto(path);
+      const card = page
+        .locator("article")
+        .filter({ has: page.getByRole("heading", { name: title }) });
+      await expect(card).toBeVisible();
+      const height = (await card.boundingBox())?.height ?? 0;
+      console.log(
+        `r5 37 pinned card at 375 on ${path}: ${Math.round(height)}px`,
+      );
+      expect(height).toBeLessThan(160);
+      if (path === "/xi") {
+        await card.scrollIntoViewIfNeeded();
+        await shoot(page, testInfo, "home-pinned-375");
+      }
+    }
+
+    // 37-2: a title-only Announcement (empty body) with a video. The empty
+    // body renders nothing, so the video is the only thing in the card's
+    // content and the only gap above it is the card's own.
+    await runQuery(`delete from announcement where title = $1`, [title]);
+    await runQuery(
+      `insert into announcement (war_week_id, title, body, video_urls, pinned, author_email)
+       select id, $1, $2::jsonb, $3::varchar[], true, $4 from war_week where edition = 'xi'`,
+      [
+        videoTitle,
+        JSON.stringify({ type: "doc", content: [{ type: "paragraph" }] }),
+        ["https://www.youtube.com/watch?v=dQw4w9WgXcQ"],
+        E2E_HOST_EMAIL,
+      ],
+    );
+    for (const path of ["/xi", "/xi/news"]) {
+      await page.goto(path);
+      const card = page
+        .locator("article")
+        .filter({ has: page.getByRole("heading", { name: videoTitle }) });
+      await expect(card).toBeVisible();
+      const content = card.locator('[data-slot="card-content"]');
+      await expect(content.locator("> *")).toHaveCount(1);
+      await expect(content.locator("> :first-child")).toHaveJSProperty(
+        "tagName",
+        "IFRAME",
+      );
+      const height = (await card.boundingBox())?.height ?? 0;
+      console.log(
+        `r5 37 pinned video card at 375 on ${path}: ${Math.round(height)}px`,
+      );
+      if (path === "/xi") {
+        await card.scrollIntoViewIfNeeded();
+        await shoot(page, testInfo, "home-pinned-video-375");
+      }
+    }
+  } finally {
+    await deleteFixture();
+  }
+});
