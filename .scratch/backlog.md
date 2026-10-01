@@ -11,13 +11,14 @@ it the week of 2026-10-05).
 
 ## Ready for an agent
 
-- [ ] **Admin on a phone**: one-row admin header and bottom section bar, setup rows in a Sheet, lists that fit, Save in reach, 44px controls, touch-friendly pickers, seed warning trimmed, pinned card fitted, four Bracket bugs. Tickets 30-38, one `/atlas-implement` run. [`regression-2026-09/epics/R5`](./regression-2026-09/epics/R5-admin-on-a-phone.md) (`ready-for-agent`)
+
 
 ## Ready, waiting on someone else
 
 - [ ] **Post new Announcements to Slack**: fully specified, ships dormant; switching it on needs IT to create an incoming webhook. Ranks first for "a twist of fun" if the webhook arrives by January 2027. [`war-weeker/issues/15`](./war-weeker/issues/15-slack-integration.md) (`ready-for-agent`)
 
 ## Needs a decision, info or grilling before a plan
+
 
 - [ ] **Move to Jahnel Group ownership**: GitHub, Vercel, Neon, the GCP OAuth project, the domain and any other secret or bill; who owns and pays for each, cutover order, whether Paul keeps admin. [`hardening/issues/20`](./hardening/issues/20-transfer-to-jahnel-group-ownership.md) (`needs-triage`)
 - [ ] **Stairs integration**: wayfinder map charted; mirror Stairs climbs so Hosts can score a stair Competition without re-typing. Work the frontier tickets. [`stairs/map`](./stairs/map.md)

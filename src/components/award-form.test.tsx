@@ -64,3 +64,23 @@ describe("AwardForm Team field", () => {
     expect(html).toContain(">House</label>");
   });
 });
+
+describe("AwardForm Recipients copy", () => {
+  it("names the Team Label when the Team field shows", () => {
+    const html = render("teams");
+    expect(html).toContain("A House, Participants, or both.");
+    expect(html).toContain('placeholder="Find by name or House"');
+  });
+
+  it("drops it when the Team field is hidden", () => {
+    const html = render("free-for-all");
+    expect(html).not.toContain("House");
+    expect(html).toContain("Participants only.");
+    expect(html).toContain('placeholder="Find by name"');
+  });
+
+  it("keeps it when a free-for-all edits an Award that has a Team", () => {
+    const html = render("free-for-all", { teamId: "team-red" });
+    expect(html).toContain("A House, Participants, or both.");
+  });
+});

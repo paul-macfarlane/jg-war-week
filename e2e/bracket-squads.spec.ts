@@ -200,6 +200,22 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
   const id = await xiCompetitionId(COMPETITION);
   const reporterId = await xiParticipantId(REPORTER);
   let opponentParticipantId: string | null = null;
+  // What the flow changes on Cypher, restored in `finally` so the test can
+  // run again without a fresh seed; and its Points Entries before it, so
+  // only the ones the Bracket generates are removed.
+  const [before] = await runQuery<{ settings: string }>(
+    `select row_to_json(c)::text as settings from (
+       select format, bracket_config, self_report, finalized_at,
+              placement_points, self_enroll, entrant_limit, enroll_closes_at
+       from competition where id = $1) c`,
+    [id],
+  );
+  const seededEntryIds = (
+    await runQuery<{ id: string }>(
+      `select id from points_entry where competition_id = $1`,
+      [id],
+    )
+  ).map((row) => row.id);
   await runQuery(
     `insert into competition_host (competition_id, email) values ($1, $2)
      on conflict do nothing`,
@@ -458,6 +474,27 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await runQuery(
       `delete from competition_host where competition_id = $1 and email = $2`,
       [id, E2E_HOST_EMAIL],
+    );
+    // The Bracket, its Entrants and Squads (their Heat Entrants and Squad
+    // members cascade), the Points Entries it generated, then Cypher as it
+    // was.
+    await runQuery(`delete from heat where competition_id = $1`, [id]);
+    await runQuery(`delete from entrant where competition_id = $1`, [id]);
+    await runQuery(`delete from squad where competition_id = $1`, [id]);
+    await runQuery(
+      `delete from points_entry
+       where competition_id = $1 and not (id = any($2::uuid[]))`,
+      [id, seededEntryIds],
+    );
+    await runQuery(
+      `update competition c set
+         format = b.format, bracket_config = b.bracket_config,
+         self_report = b.self_report, finalized_at = b.finalized_at,
+         placement_points = b.placement_points, self_enroll = b.self_enroll,
+         entrant_limit = b.entrant_limit, enroll_closes_at = b.enroll_closes_at
+       from json_populate_record(null::competition, $2::json) b
+       where c.id = $1`,
+      [id, before.settings],
     );
   }
 });

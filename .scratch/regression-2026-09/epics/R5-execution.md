@@ -477,4 +477,4 @@ Deviations and scope changes: D0 added (Paul); D0 edits `ui/sheet.tsx` and `resp
 
 Isolation re-check: sequential direct checkout was chosen for the shared port 3200 and seeded DB (still true: every deliverable ran `pnpm e2e`). The predicted file collisions materialised: `e2e/regression-r5.spec.ts` changed in 10 commits, `award-form.tsx` in 3 (D35, D32, DR), `ui/sheet.tsx`/`setup-row.tsx`/`admin-shell.tsx` in 2 each.
 
-Follow-up candidates (not ticketed): refusal toast over the sticky Save at 375 (T4); free-for-all Award help copy names the Team Label (R1); `bracket-squads.spec.ts` leaves its Squads behind, so it can't `--repeat-each` in one process.
+Follow-up candidates, ticketed 2026-09-30 as 39, 40 and 41: refusal toast over the sticky Save at 375 (T4); free-for-all Award help copy names the Team Label (R1); `bracket-squads.spec.ts` leaves its Squads behind, so it can't `--repeat-each` in one process.
