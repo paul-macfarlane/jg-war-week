@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import type { WarWeek } from "@/db/schema";
+import type { AdminSection } from "@/lib/admin-sections";
 
 import { AdminRefused, AdminShell, editingBanner } from "./admin-shell";
 
@@ -70,6 +71,57 @@ describe("AdminShell", () => {
     expect(html).not.toContain('href="/admin/organizers"');
     expect(html).toContain('href="/admin/points"');
     expect(html).toContain('href="/admin/setup"');
+  });
+});
+
+describe("AdminShell bottom bar (phone)", () => {
+  function shell(current: AdminSection, isOrganizer = true) {
+    return renderToStaticMarkup(
+      <AdminShell
+        warWeek={fakeWarWeek}
+        email="o@jahnelgroup.com"
+        isOrganizer={isOrganizer}
+        current={current}
+      >
+        x
+      </AdminShell>,
+    );
+  }
+  /** The More tab: the bar's Sheet trigger button. */
+  const moreTab = (html: string) =>
+    html.match(/<button[^>]*>(?:(?!<\/button>).)*More<\/button>/)?.[0];
+
+  it("labels both the side column and the bar Admin sections", () => {
+    const html = shell("Overview");
+    expect(html.match(/aria-label="Admin sections"/g)).toHaveLength(2);
+  });
+
+  it("gives the bar a Points tab and a More tab", () => {
+    const html = shell("Overview");
+    expect(html).toMatch(
+      /href="\/admin\/points"[^>]*>(?:(?!<\/a>).)*Points<\/a>/,
+    );
+    expect(moreTab(html)).toBeDefined();
+  });
+
+  it("marks the More tab current for a section inside More", () => {
+    expect(moreTab(shell("Guide"))).toContain('aria-current="page"');
+    expect(moreTab(shell("Awards"))).toContain('aria-current="page"');
+  });
+
+  it("doesn't mark the More tab current for a tab section", () => {
+    const html = shell("Setup");
+    expect(moreTab(html)).not.toContain('aria-current="page"');
+    expect(html).toMatch(
+      /<a[^>]*href="\/admin\/setup"[^>]*aria-current="page"|<a[^>]*aria-current="page"[^>]*href="\/admin\/setup"/,
+    );
+  });
+
+  it("shows a Host no Awards or Organizers in the side column or the bar", () => {
+    const html = shell("Guide", false);
+    expect(html).not.toContain("Awards");
+    expect(html).not.toContain("Organizers");
+    expect(moreTab(html)).toContain('aria-current="page"');
   });
 });
 
