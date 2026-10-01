@@ -51,3 +51,4 @@ Each ticket's own acceptance criteria, plus:
 - 2026-09-30: `[EXECUTION PLAN]` in [`R5-execution.md`](./R5-execution.md) (`/atlas-plan`; red-team not required).
 - 2026-09-30: `[SCOPE CHANGE]` (Paul): fix the e2e flakes failing CI on `staging` as deliverable D0, first; see `R5-execution.md`.
 - 2026-09-30: claimed by `/atlas-implement` (work package `regression-r5`), `ready-for-agent` → `in-progress`; branch `feat/regression-r5-admin-on-a-phone` from `staging` `50acefb`. Execution record: `R5-execution.md`.
+- 2026-09-30 [BLOCKED]: every deliverable except 37 is integrated, reviewed and verified at `f79549c` (`pnpm gate` exit 0; see `R5-execution.md`). Ticket 37 is blocked at human gate H1 (see its comment). No PR yet: closeout waits for 37's gate answer or Paul descoping it. Resume with `/atlas-implement .scratch/regression-2026-09/epics/R5-admin-on-a-phone.md`.

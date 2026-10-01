@@ -435,3 +435,7 @@ No finding against: shadcn usage, toasts/popups via `ThemeRoot`, ADR 0001 layeri
 | E-3 | pending closeout |
 | E-4 | pending PR CI |
 | E-5 | PASS |
+
+## [BLOCKED]
+
+2026-09-30: blocked at human gate H1 (ticket 37) after aggregate review and verification of everything else at `f79549c`. Branch `feat/regression-r5-admin-on-a-phone` (local, not pushed), state `.claude/atlas-state/regression-r5.json` (checkpoint `blocked`). Resume: answer H1 (staging `/xii` pinned Announcement `body` + `video_urls`, or a 375px devtools screenshot) or descope 37, then `/atlas-implement .scratch/regression-2026-09/epics/R5-admin-on-a-phone.md`. On resume: D37 (worker reapplies the draft spec patch from the orchestrator scratchpad, reproduces ≥160px with the supplied body, fixes at the cause), rerun the r5 spec and `pnpm gate`, then closeout: push, PR into `staging`, E-4 CI, tickets `done`.

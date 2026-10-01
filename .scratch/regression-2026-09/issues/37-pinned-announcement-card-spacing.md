@@ -26,3 +26,4 @@
 
 ## Comments
 - 2026-09-30: claimed by `/atlas-implement` (work package `regression-r5`), `ready-for-agent` → `in-progress`; branch `feat/regression-r5-admin-on-a-phone` from `staging` `50acefb`. Execution record: `../epics/R5-execution.md`.
+- 2026-09-30 [BLOCKED]: human gate H1. A one-line pinned Announcement made through the editor on XI stores one paragraph, no video, and its card is 112px at 375 on `/xi` and `/xi/news` (<160), so the cause on staging `/xii` is not reproduced and no code changed. Resume: Paul pastes staging `/xii`'s pinned Announcement `body` JSON and `video_urls` (or a 375px devtools screenshot of the tall element), then `/atlas-implement .scratch/regression-2026-09/epics/R5-admin-on-a-phone.md`; a local Announcement with that body must reproduce ≥160px before the fix. Alternative: Paul descopes 37 from R5 (it returns to `ready-for-agent` on its own).
