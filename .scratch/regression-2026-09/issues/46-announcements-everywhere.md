@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** in-progress
+**Status:** done
 
 **Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
@@ -21,7 +21,18 @@
 
 ## Acceptance criteria
 
-- [ ] No user-visible "News" remains in `src/` (grep for `>News<`, `"News"`, `All news`); the page heading is "Announcements".
-- [ ] `/xii/news` redirects (308) to `/xii/announcements`; covered by smoke.
-- [ ] CONTEXT.md bans "News" for Announcements.
-- [ ] `pnpm gate` passes.
+- [x] No user-visible "News" remains in `src/` (grep for `>News<`, `"News"`, `All news`); the page heading is "Announcements".
+- [x] `/xii/news` redirects (308) to `/xii/announcements`; covered by smoke.
+- [x] CONTEXT.md bans "News" for Announcements.
+- [x] `pnpm gate` passes.
+
+## Comments
+
+- 2026-10-02 [CLOSEOUT] (atlas-implement): PR https://github.com/paul-macfarlane/jg-war-week/pull/113.
+
+  Branch `feat/regression-r8-quick-fixes`, worker D46 (Sonnet), commit 6f80ff7.
+  - AC1 PASS: `grep -rnE '>News<|"News"|All news' src` finds nothing; the page heading is "Announcements" and Home links "All announcements". The nav label is renamed but not moved (ticket 54 owns placement).
+  - AC2 PASS: `next.config.ts` redirects `/:edition/news` to `/:edition/announcements` (`permanent: true`, 308). Smoke `ok - GET /xi/news permanently redirects (308) to /xi/announcements` in test-results/r8-quick-fixes/gate.txt.
+  - AC3 PASS: CONTEXT.md Banned terms: `News` → Announcement.
+  - AC4 PASS: `pnpm format:check && pnpm gate` at `23c3d15` PASS (`test-results/r8-quick-fixes/gate.txt`).
+  - `/about` had no "News" copy. Its stills showed the old nav, so they were regenerated with `scripts/about-media.ts --stills` (commit 0d05487). `llms.txt`, smoke and the r5 e2e paths are updated.
