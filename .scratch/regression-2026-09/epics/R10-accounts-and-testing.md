@@ -28,7 +28,7 @@
 Each ticket's own, plus:
 
 - [ ] ADR for Profiles (name resolution by email across War Weeks) and for Test sign-in / View as.
-- [ ] Privacy and Terms, `/about` and `docs/maintainers-guide.md` updated.
+- [ ] Privacy and Terms, `/about`, `docs/maintainers-guide.md` and `docs/regression-checklist.md` updated (the checklist's Accounts setup switches to Test sign-in; add Profile, Delete my account and View as lines).
 - [ ] Each ticket file records its closeout and is `done` in this branch.
 - [ ] CI on the PR passes; `pnpm format:check && pnpm gate` passes.
 

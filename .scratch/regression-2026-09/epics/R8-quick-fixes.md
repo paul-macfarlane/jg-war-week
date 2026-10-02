@@ -22,7 +22,7 @@ All independent. Run 53 last so its first checklist run sees the other fixes. Ca
 
 Each ticket's own, plus:
 
-- [ ] `/about` and `docs/maintainers-guide.md` updated where a change is user-visible (team rule).
+- [ ] `/about`, `docs/maintainers-guide.md` and `docs/regression-checklist.md` updated where a change is user-visible (team rules).
 - [ ] Each ticket file records its closeout and is `done` in this branch.
 - [ ] CI on the PR passes; `pnpm format:check && pnpm gate` passes.
 
