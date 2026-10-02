@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { dayOutsideRangeError, nextRangeSelection } from "@/lib/day-range";
+import {
+  dayDateDisabled,
+  dayOutsideRangeError,
+  nextRangeSelection,
+} from "@/lib/day-range";
 
 const days = ["2026-02-23", "2026-02-25"];
 
@@ -74,5 +78,37 @@ describe("dayOutsideRangeError", () => {
 
   it("allows dates that keep every Day inside", () => {
     expect(dayOutsideRangeError(days, "2026-02-23", "2026-02-25")).toBeNull();
+  });
+});
+
+describe("dayDateDisabled", () => {
+  const disabled = dayDateDisabled("2026-02-22", "2026-02-27", days);
+  const at = (value: string) => disabled(new Date(`${value}T12:00:00`));
+
+  it("disables dates that already have a Day", () => {
+    expect(at("2026-02-23")).toBe(true);
+    expect(at("2026-02-25")).toBe(true);
+  });
+
+  it("disables dates outside the War Week", () => {
+    expect(at("2026-02-21")).toBe(true);
+    expect(at("2026-02-28")).toBe(true);
+  });
+
+  it("leaves free dates inside the War Week pickable", () => {
+    expect(at("2026-02-22")).toBe(false);
+    expect(at("2026-02-24")).toBe(false);
+    expect(at("2026-02-27")).toBe(false);
+  });
+
+  it("does not disable the edited Day's own date", () => {
+    const editing = dayDateDisabled(
+      "2026-02-22",
+      "2026-02-27",
+      days,
+      "2026-02-23",
+    );
+    expect(editing(new Date("2026-02-23T12:00:00"))).toBe(false);
+    expect(editing(new Date("2026-02-25T12:00:00"))).toBe(true);
   });
 });

@@ -141,8 +141,10 @@ on the matching War Week page.
       an end date before the start date each show an error at their field,
       the field takes focus, and nothing is saved.
 - [ ] **Days.** Add a Day inside the War Week with a Day Theme; it shows on
-      `/<edition>/schedule`. Adding a second Day on the same date is
-      refused with "There's already a Day on <date>.". Delete the added Day
+      `/<edition>/schedule`. The Day picker greys out dates that already have
+      a Day (not the edited Day's own date) and dates outside the War Week;
+      the server still refuses a duplicate with "There's already a Day on
+      <date>.". Delete the added Day
       through its confirm.
 - [ ] **Roster: add, link, edit, delete.** Add a Participant (on a Team,
       *(teams)*); edit an existing Participant's email to
