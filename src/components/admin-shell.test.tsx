@@ -9,6 +9,11 @@ import { AdminRefused, AdminShell, editingBanner } from "./admin-shell";
 vi.mock("@/components/auth-buttons", () => ({
   SignOutButton: () => null,
 }));
+vi.mock("@/components/account-menu", () => ({
+  AccountMenu: ({ name, email }: { name: string; email: string }) => (
+    <button aria-label="Account menu" data-name={name} data-email={email} />
+  ),
+}));
 vi.mock("@/components/admin-edition-switcher", () => ({
   AdminEditionSwitcher: () => null,
 }));
@@ -39,6 +44,23 @@ describe("AdminShell", () => {
 
     expect(html).toContain("Back to War Week XI");
     expect(html).not.toContain("public site");
+  });
+
+  it("puts the account menu, not the email or Sign out, in the header", () => {
+    const html = renderToStaticMarkup(
+      <AdminShell
+        warWeek={fakeWarWeek}
+        email="o@jahnelgroup.com"
+        isOrganizer
+        current="Points"
+      >
+        x
+      </AdminShell>,
+    );
+
+    expect(html).toContain('aria-label="Account menu"');
+    expect(html).toContain('data-name="o"');
+    expect(html).not.toContain("Signed in as");
   });
 
   it("links an Organizer to Awards and the Organizer list", () => {

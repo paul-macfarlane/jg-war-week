@@ -446,23 +446,27 @@ async function assertAdminTrimmedForHost(sessions: {
   );
 }
 
-/** The Admin link in the edition navigation (`canOpenAdmin`). */
+/**
+ * The account menu is in the edition header for a Host and a Participant
+ * alike. Its Admin item (`canOpenAdmin`) renders only when the menu opens,
+ * so the e2e `regression-r9-account` spec covers who sees it.
+ */
 async function assertAdminLinkForHost(sessions: {
   host: SmokeSession;
   notOrganizer: SmokeSession;
 }) {
   for (const [label, session, expected] of [
     ["a Host", sessions.host, true],
-    ["a Participant", sessions.notOrganizer, false],
+    ["a Participant", sessions.notOrganizer, true],
   ] as const) {
     await runCheck(
-      `GET /xi as ${label} ${expected ? "shows" : "hides"} the Admin link`,
+      `GET /xi as ${label} has the account menu in the header`,
       async () => {
         const res = await fetch(`${BASE_URL}/xi`, {
           headers: { cookie: session.cookie },
         });
         const body = await res.text();
-        const shown = body.includes('href="/admin"');
+        const shown = body.includes('aria-label="Account menu"');
         return res.status === 200 && shown === expected
           ? null
           : `status=${res.status} shown=${shown}`;

@@ -2,12 +2,10 @@ import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { SignOutButton } from "@/components/auth-buttons";
-import { DisplayMenu } from "@/components/display-menu";
 import { MoreLinkIcon } from "@/components/more-link-icon";
 import { moreLinks } from "@/lib/more-links";
 
-import { getNavAccount, getWarWeekForEdition } from "../war-week";
+import { getWarWeekForEdition } from "../war-week";
 
 export default async function MorePage({
   params,
@@ -15,14 +13,12 @@ export default async function MorePage({
   const { edition } = await params;
   const warWeek = await getWarWeekForEdition(edition);
   if (!warWeek) notFound();
-  const account = await getNavAccount();
 
   const links = moreLinks({
     surface: "desktop",
     edition: warWeek.edition,
     mode: warWeek.mode,
     teamLabel: warWeek.teamLabel,
-    canOpenAdmin: account.canOpenAdmin,
   });
 
   return (
@@ -39,16 +35,6 @@ export default async function MorePage({
           </li>
         ))}
       </ul>
-      <div className="border-border flex flex-wrap items-center gap-3 gap-y-2 rounded-lg border px-4 py-3 text-sm">
-        <span className="flex-1 font-medium">Display</span>
-        <DisplayMenu />
-      </div>
-      <div className="border-border flex items-center gap-3 rounded-lg border px-4 py-3 text-sm">
-        <span className="text-foreground/70 min-w-0 flex-1 truncate">
-          Signed in as {account.email}
-        </span>
-        <SignOutButton />
-      </div>
     </main>
   );
 }

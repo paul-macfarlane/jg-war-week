@@ -1,15 +1,16 @@
 import Link from "next/link";
 
+import { AccountMenu } from "@/components/account-menu";
 import { AdminBottomBar } from "@/components/admin-bottom-bar";
 import { AdminEditionSwitcher } from "@/components/admin-edition-switcher";
 import { AdminSectionIcon } from "@/components/admin-section-icon";
 import { SignOutButton } from "@/components/auth-buttons";
-import { DisplayMenu } from "@/components/display-menu";
 import { SiteFooter } from "@/components/site-footer";
 import { ThemeRoot } from "@/components/theme-root";
 import { Toaster } from "@/components/ui/sonner";
 import type { WarWeek } from "@/db/schema";
 import { ADMIN_REFUSAL, type AdminEdition } from "@/lib/access";
+import { nameFromEmail } from "@/lib/account";
 import { type AdminSection, adminSectionsFor } from "@/lib/admin-sections";
 import { warWeekThemeStyle } from "@/lib/theme";
 
@@ -83,16 +84,23 @@ export function AdminShell({
             />
           </span>
         )}
-        <div className="hidden min-w-0 flex-wrap items-center gap-3 text-sm md:ml-auto md:flex">
+        <div className="ml-auto flex min-w-0 items-center gap-3 text-sm">
+          {/* Below `md` the way back is in the account menu. */}
           <Link
             href={`/${warWeek.edition}`}
-            className="text-primary underline-offset-4 hover:underline"
+            className="text-primary hidden underline-offset-4 hover:underline md:inline"
           >
             Back to War Week {warWeek.edition.toUpperCase()}
           </Link>
-          <DisplayMenu iconOnly />
-          <span className="text-foreground/70 truncate">{email}</span>
-          <SignOutButton />
+          <AccountMenu
+            name={nameFromEmail(email)}
+            email={email}
+            edition={warWeek.edition}
+            primaryColor={warWeek.primaryColor}
+            canOpenAdmin
+            inAdmin
+            slackUrl={warWeek.slackChannelUrl}
+          />
         </div>
       </header>
       {banner && (
@@ -136,7 +144,6 @@ export function AdminShell({
       <AdminBottomBar
         edition={warWeek.edition}
         storyTheme={warWeek.storyTheme}
-        email={email}
         isOrganizer={isOrganizer}
         current={current}
         editions={editions}

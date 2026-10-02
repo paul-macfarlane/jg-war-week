@@ -268,19 +268,21 @@ export async function assertAdminLink(sessions: {
   organizer: SmokeSession;
   notOrganizer: SmokeSession;
 }) {
-  for (const [label, session, expected] of [
-    ["an Organizer", sessions.organizer, true],
-    ["a non-Organizer", sessions.notOrganizer, false],
+  for (const [label, session] of [
+    ["an Organizer", sessions.organizer],
+    ["a non-Organizer", sessions.notOrganizer],
   ] as const) {
-    const check = `GET /xi/more as ${label} ${expected ? "shows" : "hides"} the Admin link and shows the account`;
+    const check = `GET /xi/more as ${label} has no Admin link or account rows (the account menu holds them)`;
     try {
       const res = await fetch(`${BASE_URL}/xi/more`, {
         headers: { cookie: session.cookie },
       });
       const body = await res.text();
       const checks = {
-        admin: body.includes('href="/admin"') === expected,
-        account: body.includes("Signed in as") && body.includes("Sign out"),
+        noAdmin: !body.includes('href="/admin"'),
+        noAccountRows:
+          !body.includes("Signed in as") && !body.includes("Sign out"),
+        accountMenu: body.includes('aria-label="Account menu"'),
       };
       if (res.status === 200 && Object.values(checks).every(Boolean)) {
         ok(check);

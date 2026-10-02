@@ -9,7 +9,6 @@ import { LogAGame } from "@/components/log-a-game";
 import { NowNextSection } from "@/components/now-next";
 import { RecentResultsSection } from "@/components/recent-results";
 import { HomeStandings } from "@/components/standings";
-import { Button } from "@/components/ui/button";
 import { WarWeekHero } from "@/components/war-week-hero";
 import { isArchived } from "@/lib/archive";
 import { heatEntries } from "@/lib/bracket/now-next";
@@ -69,21 +68,6 @@ export default async function EditionHomePage({
       <WarWeekHero warWeek={warWeek} />
 
       <div className="flex flex-col gap-4 px-4 pt-4 pb-6">
-        <Button
-          size="lg"
-          className="w-full md:w-auto md:self-start"
-          nativeButton={false}
-          render={
-            <a
-              href={warWeek.slackChannelUrl}
-              target="_blank"
-              rel="noreferrer"
-            />
-          }
-        >
-          Join the Slack channel
-        </Button>
-
         <NowNextSection nowNext={nowNext} edition={warWeek.edition} />
 
         <LogAGame edition={warWeek.edition} competitions={loggable} />

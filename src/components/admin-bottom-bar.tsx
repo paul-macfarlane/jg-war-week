@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -10,8 +10,6 @@ import { AdminSectionIcon } from "@/components/admin-section-icon";
 import {
   MORE_MENU_LIST,
   MORE_MENU_ROW,
-  MoreMenuAccountRow,
-  MoreMenuDisplayRow,
   MoreMenuLink,
 } from "@/components/more-menu";
 import {
@@ -31,21 +29,20 @@ const TAB_CLASS =
 /**
  * Below `md`: the admin's fixed bottom section bar, for one-thumb use. Four
  * tabs and a More tab whose Sheet holds the viewer's other sections, the
- * edition switcher, Display, the way back to the War Week and the account.
+ * edition switcher. Display, the way back and the account are in the
+ * header's account menu.
  * Its height is the admin root's `--admin-bar-height`. Highlights from
  * `current`, the page's own section, not the pathname.
  */
 export function AdminBottomBar({
   edition,
   storyTheme,
-  email,
   isOrganizer,
   current,
   editions,
 }: {
   edition: string;
   storyTheme: string;
-  email: string;
   isOrganizer: boolean;
   current: AdminSection;
   editions: AdminEdition[];
@@ -128,18 +125,6 @@ export function AdminBottomBar({
                     />
                   </div>
                 )}
-                <MoreMenuDisplayRow />
-                <ul className={MORE_MENU_LIST}>
-                  <MoreMenuLink
-                    href={`/${edition}`}
-                    label={`Back to ${name}`}
-                    icon={
-                      <ArrowLeft aria-hidden className="text-primary size-5" />
-                    }
-                    onNavigate={close}
-                  />
-                </ul>
-                <MoreMenuAccountRow email={email} />
               </div>
             </SheetContent>
           </Sheet>

@@ -3,6 +3,7 @@ import { cache } from "react";
 
 import { getActor } from "@/auth/actor";
 import type { NavAccount } from "@/components/primary-nav";
+import { nameFromEmail } from "@/lib/account";
 import { getWarWeekByEdition } from "@/queries/war-weeks";
 
 /**
@@ -25,6 +26,7 @@ export const getNavAccount = cache(async (): Promise<NavAccount> => {
   if (!actor) redirect("/sign-in");
   return {
     email: actor.email,
+    name: nameFromEmail(actor.email),
     canOpenAdmin: actor.isOrganizer || actor.hosts.length > 0,
   };
 });

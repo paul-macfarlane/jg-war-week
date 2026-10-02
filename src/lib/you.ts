@@ -6,7 +6,11 @@
 export const YOU_ROW_CLASS =
   "has-[[data-you]]:bg-accent/20 has-[[data-you]]:ring-accent has-[[data-you]]:rounded-md has-[[data-you]]:ring-2";
 
-export type YouCandidate = { id: string; email?: string | null };
+export type YouCandidate = {
+  id: string;
+  email?: string | null;
+  displayName?: string | null;
+};
 
 /** Who "you" are in a War Week. */
 export type You = { participantId: string } | null;

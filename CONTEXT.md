@@ -26,6 +26,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Leader** / **Leader Title** | A participant flagged as a team leader, displayed with the year's title (Captain, Head of House). A label only, not a permission. |
 | **Participant**               | A person in a War Week. A record, not a user.                                                                                     |
 | **Avatar**                    | A Participant's visual marker: their initials in their Team's color for now, a portrait later.                                    |
+| **Account menu**              | The avatar button in the top-right of the participant and admin headers, opening the viewer's name and email, Display, Admin (Back to War Week in admin), the Slack channel and Sign out. |
 | **You**                       | The Participant the signed-in person is, in the War Week being viewed. Found by **account linking** only (the roster email matches the session email). |
 | **Account linking**           | Matching the session email to a Participant email, ignoring case. Read-time only; nothing is stored.                             |
 | **Company Tag**               | An optional affiliation label on a participant (LTI, IL, …).                                                                      |

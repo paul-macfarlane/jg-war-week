@@ -43,6 +43,10 @@ export default async function EditionLayout({
     participants: candidates,
   });
 
+  const rosterName = candidates.find(
+    (c) => c.id === linked?.participantId,
+  )?.displayName;
+
   const themeStyle = warWeekThemeStyle(warWeek);
 
   return (
@@ -53,7 +57,9 @@ export default async function EditionLayout({
       <TopNav
         edition={warWeek.edition}
         storyTheme={warWeek.storyTheme}
-        account={account}
+        primaryColor={warWeek.primaryColor}
+        slackUrl={warWeek.slackChannelUrl}
+        account={{ ...account, name: rosterName ?? account.name }}
       />
       <div className="flex-1">
         <YouProvider linkedId={linked?.participantId ?? null}>
@@ -65,7 +71,6 @@ export default async function EditionLayout({
         edition={warWeek.edition}
         mode={warWeek.mode}
         teamLabel={warWeek.teamLabel}
-        account={account}
       />
     </ThemeRoot>
   );
