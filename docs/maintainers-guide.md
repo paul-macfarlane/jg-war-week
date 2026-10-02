@@ -169,6 +169,12 @@ re-recorded too. Use `--stills` only when the poster's edition is unchanged
 Standings stills and leaves the poster alone). Either way it rewrites the home Standings hero's three stills
 (`standings-before.png`, `standings-entry.png`, `standings-after.png`).
 
+Every About still comes in light and dark: the script writes `<name>.png`
+under the light Display and `<name>-dark.png` under the dark one (20 files
+in `public/about/`), and `/about` shows the pair member matching the
+viewer's Display (`AboutStill`, `data-still-scheme` in `globals.css`).
+Never add or replace only one of a pair.
+
 ### Run a new War Week or change this year's theme (no code first)
 
 Organizer screens cover it. Sign in and go to `/admin`:

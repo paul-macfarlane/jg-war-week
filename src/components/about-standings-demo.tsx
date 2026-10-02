@@ -1,10 +1,13 @@
+import { AboutStill } from "@/components/about-still";
+
 /**
  * The About page's hero (ticket 04): a Participant favorite, Standings
  * moving after a Points Entry, shown as three stills captured by
  * `scripts/about-media.ts` — before the entry, the Organizer saving it, and
  * the Standings reordered after — presented as a small before → after
  * stepper rather than a video. All three are written to
- * `public/about/standings-<step>.png` from the seeded demo, never by hand.
+ * `public/about/standings-<step>.png` (and `standings-<step>-dark.png` for a
+ * dark Display) from the seeded demo, never by hand.
  */
 const STEPS = [
   {
@@ -32,9 +35,9 @@ export function AboutStandingsDemo() {
           <li key={step.slug} className="flex items-center gap-2 sm:gap-3">
             <div className="flex flex-col items-center gap-1.5">
               <div className="border-foreground/20 bg-background w-[min(6rem,26vw)] overflow-hidden rounded-2xl border-4 shadow-[0_0_40px_-15px_var(--primary)] sm:w-32">
-                <img
+                <AboutStill
                   className="aspect-[390/844] w-full object-cover"
-                  src={`/about/${step.slug}.png`}
+                  name={step.slug}
                   width={390}
                   height={844}
                   alt={step.alt}

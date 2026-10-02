@@ -171,6 +171,22 @@ html[data-display="dark"] {
   }
 }
 
+/* About stills come in both schemes (`AboutStill`, the About dark stills
+   fix): show the one matching the viewer's Display, light by default. */
+@media not (prefers-color-scheme: dark) {
+  html:not([data-display="dark"]) [data-still-scheme="dark"],
+  html[data-display="dark"] [data-still-scheme="light"] {
+    display: none;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-display="light"] [data-still-scheme="dark"],
+  html:not([data-display="light"]) [data-still-scheme="light"] {
+    display: none;
+  }
+}
+
 /* Themed roots (`ThemeRoot`, `data-theme-root`) carry both palettes inline
    as `--light-*` and `--dark-*` (`warWeekThemeStyle`); map the shadcn
    tokens to the set for the viewer's scheme. A root pinned with

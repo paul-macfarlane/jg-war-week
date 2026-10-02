@@ -1,34 +1,58 @@
 current War Week: xii (free-for-all, light base palette)
-bracket demo: seeded competition dcf7dfec-28f7-4d0d-b4b6-442d1cd1f2f5, champion entrant 59e91b02-d3fa-45fa-b893-61b3bff9d0c2
-still: standings-before from /xii/leaderboard
+bracket demo: seeded competition c82dcf10-cf67-411c-86d0-f3b71268fd68, champion entrant 58359c81-1a81-4d06-8e02-55e3594ebb5d
+still: standings-before.png from /xii/leaderboard
+still: standings-before-dark.png from /xii/leaderboard
 standings demo: moving "Lou Lantern" from last (0.5) past first (7.5) with +22
-still: standings-entry from /admin/points, filled in
-still: standings-after from /xii/leaderboard
+still: standings-entry.png from /admin/points, filled in
+still: standings-entry-dark.png from /admin/points, filled in
+still: standings-after.png from /xii/leaderboard
+still: standings-after-dark.png from /xii/leaderboard
 standings demo: "Lou Lantern" is now #1 of 12 (22.5 pts)
-finale: countdown started 12 ms after Start
-finale: 469 frames captured, 469 kept
-still: organizer-setup from /admin/setup
+finale (light): countdown started 12 ms after Start
+finale (light): 467 frames captured, 467 kept
+finale (dark): countdown started 15 ms after Start
+finale (dark): 469 frames captured, 469 kept
+still: organizer-setup.png from /admin/setup
+still: organizer-setup-dark.png from /admin/setup
 points: picked Mile Run
 Individual · Max 3 pts, "1st" preset buttons on screen: 1
-still: points from /admin/points
-still: schedule from /xii?at=2027-02-23T12%3A15%3A00.000-05%3A00
-still: announcements from /xii/news
-still: competitions from /xii/competitions/dcf7dfec-28f7-4d0d-b4b6-442d1cd1f2f5
+still: points.png from /admin/points
+points: picked Mile Run
+Individual · Max 3 pts, "1st" preset buttons on screen: 1
+still: points-dark.png from /admin/points
+still: schedule.png from /xii?at=2027-02-23T12%3A15%3A00.000-05%3A00
+still: schedule-dark.png from /xii?at=2027-02-23T12%3A15%3A00.000-05%3A00
+still: announcements.png from /xii/news
+still: announcements-dark.png from /xii/news
+still: competitions.png from /xii/competitions/c82dcf10-cf67-411c-86d0-f3b71268fd68
+still: competitions-dark.png from /xii/competitions/c82dcf10-cf67-411c-86d0-f3b71268fd68
 games: frame 1600x900@1.6 used (h1 top 125, header bottom 57, first Game row bottom 560, viewport height 900)
-evidence: games from /xii/competitions/2a5bb0f0-fdaf-456c-84f6-193ac7644e45, one Game logged
-still: archive from /history
+evidence: games from /xii/competitions/5066b561-f895-4c65-9d61-16cf07d50b77, one Game logged
+still: archive.png from /history
+still: archive-dark.png from /history
 evidence: anonymous /about landed on /about
 evidence: images that failed to load on /about: 0
 evidence: desktop hero {"steps":["standings-before","standings-entry","standings-after"],"loaded":true,"finalePoster":true,"noVideo":true}
-evidence: /about desktop captured under the light Display
+evidence: /about desktop under the light Display shows 10 stills, 0 wrong or unloaded
+evidence: /about desktop under the dark Display shows 10 stills, 0 wrong or unloaded
 evidence: /about prerendered at build (.next/server/app/about.html exists): false
 wrote public/about/finale-poster.png: 462 KB
+wrote public/about/finale-poster-dark.png: 456 KB
 wrote public/about/standings-before.png: 97 KB
+wrote public/about/standings-before-dark.png: 97 KB
 wrote public/about/standings-entry.png: 77 KB
+wrote public/about/standings-entry-dark.png: 77 KB
 wrote public/about/standings-after.png: 97 KB
+wrote public/about/standings-after-dark.png: 97 KB
 wrote public/about/organizer-setup.png: 213 KB
+wrote public/about/organizer-setup-dark.png: 213 KB
 wrote public/about/schedule.png: 163 KB
+wrote public/about/schedule-dark.png: 163 KB
 wrote public/about/points.png: 176 KB
+wrote public/about/points-dark.png: 176 KB
 wrote public/about/announcements.png: 132 KB
+wrote public/about/announcements-dark.png: 132 KB
 wrote public/about/competitions.png: 156 KB
+wrote public/about/competitions-dark.png: 156 KB
 wrote public/about/archive.png: 308 KB
+wrote public/about/archive-dark.png: 306 KB
