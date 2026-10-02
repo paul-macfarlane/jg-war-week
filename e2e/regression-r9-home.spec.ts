@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { deleteXiCompetition, runQuery, xiTeamId } from "./db";
+import { asOrganizer } from "./session";
 
 // Epic R9: navigation and Home (.scratch/regression-2026-09/epics/R9-*).
 
@@ -14,7 +15,9 @@ test.afterEach(async () => {
 
 test("r9 56 Home shows Recent results newest first, one row per Competition's entries", async ({
   page,
+  context,
 }, testInfo) => {
+  await asOrganizer(context);
   await deleteXiCompetition(FIRST);
   await deleteXiCompetition(SECOND);
   const red = await xiTeamId("Red");

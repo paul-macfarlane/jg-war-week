@@ -413,6 +413,8 @@ test("r5 35 selects and the color picker on a phone", async ({
 
   await page.goto("/admin/settings");
   t = settingsTriggers(page);
+  // The Lifecycle box sits above the form; centre Mode before measuring.
+  await t.mode.evaluate((el) => el.scrollIntoView({ block: "center" }));
   const modeBox = await rect(t.mode, "Mode");
   expect(modeBox.height).toBeCloseTo(44, 0);
   expect((await rect(t.font, "Font")).height).toBeCloseTo(44, 0);

@@ -14,7 +14,8 @@ test("r8 50 the date range picker stays open until Done", async ({
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/admin/settings");
 
-  const trigger = page.getByLabel("Dates");
+  const form = page.getByRole("form", { name: "War Week settings" });
+  const trigger = form.getByLabel("Dates");
   await trigger.click();
   const popup = page.getByRole("dialog");
   // react-day-picker's `td[data-day]` carries the ISO date (the buttons
@@ -45,6 +46,6 @@ test("r8 50 the date range picker stays open until Done", async ({
   await expect(trigger).toContainText(
     `${formatDateLabel(startDate)} – ${formatDateLabel(endDate)}`,
   );
-  await expect(page.locator('input[name="startDate"]')).toHaveValue(start);
-  await expect(page.locator('input[name="endDate"]')).toHaveValue(end);
+  await expect(form.locator('input[name="startDate"]')).toHaveValue(start);
+  await expect(form.locator('input[name="endDate"]')).toHaveValue(end);
 });
