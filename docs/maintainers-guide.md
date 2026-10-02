@@ -182,7 +182,9 @@ Organizer screens cover it. Sign in and go to `/admin`:
 - **`/admin/setup`**: the **Lifecycle** box (Start, End with the computed
   Winner and highlights, Reopen), War Week settings (Story Theme, dates,
   mode, Team Label, Leader Title, links, Winner and highlights, editable
-  directly for corrections), the Appearance Theme
+  directly for corrections; a free-for-all hides Team Label, Leader Title and
+  the roster's Team controls, and keeps their saved values for if you switch
+  back to Teams), the Appearance Theme
   (colors, font, logo, banner), Days, Teams and roster, Competitions (with
   their Hosts), Schedule and FAQ. The Appearance Theme form shows both
   color schemes: whichever one the five colors you set are the base

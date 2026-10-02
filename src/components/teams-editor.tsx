@@ -429,7 +429,7 @@ export function RosterEditor({
               details={[
                 p.companyTag,
                 p.teamId && teamName.get(p.teamId),
-                p.isLeader && leaderTitle,
+                teams.length > 0 && p.isLeader && leaderTitle,
               ]
                 .filter(Boolean)
                 .join(" · ")}
