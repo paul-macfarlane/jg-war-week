@@ -248,7 +248,7 @@ that nothing personal shows (no You highlight, no Log a Game).
 - [ ] **Leaderboard.** `/<edition>/leaderboard` shows the main Standings
       (Team Standings *(teams)*, individual Standings *(free-for-all)*), the
       points breakdown per row, and the linked Participant highlighted.
-- [ ] **Announcements.** The Announcements page (today `/<edition>/news`)
+- [ ] **Announcements.** The Announcements page (`/<edition>/announcements`)
       lists the pinned Announcement first, renders rich text and videos, and
       shows who posted each by name, never an email.
 - [ ] **Roster.** `/<edition>/teams` *(teams)* shows each Team in its

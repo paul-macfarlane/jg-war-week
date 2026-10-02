@@ -17,7 +17,10 @@ const PAGES: [path: string, purpose: string][] = [
     "A finalized Bracket's Finale: its final placings, last place to the champion.",
   ],
   ["/<edition>/schedule", "The schedule, grouped by Day with each Day Theme."],
-  ["/<edition>/news", "Announcements, pinned first then newest first."],
+  [
+    "/<edition>/announcements",
+    "Announcements, pinned first then newest first.",
+  ],
   ["/<edition>/teams", "Teams and their rosters."],
   ["/<edition>/competitions", "Competitions and their results."],
   ["/<edition>/awards", "Awards and their recipients."],

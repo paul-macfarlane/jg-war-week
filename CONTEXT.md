@@ -77,6 +77,7 @@ Do not use these words in code (identifiers, comments, UI copy). Use the
 | ELO         | Points, Points Entry, Standings                                      |
 | Placeholder | "Coming in a later slice", stub, or name the concrete future feature |
 | Tournament  | Competition                                                          |
+| News        | Announcement (the page, nav item and route are all "Announcements")  |
 | Admin (a person or role) | Organizer or Host; "Admin" names only the `/admin` area   |
 
 (Exception: "the Jahnel Group admins" on Privacy and Terms means the

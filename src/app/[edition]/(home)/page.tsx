@@ -89,10 +89,10 @@ export default async function EditionHomePage({
             <div className="flex items-baseline justify-between">
               <h2 className="text-lg font-semibold">Pinned</h2>
               <Link
-                href={`/${warWeek.edition}/news`}
+                href={`/${warWeek.edition}/announcements`}
                 className="text-primary text-sm font-medium"
               >
-                All news
+                All announcements
               </Link>
             </div>
             <AnnouncementCard

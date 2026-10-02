@@ -1129,7 +1129,7 @@ test("r5 37 pinned Announcement card fits its content", async ({
     );
 
     // 37-1: the card is as tall as its header, the line and the padding.
-    for (const path of ["/xi", "/xi/news"]) {
+    for (const path of ["/xi", "/xi/announcements"]) {
       await page.goto(path);
       const card = page
         .locator("article")
@@ -1160,7 +1160,7 @@ test("r5 37 pinned Announcement card fits its content", async ({
         E2E_HOST_EMAIL,
       ],
     );
-    for (const path of ["/xi", "/xi/news"]) {
+    for (const path of ["/xi", "/xi/announcements"]) {
       await page.goto(path);
       const card = page
         .locator("article")
