@@ -244,3 +244,45 @@ describe("computeStandings", () => {
     expect(standings.team.every((row) => row.total === 0)).toBe(true);
   });
 });
+
+describe("computeStandings with resolved names", () => {
+  it("breaks a tie on equal totals and equal names by id, and carries the picture", () => {
+    const standings = computeStandings({
+      mode: "free-for-all",
+      teams: [],
+      participants: [
+        { id: "p-b", displayName: "Sam", teamId: null, image: null },
+        {
+          id: "p-a",
+          displayName: "Sam",
+          teamId: null,
+          image: "https://images.example.test/a.png",
+        },
+      ],
+      competitions: [
+        { id: "c1", scoring: "individual", countsTowardTeam: false },
+      ],
+      pointsEntries: [
+        {
+          competitionId: "c1",
+          teamId: null,
+          participantId: "p-b",
+          points: 5,
+        },
+        {
+          competitionId: "c1",
+          teamId: null,
+          participantId: "p-a",
+          points: 5,
+        },
+      ],
+    });
+
+    expect(standings.individual.map((r) => r.id)).toEqual(["p-a", "p-b"]);
+    expect(standings.individual.map((r) => r.rank)).toEqual([1, 1]);
+    expect(standings.individual[0].image).toBe(
+      "https://images.example.test/a.png",
+    );
+    expect(standings.individual[1].image).toBeNull();
+  });
+});

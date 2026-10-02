@@ -76,6 +76,7 @@ function PlaceMark({
         name={row.label}
         teamColor={row.color}
         primaryColor={primaryColor}
+        image={row.image}
       />
     );
   }

@@ -2,7 +2,12 @@ import { defineConfig, devices } from "@playwright/test";
 import { existsSync } from "node:fs";
 import path from "node:path";
 
-import { E2E_AUTH_SECRET, E2E_BASE_URL, E2E_PORT } from "./e2e/env";
+import {
+  E2E_AUTH_SECRET,
+  E2E_BASE_URL,
+  E2E_PORT,
+  E2E_TEST_SIGN_IN_SECRET,
+} from "./e2e/env";
 import { isLocalDatabaseUrl } from "./src/db/local-url";
 
 // Checked here, not in globalSetup: Playwright starts the webServer before
@@ -54,6 +59,10 @@ export default defineConfig({
       // Never real OAuth: the flows sign their own session cookies.
       GOOGLE_CLIENT_ID: "",
       GOOGLE_CLIENT_SECRET: "",
+      // Test sign-in on, with a fixed test value; explicit values win over
+      // .env.local.
+      TEST_SIGN_IN_SECRET: E2E_TEST_SIGN_IN_SECRET,
+      VERCEL_ENV: "",
     },
   },
 });

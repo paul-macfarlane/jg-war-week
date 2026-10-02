@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { AccountMenu } from "@/components/account-menu";
+import { AdminAccountMenu } from "@/components/admin-account-menu";
 import { AdminBottomBar } from "@/components/admin-bottom-bar";
 import { AdminEditionSwitcher } from "@/components/admin-edition-switcher";
 import { AdminSectionIcon } from "@/components/admin-section-icon";
@@ -10,7 +10,6 @@ import { ThemeRoot } from "@/components/theme-root";
 import { Toaster } from "@/components/ui/sonner";
 import type { WarWeek } from "@/db/schema";
 import { ADMIN_REFUSAL, type AdminEdition } from "@/lib/access";
-import { nameFromEmail } from "@/lib/account";
 import { type AdminSection, adminSectionsFor } from "@/lib/admin-sections";
 import { warWeekThemeStyle } from "@/lib/theme";
 
@@ -92,13 +91,13 @@ export function AdminShell({
           >
             Back to War Week {warWeek.edition.toUpperCase()}
           </Link>
-          <AccountMenu
-            name={nameFromEmail(email)}
+          <AdminAccountMenu
             email={email}
             edition={warWeek.edition}
+            profileEdition={
+              editions.find((e) => e.current)?.edition ?? warWeek.edition
+            }
             primaryColor={warWeek.primaryColor}
-            canOpenAdmin
-            inAdmin
             slackUrl={warWeek.slackChannelUrl}
           />
         </div>

@@ -14,7 +14,7 @@ it the week of 2026-10-05).
 October regression feedback, grilled 2026-10-01 ([`regression-2026-09/grilling-2026-10-01.md`](./regression-2026-09/grilling-2026-10-01.md)). Run in order; R10 onward change the schema and are red-teamed.
 
 - [ ] **Epic R9, navigation**: Competitions in the main nav (54), avatar account menu (55), Home's Recent results (56), flat admin nav (57), one Edit/Delete pattern (58), Settings autosave (59). [`regression-2026-09/epics/R9`](./regression-2026-09/epics/R9-navigation.md) (`ready-for-agent`)
-- [ ] **Epic R10, accounts and testing**: Profile name and picture (60), delete my account (61), staging Test sign-in (62), View as (63). After R9; needs a Blob store and `TEST_SIGN_IN_SECRET` on staging. [`regression-2026-09/epics/R10`](./regression-2026-09/epics/R10-accounts-and-testing.md) (`ready-for-agent`)
+- [ ] **Epic R10, accounts and testing**: Profile name and picture URL (60), delete my account (61), staging Test sign-in (62). Delivered on `feat/regression-r10-accounts` (PR into `staging`); needs `TEST_SIGN_IN_SECRET` on staging and the staging checks. [`regression-2026-09/epics/R10`](./regression-2026-09/epics/R10-accounts-and-testing.md) (`done`)
 - [ ] **Epic R11, content**: journeys editor parity with image upload (64), videos only in the post (65), Day description (66), roster import (67), Unstart (68). After R10. [`regression-2026-09/epics/R11`](./regression-2026-09/epics/R11-content.md) (`ready-for-agent`)
 - [ ] **Epic R12, Participation and Award Categories**: Participation Format (69), Award Categories (70), a Category through the years (71). After R11. [`regression-2026-09/epics/R12`](./regression-2026-09/epics/R12-competitions-and-awards.md) (`ready-for-agent`)
 - [ ] **Epic R13, Finale slides**: slideshow framework (72), built-in slides (73), custom slides (74). After R12. [`regression-2026-09/epics/R13`](./regression-2026-09/epics/R13-finale-slides.md) (`ready-for-agent`)
@@ -34,6 +34,7 @@ October regression feedback, grilled 2026-10-01 ([`regression-2026-09/grilling-2
 - [ ] **AI-generated Appearance Theme**: needs a named Organizer need, model/cost and contrast validation. [`regression-2026-09/issues/14`](./regression-2026-09/issues/14-ai-generated-appearance-theme.md) (`needs-triage`)
 - [ ] **A person across War Weeks**: identity rule (email from XII, names before), what the history page shows, who sees it. [`regression-2026-09/issues/20`](./regression-2026-09/issues/20-people-across-war-weeks.md) (`needs-triage`)
 
+- [ ] **View as another person**: an Organizer sees the app as a Participant or Host, read-only; dropped from R10 (Test sign-in covers testing). Revisit if Organizers need to debug a real person's view in production. [`regression-2026-09/issues/63`](./regression-2026-09/issues/63-view-as.md) (`needs-triage`)
 - [ ] **Sign in with LTI and InfoLink emails**: waiting on the domains; auth change. [`regression-2026-09/issues/75`](./regression-2026-09/issues/75-sign-in-lti-and-infolink.md) (`needs-info`)
 - [ ] **Billable hours from Tense**: owner, API access, visibility of hours. [`regression-2026-09/issues/76`](./regression-2026-09/issues/76-tense-billable-hours.md) (`needs-info`)
 - [ ] **Your War Week, on your phone**: personal recap after R13. [`regression-2026-09/issues/77`](./regression-2026-09/issues/77-personal-war-week-wrapped.md) (`needs-triage`)

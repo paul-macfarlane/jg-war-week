@@ -9,6 +9,11 @@ import {
   team,
 } from "@/db/schema";
 import { type AwardView } from "@/lib/awards";
+import {
+  participantImageSql,
+  participantNameSql,
+  withProfile,
+} from "@/queries/profile-join";
 
 export type { AwardView };
 
@@ -34,26 +39,30 @@ export async function getAwards(
   const recipients =
     rows.length === 0
       ? []
-      : await dbOrTx
-          .select({
-            awardId: awardParticipant.awardId,
-            id: participant.id,
-            displayName: participant.displayName,
-            teamColor: team.color,
-          })
-          .from(awardParticipant)
-          .innerJoin(
-            participant,
-            eq(awardParticipant.participantId, participant.id),
-          )
-          .leftJoin(team, eq(team.id, participant.teamId))
+      : await withProfile(
+          dbOrTx
+            .select({
+              awardId: awardParticipant.awardId,
+              id: participant.id,
+              displayName: participantNameSql(),
+              image: participantImageSql(),
+              teamColor: team.color,
+            })
+            .from(awardParticipant)
+            .innerJoin(
+              participant,
+              eq(awardParticipant.participantId, participant.id),
+            )
+            .leftJoin(team, eq(team.id, participant.teamId))
+            .$dynamic(),
+        )
           .where(
             inArray(
               awardParticipant.awardId,
               rows.map((row) => row.id),
             ),
           )
-          .orderBy(asc(participant.displayName));
+          .orderBy(asc(participantNameSql()));
 
   return rows.map((row) => ({
     id: row.id,
@@ -65,9 +74,10 @@ export async function getAwards(
         : null,
     participants: recipients
       .filter((r) => r.awardId === row.id)
-      .map(({ id, displayName, teamColor }) => ({
+      .map(({ id, displayName, image, teamColor }) => ({
         id,
         displayName,
+        image,
         teamColor,
       })),
   }));
@@ -90,16 +100,19 @@ export async function getAwardFormOptions(
       .from(team)
       .where(eq(team.warWeekId, warWeek.id))
       .orderBy(asc(team.name)),
-    dbOrTx
-      .select({
-        id: participant.id,
-        name: participant.displayName,
-        team: team.name,
-      })
-      .from(participant)
-      .leftJoin(team, eq(team.id, participant.teamId))
+    withProfile(
+      dbOrTx
+        .select({
+          id: participant.id,
+          name: participantNameSql(),
+          team: team.name,
+        })
+        .from(participant)
+        .leftJoin(team, eq(team.id, participant.teamId))
+        .$dynamic(),
+    )
       .where(eq(participant.warWeekId, warWeek.id))
-      .orderBy(asc(participant.displayName)),
+      .orderBy(asc(participantNameSql())),
   ]);
   return { teams, participants };
 }

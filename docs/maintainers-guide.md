@@ -88,6 +88,8 @@ before it says it's done.
 | Appearance Theme → CSS                     | `src/lib/theme.ts`                                                     |
 | Shared UI pieces                           | `src/components/` (shadcn primitives in `src/components/ui/`)          |
 | MCP server (Claude connector)              | `src/app/api/mcp/route.ts`, tools in `src/mcp/`, list in `src/mcp/tools.ts` |
+| Profiles (name, picture) and Delete my account | `src/lib/profile.ts`, `src/queries/profile-join.ts`, `src/app/[edition]/profile/`, `src/mutations/account.ts` |
+| Test sign-in (staging only)                | `src/lib/test-sign-in.ts`, `src/app/sign-in/test/`, `src/actions/test-sign-in.ts` |
 | Who can do what                            | `src/lib/access.ts` (`can`), `src/auth/authorize.ts`, `src/auth/actor.ts` |
 | Smoke test                                 | `scripts/smoke/` (entry: `scripts/smoke/index.ts`)                     |
 | Browser flows (Playwright, `pnpm e2e`)     | `e2e/`, `playwright.config.ts`                                         |
@@ -287,6 +289,81 @@ signed in is a **Participant** (`CONTEXT.md`, "Access rules").
   longer a concern. The same expand-then-contract shape applies to any
   future column removal: land the column unused first, wait out the
   rollback window, then drop it in its own migration.
+
+### Test as someone else (Test sign-in)
+
+Test sign-in lets you sign in as any `@jahnelgroup.com` address without a
+Google account, so you can test as a Participant, Host or Organizer on
+staging. It is never on for production (ADR 0008).
+
+- **Turn it on.** Generate a secret with `openssl rand -base64 32` and set it
+  as `TEST_SIGN_IN_SECRET` on the **staging** Vercel environment only, never
+  on main/production. It must be at least 32 characters, or Test sign-in
+  stays off. PR previews have no Vercel environment, so it is off there too.
+  Redeploy staging after setting it. Never paste the secret into Claude or a
+  chat.
+- **Use it.** Open `/sign-in/test` on staging, type an email and the secret.
+  A `+` alias is a different person each time:
+  `you+participant@jahnelgroup.com`, `you+host@jahnelgroup.com`,
+  `you+organizer@jahnelgroup.com`.
+  - **Participant:** put the alias on a roster row's email
+    (`/admin/roster`), and it links as that Participant. With no roster row
+    it is a signed-in person on no roster.
+  - **Host:** add the alias in a Competition's Hosts field
+    (`/admin/competitions`).
+  - **Organizer:** "inviting" is just adding the alias at
+    `/admin/organizers`.
+- **Every page shows a "Test sign-in: <email>" banner** while you are in a
+  test session.
+- **Turn it off.** Remove `TEST_SIGN_IN_SECRET` and redeploy: every test
+  session counts as anonymous (pages, the proxy and MCP) while it stays
+  removed. Setting any secret again revives the unexpired test sessions.
+  Test accounts are real `user` rows; Delete my account removes them like
+  anyone's.
+- **Rotate it, or after a suspected leak.** First delete the test sessions
+  on the staging database (`delete from session where test_sign_in;`), then
+  set the new secret and redeploy.
+- **Code:** `src/lib/test-sign-in.ts` (the gate), `src/actions/test-sign-in.ts`,
+  `src/app/sign-in/test/page.tsx`, `src/components/session-banner.tsx`,
+  `src/auth/server.ts`.
+
+### Profiles and Delete my account
+
+- **Profile.** Every signed-in person can set a Profile name and a picture
+  URL from **Profile** in the account menu (`/<edition>/profile`). They
+  override the roster name and picture everywhere that email is on a roster,
+  in every War Week, past ones too; empty means the roster name shows, and
+  with no picture URL the Google photo, then initials, show. An Organizer
+  changes the roster name, never the person's Profile: the roster form shows
+  a set Profile name read-only, "Set by the person". Pictures are `https://`
+  URLs only; there is no upload. Code: `src/lib/profile.ts` (the pure
+  resolver), `src/queries/profile-join.ts` (the SQL one),
+  `src/app/[edition]/profile/page.tsx`, `src/components/profile-form.tsx`,
+  `src/mutations/profile.ts`. A new place that shows a person's name must go
+  through the resolver (ADR 0007), never read `display_name` alone.
+- **Delete my account.** At the bottom of the Profile page, behind a
+  typed-email confirm. It removes the login, the Profile and the person's
+  Organizer-list entry (refused for the last Organizer), and keeps roster
+  records, results, Awards, Announcements, history, Host assignments and
+  email audit columns; those show the roster name again. Signing in again
+  makes a fresh account that re-links by email. Code:
+  `src/mutations/account.ts`, `src/actions/account.ts`,
+  `src/components/delete-account-section.tsx`. A person asking Jason to
+  remove them from Host or audit records is outside this button: that is a
+  data request for the Jahnel Group admins.
+
+### Rolling out R10 (migrations 0018 and 0019)
+
+Migrations 0018 (`session.test_sign_in`) and 0019 (the `profile` table) are
+additive. Vercel deploys on push and `migrate.yml` runs separately, so check
+the order each time R10 reaches staging, and again on promotion to `main`:
+
+1. Confirm the **Migrate** GitHub job succeeded **before** checking the
+   deploy. Until `session.test_sign_in` exists, `getSession` fails and every
+   page errors.
+2. If the deploy went live first, re-run the Migrate job.
+3. A Vercel rollback is safe: the new columns and table are unused by the
+   previous build.
 
 ### Run a knockout Competition as a Bracket
 

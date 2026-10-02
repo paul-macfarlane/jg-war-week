@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Monitor, Moon, Sun } from "lucide-react";
+import { LogOut, Monitor, Moon, Sun, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 
@@ -79,23 +79,30 @@ function chooseDisplay(display: Display) {
 }
 
 /**
- * The account menu: an avatar button (initials) in the top-right of the
- * participant and admin headers, opening the viewer's name and email,
+ * The account menu: an avatar button (the viewer's picture, else initials)
+ * in the top-right of the participant and admin headers, opening the
+ * viewer's name and email, Profile,
  * Display (Light / Dark / System, stored per device), Admin (or, in admin,
  * Back to War Week), the Slack channel and Sign out.
  */
 export function AccountMenu({
   name,
+  image = null,
   email,
   edition,
+  profileEdition = edition,
   primaryColor,
   canOpenAdmin,
   inAdmin = false,
   slackUrl,
 }: {
   name: string;
+  /** The viewer's resolved picture (`resolveProfile`); null for initials. */
+  image?: string | null;
   email: string;
   edition: string;
+  /** Whose War Week's Profile page the Profile item opens; `edition` by default. */
+  profileEdition?: string;
   primaryColor: string;
   /** An Organizer, or anyone who hosts a Competition. */
   canOpenAdmin: boolean;
@@ -117,7 +124,12 @@ export function AccountMenu({
         aria-label="Account menu"
         className="focus-visible:ring-ring -my-2 flex size-11 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-2 md:size-10"
       >
-        <Avatar name={name} teamColor={null} primaryColor={primaryColor} />
+        <Avatar
+          name={name}
+          image={image}
+          teamColor={null}
+          primaryColor={primaryColor}
+        />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuGroup>
@@ -127,6 +139,15 @@ export function AccountMenu({
             </span>
             <span className="truncate">{email}</span>
           </DropdownMenuLabel>
+          <DropdownMenuItem
+            className="min-h-11 md:min-h-8"
+            render={
+              <Link href={`/${profileEdition}/profile`} prefetch={false} />
+            }
+          >
+            <UserRound aria-hidden />
+            Profile
+          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>

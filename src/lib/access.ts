@@ -42,6 +42,12 @@ export type Actor = {
   hosts: { competitionId: string; warWeekId: string }[];
 } | null;
 
+/**
+ * What a signed-in person does to their own Profile or account: no target,
+ * since the write is keyed on the actor's own email.
+ */
+export type SelfAction = "profile.save" | "account.delete";
+
 /** The Organizer list family: global, so it takes no target. */
 export type OrganizerListAction =
   "organizers.view" | "organizers.add" | "organizers.remove";
@@ -185,6 +191,7 @@ export const sameEmail = (a: string | null | undefined, b: string) =>
  * and adds Entrants through the picker. Pure: the caller loads the actor
  * and the target.
  */
+export function can(actor: Actor, action: SelfAction): string | null;
 export function can(actor: Actor, action: OrganizerListAction): string | null;
 export function can(
   actor: Actor,
@@ -193,9 +200,15 @@ export function can(
 ): string | null;
 export function can(
   actor: Actor,
-  action: OrganizerListAction | WarWeekAction,
+  action: SelfAction | OrganizerListAction | WarWeekAction,
   target?: AccessTarget,
 ): string | null {
+  if (action === "profile.save" || action === "account.delete") {
+    // Before the Organizer shortcut: anyone signed in may change their own
+    // Profile or delete their own account, and nobody else's (the write is
+    // keyed on `actor.email`).
+    return actor && isJahnelGroupEmail(actor.email) ? null : SIGN_IN_REFUSAL;
+  }
   if (action === "bracket.heat-report") {
     // Before the Organizer shortcut: the Heat facts bind everyone. A non-JG
     // session already counts as anonymous upstream; checked again here.

@@ -7,6 +7,7 @@ import { GoogleSignInButton } from "@/components/auth-buttons";
 import { SiteFooter } from "@/components/site-footer";
 import { ThemeRoot } from "@/components/theme-root";
 import { JG_EMAIL_DOMAIN, safeCallbackPath } from "@/lib/access";
+import { firstParam } from "@/lib/search-params";
 import { warWeekThemeStyle } from "@/lib/theme";
 import { WAR_WEEK_STATUS_LABEL, formatDateRange } from "@/lib/war-week-display";
 import { getCurrentWarWeek } from "@/queries/war-weeks";
@@ -14,10 +15,6 @@ import { getCurrentWarWeek } from "@/queries/war-weeks";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Sign in · JG War Week" };
-
-function firstParam(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
 
 /**
  * Dressed in the current War Week's Appearance Theme (colors, font, banner,

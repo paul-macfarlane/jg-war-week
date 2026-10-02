@@ -48,7 +48,7 @@ export default async function PrivacyPage() {
             Privacy
           </h1>
           <p className="text-foreground/60 text-sm">
-            Last updated: October 1, 2026
+            Last updated: October 2, 2026
           </p>
         </div>
 
@@ -88,6 +88,19 @@ export default async function PrivacyPage() {
         </section>
 
         <section className="flex flex-col gap-3">
+          <h2 className="text-xl font-semibold tracking-tight">Your Profile</h2>
+          <p className="text-foreground/80 leading-relaxed">
+            On your Profile page you can set a name and a picture URL. We store
+            them against your email address. They replace your roster name and
+            picture wherever that email is on a roster, in every War Week,
+            including past ones. With no picture URL set, we show your Google
+            photo, kept as the profile picture URL Google gave us, or your
+            initials. A picture URL is loaded from the host it points to, which
+            sees the IP address of anyone viewing it.
+          </p>
+        </section>
+
+        <section className="flex flex-col gap-3">
           <h2 className="text-xl font-semibold tracking-tight">Who did what</h2>
           <p className="text-foreground/80 leading-relaxed">
             The Organizer email list is kept once, for every War Week, and each
@@ -123,9 +136,9 @@ export default async function PrivacyPage() {
         <section className="flex flex-col gap-3">
           <h2 className="text-xl font-semibold tracking-tight">Retention</h2>
           <p className="text-foreground/80 leading-relaxed">
-            Sessions expire. Accounts and War Week history (rosters, points,
-            Announcements, Awards) are kept indefinitely as part of the War Week
-            archive.
+            Sessions expire. War Week history (rosters, points, Announcements,
+            Awards) is kept indefinitely as part of the War Week archive.
+            Accounts are kept until you delete yours.
           </p>
         </section>
 
@@ -134,7 +147,16 @@ export default async function PrivacyPage() {
             Corrections or removal
           </h2>
           <p className="text-foreground/80 leading-relaxed">
-            Contact the Jahnel Group admins.
+            You can delete your own account from your Profile page, after typing
+            your email to confirm. That removes your login (your account,
+            sessions and Google link), your Profile name and picture URL, your
+            Google photo URL and your place on the Organizer list. It is refused
+            for the last Organizer. It keeps roster records, results, Awards,
+            Announcements and history, which then show your roster name again;
+            Host assignments; and the emails kept for audit. If you sign in
+            again, you get a fresh account that links back to your roster
+            records by email. For anything else, contact the Jahnel Group
+            admins.
           </p>
         </section>
       </main>

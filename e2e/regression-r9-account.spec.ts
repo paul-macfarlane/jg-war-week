@@ -63,9 +63,10 @@ test.describe("55 account menu", () => {
       await expect(
         menu.getByRole("menuitem", { name: "Sign out" }),
       ).toBeVisible();
-      await expect(menu.getByRole("menuitem", { name: "Profile" })).toHaveCount(
-        0,
-      );
+      // R10 (ticket 60) adds the Profile item.
+      await expect(
+        menu.getByRole("menuitem", { name: "Profile" }),
+      ).toHaveAttribute("href", "/xii/profile");
       await shoot(page, testInfo, `55-participant-menu-${label}`);
       await page.keyboard.press("Escape");
 

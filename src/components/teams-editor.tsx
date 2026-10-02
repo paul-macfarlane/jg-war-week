@@ -25,6 +25,7 @@ import {
 import { SuggestionCombobox } from "@/components/suggestion-combobox";
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -219,20 +220,39 @@ function ParticipantForm({
       className="flex flex-col gap-4"
     >
       <FieldGroup className="gap-4 px-4">
-        <Field data-invalid={!!fieldErrors.displayName}>
-          <FieldLabel htmlFor={`${id}-name`}>Display name</FieldLabel>
-          <Input
-            id={`${id}-name`}
-            name="displayName"
-            required
-            maxLength={120}
-            className="h-11 sm:h-9"
-            aria-invalid={!!fieldErrors.displayName}
-            value={values.displayName}
-            onChange={set("displayName")}
-          />
-          <FieldError>{fieldErrors.displayName}</FieldError>
-        </Field>
+        {participant?.profileName ? (
+          <Field>
+            <FieldLabel htmlFor={`${id}-name`}>Display name</FieldLabel>
+            <Input
+              id={`${id}-name`}
+              className="h-11 sm:h-9"
+              readOnly
+              value={participant.profileName}
+            />
+            <FieldDescription>Set by the person</FieldDescription>
+            {/* The typed name stays saved, as the fallback. */}
+            <input
+              type="hidden"
+              name="displayName"
+              value={values.displayName}
+            />
+          </Field>
+        ) : (
+          <Field data-invalid={!!fieldErrors.displayName}>
+            <FieldLabel htmlFor={`${id}-name`}>Display name</FieldLabel>
+            <Input
+              id={`${id}-name`}
+              name="displayName"
+              required
+              maxLength={120}
+              className="h-11 sm:h-9"
+              aria-invalid={!!fieldErrors.displayName}
+              value={values.displayName}
+              onChange={set("displayName")}
+            />
+            <FieldError>{fieldErrors.displayName}</FieldError>
+          </Field>
+        )}
         <Field data-invalid={!!fieldErrors.companyTag}>
           <FieldLabel htmlFor={`${id}-tag`}>Company Tag</FieldLabel>
           <SuggestionCombobox

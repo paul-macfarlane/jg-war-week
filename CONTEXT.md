@@ -25,10 +25,13 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Team Label**                | What teams are called this year (House / Tribe / Team).                                                                           |
 | **Leader** / **Leader Title** | A participant flagged as a team leader, displayed with the year's title (Captain, Head of House). A label only, not a permission. |
 | **Participant**               | A person in a War Week. A record, not a user.                                                                                     |
-| **Avatar**                    | A Participant's visual marker: their initials in their Team's color for now, a portrait later.                                    |
-| **Account menu**              | The avatar button in the top-right of the participant and admin headers, opening the viewer's name and email, Display, Admin (Back to War Week in admin), the Slack channel and Sign out. |
+| **Profile**                   | A person's own Profile name and picture URL, stored once by email (ADR 0007). It overrides the roster name and picture wherever that email is on a roster, in every War Week, past ones too. Set on the Profile page, opened from the Account menu. |
+| **Profile name**              | The name a person sets on their Profile. Empty means the roster name shows. An Organizer's roster form shows a set one read-only, "Set by the person".  |
+| **Avatar**                    | A person's visual marker: their Profile's picture URL (`https://` only), else their Google photo, else their initials in their Team's color. |
+| **Account menu**              | The avatar button in the top-right of the participant and admin headers, opening the viewer's name and email, Profile, Display, Admin (Back to War Week in admin), the Slack channel and Sign out. |
 | **You**                       | The Participant the signed-in person is, in the War Week being viewed. Found by **account linking** only (the roster email matches the session email). |
 | **Account linking**           | Matching the session email to a Participant email, ignoring case. Read-time only; nothing is stored.                             |
+| **Test sign-in**              | A maintainer tool at `/sign-in/test` for testing as any `@jahnelgroup.com` address (`+` aliases included) on staging, by typing a secret. Never on production (ADR 0008). |
 | **Company Tag**               | An optional affiliation label on a participant (LTI, IL, …).                                                                      |
 | **Organizer**                 | A signed-in `@jahnelgroup.com` user on the global Organizer list. Can change anything in any War Week (ADR 0002).                 |
 | **Host**                      | A signed-in JG user an Organizer assigns to a Competition ("hosted by Tony M"). Runs that Competition; needn't be a Participant. A Schedule Item's free-text `host` field is display copy, not the Host role. |
@@ -130,7 +133,8 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   words of their display name, uppercased, with no special cases ("Sir Paul
   of the Backend" → SB). Its fill is the Team color, or the Appearance
   Theme's primary color when there's no Team. It appears on the Teams page,
-  the individual leaderboard and Award winners.
+  the individual leaderboard and Award winners. A **Profile** picture
+  replaces the initials (shown through an image that falls back to them).
 - **You** is highlighted with a "You" tag and an accent ring on the Teams
   roster, the individual leaderboard (home, `/leaderboard`, the Finale) and
   Award recipients. Account linking wins: when the session email matches a
@@ -138,10 +142,35 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   self-pick. The roster admin shows "No email: won't be linked when they sign
   in" on a Participant row without an email. Participant emails never reach
   the client, only the matched id. Past editions use their own roster.
-- A Participant-facing Announcement card shows its author's Participant
-  display name when the author's email matches a Participant's (account
-  linking), else the part of the email before the `@`. The admin pages show
+- A Participant-facing Announcement card shows its author's Profile name,
+  else their Participant display name when the author's email matches a
+  Participant's (account linking), else the part of the email before the `@`. The admin pages show
   the same name; the email is only used for the edit/ownership check.
+
+## Profile rules
+
+- A **Profile** is keyed by lowercase email in the `profile` table and
+  resolves by that email wherever the email is on a roster, in every War Week
+  (ADR 0007). One resolver, in two forms: `src/queries/profile-join.ts`
+  (SQL) and `src/lib/profile.ts` (pure TS). No surface copies a resolved
+  name or picture.
+- **Profile name:** empty means the roster name shows. It shows on the
+  roster, Standings, Brackets, Games, Awards, Recent results, ledgers,
+  Announcement "Posted by", Host names and MCP (names only, never emails).
+- **Avatar picture:** the Profile's picture URL (`https://` only), else the
+  Google photo (only a `https://lh3.googleusercontent.com/` URL counts),
+  else initials. "Use Google photo" clears the picture URL. The Profile page
+  previews Light and Dark side by side. There is no upload; a picture URL is
+  loaded from its own host, which sees viewers' IP addresses.
+- better-auth's `/update-user` endpoint is disabled, so a Profile is only
+  written through the Profile page.
+- **Delete my account** (on the Profile page, behind a typed-email confirm)
+  removes the login (`user`, `session`, `account`), the Profile and the
+  person's Organizer-list entry; it is refused for the last Organizer. It
+  keeps roster records, results, Awards, Announcements, history, Host
+  assignments (`competition_host`) and the email audit columns, which show
+  the roster name again. Signing in again creates a fresh account that
+  re-links by email.
 
 ## Light and dark Display rules
 
@@ -175,7 +204,12 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 
 ## Access rules
 
-- Sign-in is Google only. Any email whose domain isn't exactly
+- Sign-in is Google only, plus **Test sign-in** where it is on: a secret of
+  at least 32 characters is set (`TEST_SIGN_IN_SECRET`) and `VERCEL_ENV` is
+  not `production`. It is typed alongside a JG email, marks its session
+  (`session.test_sign_in`), shows a "Test sign-in: <email>" banner on every
+  page, and counts as anonymous everywhere (pages, proxy, MCP) once it is
+  off. There is no impersonation (ADR 0008). Any email whose domain isn't exactly
   `jahnelgroup.com` is refused: better-auth never creates a user for it,
   and a session with such an email counts as anonymous.
 - There are three roles (ADR 0002), loaded once per request as the actor

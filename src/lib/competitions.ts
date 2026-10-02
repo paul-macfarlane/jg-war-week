@@ -1,5 +1,6 @@
 import type { Competition, PointsEntry, Team } from "@/db/schema";
 import { formatPoints } from "@/lib/points";
+import type { ProfilesByEmail } from "@/lib/profile";
 
 export type CompetitionListItem = Pick<
   Competition,
@@ -145,4 +146,12 @@ export function buildCompetitionLedger({
     }));
 
   return { entries };
+}
+
+/**
+ * A Host as the admin Competitions row shows them: their Profile name, else
+ * their email (Hosts are email-keyed and need not be Participants).
+ */
+export function hostName(email: string, profiles: ProfilesByEmail): string {
+  return profiles.get(email.trim().toLowerCase())?.profileName || email;
 }

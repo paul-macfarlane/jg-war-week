@@ -19,6 +19,11 @@ import { champion } from "@/lib/bracket/formats";
 import type { Bracket, Entrant, Heat } from "@/lib/bracket/types";
 import { BRACKET_FORMATS, isBracketFormat } from "@/lib/bracket/view";
 import { isUuid } from "@/lib/uuid";
+import {
+  participantImageSql,
+  participantNameSql,
+  withProfile,
+} from "@/queries/profile-join";
 
 /** An Entrant with what the Bracket view shows and finalizing needs. */
 export type BracketEntrant = Entrant & {
@@ -29,13 +34,21 @@ export type BracketEntrant = Entrant & {
   /** A Squad's Participants' display names, by name; [] otherwise. */
   participantNames: string[];
   /**
+   * An individual Entrant's picture URL; null for initials and for Teams
+   * and Squads.
+   */
+  image?: string | null;
+  /**
    * The Team a Placement Points Entry goes to: the Team itself, or a
    * Squad's Team; null for a Participant.
    */
   pointsTeamId: string | null;
   /** The Team's color (a Participant's or Squad's Team), or null without one. */
   color: string | null;
-  /** A Participant or Squad Entrant's Team name, for `get_bracket`; null without one. */
+  /**
+   * A Participant or Squad Entrant's Team name, for `get_bracket`; null
+   * without one.
+   */
   teamName: string | null;
 };
 
@@ -74,15 +87,21 @@ async function squadParticipantNames(
 ): Promise<Map<string, string[]>> {
   const names = new Map<string, string[]>();
   if (squadIds.length === 0) return names;
-  const rows = await dbOrTx
-    .select({
-      squadId: squadParticipant.squadId,
-      displayName: participant.displayName,
-    })
-    .from(squadParticipant)
-    .innerJoin(participant, eq(participant.id, squadParticipant.participantId))
+  const rows = await withProfile(
+    dbOrTx
+      .select({
+        squadId: squadParticipant.squadId,
+        displayName: participantNameSql(),
+      })
+      .from(squadParticipant)
+      .innerJoin(
+        participant,
+        eq(participant.id, squadParticipant.participantId),
+      )
+      .$dynamic(),
+  )
     .where(inArray(squadParticipant.squadId, squadIds))
-    .orderBy(asc(participant.displayName));
+    .orderBy(asc(participantNameSql()));
   for (const row of rows) {
     names.set(row.squadId, [
       ...(names.get(row.squadId) ?? []),
@@ -101,29 +120,33 @@ export async function getBracketEntrants(
   dbOrTx: DBOrTx = db,
 ): Promise<BracketEntrant[]> {
   if (!isUuid(competitionId)) return [];
-  const rows = await dbOrTx
-    .select({
-      id: entrant.id,
-      seedPosition: entrant.seedPosition,
-      teamId: entrant.teamId,
-      participantId: entrant.participantId,
-      squadId: entrant.squadId,
-      teamName: team.name,
-      teamColor: team.color,
-      participantName: participant.displayName,
-      participantTeamColor: participantTeam.color,
-      participantTeamName: participantTeam.name,
-      squadName: squad.name,
-      squadTeamId: squad.teamId,
-      squadTeamColor: squadTeam.color,
-      squadTeamName: squadTeam.name,
-    })
-    .from(entrant)
-    .leftJoin(team, eq(team.id, entrant.teamId))
-    .leftJoin(participant, eq(participant.id, entrant.participantId))
-    .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))
-    .leftJoin(squad, eq(squad.id, entrant.squadId))
-    .leftJoin(squadTeam, eq(squadTeam.id, squad.teamId))
+  const rows = await withProfile(
+    dbOrTx
+      .select({
+        id: entrant.id,
+        seedPosition: entrant.seedPosition,
+        teamId: entrant.teamId,
+        participantId: entrant.participantId,
+        squadId: entrant.squadId,
+        teamName: team.name,
+        teamColor: team.color,
+        participantName: participantNameSql(),
+        participantImage: participantImageSql(),
+        participantTeamColor: participantTeam.color,
+        participantTeamName: participantTeam.name,
+        squadName: squad.name,
+        squadTeamId: squad.teamId,
+        squadTeamColor: squadTeam.color,
+        squadTeamName: squadTeam.name,
+      })
+      .from(entrant)
+      .leftJoin(team, eq(team.id, entrant.teamId))
+      .leftJoin(participant, eq(participant.id, entrant.participantId))
+      .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))
+      .leftJoin(squad, eq(squad.id, entrant.squadId))
+      .leftJoin(squadTeam, eq(squadTeam.id, squad.teamId))
+      .$dynamic(),
+  )
     .where(eq(entrant.competitionId, competitionId))
     .orderBy(asc(entrant.seedPosition));
   const names = await squadParticipantNames(
@@ -138,6 +161,7 @@ export async function getBracketEntrants(
     participantId: row.participantId,
     squadId: row.squadId,
     participantNames: row.squadId ? (names.get(row.squadId) ?? []) : [],
+    image: row.participantId ? row.participantImage : null,
     pointsTeamId: row.teamId ?? row.squadTeamId ?? null,
     color:
       row.teamColor ?? row.participantTeamColor ?? row.squadTeamColor ?? null,
@@ -359,21 +383,27 @@ export async function getSquads(
     .where(eq(squad.competitionId, competitionId))
     .orderBy(asc(squad.name));
   if (squads.length === 0) return [];
-  const rows = await dbOrTx
-    .select({
-      squadId: squadParticipant.squadId,
-      id: participant.id,
-      displayName: participant.displayName,
-    })
-    .from(squadParticipant)
-    .innerJoin(participant, eq(participant.id, squadParticipant.participantId))
+  const rows = await withProfile(
+    dbOrTx
+      .select({
+        squadId: squadParticipant.squadId,
+        id: participant.id,
+        displayName: participantNameSql(),
+      })
+      .from(squadParticipant)
+      .innerJoin(
+        participant,
+        eq(participant.id, squadParticipant.participantId),
+      )
+      .$dynamic(),
+  )
     .where(
       inArray(
         squadParticipant.squadId,
         squads.map((s) => s.id),
       ),
     )
-    .orderBy(asc(participant.displayName));
+    .orderBy(asc(participantNameSql()));
   return squads.map((s) => ({
     ...s,
     participants: rows
@@ -415,16 +445,15 @@ export async function getHeatReporters(
   competitionId: string,
   dbOrTx: DBOrTx = db,
 ): Promise<Record<string, string>> {
-  const rows = await dbOrTx
-    .select({ heatId: heat.id, name: participant.displayName })
-    .from(heat)
-    .leftJoin(participant, eq(participant.id, heat.reportedByParticipantId))
-    .where(
-      and(
-        eq(heat.competitionId, competitionId),
-        isNotNull(heat.reportedByEmail),
-      ),
-    );
+  const rows = await withProfile(
+    dbOrTx
+      .select({ heatId: heat.id, name: participantNameSql() })
+      .from(heat)
+      .leftJoin(participant, eq(participant.id, heat.reportedByParticipantId))
+      .$dynamic(),
+  ).where(
+    and(eq(heat.competitionId, competitionId), isNotNull(heat.reportedByEmail)),
+  );
   return Object.fromEntries(
     rows.map((row) => [row.heatId, row.name ?? UNKNOWN_REPORTER]),
   );

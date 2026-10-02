@@ -40,7 +40,7 @@ export const ABOUT_FEATURES = [
   {
     slug: "points",
     title: "Points and Standings",
-    text: "Scoring is one tap with Placement Points, and the Standings move on the spot. Sign in and you're highlighted wherever you appear.",
+    text: "Scoring is one tap with Placement Points, and the Standings move on the spot. Sign in and you're highlighted wherever you appear, under the name and picture you set in your Profile.",
     alt: "The Points Entry form with Mile Run selected, a Participant to choose, and the 1st, 2nd and 3rd Placement Points buttons beside the current Standings.",
   },
   {

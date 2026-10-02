@@ -1,6 +1,6 @@
 import { Client } from "pg";
 
-import { E2E_EMAIL_PATTERN } from "./env";
+import { E2E_EMAIL_PATTERN, E2E_EXACT_EMAILS } from "./env";
 
 /** Runs one query on its own connection, as `scripts/smoke/harness.ts` does. */
 export async function runQuery<T extends Record<string, unknown>>(
@@ -18,13 +18,27 @@ export async function runQuery<T extends Record<string, unknown>>(
 }
 
 /**
- * Deletes every e2e user (their sessions cascade), Organizer row and Host
- * row (the e2e Host's `competition_host` rows).
+ * Deletes every e2e user (their sessions cascade), Profile, Organizer row
+ * and Host row (the e2e Host's `competition_host` rows), plus the users,
+ * Profiles and Organizer rows of the exact `E2E_EXACT_EMAILS` (no `LIKE`
+ * wildcards).
  */
 export async function deleteE2eUsers() {
   await runQuery(`delete from "user" where email like $1`, [E2E_EMAIL_PATTERN]);
+  await runQuery(`delete from "user" where email = any($1::text[])`, [
+    E2E_EXACT_EMAILS,
+  ]);
+  await runQuery(`delete from profile where email like $1`, [
+    E2E_EMAIL_PATTERN,
+  ]);
+  await runQuery(`delete from profile where email = any($1::text[])`, [
+    E2E_EXACT_EMAILS,
+  ]);
   await runQuery(`delete from organizer where email like $1`, [
     E2E_EMAIL_PATTERN,
+  ]);
+  await runQuery(`delete from organizer where email = any($1::text[])`, [
+    E2E_EXACT_EMAILS,
   ]);
   await runQuery(`delete from competition_host where email like $1`, [
     E2E_EMAIL_PATTERN,
@@ -83,6 +97,34 @@ export async function setParticipantEmail(id: string, email: string | null) {
     email,
     id,
   ]);
+}
+
+/**
+ * Runs `body` while the `edition` Participant named `displayName` has the
+ * roster email `email`, then gives the Participant back its own email.
+ */
+export async function withParticipantEmail<T>(
+  edition: string,
+  displayName: string,
+  email: string,
+  body: () => Promise<T>,
+): Promise<T> {
+  const [row] = await runQuery<{ id: string; email: string | null }>(
+    `select p.id, p.email from participant p join war_week w on w.id = p.war_week_id
+     where w.edition = $1 and p.display_name = $2`,
+    [edition, displayName],
+  );
+  if (!row) {
+    throw new Error(
+      `No War Week ${edition.toUpperCase()} Participant named "${displayName}"`,
+    );
+  }
+  await setParticipantEmail(row.id, email);
+  try {
+    return await body();
+  } finally {
+    await setParticipantEmail(row.id, row.email);
+  }
 }
 
 /**

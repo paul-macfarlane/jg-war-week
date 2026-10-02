@@ -37,6 +37,7 @@ export function RosterList({
             name={p.displayName}
             teamColor={teamColor}
             primaryColor={primaryColor}
+            image={p.image}
           />
           <span className={p.isLeader ? "font-semibold" : undefined}>
             {p.displayName}

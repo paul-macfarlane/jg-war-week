@@ -14,6 +14,8 @@ export type ResultTarget = {
   /** The Team's or Participant's id: two of one name are still two. */
   id: string;
   name: string;
+  /** A Participant's picture URL; null for initials and for Teams. */
+  image?: string | null;
   /** The Team's color, or the Participant's Team's color; null without one. */
   color: string | null;
   kind: "team" | "participant";

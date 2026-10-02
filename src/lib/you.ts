@@ -9,6 +9,7 @@ export const YOU_ROW_CLASS =
 export type YouCandidate = {
   id: string;
   email?: string | null;
+  /** The roster name as the Organizer typed it. */
   displayName?: string | null;
 };
 

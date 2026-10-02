@@ -14,6 +14,7 @@ import {
   createSmokeSession,
   fail,
   ok,
+  runCheck,
   runQuery,
   signedInFetch,
   teamTotalIn,
@@ -731,6 +732,39 @@ export async function assertSignInPage() {
   } catch (error) {
     fail(sessionCheck, String(error));
   }
+}
+
+/**
+ * The smoke server runs with no TEST_SIGN_IN_SECRET (and VERCEL_ENV
+ * blank), as Production would: Test sign-in is off, so its page is not
+ * found. better-auth's self-service `/update-user` is disabled everywhere.
+ */
+export async function assertTestSignInOffAndUpdateUserDisabled() {
+  await runCheck(
+    "GET /sign-in/test is 404 with no TEST_SIGN_IN_SECRET",
+    async () => {
+      const res = await fetch(`${BASE_URL}/sign-in/test`, {
+        redirect: "manual",
+      });
+      return res.status === 404 ? null : `status=${res.status}`;
+    },
+  );
+  await runCheck(
+    "POST /api/auth/update-user is 404 for a signed-in user",
+    async () => {
+      const res = await signedInFetch(`${BASE_URL}/api/auth/update-user`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: BASE_URL,
+        },
+        body: JSON.stringify({ image: "https://example.com/x.png" }),
+      });
+      return res.status === 404
+        ? null
+        : `status=${res.status} body=${(await res.text()).slice(0, 200)}`;
+    },
+  );
 }
 
 const FAQ_TABLE_OFF = "faq_item_smoke_off";

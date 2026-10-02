@@ -16,6 +16,7 @@ import {
 import type { TimedHeatRow } from "@/lib/bracket/now-next";
 import { BRACKET_FORMATS } from "@/lib/bracket/view";
 import { type ScheduleDay, groupSchedule } from "@/lib/schedule";
+import { participantNameSql, withProfile } from "@/queries/profile-join";
 
 /**
  * Loads a War Week's schedule, grouped and ordered by `groupSchedule`:
@@ -117,26 +118,28 @@ export async function getTimedHeats(
       .from(heat)
       .where(inArray(heat.competitionId, competitionIds))
       .groupBy(heat.competitionId),
-    dbOrTx
-      .select({
-        heatId: heatEntrant.heatId,
-        slot: heatEntrant.slot,
-        entrantId: heatEntrant.entrantId,
-        teamName: team.name,
-        participantName: participant.displayName,
-        squadName: squad.name,
-      })
-      .from(heatEntrant)
-      .innerJoin(entrant, eq(entrant.id, heatEntrant.entrantId))
-      .leftJoin(team, eq(team.id, entrant.teamId))
-      .leftJoin(participant, eq(participant.id, entrant.participantId))
-      .leftJoin(squad, eq(squad.id, entrant.squadId))
-      .where(
-        inArray(
-          heatEntrant.heatId,
-          heats.map((h) => h.id),
-        ),
+    withProfile(
+      dbOrTx
+        .select({
+          heatId: heatEntrant.heatId,
+          slot: heatEntrant.slot,
+          entrantId: heatEntrant.entrantId,
+          teamName: team.name,
+          participantName: participantNameSql(),
+          squadName: squad.name,
+        })
+        .from(heatEntrant)
+        .innerJoin(entrant, eq(entrant.id, heatEntrant.entrantId))
+        .leftJoin(team, eq(team.id, entrant.teamId))
+        .leftJoin(participant, eq(participant.id, entrant.participantId))
+        .leftJoin(squad, eq(squad.id, entrant.squadId))
+        .$dynamic(),
+    ).where(
+      inArray(
+        heatEntrant.heatId,
+        heats.map((h) => h.id),
       ),
+    ),
   ]);
 
   return heats.map((row) => {

@@ -80,6 +80,7 @@ import {
   assertSeedLoadedOnce,
   assertSignInPage,
   assertTeams,
+  assertTestSignInOffAndUpdateUserDisabled,
   assertUnknownEdition404,
   assertXiHome,
   assertYouHighlight,
@@ -197,6 +198,7 @@ async function main() {
       await assertAboutPage();
       await assertPrivacyAndTermsPages();
       await assertSignInPage();
+      await assertTestSignInOffAndUpdateUserDisabled();
       await assertAdminGate(sessions);
       await assertAdminWording(sessions);
       await assertAdminRedirects(sessions);

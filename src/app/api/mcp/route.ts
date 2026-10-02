@@ -11,7 +11,7 @@ import { toLeaderboardResult } from "@/mcp/leaderboard";
 import { toScheduleResult } from "@/mcp/schedule";
 import { MCP_TOOLS } from "@/mcp/tools";
 import { toCurrentWarWeekResult } from "@/mcp/war-week";
-import { getAnnouncements } from "@/queries/announcements";
+import { getAnnouncementsWithAuthors } from "@/queries/announcements";
 import { getArchiveDetailByYear, listArchive } from "@/queries/archive";
 import { getAwards } from "@/queries/awards";
 import { getBracket } from "@/queries/brackets";
@@ -120,7 +120,9 @@ const handler = createMcpHandler(
         const result = warWeek
           ? toAnnouncementsResult(
               warWeek.edition,
-              await getAnnouncements(warWeek, { limit: limit ?? 10 }),
+              await getAnnouncementsWithAuthors(warWeek, {
+                limit: limit ?? 10,
+              }),
             )
           : { warWeek: null };
 
