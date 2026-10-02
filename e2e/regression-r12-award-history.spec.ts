@@ -1,5 +1,6 @@
 import { type Page, type TestInfo, expect, test } from "@playwright/test";
 
+import { runQuery } from "./db";
 import { asOrganizer } from "./session";
 
 const PHONE = { width: 390, height: 844 };
@@ -20,6 +21,37 @@ test("r12 71 History lists Awards through the years and a Category lists its War
   test.setTimeout(120_000);
   await asOrganizer(context);
 
+  // The Profile branch: a seeded MVP recipient (War Week IV's "Ian Ballard")
+  // linked by email to a Profile with a distinct name shows that name.
+  const PROFILE_EMAIL = "e2e-r12-ian@jahnelgroup.com";
+  const PROFILE_NAME = "Ian Profile-Named";
+  await runQuery(
+    `update participant p set email = $1 from war_week w
+     where p.war_week_id = w.id and w.edition = 'iv' and p.display_name = 'Ian Ballard'`,
+    [PROFILE_EMAIL],
+  );
+  await runQuery(
+    `insert into profile (email, name) values ($1, $2)
+     on conflict (email) do update set name = excluded.name`,
+    [PROFILE_EMAIL, PROFILE_NAME],
+  );
+  try {
+    await runR12AwardHistory(page, testInfo, PROFILE_NAME);
+  } finally {
+    await runQuery(`delete from profile where email = $1`, [PROFILE_EMAIL]);
+    await runQuery(
+      `update participant p set email = null from war_week w
+       where p.war_week_id = w.id and w.edition = 'iv' and p.email = $1`,
+      [PROFILE_EMAIL],
+    );
+  }
+});
+
+async function runR12AwardHistory(
+  page: Page,
+  testInfo: TestInfo,
+  profileName: string,
+) {
   for (const [viewport, name] of [
     [DESKTOP, "1440"],
     [PHONE, "390"],
@@ -43,7 +75,10 @@ test("r12 71 History lists Awards through the years and a Category lists its War
     expect(v).toBeGreaterThanOrEqual(0);
     expect(iv).toBeGreaterThan(v);
     await expect(page.getByText("MVP 1st Place").first()).toBeVisible();
+    // A roster name where there's no Profile; the Profile's name where there is.
     await expect(page.getByText("Anthony Conway")).toBeVisible();
+    await expect(page.getByText(profileName)).toBeVisible();
+    await expect(page.getByText("Ian Ballard")).toHaveCount(0);
     await shoot(page, testInfo, `category-${name}`);
   }
 
@@ -52,4 +87,4 @@ test("r12 71 History lists Awards through the years and a Category lists its War
     "/history/awards/00000000-0000-4000-8000-000000000000",
   );
   expect(missing?.status()).toBe(404);
-});
+}

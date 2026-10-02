@@ -36,6 +36,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { WarWeek } from "@/db/schema";
 import { type Format, formatLabel, isBracketFormat } from "@/lib/bracket/view";
+import { setupHref, setupLinkLabel } from "@/lib/competitions";
 import { COMPETITION_FORMATS, GAME_TYPES, type GameType } from "@/lib/enums";
 import { gameTypeLabel } from "@/lib/games/config";
 import type { CompetitionInput } from "@/lib/setup";
@@ -59,25 +60,6 @@ const GAME_TYPE_DESCRIPTIONS: Record<GameType, string> = {
   "best-score": "Each Game records a score; the best or the total counts.",
   ranked: "Each Game records a finishing order, worth Finish Points.",
 };
-
-/** Where a saved Competition of this Format is set up. */
-function setupHref(competition: Pick<SetupCompetition, "id" | "format">) {
-  if (competition.format === "games") {
-    return `/admin/competitions/${competition.id}/games`;
-  }
-  if (competition.format === "participation") {
-    return `/admin/competitions/${competition.id}/participation`;
-  }
-  return `/admin/competitions/${competition.id}/bracket`;
-}
-
-/** The Competitions list's link to a Competition's setup, by Format. */
-function setupLinkLabel(format: Format): string {
-  if (format === "points") return "Run as a Bracket";
-  if (format === "games") return "Games";
-  if (format === "participation") return "Who took part";
-  return "Bracket";
-}
 
 function emptyCompetition(mode: WarWeek["mode"]): CompetitionInput {
   return {
@@ -192,9 +174,7 @@ function CompetitionForm({
           input.format === "games" ||
           input.format === "participation")
       ) {
-        router.push(
-          setupHref({ id: result.id, format: input.format as Format }),
-        );
+        router.push(setupHref(input.format as Format, result.id));
       }
       return result;
     },
@@ -459,7 +439,7 @@ export function CompetitionsEditor({
                   .join(" · ")}
                 aside={
                   <Link
-                    href={setupHref(c)}
+                    href={setupHref(c.format, c.id)}
                     className="text-primary inline-flex min-h-11 shrink-0 items-center px-2 text-sm underline-offset-4 hover:underline sm:min-h-0"
                   >
                     {setupLinkLabel(c.format)}

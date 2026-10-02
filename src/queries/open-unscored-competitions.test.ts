@@ -92,7 +92,7 @@ async function fixture(tx: DBTx) {
 async function modules() {
   return {
     mutations: await import("@/mutations/games"),
-    queries: await import("@/queries/open-games-competitions"),
+    queries: await import("@/queries/open-unscored-competitions"),
   };
 }
 
@@ -104,7 +104,7 @@ const redBeatsBlue = (red: string, blue: string) => ({
   ],
 });
 
-describe.skipIf(!isLocalDatabase)("getOpenGamesCompetitions", () => {
+describe.skipIf(!isLocalDatabase)("getOpenUnscoredCompetitions", () => {
   it("lists an open games Competition with a Game", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
@@ -113,7 +113,7 @@ describe.skipIf(!isLocalDatabase)("getOpenGamesCompetitions", () => {
       await mutations.logGame(pong, redBeatsBlue(f.red, f.blue), f.ctx, tx);
 
       expect(
-        await queries.getOpenGamesCompetitions({ id: f.ctx.warWeekId }, tx),
+        await queries.getOpenUnscoredCompetitions({ id: f.ctx.warWeekId }, tx),
       ).toEqual([{ id: pong, name: "Pong", format: "games" }]);
     });
   });
@@ -125,7 +125,7 @@ describe.skipIf(!isLocalDatabase)("getOpenGamesCompetitions", () => {
       await f.pong(f.ctx.warWeekId);
 
       expect(
-        await queries.getOpenGamesCompetitions({ id: f.ctx.warWeekId }, tx),
+        await queries.getOpenUnscoredCompetitions({ id: f.ctx.warWeekId }, tx),
       ).toEqual([]);
     });
   });
@@ -142,7 +142,7 @@ describe.skipIf(!isLocalDatabase)("getOpenGamesCompetitions", () => {
         .where(eq(f.schema.competition.id, pong));
 
       expect(
-        await queries.getOpenGamesCompetitions({ id: f.ctx.warWeekId }, tx),
+        await queries.getOpenUnscoredCompetitions({ id: f.ctx.warWeekId }, tx),
       ).toEqual([]);
     });
   });
@@ -160,7 +160,7 @@ describe.skipIf(!isLocalDatabase)("getOpenGamesCompetitions", () => {
       );
 
       expect(
-        await queries.getOpenGamesCompetitions({ id: f.ctx.warWeekId }, tx),
+        await queries.getOpenUnscoredCompetitions({ id: f.ctx.warWeekId }, tx),
       ).toEqual([]);
     });
   });
@@ -184,7 +184,7 @@ describe.skipIf(!isLocalDatabase)("getOpenGamesCompetitions", () => {
         .values({ competitionId: pool.id, loggedByEmail: actorEmail });
 
       expect(
-        await queries.getOpenGamesCompetitions({ id: f.ctx.warWeekId }, tx),
+        await queries.getOpenUnscoredCompetitions({ id: f.ctx.warWeekId }, tx),
       ).toEqual([]);
     });
   });
@@ -199,7 +199,7 @@ describe.skipIf(!isLocalDatabase)("getOpenGamesCompetitions", () => {
       await mutations.logGame(alpha, redBeatsBlue(f.red, f.blue), f.ctx, tx);
 
       expect(
-        await queries.getOpenGamesCompetitions({ id: f.ctx.warWeekId }, tx),
+        await queries.getOpenUnscoredCompetitions({ id: f.ctx.warWeekId }, tx),
       ).toEqual([
         { id: alpha, name: "Alpha Games", format: "games" },
         { id: zed, name: "Zed Games", format: "games" },
@@ -243,7 +243,7 @@ describe.skipIf(!isLocalDatabase)("getOpenGamesCompetitions", () => {
       await participation.closeParticipation(closed, f.ctx, tx);
 
       expect(
-        await queries.getOpenGamesCompetitions({ id: f.ctx.warWeekId }, tx),
+        await queries.getOpenUnscoredCompetitions({ id: f.ctx.warWeekId }, tx),
       ).toEqual([{ id: workout, name: "Workout", format: "participation" }]);
     });
   });

@@ -184,6 +184,7 @@ export default async function CompetitionPage({
           offer={checkInOffer}
           teamLabel={warWeek.teamLabel}
           primaryColor={warWeek.primaryColor}
+          now={new Date()}
         />
       ) : null}
       {isBracket ? (

@@ -596,12 +596,12 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 - A seeded Category has a stable key, so renaming never breaks a seed.
 - `/<edition>/awards` groups Awards under their Category's heading, linked
   to its page, then "Other Awards" for those with none; with no Category on
-  any Award there are no headings. An Award's own name shows only when it
-  adds to its Category's ("MVP 1st Place" under War Week MVP).
+  any Award there are no headings. The Award's own name always shows here.
 - **Through the years**: `/history` lists every Category that has an Award
   under "Awards through the years", and `/history/awards/<categoryId>` shows
   that Category's Awards by War Week, newest first, with their recipients
-  (Profile names). It is keyed by id, so a rename never breaks the link; an
+  (Profile names). An Award's own name shows there only when it adds to its
+  Category's ("MVP 1st Place" under War Week MVP). It is keyed by id, so a rename never breaks the link; an
   unknown or malformed id is a 404.
 
 ## Enrollment rules

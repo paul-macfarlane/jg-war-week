@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { BracketResults } from "@/components/bracket-results";
+import { setupHref } from "@/lib/competitions";
 import { getBracket, getHeatReporters } from "@/queries/brackets";
 import { getGamesCompetitions } from "@/queries/games";
 import { getParticipationCompetitions } from "@/queries/participation";
@@ -39,9 +40,9 @@ export default async function BracketResultsPage({
   );
   if (runAsGames || runAsParticipation) {
     const other = (runAsGames ?? runAsParticipation)!;
-    const [label, segment] = runAsGames
-      ? ["Games", "games"]
-      : ["Participation", "participation"];
+    const [label, format] = runAsGames
+      ? (["Games", "games"] as const)
+      : (["Participation", "participation"] as const);
     return (
       <AdminShell
         warWeek={warWeek}
@@ -61,7 +62,7 @@ export default async function BracketResultsPage({
           <p className="text-foreground/70 text-sm">
             This Competition is run as {label}, not a Bracket.{" "}
             <Link
-              href={`/admin/competitions/${other.id}/${segment}`}
+              href={setupHref(format, other.id)}
               className="text-primary underline-offset-4 hover:underline"
             >
               Open its {label}

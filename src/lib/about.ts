@@ -51,7 +51,7 @@ export const ABOUT_FEATURES = [
   },
   {
     slug: "competitions",
-    title: "Competitions: Brackets and Games",
+    title: "Competitions: Brackets, Games and Participation",
     text: "Run a Competition as a Bracket, as Games players log themselves from a phone, or as Participation: the Host ticks who took part, or people check themselves in. Finalizing or closing it turns the results into points.",
     alt: "A finished Bracket on its Competition page: two Round 1 Heats of Participants feeding the Final, with its champion on top.",
   },

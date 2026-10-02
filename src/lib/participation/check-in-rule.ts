@@ -49,6 +49,22 @@ export function notOnATeam(teamLabel: string): string {
 }
 
 /**
+ * Why a Participant can't take part (or be marked) in this Competition
+ * for their Team, or null: in team scoring only a Participant on a Team can.
+ */
+export function markError({
+  scoring,
+  teamId,
+  teamLabel,
+}: {
+  scoring: "team" | "individual";
+  teamId: string | null;
+  teamLabel: string;
+}): string | null {
+  return scoring === "team" && teamId === null ? notOnATeam(teamLabel) : null;
+}
+
+/**
  * Why checking in or out isn't open for the linked Participant, or null.
  * In order: not Participation, closed, switch off, close time passed, no
  * linked Participant, on no Team in team scoring.
@@ -61,10 +77,11 @@ function openError(facet: CheckInFacet): string | null {
     return CHECK_IN_CLOSED;
   }
   if (!facet.linked) return NOT_LINKED;
-  if (facet.scoring === "team" && facet.linked.teamId === null) {
-    return notOnATeam(facet.teamLabel);
-  }
-  return null;
+  return markError({
+    scoring: facet.scoring,
+    teamId: facet.linked.teamId,
+    teamLabel: facet.teamLabel,
+  });
 }
 
 /** Why the linked Participant can't check in, or null when they can. */

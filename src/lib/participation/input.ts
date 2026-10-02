@@ -5,12 +5,12 @@
  */
 import { z } from "zod";
 
-import { MAX_PLACEMENTS } from "@/lib/competitions";
 import {
   PARTICIPATION_TEAM_SCORINGS,
   type ParticipationTeamScoring,
 } from "@/lib/enums";
 import { closesAtOf } from "@/lib/games/enroll-input";
+import { parsePlacementPointsText } from "@/lib/placement-points";
 import { POINTS_NUMBER, pointsSchema } from "@/lib/points-entry";
 import type { Parsed } from "@/lib/result";
 
@@ -61,42 +61,6 @@ function parsePoints(value: unknown): Parsed<number> {
       );
 }
 
-/** "5, 3, 1" as Placement Points, highest first; blank is none. */
-function parsePlacementPoints(value: unknown): Parsed<number[] | null> {
-  if (value === null || value === undefined) return { ok: true, value: null };
-  if (typeof value !== "string") {
-    return refuse("Placement Points must be text.", "placementPoints");
-  }
-  const places = value.split(/[\s,]+/).filter(Boolean);
-  if (places.length === 0) return { ok: true, value: null };
-  if (!places.every((place) => POINTS_NUMBER.test(place))) {
-    return refuse(
-      "Placement Points must be numbers separated by commas, 1st place first.",
-      "placementPoints",
-    );
-  }
-  const points = places.map(Number);
-  if (points.length > MAX_PLACEMENTS) {
-    return refuse(
-      `Placement Points cover at most ${MAX_PLACEMENTS} places.`,
-      "placementPoints",
-    );
-  }
-  if (!points.every((p) => pointsSchema.safeParse(p).success && p >= 0)) {
-    return refuse(
-      "Each place's Placement Points must be 0 or more, with at most two decimal places.",
-      "placementPoints",
-    );
-  }
-  if (!points.every((p, i) => i === 0 || p <= points[i - 1])) {
-    return refuse(
-      "Each place's Placement Points must be no more than the place above it.",
-      "placementPoints",
-    );
-  }
-  return { ok: true, value: points };
-}
-
 /**
  * A `participation` Competition's settings from its setup page: N
  * (`participationPoints`), the team scoring (`teamScoring`, blank for
@@ -122,7 +86,7 @@ export function parseParticipationSettingsInput(
     teamScoring = scoring.data;
   }
 
-  const placementPoints = parsePlacementPoints(input.placementPoints);
+  const placementPoints = parsePlacementPointsText(input.placementPoints);
   if (!placementPoints.ok) return placementPoints;
 
   if (typeof input.selfCheckIn !== "boolean") {

@@ -1,8 +1,8 @@
 import { type SQL, and, count, eq, ne, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
+import { participationTeamScoringFor } from "@/db/participation-sql";
 import {
-  type Competition,
   award,
   awardParticipant,
   competition,
@@ -898,20 +898,6 @@ export async function updateCompetition(
           : { ok: false, error: COMPETITION_NOT_FOUND };
       }),
   );
-}
-
-/**
- * A `participation` Competition's team scoring after a scoring save (the
- * CHECK `competition_participation_columns`): kept while still team
- * scoring, `ranked` on becoming team, null for individual or another
- * Format. `scoring` is the saved value, from the excluded row in a seed
- * load.
- */
-export function participationTeamScoringFor(
-  scoring: SQL | Competition["scoring"],
-): SQL<"ranked" | "per-person" | null> {
-  return sql`case when ${competition.format}::text = 'participation' and ${scoring} = 'team'
-    then coalesce(${competition.participationTeamScoring}, 'ranked') end`;
 }
 
 /**

@@ -35,7 +35,7 @@ describe("Award Category actions", () => {
       ok: false,
       error: "Only an Organizer can add Award Categories.",
     });
-    expect(await createAwardCategory("Zz")).toEqual({
+    expect(await createAwardCategory({ name: "Zz" })).toEqual({
       ok: false,
       error: "Only an Organizer can add Award Categories.",
     });
@@ -43,8 +43,8 @@ describe("Award Category actions", () => {
   });
 
   it("check the matching action for each write", async () => {
-    await createAwardCategory("Zz");
-    await renameAwardCategory(ID, "Zz");
+    await createAwardCategory({ name: "Zz" });
+    await renameAwardCategory(ID, { name: "Zz" });
     await archiveAwardCategory(ID);
     await restoreAwardCategory(ID);
     expect(
@@ -58,20 +58,31 @@ describe("Award Category actions", () => {
   });
 
   it("trim the name and refuse an empty or overlong one", async () => {
-    await createAwardCategory("  Zz Crossword ");
+    await createAwardCategory({ name: "  Zz Crossword " });
     expect(mutations.createAwardCategory).toHaveBeenCalledWith("Zz Crossword");
-    expect(await createAwardCategory("   ")).toMatchObject({
+    expect(await createAwardCategory({ name: "   " })).toMatchObject({
       ok: false,
       error: "Name must not be empty.",
     });
-    expect(await renameAwardCategory(ID, "x".repeat(81))).toMatchObject({
+    expect(
+      await renameAwardCategory(ID, { name: "x".repeat(81) }),
+    ).toMatchObject({
       ok: false,
       error: "Name must be at most 80 characters.",
     });
   });
 
+  it("return field errors for input that isn't a name, never throwing", async () => {
+    expect(await createAwardCategory(undefined)).toMatchObject({ ok: false });
+    expect(await createAwardCategory({ name: 7 })).toMatchObject({
+      ok: false,
+      fieldErrors: { name: "Name must be text." },
+    });
+    expect(mutations.createAwardCategory).not.toHaveBeenCalled();
+  });
+
   it("read a malformed id as a Category that no longer exists", async () => {
-    expect(await renameAwardCategory("nope", "Zz")).toEqual({
+    expect(await renameAwardCategory("nope", { name: "Zz" })).toEqual({
       ok: false,
       error: "That Category no longer exists.",
     });

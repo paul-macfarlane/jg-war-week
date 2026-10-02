@@ -4,7 +4,7 @@ import { DBOrTx, db } from "@/db";
 import { type WarWeek, competition, game, participation } from "@/db/schema";
 
 /** An open `games` or `participation` Competition, named in the End War Week warning. */
-export type OpenGamesCompetition = {
+export type OpenUnscoredCompetition = {
   id: string;
   name: string;
   format: "games" | "participation";
@@ -17,10 +17,10 @@ export type OpenGamesCompetition = {
  * ending a War Week with Competitions whose points aren't yet in the
  * Standings: they land only on Close.
  */
-export async function getOpenGamesCompetitions(
+export async function getOpenUnscoredCompetitions(
   warWeek: Pick<WarWeek, "id">,
   dbOrTx: DBOrTx = db,
-): Promise<OpenGamesCompetition[]> {
+): Promise<OpenUnscoredCompetition[]> {
   const rows = await dbOrTx
     .select({
       id: competition.id,
@@ -57,6 +57,6 @@ export async function getOpenGamesCompetitions(
     .orderBy(competition.name);
   return rows.map((row) => ({
     ...row,
-    format: row.format as OpenGamesCompetition["format"],
+    format: row.format as OpenUnscoredCompetition["format"],
   }));
 }

@@ -16,6 +16,7 @@ import {
   useFocusFirstInvalid,
 } from "@/components/form-field-errors";
 import { FormValueInput } from "@/components/form-value-input";
+import { OptionSelect } from "@/components/option-select";
 import {
   SetupRowError,
   SetupSaveButton,
@@ -49,7 +50,6 @@ import type { AwardFormOptions } from "@/queries/awards";
 
 /** Base UI's Select won't accept `""` as an item value. */
 const NO_TEAM = "none";
-const NO_CATEGORY = "none";
 
 /**
  * Give or edit one Award, in its Sheet on the Awards page: name,
@@ -102,7 +102,7 @@ export function AwardForm({
     ...options.teams.map((team) => ({ value: team.id, label: team.name })),
   ];
   const categoryItems = [
-    { value: NO_CATEGORY, label: "None" },
+    { value: "", label: "None" },
     ...options.categories.map((c) => ({ value: c.id, label: c.name })),
     ...(currentCategory?.archived
       ? [
@@ -187,34 +187,14 @@ export function AwardForm({
 
         <Field data-invalid={!!fieldErrors.categoryId}>
           <FieldLabel htmlFor="award-category">Category</FieldLabel>
-          <Select
-            value={categoryId === "" ? NO_CATEGORY : categoryId}
-            items={categoryItems}
-            onValueChange={(value) =>
-              setCategoryId(!value || value === NO_CATEGORY ? "" : value)
-            }
-          >
-            <SelectTrigger
-              id="award-category"
-              aria-invalid={!!fieldErrors.categoryId}
-              className="w-full"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {categoryItems.map((item) => (
-                <SelectItem
-                  key={item.value}
-                  value={item.value}
-                  className="min-h-11 sm:min-h-8"
-                >
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {/* "" posts as no Category. */}
-          <FormValueInput name="categoryId" value={categoryId} />
+          <OptionSelect
+            id="award-category"
+            name="categoryId"
+            value={categoryId}
+            onValueChange={setCategoryId}
+            options={categoryItems}
+            aria-invalid={!!fieldErrors.categoryId}
+          />
           <FieldDescription>
             Groups this Award with the same Category in other War Weeks.
           </FieldDescription>

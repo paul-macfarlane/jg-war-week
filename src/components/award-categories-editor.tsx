@@ -39,8 +39,8 @@ function CategoryForm({
   const { pending, formRef, formAction, fieldErrors, error } = useSetupRow(
     () =>
       category
-        ? renameAwardCategory(category.id, name)
-        : createAwardCategory(name),
+        ? renameAwardCategory(category.id, { name })
+        : createAwardCategory({ name }),
     category ? "Category renamed" : "Category added",
     onSaved,
   );

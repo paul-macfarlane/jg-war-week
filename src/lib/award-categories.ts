@@ -1,3 +1,6 @@
+import { z } from "zod";
+
+import { fieldErrorsFrom } from "@/lib/form-errors";
 import type { Parsed } from "@/lib/result";
 
 /**
@@ -47,21 +50,31 @@ export function categoryKeyForAwardName(name: string): AwardCategoryKey | null {
   return null;
 }
 
-/** Validates an Award Category's name: trimmed, 1 to 80 characters. */
-export function parseAwardCategoryName(name: string): Parsed<string> {
-  const trimmed = name.trim();
-  if (trimmed === "") {
-    return {
-      ok: false,
-      error: "Name must not be empty.",
-      fieldErrors: { name: "Name must not be empty." },
-    };
-  }
-  if (trimmed.length > AWARD_CATEGORY_NAME_MAX) {
-    const error = `Name must be at most ${AWARD_CATEGORY_NAME_MAX} characters.`;
-    return { ok: false, error, fieldErrors: { name: error } };
-  }
-  return { ok: true, value: trimmed };
+/** An Award Category form's input: the name, trimmed, 1 to 80 characters. */
+export const awardCategoryInputSchema = z.object({
+  name: z
+    .string({ error: "Name must be text." })
+    .trim()
+    .min(1, { error: "Name must not be empty." })
+    .max(AWARD_CATEGORY_NAME_MAX, {
+      error: `Name must be at most ${AWARD_CATEGORY_NAME_MAX} characters.`,
+    }),
+});
+
+export const AWARD_CATEGORY_NOT_FOUND = "That Category no longer exists.";
+
+/** The Category an action names: a uuid, else it no longer exists. */
+export const awardCategoryIdSchema = z.uuid({
+  error: AWARD_CATEGORY_NOT_FOUND,
+});
+
+/** Parses an Award Category form's input. Never throws. */
+export function parseAwardCategoryInput(
+  input: unknown,
+): Parsed<{ name: string }> {
+  const result = awardCategoryInputSchema.safeParse(input);
+  if (result.success) return { ok: true, value: result.data };
+  return { ok: false, ...fieldErrorsFrom(result.error) };
 }
 
 /**

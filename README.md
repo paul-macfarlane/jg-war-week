@@ -109,7 +109,7 @@ The app exposes a read-only Model Context Protocol server over Streamable
 HTTP at `/api/mcp` (production: `https://jg-war-week.vercel.app/api/mcp`).
 Its tools are `get_current_war_week`, `get_leaderboard`, `get_schedule`,
 `get_announcements`, `get_awards`, `get_faq`, `list_history`,
-`get_history`, `get_bracket` and `get_games`. Every tool is read-only and returns only what a signed-in
+`get_history`, `get_bracket`, `get_games` and `get_participation`. Every tool is read-only and returns only what a signed-in
 Participant sees, and no tool returns an email
 or the Organizer list (Announcement authors come back as the handle
 before the `@`).

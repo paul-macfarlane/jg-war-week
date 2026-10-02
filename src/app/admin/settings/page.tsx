@@ -14,7 +14,7 @@ import {
   defaultWinner,
   nextEditionDefaults,
 } from "@/lib/war-week-lifecycle";
-import { getOpenGamesCompetitions } from "@/queries/open-games-competitions";
+import { getOpenUnscoredCompetitions } from "@/queries/open-unscored-competitions";
 import { getSetupDays, getSetupTeams } from "@/queries/setup";
 import { getStandings } from "@/queries/standings";
 import { getUnfinalizedBrackets } from "@/queries/unfinalized-brackets";
@@ -50,7 +50,7 @@ export default async function AdminSettingsPage() {
       getWarWeeks(),
       isLive ? getStandings(warWeek) : undefined,
       isLive ? getUnfinalizedBrackets(warWeek) : [],
-      isLive ? getOpenGamesCompetitions(warWeek) : [],
+      isLive ? getOpenUnscoredCompetitions(warWeek) : [],
     ]);
   const suggestedWinner = standings
     ? defaultWinner(standings)
@@ -92,7 +92,7 @@ export default async function AdminSettingsPage() {
               suggestedWinner={suggestedWinner}
               highlights={warWeek.highlights}
               unfinalizedBrackets={unfinalizedBrackets.map((c) => c.name)}
-              openGamesCompetitions={openGames}
+              openUnscoredCompetitions={openGames}
             />
             <Link
               href="#create-next-war-week"

@@ -17,6 +17,7 @@ import type {
 } from "drizzle-orm/pg-core";
 
 import { DBOrTx, DBTx, db } from "@/db";
+import { participationTeamScoringFor } from "@/db/participation-sql";
 import {
   WarWeek,
   announcement,
@@ -34,7 +35,6 @@ import {
   warWeek,
 } from "@/db/schema";
 import type { GamesConfig } from "@/lib/games/config";
-import { participationTeamScoringFor } from "@/mutations/setup";
 import { WarWeekSeed } from "@/seed/schema";
 
 /**

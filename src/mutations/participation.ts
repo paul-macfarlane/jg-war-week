@@ -13,10 +13,11 @@ import {
   NOT_PARTICIPATION,
   checkInError,
   checkOutError,
-  notOnATeam,
+  markError,
 } from "@/lib/participation/check-in-rule";
 import type { ParticipationSettings } from "@/lib/participation/input";
 import { scoreParticipation } from "@/lib/participation/score";
+import { FIRST_OVER_MAX, firstPlaceOverMax } from "@/lib/placement-points";
 import { generatedNote } from "@/lib/points-entry";
 import {
   COMPETITION_NOT_FOUND,
@@ -32,8 +33,6 @@ const PARTICIPANT_MISSING = "That Participant no longer exists.";
 const INDIVIDUAL_NO_TEAM_SCORING =
   "An individual Competition doesn't score Teams.";
 const CHOOSE_TEAM_SCORING = "Choose how Teams score.";
-const FIRST_OVER_MAX =
-  "1st place's Placement Points can't be more than Max points.";
 
 /**
  * Locks a `participation` Competition of this War Week, so a mark, a
@@ -96,12 +95,7 @@ export async function setParticipationSettings(
       return refuse(CHOOSE_TEAM_SCORING);
     }
     const ranked = teamScoring === "ranked";
-    if (
-      ranked &&
-      found.maxPoints !== null &&
-      input.placementPoints !== null &&
-      input.placementPoints[0] > found.maxPoints
-    ) {
+    if (ranked && firstPlaceOverMax(input.placementPoints, found.maxPoints)) {
       return refuse(FIRST_OVER_MAX);
     }
     await tx
@@ -145,9 +139,12 @@ export async function markParticipant(
         ),
       );
     if (!who) return refuse(PARTICIPANT_MISSING);
-    if (found.scoring === "team" && who.teamId === null) {
-      return refuse(notOnATeam(found.teamLabel));
-    }
+    const notMarkable = markError({
+      scoring: found.scoring,
+      teamId: who.teamId,
+      teamLabel: found.teamLabel,
+    });
+    if (notMarkable) return refuse(notMarkable);
     await tx
       .insert(participation)
       .values({

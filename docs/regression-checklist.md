@@ -290,8 +290,8 @@ on the matching War Week page.
       ranked by headcount with Placement Points 5/3/1, or per person; turn on
       Self check-in. Tick two Participants, untick one, then Close: the
       generated Points Entries ("From participation") appear in the ledger
-      and the Standings move. Closed, a tick or a settings save is refused.
-      Reopen withdraws them. Changing the scoring, or deleting the
+      and the Standings move. Closed, the ticks and "Save settings" are disabled (the server's
+      refusals are covered by unit tests and smoke). Reopen withdraws them. Changing the scoring, or deleting the
       Competition, while anyone is ticked is refused with the count.
 - [ ] **Points Entries.** Add a Points Entry with a Placement Points button,
       edit its points, delete it; `/<edition>/leaderboard` follows each
@@ -442,9 +442,12 @@ that nothing personal shows (no You highlight, no Log a Game).
       Team's count. The linked Participant's **Check in** adds them
       ("You're checked in") and **Check out** removes them; one the Host
       ticked can't be checked out ("The Host marked you; ask them to remove
-      it."). With Self check-in off, or closed, the button is disabled with
-      its reason; as the unlinked account there is no Check in. *(teams)* A
-      Participant on no Team is told only those on a Team can take part. At
+      it."). With Self check-in off, or once closed, there is no Check in
+      button (closed shows the Closed badge); after the close time, for a
+      Participant on no Team, or when the Host marked them, the button is
+      disabled with its reason, e.g. *(teams)* a Participant on no Team is
+      told only those on a Team can take part. As the unlinked account there
+      is no Check in. At
       390 the button and list fit without sideways scrolling.
 - [ ] **Enroll and withdraw.** In the self-enroll Competition, the linked
       Participant enrolls, withdraws and enrolls again; the Entrant list

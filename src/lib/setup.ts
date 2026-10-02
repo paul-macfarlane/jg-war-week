@@ -16,6 +16,10 @@ import {
 import { fieldErrorsFrom } from "@/lib/form-errors";
 import { gamesConfigSchema } from "@/lib/games/config";
 import { participationPointsSchema } from "@/lib/participation/input";
+import {
+  FIRST_OVER_MAX,
+  parsePlacementPointsText,
+} from "@/lib/placement-points";
 import { POINTS_NUMBER, pointsSchema as points } from "@/lib/points-entry";
 import type { Parsed } from "@/lib/result";
 
@@ -701,12 +705,8 @@ export function parseCompetitionInput(
     const error = "Max points must be a number.";
     return { ok: false, error, fieldErrors: { maxPoints: error } };
   }
-  const places = input.placementPoints.split(/[\s,]+/).filter(Boolean);
-  if (!places.every((place) => POINTS_NUMBER.test(place))) {
-    const error =
-      "Placement Points must be numbers separated by commas, 1st place first.";
-    return { ok: false, error, fieldErrors: { placementPoints: error } };
-  }
+  const places = parsePlacementPointsText(input.placementPoints);
+  if (!places.ok) return places;
 
   const parsed = parseWith(
     competitionSeedSchema,
@@ -715,7 +715,7 @@ export function parseCompetitionInput(
       description: input.description.trim() || null,
       scoring: input.scoring,
       maxPoints: maxPoints ? Number(maxPoints) : null,
-      placementPoints: places.length > 0 ? places.map(Number) : null,
+      placementPoints: places.value,
       countsTowardTeam: input.countsTowardTeam,
       group: input.group.trim() || null,
     },
@@ -733,7 +733,7 @@ export function parseCompetitionInput(
       if (issue.code !== "custom") return null;
       // Two seed refines share this path; the 1st-vs-max one names 1st.
       return issue.message.startsWith("1st")
-        ? "1st place's Placement Points can't be more than Max points."
+        ? FIRST_OVER_MAX
         : "Each place's Placement Points must be no more than the place above it.";
     },
   );

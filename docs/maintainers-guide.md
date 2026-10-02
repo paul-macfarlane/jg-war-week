@@ -521,7 +521,9 @@ setup page, where the Host or an Organizer sets:
 Who took part isn't seeded. A seed's `participation` Competition may set
 `participationPoints`, `participationTeamScoring`, `selfCheckIn` and
 `checkInClosesAt`, but they are applied only when the Competition is first
-inserted, never on a reload.
+inserted, never on a reload. The one exception: a seed reload does set a
+Participation Competition's team scoring from the seed's scoring (kept while
+team, `ranked` on becoming team, none for individual).
 
 ### Manage Award Categories
 
@@ -603,7 +605,8 @@ migration, accept it in the seed format and seeds, and show it on <page>.
 The chain is schema → `pnpm db:generate` → migration in `drizzle/` →
 `pnpm db:migrate` locally → seed format and seed files → UI. Never hand-edit
 a migration. The one exception is a data step that the schema diff can't
-express (copying rows between tables): create it with
+express (copying rows between tables, or inserting fixed reference rows
+such as the seeded Award Categories): create it with
 `pnpm db:generate --custom --name <what-it-copies>` so it gets its
 own journal entry, and write only that file.
 
@@ -727,7 +730,9 @@ Competition's Bracket by name, with each Heat's time and place, and a
 Squad's `participants` by name; never who reported a result) and
 `get_games` (a Competition run as Games, by name: its settings, leaderboard
 ranked by Game Type and its Games newest first; never an email or who
-logged one). `get_bracket` (`src/mcp/bracket.ts`) is the model for a tool
+logged one) and `get_participation` (a Competition run as Participation, by
+name: its settings, closed state, who took part by name and, in team
+scoring, each Team's headcount; never an email or who marked anyone). `get_bracket` (`src/mcp/bracket.ts`) is the model for a tool
 that looks something up by name and whitelists what it returns.
 
 ### Add or fix history

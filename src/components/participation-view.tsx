@@ -32,11 +32,14 @@ export function ParticipationView({
   offer,
   teamLabel,
   primaryColor,
+  now,
 }: {
   view: ParticipationData;
   offer: CheckInOffer | null;
   teamLabel: string;
   primaryColor: string;
+  /** The current time, so the close time reads as past or to come. */
+  now: Date;
 }) {
   const { competition, tookPart, teamCounts } = view;
   const isTeam = competition.scoring === "team";
@@ -50,7 +53,8 @@ export function ParticipationView({
           </Badge>
         ) : competition.selfCheckIn && competition.checkInClosesAt ? (
           <p className="text-foreground/70 text-sm">
-            Check-in closes {formatLedgerTime(competition.checkInClosesAt)}.
+            Check-in {now >= competition.checkInClosesAt ? "closed" : "closes"}{" "}
+            {formatLedgerTime(competition.checkInClosesAt)}.
           </p>
         ) : null}
       </div>
