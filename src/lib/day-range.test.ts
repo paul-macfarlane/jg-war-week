@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { dayOutsideRangeError, nextRangeSelection } from "@/lib/day-range";
+import {
+  dayOutsideRangeError,
+  nextRangeSelection,
+  rangeToCommit,
+} from "@/lib/day-range";
 
 const days = ["2026-02-23", "2026-02-25"];
 
@@ -11,31 +15,32 @@ describe("nextRangeSelection", () => {
     });
   });
 
-  it("commits the range on the second tap", () => {
+  it("holds the range on the second tap without committing", () => {
     expect(
       nextRangeSelection({ from: "2026-02-22" }, "2026-02-27", days),
-    ).toEqual({
-      pending: null,
-      commit: { start: "2026-02-22", end: "2026-02-27" },
-    });
+    ).toEqual({ pending: { from: "2026-02-22", to: "2026-02-27" } });
   });
 
   it("puts a second tap earlier than the first at the start", () => {
     expect(
       nextRangeSelection({ from: "2026-02-27" }, "2026-02-22", days),
-    ).toEqual({
-      pending: null,
-      commit: { start: "2026-02-22", end: "2026-02-27" },
-    });
+    ).toEqual({ pending: { from: "2026-02-22", to: "2026-02-27" } });
   });
 
-  it("commits a one-day range when the same date is tapped twice", () => {
+  it("holds a one-day range when the same date is tapped twice", () => {
     expect(
       nextRangeSelection({ from: "2026-03-02" }, "2026-03-02", []),
-    ).toEqual({
-      pending: null,
-      commit: { start: "2026-03-02", end: "2026-03-02" },
-    });
+    ).toEqual({ pending: { from: "2026-03-02", to: "2026-03-02" } });
+  });
+
+  it("starts a new range on the third tap after a complete range", () => {
+    expect(
+      nextRangeSelection(
+        { from: "2026-02-22", to: "2026-02-27" },
+        "2026-02-24",
+        days,
+      ),
+    ).toEqual({ pending: { from: "2026-02-24" } });
   });
 
   it("refuses a range that leaves a Day outside it and keeps it on screen", () => {
@@ -56,6 +61,25 @@ describe("nextRangeSelection", () => {
         days,
       ),
     ).toEqual({ pending: { from: "2026-02-20" } });
+  });
+});
+
+describe("rangeToCommit", () => {
+  it("commits a complete range the Days allow", () => {
+    expect(
+      rangeToCommit({ from: "2026-02-22", to: "2026-02-27" }, days),
+    ).toEqual({ start: "2026-02-22", end: "2026-02-27" });
+  });
+
+  it("discards a half-picked range", () => {
+    expect(rangeToCommit({ from: "2026-02-22" }, days)).toBeNull();
+    expect(rangeToCommit(null, days)).toBeNull();
+  });
+
+  it("refuses a range that leaves a Day outside it", () => {
+    expect(
+      rangeToCommit({ from: "2026-02-24", to: "2026-02-27" }, days),
+    ).toBeNull();
   });
 });
 
