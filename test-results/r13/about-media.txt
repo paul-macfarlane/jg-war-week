@@ -1,0 +1,64 @@
+Loaded War Week x (reset)
+Loaded War Week xi (reset)
+Loaded War Week xii (reset)
+current War Week: xii (free-for-all, light base palette)
+bracket demo: seeded competition c541351b-97be-4e6e-8467-39eec2ebe33c, champion entrant f4b78d2f-0319-456f-aaa1-2afa9ab0511a
+still: standings-before.png from /xii/leaderboard
+still: standings-before-dark.png from /xii/leaderboard
+standings demo: moving "Lou Lantern" from last (0.5) past first (7.5) with +22
+still: standings-entry.png from /admin/points, filled in
+still: standings-entry-dark.png from /admin/points, filled in
+still: standings-after.png from /xii/leaderboard
+still: standings-after-dark.png from /xii/leaderboard
+standings demo: "Lou Lantern" is now #1 of 12 (22.5 pts)
+finale (light): reached Standings after 2 presses
+finale (light): countdown started 4 ms after the → onto Standings
+finale (light): 470 frames captured, 468 kept
+finale (dark): reached Standings after 2 presses
+finale (dark): countdown started 6 ms after the → onto Standings
+finale (dark): 470 frames captured, 468 kept
+still: organizer-admin.png from /admin/schedule
+still: organizer-admin-dark.png from /admin/schedule
+points: picked Mile Run
+Individual · Max 3 pts, "1st" preset buttons on screen: 1
+still: points.png from /admin/points
+points: picked Mile Run
+Individual · Max 3 pts, "1st" preset buttons on screen: 1
+still: points-dark.png from /admin/points
+still: schedule.png from /xii?at=2027-02-23T12%3A15%3A00.000-05%3A00
+still: schedule-dark.png from /xii?at=2027-02-23T12%3A15%3A00.000-05%3A00
+still: announcements.png from /xii/announcements
+still: announcements-dark.png from /xii/announcements
+still: competitions.png from /xii/competitions/c541351b-97be-4e6e-8467-39eec2ebe33c
+still: competitions-dark.png from /xii/competitions/c541351b-97be-4e6e-8467-39eec2ebe33c
+games: frame 1600x900@1.6 used (h1 top 121, header bottom 53, first Game row bottom 556, viewport height 900)
+evidence: games from /xii/competitions/f59bd959-d337-49f8-91b3-9ffdfe2b3a16, one Game logged
+still: archive.png from /history
+still: archive-dark.png from /history
+evidence: anonymous /about landed on /about
+evidence: images that failed to load on /about: 0
+evidence: desktop hero {"steps":["standings-before","standings-entry","standings-after"],"loaded":true,"finalePoster":true,"noVideo":true}
+evidence: /about desktop under the light Display shows 10 stills, 0 wrong or unloaded
+evidence: /about desktop under the dark Display shows 10 stills, 0 wrong or unloaded
+evidence: /about prerendered at build (.next/server/app/about.html exists): false
+wrote public/about/finale-poster.png: 683 KB
+wrote public/about/finale-poster-dark.png: 672 KB
+wrote public/about/standings-before.png: 96 KB
+wrote public/about/standings-before-dark.png: 96 KB
+wrote public/about/standings-entry.png: 78 KB
+wrote public/about/standings-entry-dark.png: 79 KB
+wrote public/about/standings-after.png: 96 KB
+wrote public/about/standings-after-dark.png: 96 KB
+wrote public/about/organizer-admin.png: 214 KB
+wrote public/about/organizer-admin-dark.png: 214 KB
+wrote public/about/schedule.png: 195 KB
+wrote public/about/schedule-dark.png: 195 KB
+wrote public/about/points.png: 175 KB
+wrote public/about/points-dark.png: 175 KB
+wrote public/about/announcements.png: 128 KB
+wrote public/about/announcements-dark.png: 128 KB
+wrote public/about/competitions.png: 150 KB
+wrote public/about/competitions-dark.png: 151 KB
+wrote public/about/archive.png: 308 KB
+wrote public/about/archive-dark.png: 306 KB
+about-media exit 0

@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** ai-review
+**Status:** done
 
 **Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
@@ -23,3 +23,15 @@
 - [ ] Unit tests for the slide-list resolution (default, reordered, hidden).
 - [ ] e2e: an Organizer moves the Standings slide and hides one; the Finale plays in that order; the existing "Finale plays to first place" e2e passes through the slideshow.
 - [ ] `pnpm gate` passes.
+
+## [CLOSEOUT]
+
+2026-10-03, atlas-implement (Claude Opus 5.5). Deliverable D72 (worker: atlas-worker, opus; commit `dc9eab5`), with the integration fixes `6f8511c`, `66cb75a` and the review fixes `6096595` (RF). Verified on `feat/regression-r13-finale-slides` at `6096595` (code; the closeout commits add only `.scratch/` and `test-results/`), local Postgres `war-weeker-postgres` :2345, `DATABASE_URL=postgres://postgres:postgres@localhost:2345/war_weeker?sslmode=disable DATABASE_DRIVER=pg`. Final gate: `pnpm format:check && pnpm gate` exit 0 (format clean; lint 0 errors, 11 existing-pattern `<img>` warnings; vitest 173 files / 3729 tests; build; smoke 246 ok; Playwright 91 passed) → `test-results/r13/gate.txt`. PR: (linked after opening).
+
+| AC | Verdict | Evidence |
+|---|---|---|
+| Unit tests for the slide-list resolution (default, reordered, hidden) | PASS | `src/lib/finale-slides.test.ts` (default, reordered, hidden, missing built-in appended, Custom kept in place, `moveToIndex`, stepper) and `src/mutations/finale-slides.test.ts` (lock, materialize, delete → move/create order) in the gate's vitest run → `test-results/r13/gate.txt` |
+| e2e: an Organizer moves the Standings slide and hides one; the Finale plays in that order; the existing Finale e2e passes through the slideshow | PASS | `e2e/regression-r13-finale.spec.ts` (drag once, ↑ once, Hide, then the Finale plays Standings, Title, Awards, Winner [Champions after Winner when an XI Bracket is finalized]; → on the last slide, ←, Escape) and `e2e/finale.spec.ts` ("the Finale's Standings countdown ends on first place", renamed from "…plays from Start…" in review S12) passed in the gate; screenshots `test-results/e2e/regression-r13-finale-72-A-*/`, `test-results/e2e/finale-the-Finale-s-Standings-*/` |
+| `pnpm gate` passes | PASS | `test-results/r13/gate.txt` |
+
+Deviations (recorded in the execution record): the Standings countdown plays on arrival (no Start on the slideshow); keys per Red-team S5 (Enter never bound); `data-finale-hydrated` hook; the slideshow is a full-screen overlay (S4). The Bracket Finale is unchanged.

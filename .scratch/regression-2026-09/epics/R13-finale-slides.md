@@ -8,7 +8,7 @@
 
 **Blocked by:** R12 merged into `staging` (Award Categories; R11's editor).
 
-**Status:** ai-review
+**Status:** done
 
 **Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
@@ -24,10 +24,14 @@
 
 Each ticket's own, plus:
 
-- [ ] `/about`'s Finale block and stills (`scripts/about-media.ts`), `docs/maintainers-guide.md` and the regression checklist updated.
-- [ ] Each ticket file records its closeout and is `done` in this branch.
-- [ ] CI on the PR passes; `pnpm format:check && pnpm gate` passes.
+- [x] `/about`'s Finale block and stills (`scripts/about-media.ts`), `docs/maintainers-guide.md` and the regression checklist updated.
+- [x] Each ticket file records its closeout and is `done` in this branch.
+- [ ] CI on the PR passes (pending: runs on the PR); `pnpm format:check && pnpm gate` passes (local, at `6096595`).
 
 ## Comments
 
 - 2026-10-01 (Paul): grilled and approved; tickets `ready-for-agent`.
+
+## [CLOSEOUT]
+
+2026-10-03, atlas-implement (Claude Opus 5.5). Tickets 72, 73, 74 `done`; see each ticket's closeout and [`R13-execution.md`](./R13-execution.md). Migration 0027 with both demo seeds in the same branch; smoke green on seeded local Postgres; `/about` copy and poster (`scripts/about-media.ts` rerun on the XII demo → `test-results/r13/about-media.txt`), maintainer's guide ("Run the Finale", "Rolling out R13"), regression checklist, testing.md, llms.txt and organizer guide updated. The staging CI fix (Award Categories e2e locator) rides along as a recorded scope change. `pnpm format:check && pnpm gate` passed at `6096595`. PR: (linked after opening); CI runs there.

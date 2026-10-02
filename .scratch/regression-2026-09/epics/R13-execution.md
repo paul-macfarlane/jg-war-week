@@ -147,3 +147,86 @@ Human gates: none before dispatch. CI on the PR (E-AC3) is observed after the PR
 - Wave 2 dispatched: D73 (worktree `d73`, DB `war_weeker_r13_d73`, ports 3210/3211) ‖ D74 (worktree `d74`, DB `war_weeker_r13_d74`, ports 3220/3221).
 - 2026-10-03, wave 2: **D74** (atlas-worker / sonnet) `0b72b2e`, merged `34ec6ce`; **D73** (atlas-worker / opus) `5fe725f`, merged `2531728` (conflicts with D74 resolved by the orchestrator: access, actions, mutations, and `finaleSlideData`, which D73 moved into the lib, now carrying D74's Custom slide colours). Orchestrator fixes: `6f8511c` (the e2e stage is the hydrated one, never React's hidden streaming copy, which D74 saw once), `66cb75a` (the integrated specs step through Awards' reveals, wait for the layout's save before reloading, and allow Champions once `bracket.spec` has finalized an XI Bracket). Integrated run: smoke 246 ok; the six Finale specs pass.
 - Wave 3: **DX** (atlas-worker / sonnet) `fa6ff9d`: CONTEXT seed rules, `/about` copy and poster (the Title slide), `recordFinale` rewritten, Custom stills rerun, maintainer's guide ("Run the Finale", "Rolling out R13"), regression checklist, testing.md, llms.txt, organizer guide. Accepted.
+- Review fixes: **RF** (atlas-worker / opus) `6096595` applied every finding below; accepted.
+
+## [AI CODE REVIEW]
+
+2026-10-03, over `c16c727..6b4cfe5` (before RF). Two fresh opus reviewers, one per axis, read the whole diff; the orchestrator adjudicated each candidate from the cited hunks (T1 confirmed by reading `renumber`). Coverage judged sufficient on both axes (each walked D72, D73, D74, DX, the merges and the orchestrator fixes).
+
+### Axis 1: technical implementation and spec conformity
+
+Every AC, resolved decision and Red-team amendment is implemented; the reviewer listed schema/migration 0027, resolution and stepper, keys, plays-on-arrival, the single `getStandings`, the unchanged Bracket Finale, auth and targets, the lock and materialize, sanitization, contrast, seed idempotence, counts and Champions, and the e2e mapping as checked.
+
+| ID | Severity | Paths | Finding | Disposition |
+|---|---|---|---|---|
+| T1 | blocking | `src/mutations/finale-slides.ts` | `renumber` compared list positions, not stored `sort_order`; a Custom slide's delete left a gap, so a later move could tie two slides and play them in a random order. | fix (RF): compares stored order, renumbers after delete; tests for delete → move and delete → create |
+| T2 | non-blocking | same | Materialize inserted at resolved index, able to tie a gapped list. | fix (RF): renumbers 0..n after materializing; test |
+| T3 | non-blocking | `src/lib/finale-slides.ts` | Per-Category with no Categories played a lone "Other Awards". | fix (RF): falls back to one "Awards" slide; test |
+| T4 | non-blocking | `CONTEXT.md` | Reduced-motion wording implied Awards reveal at once. | fix (RF) |
+| T5 | non-blocking | `docs/regression-checklist.md` | Host sees the Awards layout disabled, not hidden. | fix (RF) |
+| T6 | non-blocking | slide eyebrow | Raw `text-primary` on a projector slide. | fix (RF): `text-primary-text` |
+| T7 | non-blocking | `src/components/finale.tsx` | Any image click refused to advance (avatars, logo). | fix (RF): only inside a link or a Custom slide's body |
+| T8 | non-blocking | 390 stills | Exit crowded the eyebrow on phones. | fix (RF): top padding; 390 stills rerun |
+| T9 | non-blocking | Custom slides e2e | A stage click advancing wasn't asserted. | fix (RF) |
+| T10 | closeout | evidence, statuses | Gate evidence and closeouts pending. | orchestrator closeout |
+
+### Axis 2: coding standards
+
+| ID | Severity | Paths | Finding | Disposition |
+|---|---|---|---|---|
+| S1 | non-blocking | `src/actions/finale-slides.ts` | zod schemas in the action (ADR 0001). | fix (RF): parse functions in `src/lib/finale-slides.ts` |
+| S2 | non-blocking | Custom slide input vs seed schema | Field rules copied. | fix (RF): one `customSlideFields`, input folded into `custom-finale-slide.ts` |
+| S3 | non-blocking | `src/lib/custom-finale-slide.ts` | Local 4.5 constant. | fix (RF): `MIN_TEXT_CONTRAST` |
+| S4 | non-blocking | Champions slide | Tie wording reimplemented in UI. | fix (RF): `tieTitle` shared with `defaultWinner`; `championsList` emits title and label |
+| S5 | non-blocking | placeholder slide | Dead `PlaceholderSlide`. | fix (RF): removed; `slide-eyebrow.tsx` |
+| S6 | non-blocking | Finale slide editor | Copied row plumbing, no failure catch. | fix (RF): shared `ROW_ACTION`, `MoveUpDownButtons` (FAQ too), `cn`, `SAVE_FAILED_ERROR` |
+| S7 | non-blocking | UI, docs, e2e, llms.txt | "Add custom slide"; loose slide names. | fix (RF): "Add Custom slide"; built-in names |
+| S8 | non-blocking | `scripts/finale-stills.ts` | Hard-coded R13 evidence folder. | fix (RF): `--out` (default `test-results/finale-stills`) |
+| S9 | non-blocking | stills and about-media scripts | Duplicated server scaffolding. | fix (RF): `startDemoServer` and friends in `scripts/media/demo.ts`; about-media rerun by the orchestrator (poster byte-identical) |
+| S10 | non-blocking | `scripts/about-media.ts` | Leftover work. | fix (RF) |
+| S11 | non-blocking | e2e helpers | Duplicated walkers; styling selectors. | fix (RF): shared in `e2e/finale-slides.ts`; `data-finale-slide-name` |
+| S12 | non-blocking | `e2e/finale.spec.ts`, testing.md | Stale "Start" title. | fix (RF): "the Finale's Standings countdown ends on first place" |
+| S13 | non-blocking | comments | Wrapping. | fix (RF) |
+| S14 | non-blocking | lib, editor, mutations, form | Sentinels and casts. | fix (RF) |
+| S15 | closeout | `test-results/r13/` | Evidence not committed yet. | orchestrator closeout |
+
+Remaining risks: the 12-row XII Standings slide scrolls a few pixels at 390×844 (phones aren't the projector; 1920×1080 fits); HTML5 drag is covered in Chromium only (↑/↓ are the alternative); the deploy window (Migrate before the deploy) is in "Rolling out R13".
+
+## [CLOSEOUT]
+
+2026-10-03. Work package `regression-r13` delivered on `feat/regression-r13-finale-slides` (one repository, `war-weeker`, base `staging` at `c16c727`; plan commit `18dae0b`).
+
+### Deliverables
+
+| ID | Worker / model | Commit | Notes |
+|---|---|---|---|
+| D72 the slideshow (72) | atlas-worker / opus | `dc9eab5` | feature-branch checkout; schema + migration 0027 |
+| D74 Custom slides (74) | atlas-worker / sonnet | `0b72b2e` | worktree `d74`, own DB `war_weeker_r13_d74`; merged `34ec6ce` |
+| D73 built-in slides (73) | atlas-worker / opus | `5fe725f` | worktree `d73`, own DB `war_weeker_r13_d73`; merged `2531728` with orchestrator conflict resolution |
+| Orchestrator fixes | orchestrator / opus | `18dae0b` (staging CI locator), `6f8511c`, `66cb75a` | hydrated e2e stage; integrated specs step through Awards, wait for the layout save, allow Champions |
+| DX docs | atlas-worker / sonnet | `fa6ff9d` | CONTEXT, `/about` + poster, maintainer's guide, checklist, testing.md, llms.txt, organizer guide |
+| RF review fixes | atlas-worker / opus | `6096595` | every [AI CODE REVIEW] finding |
+
+Red-team: one round (opus), FAIL → amended (1 blocker, 3 readings, 12 should-fix, 6 nits) before dispatch. Paul's scope change: the staging CI fix.
+
+**Parallelism re-check.** Predicted wave-2 collisions: the `kind → component` switch, the admin Finale page, `access.ts` and its test, `scripts/smoke/finale.ts`, `src/lib/finale-slides.ts` and its test, the finale page's loader. Real conflicts at the D73 merge: `src/lib/access.ts`, `src/lib/access.test.ts`, `src/lib/finale-slides.ts`, `src/queries/finale-slides.ts`, the finale page, and (unpredicted) `src/actions/finale-slides.ts`, its test and `src/mutations/finale-slides.ts`, all additive both-sides hunks except `finaleSlideData`, which D73 moved into the lib while D74 added Custom slide colours to it. The admin page, smoke and the slide switch auto-merged. Running D73 ‖ D74 in parallel was right: one resolution pass, no rework. Not caught by either worker alone: three e2e specs whose assumptions the other deliverable changed (fixed in `66cb75a`).
+
+### Verification (final)
+
+Command: `pnpm format:check && pnpm gate` with `DATABASE_URL=postgres://postgres:postgres@localhost:2345/war_weeker?sslmode=disable DATABASE_DRIVER=pg`, at `6096595`: exit 0 (vitest 173 files / 3729 tests; smoke 246 ok; Playwright 91 passed) → `test-results/r13/gate.txt`. Run surface: local only (deploy is Paul's merge).
+
+| Criterion | Verdict | Evidence |
+|---|---|---|
+| 72-AC1 resolution unit tests | PASS | gate vitest; `src/lib/finale-slides.test.ts` |
+| 72-AC2 e2e reorder/hide/play; Finale e2e through the slideshow | PASS | gate Playwright; `test-results/e2e/regression-r13-finale-72-A-*/`, `test-results/e2e/finale-the-Finale-s-Standings-*/` |
+| 72-AC3, 73-AC3, 74-AC3 `pnpm gate` | PASS | `test-results/r13/gate.txt` |
+| 73-AC1 By the numbers and Champions on the demo seed | PASS | gate vitest; `src/lib/finale-slides.test.ts`, `src/queries/finale-slides.test.ts` |
+| 73-AC2 stills at 1920×1080 and 390×844 on the XII demo | PASS | `test-results/r13/slides/*.png` (14) |
+| 74-AC1 Custom slide between Awards and Standings | PASS | gate Playwright; `test-results/e2e/regression-r13-custom-slid-*/` |
+| 74-AC2 contrast | PASS | axe in that e2e; `src/lib/custom-finale-slide.test.ts` |
+| SC-1 staging CI fix | PASS (local) | `e2e/regression-r12-award-categories.spec.ts` passed in the gate; PR CI pending |
+| E-AC1 `/about`, stills, maintainer's guide, checklist | PASS | DX `fa6ff9d`, RF `6096595`; `scripts/about-media.ts` rerun → `test-results/r13/about-media.txt` (poster byte-identical to DX's); smoke's `/about` check |
+| E-AC2 closeouts, tickets `done` | PASS | ticket files 72–74 and the epic |
+| E-AC3 PR CI; `pnpm format:check && pnpm gate` | local PASS; CI pending | gate.txt; PR checks |
+
+Deviations: listed in each ticket's closeout and the Red-team amendments. PR: (linked after opening).
