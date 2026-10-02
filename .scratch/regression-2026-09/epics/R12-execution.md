@@ -145,3 +145,91 @@ Reviewer: fresh `atlas-red-team-reviewer` (opus), read-only. Verdict FAIL → fi
 ### Staging CI (added 2026-10-02 at Paul's request)
 
 `staging`'s push CI for #118 failed in `e2e/bracket-heats.spec.ts:168`: after a reload, `getByLabel("Your next Heat")` also matched the copy React streams into a hidden `<div hidden id="S:0">` before swapping it in (seen in the run's trace), a strict-mode race. The PR run of the same code passed. Fixed separately on `fix/e2e-next-heat-streaming-race` (its own PR into `staging`, so `staging` goes green before R12 lands): the two unscoped `getByLabel("Your next Heat")` locators (`bracket-heats.spec.ts`, `bracket.spec.ts`) filter to visible, as `regression-r1.spec.ts:343` already does; the Squads spec scopes through `getByRole("region")`, which skips hidden elements.
+
+## [AI CODE REVIEW]
+
+2026-10-02, over `5af2a8b..1c6c9a2`. Two fresh opus reviewers, one per axis, read the whole diff; the orchestrator adjudicated each candidate from the cited hunks. Coverage judged sufficient on both axes (each walked every deliverable: D69, D70, D71, DX and the orchestrator fixes).
+
+### Axis 1: technical implementation and spec conformity
+
+No blocking defect in the code. Every P-, A- and Red-team item and the Restore scope change is implemented; the reviewer listed the Format switches, MCP, email exposure, the check-in facet under the row lock, the B2 CHECK across update and seed reload, fill-if-empty and the `/history/awards/[id]` 404 as checked.
+
+| ID | Severity | Paths | Finding | Disposition |
+|---|---|---|---|---|
+| NB-1 | blocking (doc accuracy; same as F1) | `docs/regression-checklist.md` | Says the Check in button is disabled when Self check-in is off or closed; no button renders then. | fix (RF) |
+| NB-2 | blocking (doc accuracy; same as F2) | `CONTEXT.md` | The "own name only when it adds to the Category's" rule is on `/history/awards/<id>`, not the edition Awards page. | fix (RF) |
+| NB-3 | non-blocking | `e2e/regression-r12-award-history.spec.ts` | 71-AC1's Profile-name branch only unit-tested. | fix (RF): e2e links a seeded recipient to a Profile |
+| N-1 | non-blocking | `src/components/participation-view.tsx` | "Check-in closes …" after it closed. | fix (RF) |
+| N-2 | non-blocking | `e2e/db.ts` | Cleanup could hit `on delete restrict`. | fix (RF) |
+| N-3 | non-blocking | `src/components/archive.tsx` | Archive detail's Awards don't link to Categories. | approved deviation: A10's reading (History list and edition Awards headings) is what 71 asks |
+| N-4 | non-blocking | `src/components/participation-builder.tsx` | Half-filled close time dropped silently. | approved deviation: same as the Games builder today |
+
+### Axis 2: coding standards
+
+| ID | Severity | Paths | Finding | Disposition |
+|---|---|---|---|---|
+| F1, F2 | blocking | checklist, CONTEXT.md | As NB-1, NB-2. | fix (RF) |
+| F3 | non-blocking | `README.md`, maintainer's guide, `scripts/smoke/mcp.ts` | `get_participation` missing from tool lists and smoke. | fix (RF) |
+| F4 | non-blocking | `src/lib/participation/input.ts`, `src/mutations/participation.ts` | Placement Points parsing and first-over-max copied, not shared (ADR 0001). | fix (RF) |
+| F5 | non-blocking | `src/mutations/participation.ts` | Team rule coded in the mutation (ADR 0001). | fix (RF) |
+| F6 | non-blocking | `src/seed/load.ts` | Seed imports a mutation module. | fix (RF) |
+| F7 | non-blocking | `src/components/award-form.tsx` | Hand-rolled select instead of `OptionSelect` (CLAUDE.md). | fix (RF) |
+| F8 | non-blocking | `src/actions/award-categories.ts` | Actions take typed strings, no zod (ADR 0001/0004). | fix (RF) |
+| F9, F10 | non-blocking | maintainer's guide | Custom-migration wording; reload exception missing. | fix (RF) |
+| F11 | non-blocking | open-games query, lifecycle controls, setup links | Names say Games; three copies of the setup link. | fix (RF); `OrganizerListAction` name kept (approved deviation: its comment covers Categories) |
+| F12 | non-blocking | `src/actions/participation.test.ts` | No action-level test. | fix (RF) |
+| F13 | non-blocking | `docs/agents/testing.md` | Smoke/e2e coverage text stale. | fix (RF) |
+| F14 | non-blocking | `src/lib/about.ts`, `src/db/schema.ts` | About title; `award_category` timestamps are timestamptz. | title fix (RF); timestamps approved deviation (harmless, no migration) |
+
+Remaining risk: the staging/production deploy window (Migrate before the deploy), covered by "Rolling out R12" in the maintainer's guide.
+
+## [CLOSEOUT]
+
+2026-10-02. Work package `regression-r12` delivered on `feat/regression-r12-participation-awards` (one repository, `war-weeker`, base `staging` at `d3c3b3e`; plan commit `5af2a8b`).
+
+### Deliverables
+
+| ID | Worker / model | Commit | Notes |
+|---|---|---|---|
+| D69 Participation | atlas-worker / opus | `2941865` | worktree `d69`, own DB; merged `d5187ee` |
+| D70 Award Categories (+ Restore) | atlas-worker / sonnet | `fda5b6e` | worktree `d70`, own DB; migrations regenerated after D69's as 0025/0026 (0025 identical); merged with D71 |
+| D71 through the years | atlas-worker / sonnet | `a4a5f0e` | after D70, same worker |
+| Orchestrator fixes | orchestrator / opus | `3233c5f`, `1c6c9a2` | `/history` loading moved into `(list)` so an unknown Category 404s; smoke tag sort; Category e2e scoped to the Sheet; Category history test makes its own Categories |
+| DX docs | atlas-worker / sonnet | `355800f` | CONTEXT, ADR 0002, maintainer's guide (incl. Rolling out R12), checklist, About, organizer guide |
+| RF review fixes | atlas-worker / sonnet | `2b06e18` | F1–F14, NB-1..3, N-1, N-2 |
+
+Red-team: one round (opus), FAIL → amended (2 blockers, C1, 6 should-fix, 8 nits) before dispatch. Paul answered Q1 (Restore: yes) and Q2 (MVP 1st Place only).
+
+### Verdicts
+
+Verified at `2b06e18` on local Postgres (`war-weeker-postgres` :2345), `DATABASE_URL=postgres://postgres:postgres@localhost:2345/war_weeker?sslmode=disable DATABASE_DRIVER=pg`. Command: `pnpm format:check && pnpm gate` → exit 0 (`test-results/r12/gate.txt`).
+
+| Criterion | Verdict | Evidence |
+|---|---|---|
+| 69-AC1 scoring unit tests | PASS | `test-results/r12/unit-participation.txt` (56) |
+| 69-AC2 e2e | PASS | gate e2e; `test-results/e2e/regression-r12-participati-3439d--Standings-Reopen-withdraws-chromium/` |
+| 69-AC3 seed + smoke | PASS | gate smoke (participation, MCP) |
+| 70-AC1 migration, tagging, matcher | PASS | `test-results/r12/unit-award-categories.txt` (455), `test-results/r12/award-tagging.txt`, smoke |
+| 70-AC2 e2e | PASS | gate e2e |
+| 71-AC1 route | PASS | gate e2e (Profile and roster names, newest first) |
+| 71-AC2 screenshots + smoke | PASS | `test-results/e2e/regression-r12-award-histo-6b63f--its-War-Weeks-newest-first-chromium/`, smoke |
+| 69/70/71 gate, E-4 local half | PASS | `test-results/r12/gate.txt` |
+| E-4 CI on the PR | recorded in the PR closeout line below | `gh pr checks` |
+| E-1 ADR, migration + seed together, smoke | PASS | `docs/adr/0009-participants-check-themselves-in.md`; `drizzle/0023`–`0026` and `seeds/demo/xi.json`; smoke |
+| E-2 About, guide, checklist, MCP | PASS | `src/lib/about.ts`, `docs/maintainers-guide.md`, `docs/regression-checklist.md`, `README.md`, `src/mcp/participation.ts`, `src/mcp/awards.ts` |
+| E-3 closeouts | PASS | tickets 69–71 and the epic `done` with `[CLOSEOUT]` |
+| Showcase / checklist team rules | PASS | as E-2 |
+
+Flake seen once in the first final-gate attempt, not R12 code: `src/mutations/account.test.ts` "refuses the last Organizer" (R10) passed in four reruns and the second gate; offered as its own task.
+
+### Isolation re-check
+
+Parallelism was chosen, with predicted collisions. Real at integration: `src/db/schema.ts` (both tables at the same spot; kept both) and `drizzle/meta` + migration numbers (D70's regenerated). Every other predicted file (`access.ts`, its test, seed schema/loader/tests, `seeds/demo/xi.json`, smoke index) auto-merged: the hunks didn't overlap. The prediction held for the two that needed it.
+
+### Staging CI
+
+Fixed separately: [paul-macfarlane/jg-war-week#119](https://github.com/paul-macfarlane/jg-war-week/pull/119) (`fix/e2e-next-heat-streaming-race`).
+
+### PR
+
+_(added after it opens)_

@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** in-progress
+**Status:** done
 
 **Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
@@ -27,3 +27,15 @@
 ## [SCOPE CHANGE]
 
 - 2026-10-02 (Paul, answering the R12 plan's queued Q1): an archived Award Category can be **restored** ("restoring them seems valid and lightweight enough"). Adds the Organizer-only action `award-category.restore` and a Restore button on the Archived list. Q2 answered: seed tagging stays "War Week MVP" only ("MVP", "MVP 1st Place"); "MVP 2nd/3rd Place" stay untagged (an admin can configure more).
+
+## [CLOSEOUT]
+
+2026-10-02, atlas-implement (Claude Opus 5.5). Deliverable D70 (worker: atlas-worker, sonnet; commit `fda5b6e`, migrations regenerated at integration as 0025/0026), with the approved Restore scope change, plus the review fixes in `2b06e18`. Verified on `feat/regression-r12-participation-awards` at `2b06e18` (code; the closeout commit adds only `.scratch/` and `test-results/`), local Postgres `war-weeker-postgres` :2345, `DATABASE_URL=postgres://postgres:postgres@localhost:2345/war_weeker?sslmode=disable DATABASE_DRIVER=pg`. Final gate: `pnpm format:check && pnpm gate` exit 0 (format clean; lint 0 errors, 7 existing `<img>` warnings; vitest 167 files / 3604 tests; build; smoke 243 ok; Playwright 86 passed) → `test-results/r12/gate.txt`. PR: _(added after it opens)_.
+
+| AC | Verdict | Evidence |
+|---|---|---|
+| Migration plus seed tagging; seeds load twice; unit tests for the name-matching | PASS | `drizzle/0025_large_exodus.sql`, `drizzle/0026_seed-award-categories.sql` (the seven keyed Categories); `pnpm exec vitest run src/lib/award-categories … src/seed`: 455 passed → `test-results/r12/unit-award-categories.txt`; after the gate's two loads, 7 seeded keys and 7 tagged seed Awards (MVP 1st Place only for War Week MVP, as Paul confirmed) → `test-results/r12/award-tagging.txt`; smoke's tag check ok |
+| e2e: an Organizer adds a Category, gives an Award in it; the Awards page groups it | PASS | `e2e/regression-r12-award-categories.spec.ts` (also rename refused on a duplicate, archive, restore) passed in the gate |
+| `pnpm gate` passes | PASS | `test-results/r12/gate.txt` |
+
+Deviations: Restore added (`[SCOPE CHANGE]` above).
