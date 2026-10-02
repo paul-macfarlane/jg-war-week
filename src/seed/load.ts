@@ -24,6 +24,7 @@ import {
   warWeek,
 } from "@/db/schema";
 import type { GamesConfig } from "@/lib/games/config";
+import { participationTeamScoringFor } from "@/mutations/setup";
 import { WarWeekSeed } from "@/seed/schema";
 
 /**
@@ -288,6 +289,19 @@ async function syncCompetitions(
       // Checked against the Game Type by `competitionSeedSchema`.
       gameConfig: (c.gameConfig ?? null) as GamesConfig | null,
       entrantsOpen: c.entrantsOpen ?? false,
+      ...(c.format === "participation"
+        ? {
+            participationPoints: c.participationPoints ?? 1,
+            participationTeamScoring:
+              c.scoring === "team"
+                ? (c.participationTeamScoring ?? "ranked")
+                : null,
+            selfCheckIn: c.selfCheckIn ?? false,
+            checkInClosesAt: c.checkInClosesAt
+              ? new Date(c.checkInClosesAt)
+              : null,
+          }
+        : {}),
     })),
     target: [competition.warWeekId, competition.name],
     set: {
@@ -297,10 +311,15 @@ async function syncCompetitions(
       scoring: sql`excluded.scoring`,
       countsTowardTeam: sql`excluded.counts_toward_team`,
       competitionGroup: sql`excluded.competition_group`,
-      // `format`, `bracketConfig`, `gameType`, `gameConfig` and
-      // `entrantsOpen` are set on insert only: a reload must never turn an
-      // Organizer's Bracket back into `points` or undo its Heats or Games
-      // settings.
+      // A `participation` Competition's team scoring follows the scoring:
+      // kept while team, `ranked` on becoming team, null otherwise.
+      participationTeamScoring: participationTeamScoringFor(
+        sql`excluded.scoring`,
+      ),
+      // `format`, `bracketConfig`, `gameType`, `gameConfig`,
+      // `entrantsOpen` and the Participation settings are set on insert
+      // only: a reload must never turn an Organizer's Bracket back into
+      // `points` or undo its Heats, Games or Participation settings.
       updatedAt: new Date(),
     },
     scope: eq(competition.warWeekId, warWeekId),

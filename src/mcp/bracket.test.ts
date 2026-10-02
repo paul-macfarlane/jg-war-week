@@ -3,7 +3,11 @@ import { describe, expect, it } from "vitest";
 import { applyResult, generate } from "@/lib/bracket/engine";
 import { champion as championOf } from "@/lib/bracket/formats";
 import type { Entrant } from "@/lib/bracket/types";
-import { toBracketResult, toGamesBracketResult } from "@/mcp/bracket";
+import {
+  toBracketResult,
+  toGamesBracketResult,
+  toParticipationBracketResult,
+} from "@/mcp/bracket";
 import type { BracketEntrant, BracketView } from "@/queries/brackets";
 
 const days = [{ id: "d1", date: "2026-02-22" }];
@@ -39,6 +43,24 @@ function bracketEntrantFixture(entrant: Entrant, teamName: string | null) {
 function bracketFixture() {
   return generate(entrants);
 }
+
+describe("toParticipationBracketResult", () => {
+  it("answers no Bracket and points to get_participation", () => {
+    expect(
+      toParticipationBracketResult({ name: "Workout", scoring: "team" }),
+    ).toEqual({
+      found: true,
+      competition: {
+        name: "Workout",
+        scoring: "team",
+        format: "participation",
+      },
+      bracket: null,
+      message:
+        "Workout isn't run as a Bracket; it's run as Participation. Call get_participation instead.",
+    });
+  });
+});
 
 describe("toGamesBracketResult", () => {
   it("answers bracket: null and points to get_games for a games Competition", () => {

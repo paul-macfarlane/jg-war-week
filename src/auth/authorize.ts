@@ -21,6 +21,7 @@ import {
   type HeatReportFacts,
   getHeatReportFacts,
 } from "@/queries/heat-reports";
+import { getCheckInFacts } from "@/queries/participation";
 import {
   type LoadedTarget,
   type TargetWarWeek,
@@ -213,6 +214,47 @@ export async function authorizeEnroll(
     warWeek: target.warWeek,
     ctx: { warWeekId: target.warWeek.id, actorEmail: actor.email },
     linked: facts.linked,
+  };
+}
+
+/**
+ * The authorize step for checking in or out (ADR 0009), in ADR 0003's
+ * order: authenticate; the id shaped like a row id; load the Competition
+ * and its War Week; load the check-in facts for the actor's email (account
+ * linking); run `can`, which binds Organizers and Hosts too. Never throws
+ * on a refusal.
+ */
+export async function authorizeCheckIn(
+  action: "participation.check-in" | "participation.check-out",
+  competitionId: unknown,
+): Promise<
+  | {
+      ok: true;
+      actor: NonNullable<Actor>;
+      warWeek: TargetWarWeek;
+      ctx: MutationContext;
+    }
+  | Refused
+> {
+  const actor = await getActor();
+  if (!actor) return { ok: false, error: SIGN_IN_REFUSAL };
+  const [competitionNotFound, load] = TARGETS.competition;
+  if (!isUuid(competitionId)) return { ok: false, error: competitionNotFound };
+  const target = await load(competitionId);
+  if (!target) return { ok: false, error: competitionNotFound };
+
+  const facts = await getCheckInFacts(competitionId, actor.email);
+  const refusal = can(actor, action, {
+    warWeekId: target.warWeek.id,
+    competitionId: target.competitionId,
+    checkIn: facts.checkIn,
+  });
+  if (refusal) return { ok: false, error: refusal };
+  return {
+    ok: true,
+    actor,
+    warWeek: target.warWeek,
+    ctx: { warWeekId: target.warWeek.id, actorEmail: actor.email },
   };
 }
 

@@ -59,8 +59,13 @@ export async function setSelfEnroll(
           })
         : null,
     });
-    // A points Competition refuses the switch either way.
-    if (unavailable && found.format === "points") return refuse(unavailable);
+    // A points or `participation` Competition refuses the switch either way.
+    if (
+      unavailable &&
+      (found.format === "points" || found.format === "participation")
+    ) {
+      return refuse(unavailable);
+    }
     if (found.finalizedAt) {
       return refuse(found.format === "games" ? GAMES_CLOSED : FINALIZED);
     }

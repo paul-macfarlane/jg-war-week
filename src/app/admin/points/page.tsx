@@ -16,6 +16,7 @@ import { formatPoints, formatPointsLabel } from "@/lib/points";
 import { formatLedgerTime, generatedNote } from "@/lib/points-entry";
 import { getBracketCompetitions } from "@/queries/brackets";
 import { getGamesCompetitions } from "@/queries/games";
+import { getParticipationCompetitions } from "@/queries/participation";
 import {
   getAdminLedger,
   getPointsEntryFormOptions,
@@ -37,14 +38,21 @@ export default async function AdminPointsPage() {
     await loadAdminPage("/admin/points");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
-  const [allOptions, allLedger, standings, allBrackets, allGames] =
-    await Promise.all([
-      getPointsEntryFormOptions(warWeek),
-      getAdminLedger(warWeek),
-      getStandings(warWeek),
-      getBracketCompetitions(warWeek),
-      getGamesCompetitions(warWeek),
-    ]);
+  const [
+    allOptions,
+    allLedger,
+    standings,
+    allBrackets,
+    allGames,
+    allParticipation,
+  ] = await Promise.all([
+    getPointsEntryFormOptions(warWeek),
+    getAdminLedger(warWeek),
+    getStandings(warWeek),
+    getBracketCompetitions(warWeek),
+    getGamesCompetitions(warWeek),
+    getParticipationCompetitions(warWeek),
+  ]);
   // A Host sees only their own Competitions in the form, ledger and Brackets.
   const options = {
     ...allOptions,
@@ -53,8 +61,10 @@ export default async function AdminPointsPage() {
   const ledger = allLedger.filter((entry) => runs(entry.competitionId));
   const brackets = allBrackets.filter((b) => runs(b.id));
   const games = allGames.filter((g) => runs(g.id));
+  const participations = allParticipation.filter((p) => runs(p.id));
 
-  // A Bracket- or Games-generated entry is changed where it is made.
+  // A Bracket-, Games- or Participation-generated entry is changed where
+  // it is made.
   const entryActions = (entry: (typeof ledger)[number]) =>
     entry.generatedByBracket ? (
       entry.competitionFormat === "games" ? (
@@ -63,6 +73,13 @@ export default async function AdminPointsPage() {
           className={changeLink}
         >
           Change in Games
+        </Link>
+      ) : entry.competitionFormat === "participation" ? (
+        <Link
+          href={`/admin/competitions/${entry.competitionId}/participation`}
+          className={changeLink}
+        >
+          Change in Participation
         </Link>
       ) : (
         <Link
@@ -140,6 +157,29 @@ export default async function AdminPointsPage() {
                   {g.name}
                   <span className="text-foreground/60 text-xs font-normal">
                     {g.finalizedAt ? "closed" : "open"}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {participations.length > 0 && (
+        <section
+          className="mb-8 flex max-w-6xl flex-col gap-2"
+          aria-label="Participation"
+        >
+          <h2 className="text-lg font-semibold">Participation</h2>
+          <ul className="flex flex-wrap gap-2">
+            {participations.map((p) => (
+              <li key={p.id}>
+                <Link
+                  href={`/admin/competitions/${p.id}/participation`}
+                  className="border-border hover:bg-muted inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium"
+                >
+                  {p.name}
+                  <span className="text-foreground/60 text-xs font-normal">
+                    {p.finalizedAt ? "closed" : "open"}
                   </span>
                 </Link>
               </li>

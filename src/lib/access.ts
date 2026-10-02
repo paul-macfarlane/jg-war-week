@@ -13,6 +13,11 @@ import {
   gameChangeError,
   gameLogError,
 } from "@/lib/games/log-rule";
+import {
+  type CheckInFacet,
+  checkInError,
+  checkOutError,
+} from "@/lib/participation/check-in-rule";
 
 /** The only Google Workspace domain allowed to sign in. */
 export const JG_EMAIL_DOMAIN = "jahnelgroup.com";
@@ -84,6 +89,14 @@ export type WarWeekAction =
   | "games.close"
   | "games.reopen"
   | "competition.self-enroll"
+  /** A `participation` Competition's setup, took-part list and close. */
+  | "participation.settings"
+  | "participation.mark"
+  | "participation.close"
+  | "participation.reopen"
+  /** Checking yourself in or out (ADR 0009). */
+  | "participation.check-in"
+  | "participation.check-out"
   /** Self-report (ADR 0005). */
   | "bracket.heat-report"
   /** Logging, editing and deleting a Game (ADR 0006). */
@@ -103,7 +116,7 @@ export type WarWeekAction =
  * an unlinked Schedule Item), the Competition the request posts
  * (`postedCompetitionId`, null to unlink), an Announcement's author and,
  * for the Participant writes, their facts: a Heat's (`heatReport`), a
- * Game's (`gameLog`) or enrollment's (`enroll`).
+ * Game's (`gameLog`), enrollment's (`enroll`) or Check in's (`checkIn`).
  */
 export type AccessTarget = {
   warWeekId: string;
@@ -113,6 +126,7 @@ export type AccessTarget = {
   heatReport?: HeatReportFacet;
   gameLog?: GameLogFacet;
   enroll?: EnrollFacet;
+  checkIn?: CheckInFacet;
 };
 
 export const SIGN_IN_REFUSAL = "Sign in to continue.";
@@ -190,11 +204,12 @@ export const sameEmail = (a: string | null | undefined, b: string) =>
  * where they host, editing or deleting their own. Everyone else signed in
  * is a Participant, whose writes are reporting the result of a Heat
  * they're in when self-report is on (ADR 0005), and logging Games,
- * changing the Games they logged, and enrolling or withdrawing (ADR 0006).
- * Those facet-bound rules bind everyone, Organizers included: a Host or
- * Organizer runs a `games` Competition through the Game facet's `runs`,
- * and adds Entrants through the picker. Pure: the caller loads the actor
- * and the target.
+ * changing the Games they logged, and enrolling or withdrawing (ADR 0006),
+ * and checking in or out (ADR 0009). Those facet-bound rules bind
+ * everyone, Organizers included: a Host or Organizer runs a `games`
+ * Competition through the Game facet's `runs`, adds Entrants through the
+ * picker and marks who took part through `participation.mark`. Pure: the
+ * caller loads the actor and the target.
  */
 export function can(actor: Actor, action: SelfAction): string | null;
 export function can(actor: Actor, action: OrganizerListAction): string | null;
@@ -242,6 +257,18 @@ export function can(
     return action === "competition.enroll"
       ? enrollError(target.enroll)
       : withdrawError(target.enroll);
+  }
+  if (
+    action === "participation.check-in" ||
+    action === "participation.check-out"
+  ) {
+    // Before the Organizer shortcut: Check in binds everyone; a Host or
+    // Organizer marks anyone through `participation.mark` instead.
+    if (!actor || !isJahnelGroupEmail(actor.email)) return SIGN_IN_REFUSAL;
+    if (!target?.checkIn) return ADMIN_REFUSAL;
+    return action === "participation.check-in"
+      ? checkInError(target.checkIn)
+      : checkOutError(target.checkIn);
   }
   if (!actor) return SIGN_IN_REFUSAL;
   if (actor.isOrganizer) return null;
@@ -291,6 +318,13 @@ export function can(
     case "competition.self-enroll":
       // A `games` Competition's setup, Entrants and close, and the enroll
       // switch: the Host of this Competition, beside their Bracket twins.
+      return hostsCurrent ? null : NOT_HOST;
+    case "participation.settings":
+    case "participation.mark":
+    case "participation.close":
+    case "participation.reopen":
+      // A `participation` Competition's setup, who took part and its close:
+      // the Host of this Competition, like `games`.
       return hostsCurrent ? null : NOT_HOST;
     default:
       // A Competition's setup and Bracket, and deleting a Points Entry or

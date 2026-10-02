@@ -51,6 +51,21 @@ describe("toGamesResult", () => {
     });
   });
 
+  it("points a participation Competition to get_participation", () => {
+    expect(
+      toGamesResult(
+        { name: "Workout", scoring: "team", format: "participation" },
+        undefined,
+        "Workout",
+      ),
+    ).toMatchObject({
+      found: true,
+      games: null,
+      message:
+        "Workout isn't run as Games; it's run as Participation. Call get_participation instead.",
+    });
+  });
+
   it("serializes a head-to-head Competition's settings, leaderboard and Games", () => {
     const view: GamesView = {
       competition: baseView({ scoring: "individual" }),

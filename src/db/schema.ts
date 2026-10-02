@@ -33,6 +33,7 @@ import {
   FONT_PRESETS,
   GAME_TYPES,
   HEAT_STATUSES,
+  PARTICIPATION_TEAM_SCORINGS,
   SCHEDULE_ITEM_CATEGORIES,
   WAR_WEEK_MODES,
   WAR_WEEK_STATUSES,
@@ -66,6 +67,11 @@ export const competitionFormat = pgEnum(
 export const heatStatus = pgEnum("heat_status", HEAT_STATUSES);
 
 export const gameType = pgEnum("game_type", GAME_TYPES);
+
+export const participationTeamScoring = pgEnum(
+  "participation_team_scoring",
+  PARTICIPATION_TEAM_SCORINGS,
+);
 
 export const warWeek = pgTable(
   "war_week",
@@ -237,6 +243,22 @@ export const competition = pgTable(
     entrantLimit: integer("entrant_limit"),
     // Enrollment closes after this time; null for no close time.
     enrollClosesAt: timestamp("enroll_closes_at", { withTimezone: true }),
+    // `participation` only (the CHECK below): N, the points per Participant
+    // who took part (individual, and team "per person").
+    participationPoints: numeric("participation_points", {
+      precision: 8,
+      scale: 2,
+      mode: "number",
+    }),
+    // `participation` with team scoring only: ranked by headcount, or per
+    // person. Null for individual scoring.
+    participationTeamScoring: participationTeamScoring(
+      "participation_team_scoring",
+    ),
+    // `participation` only: Participants may check themselves in (ADR 0009).
+    selfCheckIn: boolean("self_check_in").notNull().default(false),
+    // `participation` only: Participants can't check in or out after it.
+    checkInClosesAt: timestamp("check_in_closes_at", { withTimezone: true }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -255,6 +277,20 @@ export const competition = pgTable(
     check(
       "competition_entrant_limit_above_1",
       sql`${table.entrantLimit} is null or ${table.entrantLimit} > 1`,
+    ),
+    // The `participation` settings exist exactly on a `participation`
+    // Competition, the team scoring choice exactly in team scoring. On the
+    // text form, as above.
+    check(
+      "competition_participation_columns",
+      sql`case when ${table.format}::text = 'participation'
+        then ${table.participationPoints} is not null
+          and (${table.scoring} = 'team') = (${table.participationTeamScoring} is not null)
+        else ${table.participationPoints} is null
+          and ${table.participationTeamScoring} is null
+          and ${table.checkInClosesAt} is null
+          and not ${table.selfCheckIn}
+        end`,
     ),
   ],
 );
@@ -548,6 +584,35 @@ export const gamePlayer = pgTable(
       "game_player_place_from_1",
       sql`${table.place} is null or ${table.place} >= 1`,
     ),
+  ],
+);
+
+/**
+ * A Participant who took part in a `participation` Competition: ticked by
+ * the Host or an Organizer, or checked in by the Participant themselves
+ * (ADR 0009). Scored only when the Competition closes.
+ */
+export const participation = pgTable(
+  "participation",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competition.id, { onDelete: "cascade" }),
+    participantId: uuid("participant_id")
+      .notNull()
+      .references(() => participant.id, { onDelete: "cascade" }),
+    // Kept for audit and never read back to a page or MCP (CONTEXT.md,
+    // Access rules).
+    markedByEmail: varchar("marked_by_email", { length: 254 }).notNull(),
+    // True when the Participant checked themselves in; false when the Host
+    // or an Organizer marked them.
+    checkedIn: boolean("checked_in").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    unique().on(table.competitionId, table.participantId),
+    index("participation_participant_id_idx").on(table.participantId),
   ],
 );
 
@@ -878,6 +943,7 @@ export type HeatRow = InferSelectModel<typeof heat>;
 export type HeatEntrantRow = InferSelectModel<typeof heatEntrant>;
 export type GameRow = InferSelectModel<typeof game>;
 export type GamePlayerRow = InferSelectModel<typeof gamePlayer>;
+export type ParticipationRow = InferSelectModel<typeof participation>;
 export type Organizer = InferSelectModel<typeof organizer>;
 export type Profile = InferSelectModel<typeof profile>;
 export type CompetitionHost = InferSelectModel<typeof competitionHost>;

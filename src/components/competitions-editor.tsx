@@ -49,6 +49,8 @@ const FORMAT_DESCRIPTIONS: Record<Format, string> = {
     "A Bracket where Entrants play in Heats; a set number advance each Round.",
   games:
     "Players log Games themselves and a leaderboard ranks them. Chosen only here: a Games Competition keeps its Format.",
+  participation:
+    "Points for taking part: the Host ticks who took part, or Participants check in. Chosen only here: a Participation Competition keeps its Format.",
 };
 
 /** How each Game Type decides a Game, shown when Games is chosen. */
@@ -58,11 +60,23 @@ const GAME_TYPE_DESCRIPTIONS: Record<GameType, string> = {
   ranked: "Each Game records a finishing order, worth Finish Points.",
 };
 
-/** Where a saved Competition of this Format is set up, or null for points. */
+/** Where a saved Competition of this Format is set up. */
 function setupHref(competition: Pick<SetupCompetition, "id" | "format">) {
-  return competition.format === "games"
-    ? `/admin/competitions/${competition.id}/games`
-    : `/admin/competitions/${competition.id}/bracket`;
+  if (competition.format === "games") {
+    return `/admin/competitions/${competition.id}/games`;
+  }
+  if (competition.format === "participation") {
+    return `/admin/competitions/${competition.id}/participation`;
+  }
+  return `/admin/competitions/${competition.id}/bracket`;
+}
+
+/** The Competitions list's link to a Competition's setup, by Format. */
+function setupLinkLabel(format: Format): string {
+  if (format === "points") return "Run as a Bracket";
+  if (format === "games") return "Games";
+  if (format === "participation") return "Who took part";
+  return "Bracket";
 }
 
 function emptyCompetition(mode: WarWeek["mode"]): CompetitionInput {
@@ -171,10 +185,12 @@ function CompetitionForm({
         return setCompetitionHosts(competition.id, hostEmails);
       }
       const result = await createCompetition(warWeekId, input);
-      // A Bracket or Games Format links straight to its setup.
+      // A Bracket, Games or Participation Format links straight to its setup.
       if (
         result.ok &&
-        (isBracketFormat(input.format) || input.format === "games")
+        (isBracketFormat(input.format) ||
+          input.format === "games" ||
+          input.format === "participation")
       ) {
         router.push(
           setupHref({ id: result.id, format: input.format as Format }),
@@ -446,11 +462,7 @@ export function CompetitionsEditor({
                     href={setupHref(c)}
                     className="text-primary inline-flex min-h-11 shrink-0 items-center px-2 text-sm underline-offset-4 hover:underline sm:min-h-0"
                   >
-                    {c.format === "points"
-                      ? "Run as a Bracket"
-                      : c.format === "games"
-                        ? "Games"
-                        : "Bracket"}
+                    {setupLinkLabel(c.format)}
                   </Link>
                 }
                 form={(close) => (

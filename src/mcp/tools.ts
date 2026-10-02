@@ -54,4 +54,9 @@ export const MCP_TOOLS = {
     description:
       "Returns a Competition run as Games by name: its settings, leaderboard ranked by Game Type, and its logged Games newest first. A Competition run another way instead returns games: null; an unknown Competition returns found: false.",
   },
+  get_participation: {
+    title: "Get Participation",
+    description:
+      "Returns a Competition run as Participation (points for taking part) by name: its scoring settings, whether Participants can check in and until when, whether it's closed, who took part by name, and in team scoring each Team's headcount and place. A Competition run another way instead returns participation: null; an unknown Competition returns found: false.",
+  },
 } satisfies Record<string, { title: string; description: string }>;

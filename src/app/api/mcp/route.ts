@@ -3,11 +3,16 @@ import { z } from "zod";
 
 import { toAnnouncementsResult } from "@/mcp/announcements";
 import { toAwardsResult } from "@/mcp/awards";
-import { toBracketResult, toGamesBracketResult } from "@/mcp/bracket";
+import {
+  toBracketResult,
+  toGamesBracketResult,
+  toParticipationBracketResult,
+} from "@/mcp/bracket";
 import { toFaqResult } from "@/mcp/faq";
 import { toGamesResult } from "@/mcp/games";
 import { toHistoryListResult, toHistoryResult } from "@/mcp/history";
 import { toLeaderboardResult } from "@/mcp/leaderboard";
+import { toParticipationResult } from "@/mcp/participation";
 import { toScheduleResult } from "@/mcp/schedule";
 import { MCP_TOOLS } from "@/mcp/tools";
 import { toCurrentWarWeekResult } from "@/mcp/war-week";
@@ -18,6 +23,7 @@ import { getBracket } from "@/queries/brackets";
 import { getCompetitionByName } from "@/queries/competitions";
 import { getFaqItems } from "@/queries/faq";
 import { getGamesView } from "@/queries/games";
+import { getParticipationView } from "@/queries/participation";
 import { getSchedule } from "@/queries/schedule";
 import { getSetupDays } from "@/queries/setup";
 import { getStandings } from "@/queries/standings";
@@ -236,6 +242,17 @@ const handler = createMcpHandler(
             ],
           };
         }
+        // Nor is a `participation` one: point to `get_participation`.
+        if (found?.format === "participation") {
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(toParticipationBracketResult(found)),
+              },
+            ],
+          };
+        }
         const [view, days] = await Promise.all([
           found ? getBracket(found.id) : Promise.resolve(undefined),
           getSetupDays(warWeek),
@@ -275,6 +292,40 @@ const handler = createMcpHandler(
             ? await getGamesView(found.id, null)
             : undefined;
         const result = toGamesResult(found, view ?? undefined, competition);
+
+        return {
+          content: [{ type: "text", text: JSON.stringify(result) }],
+        };
+      },
+    );
+
+    server.registerTool(
+      "get_participation",
+      {
+        ...MCP_TOOLS.get_participation,
+        inputSchema: z.object({
+          competition: z
+            .string()
+            .trim()
+            .min(1)
+            .describe("The Competition's name, in the current War Week."),
+        }),
+      },
+      async ({ competition }) => {
+        const warWeek = await getCurrentWarWeek();
+        if (!warWeek) {
+          return {
+            content: [
+              { type: "text", text: JSON.stringify({ warWeek: null }) },
+            ],
+          };
+        }
+        const found = await getCompetitionByName(warWeek, competition);
+        const view =
+          found?.format === "participation"
+            ? await getParticipationView(found.id)
+            : undefined;
+        const result = toParticipationResult(found, view, competition);
 
         return {
           content: [{ type: "text", text: JSON.stringify(result) }],

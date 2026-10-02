@@ -63,9 +63,10 @@ type Target = {
   teamId?: string | null;
 };
 
-// Never `games`: a Competition is `games` from creation, and stays so.
+// Never `games` or `participation`: a Competition is one of those from
+// creation, and stays so.
 const FORMAT_OPTIONS = COMPETITION_FORMATS.filter(
-  (format) => format !== "games",
+  (format) => format !== "games" && format !== "participation",
 ).map((format) => ({
   value: format,
   label: formatLabel(format),

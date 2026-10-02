@@ -67,6 +67,9 @@ const SQUADS_SEEDED_AT_RANDOM = "Squads are seeded at random.";
 /** Changing a `games` Competition's Format, or making one `games` later. */
 export const GAMES_KEEP_FORMAT =
   "A Games Competition keeps its Format; add a new Competition to run it another way.";
+/** Changing a `participation` Competition's Format, or making one later. */
+export const PARTICIPATION_KEEPS_FORMAT =
+  "A Participation Competition keeps its Format; add a new Competition to run it another way.";
 /** A closed `games` Competition's Entrants can't change. */
 export const GAMES_CLOSED = "Reopen the Competition first.";
 const NO_SQUADS_IN_GAMES = "Squads aren't entered in a Games Competition.";
@@ -270,7 +273,8 @@ async function saveBracket(
 /**
  * Sets how a Competition is run, and the heats Format's config. Its Format
  * can't change while it has Entrants or Games, nor either while it's
- * finalized; a `games` Competition is `games` from creation, and stays so.
+ * finalized; a `games` or `participation` Competition is that Format from
+ * creation, and stays so.
  * Saving a different heats config clears the Heats (keeping the Entrants);
  * once a Heat has a Heat Result, only with `force`. Omitting the config
  * keeps the saved one, unless the Format changes; the default then applies.
@@ -290,6 +294,9 @@ export async function setCompetitionFormat(
     if (!found) return refuse(COMPETITION_NOT_FOUND);
     if (found.format === "games" || values.format === "games") {
       return refuse(GAMES_KEEP_FORMAT);
+    }
+    if (found.format === "participation" || values.format === "participation") {
+      return refuse(PARTICIPATION_KEEPS_FORMAT);
     }
     if (found.finalizedAt) return refuse(FINALIZED);
     const formatChanges = found.format !== values.format;

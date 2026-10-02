@@ -1,36 +1,62 @@
-import { and, eq, exists, isNull } from "drizzle-orm";
+import { and, eq, exists, isNull, or } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
-import { type WarWeek, competition, game } from "@/db/schema";
+import { type WarWeek, competition, game, participation } from "@/db/schema";
 
-/** An open `games` Competition, named in the End War Week warning. */
-export type OpenGamesCompetition = { id: string; name: string };
+/** An open `games` or `participation` Competition, named in the End War Week warning. */
+export type OpenGamesCompetition = {
+  id: string;
+  name: string;
+  format: "games" | "participation";
+};
 
 /**
- * A War Week's open `games` Competitions (not closed: `finalized_at` is null
- * until Close sets it) that have at least one Game, by name. Used to warn
- * when ending a War Week with Competitions whose Placement Points aren't yet
- * in the Standings.
+ * A War Week's open `games` Competitions with at least one Game, and open
+ * `participation` Competitions with anyone marked (not closed:
+ * `finalized_at` is null until Close sets it), by name. Used to warn when
+ * ending a War Week with Competitions whose points aren't yet in the
+ * Standings: they land only on Close.
  */
 export async function getOpenGamesCompetitions(
   warWeek: Pick<WarWeek, "id">,
   dbOrTx: DBOrTx = db,
 ): Promise<OpenGamesCompetition[]> {
-  return dbOrTx
-    .select({ id: competition.id, name: competition.name })
+  const rows = await dbOrTx
+    .select({
+      id: competition.id,
+      name: competition.name,
+      format: competition.format,
+    })
     .from(competition)
     .where(
       and(
         eq(competition.warWeekId, warWeek.id),
-        eq(competition.format, "games"),
         isNull(competition.finalizedAt),
-        exists(
-          dbOrTx
-            .select()
-            .from(game)
-            .where(eq(game.competitionId, competition.id)),
+        or(
+          and(
+            eq(competition.format, "games"),
+            exists(
+              dbOrTx
+                .select()
+                .from(game)
+                .where(eq(game.competitionId, competition.id)),
+            ),
+          ),
+          and(
+            eq(competition.format, "participation"),
+            exists(
+              dbOrTx
+                .select()
+                .from(participation)
+                .where(eq(participation.competitionId, competition.id)),
+            ),
+          ),
         ),
       ),
     )
     .orderBy(competition.name);
+  return rows.map((row) => ({
+    ...row,
+    format: row.format as OpenGamesCompetition["format"],
+  }));
 }

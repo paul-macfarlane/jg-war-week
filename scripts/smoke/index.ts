@@ -86,6 +86,7 @@ import {
   assertYouHighlight,
   restoreFaqTable,
 } from "./pages";
+import { assertParticipationLoop } from "./participation";
 import {
   assertAdminPointsPage,
   assertPointsEntryActions,
@@ -225,6 +226,7 @@ async function main() {
       await assertSquadSelfReportLoop(sessions);
       await assertHostChecks(sessions);
       await assertParticipantRefused(sessions);
+      await assertParticipationLoop(sessions);
       // Ends XI by SQL in its own step, then restores it.
       await assertGamesLoop(sessions);
       await assertPostedWarWeekWins(sessions);
