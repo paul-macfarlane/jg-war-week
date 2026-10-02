@@ -140,3 +140,8 @@ Run surface: **local** (deploy is Paul's merge; no deployed criterion). Real dep
 | E-AC3 | CI on the PR passes; `pnpm format:check && pnpm gate` passes | local run, then GitHub Actions on the PR | `test-results/r13/gate.txt`, PR checks | PR open | any push |
 
 Human gates: none before dispatch. CI on the PR (E-AC3) is observed after the PR opens; merging stays Paul's.
+
+## [PROGRESS]
+
+- 2026-10-02, wave 1: **D72** (atlas-worker / opus) committed `dc9eab5` on the feature branch: schema + migration `0027`, pure resolution and stepper, Organizer-only move/hide with the `war_week` row lock, the slideshow overlay with the Standings countdown slide, the admin list (↑/↓, Hide/Show, native drag; Hosts read-only), seed sync (`finaleSlides` in both demos), smoke and e2e rewrites, `E2E_PORT`. Worker run: unit 3651 passed, smoke 245 ok, full e2e 87 passed (candidate; the orchestrator's final gate decides). Acceptance screen: accepted. Worker decisions recorded: a `data-finale-hydrated` hook; the countdown completing its step when it ends; Enter never bound; Replay leaves the step finished.
+- Wave 2 dispatched: D73 (worktree `d73`, DB `war_weeker_r13_d73`, ports 3210/3211) ‖ D74 (worktree `d74`, DB `war_weeker_r13_d74`, ports 3220/3221).
