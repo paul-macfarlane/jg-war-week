@@ -406,6 +406,12 @@ that nothing personal shows (no You highlight, no Log a Game).
       List toggle) and its champion once finalized; a `games` Competition
       shows its leaderboard with the Game Type's columns and the Game log
       newest first, with the "Mine" filter.
+- [ ] **Teams show in team events.** *(teams)* Wherever a Participant
+  appears in a Competition or scoring context (individual Standings, a
+  Bracket's entrants and Heat results, the Games leaderboard and Game log,
+  Recent results, a Competition's ledger, Award recipients, the Finale,
+  Now/Next), their Team shows by name where there's room, else by its
+  color, including for a Participant whose Avatar is a Profile picture (`CONTEXT.md`, "The Team shows in team events").
 - [ ] **Leaderboard.** `/<edition>/leaderboard` shows the main Standings
       (Team Standings *(teams)*, individual Standings *(free-for-all)*), the
       points breakdown per row, and the linked Participant highlighted.
