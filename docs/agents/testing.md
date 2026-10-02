@@ -70,3 +70,8 @@ retained artifact before storage or sharing.
   (copy, and media via `scripts/about-media.ts` where affected) and
   `docs/maintainers-guide.md` in the same PR. Part of every Definition of
   Done. Decided 2026-09-26.
+- **Keep the regression checklist current.** `docs/regression-checklist.md`
+  is the agent-run regression suite. A PR that changes a page, a flow or a
+  role's access updates that page's lines in the same PR. Part of every
+  Definition of Done. Running it is on demand, never in CI. Decided
+  2026-10-01.
