@@ -60,6 +60,54 @@ const ctxOf = (warWeekId: string) => ({
 });
 
 describe.skipIf(!isLocalDatabase)("loadWarWeekSeed lifecycle fields", () => {
+  it("stores a Day's description, nulls a blank one, and updates it on reload", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { loadWarWeekSeed } = await import("@/seed/load");
+      const schema = await import("@/db/schema");
+      const { eq } = await import("drizzle-orm");
+      await clearLive(tx);
+      const days = (a: string | undefined, b: string) => [
+        {
+          date: "2099-01-02",
+          dayTheme: "One",
+          description: a,
+          scheduleItems: [],
+        },
+        {
+          date: "2099-01-03",
+          dayTheme: "Two",
+          description: b,
+          scheduleItems: [],
+        },
+      ];
+      const read = async (id: string) =>
+        (
+          await tx
+            .select({
+              date: schema.day.date,
+              description: schema.day.description,
+            })
+            .from(schema.day)
+            .where(eq(schema.day.warWeekId, id))
+            .orderBy(schema.day.date)
+        ).map((d) => d.description);
+
+      const first = await loadWarWeekSeed(
+        await seed("sd", 4, "upcoming", { days: days("Wear red.", "") }),
+        tx,
+      );
+      expect(await read(first.id)).toEqual(["Wear red.", null]);
+
+      await loadWarWeekSeed(
+        await seed("sd", 4, "upcoming", {
+          days: days(undefined, "Bring lunch."),
+        }),
+        tx,
+      );
+      expect(await read(first.id)).toEqual([null, "Bring lunch."]);
+    });
+  });
+
   it("sets status, Winner and highlights on insert and never overwrites them", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { loadWarWeekSeed } = await import("@/seed/load");

@@ -34,7 +34,12 @@ export async function getSchedule(
 
   const [days, rows] = await Promise.all([
     dbOrTx
-      .select({ id: day.id, date: day.date, dayTheme: day.dayTheme })
+      .select({
+        id: day.id,
+        date: day.date,
+        dayTheme: day.dayTheme,
+        description: day.description,
+      })
       .from(day)
       .where(dayFilter),
     dbOrTx

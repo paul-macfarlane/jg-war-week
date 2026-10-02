@@ -1,0 +1,1 @@
+ALTER TABLE "day" ADD COLUMN "description" varchar(280);

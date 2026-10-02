@@ -136,6 +136,7 @@ export const day = pgTable(
       .references(() => warWeek.id, { onDelete: "cascade" }),
     date: date("date").notNull(),
     dayTheme: varchar("day_theme", { length: 120 }).notNull(),
+    description: varchar("description", { length: 280 }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },

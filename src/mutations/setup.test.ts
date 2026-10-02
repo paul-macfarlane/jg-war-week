@@ -409,6 +409,45 @@ describe.skipIf(!isLocalDatabase)("Day mutations", () => {
     });
   });
 
+  it("saves and edits a Day's description", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { createDay, updateDay } = await import("@/mutations/setup");
+      const { getSetupDays } = await import("@/queries/setup");
+      const { home, quietId, ctx } = await fixture(tx);
+
+      await createDay(
+        { date: "2099-01-05", dayTheme: "Finale", description: "Wear red." },
+        ctx,
+        tx,
+      );
+      await updateDay(
+        quietId,
+        { date: "2099-01-03", dayTheme: "Quiet", description: "Shh." },
+        ctx,
+        tx,
+      );
+      const byDate = async () =>
+        Object.fromEntries(
+          (await getSetupDays({ id: home }, tx)).map((d) => [
+            d.date,
+            d.description,
+          ]),
+        );
+      expect(await byDate()).toEqual({
+        "2099-01-02": null,
+        "2099-01-03": "Shh.",
+        "2099-01-05": "Wear red.",
+      });
+      await updateDay(
+        quietId,
+        { date: "2099-01-03", dayTheme: "Quiet", description: null },
+        ctx,
+        tx,
+      );
+      expect((await byDate())["2099-01-03"]).toBeNull();
+    });
+  });
+
   it("refuses a duplicate date, a date outside the War Week, and deleting a Day with Schedule Items", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { createDay, updateDay, deleteDay } =

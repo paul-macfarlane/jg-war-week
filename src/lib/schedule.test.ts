@@ -143,7 +143,15 @@ describe("groupSchedule", () => {
   it("keeps a Day with no items", () => {
     expect(
       groupSchedule([{ id: "d1", date: "2026-02-23", dayTheme: "One" }], []),
-    ).toEqual([{ id: "d1", date: "2026-02-23", dayTheme: "One", items: [] }]);
+    ).toEqual([
+      {
+        id: "d1",
+        date: "2026-02-23",
+        dayTheme: "One",
+        description: null,
+        items: [],
+      },
+    ]);
   });
 });
 

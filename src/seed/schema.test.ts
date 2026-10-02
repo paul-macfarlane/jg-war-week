@@ -64,6 +64,23 @@ describe("warWeekSeedSchema", () => {
     });
   });
 
+  it("accepts a day with or without a description and rejects 281 characters", () => {
+    const fixture = loadFixture();
+    const withDay = (day: object) => ({
+      ...fixture,
+      days: [{ ...fixture.days[0], ...day }, ...fixture.days.slice(1)],
+    });
+    expect(
+      warWeekSeedSchema.safeParse(withDay({ description: "Hello" })).success,
+    ).toBe(true);
+    expect(
+      warWeekSeedSchema.safeParse(withDay({ description: "" })).success,
+    ).toBe(true);
+    expect(rejectionOf(withDay({ description: "x".repeat(281) }))).toEqual([
+      expect.stringMatching(/^days\.0\.description: /),
+    ]);
+  });
+
   it("rejects a non-hex appearance color", () => {
     rejectionOf({ ...loadFixture(), primary: "not-a-color" });
   });

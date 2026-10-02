@@ -211,8 +211,41 @@ describe("parseDayInput", () => {
       parseDayInput({ date: "2026-02-23", dayTheme: " Red pill " }),
     ).toEqual({
       ok: true,
-      value: { date: "2026-02-23", dayTheme: "Red pill" },
+      value: { date: "2026-02-23", dayTheme: "Red pill", description: null },
     });
+  });
+
+  it("trims the description and stores blank as null", () => {
+    expect(
+      parseDayInput({ date: "2026-02-23", dayTheme: "x", description: " Hi " }),
+    ).toEqual({
+      ok: true,
+      value: { date: "2026-02-23", dayTheme: "x", description: "Hi" },
+    });
+    expect(
+      parseDayInput({ date: "2026-02-23", dayTheme: "x", description: "  " }),
+    ).toEqual({
+      ok: true,
+      value: { date: "2026-02-23", dayTheme: "x", description: null },
+    });
+  });
+
+  it("refuses a description over 280 characters", () => {
+    expectRefused(
+      parseDayInput({
+        date: "2026-02-23",
+        dayTheme: "x",
+        description: "x".repeat(281),
+      }),
+      "Description must be at most 280 characters.",
+    );
+    expect(
+      parseDayInput({
+        date: "2026-02-23",
+        dayTheme: "x",
+        description: "x".repeat(280),
+      }).ok,
+    ).toBe(true);
   });
 
   it.each([
