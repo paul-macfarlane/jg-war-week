@@ -140,6 +140,10 @@ on the matching War Week page.
 - [ ] **Settings refuse bad input at the field.** A malformed Slack URL and
       an end date before the start date each show an error at their field,
       the field takes focus, and nothing is saved.
+- [ ] **Settings: Team fields follow Mode.** In War Week settings,
+      *(free-for-all)* Team Label and Leader Title are hidden and the roster
+      has no Team controls; set Mode to Teams (before saving) and they show
+      with their saved values.
 - [ ] **Days.** Add a Day inside the War Week with a Day Theme; it shows on
       `/<edition>/schedule`. The Day picker greys out dates that already have
       a Day (not the edited Day's own date) and dates outside the War Week;
