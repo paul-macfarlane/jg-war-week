@@ -33,7 +33,11 @@ export function AnnouncementCard({
           </p>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
-          <RichText content={announcement.body} />
+          {/* Body headings sit one below the title's own level. */}
+          <RichText
+            content={announcement.body}
+            headingFloor={headingLevel === "h2" ? 3 : 4}
+          />
           {announcement.videoUrls.map((url, index) => {
             const src = videoEmbedUrl(url);
             if (!src) return null;

@@ -34,7 +34,8 @@ export default async function FaqPage({ params }: PageProps<"/[edition]/faq">) {
                   />
                 </summary>
                 <div className="text-foreground/80 px-4 pb-4 text-sm">
-                  <RichText content={item.answer} />
+                  {/* One below the question's `h2`. */}
+                  <RichText content={item.answer} headingFloor={3} />
                 </div>
               </details>
             </li>

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { contentInputSchema, isHttpUrl } from "@/lib/rich-text/content";
+import {
+  contentInputSchema,
+  contentSchema,
+  isBlankContent,
+  isHttpUrl,
+} from "@/lib/rich-text/content";
 
 describe("contentInputSchema", () => {
   it("drops an unrecognized block (iframe) and keeps the paragraph", () => {
@@ -68,5 +73,199 @@ describe("video blocks", () => {
         content: [{ type: "video", attrs: { src, onload: "x" } }],
       }),
     ).toEqual(video(src));
+  });
+});
+
+describe("the journeys content set", () => {
+  function doc(...content: unknown[]) {
+    return { type: "doc", content };
+  }
+  const text = (value: string, marks?: unknown[]) =>
+    marks
+      ? { type: "text", text: value, marks }
+      : { type: "text", text: value };
+  const paragraph = (...content: unknown[]) => ({ type: "paragraph", content });
+
+  it("keeps underline, strike and a hard break", () => {
+    const input = doc(
+      paragraph(
+        text("under", [{ type: "underline" }]),
+        { type: "hardBreak" },
+        text("struck", [{ type: "strike" }]),
+      ),
+    );
+    expect(contentInputSchema.parse(input)).toEqual(input);
+  });
+
+  it("drops a mark it does not know and keeps the text", () => {
+    expect(
+      contentInputSchema.parse(
+        doc(paragraph(text("hi", [{ type: "highlight" }]))),
+      ),
+    ).toEqual(doc(paragraph(text("hi"))));
+  });
+
+  it("drops attrs on a hard break and an unknown inline node", () => {
+    expect(
+      contentInputSchema.parse(
+        doc(
+          paragraph(
+            { type: "hardBreak", attrs: { x: 1 }, marks: [{ type: "bold" }] },
+            { type: "mention", attrs: { id: "x" } },
+          ),
+        ),
+      ),
+    ).toEqual(doc(paragraph({ type: "hardBreak" })));
+  });
+
+  it("keeps a top-level quote of paragraphs", () => {
+    const input = doc({
+      type: "blockquote",
+      content: [paragraph(text("said")), paragraph(text("again"))],
+    });
+    expect(contentInputSchema.parse(input)).toEqual(input);
+  });
+
+  it("keeps only the paragraphs of a quote holding a heading and a list", () => {
+    expect(
+      contentInputSchema.parse(
+        doc({
+          type: "blockquote",
+          content: [
+            { type: "heading", attrs: { level: 2 }, content: [text("H")] },
+            paragraph(text("kept")),
+            {
+              type: "bulletList",
+              content: [
+                { type: "listItem", content: [paragraph(text("gone"))] },
+              ],
+            },
+          ],
+        }),
+      ),
+    ).toEqual(doc({ type: "blockquote", content: [paragraph(text("kept"))] }));
+  });
+
+  it("drops a quote with no paragraph left", () => {
+    expect(
+      contentInputSchema.parse(
+        doc({
+          type: "blockquote",
+          content: [{ type: "heading", attrs: { level: 1 } }],
+        }),
+      ),
+    ).toEqual(doc());
+  });
+
+  it("keeps an image's caption, trimmed", () => {
+    expect(
+      contentInputSchema.parse(
+        doc({
+          type: "image",
+          attrs: { src: "https://x.test/a.png", alt: " A ", caption: " Cap " },
+        }),
+      ),
+    ).toEqual(
+      doc({
+        type: "image",
+        attrs: { src: "https://x.test/a.png", alt: "A", caption: "Cap" },
+      }),
+    );
+  });
+
+  it("reads an old image with no caption as caption ''", () => {
+    expect(
+      contentInputSchema.parse(
+        doc({
+          type: "image",
+          attrs: { src: "https://x.test/a.png", alt: "A" },
+        }),
+      ),
+    ).toEqual(
+      doc({
+        type: "image",
+        attrs: { src: "https://x.test/a.png", alt: "A", caption: "" },
+      }),
+    );
+    expect(
+      contentSchema.parse(
+        doc({
+          type: "image",
+          attrs: { src: "https://x.test/a.png", alt: "A" },
+        }),
+      ),
+    ).toEqual(
+      doc({
+        type: "image",
+        attrs: { src: "https://x.test/a.png", alt: "A", caption: "" },
+      }),
+    );
+  });
+
+  it("drops an image, a video or a quote inside a list item", () => {
+    expect(
+      contentInputSchema.parse(
+        doc({
+          type: "bulletList",
+          content: [
+            {
+              type: "listItem",
+              content: [
+                paragraph(text("one")),
+                { type: "image", attrs: { src: "https://x.test/a.png" } },
+                { type: "video", attrs: { src: "https://youtu.be/abc123" } },
+                { type: "blockquote", content: [paragraph(text("q"))] },
+              ],
+            },
+          ],
+        }),
+      ),
+    ).toEqual(
+      doc({
+        type: "bulletList",
+        content: [{ type: "listItem", content: [paragraph(text("one"))] }],
+      }),
+    );
+  });
+});
+
+describe("isBlankContent", () => {
+  const doc = (...content: unknown[]) => ({ type: "doc", content });
+
+  it("is blank for no blocks, empty paragraphs and a hard-break-only line", () => {
+    expect(isBlankContent(doc())).toBe(true);
+    expect(isBlankContent(doc({ type: "paragraph" }))).toBe(true);
+    expect(
+      isBlankContent(
+        doc({ type: "paragraph", content: [{ type: "hardBreak" }] }),
+      ),
+    ).toBe(true);
+  });
+
+  it("is not blank for an image, a video or a quote with words", () => {
+    expect(
+      isBlankContent(
+        doc({ type: "image", attrs: { src: "https://x.test/a.png" } }),
+      ),
+    ).toBe(false);
+    expect(
+      isBlankContent(
+        doc({ type: "video", attrs: { src: "https://youtu.be/abc123" } }),
+      ),
+    ).toBe(false);
+    expect(
+      isBlankContent(
+        doc({
+          type: "blockquote",
+          content: [
+            { type: "paragraph", content: [{ type: "text", text: "q" }] },
+          ],
+        }),
+      ),
+    ).toBe(false);
+  });
+
+  it("is not blank for something that is not a document", () => {
+    expect(isBlankContent({ nope: true })).toBe(false);
   });
 });

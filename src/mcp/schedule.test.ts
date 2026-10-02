@@ -42,7 +42,10 @@ const days: ScheduleDay[] = [
                 },
               ],
             },
-            { type: "image", attrs: { src: "https://x.test/a.png", alt: "" } },
+            {
+              type: "image",
+              attrs: { src: "https://x.test/a.png", alt: "", caption: "" },
+            },
           ],
         },
         category: "competition",

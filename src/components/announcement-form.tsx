@@ -133,6 +133,7 @@ export function AnnouncementForm({
             onChange={setBody}
             label="Body"
             labelId="announcement-body-label"
+            placeholder="Write the Announcement…"
           />
           <FieldError>{fieldErrors.body}</FieldError>
         </Field>

@@ -110,6 +110,7 @@ export function FaqItemForm({
             onChange={setAnswer}
             label="Answer"
             labelId="faq-answer-label"
+            placeholder="Write the answer…"
           />
           <FieldError>{fieldErrors.answer}</FieldError>
         </Field>
