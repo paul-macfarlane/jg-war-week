@@ -41,7 +41,6 @@ export default async function EditionLayout({
   const linked = resolveYou({
     sessionEmail: account.email,
     participants: candidates,
-    storedId: null,
   });
 
   const themeStyle = warWeekThemeStyle(warWeek);
@@ -57,11 +56,7 @@ export default async function EditionLayout({
         account={account}
       />
       <div className="flex-1">
-        <YouProvider
-          edition={warWeek.edition}
-          linkedId={linked?.participantId ?? null}
-          participantIds={candidates.map((c) => c.id)}
-        >
+        <YouProvider linkedId={linked?.participantId ?? null}>
           {children}
         </YouProvider>
       </div>

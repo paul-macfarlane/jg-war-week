@@ -116,7 +116,7 @@ describe("enrollError: a Participant enrolls", () => {
     expect(enrollError(facet({ selfEnroll: false }))).toBe(ENROLL_OFF);
   });
 
-  it("refuses the pick-only You: account linking is required", () => {
+  it("refuses an unlinked You: account linking is required", () => {
     expect(enrollError(facet({ linked: null }))).toBe(NOT_LINKED);
   });
 

@@ -12,8 +12,7 @@ import { getEnrollFacts } from "@/queries/enrollment";
  * What the Participant linked to `email` may do about entering this
  * Competition (ADR 0006), worked out with the same rules the enrollment
  * actions run: null unless the switch is on (and the Competition offers
- * enrollment) and the email links a Participant; never for a "Which one is
- * you?" pick. In a team Competition with Squads, one Join or Leave per
+ * enrollment) and the email links a Participant. In a team Competition with Squads, one Join or Leave per
  * Squad of their Team; otherwise Enroll or Withdraw.
  */
 export async function enrollOfferFor(

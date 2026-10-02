@@ -32,7 +32,7 @@ const entrants = seeds.map((e) => ({
 }));
 const entrantsById = new Map(entrants.map((e) => [e.id, e]));
 
-function card(options: { canReport: boolean; pickOnly: boolean }) {
+function card(options: { canReport: boolean }) {
   return renderToStaticMarkup(
     <YourNextHeatCard
       next={nextHeatFor(bracket, "e1")!}
@@ -47,23 +47,14 @@ function card(options: { canReport: boolean; pickOnly: boolean }) {
 
 describe("YourNextHeatCard", () => {
   it("offers Report result when Your next Heat is reportable", () => {
-    const html = card({ canReport: true, pickOnly: false });
+    const html = card({ canReport: true });
     expect(html).toContain("vs Blue");
     expect(html).toMatch(/<button[^>]*>Report result<\/button>/);
   });
 
-  it("tells someone known only by their pick how to report", () => {
-    const html = card({ canReport: false, pickOnly: true });
-    expect(html).toContain(
-      "To report results, ask an Organizer to add your email to the roster.",
-    );
-    expect(html).not.toContain("Report result");
-  });
-
   it("offers neither when self-report doesn't apply", () => {
-    const html = card({ canReport: false, pickOnly: false });
+    const html = card({ canReport: false });
     expect(html).not.toContain("Report result");
-    expect(html).not.toContain("To report results");
   });
 });
 

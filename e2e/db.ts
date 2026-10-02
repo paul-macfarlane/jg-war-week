@@ -76,7 +76,7 @@ export async function xiTeamId(name: string): Promise<string> {
 
 /**
  * Sets (or, with null, clears) a Participant's roster email: how a flow
- * links a stub e2e session to a Participant by account, without the pick.
+ * links a stub e2e session to a Participant by account, by email.
  */
 export async function setParticipantEmail(id: string, email: string | null) {
   await runQuery(`update participant set email = $1 where id = $2`, [

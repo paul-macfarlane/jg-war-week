@@ -19,7 +19,7 @@ export type HeatReportEntrant = {
 /**
  * What `can("bracket.heat-report", …)` checks: the Competition's setting,
  * the Heat's state (or `missing`), the Participant the actor's email links
- * to (never the "Which one is you?" pick) with their Team and their Squad in
+ * to with their Team and their Squad in
  * this Competition, and the Heat's filled slots' Entrants.
  */
 export type HeatReportFacet = {
