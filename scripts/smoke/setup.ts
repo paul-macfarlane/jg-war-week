@@ -122,7 +122,7 @@ export async function assertSetup(sessions: {
 
   const ids = serverActionIds();
   const missing = [
-    "updateWarWeekSettings",
+    "updateWarWeekSettingsFields",
     "createDay",
     "updateDay",
     "deleteDay",
@@ -180,10 +180,10 @@ export async function assertSetup(sessions: {
 
   try {
     await run(
-      "updateWarWeekSettings rejects a signed-in JG user off the allowlist",
+      "updateWarWeekSettingsFields rejects a signed-in JG user off the allowlist",
       async () => {
         const result = await callAction(
-          ids.updateWarWeekSettings,
+          ids.updateWarWeekSettingsFields,
           [await xiWarWeekId(), { ...input, primaryColor: smokePrimary }],
           sessions.notOrganizer,
         );
@@ -199,10 +199,10 @@ export async function assertSetup(sessions: {
     );
 
     await run(
-      "updateWarWeekSettings refuses free-for-all while XI has Teams",
+      "updateWarWeekSettingsFields refuses free-for-all while XI has Teams",
       async () => {
         const result = await callAction(
-          ids.updateWarWeekSettings,
+          ids.updateWarWeekSettingsFields,
           [await xiWarWeekId(), { ...input, mode: "free-for-all" }],
           sessions.organizer,
         );
@@ -216,7 +216,7 @@ export async function assertSetup(sessions: {
       "an Organizer saves a new primary color and GET /xi is themed with it",
       async () => {
         const result = await callAction(
-          ids.updateWarWeekSettings,
+          ids.updateWarWeekSettingsFields,
           [await xiWarWeekId(), { ...input, primaryColor: smokePrimary }],
           sessions.organizer,
         );
@@ -231,7 +231,7 @@ export async function assertSetup(sessions: {
       "an Organizer overrides the other scheme's primary color: the row stores it and GET /xi carries it under that scheme's prefix",
       async () => {
         const result = await callAction(
-          ids.updateWarWeekSettings,
+          ids.updateWarWeekSettingsFields,
           [
             await xiWarWeekId(),
             { ...input, overridePrimaryColor: smokeOverride },

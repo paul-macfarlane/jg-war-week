@@ -139,61 +139,12 @@ function overridesClearedByFlip(
 }
 
 /**
- * Saves the War Week's settings and Appearance Theme, refusing a save that
- * would strand Teams or Days. A background that crosses light and dark
- * clears the overrides the save left untouched (`overridesClearedByFlip`).
- */
-export async function updateWarWeekSettings(
-  values: WarWeekSettingsValues,
-  ctx: MutationContext,
-  dbOrTx: DBOrTx = db,
-): Promise<MutationResult> {
-  return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-    const [teams] = await tx
-      .select({ count: count() })
-      .from(team)
-      .where(eq(team.warWeekId, ctx.warWeekId));
-    const refusal = settingsGuardError(values, {
-      teamCount: teams.count,
-      dayDates: await dayDates(ctx.warWeekId, tx),
-    });
-    if (refusal) return { ok: false, error: refusal };
-
-    const [stored] = await tx
-      .select({
-        backgroundColor: warWeek.backgroundColor,
-        overridePrimaryColor: warWeek.overridePrimaryColor,
-        overridePrimaryForegroundColor: warWeek.overridePrimaryForegroundColor,
-        overrideAccentColor: warWeek.overrideAccentColor,
-        overrideBackgroundColor: warWeek.overrideBackgroundColor,
-        overrideForegroundColor: warWeek.overrideForegroundColor,
-      })
-      .from(warWeek)
-      .where(eq(warWeek.id, ctx.warWeekId));
-    if (!stored) return { ok: false, error: WAR_WEEK_NOT_FOUND };
-
-    const updated = await tx
-      .update(warWeek)
-      .set({
-        ...values,
-        ...overridesClearedByFlip(values, stored),
-        updatedAt: sql`now()`,
-      })
-      .where(eq(warWeek.id, ctx.warWeekId))
-      .returning({ id: warWeek.id });
-    return updated.length > 0
-      ? { ok: true }
-      : { ok: false, error: WAR_WEEK_NOT_FOUND };
-  });
-}
-
-/**
  * Saves some of the War Week's settings (one autosave's fields): laid over
  * the row as it stands now, locked, and checked whole, then only those
  * columns are written, so a value stored since the form loaded (another
- * tab, End War Week's Winner) is never written back over. Refuses as
- * `updateWarWeekSettings` does, and clears overrides on a light/dark flip
- * the same way.
+ * tab, End War Week's Winner) is never written back over. Refuses a save that
+ * would strand Teams or Days, and clears the overrides a light/dark flip
+ * leaves untouched.
  */
 export async function updateWarWeekSettingsFields(
   fields: Partial<WarWeekSettingsInput>,

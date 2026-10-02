@@ -187,8 +187,8 @@ async function assertHostAllowedAndRefused(fixture: HostFixture) {
 
   for (const [label, action, args, expected, unchanged] of [
     [
-      "updateWarWeekSettings for XI",
-      "updateWarWeekSettings",
+      "updateWarWeekSettingsFields for XI",
+      "updateWarWeekSettingsFields",
       [xiId, { storyTheme: "smoke-host-theme" }],
       "Only an Organizer can change War Week settings.",
       async () => {
@@ -533,7 +533,7 @@ async function assertAccessBeforeValidation(
   }[] = [
     {
       family: "settings",
-      action: "updateWarWeekSettings",
+      action: "updateWarWeekSettingsFields",
       args: [fixture.xiId, "not settings"],
       participant: organizerOnly("change War Week settings"),
       host: organizerOnly("change War Week settings"),
@@ -729,7 +729,7 @@ export async function assertParticipantRefused(sessions: {
   const cases: [string, string, unknown[], string][] = [
     [
       "settings",
-      "updateWarWeekSettings",
+      "updateWarWeekSettingsFields",
       [xi, { storyTheme: "smoke-participant" }],
       organizerOnly("change War Week settings"),
     ],

@@ -18,7 +18,6 @@ import {
   parseParticipantInput,
   parseTeamInput,
   parseWarWeekSettingsFields,
-  parseWarWeekSettingsInput,
 } from "@/lib/setup";
 import * as mutations from "@/mutations/setup";
 import type { CreateCompetitionResult } from "@/mutations/setup";
@@ -58,21 +57,6 @@ async function setupWrite<T>(
 }
 
 const nothing = (): Parsed<null> => ({ ok: true, value: null });
-
-export async function updateWarWeekSettings(
-  warWeekId: string,
-  input: WarWeekSettingsInput,
-): Promise<SetupActionResult> {
-  return setupWrite(
-    "settings.save",
-    "warWeek",
-    warWeekId,
-    () => parseWarWeekSettingsInput(input),
-    mutations.updateWarWeekSettings,
-    // The header and the Archive show the settings and Appearance Theme.
-    "site",
-  );
-}
 
 /**
  * Saves some of the War Week's settings: the fields one autosave sends.
