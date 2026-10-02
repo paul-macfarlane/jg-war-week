@@ -4,7 +4,9 @@
 
 **Blocked by:** 60 (Blob storage)
 
-**Status:** ready-for-agent
+**Status:** in-progress
+
+**Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
 **Source:** Paul's regression feedback 2026-10-01, A5; grilling Q15
 
@@ -20,3 +22,7 @@
 - [ ] Ported unit tests pass; the sanitizer keeps every new mark/node and strips anything else.
 - [ ] e2e: an Organizer posts an Announcement with a heading, a quote, an uploaded captioned image and a video; the participant page renders all four. Screenshots at both viewports.
 - [ ] `pnpm gate` passes.
+
+## Comments
+
+- 2026-10-02 [SCOPE CHANGE] (Paul): images by URL only in R11; no upload and no Blob (R10 shipped without Blob, so "Blocked by: 60 (Blob storage)" no longer holds). AC2's "uploaded captioned image" becomes "a captioned image added by URL". Upload returns with Blob in a later ticket. Plan: `../epics/R11-execution.md`.

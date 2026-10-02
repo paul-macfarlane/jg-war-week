@@ -4,7 +4,9 @@
 
 **Blocked by:** none (lands in the Days/Schedule form from ticket 58 if R9 has merged)
 
-**Status:** ready-for-agent
+**Status:** in-progress
+
+**Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
 **Source:** Paul's regression feedback 2026-10-01, A16
 
