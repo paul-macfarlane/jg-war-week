@@ -9,6 +9,7 @@ import {
   nextEditionDefaults,
   parseClosingInput,
   parseNextWarWeekInput,
+  tieTitle,
   toRoman,
   transitionError,
   unstartError,
@@ -107,6 +108,15 @@ const person = (name: string, rank: number) => ({
   team: null,
   total: 10,
   rank,
+});
+
+describe("tieTitle", () => {
+  it("is the one name, or 'Tie: A & B & C' for more", () => {
+    expect(tieTitle(["Red"])).toBe("Red");
+    expect(tieTitle(["Red", "Blue"])).toBe("Tie: Red & Blue");
+    expect(tieTitle(["Red", "Blue", "Green"])).toBe("Tie: Red & Blue & Green");
+    expect(tieTitle([])).toBe("");
+  });
 });
 
 describe("defaultWinner", () => {

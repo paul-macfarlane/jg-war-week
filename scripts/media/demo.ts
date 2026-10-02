@@ -1,12 +1,91 @@
 /**
  * Helpers the media scripts share (`scripts/about-media.ts`,
- * `scripts/finale-stills.ts`): plain SQL on `DATABASE_URL` (importing the
- * app's database would keep a pool open), a signed session cookie for a
- * made-up user, and a finished Heats Bracket on a demo War Week.
+ * `scripts/finale-stills.ts`): their own production server, plain SQL on
+ * `DATABASE_URL` (importing the app's database would keep a pool open), a
+ * signed session cookie for a made-up user, the Display a page opens in,
+ * and a finished Heats Bracket on a demo War Week.
  */
 import { makeSignature } from "better-auth/crypto";
+import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { Client } from "pg";
+
+import { DISPLAY_STORAGE_KEY } from "@/lib/display";
+
+/** The cookie a signed-in session rides in. */
+export const SESSION_COOKIE = "better-auth.session_token";
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/** A media script's own server: where it listens, when it's up, and its stop. */
+export type DemoServer = {
+  baseUrl: string;
+  /** Resolves once `/sign-in` answers (about 30 s at most). */
+  ready: () => Promise<void>;
+  stop: () => void;
+};
+
+/**
+ * Starts the production build (`pnpm start`) on `port`, signing sessions
+ * with `authSecret` and with Google sign-in and MCP off. Exits when there
+ * is no build; throws when something already listens on the port.
+ */
+export async function startDemoServer(
+  port: number,
+  authSecret: string,
+): Promise<DemoServer> {
+  if (!existsSync(path.resolve(process.cwd(), ".next/BUILD_ID"))) {
+    console.error("No production build in .next: run `pnpm build` first.");
+    process.exit(1);
+  }
+  const baseUrl = `http://localhost:${port}`;
+  if (
+    await fetch(baseUrl).then(
+      () => true,
+      () => false,
+    )
+  ) {
+    throw new Error(`something is already listening on ${baseUrl}`);
+  }
+  const server = spawn("pnpm", ["start", "-p", String(port)], {
+    env: {
+      ...process.env,
+      BETTER_AUTH_SECRET: authSecret,
+      BETTER_AUTH_URL: baseUrl,
+      GOOGLE_CLIENT_ID: "",
+      GOOGLE_CLIENT_SECRET: "",
+      MCP_TOKEN: "",
+    },
+    stdio: "ignore",
+    detached: true,
+  });
+  return {
+    baseUrl,
+    ready: async () => {
+      for (let i = 0; i < 60; i++) {
+        await sleep(500);
+        const up = await fetch(`${baseUrl}/sign-in`).then(
+          (r) => r.ok,
+          () => false,
+        );
+        if (up) return;
+      }
+    },
+    stop: () => {
+      if (server.pid) process.kill(-server.pid, "SIGTERM");
+    },
+  };
+}
+
+/**
+ * A script that stores `display` as the viewer's Display before the page's
+ * own scripts run, so a page shows that scheme, never this machine's.
+ */
+export function displayInitScript(display: string): string {
+  return `try{localStorage.setItem(${JSON.stringify(DISPLAY_STORAGE_KEY)},${JSON.stringify(display)})}catch(e){}`;
+}
 
 /** The War Week a fixture goes on. */
 export type DemoWarWeek = { id: string; edition: string };

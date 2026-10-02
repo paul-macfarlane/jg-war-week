@@ -30,11 +30,14 @@ import {
   FieldTitle,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { FINALE_SLIDE_HEADING_MAX } from "@/lib/finale-slides";
+import { FINALE_SLIDE_HEADING_MAX } from "@/lib/custom-finale-slide";
 import type { WriteResult } from "@/lib/result";
 import type { Content } from "@/lib/rich-text/content";
 
 const EMPTY_BODY: Content = { type: "doc", content: [] };
+
+/** A dark navy: the first background offered when the theme has no swatch. */
+const FALLBACK_BACKGROUND = "#1e3a5f";
 
 /**
  * Add or edit a Custom Finale slide, in its Sheet on admin → Finale: a
@@ -141,7 +144,9 @@ export function CustomFinaleSlideForm({
                   variant="outline"
                   className="min-h-11 sm:min-h-9"
                   onClick={() =>
-                    setBackground(themeSwatches[0]?.color ?? "#1e3a5f")
+                    setBackground(
+                      themeSwatches[0]?.color ?? FALLBACK_BACKGROUND,
+                    )
                   }
                 >
                   Choose a background color
@@ -174,7 +179,7 @@ export function CustomFinaleSlideForm({
       <SetupSheetFooter>
         <SetupSaveButton
           pending={pending}
-          label={slideId ? "Save" : "Add custom slide"}
+          label={slideId ? "Save" : "Add Custom slide"}
         />
         <SetupRowError error={pending ? null : formError} />
       </SetupSheetFooter>

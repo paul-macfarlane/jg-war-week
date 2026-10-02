@@ -10,8 +10,10 @@ import { type AwardView, groupAwardsByCategory } from "@/lib/awards";
 import {
   type CustomSlideColors,
   customSlideColors,
+  customSlideFields,
 } from "@/lib/custom-finale-slide";
 import {
+  FINALE_AWARDS_LAYOUTS,
   FINALE_SLIDE_KINDS,
   type FinaleAwardsLayout,
   type FinaleSlideKind,
@@ -23,9 +25,10 @@ import {
   type ResultTarget,
   finalWinners,
 } from "@/lib/recent-results";
-import { type Content, contentInputSchema } from "@/lib/rich-text/content";
+import type { Parsed } from "@/lib/result";
+import type { Content } from "@/lib/rich-text/content";
 import type { Standings } from "@/lib/standings";
-import { defaultWinner } from "@/lib/war-week-lifecycle";
+import { defaultWinner, tieTitle } from "@/lib/war-week-lifecycle";
 
 /** The built-in slides, in their default order. */
 export const BUILT_IN_FINALE_SLIDE_KINDS = FINALE_SLIDE_KINDS.filter(
@@ -48,25 +51,18 @@ export const BUILT_IN_FINALE_SLIDE_NAMES: Record<
   winner: "Winner",
 };
 
-/** The longest Custom slide heading. */
-export const FINALE_SLIDE_HEADING_MAX = 120;
-
 /**
  * One slide in a seed file's `finaleSlides` list (its place is its order):
  * a built-in by kind, or a Custom slide with a heading, an optional body
- * (sanitized) and an optional `#rrggbb` background (lower-cased).
+ * and an optional background (`customSlideFields`).
  */
 export const finaleSlideSeedSchema = z
   .object({
     kind: z.enum(FINALE_SLIDE_KINDS),
     hidden: z.boolean().default(false),
-    heading: z.string().trim().min(1).max(FINALE_SLIDE_HEADING_MAX).optional(),
-    body: contentInputSchema.optional(),
-    backgroundColor: z
-      .string()
-      .regex(/^#[0-9a-fA-F]{6}$/, "must be a #rrggbb color")
-      .transform((color) => color.toLowerCase())
-      .optional(),
+    heading: customSlideFields.heading.optional(),
+    body: customSlideFields.body.optional(),
+    backgroundColor: customSlideFields.backgroundColor.optional(),
   })
   .superRefine((slide, ctx) => {
     if (slide.kind === "custom") {
@@ -104,13 +100,15 @@ export type FinaleSlideRow = {
 };
 
 /**
- * One slide in a War Week's list: a saved row, or (`id` null) a built-in
- * not saved yet. `key` is the kind for a built-in and the id for a Custom
- * slide, unique within the list.
+ * One slide in a War Week's list: a saved row, or (`id` and `sortOrder`
+ * null) a built-in not saved yet. `key` is the kind for a built-in and the
+ * id for a Custom slide, unique within the list. `sortOrder` is the row's
+ * stored one, which can differ from its place in the list.
  */
 export type ResolvedFinaleSlide = {
   key: string;
   id: string | null;
+  sortOrder: number | null;
   kind: FinaleSlideKind;
   name: string;
   hidden: boolean;
@@ -126,6 +124,7 @@ function builtIn(kind: BuiltInFinaleSlideKind): ResolvedFinaleSlide {
   return {
     key: kind,
     id: null,
+    sortOrder: null,
     kind,
     name: BUILT_IN_FINALE_SLIDE_NAMES[kind],
     hidden: false,
@@ -152,6 +151,7 @@ export function resolveFinaleSlides(
       return {
         key: isBuiltIn ? row.kind : row.id,
         id: row.id,
+        sortOrder: row.sortOrder,
         kind: row.kind,
         name:
           row.kind === "custom"
@@ -187,13 +187,76 @@ export function isFinaleSlide(
     : slide.kind === "custom" && slide.id === ref.id;
 }
 
-/** How the admin list names a slide in a request. */
+/**
+ * How the admin list names a saved Custom slide (by id) or a built-in (by
+ * kind) in a request; null for a Custom slide without an id, which can't
+ * happen for a listed one.
+ */
 export function finaleSlideRef(
   slide: Pick<ResolvedFinaleSlide, "id" | "kind">,
-): FinaleSlideRef {
-  return slide.kind === "custom"
-    ? { id: slide.id ?? "" }
-    : { kind: slide.kind };
+): FinaleSlideRef | null {
+  if (slide.kind !== "custom") return { kind: slide.kind };
+  return slide.id === null ? null : { id: slide.id };
+}
+
+const SLIDE_NOT_FOUND = "That Finale slide no longer exists.";
+
+/** A built-in by kind, or a Custom slide by id. */
+const slideRefSchema = z.union([
+  z.strictObject({ kind: z.enum(BUILT_IN_FINALE_SLIDE_KINDS) }),
+  z.strictObject({ id: z.uuid() }),
+]);
+
+/**
+ * Parses a request naming one slide plus `fields`; a slide that doesn't
+ * parse is refused as gone, anything else with `invalid`.
+ */
+function parseSlideRequest<T extends z.ZodRawShape>(
+  fields: T,
+  input: unknown,
+  invalid: string,
+) {
+  const parsed = z
+    .object({ slide: slideRefSchema, ...fields })
+    .safeParse(input);
+  if (parsed.success) return { ok: true as const, value: parsed.data };
+  const slide = (input as { slide?: unknown } | null)?.slide;
+  return {
+    ok: false as const,
+    error: slideRefSchema.safeParse(slide).success ? invalid : SLIDE_NOT_FOUND,
+  };
+}
+
+/** Validates a Move request: the slide and the index it goes to. */
+export function parseFinaleSlideMove(
+  input: unknown,
+): Parsed<{ slide: FinaleSlideRef; toIndex: number }> {
+  return parseSlideRequest(
+    { toIndex: z.number().int().min(0) },
+    input,
+    "Move a Finale slide to a place in the list.",
+  );
+}
+
+/** Validates a Hide or Show request: the slide and whether it's hidden. */
+export function parseFinaleSlideHidden(
+  input: unknown,
+): Parsed<{ slide: FinaleSlideRef; hidden: boolean }> {
+  return parseSlideRequest(
+    { hidden: z.boolean() },
+    input,
+    "Hide or show a Finale slide.",
+  );
+}
+
+/** Validates an Awards layout: "one-slide" or "per-category". */
+export function parseFinaleAwardsLayout(
+  input: unknown,
+): Parsed<FinaleAwardsLayout> {
+  const parsed = z.enum(FINALE_AWARDS_LAYOUTS).safeParse(input);
+  return parsed.success
+    ? { ok: true, value: parsed.data }
+    : { ok: false, error: "Pick how the Finale shows Awards." };
 }
 
 /**
@@ -270,6 +333,10 @@ export type FinaleChampion = {
   competitionId: string;
   competition: string;
   format: Competition["format"];
+  /** "Champion" for a Bracket's, "Winner" for a closed Competition's. */
+  label: "Champion" | "Winner";
+  /** The winner's name, or "Tie: A & B" (`tieTitle`). */
+  title: string;
   /** More than one on a tie for first. */
   winners: ResultTarget[];
 };
@@ -298,6 +365,12 @@ export function championsList(
       competitionId: competition.id,
       competition: competition.name,
       format: competition.format,
+      label:
+        competition.format === "single-elimination" ||
+        competition.format === "heats"
+          ? "Champion"
+          : "Winner",
+      title: tieTitle(winners.map((winner) => winner.name)),
       winners,
     }));
 }
@@ -432,14 +505,15 @@ function awardSlides(
   const groups = groupAwardsByCategory(context.awards);
   if (groups.length === 0) return [];
   const primaryColor = context.warWeek.primaryColor;
-  // Headings only once some Award has a Category, as the Awards page.
+  // Headings (and per-Category slides) only once some Award has a
+  // Category, as the Awards page.
   const headed = groups.some((group) => group.category !== null);
   const categoryName = (group: (typeof groups)[number]) =>
     group.category?.name ?? "Other Awards";
   const groupKey = (group: (typeof groups)[number]) =>
     group.category?.id ?? "other";
 
-  if (context.warWeek.finaleAwardsLayout === "per-category") {
+  if (headed && context.warWeek.finaleAwardsLayout === "per-category") {
     return groups.map((group) => ({
       kind: "awards",
       key: `${base.key}:${groupKey(group)}`,

@@ -688,8 +688,8 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   - Next while it plays jumps to its final state; Next once it's done goes
     on. Replay plays it again and never advances. Arriving by Back shows
     the final state.
-- With `prefers-reduced-motion` a slide shows its final state on arrival
-  and still waits for Next.
+- With `prefers-reduced-motion` animations are skipped (the countdown
+  shows its final state); steps still wait for Next.
 - The Finale never reorders or recomputes Standings: it plays the same
   `getStandings` rows the leaderboard shows, read once when the page loads
   (reload for the latest).

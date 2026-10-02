@@ -374,18 +374,24 @@ describe("championsList", () => {
         competitionId: "pong",
         competition: "Ping Pong",
         format: "games",
+        label: "Winner",
+        title: "Tie: Fay Falcon & Jax Jetpack",
         winners: [fay, jax],
       },
       {
         competitionId: "workout",
         competition: "Daily Workout Check-in",
         format: "participation",
+        label: "Winner",
+        title: "Red",
         winners: [red],
       },
       {
         competitionId: "chess",
         competition: "Chess Heats",
         format: "heats",
+        label: "Champion",
+        title: "Ada Anvil",
         winners: [ada],
       },
     ]);
@@ -463,6 +469,8 @@ describe("finaleSlideData", () => {
         competitionId: "pong",
         competition: "Ping Pong",
         format: "games",
+        label: "Winner",
+        title: "Ada Anvil",
         winners: [
           { id: "p-ada", name: "Ada Anvil", color: null, kind: "participant" },
         ],
@@ -553,6 +561,27 @@ describe("finaleSlideData", () => {
     ).filter((s) => s.kind === "awards");
     expect(awards).toMatchObject({
       groups: [{ name: null, awards: [{ name: "Black Midnight" }] }],
+    });
+  });
+
+  it("falls back to one Awards slide in the per-Category layout when no Award has a Category", () => {
+    const awards = finaleSlideData(
+      defaults,
+      context({
+        warWeek: { ...context().warWeek, finaleAwardsLayout: "per-category" },
+        awards: [award("Black Midnight", null), award("Night Owl", null)],
+      }),
+    ).filter((s) => s.kind === "awards");
+    expect(kinds(awards)).toEqual(["awards:Awards"]);
+    expect(awards[0]).toMatchObject({
+      key: "awards",
+      heading: "Awards",
+      groups: [
+        {
+          name: null,
+          awards: [{ name: "Black Midnight" }, { name: "Night Owl" }],
+        },
+      ],
     });
   });
 

@@ -2,16 +2,16 @@
  * Writes the About page's media (tickets 28, 03, 04, 43) from the current
  * War Week's seeded demo, never by hand: `public/about/finale-poster.png`
  * (its Finale's Title slide on a phone, which gives nothing away; a still
- * only — no Finale video is written or shown), the hero's `standings-before.png` /
- * `standings-entry.png` / `standings-after.png` (an Organizer's real Points
- * Entry moving the home Standings), and one still per feature card at
- * `public/about/<slug>.png`. Every one of them is written twice (the About
- * dark stills fix): `<name>.png` under the light Display and
- * `<name>-dark.png` under the dark one, so `/about` can show the still
- * matching its viewer's Display. Afterwards it screenshots `/about` as an
- * anonymous visitor at 390px, desktop (light and dark) and with reduced
- * motion into `test-results/about-media/`, with a log (and a logged-Game
- * still there as evidence).
+ * only — no Finale video is written or shown), the hero's
+ * `standings-before.png` / `standings-entry.png` / `standings-after.png`
+ * (an Organizer's real Points Entry moving the home Standings), and one
+ * still per feature card at `public/about/<slug>.png`. Every one of them is
+ * written twice (the About dark stills fix): `<name>.png` under the light
+ * Display and `<name>-dark.png` under the dark one, so `/about` can show
+ * the still matching its viewer's Display. Afterwards it screenshots
+ * `/about` as an anonymous visitor at 390px, desktop (light and dark) and
+ * with reduced motion into `test-results/about-media/`, with a log (and a
+ * logged-Game still there as evidence).
  *
  * Every page is the current War Week's (live, else next upcoming, else most
  * recent completed: the same resolution as `/` and `/about`), in its
@@ -52,9 +52,13 @@ import { backgroundColorScheme } from "@/lib/theme";
 import type { LeaderboardResult } from "@/mcp/leaderboard";
 
 import {
+  type DemoServer,
+  SESSION_COOKIE,
   createDemoSession,
+  displayInitScript,
   query,
   setupBracketDemo as setupBracketDemoOn,
+  startDemoServer,
 } from "./media/demo";
 
 loadEnvConfig(process.cwd());
@@ -240,7 +244,7 @@ class Page {
     await page.send("Network.enable");
     await page.send("Runtime.enable");
     await page.send("Page.addScriptToEvaluateOnNewDocument", {
-      source: `try{localStorage.setItem(${JSON.stringify(DISPLAY_STORAGE_KEY)},${JSON.stringify(display)})}catch(e){}`,
+      source: displayInitScript(display),
     });
     return page;
   }
@@ -286,7 +290,7 @@ class Page {
 
   async cookie(value: string) {
     await this.send("Network.setCookie", {
-      name: "better-auth.session_token",
+      name: SESSION_COOKIE,
       value,
       url: BASE_URL,
       httpOnly: true,
@@ -430,11 +434,13 @@ async function recordFinale(cookie: string, scheme: Scheme) {
     await sleep(100);
   }
   await sleep(1_000);
+  const slideKind = () =>
+    page.evaluate<string | null>(
+      `document.querySelector("[data-finale-slide]")?.dataset.finaleSlide ?? null`,
+    );
   // The poster is the Title slide: it opens the slideshow and shows no
   // Standings.
-  const titleKind = await page.evaluate<string | null>(
-    `document.querySelector("[data-finale-slide]")?.dataset.finaleSlide ?? null`,
-  );
+  const titleKind = await slideKind();
   if (titleKind !== "title") {
     throw new Error(`the Finale opened on "${titleKind}", not its Title slide`);
   }
@@ -453,10 +459,6 @@ async function recordFinale(cookie: string, scheme: Scheme) {
       });
     }
   };
-  const slideKind = () =>
-    page.evaluate<string | null>(
-      `document.querySelector("[data-finale-slide]")?.dataset.finaleSlide ?? null`,
-    );
   let pressedAt = Date.now();
   let presses = 0;
   while ((await slideKind()) !== "standings") {
@@ -483,8 +485,8 @@ async function recordFinale(cookie: string, scheme: Scheme) {
   await page.send("Page.stopScreencast");
   await page.close();
 
-  // The frames come from the countdown; a frame only arrives when something
-  // changes, so each one lasts until the next.
+  // A sanity check only (no video is written): the countdown really
+  // played. A frame only arrives when something changes.
   const to = startedAt + FINALE_MAX_MS + HOLD_MS;
   const kept = frames.filter((f) => f.at >= startedAt && f.at <= to);
   if (kept.length < 10) {
@@ -1096,18 +1098,6 @@ async function placementPointsCompetition(): Promise<string> {
 const STILLS_ONLY = process.argv.includes("--stills");
 
 async function main() {
-  if (!existsSync(path.resolve(process.cwd(), ".next/BUILD_ID"))) {
-    console.error("No production build in .next: run `pnpm build` first.");
-    process.exit(1);
-  }
-  if (
-    await fetch(BASE_URL).then(
-      () => true,
-      () => false,
-    )
-  ) {
-    throw new Error(`something is already listening on ${BASE_URL}`);
-  }
   mkdirSync(MEDIA, { recursive: true });
   rmSync(EVIDENCE, { recursive: true, force: true });
   mkdirSync(EVIDENCE, { recursive: true });
@@ -1117,18 +1107,7 @@ async function main() {
     `current War Week: ${current.edition} (${current.mode}, ${pinnedDisplay()} base palette)`,
   );
   const scheduleAt = await scheduleTime();
-  const server = spawn("pnpm", ["start", "-p", String(PORT)], {
-    env: {
-      ...process.env,
-      BETTER_AUTH_SECRET: AUTH_SECRET,
-      BETTER_AUTH_URL: BASE_URL,
-      GOOGLE_CLIENT_ID: "",
-      GOOGLE_CLIENT_SECRET: "",
-      MCP_TOKEN: "",
-    },
-    stdio: "ignore",
-    detached: true,
-  });
+  const server: DemoServer = await startDemoServer(PORT, AUTH_SECRET);
   const chrome = launchChrome();
   let restoreAuthorship: (() => Promise<void>) | undefined;
   let bracketDemo: Awaited<ReturnType<typeof setupBracketDemo>> | undefined;
@@ -1144,16 +1123,7 @@ async function main() {
     bracketDemo = await setupBracketDemo();
     const bracketCompetitionId = bracketDemo.competitionId;
 
-    for (let i = 0; i < 60; i++) {
-      await sleep(500);
-      if (
-        await fetch(`${BASE_URL}/sign-in`).then(
-          (r) => r.ok,
-          () => false,
-        )
-      )
-        break;
-    }
+    await server.ready();
     await waitForChrome();
 
     // Undone straight away, so the later stills show the seeded Standings.
@@ -1228,9 +1198,7 @@ async function main() {
       }
     };
     await attempt(() => chrome.process.kill());
-    await attempt(() => {
-      if (server.pid) process.kill(-server.pid, "SIGTERM");
-    });
+    await attempt(() => server.stop());
     await sleep(1_000);
     await attempt(() =>
       rmSync(chrome.dir, { recursive: true, force: true, maxRetries: 3 }),

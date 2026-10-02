@@ -1,7 +1,13 @@
-import { type Page, expect, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 import { resetXiFinaleSlides, runQuery, xiCompetitionId } from "./db";
-import { finaleStage, nextSlide, nextUntil, openFinale } from "./finale-slides";
+import {
+  finaleStage,
+  nextSlide,
+  nextUntil,
+  openFinale,
+  playedSlides,
+} from "./finale-slides";
 import {
   E2E_HOST_EMAIL,
   E2E_PARTICIPANT_EMAIL,
@@ -19,27 +25,6 @@ import {
 
 test.beforeAll(resetXiFinaleSlides);
 test.afterAll(resetXiFinaleSlides);
-
-/** The slide on screen: its `<section aria-label>`. */
-const currentSlide = (page: Page) =>
-  finaleStage(page).locator(":scope > section");
-
-/**
- * Every slide's name the Finale plays, in order: → until the end, where
- * Next does nothing.
- */
-async function playedSlides(page: Page): Promise<string[]> {
-  const names: string[] = [];
-  for (let i = 0; i < 20; i++) {
-    names.push((await currentSlide(page).getAttribute("aria-label")) ?? "");
-    const moved = await nextSlide(page).then(
-      () => true,
-      () => false,
-    );
-    if (!moved) return names;
-  }
-  return names;
-}
 
 test("73: the Awards slide reveals one Award per step, grouped by Category", async ({
   context,

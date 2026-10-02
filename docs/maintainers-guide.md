@@ -170,11 +170,13 @@ pnpm tsx scripts/about-media.ts
 
 On an edition change, run it with no flag: the Finale poster
 (`finale-poster.png`, the Finale's Title slide on a phone; the run steps
-through the slideshow with → to the Standings countdown as a check) wears the
-old edition's theme, so it must be re-recorded too. Use `--stills` only when the poster's edition is unchanged
-(`pnpm tsx scripts/about-media.ts --stills` rewrites the feature-card and
-Standings stills and leaves the poster alone). Either way it rewrites the home Standings hero's three stills
-(`standings-before.png`, `standings-entry.png`, `standings-after.png`).
+through the slideshow with → to the Standings countdown as a check) wears
+the old edition's theme, so it must be re-recorded too. Use `--stills` only
+when the poster's edition is unchanged (`pnpm tsx scripts/about-media.ts
+--stills` rewrites the feature-card and Standings stills and leaves the
+poster alone). Either way it rewrites the home Standings hero's three
+stills (`standings-before.png`, `standings-entry.png`,
+`standings-after.png`).
 
 Every About still comes in light and dark: the script writes `<name>.png`
 under the light Display and `<name>-dark.png` under the dark one (20 files
@@ -522,8 +524,9 @@ built-ins plus a Custom "Thank you").
 
 The slide stills (every slide at 1920x1080 and 390x844, in its final state)
 come from `pnpm build && pnpm seed:demo:xii && pnpm stills:finale`, written
-to `test-results/r13/slides/`. Run it when a slide's look changes; it reports
-any slide that scrolls instead of fitting the projector. Never part of CI.
+to `test-results/finale-stills/` (`--out <dir>` picks another folder, which
+it empties first). Run it when a slide's look changes; it reports any slide
+that scrolls instead of fitting the projector. Never part of CI.
 
 ### Rolling out R13 (migration 0027)
 

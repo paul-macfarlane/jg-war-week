@@ -18,6 +18,7 @@ export function CustomSlide({ data }: FinaleSlideProps<"custom">) {
       <div
         role="region"
         aria-label={`${data.heading}: details`}
+        data-finale-custom-body=""
         tabIndex={0}
         className="min-h-0 w-full max-w-5xl overflow-y-auto text-[clamp(1rem,2.2vw,2rem)] empty:hidden [&_a]:text-[var(--link,var(--primary-text))] [&_figure]:mx-auto [&_figure]:w-fit [&_iframe]:mx-auto [&_iframe]:max-w-3xl [&_img]:mx-auto [&_img]:max-h-[45vh] [&_img]:w-auto [&_img]:object-contain"
       >

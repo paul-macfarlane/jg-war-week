@@ -8,7 +8,7 @@ import {
   type SetupScheduleFaqActionResult,
   moveFaqItem,
 } from "@/actions/setup-schedule-faq";
-import { Button } from "@/components/ui/button";
+import { MoveUpDownButtons } from "@/components/setup-row";
 
 /** Runs an action, toasting its refusal, then refreshes the page. */
 function useRefreshingAction() {
@@ -38,27 +38,12 @@ export function MoveFaqItemButtons({
 }) {
   const { pending, run } = useRefreshingAction();
   return (
-    <>
-      <Button
-        variant="outline"
-        size="sm"
-        className="min-h-11 min-w-11 sm:min-h-8"
-        disabled={pending || first}
-        aria-label={`Move "${question}" up`}
-        onClick={() => run(() => moveFaqItem(id, "up"))}
-      >
-        ↑
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        className="min-h-11 min-w-11 sm:min-h-8"
-        disabled={pending || last}
-        aria-label={`Move "${question}" down`}
-        onClick={() => run(() => moveFaqItem(id, "down"))}
-      >
-        ↓
-      </Button>
-    </>
+    <MoveUpDownButtons
+      label={question}
+      first={first}
+      last={last}
+      disabled={pending}
+      onMove={(direction) => run(() => moveFaqItem(id, direction))}
+    />
   );
 }

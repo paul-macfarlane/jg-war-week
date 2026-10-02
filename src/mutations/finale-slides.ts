@@ -3,11 +3,11 @@ import { and, eq, sql } from "drizzle-orm";
 import { DBOrTx, db } from "@/db";
 import { finaleSlide, warWeek } from "@/db/schema";
 import {
+  type CustomSlideValues,
   customSlideHeadingError,
   customSlidePlacement,
   duplicateCustomSlideError,
 } from "@/lib/custom-finale-slide";
-import type { CustomSlideValues } from "@/lib/custom-finale-slide-input";
 import type { FinaleAwardsLayout } from "@/lib/enums";
 import {
   type FinaleSlideRef,
@@ -23,14 +23,20 @@ import { getFinaleSlideRows } from "@/queries/finale-slides";
 const SLIDE_NOT_FOUND = "That Finale slide no longer exists.";
 const WAR_WEEK_NOT_FOUND = "That War Week no longer exists.";
 
-type Saved = ResolvedFinaleSlide & { id: string };
+/** A slide with its saved row. */
+type Saved = ResolvedFinaleSlide & { id: string; sortOrder: number };
+
+function isSaved(slide: ResolvedFinaleSlide): slide is Saved {
+  return slide.id !== null && slide.sortOrder !== null;
+}
 
 /**
  * Every Finale slide change starts here, inside its transaction: locks the
  * War Week row (so two changes to one list run one after the other), then
  * saves the resolved list's unsaved built-ins (the default list on a War
- * Week's first change, or a built-in missing from its rows) and returns the
- * whole list, every slide saved. Null when the War Week is gone.
+ * Week's first change, or a built-in missing from its rows), numbering the
+ * whole list 0, 1, 2… so none ties, and returns it, every slide saved.
+ * Null when the War Week is gone.
  */
 async function lockedList(
   ctx: MutationContext,
@@ -51,24 +57,43 @@ async function lockedList(
       ? [{ warWeekId: ctx.warWeekId, kind: slide.kind, sortOrder }]
       : [],
   );
-  if (unsaved.length === 0) return resolved as Saved[];
+  if (unsaved.length === 0) return resolved.filter(isSaved);
 
   await tx.insert(finaleSlide).values(unsaved).onConflictDoNothing();
-  return resolveFinaleSlides(
+  // The rows just saved can tie a gapped list's; keep the resolved order.
+  const saved = resolveFinaleSlides(
     await getFinaleSlideRows(ctx.warWeekId, tx),
-  ) as Saved[];
+  ).filter(isSaved);
+  const idByKey = new Map(saved.map((slide) => [slide.key, slide.id]));
+  return renumber(
+    saved,
+    resolved.flatMap((slide) => idByKey.get(slide.key) ?? []),
+    tx,
+  );
 }
 
-/** Renumbers the list 0, 1, 2… in `ids` order, touching only moved rows. */
-async function renumber(list: Saved[], ids: string[], tx: DBOrTx) {
-  const current = new Map(list.map((slide, index) => [slide.id, index]));
+/**
+ * Numbers the list 0, 1, 2… in `ids` order, writing only the rows whose
+ * stored `sortOrder` differs; returns the list in that order, renumbered.
+ */
+async function renumber(
+  list: Saved[],
+  ids: string[],
+  tx: DBOrTx,
+): Promise<Saved[]> {
+  const byId = new Map(list.map((slide) => [slide.id, slide]));
+  const ordered: Saved[] = [];
   for (const [sortOrder, id] of ids.entries()) {
-    if (current.get(id) === sortOrder) continue;
+    const slide = byId.get(id);
+    if (!slide) continue;
+    ordered.push({ ...slide, sortOrder });
+    if (slide.sortOrder === sortOrder) continue;
     await tx
       .update(finaleSlide)
       .set({ sortOrder, updatedAt: sql`now()` })
       .where(eq(finaleSlide.id, id));
   }
+  return ordered;
 }
 
 /**
@@ -156,14 +181,22 @@ export async function createCustomFinaleSlide(
           sortOrder: list.length,
           ...values,
         })
-        .returning({ id: finaleSlide.id });
+        .returning({ id: finaleSlide.id, sortOrder: finaleSlide.sortOrder });
       const ids = list.map((slide) => slide.id);
       ids.splice(
         customSlidePlacement(list.map((slide) => slide.kind)),
         0,
         created.id,
       );
-      await renumber([...list, { id: created.id } as Saved], ids, tx);
+      const createdSlide: Saved = {
+        ...created,
+        key: created.id,
+        kind: "custom",
+        name: values.heading,
+        hidden: false,
+        ...values,
+      };
+      await renumber([...list, createdSlide], ids, tx);
       return { ok: true };
     }),
   );
@@ -217,6 +250,12 @@ export async function deleteCustomFinaleSlide(
       .where(
         and(eq(finaleSlide.id, id), eq(finaleSlide.warWeekId, ctx.warWeekId)),
       );
+    const rest = list.filter((slide) => slide.id !== id);
+    await renumber(
+      rest,
+      rest.map((slide) => slide.id),
+      tx,
+    );
     return { ok: true };
   });
 }

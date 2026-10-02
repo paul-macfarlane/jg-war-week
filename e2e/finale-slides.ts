@@ -56,9 +56,58 @@ export async function nextUntil(page: Page, kind: string): Promise<string[]> {
 }
 
 /**
- * Presses → until the Standings countdown slide is on screen, and returns
- * the kinds of the slides passed on the way (the first slide included).
+ * Presses → through the Finale to its Winner, noting each slide kind's
+ * place (the last of a kind wins).
  */
-export function nextUntilStandings(page: Page): Promise<string[]> {
-  return nextUntil(page, "standings");
+export async function slideIndexes(
+  page: Page,
+): Promise<Record<string, number>> {
+  const stage = finaleStage(page);
+  const indexes: Record<string, number> = {};
+  for (let i = 0; i < 12; i++) {
+    const kind = (await stage.getAttribute("data-finale-slide")) ?? "";
+    indexes[kind] = Number(await stage.getAttribute("data-finale-slide-index"));
+    if (kind === "winner") break;
+    // Finishes the slide's steps (an Award at a time, the countdown) first.
+    await nextSlide(page);
+  }
+  return indexes;
+}
+
+/** The slide on screen: its `<section aria-label>`. */
+export const currentSlide = (page: Page) =>
+  finaleStage(page).locator(":scope > section");
+
+/**
+ * Every slide's name the Finale plays, in order: → until the end, where
+ * Next does nothing.
+ */
+export async function playedSlides(page: Page): Promise<string[]> {
+  const names: string[] = [];
+  for (let i = 0; i < 20; i++) {
+    names.push((await currentSlide(page).getAttribute("aria-label")) ?? "");
+    const moved = await nextSlide(page).then(
+      () => true,
+      () => false,
+    );
+    if (!moved) return names;
+  }
+  return names;
+}
+
+/** admin → Finale's slide list. */
+export const slideList = (page: Page) =>
+  page.getByRole("list", { name: "Finale slides" });
+
+/** The admin list's slide names, in order, " (hidden)" after a hidden one. */
+export async function listed(page: Page): Promise<string[]> {
+  const rows = await slideList(page).locator("[data-finale-slide-name]").all();
+  return Promise.all(
+    rows.map(async (row) => {
+      const name = (await row.getAttribute("data-finale-slide-name")) ?? "";
+      const hidden =
+        (await row.getAttribute("data-finale-slide-hidden")) !== null;
+      return hidden ? `${name} (hidden)` : name;
+    }),
+  );
 }

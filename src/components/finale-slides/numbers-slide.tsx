@@ -1,4 +1,4 @@
-import { SlideEyebrow } from "./placeholder-slide";
+import { SlideEyebrow } from "./slide-eyebrow";
 import type { FinaleSlideProps } from "./types";
 
 /**

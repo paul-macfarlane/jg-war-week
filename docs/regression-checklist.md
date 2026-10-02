@@ -364,7 +364,7 @@ on the matching War Week page.
       and survives reload. Hide a slide: it shows as hidden and keeps its
       place; Show brings it back. Open the Finale: hidden slides are
       skipped and the rest play in the saved order.
-- [ ] **Custom slides.** Add custom slide (a heading, a body with an image
+- [ ] **Custom slides.** Add Custom slide (a heading, a body with an image
       by URL, a background color): it appears just before Standings
       countdown, and in the Finale shows heading, body and background. On a
       dark background and on a light one the text stays readable (4.5:1; run
@@ -414,8 +414,8 @@ Competition (from the Organizer run).
       Competition, Delete or Hosts control (the server's refusal is
       unit-tested in `src/lib/access.test.ts`).
 - [ ] **Finale is read-only for a Host.** `/admin/finale` shows the slide
-      list and "Open Finale", but no Move, Hide/Show, Add custom slide, edit,
-      delete or Awards layout control.
+      list and "Open Finale", but no Move, Hide/Show, Add Custom slide, edit
+      or delete, and the Awards layout is shown disabled.
 - [ ] **Not a Host elsewhere.** Switch to another edition (if offered), or
       set the `admin_edition` cookie to a past edition, and open another
       War Week's admin URL (e.g. `/admin/points/<an XI Points Entry id>`,

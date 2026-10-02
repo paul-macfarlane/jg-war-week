@@ -1,7 +1,13 @@
-import { type Page, expect, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 import { resetXiFinaleSlides } from "./db";
-import { finaleStage, nextSlide, openFinale } from "./finale-slides";
+import {
+  finaleStage,
+  listed,
+  nextSlide,
+  openFinale,
+  slideList,
+} from "./finale-slides";
 import { asOrganizer } from "./session";
 
 /**
@@ -12,22 +18,6 @@ import { asOrganizer } from "./session";
 
 test.beforeAll(resetXiFinaleSlides);
 test.afterAll(resetXiFinaleSlides);
-
-const slideList = (page: Page) =>
-  page.getByRole("list", { name: "Finale slides" });
-
-/** The admin list's slide names, in order, "(hidden)" after a hidden one. */
-async function listed(page: Page): Promise<string[]> {
-  const rows = await slideList(page).getByRole("listitem").all();
-  return Promise.all(
-    rows.map(async (row) => {
-      const text = (
-        await row.locator("span.font-medium").first().innerText()
-      ).trim();
-      return text.replace(/\s*Hidden$/, " (hidden)");
-    }),
-  );
-}
 
 test("72-AC2: an Organizer moves the Standings slide and hides one, and the Finale plays in that order", async ({
   context,

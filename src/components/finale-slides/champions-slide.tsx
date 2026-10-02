@@ -1,16 +1,9 @@
 import { Trophy } from "lucide-react";
 
 import { Avatar } from "@/components/avatar";
-import type { FinaleChampion } from "@/lib/finale-slides";
 
-import { SlideEyebrow } from "./placeholder-slide";
+import { SlideEyebrow } from "./slide-eyebrow";
 import type { FinaleSlideProps } from "./types";
-
-/** "Tie: A & B" for more than one winner, as the Winner on End reads it. */
-function winnersTitle(champion: FinaleChampion): string {
-  const names = champion.winners.map((w) => w.name);
-  return names.length > 1 ? `Tie: ${names.join(" & ")}` : names.join("");
-}
 
 /**
  * The Champions slide: each finalized Bracket's champion and each closed
@@ -63,14 +56,10 @@ export function ChampionsSlide({
             </div>
             <div className="flex min-w-0 flex-col gap-[0.5vh]">
               <p className="text-foreground/75 text-[clamp(0.875rem,1.4vw,1.5rem)] font-medium tracking-wide uppercase">
-                {champion.competition} ·{" "}
-                {champion.format === "single-elimination" ||
-                champion.format === "heats"
-                  ? "Champion"
-                  : "Winner"}
+                {champion.competition} · {champion.label}
               </p>
               <p className="text-[clamp(1.375rem,2.5vw,2.75rem)] leading-tight font-bold break-words">
-                {winnersTitle(champion)}
+                {champion.title}
               </p>
             </div>
           </li>

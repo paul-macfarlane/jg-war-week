@@ -54,6 +54,12 @@ async function listOf(warWeekId: string, tx: DBTx) {
 const names = (slides: { name: string; hidden: boolean }[]) =>
   slides.map((s) => (s.hidden ? `(${s.name})` : s.name));
 
+/** The saved rows' `sort_order`s, in list order. */
+async function sortOrdersOf(warWeekId: string, tx: DBTx) {
+  const { getFinaleSlideRows } = await import("@/queries/finale-slides");
+  return (await getFinaleSlideRows(warWeekId, tx)).map((r) => r.sortOrder);
+}
+
 describe.skipIf(!isLocalDatabase)("Finale slide mutations", () => {
   it("moves a built-in, saving the default list on the first change", async () => {
     await inRolledBackTransaction(async (tx) => {
@@ -145,6 +151,30 @@ describe.skipIf(!isLocalDatabase)("Finale slide mutations", () => {
         "Winner",
       ]);
       expect(slides.every((s) => s.id !== null)).toBe(true);
+    });
+  });
+
+  it("numbers a gapped saved list 0..n when it fills in a missing built-in", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { setFinaleSlideHidden } =
+        await import("@/mutations/finale-slides");
+      const f = await fixture(tx);
+      await tx.insert(f.schema.finaleSlide).values([
+        { warWeekId: f.home, kind: "standings", sortOrder: 0 },
+        { warWeekId: f.home, kind: "title", sortOrder: 5 },
+      ]);
+
+      await setFinaleSlideHidden({ kind: "winner" }, true, f.ctx, tx);
+
+      expect(names(await listOf(f.home, tx))).toEqual([
+        "Standings countdown",
+        "Title",
+        "By the numbers",
+        "Awards",
+        "Champions",
+        "(Winner)",
+      ]);
+      expect(await sortOrdersOf(f.home, tx)).toEqual([0, 1, 2, 3, 4, 5]);
     });
   });
 
@@ -413,6 +443,77 @@ describe.skipIf(!isLocalDatabase)("Custom Finale slide mutations", () => {
         "Standings countdown",
         "Winner",
       ]);
+    });
+  });
+
+  it("delete a Custom slide, then move another: order is exact and sort_orders are 0..n distinct", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const {
+        createCustomFinaleSlide,
+        deleteCustomFinaleSlide,
+        moveFinaleSlide,
+      } = await import("@/mutations/finale-slides");
+      const f = await fixture(tx);
+      for (const heading of ["A", "B"]) {
+        await createCustomFinaleSlide(
+          { heading, body, backgroundColor: null },
+          f.ctx,
+          tx,
+        );
+      }
+      const customs = (await listOf(f.home, tx)).filter(
+        (s) => s.kind === "custom",
+      );
+      const [a, b] = customs.map((s) => s.id!);
+
+      await deleteCustomFinaleSlide(a, f.ctx, tx);
+      await moveFinaleSlide({ id: b }, 3, f.ctx, tx);
+
+      expect(names(await listOf(f.home, tx))).toEqual([
+        "Title",
+        "By the numbers",
+        "Awards",
+        "B",
+        "Champions",
+        "Standings countdown",
+        "Winner",
+      ]);
+      expect(await sortOrdersOf(f.home, tx)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    });
+  });
+
+  it("delete a Custom slide, then create another: order is exact and sort_orders are 0..n distinct", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { createCustomFinaleSlide, deleteCustomFinaleSlide } =
+        await import("@/mutations/finale-slides");
+      const f = await fixture(tx);
+      for (const heading of ["A", "B"]) {
+        await createCustomFinaleSlide(
+          { heading, body, backgroundColor: null },
+          f.ctx,
+          tx,
+        );
+      }
+      const [a] = (await listOf(f.home, tx)).filter((s) => s.kind === "custom");
+
+      await deleteCustomFinaleSlide(a.id!, f.ctx, tx);
+      await createCustomFinaleSlide(
+        { heading: "C", body, backgroundColor: null },
+        f.ctx,
+        tx,
+      );
+
+      expect(names(await listOf(f.home, tx))).toEqual([
+        "Title",
+        "By the numbers",
+        "Awards",
+        "Champions",
+        "B",
+        "C",
+        "Standings countdown",
+        "Winner",
+      ]);
+      expect(await sortOrdersOf(f.home, tx)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
     });
   });
 });

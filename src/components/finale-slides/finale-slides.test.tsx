@@ -122,6 +122,8 @@ describe("the built-in Finale slides", () => {
           competitionId: "c1",
           competition: "Chess Heats",
           format: "heats",
+          label: "Champion",
+          title: "Ada Anvil",
           winners: [
             { id: "p1", name: "Ada Anvil", color: null, kind: "participant" },
           ],
@@ -130,6 +132,8 @@ describe("the built-in Finale slides", () => {
           competitionId: "c2",
           competition: "Ping Pong",
           format: "games",
+          label: "Winner",
+          title: "Tie: Fay Falcon & Jax Jetpack",
           winners: [
             { id: "p2", name: "Fay Falcon", color: null, kind: "participant" },
             { id: "p3", name: "Jax Jetpack", color: null, kind: "participant" },

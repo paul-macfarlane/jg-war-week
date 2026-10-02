@@ -12,8 +12,7 @@ import { mcpLeaderboard } from "./mcp";
  * The Finale (brackets ticket 1, ticket 72): `/xi/finale` opens on the
  * slideshow's first slide for any signed-in user, `/admin/finale` is the
  * Organizer's way in, lists the slides and sets the Awards layout (ticket
- * 73), and MCP `get_leaderboard` always
- * returns Standings.
+ * 73), and MCP `get_leaderboard` always returns Standings.
  */
 export async function assertFinale(sessions: {
   organizer: SmokeSession;
@@ -80,14 +79,14 @@ export async function assertFinale(sessions: {
   );
 
   await run(
-    'GET /admin/finale lists the seeded Custom "Thank you" slide on XI with its Edit and Delete, and offers Add custom slide, to an Organizer',
+    'GET /admin/finale lists the seeded Custom "Thank you" slide on XI with its Edit and Delete, and offers Add Custom slide, to an Organizer',
     async () => {
       const { body } = await page("/admin/finale", sessions.organizer);
       const checks = {
         heading: body.includes("Thank you"),
         edit: body.includes('aria-label="Edit Thank you"'),
         delete: body.includes('aria-label="Delete Thank you"'),
-        add: body.includes("Add custom slide"),
+        add: body.includes("Add Custom slide"),
       };
       return Object.values(checks).every(Boolean)
         ? null

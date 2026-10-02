@@ -1,47 +1,67 @@
 /**
- * Writes the Finale stills (ticket 73, 73-AC2): every slide the XII demo's
- * Finale plays, at 1920×1080 (the projector) and 390×844 (a phone), to
- * `test-results/r13/slides/<kind>-<w>x<h>.png` (a second slide of one kind
- * gets `<kind>-2-…`). Each slide is shot in its final state (every Award
+ * Writes the Finale stills: every slide the XII demo's Finale plays, at
+ * 1920×1080 (the projector) and 390×844 (a phone), to
+ * `<out>/<kind>-<w>x<h>.png` (a second slide of one kind gets
+ * `<kind>-2-…`). Each slide is shot in its final state (every Award
  * shown, the countdown done), with reduced motion so no frame is
  * mid-animation. Never part of CI. Needs a production build and a local
  * Postgres seeded with the XII demo:
  *   pnpm build && pnpm seed:demo:xii && pnpm stills:finale
  *
- * Starts its own server on port 3212 and signs in as a made-up Organizer
- * (`finale-stills@jahnelgroup.com`), so the stills show what the Organizer
- * presents. So every built-in slide has something to show, it adds, and
- * removes again afterwards: two Awards in Award Categories, a finalized
- * Heats Bracket (`setupBracketDemo`, finalized here with its placings'
- * points) and the seeded Ping Pong `games` Competition closed with a
- * winner. Pass an edition to shoot another War Week's demo:
+ * `--out <dir>` picks the folder (default `test-results/finale-stills`),
+ * which is emptied first. Starts its own server on port 3212 and signs in
+ * as a made-up Organizer (`finale-stills@jahnelgroup.com`), so the stills
+ * show what the Organizer presents. So every built-in slide has something
+ * to show, it adds, and removes again afterwards: two Awards in Award
+ * Categories, a finalized Heats Bracket (`setupBracketDemo`, finalized
+ * here with its placings' points) and the seeded Ping Pong `games`
+ * Competition closed with a winner. Pass an edition to shoot another War
+ * Week's demo:
  *   pnpm stills:finale xiii
  */
 import { loadEnvConfig } from "@next/env";
 import { type Page, chromium } from "@playwright/test";
-import { type ChildProcess, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, renameSync, rmSync } from "node:fs";
+import { mkdirSync, renameSync, rmSync } from "node:fs";
 import path from "node:path";
 
-import { DISPLAY_STORAGE_KEY } from "@/lib/display";
 import { backgroundColorScheme } from "@/lib/theme";
 
 import {
   type DemoWarWeek,
+  SESSION_COOKIE,
   createDemoSession,
+  displayInitScript,
   query,
   setupBracketDemo,
+  startDemoServer,
 } from "./media/demo";
 
 loadEnvConfig(process.cwd());
 
 const PORT = 3212;
-const BASE_URL = `http://localhost:${PORT}`;
-const OUT = path.resolve(process.cwd(), "test-results/r13/slides");
 const AUTH_SECRET = `finale-stills-secret-${randomUUID()}`;
 const DEMO_EMAIL = "finale-stills@jahnelgroup.com";
-const EDITION = process.argv[2] ?? "xii";
+
+/** `--out <dir>` and an optional edition, in any order. */
+function parseArgs(args: string[]): { out: string; edition: string } {
+  let out = "test-results/finale-stills";
+  const rest: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--out") {
+      const dir = args[++i];
+      if (!dir) throw new Error("--out needs a folder");
+      out = dir;
+    } else {
+      rest.push(args[i]);
+    }
+  }
+  return { out, edition: rest[0] ?? "xii" };
+}
+
+const ARGS = parseArgs(process.argv.slice(2));
+const OUT = path.resolve(process.cwd(), ARGS.out);
+const EDITION = ARGS.edition;
 const SIZES = [
   { width: 1920, height: 1080 },
   { width: 390, height: 844 },
@@ -239,24 +259,12 @@ function nameShots(shots: Shot[], size: { width: number; height: number }) {
     const name = `${shot.kind}${n > 1 ? `-${n}` : ""}-${size.width}x${size.height}.png`;
     renameSync(shot.file, path.join(OUT, name));
     note(
-      `wrote test-results/r13/slides/${name}${shot.scrolls ? " (the slide scrolls)" : ""}`,
+      `wrote ${path.join(ARGS.out, name)}${shot.scrolls ? " (the slide scrolls)" : ""}`,
     );
   }
 }
 
 async function main() {
-  if (!existsSync(path.resolve(process.cwd(), ".next/BUILD_ID"))) {
-    console.error("No production build in .next: run `pnpm build` first.");
-    process.exit(1);
-  }
-  if (
-    await fetch(BASE_URL).then(
-      () => true,
-      () => false,
-    )
-  ) {
-    throw new Error(`something is already listening on ${BASE_URL}`);
-  }
   const [warWeek] = await query<StillsWarWeek>(
     `select id, edition, background_color from war_week where edition = $1`,
     [EDITION],
@@ -264,21 +272,9 @@ async function main() {
   if (!warWeek) {
     throw new Error(`no War Week ${EDITION}: run \`pnpm seed:demo:xii\` first`);
   }
+  const server = await startDemoServer(PORT, AUTH_SECRET);
   rmSync(OUT, { recursive: true, force: true });
   mkdirSync(OUT, { recursive: true });
-
-  const server: ChildProcess = spawn("pnpm", ["start", "-p", String(PORT)], {
-    env: {
-      ...process.env,
-      BETTER_AUTH_SECRET: AUTH_SECRET,
-      BETTER_AUTH_URL: BASE_URL,
-      GOOGLE_CLIENT_ID: "",
-      GOOGLE_CLIENT_SECRET: "",
-      MCP_TOKEN: "",
-    },
-    stdio: "ignore",
-    detached: true,
-  });
   const browser = await chromium.launch();
   try {
     // Setup is inside the `try`, so the `finally` undoes whatever got done.
@@ -299,39 +295,24 @@ async function main() {
     await addFinalizedBracket(warWeek);
     await closePingPong(warWeek);
 
-    for (let i = 0; i < 60; i++) {
-      await sleep(500);
-      if (
-        await fetch(`${BASE_URL}/sign-in`).then(
-          (r) => r.ok,
-          () => false,
-        )
-      )
-        break;
-    }
+    await server.ready();
 
     const context = await browser.newContext({
-      baseURL: BASE_URL,
+      baseURL: server.baseUrl,
       reducedMotion: "reduce",
       deviceScaleFactor: 1,
     });
     await context.addCookies([
       {
-        name: "better-auth.session_token",
+        name: SESSION_COOKIE,
         value: cookie,
-        url: BASE_URL,
+        url: server.baseUrl,
         httpOnly: true,
       },
     ]);
     // The War Week's own palette, not this machine's light or dark mode.
-    const display = backgroundColorScheme(warWeek.background_color);
     await context.addInitScript(
-      ([key, value]) => {
-        try {
-          localStorage.setItem(key, value);
-        } catch {}
-      },
-      [DISPLAY_STORAGE_KEY, display],
+      displayInitScript(backgroundColorScheme(warWeek.background_color)),
     );
     const page = await context.newPage();
     for (const size of SIZES) nameShots(await shoot(page, size), size);
@@ -341,7 +322,7 @@ async function main() {
     const errors: unknown[] = [];
     await browser.close().catch((error) => errors.push(error));
     try {
-      if (server.pid) process.kill(-server.pid, "SIGTERM");
+      server.stop();
     } catch (error) {
       errors.push(error);
     }

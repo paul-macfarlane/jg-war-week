@@ -752,7 +752,7 @@ export const finaleSlide = pgTable(
     sortOrder: integer("sort_order").notNull(),
     hidden: boolean("hidden").notNull().default(false),
     // Custom slides only (the CHECKs below). `FINALE_SLIDE_HEADING_MAX` in
-    // `@/lib/finale-slides`; a literal so the schema imports nothing from
+    // `@/lib/custom-finale-slide`; a literal so the schema imports nothing from
     // the app.
     heading: varchar("heading", { length: 120 }),
     body: jsonb("body").$type<Content>(),

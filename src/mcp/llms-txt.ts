@@ -10,7 +10,7 @@ const PAGES: [path: string, purpose: string][] = [
   ["/<edition>/leaderboard", "Team and individual Standings."],
   [
     "/<edition>/finale",
-    "The closing-ceremony slideshow (title, numbers, Awards, champions, the Standings last place to first, the Winner, plus Custom slides), stepped through by the presenter.",
+    "The closing-ceremony slideshow (Title, By the numbers, Awards, Champions, the Standings countdown from last place to first, Winner, plus Custom slides), stepped through by the presenter.",
   ],
   [
     "/<edition>/finale/<competitionId>",

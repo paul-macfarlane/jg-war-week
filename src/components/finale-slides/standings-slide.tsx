@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useFinale } from "@/components/use-finale";
 
-import { SlideEyebrow } from "./placeholder-slide";
+import { SlideEyebrow } from "./slide-eyebrow";
 import type { FinaleSlideProps } from "./types";
 
 /**

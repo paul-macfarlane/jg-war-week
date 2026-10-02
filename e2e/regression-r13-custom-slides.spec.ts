@@ -3,7 +3,13 @@ import { type Page, expect, test } from "@playwright/test";
 
 import { resetXiFinaleSlides } from "./db";
 import { E2E_BASE_URL } from "./env";
-import { finaleStage, nextSlide, nextUntil, openFinale } from "./finale-slides";
+import {
+  finaleStage,
+  listed,
+  nextUntil,
+  openFinale,
+  slideIndexes,
+} from "./finale-slides";
 import { asOrganizer } from "./session";
 
 /**
@@ -23,40 +29,11 @@ const IMAGE_URL = `${E2E_BASE_URL}/about/announcements.png`;
 const HEADING = "R13 Custom slide";
 const BACKGROUND = "#1e3a5f";
 
-const slideList = (page: Page) =>
-  page.getByRole("list", { name: "Finale slides" });
-
-/** The admin list's slide names, in order. */
-async function listed(page: Page): Promise<string[]> {
-  const rows = await slideList(page).getByRole("listitem").all();
-  return Promise.all(
-    rows.map(async (row) =>
-      (await row.locator("span.font-medium").first().innerText())
-        .replace(/\s*Hidden$/, "")
-        .trim(),
-    ),
-  );
-}
-
-/** Presses → through the Finale, noting each slide kind's place. */
-async function slideIndexes(page: Page): Promise<Record<string, number>> {
-  const stage = finaleStage(page);
-  const indexes: Record<string, number> = {};
-  for (let i = 0; i < 12; i++) {
-    const kind = (await stage.getAttribute("data-finale-slide")) ?? "";
-    indexes[kind] = Number(await stage.getAttribute("data-finale-slide-index"));
-    if (kind === "winner") break;
-    // Finishes the slide's steps (an Award at a time, the countdown) first.
-    await nextSlide(page);
-  }
-  return indexes;
-}
-
 async function fillForm(
   page: Page,
   { heading, text }: { heading: string; text: string },
 ) {
-  const dialog = page.getByRole("dialog", { name: "Add custom slide" });
+  const dialog = page.getByRole("dialog", { name: "Add Custom slide" });
   await dialog
     .getByRole("textbox", { name: "Heading", exact: true })
     .fill(heading);
@@ -74,7 +51,7 @@ test("74-AC1 74-AC2: an Organizer adds a Custom slide with an image between Awar
   await page.goto("/admin/finale");
 
   // Add: heading, text, a captioned image, a background color.
-  await page.getByRole("button", { name: "Add custom slide" }).click();
+  await page.getByRole("button", { name: "Add Custom slide" }).click();
   const dialog = await fillForm(page, {
     heading: HEADING,
     text: "Thanks for playing",
@@ -101,7 +78,7 @@ test("74-AC1 74-AC2: an Organizer adds a Custom slide with an image between Awar
     dialog.getByRole("button", { name: "Background color" }),
   ).toContainText(BACKGROUND);
 
-  await dialog.getByRole("button", { name: "Add custom slide" }).click();
+  await dialog.getByRole("button", { name: "Add Custom slide" }).click();
   await expect(dialog).toBeHidden();
   await expect
     .poll(() => listed(page))
@@ -116,9 +93,9 @@ test("74-AC1 74-AC2: an Organizer adds a Custom slide with an image between Awar
     ]);
 
   // The same heading again is refused, in the form.
-  await page.getByRole("button", { name: "Add custom slide" }).click();
+  await page.getByRole("button", { name: "Add Custom slide" }).click();
   const again = await fillForm(page, { heading: HEADING, text: "Twice" });
-  await again.getByRole("button", { name: "Add custom slide" }).click();
+  await again.getByRole("button", { name: "Add Custom slide" }).click();
   await expect(
     again
       .getByText(`There's already a Custom slide called ${HEADING}.`)
@@ -149,8 +126,19 @@ test("74-AC1 74-AC2: an Organizer adds a Custom slide with an image between Awar
   await expect(page.getByText("Photo: the page")).toBeVisible();
   await expect(stage).toHaveCSS("background-color", "rgb(30, 58, 95)");
 
-  // A click on the image never advances the slideshow; one on the stage does.
+  // A click on the image never advances the slideshow; one on an empty
+  // stage area does (and ← comes back).
   await image.click();
+  await expect(stage).toHaveAttribute(
+    "data-finale-slide-index",
+    String(indexes.custom),
+  );
+  await stage.click({ position: { x: 20, y: DESKTOP.height - 20 } });
+  await expect(stage).toHaveAttribute(
+    "data-finale-slide-index",
+    String(indexes.custom + 1),
+  );
+  await page.keyboard.press("ArrowLeft");
   await expect(stage).toHaveAttribute(
     "data-finale-slide-index",
     String(indexes.custom),

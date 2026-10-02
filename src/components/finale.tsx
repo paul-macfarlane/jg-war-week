@@ -22,7 +22,15 @@ import {
 
 /** Controls that handle their own clicks and `Space`: never "next". */
 const INTERACTIVE =
-  "a, button, input, select, textarea, summary, video, audio, iframe, img, label, [role='button'], [contenteditable='true']";
+  "a, button, input, select, textarea, summary, video, audio, iframe, label, [role='button'], [contenteditable='true']";
+
+/**
+ * An image in a Custom slide's body (`CustomSlide`) is the Organizer's
+ * content, looked at rather than clicked through: a click on it never
+ * advances. Any other image (an Avatar, the Title logo) advances like the
+ * stage; one inside a link is the link's (`INTERACTIVE`).
+ */
+const CUSTOM_BODY_IMAGE = "[data-finale-custom-body] img";
 
 /** Where typing happens: no slideshow key works there. */
 const TYPING = "input, textarea, select, [contenteditable='true']";
@@ -139,7 +147,9 @@ export function FinaleSlideshow({
 
   const onStageClick = (event: MouseEvent<HTMLDivElement>) => {
     const target = event.target instanceof Element ? event.target : null;
-    if (target?.closest(INTERACTIVE)) return;
+    if (target?.closest(INTERACTIVE) || target?.closest(CUSTOM_BODY_IMAGE)) {
+      return;
+    }
     next();
   };
 
@@ -175,7 +185,11 @@ export function FinaleSlideshow({
       </Link>
       {slide ? (
         <>
-          <section aria-label={slide.name} className="relative h-full w-full">
+          {/* On a phone the slide starts below the Exit link. */}
+          <section
+            aria-label={slide.name}
+            className="relative h-full w-full max-sm:pt-10"
+          >
             <FinaleSlideView
               key={`${slide.key}:${visit.arrival}`}
               data={slide}

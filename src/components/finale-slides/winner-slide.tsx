@@ -2,7 +2,7 @@ import { Trophy } from "lucide-react";
 
 import { Avatar } from "@/components/avatar";
 
-import { SlideEyebrow } from "./placeholder-slide";
+import { SlideEyebrow } from "./slide-eyebrow";
 import type { FinaleSlideProps } from "./types";
 
 /**

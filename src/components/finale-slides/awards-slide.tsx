@@ -6,7 +6,7 @@ import { useEffect, useRef } from "react";
 import { Avatar } from "@/components/avatar";
 import type { FinaleAward } from "@/lib/finale-slides";
 
-import { SlideEyebrow } from "./placeholder-slide";
+import { SlideEyebrow } from "./slide-eyebrow";
 import type { FinaleSlideProps } from "./types";
 
 /**

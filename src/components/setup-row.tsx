@@ -179,7 +179,51 @@ function SetupSheet({
 }
 
 /** A row action's classes: at least 44px on phones. */
-const ROW_ACTION = "min-h-11 min-w-11 sm:min-h-8";
+export const ROW_ACTION = "min-h-11 min-w-11 sm:min-h-8";
+
+/**
+ * A row's Move up and Move down buttons (`Move "<label>" up`); the first
+ * row's up and the last row's down are disabled.
+ */
+export function MoveUpDownButtons({
+  label,
+  first,
+  last,
+  disabled,
+  onMove,
+}: {
+  label: string;
+  first: boolean;
+  last: boolean;
+  /** While a change is saving. */
+  disabled?: boolean;
+  onMove: (direction: "up" | "down") => void;
+}) {
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        className={ROW_ACTION}
+        disabled={disabled || first}
+        aria-label={`Move "${label}" up`}
+        onClick={() => onMove("up")}
+      >
+        ↑
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        className={ROW_ACTION}
+        disabled={disabled || last}
+        aria-label={`Move "${label}" down`}
+        onClick={() => onMove("down")}
+      >
+        ↓
+      </Button>
+    </>
+  );
+}
 
 /**
  * One row of an admin list, the one pattern every list uses: the row's
