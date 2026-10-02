@@ -229,4 +229,4 @@ Command: `pnpm format:check && pnpm gate` with `DATABASE_URL=postgres://postgres
 | E-AC2 closeouts, tickets `done` | PASS | ticket files 72–74 and the epic |
 | E-AC3 PR CI; `pnpm format:check && pnpm gate` | local PASS; CI pending | gate.txt; PR checks |
 
-Deviations: listed in each ticket's closeout and the Red-team amendments. PR: (linked after opening).
+Deviations: listed in each ticket's closeout and the Red-team amendments. PR: [paul-macfarlane/jg-war-week#121](https://github.com/paul-macfarlane/jg-war-week/pull/121).

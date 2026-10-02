@@ -26,7 +26,7 @@
 
 ## [CLOSEOUT]
 
-2026-10-03, atlas-implement (Claude Opus 5.5). Deliverable D72 (worker: atlas-worker, opus; commit `dc9eab5`), with the integration fixes `6f8511c`, `66cb75a` and the review fixes `6096595` (RF). Verified on `feat/regression-r13-finale-slides` at `6096595` (code; the closeout commits add only `.scratch/` and `test-results/`), local Postgres `war-weeker-postgres` :2345, `DATABASE_URL=postgres://postgres:postgres@localhost:2345/war_weeker?sslmode=disable DATABASE_DRIVER=pg`. Final gate: `pnpm format:check && pnpm gate` exit 0 (format clean; lint 0 errors, 11 existing-pattern `<img>` warnings; vitest 173 files / 3729 tests; build; smoke 246 ok; Playwright 91 passed) → `test-results/r13/gate.txt`. PR: (linked after opening).
+2026-10-03, atlas-implement (Claude Opus 5.5). Deliverable D72 (worker: atlas-worker, opus; commit `dc9eab5`), with the integration fixes `6f8511c`, `66cb75a` and the review fixes `6096595` (RF). Verified on `feat/regression-r13-finale-slides` at `6096595` (code; the closeout commits add only `.scratch/` and `test-results/`), local Postgres `war-weeker-postgres` :2345, `DATABASE_URL=postgres://postgres:postgres@localhost:2345/war_weeker?sslmode=disable DATABASE_DRIVER=pg`. Final gate: `pnpm format:check && pnpm gate` exit 0 (format clean; lint 0 errors, 11 existing-pattern `<img>` warnings; vitest 173 files / 3729 tests; build; smoke 246 ok; Playwright 91 passed) → `test-results/r13/gate.txt`. PR: [paul-macfarlane/jg-war-week#121](https://github.com/paul-macfarlane/jg-war-week/pull/121).
 
 | AC | Verdict | Evidence |
 |---|---|---|
