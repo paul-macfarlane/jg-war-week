@@ -354,7 +354,28 @@ on the matching War Week page.
       "This War Week has been ended; Unstart isn't available." It stays
       live.
 - [ ] **Finale links.** `/admin/finale` links to the Finale and to each
-      finalized Bracket's Finale; both open.
+      finalized Bracket's Finale; both open. (The Bracket's Finale keeps its
+      Start button.)
+- [ ] **Finale slide list.** `/admin/finale` lists the Finale slides in
+      order (Title, By the numbers, Awards, Champions, Standings countdown,
+      Winner, plus the demo's Custom "Thank you" before Standings or after
+      Winner, per the seed). Move a slide with its Move up/down buttons
+      (1440 and 390) and by dragging it at 1440: the order changes at once
+      and survives reload. Hide a slide: it shows as hidden and keeps its
+      place; Show brings it back. Open the Finale: hidden slides are
+      skipped and the rest play in the saved order.
+- [ ] **Custom slides.** Add custom slide (a heading, a body with an image
+      by URL, a background color): it appears just before Standings
+      countdown, and in the Finale shows heading, body and background. On a
+      dark background and on a light one the text stays readable (4.5:1; run
+      the page's axe check or read the colors). Editing changes it; adding a
+      second one with the same heading is refused ("There's already a Custom
+      slide called <heading>."); delete asks first and removes it. A
+      built-in has Hide/Show but no Delete.
+- [ ] **Awards layout.** On `/admin/finale`, set the Awards layout to "One
+      slide per Category": the Finale's Awards become one slide per Category
+      ("Awards: <Category>", the uncategorized "Other Awards"); back to "All
+      on one slide": one Awards slide. Each choice saves at once.
 - [ ] **Forms behave the same everywhere.** On a long form (Competition),
       resize from 1440 to 390 (crossing 768) with typed input: the input
       survives the dialog-to-sheet switch. At 820 the add-Participant and
@@ -392,6 +413,9 @@ Competition (from the Organizer run).
       can't create or delete a Competition or assign Hosts: no Add
       Competition, Delete or Hosts control (the server's refusal is
       unit-tested in `src/lib/access.test.ts`).
+- [ ] **Finale is read-only for a Host.** `/admin/finale` shows the slide
+      list and "Open Finale", but no Move, Hide/Show, Add custom slide, edit,
+      delete or Awards layout control.
 - [ ] **Not a Host elsewhere.** Switch to another edition (if offered), or
       set the `admin_edition` cookie to a past edition, and open another
       War Week's admin URL (e.g. `/admin/points/<an XI Points Entry id>`,
@@ -491,13 +515,35 @@ that nothing personal shows (no You highlight, no Log a Game).
       each shows its archive view. "Awards through the years" lists each
       Award Category; open one: `/history/awards/<id>` shows its War Weeks
       newest first with recipients, and an unknown id is a 404 page.
-- [ ] **Finale.** `/<edition>/finale` opens on Start. Pressing Start counts
-      the main Standings in from last place to first, ties together, within
-      8 s (`FINALE_MAX_MS`; time it in the page, from the Start click to
-      `[data-finale="done"]`: a frame or two over 8000 ms is the animation
-      clock, Playwright's own waits add more), ending in the same order as
-      the Leaderboard. Replay works. With `prefers-reduced-motion` it still
-      waits for Start, then jumps to the end.
+- [ ] **Finale slideshow.** `/<edition>/finale` opens full screen (over the
+      edition nav, with a small Exit link back to the edition) on the Title
+      slide, showing no Standings. `→`, `Space` or a click on the stage
+      goes next (an Awards slide first shows its Awards one per press);
+      `←` goes back to the previous slide in its final state; `Escape`
+      returns to the first slide; Next on the last slide does nothing.
+      Nothing auto-advances: leave it 10 s on a slide and it stays. A click
+      on a link or video in a slide doesn't advance it. Hidden slides and
+      slides with nothing to show (no Awards, no finalized Competitions, no
+      Standings rows) are skipped. With every slide hidden it says "Nothing
+      to show yet." (an Organizer also sees "Set up the Finale").
+- [ ] **Finale slides.** Step through the demo's Finale: By the numbers shows
+      only non-zero figures ("Points handed out" among them); Awards lists
+      each Award once, grouped by Category (or one slide per Category, per
+      the Awards layout); Champions lists each finalized Bracket's champion
+      and each closed `games` or team-scoring Participation Competition's
+      winner, ties together; Winner is the first place of the Standings, a
+      tie shown as "Tie: A & B". No slide scrolls at 1440 (1920x1080 is the
+      projector) or at 390.
+- [ ] **Finale Standings countdown.** Arriving on Standings countdown with
+      → starts it (no Start button): rows appear from last place to first,
+      ties together, totals counting up from 0, within 8 s (`FINALE_MAX_MS`;
+      time it in the page, from the → press to `[data-finale="done"]`: a
+      frame or two over 8000 ms is the animation clock, Playwright's own
+      waits add more), ending in the same order as the Leaderboard. → while
+      it plays jumps to its final state; Replay plays it again and doesn't
+      advance. Arriving by ← shows the final state. With
+      `prefers-reduced-motion` every slide shows its final state on arrival
+      and still waits for →.
 - [ ] **Account menu.** The avatar button at the top right (at 1440 and
       390; no email text, no Sign out button beside it) opens a menu with
       the name and email, Profile, Display, "Join the Slack channel" (when the War

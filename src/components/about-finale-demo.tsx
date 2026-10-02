@@ -1,15 +1,15 @@
 import { AboutStill } from "@/components/about-still";
 
 /**
- * A still of the current War Week's Finale on a phone (ticket 04): its Start
- * screen, before the Standings count in. Moved out of the About page's hero
+ * A still of the current War Week's Finale on a phone (ticket 04): its Title
+ * slide, the first of the slideshow (it shows no Standings). Moved out of the About page's hero
  * (now `AboutStandingsDemo`) and shown lower down as a plain still, not a
  * looping video. `public/about/finale-poster.png` (and `finale-poster-dark.png`
  * for a dark Display) is written by `scripts/about-media.ts` from the seeded
  * demo, never by hand.
  */
 const DESCRIPTION =
-  "The current War Week's Finale on a phone, ready to count the Standings in from last place to first.";
+  "The current War Week's Finale on a phone, opening on its Title slide.";
 
 export function AboutFinaleDemo() {
   return (
@@ -26,8 +26,8 @@ export function AboutFinaleDemo() {
         </div>
       </div>
       <figcaption className="text-foreground/60 max-w-xs text-center text-xs">
-        The Finale: at closing ceremonies, Standings count in from last place to
-        first.
+        The Finale: a slideshow for closing ceremonies, from the Title slide to
+        the Standings counting in from last place to first.
       </figcaption>
     </figure>
   );

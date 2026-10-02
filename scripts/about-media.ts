@@ -1,8 +1,8 @@
 /**
  * Writes the About page's media (tickets 28, 03, 04, 43) from the current
  * War Week's seeded demo, never by hand: `public/about/finale-poster.png`
- * (its Finale's Start screen on a phone; a still only — no Finale video is
- * written or shown), the hero's `standings-before.png` /
+ * (its Finale's Title slide on a phone, which gives nothing away; a still
+ * only — no Finale video is written or shown), the hero's `standings-before.png` /
  * `standings-entry.png` / `standings-after.png` (an Organizer's real Points
  * Entry moving the home Standings), and one still per feature card at
  * `public/about/<slug>.png`. Every one of them is written twice (the About
@@ -71,9 +71,10 @@ const AUTH_SECRET = `about-media-secret-${randomUUID()}`;
 const DEMO_EMAIL = "about-demo@jahnelgroup.com";
 const STILL = { width: 1280, height: 720 };
 const PHONE = { width: 390, height: 844 };
-/** Around the Finale: this much of the Start screen before, and after. */
-const LEAD_IN_MS = 2_500;
+/** After the Standings countdown: this long on its final state. */
 const HOLD_MS = 3_500;
+/** Between the presenter's → presses on the way to the countdown. */
+const STEP_MS = 700;
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const log: string[] = [];
@@ -419,12 +420,53 @@ async function recordFinale(cookie: string, scheme: Scheme) {
     maxWidth: PHONE.width * 2,
     maxHeight: PHONE.height * 2,
   });
-  await sleep(LEAD_IN_MS);
 
-  const pressedAt = Date.now();
-  await page.evaluate(
-    `Array.from(document.querySelectorAll("button")).find((b) => b.innerText.trim() === "Start")?.click()`,
+  // The slideshow's keys work once it has hydrated.
+  for (let i = 0; i < 100; i++) {
+    const hydrated = await page.evaluate<boolean>(
+      `document.querySelector("[data-finale-hydrated]") !== null`,
+    );
+    if (hydrated) break;
+    await sleep(100);
+  }
+  await sleep(1_000);
+  // The poster is the Title slide: it opens the slideshow and shows no
+  // Standings.
+  const titleKind = await page.evaluate<string | null>(
+    `document.querySelector("[data-finale-slide]")?.dataset.finaleSlide ?? null`,
   );
+  if (titleKind !== "title") {
+    throw new Error(`the Finale opened on "${titleKind}", not its Title slide`);
+  }
+  const poster = frames.at(-1);
+  if (!poster) throw new Error("no frame recorded of the Title slide");
+
+  // The presenter's →, one press at a time, until the next press lands on
+  // the Standings countdown: that press is the "pressed" moment.
+  const press = async () => {
+    for (const type of ["rawKeyDown", "keyUp"]) {
+      await page.send("Input.dispatchKeyEvent", {
+        type,
+        key: "ArrowRight",
+        code: "ArrowRight",
+        windowsVirtualKeyCode: 39,
+      });
+    }
+  };
+  const slideKind = () =>
+    page.evaluate<string | null>(
+      `document.querySelector("[data-finale-slide]")?.dataset.finaleSlide ?? null`,
+    );
+  let pressedAt = Date.now();
+  let presses = 0;
+  while ((await slideKind()) !== "standings") {
+    if (++presses > 60) throw new Error("→ never reached the Standings slide");
+    pressedAt = Date.now();
+    await press();
+    await sleep(STEP_MS);
+  }
+  note(`finale (${scheme}): reached Standings after ${presses} presses`);
+
   let startedAt: number | null = null;
   while (Date.now() - pressedAt < 20_000 && startedAt === null) {
     const value = await page.evaluate<string | null>(
@@ -433,25 +475,20 @@ async function recordFinale(cookie: string, scheme: Scheme) {
     if (value) startedAt = Number(value);
     else await sleep(100);
   }
-  if (startedAt === null) throw new Error("the Finale never started");
+  if (startedAt === null) throw new Error("the countdown never started");
   note(
-    `finale (${scheme}): countdown started ${startedAt - pressedAt} ms after Start`,
+    `finale (${scheme}): countdown started ${startedAt - pressedAt} ms after the → onto Standings`,
   );
   await sleep(FINALE_MAX_MS + HOLD_MS);
   await page.send("Page.stopScreencast");
   await page.close();
 
-  // Keep the lead-in before the Finale and the hold after it; a frame only
-  // arrives when something changes, so each one lasts until the next.
-  const from = startedAt - LEAD_IN_MS;
+  // The frames come from the countdown; a frame only arrives when something
+  // changes, so each one lasts until the next.
   const to = startedAt + FINALE_MAX_MS + HOLD_MS;
-  const before = frames.filter((f) => f.at <= from).at(-1);
-  const kept = [
-    ...(before ? [{ ...before, at: from }] : []),
-    ...frames.filter((f) => f.at > from && f.at <= to),
-  ];
+  const kept = frames.filter((f) => f.at >= startedAt && f.at <= to);
   if (kept.length < 10) {
-    throw new Error(`only ${kept.length} frames recorded around the Finale`);
+    throw new Error(`only ${kept.length} frames recorded of the countdown`);
   }
   note(
     `finale (${scheme}): ${frames.length} frames captured, ${kept.length} kept`,
@@ -460,7 +497,7 @@ async function recordFinale(cookie: string, scheme: Scheme) {
   // Only the poster still is kept; no Finale video is written or shown.
   writeFileSync(
     path.join(MEDIA, stillFile("finale-poster", scheme)),
-    Buffer.from(kept[0].data, "base64"),
+    Buffer.from(poster.data, "base64"),
   );
 }
 

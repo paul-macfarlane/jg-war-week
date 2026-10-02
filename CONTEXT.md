@@ -723,6 +723,14 @@ same rows with the same values (only `updated_at` moves).
   - Competition: `(war_week_id, name)`
   - FAQ Item: `(war_week_id, question)`; sort order is the position in the
     seed's `faqItems` list
+  - Finale slide: `(war_week_id, kind, heading)` (a built-in's heading is
+    null, so each built-in is once per War Week and a Custom slide is
+    unique by its heading); sort order is the position in the seed's
+    `finaleSlides` list, which also sets `hidden`, and a Custom slide's body
+    and background. Synced like FAQ Items: a row absent from the list is
+    deleted and ids stay the same across loads. A seed that omits
+    `finaleSlides` leaves the War Week's rows alone, so an Organizer's list
+    survives the reload.
 
   Seed references between entities use these names (a Points Entry names its
   Competition, Team or Participant). Removing a Team, Participant or
@@ -772,6 +780,9 @@ same rows with the same values (only `updated_at` moves).
     fill-if-empty: a seeded Award that has no Category and was never edited
     in the app (`updated_at` still equals `created_at`) gets the seed's. An
     Organizer's choice, "None" included, is never overwritten.
+  - A War Week's `finaleAwardsLayout` (the Finale's Awards layout) is
+    insert-only: set from the seed when the War Week is first inserted
+    (default "All on one slide"), then owned by the Organizer's setting.
   - **Award Categories** themselves come from a migration, not a seed, are
     global, and survive `--reset`.
 

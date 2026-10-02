@@ -169,8 +169,9 @@ pnpm tsx scripts/about-media.ts
 ```
 
 On an edition change, run it with no flag: the Finale poster
-(`finale-poster.png`) wears the old edition's theme, so it must be
-re-recorded too. Use `--stills` only when the poster's edition is unchanged
+(`finale-poster.png`, the Finale's Title slide on a phone; the run steps
+through the slideshow with → to the Standings countdown as a check) wears the
+old edition's theme, so it must be re-recorded too. Use `--stills` only when the poster's edition is unchanged
 (`pnpm tsx scripts/about-media.ts --stills` rewrites the feature-card and
 Standings stills and leaves the poster alone). Either way it rewrites the home Standings hero's three stills
 (`standings-before.png`, `standings-entry.png`, `standings-after.png`).
@@ -236,7 +237,7 @@ redirect to their new homes.
   sign in" on Roster.
 - **`/admin/organizers`**: the Organizer list (see
   [Add an Organizer or assign Hosts](#add-an-organizer-or-assign-hosts)).
-- **`/admin/points`**, **`/admin/finale`** (Run the Finale: "Open Finale" at closing ceremonies, and "Finale: <Competition>" for each finalized Bracket),
+- **`/admin/points`**, **`/admin/finale`** (Run the Finale: the slide list and Awards layout, "Open Finale" at closing ceremonies, and "Finale: <Competition>" for each finalized Bracket),
   **`/admin/announcements`**, **`/admin/awards`**.
 
 To start next year's edition in the app:
@@ -494,6 +495,49 @@ the order each time R12 reaches staging, and again on promotion to `main`:
    file, `seeds/i.json` … `seeds/xi.json`, with reset **off** (never reset)
    and never for the edition being run: a reload overwrites that edition's
    setup. Then check `/history` shows "Awards through the years".
+
+### Run the Finale
+
+The Finale (`/<edition>/finale`) is a slideshow for the projector, not a
+playback: the presenter steps through it (→, Space or a click for next, ←
+back, Escape to the first slide) and nothing advances on its own. Its
+slides are the built-ins (Title, By the numbers, Awards, Champions,
+Standings countdown, Winner) plus any **Custom slides**. In `/admin/finale`
+an Organizer sees the slide list, moves a slide (drag, or ↑/↓), hides or
+shows it, adds a Custom slide (heading, rich-text body, optional background
+color; its text colors adjust to read on it) and edits or deletes it, and
+picks the Awards layout ("All on one slide" or "One slide per Category").
+Every change saves at once. Writes are Organizer-only: a Host sees the list
+but no controls. A slide with nothing to show is skipped, and with every
+slide hidden the Finale says "Nothing to show yet." The rules are under
+"Finale rules" in `CONTEXT.md`.
+
+Schema: slides live in the `finale_slide` table (unique on War Week, kind and
+heading, so each built-in is once per War Week and a Custom slide is unique
+by heading) and the layout in `war_week.finale_awards_layout`. A seed's
+optional `finaleSlides` list is synced like FAQ Items and its
+`finaleAwardsLayout` is insert-only (`CONTEXT.md`, "Seed idempotence rules").
+The demo seeds `seeds/demo/xi.json` and `xii.json` carry a list (the six
+built-ins plus a Custom "Thank you").
+
+The slide stills (every slide at 1920x1080 and 390x844, in its final state)
+come from `pnpm build && pnpm seed:demo:xii && pnpm stills:finale`, written
+to `test-results/r13/slides/`. Run it when a slide's look changes; it reports
+any slide that scrolls instead of fitting the projector. Never part of CI.
+
+### Rolling out R13 (migration 0027)
+
+Migration 0027 adds the `finale_slide` table and `war_week.finale_awards_layout`
+(with its enums). It is additive, so a Vercel rollback is safe (the previous
+build ignores them). Check the order each time R13 reaches staging, and again
+on promotion to `main`:
+
+1. Confirm the **Migrate** GitHub job succeeded **before** checking the
+   deploy. Every edition page reads `war_week` whole, so until the new column
+   exists every edition page errors, not only the Finale.
+2. If the deploy went live first, re-run the Migrate job.
+3. Nothing to backfill: a War Week with no saved slides plays the default
+   list, and its Awards layout defaults to "All on one slide".
 
 ### Run a Competition as Participation
 

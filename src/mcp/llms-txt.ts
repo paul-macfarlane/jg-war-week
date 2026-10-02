@@ -10,7 +10,7 @@ const PAGES: [path: string, purpose: string][] = [
   ["/<edition>/leaderboard", "Team and individual Standings."],
   [
     "/<edition>/finale",
-    "The closing-ceremony playback of the Standings, last place to first.",
+    "The closing-ceremony slideshow (title, numbers, Awards, champions, the Standings last place to first, the Winner, plus Custom slides), stepped through by the presenter.",
   ],
   [
     "/<edition>/finale/<competitionId>",
@@ -57,8 +57,8 @@ Exactly one War Week is live at a time; \`get_current_war_week\` returns it (the
 live one, else the next upcoming one, else the latest complete one). Complete
 editions stay in the Archive at \`/history\`. Standings are never hidden: they
 are always the current Standings, live or complete. The Finale
-(\`/<edition>/finale\`) is a closing-ceremony playback of those Standings, not
-a separate result — it changes nothing. Some Competitions run as a Bracket
+(\`/<edition>/finale\`) is a closing-ceremony slideshow whose countdown plays those
+Standings, not a separate result — it changes nothing. Some Competitions run as a Bracket
 (single elimination or Heats) instead of plain points; \`get_bracket\` reads
 one by Competition name, with its Squads by name.
 
