@@ -1,7 +1,7 @@
 import { type Page, expect, test } from "@playwright/test";
 
 import { resetXiFinaleSlides } from "./db";
-import { finaleStage, openFinale } from "./finale-slides";
+import { finaleStage, nextSlide, openFinale } from "./finale-slides";
 import { asOrganizer } from "./session";
 
 /**
@@ -117,28 +117,24 @@ test("72-AC2: an Organizer moves the Standings slide and hides one, and the Fina
     path: testInfo.outputPath("finale-standings-1440x900.png"),
   });
 
+  // Champions has nothing to show on the XI demo (nothing is finalized),
+  // so the Finale skips it (ticket 73).
   const played: string[] = ["standings"];
-  for (let index = 1; index < 5; index++) {
-    await page.keyboard.press("ArrowRight");
+  for (let index = 1; index < 4; index++) {
+    await nextSlide(page);
     await expect(stage).toHaveAttribute(
       "data-finale-slide-index",
       String(index),
     );
     played.push((await stage.getAttribute("data-finale-slide")) ?? "");
   }
-  expect(played).toEqual([
-    "standings",
-    "title",
-    "awards",
-    "winner",
-    "champions",
-  ]);
+  expect(played).toEqual(["standings", "title", "awards", "winner"]);
 
   // Next on the last slide does nothing; ← goes back; Escape to the first.
   await page.keyboard.press("ArrowRight");
-  await expect(stage).toHaveAttribute("data-finale-slide-index", "4");
+  await expect(stage).toHaveAttribute("data-finale-slide-index", "3");
   await page.keyboard.press("ArrowLeft");
-  await expect(stage).toHaveAttribute("data-finale-slide", "winner");
+  await expect(stage).toHaveAttribute("data-finale-slide", "awards");
   await page.keyboard.press("Escape");
   await expect(stage).toHaveAttribute("data-finale-slide", "standings");
 

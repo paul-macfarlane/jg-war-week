@@ -96,39 +96,27 @@ export function shapeRecentResults(
   const byId = new Map(competitions.map((c) => [c.id, c]));
   const results: RecentResult[] = [];
 
-  for (const c of competitions) {
-    if (!c.finalizedAt || c.format === "points") continue;
-    const generated = entries.filter(
-      (e) => e.competitionId === c.id && e.generatedByBracket,
-    );
-    const top = Math.max(...generated.map((e) => e.points));
-    const winners: ResultTarget[] = [];
-    for (const e of generated) {
-      if (e.points === top && !winners.some((w) => sameTarget(w, e.target))) {
-        winners.push(e.target);
-      }
-    }
-    if (winners.length === 0) continue;
+  for (const final of finalWinners(competitions, entries)) {
+    const c = final.competition;
+    const base = {
+      key: `final-${c.id}`,
+      competitionId: c.id,
+      competition: c.name,
+      when: c.finalizedAt,
+    };
     if (c.format === "participation") {
-      const individual = generated.every((e) => e.target.kind !== "team");
       results.push({
         kind: "participation-closed",
-        key: `final-${c.id}`,
-        competitionId: c.id,
-        competition: c.name,
-        when: c.finalizedAt,
-        winners: individual ? [] : winners,
-        tookPart: individual ? generated.length : null,
+        ...base,
+        winners: final.winners,
+        tookPart: final.tookPart,
       });
       continue;
     }
     results.push({
       kind: c.format === "games" ? "games-closed" : "bracket-finalized",
-      key: `final-${c.id}`,
-      competitionId: c.id,
-      competition: c.name,
-      when: c.finalizedAt,
-      winners,
+      ...base,
+      winners: final.winners,
     });
   }
 
@@ -182,6 +170,57 @@ export function shapeRecentResults(
         b.when.getTime() - a.when.getTime() || a.key.localeCompare(b.key),
     )
     .slice(0, RECENT_RESULTS_LIMIT);
+}
+
+/** A finalized Competition's result, as its finalize or close wrote it. */
+export type FinalWinners = {
+  competition: ResultCompetition & { finalizedAt: Date };
+  /**
+   * The champion or winner: the target of the highest generated Points
+   * Entry; more than one on a tie for first. Empty for an
+   * individual-scoring Participation Competition, which has no winner.
+   */
+  winners: ResultTarget[];
+  /** Individual-scoring Participation: how many took part. Else null. */
+  tookPart: number | null;
+};
+
+/**
+ * The winner of each finalized Bracket, closed `games` Competition and
+ * closed `participation` Competition, in `competitions` order: the one
+ * rule Recent results and the Finale's Champions slide share. A
+ * Competition with no finalize time, a `points`-Format one, or one with no
+ * generated Points Entries has none and is left out.
+ */
+export function finalWinners(
+  competitions: ResultCompetition[],
+  entries: ResultEntry[],
+): FinalWinners[] {
+  const results: FinalWinners[] = [];
+  for (const c of competitions) {
+    const finalizedAt = c.finalizedAt;
+    if (!finalizedAt || c.format === "points") continue;
+    const generated = entries.filter(
+      (e) => e.competitionId === c.id && e.generatedByBracket,
+    );
+    const top = Math.max(...generated.map((e) => e.points));
+    const winners: ResultTarget[] = [];
+    for (const e of generated) {
+      if (e.points === top && !winners.some((w) => sameTarget(w, e.target))) {
+        winners.push(e.target);
+      }
+    }
+    if (winners.length === 0) continue;
+    const individual =
+      c.format === "participation" &&
+      generated.every((e) => e.target.kind !== "team");
+    results.push({
+      competition: { ...c, finalizedAt },
+      winners: individual ? [] : winners,
+      tookPart: individual ? generated.length : null,
+    });
+  }
+  return results;
 }
 
 function sameTarget(a: ResultTarget, b: ResultTarget): boolean {

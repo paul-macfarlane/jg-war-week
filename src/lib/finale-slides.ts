@@ -5,9 +5,23 @@
  */
 import { z } from "zod";
 
-import { FINALE_SLIDE_KINDS, type FinaleSlideKind } from "@/lib/enums";
+import type { Competition, WarWeek } from "@/db/schema";
+import { type AwardView, groupAwardsByCategory } from "@/lib/awards";
+import {
+  FINALE_SLIDE_KINDS,
+  type FinaleAwardsLayout,
+  type FinaleSlideKind,
+} from "@/lib/enums";
+import { formatPoints } from "@/lib/points";
+import {
+  type ResultCompetition,
+  type ResultEntry,
+  type ResultTarget,
+  finalWinners,
+} from "@/lib/recent-results";
 import { type Content, contentInputSchema } from "@/lib/rich-text/content";
 import type { Standings } from "@/lib/standings";
+import { defaultWinner } from "@/lib/war-week-lifecycle";
 
 /** The built-in slides, in their default order. */
 export const BUILT_IN_FINALE_SLIDE_KINDS = FINALE_SLIDE_KINDS.filter(
@@ -199,15 +213,150 @@ export function moveToIndex(
 type SlideBase = { key: string; name: string };
 
 /**
+ * The War Week's figures for the By the numbers slide (`getFinaleCounts`).
+ * `pointsHandedOut` sums every Points Entry, generated ones included: it
+ * is not a Standings total.
+ */
+export type FinaleCounts = {
+  /** Competitions with at least one Points Entry. */
+  competitionsRun: number;
+  /** Games logged in `games` Competitions. */
+  gamesLogged: number;
+  /** Heats played (a forfeit is not played). */
+  heatsPlayed: number;
+  pointsEntries: number;
+  pointsHandedOut: number;
+  /** The War Week's roster. */
+  participants: number;
+};
+
+/** One figure on the By the numbers slide: "18" over "Points Entries". */
+export type FinaleFigure = { label: string; value: string };
+
+const count = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+
+/** Each figure's label, in the slide's order: plural, then singular. */
+const FIGURES: [keyof FinaleCounts, string, string][] = [
+  ["competitionsRun", "Competitions run", "Competition run"],
+  ["gamesLogged", "Games logged", "Game logged"],
+  ["heatsPlayed", "Heats played", "Heat played"],
+  ["pointsEntries", "Points Entries", "Points Entry"],
+  ["pointsHandedOut", "Points handed out", "Point handed out"],
+  ["participants", "Participants", "Participant"],
+];
+
+/**
+ * The By the numbers slide's figures, in order, without the zeros
+ * (CONTEXT.md, "Finale rules"). Counts are grouped by thousands; the
+ * points read as the leaderboard shows them. Empty when every figure is
+ * zero, so the slide is skipped.
+ */
+export function byTheNumbers(counts: FinaleCounts): FinaleFigure[] {
+  return FIGURES.flatMap(([field, plural, singular]) => {
+    const value = counts[field];
+    if (value === 0) return [];
+    const shown =
+      field === "pointsHandedOut" ? formatPoints(value) : count.format(value);
+    return [{ label: shown === "1" ? singular : plural, value: shown }];
+  });
+}
+
+/** One line of the Champions slide. */
+export type FinaleChampion = {
+  competitionId: string;
+  competition: string;
+  format: Competition["format"];
+  /** More than one on a tie for first. */
+  winners: ResultTarget[];
+};
+
+/**
+ * The Champions slide's lines: every finalized Bracket's champion and every
+ * closed `games` or team-scoring `participation` Competition's winner (ties
+ * listed together), by the rule Recent results uses (`finalWinners`), never
+ * capped, ordered by when each was finalized or closed. An
+ * individual-scoring Participation Competition has no winner and is left
+ * out.
+ */
+export function championsList(
+  competitions: ResultCompetition[],
+  entries: ResultEntry[],
+): FinaleChampion[] {
+  return finalWinners(competitions, entries)
+    .filter((final) => final.winners.length > 0)
+    .sort(
+      (a, b) =>
+        a.competition.finalizedAt.getTime() -
+          b.competition.finalizedAt.getTime() ||
+        a.competition.name.localeCompare(b.competition.name),
+    )
+    .map(({ competition, winners }) => ({
+      competitionId: competition.id,
+      competition: competition.name,
+      format: competition.format,
+      winners,
+    }));
+}
+
+/** An Award as the Awards slide shows it. */
+export type FinaleAward = {
+  id: string;
+  name: string;
+  description: string | null;
+  team: { name: string; color: string } | null;
+  participants: {
+    id: string;
+    displayName: string;
+    image?: string | null;
+    teamColor: string | null;
+  }[];
+};
+
+/** A heading's worth of Awards on an Awards slide; `name` null: no heading. */
+export type FinaleAwardGroup = {
+  key: string;
+  name: string | null;
+  awards: FinaleAward[];
+};
+
+/** What the Winner slide shows of each row tied at first place. */
+export type FinaleWinnerRow = {
+  id: string;
+  name: string;
+  /** Formatted as the leaderboard shows it. */
+  total: string;
+  /** The Team's color (a Team, or a Participant's Team); null without one. */
+  color: string | null;
+  image?: string | null;
+  kind: "team" | "participant";
+};
+
+/**
  * What one Finale slide needs to render, by kind (the slideshow's `kind →
- * component` switch reads it). Built-ins other than the Standings countdown
- * are placeholders until their slides land (tickets 73 and 74).
+ * component` switch reads it).
  */
 export type FinaleSlideData =
-  | (SlideBase & { kind: "title" })
-  | (SlideBase & { kind: "numbers" })
-  | (SlideBase & { kind: "awards" })
-  | (SlideBase & { kind: "champions" })
+  | (SlideBase & {
+      kind: "title";
+      edition: string;
+      year: number;
+      storyTheme: string;
+      logoUrl: string | null;
+      bannerUrl: string | null;
+    })
+  | (SlideBase & { kind: "numbers"; figures: FinaleFigure[] })
+  | (SlideBase & {
+      kind: "awards";
+      /** "Awards", or the Category's name on a per-Category slide. */
+      heading: string;
+      groups: FinaleAwardGroup[];
+      primaryColor: string;
+    })
+  | (SlideBase & {
+      kind: "champions";
+      champions: FinaleChampion[];
+      primaryColor: string;
+    })
   | (SlideBase & {
       kind: "standings";
       /** The page's one `getStandings` result, shown as is. */
@@ -216,7 +365,14 @@ export type FinaleSlideData =
       /** The Appearance Theme primary color, for Avatars with no Team. */
       primaryColor: string;
     })
-  | (SlideBase & { kind: "winner" })
+  | (SlideBase & {
+      kind: "winner";
+      /** "Red", or "Tie: Red & Blue" (`defaultWinner`'s wording). */
+      title: string;
+      tie: boolean;
+      rows: FinaleWinnerRow[];
+      primaryColor: string;
+    })
   | (SlideBase & {
       kind: "custom";
       heading: string;
@@ -224,15 +380,217 @@ export type FinaleSlideData =
       backgroundColor: string | null;
     });
 
+/** Everything the page reads once for the slides' data. */
+export type FinaleSlideContext = {
+  warWeek: Pick<
+    WarWeek,
+    | "edition"
+    | "year"
+    | "storyTheme"
+    | "logoUrl"
+    | "bannerUrl"
+    | "teamLabel"
+    | "primaryColor"
+  > & { finaleAwardsLayout: FinaleAwardsLayout };
+  /** The page's one `getStandings` result. */
+  standings: Standings;
+  counts: FinaleCounts;
+  awards: AwardView[];
+  champions: FinaleChampion[];
+};
+
+function finaleAward(award: AwardView): FinaleAward {
+  return {
+    id: award.id,
+    name: award.name,
+    description: award.description,
+    team: award.team && { name: award.team.name, color: award.team.color },
+    participants: award.participants.map((p) => ({
+      id: p.id,
+      displayName: p.displayName,
+      image: p.image ?? null,
+      teamColor: p.teamColor,
+    })),
+  };
+}
+
+/** The Awards slide (or slides, one per Category), none without Awards. */
+function awardSlides(
+  base: SlideBase,
+  context: FinaleSlideContext,
+): FinaleSlideData[] {
+  const groups = groupAwardsByCategory(context.awards);
+  if (groups.length === 0) return [];
+  const primaryColor = context.warWeek.primaryColor;
+  // Headings only once some Award has a Category, as the Awards page.
+  const headed = groups.some((group) => group.category !== null);
+  const categoryName = (group: (typeof groups)[number]) =>
+    group.category?.name ?? "Other Awards";
+  const groupKey = (group: (typeof groups)[number]) =>
+    group.category?.id ?? "other";
+
+  if (context.warWeek.finaleAwardsLayout === "per-category") {
+    return groups.map((group) => ({
+      kind: "awards",
+      key: `${base.key}:${groupKey(group)}`,
+      name: group.category ? `Awards: ${group.category.name}` : "Other Awards",
+      heading: categoryName(group),
+      groups: [
+        {
+          key: groupKey(group),
+          name: null,
+          awards: group.awards.map(finaleAward),
+        },
+      ],
+      primaryColor,
+    }));
+  }
+  return [
+    {
+      ...base,
+      kind: "awards",
+      heading: "Awards",
+      groups: groups.map((group) => ({
+        key: groupKey(group),
+        name: headed ? categoryName(group) : null,
+        awards: group.awards.map(finaleAward),
+      })),
+      primaryColor,
+    },
+  ];
+}
+
+/** The Winner slide: the main Standings' first place, ties together. */
+function winnerSlide(
+  base: SlideBase,
+  context: FinaleSlideContext,
+): FinaleSlideData[] {
+  const { standings } = context;
+  const title = defaultWinner(standings);
+  if (title === "") return [];
+  const rows: FinaleWinnerRow[] =
+    standings.main === "team"
+      ? standings.team
+          .filter((row) => row.rank === 1)
+          .map((row) => ({
+            id: row.id,
+            name: row.name,
+            total: formatPoints(row.total),
+            color: row.color,
+            kind: "team",
+          }))
+      : standings.individual
+          .filter((row) => row.rank === 1)
+          .map((row) => ({
+            id: row.id,
+            name: row.name,
+            total: formatPoints(row.total),
+            color: row.team?.color ?? null,
+            image: row.image ?? null,
+            kind: "participant",
+          }));
+  return [
+    {
+      ...base,
+      kind: "winner",
+      title,
+      tie: rows.length > 1,
+      rows,
+      primaryColor: context.warWeek.primaryColor,
+    },
+  ];
+}
+
+/**
+ * Each slide the Finale plays, in order, with its data: the visible slides,
+ * less any with nothing to show (By the numbers with every figure zero, no
+ * Awards, no Champions, no Standings rows, or a Winner with every total
+ * zero). In the per-Category Awards layout the Awards slide becomes one
+ * slide per Category. The Standings countdown and the Winner read the
+ * page's one `getStandings` result, so the Finale never recomputes
+ * Standings.
+ */
+export function finaleSlideData(
+  slides: ResolvedFinaleSlide[],
+  context: FinaleSlideContext,
+): FinaleSlideData[] {
+  const { warWeek, standings } = context;
+  const mainRows =
+    standings.main === "team" ? standings.team : standings.individual;
+  return visibleFinaleSlides(slides).flatMap((slide): FinaleSlideData[] => {
+    const base = { key: slide.key, name: slide.name };
+    switch (slide.kind) {
+      case "title":
+        return [
+          {
+            ...base,
+            kind: "title",
+            edition: warWeek.edition,
+            year: warWeek.year,
+            storyTheme: warWeek.storyTheme,
+            logoUrl: warWeek.logoUrl,
+            bannerUrl: warWeek.bannerUrl,
+          },
+        ];
+      case "numbers": {
+        const figures = byTheNumbers(context.counts);
+        return figures.length > 0
+          ? [{ ...base, kind: "numbers", figures }]
+          : [];
+      }
+      case "awards":
+        return awardSlides(base, context);
+      case "champions":
+        return context.champions.length > 0
+          ? [
+              {
+                ...base,
+                kind: "champions",
+                champions: context.champions,
+                primaryColor: warWeek.primaryColor,
+              },
+            ]
+          : [];
+      case "standings":
+        return mainRows.length > 0
+          ? [
+              {
+                ...base,
+                kind: "standings",
+                standings,
+                teamLabel: warWeek.teamLabel,
+                primaryColor: warWeek.primaryColor,
+              },
+            ]
+          : [];
+      case "winner":
+        return winnerSlide(base, context);
+      case "custom":
+        return [
+          {
+            ...base,
+            kind: "custom",
+            heading: slide.heading ?? slide.name,
+            body: slide.body,
+            backgroundColor: slide.backgroundColor,
+          },
+        ];
+    }
+  });
+}
+
 /**
  * How many steps a slide reveals before Next moves on (the step protocol):
  * 0 shows everything on arrival; the Standings countdown is one step (its
- * countdown, finished by Next or by itself).
+ * countdown, finished by Next or by itself); an Awards slide reveals one
+ * Award per step.
  */
 export function finaleSlideSteps(data: FinaleSlideData): number {
   switch (data.kind) {
     case "standings":
       return 1;
+    case "awards":
+      return data.groups.reduce((sum, group) => sum + group.awards.length, 0);
     default:
       return 0;
   }

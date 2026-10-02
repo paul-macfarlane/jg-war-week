@@ -81,6 +81,8 @@ export type WarWeekAction =
   /** Reordering, hiding and showing Finale slides (ticket 72). */
   | "finale-slide.move"
   | "finale-slide.hide"
+  /** How the Finale shows Awards: one slide, or one per Category (ticket 73). */
+  | "finale.awards-layout"
   | "competition.create"
   | "competition.delete"
   | "competition.assign-hosts"
@@ -176,6 +178,7 @@ const ORGANIZER_ONLY: Partial<
   "faq-item.move": "move FAQ Items",
   "finale-slide.move": "reorder Finale slides",
   "finale-slide.hide": "hide Finale slides",
+  "finale.awards-layout": "change how the Finale shows Awards",
   "award.create": "give Awards",
   "award.edit": "change Awards",
   "award.delete": "delete Awards",

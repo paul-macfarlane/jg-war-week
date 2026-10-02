@@ -19,6 +19,7 @@
     "seed:demo": "tsx scripts/seed-load.ts --reset seeds/xii.json seeds/demo/xi.json",
     "seed:demo:xii": "tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/ix.json seeds/x.json seeds/xi.json seeds/demo/xii.json",
     "smoke": "tsx scripts/smoke/index.ts",
+    "stills:finale": "tsx scripts/finale-stills.ts",
     "e2e": "playwright test",
     "gate": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm smoke && pnpm e2e"
   },

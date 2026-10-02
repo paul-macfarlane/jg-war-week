@@ -149,6 +149,7 @@ export function FinaleSlideshow({
     <div
       data-finale-slide={slide?.kind}
       data-finale-slide-index={slide ? index : undefined}
+      data-finale-step={slide ? visit.step : undefined}
       data-finale-hydrated={hydrated ? "" : undefined}
       className="bg-background text-foreground fixed inset-0 z-[60] cursor-default overflow-hidden"
       onClick={slide ? onStageClick : undefined}

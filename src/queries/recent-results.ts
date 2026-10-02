@@ -56,31 +56,7 @@ export async function getRecentResults(
     .slice(0, RECENT_RESULTS_LIMIT)
     .map((c) => c.id);
 
-  const participantTeam = aliasedTable(team, "participant_team");
-  const entries = () =>
-    withProfile(
-      dbOrTx
-        .select({
-          id: pointsEntry.id,
-          competitionId: pointsEntry.competitionId,
-          points: pointsEntry.points,
-          enteredAt: pointsEntry.enteredAt,
-          generatedByBracket: pointsEntry.generatedByBracket,
-          teamId: pointsEntry.teamId,
-          participantId: pointsEntry.participantId,
-          teamName: team.name,
-          teamColor: team.color,
-          participantName: participantNameSql(),
-          participantImage: participantImageSql(),
-          participantTeamColor: participantTeam.color,
-        })
-        .from(pointsEntry)
-        .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
-        .leftJoin(team, eq(team.id, pointsEntry.teamId))
-        .leftJoin(participant, eq(participant.id, pointsEntry.participantId))
-        .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))
-        .$dynamic(),
-    );
+  const entries = () => resultEntryQuery(dbOrTx);
   const [manual, generated] = await Promise.all([
     entries()
       .where(
@@ -101,7 +77,46 @@ export async function getRecentResults(
       : Promise.resolve([]),
   ]);
 
-  const shaped: ResultEntry[] = [...manual, ...generated].map((r) => ({
+  const shaped = [...manual, ...generated].map(toResultEntry);
+  return shapeRecentResults(competitions, shaped);
+}
+
+/**
+ * Points Entries with who each is for, as Recent results and the Finale's
+ * Champions read them: a query to add `where`, `orderBy` and `limit` to.
+ */
+export function resultEntryQuery(dbOrTx: DBOrTx) {
+  const participantTeam = aliasedTable(team, "participant_team");
+  return withProfile(
+    dbOrTx
+      .select({
+        id: pointsEntry.id,
+        competitionId: pointsEntry.competitionId,
+        points: pointsEntry.points,
+        enteredAt: pointsEntry.enteredAt,
+        generatedByBracket: pointsEntry.generatedByBracket,
+        teamId: pointsEntry.teamId,
+        participantId: pointsEntry.participantId,
+        teamName: team.name,
+        teamColor: team.color,
+        participantName: participantNameSql(),
+        participantImage: participantImageSql(),
+        participantTeamColor: participantTeam.color,
+      })
+      .from(pointsEntry)
+      .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
+      .leftJoin(team, eq(team.id, pointsEntry.teamId))
+      .leftJoin(participant, eq(participant.id, pointsEntry.participantId))
+      .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))
+      .$dynamic(),
+  );
+}
+
+/** A `resultEntryQuery` row as `shapeRecentResults` and `finalWinners` read it. */
+export function toResultEntry(
+  r: Awaited<ReturnType<typeof resultEntryQuery>>[number],
+): ResultEntry {
+  return {
     id: r.id,
     competitionId: r.competitionId,
     points: r.points,
@@ -122,6 +137,5 @@ export async function getRecentResults(
           image: r.participantImage,
           color: r.participantTeamColor,
         },
-  }));
-  return shapeRecentResults(competitions, shaped);
+  };
 }

@@ -653,6 +653,30 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   current slide's next step before moving on. Back shows the previous
   slide in its final state, every step shown.
 - **Nothing auto-advances.** Every step and slide waits for the presenter.
+- **Built-in slides.** Each wears the War Week's Appearance Theme at
+  projector scale; a slide with nothing to show is skipped.
+  - **Title:** War Week, the edition and year and the Story Theme, with the
+    War Week's logo and banner when set.
+  - **By the numbers:** Competitions run (with at least one Points Entry),
+    Games logged, Heats played (a forfeit isn't played), Points Entries,
+    **Points handed out** (the sum of every Points Entry, generated ones
+    included: not a Standings total) and Participants (the roster). Only
+    non-zero figures show; with every figure zero the slide is skipped.
+  - **Awards:** one Award revealed per step, grouped by Award Category
+    (Categories by name, the uncategorized last as "Other Awards"). The
+    War Week's **Awards layout**, set by an Organizer in admin → Finale:
+    "All on one slide", or "One slide per Category" (each slide named
+    "Awards: <Category>", the uncategorized "Other Awards"). No Awards: no
+    slide.
+  - **Champions:** every finalized Bracket's champion and every closed
+    `games` or team-scoring `participation` Competition's winner, ties
+    listed together, by the rule Recent results uses but never capped, in
+    the order they were decided. An individual-scoring Participation
+    Competition has no winner and isn't listed.
+  - **Winner:** the main Standings' first place, from the same
+    `getStandings` rows as the countdown; a tie for first shows as "Tie: A
+    & B", as the Winner on End reads it. Skipped while there are no
+    Standings rows or every total is zero (and the countdown with no rows).
 - **Standings countdown.** The countdown slide plays the main leaderboard
   (team Standings in `teams` mode, individual Standings in free-for-all)
   and starts when the presenter arrives on it with Next: no Start button.

@@ -54,15 +54,17 @@ export function StandingsSlide({
     <div
       data-finale={phase}
       data-finale-started-at={startedAt ?? undefined}
-      className="flex h-full w-full flex-col items-center gap-[3vh] overflow-y-auto px-4 py-[6vh]"
+      className="flex h-full w-full flex-col items-center gap-[2.5vh] overflow-y-auto px-4 py-[4vh]"
     >
       <header className="flex flex-col items-center gap-2 text-center">
         <SlideEyebrow edition={edition} storyTheme={storyTheme} />
-        <h1 className="text-[clamp(2rem,4.5vw,4.5rem)] font-bold tracking-tight">
+        <h1 className="text-[clamp(2.25rem,5vw,5.5rem)] leading-tight font-bold tracking-tight">
           {title}
         </h1>
       </header>
-      <div className="flex w-full max-w-[min(64rem,92vw)] flex-col gap-6 md:text-lg xl:text-2xl">
+      {/* Projector scale: the leaderboard list's own sizes, zoomed (its
+          rows, order and values untouched). */}
+      <div className="flex w-full max-w-[min(64rem,92vw)] flex-col gap-6 min-[1800px]:[zoom:1.5] md:text-lg lg:[zoom:1.25] xl:text-2xl">
         {main === "team" ? (
           <TeamStandingsList rows={standings.team} finale={rows} />
         ) : (

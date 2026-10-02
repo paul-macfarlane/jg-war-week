@@ -2,6 +2,7 @@ import { eq, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import { finaleSlide, warWeek } from "@/db/schema";
+import type { FinaleAwardsLayout } from "@/lib/enums";
 import {
   type FinaleSlideRef,
   type ResolvedFinaleSlide,
@@ -110,4 +111,23 @@ export async function setFinaleSlideHidden(
     }
     return { ok: true };
   });
+}
+
+/**
+ * How the War Week's Finale shows Awards: every Award on one slide, or one
+ * slide per Award Category.
+ */
+export async function setFinaleAwardsLayout(
+  layout: FinaleAwardsLayout,
+  ctx: MutationContext,
+  dbOrTx: DBOrTx = db,
+): Promise<MutationResult> {
+  const updated = await dbOrTx
+    .update(warWeek)
+    .set({ finaleAwardsLayout: layout, updatedAt: sql`now()` })
+    .where(eq(warWeek.id, ctx.warWeekId))
+    .returning({ id: warWeek.id });
+  return updated.length > 0
+    ? { ok: true }
+    : { ok: false, error: WAR_WEEK_NOT_FOUND };
 }

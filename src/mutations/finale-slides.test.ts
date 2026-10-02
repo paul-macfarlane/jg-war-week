@@ -196,4 +196,31 @@ describe.skipIf(!isLocalDatabase)("Finale slide mutations", () => {
       ).toEqual(missing);
     });
   });
+
+  it("sets the War Week's Awards layout, and only that War Week's", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { setFinaleAwardsLayout } =
+        await import("@/mutations/finale-slides");
+      const { eq } = await import("drizzle-orm");
+      const f = await fixture(tx);
+      const layoutOf = async (id: string) =>
+        (
+          await tx
+            .select({ layout: f.schema.warWeek.finaleAwardsLayout })
+            .from(f.schema.warWeek)
+            .where(eq(f.schema.warWeek.id, id))
+        )[0].layout;
+
+      expect(await layoutOf(f.home)).toBe("one-slide");
+      expect(await setFinaleAwardsLayout("per-category", f.ctx, tx)).toEqual({
+        ok: true,
+      });
+      expect(await layoutOf(f.home)).toBe("per-category");
+      expect(await layoutOf(f.other)).toBe("one-slide");
+      expect(await setFinaleAwardsLayout("one-slide", f.ctx, tx)).toEqual({
+        ok: true,
+      });
+      expect(await layoutOf(f.home)).toBe("one-slide");
+    });
+  });
 });
