@@ -261,6 +261,13 @@ describe("planRosterText", () => {
     ]);
   });
 
+  it("leaves a cell missing from a short row unchanged, unlike an empty one", () => {
+    expect(plan("Neo,neo@jahnelgroup.com\nOracle,,Red,IL,")).toEqual([
+      { row: 1, kind: "unchanged", name: "Neo", id: NEO },
+      expect.objectContaining({ row: 2, kind: "add", name: "Oracle" }),
+    ]);
+  });
+
   it("reads a Leader cell as yes, y, true, x, 1, ✓, leader, captain or the Leader Title", () => {
     const leaders = ["Yes", "y", "TRUE", "x", "1", "✓", "Leader", "captain"];
     const text = [

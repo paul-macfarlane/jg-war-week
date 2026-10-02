@@ -209,8 +209,8 @@ function isLeaderCell(cell: string, leaderTitle: string): boolean {
  * Plans every data row against the roster: an **Add**, an **Update** of the
  * Participant with that email (ignoring case) with what changes, an
  * **Unchanged** Update, or an **Error** with its reason. A column absent
- * from the file leaves the field as it is (an Add's default); a present,
- * empty cell clears it. In a free-for-all the Team and Leader columns are
+ * from the file, or a cell missing from a short row, leaves the field as it
+ * is (an Add's default); a present, empty cell clears it. In a free-for-all the Team and Leader columns are
  * ignored. A Team is matched by name, never created. Names are matched
  * ignoring case and outer spaces, against the roster and earlier rows.
  */
@@ -242,7 +242,9 @@ export function planRosterImport({
     const row = firstRow + index;
     const cell = (field: RosterColumn) => {
       const at = columns[field];
-      return at === undefined ? undefined : (cells[at] ?? "");
+      // A row shorter than the file's columns (a hand-made CSV) leaves its
+      // missing cells absent, so they never clear a field.
+      return at === undefined ? undefined : cells[at];
     };
     const name = cell("name") ?? "";
     const error = (message: string): RosterImportEntry => ({
