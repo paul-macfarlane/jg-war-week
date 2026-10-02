@@ -1,0 +1,28 @@
+nav-competitions-390/screenshot.png: Competitions list, Competitions highlighted
+nav-competition-page-390/screenshot.png: A Competition page (Mile Run), Competitions highlighted
+nav-announcements-390/screenshot.png: Announcements page, More highlighted
+nav-more-sheet-390/screenshot.png: More sheet open, Announcements first
+recent-results-390/screenshot.png: Home with Recent results (finalized Bracket and Points Entries)
+account-menu-participant-390/screenshot.png: Account menu open on /xii as an Organizer (Admin item present)
+admin-nav-organizer-390/screenshot.png: Admin Points page, Organizer nav
+admin-more-organizer-390/screenshot.png: Admin More sheet as Organizer
+account-menu-admin-390/screenshot.png: Account menu open in /admin/points (Back to War Week)
+admin-schedule-390/screenshot.png: Admin Schedule: Days and Items on one page
+admin-settings-390/screenshot.png: Admin Settings with Lifecycle box and autosave
+admin-roster-390/screenshot.png: Admin Roster: Edit and Delete per row
+admin-list-schedule-390/screenshot.png: Admin Schedule list rows with Edit and Delete (full page)
+account-menu-plain-390/screenshot.png: Account menu open as a plain Participant (no Admin item)
+admin-nav-host-390/screenshot.png: Admin Points page, Host nav
+admin-more-host-390/screenshot.png: Admin More sheet as Host
+nav-competitions-1440/screenshot.png: Competitions list, Competitions highlighted
+nav-competition-page-1440/screenshot.png: A Competition page (Mile Run), Competitions highlighted
+recent-results-1440/screenshot.png: Home with Recent results (finalized Bracket and Points Entries)
+account-menu-participant-1440/screenshot.png: Account menu open on /xii as an Organizer (Admin item present)
+admin-nav-organizer-1440/screenshot.png: Admin Points page, Organizer nav
+account-menu-admin-1440/screenshot.png: Account menu open in /admin/points (Back to War Week)
+admin-schedule-1440/screenshot.png: Admin Schedule: Days and Items on one page
+admin-settings-1440/screenshot.png: Admin Settings with Lifecycle box and autosave
+admin-roster-1440/screenshot.png: Admin Roster: Edit and Delete per row
+admin-list-schedule-1440/screenshot.png: Admin Schedule list rows with Edit and Delete (full page)
+account-menu-plain-1440/screenshot.png: Account menu open as a plain Participant (no Admin item)
+admin-nav-host-1440/screenshot.png: Admin Points page, Host nav
