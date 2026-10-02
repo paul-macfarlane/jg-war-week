@@ -491,8 +491,9 @@ Notes:
 - Admin forms save with their own Save button inside the sheet or dialog;
   the War Week settings form is the exception: it autosaves (debounced per
   field, "Saving…" / "Saved" by the heading) and has no Save button.
-  `StickyFormActions` (`src/components/sticky-form-actions.tsx`) is no
-  longer used by any form.
+  Each save sends only its own fields (`updateWarWeekSettingsFields`),
+  merged over the stored row, so it never writes back over a newer value;
+  leaving with a refused field asks first.
 - Every admin list is a column of `SetupListRow`s
   (`src/components/setup-row.tsx`): one visible Edit and one Delete per
   row, Edit in a `ResponsiveSheetDialog`, Delete in a `ConfirmDialog` with
