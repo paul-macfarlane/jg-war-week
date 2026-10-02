@@ -1,0 +1,47 @@
+PASS sign-in @1440 loads signed out (200 /sign-in)
+PASS sign-in @1440 wears XII's theme (39 tokens)
+PASS sign-in @1440 no horizontal scroll (scrollWidth 1440 <= clientWidth 1440)
+PASS sign-in @1440 footer shows © 2026 Jahnel Group
+PASS sign-in @1440 no text past the viewport edge
+PASS about @1440 loads signed out (200 /about)
+PASS about @1440 wears XII's theme (39 tokens)
+PASS about @1440 no horizontal scroll (scrollWidth 1440 <= clientWidth 1440)
+PASS about @1440 footer shows © 2026 Jahnel Group
+PASS about @1440 no text past the viewport edge
+PASS about @1440 every About still loads (10/10)
+PASS privacy @1440 loads signed out (200 /privacy)
+PASS privacy @1440 wears XII's theme (39 tokens)
+PASS privacy @1440 no horizontal scroll (scrollWidth 1440 <= clientWidth 1440)
+PASS privacy @1440 footer shows © 2026 Jahnel Group
+PASS privacy @1440 no text past the viewport edge
+PASS privacy @1440 contact line names the Jahnel Group admins
+PASS terms @1440 loads signed out (200 /terms)
+PASS terms @1440 wears XII's theme (39 tokens)
+PASS terms @1440 no horizontal scroll (scrollWidth 1440 <= clientWidth 1440)
+PASS terms @1440 footer shows © 2026 Jahnel Group
+PASS terms @1440 no text past the viewport edge
+PASS terms @1440 contact line names the Jahnel Group admins
+PASS sign-in @390 loads signed out (200 /sign-in)
+PASS sign-in @390 wears XII's theme (39 tokens)
+PASS sign-in @390 no horizontal scroll (scrollWidth 390 <= clientWidth 390)
+PASS sign-in @390 footer shows © 2026 Jahnel Group
+PASS sign-in @390 no text past the viewport edge
+PASS about @390 loads signed out (200 /about)
+PASS about @390 wears XII's theme (39 tokens)
+PASS about @390 no horizontal scroll (scrollWidth 390 <= clientWidth 390)
+PASS about @390 footer shows © 2026 Jahnel Group
+PASS about @390 no text past the viewport edge
+PASS about @390 every About still loads (10/10)
+PASS privacy @390 loads signed out (200 /privacy)
+PASS privacy @390 wears XII's theme (39 tokens)
+PASS privacy @390 no horizontal scroll (scrollWidth 390 <= clientWidth 390)
+PASS privacy @390 footer shows © 2026 Jahnel Group
+PASS privacy @390 no text past the viewport edge
+PASS privacy @390 contact line names the Jahnel Group admins
+PASS terms @390 loads signed out (200 /terms)
+PASS terms @390 wears XII's theme (39 tokens)
+PASS terms @390 no horizontal scroll (scrollWidth 390 <= clientWidth 390)
+PASS terms @390 footer shows © 2026 Jahnel Group
+PASS terms @390 no text past the viewport edge
+PASS terms @390 contact line names the Jahnel Group admins
+ALL PASS
