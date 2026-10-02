@@ -14,6 +14,11 @@ import {
   type ResultEntry,
   shapeRecentResults,
 } from "@/lib/recent-results";
+import {
+  participantImageSql,
+  participantNameSql,
+  withProfile,
+} from "@/queries/profile-join";
 
 /**
  * The most manual Points Entries Home reads: far more than the newest
@@ -53,25 +58,29 @@ export async function getRecentResults(
 
   const participantTeam = aliasedTable(team, "participant_team");
   const entries = () =>
-    dbOrTx
-      .select({
-        id: pointsEntry.id,
-        competitionId: pointsEntry.competitionId,
-        points: pointsEntry.points,
-        enteredAt: pointsEntry.enteredAt,
-        generatedByBracket: pointsEntry.generatedByBracket,
-        teamId: pointsEntry.teamId,
-        participantId: pointsEntry.participantId,
-        teamName: team.name,
-        teamColor: team.color,
-        participantName: participant.displayName,
-        participantTeamColor: participantTeam.color,
-      })
-      .from(pointsEntry)
-      .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
-      .leftJoin(team, eq(team.id, pointsEntry.teamId))
-      .leftJoin(participant, eq(participant.id, pointsEntry.participantId))
-      .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId));
+    withProfile(
+      dbOrTx
+        .select({
+          id: pointsEntry.id,
+          competitionId: pointsEntry.competitionId,
+          points: pointsEntry.points,
+          enteredAt: pointsEntry.enteredAt,
+          generatedByBracket: pointsEntry.generatedByBracket,
+          teamId: pointsEntry.teamId,
+          participantId: pointsEntry.participantId,
+          teamName: team.name,
+          teamColor: team.color,
+          participantName: participantNameSql(),
+          participantImage: participantImageSql(),
+          participantTeamColor: participantTeam.color,
+        })
+        .from(pointsEntry)
+        .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
+        .leftJoin(team, eq(team.id, pointsEntry.teamId))
+        .leftJoin(participant, eq(participant.id, pointsEntry.participantId))
+        .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))
+        .$dynamic(),
+    );
   const [manual, generated] = await Promise.all([
     entries()
       .where(
@@ -103,12 +112,14 @@ export async function getRecentResults(
           kind: "team",
           id: r.teamId,
           name: r.teamName ?? "Unknown",
+          image: null,
           color: r.teamColor,
         }
       : {
           kind: "participant",
           id: r.participantId ?? r.id,
           name: r.participantName ?? "Unknown",
+          image: r.participantImage,
           color: r.participantTeamColor,
         },
   }));

@@ -7,6 +7,7 @@ import {
   formatMaxPoints,
   groupCompetitions,
   hasPlacementPoints,
+  hostName,
   placementLabel,
   pointsForPlacement,
 } from "@/lib/competitions";
@@ -209,5 +210,31 @@ describe("placementLabel", () => {
       "4th",
       "5th",
     ]);
+  });
+});
+
+describe("hostName", () => {
+  const profiles = new Map([
+    [
+      "host@jahnelgroup.com",
+      { profileName: "Hosty", profileImage: null, googleImage: null },
+    ],
+    [
+      "plain@jahnelgroup.com",
+      { profileName: null, profileImage: null, googleImage: null },
+    ],
+  ]);
+
+  it("shows the Profile name, matching the email in any case", () => {
+    expect(hostName("Host@JahnelGroup.com", profiles)).toBe("Hosty");
+  });
+
+  it("shows the email with no Profile name or no Profile", () => {
+    expect(hostName("plain@jahnelgroup.com", profiles)).toBe(
+      "plain@jahnelgroup.com",
+    );
+    expect(hostName("new@jahnelgroup.com", profiles)).toBe(
+      "new@jahnelgroup.com",
+    );
   });
 });

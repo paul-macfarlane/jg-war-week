@@ -17,6 +17,7 @@ import {
   groupCompetitions,
 } from "@/lib/competitions";
 import { isUuid } from "@/lib/uuid";
+import { participantNameSql, withProfile } from "@/queries/profile-join";
 
 const competitionColumns = {
   id: competition.id,
@@ -101,23 +102,25 @@ export async function getCompetitionWithLedger(
     .limit(1);
   if (!found) return undefined;
 
-  const rows = await dbOrTx
-    .select({
-      id: pointsEntry.id,
-      points: pointsEntry.points,
-      note: pointsEntry.note,
-      enteredAt: pointsEntry.enteredAt,
-      teamName: team.name,
-      teamColor: team.color,
-      participantName: participant.displayName,
-      participantTeamName: participantTeam.name,
-      participantTeamColor: participantTeam.color,
-    })
-    .from(pointsEntry)
-    .leftJoin(team, eq(team.id, pointsEntry.teamId))
-    .leftJoin(participant, eq(participant.id, pointsEntry.participantId))
-    .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))
-    .where(eq(pointsEntry.competitionId, found.id));
+  const rows = await withProfile(
+    dbOrTx
+      .select({
+        id: pointsEntry.id,
+        points: pointsEntry.points,
+        note: pointsEntry.note,
+        enteredAt: pointsEntry.enteredAt,
+        teamName: team.name,
+        teamColor: team.color,
+        participantName: participantNameSql(),
+        participantTeamName: participantTeam.name,
+        participantTeamColor: participantTeam.color,
+      })
+      .from(pointsEntry)
+      .leftJoin(team, eq(team.id, pointsEntry.teamId))
+      .leftJoin(participant, eq(participant.id, pointsEntry.participantId))
+      .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))
+      .$dynamic(),
+  ).where(eq(pointsEntry.competitionId, found.id));
 
   return {
     competition: found,

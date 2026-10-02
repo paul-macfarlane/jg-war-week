@@ -10,7 +10,10 @@ export type StandingsTeam = Pick<Team, "id" | "name" | "color">;
 export type StandingsParticipant = Pick<
   Participant,
   "id" | "displayName" | "teamId"
->;
+> & {
+  /** The picture URL, or null for initials. */
+  image?: string | null;
+};
 export type StandingsCompetition = Pick<
   Competition,
   "id" | "scoring" | "countsTowardTeam"
@@ -39,6 +42,8 @@ export type TeamStanding = {
 export type IndividualStanding = {
   id: string;
   name: string;
+  /** The picture URL; null or absent for initials. */
+  image?: string | null;
   team: { name: string; color: string } | null;
   total: number;
   rank: number;
@@ -60,7 +65,8 @@ export type Standings = {
  * - Individual total: Points Entries targeting the Participant in individual
  *   Competitions. Only Participants with at least one such entry are listed.
  * - Main leaderboard: team in `teams` mode, individual in `free-for-all`.
- * - Ordered by total descending (then name); tied totals share a rank.
+ * - Ordered by total descending (then name, then id); tied totals share a
+ *   rank.
  *
  * Points are summed in hundredths (the database stores two decimal places)
  * so fractional totals like 0.1 + 0.2 come out exact.
@@ -117,6 +123,7 @@ export function computeStandings(input: StandingsInput): Standings {
       return {
         id,
         name: participant.displayName,
+        image: participant.image ?? null,
         team: team ? { name: team.name, color: team.color } : null,
         total: hundredths / 100,
       };
@@ -130,11 +137,15 @@ export function computeStandings(input: StandingsInput): Standings {
   };
 }
 
-function rank<T extends { name: string; total: number }>(
+function rank<T extends { id: string; name: string; total: number }>(
   rows: T[],
 ): (T & { rank: number })[] {
   const sorted = [...rows].sort(
-    (a, b) => b.total - a.total || a.name.localeCompare(b.name),
+    (a, b) =>
+      b.total - a.total ||
+      a.name.localeCompare(b.name) ||
+      // Profile names may collide, so the id keeps the order stable.
+      a.id.localeCompare(b.id),
   );
   // A row's rank is one more than the number of rows with a higher total.
   return sorted.map((row) => ({

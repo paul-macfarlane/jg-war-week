@@ -10,6 +10,11 @@ import {
 } from "@/db/schema";
 import { PointsBreakdown, buildPointsBreakdown } from "@/lib/points-breakdown";
 import { Standings, computeStandings } from "@/lib/standings";
+import {
+  participantImageSql,
+  participantNameSql,
+  withProfile,
+} from "@/queries/profile-join";
 
 /**
  * Loads a War Week's Standings, the same rows for Participants, Organizers,
@@ -24,14 +29,17 @@ export async function getStandings(
       .select({ id: team.id, name: team.name, color: team.color })
       .from(team)
       .where(eq(team.warWeekId, warWeek.id)),
-    dbOrTx
-      .select({
-        id: participant.id,
-        displayName: participant.displayName,
-        teamId: participant.teamId,
-      })
-      .from(participant)
-      .where(eq(participant.warWeekId, warWeek.id)),
+    withProfile(
+      dbOrTx
+        .select({
+          id: participant.id,
+          displayName: participantNameSql(),
+          image: participantImageSql(),
+          teamId: participant.teamId,
+        })
+        .from(participant)
+        .$dynamic(),
+    ).where(eq(participant.warWeekId, warWeek.id)),
     dbOrTx
       .select({
         id: competition.id,

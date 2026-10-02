@@ -6,13 +6,18 @@
  */
 import type { Entrant, Placing } from "@/lib/bracket/types";
 
-export type BracketFinaleEntrant = Entrant & { color: string | null };
+export type BracketFinaleEntrant = Entrant & {
+  color: string | null;
+  image?: string | null;
+};
 
 export type BracketFinaleRow = {
   entrantId: string;
   label: string;
   /** The Entrant's Team color, or null without one. */
   color: string | null;
+  /** An individual Entrant's picture URL; null for initials. */
+  image?: string | null;
   place: number;
 };
 
@@ -35,6 +40,7 @@ export function bracketFinaleRows(
       entrantId: entrant.id,
       label: entrant.label,
       color: entrant.color,
+      image: entrant.image,
       place,
     }));
 }

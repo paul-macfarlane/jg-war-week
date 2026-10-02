@@ -143,6 +143,7 @@ export function GamesLeaderboard({
                       name={row.name}
                       teamColor={row.color}
                       primaryColor={primaryColor}
+                      image={row.image}
                     />
                   ) : (
                     <span
