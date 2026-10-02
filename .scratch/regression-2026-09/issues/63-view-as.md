@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** needs-triage
 
 **Source:** Paul's regression feedback 2026-10-01, A2; grilling Q8, Q24
 
@@ -20,3 +20,7 @@
 - [ ] Unit tests: `can` refuses every write action while viewing; reads follow the viewed actor.
 - [ ] e2e: an Organizer views as a Host, sees only the Host's Competitions in admin, a Points Entry save is refused, Exit restores the Organizer view.
 - [ ] `pnpm gate` passes.
+
+## Comments
+
+- 2026-10-02 (Paul, during /atlas-plan of R10): dropped from R10 and back to `needs-triage`. Test sign-in (62) covers testing as a non-admin, a Host or a linked Participant with real behavior. View as was the riskiest access change in R10 (actor swap, signed cookie, write refusal in `can`) for marginal benefit. Revisit if Organizers need to debug a real person's view in production. If it returns, re-plan and red-team it; the R10 red-team found that self actions (Profile save, Delete my account) must count as writes while viewing.

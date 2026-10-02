@@ -4,7 +4,9 @@
 
 **Blocked by:** 60
 
-**Status:** ready-for-agent
+**Status:** in-progress
+
+**Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
 **Source:** Paul's regression feedback 2026-10-01, P4; grilling Q4
 
@@ -18,3 +20,7 @@
 - [ ] e2e: a stub Participant with a Profile deletes their account, is signed out, and their Participant row now shows the roster name; their Blob object is gone (checked in a unit/integration test with a fake store, and once on staging).
 - [ ] The last Organizer is refused with a clear message.
 - [ ] `pnpm gate` passes.
+
+## Comments
+
+- 2026-10-02 [SCOPE CHANGE] (Paul, during /atlas-plan): "pictures should just be urls, we don't want or need blob storage at this time" and "Users should be able to set the url for their image as well … just no need to upload yet." The picture is a URL the person sets on their Profile, else the Google photo URL, else initials; no upload, no Vercel Blob. Uploads move to Blob later, with AI-edited portraits. See `../epics/R10-execution.md` D12. For this ticket: there is no Blob object to delete, so the Blob checks in AC1 are N/A; the picture URL goes with the `profile` row.

@@ -4,7 +4,9 @@
 
 **Blocked by:** R9 (ticket 55's account menu)
 
-**Status:** ready-for-agent
+**Status:** in-progress
+
+**Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
 **Source:** Paul's regression feedback 2026-10-01, P3; grilling Q3, Q20–Q22
 
@@ -27,3 +29,7 @@
 - [ ] e2e: a Participant sets a Profile name and uploads a picture; Standings, the roster and a Game log show them; the Organizer's roster form shows the name read-only.
 - [ ] A real upload to the Blob store in the staging deploy succeeds and renders (smoke against the deployment).
 - [ ] Seeds still load twice (idempotence) with the migration; `pnpm gate` passes.
+
+## Comments
+
+- 2026-10-02 [SCOPE CHANGE] (Paul, during /atlas-plan): "pictures should just be urls, we don't want or need blob storage at this time" and "Users should be able to set the url for their image as well … just no need to upload yet." The picture is a URL the person sets on their Profile, else the Google photo URL, else initials; no upload, no Vercel Blob. Uploads move to Blob later, with AI-edited portraits. See `../epics/R10-execution.md` D12. For this ticket: the e2e sets a picture URL instead of uploading, the preview shows Light and Dark, and AC3 becomes a staging screenshot after a real Google sign-in.
