@@ -195,3 +195,40 @@ describe("insertVideo", () => {
     ]);
   });
 });
+
+describe("inserting next to a selected image or video", () => {
+  const video = { src: "https://youtu.be/dQw4w9WgXcQ" };
+
+  function blockTypes(instance: Editor): string[] {
+    return (instance.getJSON().content ?? []).map((block) => block.type ?? "");
+  }
+
+  it("keeps the image just inserted when a video and another image follow", () => {
+    const instance = editorAt("<p>one</p>", "one");
+    expect(instance.commands.insertImage(attrs)).toBe(true);
+    expect(instance.commands.insertVideo(video)).toBe(true);
+    expect(instance.commands.insertImage(attrs)).toBe(true);
+    expect(blockTypes(instance).filter((t) => t !== "paragraph")).toEqual([
+      "image",
+      "video",
+      "image",
+    ]);
+  });
+
+  it("puts a video after a selected image rather than replacing it", () => {
+    const instance = editorAt("<p>one</p>", "one");
+    instance.commands.insertImage(attrs);
+    let imageAt = -1;
+    instance.state.doc.forEach((node, offset) => {
+      if (node.type.name === "image") imageAt = offset;
+    });
+    instance.commands.setNodeSelection(imageAt);
+    expect(instance.commands.insertVideo(video)).toBe(true);
+    expect(instance.commands.insertImage(attrs)).toBe(true);
+    expect(blockTypes(instance).filter((t) => t !== "paragraph")).toEqual([
+      "image",
+      "video",
+      "image",
+    ]);
+  });
+});

@@ -4,7 +4,11 @@ import {
   type Node as ProseMirrorNode,
   Slice,
 } from "@tiptap/pm/model";
-import { NodeSelection, type Transaction } from "@tiptap/pm/state";
+import {
+  NodeSelection,
+  type Selection,
+  type Transaction,
+} from "@tiptap/pm/state";
 
 /**
  * The `figure` group: the nodes the stored shape allows only at the top of
@@ -15,6 +19,21 @@ export const FIGURE_GROUP = "figure";
 
 function isFigure(type: NodeType): boolean {
   return (type.spec.group ?? "").split(" ").includes(FIGURE_GROUP);
+}
+
+/**
+ * Where the Image and Video controls put a new figure: in place of the
+ * selection, except that a selected image or video (one just inserted, or
+ * clicked to show its tools) is kept and the new figure goes after it.
+ */
+export function figureInsertRange(selection: Selection): {
+  from: number;
+  to: number;
+} {
+  if (selection instanceof NodeSelection && isFigure(selection.node.type)) {
+    return { from: selection.to, to: selection.to };
+  }
+  return { from: selection.from, to: selection.to };
 }
 
 /**

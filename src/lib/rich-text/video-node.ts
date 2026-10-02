@@ -1,7 +1,11 @@
 import { Node, mergeAttributes } from "@tiptap/core";
 import { Fragment, Slice } from "@tiptap/pm/model";
 
-import { FIGURE_GROUP, replaceLiftingImages } from "@/lib/rich-text/figures";
+import {
+  FIGURE_GROUP,
+  figureInsertRange,
+  replaceLiftingImages,
+} from "@/lib/rich-text/figures";
 import { VIDEO_IFRAME, videoEmbedUrl } from "@/lib/video";
 
 declare module "@tiptap/core" {
@@ -47,15 +51,15 @@ export const Video = Node.create({
         (attrs) =>
         ({ state, tr, dispatch, commands }) => {
           const video = this.type.create(attrs);
-          const { from, to } = state.selection;
+          const range = figureInsertRange(state.selection);
           if (!dispatch) return true;
           return (
             replaceLiftingImages(
               tr,
-              from,
-              to,
+              range.from,
+              range.to,
               new Slice(Fragment.from(video), 0, 0),
-            ) || commands.insertContent(video.toJSON())
+            ) || commands.insertContentAt(range, video.toJSON())
           );
         },
     };

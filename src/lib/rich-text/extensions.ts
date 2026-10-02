@@ -4,7 +4,11 @@ import { Fragment, Slice } from "@tiptap/pm/model";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import StarterKit from "@tiptap/starter-kit";
 
-import { FIGURE_GROUP, replaceLiftingImages } from "@/lib/rich-text/figures";
+import {
+  FIGURE_GROUP,
+  figureInsertRange,
+  replaceLiftingImages,
+} from "@/lib/rich-text/figures";
 import { Video } from "@/lib/rich-text/video-node";
 
 /** What the Image control writes onto an image. */
@@ -45,15 +49,15 @@ export const CaptionedImage = Image.extend({
         (attrs) =>
         ({ state, tr, dispatch, commands }) => {
           const image = this.type.create(attrs);
-          const { from, to } = state.selection;
+          const range = figureInsertRange(state.selection);
           if (!dispatch) return true;
           return (
             replaceLiftingImages(
               tr,
-              from,
-              to,
+              range.from,
+              range.to,
               new Slice(Fragment.from(image), 0, 0),
-            ) || commands.insertContent(image.toJSON())
+            ) || commands.insertContentAt(range, image.toJSON())
           );
         },
     };
