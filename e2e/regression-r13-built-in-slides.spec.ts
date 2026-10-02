@@ -126,8 +126,15 @@ test("73: the per-Category Awards layout, set in admin → Finale, plays one Awa
     name: "One slide per Category",
   });
   await expect(oneSlide).toHaveAttribute("aria-pressed", "true");
+  // The choice saves through a server action (a POST); wait for it.
+  const saved = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      new URL(response.url()).pathname === "/admin/finale",
+  );
   await perCategory.click();
   await expect(perCategory).toHaveAttribute("aria-pressed", "true");
+  await saved;
   // Saved: it's still the choice after a reload.
   await page.reload();
   await expect(perCategory).toHaveAttribute("aria-pressed", "true");

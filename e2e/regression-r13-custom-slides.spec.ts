@@ -3,7 +3,7 @@ import { type Page, expect, test } from "@playwright/test";
 
 import { resetXiFinaleSlides } from "./db";
 import { E2E_BASE_URL } from "./env";
-import { finaleStage, openFinale } from "./finale-slides";
+import { finaleStage, nextSlide, nextUntil, openFinale } from "./finale-slides";
 import { asOrganizer } from "./session";
 
 /**
@@ -46,19 +46,8 @@ async function slideIndexes(page: Page): Promise<Record<string, number>> {
     const kind = (await stage.getAttribute("data-finale-slide")) ?? "";
     indexes[kind] = Number(await stage.getAttribute("data-finale-slide-index"));
     if (kind === "winner") break;
-    // The Standings countdown takes a first Next to finish, a second to leave.
-    const here = String(indexes[kind]);
-    for (let press = 0; press < 3; press++) {
-      await page.keyboard.press("ArrowRight");
-      if (
-        (await stage.getAttribute("data-finale-slide-index", {
-          timeout: 1000,
-        })) !== here
-      ) {
-        break;
-      }
-    }
-    await expect(stage).not.toHaveAttribute("data-finale-slide-index", here);
+    // Finishes the slide's steps (an Award at a time, the countdown) first.
+    await nextSlide(page);
   }
   return indexes;
 }
@@ -147,8 +136,7 @@ test("74-AC1 74-AC2: an Organizer adds a Custom slide with an image between Awar
   const stage = finaleStage(page);
   await page.keyboard.press("Escape");
   await expect(stage).toHaveAttribute("data-finale-slide-index", "0");
-  for (let i = 0; i < indexes.custom; i++)
-    await page.keyboard.press("ArrowRight");
+  await nextUntil(page, "custom");
   await expect(stage).toHaveAttribute("data-finale-slide", "custom");
   await expect(
     page.getByRole("heading", { name: HEADING, level: 1 }),
