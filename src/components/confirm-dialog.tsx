@@ -16,6 +16,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { WriteResult } from "@/lib/result";
 
 type ConfirmDialogProps = {
@@ -29,10 +31,16 @@ type ConfirmDialogProps = {
   pending?: boolean;
   /** Fields the confirm needs, e.g. End War Week's Winner. */
   children?: ReactNode;
+  /**
+   * Asks the person to type `expected` before the confirm enables (ignoring
+   * case and surrounding spaces). The input is named `confirmText`, so a
+   * `form` confirm posts it, and `onConfirm` receives it.
+   */
+  confirmText?: { label: string; expected: string };
 } & (
   | {
-      /** Runs on confirm. */
-      onConfirm: () => void;
+      /** Runs on confirm, given what was typed (empty without `confirmText`). */
+      onConfirm: (typed: string) => void;
       form?: never;
     }
   | {
@@ -44,6 +52,11 @@ type ConfirmDialogProps = {
       onConfirm?: never;
     }
 );
+
+/** Whether `typed` is `expected`, ignoring case and surrounding spaces. */
+export function confirmTextMatches(typed: string, expected: string): boolean {
+  return typed.trim().toLowerCase() === expected.trim().toLowerCase();
+}
 
 /**
  * The one confirm for destructive or hard-to-undo actions. `title` names
@@ -62,9 +75,20 @@ export function ConfirmDialog({
   onConfirm,
   form,
   children,
+  confirmText,
 }: ConfirmDialogProps) {
+  const [typed, setTyped] = useState("");
+  const typedOk =
+    !confirmText || confirmTextMatches(typed, confirmText.expected);
+
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) setTyped("");
+        onOpenChange(next);
+      }}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
@@ -73,6 +97,19 @@ export function ConfirmDialog({
           )}
         </AlertDialogHeader>
         {children}
+        {confirmText && (
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="confirm-dialog-text">{confirmText.label}</Label>
+            <Input
+              id="confirm-dialog-text"
+              name="confirmText"
+              form={form}
+              autoComplete="off"
+              value={typed}
+              onChange={(event) => setTyped(event.target.value)}
+            />
+          </div>
+        )}
         <AlertDialogFooter>
           <AlertDialogCancel className="min-h-11 sm:min-h-9" disabled={pending}>
             Cancel
@@ -80,8 +117,10 @@ export function ConfirmDialog({
           <AlertDialogAction
             variant={destructive ? "destructive" : "default"}
             className="min-h-11 sm:min-h-9"
-            disabled={pending}
-            {...(form ? { type: "submit", form } : { onClick: onConfirm })}
+            disabled={pending || !typedOk}
+            {...(form
+              ? { type: "submit", form }
+              : { onClick: () => onConfirm?.(typed) })}
           >
             {pending ? `${confirmLabel}…` : confirmLabel}
           </AlertDialogAction>
