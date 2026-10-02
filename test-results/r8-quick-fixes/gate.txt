@@ -1,3 +1,4 @@
+23c3d15
 
 > war-weeker@0.1.0 format:check /Users/paulmacfarlane/Code/jg-war-week
 > prettier --check .
@@ -46,69 +47,69 @@ Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
 
  RUN  v4.1.11 /Users/paulmacfarlane/Code/jg-war-week
 
-(node:49965) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:90626) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:49969) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:90633) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:49973) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:90634) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:49966) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:90630) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:50085) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:90627) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:50087) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:90637) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:50089) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:90638) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:50090) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:90644) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:50091) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:90640) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:50094) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:90641) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
 
  Test Files  134 passed (134)
-      Tests  3172 passed (3172)
-   Start at  00:11:21
-   Duration  14.38s (transform 4.94s, setup 0ms, import 60.70s, tests 47.95s, environment 8ms)
+      Tests  3170 passed (3170)
+   Start at  01:38:33
+   Duration  15.72s (transform 5.83s, setup 0ms, import 66.50s, tests 52.56s, environment 8ms)
 
 
 > war-weeker@0.1.0 build /Users/paulmacfarlane/Code/jg-war-week
 > next build
 
 ▲ Next.js 16.3.6 (Turbopack)
-✓ Running next.config.ts took 55ms
+✓ Running next.config.ts took 57ms
 
   Creating an optimized production build ...
-✓ Compiled successfully in 1296ms
+✓ Compiled successfully in 1095ms
   Running TypeScript ...
   Finished TypeScript in 2.3s ...
   Collecting page data using 9 workers ...
-2026-10-02T04:11:41.742Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-10-02T05:38:54.457Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-10-02T04:11:41.784Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-10-02T05:38:54.503Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-10-02T04:11:41.789Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-2026-10-02T04:11:41.796Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-10-02T05:38:54.509Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-10-02T05:38:54.538Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-10-02T04:11:41.814Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-2026-10-02T04:11:41.816Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-10-02T05:38:54.547Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-10-02T05:38:54.557Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-10-02T04:11:41.820Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-2026-10-02T04:11:41.820Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-10-02T05:38:54.567Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-10-02T05:38:54.577Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-10-02T04:11:41.903Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-10-02T05:38:54.701Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-10-02T04:11:41.919Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-10-02T05:38:54.717Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
   Generating static pages using 9 workers (0/5) ...
   Generating static pages using 9 workers (1/5) 
   Generating static pages using 9 workers (2/5) 
   Generating static pages using 9 workers (3/5) 
-✓ Generating static pages using 9 workers (5/5) in 100ms
+✓ Generating static pages using 9 workers (5/5) in 107ms
   Finalizing page optimization ...
 
 Route (app)
@@ -261,7 +262,7 @@ ok - GET /iv/teams shows one roster of all Participants for a free-for-all War W
 ok - a signed-in user linked by email sees one 'You' on /xi/teams and no picker
 ok - a signed-in user linked by email sees one 'You' on the individual leaderboard
 ok - a signed-in user linked by email sees 'You' on their Award on /xi/awards
-FAIL - a signed-in user with no email match gets the 'Which one is you?' picker and no 'You': status=200 {"picker":false,"noTag":true,"noEmails":true}
+ok - a signed-in user with no email match gets no 'You' and no picker
 ok - MCP tools/list includes get_current_war_week
 ok - MCP tools/list includes get_leaderboard
 ok - MCP tools/list includes get_schedule
@@ -316,7 +317,7 @@ ok - GET /admin/guide as a signed-in non-Organizer shows the refusal
 ok - GET /admin/points as an Organizer shows the form with every Competition, the ledger with entered-by, and the current standings (16 unscheduled Competitions offered)
 ok - GET /admin/points as a non-Organizer shows the refusal
 ok - createPointsEntry rejects a signed-in JG user off the allowlist
-(node:51847) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:91123) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
 ok - createPointsEntry rejects a Participant in a team Competition and a Team in an individual one
 ok - createPointsEntry as an Organizer saves an over-max decimal entry with entered-by
@@ -427,13 +428,13 @@ ok - games: reopen Bouncy Pong and delete the smoke Game
 ok - createFaqItem posting XI's warWeekId with admin_edition=x in the cookie writes to XI and leaves X unchanged
 ok - lifecycle: create XII, end XI with a Winner, start XII; an Organizer corrects XI but a Participant can't reopen it; then restore
 ⨯ Error: Failed query: select "id", "war_week_id", "question", "answer", "sort_order", "created_at", "updated_at" from "faq_item" where "faq_item"."war_week_id" = $1 order by "faq_item"."sort_order" asc, "faq_item"."id" asc
-params: 9af43669-0fa1-44ab-a35b-74a92da9b355
+params: dcf20449-617e-44ff-b904-91edf584a877
     at o.queryWithCache (.next/server/chunks/ssr/_0jbg1m6._.js:25:37181)
     at async (.next/server/chunks/ssr/_0jbg1m6._.js:18:6014)
     at async k (.next/server/chunks/ssr/[root-of-the-server]__1w3cl-j._.js:1:5635) {
   query: 'select "id", "war_week_id", "question", "answer", "sort_order", "created_at", "updated_at" from "faq_item" where "faq_item"."war_week_id" = $1 order by "faq_item"."sort_order" asc, "faq_item"."id" asc',
-  params: [ '9af43669-0fa1-44ab-a35b-74a92da9b355' ],
-  digest: '4236611112',
+  params: [ 'dcf20449-617e-44ff-b904-91edf584a877' ],
+  digest: '1507775016',
   [cause]: error: relation "faq_item" does not exist
       at async (.next/server/chunks/ssr/_0jbg1m6._.js:18:6229)
       at async o.queryWithCache (.next/server/chunks/ssr/_0jbg1m6._.js:25:37156)
@@ -461,6 +462,135 @@ params: 9af43669-0fa1-44ab-a35b-74a92da9b355
   /xi/faq with faq_item missing answered 200
 ok - GET /xi/faq with its table missing streams the edition error boundary (ErrorScreen copy), not Next's default error page
  ELIFECYCLE  Command failed with exit code 143.
- ELIFECYCLE  Command failed with exit code 1.
- ELIFECYCLE  Command failed with exit code 1.
-exit 1
+
+> war-weeker@0.1.0 e2e /Users/paulmacfarlane/Code/jg-war-week
+> playwright test
+
+
+> war-weeker@0.1.0 db:migrate /Users/paulmacfarlane/Code/jg-war-week
+> drizzle-kit migrate
+
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/Users/paulmacfarlane/Code/jg-war-week/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] applying migrations...[2K[1G[✓] migrations applied successfully!
+> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week
+> tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xii.json seeds/demo/xi.json
+
+Loaded War Week i (reset)
+Loaded War Week ii (reset)
+Loaded War Week iii (reset)
+Loaded War Week iv (reset)
+Loaded War Week ix (reset)
+Loaded War Week v (reset)
+Loaded War Week vi (reset)
+Loaded War Week vii (reset)
+Loaded War Week viii (reset)
+Loaded War Week x (reset)
+Loaded War Week xii (reset)
+Loaded War Week xi (reset)
+
+Running 54 tests using 1 worker
+
+  ✓   1 [chromium] › e2e/about-games.spec.ts:15:5 › about the Competitions feature card shows and screenshots on /about (430ms)
+  ✓   2 [chromium] › e2e/archive.spec.ts:25:5 › the Archive lists every past War Week (610ms)
+  ✓   3 [chromium] › e2e/archive.spec.ts:46:7 › past edition /i renders (264ms)
+  ✓   4 [chromium] › e2e/archive.spec.ts:46:7 › past edition /ii renders (253ms)
+  ✓   5 [chromium] › e2e/archive.spec.ts:46:7 › past edition /iii renders (243ms)
+  ✓   6 [chromium] › e2e/archive.spec.ts:46:7 › past edition /iv renders (283ms)
+  ✓   7 [chromium] › e2e/archive.spec.ts:46:7 › past edition /ix renders (246ms)
+  ✓   8 [chromium] › e2e/archive.spec.ts:46:7 › past edition /v renders (238ms)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓   9 [chromium] › e2e/archive.spec.ts:46:7 › past edition /vi renders (227ms)
+  ✓  10 [chromium] › e2e/archive.spec.ts:46:7 › past edition /vii renders (298ms)
+  ✓  11 [chromium] › e2e/archive.spec.ts:46:7 › past edition /viii renders (279ms)
+  ✓  12 [chromium] › e2e/archive.spec.ts:46:7 › past edition /x renders (236ms)
+  ✓  13 [chromium] › e2e/axe.spec.ts:36:9 › xi has no color-contrast violations (light) (1.2s)
+  ✓  14 [chromium] › e2e/axe.spec.ts:36:9 › xi has no color-contrast violations (dark) (1.1s)
+  ✓  15 [chromium] › e2e/axe.spec.ts:36:9 › history has no color-contrast violations (light) (394ms)
+  ✓  16 [chromium] › e2e/axe.spec.ts:36:9 › history has no color-contrast violations (dark) (387ms)
+  ✓  17 [chromium] › e2e/axe.spec.ts:36:9 › about has no color-contrast violations (light) (1.1s)
+  ✓  18 [chromium] › e2e/axe.spec.ts:36:9 › about has no color-contrast violations (dark) (1.1s)
+  ✓  19 [chromium] › e2e/bracket-heats.spec.ts:104:5 › a Heats Bracket is built, run and finalized into Points Entries (6.3s)
+  ✓  20 [chromium] › e2e/bracket-squads.spec.ts:194:5 › a Squad Bracket with self-report: a Participant reports, a second report is refused, the Host overwrites (11.0s)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓  21 [chromium] › e2e/bracket-tree.spec.ts:247:5 › a single-elimination Bracket shows as a tree, and a result records in a Dialog on large screens (5.6s)
+  ✓  22 [chromium] › e2e/bracket-tree.spec.ts:295:5 › a Heats Bracket shows as a tree of Heat boxes, advancers highlighted (7.2s)
+  ✓  23 [chromium] › e2e/bracket.spec.ts:106:5 › a Bracket is built, run and finalized into Points Entries (10.7s)
+[WebServer] (node:91211) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+[WebServer] (Use `node --trace-deprecation ...` to show where the warning was created)
+  ✓  24 [chromium] › e2e/enrollment.spec.ts:130:5 › enrollment: a Participant enrolls, withdraws and enrolls again; once the Host builds the Bracket, enrollment is refused (2.4s)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓  25 [chromium] › e2e/finale.spec.ts:6:5 › the Finale plays from Start and ends on first place (3.3s)
+  ✓  26 [chromium] › e2e/forms.spec.ts:6:7 › forms › a Points Entry refused on the server shows under Points and focuses it (986ms)
+  ✓  27 [chromium] › e2e/forms.spec.ts:45:7 › forms › the settings form refused on the server shows under Slack URL and focuses it (494ms)
+  ✓  28 [chromium] › e2e/games.spec.ts:98:5 › games: a Participant logs a head-to-head Game from home, the Host edits it and closes the Competition, the Standings move (5.5s)
+  ✓  29 [chromium] › e2e/points-entry.spec.ts:6:5 › an Organizer's Points Entry raises the Team's total on the leaderboard (1.1s)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓  30 [chromium] › e2e/regression-r1.spec.ts:91:5 › r1 01 the site footer sits at the bottom of a short page and follows a long page's content (1.8s)
+  ✓  31 [chromium] › e2e/regression-r1.spec.ts:106:5 › r1 02 a free-for-all edition shows only a Standings heading; a teams edition still shows the Team label (924ms)
+  ✓  32 [chromium] › e2e/regression-r1.spec.ts:158:5 › r1 10 expanding a Team or Participant row on the leaderboard shows its Points Entries, newest first, summing to the row total (748ms)
+  ✓  33 [chromium] › e2e/regression-r1.spec.ts:243:5 › r1 05 the End War Week dialog shows the computed Winner read-only (700ms)
+  ✓  34 [chromium] › e2e/regression-r1.spec.ts:273:5 › r1 06 09 the Competitions form explains Max points and offers Format including Bracket formats, linking a Bracket Competition to its Bracket setup (917ms)
+  ✓  35 [chromium] › e2e/regression-r1.spec.ts:348:5 › r1 08 the Schedule defaults to All and filters to one Day by URL (910ms)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓  36 [chromium] › e2e/regression-r5.spec.ts:48:5 › r5 30 admin header and section bar on a phone (2.0s)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓  37 [chromium] › e2e/regression-r5.spec.ts:214:5 › r5 34 admin controls are 44px on a phone (1.5s)
+  ✓  38 [chromium] › e2e/regression-r5.spec.ts:335:5 › r5 35 selects and the color picker on a phone (1.8s)
+Teams & roster at 375px: 8273px tall
+Competitions at 375px: 2479px tall
+  ✓  39 [chromium] › e2e/regression-r5.spec.ts:466:5 › r5 31 setup rows open in a Sheet (2.9s)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓  40 [chromium] › e2e/regression-r5.spec.ts:642:5 › r5 32 admin lists fit a phone; free-for-all drops Team (4.9s)
+r5 33 announcement form at 375: 703px
+r5 33 schedule item form at 375: 1190px
+r5 33 next War Week form at 375: 873px
+r5 33 award form at 375: 509px
+  ✓  41 [chromium] › e2e/regression-r5.spec.ts:805:5 › r5 33 Save stays in reach on long admin forms (1.4s)
+  ✓  42 [chromium] › e2e/regression-r5.spec.ts:924:5 › r5 38 Escape keeps chosen Entrants; Tree shows a Heat's place; Format help (2.3s)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓  43 [chromium] › e2e/regression-r5.spec.ts:1042:5 › r5 epic admin pages at 375 and 1280, as Organizer and Host (4.2s)
+r5 37 stored body: {"type":"doc","content":[{"type":"paragraph","content":[{"text":"Doors open at nine.","type":"text"}]}]} video_urls: []
+r5 37 pinned card at 375 on /xi: 112px
+r5 37 pinned card at 375 on /xi/announcements: 112px
+r5 37 pinned video card at 375 on /xi: 325px
+r5 37 pinned video card at 375 on /xi/announcements: 325px
+  ✓  44 [chromium] › e2e/regression-r5.spec.ts:1099:5 › r5 37 pinned Announcement card fits its content (2.4s)
+  ✓  45 [chromium] › e2e/regression-r6.spec.ts:44:5 › r6 39 a refusal toast sits above the sticky Save, not over it (3.5s)
+  ✓  46 [chromium] › e2e/regression-r8.spec.ts:9:5 › r8 50 the date range picker stays open until Done (896ms)
+  ✓  47 [chromium] › e2e/sign-in.spec.ts:5:5 › an anonymous visit to /xi lands on /sign-in (212ms)
+  ✓  48 [chromium] › e2e/sign-in.spec.ts:20:5 › a session with a non-JG email is refused /xi (238ms)
+  ✓  49 [chromium] › e2e/sign-in.spec.ts:38:5 › a JG session opens /xi (634ms)
+  ✓  50 [chromium] › e2e/theme.spec.ts:114:7 › Display: Light, Dark and System › XI (dark base) follows the header's Display control, across reloads and the system setting (2.0s)
+  ✓  51 [chromium] › e2e/theme.spec.ts:164:7 › Display: Light, Dark and System › VII (light base) follows it in reverse (478ms)
+  ✓  52 [chromium] › e2e/theme.spec.ts:194:5 › a stored Dark applies before any client JavaScript loads: no flash (707ms)
+  ✓  53 [chromium] › e2e/theme.spec.ts:223:5 › every themed surface follows the Display: the Finale, the Archive, /about, /privacy, /terms, sign-in and /admin (2.4s)
+  ✓  54 [chromium] › e2e/theme.spec.ts:338:5 › Setup: the other scheme's colors are derived, overridable and reset; an untouched save stores no override (6.9s)
+
+  54 passed (2.1m)
+exit 0
