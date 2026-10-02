@@ -2,7 +2,7 @@
 
 Every open item across `.scratch/`, in one place. Each ticket file stays the
 source of truth for its own status and details; update this list when a
-ticket opens or closes. Last reviewed 2026-09-30 (Paul plans to work through
+ticket opens or closes. Last reviewed 2026-10-01 (Paul plans to work through
 it the week of 2026-10-05).
 
 ## Paul's manual steps
@@ -11,6 +11,7 @@ it the week of 2026-10-05).
 
 ## Ready for an agent
 
+- [ ] **Epic R7, public pages**: About rewritten to one clear pitch with six key features and a phone fix (42), a XII demo and About stills from the current War Week (43), Privacy and Terms in the current theme naming the Jahnel Group admins (44), and an agent-runnable regression checklist (45). [`regression-2026-09/epics/R7`](./regression-2026-09/epics/R7-public-pages.md) (`ready-for-agent`)
 
 
 ## Ready, waiting on someone else
