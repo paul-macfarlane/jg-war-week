@@ -13,7 +13,9 @@ import {
   announcementAuthorName,
   sortAnnouncements,
 } from "@/lib/announcements";
+import type { ProfilesByEmail } from "@/lib/profile";
 import { isUuid } from "@/lib/uuid";
+import { getProfilesByEmail } from "@/queries/profile-join";
 
 async function loadSorted(
   warWeekId: string,
@@ -75,10 +77,26 @@ async function loadAuthorCandidates(
     .where(eq(participant.warWeekId, warWeekId));
 }
 
-function toCardData(
-  row: Announcement,
-  participants: AuthorCandidate[],
-): AnnouncementCardData {
+/** What `announcementAuthorName` resolves with, for these authors. */
+type Authors = { participants: AuthorCandidate[]; profiles: ProfilesByEmail };
+
+/**
+ * The roster candidates and the authors' Profiles: an author with a Profile
+ * name shows as it, Participant or not.
+ */
+async function loadAuthors(
+  warWeekId: string,
+  authorEmails: string[],
+  dbOrTx: DBOrTx,
+): Promise<Authors> {
+  const [participants, profiles] = await Promise.all([
+    loadAuthorCandidates(warWeekId, dbOrTx),
+    getProfilesByEmail(authorEmails, dbOrTx),
+  ]);
+  return { participants, profiles };
+}
+
+function toCardData(row: Announcement, authors: Authors): AnnouncementCardData {
   return {
     id: row.id,
     title: row.title,
@@ -86,7 +104,11 @@ function toCardData(
     videoUrls: row.videoUrls,
     pinned: row.pinned,
     publishedAt: row.publishedAt,
-    authorName: announcementAuthorName(row.authorEmail, participants),
+    authorName: announcementAuthorName(
+      row.authorEmail,
+      authors.participants,
+      authors.profiles,
+    ),
   };
 }
 
@@ -94,18 +116,20 @@ function toCardData(
  * A War Week's Announcements as `AnnouncementCard` data (author display
  * name, not email). `/announcements` and the home feed both use this. The
  * admin pages show the name too; the email is only for the edit/ownership
- * check (MCP shows the handle before the `@`).
+ * check (MCP shows the same name).
  */
 export async function getAnnouncementCards(
   warWeek: Pick<WarWeek, "id">,
   options: { limit?: number } = {},
   dbOrTx: DBOrTx = db,
 ): Promise<AnnouncementCardData[]> {
-  const [rows, participants] = await Promise.all([
-    getAnnouncements(warWeek, options, dbOrTx),
-    loadAuthorCandidates(warWeek.id, dbOrTx),
-  ]);
-  return rows.map((row) => toCardData(row, participants));
+  const rows = await getAnnouncements(warWeek, options, dbOrTx);
+  const authors = await loadAuthors(
+    warWeek.id,
+    rows.map((r) => r.authorEmail),
+    dbOrTx,
+  );
+  return rows.map((row) => toCardData(row, authors));
 }
 
 /** The pinned Announcement's card data, if there is one. */
@@ -113,11 +137,12 @@ export async function getPinnedAnnouncementCard(
   warWeek: Pick<WarWeek, "id">,
   dbOrTx: DBOrTx = db,
 ): Promise<AnnouncementCardData | undefined> {
-  const [pinned, participants] = await Promise.all([
-    getPinnedAnnouncement(warWeek, dbOrTx),
-    loadAuthorCandidates(warWeek.id, dbOrTx),
-  ]);
-  return pinned ? toCardData(pinned, participants) : undefined;
+  const pinned = await getPinnedAnnouncement(warWeek, dbOrTx);
+  if (!pinned) return undefined;
+  return toCardData(
+    pinned,
+    await loadAuthors(warWeek.id, [pinned.authorEmail], dbOrTx),
+  );
 }
 
 /** An Announcement author's display name, by the shared resolver. */
@@ -126,26 +151,44 @@ export async function getAnnouncementAuthorName(
   authorEmail: string,
   dbOrTx: DBOrTx = db,
 ): Promise<string> {
-  return announcementAuthorName(
-    authorEmail,
-    await loadAuthorCandidates(warWeek.id, dbOrTx),
+  const { participants, profiles } = await loadAuthors(
+    warWeek.id,
+    [authorEmail],
+    dbOrTx,
   );
+  return announcementAuthorName(authorEmail, participants, profiles);
+}
+
+/**
+ * A War Week's Announcements (pinned first, then newest; `limit` caps the
+ * list), each with its author's display name added. Rows keep the author's
+ * email for the edit check, so only the admin pages and the MCP builder
+ * (which drops it) read them.
+ */
+export async function getAnnouncementsWithAuthors(
+  warWeek: Pick<WarWeek, "id">,
+  options: { limit?: number } = {},
+  dbOrTx: DBOrTx = db,
+): Promise<(Announcement & { authorName: string })[]> {
+  const rows = await getAnnouncements(warWeek, options, dbOrTx);
+  const { participants, profiles } = await loadAuthors(
+    warWeek.id,
+    rows.map((r) => r.authorEmail),
+    dbOrTx,
+  );
+  return rows.map((row) => ({
+    ...row,
+    authorName: announcementAuthorName(row.authorEmail, participants, profiles),
+  }));
 }
 
 /**
  * A War Week's Announcements for the admin list: each row keeps its author's
  * email (for the edit check) and adds the display name to show.
  */
-export async function getAdminAnnouncementRows(
+export function getAdminAnnouncementRows(
   warWeek: Pick<WarWeek, "id">,
   dbOrTx: DBOrTx = db,
 ): Promise<(Announcement & { authorName: string })[]> {
-  const [rows, participants] = await Promise.all([
-    getAnnouncements(warWeek, {}, dbOrTx),
-    loadAuthorCandidates(warWeek.id, dbOrTx),
-  ]);
-  return rows.map((row) => ({
-    ...row,
-    authorName: announcementAuthorName(row.authorEmail, participants),
-  }));
+  return getAnnouncementsWithAuthors(warWeek, {}, dbOrTx);
 }

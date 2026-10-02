@@ -241,6 +241,45 @@ describe("announcementAuthorName", () => {
     ).toBe("someone-else");
   });
 
+  it("prefers the author's Profile name, Participant or not", () => {
+    const profiles = new Map([
+      [
+        "pmacfarlane@jahnelgroup.com",
+        { profileName: "Paulie", profileImage: null, googleImage: null },
+      ],
+      [
+        "solo@jahnelgroup.com",
+        { profileName: "Solo S.", profileImage: null, googleImage: null },
+      ],
+    ]);
+    expect(
+      announcementAuthorName(
+        "PMacfarlane@JahnelGroup.com",
+        participants,
+        profiles,
+      ),
+    ).toBe("Paulie");
+    expect(announcementAuthorName("solo@jahnelgroup.com", [], profiles)).toBe(
+      "Solo S.",
+    );
+  });
+
+  it("falls back to the roster name when the Profile has no name", () => {
+    const profiles = new Map([
+      [
+        "pmacfarlane@jahnelgroup.com",
+        { profileName: null, profileImage: null, googleImage: null },
+      ],
+    ]);
+    expect(
+      announcementAuthorName(
+        "pmacfarlane@jahnelgroup.com",
+        participants,
+        profiles,
+      ),
+    ).toBe("Paul Macfarlane");
+  });
+
   it("falls back with no Participants at all", () => {
     expect(announcementAuthorName("solo@jahnelgroup.com", [])).toBe("solo");
   });

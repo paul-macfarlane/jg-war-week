@@ -4,7 +4,10 @@ export type RosterTeamInput = Pick<Team, "id" | "name" | "color" | "logoUrl">;
 export type RosterParticipantInput = Pick<
   Participant,
   "id" | "displayName" | "companyTag" | "teamId" | "isLeader"
->;
+> & {
+  /** The picture URL, or null for initials. */
+  image?: string | null;
+};
 
 export type RosterParticipant = Omit<RosterParticipantInput, "teamId">;
 export type RosterTeam = RosterTeamInput & {
@@ -40,10 +43,11 @@ function byRosterOrder(a: RosterParticipant, b: RosterParticipant): number {
 function toRosterParticipant({
   id,
   displayName,
+  image,
   companyTag,
   isLeader,
 }: RosterParticipantInput): RosterParticipant {
-  return { id, displayName, companyTag, isLeader };
+  return { id, displayName, image, companyTag, isLeader };
 }
 
 /**

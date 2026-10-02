@@ -79,7 +79,13 @@ export type AwardView = {
   description: string | null;
   team: { id: string; name: string; color: string } | null;
   /** Ordered by display name. `teamColor` is null with no Team. */
-  participants: { id: string; displayName: string; teamColor: string | null }[];
+  participants: {
+    id: string;
+    displayName: string;
+    /** The picture URL; null for initials. */
+    image?: string | null;
+    teamColor: string | null;
+  }[];
 };
 
 /** An Award with recipients by name only, as the Archive and MCP show it. */

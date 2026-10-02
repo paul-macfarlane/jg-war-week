@@ -15,6 +15,7 @@ import {
   buildAdminLedger,
 } from "@/lib/points-entry";
 import { isUuid } from "@/lib/uuid";
+import { participantNameSql, withProfile } from "@/queries/profile-join";
 
 export type PointsEntryFormCompetition = {
   id: string;
@@ -69,17 +70,20 @@ export async function getPointsEntryFormOptions(
       .from(team)
       .where(eq(team.warWeekId, warWeek.id))
       .orderBy(asc(team.name)),
-    dbOrTx
-      .select({
-        id: participant.id,
-        name: participant.displayName,
-        team: participantTeam.name,
-        teamId: participant.teamId,
-      })
-      .from(participant)
-      .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))
+    withProfile(
+      dbOrTx
+        .select({
+          id: participant.id,
+          name: participantNameSql(),
+          team: participantTeam.name,
+          teamId: participant.teamId,
+        })
+        .from(participant)
+        .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))
+        .$dynamic(),
+    )
       .where(eq(participant.warWeekId, warWeek.id))
-      .orderBy(asc(participant.displayName)),
+      .orderBy(asc(participantNameSql())),
   ]);
 
   return {
@@ -94,27 +98,29 @@ export async function getAdminLedger(
   warWeek: Pick<WarWeek, "id">,
   dbOrTx: DBOrTx = db,
 ): Promise<AdminLedgerEntry[]> {
-  const rows = await dbOrTx
-    .select({
-      id: pointsEntry.id,
-      competition: competition.name,
-      competitionId: competition.id,
-      competitionFormat: competition.format,
-      teamName: team.name,
-      participantName: participant.displayName,
-      points: pointsEntry.points,
-      note: pointsEntry.note,
-      enteredByEmail: pointsEntry.enteredByEmail,
-      enteredAt: pointsEntry.enteredAt,
-      createdAt: pointsEntry.createdAt,
-      updatedAt: pointsEntry.updatedAt,
-      generatedByBracket: pointsEntry.generatedByBracket,
-    })
-    .from(pointsEntry)
-    .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
-    .leftJoin(team, eq(team.id, pointsEntry.teamId))
-    .leftJoin(participant, eq(participant.id, pointsEntry.participantId))
-    .where(eq(competition.warWeekId, warWeek.id));
+  const rows = await withProfile(
+    dbOrTx
+      .select({
+        id: pointsEntry.id,
+        competition: competition.name,
+        competitionId: competition.id,
+        competitionFormat: competition.format,
+        teamName: team.name,
+        participantName: participantNameSql(),
+        points: pointsEntry.points,
+        note: pointsEntry.note,
+        enteredByEmail: pointsEntry.enteredByEmail,
+        enteredAt: pointsEntry.enteredAt,
+        createdAt: pointsEntry.createdAt,
+        updatedAt: pointsEntry.updatedAt,
+        generatedByBracket: pointsEntry.generatedByBracket,
+      })
+      .from(pointsEntry)
+      .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
+      .leftJoin(team, eq(team.id, pointsEntry.teamId))
+      .leftJoin(participant, eq(participant.id, pointsEntry.participantId))
+      .$dynamic(),
+  ).where(eq(competition.warWeekId, warWeek.id));
   return buildAdminLedger(rows);
 }
 

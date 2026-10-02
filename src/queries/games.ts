@@ -32,6 +32,11 @@ import {
 import { loggingStateOf } from "@/lib/games/log-state";
 import { isUuid } from "@/lib/uuid";
 import type { BracketCompetitionLink } from "@/queries/brackets";
+import {
+  participantImageSql,
+  participantNameSql,
+  withProfile,
+} from "@/queries/profile-join";
 
 type Scoring = GameLogFacet["scoring"];
 type Linked = GameLogFacet["linked"];
@@ -376,9 +381,12 @@ export type GamesViewName = { id: string; name: string; color: string | null };
 export type GamesViewRow = LeaderboardRow & {
   name: string;
   color: string | null;
+  /** A Participant's picture URL; null for initials and for Teams. */
+  image?: string | null;
 };
 
 export type GamesViewPlayer = GamesViewName & {
+  image?: string | null;
   place: number | null;
   score: number | null;
 };
@@ -440,29 +448,34 @@ export async function getGamesView(
         .from(team)
         .where(eq(team.warWeekId, found.warWeekId))
         .orderBy(asc(team.name)),
-      dbOrTx
-        .select({
-          id: participant.id,
-          name: participant.displayName,
-          teamId: participant.teamId,
-        })
-        .from(participant)
+      withProfile(
+        dbOrTx
+          .select({
+            id: participant.id,
+            name: participantNameSql(),
+            image: participantImageSql(),
+            teamId: participant.teamId,
+          })
+          .from(participant)
+          .$dynamic(),
+      )
         .where(eq(participant.warWeekId, found.warWeekId))
-        .orderBy(asc(participant.displayName)),
+        .orderBy(asc(participantNameSql())),
     ]);
 
   const colorOfTeam = new Map(teams.map((t) => [t.id, t.color]));
-  const names = new Map<string, GamesViewName>();
-  for (const t of teams) names.set(t.id, t);
+  const names = new Map<string, GamesViewName & { image: string | null }>();
+  for (const t of teams) names.set(t.id, { ...t, image: null });
   for (const p of participants) {
     names.set(p.id, {
       id: p.id,
       name: p.name,
+      image: p.image,
       color: p.teamId ? (colorOfTeam.get(p.teamId) ?? null) : null,
     });
   }
-  const nameOf = (id: string): GamesViewName =>
-    names.get(id) ?? { id, name: "Unknown", color: null };
+  const nameOf = (id: string) =>
+    names.get(id) ?? { id, name: "Unknown", color: null, image: null };
 
   const { loggingOpen, bestOfDecided, winnerId } = loggingState(found, games);
   const facet: GameLogFacet = {
@@ -493,8 +506,8 @@ export async function getGamesView(
   return {
     competition: found,
     leaderboard: rows.map((row) => {
-      const { name, color } = nameOf(row.id);
-      return { ...row, name, color };
+      const { name, color, image } = nameOf(row.id);
+      return { ...row, name, color, image };
     }),
     games: games.map((g) => {
       const allowed =

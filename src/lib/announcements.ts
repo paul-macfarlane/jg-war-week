@@ -4,6 +4,7 @@ import type { Announcement } from "@/db/schema";
 import { sameEmail } from "@/lib/access";
 import { fieldErrorsFrom } from "@/lib/form-errors";
 import { formatLedgerTime } from "@/lib/points-entry";
+import type { ProfilesByEmail } from "@/lib/profile";
 import type { Parsed } from "@/lib/result";
 import { contentInputSchema } from "@/lib/rich-text/content";
 import { videoEmbedUrl } from "@/lib/video";
@@ -120,14 +121,20 @@ export const formatPublishedAt = formatLedgerTime;
 
 /**
  * The name an Announcement's author shows as, for a Participant-facing
- * card: the War Week's Participant whose email matches the author's
- * (account linking: `sameEmail`), else `authorHandle`. Never the raw
- * email; only the admin pages keep it.
+ * card: the author's Profile name (any author, Participant or not), else
+ * the roster name of the War Week's Participant whose email matches the
+ * author's (account linking: `sameEmail`), else `authorHandle`. Never the
+ * raw email; only the admin pages keep it.
  */
 export function announcementAuthorName(
   authorEmail: string,
   participants: AuthorCandidate[],
+  profiles: ProfilesByEmail = new Map(),
 ): string {
+  const profileName = profiles.get(
+    authorEmail.trim().toLowerCase(),
+  )?.profileName;
+  if (profileName) return profileName;
   const match = participants.find((p) => sameEmail(p.email, authorEmail));
   return match ? match.displayName : authorHandle(authorEmail);
 }

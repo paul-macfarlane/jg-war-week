@@ -169,6 +169,7 @@ export function IndividualStandingsList({
                   name={row.name}
                   teamColor={team?.color ?? null}
                   primaryColor={primaryColor}
+                  image={row.image}
                 />
               ) : null}
               <span className="flex-1">

@@ -60,6 +60,7 @@ export default async function AwardsPage({
                             name={p.displayName}
                             teamColor={p.teamColor}
                             primaryColor={warWeek.primaryColor}
+                            image={p.image}
                           />
                           {p.displayName}
                           <YouTag participantId={p.id} />

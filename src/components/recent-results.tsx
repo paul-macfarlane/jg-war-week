@@ -28,6 +28,7 @@ function TargetName({
           name={target.name}
           teamColor={target.color}
           primaryColor={primaryColor}
+          image={target.image}
         />
       )}
       <span className="font-medium">{target.name}</span>
