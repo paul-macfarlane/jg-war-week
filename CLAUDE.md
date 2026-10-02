@@ -6,7 +6,7 @@ When Jason (or any maintainer) asks how to change JG War Week, read and follow `
 
 ## Regression checklist
 
-`docs/regression-checklist.md` is the agent-run regression suite. Before War Week each year, or when asked for a regression pass, run it line by line at both viewports it names; in a work package's closeout, run the lines for the pages it changed. Keep it current (`docs/agents/testing.md`, Team rules).
+`docs/regression-checklist.md` is the agent-run regression suite. Before War Week each year, or when asked for a regression pass, run it line by line at both viewports it names. It is never part of CI. Keep its lines current (`docs/agents/testing.md`, Team rules).
 
 ## Agent skills
 

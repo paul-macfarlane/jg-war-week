@@ -15,9 +15,9 @@ counts as a pass, so the run doesn't depend on remembering what to look at.
   theme, fits a phone, says true and current things, and shows only what its
   reader needs. It also walks the flows Organizers, Hosts and Participants
   actually use end to end, the way a person would.
-- **When to run it:** before War Week each year, when asked for a regression
-  pass, and in the closeout of any work package that changes a page it
-  covers (run that page's lines).
+- **Not part of CI.** Nothing runs it automatically. An agent runs it on
+  demand: before War Week each year, or whenever someone asks for a
+  regression pass (all of it, or the sections they name).
 
 ## Running it
 
@@ -39,8 +39,8 @@ counts as a pass, so the run doesn't depend on remembering what to look at.
 
 A PR that changes a page, a flow or a role's access updates that page's
 lines here in the same PR: new pages get lines, removed features lose
-theirs. Each work package's closeout runs the lines it touched. A line that
-no longer matches the app is a bug in this file.
+theirs. Updating a line doesn't mean running it; runs stay on demand. A
+line that no longer matches the app is a bug in this file.
 
 ## Setup
 
@@ -92,8 +92,8 @@ no longer matches the app is a bug in this file.
   the no-horizontal-scroll check and a screenshot. Those three are implied by
   each line and not repeated.
 - Save a screenshot per page per viewport under
-  `test-results/<work-package>/<page>-<width>/` and record each line's result
-  in the ticket's closeout.
+  `test-results/<run>/<page>-<width>/` and record each line's verdict in the
+  run's report (the ticket's closeout when a ticket asked for the run).
 
 ## Public Pages
 
