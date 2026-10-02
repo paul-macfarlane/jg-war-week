@@ -121,6 +121,124 @@ Human gates: none. CI on the PR is read after it opens.
 
 ## [PROGRESS]
 
+- Wave 1 integrated at `2c2d110`: D57 (`182a319`, Opus), D54 (`4f53a55`, Sonnet), D56 (`0c12d50`, Sonnet), merged in that order without conflicts.
+- Candidate gate at `2c2d110`: format, typecheck, lint, unit (3213), build and smoke (221 ok) pass; e2e 54 passed, 3 failed. All three were test-side:
+  - r8 50: two Dates pickers on Settings.
+  - r5 35: Mode measured below the fold after the Lifecycle box moved above the form.
+  - r9 56: the spec didn't sign in.
+- Orchestrator fix `62acabf`; the four affected specs rerun green.
+- D56 decision accepted: the pure shaper lives in `src/lib/recent-results.ts`, the loader in `src/queries/`. Entries of one Competition group within 10 minutes of each other.
+- D57 decisions accepted:
+  - `/admin` redirects in `next.config.ts`.
+  - The Days editor sits above the Items on Schedule.
+  - Create next War Week is inline on Settings.
+- Wave 2 integrated: D55 (`9b6d277`, Sonnet) at `08657d6`, D59 (`ef1b9bd`, Opus) at `54b5368`, and D58 (`690a8dd`, Opus) at `b20beaa`. All merged cleanly.
+  - D55 orchestrator fix `a814715`: with the avatar, the admin phone header was 57px against r5 30's 56px limit; the avatar margin is now `-my-2`.
+  - D58 orchestrator fix: r5 31 filtered rows by a list-scoped locator, and r5 35 measured the Award field mid-zoom. The full r5 spec reruns green.
+  - Candidate gate at `b20beaa`: unit (3243), build and smoke (225 ok) pass; e2e 66 passed, and the 2 r5 failures above are fixed.
+- D59 decisions accepted:
+  - no toast on autosave;
+  - the form's key is `${id}:${status}`;
+  - r6 39 now refuses a Points Entry for its toast check.
+- Loose end for the review: `StickyFormActions` is now unused.
+- D58 decisions accepted:
+  - Organizer Edit adds the new email, then removes the old one;
+  - Delete lives only on the row;
+  - the Add buttons sit below each list.
+- Wave 3: DX (Sonnet) committed `a51a10f` (docs, checklist, `/about` card `organizer-admin` with its still on `/admin/schedule`, stills regenerated) and `9a6897e` (ticket screenshots). The orchestrator looked at `account-menu-plain-390` and `admin-nav-organizer-1440`.
+
 ## [AI CODE REVIEW]
 
+2026-10-02. Two fresh Opus reviewers, one per axis, read `0e19fa6..d7c4096` (code; docs came after). The orchestrator adjudicated each candidate against the cited hunks and checked F2 in `src/lib/autosave.ts` and `src/mutations/setup.ts` itself.
+
+### Axis 1 — technical implementation and spec conformity
+
+- **F2 (blocking, resolved in `aae6856`, `6360357`).** Each autosave wrote the whole settings row from the form's mount-time snapshot, including the Winner and highlights. So a newer server value was silently reverted: another tab's edit, or the Winner End War Week had just written.
+  - Now each save sends only its group's fields.
+  - `updateWarWeekSettingsFields` locks the row, merges the fields over it, validates the whole, and writes only the changed columns.
+  - The full-save action is retired, and smoke posts the partial one.
+  - e2e r9 59-3 proves a later Winner survives.
+- **F1 (resolved).** Navigating in-app with a refused field dropped it silently. A capture-phase link guard now opens `ConfirmDialog` (`src/lib/leave-guard.ts`; e2e r9 59-4).
+- **F3 (resolved).** `StickyFormActions` and `--admin-sticky-height` were dead code; both are deleted, and r5 33 is reduced to what still exists.
+- **F4 (resolved).** The in-app Guide said Display was under More.
+- **F5 (resolved).** `CONTEXT.md` had stale routes; a **Recent results** row is added.
+- **F6 (resolved).** Stale comments.
+- **F7 (resolved).** Recent results merged same-name targets; they are now compared by id.
+- **F8 (resolved).** The Home query loaded every Points Entry; it is now bounded.
+- **F9 (resolved).** Organizer Edit's partial failure left a stale list.
+- **F10 (resolved / deviation).** The Admin item now links `/admin/points`. Deviation approved: the admin menu shows the email's local part until ticket 60.
+- **F11 (deviation approved).** 58-AC3 keeps `points/[id]`, `brackets/[id]` and `competitions/[id]/bracket|games`, which aren't list editors.
+- Conformant: 54–59 ACs and Decisions as listed in each ticket's closeout; Host trimming and Organizer-only gating unchanged.
+
+### Axis 2 — coding standards
+
+- **S1–S5 (resolved, with F3–F6):** dead sticky code, the Guide line, `CONTEXT.md`, the `DisplayMenu` comments and the `MoreMenu` JSDoc.
+- **S6 (resolved).** Unused exports dropped; tests import their constants.
+- **S7 (resolved).** The Points title is "Points".
+- **S8 (resolved).**
+  - shadcn `Badge` for Pinned.
+  - A shared `useSignOut()` with a pending guard.
+  - The keyboard e2e uses retrying assertions.
+- **S8 tail (deviation approved).** The redirect table appears in next.config, the unit test and smoke, as the verification map asks. Per-spec `shoot()` helpers follow the suite's idiom.
+- Conformant:
+  - shadcn `dropdown-menu`, portaled via `useThemeContainer`;
+  - `ConfirmDialog`, `ResponsiveSheetDialog` and sonner throughout;
+  - ADR 0001 (pure `src/lib`) and ADR 0003/0004 (authorize, zod, never throw);
+  - no banned terms; no `.env` reads.
+
+Review fix commits:
+- `aae6856`: DR, Opus.
+- `6360357`: DR2, Sonnet. The first final gate's smoke failed because no client referenced the old action, so Next dropped it from the action manifest.
+- `f34ce58`: orchestrator, maintainers' guide.
+
 ## [CLOSEOUT]
+
+2026-10-02. Repository `war-weeker`, branch `feat/regression-r9-navigation` from `staging` `0e19fa6`. PR: PR_URL.
+
+| Deliverable | Commit | Worker model | Result |
+|---|---|---|---|
+| D57 Flat admin nav | `182a319` | Opus | accepted (orchestrator e2e fix `62acabf`) |
+| D54 Competitions in the main nav | `4f53a55` | Sonnet | accepted |
+| D56 Home Recent results | `0c12d50` | Sonnet | accepted (orchestrator e2e fix `62acabf`) |
+| D55 Account menu | `9b6d277` | Sonnet | accepted (orchestrator fix `a814715`) |
+| D59 Settings autosave | `ef1b9bd` | Opus | accepted |
+| D58 One admin list pattern | `690a8dd` | Opus | accepted (orchestrator e2e fix `d7c4096`) |
+| DX Checklist, /about, maintainers' guide, screenshots | `a51a10f`, `9a6897e` | Sonnet | accepted |
+| DR Aggregate review fixes | `aae6856` | Opus | accepted |
+| DR2 Retire the full-save settings action | `6360357` | Sonnet | accepted (DR retry 1: final-gate smoke failure) |
+| Guide line on partial saves | `f34ce58` | orchestrator | — |
+
+**Verified run command.** `set -a; . ./.env.example; set +a; pnpm format:check && pnpm gate` exits 0 at `6360357`. Unit: 3261 tests in 141 files. Smoke: 225 `ok`, 0 `FAIL`. e2e: 70 passed. Evidence:
+- `test-results/r9-navigation/gate.txt`
+- the ticket screenshots under `test-results/r9-navigation/<name>-<width>/` (index in `screenshots.txt`)
+- `test-results/e2e/`
+- `test-results/about-media/`
+
+No deployed target in scope.
+
+**Verdicts.**
+- PASS: 54-AC1–3, 55-AC1–4, 56-AC1–3, 57-AC1–4, 58-AC1–4 (AC3 with the F11 deviation), 59-AC1–3, E-AC1 (checklist), E-AC2 (`/about` and maintainers' guide), E-AC3 (tickets closed out, `done`), DoD checklist current.
+- E-AC4: `pnpm format:check && pnpm gate` PASS; CI on the PR is pending at closeout (check with `gh pr checks`).
+- The screenshots were taken at `9a6897e`, before the review fixes. Those fixes changed no page the shots show, apart from the Admin item's link target.
+
+**Deviations**
+- Review deviations F10 (admin menu name until ticket 60), F11 (58-AC3's non-list pages) and S8-tail.
+- D59's `updateWarWeekSettings` was replaced by `updateWarWeekSettingsFields` (partial saves), beyond the ticket's "existing action or a per-field variant", which allowed it.
+- `/about`'s `organizer-setup` card became `organizer-admin`.
+- Tracker: tickets went `ready-for-agent` → `in-progress` → `done`. `planning` was skipped (no `/atlas-plan`), and `ai-review` wasn't written to the files; the review ran between DX and closeout.
+- The regression checklist was updated, not run; running it is on demand per `CLAUDE.md`.
+
+**Isolation re-check.** The predicted collisions all materialised:
+- 54 and 55: `primary-nav.tsx`, `more-menu.tsx`, `more-links.ts`, `more/page.tsx`.
+- 57 and 55: `admin-shell.tsx`.
+- 56 and 55: the Home page.
+- 57 and 58: the moved Schedule and FAQ pages, `days-editor.tsx`, `next.config.ts`.
+- 57 and 59: `settings/page.tsx`, `src/lib/setup.ts`.
+
+Wave-mates shared only e2e and smoke files: D58/D59 `regression-r5.spec.ts`, D55/D58 `smoke/admin.ts`, D55/D59 `theme.spec.ts`. Git merged these without conflict, so the waves were right.
+
+**Follow-up candidates**
+- The admin account menu shows the email's local part (ticket 60 brings Profile names).
+- Recent results can get tall when one batch scores many Participants. A cap on names per row, with "+N more", could help.
+- The phone tab labels "Competitions" and "Leaderboard" sit close at 390px.
+- `pnpm smoke` prints `ELIFECYCLE … 143` from killing its server even when it passes.

@@ -13,7 +13,7 @@
 
 **Blocked by:** none (merge R8 first; both touch nav files)
 
-**Status:** in-progress
+**Status:** done
 
 **Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
@@ -30,3 +30,13 @@
 - [ ] `/admin` → `/admin/points`; each old `/admin/setup/...` path redirects (smoke).
 - [ ] Schedule shows Days and their Items on one page; Settings shows the Lifecycle box.
 - [ ] `pnpm gate` passes.
+
+## Comments
+
+- 2026-10-02 [AI CODE REVIEW] (atlas-implement): Two fresh Opus reviewers read `0e19fa6..d7c4096`, one per axis. The orchestrator adjudicated each finding against the cited hunks; the full record is in `../epics/R9-execution.md` [AI CODE REVIEW]. One blocking finding: F2, settings autosave wrote the whole row and could revert a newer Winner. It was fixed in `aae6856`/`6360357` with partial saves merged over the locked row. Every non-blocking finding was fixed or approved as a deviation.
+- 2026-10-02 [CLOSEOUT] (atlas-implement): Branch `feat/regression-r9-navigation`; worker D57 (Opus), commit `182a319`; orchestrator e2e fix `62acabf`.
+  - AC1 PASS: `src/lib/admin-sections.ts` (unit-tested) has the 11 sections in order; a Host sees Points, Competitions, Schedule, Announcements, Finale, Guide; the phone bar is Points, Competitions, Schedule, Announcements, More. Screenshots `admin-nav-organizer-*`, `admin-nav-host-*`, `admin-more-*-390`; smoke checks the Host's nav.
+  - AC2 PASS: permanent redirects in `next.config.ts` (`src/lib/admin-redirects.test.ts`); smoke checks each 308 including `/admin` → `/admin/points`.
+  - AC3 PASS: `/admin/schedule` has Days (Organizers) above Items grouped by Day; `/admin/settings` has the Lifecycle box, the seed warning and Create next War Week (smoke markers; `admin-schedule-*`, `admin-settings-*`).
+  - AC4 PASS: gate at `6360357`.
+  - The in-app Guide was rewritten; the maintainers' guide by DX (`a51a10f`).
