@@ -2,6 +2,7 @@ import { asc, eq } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import { finaleSlide } from "@/db/schema";
+import { customSlideColors } from "@/lib/custom-finale-slide";
 import {
   type FinaleSlideData,
   type ResolvedFinaleSlide,
@@ -49,13 +50,21 @@ export function finaleSlideData(
     standings: Standings;
     teamLabel: string;
     primaryColor: string;
+    /** The theme's text color, where a Custom slide's text starts from. */
+    foregroundColor: string;
   },
 ): FinaleSlideData[] {
   return visibleFinaleSlides(slides).map((slide): FinaleSlideData => {
     const base = { key: slide.key, name: slide.name };
     switch (slide.kind) {
       case "standings":
-        return { ...base, kind: "standings", ...context };
+        return {
+          ...base,
+          kind: "standings",
+          standings: context.standings,
+          teamLabel: context.teamLabel,
+          primaryColor: context.primaryColor,
+        };
       case "custom":
         return {
           ...base,
@@ -63,6 +72,12 @@ export function finaleSlideData(
           heading: slide.heading ?? slide.name,
           body: slide.body,
           backgroundColor: slide.backgroundColor,
+          colors: slide.backgroundColor
+            ? customSlideColors(slide.backgroundColor, {
+                foreground: context.foregroundColor,
+                primary: context.primaryColor,
+              })
+            : null,
         };
       default:
         return { ...base, kind: slide.kind };

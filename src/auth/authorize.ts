@@ -30,6 +30,7 @@ import {
   loadCompetitionTarget,
   loadDayTarget,
   loadFaqItemTarget,
+  loadFinaleSlideTarget,
   loadParticipantTarget,
   loadPointsEntryTarget,
   loadScheduleItemTarget,
@@ -61,6 +62,7 @@ const TARGETS = {
     loadScheduleItemTarget,
   ],
   faqItem: ["That FAQ Item no longer exists.", loadFaqItemTarget],
+  finaleSlide: ["That Finale slide no longer exists.", loadFinaleSlideTarget],
   award: ["That Award no longer exists.", loadAwardTarget],
   announcement: ["That Announcement no longer exists.", loadAnnouncementTarget],
 } as const satisfies Record<

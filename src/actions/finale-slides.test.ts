@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { moveFinaleSlide, setFinaleSlideHidden } from "@/actions/finale-slides";
+import {
+  createCustomFinaleSlide,
+  deleteCustomFinaleSlide,
+  moveFinaleSlide,
+  setFinaleSlideHidden,
+  updateCustomFinaleSlide,
+} from "@/actions/finale-slides";
+import { authorize } from "@/auth/authorize";
 import * as mutations from "@/mutations/finale-slides";
 
 // vi.mock factories are hoisted above the imports, so their values are too.
@@ -27,6 +34,9 @@ vi.mock("@/auth/authorize", () => ({
 vi.mock("@/mutations/finale-slides", () => ({
   moveFinaleSlide: vi.fn(async () => ({ ok: true })),
   setFinaleSlideHidden: vi.fn(async () => ({ ok: true })),
+  createCustomFinaleSlide: vi.fn(async () => ({ ok: true })),
+  updateCustomFinaleSlide: vi.fn(async () => ({ ok: true })),
+  deleteCustomFinaleSlide: vi.fn(async () => ({ ok: true })),
 }));
 
 beforeEach(() => {
@@ -107,5 +117,139 @@ describe("Finale slide actions", () => {
     });
     expect(mutations.moveFinaleSlide).not.toHaveBeenCalled();
     expect(mutations.setFinaleSlideHidden).not.toHaveBeenCalled();
+  });
+});
+
+const text = (value: string) => ({
+  type: "doc",
+  content: [{ type: "paragraph", content: [{ type: "text", text: value }] }],
+});
+
+describe("Custom Finale slide actions", () => {
+  it("create authorizes against the War Week, then saves the sanitized, trimmed values", async () => {
+    await expect(
+      createCustomFinaleSlide(WAR_WEEK, {
+        heading: "  Thank you  ",
+        body: text("Hi"),
+        backgroundColor: "#ABCDEF",
+      }),
+    ).resolves.toEqual({ ok: true });
+    expect(authorize).toHaveBeenCalledWith(
+      "finale-slide.create",
+      "warWeek",
+      WAR_WEEK,
+    );
+    expect(mutations.createCustomFinaleSlide).toHaveBeenCalledWith(
+      { heading: "Thank you", body: text("Hi"), backgroundColor: "#abcdef" },
+      ctx,
+    );
+  });
+
+  it("strips unsafe content from the body on the way in", async () => {
+    await createCustomFinaleSlide(WAR_WEEK, {
+      heading: "Links",
+      body: {
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: [
+              {
+                type: "text",
+                text: "x",
+                marks: [
+                  {
+                    type: "link",
+                    attrs: {
+                      href: "javascript:alert(1)",
+                      rel: "noopener noreferrer",
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      backgroundColor: null,
+    });
+    expect(mutations.createCustomFinaleSlide).toHaveBeenCalledWith(
+      { heading: "Links", body: text("x"), backgroundColor: null },
+      ctx,
+    );
+  });
+
+  it("update and delete authorize against the Finale slide", async () => {
+    await updateCustomFinaleSlide(CUSTOM, {
+      heading: "Thanks",
+      body: text("Hi"),
+      backgroundColor: null,
+    });
+    await deleteCustomFinaleSlide(CUSTOM);
+    expect(authorize).toHaveBeenNthCalledWith(
+      1,
+      "finale-slide.update",
+      "finaleSlide",
+      CUSTOM,
+    );
+    expect(authorize).toHaveBeenNthCalledWith(
+      2,
+      "finale-slide.delete",
+      "finaleSlide",
+      CUSTOM,
+    );
+    expect(mutations.updateCustomFinaleSlide).toHaveBeenCalledWith(
+      CUSTOM,
+      { heading: "Thanks", body: text("Hi"), backgroundColor: null },
+      ctx,
+    );
+    expect(mutations.deleteCustomFinaleSlide).toHaveBeenCalledWith(CUSTOM, ctx);
+  });
+
+  it("refuse a blank or long heading, a bad color and a non-document body, naming the field", async () => {
+    const good = { heading: "A", body: text("Hi"), backgroundColor: null };
+    await expect(
+      createCustomFinaleSlide(WAR_WEEK, { ...good, heading: "   " }),
+    ).resolves.toMatchObject({
+      ok: false,
+      fieldErrors: { heading: "Heading must not be empty." },
+    });
+    await expect(
+      createCustomFinaleSlide(WAR_WEEK, { ...good, heading: "x".repeat(121) }),
+    ).resolves.toMatchObject({
+      ok: false,
+      fieldErrors: { heading: "Heading must be at most 120 characters." },
+    });
+    await expect(
+      createCustomFinaleSlide(WAR_WEEK, { ...good, backgroundColor: "red" }),
+    ).resolves.toMatchObject({
+      ok: false,
+      fieldErrors: { backgroundColor: expect.any(String) },
+    });
+    await expect(
+      createCustomFinaleSlide(WAR_WEEK, { ...good, body: "<script>" }),
+    ).resolves.toMatchObject({
+      ok: false,
+      fieldErrors: { body: "Body must be valid rich text." },
+    });
+    expect(mutations.createCustomFinaleSlide).not.toHaveBeenCalled();
+  });
+
+  it("do nothing when authorization refuses", async () => {
+    vi.mocked(authorize).mockResolvedValueOnce({
+      ok: false,
+      error: "Only an Organizer can add Custom Finale slides.",
+    });
+    await expect(
+      createCustomFinaleSlide(WAR_WEEK, {
+        heading: "A",
+        body: text("Hi"),
+        backgroundColor: null,
+      }),
+    ).resolves.toEqual({
+      ok: false,
+      error: "Only an Organizer can add Custom Finale slides.",
+    });
+    expect(mutations.createCustomFinaleSlide).not.toHaveBeenCalled();
   });
 });

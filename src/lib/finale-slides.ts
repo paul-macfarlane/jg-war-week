@@ -5,6 +5,7 @@
  */
 import { z } from "zod";
 
+import type { CustomSlideColors } from "@/lib/custom-finale-slide";
 import { FINALE_SLIDE_KINDS, type FinaleSlideKind } from "@/lib/enums";
 import { type Content, contentInputSchema } from "@/lib/rich-text/content";
 import type { Standings } from "@/lib/standings";
@@ -222,6 +223,11 @@ export type FinaleSlideData =
       heading: string;
       body: Content | null;
       backgroundColor: string | null;
+      /**
+       * Text colors that read on `backgroundColor` (null with none): the
+       * stage overrides the theme's with them (`customSlideColors`).
+       */
+      colors: CustomSlideColors | null;
     });
 
 /**

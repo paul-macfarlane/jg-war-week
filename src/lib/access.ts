@@ -81,6 +81,10 @@ export type WarWeekAction =
   /** Reordering, hiding and showing Finale slides (ticket 72). */
   | "finale-slide.move"
   | "finale-slide.hide"
+  /** Custom Finale slides (ticket 74). */
+  | "finale-slide.create"
+  | "finale-slide.update"
+  | "finale-slide.delete"
   | "competition.create"
   | "competition.delete"
   | "competition.assign-hosts"
@@ -176,6 +180,9 @@ const ORGANIZER_ONLY: Partial<
   "faq-item.move": "move FAQ Items",
   "finale-slide.move": "reorder Finale slides",
   "finale-slide.hide": "hide Finale slides",
+  "finale-slide.create": "add Custom Finale slides",
+  "finale-slide.update": "change Custom Finale slides",
+  "finale-slide.delete": "delete Custom Finale slides",
   "award.create": "give Awards",
   "award.edit": "change Awards",
   "award.delete": "delete Awards",

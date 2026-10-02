@@ -43,6 +43,7 @@ export default async function FinalePage({
           standings,
           teamLabel: warWeek.teamLabel,
           primaryColor: warWeek.primaryColor,
+          foregroundColor: warWeek.foregroundColor,
         })}
         edition={warWeek.edition}
         storyTheme={warWeek.storyTheme}
