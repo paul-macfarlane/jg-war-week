@@ -64,6 +64,8 @@ export type WarWeekAction =
   | "lifecycle.unstart"
   | "lifecycle.create-next"
   | `${"day" | "team" | "participant" | "award"}.${Crud}`
+  /** Importing the roster from a spreadsheet (ticket 67). */
+  | "participant.import"
   | `faq-item.${Crud | "move"}`
   | "competition.create"
   | "competition.delete"
@@ -140,6 +142,7 @@ const ORGANIZER_ONLY: Partial<
   "participant.create": "add Participants",
   "participant.edit": "change Participants",
   "participant.delete": "delete Participants",
+  "participant.import": "import Participants",
   "faq-item.create": "add FAQ Items",
   "faq-item.edit": "change FAQ Items",
   "faq-item.delete": "delete FAQ Items",

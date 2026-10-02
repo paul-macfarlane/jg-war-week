@@ -12,6 +12,7 @@ import {
 } from "@/actions/setup";
 import { ColorField, type ColorSwatch } from "@/components/color-field";
 import { OptionSelect } from "@/components/option-select";
+import { RosterImport } from "@/components/roster-import";
 import {
   SETUP_EDITOR,
   SetupAddButton,
@@ -32,6 +33,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import type { WarWeek } from "@/db/schema";
 import type { ParticipantInput, TeamInput } from "@/lib/setup";
 import { teamSwatches } from "@/lib/theme";
 import type { SetupParticipant, SetupTeam } from "@/queries/setup";
@@ -395,11 +397,15 @@ export function TeamsEditor({
   );
 }
 
-/** The roster: every Participant, each with Edit (a Sheet) and Delete, then "Add Participant". */
+/**
+ * The roster: every Participant, each with Edit (a Sheet) and Delete, then
+ * "Add Participant" and "Import" (from a spreadsheet).
+ */
 export function RosterEditor({
   warWeekId,
   participants,
   teams,
+  mode,
   teamLabel,
   leaderTitle,
   tagSuggestions,
@@ -408,6 +414,7 @@ export function RosterEditor({
   warWeekId: string;
   participants: SetupParticipant[];
   teams: SetupTeam[];
+  mode: WarWeek["mode"];
   teamLabel: string;
   leaderTitle: string;
   /** Company Tags used in any War Week, for the Company Tag field. */
@@ -461,10 +468,20 @@ export function RosterEditor({
           ))}
         </ul>
       )}
-      <SetupAddButton
-        label="Add Participant"
-        form={(close) => <ParticipantForm {...formProps} onSaved={close} />}
-      />
+      <div className="flex flex-wrap items-start gap-2">
+        <SetupAddButton
+          label="Add Participant"
+          form={(close) => <ParticipantForm {...formProps} onSaved={close} />}
+        />
+        <RosterImport
+          warWeekId={warWeekId}
+          participants={participants}
+          teams={teams}
+          mode={mode}
+          teamLabel={teamLabel}
+          leaderTitle={leaderTitle}
+        />
+      </div>
     </div>
   );
 }

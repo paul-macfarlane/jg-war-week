@@ -111,6 +111,7 @@ export async function assertHostChecks(sessions: {
     await assertAdminTrimmedForHost(sessions);
     await assertAdminLinkForHost(sessions);
     await assertAccessBeforeValidation(sessions, fixture);
+    await assertImportOrganizerOnly(sessions, fixture);
     await assertFormerHostRefused(fixture);
   } finally {
     await deleteSmokeHosts().catch((error) =>
@@ -669,6 +670,48 @@ async function assertAccessBeforeValidation(
           }
         }
         return wrong.length === 0 ? null : wrong.join("; ");
+      },
+    );
+  }
+}
+
+/**
+ * Ticket 67: importing the roster is Organizer-only. A Host (of an XI
+ * Competition) and a Participant both get the refusal, and the roster gains
+ * no row.
+ */
+async function assertImportOrganizerOnly(
+  sessions: { host: SmokeSession; notOrganizer: SmokeSession },
+  fixture: HostFixture,
+) {
+  const ids = serverActionIds();
+  const name = "Smoke Refused Import";
+  const refusal = "Only an Organizer can import Participants.";
+  for (const [label, session] of [
+    ["a Host", sessions.host],
+    ["a Participant", sessions.notOrganizer],
+  ] as const) {
+    await runCheck(
+      `importParticipants as ${label} is refused with '${refusal}' and writes nothing`,
+      async () => {
+        if (!ids.importParticipants) {
+          return "no server action id for importParticipants";
+        }
+        const result = await callAction(
+          ids.importParticipants,
+          [
+            fixture.xiId,
+            { text: name, expected: [{ row: 1, kind: "add", changes: [] }] },
+          ],
+          session,
+        );
+        const [{ count }] = await runQuery<{ count: string }>(
+          `select count(*) from participant where display_name = $1`,
+          [name],
+        );
+        return !result.ok && result.error === refusal && count === "0"
+          ? null
+          : `result=${JSON.stringify(result)} rows=${count}`;
       },
     );
   }

@@ -786,6 +786,105 @@ describe.skipIf(!isLocalDatabase)("Participant mutations", () => {
   });
 });
 
+describe.skipIf(!isLocalDatabase)("importParticipants", () => {
+  const text = [
+    "Name\tEmail\tTeam\tCompany tag",
+    "Smith\tsmith@jahnelgroup.com\tBlue\tIL",
+    "Neo\tNEO@jahnelgroup.com\tBlue\t",
+  ].join("\n");
+  // What the preview showed: Smith added, Neo moved to Blue.
+  const expected = [
+    { row: 2, kind: "add" as const, changes: [] },
+    { row: 3, kind: "update" as const, changes: ["House: Red → Blue"] },
+  ];
+
+  it("adds and updates the previewed rows in one transaction", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { importParticipants } = await import("@/mutations/setup");
+      const { schema, home, blueId, ctx } = await rosterFixture(tx);
+
+      expect(await importParticipants({ text, expected }, ctx, tx)).toEqual({
+        ok: true,
+        added: 1,
+        updated: 1,
+      });
+      const rows = await tx
+        .select({
+          displayName: schema.participant.displayName,
+          email: schema.participant.email,
+          companyTag: schema.participant.companyTag,
+          teamId: schema.participant.teamId,
+          isLeader: schema.participant.isLeader,
+        })
+        .from(schema.participant)
+        .where(eq(schema.participant.warWeekId, home));
+      expect(rows).toEqual(
+        expect.arrayContaining([
+          {
+            displayName: "Smith",
+            email: "smith@jahnelgroup.com",
+            companyTag: "IL",
+            teamId: blueId,
+            isLeader: false,
+          },
+          {
+            displayName: "Neo",
+            email: "neo@jahnelgroup.com",
+            companyTag: null,
+            teamId: blueId,
+            isLeader: true,
+          },
+        ]),
+      );
+      expect(rows).toHaveLength(3);
+    });
+  });
+
+  it("refuses, writing nothing, when the roster changed since the preview", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { importParticipants } = await import("@/mutations/setup");
+      const { schema, home, neoId, blueId, ctx } = await rosterFixture(tx);
+      // Another tab moved Neo to Blue after the preview.
+      await tx
+        .update(schema.participant)
+        .set({ teamId: blueId })
+        .where(eq(schema.participant.id, neoId));
+
+      expect(await importParticipants({ text, expected }, ctx, tx)).toEqual({
+        ok: false,
+        error: "The roster changed since the preview. Review it again.",
+      });
+      expect(
+        await tx.$count(
+          schema.participant,
+          eq(schema.participant.warWeekId, home),
+        ),
+      ).toBe(2);
+    });
+  });
+
+  it("refuses a file with nothing to import", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { importParticipants } = await import("@/mutations/setup");
+      const { ctx } = await rosterFixture(tx);
+
+      expect(
+        await importParticipants({ text: "", expected: [] }, ctx, tx),
+      ).toEqual({ ok: false, error: "Paste some rows or upload a CSV first." });
+      expect(
+        await importParticipants(
+          {
+            text: "Neo\tneo@jahnelgroup.com",
+            expected: [{ row: 1, kind: "unchanged", changes: [] }],
+          },
+          ctx,
+          tx,
+        ),
+      ).toEqual({ ok: false, error: "There's nothing to add or update." });
+    });
+  });
+});
+
 describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
   it("creates, edits and deletes a Competition with Placement Points", async () => {
     await inRolledBackTransaction(async (tx) => {

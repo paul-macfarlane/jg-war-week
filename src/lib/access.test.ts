@@ -216,6 +216,7 @@ describe("can: Organizer-only War Week families", () => {
           ["participant.create", "add Participants"],
           ["participant.edit", "change Participants"],
           ["participant.delete", "delete Participants"],
+          ["participant.import", "import Participants"],
           ["faq-item.create", "add FAQ Items"],
           ["faq-item.edit", "change FAQ Items"],
           ["faq-item.delete", "delete FAQ Items"],
