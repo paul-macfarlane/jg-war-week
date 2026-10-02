@@ -1,3 +1,5 @@
+import { formatDateValue } from "@/lib/date-value";
+
 /**
  * Refuses War Week dates that would leave an existing Day outside them,
  * naming the earliest such Day. Shared by the settings save and the date
@@ -46,4 +48,22 @@ export function nextRangeSelection(
   const error = dayOutsideRangeError(days, start, end);
   if (error) return { pending: { from: start, to: end }, error };
   return { pending: null, commit: { start, end } };
+}
+
+/**
+ * The Day picker's disabled-date matcher: a date is refused when it falls
+ * outside the War Week or already has a Day, except the edited Day's own
+ * date. The server's duplicate-date error stays as the backstop.
+ */
+export function dayDateDisabled(
+  startDate: string,
+  endDate: string,
+  dayDates: string[],
+  ownDate?: string,
+): (date: Date) => boolean {
+  const taken = new Set(dayDates.filter((date) => date !== ownDate));
+  return (date) => {
+    const value = formatDateValue(date);
+    return value < startDate || value > endDate || taken.has(value);
+  };
 }
