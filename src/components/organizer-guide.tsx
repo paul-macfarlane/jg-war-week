@@ -87,7 +87,8 @@ export function OrganizerGuide({
         <p className="text-foreground/70">
           On a phone, Points, Competitions, Schedule and Announcements are tabs
           on the bar at the bottom of the screen; the rest are under More, with
-          the edition switcher, Display and the way back to the War Week.
+          the edition switcher. Display, Back to War Week and Sign out are in
+          the account menu (your initials, top right).
         </p>
         <p className="text-foreground/70">
           A Host sees Points, Competitions, Schedule, Announcements, Finale and

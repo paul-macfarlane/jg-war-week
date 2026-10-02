@@ -109,14 +109,25 @@ function OrganizerForm({
   onSaved: () => void;
 }) {
   const id = useId();
+  const router = useRouter();
   const [value, setValue] = useState(email);
   const { pending, formRef, formAction, error } = useSetupRow(
     async () => {
       const next = value.trim().toLowerCase();
       if (next === email) return { ok: true };
+      if (!jgEmailSchema.safeParse(next).success) {
+        return { ok: false, error: JG_EMAIL_MESSAGE };
+      }
       const added = await addOrganizer(next);
       if (!added.ok) return added;
-      return removeOrganizer(email);
+      const removed = await removeOrganizer(email);
+      if (removed.ok) return removed;
+      // The new email is on the list now: show it, and say the old one stays.
+      router.refresh();
+      return {
+        ok: false,
+        error: `Added ${next}, but couldn't remove ${email}: ${removed.error}`,
+      };
     },
     "Organizer saved",
     onSaved,

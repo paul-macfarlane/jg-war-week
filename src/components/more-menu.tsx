@@ -51,8 +51,8 @@ export function MoreMenuLink({
 }
 
 /**
- * The More Sheet's content on a phone: the same links as `/[edition]/more`,
- * Tapping a link calls `onNavigate` so the
+ * The More Sheet's content on a phone: the same links as `/[edition]/more`
+ * (`moreLinks`, phone surface). Tapping a link calls `onNavigate` so the
  * caller can close the Sheet.
  */
 export function MoreMenu({

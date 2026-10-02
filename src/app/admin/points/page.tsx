@@ -26,7 +26,7 @@ import { loadAdminPage } from "../gate";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = { title: "Points Entries · JG War Week" };
+export const metadata: Metadata = { title: "Points · JG War Week" };
 
 // A text link, at least 44px tall on phones.
 const changeLink =

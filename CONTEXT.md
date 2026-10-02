@@ -19,7 +19,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Color scheme**              | `light` or `dark`, the CSS term for which of a War Week's two palettes a page renders.                                            |
 | **Base palette**              | An Appearance Theme's five Organizer-set colors, for whichever scheme its background reads as.                                   |
 | **Derived palette**           | The other color scheme's five colors, computed from the base palette (`derivePalette`) unless overridden.                        |
-| **Override**                  | An Organizer's per-color replacement of one derived-palette color in Setup.                                                       |
+| **Override**                  | An Organizer's per-color replacement of one derived-palette color in Settings.                                                    |
 | **Mode**                      | `teams` or `free-for-all`. Decides which leaderboard is the main one.                                                             |
 | **Team**                      | A competing group. Displayed using the War Week's **Team Label**.                                                                 |
 | **Team Label**                | What teams are called this year (House / Tribe / Team).                                                                           |
@@ -44,6 +44,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Announcement**              | A post by an Organizer or Host (rich text plus video links).                                                                      |
 | **FAQ Item**                  | A question and answer pair for a War Week.                                                                                        |
 | **Archive**                   | The past War Weeks shown at `/history`.                                                                                           |
+| **Recent results**            | Home's section of the latest results: finalized Brackets, closed `games` Competitions and Points Entries, newest first, up to 5. |
 | **Format**                    | How a Competition is run: `points` (Points Entries only), `games` (decided by Games, once or recurring; not a Bracket), or `single-elimination` or `heats` (a Bracket, for tournaments).                            |
 | **Bracket**                   | The Rounds and Heats of a non-`points` Competition.                                                                               |
 | **Round**                     | One step of a Bracket, holding Heats that can be played at the same time. Round 1 is the first.                                   |
@@ -144,9 +145,9 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 
 ## Light and dark Display rules
 
-- A viewer picks a **Display** — Light, Dark or System — from the control in
-  the header (the phone More Sheet, the desktop TopNav, and the AdminShell
-  header). **System** is the default and follows the OS's
+- A viewer picks a **Display** — Light, Dark or System — from the Account
+  menu (the avatar button in the top-right of the participant and admin
+  headers). **System** is the default and follows the OS's
   `prefers-color-scheme`. The choice is stored per device, in
   `localStorage["ww:display"]`, never on the account and never synced across
   devices.
@@ -156,7 +157,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   foreground swap, and the primary and accent colors keep their hue but move
   toward the new text color only as far as WCAG AA (4.5:1) needs. An
   Organizer may **override** any of the derived palette's five colors in
-  Setup; a background change across light and dark clears every override
+  Settings; a background change across light and dark clears every override
   that hasn't itself been touched.
 - Every themed surface follows the viewer's Display: the edition pages, the
   Finale, the Archive, `/about`, `/admin`, sign-in, install, privacy and
@@ -185,7 +186,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
     Organizer can add a JG email or remove one, themselves included while
     another remains; the last Organizer can't be removed.
   - A **Host** is a signed-in JG email an Organizer assigns to a
-    Competition (a `competition_host` row, set in Setup → Competitions). A
+    Competition (a `competition_host` row, set in Admin → Competitions). A
     Host runs their own Competitions: their setup (not creating, deleting or
     assigning Hosts), their Bracket, their Points Entries and the Schedule
     Items linked to them. A Host can also post Announcements in a War Week
@@ -232,13 +233,13 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   marks the Archive ("Editing the Archive: War Week X"). Anonymous visitors
   go to sign-in; anyone else sees "Organizers and Hosts only."
 - `/admin` is trimmed for a Host (`loadAdminPage` in
-  `src/app/admin/gate.ts`): Points Entries, the Brackets, Setup →
-  Competitions and Setup → Schedule list only their Competitions and the
+  `src/app/admin/gate.ts`): Points Entries, the Brackets, Admin →
+  Competitions and Admin → Schedule list only their Competitions and the
   Schedule Items linked to them. War Week settings, Days, Teams and roster,
   FAQ, Awards, the Organizer list and Create next War Week are
   Organizer-only pages and show a Host "Organizers and Hosts only." The
-  Admin link on the edition pages shows for Organizers and for anyone who
-  hosts a Competition.
+  Account menu's Admin item shows for Organizers and for anyone who hosts a
+  Competition.
 - Every page and API route needs a JG sign-in. Anonymous visitors to a
   page go to `/sign-in` and come back afterwards; API routes answer 401.
   Only `/sign-in`, `/api/auth/*`, `/about`, `/privacy` and `/terms` are
@@ -257,7 +258,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 - Standings are always visible to every signed-in user. `/<edition>/finale`
   and a finalized Bracket's `/<edition>/finale/<competitionId>` are readable
   by any signed-in JG user; Organizers and Hosts see the links to them in
-  `/admin/standings`.
+  `/admin/finale`.
 - A Heat's time and place is set by an Organizer or that Competition's Host
   (`bracket.heat-schedule`, through `authorize` like every Bracket write).
 - **Self-report** (`bracket.heat-report`, ADR 0005) is the one Participant
@@ -284,7 +285,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 
 - The current War Week is picked from status, never the clock: the `live`
   one, else the next `upcoming`, else the latest `complete`.
-- Status changes only through the lifecycle actions in `/admin/setup`, each
+- Status changes only through the lifecycle actions in `/admin/settings`, each
   behind a confirm, never through the settings form:
   - **Start**: `upcoming → live`
   - **End**: `live → complete`, recording the **Winner**: computed
@@ -304,7 +305,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   - Reopen works only for the most recently ended edition, and not while a
     later edition is upcoming ("War Week XII is next; reopen isn't
     available").
-- **Create next War Week** (`/admin/setup/next`, Organizers only) makes an
+- **Create next War Week** (on `/admin/settings`, Organizers only) makes an
   `upcoming` edition from any edition, prefilled with the next Roman
   numeral, edition number and year. It can copy settings with the
   Appearance Theme (on), Competitions with new ids and their Hosts (off) and
@@ -490,7 +491,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 ## Finale rules
 
 - The Finale is the closing-ceremony screen at `/<edition>/finale`, for the
-  projector. Organizers and Hosts open it from `/admin/standings` ("Open
+  projector. Organizers and Hosts open it from `/admin/finale` ("Open
   Finale").
 - It opens on a big Start button. Start, `Space`, or a click anywhere on the
   stage plays the countdown for the main leaderboard (team Standings in
@@ -515,7 +516,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   Start, Replay and reduced motion work as in the Finale. It reads nothing
   from the Standings and changes nothing. It's linked from the Bracket's
   champion card ("Play the Finale"), the results screen once finalized, and
-  `/admin/standings` ("Finale: <Competition>").
+  `/admin/finale` ("Finale: <Competition>").
 
 ## Seed idempotence rules
 
@@ -570,9 +571,11 @@ same rows with the same values (only `updated_at` moves).
     Competition's Game Type, Games settings, or open-to-everyone switch
     once it exists.
 
-**Setup in the UI.** Organizers can also edit setup in `/admin/setup`
-(War Week settings, the Appearance Theme, Days, Teams, the roster,
-Competitions with their Hosts, Schedule Items and FAQ Items); a Host edits
+**Setup in the UI.** Organizers can also edit setup in `/admin`: War Week
+settings and the Appearance Theme in `/admin/settings`, Days and Schedule
+Items in `/admin/schedule`, Teams and the roster in `/admin/roster`,
+Competitions with their Hosts in `/admin/competitions` and FAQ Items in
+`/admin/faq`; a Host edits
 only their own Competitions and the Schedule Items linked to them. The seed
 stays the way to bootstrap a War Week, and there's no merge: reloading a
 seed makes its War Week match the seed again, overwriting settings, Days and

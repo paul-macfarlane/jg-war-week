@@ -2,10 +2,9 @@
 
 import { LogOut, Monitor, Moon, Sun } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useSyncExternalStore } from "react";
 
-import { authClient } from "@/auth/client";
+import { useSignOut } from "@/components/auth-buttons";
 import { Avatar } from "@/components/avatar";
 import {
   DropdownMenu,
@@ -105,7 +104,7 @@ export function AccountMenu({
   /** The War Week's Slack channel; no item when empty. */
   slackUrl?: string | null;
 }) {
-  const router = useRouter();
+  const { pending: signingOut, signOut } = useSignOut();
   const display = useSyncExternalStore(
     subscribe,
     readDisplay,
@@ -154,7 +153,7 @@ export function AccountMenu({
             className="min-h-11 md:min-h-8"
             render={
               <Link
-                href={inAdmin ? `/${edition}` : "/admin"}
+                href={inAdmin ? `/${edition}` : "/admin/points"}
                 prefetch={false}
               />
             }
@@ -172,11 +171,8 @@ export function AccountMenu({
         )}
         <DropdownMenuItem
           className="min-h-11 md:min-h-8"
-          onClick={async () => {
-            await authClient.signOut();
-            router.push("/");
-            router.refresh();
-          }}
+          disabled={signingOut}
+          onClick={() => void signOut()}
         >
           <LogOut aria-hidden />
           Sign out

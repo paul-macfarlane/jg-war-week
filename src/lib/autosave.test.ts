@@ -2,7 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WriteResult } from "@/lib/result";
 
-import { type AutosaveSnapshot, createAutosave } from "./autosave";
+import {
+  type AutosaveSnapshot,
+  SAVE_FAILED_ERROR,
+  createAutosave,
+} from "./autosave";
 
 type Form = {
   title: string;
@@ -20,11 +24,11 @@ const SAVED: Form = {
 
 /** A save the test settles by hand, recording each posted input. */
 function fakeServer() {
-  const posted: Form[] = [];
+  const posted: Partial<Form>[] = [];
   const pending: ((result: WriteResult) => void)[] = [];
   return {
     posted,
-    save: (input: Form) =>
+    save: (input: Partial<Form>) =>
       new Promise<WriteResult>((resolve) => {
         posted.push(input);
         pending.push(resolve);
@@ -72,7 +76,7 @@ describe("createAutosave", () => {
     expect(last()?.status).toBe("saving");
 
     await vi.advanceTimersByTimeAsync(1);
-    expect(server.posted).toEqual([{ ...SAVED, title: "Spaces" }]);
+    expect(server.posted).toEqual([{ title: "Spaces" }]);
     await server.respond({ ok: true });
     expect(last()).toEqual({ status: "saved", fieldErrors: {} });
     expect(autosave.unsaved()).toBe(false);
@@ -106,7 +110,7 @@ describe("createAutosave", () => {
     // The title saves on its own: the refused URL isn't sent with it.
     autosave.change({ ...badUrl, title: "Moon" }, ["title"]);
     await vi.runAllTimersAsync();
-    expect(server.posted.at(-1)).toEqual({ ...SAVED, title: "Moon" });
+    expect(server.posted.at(-1)).toEqual({ title: "Moon" });
     await server.respond({ ok: true });
     expect(last()?.fieldErrors).toEqual({
       url: "Slack URL must be an https URL.",
@@ -119,11 +123,7 @@ describe("createAutosave", () => {
       ["url"],
     );
     await vi.runAllTimersAsync();
-    expect(server.posted.at(-1)).toEqual({
-      ...SAVED,
-      title: "Moon",
-      url: "https://slack.example/b",
-    });
+    expect(server.posted.at(-1)).toEqual({ url: "https://slack.example/b" });
     await server.respond({ ok: true });
     expect(last()).toEqual({ status: "saved", fieldErrors: {} });
   });
@@ -151,12 +151,12 @@ describe("createAutosave", () => {
     await server.respond({ ok: true });
     await server.respond({ ok: true });
     expect(server.posted).toEqual([
-      { ...SAVED, title: "Moon" },
-      { ...SAVED, title: "Moon", start: "2027-02-21", end: "2027-02-27" },
+      { title: "Moon" },
+      { start: "2027-02-21", end: "2027-02-27" },
     ]);
   });
 
-  it("sends one save at a time, each on top of the last one saved, and never another field's unsaved typing", async () => {
+  it("sends one save at a time, each with only its own fields, never another field's unsaved typing", async () => {
     const { server, autosave, settled } = setup();
     autosave.change({ ...SAVED, title: "Moon" }, ["title"]);
     await vi.runAllTimersAsync();
@@ -173,19 +173,11 @@ describe("createAutosave", () => {
     expect(server.posted).toHaveLength(1);
 
     await server.respond({ ok: true });
-    expect(server.posted[1]).toEqual({
-      ...SAVED,
-      title: "Moon",
-      url: "https://slack.example/b",
-    });
+    expect(server.posted[1]).toEqual({ url: "https://slack.example/b" });
     expect(settled).not.toHaveBeenCalled();
     await server.respond({ ok: true });
     await server.respond({ ok: true });
-    expect(server.posted[2]).toEqual({
-      ...SAVED,
-      title: "Moonbase",
-      url: "https://slack.example/b",
-    });
+    expect(server.posted[2]).toEqual({ title: "Moonbase" });
     expect(settled).toHaveBeenCalledTimes(1);
   });
 
@@ -196,7 +188,7 @@ describe("createAutosave", () => {
     const done = autosave.flush();
     expect(server.posted).toEqual([]);
     await vi.advanceTimersByTimeAsync(0);
-    expect(server.posted).toEqual([{ ...SAVED, title: "Moon" }]);
+    expect(server.posted).toEqual([{ title: "Moon" }]);
     await server.respond({ ok: true });
     await done;
     expect(autosave.unsaved()).toBe(false);
@@ -214,6 +206,6 @@ describe("createAutosave", () => {
     watched.change({ ...SAVED, title: "Moon" }, ["title"]);
     await vi.runAllTimersAsync();
     expect(snapshots.at(-1)?.status).toBe("failed");
-    expect(snapshots.at(-1)?.fieldErrors.title).toMatch(/couldn't save/i);
+    expect(snapshots.at(-1)?.fieldErrors.title).toBe(SAVE_FAILED_ERROR);
   });
 });

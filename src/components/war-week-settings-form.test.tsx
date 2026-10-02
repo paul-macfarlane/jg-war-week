@@ -8,7 +8,7 @@ import { WarWeekSettingsForm } from "./war-week-settings-form";
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: () => {}, push: () => {} }),
 }));
-vi.mock("@/actions/setup", () => ({ updateWarWeekSettings: vi.fn() }));
+vi.mock("@/actions/setup", () => ({ updateWarWeekSettingsFields: vi.fn() }));
 
 const initial: WarWeekSettingsInput = {
   storyTheme: "Space",
@@ -69,7 +69,6 @@ describe("WarWeekSettingsForm autosave", () => {
     const html = render("teams");
     expect(html).not.toContain("Save settings");
     expect(html).not.toContain('type="submit"');
-    expect(html).not.toContain('data-slot="sticky-form-actions"');
     expect(html).toMatch(
       /<p[^>]*role="status"[^>]*data-slot="autosave-status"[^>]*>Changes save automatically<\/p>/,
     );

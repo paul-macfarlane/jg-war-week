@@ -44,7 +44,7 @@ const EDITOR_ATTR = "data-setup-editor";
 export const SETUP_EDITOR = { [EDITOR_ATTR]: "" };
 
 /** Marks a setup row by its id; the add row has none. */
-export function setupRowProps(id?: string) {
+function setupRowProps(id?: string) {
   return { [ROW_ATTR]: id ?? ADD_ROW };
 }
 

@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { updateWarWeekSettings } from "@/actions/setup";
+import { updateWarWeekSettingsFields } from "@/actions/setup";
 import { ColorField, type ColorSwatch } from "@/components/color-field";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DateRangePicker } from "@/components/date-range-picker";
 import { OptionSelect, type SelectOption } from "@/components/option-select";
 import { ThemeRoot } from "@/components/theme-root";
@@ -27,10 +28,12 @@ import {
   createAutosave,
 } from "@/lib/autosave";
 import { normalizeHex } from "@/lib/color";
+import { leavingHref } from "@/lib/leave-guard";
 import {
   type OverrideColumn,
   type WarWeekSettingsInput,
   settingsSaveGroup,
+  setupFieldLabel,
 } from "@/lib/setup";
 import {
   type ColorScheme,
@@ -129,7 +132,10 @@ const STATUS_TEXT: Record<AutosaveStatus, string> = {
  * send a waiting change at once, and the save runs to completion in the
  * still-open app. A reload or close can't promise a request finishes once
  * the page unloads, so `beforeunload` sends what's waiting and asks the
- * browser to warn while a save is waiting, in flight, or refused.
+ * browser to warn while a save is waiting, in flight, or refused. A
+ * refused field isn't sent again on its own, so while one is showing, a
+ * click on an in-app link asks first ("Leave without saving?"); a save
+ * merely waiting or in flight lets the link go and finishes on unmount.
  */
 export function WarWeekSettingsForm({
   warWeekId,
@@ -162,7 +168,7 @@ export function WarWeekSettingsForm({
   const [autosave] = useState(() =>
     createAutosave<WarWeekSettingsInput>({
       saved: initial,
-      save: (input) => updateWarWeekSettings(warWeekId, input),
+      save: (fields) => updateWarWeekSettingsFields(warWeekId, fields),
       groupOf: settingsSaveGroup,
       delayMs: AUTOSAVE_DELAY_MS,
       onChange: setSaveState,
@@ -187,6 +193,40 @@ export function WarWeekSettingsForm({
       void autosave.flush();
     };
   }, [autosave]);
+
+  // While a refusal shows, an in-app link click asks before leaving. A
+  // capture listener on the document runs before the link's own handler,
+  // and Next's Link doesn't navigate a click that was prevented.
+  const [leaving, setLeaving] = useState<string | null>(null);
+  const refused = Object.entries(saveState.fieldErrors);
+  const hasRefusal = refused.length > 0;
+  useEffect(() => {
+    if (!hasRefusal) return;
+    const onClick = (event: MouseEvent) => {
+      const link =
+        event.target instanceof Element
+          ? event.target.closest("a[href]")
+          : null;
+      if (!(link instanceof HTMLAnchorElement)) return;
+      const href = leavingHref(
+        {
+          href: link.href,
+          target: link.target,
+          download: link.hasAttribute("download"),
+          button: event.button,
+          modified:
+            event.metaKey || event.ctrlKey || event.shiftKey || event.altKey,
+          defaultPrevented: event.defaultPrevented,
+        },
+        window.location.href,
+      );
+      if (href === null) return;
+      event.preventDefault();
+      setLeaving(href);
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, [hasRefusal]);
 
   /** Applies an edit to `fields` and queues them to save. */
   function edit(
@@ -297,6 +337,23 @@ export function WarWeekSettingsForm({
           {STATUS_TEXT[saveState.status]}
         </p>
       </div>
+      <ConfirmDialog
+        open={leaving !== null}
+        onOpenChange={(open) => {
+          if (!open) setLeaving(null);
+        }}
+        title="Leave without saving?"
+        description={
+          hasRefusal
+            ? `${setupFieldLabel(refused[0][0])} wasn't saved: ${refused[0][1]}`
+            : undefined
+        }
+        confirmLabel="Leave"
+        onConfirm={() => {
+          if (leaving) router.push(leaving);
+          setLeaving(null);
+        }}
+      />
       <form
         // Enter in a field saves it now instead of submitting the page.
         onSubmit={(event) => {
@@ -347,7 +404,7 @@ export function WarWeekSettingsForm({
               <FieldError>{fieldErrors.mode}</FieldError>
             </Field>
             {/* A free-for-all has no Teams: hide the fields; their saved
-              values stay (each save sends the saved ones). */}
+              values stay (each save sends only its own fields). */}
             {values.mode !== "free-for-all" && (
               <>
                 {text("teamLabel", "Team Label", {

@@ -47,7 +47,7 @@ function ResultSummary({
       <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
         {result.scores.map(({ target, points }) => (
           <span
-            key={`${target.kind}-${target.name}`}
+            key={`${target.kind}-${target.id}`}
             className="inline-flex items-center gap-1.5"
           >
             <TargetName target={target} primaryColor={primaryColor} />
@@ -66,7 +66,7 @@ function ResultSummary({
       </span>
       {result.winners.map((target) => (
         <TargetName
-          key={`${target.kind}-${target.name}`}
+          key={`${target.kind}-${target.id}`}
           target={target}
           primaryColor={primaryColor}
         />
