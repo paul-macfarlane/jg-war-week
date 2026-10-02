@@ -27,7 +27,7 @@
 ## Comments
 
 - 2026-10-02 [AI CODE REVIEW] (atlas-implement): Two fresh Opus reviewers read `0e19fa6..d7c4096`, one per axis. The orchestrator adjudicated each finding against the cited hunks; the full record is in `../epics/R9-execution.md` [AI CODE REVIEW]. One blocking finding: F2, settings autosave wrote the whole row and could revert a newer Winner. It was fixed in `aae6856`/`6360357` with partial saves merged over the locked row. Every non-blocking finding was fixed or approved as a deviation.
-- 2026-10-02 [CLOSEOUT] (atlas-implement): Branch `feat/regression-r9-navigation`; worker D54 (Sonnet), commit `4f53a55`.
+- 2026-10-02 [CLOSEOUT] (atlas-implement): PR https://github.com/paul-macfarlane/jg-war-week/pull/114. Branch `feat/regression-r9-navigation`; worker D54 (Sonnet), commit `4f53a55`.
   - AC1 PASS: `src/lib/primary-nav.ts` (unit-tested) gives phone Home, Schedule, Competitions, Leaderboard, More and desktop + Announcements. `e2e/regression-r9-nav.spec.ts` asserts order and Competitions current on `/xii/competitions` and a Competition page at 390×844 and 1440×900. Screenshots: `test-results/r9-navigation/nav-competitions-*`, `nav-competition-page-*`.
   - AC2 PASS: Announcements is the first More item on a phone and More is current on its page (e2e; `nav-announcements-390`, `nav-more-sheet-390`).
   - AC3 PASS: no spec went through More → Competitions. `pnpm format:check && pnpm gate` passes at `6360357` (`test-results/r9-navigation/gate.txt`).

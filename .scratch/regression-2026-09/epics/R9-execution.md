@@ -193,7 +193,7 @@ Review fix commits:
 
 ## [CLOSEOUT]
 
-2026-10-02. Repository `war-weeker`, branch `feat/regression-r9-navigation` from `staging` `0e19fa6`. PR: PR_URL.
+2026-10-02. Repository `war-weeker`, branch `feat/regression-r9-navigation` from `staging` `0e19fa6`. PR: https://github.com/paul-macfarlane/jg-war-week/pull/114.
 
 | Deliverable | Commit | Worker model | Result |
 |---|---|---|---|

@@ -25,7 +25,7 @@
 ## Comments
 
 - 2026-10-02 [AI CODE REVIEW] (atlas-implement): Two fresh Opus reviewers read `0e19fa6..d7c4096`, one per axis. The orchestrator adjudicated each finding against the cited hunks; the full record is in `../epics/R9-execution.md` [AI CODE REVIEW]. One blocking finding: F2, settings autosave wrote the whole row and could revert a newer Winner. It was fixed in `aae6856`/`6360357` with partial saves merged over the locked row. Every non-blocking finding was fixed or approved as a deviation.
-- 2026-10-02 [CLOSEOUT] (atlas-implement): Branch `feat/regression-r9-navigation`; worker D58 (Opus), commit `690a8dd`; orchestrator e2e fix `d7c4096`; review fixes `aae6856`.
+- 2026-10-02 [CLOSEOUT] (atlas-implement): PR https://github.com/paul-macfarlane/jg-war-week/pull/114. Branch `feat/regression-r9-navigation`; worker D58 (Opus), commit `690a8dd`; orchestrator e2e fix `d7c4096`; review fixes `aae6856`.
   - AC1 PASS: `SetupListRow` is the one row component with a visible Edit (sheet/dialog; Announcements link to their page) and Delete (`ConfirmDialog` + toast), 44px on phones. `e2e/regression-r9-lists.spec.ts` checks all nine lists at both widths; screenshots `admin-roster-*`, `admin-list-schedule-*`.
   - AC2 PASS: e2e edits and deletes a Participant and a Schedule Item through the row buttons.
   - AC3 PASS with approved deviation: Schedule, FAQ and Awards `/new` and `/[id]` pages are gone and redirect (unit + smoke). Remaining dynamic pages are Announcements plus `points/[id]`, `brackets/[id]` and `competitions/[id]/bracket|games`, which aren't list editors.

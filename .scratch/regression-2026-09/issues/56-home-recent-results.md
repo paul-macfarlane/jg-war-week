@@ -25,7 +25,7 @@
 ## Comments
 
 - 2026-10-02 [AI CODE REVIEW] (atlas-implement): Two fresh Opus reviewers read `0e19fa6..d7c4096`, one per axis. The orchestrator adjudicated each finding against the cited hunks; the full record is in `../epics/R9-execution.md` [AI CODE REVIEW]. One blocking finding: F2, settings autosave wrote the whole row and could revert a newer Winner. It was fixed in `aae6856`/`6360357` with partial saves merged over the locked row. Every non-blocking finding was fixed or approved as a deviation.
-- 2026-10-02 [CLOSEOUT] (atlas-implement): Branch `feat/regression-r9-navigation`; worker D56 (Sonnet), commit `0c12d50`; orchestrator fix `62acabf` (e2e sign-in); review fixes `aae6856` (targets compared by id, bounded query).
+- 2026-10-02 [CLOSEOUT] (atlas-implement): PR https://github.com/paul-macfarlane/jg-war-week/pull/114. Branch `feat/regression-r9-navigation`; worker D56 (Sonnet), commit `0c12d50`; orchestrator fix `62acabf` (e2e sign-in); review fixes `aae6856` (targets compared by id, bounded query).
   - AC1 PASS: `src/lib/recent-results.test.ts` covers ordering, grouping (one Competition's entries within 10 minutes of each other), ties, same-name targets and the limit of 5.
   - AC2 PASS: `e2e/regression-r9-home.spec.ts` shows newest first, one row per Competition's entries. Screenshots `recent-results-390`/`-1440` on the XII demo with a finalized Bracket made for the shot and removed after. The XII demo's seeded Points Entries are dated Feb 2027, so they sort above today's Bracket row (correct ordering).
   - AC3 PASS: gate at `6360357`.

@@ -25,7 +25,7 @@
 ## Comments
 
 - 2026-10-02 [AI CODE REVIEW] (atlas-implement): Two fresh Opus reviewers read `0e19fa6..d7c4096`, one per axis. The orchestrator adjudicated each finding against the cited hunks; the full record is in `../epics/R9-execution.md` [AI CODE REVIEW]. One blocking finding: F2, settings autosave wrote the whole row and could revert a newer Winner. It was fixed in `aae6856`/`6360357` with partial saves merged over the locked row. Every non-blocking finding was fixed or approved as a deviation.
-- 2026-10-02 [CLOSEOUT] (atlas-implement): Branch `feat/regression-r9-navigation`; worker D59 (Opus), commit `ef1b9bd`; review fixes `aae6856` (partial saves, leave guard) and `6360357` (old full-save action retired).
+- 2026-10-02 [CLOSEOUT] (atlas-implement): PR https://github.com/paul-macfarlane/jg-war-week/pull/114. Branch `feat/regression-r9-navigation`; worker D59 (Opus), commit `ef1b9bd`; review fixes `aae6856` (partial saves, leave guard) and `6360357` (old full-save action retired).
   - AC1 PASS: `e2e/regression-r9-settings.spec.ts` r9 59-1 changes Story Theme, waits for "Saved", reloads, and the value persisted; no Save button.
   - AC2 PASS: r9 59-2 shows a bad Slack URL's error at the field, keeps the typed value and doesn't save it.
   - AC3 PASS: gate at `6360357`.

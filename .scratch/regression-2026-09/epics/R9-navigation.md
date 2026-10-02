@@ -32,4 +32,4 @@ Each ticket's own, plus:
 ## Comments
 
 - 2026-10-01 (Paul): grilled and approved; tickets `ready-for-agent`.
-- 2026-10-02 [CLOSEOUT] (atlas-implement): tickets 54–59 done on `feat/regression-r9-navigation`; record in `R9-execution.md`. PR: PR_URL. `pnpm format:check && pnpm gate` passes at `6360357`; CI pending at closeout.
+- 2026-10-02 [CLOSEOUT] (atlas-implement): tickets 54–59 done on `feat/regression-r9-navigation`; record in `R9-execution.md`. PR: https://github.com/paul-macfarlane/jg-war-week/pull/114. `pnpm format:check && pnpm gate` passes at `6360357`; CI pending at closeout.
