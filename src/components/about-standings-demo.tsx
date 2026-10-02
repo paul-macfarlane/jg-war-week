@@ -15,7 +15,7 @@ const STEPS = [
   {
     slug: "standings-entry",
     label: "Points Entry",
-    alt: "An Organizer saving a Points Entry with Placement Points.",
+    alt: "An Organizer saving a Points Entry for whoever is in last place.",
   },
   {
     slug: "standings-after",

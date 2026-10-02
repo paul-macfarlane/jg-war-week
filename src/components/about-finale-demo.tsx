@@ -1,12 +1,12 @@
 /**
- * A still of War Week XI's Finale on a phone (ticket 04): the countdown
+ * A still of the current War Week's Finale on a phone (ticket 04): the countdown
  * caught mid-count, Standings climbing into place. Moved out of the About
  * page's hero (now `AboutStandingsDemo`) and shown lower down as a plain
  * still, not a looping video. `public/about/finale-poster.png` is written
  * by `scripts/about-media.ts` from the seeded demo, never by hand.
  */
 const DESCRIPTION =
-  "War Week XI's Finale on a phone, mid-countdown: each Team counting up into its place.";
+  "War Week XII's Finale on a phone, ready to count the Standings in from last place to first.";
 
 export function AboutFinaleDemo() {
   return (

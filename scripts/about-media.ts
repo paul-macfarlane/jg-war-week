@@ -1,28 +1,33 @@
 /**
- * Writes the About page's media (tickets 28, 03, 04) from the seeded demo,
- * never by hand: `public/about/finale-poster.png` (War Week XI's Finale on
- * a phone, mid-countdown; a still only — no Finale video is written or
- * shown), the hero's `standings-before.png` / `standings-entry.png` /
- * `standings-after.png` (an Organizer's real Points Entry moving the home
- * Standings), and one still per feature card at `public/about/<slug>.png`.
- * Afterwards it screenshots `/about` as an anonymous visitor at 390px,
- * desktop and with reduced motion into `test-results/28-splash/`, with a
- * log.
+ * Writes the About page's media (tickets 28, 03, 04, 43) from the current
+ * War Week's seeded demo, never by hand: `public/about/finale-poster.png`
+ * (its Finale on a phone, mid-countdown; a still only — no Finale video is
+ * written or shown), the hero's `standings-before.png` /
+ * `standings-entry.png` / `standings-after.png` (an Organizer's real Points
+ * Entry moving the home Standings), and one still per feature card at
+ * `public/about/<slug>.png`. Afterwards it screenshots `/about` as an
+ * anonymous visitor at 390px, desktop and with reduced motion into
+ * `test-results/about-media/`, with a log (and a logged-Game still there as
+ * evidence).
  *
- * Needs a production build and a freshly seeded local Postgres, the same
- * prerequisite as `docs/maintainers-guide.md` (`pnpm build`, then
- * `pnpm seed:load --reset seeds/*.json && pnpm seed:demo`), and Google
- * Chrome. Starts its own server on port 3202, signs in as a made-up Organizer
- * (`about-demo@jahnelgroup.com`) that it adds to the Organizer list and
- * lends XI's seeded Points Entries for the run, so no real email is in any
- * file, and restores everything after, including the one Points Entry the
- * Standings hero saves:
+ * Every page is the current War Week's (live, else next upcoming, else most
+ * recent completed: the same resolution as `/` and `/about`), in its
+ * Appearance Theme and Teams or free-for-all mode. Needs a production build,
+ * a local Postgres seeded with that edition's demo, and Google Chrome:
+ *   pnpm build && pnpm seed:demo:xii
+ * (next year, write `seeds/demo/<edition>.json` and use
+ * `pnpm seed:demo:<edition>`). Starts its own server on port 3202, signs in
+ * as a made-up Organizer (`about-demo@jahnelgroup.com`) that it adds to the
+ * Organizer list and lends the War Week's seeded Points Entries and
+ * Announcements for the run, so no real email is in any file, and restores
+ * everything after, including the one Points Entry the Standings hero saves:
  *   pnpm tsx scripts/about-media.ts
  *
  * `--stills` rewrites the feature-card and Standings-hero stills and
  * leaves the Finale poster alone:
  *   pnpm tsx scripts/about-media.ts --stills
  */
+import { TZDate } from "@date-fns/tz";
 import { loadEnvConfig } from "@next/env";
 import { makeSignature } from "better-auth/crypto";
 import { type ChildProcess, spawn } from "node:child_process";
@@ -31,7 +36,6 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
-  readFileSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -40,12 +44,11 @@ import os from "node:os";
 import path from "node:path";
 import { Client } from "pg";
 
-import { ABOUT_FEATURES, STATIC_PAGE_THEME } from "@/lib/about";
+import { ABOUT_FEATURES } from "@/lib/about";
 import { DISPLAY_STORAGE_KEY } from "@/lib/display";
 import { FINALE_MAX_MS } from "@/lib/finale";
 import { backgroundColorScheme } from "@/lib/theme";
 import type { LeaderboardResult } from "@/mcp/leaderboard";
-import { DEMO_SEED } from "@/seed/local-files";
 
 loadEnvConfig(process.cwd());
 
@@ -56,25 +59,14 @@ const CHROME =
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const DEBUG_PORT = 9304;
 const MEDIA = path.resolve(process.cwd(), "public/about");
-const EVIDENCE = path.resolve(process.cwd(), "test-results/28-splash");
+const EVIDENCE = path.resolve(process.cwd(), "test-results/about-media");
 const AUTH_SECRET = `about-media-secret-${randomUUID()}`;
 const DEMO_EMAIL = "about-demo@jahnelgroup.com";
 const STILL = { width: 1280, height: 720 };
 const PHONE = { width: 390, height: 844 };
-/**
- * Every still and the Finale poster wear XI's base palette, the scheme its
- * Organizer designed, not whatever this Chrome's OS happens to be set to
- * (it has no stored `ww:display`, so under System it would follow the Mac).
- * Pinned per page via `Page.addScriptToEvaluateOnNewDocument`, never
- * `Emulation.setEmulatedMedia` (the reduced-motion capture below replaces
- * its feature list wholesale, which would drop an earlier media pin).
- */
-const PINNED_DISPLAY = backgroundColorScheme(STATIC_PAGE_THEME.backgroundColor);
 /** Around the Finale: this much of the Start screen before, and after. */
 const LEAD_IN_MS = 2_500;
 const HOLD_MS = 3_500;
-/** A time inside XI's week for the Now / Next still (ET). */
-const SCHEDULE_AT = "2026-02-24T12:15:00-05:00";
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const log: string[] = [];
@@ -85,6 +77,31 @@ const note = (line: string) => {
 
 // ---------------------------------------------------------------------------
 // Database
+
+/** The War Week every capture is taken from, resolved once in `main`. */
+type CurrentWarWeek = {
+  id: string;
+  edition: string;
+  mode: "teams" | "free-for-all";
+  background_color: string;
+};
+
+let current: CurrentWarWeek;
+/** The current War Week's home: `/` and its edition. */
+const home = () => `/${current.edition}`;
+/**
+ * Every still and the Finale poster wear the current War Week's base
+ * palette, the scheme its Organizer designed, not whatever this Chrome's OS
+ * happens to be set to (it has no stored `ww:display`, so under System it
+ * would follow the Mac). Pinned per page via
+ * `Page.addScriptToEvaluateOnNewDocument`, never `Emulation.setEmulatedMedia`
+ * (the reduced-motion capture below replaces its feature list wholesale,
+ * which would drop an earlier media pin).
+ */
+const pinnedDisplay = () => backgroundColorScheme(current.background_color);
+/** Teams-mode Standings rank Teams; free-for-all, Participants. */
+const standingsKind = () =>
+  current.mode === "teams" ? ("team" as const) : ("individual" as const);
 
 async function query<T = Record<string, unknown>>(
   sql: string,
@@ -116,12 +133,59 @@ async function createSession(email: string): Promise<string> {
   );
 }
 
-/** The seeded Organizer, whose email must not appear in any file written. */
-function seededOrganizerEmail(): string {
-  const seed = JSON.parse(
-    readFileSync(path.resolve(process.cwd(), DEMO_SEED), "utf8"),
-  ) as { organizers: string[] };
-  return seed.organizers[0];
+/**
+ * The current War Week, resolved as `getCurrentWarWeek` does
+ * (`selectCurrentWarWeek`): live, else the earliest upcoming, else the
+ * latest completed.
+ */
+async function resolveCurrentWarWeek(): Promise<CurrentWarWeek> {
+  const [row] = await query<CurrentWarWeek>(
+    `select id, edition, mode, background_color from war_week
+     order by case status when 'live' then 0 when 'upcoming' then 1 else 2 end,
+       case when status = 'upcoming' then start_date end asc,
+       start_date desc
+     limit 1`,
+  );
+  if (!row) {
+    throw new Error("no War Week: run `pnpm seed:demo:<edition>` first");
+  }
+  return row;
+}
+
+/**
+ * Lends the current War Week's seeded Points Entries and Announcements to
+ * the demo Organizer, so whoever entered them (an email) never appears in a
+ * capture; returns the undo, which puts each row's own author back.
+ */
+async function lendAuthorship(): Promise<() => Promise<void>> {
+  const entries = await query<{ id: string; email: string }>(
+    `update points_entry p set entered_by_email = $1
+     from points_entry old
+     where p.id = old.id and p.competition_id in (select id from competition where war_week_id = $2)
+     returning p.id, old.entered_by_email as email`,
+    [DEMO_EMAIL, current.id],
+  );
+  const announcements = await query<{ id: string; email: string }>(
+    `update announcement a set author_email = $1
+     from announcement old
+     where a.id = old.id and a.war_week_id = $2
+     returning a.id, old.author_email as email`,
+    [DEMO_EMAIL, current.id],
+  );
+  return async () => {
+    for (const { id, email } of entries) {
+      await query(
+        `update points_entry set entered_by_email = $2 where id = $1`,
+        [id, email],
+      );
+    }
+    for (const { id, email } of announcements) {
+      await query(`update announcement set author_email = $2 where id = $1`, [
+        id,
+        email,
+      ]);
+    }
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -159,7 +223,7 @@ class Page {
     });
   }
 
-  static async open(display: "light" | "dark" = PINNED_DISPLAY): Promise<Page> {
+  static async open(display = pinnedDisplay()): Promise<Page> {
     const target = (await (
       await fetch(`http://127.0.0.1:${DEBUG_PORT}/json/new?about:blank`, {
         method: "PUT",
@@ -336,7 +400,7 @@ async function recordFinale(cookie: string) {
     1,
   );
   await page.cookie(cookie);
-  await page.goto("/xi/finale", 3_000);
+  await page.goto(`${home()}/finale`, 3_000);
   await page.evaluate(`(document.documentElement.style.zoom = "2")`);
   await sleep(500);
   await assertNoRealEmail(page, "finale");
@@ -396,84 +460,114 @@ async function recordFinale(cookie: string) {
 }
 
 // ---------------------------------------------------------------------------
-// A finished Heats Bracket for the "brackets" still
+// A finished Heats Bracket for the "competitions" still
 
 const BRACKET_COMP_NAME = "Capture the Flag";
 
 /**
- * Builds a small, already-finished Heats Bracket on XI (8 Participant
- * Entrants, 4 per Heat with the top 2 advancing, two Round 1 Heats and a
- * decided Final) directly in SQL: the Competition, its Entrants at Seed
- * Positions 1–8, and each Heat with its slots and places. The caller deletes
- * the Competition (which cascades its Entrants and Heats) when done.
+ * Fills a small, already-finished Heats Bracket on the current War Week (8
+ * Participant Entrants, 4 per Heat with the top 2 advancing, two Round 1
+ * Heats and a decided Final) directly in SQL: its Entrants at Seed
+ * Positions 1–8, and each Heat with its slots and places. It uses the
+ * demo's own seeded heats Competition when it has one with no Entrants yet
+ * (seeds can't seed Entrants), else adds a Competition of its own. Returns
+ * the Competition and the undo: delete the added Competition (which cascades
+ * its Entrants and Heats), or the seeded one's Heats and Entrants.
  */
-async function setupBracketDemo(): Promise<string> {
-  const [xiWarWeek] = await query<{ id: string }>(
-    `select id from war_week where edition = 'xi'`,
+async function setupBracketDemo(): Promise<{
+  competitionId: string;
+  teardown: () => Promise<void>;
+}> {
+  const [seeded] = await query<{ id: string }>(
+    `select c.id from competition c
+     where c.war_week_id = $1 and c.format = 'heats' and c.scoring = 'individual'
+       and not exists (select 1 from entrant e where e.competition_id = c.id)
+     order by c.name limit 1`,
+    [current.id],
   );
-  const [comp] = await query<{ id: string }>(
-    `insert into competition (war_week_id, name, scoring, format, bracket_config)
-     values ($1, $2, 'individual', 'heats', $3) returning id`,
-    [
-      xiWarWeek.id,
-      BRACKET_COMP_NAME,
-      { entrantsPerHeat: 4, advancePerHeat: 2 },
-    ],
-  );
-  const competitionId = comp.id;
-  const participants = await query<{ id: string }>(
-    `select id from participant where war_week_id = $1 order by display_name limit 8`,
-    [xiWarWeek.id],
-  );
-  if (participants.length < 8) {
-    throw new Error("XI needs at least 8 Participants for the Bracket demo");
-  }
-  const entrantIds: string[] = [];
-  for (const [i, p] of participants.entries()) {
-    const [entrant] = await query<{ id: string }>(
-      `insert into entrant (competition_id, participant_id, seed_position)
-       values ($1, $2, $3) returning id`,
-      [competitionId, p.id, i + 1],
+  const competitionId =
+    seeded?.id ??
+    (
+      await query<{ id: string }>(
+        `insert into competition (war_week_id, name, scoring, format, bracket_config)
+         values ($1, $2, 'individual', 'heats', $3) returning id`,
+        [
+          current.id,
+          BRACKET_COMP_NAME,
+          { entrantsPerHeat: 4, advancePerHeat: 2 },
+        ],
+      )
+    )[0].id;
+  const teardown = seeded
+    ? async () => {
+        await query(`delete from heat where competition_id = $1`, [
+          competitionId,
+        ]);
+        await query(`delete from entrant where competition_id = $1`, [
+          competitionId,
+        ]);
+      }
+    : async () => {
+        await query(`delete from competition where id = $1`, [competitionId]);
+      };
+  try {
+    const participants = await query<{ id: string }>(
+      `select id from participant where war_week_id = $1 order by display_name limit 8`,
+      [current.id],
     );
-    entrantIds.push(entrant.id);
+    if (participants.length < 8) {
+      throw new Error(
+        `${current.edition} needs at least 8 Participants for the Bracket demo`,
+      );
+    }
+    const entrantIds: string[] = [];
+    for (const [i, p] of participants.entries()) {
+      const [entrant] = await query<{ id: string }>(
+        `insert into entrant (competition_id, participant_id, seed_position)
+         values ($1, $2, $3) returning id`,
+        [competitionId, p.id, i + 1],
+      );
+      entrantIds.push(entrant.id);
+    }
+    const [e1, e2, e3, e4, e5, e6, e7, e8] = entrantIds;
+    const [finalHeat] = await query<{ id: string }>(
+      `insert into heat (competition_id, round, position, status, slot_count)
+       values ($1, 2, 1, 'played', 4) returning id`,
+      [competitionId],
+    );
+    const [heatA] = await query<{ id: string }>(
+      `insert into heat (competition_id, round, position, status, slot_count)
+       values ($1, 1, 1, 'played', 4) returning id`,
+      [competitionId],
+    );
+    const [heatB] = await query<{ id: string }>(
+      `insert into heat (competition_id, round, position, status, slot_count)
+       values ($1, 1, 2, 'played', 4) returning id`,
+      [competitionId],
+    );
+    await query(
+      `insert into heat_entrant (heat_id, entrant_id, slot, place) values
+         ($1, $2, 0, 1), ($1, $3, 1, 2), ($1, $4, 2, 3), ($1, $5, 3, 4),
+         ($6, $7, 0, 1), ($6, $8, 1, 2), ($6, $9, 2, 3), ($6, $10, 3, 4),
+         ($11, $2, 0, 1), ($11, $7, 1, 2), ($11, $3, 2, 3), ($11, $8, 3, 4)`,
+      [heatA.id, e1, e2, e3, e4, heatB.id, e5, e6, e7, e8, finalHeat.id],
+    );
+    // One Heat's time and place, so the still shows a when-line
+    // ("Sunday, Feb 21 · 7:00 PM ET · Main room") on its card.
+    await query(
+      `update heat set day_id = (select id from day where war_week_id = $2 order by date limit 1),
+         start_time = '19:00', location = 'Main room'
+       where id = $1`,
+      [heatA.id, current.id],
+    );
+    note(
+      `bracket demo: ${seeded ? "seeded" : "added"} competition ${competitionId}, champion entrant ${e1}`,
+    );
+  } catch (error) {
+    await teardown();
+    throw error;
   }
-  const [e1, e2, e3, e4, e5, e6, e7, e8] = entrantIds;
-  const [finalHeat] = await query<{ id: string }>(
-    `insert into heat (competition_id, round, position, status, slot_count)
-     values ($1, 2, 1, 'played', 4) returning id`,
-    [competitionId],
-  );
-  const [heatA] = await query<{ id: string }>(
-    `insert into heat (competition_id, round, position, status, slot_count)
-     values ($1, 1, 1, 'played', 4) returning id`,
-    [competitionId],
-  );
-  const [heatB] = await query<{ id: string }>(
-    `insert into heat (competition_id, round, position, status, slot_count)
-     values ($1, 1, 2, 'played', 4) returning id`,
-    [competitionId],
-  );
-  await query(
-    `insert into heat_entrant (heat_id, entrant_id, slot, place) values
-       ($1, $2, 0, 1), ($1, $3, 1, 2), ($1, $4, 2, 3), ($1, $5, 3, 4),
-       ($6, $7, 0, 1), ($6, $8, 1, 2), ($6, $9, 2, 3), ($6, $10, 3, 4),
-       ($11, $2, 0, 1), ($11, $7, 1, 2), ($11, $3, 2, 3), ($11, $8, 3, 4)`,
-    [heatA.id, e1, e2, e3, e4, heatB.id, e5, e6, e7, e8, finalHeat.id],
-  );
-  // One Heat's time and place, so the still shows a when-line
-  // ("Sunday, Feb 22 · 7:00 PM ET · Main room") on its card.
-  await query(
-    `update heat set day_id = (select id from day where war_week_id = $2 order by date limit 1),
-       start_time = '19:00', location = 'Main room'
-     where id = $1`,
-    [heatA.id, xiWarWeek.id],
-  );
-  note(`bracket demo: competition ${competitionId}, champion entrant ${e1}`);
-  return competitionId;
-}
-
-async function teardownBracketDemo(competitionId: string) {
-  await query(`delete from competition where id = $1`, [competitionId]);
+  return { competitionId, teardown };
 }
 
 // ---------------------------------------------------------------------------
@@ -579,7 +673,10 @@ async function askMcp(cookie: string): Promise<LeaderboardResult> {
       jsonrpc: "2.0",
       id: 2,
       method: "tools/call",
-      params: { name: "get_leaderboard", arguments: { kind: "team" } },
+      params: {
+        name: "get_leaderboard",
+        arguments: { kind: standingsKind() },
+      },
     },
     init.sessionId,
   );
@@ -591,36 +688,38 @@ async function askMcp(cookie: string): Promise<LeaderboardResult> {
 }
 
 // ---------------------------------------------------------------------------
-// A logged Game for the "games" still (R3)
+// A logged Game, as evidence beside the "competitions" still (R3)
 
-/** The seeded head-to-head, open-to-everyone `games` Competition on XI. */
-const GAMES_COMP_NAME = "Bouncy Pong";
-
-/** Bouncy Pong's id and two Participant names to log a Game between. */
+/**
+ * The current War Week's seeded head-to-head, individual, open-to-everyone
+ * `games` Competition, and two Participant names to log a Game between.
+ */
 async function findGamesDemo(): Promise<{
   competitionId: string;
   playerA: string;
   playerB: string;
 }> {
   const [comp] = await query<{ id: string }>(
-    `select c.id from competition c
-     join war_week w on w.id = c.war_week_id
-     where w.edition = 'xi' and c.name = $1`,
-    [GAMES_COMP_NAME],
+    `select id from competition
+     where war_week_id = $1 and format = 'games' and game_type = 'head-to-head'
+       and scoring = 'individual' and entrants_open
+     order by name limit 1`,
+    [current.id],
   );
   if (!comp) {
-    throw new Error(`no seeded "${GAMES_COMP_NAME}" Competition on XI`);
+    throw new Error(
+      `no seeded head-to-head, open "games" Competition on ${current.edition}`,
+    );
   }
-  const [xiWarWeek] = await query<{ id: string }>(
-    `select id from war_week where edition = 'xi'`,
-  );
   const participants = await query<{ display_name: string }>(
     `select display_name from participant where war_week_id = $1
      order by display_name limit 2`,
-    [xiWarWeek.id],
+    [current.id],
   );
   if (participants.length < 2) {
-    throw new Error("XI needs at least 2 Participants for the Games demo");
+    throw new Error(
+      `${current.edition} needs at least 2 Participants for the Games demo`,
+    );
   }
   return {
     competitionId: comp.id,
@@ -658,7 +757,7 @@ async function selectLabeledCombobox(
 }
 
 /**
- * Logs one head-to-head Game on Bouncy Pong through the real Game form (the
+ * Logs one head-to-head Game through the real Game form (the
  * `logGame` action, as the demo Organizer): opens "Log a Game" from the
  * Competition page, picks both players and who won, and saves. Returns the
  * logged Game's id so the caller can undo it in `finally`.
@@ -671,12 +770,12 @@ async function captureGamesDemo(cookie: string): Promise<{
   const page = await Page.open();
   await page.viewport(STILL, false);
   await page.cookie(cookie);
-  await page.goto(`/xi/competitions/${competitionId}`);
+  await page.goto(`${home()}/competitions/${competitionId}`);
 
   const opened = await page.evaluate<boolean>(
     `(() => { const b = Array.from(document.querySelectorAll("button")).find((b) => b.innerText.trim() === "Log a Game"); b?.click(); return Boolean(b); })()`,
   );
-  if (!opened) throw new Error('no "Log a Game" button on Bouncy Pong');
+  if (!opened) throw new Error('no "Log a Game" button on the Competition');
   await sleep(500);
 
   await selectLabeledCombobox(page, "Player A", playerA);
@@ -777,8 +876,10 @@ async function captureGamesDemo(cookie: string): Promise<{
   }
   if (!toastGone) throw new Error('the "Game logged" toast never went away');
   await assertNoRealEmail(page, "games");
-  await page.screenshot(path.join(MEDIA, "games.png"));
-  note(`still: games from /xi/competitions/${competitionId}, one Game logged`);
+  await page.screenshot(path.join(EVIDENCE, "games.png"));
+  note(
+    `evidence: games from ${home()}/competitions/${competitionId}, one Game logged`,
+  );
   await page.close();
 
   const [row] = await query<{ id: string }>(
@@ -799,24 +900,40 @@ async function teardownGamesDemo(gameId: string) {
 // The About hero: Standings moving after a Points Entry (ticket 04)
 
 /**
- * The competition the hero uses to move the home Standings: team-scored,
- * with no Max points cap, so any margin needed to move the last-place Team
- * into first saves without a warning.
+ * The Competition the hero uses to move the home Standings: points-only,
+ * scored like the Standings (team in Teams mode, individual in free-for-all)
+ * and with no Max points cap, so any margin needed to move last place into
+ * first saves without a warning.
  */
-const STANDINGS_DEMO_COMPETITION = "Beast Mode Workout";
+async function standingsDemoCompetition(): Promise<string> {
+  const [comp] = await query<{ name: string }>(
+    `select name from competition
+     where war_week_id = $1 and format = 'points' and max_points is null and scoring = $2
+     order by name limit 1`,
+    [current.id, current.mode === "teams" ? "team" : "individual"],
+  );
+  if (!comp) {
+    throw new Error(
+      `${current.edition} needs a points-only Competition with no Max points for the Standings demo`,
+    );
+  }
+  return comp.name;
+}
 
 /**
  * Three stills for the About page's hero (ticket 04): the home Standings
- * before, the Points Entry form about to save a big win for the Team
- * currently in last place, and the same home Standings right after,
- * reordered. Uses the real Points Entry form and the real `get_leaderboard`
- * MCP tool to read the Team Standings, not a hand-crafted fixture.
+ * before, the Points Entry form about to save a big win for whoever is
+ * currently in last place (a Team, or in free-for-all a Participant), and
+ * the same home Standings right after, reordered. Uses the real Points Entry
+ * form and the real `get_leaderboard` MCP tool to read the Standings, not a
+ * hand-crafted fixture.
  */
 async function captureStandingsDemo(cookie: string): Promise<string> {
+  const competition = await standingsDemoCompetition();
   await still(
     "standings-before",
     cookie,
-    "/xi/leaderboard",
+    `${home()}/leaderboard`,
     () => sleep(500),
     PHONE,
   );
@@ -825,7 +942,7 @@ async function captureStandingsDemo(cookie: string): Promise<string> {
   const last = before.standings.at(-1);
   const first = before.standings[0];
   if (!last || !first || before.standings.length < 2) {
-    throw new Error("need at least two Teams for the Standings demo");
+    throw new Error("need at least two in the Standings for the demo");
   }
   // Enough to overtake first place outright, so the reorder is unmistakable.
   const margin = Math.max(first.total - last.total + 15, 15);
@@ -837,9 +954,13 @@ async function captureStandingsDemo(cookie: string): Promise<string> {
   await page.viewport(PHONE, true);
   await page.cookie(cookie);
   await page.goto("/admin/points");
-  await selectCompetition(page, STANDINGS_DEMO_COMPETITION);
+  await selectCompetition(page, competition);
   await sleep(300);
-  await selectComboboxOption(page, before.teamLabel, last.name);
+  await selectComboboxOption(
+    page,
+    standingsKind() === "team" ? before.teamLabel : "Participant",
+    last.name,
+  );
   await page.evaluate(`document.querySelector('#points-entry-points').focus()`);
   await page.send("Input.insertText", { text: String(margin) });
   await sleep(400);
@@ -867,7 +988,7 @@ async function captureStandingsDemo(cookie: string): Promise<string> {
   await still(
     "standings-after",
     cookie,
-    "/xi/leaderboard",
+    `${home()}/leaderboard`,
     () => sleep(500),
     PHONE,
   );
@@ -880,7 +1001,7 @@ async function captureStandingsDemo(cookie: string): Promise<string> {
     } of ${after.standings.length} (${lastAfter?.total} pts)`,
   );
   if (after.standings[0]?.name !== last.name) {
-    throw new Error("the demo Points Entry did not move the Team to first");
+    throw new Error("the demo Points Entry did not move last place to first");
   }
 
   const [entry] = await query<{ id: string }>(
@@ -962,6 +1083,37 @@ async function evidence() {
 
 // ---------------------------------------------------------------------------
 
+/**
+ * A moment inside the current War Week for the Now / Next still: 12:15 PM
+ * ET on its middle Day.
+ */
+async function scheduleTime(): Promise<string> {
+  const days = await query<{ date: string }>(
+    `select date::text as date from day where war_week_id = $1 order by date`,
+    [current.id],
+  );
+  const day = days[Math.floor(days.length / 2)];
+  if (!day) throw new Error(`${current.edition} has no Days to schedule`);
+  const [y, m, d] = day.date.split("-").map(Number);
+  return new TZDate(y, m - 1, d, 12, 15, 0, "America/New_York").toISOString();
+}
+
+/** A points-only Competition with Placement Points, for the "points" still. */
+async function placementPointsCompetition(): Promise<string> {
+  const [comp] = await query<{ name: string }>(
+    `select name from competition
+     where war_week_id = $1 and format = 'points' and placement_points is not null
+     order by name limit 1`,
+    [current.id],
+  );
+  if (!comp) {
+    throw new Error(
+      `${current.edition} needs a Competition with Placement Points for the points still`,
+    );
+  }
+  return comp.name;
+}
+
 /** Only the feature-card and Standings-hero stills; the Finale poster stays as it is. */
 const STILLS_ONLY = process.argv.includes("--stills");
 
@@ -982,21 +1134,18 @@ async function main() {
   rmSync(EVIDENCE, { recursive: true, force: true });
   mkdirSync(EVIDENCE, { recursive: true });
 
-  const realOrganizer = seededOrganizerEmail();
+  current = await resolveCurrentWarWeek();
+  note(
+    `current War Week: ${current.edition} (${current.mode}, ${pinnedDisplay()} base palette)`,
+  );
+  const scheduleAt = await scheduleTime();
   await query(
     `insert into organizer (email) values ($1) on conflict (email) do nothing`,
     [DEMO_EMAIL],
   );
-  await query(
-    `update points_entry set entered_by_email = $1 where entered_by_email = $2 and competition_id in (select id from competition where war_week_id = (select id from war_week where edition = 'xi'))`,
-    [DEMO_EMAIL, realOrganizer],
-  );
-  await query(
-    `update announcement set author_email = $1 where author_email = $2 and war_week_id = (select id from war_week where edition = 'xi')`,
-    [DEMO_EMAIL, realOrganizer],
-  );
+  const restoreAuthorship = await lendAuthorship();
   const cookie = await createSession(DEMO_EMAIL);
-  const bracketCompetitionId = await setupBracketDemo();
+  const bracketDemo = await setupBracketDemo();
 
   const server = spawn("pnpm", ["start", "-p", String(PORT)], {
     env: {
@@ -1027,14 +1176,20 @@ async function main() {
     }
     await waitForChrome();
 
+    // Undone straight away, so the later stills show the seeded Standings.
     standingsEntryId = await captureStandingsDemo(cookie);
+    await teardownStandingsDemo(standingsEntryId);
+    standingsEntryId = undefined;
 
     if (!STILLS_ONLY) await recordFinale(cookie);
 
     const slugs = ABOUT_FEATURES.map((f) => f.slug);
     await still("organizer-setup", cookie, "/admin/setup");
     await still("points", cookie, "/admin/points", async (page) => {
-      const picked = await selectCompetition(page, "Settlers of Catan");
+      const picked = await selectCompetition(
+        page,
+        await placementPointsCompetition(),
+      );
       await sleep(500);
       const presets = await page.evaluate<number>(
         `document.querySelectorAll('button').length && Array.from(document.querySelectorAll('button')).filter((b) => /^1st/.test(b.innerText)).length`,
@@ -1047,18 +1202,18 @@ async function main() {
     await still(
       "schedule",
       cookie,
-      `/xi?at=${encodeURIComponent(SCHEDULE_AT)}`,
+      `${home()}?at=${encodeURIComponent(scheduleAt)}`,
       async (page) => {
         const found = await page.evaluate<boolean>(scrollToText("Today"));
         await sleep(300);
-        if (!found) throw new Error("no Now / Next section on the XI home");
+        if (!found) throw new Error(`no Now / Next section on ${home()}`);
       },
     );
-    await still("announcements", cookie, "/xi/news", () => sleep(2_000));
+    await still("announcements", cookie, `${home()}/news`, () => sleep(2_000));
     await still(
       "competitions",
       cookie,
-      `/xi/competitions/${bracketCompetitionId}`,
+      `${home()}/competitions/${bracketDemo.competitionId}`,
       async (page) => {
         const found = await page.evaluate<boolean>(scrollToText("champion"));
         await sleep(300);
@@ -1093,16 +1248,9 @@ async function main() {
     if (standingsEntryId) await teardownStandingsDemo(standingsEntryId);
     if (gamesDemoGameId) await teardownGamesDemo(gamesDemoGameId);
     await query(`delete from organizer where email = $1`, [DEMO_EMAIL]);
-    await query(
-      `update points_entry set entered_by_email = $1 where entered_by_email = $2`,
-      [realOrganizer, DEMO_EMAIL],
-    );
-    await query(
-      `update announcement set author_email = $1 where author_email = $2`,
-      [realOrganizer, DEMO_EMAIL],
-    );
+    await restoreAuthorship();
     await query(`delete from "user" where email = $1`, [DEMO_EMAIL]);
-    await teardownBracketDemo(bracketCompetitionId);
+    await bracketDemo.teardown();
     writeFileSync(
       path.join(EVIDENCE, "about-media.txt"),
       log.join("\n") + "\n",
