@@ -31,4 +31,4 @@ See `../epics/R11-execution.md` [AI CODE REVIEW] (one review for the epic, both 
 
 ## [CLOSEOUT]
 
-2026-10-02, branch `feat/regression-r11-content`. AC1 PASS (`src/lib/roster-import.test.ts`); AC2 PASS (`e2e/regression-r11-roster-import.spec.ts`: 2 Add, 1 Update, imported); AC3 PASS (gate). Also: Organizer-only refusal over HTTP for Host and Participant (smoke). Empty cell clears (H2); a short row's missing cells stay unchanged. Commits `27c1d45`, orchestrator fix, `de713eb`. Full record: `../epics/R11-execution.md` [CLOSEOUT].
+2026-10-02, branch `feat/regression-r11-content`. AC1 PASS (`src/lib/roster-import.test.ts`); AC2 PASS (`e2e/regression-r11-roster-import.spec.ts`: 2 Add, 1 Update, imported); AC3 PASS (gate). Also: Organizer-only refusal over HTTP for Host and Participant (smoke). Empty cell clears (H2); a short row's missing cells stay unchanged. Commits `27c1d45`, orchestrator fix, `de713eb`. Full record: `../epics/R11-execution.md` [CLOSEOUT]. PR: https://github.com/paul-macfarlane/jg-war-week/pull/118

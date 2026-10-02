@@ -29,4 +29,4 @@ See `../epics/R11-execution.md` [AI CODE REVIEW] (one review for the epic, both 
 
 ## [CLOSEOUT]
 
-2026-10-02, branch `feat/regression-r11-content`. AC1 PASS (`src/db/migrations.test.ts`; real seeded data in `test-results/r11-content/migration-real-data.txt`); AC2 PASS (smoke, seeds twice); AC3 PASS (no "Add video link" in `src/`; gate). Migrations `0021_announcement-videos-into-body`, `0022_drop-announcement-video-urls` (destructive; merge and promote outside War Week, decision H1-a). Commits `95b07c8`, `de713eb`. Full record: `../epics/R11-execution.md` [CLOSEOUT].
+2026-10-02, branch `feat/regression-r11-content`. AC1 PASS (`src/db/migrations.test.ts`; real seeded data in `test-results/r11-content/migration-real-data.txt`); AC2 PASS (smoke, seeds twice); AC3 PASS (no "Add video link" in `src/`; gate). Migrations `0021_announcement-videos-into-body`, `0022_drop-announcement-video-urls` (destructive; merge and promote outside War Week, decision H1-a). Commits `95b07c8`, `de713eb`. Full record: `../epics/R11-execution.md` [CLOSEOUT]. PR: https://github.com/paul-macfarlane/jg-war-week/pull/118

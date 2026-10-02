@@ -24,4 +24,4 @@ See `../epics/R11-execution.md` [AI CODE REVIEW] (one review for the epic, both 
 
 ## [CLOSEOUT]
 
-2026-10-02, branch `feat/regression-r11-content`. AC1 PASS (`drizzle/0020_wild_speed.sql`; seed schema and loader tests; smoke, seeds twice); AC2 PASS (`e2e/regression-r11-day-description.spec.ts`, Schedule and Home's Today header at both viewports); AC3 PASS (gate). Commits `0d44855`, `de713eb`, `b3cfdb3`. Full record: `../epics/R11-execution.md` [CLOSEOUT].
+2026-10-02, branch `feat/regression-r11-content`. AC1 PASS (`drizzle/0020_wild_speed.sql`; seed schema and loader tests; smoke, seeds twice); AC2 PASS (`e2e/regression-r11-day-description.spec.ts`, Schedule and Home's Today header at both viewports); AC3 PASS (gate). Commits `0d44855`, `de713eb`, `b3cfdb3`. Full record: `../epics/R11-execution.md` [CLOSEOUT]. PR: https://github.com/paul-macfarlane/jg-war-week/pull/118

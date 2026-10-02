@@ -33,4 +33,4 @@ See `../epics/R11-execution.md` [AI CODE REVIEW] (one review for the epic, both 
 
 ## [CLOSEOUT]
 
-2026-10-02, branch `feat/regression-r11-content`. AC1 PASS (`src/lib/rich-text/*.test.ts`, `src/components/rich-text.test.tsx`); AC2 PASS (`e2e/regression-r11-editor.spec.ts`, captioned image by URL per the scope change; screenshots under `test-results/e2e/regression-r11-editor-*/`); AC3 PASS (`test-results/r11-content/gate-final.txt`). Commits `d30033c`, `565ca74`, `de713eb`. Full record: `../epics/R11-execution.md` [CLOSEOUT].
+2026-10-02, branch `feat/regression-r11-content`. AC1 PASS (`src/lib/rich-text/*.test.ts`, `src/components/rich-text.test.tsx`); AC2 PASS (`e2e/regression-r11-editor.spec.ts`, captioned image by URL per the scope change; screenshots under `test-results/e2e/regression-r11-editor-*/`); AC3 PASS (`test-results/r11-content/gate-final.txt`). Commits `d30033c`, `565ca74`, `de713eb`. Full record: `../epics/R11-execution.md` [CLOSEOUT]. PR: https://github.com/paul-macfarlane/jg-war-week/pull/118

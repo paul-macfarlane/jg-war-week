@@ -301,9 +301,11 @@ No open blocking findings.
 | Epic: `/about`, maintainers guide, checklist updated | PASS | PR diff (`src/lib/about.ts`, `docs/maintainers-guide.md`, `docs/regression-checklist.md`, `CONTEXT.md`) |
 | Epic: closeouts, tickets `done` | PASS | this commit |
 | Epic: format:check and gate | PASS | `gate-final.txt` |
-| Epic: CI on the PR | pending | runs on the PR |
+| Epic: CI on the PR | pending | runs on https://github.com/paul-macfarlane/jg-war-week/pull/118 |
 | Post-merge staging (human gate, not a DoD row) | BLOCKED until merge | Paul merges outside War Week, `migrate.yml` green, then opens staging `/<live edition>/announcements`: any Announcement that had video links shows them at the end of its body |
 
 **Deviations and scope changes.** Images by URL only (H0=A, `[SCOPE CHANGE]` on 64). Column dropped in this PR (H1-a). Empty roster cell clears (H2). Added during review and recorded above: Unstart refuses an edition with a Winner; a posted `videoUrls` is refused; caps of 500 (video link) and 300 (caption); a short CSV row's missing cells stay unchanged; the Image and Video controls insert after a selected figure; new direct dependency `@tiptap/extension-list` (already installed through StarterKit). The XI demo's Sunday has a Day description; the history seed doesn't.
+
+**PR.** https://github.com/paul-macfarlane/jg-war-week/pull/118
 
 **Residual risk.** An edition ended with no Winner (nothing scored) can still be Reopened then Unstarted.

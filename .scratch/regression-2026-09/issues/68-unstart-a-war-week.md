@@ -29,4 +29,4 @@ See `../epics/R11-execution.md` [AI CODE REVIEW] (one review for the epic, both 
 
 ## [CLOSEOUT]
 
-2026-10-02, branch `feat/regression-r11-content`. AC1 PASS (`src/lib/war-week-lifecycle.test.ts`, `src/lib/access.test.ts`, `src/mutations/war-week-lifecycle.test.ts`); AC2 PASS (`e2e/regression-r11-unstart.spec.ts`); AC3 PASS (gate). Added in review: an edition with a Winner (ended before) can't be unstarted. Residual: one ended with no Winner can still be Reopened then Unstarted. Commits `c61e47f`, `dc5a3b8`, `de713eb`. Full record: `../epics/R11-execution.md` [CLOSEOUT].
+2026-10-02, branch `feat/regression-r11-content`. AC1 PASS (`src/lib/war-week-lifecycle.test.ts`, `src/lib/access.test.ts`, `src/mutations/war-week-lifecycle.test.ts`); AC2 PASS (`e2e/regression-r11-unstart.spec.ts`); AC3 PASS (gate). Added in review: an edition with a Winner (ended before) can't be unstarted. Residual: one ended with no Winner can still be Reopened then Unstarted. Commits `c61e47f`, `dc5a3b8`, `de713eb`. Full record: `../epics/R11-execution.md` [CLOSEOUT]. PR: https://github.com/paul-macfarlane/jg-war-week/pull/118
