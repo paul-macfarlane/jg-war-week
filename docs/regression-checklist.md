@@ -284,6 +284,15 @@ on the matching War Week page.
       finishers get Placement Points and the Standings move. Reopen
       withdraws them. *(teams)* Add it with Scoring Individual and Counts
       toward the Team on, so the Team Standings move.
+- [ ] **Run a Competition as Participation.** Add a `participation`
+      Competition (Add Competition lands on its setup page; the list's link
+      reads "Who took part"). Settings: Points per Participant, and *(teams)*
+      ranked by headcount with Placement Points 5/3/1, or per person; turn on
+      Self check-in. Tick two Participants, untick one, then Close: the
+      generated Points Entries ("From participation") appear in the ledger
+      and the Standings move. Closed, a tick or a settings save is refused.
+      Reopen withdraws them. Changing the scoring, or deleting the
+      Competition, while anyone is ticked is refused with the count.
 - [ ] **Points Entries.** Add a Points Entry with a Placement Points button,
       edit its points, delete it; `/<edition>/leaderboard` follows each
       change within about 10 s without a reload.
@@ -307,6 +316,13 @@ on the matching War Week page.
       in the plain-text body.
 - [ ] **Awards.** Give an Award to two Participants (and a Team,
       *(teams)*); it shows on `/<edition>/awards`. Delete it.
+- [ ] **Award Categories.** On `/admin/awards`, Categories lists the seven
+      seeded ones. Add one (a name already taken, ignoring case, is refused),
+      rename it, archive it, restore it; there is no delete. Archived, it's
+      absent from the Award form's Category select, but an Award that already
+      has it keeps it (labeled archived) when edited. Give an Award a
+      Category with the select ("None" is allowed): `/<edition>/awards` shows
+      it under that Category's heading.
 - [ ] **FAQ.** Add an FAQ Item and move it first; `/<edition>/faq` shows it
       first. Delete it.
 - [ ] **Organizers.** Add `e2e-extra@jahnelgroup.com`, then remove it
@@ -320,8 +336,9 @@ on the matching War Week page.
       shows there too, and only there), Create next War Week makes an Upcoming edition (copy
       settings only). Start on it is refused while the current one is live
       ("End <X> first."). End the current War Week: its confirm names any
-      generated Bracket that isn't finalized and any open `games`
-      Competition with at least one Game, and on End it records the Winner
+      generated Bracket that isn't finalized, any open `games`
+      Competition with at least one Game and any open `participation`
+      Competition with anyone ticked (linked to its setup page), and on End it records the Winner
       from first place. Unstart on a live edition with nothing scored (an
       edition freshly started, e.g. XII) goes back to Upcoming behind a
       confirm; on one with a Points Entry, Heat result or Game it is
@@ -404,7 +421,8 @@ that nothing personal shows (no You highlight, no Log a Game).
       Competition closed and Points Entries are added, Home's Recent
       results lists up to 5 rows newest first (a champion, a winner, a
       Competition's Points Entries grouped in one row, e.g. "Trivia: Red 10,
-      Blue 5"), each linking to its Competition, with "All Competitions"
+      Blue 5"), each linking to its Competition (a closed Participation Competition is a
+      row too: *(teams)* its top Team, else how many took part), with "All Competitions"
       opening `/<edition>/competitions`. With nothing scored the section is
       hidden. It follows a new result within about 10 s.
 - [ ] **Navigation.** At 390 the tab bar is Home, Schedule, Competitions,
@@ -418,6 +436,16 @@ that nothing personal shows (no You highlight, no Log a Game).
       updates. As the unlinked account, there's no shortcut and no Log a
       Game on the Competition page (the server's refusal of a posted Game
       is unit-tested in `src/lib/access.test.ts`).
+- [ ] **A Participation Competition page.** In the Participation
+      Competition (Self check-in on), the page says how it scores, shows
+      "Took part" with the ticked Participants by name and *(teams)* each
+      Team's count. The linked Participant's **Check in** adds them
+      ("You're checked in") and **Check out** removes them; one the Host
+      ticked can't be checked out ("The Host marked you; ask them to remove
+      it."). With Self check-in off, or closed, the button is disabled with
+      its reason; as the unlinked account there is no Check in. *(teams)* A
+      Participant on no Team is told only those on a Team can take part. At
+      390 the button and list fit without sideways scrolling.
 - [ ] **Enroll and withdraw.** In the self-enroll Competition, the linked
       Participant enrolls, withdraws and enrolls again; the Entrant list
       follows each step.
@@ -452,9 +480,14 @@ that nothing personal shows (no You highlight, no Log a Game).
       Participants. The linked Participant is highlighted.
 - [ ] **Awards and FAQ.** `/<edition>/awards` and `/<edition>/faq` show
       their content, or a plain empty state when there is none (XII demo).
+      Once an Award has a Category, Awards sit under Category headings (each
+      a link to its through-the-years page), then "Other Awards"; with no
+      Category anywhere there are no headings.
 - [ ] **History.** `/history` lists every past War Week with its Story
       Theme and Winner; open three past editions, including the oldest:
-      each shows its archive view.
+      each shows its archive view. "Awards through the years" lists each
+      Award Category; open one: `/history/awards/<id>` shows its War Weeks
+      newest first with recipients, and an unknown id is a 404 page.
 - [ ] **Finale.** `/<edition>/finale` opens on Start. Pressing Start counts
       the main Standings in from last place to first, ties together, within
       8 s (`FINALE_MAX_MS`; time it in the page, from the Start click to
