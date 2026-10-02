@@ -297,12 +297,11 @@ export async function assertPlacementPointsSeeded() {
 
 export async function assertMoreLinks() {
   const check =
-    "GET /xi/more links to Competitions, Teams, Awards, FAQ, history, Install app and About";
+    "GET /xi/more links to Teams, Awards, FAQ, history, Install app and About";
   try {
     const res = await signedInFetch(`${BASE_URL}/xi/more`);
     const body = await res.text();
     const checks = {
-      competitions: body.includes('href="/xi/competitions"'),
       teams: body.includes('href="/xi/teams"'),
       awards: body.includes('href="/xi/awards"'),
       faq: body.includes('href="/xi/faq"'),

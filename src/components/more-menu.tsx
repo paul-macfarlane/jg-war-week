@@ -94,6 +94,7 @@ export function MoreMenu({
   onNavigate?: () => void;
 }) {
   const links = moreLinks({
+    surface: "phone",
     edition,
     mode,
     teamLabel,

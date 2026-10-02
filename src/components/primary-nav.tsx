@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, ListChecks, Menu, Newspaper, Trophy } from "lucide-react";
+import { Home, ListChecks, Medal, Menu, Newspaper, Trophy } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -16,49 +16,19 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import type { WarWeek } from "@/db/schema";
+import { type NavKey, destinationsFor, isActive } from "@/lib/primary-nav";
 
 /** The signed-in user, as shown in the navigation. */
 export type NavAccount = { email: string; canOpenAdmin: boolean };
 
-type Destination = {
-  label: string;
-  href: string;
-  icon: typeof Home;
-  // Pages reached from this destination that keep it highlighted.
-  subpaths?: string[];
+const ICONS: Record<NavKey, typeof Home> = {
+  home: Home,
+  schedule: ListChecks,
+  competitions: Trophy,
+  leaderboard: Medal,
+  announcements: Newspaper,
+  more: Menu,
 };
-
-function destinationsFor(edition: string): Destination[] {
-  return [
-    { label: "Home", href: `/${edition}`, icon: Home },
-    { label: "Schedule", href: `/${edition}/schedule`, icon: ListChecks },
-    { label: "Leaderboard", href: `/${edition}/leaderboard`, icon: Trophy },
-    {
-      label: "Announcements",
-      href: `/${edition}/announcements`,
-      icon: Newspaper,
-    },
-    {
-      label: "More",
-      href: `/${edition}/more`,
-      icon: Menu,
-      subpaths: [
-        `/${edition}/competitions`,
-        `/${edition}/teams`,
-        `/${edition}/awards`,
-        `/${edition}/faq`,
-      ],
-    },
-  ];
-}
-
-function isActive(pathname: string, destination: Destination, edition: string) {
-  const { href } = destination;
-  if (href === `/${edition}`) return pathname === href;
-  return [href, ...(destination.subpaths ?? [])].some(
-    (path) => pathname === path || pathname.startsWith(`${path}/`),
-  );
-}
 
 const TAB_CLASS = "flex flex-col items-center gap-1 py-2 text-xs";
 
@@ -94,14 +64,15 @@ export function BottomTabBar({
       className="border-border bg-background fixed inset-x-0 bottom-0 z-50 border-t pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
       <ul className="flex items-stretch justify-around">
-        {destinationsFor(edition).map((destination) => {
-          const { label, href, icon: Icon } = destination;
+        {destinationsFor(edition, "phone").map((destination) => {
+          const { key, label, href } = destination;
+          const Icon = ICONS[key];
           const active = isActive(pathname, destination, edition);
           const tabClassName = `${TAB_CLASS} ${
             active ? "text-primary-text" : "text-muted-foreground"
           }`;
 
-          if (label === "More") {
+          if (key === "more") {
             return (
               <li key={href} className="flex-1">
                 <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
@@ -179,7 +150,7 @@ export function TopNav({
         </Link>
         <nav aria-label="Primary">
           <ul className="flex items-center gap-1">
-            {destinationsFor(edition).map((destination) => {
+            {destinationsFor(edition, "desktop").map((destination) => {
               const { label, href } = destination;
               const active = isActive(pathname, destination, edition);
               return (
