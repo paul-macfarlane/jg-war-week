@@ -5,8 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-import { SignOutButton } from "@/components/auth-buttons";
-import { DisplayMenu } from "@/components/display-menu";
+import { AccountMenu } from "@/components/account-menu";
 import { MoreMenu } from "@/components/more-menu";
 import {
   Sheet,
@@ -19,7 +18,12 @@ import type { WarWeek } from "@/db/schema";
 import { type NavKey, destinationsFor, isActive } from "@/lib/primary-nav";
 
 /** The signed-in user, as shown in the navigation. */
-export type NavAccount = { email: string; canOpenAdmin: boolean };
+export type NavAccount = {
+  email: string;
+  /** The roster name when linked to a Participant, else the email's local part. */
+  name: string;
+  canOpenAdmin: boolean;
+};
 
 const ICONS: Record<NavKey, typeof Home> = {
   home: Home,
@@ -40,12 +44,10 @@ export function BottomTabBar({
   edition,
   mode,
   teamLabel,
-  account,
 }: {
   edition: string;
   mode: WarWeek["mode"];
   teamLabel: string;
-  account: NavAccount;
 }) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -94,7 +96,6 @@ export function BottomTabBar({
                       edition={edition}
                       mode={mode}
                       teamLabel={teamLabel}
-                      account={account}
                       onNavigate={() => setMoreOpen(false)}
                     />
                   </SheetContent>
@@ -122,23 +123,27 @@ export function BottomTabBar({
 }
 
 /**
- * Desktop (`lg` and wider): a sticky top header with the War Week name and
- * the same destinations as the bottom tab bar.
+ * A sticky top header at every width: the War Week name, the account menu
+ * and, from `lg`, the same destinations as the bottom tab bar.
  */
 export function TopNav({
   edition,
   storyTheme,
+  primaryColor,
+  slackUrl,
   account,
 }: {
   edition: string;
   storyTheme: string;
+  primaryColor: string;
+  slackUrl: string;
   account: NavAccount;
 }) {
   const pathname = usePathname();
 
   return (
-    <header className="border-border bg-background sticky top-0 z-50 hidden border-b lg:block">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-3">
+    <header className="border-border bg-background sticky top-0 z-50 border-b">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-4 py-2 lg:px-6 lg:py-3">
         <Link
           href={`/${edition}`}
           className="flex shrink-0 items-baseline gap-2 whitespace-nowrap"
@@ -146,9 +151,11 @@ export function TopNav({
           <span className="text-lg font-bold">
             War Week {edition.toUpperCase()}
           </span>
-          <span className="text-primary-text text-sm">{storyTheme}</span>
+          <span className="text-primary-text hidden text-sm sm:inline">
+            {storyTheme}
+          </span>
         </Link>
-        <nav aria-label="Primary">
+        <nav aria-label="Primary" className="hidden lg:block">
           <ul className="flex items-center gap-1">
             {destinationsFor(edition, "desktop").map((destination) => {
               const { label, href } = destination;
@@ -171,24 +178,14 @@ export function TopNav({
             })}
           </ul>
         </nav>
-        <div className="flex min-w-0 items-center gap-3 text-sm whitespace-nowrap">
-          {account.canOpenAdmin && (
-            <Link
-              href="/admin"
-              className="text-primary-text underline-offset-4 hover:underline"
-            >
-              Admin
-            </Link>
-          )}
-          <DisplayMenu iconOnly />
-          <span
-            title={account.email}
-            className="text-muted-foreground hidden max-w-56 truncate lg:inline"
-          >
-            {account.email}
-          </span>
-          <SignOutButton />
-        </div>
+        <AccountMenu
+          name={account.name}
+          email={account.email}
+          edition={edition}
+          primaryColor={primaryColor}
+          canOpenAdmin={account.canOpenAdmin}
+          slackUrl={slackUrl}
+        />
       </div>
     </header>
   );

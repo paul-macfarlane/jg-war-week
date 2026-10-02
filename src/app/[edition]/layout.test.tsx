@@ -7,6 +7,7 @@ vi.mock("./war-week", () => ({
   getWarWeekForEdition: vi.fn(async () => fakeWarWeek),
   getNavAccount: vi.fn(async () => ({
     email: "o@jahnelgroup.com",
+    name: "o",
     canOpenAdmin: false,
   })),
 }));

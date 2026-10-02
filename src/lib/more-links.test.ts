@@ -7,20 +7,12 @@ const base = {
   edition: "xi",
   mode: "teams" as const,
   teamLabel: "House",
-  canOpenAdmin: false,
 };
 
 describe("moreLinks", () => {
-  it("omits the Admin link for a non-Organizer", () => {
+  it("has no Admin link: Admin is in the account menu", () => {
     const links = moreLinks(base);
-    expect(links.some((link) => link.label === "Admin")).toBe(false);
-  });
-
-  it("includes the Admin link for an Organizer", () => {
-    const links = moreLinks({ ...base, canOpenAdmin: true });
-    const admin = links.find((link) => link.label === "Admin");
-    expect(admin?.href).toBe("/admin");
-    expect(admin?.icon).toBe("admin");
+    expect(links.some((link) => link.href === "/admin")).toBe(false);
   });
 
   it("labels the roster link with rosterHeading's plural Team Label", () => {

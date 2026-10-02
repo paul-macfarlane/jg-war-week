@@ -98,12 +98,14 @@ async function contextWithDisplay(browser: Browser, display: Display) {
   return context;
 }
 
+/** Changes the Display through the header's account menu, then closes it. */
 async function chooseDisplay(page: Page, label: "Light" | "Dark" | "System") {
-  const control = page.getByRole("group", { name: "Display" }).first();
-  await control.getByRole("button", { name: label, exact: true }).click();
-  await expect(
-    control.getByRole("button", { name: label, exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Account menu" }).click();
+  const option = page.getByRole("menuitemradio", { name: label, exact: true });
+  await option.click();
+  await expect(option).toHaveAttribute("aria-checked", "true");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu")).toHaveCount(0);
 }
 
 test.describe("Display: Light, Dark and System", () => {
@@ -111,7 +113,7 @@ test.describe("Display: Light, Dark and System", () => {
     await signIn(context, E2E_PARTICIPANT_EMAIL);
   });
 
-  test("XI (dark base) follows the header's Display control, across reloads and the system setting", async ({
+  test("XI (dark base) follows the account menu's Display, across reloads and the system setting", async ({
     page,
   }, testInfo) => {
     // XI's base background, and its derived light one (its base text color).

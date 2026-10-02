@@ -6,7 +6,6 @@ import {
   type LucideIcon,
   Medal,
   Newspaper,
-  Shield,
   Users,
 } from "lucide-react";
 
@@ -21,7 +20,6 @@ const ICONS: Record<IconKey, LucideIcon> = {
   history: History,
   install: Download,
   about: Info,
-  admin: Shield,
 };
 
 export function MoreLinkIcon({ icon }: { icon: IconKey }) {

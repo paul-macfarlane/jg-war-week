@@ -10,8 +10,7 @@ export type MoreLinkIcon =
   | "faq"
   | "history"
   | "install"
-  | "about"
-  | "admin";
+  | "about";
 
 export type MoreLink = {
   label: string;
@@ -25,7 +24,6 @@ export type MoreLinksInput = {
   edition: string;
   mode: WarWeek["mode"];
   teamLabel: string;
-  canOpenAdmin: boolean;
 };
 
 /**
@@ -39,7 +37,6 @@ export function moreLinks({
   edition,
   mode,
   teamLabel,
-  canOpenAdmin,
 }: MoreLinksInput): MoreLink[] {
   return [
     // The desktop top nav lists Announcements itself; only a phone needs it here.
@@ -62,8 +59,5 @@ export function moreLinks({
     { label: "War Week history", href: "/history", icon: "history" },
     { label: "Install app", href: "/install", icon: "install" },
     { label: "About JG War Week", href: "/about", icon: "about" },
-    ...(canOpenAdmin
-      ? [{ label: "Admin", href: "/admin", icon: "admin" as const }]
-      : []),
   ];
 }
