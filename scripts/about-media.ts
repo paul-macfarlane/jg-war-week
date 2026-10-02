@@ -5,10 +5,13 @@
  * written or shown), the hero's `standings-before.png` /
  * `standings-entry.png` / `standings-after.png` (an Organizer's real Points
  * Entry moving the home Standings), and one still per feature card at
- * `public/about/<slug>.png`. Afterwards it screenshots `/about` as an
- * anonymous visitor at 390px, desktop and with reduced motion into
- * `test-results/about-media/`, with a log (and a logged-Game still there as
- * evidence).
+ * `public/about/<slug>.png`. Every one of them is written twice (the About
+ * dark stills fix): `<name>.png` under the light Display and
+ * `<name>-dark.png` under the dark one, so `/about` can show the still
+ * matching its viewer's Display. Afterwards it screenshots `/about` as an
+ * anonymous visitor at 390px, desktop (light and dark) and with reduced
+ * motion into `test-results/about-media/`, with a log (and a logged-Game
+ * still there as evidence).
  *
  * Every page is the current War Week's (live, else next upcoming, else most
  * recent completed: the same resolution as `/` and `/about`), in its
@@ -23,8 +26,8 @@
  * everything after, including the one Points Entry the Standings hero saves:
  *   pnpm tsx scripts/about-media.ts
  *
- * `--stills` rewrites the feature-card and Standings-hero stills and
- * leaves the Finale poster alone:
+ * `--stills` rewrites the feature-card and Standings-hero stills (both
+ * schemes) and leaves the Finale poster alone (both schemes):
  *   pnpm tsx scripts/about-media.ts --stills
  */
 import { TZDate } from "@date-fns/tz";
@@ -45,7 +48,7 @@ import path from "node:path";
 import { Client } from "pg";
 
 import { ABOUT_FEATURES } from "@/lib/about";
-import { DISPLAY_STORAGE_KEY } from "@/lib/display";
+import { DISPLAY_CHANGE_EVENT, DISPLAY_STORAGE_KEY } from "@/lib/display";
 import { FINALE_MAX_MS } from "@/lib/finale";
 import { backgroundColorScheme } from "@/lib/theme";
 import type { LeaderboardResult } from "@/mcp/leaderboard";
@@ -90,15 +93,32 @@ let current: CurrentWarWeek;
 /** The current War Week's home: `/` and its edition. */
 const home = () => `/${current.edition}`;
 /**
- * Every still and the Finale poster wear the current War Week's base
- * palette, the scheme its Organizer designed, not whatever this Chrome's OS
- * happens to be set to (it has no stored `ww:display`, so under System it
- * would follow the Mac). Pinned per page via
+ * The About stills and the Finale poster are captured once per scheme in
+ * `SCHEMES` (the About dark stills fix); anything else (the Games and
+ * `/about` evidence) wears the current War Week's base palette, the scheme
+ * its Organizer designed. Either way the Display is pinned, never whatever
+ * this Chrome's OS happens to be set to (it has no stored `ww:display`, so
+ * under System it would follow the Mac). Pinned per page via
  * `Page.addScriptToEvaluateOnNewDocument`, never `Emulation.setEmulatedMedia`
  * (the reduced-motion capture below replaces its feature list wholesale,
  * which would drop an earlier media pin).
  */
 const pinnedDisplay = () => backgroundColorScheme(current.background_color);
+/** Every About still is written once per Display scheme. */
+const SCHEMES = ["light", "dark"] as const;
+type Scheme = (typeof SCHEMES)[number];
+/** `<name>.png` for the light Display, `<name>-dark.png` for the dark. */
+const stillFile = (name: string, scheme: Scheme) =>
+  scheme === "light" ? `${name}.png` : `${name}-dark.png`;
+/**
+ * Switches an open page's Display the way `DisplayMenu` does (stored,
+ * applied to `html[data-display]`, change event), without a reload.
+ */
+const switchDisplay = (scheme: Scheme) =>
+  `(() => { try { localStorage.setItem(${JSON.stringify(DISPLAY_STORAGE_KEY)}, ${JSON.stringify("__S__")}); } catch (e) {} document.documentElement.dataset.display = ${JSON.stringify("__S__")}; window.dispatchEvent(new Event(${JSON.stringify(DISPLAY_CHANGE_EVENT)})); })()`.replaceAll(
+    "__S__",
+    scheme,
+  );
 /** Teams-mode Standings rank Teams; free-for-all, Participants. */
 const standingsKind = () =>
   current.mode === "teams" ? ("team" as const) : ("individual" as const);
@@ -310,7 +330,8 @@ class Page {
         await new Promise((r) => setTimeout(r, 120));
       }
       window.scrollTo(0, 0);
-      await Promise.all(Array.from(document.images).map((img) => img.complete ? null : new Promise((r) => { img.onload = img.onerror = r; })));
+      // A still for the other Display is display: none and, lazy, never loads.
+      await Promise.all(Array.from(document.images).filter((img) => img.checkVisibility()).map((img) => img.complete ? null : new Promise((r) => { img.onload = img.onerror = r; })));
       return document.images.length;
     })()`);
     await sleep(500);
@@ -393,8 +414,8 @@ async function assertNoRealEmail(page: Page, what: string) {
 
 type Frame = { at: number; data: string };
 
-async function recordFinale(cookie: string) {
-  const page = await Page.open();
+async function recordFinale(cookie: string, scheme: Scheme) {
+  const page = await Page.open(scheme);
   // The screencast sends CSS-pixel frames whatever the device scale, so
   // the page is laid out at 390px inside a doubled viewport, zoomed 2x.
   await page.viewport(
@@ -436,7 +457,9 @@ async function recordFinale(cookie: string) {
     else await sleep(100);
   }
   if (startedAt === null) throw new Error("the Finale never started");
-  note(`finale: countdown started ${startedAt - pressedAt} ms after Start`);
+  note(
+    `finale (${scheme}): countdown started ${startedAt - pressedAt} ms after Start`,
+  );
   await sleep(FINALE_MAX_MS + HOLD_MS);
   await page.send("Page.stopScreencast");
   await page.close();
@@ -453,11 +476,13 @@ async function recordFinale(cookie: string) {
   if (kept.length < 10) {
     throw new Error(`only ${kept.length} frames recorded around the Finale`);
   }
-  note(`finale: ${frames.length} frames captured, ${kept.length} kept`);
+  note(
+    `finale (${scheme}): ${frames.length} frames captured, ${kept.length} kept`,
+  );
 
   // Only the poster still is kept; no Finale video is written or shown.
   writeFileSync(
-    path.join(MEDIA, "finale-poster.png"),
+    path.join(MEDIA, stillFile("finale-poster", scheme)),
     Buffer.from(kept[0].data, "base64"),
   );
 }
@@ -583,15 +608,17 @@ async function still(
   prepare?: (page: Page) => Promise<void>,
   viewport: { width: number; height: number } = STILL,
 ) {
-  const page = await Page.open();
-  await page.viewport(viewport, viewport === PHONE);
-  await page.cookie(cookie);
-  await page.goto(target);
-  if (prepare) await prepare(page);
-  await assertNoRealEmail(page, slug);
-  await page.screenshot(path.join(MEDIA, `${slug}.png`));
-  await page.close();
-  note(`still: ${slug} from ${target}`);
+  for (const scheme of SCHEMES) {
+    const page = await Page.open(scheme);
+    await page.viewport(viewport, viewport === PHONE);
+    await page.cookie(cookie);
+    await page.goto(target);
+    if (prepare) await prepare(page);
+    await assertNoRealEmail(page, slug);
+    await page.screenshot(path.join(MEDIA, stillFile(slug, scheme)));
+    await page.close();
+    note(`still: ${stillFile(slug, scheme)} from ${target}`);
+  }
 }
 
 /**
@@ -943,7 +970,7 @@ async function captureStandingsDemo(cookie: string): Promise<void> {
     `standings demo: moving ${JSON.stringify(last.name)} from last (${last.total}) past first (${first.total}) with +${margin}`,
   );
 
-  const page = await Page.open();
+  const page = await Page.open(SCHEMES[0]);
   await page.viewport(PHONE, true);
   await page.cookie(cookie);
   await page.goto("/admin/points");
@@ -958,8 +985,18 @@ async function captureStandingsDemo(cookie: string): Promise<void> {
   await page.send("Input.insertText", { text: String(margin) });
   await sleep(400);
   await assertNoRealEmail(page, "standings-entry");
-  await page.screenshot(path.join(MEDIA, "standings-entry.png"));
-  note("still: standings-entry from /admin/points, filled in");
+  // One filled-in form, shot in each scheme: the Display switches in place,
+  // so only one Points Entry is ever saved.
+  for (const scheme of SCHEMES) {
+    await page.evaluate(switchDisplay(scheme));
+    await sleep(400);
+    await page.screenshot(
+      path.join(MEDIA, stillFile("standings-entry", scheme)),
+    );
+    note(
+      `still: ${stillFile("standings-entry", scheme)} from /admin/points, filled in`,
+    );
+  }
 
   // The save may land even if a later check throws: remember how many
   // entries the demo Organizer holds now, so the teardown can tell.
@@ -1045,7 +1082,7 @@ async function evidence() {
   await assertNoRealEmail(phone, "about");
   await phone.screenshot(path.join(EVIDENCE, "about-390.png"), true);
   const broken = await phone.evaluate<number>(
-    `Array.from(document.images).filter((img) => img.complete && img.naturalWidth === 0).length`,
+    `Array.from(document.images).filter((img) => img.checkVisibility() && img.complete && img.naturalWidth === 0).length`,
   );
   note(`evidence: images that failed to load on /about: ${broken}`);
   if (broken > 0) throw new Error("an About page image failed to load");
@@ -1055,23 +1092,40 @@ async function evidence() {
   await desktop.viewport({ width: 1440, height: 900 }, false, 1);
   await desktop.goto("/about", 3_000);
   const hero = await desktop.evaluate<Record<string, unknown>>(
-    `(() => { const imgs = Array.from(document.querySelectorAll('[data-standings-step]')); return { steps: imgs.map((i) => i.dataset.standingsStep), loaded: imgs.every((i) => i.complete && i.naturalWidth > 0), finalePoster: document.querySelector('img[src="/about/finale-poster.png"]') !== null, noVideo: document.querySelector("video") === null }; })()`,
+    `(() => { const imgs = Array.from(document.querySelectorAll('[data-standings-step]')).filter((i) => i.checkVisibility()); return { steps: imgs.map((i) => i.dataset.standingsStep), loaded: imgs.every((i) => i.complete && i.naturalWidth > 0), finalePoster: document.querySelector('img[src="/about/finale-poster.png"]') !== null, noVideo: document.querySelector("video") === null }; })()`,
   );
   note(`evidence: desktop hero ${JSON.stringify(hero)}`);
   if (!hero.noVideo)
     throw new Error("the About page hero must be stills, not a video");
   await desktop.screenshot(path.join(EVIDENCE, "about-desktop.png"), true);
 
-  const desktopLight = await Page.open("light");
-  await desktopLight.viewport({ width: 1440, height: 900 }, false, 1);
-  await desktopLight.goto("/about", 3_000);
-  await assertNoRealEmail(desktopLight, "about-light");
-  await desktopLight.screenshot(
-    path.join(EVIDENCE, "about-desktop-light.png"),
-    true,
-  );
-  await desktopLight.close();
-  note("evidence: /about desktop captured under the light Display");
+  // Each Display shows only its own stills (the About dark stills fix).
+  for (const scheme of SCHEMES) {
+    const desktopScheme = await Page.open(scheme);
+    await desktopScheme.viewport({ width: 1440, height: 900 }, false, 1);
+    await desktopScheme.goto("/about", 3_000);
+    await assertNoRealEmail(desktopScheme, `about-${scheme}`);
+    await desktopScheme.screenshot(
+      path.join(EVIDENCE, `about-desktop-${scheme}.png`),
+      true,
+    );
+    const shown = await desktopScheme.evaluate<
+      { src: string; loaded: boolean }[]
+    >(
+      `Array.from(document.querySelectorAll("img[data-still-scheme]")).filter((i) => i.checkVisibility()).map((i) => ({ src: new URL(i.currentSrc).pathname, loaded: i.complete && i.naturalWidth > 0 }))`,
+    );
+    const wrong = shown.filter(
+      (s) => s.src.endsWith("-dark.png") !== (scheme === "dark") || !s.loaded,
+    );
+    note(
+      `evidence: /about desktop under the ${scheme} Display shows ${shown.length} stills, ${wrong.length} wrong or unloaded`,
+    );
+    if (shown.length !== 10 || wrong.length > 0)
+      throw new Error(
+        `/about under the ${scheme} Display: ${JSON.stringify(shown)}`,
+      );
+    await desktopScheme.close();
+  }
 
   await desktop.send("Emulation.setEmulatedMedia", {
     features: [{ name: "prefers-reduced-motion", value: "reduce" }],
@@ -1197,7 +1251,8 @@ async function main() {
     await captureStandingsDemo(cookie);
     await teardownStandingsDemo();
 
-    if (!STILLS_ONLY) await recordFinale(cookie);
+    if (!STILLS_ONLY)
+      for (const scheme of SCHEMES) await recordFinale(cookie, scheme);
 
     const slugs = ABOUT_FEATURES.map((f) => f.slug);
     await still("organizer-setup", cookie, "/admin/setup");
@@ -1241,12 +1296,12 @@ async function main() {
     await evidence();
 
     for (const name of [
-      ...(STILLS_ONLY ? [] : ["finale-poster.png"]),
-      "standings-before.png",
-      "standings-entry.png",
-      "standings-after.png",
-      ...slugs.map((s) => `${s}.png`),
-    ]) {
+      ...(STILLS_ONLY ? [] : ["finale-poster"]),
+      "standings-before",
+      "standings-entry",
+      "standings-after",
+      ...slugs,
+    ].flatMap((still) => SCHEMES.map((scheme) => stillFile(still, scheme)))) {
       note(
         `wrote public/about/${name}: ${(statSync(path.join(MEDIA, name)).size / 1024).toFixed(0)} KB`,
       );

@@ -94,6 +94,7 @@ describe("AboutPage", () => {
     const { html } = await renderAbout();
 
     expect(html).toContain('src="/about/finale-poster.png"');
+    expect(html).toContain('src="/about/finale-poster-dark.png"');
     expect(html).not.toContain("finale.mp4");
     expect(html).not.toMatch(/<video/i);
   });
@@ -105,6 +106,9 @@ describe("AboutPage", () => {
     expect(html).toContain('src="/about/standings-before.png"');
     expect(html).toContain('src="/about/standings-entry.png"');
     expect(html).toContain('src="/about/standings-after.png"');
+    expect(html).toContain('src="/about/standings-before-dark.png"');
+    expect(html).toContain('src="/about/standings-entry-dark.png"');
+    expect(html).toContain('src="/about/standings-after-dark.png"');
     expect(text).toContain("Points Entry");
     // Accessible alt text on every step.
     expect(html).toMatch(/alt="[^"]*Standings[^"]*"/);
@@ -117,8 +121,33 @@ describe("AboutPage", () => {
     for (const feature of ABOUT_FEATURES) {
       expect(html).toContain(`data-feature="${feature.slug}"`);
       expect(html).toContain(`src="/about/${feature.slug}.png"`);
+      expect(html).toContain(`src="/about/${feature.slug}-dark.png"`);
       expect(text).toContain(feature.title);
     }
+  });
+
+  it("pairs every About still with a dark one, tagged by scheme for the viewer's Display to pick", async () => {
+    getCurrentWarWeek.mockResolvedValue(warWeekFixture());
+    const { html } = await renderAbout();
+    const imgs = html.match(/<img [^>]*>/g) ?? [];
+    const stills = imgs.filter((img) => img.includes('src="/about/'));
+
+    // 6 feature cards, 3 Standings steps and the Finale poster, each twice.
+    expect(stills).toHaveLength(20);
+    const light = stills.filter((img) =>
+      img.includes('data-still-scheme="light"'),
+    );
+    const dark = stills.filter((img) =>
+      img.includes('data-still-scheme="dark"'),
+    );
+    expect(light).toHaveLength(10);
+    expect(dark).toHaveLength(10);
+    for (const img of dark) {
+      expect(img).toMatch(/src="\/about\/[a-z-]+-dark\.png"/);
+      expect(img).toMatch(/alt="[^"]+"/);
+      expect(img).toContain('loading="lazy"');
+    }
+    for (const img of light) expect(img).not.toContain("-dark.png");
   });
 
   it("says what the app is: approved headline, hero and one Why we built this", async () => {
