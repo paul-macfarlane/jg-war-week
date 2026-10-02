@@ -203,6 +203,12 @@ test("r5 30 admin header and section bar on a phone", async ({
 
 /** A visible control's bounding box must be at least 44x44. */
 async function expectTouchTarget(locator: Locator, what: string) {
+  // A dialog zooms in as it opens: measure once its animation has finished.
+  await locator
+    .first()
+    .evaluate(() =>
+      Promise.all(document.getAnimations().map((a) => a.finished)),
+    );
   const rect = await locator.first().boundingBox();
   if (!rect) throw new Error(`${what} isn't visible`);
   expect(rect.width, `${what} width`).toBeGreaterThanOrEqual(44 - TOLERANCE);
