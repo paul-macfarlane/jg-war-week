@@ -183,8 +183,7 @@ export function HeatRows({
  * The "Your next Heat" card (props only): the Heat You play next, when and
  * against whom, or the Round You advanced to. `canReport` adds **Report
  * result** (the server found the Heat reportable by You, known by account
- * linking); `pickOnly` says how to report when You are known only by the
- * "Which one is you?" pick.
+ * linking).
  */
 export function YourNextHeatCard({
   next,
@@ -192,7 +191,6 @@ export function YourNextHeatCard({
   entrantsById,
   when,
   canReport,
-  pickOnly,
   onReport,
 }: {
   next: NextHeat;
@@ -201,7 +199,6 @@ export function YourNextHeatCard({
   /** The Heat's Day, time and place, when it has them. */
   when: string | null;
   canReport: boolean;
-  pickOnly: boolean;
   onReport: () => void;
 }) {
   return (
@@ -248,11 +245,6 @@ export function YourNextHeatCard({
               >
                 Report result
               </Button>
-            ) : pickOnly ? (
-              <p className="text-foreground/70 text-sm">
-                To report results, ask an Organizer to add your email to the
-                roster.
-              </p>
             ) : null}
           </>
         )}
@@ -332,11 +324,9 @@ export function BracketView({
   const heatsById = new Map(bracket.heats.map((h) => [h.id, h]));
   const canReport =
     selfReport.on &&
-    you?.via === "email" &&
-    you.participantId === selfReport.linkedParticipantId &&
+    you?.participantId === selfReport.linkedParticipantId &&
     next?.kind === "heat" &&
     next.heat.id === selfReport.reportableHeatId;
-  const pickOnly = selfReport.on && you?.via === "pick";
   const reportHeat = reporting ? heatsById.get(reporting) : undefined;
   const close = () => setReporting(null);
   const squadHelp = entrants.some((e) => e.squadId) ? (
@@ -420,7 +410,6 @@ export function BracketView({
           entrantsById={entrantsById}
           when={nextWhen}
           canReport={canReport}
-          pickOnly={pickOnly}
           onReport={() => {
             if (next.kind === "heat") setReporting(next.heat.id);
           }}

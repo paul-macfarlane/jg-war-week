@@ -29,8 +29,7 @@ export type EnrollEntrant = {
  *   against `entrantCount`, `enrollClosesAt` against `now`, `closed`
  *   (finalized), `hasGames` (a `games` Competition's first Game).
  * - `linked`: the Participant the actor's email links to, with their Team
- *   and their Squad in this Competition (never the "Which one is you?"
- *   pick).
+ *   and their Squad in this Competition.
  * - `scoring` and `entrants`: who is entered.
  * - `hasSquads` and `squad`: for a Squads Bracket, whether any Squad
  *   exists and the Squad being joined or left (`missing` when gone, null

@@ -206,6 +206,11 @@ Organizer screens cover it. Sign in and go to `/admin`:
   opens the empty form. A Team's row reads "Edit <Team Label> <name>". "Assign
   Hosts" (the Hosts field) is inside the Competition's Sheet, and its one
   Save saves the Hosts with the rest.
+- **You comes from the roster email only.** A signed-in person is "You" (the
+  highlight, Log a Game, reporting a Heat) only when their email matches a
+  Participant's roster email; there is no "Which one is you?" pick. A
+  Participant row without an email shows "No email: won't be linked when they
+  sign in" on Teams & roster.
 - **`/admin/organizers`**: the Organizer list (see
   [Add an Organizer or assign Hosts](#add-an-organizer-or-assign-hosts)).
 - **`/admin/points`**, **`/admin/standings`** (Run the Finale: "Open Finale" at closing ceremonies, and "Finale: <Competition>" for each finalized Bracket),

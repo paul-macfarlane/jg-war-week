@@ -22,8 +22,7 @@ export type GameSide = { teamId: string | null; participantId: string | null };
  * - `closed`: the Competition is closed (`finalized_at` set).
  * - `loggingOpen`: before `logging_closes_at` (or none) and no Best of
  *   decided; `bestOfDecided` says which of the two closed it.
- * - `linked`: the Participant the actor's email links to, with their Team
- *   (never the "Which one is you?" pick).
+ * - `linked`: the Participant the actor's email links to, with their Team.
  * - `scoring`, `entrantsOpen` and `entrants`: who may play (the fixed
  *   list; empty when open to everyone).
  * - `players`: the posted player set for a log or an edit; empty for a

@@ -8,7 +8,7 @@ import { gameTypeLabel } from "@/lib/games/config";
 /**
  * The home page's "Log a Game" card (Games rules): the open `games` Competitions
  * the linked Participant may log in right now, each opening its page with
- * the Game form up. Nothing when there are none, so a pick-only You (who
+ * the Game form up. Nothing when there are none, so an unlinked You (who
  * can't log) never sees it.
  */
 export function LogAGame({

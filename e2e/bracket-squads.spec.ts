@@ -51,7 +51,7 @@ const SQUADS = [
 ] as const;
 const SQUAD_NAMES: readonly string[] = SQUADS.map((squad) => squad.name);
 
-/** Reports for Red Alpha: linked to the roster by email, never the pick. */
+/** Reports for Red Alpha: linked to the roster by email. */
 const REPORTER = "Ashley Schuliger";
 /** A second stub JG address, cleared with every e2e user (`e2e-%`). */
 const E2E_PARTICIPANT_2_EMAIL = "e2e-participant-2@jahnelgroup.com";

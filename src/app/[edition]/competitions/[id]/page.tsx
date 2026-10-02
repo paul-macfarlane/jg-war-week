@@ -37,8 +37,7 @@ const SELF_REPORT_OFF: BracketViewSelfReport = {
 
 /**
  * Whether the signed-in person may report their next Heat (ADR 0005): the
- * Participant their session email links to (as the layout finds them;
- * never the "Which one is you?" pick), and Your next Heat when the same
+ * Participant their session email links to (as the layout finds them), and Your next Heat when the same
  * `can` rule the report action runs lets them report it now.
  */
 async function selfReportFor(
@@ -56,7 +55,6 @@ async function selfReportFor(
   const linked = resolveYou({
     sessionEmail: actor?.email,
     participants: candidates,
-    storedId: null,
   });
   if (!actor || !linked) {
     return { on: true, linkedParticipantId: null, reportableHeatId: null };

@@ -433,6 +433,11 @@ export function RosterEditor({
               ]
                 .filter(Boolean)
                 .join(" · ")}
+              note={
+                p.email?.trim()
+                  ? undefined
+                  : "No email: won't be linked when they sign in"
+              }
               form={(close) => (
                 <ParticipantForm
                   {...formProps}

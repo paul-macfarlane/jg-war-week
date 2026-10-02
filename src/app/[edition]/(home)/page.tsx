@@ -49,7 +49,7 @@ export default async function EditionHomePage({
     getSchedule(warWeek.id),
     getPinnedAnnouncementCard(warWeek),
     getTimedHeats(warWeek),
-    // Only an email-linked Participant can log, so a pick-only You sees none.
+    // Only an email-linked Participant can log.
     getActor().then((actor) =>
       getLoggableCompetitions(warWeek.id, actor?.email),
     ),
