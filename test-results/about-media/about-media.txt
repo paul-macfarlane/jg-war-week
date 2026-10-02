@@ -1,0 +1,52 @@
+current War Week: xii (free-for-all, light base palette)
+bracket demo: seeded competition c63b5fdd-41c4-4ccc-9a06-f2a15b643236, champion entrant 371bc986-a64d-450e-ad74-53fcfd9a5275
+still: standings-before.png from /xii/leaderboard
+still: standings-before-dark.png from /xii/leaderboard
+standings demo: moving "Lou Lantern" from last (0.5) past first (7.5) with +22
+still: standings-entry.png from /admin/points, filled in
+still: standings-entry-dark.png from /admin/points, filled in
+still: standings-after.png from /xii/leaderboard
+still: standings-after-dark.png from /xii/leaderboard
+standings demo: "Lou Lantern" is now #1 of 12 (22.5 pts)
+still: organizer-setup.png from /admin/setup
+still: organizer-setup-dark.png from /admin/setup
+points: picked Mile Run
+Individual · Max 3 pts, "1st" preset buttons on screen: 1
+still: points.png from /admin/points
+points: picked Mile Run
+Individual · Max 3 pts, "1st" preset buttons on screen: 1
+still: points-dark.png from /admin/points
+still: schedule.png from /xii?at=2027-02-23T12%3A15%3A00.000-05%3A00
+still: schedule-dark.png from /xii?at=2027-02-23T12%3A15%3A00.000-05%3A00
+still: announcements.png from /xii/announcements
+still: announcements-dark.png from /xii/announcements
+still: competitions.png from /xii/competitions/c63b5fdd-41c4-4ccc-9a06-f2a15b643236
+still: competitions-dark.png from /xii/competitions/c63b5fdd-41c4-4ccc-9a06-f2a15b643236
+games: frame 1600x900@1.6 used (h1 top 125, header bottom 57, first Game row bottom 560, viewport height 900)
+evidence: games from /xii/competitions/a48c0e2c-a8de-4b8e-9de6-8f9a92675ed0, one Game logged
+still: archive.png from /history
+still: archive-dark.png from /history
+evidence: anonymous /about landed on /about
+evidence: images that failed to load on /about: 0
+evidence: desktop hero {"steps":["standings-before","standings-entry","standings-after"],"loaded":true,"finalePoster":true,"noVideo":true}
+evidence: /about desktop under the light Display shows 10 stills, 0 wrong or unloaded
+evidence: /about desktop under the dark Display shows 10 stills, 0 wrong or unloaded
+evidence: /about prerendered at build (.next/server/app/about.html exists): false
+wrote public/about/standings-before.png: 98 KB
+wrote public/about/standings-before-dark.png: 98 KB
+wrote public/about/standings-entry.png: 77 KB
+wrote public/about/standings-entry-dark.png: 77 KB
+wrote public/about/standings-after.png: 98 KB
+wrote public/about/standings-after-dark.png: 98 KB
+wrote public/about/organizer-setup.png: 213 KB
+wrote public/about/organizer-setup-dark.png: 213 KB
+wrote public/about/schedule.png: 164 KB
+wrote public/about/schedule-dark.png: 164 KB
+wrote public/about/points.png: 176 KB
+wrote public/about/points-dark.png: 176 KB
+wrote public/about/announcements.png: 135 KB
+wrote public/about/announcements-dark.png: 135 KB
+wrote public/about/competitions.png: 155 KB
+wrote public/about/competitions-dark.png: 155 KB
+wrote public/about/archive.png: 308 KB
+wrote public/about/archive-dark.png: 306 KB
