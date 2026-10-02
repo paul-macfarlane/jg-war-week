@@ -118,3 +118,21 @@ export async function getPinnedAnnouncementCard(
   ]);
   return pinned ? toCardData(pinned, participants) : undefined;
 }
+
+/**
+ * A War Week's Announcements for the admin list: each row keeps its author's
+ * email (for the edit check) and adds the display name to show.
+ */
+export async function getAdminAnnouncementRows(
+  warWeek: Pick<WarWeek, "id">,
+  dbOrTx: DBOrTx = db,
+): Promise<(Announcement & { authorName: string })[]> {
+  const [rows, participants] = await Promise.all([
+    getAnnouncements(warWeek, {}, dbOrTx),
+    loadAuthorCandidates(warWeek.id, dbOrTx),
+  ]);
+  return rows.map((row) => ({
+    ...row,
+    authorName: announcementAuthorName(row.authorEmail, participants),
+  }));
+}

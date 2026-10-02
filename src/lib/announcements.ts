@@ -139,24 +139,3 @@ export type AuthorCandidate = { email: string | null; displayName: string };
 export function authorHandle(email: string): string {
   return email.split("@")[0];
 }
-
-/** How many `video` blocks a rich-text tree holds, at any depth. */
-function embeddedVideos(node: unknown): number {
-  if (typeof node !== "object" || node === null) return 0;
-  const { type, content } = node as { type?: unknown; content?: unknown };
-  const own = type === "video" ? 1 : 0;
-  return Array.isArray(content)
-    ? content.reduce<number>((sum, child) => sum + embeddedVideos(child), own)
-    : own;
-}
-
-/** An Announcement's videos: its video links plus videos embedded in the body. */
-export function announcementVideoCount({
-  videoUrls,
-  body,
-}: {
-  videoUrls: string[];
-  body: unknown;
-}): number {
-  return videoUrls.length + embeddedVideos(body);
-}
