@@ -4,7 +4,9 @@
 
 **Blocked by:** 46–52 (run last in R8, so it checks the fixed app)
 
-**Status:** ready-for-agent
+**Status:** in-progress
+
+**Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
 **Source:** Paul's regression feedback 2026-10-01, regression checklist. The sections and the checklist's purpose were written into `docs/regression-checklist.md` in PR #112. This ticket proves them by running them.
 
