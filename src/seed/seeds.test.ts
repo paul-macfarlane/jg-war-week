@@ -108,8 +108,15 @@ describe("War Week XI", () => {
 
   it("keeps the demo's schedule, roster and Appearance Theme", () => {
     const { days, participants, teams, primary, background, storyTheme } = demo;
+    // Only the demo describes a Day: the history seed carries no Day
+    // descriptions, so they're left out of the match.
+    const undescribed = days.map((day) => {
+      const copy = { ...day };
+      delete copy.description;
+      return copy;
+    });
     expect(xi).toMatchObject({
-      days,
+      days: undescribed,
       participants,
       teams,
       primary,
