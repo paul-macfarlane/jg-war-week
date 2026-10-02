@@ -117,6 +117,49 @@ describe("editorExtensions schema", () => {
     ).toThrow();
   });
 
+  it("refuses a heading inside a list item", () => {
+    expect(
+      check({
+        type: "doc",
+        content: [
+          bulletList([
+            paragraph("a"),
+            {
+              type: "heading",
+              attrs: { level: 2 },
+              content: [{ type: "text", text: "b" }],
+            },
+          ]),
+        ],
+      }),
+    ).toThrow();
+  });
+
+  it("accepts a list item of paragraphs and nested lists, starting with a paragraph", () => {
+    expect(
+      check({
+        type: "doc",
+        content: [
+          bulletList([
+            paragraph("a"),
+            paragraph("b"),
+            bulletList([paragraph("c")]),
+            {
+              type: "orderedList",
+              content: [{ type: "listItem", content: [paragraph("d")] }],
+            },
+          ]),
+        ],
+      }),
+    ).not.toThrow();
+    expect(
+      check({
+        type: "doc",
+        content: [bulletList([bulletList([paragraph("a")])])],
+      }),
+    ).toThrow();
+  });
+
   it("accepts an image and a video at the top of a document", () => {
     expect(
       check({ type: "doc", content: [paragraph("a"), image, video] }),

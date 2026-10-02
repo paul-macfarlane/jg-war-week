@@ -36,6 +36,7 @@ export function AnnouncementCard({
           <RichText
             content={announcement.body}
             headingFloor={headingLevel === "h2" ? 3 : 4}
+            videoTitle={`Video: ${announcement.title}`}
           />
         </CardContent>
       </Card>

@@ -33,10 +33,12 @@ export type ScheduleEntry = Pick<
   entrants?: string;
 };
 
-export type ScheduleDay = Pick<Day, "id" | "date" | "dayTheme"> &
-  Partial<Pick<Day, "description">> & {
-    items: ScheduleEntry[];
-  };
+export type ScheduleDay = Pick<
+  Day,
+  "id" | "date" | "dayTheme" | "description"
+> & {
+  items: ScheduleEntry[];
+};
 
 /** An ET wall-clock reading: `YYYY-MM-DD` and `HH:MM:SS`. */
 export type EasternClock = { date: string; time: string };

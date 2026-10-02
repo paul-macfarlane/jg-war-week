@@ -37,6 +37,19 @@ describe("parseAnnouncementInput", () => {
     });
   });
 
+  it("refuses a posted videoUrls key, saying where videos went", () => {
+    expect(
+      parseAnnouncementInput({
+        ...baseInput(),
+        videoUrls: ["https://youtu.be/dQw4w9WgXcQ"],
+      } as AnnouncementInput),
+    ).toMatchObject({
+      ok: false,
+      error:
+        "Video links moved into the body: add each video with the Video button.",
+    });
+  });
+
   it("rejects an empty title", () => {
     expect(parseAnnouncementInput(baseInput({ title: "   " }))).toMatchObject({
       ok: false,

@@ -29,10 +29,16 @@ export const announcementTitleSchema = z
     error: `must be at most ${ANNOUNCEMENT_TITLE_MAX} characters`,
   });
 
+const VIDEO_URLS_MOVED =
+  "Video links moved into the body: add each video with the Video button.";
+
 export const announcementInputSchema = z.object({
   title: announcementTitleSchema,
   body: contentInputSchema,
   pinned: z.boolean().default(false),
+  // zod would strip an unknown key and lose the videos silently (a form
+  // from before R11), so refuse it, as the seed does.
+  videoUrls: z.never({ error: VIDEO_URLS_MOVED }).optional(),
 });
 
 /** The Announcement form's raw fields. */
@@ -42,15 +48,19 @@ export type AnnouncementInput = {
   pinned: boolean;
 };
 
-export type AnnouncementValues = z.infer<typeof announcementInputSchema>;
+export type AnnouncementValues = Omit<
+  z.infer<typeof announcementInputSchema>,
+  "videoUrls"
+>;
 
 const FIELD_LABELS: Record<string, string> = {
   title: "Title",
 };
 
-/** Words the body issue; the rest take the label rule. */
+/** Words the body and videoUrls issues; the rest take the label rule. */
 function describeAnnouncementIssue(issue: z.core.$ZodIssue): string | null {
   if (issue.path[0] === "body") return "Body must be valid rich text.";
+  if (issue.path[0] === "videoUrls") return VIDEO_URLS_MOVED;
   return null;
 }
 

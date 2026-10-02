@@ -232,6 +232,23 @@ describe("RichText", () => {
     expect(html).toContain("aspect-video");
   });
 
+  it("titles each video with videoTitle when given, keeping its other attributes", () => {
+    const html = renderToStaticMarkup(
+      <RichText
+        content={doc({
+          type: "video",
+          attrs: { src: "https://www.youtube.com/watch?v=abc123" },
+        })}
+        videoTitle="Video: Kickoff"
+      />,
+    );
+
+    expect(html).toContain('title="Video: Kickoff"');
+    expect(html).not.toContain('title="Embedded video"');
+    expect(html).toContain('loading="lazy"');
+    expect(html).toContain('allow="fullscreen"');
+  });
+
   it("drops a video outside the allow-list on render", () => {
     const html = render(
       doc(

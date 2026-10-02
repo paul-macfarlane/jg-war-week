@@ -924,6 +924,29 @@ describe.skipIf(!isLocalDatabase)("importParticipants", () => {
   });
 });
 
+describe("importParticipants when a Team is deleted mid-import", () => {
+  it("refuses as a changed roster on a foreign-key violation", async () => {
+    const { importParticipants } = await import("@/mutations/setup");
+    // The database boundary: the write hits Postgres 23503.
+    const db = {
+      transaction: async () => {
+        throw Object.assign(new Error("fk"), { code: "23503" });
+      },
+    } as unknown as DBTx;
+
+    expect(
+      await importParticipants(
+        { text: "Neo", expected: [] },
+        { warWeekId: "w", actorEmail: "organizer@jahnelgroup.com" },
+        db,
+      ),
+    ).toEqual({
+      ok: false,
+      error: "The roster changed since the preview. Review it again.",
+    });
+  });
+});
+
 describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
   it("creates, edits and deletes a Competition with Placement Points", async () => {
     await inRolledBackTransaction(async (tx) => {

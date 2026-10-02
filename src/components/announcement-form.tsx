@@ -37,7 +37,8 @@ type Initial = {
 };
 
 /**
- * Write or edit one Announcement: title, rich-text body (videos go in it) and whether it's pinned.
+ * Write or edit one Announcement: title, rich-text body (videos go in it)
+ * and whether it's pinned.
  */
 export function AnnouncementForm({
   warWeekId,

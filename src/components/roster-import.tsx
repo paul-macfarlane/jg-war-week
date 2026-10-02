@@ -36,8 +36,10 @@ import { Textarea } from "@/components/ui/textarea";
 import type { WarWeek } from "@/db/schema";
 import {
   MAX_IMPORT_BYTES,
+  MAX_IMPORT_SIZE,
   type RosterImportEntry,
   type RosterImportPlan,
+  changeText,
   importedMessage,
   planCounts,
   planRosterText,
@@ -76,12 +78,10 @@ function EntryDetails({ entry }: { entry: RosterImportEntry }) {
       <ul className="flex flex-col">
         {entry.changes.map((change) => (
           <li
-            key={change}
-            className={
-              change.endsWith("→ none") ? "text-destructive font-semibold" : ""
-            }
+            key={change.label}
+            className={change.cleared ? "text-destructive font-semibold" : ""}
           >
-            {change}
+            {changeText(change)}
           </li>
         ))}
       </ul>
@@ -187,9 +187,11 @@ export function RosterImport({
   const [pending, startTransition] = useTransition();
 
   const isTeams = mode === "teams";
-  const columnHint = isTeams
-    ? `Columns: name, email, ${teamLabel}, company tag, ${leaderTitle}. A header row may name them instead.`
-    : "Columns: name, email, company tag. A header row may name them instead.";
+  const columnHint =
+    (isTeams
+      ? `Columns: name, email, ${teamLabel}, Company Tag, ${leaderTitle}.`
+      : "Columns: name, email, Company Tag.") +
+    " A header row may name them instead.";
 
   function openChange(next: boolean) {
     setOpen(next);
@@ -210,7 +212,9 @@ export function RosterImport({
     const file = event.target.files?.[0];
     if (!file) return;
     if (file.size > MAX_IMPORT_BYTES) {
-      toast.error("That file is over 256 KB. Import fewer rows at a time.");
+      toast.error(
+        `That file is over ${MAX_IMPORT_SIZE}. Import fewer rows at a time.`,
+      );
       event.target.value = "";
       return;
     }
@@ -218,6 +222,7 @@ export function RosterImport({
   }
 
   function preview() {
+    setError(null);
     setPlan(
       planRosterText(text, {
         roster: participants,
@@ -243,6 +248,9 @@ export function RosterImport({
       if (!result.ok) {
         toast.error(result.error);
         setError(result.error);
+        // The roster may have changed: the next Preview plans against it.
+        setPlan(null);
+        router.refresh();
         return;
       }
       toast.success(importedMessage(result));

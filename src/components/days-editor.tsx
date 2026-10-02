@@ -16,6 +16,7 @@ import {
 } from "@/components/setup-row";
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -24,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { dayDateDisabled } from "@/lib/day-range";
 import { formatDayHeading } from "@/lib/schedule";
+import { DAY_DESCRIPTION_MAX } from "@/lib/setup";
 import type { SetupDay } from "@/queries/setup";
 
 /** "2 Schedule Items": what keeps the Day from being deleted. */
@@ -117,14 +119,14 @@ function DayForm({
             id={`${id}-description`}
             name="description"
             rows={3}
-            maxLength={280}
+            maxLength={DAY_DESCRIPTION_MAX}
             aria-invalid={!!fieldErrors.description}
             value={description}
             onChange={(event) => setDescription(event.target.value)}
           />
-          <span className="text-foreground/70 text-xs" aria-live="polite">
-            {description.length}/280
-          </span>
+          <FieldDescription>
+            {description.length}/{DAY_DESCRIPTION_MAX}
+          </FieldDescription>
           <FieldError>{fieldErrors.description}</FieldError>
         </Field>
       </FieldGroup>

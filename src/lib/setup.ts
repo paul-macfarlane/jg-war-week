@@ -67,12 +67,15 @@ export const warWeekSettingsSeedShape = {
   highlights: z.array(z.string().max(500)).default([]),
 };
 
+/** The longest Day description, its column's length. */
+export const DAY_DESCRIPTION_MAX = 280;
+
 /** A Day's own fields; the seed adds its Schedule Items. */
 export const daySeedShape = {
   date: z.iso.date(),
   dayTheme: z.string().min(1).max(120),
   /** Plain text under the Day Theme; `""` is stored as null. */
-  description: z.string().trim().max(280).nullish(),
+  description: z.string().trim().max(DAY_DESCRIPTION_MAX).nullish(),
 };
 
 export const teamSeedSchema = z.object({
@@ -367,7 +370,11 @@ export type DayInput = {
   dayTheme: string;
   description?: string | null;
 };
-/** A parsed Day; `description` may be left out (a write then leaves it be). */
+/**
+ * A parsed Day. `optional()` reads an omitted or blank `description` as
+ * null, so a parsed Day always carries one and a write sets it: a caller
+ * that leaves it out clears the Day's description.
+ */
 export type DayValues = Omit<z.infer<typeof daySchema>, "description"> & {
   description?: string | null;
 };

@@ -11,6 +11,7 @@ import {
   parseNextWarWeekInput,
   toRoman,
   transitionError,
+  unstartError,
 } from "@/lib/war-week-lifecycle";
 
 /** Refused with `error`, which also shows under the field it names. */
@@ -243,6 +244,39 @@ describe("parseNextWarWeekInput", () => {
   });
 });
 
+describe("unstartError", () => {
+  const none = { pointsEntries: 0, heatResults: 0, games: 0 };
+
+  it.each<[string, Parameters<typeof unstartError>[0], string | null]>([
+    [
+      "a live edition never ended, nothing scored",
+      { status: "live", winner: null, scored: none },
+      null,
+    ],
+    [
+      "not live comes first",
+      { status: "upcoming", winner: "Red", scored: { ...none, games: 1 } },
+      "Only a live War Week can be unstarted.",
+    ],
+    [
+      "ended before comes before anything scored",
+      { status: "live", winner: "Red", scored: { ...none, pointsEntries: 1 } },
+      "This War Week has been ended; Unstart isn't available.",
+    ],
+    [
+      "then Points, Heat results and Games, in that order",
+      {
+        status: "live",
+        winner: null,
+        scored: { pointsEntries: 0, heatResults: 1, games: 1 },
+      },
+      "A Heat has a result; Unstart isn't available.",
+    ],
+  ])("%s", (_, input, expected) => {
+    expect(unstartError(input)).toBe(expected);
+  });
+});
+
 describe("lifecycleActionError", () => {
   // Who may run a lifecycle action is `can` (Organizers only); this is only
   // the status rules.
@@ -252,6 +286,7 @@ describe("lifecycleActionError", () => {
     editionNumber: number;
     status: Status;
     startDate: string;
+    winner: string | null;
   };
   const edition = (n: number, roman: string, status: Status): Edition => ({
     id: roman,
@@ -259,6 +294,7 @@ describe("lifecycleActionError", () => {
     editionNumber: n,
     status,
     startDate: `20${n + 15}-02-21`,
+    winner: status === "complete" ? "Red" : null,
   });
 
   // X and XI are over; XII is live.
@@ -368,6 +404,16 @@ describe("lifecycleActionError", () => {
       "Unstart refuses an ended edition",
       { action: "unstart", target: xi, warWeeks: liveWeeks },
       "Only a live War Week can be unstarted.",
+    ],
+    [
+      "Unstart refuses a reopened edition, which has been ended before",
+      {
+        action: "unstart",
+        target: { ...xi, status: "live" },
+        warWeeks: [x, { ...xi, status: "live" }],
+        scored: { pointsEntries: 1, heatResults: 0, games: 0 },
+      },
+      "This War Week has been ended; Unstart isn't available.",
     ],
     [
       "End leaves the live check to the transition",

@@ -65,6 +65,18 @@ describe("video blocks", () => {
     });
   });
 
+  it("keeps a src of 500 characters and drops a video whose src is longer", () => {
+    const at = (length: number) =>
+      `https://www.youtube.com/watch?v=abc123&t=${"1".repeat(length - 41)}`;
+    expect(at(500)).toHaveLength(500);
+    expect(contentInputSchema.parse(video(at(500)))).toEqual(video(at(500)));
+    expect(contentInputSchema.parse(video(at(501)))).toEqual({
+      type: "doc",
+      content: [],
+    });
+    expect(contentSchema.safeParse(video(at(501))).success).toBe(false);
+  });
+
   it("drops attrs other than src", () => {
     const src = "https://vimeo.com/123456";
     expect(
@@ -76,7 +88,7 @@ describe("video blocks", () => {
   });
 });
 
-describe("the journeys content set", () => {
+describe("the rich-text content set", () => {
   function doc(...content: unknown[]) {
     return { type: "doc", content };
   }
@@ -171,6 +183,20 @@ describe("the journeys content set", () => {
         attrs: { src: "https://x.test/a.png", alt: "A", caption: "Cap" },
       }),
     );
+  });
+
+  it("keeps a caption of 300 characters, trimmed, and drops a longer one", () => {
+    const image = (caption: string) =>
+      doc({
+        type: "image",
+        attrs: { src: "https://x.test/a.png", alt: "A", caption },
+      });
+    const longest = "c".repeat(300);
+    expect(contentInputSchema.parse(image(` ${longest} `))).toEqual(
+      image(longest),
+    );
+    expect(contentInputSchema.parse(image(`${longest}c`))).toEqual(image(""));
+    expect(contentSchema.safeParse(image(`${longest}c`)).success).toBe(false);
   });
 
   it("reads an old image with no caption as caption ''", () => {

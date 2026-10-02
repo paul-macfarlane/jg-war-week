@@ -34,8 +34,8 @@ const STATUS_HELP = {
 } as const;
 
 /**
- * The War Week's settings, its Lifecycle (Start, End, Unstart, Reopen) and Create
- * next War Week, for Organizers.
+ * The War Week's settings, its Lifecycle (Start, End, Unstart, Reopen) and
+ * Create next War Week, for Organizers.
  */
 export default async function AdminSettingsPage() {
   const { warWeek, email, allowed, isOrganizer, editions } =

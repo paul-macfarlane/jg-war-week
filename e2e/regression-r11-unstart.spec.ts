@@ -1,4 +1,4 @@
-import { type Page, expect, test } from "@playwright/test";
+import { type Page, type TestInfo, expect, test } from "@playwright/test";
 
 import { runQuery } from "./db";
 import { asOrganizer } from "./session";
@@ -12,12 +12,12 @@ const VIEWPORTS = [
   { name: "390", width: 390, height: 844 },
 ] as const;
 
-/** Screenshots `page` at both viewports as `<test name>/<width>.png`. */
-async function shoot(page: Page, testName: string) {
+/** Screenshots `page` at both viewports as `<step>-<width>.png`. */
+async function shoot(page: Page, testInfo: TestInfo, step: string) {
   for (const { name, width, height } of VIEWPORTS) {
     await page.setViewportSize({ width, height });
     await page.screenshot({
-      path: `test-results/e2e/${testName}/${name}.png`,
+      path: testInfo.outputPath(`${step}-${name}.png`),
       animations: "disabled",
     });
   }
@@ -35,7 +35,7 @@ const statusOf = async (edition: string) =>
 test("r11 68 Start then Unstart a fresh edition; it shows Upcoming again", async ({
   context,
   page,
-}) => {
+}, testInfo) => {
   await asOrganizer(context);
   await page.setViewportSize({ width: 1440, height: 900 });
   expect(await statusOf("xii")).toBe("upcoming");
@@ -73,7 +73,7 @@ test("r11 68 Start then Unstart a fresh edition; it shows Upcoming again", async
       .click();
     await expect(lifecycle.getByText("Live", { exact: true })).toBeVisible();
     expect(await statusOf("xii")).toBe("live");
-    await shoot(page, "r11-68-live");
+    await shoot(page, testInfo, "live");
 
     await lifecycle.getByRole("button", { name: "Unstart" }).click();
     const confirm = page.getByRole("alertdialog");
@@ -91,7 +91,7 @@ test("r11 68 Start then Unstart a fresh edition; it shows Upcoming again", async
       lifecycle.getByRole("button", { name: "Start War Week" }),
     ).toBeVisible();
     expect(await statusOf("xii")).toBe("upcoming");
-    await shoot(page, "r11-68-unstarted");
+    await shoot(page, testInfo, "unstarted");
   } finally {
     if ((await statusOf("xii")) === "live") {
       await runQuery(

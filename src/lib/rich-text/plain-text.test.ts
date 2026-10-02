@@ -60,7 +60,7 @@ describe("toPlainText", () => {
   });
 });
 
-describe("toPlainText over the journeys content set", () => {
+describe("toPlainText over the rich-text content set", () => {
   it("prefixes a quote's lines, breaks on a hard break, and keeps a caption", () => {
     expect(
       toPlainText({

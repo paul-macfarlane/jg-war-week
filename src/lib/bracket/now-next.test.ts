@@ -63,7 +63,13 @@ function rowsOf(bracket: Bracket): TimedHeatRow[] {
 
 /** An empty Sunday of War Week. */
 const sunday: ScheduleDay[] = [
-  { id: "d1", date: "2026-02-22", dayTheme: "Kickoff", items: [] },
+  {
+    id: "d1",
+    date: "2026-02-22",
+    dayTheme: "Kickoff",
+    description: null,
+    items: [],
+  },
 ];
 
 /** An instant given as an ET wall-clock time in February (EST, UTC-5). */

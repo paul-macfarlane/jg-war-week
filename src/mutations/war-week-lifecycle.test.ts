@@ -520,6 +520,25 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
     });
   });
 
+  it("refuses to Unstart a reopened War Week, which has been ended before", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { unstartWarWeek } = await import("@/mutations/war-week-lifecycle");
+      const { schema, byId } = await fixture(tx);
+      await tx.update(schema.warWeek).set({ status: "complete" });
+      // Ended with a Winner, then reopened: live, Winner kept, nothing scored.
+      const [reopened] = await tx
+        .insert(schema.warWeek)
+        .values({ ...warWeekValues(2, "live"), winner: "Red" })
+        .returning();
+
+      expect(await unstartWarWeek(ctxOf(reopened.id), tx)).toEqual({
+        ok: false,
+        error: "This War Week has been ended; Unstart isn't available.",
+      });
+      expect((await byId(reopened.id)).status).toBe("live");
+    });
+  });
+
   it("refuses to Unstart an upcoming or ended War Week", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { unstartWarWeek } = await import("@/mutations/war-week-lifecycle");

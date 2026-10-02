@@ -110,7 +110,7 @@ export function WarWeekLifecycleControls({
       />
       <ConfirmActionButton
         title={`Unstart War Week ${name}?`}
-        description={`It goes back to Upcoming. Only possible while nothing has been scored.`}
+        description="It goes back to Upcoming. Only possible while nothing has been scored."
         confirmLabel="Unstart"
         variant="outline"
         size="lg"

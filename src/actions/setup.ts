@@ -1,14 +1,12 @@
 "use server";
 
-import { z } from "zod";
-
 import { guarded } from "@/actions/result";
 import { revalidateSite, revalidateWarWeek } from "@/actions/revalidate";
 import { type TargetKind, authorize } from "@/auth/authorize";
 import type { WarWeekAction } from "@/lib/access";
 import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
 import type { Parsed } from "@/lib/result";
-import { MAX_IMPORT_ROWS } from "@/lib/roster-import";
+import { rosterImportInputSchema } from "@/lib/roster-import";
 import {
   type CompetitionInput,
   type DayInput,
@@ -192,19 +190,6 @@ export async function deleteParticipant(
   );
 }
 
-const importInputSchema = z.object({
-  text: z.string(),
-  expected: z
-    .array(
-      z.object({
-        row: z.number().int(),
-        kind: z.enum(["add", "update", "unchanged", "error"]),
-        changes: z.array(z.string()),
-      }),
-    )
-    .max(MAX_IMPORT_ROWS),
-});
-
 /**
  * Imports the roster from pasted cells or a CSV (ticket 67), Organizer
  * only: the Adds and Updates the preview showed (`expected`), or nothing
@@ -219,7 +204,7 @@ export async function importParticipants(
     "warWeek",
     warWeekId,
     (): Parsed<ImportParticipantsInput> => {
-      const parsed = importInputSchema.safeParse(input);
+      const parsed = rosterImportInputSchema.safeParse(input);
       return parsed.success
         ? { ok: true, value: parsed.data }
         : { ok: false, error: "The import's rows are missing." };

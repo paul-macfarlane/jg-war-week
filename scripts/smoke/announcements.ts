@@ -199,7 +199,7 @@ export async function assertAnnouncementActions(sessions: {
     );
 
     await run(
-      "createAnnouncement strips a body video node from a disallowed host (AC2)",
+      "createAnnouncement strips a body video node from a disallowed host",
       async () => {
         const result = await callAction(
           ids.createAnnouncement,

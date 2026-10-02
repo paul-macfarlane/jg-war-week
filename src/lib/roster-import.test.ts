@@ -38,10 +38,29 @@ describe("parseRosterText", () => {
       ["Smith, Agent", "smith@jahnelgroup.com"],
     ]);
   });
+
+  it("keeps a Google Sheets cell holding a newline or quote, which Sheets quotes, as one cell", () => {
+    expect(
+      parseRosterText(
+        '"Two\nLines"\tneo@jahnelgroup.com\t"The ""Matrix"""\r\nSmith\t\tIL\n',
+      ),
+    ).toEqual([
+      ["Two\nLines", "neo@jahnelgroup.com", 'The "Matrix"'],
+      ["Smith", "", "IL"],
+    ]);
+  });
+
+  it("reads a quote inside an unquoted cell as text", () => {
+    expect(parseRosterText('Neo "The One"\tLTI\nSmith\tIL')).toEqual([
+      ['Neo "The One"', "LTI"],
+      ["Smith", "IL"],
+    ]);
+  });
 });
 
 describe("mapColumns", () => {
   const leaderTitle = "Captain";
+  const mode = "teams";
 
   it("maps a forgiving header row by name, case and punctuation aside, ignoring unknown headers", () => {
     expect(
@@ -50,7 +69,7 @@ describe("mapColumns", () => {
           ["Timestamp", "Email Address", "Full name", "Team Name", "Company"],
           ["1/1/2027", "neo@jahnelgroup.com", "Neo", "Red", "LTI"],
         ],
-        { leaderTitle },
+        { mode, leaderTitle },
       ),
     ).toEqual({
       header: true,
@@ -60,13 +79,16 @@ describe("mapColumns", () => {
 
   it("knows a Leader column by its synonyms and by the War Week's Leader Title", () => {
     for (const heading of ["Leader", "Is leader?", "CAPTAIN"]) {
-      expect(mapColumns([["Name", heading]], { leaderTitle }).columns).toEqual({
+      expect(
+        mapColumns([["Name", heading]], { mode, leaderTitle }).columns,
+      ).toEqual({
         name: 0,
         leader: 1,
       });
     }
     expect(
       mapColumns([["Your name", "Head of House"]], {
+        mode,
         leaderTitle: "Head of House",
       }).columns,
     ).toEqual({ name: 0, leader: 1 });
@@ -74,14 +96,18 @@ describe("mapColumns", () => {
 
   it("knows a Team column by the War Week's Team Label", () => {
     expect(
-      mapColumns([["Name", "House"]], { leaderTitle, teamLabel: "House" })
-        .columns,
+      mapColumns([["Name", "House"]], {
+        mode,
+        leaderTitle,
+        teamLabel: "House",
+      }).columns,
     ).toEqual({ name: 0, team: 1 });
   });
 
   it("reads a first row whose only heading-like cell is a Leader value as data", () => {
     expect(
-      mapColumns([["Neo", "", "Red", "", "Captain"]], { leaderTitle }).header,
+      mapColumns([["Neo", "", "Red", "", "Captain"]], { mode, leaderTitle })
+        .header,
     ).toBe(false);
   });
 
@@ -92,7 +118,7 @@ describe("mapColumns", () => {
           ["Name", "name@jahnelgroup.com", "Red"],
           ["Neo", "", "Red", "LTI"],
         ],
-        { leaderTitle },
+        { mode, leaderTitle },
       ),
     ).toEqual({
       header: false,
@@ -103,15 +129,28 @@ describe("mapColumns", () => {
   it("maps a headerless paste by position, up to the widest row", () => {
     expect(
       mapColumns([["Neo", "neo@jahnelgroup.com", "Red", "LTI", "yes"]], {
+        mode,
         leaderTitle,
       }),
     ).toEqual({
       header: false,
       columns: { name: 0, email: 1, team: 2, companyTag: 3, leader: 4 },
     });
-    expect(mapColumns([["Neo"], ["Trinity"]], { leaderTitle })).toEqual({
+    expect(mapColumns([["Neo"], ["Trinity"]], { mode, leaderTitle })).toEqual({
       header: false,
       columns: { name: 0 },
+    });
+  });
+
+  it("maps a headerless free-for-all paste as name, email, Company Tag", () => {
+    expect(
+      mapColumns([["Neo", "neo@jahnelgroup.com", "LTI", "extra"]], {
+        mode: "free-for-all",
+        leaderTitle,
+      }),
+    ).toEqual({
+      header: false,
+      columns: { name: 0, email: 1, companyTag: 2 },
     });
   });
 });
@@ -205,9 +244,14 @@ describe("planRosterText", () => {
           isLeader: true,
         },
         changes: [
-          "Name: Neo → Neo Anderson",
-          "House: Red → Blue",
-          "Company Tag: LTI → none",
+          {
+            label: "Name",
+            before: "Neo",
+            after: "Neo Anderson",
+            cleared: false,
+          },
+          { label: "House", before: "Red", after: "Blue", cleared: false },
+          { label: "Company Tag", before: "LTI", after: "none", cleared: true },
         ],
       },
       {
@@ -253,9 +297,9 @@ describe("planRosterText", () => {
       expect.objectContaining({
         kind: "update",
         changes: [
-          "House: Red → none",
-          "Company Tag: LTI → none",
-          "Captain: yes → no",
+          { label: "House", before: "Red", after: "none", cleared: true },
+          { label: "Company Tag", before: "LTI", after: "none", cleared: true },
+          { label: "Captain", before: "yes", after: "no", cleared: false },
         ],
       }),
     ]);
@@ -295,7 +339,7 @@ describe("planRosterText", () => {
 
   it("ignores the Team and Leader columns in a free-for-all", () => {
     expect(
-      plan("Smith\t\tGreen\t\tyes", {
+      plan("Name\tEmail\tTeam\tCompany Tag\tLeader\nSmith\t\tGreen\t\tyes", {
         ...context,
         mode: "free-for-all",
         teams: [],
@@ -305,6 +349,60 @@ describe("planRosterText", () => {
         kind: "add",
         values: expect.objectContaining({ teamId: null, isLeader: false }),
       }),
+    ]);
+  });
+
+  it("reads a headerless free-for-all paste's third column as the Company Tag", () => {
+    expect(
+      plan("Smith\tsmith@jahnelgroup.com\tIL", {
+        ...context,
+        mode: "free-for-all",
+        teams: [],
+      }),
+    ).toEqual([
+      {
+        row: 1,
+        kind: "add",
+        name: "Smith",
+        values: {
+          displayName: "Smith",
+          email: "smith@jahnelgroup.com",
+          teamId: null,
+          companyTag: "IL",
+          isLeader: false,
+        },
+      },
+    ]);
+  });
+
+  it("reports a row's missing name before its bad email", () => {
+    expect(plan("\tnot-an-email")).toEqual([
+      {
+        row: 1,
+        kind: "error",
+        name: "",
+        error: "Display name must not be empty.",
+      },
+    ]);
+  });
+
+  it("lets a later row take the name or email of an earlier row that is an Error", () => {
+    const entries = plan(
+      [
+        "Dup\tnot-an-email\tRed",
+        "Dup\t\tRed",
+        "Gone\tsame@jahnelgroup.com\tGreen",
+        "Kept\tsame@jahnelgroup.com\tRed",
+      ].join("\n"),
+    );
+    expect(
+      Array.isArray(entries) &&
+        entries.map((e) => [e.row, e.kind === "error" ? e.error : e.kind]),
+    ).toEqual([
+      [1, "Email must be a valid email."],
+      [2, "add"],
+      [3, 'No House named "Green".'],
+      [4, "add"],
     ]);
   });
 

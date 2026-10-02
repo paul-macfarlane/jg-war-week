@@ -155,8 +155,18 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   don't yet.
 - A Participant-facing Announcement card shows its author's Profile name,
   else their Participant display name when the author's email matches a
-  Participant's (account linking), else the part of the email before the `@`. The admin pages show
-  the same name; the email is only used for the edit/ownership check.
+  Participant's (account linking), else the part of the email before the
+  `@`. The admin pages show the same name; the email is only used for the
+  edit/ownership check.
+- **Roster import** (`/admin/roster`, Organizers only; Hosts can't): paste
+  from Google Sheets or upload a CSV (name, email, Team, Company Tag,
+  Leader; a free-for-all's are name, email, Company Tag; headers
+  forgiving; at most 500 rows or 256 KB). The preview marks each row Add,
+  Update (matched by email, case-insensitive, listing the changes),
+  Unchanged or Error; Import commits the valid rows in one transaction,
+  and refuses if the roster changed since the preview. A Team that doesn't
+  exist is an Error: import never creates one. On Update an empty cell
+  clears that field; a column that isn't in the file leaves it alone.
 
 ## Profile rules
 
@@ -341,7 +351,9 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   - **Reopen**: `complete → live`, for corrections in the live view.
   - **Unstart**: `live → upcoming`, for an edition started by mistake. Only
     while nothing is scored: refused once the edition has a Points Entry, a
-    Heat result or a Game.
+    Heat result or a Game. Never for an edition that has been ended before
+    (it has a Winner, which Reopen keeps): "This War Week has been ended;
+    Unstart isn't available."
 - Every lifecycle action is Organizer-only: `can` refuses anyone else
   first. Then the status rules (`lifecycleActionError` in
   `src/lib/war-week-lifecycle.ts`, re-checked by every lifecycle action):
@@ -352,14 +364,6 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   - Reopen works only for the most recently ended edition, and not while a
     later edition is upcoming ("War Week XII is next; reopen isn't
     available").
-- **Roster import** (`/admin/roster`, Organizers only; Hosts can't): paste
-  from Google Sheets or upload a CSV (name, email, Team, company tag,
-  leader; headers forgiving; at most 500 rows or 256 KB). The preview
-  marks each row Add, Update (matched by email, case-insensitive, listing
-  the changes), Unchanged or Error; Import commits the valid rows in one
-  transaction. A Team that doesn't exist is an Error: import never creates
-  one. On Update an empty cell clears that field; a column that isn't in
-  the file leaves it alone.
 - **Create next War Week** (on `/admin/settings`, Organizers only) makes an
   `upcoming` edition from any edition, prefilled with the next Roman
   numeral, edition number and year. It can copy settings with the

@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import type { WarWeek } from "@/db/schema";
 import {
   type ParticipantValues,
@@ -19,14 +21,20 @@ export type RosterColumn = "name" | "email" | "team" | "companyTag" | "leader";
 /** Which cell of a row holds each field; a missing field is absent. */
 export type RosterColumns = Partial<Record<RosterColumn, number>>;
 
-/** Without a header row, the columns in this order. */
-const POSITIONAL: RosterColumn[] = [
+/** Every field, in a Teams War Week's headerless column order. */
+const FIELDS: RosterColumn[] = [
   "name",
   "email",
   "team",
   "companyTag",
   "leader",
 ];
+
+/** Without a header row, the columns in this order, by War Week mode. */
+const POSITIONAL: Record<WarWeek["mode"], RosterColumn[]> = {
+  teams: FIELDS,
+  "free-for-all": ["name", "email", "companyTag"],
+};
 
 /** Lowercase letters and digits only, so "Is leader?" reads as "isleader". */
 const normalized = (cell: string) =>
@@ -43,19 +51,18 @@ const SYNONYMS: Record<RosterColumn, string[]> = {
 /**
  * Reads pasted or uploaded text into rows of trimmed cells, dropping blank
  * lines. Tab-separated when any line has a tab (a Google Sheets paste),
- * else CSV (RFC 4180: quoted fields, `""` escapes, commas and newlines
- * inside quotes, CRLF).
+ * else comma-separated. Either way RFC 4180 quoting applies: a cell that
+ * starts with `"` runs to its closing `"`, with `""` for a quote and any
+ * delimiter or newline inside it (Google Sheets quotes a cell holding a
+ * newline or `"` that way), and CRLF ends a row.
  */
 export function parseRosterText(text: string): string[][] {
-  const rows = /\t/.test(text)
-    ? text.split(/\r?\n/).map((line) => line.split("\t"))
-    : parseCsv(text);
-  return rows
+  return parseDelimited(text, /\t/.test(text) ? "\t" : ",")
     .map((row) => row.map((cell) => cell.trim()))
     .filter((row) => row.some((cell) => cell !== ""));
 }
 
-function parseCsv(text: string): string[][] {
+function parseDelimited(text: string, delimiter: "," | "\t"): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let cell = "";
@@ -71,9 +78,10 @@ function parseCsv(text: string): string[][] {
       } else {
         cell += char;
       }
-    } else if (char === '"') {
+    } else if (char === '"' && cell === "") {
+      // Only a cell's first character opens quotes; a `"` later is text.
       quoted = true;
-    } else if (char === ",") {
+    } else if (char === delimiter) {
       row.push(cell);
       cell = "";
     } else if (char === "\n" || char === "\r") {
@@ -99,16 +107,18 @@ const isEmail = (cell: string) => emailSchema.safeParse(cell).success;
  * a Leader cell saying "Captain" is data) and none is an email; then each
  * field is the first cell naming it ("Full name", "Email address", the War
  * Week's Team Label or Leader Title…) and other headings, such as a Google
- * Form's Timestamp, are ignored. Without a header the columns are
- * name, email, Team, Company Tag and Leader by position, as many as the
- * widest row has.
+ * Form's Timestamp, are ignored. Without a header the columns are, by
+ * position, name, email, Team, Company Tag and Leader in a Teams War Week,
+ * or name, email and Company Tag in a free-for-all, as many as the widest
+ * row has.
  */
 export function mapColumns(
   rows: string[][],
   {
+    mode,
     leaderTitle,
     teamLabel = "Team",
-  }: { leaderTitle: string; teamLabel?: string },
+  }: { mode: WarWeek["mode"]; leaderTitle: string; teamLabel?: string },
 ): { header: boolean; columns: RosterColumns } {
   const first = rows[0] ?? [];
   const synonyms = {
@@ -119,7 +129,7 @@ export function mapColumns(
   const fieldOf = (cell: string): RosterColumn | undefined => {
     const key = normalized(cell);
     if (!key) return undefined;
-    return POSITIONAL.find((field) =>
+    return FIELDS.find((field) =>
       synonyms[field].some((synonym) => normalized(synonym) === key),
     );
   };
@@ -139,7 +149,7 @@ export function mapColumns(
 
   const width = Math.max(0, ...rows.map((row) => row.length));
   const columns: RosterColumns = {};
-  POSITIONAL.slice(0, width).forEach((field, index) => {
+  POSITIONAL[mode].slice(0, width).forEach((field, index) => {
     columns[field] = index;
   });
   return { header: false, columns };
@@ -147,8 +157,19 @@ export function mapColumns(
 
 /** The most data rows one import takes. */
 export const MAX_IMPORT_ROWS = 500;
-/** The most bytes one paste or CSV file may be, under Next's 1 MB body limit. */
+/** The most bytes one paste or CSV file may be, under Next's 1 MB limit. */
 export const MAX_IMPORT_BYTES = 256 * 1024;
+/** `MAX_IMPORT_BYTES` as the refusals word it: "256 KB". */
+export const MAX_IMPORT_SIZE = `${MAX_IMPORT_BYTES / 1024} KB`;
+
+/** What importing a row can do. */
+export const ROSTER_IMPORT_KINDS = [
+  "add",
+  "update",
+  "unchanged",
+  "error",
+] as const;
+export type RosterImportKind = (typeof ROSTER_IMPORT_KINDS)[number];
 
 /** A roster row as the planner reads it (`SetupParticipant` fits). */
 export type RosterImportParticipant = Pick<
@@ -169,6 +190,22 @@ export type RosterImportContext = {
   leaderTitle: string;
 };
 
+/**
+ * One field an Update changes, as the preview words it: `label`, `before`
+ * and `after`, with "none" for an empty value. `cleared` when the field had
+ * a value and the import empties it.
+ */
+export type RosterImportChange = {
+  label: string;
+  before: string;
+  after: string;
+  cleared: boolean;
+};
+
+/** A change as one line: "Team: Red → none". */
+export const changeText = ({ label, before, after }: RosterImportChange) =>
+  `${label}: ${before} → ${after}`;
+
 /** What importing one data row does. `row` counts the file's rows from 1. */
 export type RosterImportEntry =
   | { row: number; kind: "add"; name: string; values: ParticipantValues }
@@ -178,8 +215,8 @@ export type RosterImportEntry =
       name: string;
       id: string;
       values: ParticipantValues;
-      /** "Team: Red → none", one per changed field. */
-      changes: string[];
+      /** One per changed field. */
+      changes: RosterImportChange[];
     }
   | { row: number; kind: "unchanged"; name: string; id: string }
   | { row: number; kind: "error"; name: string; error: string };
@@ -190,9 +227,24 @@ export type RosterImportPlan =
 /** What the preview promised, row by row: the import refuses if it differs. */
 export type RosterImportSignature = {
   row: number;
-  kind: RosterImportEntry["kind"];
+  kind: RosterImportKind;
+  /** Each change as `changeText` words it. */
   changes: string[];
 }[];
+
+/** A roster import as the preview posts it: the text and what it showed. */
+export const rosterImportInputSchema = z.object({
+  text: z.string(),
+  expected: z
+    .array(
+      z.object({
+        row: z.number().int(),
+        kind: z.enum(ROSTER_IMPORT_KINDS),
+        changes: z.array(z.string()),
+      }),
+    )
+    .max(MAX_IMPORT_ROWS),
+});
 
 /** A name or email as matching compares it: case and outer spaces aside. */
 const key = (value: string) => value.trim().toLowerCase();
@@ -210,9 +262,12 @@ function isLeaderCell(cell: string, leaderTitle: string): boolean {
  * Participant with that email (ignoring case) with what changes, an
  * **Unchanged** Update, or an **Error** with its reason. A column absent
  * from the file, or a cell missing from a short row, leaves the field as it
- * is (an Add's default); a present, empty cell clears it. In a free-for-all the Team and Leader columns are
- * ignored. A Team is matched by name, never created. Names are matched
- * ignoring case and outer spaces, against the roster and earlier rows.
+ * is (an Add's default); a present, empty cell clears it. In a free-for-all
+ * the Team and Leader columns are ignored. A Team is matched by name, never
+ * created. Names are matched ignoring case and outer spaces, against the
+ * roster and earlier rows that aren't Errors. A row with several problems
+ * reports the first of: an unknown Team, then the Participant form's own
+ * order (name, Company Tag, email, Leader), then a duplicate.
  */
 export function planRosterImport({
   rows,
@@ -254,31 +309,18 @@ export function planRosterImport({
       error: message,
     });
     const nameKey = key(name);
-    const firstWithName = nameKey !== "" && !seenNames.has(nameKey);
-    if (nameKey) seenNames.add(nameKey);
 
     const email = cell("email") ?? "";
-    let emailKey = "";
-    if (email) {
-      const parsed = emailSchema.safeParse(email);
-      if (!parsed.success) {
-        return error(
-          firstError(
-            parseParticipantInput({
-              displayName: name,
-              companyTag: "",
-              email,
-              teamId: "",
-              isLeader: false,
-            }),
-          ),
-        );
-      }
-      emailKey = parsed.data;
-    }
-    const firstWithEmail = emailKey !== "" && !seenEmails.has(emailKey);
-    if (emailKey) seenEmails.add(emailKey);
+    const parsedEmail = emailSchema.safeParse(email);
+    // A bad email matches no one; the Participant parse below refuses it.
+    const emailKey = email && parsedEmail.success ? parsedEmail.data : "";
     const existing = emailKey ? byEmail.get(emailKey) : undefined;
+    /** A row that isn't an Error claims its name and email. */
+    const claimed = (entry: RosterImportEntry): RosterImportEntry => {
+      seenNames.add(nameKey);
+      if (emailKey) seenEmails.add(emailKey);
+      return entry;
+    };
 
     let teamId = existing?.teamId ?? "";
     let isLeader = existing?.isLeader ?? false;
@@ -303,57 +345,63 @@ export function planRosterImport({
     const parsed = parseParticipantInput({
       displayName: name,
       companyTag,
-      email: existing?.email ?? emailKey,
-      teamId: teamId ?? "",
+      email: existing?.email ?? (emailKey || email),
+      teamId,
       isLeader,
     });
     if (!parsed.ok) return error(parsed.error);
     const values = parsed.value;
 
-    if (emailKey && !firstWithEmail) {
+    if (emailKey && seenEmails.has(emailKey)) {
       return error(`Another row already has ${emailKey}.`);
     }
     if (roster.some((p) => p !== existing && key(p.displayName) === nameKey)) {
       return error(`There's already a Participant named "${name}".`);
     }
-    if (!firstWithName) {
+    if (seenNames.has(nameKey)) {
       return error(`Another row already has the name "${name}".`);
     }
 
-    if (!existing) return { row, kind: "add", name, values };
+    if (!existing) return claimed({ row, kind: "add", name, values });
 
     if (values.teamId !== existing.teamId && existing.squadCount > 0) {
       return error(
-        `In a Squad; change their ${teamLabel} on the roster after removing them from its Squads.`,
+        `In a Squad; change their ${teamLabel} on the roster after removing ` +
+          "them from its Squads.",
       );
     }
-    const none = (value: string | null | undefined) => value || "none";
     const yesNo = (value: boolean) => (value ? "yes" : "no");
-    const changes = [
+    const teamOf = (id: string | null) => (id && teamName.get(id)) || null;
+    const fields: [string, string | null, string | null][] = [
       ["Name", existing.displayName, values.displayName],
-      [
-        teamLabel,
-        none(existing.teamId && teamName.get(existing.teamId)),
-        none(values.teamId && teamName.get(values.teamId)),
-      ],
-      ["Company Tag", none(existing.companyTag), none(values.companyTag)],
+      [teamLabel, teamOf(existing.teamId), teamOf(values.teamId)],
+      ["Company Tag", existing.companyTag, values.companyTag],
       [leaderTitle, yesNo(existing.isLeader), yesNo(values.isLeader)],
-    ].flatMap(([label, before, after]) =>
-      before === after ? [] : [`${label}: ${before} → ${after}`],
+    ];
+    const changes = fields.flatMap(([label, before, after]) =>
+      (before || null) === (after || null)
+        ? []
+        : [
+            {
+              label,
+              before: before || "none",
+              after: after || "none",
+              cleared: !!before && !after,
+            },
+          ],
     );
-    return changes.length === 0
-      ? { row, kind: "unchanged", name, id: existing.id }
-      : { row, kind: "update", name, id: existing.id, values, changes };
+    return claimed(
+      changes.length === 0
+        ? { row, kind: "unchanged", name, id: existing.id }
+        : { row, kind: "update", name, id: existing.id, values, changes },
+    );
   });
-}
-
-function firstError(parsed: ReturnType<typeof parseParticipantInput>) {
-  return parsed.ok ? "Email must be a valid email." : parsed.error;
 }
 
 /**
  * Reads, maps and plans pasted or uploaded text, or refuses the whole file:
- * empty, over 256 KB, over 500 data rows, or with no name column.
+ * empty, over `MAX_IMPORT_SIZE`, over `MAX_IMPORT_ROWS` data rows, or with
+ * no name column.
  */
 export function planRosterText(
   text: string,
@@ -362,7 +410,7 @@ export function planRosterText(
   if (new TextEncoder().encode(text).length > MAX_IMPORT_BYTES) {
     return {
       ok: false,
-      error: "That's more than 256 KB. Import fewer rows at a time.",
+      error: `That's more than ${MAX_IMPORT_SIZE}. Import fewer rows at a time.`,
     };
   }
   const rows = parseRosterText(text);
@@ -380,7 +428,9 @@ export function planRosterText(
   if (data.length > MAX_IMPORT_ROWS) {
     return {
       ok: false,
-      error: `That's more than ${MAX_IMPORT_ROWS} rows. Import at most ${MAX_IMPORT_ROWS} at a time.`,
+      error:
+        `That's more than ${MAX_IMPORT_ROWS} rows. ` +
+        `Import at most ${MAX_IMPORT_ROWS} at a time.`,
     };
   }
   return {
@@ -401,13 +451,13 @@ export function planSignature(
   return entries.map((entry) => ({
     row: entry.row,
     kind: entry.kind,
-    changes: entry.kind === "update" ? entry.changes : [],
+    changes: entry.kind === "update" ? entry.changes.map(changeText) : [],
   }));
 }
 
 /** How many rows of each kind: the preview's summary. */
 export function planCounts(entries: RosterImportEntry[]) {
-  const count = (kind: RosterImportEntry["kind"]) =>
+  const count = (kind: RosterImportKind) =>
     entries.filter((entry) => entry.kind === kind).length;
   return {
     add: count("add"),

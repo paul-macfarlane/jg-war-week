@@ -136,6 +136,8 @@ export const day = pgTable(
       .references(() => warWeek.id, { onDelete: "cascade" }),
     date: date("date").notNull(),
     dayTheme: varchar("day_theme", { length: 120 }).notNull(),
+    // `DAY_DESCRIPTION_MAX` in `@/lib/setup`; kept a literal so the schema
+    // imports nothing from the app.
     description: varchar("description", { length: 280 }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),

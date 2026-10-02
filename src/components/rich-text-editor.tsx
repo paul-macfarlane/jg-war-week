@@ -22,8 +22,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Tooltip,
   TooltipContent,
@@ -32,6 +37,8 @@ import {
 } from "@/components/ui/tooltip";
 import {
   type Content,
+  IMAGE_CAPTION_MAX,
+  VIDEO_SRC_MAX,
   isHttpUrl,
   sanitizeContent,
 } from "@/lib/rich-text/content";
@@ -55,7 +62,7 @@ const URL_HINT = "Start the address with http:// or https://";
 /** The help line under the alt text field, the one field the dialog insists on. */
 const ALT_HELP = "Describe the image for people who cannot see it";
 const MISSING_ALT = "Every image needs alt text";
-/** Video URLs follow the Announcement video link rule (`videoEmbedUrl`). */
+/** Video URLs follow the rich-text video block's rule (`videoEmbedUrl`). */
 const VIDEO_HINT = "Use a YouTube, Loom, Vimeo or Google Drive video link";
 
 /**
@@ -571,21 +578,18 @@ export function RichTextEditor({
           <DialogHeader>
             <DialogTitle>Add link</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={linkUrlId}>Link URL</Label>
+          <Field data-invalid={linkError ? true : undefined}>
+            <FieldLabel htmlFor={linkUrlId}>Link URL</FieldLabel>
             <Input
               id={linkUrlId}
               autoComplete="off"
               className={DIALOG_INPUT_CLASS}
+              aria-invalid={linkError ? true : undefined}
               value={linkUrl}
               onChange={(event) => setLinkUrl(event.target.value)}
             />
-            {linkError ? (
-              <p role="alert" className="text-destructive text-sm">
-                {linkError}
-              </p>
-            ) : null}
-          </div>
+            <FieldError>{linkError}</FieldError>
+          </Field>
           <DialogFooter>
             <DialogClose
               render={
@@ -622,8 +626,8 @@ export function RichTextEditor({
               {imageMode === "edit" ? "Edit image" : "Add image"}
             </DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={imageUrlId}>Image URL</Label>
+          <Field>
+            <FieldLabel htmlFor={imageUrlId}>Image URL</FieldLabel>
             <Input
               id={imageUrlId}
               autoComplete="off"
@@ -631,9 +635,9 @@ export function RichTextEditor({
               value={imageUrl}
               onChange={(event) => setImageUrl(event.target.value)}
             />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={imageAltId}>Alt text</Label>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor={imageAltId}>Alt text</FieldLabel>
             <Input
               id={imageAltId}
               autoComplete="off"
@@ -642,25 +646,20 @@ export function RichTextEditor({
               value={imageAlt}
               onChange={(event) => setImageAlt(event.target.value)}
             />
-            <p id={imageAltHelpId} className="text-muted-foreground text-sm">
-              {ALT_HELP}
-            </p>
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={imageCaptionId}>Caption (optional)</Label>
+            <FieldDescription id={imageAltHelpId}>{ALT_HELP}</FieldDescription>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor={imageCaptionId}>Caption (optional)</FieldLabel>
             <Input
               id={imageCaptionId}
               autoComplete="off"
               className={DIALOG_INPUT_CLASS}
+              maxLength={IMAGE_CAPTION_MAX}
               value={imageCaption}
               onChange={(event) => setImageCaption(event.target.value)}
             />
-            {imageError ? (
-              <p role="alert" className="text-destructive text-sm">
-                {imageError}
-              </p>
-            ) : null}
-          </div>
+            <FieldError>{imageError}</FieldError>
+          </Field>
           <DialogFooter>
             <DialogClose
               render={
@@ -695,25 +694,21 @@ export function RichTextEditor({
           <DialogHeader>
             <DialogTitle>Add video</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={videoUrlId}>Video URL</Label>
+          <Field data-invalid={videoError ? true : undefined}>
+            <FieldLabel htmlFor={videoUrlId}>Video URL</FieldLabel>
             <Input
               id={videoUrlId}
               autoComplete="off"
               className={DIALOG_INPUT_CLASS}
               aria-describedby={videoHelpId}
+              aria-invalid={videoError ? true : undefined}
+              maxLength={VIDEO_SRC_MAX}
               value={videoUrl}
               onChange={(event) => setVideoUrl(event.target.value)}
             />
-            <p id={videoHelpId} className="text-muted-foreground text-sm">
-              {VIDEO_HINT}
-            </p>
-            {videoError ? (
-              <p role="alert" className="text-destructive text-sm">
-                {videoError}
-              </p>
-            ) : null}
-          </div>
+            <FieldDescription id={videoHelpId}>{VIDEO_HINT}</FieldDescription>
+            <FieldError>{videoError}</FieldError>
+          </Field>
           <DialogFooter>
             <DialogClose
               render={

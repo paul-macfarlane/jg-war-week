@@ -1,3 +1,4 @@
+import type { CommandProps } from "@tiptap/core";
 import {
   Fragment,
   type NodeType,
@@ -37,6 +38,28 @@ export function figureInsertRange(selection: Selection): {
 }
 
 /**
+ * The Image and Video controls' command: puts `figure` at
+ * `figureInsertRange`, directly after the list or quote the selection sits
+ * in when it sits in one (`replaceLiftingFigures`), since a figure cannot
+ * live inside either.
+ */
+export function insertFigure(
+  figure: ProseMirrorNode,
+  { state, tr, dispatch, commands }: CommandProps,
+): boolean {
+  const range = figureInsertRange(state.selection);
+  if (!dispatch) return true;
+  return (
+    replaceLiftingFigures(
+      tr,
+      range.from,
+      range.to,
+      new Slice(Fragment.from(figure), 0, 0),
+    ) || commands.insertContentAt(range, figure.toJSON())
+  );
+}
+
+/**
  * Replaces `from`–`to` with `slice` when the range sits inside a list or a
  * quote and the slice carries a figure (an image or a video): the rest of
  * the slice goes in where it was aimed and every figure goes directly after
@@ -47,7 +70,7 @@ export function figureInsertRange(selection: Selection): {
  * Ported from journeys' `replaceLiftingImages`, widened from images to the
  * figure group.
  */
-export function replaceLiftingImages(
+export function replaceLiftingFigures(
   tr: Transaction,
   from: number,
   to: number,

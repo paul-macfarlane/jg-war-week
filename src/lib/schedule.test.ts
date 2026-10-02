@@ -39,6 +39,7 @@ const week: ScheduleDay[] = [
     id: "d1",
     date: "2026-02-23",
     dayTheme: "Competition Day",
+    description: null,
     items: [
       entry("07:00:00", "Workout", "08:00:00"),
       entry("08:30:00", "Breakfast"),
@@ -51,6 +52,7 @@ const week: ScheduleDay[] = [
     id: "d2",
     date: "2026-02-24",
     dayTheme: "Red vs. Blue",
+    description: null,
     items: [entry("09:00:00", "Kickoff")],
   },
 ];
@@ -270,12 +272,14 @@ describe("computeNowNext edge cases", () => {
       id: "fri",
       date: "2026-02-20",
       dayTheme: "Friday",
+      description: null,
       items: [entry("22:00:00", "Late Show", "01:00:00")],
     },
     {
       id: "mon",
       date: "2026-02-23",
       dayTheme: "Monday",
+      description: null,
       items: [entry("09:00:00", "Kickoff")],
     },
   ];

@@ -1,13 +1,13 @@
 import { Node, mergeAttributes, wrappingInputRule } from "@tiptap/core";
 import Image from "@tiptap/extension-image";
-import { Fragment, Slice } from "@tiptap/pm/model";
+import { ListItem } from "@tiptap/extension-list";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import StarterKit from "@tiptap/starter-kit";
 
 import {
   FIGURE_GROUP,
-  figureInsertRange,
-  replaceLiftingImages,
+  insertFigure,
+  replaceLiftingFigures,
 } from "@/lib/rich-text/figures";
 import { Video } from "@/lib/rich-text/video-node";
 
@@ -37,7 +37,7 @@ declare module "@tiptap/core" {
  * stored shape gives a list item and a quote paragraphs only, so an image
  * the editor let into either would vanish at the next save. Inserted,
  * pasted, or dropped there, it goes directly after that list or quote
- * instead (`replaceLiftingImages`), and so does a video.
+ * instead (`insertFigure`, `replaceLiftingFigures`), and so does a video.
  */
 export const CaptionedImage = Image.extend({
   group: FIGURE_GROUP,
@@ -45,21 +45,8 @@ export const CaptionedImage = Image.extend({
   addCommands() {
     return {
       ...this.parent?.(),
-      insertImage:
-        (attrs) =>
-        ({ state, tr, dispatch, commands }) => {
-          const image = this.type.create(attrs);
-          const range = figureInsertRange(state.selection);
-          if (!dispatch) return true;
-          return (
-            replaceLiftingImages(
-              tr,
-              range.from,
-              range.to,
-              new Slice(Fragment.from(image), 0, 0),
-            ) || commands.insertContentAt(range, image.toJSON())
-          );
-        },
+      insertImage: (attrs) => (props) =>
+        insertFigure(this.type.create(attrs), props),
     };
   },
 
@@ -72,7 +59,7 @@ export const CaptionedImage = Image.extend({
           handlePaste(view, _event, slice) {
             const { from, to } = view.state.selection;
             const tr = view.state.tr;
-            if (!replaceLiftingImages(tr, from, to, slice)) return false;
+            if (!replaceLiftingFigures(tr, from, to, slice)) return false;
             view.dispatch(tr.scrollIntoView().setMeta("uiEvent", "paste"));
             return true;
           },
@@ -87,7 +74,7 @@ export const CaptionedImage = Image.extend({
             // does; an unhandled drop discards this transaction.
             if (moved) tr.deleteSelection();
             const pos = tr.mapping.map(target.pos);
-            if (!replaceLiftingImages(tr, pos, pos, slice)) return false;
+            if (!replaceLiftingFigures(tr, pos, pos, slice)) return false;
             view.dispatch(tr.setMeta("uiEvent", "drop"));
             return true;
           },
@@ -178,6 +165,15 @@ export const ParagraphQuote = Node.create({
 });
 
 /**
+ * StarterKit's list item, holding what the stored shape gives one: a
+ * paragraph first, then paragraphs and nested lists. StarterKit's holds any
+ * block, so a heading typed into a list item would lose its level on save.
+ */
+export const ParagraphListItem = ListItem.extend({
+  content: "paragraph (paragraph | bulletList | orderedList)*",
+});
+
+/**
  * StarterKit's document, admitting a quote, an image and a video beside the
  * blocks at its top.
  */
@@ -200,10 +196,11 @@ export const QuoteDocument = Node.create({
  */
 export const editorExtensions = [
   StarterKit.configure({
-    // StarterKit's own document and quote are swapped for `QuoteDocument`
-    // and `ParagraphQuote` below.
+    // StarterKit's own document, quote and list item are swapped for
+    // `QuoteDocument`, `ParagraphQuote` and `ParagraphListItem` below.
     document: false,
     blockquote: false,
+    listItem: false,
     code: false,
     codeBlock: false,
     horizontalRule: false,
@@ -221,6 +218,7 @@ export const editorExtensions = [
   }),
   QuoteDocument,
   ParagraphQuote,
+  ParagraphListItem,
   CaptionedImage,
   Video,
 ];

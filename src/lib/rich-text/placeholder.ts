@@ -7,8 +7,9 @@ import { type Content, isBlankContent } from "@/lib/rich-text/content";
 
 /**
  * A placeholder shown over the first block — whatever block that is — while
- * the Step content editor's document is empty (ticket 57), and named to
- * assistive technology as `aria-placeholder` for exactly as long. A
+ * the rich-text editor's document (an Announcement body, an FAQ answer or a
+ * Schedule Item description) is empty, and named to assistive technology
+ * as `aria-placeholder` for exactly as long. A
  * decoration and an attribute only: it never touches the document, so it
  * can never appear in `editor.getJSON()` or reach the stored shape.
  *

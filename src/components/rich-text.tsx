@@ -18,16 +18,22 @@ import { VIDEO_IFRAME, videoEmbedUrl } from "@/lib/video";
  *
  * Stored headings are never rendered at their stored level: rich text sits
  * under a heading of the page's own, at different depths, so headings are
- * normalised the way journeys' runner does (`normalizeHeadingLevels`) from
+ * normalized the way journeys' runner does (`normalizeHeadingLevels`) from
  * `headingFloor`, one below the nearest enclosing heading.
  */
 export function RichText({
   content,
   headingFloor = 2,
+  videoTitle = VIDEO_IFRAME.title,
 }: {
   content: unknown;
   /** The level the first stored heading renders at; 2 to 6. */
   headingFloor?: number;
+  /**
+   * Each video iframe's accessible title, so a page with several rich
+   * texts can tell their players apart ("Video: Kickoff recap").
+   */
+  videoTitle?: string;
 }) {
   const result = sanitizeContent(content);
   if (!result.ok) {
@@ -45,14 +51,14 @@ export function RichText({
   return (
     <div className="[&_blockquote]:border-muted-foreground [&_figcaption]:text-muted-foreground flex flex-col gap-3 break-words [&_a]:underline [&_a]:underline-offset-4 [&_blockquote]:border-l-2 [&_blockquote]:pl-4 [&_blockquote]:not-italic [&_blockquote>*+*]:mt-3 [&_figcaption]:mt-2 [&_figcaption]:text-sm [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-semibold [&_h4]:text-base [&_h4]:font-semibold [&_h5]:text-sm [&_h5]:font-semibold [&_h6]:text-sm [&_h6]:font-semibold [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-lg [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6">
       {blocks.map((block, index) => (
-        <BlockView key={index} block={block} />
+        <BlockView key={index} block={block} videoTitle={videoTitle} />
       ))}
     </div>
   );
 }
 
 /**
- * Journeys' heading normalisation, from a floor instead of a fixed `h2`:
+ * Journeys' heading normalization, from a floor instead of a fixed `h2`:
  * the first heading renders at `floor`, whatever level it was written at;
  * each later heading at its written distance from the first, but never
  * above `floor`, never more than one level deeper than the previous
@@ -98,7 +104,14 @@ function trimEmptyParagraphs(blocks: Block[]) {
   return blocks.slice(start, end);
 }
 
-function BlockView({ block }: { block: Block }) {
+function BlockView({
+  block,
+  videoTitle = VIDEO_IFRAME.title,
+}: {
+  block: Block;
+  /** Videos are top-level blocks only, so nested blocks never need it. */
+  videoTitle?: string;
+}) {
   switch (block.type) {
     case "paragraph":
       return <p>{renderInline(block.content)}</p>;
@@ -141,6 +154,7 @@ function BlockView({ block }: { block: Block }) {
         <iframe
           src={src}
           {...VIDEO_IFRAME}
+          title={videoTitle}
           allowFullScreen
           className="aspect-video w-full rounded-lg"
         />

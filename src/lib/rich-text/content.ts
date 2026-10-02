@@ -167,6 +167,11 @@ export function readStoredImageAttrs(attrs: unknown): {
   };
 }
 
+/** The longest video `src` kept, as the old Announcement video links were. */
+export const VIDEO_SRC_MAX = 500;
+/** The longest image caption kept, once trimmed. */
+export const IMAGE_CAPTION_MAX = 300;
+
 const imageSchema: z.ZodType<ImageBlock> = z.object({
   type: z.literal("image"),
   attrs: z.preprocess(
@@ -174,7 +179,7 @@ const imageSchema: z.ZodType<ImageBlock> = z.object({
     z.object({
       src: z.string().min(1),
       alt: z.string(),
-      caption: z.string(),
+      caption: z.string().max(IMAGE_CAPTION_MAX),
     }),
   ),
 });
@@ -182,7 +187,10 @@ const imageSchema: z.ZodType<ImageBlock> = z.object({
 const videoSchema: z.ZodType<VideoBlock> = z.object({
   type: z.literal("video"),
   attrs: z.object({
-    src: z.string().refine((src) => videoEmbedUrl(src) !== null),
+    src: z
+      .string()
+      .max(VIDEO_SRC_MAX)
+      .refine((src) => videoEmbedUrl(src) !== null),
   }),
 });
 
@@ -314,18 +322,29 @@ function sanitizeImage(input: Record<string, unknown>): ImageBlock | null {
     return null;
   }
   const stored = readStoredImageAttrs(attrs);
+  const caption = stored.caption.trim();
+  // An over-long caption is dropped like any attr it can't keep; the
+  // picture stays.
   return {
     type: "image",
-    attrs: { src, alt: stored.alt.trim(), caption: stored.caption.trim() },
+    attrs: {
+      src,
+      alt: stored.alt.trim(),
+      caption: caption.length > IMAGE_CAPTION_MAX ? "" : caption,
+    },
   };
 }
 
 function sanitizeVideo(input: Record<string, unknown>): VideoBlock | null {
   const attrs = isRecord(input.attrs) ? input.attrs : {};
   const src = attrs.src;
-  // Stricter than the image rule: the URL must be on the video allow-list
-  // and point at a video its host can embed.
-  if (typeof src !== "string" || videoEmbedUrl(src) === null) {
+  // Stricter than the image rule: the URL must be on the video allow-list,
+  // point at a video its host can embed, and be at most `VIDEO_SRC_MAX`.
+  if (
+    typeof src !== "string" ||
+    src.length > VIDEO_SRC_MAX ||
+    videoEmbedUrl(src) === null
+  ) {
     return null;
   }
   return { type: "video", attrs: { src } };

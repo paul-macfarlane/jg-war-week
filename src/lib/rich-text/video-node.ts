@@ -1,11 +1,6 @@
 import { Node, mergeAttributes } from "@tiptap/core";
-import { Fragment, Slice } from "@tiptap/pm/model";
 
-import {
-  FIGURE_GROUP,
-  figureInsertRange,
-  replaceLiftingImages,
-} from "@/lib/rich-text/figures";
+import { FIGURE_GROUP, insertFigure } from "@/lib/rich-text/figures";
 import { VIDEO_IFRAME, videoEmbedUrl } from "@/lib/video";
 
 declare module "@tiptap/core" {
@@ -27,7 +22,7 @@ declare module "@tiptap/core" {
  * does (`videoEmbedUrl`) so an Organizer sees what they inserted; the
  * sanitizer drops any `src` that does not resolve to an embed. It sits in
  * the `figure` group with the image, so like the image it lives only at the
- * top of a document and is placed the same way (`replaceLiftingImages`).
+ * top of a document and is placed the same way (`insertFigure`).
  */
 export const Video = Node.create({
   name: "video",
@@ -47,21 +42,8 @@ export const Video = Node.create({
 
   addCommands() {
     return {
-      insertVideo:
-        (attrs) =>
-        ({ state, tr, dispatch, commands }) => {
-          const video = this.type.create(attrs);
-          const range = figureInsertRange(state.selection);
-          if (!dispatch) return true;
-          return (
-            replaceLiftingImages(
-              tr,
-              range.from,
-              range.to,
-              new Slice(Fragment.from(video), 0, 0),
-            ) || commands.insertContentAt(range, video.toJSON())
-          );
-        },
+      insertVideo: (attrs) => (props) =>
+        insertFigure(this.type.create(attrs), props),
     };
   },
 
