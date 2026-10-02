@@ -469,7 +469,6 @@ async function insertAnnouncements(
         warWeekId,
         title: a.title,
         body: a.body,
-        videoUrls: a.videoUrls,
         pinned: a.pinned,
         authorEmail: a.authorEmail,
         publishedAt: new Date(a.publishedAt),

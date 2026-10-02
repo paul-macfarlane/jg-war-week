@@ -59,7 +59,6 @@ export default async function EditAnnouncementPage({
           initial={{
             title: announcement.title,
             body: body.ok ? body.content : { type: "doc", content: [] },
-            videoUrls: announcement.videoUrls,
             pinned: announcement.pinned,
           }}
         />

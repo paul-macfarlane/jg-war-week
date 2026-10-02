@@ -21,7 +21,6 @@ export async function createAnnouncement(
     warWeekId: ctx.warWeekId,
     title: values.title,
     body: values.body,
-    videoUrls: values.videoUrls,
     pinned: values.pinned,
     authorEmail: ctx.actorEmail,
   });
@@ -43,7 +42,6 @@ export async function updateAnnouncement(
     .set({
       title: values.title,
       body: values.body,
-      videoUrls: values.videoUrls,
       pinned: values.pinned,
       updatedAt: sql`now()`,
     })

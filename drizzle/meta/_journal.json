@@ -148,6 +148,20 @@
       "when": 1790970561077,
       "tag": "0020_wild_speed",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790970763759,
+      "tag": "0021_announcement-videos-into-body",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1790970769295,
+      "tag": "0022_drop-announcement-video-urls",
+      "breakpoints": true
     }
   ]
 }

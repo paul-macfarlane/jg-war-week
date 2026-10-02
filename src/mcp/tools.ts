@@ -22,7 +22,7 @@ export const MCP_TOOLS = {
   get_announcements: {
     title: "Get Announcements",
     description:
-      "Returns the current War Week's recent Announcements as readable text, pinned first then newest first, with title, author, published time, plain-text body and any video links.",
+      "Returns the current War Week's recent Announcements as readable text, pinned first then newest first, with title, author, published time, plain-text body (a video is its URL).",
   },
   get_awards: {
     title: "Get Awards",

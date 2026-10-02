@@ -216,9 +216,13 @@ describe("War Week XI demo", () => {
     );
   });
 
-  it("has Announcements (one pinned, one with a video), Awards and organizers", () => {
+  it("has Announcements (one pinned, one with a video in its body), Awards and organizers", () => {
     expect(xi.announcements.filter((a) => a.pinned)).toHaveLength(1);
-    expect(xi.announcements.some((a) => a.videoUrls.length > 0)).toBe(true);
+    expect(
+      xi.announcements.some((a) =>
+        a.body.content.some((block) => block.type === "video"),
+      ),
+    ).toBe(true);
     expect(xi.awards.length).toBeGreaterThanOrEqual(2);
     expect(xi.organizers.length).toBeGreaterThan(0);
   });

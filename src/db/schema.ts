@@ -596,10 +596,6 @@ export const announcement = pgTable(
       .references(() => warWeek.id, { onDelete: "cascade" }),
     title: varchar("title", { length: 200 }).notNull(),
     body: jsonb("body").$type<Content>().notNull(),
-    videoUrls: varchar("video_urls", { length: 500 })
-      .array()
-      .notNull()
-      .default([]),
     pinned: boolean("pinned").notNull().default(false),
     authorEmail: varchar("author_email", { length: 254 }).notNull(),
     publishedAt: timestamp("published_at", { withTimezone: true })

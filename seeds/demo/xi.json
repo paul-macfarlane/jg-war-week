@@ -1309,10 +1309,13 @@
                 "text": " until closing ceremonies."
               }
             ]
+          },
+          {
+            "type": "video",
+            "attrs": { "src": "https://www.youtube.com/watch?v=vKQi3bBA1y8" }
           }
         ]
-      },
-      "videoUrls": ["https://www.youtube.com/watch?v=vKQi3bBA1y8"]
+      }
     },
     {
       "key": "tournament-night-recap",

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { announcementTitleSchema, videoUrlSchema } from "@/lib/announcements";
+import { announcementTitleSchema } from "@/lib/announcements";
 import { AWARD_DESCRIPTION_MAX, AWARD_NAME_MAX } from "@/lib/awards";
 import { WAR_WEEK_STATUSES } from "@/lib/enums";
 import { jgEmailSchema } from "@/lib/jg-email";
@@ -86,7 +86,12 @@ export const announcementSeedSchema = z.object({
   key: seedKey,
   title: announcementTitleSchema,
   body: contentInputSchema,
-  videoUrls: z.array(videoUrlSchema).default([]),
+  // zod would strip an unknown key and lose the video silently, so refuse it.
+  videoUrls: z
+    .never({
+      error: "videoUrls is gone; put each video in body as a video block",
+    })
+    .optional(),
   pinned: z.boolean().default(false),
   authorEmail: emailSchema,
   publishedAt: z.iso.datetime({ offset: true }),

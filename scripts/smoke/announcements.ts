@@ -183,7 +183,6 @@ export async function assertAnnouncementActions(sessions: {
             {
               title: `${SMOKE_ANNOUNCEMENT_PREFIX}refused`,
               body: validBody,
-              videoUrls: [],
               pinned: false,
             },
           ],
@@ -200,7 +199,7 @@ export async function assertAnnouncementActions(sessions: {
     );
 
     await run(
-      "createAnnouncement rejects a disallowed video URL (AC2)",
+      "createAnnouncement strips a body video node from a disallowed host (AC2)",
       async () => {
         const result = await callAction(
           ids.createAnnouncement,
@@ -208,19 +207,30 @@ export async function assertAnnouncementActions(sessions: {
             await xiWarWeekId(),
             {
               title: `${SMOKE_ANNOUNCEMENT_PREFIX}bad-video`,
-              body: validBody,
-              videoUrls: ["https://evil.example.com/watch?v=1"],
+              body: {
+                type: "doc",
+                content: [
+                  ...validBody.content,
+                  {
+                    type: "video",
+                    attrs: { src: "https://evil.example.com/watch?v=1" },
+                  },
+                ],
+              },
               pinned: false,
             },
           ],
           sessions.organizer,
         );
         const rows = await smokeAnnouncements();
-        return !result.ok &&
-          /YouTube, Loom, Vimeo or Google Drive/.test(result.error) &&
-          rows.length === 0
+        const stored = rows[0]?.body ?? "";
+        await deleteSmokeAnnouncements();
+        return result.ok &&
+          rows.length === 1 &&
+          !stored.includes("evil.example.com") &&
+          !stored.includes('"video"')
           ? null
-          : `result=${JSON.stringify(result)} rows=${rows.length}`;
+          : `result=${JSON.stringify(result)} rows=${JSON.stringify(rows)}`;
       },
     );
 
@@ -234,7 +244,6 @@ export async function assertAnnouncementActions(sessions: {
             {
               title: `${SMOKE_ANNOUNCEMENT_PREFIX}created`,
               body: validBody,
-              videoUrls: ["https://youtu.be/dQw4w9WgXcQ"],
               pinned: false,
             },
           ],
@@ -272,7 +281,6 @@ export async function assertAnnouncementActions(sessions: {
               {
                 title: "should-not-apply",
                 body: validBody,
-                videoUrls: [],
                 pinned: true,
               },
             ],
@@ -321,7 +329,6 @@ export async function assertAnnouncementActions(sessions: {
               {
                 title: editedTitle,
                 body: validBody,
-                videoUrls: ["https://youtu.be/dQw4w9WgXcQ"],
                 pinned: false,
               },
             ],
@@ -459,7 +466,6 @@ export async function assertAnnouncementUnsafeContentStripped(sessions: {
         {
           title: `${SMOKE_ANNOUNCEMENT_PREFIX}unsafe`,
           body: unsafeBody,
-          videoUrls: [],
           pinned: false,
         },
       ],

@@ -9,13 +9,12 @@ export type AnnouncementsResult = {
     author: string;
     publishedAt: string;
     body: string | null;
-    videoUrls: string[];
   }[];
 };
 
 type AnnouncementRow = Pick<
   Announcement,
-  "title" | "pinned" | "publishedAt" | "body" | "videoUrls"
+  "title" | "pinned" | "publishedAt" | "body"
 > & {
   /** The resolved author name (`announcementAuthorName`); never an email. */
   authorName: string;
@@ -40,7 +39,6 @@ export function toAnnouncementsResult(
       author: row.authorName,
       publishedAt: row.publishedAt.toISOString(),
       body: toPlainText(row.body),
-      videoUrls: row.videoUrls,
     })),
   };
 }

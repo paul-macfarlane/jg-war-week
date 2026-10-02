@@ -310,7 +310,7 @@ async function assertHostKeepsOwnPin(fixture: HostFixture) {
       async () => {
         const result = await callAction(
           ids.updateAnnouncement,
-          [row.id, { title: `${title}-edited`, body, videoUrls: [] }],
+          [row.id, { title: `${title}-edited`, body }],
           fixture.session,
         );
         const after = await pinned(row.id);
@@ -327,10 +327,7 @@ async function assertHostKeepsOwnPin(fixture: HostFixture) {
       async () => {
         const result = await callAction(
           ids.updateAnnouncement,
-          [
-            row.id,
-            { title: `${title}-unpinned`, body, videoUrls: [], pinned: false },
-          ],
+          [row.id, { title: `${title}-unpinned`, body, pinned: false }],
           fixture.session,
         );
         const after = await pinned(row.id);

@@ -101,7 +101,6 @@ function toCardData(row: Announcement, authors: Authors): AnnouncementCardData {
     id: row.id,
     title: row.title,
     body: row.body,
-    videoUrls: row.videoUrls,
     pinned: row.pinned,
     publishedAt: row.publishedAt,
     authorName: announcementAuthorName(
