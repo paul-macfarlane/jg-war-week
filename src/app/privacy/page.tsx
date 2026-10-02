@@ -3,23 +3,31 @@ import Link from "next/link";
 
 import { SiteFooter } from "@/components/site-footer";
 import { ThemeRoot } from "@/components/theme-root";
-import { STATIC_PAGE_THEME } from "@/lib/about";
+import { ABOUT_FALLBACK_THEME } from "@/lib/about";
 import { warWeekThemeStyle } from "@/lib/theme";
+import { getCurrentWarWeek } from "@/queries/war-weeks";
 
 export const metadata: Metadata = {
   title: "Privacy · JG War Week",
   description: "What JG War Week collects, why, and who can see it.",
 };
 
+/** Never statically prerendered: it reads the current War Week. */
+export const dynamic = "force-dynamic";
+
 /**
  * The public Privacy page: what JG War Week collects and why, in plain
- * language. Static on purpose, like `/about`: copy only, no database or
- * session reads (`PUBLIC_PATHS` in `src/lib/access.ts`).
+ * language. Copy only, but like `/about` it wears the current War Week's
+ * Appearance Theme (`getCurrentWarWeek`), else `ABOUT_FALLBACK_THEME`. No
+ * session reads; still one of the `PUBLIC_PATHS` in `src/lib/access.ts`.
  */
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  const current = await getCurrentWarWeek();
+  const theme = current ?? ABOUT_FALLBACK_THEME;
+
   return (
     <ThemeRoot
-      style={warWeekThemeStyle(STATIC_PAGE_THEME)}
+      style={warWeekThemeStyle(theme)}
       className="bg-background text-foreground flex min-h-dvh flex-col font-sans"
     >
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-5 sm:px-6">
@@ -40,7 +48,7 @@ export default function PrivacyPage() {
             Privacy
           </h1>
           <p className="text-foreground/60 text-sm">
-            Last updated: September 24, 2026
+            Last updated: October 1, 2026
           </p>
         </div>
 
@@ -81,10 +89,12 @@ export default function PrivacyPage() {
         <section className="flex flex-col gap-3">
           <h2 className="text-xl font-semibold tracking-tight">Who did what</h2>
           <p className="text-foreground/80 leading-relaxed">
-            A War Week keeps its Organizer email list; the email of the
-            Organizer who entered each Points Entry, shown only to Organizers;
-            and each Announcement author&apos;s email, which is shown on the
-            Announcement to everyone signed in.
+            A War Week keeps its Organizer email list and each
+            Competition&apos;s Host emails; the email of whoever entered each
+            Points Entry, shown only to Organizers; and each Announcement
+            author&apos;s email, which is shown on the Announcement to everyone
+            signed in. The email of whoever logs a Game or reports a Bracket
+            result is kept for audit and never shown.
           </p>
         </section>
 
@@ -121,8 +131,7 @@ export default function PrivacyPage() {
             Corrections or removal
           </h2>
           <p className="text-foreground/80 leading-relaxed">
-            To correct or remove your data, contact the War Week Organizers or
-            Jahnel Group.
+            Contact the Jahnel Group admins.
           </p>
         </section>
       </main>

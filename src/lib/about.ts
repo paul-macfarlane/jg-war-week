@@ -1,27 +1,10 @@
 import type { ThemeColors } from "@/lib/theme";
 
 /**
- * The Privacy and Terms pages' theme: static copy with no War Week data
- * (ticket 28), so it's copied here from `seeds/xi.json` rather than read at
- * request time. Unlike `/about` (ticket 03), those two pages don't follow
- * the current War Week; update this together with `seeds/xi.json` if XI's
- * look changes.
- */
-export const STATIC_PAGE_THEME: ThemeColors = {
-  primaryColor: "#00ff41",
-  primaryForegroundColor: "#000000",
-  accentColor: "#008f11",
-  backgroundColor: "#000000",
-  foregroundColor: "#d1ffd6",
-  fontPreset: "mono",
-  overridePrimaryColor: "#0a7a1f",
-};
-
-/**
- * `/about`'s theme (ticket 03) when no War Week exists at all (an empty
+ * The theme of `/about`, `/privacy` and `/terms` (tickets 03, 44) when no War Week exists at all (an empty
  * database, e.g. before the first `seed:load`): a neutral black-on-white
  * look so the page stays readable rather than wearing a stale edition's
- * colors. Whenever a War Week exists, `/about` wears *its* Appearance
+ * colors. Whenever a War Week exists, those pages wear *its* Appearance
  * Theme instead (`getCurrentWarWeek`, same resolution the root page uses:
  * live, else next upcoming, else most recent completed).
  */
