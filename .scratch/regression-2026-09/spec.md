@@ -87,3 +87,21 @@ Each epic is one `/atlas-implement` run, one branch and one PR into
 Outside the epics: `11` (Paul, with Claude in Chrome), `14` (after R2; ticket
 17 of hardening), `18` (a regression pass after R1), `19` (backlog),
 `20` (grilling first).
+
+## October regression (grilling, 2026-10-01)
+
+Full record: `grilling-2026-10-01.md`. Source: Paul's regression feedback
+(Participant P1–P8, Admin A1–A18, checklist), 2026-10-01.
+
+| Epic | Tickets | Waits on | Red-team |
+|---|---|---|---|
+| `R8` Quick fixes | 46–53 | none | no |
+| `R9` Navigation | 54–59 | R8 merged | no |
+| `R10` Accounts and testing | 60–63 | R9 merged; Blob store and staging secret | yes |
+| `R11` Content | 64–68 | R10 merged | yes |
+| `R12` Participation and Award Categories | 69–71 | R11 merged | yes |
+| `R13` Finale slides | 72–74 | R12 merged | yes |
+
+Outside the epics: `75` LTI and InfoLink sign-in (needs-info: domains),
+`76` Tense billable hours (needs-info: owner and access), `77` personal
+War Week recap (needs-triage, after R13).
