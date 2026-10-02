@@ -8,7 +8,9 @@
 
 **Blocked by:** R8 merged into `staging` (shared nav files).
 
-**Status:** ready-for-agent
+**Status:** in-progress
+
+**Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
 **Red-team:** not required (no Drizzle schema, auth or access change; Host trimming is preserved, not changed).
 

@@ -13,7 +13,9 @@
 
 **Blocked by:** none (merge R8 first; both touch nav files)
 
-**Status:** ready-for-agent
+**Status:** in-progress
+
+**Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
 **Source:** Paul's regression feedback 2026-10-01, A3, A14, A15; grilling Q9
 
