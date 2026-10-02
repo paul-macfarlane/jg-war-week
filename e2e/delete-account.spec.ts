@@ -43,11 +43,9 @@ for (const viewport of VIEWPORTS) {
         const page = await context.newPage();
         await page.setViewportSize(viewport);
 
-        // Another worker threads Profile names into the roster; assert on the
-        // roster page only once it shows them, else on the rows (reported).
+        // The roster shows the Profile name while the account exists.
         await page.goto("/xi/teams");
-        await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-        expect(await rows("profile", "email")).toBe(1);
+        await expect(page.getByText(PROFILE_NAME).first()).toBeVisible();
 
         await page.goto("/xi/profile");
         await expect(
@@ -93,6 +91,12 @@ for (const viewport of VIEWPORTS) {
           [EMAIL],
         );
         expect(participant.display_name).toBe(PARTICIPANT);
+
+        // Seen by someone else, the roster shows the roster name again.
+        await signIn(context, "e2e-delete-viewer@jahnelgroup.com");
+        await page.goto("/xi/teams");
+        await expect(page.getByText(PARTICIPANT).first()).toBeVisible();
+        await expect(page.getByText(PROFILE_NAME)).toHaveCount(0);
       });
     } finally {
       await context.close();

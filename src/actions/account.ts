@@ -32,8 +32,16 @@ export async function deleteMyAccount(input: {
     const result = await mutations.deleteAccount(actor.email);
     if (!result.ok) return result;
 
-    const { name } = (await auth.$context).authCookies.sessionToken;
-    (await cookies()).delete(name);
+    // With its own attributes: a `__Secure-` cookie (https) is only
+    // replaced by a Set-Cookie that is itself Secure.
+    const { name, attributes } = (await auth.$context).authCookies.sessionToken;
+    (await cookies()).delete({
+      name,
+      path: attributes.path,
+      secure: attributes.secure,
+      httpOnly: attributes.httpOnly,
+      domain: attributes.domain,
+    });
     redirect("/");
   });
 }
