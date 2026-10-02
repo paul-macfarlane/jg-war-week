@@ -198,7 +198,7 @@ Organizer screens cover it. Sign in and go to `/admin`:
   with the other sections you can see, the edition switcher, Display and
   your account. From `md` up it is the side column and header as before.
   The sections live in `src/lib/admin-sections.ts`.
-- **Setup rows open in a Sheet.** On Teams & roster and Competitions, each
+- **Setup rows open in a Sheet on phones, a Dialog from 768px.** On Teams & roster and Competitions, each
   row is one "Edit <name>" button that opens its form in a
   `ResponsiveSheetDialog`, with Save and Delete in a sticky footer; "Add …"
   opens the empty form. A Team's row reads "Edit <Team Label> <name>". "Assign
@@ -453,7 +453,7 @@ Notes:
   with hand-rolled `aria-pressed`.
 - The app's own wrappers — `EntityCombobox`, `DatePicker`,
   `DateRangePicker`, `TimeCombobox`, `ColorField`, and `ResponsiveSheetDialog`
-  (a centered Dialog at `lg` and up, a bottom Sheet below) — live in
+  (a centered Dialog at `md`, 768px, and up; a bottom Sheet on phones below) — live in
   `src/components/`. Reach for one of those before building a new control.
   Only `EntityCombobox` does search and chips.
 - Below `sm`, every admin control is at least 44px tall and wide: `min-h-11

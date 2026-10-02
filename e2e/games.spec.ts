@@ -135,7 +135,7 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     await expect(form.getByRole("combobox", { name: "Player A" })).toHaveValue(
       PLAYER.name,
     );
-    // Filled in on a phone, then widened past `lg`: the form keeps its input.
+    // Filled in on a phone, then widened past `md` (768px): the form keeps its input.
     await you.setViewportSize({ width: 375, height: 900 });
     await form.getByRole("combobox", { name: "Player B" }).click();
     await you.getByRole("option", { name: OPPONENT.name, exact: true }).click();
@@ -144,7 +144,7 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
       .getByRole("group", { name: "Who won?" })
       .getByRole("button", { name: `${PLAYER.name} won` });
     await won.click();
-    await you.setViewportSize({ width: 1280, height: 900 });
+    await you.setViewportSize({ width: 820, height: 900 });
     await expect(form.getByRole("combobox", { name: "Player B" })).toHaveValue(
       OPPONENT.name,
     );

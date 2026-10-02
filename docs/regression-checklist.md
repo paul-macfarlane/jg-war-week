@@ -158,7 +158,7 @@ on the matching War Week page.
 - [ ] **Run a Bracket end to end.** Enter Entrants in the
       `single-elimination` Competition, seed them, build it, give a Heat a
       Day, time and location (it shows in Now/Next with `?at=` set to that
-      time), record every Heat (a dialog at 1440, a sheet at 390), and
+      time), record every Heat (a dialog at 820 and 1440, a sheet at 390), and
       finalize. The finalized Bracket's Placement Points appear in Points
       Entries and the Standings, and "Play the Finale" opens its Bracket
       Finale.
@@ -191,8 +191,9 @@ on the matching War Week page.
 - [ ] **Finale links.** `/admin/standings` links to the Finale and to each
       finalized Bracket's Finale; both open.
 - [ ] **Forms behave the same everywhere.** On a long form (Competition),
-      resize from 1440 to 390 with typed input: the input survives the
-      dialog-to-sheet switch. Every delete above used `ConfirmDialog`, and
+      resize from 1440 to 390 (crossing 768) with typed input: the input
+      survives the dialog-to-sheet switch. At 820 the add-Participant and
+      Squad forms are dialogs; at 390, bottom sheets. Every delete above used `ConfirmDialog`, and
       every save and delete showed a toast.
 - [ ] **The Guide is true.** Read `/admin/guide`: every step names a page
       and control that exists and works as described.
