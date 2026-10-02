@@ -91,4 +91,54 @@ describe("FinaleSlideshow", () => {
       /<a[^>]*href="\/admin\/finale"[^>]*>Set up the Finale<\/a>/,
     );
   });
+
+  it("renders a Custom slide's heading and body, escaped, on its background with readable text colors", () => {
+    const { html } = render([
+      {
+        key: "c1",
+        kind: "custom",
+        name: "Thank you",
+        heading: "Thank you",
+        body: {
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "See you <b>next year</b>" }],
+            },
+          ],
+        },
+        backgroundColor: "#101827",
+        colors: {
+          "--foreground": "#ffffff",
+          "--muted-foreground": "#cccccc",
+          "--primary-text": "#99bbff",
+          "--link": "#99bbff",
+        },
+      },
+    ]);
+    expect(html).toContain('data-finale-slide="custom"');
+    expect(html).toMatch(/<h1[^>]*>Thank you<\/h1>/);
+    expect(html).toContain("See you &lt;b&gt;next year&lt;/b&gt;");
+    expect(html).not.toContain("<b>next year");
+    expect(html).toContain("background-color:#101827");
+    expect(html).toContain("--foreground:#ffffff");
+    expect(html).toContain("--muted-foreground:#cccccc");
+  });
+
+  it("leaves the stage on the theme's background for a Custom slide with none", () => {
+    const { html } = render([
+      {
+        key: "c1",
+        kind: "custom",
+        name: "Hello",
+        heading: "Hello",
+        body: null,
+        backgroundColor: null,
+        colors: null,
+      },
+    ]);
+    expect(html).not.toContain("background-color:");
+    expect(html).toMatch(/<h1[^>]*>Hello<\/h1>/);
+  });
 });

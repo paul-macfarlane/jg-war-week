@@ -75,6 +75,22 @@ export async function assertFinale(sessions: {
   );
 
   await run(
+    'GET /admin/finale lists the seeded Custom "Thank you" slide on XI with its Edit and Delete, and offers Add custom slide, to an Organizer',
+    async () => {
+      const { body } = await page("/admin/finale", sessions.organizer);
+      const checks = {
+        heading: body.includes("Thank you"),
+        edit: body.includes('aria-label="Edit Thank you"'),
+        delete: body.includes('aria-label="Delete Thank you"'),
+        add: body.includes("Add custom slide"),
+      };
+      return Object.values(checks).every(Boolean)
+        ? null
+        : JSON.stringify(checks);
+    },
+  );
+
+  await run(
     "MCP get_leaderboard(team) returns the same Team totals as /xi/leaderboard",
     async () => {
       const mcp = await mcpLeaderboard("team");

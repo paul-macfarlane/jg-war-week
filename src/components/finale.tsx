@@ -22,7 +22,7 @@ import {
 
 /** Controls that handle their own clicks and `Space`: never "next". */
 const INTERACTIVE =
-  "a, button, input, select, textarea, summary, video, audio, label, [role='button'], [contenteditable='true']";
+  "a, button, input, select, textarea, summary, video, audio, iframe, img, label, [role='button'], [contenteditable='true']";
 
 /** Where typing happens: no slideshow key works there. */
 const TYPING = "input, textarea, select, [contenteditable='true']";
@@ -144,6 +144,12 @@ export function FinaleSlideshow({
   };
 
   const slide = slides[index];
+  // A Custom slide with a background paints the whole stage with it, and
+  // its text colors read on it (so do the Exit link and the hint).
+  const custom =
+    slide?.kind === "custom" && slide.backgroundColor && slide.colors
+      ? { backgroundColor: slide.backgroundColor, ...slide.colors }
+      : null;
 
   return (
     <div
@@ -151,15 +157,18 @@ export function FinaleSlideshow({
       data-finale-slide-index={slide ? index : undefined}
       data-finale-hydrated={hydrated ? "" : undefined}
       className="bg-background text-foreground fixed inset-0 z-[60] cursor-default overflow-hidden"
+      style={custom ?? undefined}
       onClick={slide ? onStageClick : undefined}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-[60vh] bg-[radial-gradient(ellipse_at_top,color-mix(in_oklch,var(--primary)_22%,transparent),transparent_60%)]"
-      />
+      {custom ? null : (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-[60vh] bg-[radial-gradient(ellipse_at_top,color-mix(in_oklch,var(--primary)_22%,transparent),transparent_60%)]"
+        />
+      )}
       <Link
         href={`/${edition}`}
-        className="text-foreground/60 hover:text-foreground absolute top-3 right-4 z-10 rounded px-2 py-1 text-sm underline-offset-4 hover:underline"
+        className={`${custom ? "text-foreground" : "text-foreground/60"} hover:text-foreground absolute top-3 right-4 z-10 rounded px-2 py-1 text-sm underline-offset-4 hover:underline`}
       >
         Exit
       </Link>
@@ -180,7 +189,9 @@ export function FinaleSlideshow({
             Slide {index + 1} of {slides.length}: {slide.name}
           </p>
           {index === 0 ? (
-            <p className="text-foreground/60 pointer-events-none absolute inset-x-0 bottom-[4vh] text-center text-sm">
+            <p
+              className={`${custom ? "text-foreground" : "text-foreground/60"} pointer-events-none absolute inset-x-0 bottom-[4vh] text-center text-sm`}
+            >
               → next · ← back
             </p>
           ) : null}

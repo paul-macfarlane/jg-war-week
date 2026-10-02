@@ -4,13 +4,24 @@ import { useRouter } from "next/navigation";
 import { type DragEvent, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { moveFinaleSlide, setFinaleSlideHidden } from "@/actions/finale-slides";
-import { SETUP_EDITOR, SetupListRow } from "@/components/setup-row";
+import {
+  deleteCustomFinaleSlide,
+  moveFinaleSlide,
+  setFinaleSlideHidden,
+} from "@/actions/finale-slides";
+import type { ColorSwatch } from "@/components/color-field";
+import { CustomFinaleSlideForm } from "@/components/custom-finale-slide-form";
+import {
+  SETUP_EDITOR,
+  SetupAddButton,
+  SetupListRow,
+} from "@/components/setup-row";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { FinaleSlideKind } from "@/lib/enums";
 import { type FinaleSlideRef, finaleSlideRef } from "@/lib/finale-slides";
 import type { WriteResult } from "@/lib/result";
+import type { Content } from "@/lib/rich-text/content";
 
 /** One row of the list, as the page passes it. */
 export type FinaleSlideListItem = {
@@ -19,6 +30,9 @@ export type FinaleSlideListItem = {
   kind: FinaleSlideKind;
   name: string;
   hidden: boolean;
+  /** A Custom slide's body (already sanitized) and background. */
+  body: Content | null;
+  backgroundColor: string | null;
 };
 
 const ROW_ACTION = "min-h-11 min-w-11 sm:min-h-8";
@@ -33,12 +47,15 @@ export function FinaleSlidesEditor({
   warWeekId,
   slides,
   canEdit,
+  themeSwatches,
 }: {
   /** The War Week this page was rendered for; every change posts it. */
   warWeekId: string;
   slides: FinaleSlideListItem[];
   /** Organizers only: the controls and the drag. */
   canEdit: boolean;
+  /** The theme's colors, as a Custom slide background's swatches. */
+  themeSwatches: ColorSwatch[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -109,6 +126,30 @@ export function FinaleSlidesEditor({
               </span>
             }
             rowProps={dragProps(slide, index)}
+            form={
+              canEdit && slide.kind === "custom" && slide.id
+                ? (close) => (
+                    <CustomFinaleSlideForm
+                      warWeekId={warWeekId}
+                      slideId={slide.id ?? undefined}
+                      initial={{
+                        heading: slide.name,
+                        body: slide.body ?? { type: "doc", content: [] },
+                        backgroundColor: slide.backgroundColor,
+                      }}
+                      themeSwatches={themeSwatches}
+                      onSaved={close}
+                    />
+                  )
+                : undefined
+            }
+            onDelete={
+              canEdit && slide.kind === "custom" && slide.id
+                ? () => deleteCustomFinaleSlide(slide.id ?? "")
+                : undefined
+            }
+            deleteTitle={`Delete "${slide.name}"?`}
+            deleteSuccess="Custom slide deleted"
             aside={
               canEdit ? (
                 <>
@@ -155,6 +196,18 @@ export function FinaleSlidesEditor({
           />
         ))}
       </ol>
+      {canEdit ? (
+        <SetupAddButton
+          label="Add custom slide"
+          form={(close) => (
+            <CustomFinaleSlideForm
+              warWeekId={warWeekId}
+              themeSwatches={themeSwatches}
+              onSaved={close}
+            />
+          )}
+        />
+      ) : null}
     </div>
   );
 }

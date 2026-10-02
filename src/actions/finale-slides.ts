@@ -6,6 +6,10 @@ import { guarded } from "@/actions/result";
 import { revalidateWarWeek } from "@/actions/revalidate";
 import { authorize } from "@/auth/authorize";
 import {
+  type CustomSlideInput,
+  parseCustomSlideInput,
+} from "@/lib/custom-finale-slide-input";
+import {
   BUILT_IN_FINALE_SLIDE_KINDS,
   type FinaleSlideRef,
 } from "@/lib/finale-slides";
@@ -94,6 +98,73 @@ export async function setFinaleSlideHidden(
       parsed.data.hidden,
       authorized.ctx,
     );
+    if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
+    return result;
+  });
+}
+
+/** Adds a Custom slide to the War Week the form was rendered for (Organizer only). */
+export async function createCustomFinaleSlide(
+  warWeekId: string,
+  input: CustomSlideInput,
+): Promise<WriteResult> {
+  return guarded(async () => {
+    const authorized = await authorize(
+      "finale-slide.create",
+      "warWeek",
+      warWeekId,
+    );
+    if (!authorized.ok) return authorized;
+    const parsed = parseCustomSlideInput(input);
+    if (!parsed.ok) return parsed;
+
+    const result = await mutations.createCustomFinaleSlide(
+      parsed.value,
+      authorized.ctx,
+    );
+    if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
+    return result;
+  });
+}
+
+/** Changes a Custom slide (Organizer only). */
+export async function updateCustomFinaleSlide(
+  id: string,
+  input: CustomSlideInput,
+): Promise<WriteResult> {
+  return guarded(async () => {
+    const authorized = await authorize(
+      "finale-slide.update",
+      "finaleSlide",
+      id,
+    );
+    if (!authorized.ok) return authorized;
+    const parsed = parseCustomSlideInput(input);
+    if (!parsed.ok) return parsed;
+
+    const result = await mutations.updateCustomFinaleSlide(
+      id,
+      parsed.value,
+      authorized.ctx,
+    );
+    if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
+    return result;
+  });
+}
+
+/** Deletes a Custom slide (Organizer only); a built-in is hidden, not deleted. */
+export async function deleteCustomFinaleSlide(
+  id: string,
+): Promise<WriteResult> {
+  return guarded(async () => {
+    const authorized = await authorize(
+      "finale-slide.delete",
+      "finaleSlide",
+      id,
+    );
+    if (!authorized.ok) return authorized;
+
+    const result = await mutations.deleteCustomFinaleSlide(id, authorized.ctx);
     if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
     return result;
   });

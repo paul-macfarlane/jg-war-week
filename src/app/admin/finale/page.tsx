@@ -5,6 +5,8 @@ import Link from "next/link";
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { FinaleSlidesEditor } from "@/components/finale-slides-editor";
 import { buttonVariants } from "@/components/ui/button";
+import { sanitizeContent } from "@/lib/rich-text/content";
+import { themeSwatches } from "@/lib/theme";
 import { getBracketCompetitions } from "@/queries/brackets";
 import { getFinaleSlides } from "@/queries/finale-slides";
 
@@ -78,14 +80,24 @@ export default async function AdminFinalePage() {
           </p>
           <FinaleSlidesEditor
             warWeekId={warWeek.id}
-            slides={slides.map(({ key, id, kind, name, hidden }) => ({
-              key,
-              id,
-              kind,
-              name,
-              hidden,
-            }))}
+            slides={slides.map(
+              ({ key, id, kind, name, hidden, body, backgroundColor }) => {
+                // Sanitized on write; again here so the editor only gets
+                // the closed set.
+                const sanitized = sanitizeContent(body);
+                return {
+                  key,
+                  id,
+                  kind,
+                  name,
+                  hidden,
+                  body: sanitized.ok ? sanitized.content : null,
+                  backgroundColor,
+                };
+              },
+            )}
             canEdit={isOrganizer}
+            themeSwatches={themeSwatches(warWeek)}
           />
         </section>
         <section className="flex flex-col gap-2">

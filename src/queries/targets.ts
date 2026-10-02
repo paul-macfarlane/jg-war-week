@@ -7,6 +7,7 @@ import {
   competition,
   day,
   faqItem,
+  finaleSlide,
   participant,
   pointsEntry,
   scheduleItem,
@@ -73,6 +74,7 @@ async function warWeekRow(
     | typeof team
     | typeof participant
     | typeof faqItem
+    | typeof finaleSlide
     | typeof award,
   id: string,
   dbOrTx: DBOrTx,
@@ -94,6 +96,8 @@ export const loadParticipantTarget = (id: string, dbOrTx: DBOrTx = db) =>
   warWeekRow(participant, id, dbOrTx);
 export const loadFaqItemTarget = (id: string, dbOrTx: DBOrTx = db) =>
   warWeekRow(faqItem, id, dbOrTx);
+export const loadFinaleSlideTarget = (id: string, dbOrTx: DBOrTx = db) =>
+  warWeekRow(finaleSlide, id, dbOrTx);
 export const loadAwardTarget = (id: string, dbOrTx: DBOrTx = db) =>
   warWeekRow(award, id, dbOrTx);
 
