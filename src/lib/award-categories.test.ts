@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { categoryKeyForAwardName } from "@/lib/award-categories";
+import {
+  awardNameUnderCategory,
+  categoryKeyForAwardName,
+} from "@/lib/award-categories";
 
 describe("categoryKeyForAwardName", () => {
   it.each([
@@ -37,5 +40,19 @@ describe("categoryKeyForAwardName", () => {
     "",
   ])("leaves %j untagged", (name) => {
     expect(categoryKeyForAwardName(name)).toBeNull();
+  });
+});
+
+describe("awardNameUnderCategory", () => {
+  it("is the Award's name when it differs from the Category's", () => {
+    expect(awardNameUnderCategory("MVP 1st Place", "War Week MVP")).toBe(
+      "MVP 1st Place",
+    );
+  });
+
+  it("is null when it only repeats the Category, ignoring case and space", () => {
+    expect(
+      awardNameUnderCategory(" black midnight ", "Black Midnight"),
+    ).toBeNull();
   });
 });

@@ -25,6 +25,7 @@ import {
   assertAwardCategoriesSeeded,
   assertAwardsPageGrouped,
 } from "./award-categories";
+import { assertAwardHistoryRoute } from "./award-history";
 import {
   assertAwardActions,
   assertAwardAdminPages,
@@ -194,6 +195,7 @@ async function main() {
       await assertLlmsTxt();
       await assertHistory();
       await assertArchiveDetail();
+      await assertAwardHistoryRoute();
       await assertCompetitions();
       await assertCompetitionDetail();
       await assertTeams();

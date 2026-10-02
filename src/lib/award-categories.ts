@@ -63,3 +63,38 @@ export function parseAwardCategoryName(name: string): Parsed<string> {
   }
   return { ok: true, value: trimmed };
 }
+
+/**
+ * The Award's own name when it adds something to its Category's ("MVP 1st
+ * Place" under War Week MVP); null when it just repeats it.
+ */
+export function awardNameUnderCategory(
+  awardName: string,
+  categoryName: string,
+): string | null {
+  const same =
+    awardName.trim().toLowerCase() === categoryName.trim().toLowerCase();
+  return same ? null : awardName;
+}
+
+/** One Award of a Category, with its recipients, in a War Week. */
+export type CategoryHistoryAward = {
+  id: string;
+  name: string;
+  team: { id: string; name: string; color: string } | null;
+  /** The Profile name where linked, else the roster name. */
+  participants: { id: string; displayName: string }[];
+};
+
+/** One War Week's Awards in a Category. */
+export type CategoryHistoryWarWeek = {
+  edition: string;
+  year: number;
+  awards: CategoryHistoryAward[];
+};
+
+/** A Category through the years: War Weeks newest first. */
+export type CategoryHistory = {
+  category: { id: string; name: string; archived: boolean };
+  warWeeks: CategoryHistoryWarWeek[];
+};
