@@ -7,6 +7,7 @@ import { ArchiveDetailView } from "@/components/archive";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { LogAGame } from "@/components/log-a-game";
 import { NowNextSection } from "@/components/now-next";
+import { RecentResultsSection } from "@/components/recent-results";
 import { HomeStandings } from "@/components/standings";
 import { Button } from "@/components/ui/button";
 import { WarWeekHero } from "@/components/war-week-hero";
@@ -16,6 +17,7 @@ import { computeNowNext, resolveClock, withHeats } from "@/lib/schedule";
 import { getPinnedAnnouncementCard } from "@/queries/announcements";
 import { getArchiveDetail } from "@/queries/archive";
 import { getLoggableCompetitions } from "@/queries/games";
+import { getRecentResults } from "@/queries/recent-results";
 import { getSchedule, getTimedHeats } from "@/queries/schedule";
 import { getPointsBreakdown, getStandings } from "@/queries/standings";
 
@@ -43,6 +45,7 @@ export default async function EditionHomePage({
     pinnedAnnouncement,
     timedHeats,
     loggable,
+    recentResults,
   ] = await Promise.all([
     getStandings(warWeek),
     getPointsBreakdown(warWeek),
@@ -53,6 +56,7 @@ export default async function EditionHomePage({
     getActor().then((actor) =>
       getLoggableCompetitions(warWeek.id, actor?.email),
     ),
+    getRecentResults(warWeek),
   ]);
   // Timed Heats join Now/Next only, not the full schedule.
   const nowNext = computeNowNext(
@@ -83,6 +87,12 @@ export default async function EditionHomePage({
         <NowNextSection nowNext={nowNext} edition={warWeek.edition} />
 
         <LogAGame edition={warWeek.edition} competitions={loggable} />
+
+        <RecentResultsSection
+          results={recentResults}
+          edition={warWeek.edition}
+          primaryColor={warWeek.primaryColor}
+        />
 
         {pinnedAnnouncement ? (
           <section className="flex flex-col gap-3">
