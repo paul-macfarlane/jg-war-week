@@ -360,3 +360,5 @@ Round 2, 2026-10-02: **PASS**. B1 and B2 confirmed resolved. Three minor should-
 ## [PROGRESS]
 
 - 2026-10-02: claimed the epic and tickets 60, 61 and 62 (`ready-for-agent` → `in-progress`; planning and plan-review happened in `/atlas-plan` the same day, recorded above). Proof root `test-results/` cleared.
+- Wave 1 integrated: D62 (`e4d36b1`, Opus) accepted. Candidate gate at `e4d36b1`: format, typecheck, lint, unit (3285), build, smoke (227 ok) and e2e (73 passed) all pass (`test-results/r10-accounts/gate-wave1.txt`). Accepted D62 decisions: the e2e links a War Week XI Participant (XII's local seed has no roster); `sessionIdentity` is a pure function shared by the identity helper and the proxy; `/_not-found` is now dynamic because the root-layout banner reads the session (accepted under D6); a signed-in visitor can still open `/sign-in/test` to switch aliases.
+- D10 refined at wave 2: the Avatar picture uses shadcn `AvatarImage` (already in `src/components/ui/avatar`), which falls back to the initials, instead of a hand-rolled `<img>`.
