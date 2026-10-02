@@ -14,15 +14,23 @@ async function shoot(page: Page, testInfo: TestInfo, name: string) {
   });
 }
 
-/** Refuses a settings save (a Slack URL that isn't https) and returns its toast. */
-async function refuseSettingsSave(page: Page) {
-  const form = page.getByRole("form", { name: "War Week settings" });
-  await form.getByLabel("Slack URL").fill("http://slack.example.com/x");
-  await form.getByRole("button", { name: "Save settings" }).click();
-  await expect(form.getByLabel("Slack URL")).toHaveAttribute(
-    "aria-invalid",
-    "true",
-  );
+/**
+ * Refuses a Points Entry (Points over the maximum) and returns its toast.
+ * The War Week settings form, which had the sticky Save row, autosaves
+ * and has no toast (r9 59).
+ */
+async function refusePointsEntry(page: Page) {
+  const form = page.getByRole("form", { name: "Points Entry" });
+  await form
+    .getByRole("combobox", { name: "Competition" })
+    .fill("HQ Attendance");
+  await page.getByRole("option", { name: /^HQ Attendance/ }).click();
+  await form.getByRole("combobox", { name: "Team" }).fill("Blue");
+  await page.getByRole("option", { name: /^Blue/ }).click();
+  const points = form.getByLabel("Points", { exact: true });
+  await points.fill("9999999");
+  await points.press("Enter");
+  await expect(points).toHaveAttribute("aria-invalid", "true");
   const toast = page
     .getByRole("region", { name: /^Notifications/ })
     .getByRole("listitem")
@@ -41,31 +49,30 @@ async function refuseSettingsSave(page: Page) {
   return toast;
 }
 
-test("r6 39 a refusal toast sits above the sticky Save, not over it", async ({
+test("r6 39 a refusal toast clears the section bar, and keeps Sonner's offset from md", async ({
   context,
   page,
 }, testInfo) => {
   await asOrganizer(context);
 
-  // Below `md`: the toast clears the sticky Save row and the error under it.
+  // Below `md`: the toast sits above the admin section bar.
   await page.setViewportSize(PHONE);
-  await page.goto("/admin/settings");
-  const sticky = page.locator('[data-slot="sticky-form-actions"]');
-  const toast = await refuseSettingsSave(page);
+  await page.goto("/admin/points");
+  const toast = await refusePointsEntry(page);
   const toastBox = await toast.boundingBox();
-  const stickyBox = await sticky.boundingBox();
-  if (!toastBox || !stickyBox) throw new Error("Toast or Save row missing");
-  expect(toastBox.y + toastBox.height).toBeLessThanOrEqual(stickyBox.y);
-  await shoot(page, testInfo, "settings-refused-375");
-
-  // A page with no sticky row keeps the toast just above the bar: r5 30.
+  const barBox = await page
+    .getByRole("navigation", { name: "Admin sections" })
+    .boundingBox();
+  if (!toastBox || !barBox) throw new Error("Toast or section bar missing");
+  expect(toastBox.y + toastBox.height).toBeLessThanOrEqual(barBox.y);
+  await shoot(page, testInfo, "points-refused-375");
 
   // From `md`: Sonner's default offset, as before.
   await page.setViewportSize(DESKTOP);
-  await page.goto("/admin/settings");
-  const wide = await refuseSettingsSave(page);
+  await page.goto("/admin/points");
+  const wide = await refusePointsEntry(page);
   const wideBox = await wide.boundingBox();
   if (!wideBox) throw new Error("Toast missing");
   expect(DESKTOP.height - (wideBox.y + wideBox.height)).toBeCloseTo(24, 0);
-  await shoot(page, testInfo, "settings-refused-1280");
+  await shoot(page, testInfo, "points-refused-1280");
 });

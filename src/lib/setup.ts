@@ -209,6 +209,32 @@ export type OverrideColumn =
   | "overrideBackgroundColor"
   | "overrideForegroundColor";
 
+const DATE_RANGE_FIELDS = ["startDate", "endDate"] as const;
+
+// The background with the overrides: a background crossing light and dark
+// clears the overrides (the form resets them), so they save with it.
+const SCHEME_FIELDS = [
+  "backgroundColor",
+  "overridePrimaryColor",
+  "overridePrimaryForegroundColor",
+  "overrideAccentColor",
+  "overrideBackgroundColor",
+  "overrideForegroundColor",
+] as const satisfies readonly (keyof WarWeekSettingsInput)[];
+
+/**
+ * The settings fields that autosave together with `field`: the date range
+ * as one, the background with every override, any other field alone.
+ */
+export function settingsSaveGroup(
+  field: keyof WarWeekSettingsInput,
+): readonly (keyof WarWeekSettingsInput)[] {
+  for (const group of [DATE_RANGE_FIELDS, SCHEME_FIELDS]) {
+    if ((group as readonly string[]).includes(field)) return group;
+  }
+  return [field];
+}
+
 /**
  * Validated settings, keyed by the `war_week` columns they update. The
  * overrides are optional here: the mutation leaves an omitted key's column
