@@ -10,7 +10,7 @@ import { AdminRefused, AdminShell, editingBanner } from "./admin-shell";
 vi.mock("@/components/auth-buttons", () => ({
   SignOutButton: () => null,
 }));
-vi.mock("@/app/admin/account-menu", () => ({
+vi.mock("@/components/admin-account-menu", () => ({
   AdminAccountMenu: ({
     email,
     profileEdition,
