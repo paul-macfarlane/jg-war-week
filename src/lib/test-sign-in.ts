@@ -42,7 +42,7 @@ function secretMatches(typed: string, expected: string): boolean {
  * matches, and the email is a Jahnel Group email (`+` aliases included).
  * Returns the email as it's stored, or the refusal the form shows.
  */
-export function testSignInRefusal({
+export function checkTestSignIn({
   env,
   typedSecret,
   email,

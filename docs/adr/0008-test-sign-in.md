@@ -59,6 +59,10 @@ view in production.
   alias at `/admin/organizers` makes it an Organizer.
 - Test users are real `user` rows, and Delete my account removes them like
   any other.
-- A leaked secret is contained to non-production. Removing it ends every
-  test session at once; rotating it only stops new Test sign-ins (sessions
-  don't record which secret made them), so remove it, then set the new one.
+- A leaked secret is contained to non-production. Removing it makes every
+  test session anonymous while it stays removed. Setting any secret again
+  revives the unexpired ones: sessions don't record which secret made them,
+  and `sessionIdentity` only rejects them while Test sign-in is off. To
+  rotate, or after a suspected leak, delete the test sessions on the staging
+  database (`delete from session where test_sign_in;`), then set the new
+  secret.

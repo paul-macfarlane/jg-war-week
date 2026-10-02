@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { confirmTextMatches } from "./confirm-dialog";
+import { confirmTextMatches } from "@/lib/confirm-text";
 
 describe("confirmTextMatches", () => {
   it("matches ignoring case and surrounding spaces", () => {

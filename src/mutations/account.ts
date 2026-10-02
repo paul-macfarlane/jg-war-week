@@ -18,10 +18,13 @@ export async function deleteAccount(
 ): Promise<MutationResult> {
   const normalized = email.trim().toLowerCase();
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-    const [listed] = await tx
-      .select({ id: organizer.id })
+    // Locked first, as `removeOrganizer` does, so a concurrent removal
+    // can't slip between this check and the last-Organizer rule.
+    const organizers = await tx
+      .select({ email: organizer.email })
       .from(organizer)
-      .where(eq(organizer.email, normalized));
+      .for("update");
+    const listed = organizers.some((row) => row.email === normalized);
     if (listed) {
       const removed = await removeOrganizer(normalized, normalized, tx);
       if (!removed.ok) return removed;

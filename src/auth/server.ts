@@ -86,23 +86,36 @@ export const auth = betterAuth({
   },
 });
 
+type AuthSession = Awaited<ReturnType<typeof auth.api.getSession>>;
+
+/**
+ * Who a better-auth session belongs to, as the app sees it, for this
+ * request's env: `null` when it is anonymous (`sessionIdentity`). The one
+ * mapping for pages and the proxy.
+ */
+export function identityFromSession(
+  session: AuthSession,
+): SessionIdentity | null {
+  return sessionIdentity(
+    session && {
+      email: session.user.email,
+      sessionId: session.session.id,
+      testSignIn: session.session.testSignIn === true,
+    },
+    process.env,
+  );
+}
+
 /**
  * Who is signed in for this request, or `null` when anonymous. A session
  * counts as anonymous when its email isn't a Jahnel Group email, or when it
  * is a Test sign-in session and Test sign-in is off (`sessionIdentity`).
  */
 export const getSessionIdentity = cache(
-  async (): Promise<SessionIdentity | null> => {
-    const session = await auth.api.getSession({ headers: await headers() });
-    return sessionIdentity(
-      session && {
-        email: session.user.email,
-        sessionId: session.session.id,
-        testSignIn: session.session.testSignIn === true,
-      },
-      process.env,
-    );
-  },
+  async (): Promise<SessionIdentity | null> =>
+    identityFromSession(
+      await auth.api.getSession({ headers: await headers() }),
+    ),
 );
 
 /** The signed-in user's email for this request, or `null` when anonymous. */

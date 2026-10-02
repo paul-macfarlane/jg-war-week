@@ -34,10 +34,13 @@ export default async function EditionLayout({
   const { edition } = await params;
   const warWeek = await getWarWeekForEdition(edition);
   if (!warWeek) notFound();
-  const account = await getNavAccount();
-  const [candidates, profiles] = await Promise.all([
+  // Only the Profile lookup waits for the email.
+  const [candidates, [account, profiles]] = await Promise.all([
     getYouCandidates(warWeek),
-    getProfilesByEmail([account.email]),
+    getNavAccount().then(
+      async (account) =>
+        [account, await getProfilesByEmail([account.email])] as const,
+    ),
   ]);
   // Account linking happens here, on the server, so Participant emails
   // never reach the client: only the matched id does.

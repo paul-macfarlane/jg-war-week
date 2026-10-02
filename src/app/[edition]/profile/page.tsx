@@ -5,7 +5,7 @@ import { DeleteAccountSection } from "@/components/delete-account-section";
 import { ProfileForm } from "@/components/profile-form";
 import { Toaster } from "@/components/ui/sonner";
 import { nameFromEmail } from "@/lib/account";
-import { resolveProfile } from "@/lib/profile";
+import { googlePhotoOf } from "@/lib/profile";
 import { warWeekThemeStyle } from "@/lib/theme";
 import { resolveYou } from "@/lib/you";
 import { getProfilesByEmail } from "@/queries/profile-join";
@@ -44,10 +44,8 @@ export default async function ProfilePage({
   )?.displayName;
   const stored = profiles.get(actor.email.toLowerCase());
   // Only a Google photo reaches the form (`resolveProfile`'s rule).
-  const googleImage = resolveProfile({
-    rosterName: "",
-    googleImage: stored?.googleImage,
-  }).image;
+  const googleImage = googlePhotoOf(stored?.googleImage);
+  const emailName = nameFromEmail(actor.email);
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 px-4 py-6 md:max-w-3xl">
@@ -57,11 +55,11 @@ export default async function ProfilePage({
         War Week.
       </p>
       <ProfileForm
-        fallbackName={rosterName ?? nameFromEmail(actor.email)}
+        fallbackName={rosterName ?? emailName}
         hint={
           rosterName
             ? `Shown as ${rosterName} until you set one.`
-            : `Shown as ${nameFromEmail(actor.email)}.`
+            : `Shown as ${emailName}.`
         }
         profileName={stored?.profileName ?? null}
         profileImage={stored?.profileImage ?? null}

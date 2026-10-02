@@ -26,8 +26,8 @@ export type ResolvedProfile = { name: string; image: string | null };
 /** Lowercase email to what is stored for it (`profilesByEmail`). */
 export type ProfilesByEmail = Map<string, ProfileFacts>;
 
-/** Whether `value` is a Google photo URL (`GOOGLE_PHOTO_PREFIX`). */
-function googlePhoto(value: string | null | undefined): string | null {
+/** `value` when it is a Google photo URL (`GOOGLE_PHOTO_PREFIX`), else null. */
+export function googlePhotoOf(value: string | null | undefined): string | null {
   return value?.startsWith(GOOGLE_PHOTO_PREFIX) ? value : null;
 }
 
@@ -44,7 +44,7 @@ export function resolveProfile({
 }: { rosterName: string } & Partial<ProfileFacts>): ResolvedProfile {
   return {
     name: profileName || rosterName,
-    image: profileImage || googlePhoto(googleImage),
+    image: profileImage || googlePhotoOf(googleImage),
   };
 }
 

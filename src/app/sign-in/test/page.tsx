@@ -3,15 +3,12 @@ import { notFound } from "next/navigation";
 
 import { TestSignInForm } from "@/components/test-sign-in-form";
 import { safeCallbackPath } from "@/lib/access";
+import { firstParam } from "@/lib/search-params";
 import { testSignInEnabled } from "@/lib/test-sign-in";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Test sign-in · JG War Week" };
-
-function firstParam(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
 
 /**
  * Test sign-in: sign in as any @jahnelgroup.com address (`+` aliases too)

@@ -366,6 +366,21 @@ export async function assertMcp() {
       fail(allCheck, `result=${JSON.stringify(announcementsAll.raw)}`);
     }
 
+    // Profile names only: no MCP tool returns an email.
+    for (const [id, name, args] of [
+      [18, "get_announcements", {}],
+      [19, "get_leaderboard", { kind: "team" }],
+      [20, "get_leaderboard", { kind: "individual" }],
+    ] as const) {
+      const check = `MCP ${name}(${JSON.stringify(args)}) returns no @ anywhere`;
+      const res = await callTool(id, name, args);
+      if (res.parsed !== undefined && !JSON.stringify(res.raw).includes("@")) {
+        ok(check);
+      } else {
+        fail(check, `result=${JSON.stringify(res.raw)}`);
+      }
+    }
+
     const awards = await callTool(14, "get_awards", {});
     const awardsCheck =
       "MCP get_awards returns XI's three seeded Awards with the same recipients as /xi/awards";

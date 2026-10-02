@@ -73,6 +73,7 @@ export function ProfileForm({
         imageUrl: String(formData.get("imageUrl") ?? ""),
       });
       if (saved.ok) toast.success("Profile saved");
+      else toast.error(saved.error);
       return saved;
     },
     null,

@@ -33,7 +33,10 @@ export type BracketEntrant = Entrant & {
   squadId: string | null;
   /** A Squad's Participants' display names, by name; [] otherwise. */
   participantNames: string[];
-  /** An individual Entrant's picture URL; null for initials and for Teams and Squads. */
+  /**
+   * An individual Entrant's picture URL; null for initials and for Teams
+   * and Squads.
+   */
   image?: string | null;
   /**
    * The Team a Placement Points Entry goes to: the Team itself, or a
@@ -42,7 +45,10 @@ export type BracketEntrant = Entrant & {
   pointsTeamId: string | null;
   /** The Team's color (a Participant's or Squad's Team), or null without one. */
   color: string | null;
-  /** A Participant or Squad Entrant's Team name, for `get_bracket`; null without one. */
+  /**
+   * A Participant or Squad Entrant's Team name, for `get_bracket`; null
+   * without one.
+   */
   teamName: string | null;
 };
 

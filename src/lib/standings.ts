@@ -11,6 +11,8 @@ export type StandingsParticipant = Pick<
   Participant,
   "id" | "displayName" | "teamId"
 > & {
+  /** The shown name: the Profile name, else the roster name. */
+  displayName: string;
   /** The picture URL, or null for initials. */
   image?: string | null;
 };

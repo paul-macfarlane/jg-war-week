@@ -18,13 +18,20 @@ export async function runQuery<T extends Record<string, unknown>>(
 }
 
 /**
- * Deletes every e2e user (their sessions cascade), Organizer row and Host
- * row (the e2e Host's `competition_host` rows), plus the users and
- * Organizer rows of the exact `E2E_EXACT_EMAILS` (no `LIKE` wildcards).
+ * Deletes every e2e user (their sessions cascade), Profile, Organizer row
+ * and Host row (the e2e Host's `competition_host` rows), plus the users,
+ * Profiles and Organizer rows of the exact `E2E_EXACT_EMAILS` (no `LIKE`
+ * wildcards).
  */
 export async function deleteE2eUsers() {
   await runQuery(`delete from "user" where email like $1`, [E2E_EMAIL_PATTERN]);
   await runQuery(`delete from "user" where email = any($1::text[])`, [
+    E2E_EXACT_EMAILS,
+  ]);
+  await runQuery(`delete from profile where email like $1`, [
+    E2E_EMAIL_PATTERN,
+  ]);
+  await runQuery(`delete from profile where email = any($1::text[])`, [
     E2E_EXACT_EMAILS,
   ]);
   await runQuery(`delete from organizer where email like $1`, [

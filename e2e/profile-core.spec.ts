@@ -87,8 +87,16 @@ for (const viewport of VIEWPORTS) {
       // A bad URL is refused at its field, and nothing changes.
       await page.getByLabel("Picture URL").fill("http://images.example.test/x");
       await page.getByRole("button", { name: "Save" }).click();
+      const badUrl = "Picture URL must be an https:// link to an image.";
       await expect(
-        page.getByText("Picture URL must be an https:// link to an image."),
+        page.getByRole("form", { name: "Profile" }).getByText(badUrl),
+      ).toBeVisible();
+      // And as an error toast, as the sibling forms show a refusal.
+      await expect(
+        page
+          .getByRole("region", { name: /^Notifications/ })
+          .getByRole("listitem")
+          .filter({ hasText: badUrl }),
       ).toBeVisible();
 
       // Use Google photo clears the field; this stub user has no Google

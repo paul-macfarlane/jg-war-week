@@ -46,22 +46,18 @@ export async function getRoster(
 /**
  * A War Week's Participants with their emails, for account linking. Stays
  * on the server: only the matched id reaches the client. `displayName` is
- * the roster name as typed (the Profile page's hint); `name` is the shown
- * one (Profile name, else roster name).
+ * the roster name as typed (the Profile page's hint).
  */
 export async function getYouCandidates(
   warWeek: Pick<WarWeek, "id">,
   dbOrTx: DBOrTx = db,
 ): Promise<YouCandidate[]> {
-  return withProfile(
-    dbOrTx
-      .select({
-        id: participant.id,
-        email: participant.email,
-        displayName: participant.displayName,
-        name: participantNameSql(),
-      })
-      .from(participant)
-      .$dynamic(),
-  ).where(eq(participant.warWeekId, warWeek.id));
+  return dbOrTx
+    .select({
+      id: participant.id,
+      email: participant.email,
+      displayName: participant.displayName,
+    })
+    .from(participant)
+    .where(eq(participant.warWeekId, warWeek.id));
 }

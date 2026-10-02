@@ -126,7 +126,7 @@ describe.skipIf(!isLocalDatabase)(
       });
     });
 
-    it("keeps the raw roster name on `getYouCandidates` and adds the shown name", async () => {
+    it("keeps the raw roster name on `getYouCandidates`", async () => {
       await inRolledBackTransaction(async (tx) => {
         const { getYouCandidates } = await import("@/queries/roster");
         const { warWeek, setId } = await fixture(tx);
@@ -134,7 +134,6 @@ describe.skipIf(!isLocalDatabase)(
         const candidates = await getYouCandidates(warWeek, tx);
         expect(candidates.find((c) => c.id === setId)).toMatchObject({
           displayName: "Typed Name",
-          name: "Profile Name",
         });
       });
     });

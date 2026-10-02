@@ -4,9 +4,9 @@ import { JG_EMAIL_MESSAGE } from "@/lib/jg-email";
 import {
   TEST_SIGN_IN_OFF,
   TEST_SIGN_IN_WRONG_SECRET,
+  checkTestSignIn,
   sessionIdentity,
   testSignInEnabled,
-  testSignInRefusal,
 } from "@/lib/test-sign-in";
 
 // 40 characters; a fixture, not a secret.
@@ -42,7 +42,7 @@ describe("testSignInEnabled", () => {
   });
 });
 
-describe("testSignInRefusal", () => {
+describe("checkTestSignIn", () => {
   const email = "paul+participant@jahnelgroup.com";
 
   it.each([
@@ -53,7 +53,7 @@ describe("testSignInRefusal", () => {
       { TEST_SIGN_IN_SECRET: SECRET, VERCEL_ENV: "production" },
     ],
   ])("refuses when %s, even with the right secret typed", (_case, env) => {
-    expect(testSignInRefusal({ env, typedSecret: SECRET, email })).toEqual({
+    expect(checkTestSignIn({ env, typedSecret: SECRET, email })).toEqual({
       ok: false,
       error: TEST_SIGN_IN_OFF,
     });
@@ -61,7 +61,7 @@ describe("testSignInRefusal", () => {
 
   it("refuses a wrong secret on the secret field", () => {
     for (const typedSecret of ["", "wrong", `${SECRET}x`, SECRET.slice(1)]) {
-      expect(testSignInRefusal({ env: ON, typedSecret, email })).toEqual({
+      expect(checkTestSignIn({ env: ON, typedSecret, email })).toEqual({
         ok: false,
         error: TEST_SIGN_IN_WRONG_SECRET,
         fieldErrors: { secret: TEST_SIGN_IN_WRONG_SECRET },
@@ -77,7 +77,7 @@ describe("testSignInRefusal", () => {
     ["an email over 254 characters", `${"a".repeat(240)}@jahnelgroup.com`],
   ])("refuses %s on the email field", (_case, typed) => {
     expect(
-      testSignInRefusal({ env: ON, typedSecret: SECRET, email: typed }),
+      checkTestSignIn({ env: ON, typedSecret: SECRET, email: typed }),
     ).toEqual({
       ok: false,
       error: JG_EMAIL_MESSAGE,
@@ -87,13 +87,13 @@ describe("testSignInRefusal", () => {
 
   it("checks the secret before the email", () => {
     expect(
-      testSignInRefusal({ env: ON, typedSecret: "wrong", email: "x@y.z" }),
+      checkTestSignIn({ env: ON, typedSecret: "wrong", email: "x@y.z" }),
     ).toMatchObject({ error: TEST_SIGN_IN_WRONG_SECRET });
   });
 
   it("allows a JG + alias, trimmed and lowercased", () => {
     expect(
-      testSignInRefusal({
+      checkTestSignIn({
         env: ON,
         typedSecret: SECRET,
         email: "  Paul+Host@JahnelGroup.com ",

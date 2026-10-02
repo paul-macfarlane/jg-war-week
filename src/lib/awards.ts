@@ -81,6 +81,7 @@ export type AwardView = {
   /** Ordered by display name. `teamColor` is null with no Team. */
   participants: {
     id: string;
+    /** The shown name: the Profile name, else the roster name. */
     displayName: string;
     /** The picture URL; null for initials. */
     image?: string | null;

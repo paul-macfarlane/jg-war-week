@@ -11,8 +11,6 @@ export type YouCandidate = {
   email?: string | null;
   /** The roster name as the Organizer typed it. */
   displayName?: string | null;
-  /** The shown name: the Profile name, else the roster name. */
-  name?: string | null;
 };
 
 /** Who "you" are in a War Week. */

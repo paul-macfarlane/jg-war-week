@@ -1,4 +1,4 @@
-import { and, asc, count, eq, isNotNull, sql } from "drizzle-orm";
+import { and, asc, count, eq, isNotNull } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import {
@@ -19,6 +19,7 @@ import {
   squadParticipant,
   team,
 } from "@/db/schema";
+import { profileOn } from "@/queries/profile-join";
 
 /** A Day as the setup page lists it. */
 export type SetupDay = {
@@ -132,7 +133,7 @@ export async function getSetupParticipants(
       ),
     })
     .from(participant)
-    .leftJoin(profile, eq(profile.email, sql`lower(${participant.email})`))
+    .leftJoin(profile, profileOn())
     .where(eq(participant.warWeekId, warWeek.id))
     .orderBy(asc(participant.displayName));
 }

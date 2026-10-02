@@ -23,10 +23,16 @@ export function withProfile<T extends PgSelect>(
   query: T,
   participantTable: ParticipantColumns = participant,
 ) {
-  const email = sql`lower(${participantTable.email})`;
   return query
-    .leftJoin(profile, eq(profile.email, email))
-    .leftJoin(user, eq(user.email, email));
+    .leftJoin(profile, profileOn(participantTable))
+    .leftJoin(user, eq(user.email, sql`lower(${participantTable.email})`));
+}
+
+/** The `profile` join condition: the Participant's email, lowercased. */
+export function profileOn(
+  participantTable: Pick<ParticipantColumns, "email"> = participant,
+): SQL {
+  return eq(profile.email, sql`lower(${participantTable.email})`);
 }
 
 /** The Participant's shown name: the Profile name, else the roster name. */

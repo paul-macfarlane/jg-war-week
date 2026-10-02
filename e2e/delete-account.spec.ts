@@ -35,6 +35,10 @@ for (const viewport of VIEWPORTS) {
     try {
       await withParticipantEmail("xi", PARTICIPANT, EMAIL, async () => {
         await signIn(context, EMAIL);
+        const [{ id: userId }] = await runQuery<{ id: string }>(
+          `select id from "user" where email = $1`,
+          [EMAIL],
+        );
         await runQuery(
           `insert into profile (email, name) values ($1, $2)
            on conflict (email) do update set name = excluded.name`,
@@ -79,11 +83,13 @@ for (const viewport of VIEWPORTS) {
         await expect(page).toHaveURL(/\/sign-in/);
 
         expect(await userRows()).toBe(0);
-        const [{ n: sessions }] = await runQuery<{ n: string }>(
-          `select count(*)::text as n from session s
-           where s.user_id not in (select id from "user")`,
-        );
-        expect(Number(sessions)).toBe(0);
+        for (const table of ["session", "account"]) {
+          const [{ n }] = await runQuery<{ n: string }>(
+            `select count(*)::text as n from ${table} where user_id = $1`,
+            [userId],
+          );
+          expect(Number(n), `${table} rows left`).toBe(0);
+        }
         expect(await rows("profile", "email")).toBe(0);
         const [participant] = await runQuery<{ display_name: string }>(
           `select p.display_name from participant p join war_week w on w.id = p.war_week_id

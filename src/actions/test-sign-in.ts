@@ -1,14 +1,13 @@
 "use server";
 
-import { makeSignature } from "better-auth/crypto";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { guarded } from "@/actions/result";
 import { auth } from "@/auth/server";
+import { setSessionCookie } from "@/auth/session-cookie";
 import { safeCallbackPath } from "@/lib/access";
 import type { WriteResult } from "@/lib/result";
-import { type TestSignInInput, testSignInRefusal } from "@/lib/test-sign-in";
+import { type TestSignInInput, checkTestSignIn } from "@/lib/test-sign-in";
 
 /**
  * Test sign-in (local and staging only): signs in as any Jahnel Group email
@@ -19,7 +18,7 @@ import { type TestSignInInput, testSignInRefusal } from "@/lib/test-sign-in";
  */
 export async function testSignIn(input: TestSignInInput): Promise<WriteResult> {
   return guarded(async () => {
-    const checked = testSignInRefusal({
+    const checked = checkTestSignIn({
       env: process.env,
       typedSecret: String(input.secret ?? ""),
       email: String(input.email ?? ""),
@@ -50,19 +49,7 @@ export async function testSignIn(input: TestSignInInput): Promise<WriteResult> {
     );
     if (!session) throw new Error("Test sign-in: no session was created");
 
-    // Signed the way better-auth's `setSignedCookie` signs it. `cookies().set`
-    // URL-encodes the value itself, so it isn't encoded here.
-    const { name, attributes } = ctx.authCookies.sessionToken;
-    const signature = await makeSignature(session.token, ctx.secret);
-    (await cookies()).set(name, `${session.token}.${signature}`, {
-      path: attributes.path,
-      httpOnly: attributes.httpOnly,
-      secure: attributes.secure,
-      sameSite: attributes.sameSite?.toLowerCase() as
-        "lax" | "strict" | "none" | undefined,
-      maxAge: attributes.maxAge,
-      domain: attributes.domain,
-    });
+    await setSessionCookie(session.token);
 
     redirect(safeCallbackPath(input.callbackURL));
   });

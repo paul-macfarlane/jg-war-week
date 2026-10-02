@@ -124,6 +124,13 @@ for (const viewport of VIEWPORTS) {
         .getByRole("row")
         .filter({ has: page.getByRole("rowheader", { name: PROFILE_NAME }) });
       await expect(gamesRow.locator("img")).toHaveAttribute("src", PICTURE_URL);
+      // The logged Game's entry in the Game log names them by Profile name.
+      await expect(
+        page
+          .getByRole("region", { name: "Games" })
+          .getByRole("listitem")
+          .filter({ hasText: `${PROFILE_NAME} beat ${OPPONENT}` }),
+      ).toBeVisible();
       await shot("games");
 
       // The Organizer's roster form: the name read-only, set by the person.

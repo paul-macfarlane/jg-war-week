@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { confirmTextMatches } from "@/lib/confirm-text";
 import type { WriteResult } from "@/lib/result";
 
 type ConfirmDialogProps = {
@@ -53,11 +54,6 @@ type ConfirmDialogProps = {
     }
 );
 
-/** Whether `typed` is `expected`, ignoring case and surrounding spaces. */
-export function confirmTextMatches(typed: string, expected: string): boolean {
-  return typed.trim().toLowerCase() === expected.trim().toLowerCase();
-}
-
 /**
  * The one confirm for destructive or hard-to-undo actions. `title` names
  * what will be deleted (or removed, reset…); `description` carries what the caller
@@ -67,6 +63,21 @@ export function confirmTextMatches(typed: string, expected: string): boolean {
 export function ConfirmDialog({
   open,
   onOpenChange,
+  ...body
+}: ConfirmDialogProps) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        {/* Keyed to `open`, so the typed text resets whenever the dialog
+            closes, the parent's `open` prop included. */}
+        <ConfirmDialogBody key={open ? "open" : "closed"} {...body} />
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+/** The dialog's content, which owns the typed confirmation text. */
+function ConfirmDialogBody({
   title,
   description,
   confirmLabel = "Delete",
@@ -76,57 +87,49 @@ export function ConfirmDialog({
   form,
   children,
   confirmText,
-}: ConfirmDialogProps) {
+}: Omit<ConfirmDialogProps, "open" | "onOpenChange">) {
   const [typed, setTyped] = useState("");
   const typedOk =
     !confirmText || confirmTextMatches(typed, confirmText.expected);
 
   return (
-    <AlertDialog
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) setTyped("");
-        onOpenChange(next);
-      }}
-    >
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          {description && (
-            <AlertDialogDescription>{description}</AlertDialogDescription>
-          )}
-        </AlertDialogHeader>
-        {children}
-        {confirmText && (
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="confirm-dialog-text">{confirmText.label}</Label>
-            <Input
-              id="confirm-dialog-text"
-              name="confirmText"
-              form={form}
-              autoComplete="off"
-              value={typed}
-              onChange={(event) => setTyped(event.target.value)}
-            />
-          </div>
+    <>
+      <AlertDialogHeader>
+        <AlertDialogTitle>{title}</AlertDialogTitle>
+        {description && (
+          <AlertDialogDescription>{description}</AlertDialogDescription>
         )}
-        <AlertDialogFooter>
-          <AlertDialogCancel className="min-h-11 sm:min-h-9" disabled={pending}>
-            Cancel
-          </AlertDialogCancel>
-          <AlertDialogAction
-            variant={destructive ? "destructive" : "default"}
-            className="min-h-11 sm:min-h-9"
-            disabled={pending || !typedOk}
-            {...(form
-              ? { type: "submit", form }
-              : { onClick: () => onConfirm?.(typed) })}
-          >
-            {pending ? `${confirmLabel}…` : confirmLabel}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+      </AlertDialogHeader>
+      {children}
+      {confirmText && (
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="confirm-dialog-text">{confirmText.label}</Label>
+          <Input
+            id="confirm-dialog-text"
+            name="confirmText"
+            form={form}
+            autoComplete="off"
+            value={typed}
+            onChange={(event) => setTyped(event.target.value)}
+          />
+        </div>
+      )}
+      <AlertDialogFooter>
+        <AlertDialogCancel className="min-h-11 sm:min-h-9" disabled={pending}>
+          Cancel
+        </AlertDialogCancel>
+        <AlertDialogAction
+          variant={destructive ? "destructive" : "default"}
+          className="min-h-11 sm:min-h-9"
+          disabled={pending || !typedOk}
+          {...(form
+            ? { type: "submit", form }
+            : { onClick: () => onConfirm?.(typed) })}
+        >
+          {pending ? `${confirmLabel}…` : confirmLabel}
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </>
   );
 }
 

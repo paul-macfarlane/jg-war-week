@@ -316,9 +316,13 @@ staging. It is never on for production (ADR 0008).
 - **Every page shows a "Test sign-in: <email>" banner** while you are in a
   test session.
 - **Turn it off.** Remove `TEST_SIGN_IN_SECRET` and redeploy: every test
-  session ends at once and counts as anonymous (pages, the proxy and MCP).
+  session counts as anonymous (pages, the proxy and MCP) while it stays
+  removed. Setting any secret again revives the unexpired test sessions.
   Test accounts are real `user` rows; Delete my account removes them like
   anyone's.
+- **Rotate it, or after a suspected leak.** First delete the test sessions
+  on the staging database (`delete from session where test_sign_in;`), then
+  set the new secret and redeploy.
 - **Code:** `src/lib/test-sign-in.ts` (the gate), `src/actions/test-sign-in.ts`,
   `src/app/sign-in/test/page.tsx`, `src/components/session-banner.tsx`,
   `src/auth/server.ts`.
