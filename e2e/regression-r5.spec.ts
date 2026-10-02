@@ -385,9 +385,14 @@ test("r5 35 selects and the color picker on a phone", async ({
   // The Award form opens in a Sheet from the Awards list (r9 58).
   await page.goto("/admin/awards");
   await page.getByRole("button", { name: "Add Award" }).click();
-  expect(
-    (await rect(page.locator("#award-team"), "Award Team")).height,
-  ).toBeCloseTo(36, 0);
+  // The dialog zooms in; measure once it settles.
+  await expect
+    .poll(async () =>
+      Math.round(
+        (await rect(page.locator("#award-team"), "Award Team")).height,
+      ),
+    )
+    .toBe(36);
   await page.goto("/admin/points");
   const switcher = page.getByRole("combobox", {
     name: "War Week to administer",
@@ -525,7 +530,12 @@ test("r5 31 setup rows open in a Sheet", async ({
       name: `Edit ${participant}`,
       exact: true,
     });
-    const rowItem = roster.getByRole("listitem").filter({ has: row });
+    const rowItem = roster.getByRole("listitem").filter({
+      has: page.getByRole("button", {
+        name: `Edit ${participant}`,
+        exact: true,
+      }),
+    });
     await expectTouchTarget(row, "Participant row");
     await expect(rowItem).toContainText("Blue");
     await shoot(page, testInfo, "teams-list-375");
