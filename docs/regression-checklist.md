@@ -186,27 +186,37 @@ on the matching War Week page.
       a Day (not the edited Day's own date) and dates outside the War Week,
       so the form can't post a duplicate (the server's "There's already a
       Day on <date>." is unit-tested in `src/mutations/setup.test.ts`).
-      Delete the added Day through its confirm.
+      Delete the added Day through its confirm. When every date already has
+      a Day (the XI demo), widen the War Week's dates by one in settings
+      first and restore them after.
 - [ ] **Roster: add, link, edit, delete.** Add a Participant (on a Team,
       *(teams)*); edit an existing Participant's email to
       `e2e-participant@jahnelgroup.com` (this is the linked Participant the
       User Pages use; pick one in the top five of the Standings, e.g. Cass
-      Comet in the XII demo, so Home's Standings show the You highlight);
+      Comet in the XII demo or Anthony Conway in the XI demo, so the
+      Standings show the You highlight);
       a Participant row without an email shows "No email: won't be
       linked when they sign in"; delete the added Participant through its
       confirm.
-      *(teams)* Add a Team, mark a Leader; the Captain title shows on
-      `/<edition>/teams`; delete the Team.
+      *(teams)* Add a Team, mark a Leader (e.g. the added Participant, on
+      the new Team, as Captain); the Captain title shows on
+      `/<edition>/teams`; delete the Team (a Team with Participants can't
+      be deleted, so delete its Participant first).
 - [ ] **Competitions, one of each Format.** Create a `points` Competition
       with Placement Points 5/3/1, a `single-elimination` Competition, and a
       `games` Competition with `head-to-head` (Add Competition lands on its
       Games page: set Entrants to "A fixed list", turn on "Participants can
       enroll", Save settings); assign `e2e-host@jahnelgroup.com` as Host of
       the `points` one (the Hosts field is on its Edit form, not Add). Each
-      shows on `/<edition>/competitions`.
+      shows on `/<edition>/competitions` (when the War Week has Groups, as
+      the XI demo does, one without a Group is under the Other
+      Competitions tab).
 - [ ] **Run a Bracket end to end.** In the `single-elimination`
       Competition's Bracket setup, pick Entrants and Save Entrants, then
-      Generate (or By Standings) to seed and build it. On its results
+      Generate (or By Standings) to seed and build it. *(teams)* A new
+      Competition scores by Team: Add Squad two Squads per Team, set
+      Entrants are to Squads and press All Squads; the finalized Placement
+      Points go to each Squad's Team. On its results
       screen, give a Heat a Day, time and location with Time & place (it
       shows in Home's Up next with `?at=` set just before that time), record
       every Heat (a dialog at 1440, a bottom sheet at 390), and finalize.
@@ -216,7 +226,8 @@ on the matching War Week page.
       a `head-to-head` Competition with Placement Points (Log a Game on its
       public Competition page), then Close on its Games page: its top
       finishers get Placement Points and the Standings move. Reopen
-      withdraws them.
+      withdraws them. *(teams)* Add it with Scoring Individual and Counts
+      toward the Team on, so the Team Standings move.
 - [ ] **Points Entries.** Add a Points Entry with a Placement Points button,
       edit its points, delete it; `/<edition>/leaderboard` follows each
       change within about 10 s without a reload.
@@ -246,15 +257,20 @@ on the matching War Week page.
       ("End <X> first."). End the current War Week: its confirm names any
       generated Bracket that isn't finalized and any open `games`
       Competition with at least one Game, and on End it records the Winner
-      from first place. Reopen makes it live again. `--reset` doesn't
-      remove the edition this line created, so delete it afterwards from
-      the local database (`delete from war_week where edition = '<new>'`).
+      from first place. Reopen makes it live again. Reopen is refused while
+      a later edition is upcoming ("War Week <Y> is next; reopen isn't
+      available."), so before Reopen delete the edition this line created
+      from the local database (`delete from war_week where edition =
+      '<new>'`; `--reset` doesn't remove it). In the teams pass XII is
+      upcoming too: delete it as well; the closing `pnpm seed:demo`
+      restores it.
 - [ ] **Finale links.** `/admin/standings` links to the Finale and to each
       finalized Bracket's Finale; both open.
 - [ ] **Forms behave the same everywhere.** On a long form (Competition),
       resize from 1440 to 390 (crossing 768) with typed input: the input
       survives the dialog-to-sheet switch. At 820 the add-Participant and
-      *(teams)* Squad forms are dialogs; at 390, bottom sheets. Every delete
+      *(teams)* Squad (Bracket setup → Add Squad) forms are dialogs; at
+      390, bottom sheets. Every delete
       above used `ConfirmDialog`, and every save and delete showed a toast.
 - [ ] **The Guide is true.** Read `/admin/guide`: every step names a page
       and control that exists and works as described.
@@ -281,8 +297,9 @@ Competition (from the Organizer run).
 - [ ] **Not a Host elsewhere.** Switch to another edition (if offered), or
       set the `admin_edition` cookie to a past edition, and open another
       War Week's admin URL (e.g. `/admin/points/<an XI Points Entry id>`,
-      `/admin/brackets/<a Competition they don't host>`): nothing to manage
-      there.
+      `/admin/brackets/<a Competition they don't host>`; the teams demo has
+      no Points Entries outside XI, so use `/admin/brackets/<an X
+      Competition id>`): nothing to manage there.
 
 ## User Pages
 
@@ -292,8 +309,10 @@ that nothing personal shows (no You highlight, no Log a Game).
 
 - [ ] **Home.** `/<edition>` shows the hero, Now/Next for the time given by
       `?at=` (pick a time with a Schedule Item and a timed Heat), the
-      pinned Announcement, and the top of the Standings with the linked
-      Participant highlighted as You. With a `games` Competition open, the
+      pinned Announcement, and the top of the Standings: *(free-for-all)*
+      with the linked Participant highlighted as You; *(teams)* the Team
+      Standings, which carry no You (it marks individual rows: Leaderboard,
+      Teams). With a `games` Competition open, the
       "Log a Game" shortcut shows for the linked Participant only. The XII
       demo has no timed Heat: as the Organizer, generate a Bracket with the
       linked Participant in it (e.g. Chess Heats) and time an unplayed Heat,

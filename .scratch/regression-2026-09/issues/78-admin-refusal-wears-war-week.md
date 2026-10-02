@@ -24,3 +24,7 @@
 ## Acceptance criteria
 
 - [ ] The refusal page passes the checklist's theme check for the current War Week at both viewports.
+
+## Comments
+
+- **2026-10-02, teams pass (`pnpm seed:demo`, XI live):** same defect. The refusal page has no `[data-theme-root]` at 1440 and 390 for the Host on every Organizer-only page and on `/admin/brackets/<a Competition they don't host>`, and for the linked Participant and the unlinked account on `/admin`; it shows neutral black and white instead of XI's green on black. Screenshots: `test-results/r8-quick-fixes/checklist/admin-setup-next-host-teams-1440/refused.png`, `.../admin-setup-next-host-teams-390/refused.png`, `.../admin-teams-390/refused.png`, `.../admin-teams-unlinked-390/refused.png`, `.../admin-brackets-host-teams-390/not-hosted.png`.
