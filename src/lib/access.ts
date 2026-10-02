@@ -85,6 +85,8 @@ export type WarWeekAction =
   | "finale-slide.create"
   | "finale-slide.update"
   | "finale-slide.delete"
+  /** How the Finale shows Awards: one slide, or one per Category (ticket 73). */
+  | "finale.awards-layout"
   | "competition.create"
   | "competition.delete"
   | "competition.assign-hosts"
@@ -183,6 +185,7 @@ const ORGANIZER_ONLY: Partial<
   "finale-slide.create": "add Custom Finale slides",
   "finale-slide.update": "change Custom Finale slides",
   "finale-slide.delete": "delete Custom Finale slides",
+  "finale.awards-layout": "change how the Finale shows Awards",
   "award.create": "give Awards",
   "award.edit": "change Awards",
   "award.delete": "delete Awards",

@@ -32,7 +32,6 @@
  */
 import { TZDate } from "@date-fns/tz";
 import { loadEnvConfig } from "@next/env";
-import { makeSignature } from "better-auth/crypto";
 import { type ChildProcess, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import {
@@ -45,13 +44,18 @@ import {
 } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { Client } from "pg";
 
 import { ABOUT_FEATURES } from "@/lib/about";
 import { DISPLAY_CHANGE_EVENT, DISPLAY_STORAGE_KEY } from "@/lib/display";
 import { FINALE_MAX_MS } from "@/lib/finale";
 import { backgroundColorScheme } from "@/lib/theme";
 import type { LeaderboardResult } from "@/mcp/leaderboard";
+
+import {
+  createDemoSession,
+  query,
+  setupBracketDemo as setupBracketDemoOn,
+} from "./media/demo";
 
 loadEnvConfig(process.cwd());
 
@@ -123,35 +127,8 @@ const switchDisplay = (scheme: Scheme) =>
 const standingsKind = () =>
   current.mode === "teams" ? ("team" as const) : ("individual" as const);
 
-async function query<T = Record<string, unknown>>(
-  sql: string,
-  params: unknown[] = [],
-): Promise<T[]> {
-  const client = new Client({ connectionString: process.env.DATABASE_URL });
-  await client.connect();
-  try {
-    return (await client.query(sql, params)).rows as T[];
-  } finally {
-    await client.end();
-  }
-}
-
-async function createSession(email: string): Promise<string> {
-  const userId = `smoke-${randomUUID()}`;
-  const token = `smoke-${randomUUID()}`;
-  await query(`delete from "user" where email = $1`, [email]);
-  await query(
-    `insert into "user" (id, name, email, email_verified) values ($1, 'About demo', $2, true)`,
-    [userId, email],
-  );
-  await query(
-    `insert into session (id, token, user_id, expires_at) values ($1, $2, $3, now() + interval '1 hour')`,
-    [`smoke-${randomUUID()}`, token, userId],
-  );
-  return encodeURIComponent(
-    `${token}.${await makeSignature(token, AUTH_SECRET)}`,
-  );
-}
+const createSession = (email: string) =>
+  createDemoSession(email, AUTH_SECRET, "About demo");
 
 /**
  * The current War Week, resolved as `getCurrentWarWeek` does
@@ -488,115 +465,10 @@ async function recordFinale(cookie: string, scheme: Scheme) {
 }
 
 // ---------------------------------------------------------------------------
-// A finished Heats Bracket for the "competitions" still
+// A finished Heats Bracket for the "competitions" still (`setupBracketDemo`
+// in `scripts/media/demo.ts`, shared with the Finale stills)
 
-const BRACKET_COMP_NAME = "Capture the Flag";
-
-/**
- * Fills a small, already-finished Heats Bracket on the current War Week (8
- * Participant Entrants, 4 per Heat with the top 2 advancing, two Round 1
- * Heats and a decided Final) directly in SQL: its Entrants at Seed
- * Positions 1–8, and each Heat with its slots and places. It uses the
- * demo's own seeded heats Competition when it has one with no Entrants yet
- * (seeds can't seed Entrants), else adds a Competition of its own. Returns
- * the Competition and the undo: delete the added Competition (which cascades
- * its Entrants and Heats), or the seeded one's Heats and Entrants.
- */
-async function setupBracketDemo(): Promise<{
-  competitionId: string;
-  teardown: () => Promise<void>;
-}> {
-  const [seeded] = await query<{ id: string }>(
-    `select c.id from competition c
-     where c.war_week_id = $1 and c.format = 'heats' and c.scoring = 'individual'
-       and not exists (select 1 from entrant e where e.competition_id = c.id)
-     order by c.name limit 1`,
-    [current.id],
-  );
-  const competitionId =
-    seeded?.id ??
-    (
-      await query<{ id: string }>(
-        `insert into competition (war_week_id, name, scoring, format, bracket_config)
-         values ($1, $2, 'individual', 'heats', $3) returning id`,
-        [
-          current.id,
-          BRACKET_COMP_NAME,
-          { entrantsPerHeat: 4, advancePerHeat: 2 },
-        ],
-      )
-    )[0].id;
-  const teardown = seeded
-    ? async () => {
-        await query(`delete from heat where competition_id = $1`, [
-          competitionId,
-        ]);
-        await query(`delete from entrant where competition_id = $1`, [
-          competitionId,
-        ]);
-      }
-    : async () => {
-        await query(`delete from competition where id = $1`, [competitionId]);
-      };
-  try {
-    const participants = await query<{ id: string }>(
-      `select id from participant where war_week_id = $1 order by display_name limit 8`,
-      [current.id],
-    );
-    if (participants.length < 8) {
-      throw new Error(
-        `${current.edition} needs at least 8 Participants for the Bracket demo`,
-      );
-    }
-    const entrantIds: string[] = [];
-    for (const [i, p] of participants.entries()) {
-      const [entrant] = await query<{ id: string }>(
-        `insert into entrant (competition_id, participant_id, seed_position)
-         values ($1, $2, $3) returning id`,
-        [competitionId, p.id, i + 1],
-      );
-      entrantIds.push(entrant.id);
-    }
-    const [e1, e2, e3, e4, e5, e6, e7, e8] = entrantIds;
-    const [finalHeat] = await query<{ id: string }>(
-      `insert into heat (competition_id, round, position, status, slot_count)
-       values ($1, 2, 1, 'played', 4) returning id`,
-      [competitionId],
-    );
-    const [heatA] = await query<{ id: string }>(
-      `insert into heat (competition_id, round, position, status, slot_count)
-       values ($1, 1, 1, 'played', 4) returning id`,
-      [competitionId],
-    );
-    const [heatB] = await query<{ id: string }>(
-      `insert into heat (competition_id, round, position, status, slot_count)
-       values ($1, 1, 2, 'played', 4) returning id`,
-      [competitionId],
-    );
-    await query(
-      `insert into heat_entrant (heat_id, entrant_id, slot, place) values
-         ($1, $2, 0, 1), ($1, $3, 1, 2), ($1, $4, 2, 3), ($1, $5, 3, 4),
-         ($6, $7, 0, 1), ($6, $8, 1, 2), ($6, $9, 2, 3), ($6, $10, 3, 4),
-         ($11, $2, 0, 1), ($11, $7, 1, 2), ($11, $3, 2, 3), ($11, $8, 3, 4)`,
-      [heatA.id, e1, e2, e3, e4, heatB.id, e5, e6, e7, e8, finalHeat.id],
-    );
-    // One Heat's time and place, so the still shows a when-line
-    // ("Sunday, Feb 21 · 7:00 PM ET · Main room") on its card.
-    await query(
-      `update heat set day_id = (select id from day where war_week_id = $2 order by date limit 1),
-         start_time = '19:00', location = 'Main room'
-       where id = $1`,
-      [heatA.id, current.id],
-    );
-    note(
-      `bracket demo: ${seeded ? "seeded" : "added"} competition ${competitionId}, champion entrant ${e1}`,
-    );
-  } catch (error) {
-    await teardown();
-    throw error;
-  }
-  return { competitionId, teardown };
-}
+const setupBracketDemo = () => setupBracketDemoOn(current, note);
 
 // ---------------------------------------------------------------------------
 // The stills

@@ -247,6 +247,7 @@ describe("can: Organizer-only War Week families", () => {
           ["finale-slide.create", "add Custom Finale slides"],
           ["finale-slide.update", "change Custom Finale slides"],
           ["finale-slide.delete", "delete Custom Finale slides"],
+          ["finale.awards-layout", "change how the Finale shows Awards"],
           ["award.create", "give Awards"],
           ["award.edit", "change Awards"],
           ["award.delete", "delete Awards"],

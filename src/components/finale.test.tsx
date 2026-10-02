@@ -25,12 +25,70 @@ const standingsSlide: FinaleSlideData = {
 };
 
 const defaultSlides: FinaleSlideData[] = [
-  { key: "title", kind: "title", name: "Title" },
-  { key: "numbers", kind: "numbers", name: "By the numbers" },
-  { key: "awards", kind: "awards", name: "Awards" },
-  { key: "champions", kind: "champions", name: "Champions" },
+  {
+    key: "title",
+    kind: "title",
+    name: "Title",
+    edition: "xi",
+    year: 2026,
+    storyTheme: "The Matrix",
+    logoUrl: null,
+    bannerUrl: null,
+  },
+  {
+    key: "numbers",
+    kind: "numbers",
+    name: "By the numbers",
+    figures: [{ label: "Points Entries", value: "2" }],
+  },
+  {
+    key: "awards",
+    kind: "awards",
+    name: "Awards",
+    heading: "Awards",
+    primaryColor: "#00ff41",
+    groups: [
+      {
+        key: "other",
+        name: null,
+        awards: [
+          {
+            id: "a1",
+            name: "Catan Champion",
+            description: null,
+            team: { name: "Red", color: "#f00" },
+            participants: [],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    key: "champions",
+    kind: "champions",
+    name: "Champions",
+    primaryColor: "#00ff41",
+    champions: [
+      {
+        competitionId: "c1",
+        competition: "Pool",
+        format: "games",
+        winners: [{ id: "t1", name: "Blue", color: "#00f", kind: "team" }],
+      },
+    ],
+  },
   standingsSlide,
-  { key: "winner", kind: "winner", name: "Winner" },
+  {
+    key: "winner",
+    kind: "winner",
+    name: "Winner",
+    title: "Blue",
+    tie: false,
+    primaryColor: "#00ff41",
+    rows: [
+      { id: "t1", name: "Blue", total: "12.5", color: "#00f", kind: "team" },
+    ],
+  },
 ];
 
 function render(

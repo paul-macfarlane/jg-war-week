@@ -4,6 +4,7 @@ import {
   createCustomFinaleSlide,
   deleteCustomFinaleSlide,
   moveFinaleSlide,
+  setFinaleAwardsLayout,
   setFinaleSlideHidden,
   updateCustomFinaleSlide,
 } from "@/actions/finale-slides";
@@ -37,6 +38,7 @@ vi.mock("@/mutations/finale-slides", () => ({
   createCustomFinaleSlide: vi.fn(async () => ({ ok: true })),
   updateCustomFinaleSlide: vi.fn(async () => ({ ok: true })),
   deleteCustomFinaleSlide: vi.fn(async () => ({ ok: true })),
+  setFinaleAwardsLayout: vi.fn(async () => ({ ok: true })),
 }));
 
 beforeEach(() => {
@@ -251,5 +253,55 @@ describe("Custom Finale slide actions", () => {
       error: "Only an Organizer can add Custom Finale slides.",
     });
     expect(mutations.createCustomFinaleSlide).not.toHaveBeenCalled();
+  });
+});
+
+describe("setFinaleAwardsLayout", () => {
+  it("saves either layout, authorized as finale.awards-layout on the War Week", async () => {
+    await expect(
+      setFinaleAwardsLayout(WAR_WEEK, "per-category"),
+    ).resolves.toEqual({
+      ok: true,
+    });
+    await setFinaleAwardsLayout(WAR_WEEK, "one-slide");
+    expect(authorize).toHaveBeenCalledWith(
+      "finale.awards-layout",
+      "warWeek",
+      WAR_WEEK,
+    );
+    expect(mutations.setFinaleAwardsLayout).toHaveBeenNthCalledWith(
+      1,
+      "per-category",
+      ctx,
+    );
+    expect(mutations.setFinaleAwardsLayout).toHaveBeenNthCalledWith(
+      2,
+      "one-slide",
+      ctx,
+    );
+  });
+
+  it("refuses a layout that isn't one of the two", async () => {
+    await expect(
+      setFinaleAwardsLayout(WAR_WEEK, "sideways" as never),
+    ).resolves.toEqual({
+      ok: false,
+      error: "Pick how the Finale shows Awards.",
+    });
+    expect(mutations.setFinaleAwardsLayout).not.toHaveBeenCalled();
+  });
+
+  it("returns the refusal when the actor isn't an Organizer, and saves nothing", async () => {
+    vi.mocked(authorize).mockResolvedValueOnce({
+      ok: false,
+      error: "Only an Organizer can change how the Finale shows Awards.",
+    });
+    await expect(
+      setFinaleAwardsLayout(WAR_WEEK, "per-category"),
+    ).resolves.toEqual({
+      ok: false,
+      error: "Only an Organizer can change how the Finale shows Awards.",
+    });
+    expect(mutations.setFinaleAwardsLayout).not.toHaveBeenCalled();
   });
 });

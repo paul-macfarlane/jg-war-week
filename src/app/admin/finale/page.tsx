@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
+import { FinaleAwardsLayoutControl } from "@/components/finale-awards-layout";
 import { FinaleSlidesEditor } from "@/components/finale-slides-editor";
 import { buttonVariants } from "@/components/ui/button";
 import { sanitizeContent } from "@/lib/rich-text/content";
@@ -20,7 +21,8 @@ export const metadata: Metadata = {
 
 /**
  * The Organizer's way into the Finale, its slide list (order and hidden
- * slides; Organizers change it, Hosts see it), and each finalized Bracket's
+ * slides; Organizers change it, Hosts see it), how it shows Awards (the
+ * Awards layout, likewise), and each finalized Bracket's
  * Bracket Finale ("Finale: <Competition>").
  */
 export default async function AdminFinalePage() {
@@ -98,6 +100,14 @@ export default async function AdminFinalePage() {
             )}
             canEdit={isOrganizer}
             themeSwatches={themeSwatches(warWeek)}
+          />
+        </section>
+        <section className="flex flex-col gap-2">
+          <h2 className="text-lg font-semibold">Awards</h2>
+          <FinaleAwardsLayoutControl
+            warWeekId={warWeek.id}
+            layout={warWeek.finaleAwardsLayout}
+            canEdit={isOrganizer}
           />
         </section>
         <section className="flex flex-col gap-2">

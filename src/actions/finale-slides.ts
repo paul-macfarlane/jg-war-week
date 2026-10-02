@@ -9,6 +9,7 @@ import {
   type CustomSlideInput,
   parseCustomSlideInput,
 } from "@/lib/custom-finale-slide-input";
+import { FINALE_AWARDS_LAYOUTS, type FinaleAwardsLayout } from "@/lib/enums";
 import {
   BUILT_IN_FINALE_SLIDE_KINDS,
   type FinaleSlideRef,
@@ -165,6 +166,37 @@ export async function deleteCustomFinaleSlide(
     if (!authorized.ok) return authorized;
 
     const result = await mutations.deleteCustomFinaleSlide(id, authorized.ctx);
+    if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
+    return result;
+  });
+}
+
+const awardsLayoutSchema = z.enum(FINALE_AWARDS_LAYOUTS);
+
+/**
+ * How the Finale shows Awards: "one-slide" or "per-category" (Organizer
+ * only; admin → Finale's Awards layout saves it on change).
+ */
+export async function setFinaleAwardsLayout(
+  warWeekId: string,
+  layout: FinaleAwardsLayout,
+): Promise<WriteResult> {
+  return guarded(async () => {
+    const authorized = await authorize(
+      "finale.awards-layout",
+      "warWeek",
+      warWeekId,
+    );
+    if (!authorized.ok) return authorized;
+    const parsed = awardsLayoutSchema.safeParse(layout);
+    if (!parsed.success) {
+      return { ok: false, error: "Pick how the Finale shows Awards." };
+    }
+
+    const result = await mutations.setFinaleAwardsLayout(
+      parsed.data,
+      authorized.ctx,
+    );
     if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
     return result;
   });

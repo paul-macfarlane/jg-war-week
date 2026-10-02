@@ -1,15 +1,32 @@
-import { asc, eq } from "drizzle-orm";
+import {
+  and,
+  asc,
+  countDistinct,
+  eq,
+  inArray,
+  isNotNull,
+  ne,
+  sql,
+} from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
-import { finaleSlide } from "@/db/schema";
-import { customSlideColors } from "@/lib/custom-finale-slide";
 import {
-  type FinaleSlideData,
+  type WarWeek,
+  competition,
+  finaleSlide,
+  game,
+  heat,
+  participant,
+  pointsEntry,
+} from "@/db/schema";
+import {
+  type FinaleChampion,
+  type FinaleCounts,
   type ResolvedFinaleSlide,
+  championsList,
   resolveFinaleSlides,
-  visibleFinaleSlides,
 } from "@/lib/finale-slides";
-import type { Standings } from "@/lib/standings";
+import { resultEntryQuery, toResultEntry } from "@/queries/recent-results";
 
 /** A War Week's saved `finale_slide` rows, in no particular order. */
 export async function getFinaleSlideRows(warWeekId: string, dbOrTx: DBOrTx) {
@@ -40,47 +57,85 @@ export async function getFinaleSlides(
 }
 
 /**
- * Each visible slide's data, in order, for the slideshow. The Standings
- * countdown gets the page's one `getStandings` result, so the Finale never
- * recomputes Standings.
+ * A War Week's figures for the By the numbers slide (`byTheNumbers` labels
+ * and filters them): Competitions with a Points Entry, Games logged, Heats
+ * played, Points Entries and the points they hand out, and the roster.
  */
-export function finaleSlideData(
-  slides: ResolvedFinaleSlide[],
-  context: {
-    standings: Standings;
-    teamLabel: string;
-    primaryColor: string;
-    /** The theme's text color, where a Custom slide's text starts from. */
-    foregroundColor: string;
-  },
-): FinaleSlideData[] {
-  return visibleFinaleSlides(slides).map((slide): FinaleSlideData => {
-    const base = { key: slide.key, name: slide.name };
-    switch (slide.kind) {
-      case "standings":
-        return {
-          ...base,
-          kind: "standings",
-          standings: context.standings,
-          teamLabel: context.teamLabel,
-          primaryColor: context.primaryColor,
-        };
-      case "custom":
-        return {
-          ...base,
-          kind: "custom",
-          heading: slide.heading ?? slide.name,
-          body: slide.body,
-          backgroundColor: slide.backgroundColor,
-          colors: slide.backgroundColor
-            ? customSlideColors(slide.backgroundColor, {
-                foreground: context.foregroundColor,
-                primary: context.primaryColor,
-              })
-            : null,
-        };
-      default:
-        return { ...base, kind: slide.kind };
-    }
-  });
+export async function getFinaleCounts(
+  warWeekId: string,
+  dbOrTx: DBOrTx = db,
+): Promise<FinaleCounts> {
+  const ofWarWeek = eq(competition.warWeekId, warWeekId);
+  const [[entries], [games], [heats], [roster]] = await Promise.all([
+    dbOrTx
+      .select({
+        competitions: countDistinct(pointsEntry.competitionId),
+        entries: sql<number>`count(*)::int`,
+        points: sql<string>`coalesce(sum(${pointsEntry.points}), 0)`,
+      })
+      .from(pointsEntry)
+      .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
+      .where(ofWarWeek),
+    dbOrTx
+      .select({ n: sql<number>`count(*)::int` })
+      .from(game)
+      .innerJoin(competition, eq(competition.id, game.competitionId))
+      .where(ofWarWeek),
+    dbOrTx
+      .select({ n: sql<number>`count(*)::int` })
+      .from(heat)
+      .innerJoin(competition, eq(competition.id, heat.competitionId))
+      .where(and(ofWarWeek, eq(heat.status, "played"))),
+    dbOrTx
+      .select({ n: sql<number>`count(*)::int` })
+      .from(participant)
+      .where(eq(participant.warWeekId, warWeekId)),
+  ]);
+  return {
+    competitionsRun: Number(entries?.competitions ?? 0),
+    gamesLogged: Number(games?.n ?? 0),
+    heatsPlayed: Number(heats?.n ?? 0),
+    pointsEntries: Number(entries?.entries ?? 0),
+    pointsHandedOut: Number(entries?.points ?? 0),
+    participants: Number(roster?.n ?? 0),
+  };
+}
+
+/**
+ * The Champions slide's lines (`championsList`): every finalized Bracket's
+ * champion and closed Competition's winner, uncapped. Reads the finalized
+ * Competitions and only their generated Points Entries.
+ */
+export async function getChampions(
+  warWeek: Pick<WarWeek, "id">,
+  dbOrTx: DBOrTx = db,
+): Promise<FinaleChampion[]> {
+  const competitions = await dbOrTx
+    .select({
+      id: competition.id,
+      name: competition.name,
+      format: competition.format,
+      finalizedAt: competition.finalizedAt,
+    })
+    .from(competition)
+    .where(
+      and(
+        eq(competition.warWeekId, warWeek.id),
+        isNotNull(competition.finalizedAt),
+        ne(competition.format, "points"),
+      ),
+    );
+  if (competitions.length === 0) return [];
+  const entries = await resultEntryQuery(dbOrTx)
+    .where(
+      and(
+        inArray(
+          pointsEntry.competitionId,
+          competitions.map((c) => c.id),
+        ),
+        eq(pointsEntry.generatedByBracket, true),
+      ),
+    )
+    .orderBy(asc(pointsEntry.enteredAt), asc(pointsEntry.id));
+  return championsList(competitions, entries.map(toResultEntry));
 }
