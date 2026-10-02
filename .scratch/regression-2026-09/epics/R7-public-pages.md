@@ -8,7 +8,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Red-team:** not required (no Drizzle schema, auth or access change; Privacy and Terms stay in `PUBLIC_PATHS`).
 

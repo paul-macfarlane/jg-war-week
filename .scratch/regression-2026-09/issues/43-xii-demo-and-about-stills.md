@@ -4,7 +4,7 @@
 
 **Blocked by:** 42 (settles the six feature cards and their slugs)
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** Paul's public-pages review, 2026-10-01, item 3; regression checklist "About page has the theme of the latest war week, including the screenshots/video"
 
