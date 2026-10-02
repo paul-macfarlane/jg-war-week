@@ -18,6 +18,7 @@ export default async function MorePage({
   const account = await getNavAccount();
 
   const links = moreLinks({
+    surface: "desktop",
     edition: warWeek.edition,
     mode: warWeek.mode,
     teamLabel: warWeek.teamLabel,
