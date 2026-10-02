@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 
 import { getActor } from "@/auth/actor";
+import { DeleteAccountSection } from "@/components/delete-account-section";
 import { ProfileForm } from "@/components/profile-form";
 import { Toaster } from "@/components/ui/sonner";
 import { nameFromEmail } from "@/lib/account";
@@ -68,7 +69,7 @@ export default async function ProfilePage({
         primaryColor={warWeek.primaryColor}
         themeStyle={warWeekThemeStyle(warWeek)}
       />
-      {/* Ticket 61 (wave 3): the Delete my account section goes here. */}
+      <DeleteAccountSection email={actor.email} />
       <Toaster position="bottom-center" closeButton />
     </main>
   );
