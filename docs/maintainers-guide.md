@@ -146,7 +146,8 @@ Each has a prompt you can paste into Claude. Replace the `<…>` parts.
 Words must follow `CONTEXT.md`. If Claude refuses a word, that's why.
 
 A change people can see also updates `/about` in the same PR: its copy
-(`src/app/about/page.tsx`, `src/lib/about.ts`) and, when a feature card's
+(`src/app/about/page.tsx`, `src/lib/about.ts`: six key-feature cards, copy
+that reads the same for Teams and free-for-all) and, when a feature card's
 screen changed, its still. Regenerate the stills from the seeded demo, never
 by hand, after `pnpm build` with a freshly loaded seed
 (`pnpm seed:load --reset seeds/*.json && pnpm seed:demo`):

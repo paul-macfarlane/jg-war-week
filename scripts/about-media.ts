@@ -590,45 +590,6 @@ async function askMcp(cookie: string): Promise<LeaderboardResult> {
   return JSON.parse(text) as LeaderboardResult;
 }
 
-const escapeHtml = (s: string) =>
-  s.replace(
-    /[&<>"]/g,
-    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!,
-  );
-
-/**
- * A chat card in XI's theme: the question, then Claude's answer written
- * from the real tool result, with the tool call shown underneath.
- */
-function chatCardUrl(result: LeaderboardResult): string {
-  const answer = `<p>${escapeHtml(result.teamLabel)} Standings for War Week XI right now:</p><ol>${result.standings
-    .slice(0, 5)
-    .map(
-      (row) =>
-        `<li><span class="dot" style="background:${"color" in row ? escapeHtml(row.color) : "#888"}"></span><b>${escapeHtml(row.name)}</b><span class="pts">${row.total} pts</span></li>`,
-    )
-    .join(
-      "",
-    )}</ol><p>${escapeHtml(result.standings[0]?.name ?? "")} lead${result.standings.length > 1 ? `, ${result.standings[0].total - result.standings[1].total} points ahead of ${escapeHtml(result.standings[1].name)}` : ""}.</p>`;
-  const t = STATIC_PAGE_THEME;
-  return `data:text/html;charset=utf-8,${encodeURIComponent(`<!doctype html><html><head><meta charset="utf-8"><style>
-  html,body{margin:0;height:100%;background:${t.backgroundColor};color:${t.foregroundColor};font:16px/1.5 ui-monospace,"JetBrains Mono",Menlo,monospace}
-  body{display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at top,color-mix(in oklch,${t.primaryColor} 18%,transparent),transparent 60%),${t.backgroundColor}}
-  .chat{width:760px;display:flex;flex-direction:column;gap:24px;zoom:1.5}
-  .msg{max-width:80%;padding:16px 20px;border-radius:18px;border:1px solid ${t.accentColor}}
-  .you{align-self:flex-end;background:${t.primaryColor};color:${t.primaryForegroundColor};border-color:${t.primaryColor}}
-  .claude{align-self:flex-start;background:color-mix(in oklch,${t.backgroundColor} 85%,${t.accentColor})}
-  .claude p{margin:0 0 8px}.claude ol{margin:0 0 12px;padding-left:24px}.claude li{margin:4px 0;display:flex;align-items:center;gap:10px}
-  .dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:1px solid rgba(255,255,255,.3)}
-  .pts{margin-left:auto;opacity:.7}
-  .tool{font-size:12px;opacity:.6;margin-top:12px;border-top:1px dashed ${t.accentColor};padding-top:8px}
-  .who{font-size:12px;letter-spacing:.2em;text-transform:uppercase;opacity:.6;margin-bottom:6px}
-  </style></head><body><div class="chat">
-  <div class="msg you"><div class="who">You</div>Who's winning War Week XI?</div>
-  <div class="msg claude"><div class="who">Claude</div>${answer}<div class="tool">jg-war-week · get_leaderboard(kind: "team")</div></div>
-  </div></body></html>`)}`;
-}
-
 // ---------------------------------------------------------------------------
 // A logged Game for the "games" still (R3)
 
@@ -1095,7 +1056,7 @@ async function main() {
     );
     await still("announcements", cookie, "/xi/news", () => sleep(2_000));
     await still(
-      "brackets",
+      "competitions",
       cookie,
       `/xi/competitions/${bracketCompetitionId}`,
       async (page) => {
@@ -1106,16 +1067,7 @@ async function main() {
     );
     const gamesDemo = await captureGamesDemo(cookie);
     gamesDemoGameId = gamesDemo.gameId;
-    await still("lifecycle", cookie, "/admin/setup", async (page) => {
-      const found = await page.evaluate<boolean>(scrollToText("Lifecycle"));
-      await sleep(300);
-      if (!found) throw new Error("no Lifecycle box on /admin/setup");
-    });
     await still("archive", cookie, "/history");
-    const result = await askMcp(cookie);
-    note(`ask-claude: get_leaderboard rows=${result.standings.length}`);
-    await still("ask-claude", null, chatCardUrl(result));
-
     await evidence();
 
     for (const name of [

@@ -3,11 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { WarWeek } from "@/db/schema";
-import {
-  ABOUT_FALLBACK_THEME,
-  ABOUT_FEATURES,
-  MAINTAINERS_GUIDE_URL,
-} from "@/lib/about";
+import { ABOUT_FALLBACK_THEME, ABOUT_FEATURES } from "@/lib/about";
 
 const { getCurrentWarWeek } = vi.hoisted(() => ({
   getCurrentWarWeek: vi.fn(),
@@ -49,7 +45,10 @@ async function renderAbout() {
   const { default: AboutPage } = await import("./page");
   const element = await AboutPage();
   const html = renderToStaticMarkup(element);
-  return { html, text: html.replace(/<[^>]+>/g, " ") };
+  return {
+    html,
+    text: html.replace(/<[^>]+>/g, " ").replaceAll("&#x27;", "'"),
+  };
 }
 
 describe("AboutPage", () => {
@@ -122,28 +121,74 @@ describe("AboutPage", () => {
     }
   });
 
-  it("links the maintainer's guide", async () => {
+  it("says what the app is: approved headline, hero and one Why we built this", async () => {
     getCurrentWarWeek.mockResolvedValue(warWeekFixture());
-    const { html } = await renderAbout();
+    const { text } = await renderAbout();
+    const flat = text.replace(/\s+/g, " ").replace(/ ([.,])/g, "$1");
 
-    expect(html).toContain(`href="${MAINTAINERS_GUIDE_URL}"`);
+    expect(flat).toContain("Everything War Week, in one place.");
+    expect(flat).toContain(
+      "The JG War Week app is where Jahnel Group runs War Week: the Story Theme, the schedule, the players, the Competitions, the points and the Finale, on every phone in the building.",
+    );
+    expect(flat).toContain(
+      "War Week has run at Jahnel Group every year since 2016. Each year, the schedule, the Teams, the rules and the points were spread across a wiki page, Slack and a scoring tool, and Organizers spent the week answering what's on, where, and who's winning.",
+    );
+    expect(flat).toContain(
+      "The JG War Week app is the one place for all of it. Organizers and Hosts run the week here, everyone else follows along from their phone, and past War Weeks are a tap away.",
+    );
+    expect(text.match(/Why we built this/g)).toHaveLength(1);
+    expect(text).toContain("Jahnel Group War Week · since 2016");
+    expect(text).toContain("Install app");
+    expect(text).toContain(
+      "Sign-in is Google, @jahnelgroup.com accounts only.",
+    );
   });
 
-  it("tells the team's story and mentions the one-sentence features", async () => {
+  it("drops the removed copy and the maintainer pitch", async () => {
     getCurrentWarWeek.mockResolvedValue(warWeekFixture());
     const { html, text } = await renderAbout();
 
-    expect(text).toContain("Why we built this");
-    expect(text).toContain("Jahnel Group War Week · since 2016");
-    expect(text).toContain("Install app");
-    expect(text).toContain("2016");
-    expect(text.match(/Competiscore/g)).toHaveLength(1);
-    expect(text).not.toContain("points are gone");
-    expect(text).not.toContain("Why I built this");
-    expect(text).not.toContain("Paul Macfarlane");
-    expect(text).not.toContain("Appearance Theme");
-    expect(text).not.toMatch(/\blost\b/i);
-    expect(html.toLowerCase()).not.toContain('href="/install"');
+    for (const phrase of [
+      "no code",
+      "light and dark",
+      "Competiscore",
+      "spreadsheets",
+      "The history is back",
+      "maintainer's guide",
+      "Every still below",
+      "Why it exists",
+      "source is on",
+    ]) {
+      expect(text).not.toContain(phrase);
+    }
+    expect(html).not.toContain("maintainers-guide");
+    expect(text).not.toMatch(/your team/i);
+  });
+
+  it("renders exactly the six feature cards, in order", async () => {
+    getCurrentWarWeek.mockResolvedValue(warWeekFixture());
+    const { html } = await renderAbout();
+
+    const slugs = [...html.matchAll(/data-feature="([^"]+)"/g)].map(
+      (m) => m[1],
+    );
+    expect(slugs).toEqual([
+      "organizer-setup",
+      "schedule",
+      "points",
+      "announcements",
+      "competitions",
+      "archive",
+    ]);
+    const titles = ABOUT_FEATURES.map((f) => f.title);
+    expect(titles).toEqual([
+      "Organizer and Host setup",
+      "Schedule, Now and Next",
+      "Points and Standings",
+      "Announcements",
+      "Competitions: Brackets and Games",
+      "The Archive",
+    ]);
   });
 
   it("mentions no build tooling and no banned terms", async () => {

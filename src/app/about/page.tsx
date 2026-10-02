@@ -9,8 +9,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { ThemeRoot } from "@/components/theme-root";
 import { buttonVariants } from "@/components/ui/button";
 import type { WarWeek } from "@/db/schema";
-import { ABOUT_FALLBACK_THEME, MAINTAINERS_GUIDE_URL } from "@/lib/about";
-import { REPO_URL } from "@/lib/site";
+import { ABOUT_FALLBACK_THEME } from "@/lib/about";
 import { warWeekThemeStyle } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { getCurrentWarWeek } from "@/queries/war-weeks";
@@ -18,16 +17,16 @@ import { getCurrentWarWeek } from "@/queries/war-weeks";
 export const metadata: Metadata = {
   title: "About · JG War Week",
   description:
-    "The JG War Week app is where Jahnel Group runs War Week: setup, schedule, Teams, Competitions, points, the Finale, and every War Week since 2016.",
+    "The JG War Week app is where Jahnel Group runs War Week: the Story Theme, schedule, players, Competitions, points and the Finale.",
 };
 
 /** Never statically prerendered: it reads the current War Week (ticket 03). */
 export const dynamic = "force-dynamic";
 
 /**
- * The public About page (ticket 28): what War Week is, the problem, the
- * features and the history, for Jason first, then Organizers, then
- * Participants. Mostly static copy and stills, but it wears and links to
+ * The public About page (tickets 28, 42): what the app is, why we built it
+ * and what it does, in copy that holds for any edition (Teams or
+ * free-for-all). Mostly static copy and stills, but it wears and links to
  * the *current* War Week's Appearance Theme (ticket 03): the live one, else
  * the next upcoming one, else the most recently completed one — the same
  * resolution the root page uses (`getCurrentWarWeek`). With no War Week at
@@ -63,21 +62,18 @@ export default async function AboutPage() {
       </header>
 
       <main className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col gap-20 px-4 pt-6 pb-20 sm:gap-28 sm:px-6 sm:pt-10">
-        <section className="animate-in fade-in grid items-center gap-12 duration-700 motion-reduce:animate-none md:grid-cols-[minmax(0,1fr)_auto] md:gap-16">
-          <div className="flex flex-col gap-6">
+        <section className="animate-in fade-in grid grid-cols-1 items-center gap-12 duration-700 motion-reduce:animate-none md:grid-cols-[minmax(0,1fr)_auto] md:gap-16">
+          <div className="flex min-w-0 flex-col gap-6">
             <p className="text-primary text-xs font-semibold tracking-[0.2em] uppercase">
               Jahnel Group War Week · since 2016
             </p>
             <h1 className="text-4xl leading-[1.05] font-bold tracking-tight sm:text-6xl">
-              Run War Week in one place, and keep every year of it.
+              Everything War Week, in one place.
             </h1>
             <p className="text-foreground/75 max-w-xl text-lg leading-relaxed sm:text-xl">
               The JG War Week app is where Jahnel Group runs War Week: the Story
-              Theme, the schedule, the Teams, the Competitions, the points and
-              the Finale, on every phone in the building. Organizers set it up
-              with no code, and every War Week since 2016 is still here. Every
-              edition works in light and dark, and each viewer picks Light, Dark
-              or System.
+              Theme, the schedule, the players, the Competitions, the points and
+              the Finale, on every phone in the building.
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <OpenCurrentEdition current={current} />
@@ -92,79 +88,41 @@ export default async function AboutPage() {
           <AboutStandingsDemo />
         </section>
 
-        <section className="flex flex-col gap-6">
-          <h2 className="text-2xl font-bold tracking-tight sm:text-4xl">
-            Why it exists
-          </h2>
-          <div className="grid gap-4 md:grid-cols-3">
-            <Problem title="Competiscore was too general.">
-              An earlier attempt: a general-purpose scoring platform, built for
-              any kind of competition, that never quite fit how War Week works.
-            </Problem>
-            <Problem title="The history is scattered.">
-              Ten years of War Week lived only in old wiki pages, one per year,
-              each a little harder to find than the last.
-            </Problem>
-            <Problem title="The week ran on spreadsheets.">
-              Organizers juggled spreadsheets, Slack and wikis, and answered the
-              same questions all week: what&apos;s on, where, and who&apos;s
-              winning.
-            </Problem>
-          </div>
-          <p className="text-foreground/75 max-w-3xl text-lg leading-relaxed">
-            The JG War Week app puts all of it in one place. Organizers set up
-            an edition with no code, from the theme to the FAQ. Participants get
-            a phone app. The history is back. And it is Jahnel Group&apos;s to
-            change: the source is on GitHub, and the maintainer&apos;s guide
-            walks through the first change.
-          </p>
-        </section>
-
-        <section id="features" className="flex scroll-mt-8 flex-col gap-8">
-          <div className="flex flex-col gap-2">
-            <h2 className="text-2xl font-bold tracking-tight sm:text-4xl">
-              What it does
-            </h2>
-            <p className="text-foreground/60">
-              Every still below is the app on the seeded demo War Week.
-            </p>
-          </div>
-          <AboutFeatureGrid />
-          <div className="border-border bg-background/60 flex flex-col items-center gap-4 rounded-xl border p-6 sm:flex-row sm:justify-center sm:gap-10">
-            <AboutFinaleDemo />
-            <p className="text-foreground/75 max-w-sm text-sm leading-relaxed">
-              And at closing ceremonies, the Finale plays every Team&apos;s
-              Standings counting up into place on the projector, from last to
-              first.
-            </p>
-          </div>
-          <p className="text-foreground/75 max-w-3xl leading-relaxed">
-            Sign in and the JG War Week app finds you on the roster, so your
-            Team is highlighted wherever it appears. Once you&apos;re signed in,{" "}
-            <strong>More → Install app</strong> puts it on your home screen, and
-            every War Week keeps its own colors and logo.
-          </p>
-        </section>
-
         <section className="border-border bg-background/60 flex flex-col gap-4 rounded-2xl border p-6 sm:p-10">
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
             Why we built this
           </h2>
           <div className="text-foreground/80 flex max-w-3xl flex-col gap-4 leading-relaxed">
             <p>
-              War Week has run every year since 2016; XI, in 2026, is the
-              eleventh. For most of those years the points lived in one tool and
-              the rest of each War Week in a wiki page that only the people who
-              wrote it could find. Organizers juggled spreadsheets, Slack and
-              wikis to run a week that was supposed to be fun.
+              War Week has run at Jahnel Group every year since 2016. Each year,
+              the schedule, the Teams, the rules and the points were spread
+              across a wiki page, Slack and a scoring tool, and Organizers spent
+              the week answering what&apos;s on, where, and who&apos;s winning.
             </p>
             <p>
-              We wanted the next Organizer to open one screen, set the week up,
-              and get back to competing. And we wanted to read about War Week
-              2016 without asking anyone where the page went.
+              The JG War Week app is the one place for all of it. Organizers and
+              Hosts run the week here, everyone else follows along from their
+              phone, and past War Weeks are a tap away.
             </p>
-            <p className="text-foreground/60 text-sm">Jahnel Group</p>
           </div>
+        </section>
+
+        <section id="features" className="flex scroll-mt-8 flex-col gap-8">
+          <h2 className="text-2xl font-bold tracking-tight sm:text-4xl">
+            What it does
+          </h2>
+          <AboutFeatureGrid />
+          <div className="border-border bg-background/60 flex flex-col items-center gap-4 rounded-xl border p-6 sm:flex-row sm:justify-center sm:gap-10">
+            <AboutFinaleDemo />
+            <p className="text-foreground/75 max-w-sm text-sm leading-relaxed">
+              And at closing ceremonies, the Finale plays the Standings counting
+              up into place on the projector, from last to first.
+            </p>
+          </div>
+          <p className="text-foreground/75 max-w-3xl leading-relaxed">
+            Once you&apos;re signed in, <strong>More → Install app</strong> puts
+            it on your home screen.
+          </p>
         </section>
 
         <section className="flex flex-col items-start gap-5">
@@ -173,26 +131,9 @@ export default async function AboutPage() {
           </h2>
           <div className="flex flex-wrap items-center gap-3">
             <OpenCurrentEdition current={current} />
-            <a
-              href={MAINTAINERS_GUIDE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={buttonVariants({ size: "lg", variant: "outline" })}
-            >
-              Read the maintainer&apos;s guide
-            </a>
           </div>
           <p className="text-foreground/60 text-sm">
-            Sign-in is Google, @jahnelgroup.com accounts only. The source is on{" "}
-            <a
-              href={REPO_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline underline-offset-4"
-            >
-              GitHub
-            </a>
-            .
+            Sign-in is Google, @jahnelgroup.com accounts only.
           </p>
         </section>
       </main>
@@ -228,20 +169,5 @@ function OpenCurrentEdition({ current }: { current: WarWeek | undefined }) {
       Open War Week {current.edition.toUpperCase()}
       <ArrowRight aria-hidden className="size-4" />
     </Link>
-  );
-}
-
-function Problem({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="border-border flex flex-col gap-2 rounded-xl border p-5">
-      <h3 className="text-primary font-semibold">{title}</h3>
-      <p className="text-foreground/75 text-sm leading-relaxed">{children}</p>
-    </div>
   );
 }
