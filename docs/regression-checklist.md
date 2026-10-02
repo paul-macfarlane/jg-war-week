@@ -133,7 +133,8 @@ on the matching War Week page.
       Switch to a past edition: the banner reads "Editing the Archive: War
       Week <X>". Switch back.
 - [ ] **Settings save and show.** In War Week settings, change the Story
-      Theme, the dates (DateRangePicker), the Slack URL and one Appearance
+      Theme, the dates (DateRangePicker: picking the end date leaves it open until
+      Done), the Slack URL and one Appearance
       Theme color, then save. The preview shows both schemes, and
       `/<edition>` shows the new Story Theme, dates and color after a
       reload. Restore the originals.
