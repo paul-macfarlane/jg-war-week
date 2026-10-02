@@ -54,6 +54,7 @@ line that no longer matches the app is a bug in this file.
   ```sh
   BETTER_AUTH_SECRET=e2e-only-secret-never-used-in-production \
     BETTER_AUTH_URL=http://localhost:3200 GOOGLE_CLIENT_ID= GOOGLE_CLIENT_SECRET= \
+    TEST_SIGN_IN_SECRET=<a string of 32 or more characters> \
     pnpm start -p 3200
   ```
 
@@ -81,15 +82,25 @@ line that no longer matches the app is a bug in this file.
 - **Run order:** Public Pages, then Admin as an Organizer (it links the
   Participant account and assigns the Host the later sections use), then
   Host, then User Pages.
-- **Accounts:** sign in without Google using `e2e/session.ts` from a
-  Playwright script against port 3200. It writes a session for the email
-  and signs the cookie with the e2e secret the server was started with, so
-  there's no need to read any `.env` file. Export
-  `BETTER_AUTH_SECRET=e2e-only-secret-never-used-in-production` in the
-  script's shell too: `e2e/env.ts` loads `.env.local`, and a secret there
-  would sign cookies the server rejects. Once Test sign-in (ticket 62)
-  ships, use `/sign-in/test` instead.
-  - **Driver:** `scripts/regression/driver.ts` does this for you.
+- **Accounts:** sign in without Google with **Test sign-in** at
+  `/sign-in/test`: type the email and the secret. The local server needs
+  Test sign-in on, so start it with
+  `TEST_SIGN_IN_SECRET=<a 32+ character string>` in its environment (as
+  `playwright.config.ts` does for e2e) and no `VERCEL_ENV=production`.
+  Use `+` aliases of one JG address as the accounts:
+  - **Organizer:** `regression+organizer@jahnelgroup.com`, added at
+    `/admin/organizers` by the first Organizer.
+  - **Linked Participant:** `regression+participant@jahnelgroup.com`, after
+    the Admin run puts that email on a Participant.
+  - **Unlinked:** `regression+unlinked@jahnelgroup.com`, a JG account on
+    no roster.
+  - **Host:** `regression+host@jahnelgroup.com`, after the Admin run makes
+    it a Host of one Competition.
+  - **Driver:** `scripts/regression/driver.ts` signs in for you with
+    `e2e/session.ts` (the e2e accounts `e2e-organizer@`, `e2e-host@`,
+    `e2e-participant@` and `e2e-unlinked@jahnelgroup.com`, signed with the
+    e2e secret the server was started with); use it for the page-basics
+    checks, and Test sign-in for the lines below that need the real flow.
     `openAs(browser, role, width)` gives a signed-in page at a checklist
     viewport, and `pageBasics(page, dir)` runs the theme check, the
     no-horizontal-scroll and clipping checks, and saves a full-page
@@ -97,13 +108,6 @@ line that no longer matches the app is a bug in this file.
     `pnpm tsx scripts/regression/driver.ts <role> <width> test-results/<run>/checklist --tag=<pass> <path>...`
     prints one JSON line of results per page. Roles: `organizer`, `host`,
     `participant`, `unlinked`, `anon`.
-  - **Organizer:** `asOrganizer(context)` (`e2e-organizer@jahnelgroup.com`).
-  - **Linked Participant:** `signIn(context, "e2e-participant@jahnelgroup.com")`,
-    after the Admin run puts that email on a Participant.
-  - **Unlinked:** `signIn(context, "e2e-unlinked@jahnelgroup.com")`, a JG
-    account on no roster.
-  - **Host:** `asHost(context)` (`e2e-host@jahnelgroup.com`), after the
-    Admin run makes it a Host of one Competition.
 - **Viewports:** run every line at laptop **1440×900** and iPhone
   **390×844**.
 - **Theme check:** a page "wears the current War Week" when its themed root
@@ -184,7 +188,7 @@ on the matching War Week page.
       `/admin/setup/faq` on `/admin/faq`.
 - [ ] **Account menu in admin.** The header's right side is the avatar
       alone at 1440 and 390. Opening it shows the name and email, Display
-      (Light, Dark, System), "Back to War Week", "Join the Slack channel"
+      (Light, Dark, System), Profile, "Back to War Week", "Join the Slack channel"
       (when the War Week has a Slack URL) and Sign out. Enter opens it,
       arrows move, Escape closes. Display changes restyle admin and survive
       a reload.
@@ -426,12 +430,41 @@ that nothing personal shows (no You highlight, no Log a Game).
       waits for Start, then jumps to the end.
 - [ ] **Account menu.** The avatar button at the top right (at 1440 and
       390; no email text, no Sign out button beside it) opens a menu with
-      the name and email, Display, "Join the Slack channel" (when the War
+      the name and email, Profile, Display, "Join the Slack channel" (when the War
       Week has a Slack URL; it opens it) and Sign out; for the Organizer and
       the Host it also has Admin, which opens `/admin/points`; for a plain
       Participant (the linked or the unlinked account, never a Host) there
       is no Admin item. Enter opens it, arrows move,
       Escape closes.
+- [ ] **Test sign-in banner.** Signed in through `/sign-in/test`, every page
+      (public ones, admin and participant pages) shows a "Test sign-in:
+      <email>" strip with that email, above the page. Open `/sign-in/test`
+      with Test sign-in off (restart the server without
+      `TEST_SIGN_IN_SECRET`): it is a 404, and the old test session counts as
+      signed out (a page goes to `/sign-in`). A wrong secret and a non-JG
+      email are each refused with a message.
+- [ ] **Profile page.** "Profile" in the account menu opens
+      `/<edition>/profile`. It has a Profile name field (a hint says what
+      shows when it is empty: the roster name), a Picture URL field and a
+      "Use Google photo" button that clears it, and a Light and a Dark
+      preview side by side (stacked or fitting at 390, no horizontal
+      scroll). Save a name and an `https://` picture URL: both preview at
+      once and persist after a reload; an `http://` URL is refused at the
+      field. Empty both and save: the roster name returns.
+- [ ] **Profile name and picture show everywhere.** As the linked
+      Participant, set a Profile name and an `https://` picture URL, then
+      check the name and picture on the Teams roster, the Leaderboard
+      (Standings), a Competition's Games and Awards, and Recent results on
+      Home. Open a past War Week the same email is on: it shows the Profile
+      name too. As the Organizer, the roster form shows that name read-only
+      with "Set by the person".
+- [ ] **Delete my account.** At the bottom of the Profile page, "Delete my
+      account" opens a confirm that needs the email typed (the button stays
+      disabled until it matches, ignoring case). As the only Organizer it is
+      refused with a message, and the account stays. As the linked
+      Participant it signs you out to `/`; sign in again with the same
+      address and the Teams roster shows the roster name again, not the
+      Profile name, with Awards, results and Announcements intact.
 - [ ] **Display.** In the account menu, Light, Dark and System each restyle
       every page above, and the choice survives a reload. In Dark, text
       passes contrast (axe) on Home, Leaderboard and a Competition.
@@ -440,9 +473,8 @@ that nothing personal shows (no You highlight, no Log a Game).
       Install app, About) opens its page. More has no "Signed in as" or
       Display rows; Admin is in the account menu, not here.
 - [ ] **Access.** Signed out, `/<edition>` goes to
-      `/sign-in?callbackURL=%2F<edition>` (finishing the sign-in needs
-      Google until Test sign-in, ticket 62, ships; then check it returns to
-      `/<edition>`). As the linked Participant, `/admin` (which redirects to
+      `/sign-in?callbackURL=%2F<edition>` (finish it with Test sign-in at
+      `/sign-in/test` and check it returns to `/<edition>`). As the linked Participant, `/admin` (which redirects to
       `/admin/points`) shows "Organizers and Hosts only."
 - [ ] **No page carries more than it needs.** *(judgment)* Apply the
       judgment rule to every page above, at 390 first.

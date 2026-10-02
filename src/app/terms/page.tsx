@@ -48,7 +48,7 @@ export default async function TermsPage() {
             Terms
           </h1>
           <p className="text-foreground/60 text-sm">
-            Last updated: October 1, 2026
+            Last updated: October 2, 2026
           </p>
         </div>
 
@@ -78,7 +78,16 @@ export default async function TermsPage() {
           </h2>
           <p className="text-foreground/80 leading-relaxed">
             Don&apos;t post offensive, harassing or confidential content in
-            Announcements, Team names or anything else you enter.
+            Announcements, Team names, your Profile name and picture or anything
+            else you enter.
+          </p>
+        </section>
+
+        <section className="flex flex-col gap-3">
+          <h2 className="text-xl font-semibold tracking-tight">Test sign-in</h2>
+          <p className="text-foreground/80 leading-relaxed">
+            Test sign-in is a maintainer tool for testing. It is never on for
+            the production site.
           </p>
         </section>
 

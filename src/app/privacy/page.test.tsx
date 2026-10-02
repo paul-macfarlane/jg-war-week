@@ -80,9 +80,10 @@ describe("PrivacyPage", () => {
   it("names the Jahnel Group admins as the contact", async () => {
     getCurrentWarWeek.mockResolvedValue(undefined);
     const { text } = await render();
-    expect(text).toContain("Contact the Jahnel Group admins.");
+    expect(text).toContain("contact the Jahnel Group admins.");
+    expect(text).toContain("delete your own account from your Profile page");
     expect(text).not.toContain("War Week Organizers or Jahnel Group");
-    expect(text).toContain("Last updated: October 1, 2026");
+    expect(text).toContain("Last updated: October 2, 2026");
   });
 
   it("mentions the key data inventory", async () => {

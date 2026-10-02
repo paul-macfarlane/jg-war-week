@@ -82,7 +82,7 @@ describe("TermsPage", () => {
     const { text } = await render();
     expect(text).toContain("Contact the Jahnel Group admins.");
     expect(text).not.toContain("War Week Organizers or Jahnel Group");
-    expect(text).toContain("Last updated: October 1, 2026");
+    expect(text).toContain("Last updated: October 2, 2026");
   });
 
   it("states it's an internal Jahnel Group tool with no warranty", async () => {
