@@ -78,6 +78,9 @@ export type WarWeekAction =
   /** Importing the roster from a spreadsheet (ticket 67). */
   | "participant.import"
   | `faq-item.${Crud | "move"}`
+  /** Reordering, hiding and showing Finale slides (ticket 72). */
+  | "finale-slide.move"
+  | "finale-slide.hide"
   | "competition.create"
   | "competition.delete"
   | "competition.assign-hosts"
@@ -171,6 +174,8 @@ const ORGANIZER_ONLY: Partial<
   "faq-item.edit": "change FAQ Items",
   "faq-item.delete": "delete FAQ Items",
   "faq-item.move": "move FAQ Items",
+  "finale-slide.move": "reorder Finale slides",
+  "finale-slide.hide": "hide Finale slides",
   "award.create": "give Awards",
   "award.edit": "change Awards",
   "award.delete": "delete Awards",

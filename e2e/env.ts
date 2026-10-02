@@ -3,7 +3,8 @@ import { loadEnvConfig } from "@next/env";
 // The same env the app gets from `.env.local`, as `scripts/smoke/index.ts` loads it.
 loadEnvConfig(process.cwd());
 
-export const E2E_PORT = 3200;
+// E2E_PORT lets parallel worktrees run e2e side by side.
+export const E2E_PORT = Number(process.env.E2E_PORT || 3200);
 export const E2E_BASE_URL = `http://localhost:${E2E_PORT}`;
 
 /**

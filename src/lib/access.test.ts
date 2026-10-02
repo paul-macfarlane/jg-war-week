@@ -242,6 +242,8 @@ describe("can: Organizer-only War Week families", () => {
           ["faq-item.edit", "change FAQ Items"],
           ["faq-item.delete", "delete FAQ Items"],
           ["faq-item.move", "move FAQ Items"],
+          ["finale-slide.move", "reorder Finale slides"],
+          ["finale-slide.hide", "hide Finale slides"],
           ["award.create", "give Awards"],
           ["award.edit", "change Awards"],
           ["award.delete", "delete Awards"],

@@ -2,7 +2,8 @@ import { z } from "zod";
 
 import { announcementTitleSchema } from "@/lib/announcements";
 import { AWARD_DESCRIPTION_MAX, AWARD_NAME_MAX } from "@/lib/awards";
-import { WAR_WEEK_STATUSES } from "@/lib/enums";
+import { FINALE_AWARDS_LAYOUTS, WAR_WEEK_STATUSES } from "@/lib/enums";
+import { finaleSlideSeedSchema } from "@/lib/finale-slides";
 import { jgEmailSchema } from "@/lib/jg-email";
 import {
   pointsSchema as points,
@@ -128,6 +129,13 @@ export const warWeekSeedSchema = z
     awards: z.array(awardSeedSchema).default([]),
     announcements: z.array(announcementSeedSchema).default([]),
     faqItems: z.array(faqItemSeedSchema).default([]),
+    /** Set when the War Week is first inserted, never on a reload. */
+    finaleAwardsLayout: z.enum(FINALE_AWARDS_LAYOUTS).optional(),
+    /**
+     * The Finale's slides in order. Absent: a load leaves the saved list
+     * alone (CONTEXT.md, "Seed idempotence rules").
+     */
+    finaleSlides: z.array(finaleSlideSeedSchema).optional(),
   })
   .refine((seed) => seed.startDate <= seed.endDate, {
     message: "startDate must not be after endDate",
@@ -218,6 +226,13 @@ export const warWeekSeedSchema = z
       (f) => f.question,
       "question",
       "FAQ question",
+    );
+    unique(
+      "finaleSlides",
+      seed.finaleSlides ?? [],
+      (s) => (s.kind === "custom" ? `custom: ${s.heading}` : s.kind),
+      "kind",
+      "Finale slide",
     );
     seed.days.forEach((d, dayIndex) =>
       unique(

@@ -467,3 +467,103 @@ describe("warWeekSeedSchema", () => {
     });
   });
 });
+
+describe("warWeekSeedSchema Finale slides", () => {
+  const withSlides = (finaleSlides: unknown[]) => ({
+    ...loadFixture(),
+    finaleSlides,
+  });
+
+  it("parses an ordered list with a Custom slide, lower-casing its background", () => {
+    const seed = warWeekSeedSchema.parse(
+      withSlides([
+        { kind: "title" },
+        { kind: "standings", hidden: true },
+        {
+          kind: "custom",
+          heading: "  Thank you  ",
+          backgroundColor: "#AABBCC",
+          body: {
+            type: "doc",
+            content: [
+              { type: "paragraph", content: [{ type: "text", text: "Hi" }] },
+            ],
+          },
+        },
+      ]),
+    );
+    expect(seed.finaleSlides).toEqual([
+      { kind: "title", hidden: false },
+      { kind: "standings", hidden: true },
+      {
+        kind: "custom",
+        hidden: false,
+        heading: "Thank you",
+        backgroundColor: "#aabbcc",
+        body: {
+          type: "doc",
+          content: [
+            { type: "paragraph", content: [{ type: "text", text: "Hi" }] },
+          ],
+        },
+      },
+    ]);
+  });
+
+  it("leaves finaleSlides and finaleAwardsLayout out when a seed has none", () => {
+    const fixture = loadFixture();
+    delete fixture.finaleSlides;
+    const seed = warWeekSeedSchema.parse(fixture);
+    expect(seed.finaleSlides).toBeUndefined();
+    expect(seed.finaleAwardsLayout).toBeUndefined();
+    expect(
+      warWeekSeedSchema.parse({
+        ...fixture,
+        finaleAwardsLayout: "per-category",
+      }).finaleAwardsLayout,
+    ).toBe("per-category");
+  });
+
+  it("requires a heading on a Custom slide and refuses Custom fields on a built-in", () => {
+    expect(rejectionOf(withSlides([{ kind: "custom" }]))).toEqual([
+      "finaleSlides.0.heading: a Custom slide needs a heading",
+    ]);
+    expect(
+      rejectionOf(
+        withSlides([
+          { kind: "title", heading: "Hello", backgroundColor: "#000000" },
+        ]),
+      ),
+    ).toEqual([
+      "finaleSlides.0.heading: only a Custom slide has a heading",
+      "finaleSlides.0.backgroundColor: only a Custom slide has a backgroundColor",
+    ]);
+  });
+
+  it("refuses a built-in twice and two Custom slides with one heading", () => {
+    expect(
+      rejectionOf(
+        withSlides([
+          { kind: "title" },
+          { kind: "custom", heading: "Thanks" },
+          { kind: "title" },
+          { kind: "custom", heading: "Thanks" },
+        ]),
+      ),
+    ).toEqual([
+      'finaleSlides.2.kind: duplicate Finale slide "title"',
+      'finaleSlides.3.kind: duplicate Finale slide "custom: Thanks"',
+    ]);
+  });
+
+  it("refuses a background that isn't #rrggbb and an unknown kind", () => {
+    expect(
+      rejectionOf(
+        withSlides([
+          { kind: "custom", heading: "Hi", backgroundColor: "red" },
+          { kind: "intro" },
+        ]),
+      ).map((issue) => issue.split(":")[0]),
+    ).toEqual(["finaleSlides.0.backgroundColor", "finaleSlides.1.kind"]);
+  });
+});

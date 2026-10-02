@@ -71,6 +71,7 @@ import {
   assertCompetitions,
   assertDisplayScriptInHead,
   assertEditionErrorBoundary,
+  assertFinaleSlidesKeptIds,
   assertFreeForAllRoster,
   assertHomeNowNext,
   assertInstallable,
@@ -90,6 +91,7 @@ import {
   assertXiHome,
   assertYouHighlight,
   restoreFaqTable,
+  xiFinaleSlideIds,
 } from "./pages";
 import { assertParticipationLoop } from "./participation";
 import {
@@ -135,6 +137,7 @@ async function main() {
   // Load every seed (the XI demo in place of the real XI) twice: the first load resets each War Week so the counts
   // below match the seeds exactly; the second proves loading is idempotent.
   const seedFiles = localSeedFiles();
+  let finaleSlideIds: string[] = [];
   for (const [attempt, flags] of [
     [1, ["--reset"]],
     [2, []],
@@ -148,8 +151,10 @@ async function main() {
     ) {
       process.exit(1);
     }
+    if (attempt === 1) finaleSlideIds = await xiFinaleSlideIds();
   }
   await assertSeedLoadedOnce();
+  await assertFinaleSlidesKeptIds(finaleSlideIds);
   await assertPointsEntryTargetConstraint();
   await assertPlacementPointsSeeded();
   await assertAwardCategoriesSeeded();

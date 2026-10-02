@@ -1,9 +1,11 @@
 // Only client components import this: the one admin list row (Edit and
 // Delete) and its Sheet plumbing.
+import { cn } from "cn";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  type LiHTMLAttributes,
   type ReactNode,
   useActionState,
   useId,
@@ -205,6 +207,7 @@ export function SetupListRow({
   deleteSuccess,
   editLabel = "Edit",
   deleteLabel = "Delete",
+  rowProps,
 }: {
   id: string;
   name: ReactNode;
@@ -234,6 +237,8 @@ export function SetupListRow({
   editLabel?: string;
   /** What the Delete control says instead, e.g. "Archive". */
   deleteLabel?: string;
+  /** More props for the row's `<li>`, e.g. drag handlers. */
+  rowProps?: LiHTMLAttributes<HTMLLIElement>;
 }) {
   const router = useRouter();
   const rowRef = useRef<HTMLLIElement>(null);
@@ -262,8 +267,12 @@ export function SetupListRow({
   return (
     <li
       ref={rowRef}
+      {...rowProps}
       {...setupRowProps(id)}
-      className="border-border flex flex-wrap items-center gap-x-3 gap-y-2 border-b py-2 last:border-b-0"
+      className={cn(
+        "border-border flex flex-wrap items-center gap-x-3 gap-y-2 border-b py-2 last:border-b-0",
+        rowProps?.className,
+      )}
     >
       <div className="flex min-w-0 flex-1 basis-48 items-center gap-2">
         {leading}

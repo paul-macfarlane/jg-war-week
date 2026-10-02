@@ -507,3 +507,148 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Award Categories", () => {
     });
   });
 });
+
+describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Finale slides", () => {
+  const list = (slides: Record<string, unknown>[]) => ({
+    finaleSlides: slides,
+  });
+  const defaults = [
+    { kind: "title" },
+    { kind: "numbers" },
+    { kind: "awards" },
+    { kind: "champions" },
+    { kind: "standings" },
+    { kind: "winner" },
+  ];
+  const thanks = {
+    kind: "custom",
+    heading: "Thank you",
+    backgroundColor: "#112233",
+    body: {
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "See you" }] },
+      ],
+    },
+  };
+
+  async function slidesOf(warWeekId: string, tx: DBTx) {
+    const { getFinaleSlides } = await import("@/queries/finale-slides");
+    return getFinaleSlides(warWeekId, tx);
+  }
+
+  it("saves the seed's list in order, and a second load keeps the same ids", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { loadWarWeekSeed } = await import("@/seed/load");
+      const file = await seed(
+        "sf",
+        21,
+        "upcoming",
+        list([...defaults, thanks]),
+      );
+
+      const first = await loadWarWeekSeed(file, tx);
+      const loaded = await slidesOf(first.id, tx);
+      expect(loaded.map((s) => s.name)).toEqual([
+        "Title",
+        "By the numbers",
+        "Awards",
+        "Champions",
+        "Standings countdown",
+        "Winner",
+        "Thank you",
+      ]);
+      expect(loaded[6]).toMatchObject({
+        kind: "custom",
+        backgroundColor: "#112233",
+        body: thanks.body,
+      });
+
+      await loadWarWeekSeed(file, tx);
+      const reloaded = await slidesOf(first.id, tx);
+      expect(reloaded.map((s) => s.id)).toEqual(loaded.map((s) => s.id));
+      expect(reloaded.every((s) => s.id !== null)).toBe(true);
+    });
+  });
+
+  it("makes the saved list match the seed on reload: order, hidden, and absent slides deleted", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { loadWarWeekSeed } = await import("@/seed/load");
+      const first = await loadWarWeekSeed(
+        await seed("sf", 22, "upcoming", list([...defaults, thanks])),
+        tx,
+      );
+      await loadWarWeekSeed(
+        await seed(
+          "sf",
+          22,
+          "upcoming",
+          list([
+            { kind: "standings" },
+            { kind: "title", hidden: true },
+            { kind: "winner" },
+          ]),
+        ),
+        tx,
+      );
+      expect(
+        (await slidesOf(first.id, tx)).map((s) =>
+          s.id === null ? `${s.name}*` : s.hidden ? `(${s.name})` : s.name,
+        ),
+      ).toEqual([
+        "Standings countdown",
+        "(Title)",
+        "Winner",
+        // Not in the seed's list: unsaved, at the end in the default order.
+        "By the numbers*",
+        "Awards*",
+        "Champions*",
+      ]);
+    });
+  });
+
+  it("leaves a saved list alone when the seed has none", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { loadWarWeekSeed } = await import("@/seed/load");
+      const { setFinaleSlideHidden } =
+        await import("@/mutations/finale-slides");
+      const first = await loadWarWeekSeed(await seed("sf", 23, "upcoming"), tx);
+      await setFinaleSlideHidden({ kind: "awards" }, true, ctxOf(first.id), tx);
+      const saved = await slidesOf(first.id, tx);
+
+      await loadWarWeekSeed(await seed("sf", 23, "upcoming"), tx);
+      expect(await slidesOf(first.id, tx)).toEqual(saved);
+    });
+  });
+
+  it("sets the Awards layout on insert only", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { loadWarWeekSeed } = await import("@/seed/load");
+      const schema = await import("@/db/schema");
+      const { eq } = await import("drizzle-orm");
+      const layout = async (id: string) =>
+        (
+          await tx
+            .select({ layout: schema.warWeek.finaleAwardsLayout })
+            .from(schema.warWeek)
+            .where(eq(schema.warWeek.id, id))
+        )[0].layout;
+
+      const first = await loadWarWeekSeed(
+        await seed("sf", 24, "upcoming", {
+          finaleAwardsLayout: "per-category",
+        }),
+        tx,
+      );
+      expect(await layout(first.id)).toBe("per-category");
+      await loadWarWeekSeed(
+        await seed("sf", 24, "upcoming", { finaleAwardsLayout: "one-slide" }),
+        tx,
+      );
+      expect(await layout(first.id)).toBe("per-category");
+
+      const other = await loadWarWeekSeed(await seed("sg", 25, "upcoming"), tx);
+      expect(await layout(other.id)).toBe("one-slide");
+    });
+  });
+});

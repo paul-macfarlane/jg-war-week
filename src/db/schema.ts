@@ -30,6 +30,8 @@ import type { HeatsConfig } from "@/lib/bracket/config";
 import {
   COMPETITION_FORMATS,
   COMPETITION_SCORINGS,
+  FINALE_AWARDS_LAYOUTS,
+  FINALE_SLIDE_KINDS,
   FONT_PRESETS,
   GAME_TYPES,
   HEAT_STATUSES,
@@ -71,6 +73,13 @@ export const gameType = pgEnum("game_type", GAME_TYPES);
 export const participationTeamScoring = pgEnum(
   "participation_team_scoring",
   PARTICIPATION_TEAM_SCORINGS,
+);
+
+export const finaleSlideKind = pgEnum("finale_slide_kind", FINALE_SLIDE_KINDS);
+
+export const finaleAwardsLayout = pgEnum(
+  "finale_awards_layout",
+  FINALE_AWARDS_LAYOUTS,
 );
 
 export const warWeek = pgTable(
@@ -115,6 +124,11 @@ export const warWeek = pgTable(
     fontPreset: fontPreset("font_preset").notNull(),
     wikiUrl: varchar("wiki_url", { length: 500 }),
     winner: varchar("winner", { length: 200 }),
+    // How the Finale shows Awards (ticket 73); the Organizer sets it on
+    // `/admin/finale`.
+    finaleAwardsLayout: finaleAwardsLayout("finale_awards_layout")
+      .notNull()
+      .default("one-slide"),
     highlights: varchar("highlights", { length: 500 })
       .array()
       .notNull()
@@ -721,6 +735,49 @@ export const faqItem = pgTable(
   (table) => [unique().on(table.warWeekId, table.question)],
 );
 
+/**
+ * One Finale slide in a War Week's saved list (CONTEXT.md, Finale slide):
+ * a built-in (once per War Week, no heading) or a Custom slide (unique by
+ * heading). A War Week with no rows plays the default order; the first
+ * change saves the whole list (`src/mutations/finale-slides.ts`).
+ */
+export const finaleSlide = pgTable(
+  "finale_slide",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    warWeekId: uuid("war_week_id")
+      .notNull()
+      .references(() => warWeek.id, { onDelete: "cascade" }),
+    kind: finaleSlideKind("kind").notNull(),
+    sortOrder: integer("sort_order").notNull(),
+    hidden: boolean("hidden").notNull().default(false),
+    // Custom slides only (the CHECKs below). `FINALE_SLIDE_HEADING_MAX` in
+    // `@/lib/finale-slides`; a literal so the schema imports nothing from
+    // the app.
+    heading: varchar("heading", { length: 120 }),
+    body: jsonb("body").$type<Content>(),
+    // `#rrggbb`, lower-case; null for the theme's background.
+    backgroundColor: varchar("background_color", { length: 7 }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    // Nulls not distinct: each built-in (heading null) once per War Week,
+    // each Custom slide heading once.
+    unique("finale_slide_war_week_kind_heading")
+      .on(table.warWeekId, table.kind, table.heading)
+      .nullsNotDistinct(),
+    check(
+      "finale_slide_custom_columns",
+      sql`(${table.kind}::text = 'custom') = (${table.heading} is not null) and (${table.kind}::text = 'custom' or (${table.body} is null and ${table.backgroundColor} is null))`,
+    ),
+    check(
+      "finale_slide_background_color_hex",
+      sql`${table.backgroundColor} is null or ${table.backgroundColor} ~ '^#[0-9a-f]{6}$'`,
+    ),
+  ],
+);
+
 /** A global Organizer: may change everything in every War Week. */
 export const organizer = pgTable(
   "organizer",
@@ -858,6 +915,7 @@ export const warWeekRelations = relations(warWeek, ({ many }) => ({
   awards: many(award),
   announcements: many(announcement),
   faqItems: many(faqItem),
+  finaleSlides: many(finaleSlide),
 }));
 
 export const dayRelations = relations(day, ({ one, many }) => ({
@@ -957,6 +1015,13 @@ export const faqItemRelations = relations(faqItem, ({ one }) => ({
   }),
 }));
 
+export const finaleSlideRelations = relations(finaleSlide, ({ one }) => ({
+  warWeek: one(warWeek, {
+    fields: [finaleSlide.warWeekId],
+    references: [warWeek.id],
+  }),
+}));
+
 export type WarWeek = InferSelectModel<typeof warWeek>;
 export type NewWarWeek = InferInsertModel<typeof warWeek>;
 export type Day = InferSelectModel<typeof day>;
@@ -971,6 +1036,7 @@ export type AwardCategory = InferSelectModel<typeof awardCategory>;
 export type AwardParticipant = InferSelectModel<typeof awardParticipant>;
 export type Announcement = InferSelectModel<typeof announcement>;
 export type FaqItem = InferSelectModel<typeof faqItem>;
+export type FinaleSlide = InferSelectModel<typeof finaleSlide>;
 export type Squad = InferSelectModel<typeof squad>;
 export type SquadParticipant = InferSelectModel<typeof squadParticipant>;
 export type EntrantRow = InferSelectModel<typeof entrant>;

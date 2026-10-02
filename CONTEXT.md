@@ -43,7 +43,8 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Placement Points**          | A Competition's optional preset points for 1st, 2nd, 3rd… (up to 5 places, highest first), offered as buttons on Points Entry.  |
 | **Counts Toward Team**        | Whether an individual competition's points also go to the participant's team.                                                     |
 | **Standings**                 | The main leaderboard, computed from Points Entries.                                                                               |
-| **Finale**                    | The closing-ceremony screen at `/<edition>/finale`: press Start and the Standings count in from last place to first. A finalized Bracket has its own **Bracket Finale** at `/<edition>/finale/<competitionId>`. |
+| **Finale**                    | The closing-ceremony slideshow at `/<edition>/finale`: the War Week's **Finale slides**, one full screen at a time, stepped through by the presenter. A finalized Bracket has its own **Bracket Finale** at `/<edition>/finale/<competitionId>`. |
+| **Finale slide**              | One full-screen step of the Finale: a built-in (Title, By the numbers, Awards, Champions, **Standings countdown**, Winner) or a **Custom slide**. Each War Week orders and hides its slides in admin → Finale. |
 | **Award**                     | A named honor given to participants or a team. It doesn't affect points.                                                          |
 | **Announcement**              | A post by an Organizer or Host (rich text, videos included).                                                                      |
 | **FAQ Item**                  | A question and answer pair for a War Week.                                                                                        |
@@ -629,22 +630,44 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 
 ## Finale rules
 
-- The Finale is the closing-ceremony screen at `/<edition>/finale`, for the
-  projector. Organizers and Hosts open it from `/admin/finale` ("Open
-  Finale").
-- It opens on a big Start button. Start, `Space`, or a click anywhere on the
-  stage plays the countdown for the main leaderboard (team Standings in
-  `teams` mode, individual Standings in free-for-all):
+- The Finale is the closing-ceremony slideshow at `/<edition>/finale`, for
+  the projector. Organizers and Hosts open it from `/admin/finale` ("Open
+  Finale"); anyone signed in may watch it. One Finale slide fills the
+  screen at a time, over the edition's navigation; Exit goes back to the
+  edition.
+- **Slide list.** Each War Week has an ordered list of Finale slides. With
+  nothing saved it plays the default order: Title, By the numbers, Awards,
+  Champions, Standings countdown, Winner. In admin → Finale an Organizer
+  moves a slide (drag on a pointer device, or Move up/down) and hides or
+  shows it; each change saves at once, and the first one saves the whole
+  list. A hidden slide keeps its place in the list and is skipped by the
+  Finale. A built-in missing from a saved list is added at its end. Hosts
+  see the list but can't change it. With every slide hidden, the Finale
+  says "Nothing to show yet."
+- **Keys.** `→`, `Space`, `PageDown` or a click on the stage: next. `←` or
+  `PageUp`: back. `Escape`: back to the first slide. `Space` (and `Enter`)
+  on a focused button or link work that control instead, and a click on a
+  link, button or video in a slide never advances. Next on the last slide
+  does nothing.
+- **Steps.** A slide may reveal its content in steps; Next shows the
+  current slide's next step before moving on. Back shows the previous
+  slide in its final state, every step shown.
+- **Nothing auto-advances.** Every step and slide waits for the presenter.
+- **Standings countdown.** The countdown slide plays the main leaderboard
+  (team Standings in `teams` mode, individual Standings in free-for-all)
+  and starts when the presenter arrives on it with Next: no Start button.
   - Rows appear from last place up to first, and tied rows appear together.
   - Totals count up from 0.
   - Every list ends together, so each first place lands at the end.
-  - The whole Finale is under 8 s.
-- Replay plays it again. With `prefers-reduced-motion`, Start still has to be
-  pressed (or `Space`, or a click on the stage) — reduced motion only skips
-  the count-in animation once pressed, jumping straight to the final state.
-  It never auto-starts: the ceremony needs a deliberate start.
+  - The whole countdown is under 8 s.
+  - Next while it plays jumps to its final state; Next once it's done goes
+    on. Replay plays it again and never advances. Arriving by Back shows
+    the final state.
+- With `prefers-reduced-motion` a slide shows its final state on arrival
+  and still waits for Next.
 - The Finale never reorders or recomputes Standings: it plays the same
-  `getStandings` rows the leaderboard shows.
+  `getStandings` rows the leaderboard shows, read once when the page loads
+  (reload for the latest).
 - The home and leaderboard pages keep refreshing about every 10 s while the
   tab is visible, and always show the plain Standings.
 - **Bracket Finale.** A finalized Bracket has its own Finale at
@@ -652,7 +675,9 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   not found for any other Competition. It plays the Bracket's final placings
   (places and names, no points) from last place to first, tied places
   together, and ends on the champion card ("Champion of <Competition>").
-  Start, Replay and reduced motion work as in the Finale. It reads nothing
+  It opens on a big Start button (Start, `Space` or a click on the stage
+  plays it), Replay plays it again, and with `prefers-reduced-motion` Start
+  still has to be pressed and shows the final state. It reads nothing
   from the Standings and changes nothing. It's linked from the Bracket's
   champion card ("Play the Finale"), the results screen once finalized, and
   `/admin/finale` ("Finale: <Competition>").
