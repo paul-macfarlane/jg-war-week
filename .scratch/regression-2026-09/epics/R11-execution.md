@@ -208,3 +208,102 @@ Round 1 (2026-10-02, fresh `atlas-red-team-reviewer`): **PASS**, 0 blocking, 5 s
 - 2026-10-02: claimed epic and tickets 64–68; branch `feat/regression-r11-content` from `staging` at `2c8fcc3`; `test-results/` cleared. Wave 1 (D64, D67, D68) dispatched to worktrees under `.claude/worktrees/regression-r11/war-weeker/`.
 - 2026-10-02: wave 1 integrated at `565ca74`. D68 (Sonnet), D64 (Opus), D67 (Opus) accepted. Orchestrator fixes: the Unstart confirm no longer repeats its title; a short CSV row leaves its missing cells unchanged instead of clearing them (new unit case); a selected image or video is kept when another is inserted after it (the editor e2e caught the Video control replacing the image just inserted; new unit case). Candidate evidence: format, typecheck, lint, unit (3418 tests), build, smoke (import and Unstart refusals, lifecycle Unstart) and the three new e2e specs, under `test-results/r11-content/w1-*`. Predicted conflicts in `access.ts` and `hosts.ts` didn't happen: both cherry-picks applied cleanly.
 - 2026-10-02: wave 2 integrated at `5899990`. D66 (Sonnet) added `drizzle/0020_wild_speed.sql` (nullable `day.description`); its e2e passed. D65 (Sonnet) added `0021_announcement-videos-into-body.sql` (custom data step) and `0022_drop-announcement-video-urls.sql` (generated). V2a passed on the seeded local DB: the XI demo Announcement's body now ends with the video node and `video_urls` is gone (`test-results/r11-content/migration-real-data.txt`). The only remaining `videoUrls`/`video_urls` hits are in the migration test and the seed refusal. Orchestrator fix: r5 34's touch-target check measured the new link dialog mid zoom-in (0.96 scale); it now waits for animations to finish.
+- 2026-10-02: aggregate code review (two fresh Opus reviewers, one per axis), then review fixes (Opus, `de713eb`) and one orchestrator fix (`b3cfdb3`). Final gate green at `b3cfdb3`.
+
+## [AI CODE REVIEW]
+
+2026-10-02, diff `2c8fcc3..8fd39a4`, then re-verified at `b3cfdb3`. Each axis was read by its own fresh reviewer; the orchestrator adjudicated every finding.
+
+**Technical implementation and spec conformity**
+
+| Finding | Severity | Disposition |
+|---|---|---|
+| F1 A headerless free-for-all paste read Company Tag as the ignored Team column (the hint said name, email, company tag) | blocking | Resolved: positional columns follow the mode; the hint matches; unit cases |
+| F2 After "The roster changed since the preview" the preview re-planned against stale props | non-blocking | Resolved: the refusal refreshes the roster and clears the plan |
+| F3 Reopen then Unstart sent an ended edition back to Upcoming with its Winner | non-blocking | Resolved: Unstart refuses an edition with a Winner ("This War Week has been ended; Unstart isn't available."). Residual: an edition ended with no Winner (nothing scored) can still be Reopened then Unstarted |
+| F4 A Team deleted during an import gave a generic error | non-blocking | Resolved: a foreign-key violation refuses as a changed roster |
+| F5 The `DayValues` comment said an omitted description is kept | non-blocking | Resolved: comment corrected |
+| F6 Body videos all shared one iframe title | non-blocking | Resolved: `RichText` takes `videoTitle`; the card passes "Video: <title>" |
+| F7 A seed reload overwrites a seeded Day's description | non-blocking | Resolved: noted in the maintainers guide (as with Day Theme) |
+| F8 A heading in a list item showed in the editor but was dropped on save | non-blocking | Resolved: list items hold paragraphs and lists only in the editor too |
+| F9 Ticket closeouts, statuses, stills decision | non-blocking | Resolved at closeout (below) |
+| F10 Nits: error rows claimed names; TSV ignored quotes; no caps on video src and caption; a posted `videoUrls` was silently stripped | non-blocking | Resolved: all four, with unit cases |
+
+**Coding standards**
+
+| Finding | Severity | Disposition |
+|---|---|---|
+| S1 Same as F1 | blocking | Resolved |
+| S2 Maintainers guide had no R11 rollout note and its expand/contract rule contradicted 0022 | blocking | Resolved: "Rolling out R11 (migrations 0020–0022)" section; the expand/contract bullet records H1-a as an approved exception |
+| S3 Stale "Announcement video link" comments | non-blocking | Resolved |
+| S4 Stale "(AC2)" smoke tag | non-blocking | Resolved |
+| S5 Journeys vocabulary and ticket number in comments; spelling; test names | non-blocking | Resolved |
+| S6 Editor dialogs dropped the shadcn Field components | non-blocking | Resolved: Field, FieldLabel, FieldDescription, FieldError |
+| S7 Unstart's in-lock check passed a fake War Week | non-blocking | Resolved: pure `unstartError` |
+| S8 The import action defined its own schema | non-blocking | Resolved: `rosterImportInputSchema` in lib |
+| S9 Limits repeated as literals | non-blocking | Resolved: `DAY_DESCRIPTION_MAX`, size copy from `MAX_IMPORT_BYTES` |
+| S10 Preview styling matched a message string | non-blocking | Resolved: structured changes with `cleared` |
+| S11 roster-import nits | non-blocking | Resolved |
+| S12 CONTEXT.md roster import in the wrong section; lowercase glossary terms | non-blocking | Resolved |
+| S13 Duplicate insert commands; `replaceLiftingImages` name | non-blocking | Resolved: `insertFigure`, `replaceLiftingFigures` |
+| S14 No demo Day description; stills decision unrecorded | non-blocking | Resolved: the XI demo's Sunday has a description (demo seed only; the history seed stays without one, orchestrator fix `b3cfdb3`); stills decision below |
+| S15 Counter was a hand-built live region | non-blocking | Resolved: `FieldDescription` |
+| S16 Type, style and wrap nits | non-blocking | Resolved |
+| S17 R11 e2e naming and screenshot paths inconsistent | non-blocking | Resolved |
+
+No open blocking findings.
+
+## [CLOSEOUT]
+
+2026-10-02. Branch `feat/regression-r11-content`, head `b3cfdb3` at verification; base `staging` at `2c8fcc3`.
+
+**Deliverables**
+
+| Deliverable | Commit | Worker |
+|---|---|---|
+| D68 Unstart | `bd27fb4` (picked `c61e47f`), orchestrator fix `dc5a3b8` | Sonnet |
+| D64 Editor | `cd9c6b5` (picked `d30033c`), orchestrator fix `565ca74` | Opus |
+| D67 Roster import | `27c1d45` (picked), orchestrator fix (short CSV rows) | Opus |
+| D66 Day description | `0d44855` | Sonnet |
+| D65 Videos into the body | `95b07c8`, orchestrator fix (r5 touch-target timing) | Sonnet |
+| DX Docs | `8fd39a4` | Sonnet |
+| Review fixes | `de713eb`, orchestrator `b3cfdb3` | Opus |
+
+**Isolation check.** Wave 1 ran D64, D67 and D68 in parallel worktrees. The predicted shared files, `src/lib/access.ts` and `scripts/smoke/hosts.ts`, didn't conflict: both cherry-picks applied cleanly (adjacent single-line entries). D66 and D65 ran one after the other because both generate Drizzle migrations (0020, then 0021 and 0022); that ordering was required, not a prediction.
+
+**About stills.** Not regenerated. The "announcements" still shows the about demo's feed, which has no headings, quotes, figures or videos in its body; the "schedule" still is Home's Now/Next at a time whose Day has no description in the about demo. Neither page changed visibly.
+
+**Verified run command.** `set -a; . ./.env.example; set +a; pnpm format:check && pnpm gate` → exit 0 at `b3cfdb3`: unit 3433, build, smoke 233 ok and 0 not ok, e2e 83 passed (`test-results/r11-content/gate-final.txt`).
+
+**Verdicts**
+
+| Criterion | Verdict | Evidence |
+|---|---|---|
+| 64-AC1 ported tests; sanitizer keeps new marks/nodes, strips others | PASS | `src/lib/rich-text/*.test.ts`, `src/components/rich-text.test.tsx` (gate unit run) |
+| 64-AC2 e2e: heading, quote, captioned image (by URL, per scope change), video render | PASS | `e2e/regression-r11-editor.spec.ts`; `test-results/e2e/regression-r11-editor-*/{1440,390,image-tools}.png` |
+| 64 image tools, placeholder, shortcut hint | PASS | same e2e |
+| 64 heading floor | PASS | `src/components/rich-text.test.tsx` |
+| 65-AC1 migration test (two links → two trailing video nodes, no column) | PASS | `src/db/migrations.test.ts` (ran against local Postgres) |
+| 65 V2a real-data migration | PASS | `test-results/r11-content/migration-real-data.txt` (migration files unchanged since) |
+| 65-AC2 seeds twice; smoke | PASS | `gate-final.txt` (smoke reloads seeds `--reset` then plain; MCP body text has the XI video URL) |
+| 65 seed refusal | PASS | `src/seed/schema.test.ts` |
+| 65-AC3 no "Add video link" in `src/`; gate | PASS | `rg -n "Add video link\|videoUrls\|video_urls" src scripts e2e seeds` → only the migration test, the seed refusal and the posted-key refusal; `gate-final.txt` |
+| 66-AC1 nullable column; seed schema optional description; seeds twice | PASS | `drizzle/0020_wild_speed.sql`; `src/seed/schema.test.ts`, `src/seed/load.test.ts`; smoke |
+| 66-AC2 description on the Schedule (and Home's Today header) | PASS | `e2e/regression-r11-day-description.spec.ts`; `test-results/e2e/regression-r11-day-descrip-*/` |
+| 67-AC1 unit (TSV, CSV, headers, update by email ignoring case, every error kind) | PASS | `src/lib/roster-import.test.ts` |
+| 67 write (one transaction; stale preview refused) | PASS | `src/mutations/setup.test.ts` |
+| 67 access (Organizer-only; Host and Participant refused over HTTP) | PASS | `src/lib/access.test.ts`; smoke `importParticipants as a Host/Participant is refused` |
+| 67-AC2 e2e: 2 Add, 1 Update, imported | PASS | `e2e/regression-r11-roster-import.spec.ts`; `test-results/e2e/regression-r11-roster-impo-*/` |
+| 68-AC1 unit (allowed unscored; refused with Points Entry, Heat result, Game; non-Organizer; non-live) | PASS | `src/lib/war-week-lifecycle.test.ts`, `src/lib/access.test.ts`; smoke lifecycle |
+| 68 lock (re-check in the transaction) | PASS | `src/mutations/war-week-lifecycle.test.ts` |
+| 68-AC2 e2e: Start then Unstart, Upcoming | PASS | `e2e/regression-r11-unstart.spec.ts`; `test-results/e2e/regression-r11-unstart-*/` |
+| Epic: seeds and migrations together; smoke | PASS | `gate-final.txt` |
+| Epic: `/about`, maintainers guide, checklist updated | PASS | PR diff (`src/lib/about.ts`, `docs/maintainers-guide.md`, `docs/regression-checklist.md`, `CONTEXT.md`) |
+| Epic: closeouts, tickets `done` | PASS | this commit |
+| Epic: format:check and gate | PASS | `gate-final.txt` |
+| Epic: CI on the PR | pending | runs on the PR |
+| Post-merge staging (human gate, not a DoD row) | BLOCKED until merge | Paul merges outside War Week, `migrate.yml` green, then opens staging `/<live edition>/announcements`: any Announcement that had video links shows them at the end of its body |
+
+**Deviations and scope changes.** Images by URL only (H0=A, `[SCOPE CHANGE]` on 64). Column dropped in this PR (H1-a). Empty roster cell clears (H2). Added during review and recorded above: Unstart refuses an edition with a Winner; a posted `videoUrls` is refused; caps of 500 (video link) and 300 (caption); a short CSV row's missing cells stay unchanged; the Image and Video controls insert after a selected figure; new direct dependency `@tiptap/extension-list` (already installed through StarterKit). The XI demo's Sunday has a Day description; the history seed doesn't.
+
+**Residual risk.** An edition ended with no Winner (nothing scored) can still be Reopened then Unstarted.

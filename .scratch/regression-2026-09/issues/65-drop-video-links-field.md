@@ -4,7 +4,7 @@
 
 **Blocked by:** 64
 
-**Status:** in-progress
+**Status:** done
 
 **Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
@@ -17,6 +17,16 @@
 
 ## Acceptance criteria
 
-- [ ] Migration test: an Announcement with two video links ends with two video nodes and no column.
-- [ ] Seeds load twice (idempotence); smoke passes.
-- [ ] No "Add video link" in `src/`; `pnpm gate` passes.
+- [x] Migration test: an Announcement with two video links ends with two video nodes and no column.
+- [x] Seeds load twice (idempotence); smoke passes.
+- [x] No "Add video link" in `src/`; `pnpm gate` passes.
+
+## Comments
+
+## [AI CODE REVIEW]
+
+See `../epics/R11-execution.md` [AI CODE REVIEW] (one review for the epic, both axes; no open blocking findings).
+
+## [CLOSEOUT]
+
+2026-10-02, branch `feat/regression-r11-content`. AC1 PASS (`src/db/migrations.test.ts`; real seeded data in `test-results/r11-content/migration-real-data.txt`); AC2 PASS (smoke, seeds twice); AC3 PASS (no "Add video link" in `src/`; gate). Migrations `0021_announcement-videos-into-body`, `0022_drop-announcement-video-urls` (destructive; merge and promote outside War Week, decision H1-a). Commits `95b07c8`, `de713eb`. Full record: `../epics/R11-execution.md` [CLOSEOUT].

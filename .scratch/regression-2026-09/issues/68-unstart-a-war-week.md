@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** in-progress
+**Status:** done
 
 **Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
@@ -17,6 +17,16 @@
 
 ## Acceptance criteria
 
-- [ ] Unit tests: Unstart allowed with nothing scored; refused with a Points Entry, a Heat result or a Game; refused for non-Organizers and for non-live editions.
-- [ ] e2e: Start then Unstart a fresh edition; it shows Upcoming again.
-- [ ] `pnpm gate` passes.
+- [x] Unit tests: Unstart allowed with nothing scored; refused with a Points Entry, a Heat result or a Game; refused for non-Organizers and for non-live editions.
+- [x] e2e: Start then Unstart a fresh edition; it shows Upcoming again.
+- [x] `pnpm gate` passes.
+
+## Comments
+
+## [AI CODE REVIEW]
+
+See `../epics/R11-execution.md` [AI CODE REVIEW] (one review for the epic, both axes; no open blocking findings).
+
+## [CLOSEOUT]
+
+2026-10-02, branch `feat/regression-r11-content`. AC1 PASS (`src/lib/war-week-lifecycle.test.ts`, `src/lib/access.test.ts`, `src/mutations/war-week-lifecycle.test.ts`); AC2 PASS (`e2e/regression-r11-unstart.spec.ts`); AC3 PASS (gate). Added in review: an edition with a Winner (ended before) can't be unstarted. Residual: one ended with no Winner can still be Reopened then Unstarted. Commits `c61e47f`, `dc5a3b8`, `de713eb`. Full record: `../epics/R11-execution.md` [CLOSEOUT].
