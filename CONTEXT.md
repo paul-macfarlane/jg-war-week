@@ -138,6 +138,14 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   self-pick. The roster admin shows "No email: won't be linked when they sign
   in" on a Participant row without an email. Participant emails never reach
   the client, only the matched id. Past editions use their own roster.
+- **The Team shows in team events.** In a teams War Week, wherever a
+  Participant appears in a Competition or scoring context (Standings,
+  Brackets and Heats, Games, Recent results, Points Entry ledgers, Awards,
+  the Finale, Now/Next), their Team shows: by name where there's room, as the
+  individual leaderboard's Team tag does, and at least by the Team-colored
+  Avatar where there isn't. Never by color alone where the name fits.
+  Free-for-all War Weeks have no Teams. Ticket 83 audits the surfaces that
+  don't yet.
 - A Participant-facing Announcement card shows its author's Participant
   display name when the author's email matches a Participant's (account
   linking), else the part of the email before the `@`. The admin pages show
