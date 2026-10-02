@@ -32,4 +32,4 @@ See `../epics/R10-execution.md` [AI CODE REVIEW] (one review for the epic, both 
 
 ## [CLOSEOUT]
 
-2026-10-02, branch `feat/regression-r10-accounts`. AC1 PASS (unit, smoke 404); AC2 PASS (`e2e/test-sign-in.spec.ts`, screenshots `test-results/r10-accounts/test-sign-in-*`); AC3 BLOCKED on the human gates (staging sign-in after Paul sets the secret; production 404 after promotion); AC4 PASS (`gate-final.txt`). Commits `e4d36b1`, `0df77f7`. Full record: `../epics/R10-execution.md` [CLOSEOUT].
+2026-10-02, branch `feat/regression-r10-accounts`. AC1 PASS (unit, smoke 404); AC2 PASS (`e2e/test-sign-in.spec.ts`, screenshots `test-results/r10-accounts/test-sign-in-*`); AC3 BLOCKED on the human gates (staging sign-in after Paul sets the secret; production 404 after promotion); AC4 PASS (`gate-final.txt`). Commits `e4d36b1`, `0df77f7`. Full record: `../epics/R10-execution.md` [CLOSEOUT]. PR: https://github.com/paul-macfarlane/jg-war-week/pull/115

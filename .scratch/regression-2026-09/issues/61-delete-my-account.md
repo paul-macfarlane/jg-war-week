@@ -31,4 +31,4 @@ See `../epics/R10-execution.md` [AI CODE REVIEW] (one review for the epic, both 
 
 ## [CLOSEOUT]
 
-2026-10-02, branch `feat/regression-r10-accounts`. AC1 PASS (`e2e/delete-account.spec.ts`, `src/mutations/account.test.ts`; the Blob part SKIPPED by the approved scope change); AC2 PASS (last Organizer refused); AC3 PASS (`gate-final.txt`). Commits `046db75`, `9214232`, `0df77f7`. Full record: `../epics/R10-execution.md` [CLOSEOUT].
+2026-10-02, branch `feat/regression-r10-accounts`. AC1 PASS (`e2e/delete-account.spec.ts`, `src/mutations/account.test.ts`; the Blob part SKIPPED by the approved scope change); AC2 PASS (last Organizer refused); AC3 PASS (`gate-final.txt`). Commits `046db75`, `9214232`, `0df77f7`. Full record: `../epics/R10-execution.md` [CLOSEOUT]. PR: https://github.com/paul-macfarlane/jg-war-week/pull/115
