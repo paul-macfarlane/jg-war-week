@@ -23,3 +23,7 @@
 - [ ] Migration plus seed tagging; seeds load twice; unit tests for the name-matching used to tag seeds.
 - [ ] e2e: an Organizer adds a Category, gives an Award in it; the Awards page groups it.
 - [ ] `pnpm gate` passes.
+
+## [SCOPE CHANGE]
+
+- 2026-10-02 (Paul, answering the R12 plan's queued Q1): an archived Award Category can be **restored** ("restoring them seems valid and lightweight enough"). Adds the Organizer-only action `award-category.restore` and a Restore button on the Archived list. Q2 answered: seed tagging stays "War Week MVP" only ("MVP", "MVP 1st Place"); "MVP 2nd/3rd Place" stay untagged (an admin can configure more).

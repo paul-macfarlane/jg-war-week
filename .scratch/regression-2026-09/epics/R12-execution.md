@@ -139,5 +139,9 @@ Reviewer: fresh `atlas-red-team-reviewer` (opus), read-only. Verdict FAIL → fi
 
 ### Questions queued (non-blocking)
 
-- Q1: Should an archived Award Category be restorable? The ticket says add, rename, archive; the plan ships exactly that (no Restore).
-- Q2: The plan tags only "MVP 1st Place" (and "MVP"/"War Week MVP") as War Week MVP; "MVP 2nd/3rd Place" stay untagged. Tag them too?
+- Q1: Should an archived Award Category be restorable? **Answered 2026-10-02 (Paul): yes.** `[SCOPE CHANGE]` on ticket 70: `award-category.restore` (Organizer-only) and a Restore button on the Archived list (A6, A7). Applied in D70.
+- Q2: Tag "MVP 2nd/3rd Place" as War Week MVP too? **Answered 2026-10-02 (Paul): no**, War Week MVP only, as A5 planned.
+
+### Staging CI (added 2026-10-02 at Paul's request)
+
+`staging`'s push CI for #118 failed in `e2e/bracket-heats.spec.ts:168`: after a reload, `getByLabel("Your next Heat")` also matched the copy React streams into a hidden `<div hidden id="S:0">` before swapping it in (seen in the run's trace), a strict-mode race. The PR run of the same code passed. Fixed separately on `fix/e2e-next-heat-streaming-race` (its own PR into `staging`, so `staging` goes green before R12 lands): the two unscoped `getByLabel("Your next Heat")` locators (`bracket-heats.spec.ts`, `bracket.spec.ts`) filter to visible, as `regression-r1.spec.ts:343` already does; the Squads spec scopes through `getByRole("region")`, which skips hidden elements.
