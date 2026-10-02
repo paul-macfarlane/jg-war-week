@@ -205,6 +205,7 @@ describe("can: Organizer-only War Week families", () => {
           ["lifecycle.start", "start a War Week"],
           ["lifecycle.end", "end a War Week"],
           ["lifecycle.reopen", "reopen a War Week"],
+          ["lifecycle.unstart", "unstart a War Week"],
           ["lifecycle.create-next", "create the next War Week"],
           ["day.create", "add Days"],
           ["day.edit", "change Days"],

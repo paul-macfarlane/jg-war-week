@@ -639,6 +639,13 @@ async function assertAccessBeforeValidation(
       host: organizerOnly("end a War Week"),
     },
     {
+      family: "lifecycle",
+      action: "unstartWarWeek",
+      args: [fixture.xiId],
+      participant: organizerOnly("unstart a War Week"),
+      host: organizerOnly("unstart a War Week"),
+    },
+    {
       family: "Organizer list",
       action: "addOrganizer",
       args: [42],
@@ -863,6 +870,7 @@ export async function assertParticipantRefused(sessions: {
       SELF_REPORT_OFF,
     ],
     ["lifecycle", "startWarWeek", [xi], organizerOnly("start a War Week")],
+    ["lifecycle", "unstartWarWeek", [xi], organizerOnly("unstart a War Week")],
     [
       "Organizer list",
       "removeOrganizer",

@@ -21,8 +21,10 @@ export const STATUS_LABELS: Record<Status, string> = {
 
 /**
  * Why a War Week can't move from `from` to `to`, or null when it can. The
- * only moves are Start (`upcoming → live`), End (`live → complete`) and
- * Reopen (`complete → live`); there's no way back to `upcoming`.
+ * only moves are Start (`upcoming → live`), End (`live → complete`),
+ * Reopen (`complete → live`) and Unstart (`live → upcoming`, only while
+ * nothing is scored: `lifecycleActionError`); an ended War Week can't go
+ * back to `upcoming`.
  * `liveEdition` is another War Week that is `live` now, if any: at most one
  * War Week is live, so going live waits for it to end.
  */
@@ -32,7 +34,9 @@ export function transitionError(
   { liveEdition }: { liveEdition: string | null },
 ): string | null {
   if (from === to) return `This War Week is already ${to}.`;
-  if (to === "upcoming") return "A War Week can't go back to upcoming.";
+  if (to === "upcoming") {
+    return from === "live" ? null : "A War Week can't go back to upcoming.";
+  }
   if (to === "complete") {
     return from === "live" ? null : "Start this War Week before ending it.";
   }
@@ -58,7 +62,15 @@ export function moveError(
   return null;
 }
 
-export type LifecycleAction = "start" | "end" | "reopen" | "create-next";
+export type LifecycleAction =
+  "start" | "end" | "reopen" | "unstart" | "create-next";
+
+/** What has been scored in a War Week; Unstart needs all three at zero. */
+export type ScoredCounts = {
+  pointsEntries: number;
+  heatResults: number;
+  games: number;
+};
 
 type LifecycleWarWeek = Pick<
   WarWeek,
@@ -76,17 +88,37 @@ const warWeekName = (w: Pick<WarWeek, "edition">) =>
  *   reopen instead.
  * - Reopen (a `complete` target, whichever button asked) only for the most
  *   recently ended edition, and never while a later edition is upcoming.
+ * - Unstart only a `live` edition with nothing scored: no Points Entry,
+ *   no Heat result (`played` or `forfeit`) and no Game (`scored`, read by
+ *   the caller; none given counts as nothing scored).
  * The one-live rule (`transitionError`) is checked after this.
  */
 export function lifecycleActionError({
   action,
   target,
   warWeeks,
+  scored,
 }: {
   action: LifecycleAction;
   target: LifecycleWarWeek;
   warWeeks: LifecycleWarWeek[];
+  scored?: ScoredCounts;
 }): string | null {
+  if (action === "unstart") {
+    if (target.status !== "live") {
+      return "Only a live War Week can be unstarted.";
+    }
+    if (scored && scored.pointsEntries > 0) {
+      return "Points have been entered; Unstart isn't available.";
+    }
+    if (scored && scored.heatResults > 0) {
+      return "A Heat has a result; Unstart isn't available.";
+    }
+    if (scored && scored.games > 0) {
+      return "A Game has been logged; Unstart isn't available.";
+    }
+    return null;
+  }
   if (action === "end" || action === "create-next") return null;
   if (target.status === "upcoming") {
     return action === "reopen" ? moveError("reopen", "upcoming") : null;

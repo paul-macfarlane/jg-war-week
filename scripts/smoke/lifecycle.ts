@@ -38,6 +38,7 @@ export async function assertWarWeekLifecycle(sessions: {
       "endWarWeek",
       "startWarWeek",
       "reopenWarWeek",
+      "unstartWarWeek",
       "selectAdminEdition",
       "updateWarWeekSettingsFields",
     ].filter((name) => !ids[name]);
@@ -64,7 +65,7 @@ export async function assertWarWeekLifecycle(sessions: {
       const result = await callAction(ids[name], args, sessions.notOrganizer);
       if (
         result.ok ||
-        !/^Only an Organizer can (start|end|reopen) a War Week\.$/.test(
+        !/^Only an Organizer can (start|end|reopen|unstart) a War Week\.$/.test(
           result.error,
         )
       ) {
@@ -113,6 +114,29 @@ export async function assertWarWeekLifecycle(sessions: {
     );
     await expectRefused("non-Organizer starts XII", "startWarWeek", [xiiId]);
     await expectOk("start XII", "startWarWeek", [xiiId]);
+    // Unstart: Organizers only, and only while nothing is scored.
+    await expectRefused("non-Organizer unstarts XII", "unstartWarWeek", [
+      xiiId,
+    ]);
+    await expectOk("unstart XII", "unstartWarWeek", [xiiId]);
+    const [unstarted] = await runQuery<{ status: string }>(
+      "select status from war_week where edition = 'xii'",
+    );
+    if (unstarted.status !== "upcoming") {
+      problems.push(`XII after Unstart is ${unstarted.status}`);
+    }
+    const unstartUpcoming = await callAction(
+      ids.unstartWarWeek,
+      [xiiId],
+      sessions.organizer,
+    );
+    if (
+      unstartUpcoming.ok ||
+      unstartUpcoming.error !== "Only a live War Week can be unstarted."
+    ) {
+      problems.push(`unstart upcoming XII: ${JSON.stringify(unstartUpcoming)}`);
+    }
+    await expectOk("start XII again", "startWarWeek", [xiiId]);
     await expectRefused("non-Organizer ends XII", "endWarWeek", [
       xiiId,
       { highlights: "" },

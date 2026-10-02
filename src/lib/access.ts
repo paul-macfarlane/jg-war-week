@@ -61,6 +61,7 @@ export type WarWeekAction =
   | "lifecycle.start"
   | "lifecycle.end"
   | "lifecycle.reopen"
+  | "lifecycle.unstart"
   | "lifecycle.create-next"
   | `${"day" | "team" | "participant" | "award"}.${Crud}`
   | `faq-item.${Crud | "move"}`
@@ -128,6 +129,7 @@ const ORGANIZER_ONLY: Partial<
   "lifecycle.start": "start a War Week",
   "lifecycle.end": "end a War Week",
   "lifecycle.reopen": "reopen a War Week",
+  "lifecycle.unstart": "unstart a War Week",
   "lifecycle.create-next": "create the next War Week",
   "day.create": "add Days",
   "day.edit": "change Days",

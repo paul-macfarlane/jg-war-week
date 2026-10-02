@@ -19,6 +19,7 @@ import {
 } from "@/lib/war-week-lifecycle";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 import * as mutations from "@/mutations/war-week-lifecycle";
+import { getScoredCounts } from "@/queries/scored-counts";
 import type { TargetWarWeek } from "@/queries/targets";
 import {
   getCurrentWarWeek,
@@ -54,7 +55,9 @@ async function lifecycleWarWeek(
   if (!authorized.ok) return authorized;
   const target = authorized.warWeek;
   const warWeeks = await getWarWeeks();
-  const refusal = lifecycleActionError({ action, target, warWeeks });
+  const scored =
+    action === "unstart" ? await getScoredCounts(target.id) : undefined;
+  const refusal = lifecycleActionError({ action, target, warWeeks, scored });
   if (refusal) return { ok: false, error: refusal };
   return { ok: true, warWeek: target, ctx: authorized.ctx };
 }
@@ -104,6 +107,22 @@ export async function reopenWarWeek(
     const organizer = await lifecycleWarWeek("reopen", warWeekId);
     if (!organizer.ok) return organizer;
     const result = await mutations.reopenWarWeek(organizer.ctx);
+    if (result.ok) revalidateSite();
+    return result;
+  });
+}
+
+/**
+ * Unstart: `live → upcoming`, only while nothing has been scored (no Points
+ * Entry, Heat result or Game). Re-checked under the row lock.
+ */
+export async function unstartWarWeek(
+  warWeekId: string,
+): Promise<LifecycleActionResult> {
+  return guarded(async () => {
+    const organizer = await lifecycleWarWeek("unstart", warWeekId);
+    if (!organizer.ok) return organizer;
+    const result = await mutations.unstartWarWeek(organizer.ctx);
     if (result.ok) revalidateSite();
     return result;
   });

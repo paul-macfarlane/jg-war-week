@@ -28,13 +28,13 @@ export const metadata: Metadata = { title: "Settings · JG War Week" };
 
 const STATUS_HELP = {
   upcoming: "Set it up in advance. Start it when the current War Week ends.",
-  live: "This is the current War Week. End it to move it to the Archive with its Winner.",
+  live: "This is the current War Week. End it to move it to the Archive with its Winner, or Unstart it while nothing has been scored.",
   complete:
     "In the Archive. You can still correct its results, or reopen it for the live view.",
 } as const;
 
 /**
- * The War Week's settings, its Lifecycle (Start, End, Reopen) and Create
+ * The War Week's settings, its Lifecycle (Start, End, Unstart, Reopen) and Create
  * next War Week, for Organizers.
  */
 export default async function AdminSettingsPage() {
@@ -79,6 +79,10 @@ export default async function AdminSettingsPage() {
           </div>
           <p className="text-foreground/70 text-sm">
             {STATUS_HELP[warWeek.status]}
+          </p>
+          <p className="text-foreground/70 text-sm">
+            Live makes this the War Week everyone lands on. Nothing is hidden
+            before then.
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <WarWeekLifecycleControls
