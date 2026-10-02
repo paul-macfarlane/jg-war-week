@@ -35,4 +35,4 @@ Each ticket's own, plus:
 
 ## [CLOSEOUT]
 
-2026-10-02, atlas-implement (Claude Opus 5.5). Tickets 69, 70, 71 `done`; see each ticket's closeout and [`R12-execution.md`](./R12-execution.md). ADR 0009 (Check in); migrations 0023–0026 with the demo seed in the same branch; smoke green on seeded local Postgres; `/about`, maintainer's guide, regression checklist, README and MCP (`get_participation`, `get_awards` category) updated. `pnpm format:check && pnpm gate` passed at `2b06e18`. CI on the PR: checked after it opens.
+2026-10-02, atlas-implement (Claude Opus 5.5). Tickets 69, 70, 71 `done`; see each ticket's closeout and [`R12-execution.md`](./R12-execution.md). ADR 0009 (Check in); migrations 0023–0026 with the demo seed in the same branch; smoke green on seeded local Postgres; `/about`, maintainer's guide, regression checklist, README and MCP (`get_participation`, `get_awards` category) updated. `pnpm format:check && pnpm gate` passed at `2b06e18`. PR: [paul-macfarlane/jg-war-week#120](https://github.com/paul-macfarlane/jg-war-week/pull/120); CI runs there (Auto-fix on).

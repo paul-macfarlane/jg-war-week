@@ -232,4 +232,4 @@ Fixed separately: [paul-macfarlane/jg-war-week#119](https://github.com/paul-macf
 
 ### PR
 
-_(added after it opens)_
+[paul-macfarlane/jg-war-week#120](https://github.com/paul-macfarlane/jg-war-week/pull/120), into `staging`. CI on the PR is watched by Auto-fix.

@@ -18,7 +18,7 @@
 
 ## [CLOSEOUT]
 
-2026-10-02, atlas-implement (Claude Opus 5.5). Deliverable D71 (worker: atlas-worker, sonnet; commit `a4a5f0e`), the orchestrator's 404 fix in `3233c5f` and the review fixes in `2b06e18`. Verified on `feat/regression-r12-participation-awards` at `2b06e18` (code; the closeout commit adds only `.scratch/` and `test-results/`), local Postgres `war-weeker-postgres` :2345, `DATABASE_URL=postgres://postgres:postgres@localhost:2345/war_weeker?sslmode=disable DATABASE_DRIVER=pg`. Final gate: `pnpm format:check && pnpm gate` exit 0 (format clean; lint 0 errors, 7 existing `<img>` warnings; vitest 167 files / 3604 tests; build; smoke 243 ok; Playwright 86 passed) → `test-results/r12/gate.txt`. PR: _(added after it opens)_.
+2026-10-02, atlas-implement (Claude Opus 5.5). Deliverable D71 (worker: atlas-worker, sonnet; commit `a4a5f0e`), the orchestrator's 404 fix in `3233c5f` and the review fixes in `2b06e18`. Verified on `feat/regression-r12-participation-awards` at `2b06e18` (code; the closeout commit adds only `.scratch/` and `test-results/`), local Postgres `war-weeker-postgres` :2345, `DATABASE_URL=postgres://postgres:postgres@localhost:2345/war_weeker?sslmode=disable DATABASE_DRIVER=pg`. Final gate: `pnpm format:check && pnpm gate` exit 0 (format clean; lint 0 errors, 7 existing `<img>` warnings; vitest 167 files / 3604 tests; build; smoke 243 ok; Playwright 86 passed) → `test-results/r12/gate.txt`. PR: [paul-macfarlane/jg-war-week#120](https://github.com/paul-macfarlane/jg-war-week/pull/120).
 
 | AC | Verdict | Evidence |
 |---|---|---|
