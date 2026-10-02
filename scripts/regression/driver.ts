@@ -164,7 +164,7 @@ export async function pageBasics(
   };
 }
 
-/** `/admin/setup/war-week` → `admin-setup-war-week`; `/` → `root`. */
+/** `/admin/settings` → `admin-settings`; `/` → `root`. */
 export function pageSlug(urlPath: string): string {
   return (
     urlPath

@@ -7,8 +7,8 @@ import { ArchiveDetailView } from "@/components/archive";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { LogAGame } from "@/components/log-a-game";
 import { NowNextSection } from "@/components/now-next";
+import { RecentResultsSection } from "@/components/recent-results";
 import { HomeStandings } from "@/components/standings";
-import { Button } from "@/components/ui/button";
 import { WarWeekHero } from "@/components/war-week-hero";
 import { isArchived } from "@/lib/archive";
 import { heatEntries } from "@/lib/bracket/now-next";
@@ -16,6 +16,7 @@ import { computeNowNext, resolveClock, withHeats } from "@/lib/schedule";
 import { getPinnedAnnouncementCard } from "@/queries/announcements";
 import { getArchiveDetail } from "@/queries/archive";
 import { getLoggableCompetitions } from "@/queries/games";
+import { getRecentResults } from "@/queries/recent-results";
 import { getSchedule, getTimedHeats } from "@/queries/schedule";
 import { getPointsBreakdown, getStandings } from "@/queries/standings";
 
@@ -43,6 +44,7 @@ export default async function EditionHomePage({
     pinnedAnnouncement,
     timedHeats,
     loggable,
+    recentResults,
   ] = await Promise.all([
     getStandings(warWeek),
     getPointsBreakdown(warWeek),
@@ -53,6 +55,7 @@ export default async function EditionHomePage({
     getActor().then((actor) =>
       getLoggableCompetitions(warWeek.id, actor?.email),
     ),
+    getRecentResults(warWeek),
   ]);
   // Timed Heats join Now/Next only, not the full schedule.
   const nowNext = computeNowNext(
@@ -65,24 +68,15 @@ export default async function EditionHomePage({
       <WarWeekHero warWeek={warWeek} />
 
       <div className="flex flex-col gap-4 px-4 pt-4 pb-6">
-        <Button
-          size="lg"
-          className="w-full md:w-auto md:self-start"
-          nativeButton={false}
-          render={
-            <a
-              href={warWeek.slackChannelUrl}
-              target="_blank"
-              rel="noreferrer"
-            />
-          }
-        >
-          Join the Slack channel
-        </Button>
-
         <NowNextSection nowNext={nowNext} edition={warWeek.edition} />
 
         <LogAGame edition={warWeek.edition} competitions={loggable} />
+
+        <RecentResultsSection
+          results={recentResults}
+          edition={warWeek.edition}
+          primaryColor={warWeek.primaryColor}
+        />
 
         {pinnedAnnouncement ? (
           <section className="flex flex-col gap-3">

@@ -63,7 +63,7 @@ const PAIRS = [
   ["text-accent-foreground", "--accent-foreground", "--accent"],
   // A disabled Button's text on its muted surface.
   ["text-foreground", "--foreground", "--muted"],
-  // Setup's contrast warnings and the form warnings.
+  // Settings' contrast warnings and the form warnings.
   ["text-warning", "--warning", "--background"],
   // The card footer's "Original wiki page" link sits on `bg-muted/50`.
   ["text-foreground", "--foreground", "card footer"],

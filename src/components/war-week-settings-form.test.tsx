@@ -8,7 +8,7 @@ import { WarWeekSettingsForm } from "./war-week-settings-form";
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: () => {}, push: () => {} }),
 }));
-vi.mock("@/actions/setup", () => ({ updateWarWeekSettings: vi.fn() }));
+vi.mock("@/actions/setup", () => ({ updateWarWeekSettingsFields: vi.fn() }));
 
 const initial: WarWeekSettingsInput = {
   storyTheme: "Space",
@@ -40,6 +40,7 @@ function render(mode: string) {
   return renderToStaticMarkup(
     <WarWeekSettingsForm
       warWeekId="ww"
+      headingId="war-week-settings-heading"
       initial={{ ...initial, mode }}
       dayDates={[]}
       teamSwatches={[]}
@@ -56,11 +57,27 @@ describe("WarWeekSettingsForm Team Label and Leader Title", () => {
     expect(html).toContain('value="Captain"');
   });
 
-  it("hides the fields in a free-for-all but still posts the saved values", () => {
+  it("hides the fields in a free-for-all", () => {
     const html = render("free-for-all");
     expect(html).not.toContain(">Team Label</label>");
     expect(html).not.toContain(">Leader Title</label>");
-    expect(html).toContain('type="hidden" name="teamLabel" value="House"');
-    expect(html).toContain('type="hidden" name="leaderTitle" value="Captain"');
+  });
+});
+
+describe("WarWeekSettingsForm autosave", () => {
+  it("has no Save button and says changes save themselves", () => {
+    const html = render("teams");
+    expect(html).not.toContain("Save settings");
+    expect(html).not.toContain('type="submit"');
+    expect(html).toMatch(
+      /<p[^>]*role="status"[^>]*data-slot="autosave-status"[^>]*>Changes save automatically<\/p>/,
+    );
+  });
+
+  it("puts the save status beside the War Week settings heading", () => {
+    const html = render("teams");
+    expect(html).toMatch(
+      /<h2 id="war-week-settings-heading"[^>]*>War Week settings<\/h2><p[^>]*data-slot="autosave-status"/,
+    );
   });
 });

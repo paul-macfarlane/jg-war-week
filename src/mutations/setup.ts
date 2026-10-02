@@ -29,13 +29,16 @@ import {
   type OverrideColumn,
   type ParticipantValues,
   type TeamValues,
+  type WarWeekSettingsInput,
   type WarWeekSettingsValues,
   competitionGuardError,
   dayDeleteGuardError,
   dayGuardError,
   inUseError,
+  mergeWarWeekSettings,
   participantGuardError,
   settingsGuardError,
+  settingsInputFrom,
   teamGuardError,
 } from "@/lib/setup";
 import { backgroundColorScheme } from "@/lib/theme";
@@ -136,16 +139,29 @@ function overridesClearedByFlip(
 }
 
 /**
- * Saves the War Week's settings and Appearance Theme, refusing a save that
- * would strand Teams or Days. A background that crosses light and dark
- * clears the overrides the save left untouched (`overridesClearedByFlip`).
+ * Saves some of the War Week's settings (one autosave's fields): laid over
+ * the row as it stands now, locked, and checked whole, then only those
+ * columns are written, so a value stored since the form loaded (another
+ * tab, End War Week's Winner) is never written back over. Refuses a save that
+ * would strand Teams or Days, and clears the overrides a light/dark flip
+ * leaves untouched.
  */
-export async function updateWarWeekSettings(
-  values: WarWeekSettingsValues,
+export async function updateWarWeekSettingsFields(
+  fields: Partial<WarWeekSettingsInput>,
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
+    const [stored] = await tx
+      .select()
+      .from(warWeek)
+      .where(eq(warWeek.id, ctx.warWeekId))
+      .for("update");
+    if (!stored) return { ok: false, error: WAR_WEEK_NOT_FOUND };
+    const merged = mergeWarWeekSettings(settingsInputFrom(stored), fields);
+    if (!merged.ok) return merged;
+    const { values, changed } = merged.value;
+
     const [teams] = await tx
       .select({ count: count() })
       .from(team)
@@ -156,31 +172,15 @@ export async function updateWarWeekSettings(
     });
     if (refusal) return { ok: false, error: refusal };
 
-    const [stored] = await tx
-      .select({
-        backgroundColor: warWeek.backgroundColor,
-        overridePrimaryColor: warWeek.overridePrimaryColor,
-        overridePrimaryForegroundColor: warWeek.overridePrimaryForegroundColor,
-        overrideAccentColor: warWeek.overrideAccentColor,
-        overrideBackgroundColor: warWeek.overrideBackgroundColor,
-        overrideForegroundColor: warWeek.overrideForegroundColor,
-      })
-      .from(warWeek)
-      .where(eq(warWeek.id, ctx.warWeekId));
-    if (!stored) return { ok: false, error: WAR_WEEK_NOT_FOUND };
-
-    const updated = await tx
+    await tx
       .update(warWeek)
       .set({
-        ...values,
+        ...changed,
         ...overridesClearedByFlip(values, stored),
         updatedAt: sql`now()`,
       })
-      .where(eq(warWeek.id, ctx.warWeekId))
-      .returning({ id: warWeek.id });
-    return updated.length > 0
-      ? { ok: true }
-      : { ok: false, error: WAR_WEEK_NOT_FOUND };
+      .where(eq(warWeek.id, ctx.warWeekId));
+    return { ok: true };
   });
 }
 

@@ -36,7 +36,7 @@ const themeUrl = z
 export const emailSchema = z.email().max(254).toLowerCase();
 
 /**
- * The War Week fields an Organizer can also edit in `/admin/setup`, so the
+ * The War Week fields an Organizer can also edit in `/admin/settings`, so the
  * seed and the setup form share one set of field rules.
  */
 export const warWeekSettingsSeedShape = {
@@ -209,6 +209,32 @@ export type OverrideColumn =
   | "overrideBackgroundColor"
   | "overrideForegroundColor";
 
+const DATE_RANGE_FIELDS = ["startDate", "endDate"] as const;
+
+// The background with the overrides: a background crossing light and dark
+// clears the overrides (the form resets them), so they save with it.
+const SCHEME_FIELDS = [
+  "backgroundColor",
+  "overridePrimaryColor",
+  "overridePrimaryForegroundColor",
+  "overrideAccentColor",
+  "overrideBackgroundColor",
+  "overrideForegroundColor",
+] as const satisfies readonly (keyof WarWeekSettingsInput)[];
+
+/**
+ * The settings fields that autosave together with `field`: the date range
+ * as one, the background with every override, any other field alone.
+ */
+export function settingsSaveGroup(
+  field: keyof WarWeekSettingsInput,
+): readonly (keyof WarWeekSettingsInput)[] {
+  for (const group of [DATE_RANGE_FIELDS, SCHEME_FIELDS]) {
+    if ((group as readonly string[]).includes(field)) return group;
+  }
+  return [field];
+}
+
 /**
  * Validated settings, keyed by the `war_week` columns they update. The
  * overrides are optional here: the mutation leaves an omitted key's column
@@ -295,32 +321,34 @@ export function optional<T extends ZodType>(schema: T) {
 
 const seed = warWeekSettingsSeedShape;
 
+const settingsShape = {
+  storyTheme: trimmed(seed.storyTheme),
+  startDate: trimmed(seed.startDate),
+  endDate: trimmed(seed.endDate),
+  mode: seed.mode,
+  teamLabel: trimmed(seed.teamLabel),
+  leaderTitle: trimmed(seed.leaderTitle),
+  slackChannelUrl: trimmed(seed.slackChannelUrl),
+  wikiUrl: optional(seed.wikiUrl),
+  primaryColor: trimmed(seed.primary),
+  primaryForegroundColor: trimmed(seed.primaryForeground),
+  accentColor: trimmed(seed.accent),
+  backgroundColor: trimmed(seed.background),
+  foregroundColor: trimmed(seed.foreground),
+  overridePrimaryColor: optional(seed.overridePrimary),
+  overridePrimaryForegroundColor: optional(seed.overridePrimaryForeground),
+  overrideAccentColor: optional(seed.overrideAccent),
+  overrideBackgroundColor: optional(seed.overrideBackground),
+  overrideForegroundColor: optional(seed.overrideForeground),
+  logoUrl: optional(seed.logoUrl),
+  bannerUrl: optional(seed.bannerUrl),
+  fontPreset: seed.fontPreset,
+  winner: optional(seed.winner),
+  highlights: z.preprocess(splitLines, seed.highlights),
+} satisfies Record<keyof WarWeekSettingsInput, ZodType>;
+
 const settingsSchema = z
-  .object({
-    storyTheme: trimmed(seed.storyTheme),
-    startDate: trimmed(seed.startDate),
-    endDate: trimmed(seed.endDate),
-    mode: seed.mode,
-    teamLabel: trimmed(seed.teamLabel),
-    leaderTitle: trimmed(seed.leaderTitle),
-    slackChannelUrl: trimmed(seed.slackChannelUrl),
-    wikiUrl: optional(seed.wikiUrl),
-    primaryColor: trimmed(seed.primary),
-    primaryForegroundColor: trimmed(seed.primaryForeground),
-    accentColor: trimmed(seed.accent),
-    backgroundColor: trimmed(seed.background),
-    foregroundColor: trimmed(seed.foreground),
-    overridePrimaryColor: optional(seed.overridePrimary),
-    overridePrimaryForegroundColor: optional(seed.overridePrimaryForeground),
-    overrideAccentColor: optional(seed.overrideAccent),
-    overrideBackgroundColor: optional(seed.overrideBackground),
-    overrideForegroundColor: optional(seed.overrideForeground),
-    logoUrl: optional(seed.logoUrl),
-    bannerUrl: optional(seed.bannerUrl),
-    fontPreset: seed.fontPreset,
-    winner: optional(seed.winner),
-    highlights: z.preprocess(splitLines, seed.highlights),
-  })
+  .object(settingsShape)
   .refine((s) => s.startDate <= s.endDate, {
     error: "Start date must not be after the end date.",
     path: ["startDate"],
@@ -446,6 +474,11 @@ const FIELD_LABELS: Record<string, string> = {
   format: "Format",
 };
 
+/** A setup field's label, as its errors name it ("Slack URL"). */
+export function setupFieldLabel(field: string): string {
+  return FIELD_LABELS[field] ?? field;
+}
+
 /** A zod issue worded as "must …", or null when it is already a sentence. */
 function mustPhrase(issue: z.core.$ZodIssue): string | null {
   switch (issue.code) {
@@ -513,6 +546,60 @@ export function parseWarWeekSettingsInput(
   input: WarWeekSettingsInput,
 ): Parsed<WarWeekSettingsValues> {
   return parseWith(settingsSchema, input);
+}
+
+/**
+ * Validates the settings fields one autosave sends: some of the form's
+ * fields, each a string. Never throws. Their values are checked once laid
+ * over the stored ones (`mergeWarWeekSettings`).
+ */
+export function parseWarWeekSettingsFields(
+  input: unknown,
+): Parsed<Partial<WarWeekSettingsInput>> {
+  const missing = {
+    ok: false,
+    error: "The form's fields are missing.",
+    fieldErrors: {},
+  } as const;
+  if (typeof input !== "object" || input === null || Array.isArray(input)) {
+    return missing;
+  }
+  const entries = Object.entries(input);
+  if (entries.length === 0) return missing;
+  for (const [field, value] of entries) {
+    if (!Object.hasOwn(settingsShape, field)) return missing;
+    if (typeof value !== "string") {
+      const error = `${FIELD_LABELS[field]} must be filled in.`;
+      return { ok: false, error, fieldErrors: { [field]: error } };
+    }
+  }
+  return { ok: true, value: input as Partial<WarWeekSettingsInput> };
+}
+
+/**
+ * Lays an autosave's `fields` over the `stored` settings and validates the
+ * whole, so rules across fields (the date range) hold against the newest
+ * stored values. `values` is the whole result, for the guards; `changed`
+ * is only the columns `fields` names, so a save never writes back a
+ * column it didn't send.
+ */
+export function mergeWarWeekSettings(
+  stored: WarWeekSettingsInput,
+  fields: Partial<WarWeekSettingsInput>,
+): Parsed<{
+  values: WarWeekSettingsValues;
+  changed: Partial<WarWeekSettingsValues>;
+}> {
+  const parsed = parseWarWeekSettingsInput({ ...stored, ...fields });
+  if (!parsed.ok) return parsed;
+  const values = parsed.value;
+  const changed = Object.fromEntries(
+    Object.keys(fields).map((field) => [
+      field,
+      values[field as keyof WarWeekSettingsValues],
+    ]),
+  ) as Partial<WarWeekSettingsValues>;
+  return { ok: true, value: { values, changed } };
 }
 
 /** Validates one Day's form. Never throws; returns the first error. */

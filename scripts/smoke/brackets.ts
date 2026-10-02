@@ -164,7 +164,7 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     if (recorded !== 3) problems.push(`recorded ${recorded} Heat Results`);
 
     for (const route of [
-      `/admin/setup/competitions/${id}/bracket`,
+      `/admin/competitions/${id}/bracket`,
       `/admin/brackets/${id}`,
     ]) {
       const res = await get(route);

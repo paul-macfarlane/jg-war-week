@@ -17,8 +17,8 @@ import {
   SETUP_EDITOR,
   SetupAddButton,
   SetupListRow,
-  SetupRowButtons,
   SetupRowError,
+  SetupSaveButton,
   SetupSheetFooter,
   usageSummary,
   useSetupRow,
@@ -61,8 +61,8 @@ const GAME_TYPE_DESCRIPTIONS: Record<GameType, string> = {
 /** Where a saved Competition of this Format is set up, or null for points. */
 function setupHref(competition: Pick<SetupCompetition, "id" | "format">) {
   return competition.format === "games"
-    ? `/admin/setup/competitions/${competition.id}/games`
-    : `/admin/setup/competitions/${competition.id}/bracket`;
+    ? `/admin/competitions/${competition.id}/games`
+    : `/admin/competitions/${competition.id}/bracket`;
 }
 
 function emptyCompetition(mode: WarWeek["mode"]): CompetitionInput {
@@ -133,7 +133,6 @@ function competitionUsage(competition: SetupCompetition): string {
 function CompetitionForm({
   warWeekId,
   competition,
-  canDelete,
   hosts,
   mode,
   teamLabel,
@@ -142,8 +141,6 @@ function CompetitionForm({
 }: {
   warWeekId: string;
   competition?: SetupCompetition;
-  /** Deleting a Competition is Organizer-only. */
-  canDelete: boolean;
   /** The Competition's Hosts, shown only to Organizers. */
   hosts?: string[];
   mode: WarWeek["mode"];
@@ -159,36 +156,35 @@ function CompetitionForm({
   const [hostEmails, setHostEmails] = useState(hosts ?? []);
   const hostsChanged =
     hosts !== undefined && hostEmails.join("\n") !== hosts.join("\n");
-  const { pending, formRef, formAction, fieldErrors, error, remove } =
-    useSetupRow(
-      async () => {
-        // Only an individual Competition can count toward the Team.
-        const input = {
-          ...values,
-          countsTowardTeam:
-            values.scoring === "individual" && values.countsTowardTeam,
-        };
-        if (competition) {
-          const saved = await updateCompetition(competition.id, input);
-          // Hosts go only once the setup saved, so a refusal can't half-save.
-          if (!saved.ok || !hostsChanged) return saved;
-          return setCompetitionHosts(competition.id, hostEmails);
-        }
-        const result = await createCompetition(warWeekId, input);
-        // A Bracket or Games Format links straight to its setup.
-        if (
-          result.ok &&
-          (isBracketFormat(input.format) || input.format === "games")
-        ) {
-          router.push(
-            setupHref({ id: result.id, format: input.format as Format }),
-          );
-        }
-        return result;
-      },
-      "Competition saved",
-      onSaved,
-    );
+  const { pending, formRef, formAction, fieldErrors, error } = useSetupRow(
+    async () => {
+      // Only an individual Competition can count toward the Team.
+      const input = {
+        ...values,
+        countsTowardTeam:
+          values.scoring === "individual" && values.countsTowardTeam,
+      };
+      if (competition) {
+        const saved = await updateCompetition(competition.id, input);
+        // Hosts go only once the setup saved, so a refusal can't half-save.
+        if (!saved.ok || !hostsChanged) return saved;
+        return setCompetitionHosts(competition.id, hostEmails);
+      }
+      const result = await createCompetition(warWeekId, input);
+      // A Bracket or Games Format links straight to its setup.
+      if (
+        result.ok &&
+        (isBracketFormat(input.format) || input.format === "games")
+      ) {
+        router.push(
+          setupHref({ id: result.id, format: input.format as Format }),
+        );
+      }
+      return result;
+    },
+    "Competition saved",
+    onSaved,
+  );
   const set =
     (field: Exclude<keyof CompetitionInput, "countsTowardTeam">) =>
     (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -201,8 +197,6 @@ function CompetitionForm({
       : []),
     { value: "individual", label: "Individual" },
   ];
-
-  const usage = competition ? competitionUsage(competition) : "";
 
   return (
     <form
@@ -386,21 +380,9 @@ function CompetitionForm({
         )}
       </FieldGroup>
       <SetupSheetFooter>
-        <SetupRowButtons
+        <SetupSaveButton
           pending={pending}
-          addLabel="Add Competition"
-          rowId={competition?.id}
-          onDelete={
-            competition && canDelete
-              ? () =>
-                  remove(
-                    () => deleteCompetition(competition.id),
-                    "Competition deleted",
-                  )
-              : undefined
-          }
-          deleteTitle={competition && `Delete ${competition.name}?`}
-          deleteDescription={usage}
+          label={competition ? "Save" : "Add Competition"}
         />
         <SetupRowError error={error} />
       </SetupSheetFooter>
@@ -408,7 +390,7 @@ function CompetitionForm({
   );
 }
 
-/** The War Week's Competitions by name, each opening in a Sheet, plus an Add button. */
+/** The War Week's Competitions by name, each with Edit (a Sheet) and Delete, plus an Add button. */
 export function CompetitionsEditor({
   warWeekId,
   isOrganizer,
@@ -472,11 +454,17 @@ export function CompetitionsEditor({
                   <CompetitionForm
                     {...formProps}
                     competition={c}
-                    canDelete={isOrganizer}
                     hosts={competitionHosts}
                     onSaved={close}
                   />
                 )}
+                // Deleting a Competition is Organizer-only.
+                onDelete={
+                  isOrganizer ? () => deleteCompetition(c.id) : undefined
+                }
+                deleteTitle={`Delete ${c.name}?`}
+                deleteDescription={competitionUsage(c)}
+                deleteSuccess="Competition deleted"
               />
             );
           })}
@@ -485,9 +473,7 @@ export function CompetitionsEditor({
       {isOrganizer && (
         <SetupAddButton
           label="Add Competition"
-          form={(close) => (
-            <CompetitionForm {...formProps} canDelete onSaved={close} />
-          )}
+          form={(close) => <CompetitionForm {...formProps} onSaved={close} />}
         />
       )}
     </div>

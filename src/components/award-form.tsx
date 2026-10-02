@@ -16,7 +16,11 @@ import {
   useFocusFirstInvalid,
 } from "@/components/form-field-errors";
 import { FormValueInput } from "@/components/form-value-input";
-import { Button } from "@/components/ui/button";
+import {
+  SetupRowError,
+  SetupSaveButton,
+  SetupSheetFooter,
+} from "@/components/setup-row";
 import {
   Field,
   FieldDescription,
@@ -47,9 +51,10 @@ import type { AwardFormOptions } from "@/queries/awards";
 const NO_TEAM = "none";
 
 /**
- * Give or edit one Award: name, description, and its recipients — one Team,
- * any number of Participants, or both. The server action checks the
- * recipients belong to this War Week; its error is what's shown.
+ * Give or edit one Award, in its Sheet on the Awards page: name,
+ * description, and its recipients — one Team, any number of Participants,
+ * or both. The server action checks the recipients belong to this War
+ * Week; its error is what's shown. `onSaved` closes the Sheet.
  */
 export function AwardForm({
   warWeekId,
@@ -58,6 +63,7 @@ export function AwardForm({
   options,
   teamLabel,
   mode,
+  onSaved,
 }: {
   /** The War Week this page was rendered for; creates post it. */
   warWeekId: string;
@@ -69,6 +75,7 @@ export function AwardForm({
   teamLabel: string;
   /** The War Week's Mode: a free-for-all has no Team field. */
   mode: WarWeek["mode"];
+  onSaved?: () => void;
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -113,7 +120,7 @@ export function AwardForm({
         return saved;
       }
       toast.success("Award saved");
-      router.push("/admin/awards");
+      onSaved?.();
       router.refresh();
       return saved;
     },
@@ -130,7 +137,7 @@ export function AwardForm({
       className="flex flex-col gap-5"
       aria-label="Award"
     >
-      <FieldGroup>
+      <FieldGroup className="px-4">
         <Field data-invalid={!!fieldErrors.name}>
           <FieldLabel htmlFor="award-name">Name</FieldLabel>
           <Input
@@ -227,26 +234,13 @@ export function AwardForm({
         </FieldSet>
       </FieldGroup>
 
-      <div className="flex items-center gap-3">
-        <Button
-          type="submit"
-          size="lg"
-          className="min-h-11 sm:min-h-9"
-          disabled={pending}
-        >
-          {pending ? "Saving…" : awardId ? "Save changes" : "Give Award"}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          className="min-h-11 sm:min-h-9"
-          onClick={() => router.push("/admin/awards")}
-        >
-          Cancel
-        </Button>
-      </div>
-      {formError && !pending && <FieldError>{formError}</FieldError>}
+      <SetupSheetFooter>
+        <SetupSaveButton
+          pending={pending}
+          label={awardId ? "Save" : "Add Award"}
+        />
+        <SetupRowError error={pending ? null : formError} />
+      </SetupSheetFooter>
     </form>
   );
 }

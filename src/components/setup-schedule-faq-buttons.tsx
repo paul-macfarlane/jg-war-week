@@ -6,11 +6,8 @@ import { toast } from "sonner";
 
 import {
   type SetupScheduleFaqActionResult,
-  deleteFaqItem,
-  deleteScheduleItem,
   moveFaqItem,
 } from "@/actions/setup-schedule-faq";
-import { ConfirmActionButton } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 
 /** Runs an action, toasting its refusal, then refreshes the page. */
@@ -25,31 +22,6 @@ function useRefreshingAction() {
     });
   }
   return { pending, run };
-}
-
-/** Deletes a Schedule Item or FAQ Item named `name`, after a confirm. */
-export function DeleteSetupItemButton({
-  id,
-  name,
-  kind,
-}: {
-  id: string;
-  name: string;
-  kind: "schedule-item" | "faq-item";
-}) {
-  return (
-    <ConfirmActionButton
-      title={`Delete "${name}"?`}
-      action={() =>
-        kind === "schedule-item" ? deleteScheduleItem(id) : deleteFaqItem(id)
-      }
-      successMessage={
-        kind === "schedule-item" ? "Schedule Item deleted" : "FAQ Item deleted"
-      }
-    >
-      Delete
-    </ConfirmActionButton>
-  );
 }
 
 /** Up and down buttons for one FAQ Item; an end's button is disabled. */
@@ -69,8 +41,8 @@ export function MoveFaqItemButtons({
     <>
       <Button
         variant="outline"
-        size="xs"
-        className="min-h-11 min-w-11 sm:min-h-6 sm:min-w-0"
+        size="sm"
+        className="min-h-11 min-w-11 sm:min-h-8"
         disabled={pending || first}
         aria-label={`Move "${question}" up`}
         onClick={() => run(() => moveFaqItem(id, "up"))}
@@ -79,8 +51,8 @@ export function MoveFaqItemButtons({
       </Button>
       <Button
         variant="outline"
-        size="xs"
-        className="min-h-11 min-w-11 sm:min-h-6 sm:min-w-0"
+        size="sm"
+        className="min-h-11 min-w-11 sm:min-h-8"
         disabled={pending || last}
         aria-label={`Move "${question}" down`}
         onClick={() => run(() => moveFaqItem(id, "down"))}

@@ -44,7 +44,11 @@ export async function getYouCandidates(
   dbOrTx: DBOrTx = db,
 ): Promise<YouCandidate[]> {
   return dbOrTx
-    .select({ id: participant.id, email: participant.email })
+    .select({
+      id: participant.id,
+      email: participant.email,
+      displayName: participant.displayName,
+    })
     .from(participant)
     .where(eq(participant.warWeekId, warWeek.id));
 }

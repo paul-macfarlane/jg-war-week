@@ -110,7 +110,7 @@ test("a Heats Bracket is built, run and finalized into Points Entries", async ({
   await asOrganizer(context);
   const id = await xiCompetitionId(COMPETITION);
 
-  await page.goto(`/admin/setup/competitions/${id}/bracket`);
+  await page.goto(`/admin/competitions/${id}/bracket`);
   await page.getByRole("combobox", { name: "Format" }).click();
   await page.getByRole("option", { name: "Heats" }).click();
   await expect(page.getByText("Format set to Heats")).toBeVisible();
@@ -181,7 +181,7 @@ test("a Heats Bracket is built, run and finalized into Points Entries", async ({
 
   // Before finalizing: End War Week must warn (never refuse), naming this
   // Bracket, then Cancel without ever confirming it (XI stays live).
-  await page.goto("/admin/setup");
+  await page.goto("/admin/settings");
   await page.getByRole("button", { name: "End War Week" }).click();
   const endDialog = page.getByRole("alertdialog");
   await expect(endDialog).toContainText("Not finalized:");

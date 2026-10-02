@@ -70,6 +70,14 @@ line that no longer matches the app is a bug in this file.
   - Each pass reseeds with `--reset`, which wipes only the seeded War Weeks
     in the local database: a War Week the run creates (Lifecycle) survives
     it, so delete that one yourself. Never run against a hosted database.
+- **Navigation, for the lines below.** Participant pages: the phone tab bar
+  is Home, Schedule, Competitions, Leaderboard, More (Announcements is
+  More's first item); the desktop top nav adds Announcements. Admin: one
+  flat nav, Points, Competitions, Schedule, Roster, Announcements, Awards,
+  FAQ, Finale, Settings, Organizers, Guide (a Host sees Points,
+  Competitions, Schedule, Announcements, Finale, Guide); the phone bar is
+  Points, Competitions, Schedule, Announcements, More. The avatar button
+  (**Account menu**) at the top right of both headers holds the account.
 - **Run order:** Public Pages, then Admin as an Organizer (it links the
   Participant account and assigns the Host the later sections use), then
   Host, then User Pages.
@@ -157,16 +165,45 @@ line that no longer matches the app is a bug in this file.
 otherwise. Every create, edit and delete below ends with the change visible
 on the matching War Week page.
 
-- [ ] **Lands on the current War Week.** Open `/admin`; the header names the
-      current War Week, and the edition switcher (in the header at 1440, in
-      More at 390) lists every edition. Switch to a past edition: the
-      banner reads "Editing the Archive: War Week <X>". Switch back.
-- [ ] **Settings save and show.** In War Week settings, change the Story
-      Theme, the dates (DateRangePicker: picking the end date leaves it open until
-      Done), the Slack URL and one Appearance
-      Theme color, then save. The preview shows both schemes, and
-      `/<edition>` shows the new Story Theme, dates and color after a
-      reload. Restore the originals.
+- [ ] **Lands on the current War Week, on Points.** Open `/admin`; it
+      redirects to `/admin/points` (there is no Overview or Setup hub). The
+      header names the current War Week, and the edition switcher (in the
+      header at 1440, in More at 390) lists every edition. Switch to a past
+      edition: the banner reads "Editing the Archive: War Week <X>". Switch
+      back.
+- [ ] **Flat admin nav.** At 1440 the side nav lists Points, Competitions,
+      Schedule, Roster, Announcements, Awards, FAQ, Finale, Settings,
+      Organizers, Guide, in that order, current page highlighted. At 390 the
+      bottom bar is Points, Competitions, Schedule, Announcements, More, and
+      More's Sheet holds the other seven plus the edition switcher; More is
+      highlighted on a page that lives in it (e.g. Settings).
+- [ ] **Old Setup URLs redirect.** `/admin/setup` and `/admin/setup/war-week`
+      land on `/admin/settings`; `/admin/setup/days` and
+      `/admin/setup/schedule` on `/admin/schedule`; `/admin/setup/teams` on
+      `/admin/roster`; `/admin/setup/competitions` on `/admin/competitions`;
+      `/admin/setup/faq` on `/admin/faq`.
+- [ ] **Account menu in admin.** The header's right side is the avatar
+      alone at 1440 and 390. Opening it shows the name and email, Display
+      (Light, Dark, System), "Back to War Week", "Join the Slack channel"
+      (when the War Week has a Slack URL) and Sign out. Enter opens it,
+      arrows move, Escape closes. Display changes restyle admin and survive
+      a reload.
+- [ ] **Every list row has Edit and Delete.** On Competitions, Schedule
+      (Days and Items), Roster (Teams and Participants), Announcements,
+      Awards, FAQ and Organizers, each row shows a visible **Edit** and a
+      **Delete** button (touch targets at least 44px at 390). Edit opens the
+      form in a dialog at 1440 and a bottom sheet at 390 (Announcements'
+      Edit goes to its own page); Delete opens a confirm and ends in a
+      toast. There is no whole-row hidden button. Schedule, FAQ and Awards
+      have no `/new` or `/[id]` page: `/admin/schedule/new`,
+      `/admin/faq/new` and `/admin/awards/new` redirect to their list.
+- [ ] **Settings autosave and show.** In Settings, change the Story Theme,
+      the dates (DateRangePicker: picking the end date leaves it open until
+      Done), the Slack URL and one Appearance Theme color. There is no Save
+      button; the heading shows "Saving…" then "Saved" after each change.
+      The preview shows both schemes, and `/<edition>` shows the new Story
+      Theme, dates and color after a reload. Reload Settings: every change
+      persisted. Restore the originals.
 - [ ] **Settings refuse bad input at the field.** A Slack URL that isn't
       `https` (e.g. `http://jahnelgroup.slack.com/x`) shows "Slack URL must
       be an https URL." at its field (text that isn't a URL at all is
@@ -175,22 +212,25 @@ on the matching War Week page.
       end date." at Dates: the DateRangePicker can't produce one (a second
       tap before the first just reorders the range), so set the form's
       `startDate` and `endDate` inputs in the page (e.g. `2027-02-26` and
-      `2027-02-21`) and save. Each time the field takes focus, and nothing
-      is saved.
-- [ ] **Settings: Team fields follow Mode.** In War Week settings,
-      *(free-for-all)* Team Label and Leader Title are hidden and the roster
-      has no Team controls; set Mode to Teams (before saving) and they show
-      with their saved values.
-- [ ] **Days.** Add a Day inside the War Week with a Day Theme; it shows on
-      `/<edition>/schedule`. The Day picker greys out dates that already have
+      `2027-02-21`) and let it autosave. Each time the error shows at the field, the value
+      stays typed in the field, and nothing is saved (reload Settings to
+      confirm the old value).
+- [ ] **Settings: Team fields follow Mode.** In Settings,
+      *(free-for-all)* Team Label and Leader Title are hidden and Roster
+      has no Team controls; set Mode to Teams (it autosaves) and they show
+      with their saved values. Restore the Mode.
+- [ ] **Days.** On `/admin/schedule` the Days sit together with their
+      Schedule Items on one page. Add a Day inside the War Week with a Day
+      Theme (Add Day, a dialog or sheet); it shows on
+      `/<edition>/schedule`. Edit it through its Edit button. The Day picker greys out dates that already have
       a Day (not the edited Day's own date) and dates outside the War Week,
       so the form can't post a duplicate (the server's "There's already a
       Day on <date>." is unit-tested in `src/mutations/setup.test.ts`).
-      Delete the added Day through its confirm. When every date already has
+      Delete the added Day through its Delete button and confirm. When every date already has
       a Day (the XI demo), widen the War Week's dates by one in settings
       first and restore them after.
-- [ ] **Roster: add, link, edit, delete.** Add a Participant (on a Team,
-      *(teams)*); edit an existing Participant's email to
+- [ ] **Roster: add, link, edit, delete.** On `/admin/roster`, add a
+      Participant (on a Team, *(teams)*); edit an existing Participant's email to
       `e2e-participant@jahnelgroup.com` (this is the linked Participant the
       User Pages use; pick one in the top five of the Standings, e.g. Cass
       Comet in the XII demo or Anthony Conway in the XI demo, so the
@@ -231,9 +271,11 @@ on the matching War Week page.
 - [ ] **Points Entries.** Add a Points Entry with a Placement Points button,
       edit its points, delete it; `/<edition>/leaderboard` follows each
       change within about 10 s without a reload.
-- [ ] **Schedule.** Add a Schedule Item on a Day, linked to a Competition;
-      it shows on `/<edition>/schedule` under that Day with its time in ET
-      and links to the Competition. Edit, then delete it.
+- [ ] **Schedule Items.** On `/admin/schedule`, add a Schedule Item on a
+      Day, linked to a Competition; it shows on `/<edition>/schedule` under
+      that Day with its time in ET and links to the Competition. Edit it
+      (sheet or dialog, no separate page), then delete it (confirm and
+      toast).
 - [ ] **Announcements.** Post an Announcement with a heading, a link, an
       image and a video, then pin it. It shows first on the Announcements
       page and as the pinned card on Home, with every element rendered.
@@ -252,7 +294,9 @@ on the matching War Week page.
       "The last Organizer can't be removed." If others are listed, delete
       their rows from the local `organizer` table for this check and put
       them back after; never remove a real Organizer in the app.
-- [ ] **Lifecycle.** Create next War Week makes an Upcoming edition (copy
+- [ ] **Lifecycle.** On Settings (the Lifecycle box and Create next War
+      Week live there, not on a separate page; the seed-overwrite warning
+      shows there too, and only there), Create next War Week makes an Upcoming edition (copy
       settings only). Start on it is refused while the current one is live
       ("End <X> first."). End the current War Week: its confirm names any
       generated Bracket that isn't finalized and any open `games`
@@ -264,7 +308,7 @@ on the matching War Week page.
       '<new>'`; `--reset` doesn't remove it). In the teams pass XII is
       upcoming too: delete it as well; the closing `pnpm seed:demo`
       restores it.
-- [ ] **Finale links.** `/admin/standings` links to the Finale and to each
+- [ ] **Finale links.** `/admin/finale` links to the Finale and to each
       finalized Bracket's Finale; both open.
 - [ ] **Forms behave the same everywhere.** On a long form (Competition),
       resize from 1440 to 390 (crossing 768) with typed input: the input
@@ -273,22 +317,31 @@ on the matching War Week page.
       390, bottom sheets. Every delete
       above used `ConfirmDialog`, and every save and delete showed a toast.
 - [ ] **The Guide is true.** Read `/admin/guide`: every step names a page
-      and control that exists and works as described.
+      and control that exists and works as described (it is written for the
+      flat nav: Settings, Schedule, Roster, no Setup hub).
 - [ ] **No admin page carries more than it needs.** *(judgment)* Apply the
-      judgment rule to the Overview, Setup, every list page and every form.
+      judgment rule to every admin page (Points through Guide), every list
+      page and every form.
 
 ## Admin, as a Host
 
 `/admin/**` as `e2e-host@jahnelgroup.com`, Host of one `points`
 Competition (from the Organizer run).
 
-- [ ] **Trimmed to their Competitions.** The admin nav, Points Entries (its
-      Competition picker and its Brackets and Games lists), Setup →
-      Competitions and Setup → Schedule list only the Host's Competition
-      and its Schedule Items.
-- [ ] **Organizer-only pages refuse.** War Week settings, Days, Teams &
-      roster, FAQ, Awards, Organizers and Create next War Week each show
-      "Organizers and Hosts only."; there is no lifecycle box.
+- [ ] **Six sections, trimmed to their Competitions.** The admin nav is
+      Points, Competitions, Schedule, Announcements, Finale, Guide at 1440;
+      at 390 the bar is Points, Competitions, Schedule, Announcements, More
+      (Finale and Guide in More). Points Entries (its Competition picker and
+      its Brackets and Games lists), Competitions and Schedule list only the
+      Host's Competition and its Schedule Items. Each row has Edit and
+      Delete where the Host may use them.
+- [ ] **Organizer-only pages refuse.** Settings, Roster, FAQ, Awards and
+      Organizers (open their URLs directly) each show "Organizers and Hosts
+      only."; there is no Lifecycle box, no Create next War Week and no
+      Add Competition or Days editor.
+- [ ] **Account menu as a Host.** The avatar menu offers "Back to War Week"
+      in admin and Admin on participant pages (a Host is not a plain
+      Participant), plus Display and Sign out.
 - [ ] **What a Host can do works.** Add, edit and delete a Points Entry on
       their Competition; post an Announcement, edit it and delete it. They
       can't create or delete a Competition or assign Hosts: no Add
@@ -309,14 +362,28 @@ that nothing personal shows (no You highlight, no Log a Game).
 
 - [ ] **Home.** `/<edition>` shows the hero, Now/Next for the time given by
       `?at=` (pick a time with a Schedule Item and a timed Heat), the
-      pinned Announcement, and the top of the Standings: *(free-for-all)*
+      pinned Announcement, Recent results and the top of the Standings: *(free-for-all)*
       with the linked Participant highlighted as You; *(teams)* the Team
       Standings, which carry no You (it marks individual rows: Leaderboard,
       Teams). With a `games` Competition open, the
-      "Log a Game" shortcut shows for the linked Participant only. The XII
+      "Log a Game" shortcut shows for the linked Participant only. There is no
+      "Join the Slack channel" button on Home (it moved to the account
+      menu). The XII
       demo has no timed Heat: as the Organizer, generate a Bracket with the
       linked Participant in it (e.g. Chess Heats) and time an unplayed Heat,
       then use a `?at=` just before it.
+- [ ] **Recent results.** After a Bracket is finalized or a `games`
+      Competition closed and Points Entries are added, Home's Recent
+      results lists up to 5 rows newest first (a champion, a winner, a
+      Competition's Points Entries grouped in one row, e.g. "Trivia: Red 10,
+      Blue 5"), each linking to its Competition, with "All Competitions"
+      opening `/<edition>/competitions`. With nothing scored the section is
+      hidden. It follows a new result within about 10 s.
+- [ ] **Navigation.** At 390 the tab bar is Home, Schedule, Competitions,
+      Leaderboard, More, with the current page's tab highlighted:
+      Competitions on `/<edition>/competitions` and on a Competition page,
+      More on Announcements, Roster, Awards, FAQ and About. At 1440 the top
+      nav is Home, Schedule, Competitions, Leaderboard, Announcements, More.
 - [ ] **Log a Game from a phone.** At 390, log a head-to-head Game from
       Home's shortcut against another Entrant; it shows in that
       Competition's Game log as the newest Game, and its leaderboard
@@ -338,7 +405,8 @@ that nothing personal shows (no You highlight, no Log a Game).
 - [ ] **Leaderboard.** `/<edition>/leaderboard` shows the main Standings
       (Team Standings *(teams)*, individual Standings *(free-for-all)*), the
       points breakdown per row, and the linked Participant highlighted.
-- [ ] **Announcements.** The Announcements page (`/<edition>/announcements`)
+- [ ] **Announcements.** The Announcements page (`/<edition>/announcements`;
+      at 390 it is More's first item and More is highlighted there)
       lists the pinned Announcement first, renders rich text and videos, and
       shows who posted each by name, never an email.
 - [ ] **Roster.** `/<edition>/teams` *(teams)* shows each Team in its
@@ -356,15 +424,25 @@ that nothing personal shows (no You highlight, no Log a Game).
       clock, Playwright's own waits add more), ending in the same order as
       the Leaderboard. Replay works. With `prefers-reduced-motion` it still
       waits for Start, then jumps to the end.
-- [ ] **Display.** Light, Dark and System each restyle every page above,
-      and the choice survives a reload. In Dark, text passes contrast (axe)
-      on Home, Leaderboard and a Competition.
-- [ ] **More.** Every link in More (the page at 1440, the sheet at 390)
-      opens its page; Admin shows only for the Organizer and the Host.
+- [ ] **Account menu.** The avatar button at the top right (at 1440 and
+      390; no email text, no Sign out button beside it) opens a menu with
+      the name and email, Display, "Join the Slack channel" (when the War
+      Week has a Slack URL; it opens it) and Sign out; for the Organizer and
+      the Host it also has Admin, which opens `/admin/points`; for a plain
+      Participant (the linked or the unlinked account, never a Host) there
+      is no Admin item. Enter opens it, arrows move,
+      Escape closes.
+- [ ] **Display.** In the account menu, Light, Dark and System each restyle
+      every page above, and the choice survives a reload. In Dark, text
+      passes contrast (axe) on Home, Leaderboard and a Competition.
+- [ ] **More.** Every link in More (the page at 1440, the sheet at 390:
+      Announcements *(390 only)*, Roster, Awards, FAQ, War Week history,
+      Install app, About) opens its page. More has no "Signed in as" or
+      Display rows; Admin is in the account menu, not here.
 - [ ] **Access.** Signed out, `/<edition>` goes to
       `/sign-in?callbackURL=%2F<edition>` (finishing the sign-in needs
       Google until Test sign-in, ticket 62, ships; then check it returns to
-      `/<edition>`). As the linked Participant, `/admin` shows "Organizers
-      and Hosts only."
+      `/<edition>`). As the linked Participant, `/admin` (which redirects to
+      `/admin/points`) shows "Organizers and Hosts only."
 - [ ] **No page carries more than it needs.** *(judgment)* Apply the
       judgment rule to every page above, at 390 first.

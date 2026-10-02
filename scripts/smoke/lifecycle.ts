@@ -39,7 +39,7 @@ export async function assertWarWeekLifecycle(sessions: {
       "startWarWeek",
       "reopenWarWeek",
       "selectAdminEdition",
-      "updateWarWeekSettings",
+      "updateWarWeekSettingsFields",
     ].filter((name) => !ids[name]);
     if (missing.length > 0) {
       fail(check, `missing action ids: ${missing.join(", ")}`);
@@ -132,7 +132,7 @@ export async function assertWarWeekLifecycle(sessions: {
       );
     }
     const archiveAdmin = await (
-      await fetch(`${BASE_URL}/admin/setup`, {
+      await fetch(`${BASE_URL}/admin/settings`, {
         headers: { cookie: `${sessions.organizer.cookie}; admin_edition=xi` },
       })
     ).text();
@@ -174,7 +174,7 @@ export async function assertWarWeekLifecycle(sessions: {
        from war_week where edition = 'xi'`,
     );
     const saved = await callAction(
-      ids.updateWarWeekSettings,
+      ids.updateWarWeekSettingsFields,
       [
         xiId,
         {

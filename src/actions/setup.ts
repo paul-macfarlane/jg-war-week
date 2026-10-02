@@ -17,7 +17,7 @@ import {
   parseDayInput,
   parseParticipantInput,
   parseTeamInput,
-  parseWarWeekSettingsInput,
+  parseWarWeekSettingsFields,
 } from "@/lib/setup";
 import * as mutations from "@/mutations/setup";
 import type { CreateCompetitionResult } from "@/mutations/setup";
@@ -58,16 +58,21 @@ async function setupWrite<T>(
 
 const nothing = (): Parsed<null> => ({ ok: true, value: null });
 
-export async function updateWarWeekSettings(
+/**
+ * Saves some of the War Week's settings: the fields one autosave sends.
+ * Only those columns are written, laid over the row as it stands now
+ * (`mutations.updateWarWeekSettingsFields`).
+ */
+export async function updateWarWeekSettingsFields(
   warWeekId: string,
-  input: WarWeekSettingsInput,
+  fields: Partial<WarWeekSettingsInput>,
 ): Promise<SetupActionResult> {
   return setupWrite(
     "settings.save",
     "warWeek",
     warWeekId,
-    () => parseWarWeekSettingsInput(input),
-    mutations.updateWarWeekSettings,
+    () => parseWarWeekSettingsFields(fields),
+    mutations.updateWarWeekSettingsFields,
     // The header and the Archive show the settings and Appearance Theme.
     "site",
   );

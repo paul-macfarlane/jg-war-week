@@ -11,14 +11,17 @@ import {
   dayGuardError,
   dayOutsideRangeError,
   inUseError,
+  mergeWarWeekSettings,
   parseCompetitionInput,
   parseCreateCompetitionInput,
   parseDayInput,
   parseParticipantInput,
   parseTeamInput,
+  parseWarWeekSettingsFields,
   parseWarWeekSettingsInput,
   participantGuardError,
   settingsGuardError,
+  settingsSaveGroup,
   teamGuardError,
 } from "@/lib/setup";
 
@@ -824,5 +827,105 @@ describe("setup parsers' field errors", () => {
       error: "The form's fields are missing.",
       fieldErrors: {},
     });
+  });
+});
+
+describe("settingsSaveGroup", () => {
+  it("saves a text field on its own", () => {
+    expect(settingsSaveGroup("storyTheme")).toEqual(["storyTheme"]);
+    expect(settingsSaveGroup("slackChannelUrl")).toEqual(["slackChannelUrl"]);
+  });
+
+  it("saves the date range as one", () => {
+    expect(settingsSaveGroup("startDate")).toEqual(["startDate", "endDate"]);
+    expect(settingsSaveGroup("endDate")).toEqual(["startDate", "endDate"]);
+  });
+
+  it("saves the background with every override, so a light/dark flip and the overrides it clears land together", () => {
+    const group = [
+      "backgroundColor",
+      "overridePrimaryColor",
+      "overridePrimaryForegroundColor",
+      "overrideAccentColor",
+      "overrideBackgroundColor",
+      "overrideForegroundColor",
+    ];
+    expect(settingsSaveGroup("backgroundColor")).toEqual(group);
+    expect(settingsSaveGroup("overrideAccentColor")).toEqual(group);
+  });
+});
+
+describe("parseWarWeekSettingsFields", () => {
+  it("accepts some of the settings fields, as strings", () => {
+    expect(
+      parseWarWeekSettingsFields({ storyTheme: "Moon", winner: "" }),
+    ).toEqual({ ok: true, value: { storyTheme: "Moon", winner: "" } });
+  });
+
+  it("refuses a field that isn't a setting", () => {
+    expect(parseWarWeekSettingsFields({ status: "live" })).toMatchObject({
+      ok: false,
+      error: "The form's fields are missing.",
+    });
+  });
+
+  it("refuses a setting that isn't a string, at its field", () => {
+    expect(parseWarWeekSettingsFields({ storyTheme: 7 })).toEqual({
+      ok: false,
+      error: "Story Theme must be filled in.",
+      fieldErrors: { storyTheme: "Story Theme must be filled in." },
+    });
+  });
+
+  it("refuses no fields, or no object at all", () => {
+    for (const malformed of [{}, null, "storyTheme", ["storyTheme"]]) {
+      expect(parseWarWeekSettingsFields(malformed)).toMatchObject({
+        ok: false,
+        error: "The form's fields are missing.",
+      });
+    }
+  });
+});
+
+describe("mergeWarWeekSettings", () => {
+  it("lays the saved fields over the stored ones and changes only those columns", () => {
+    const stored = { ...input, winner: "Red", highlights: "Won it" };
+    const result = mergeWarWeekSettings(stored, { storyTheme: " Moon " });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.changed).toEqual({ storyTheme: "Moon" });
+    // The whole row is checked, newer stored values included.
+    expect(result.value.values).toMatchObject({
+      storyTheme: "Moon",
+      winner: "Red",
+      highlights: ["Won it"],
+      startDate: "2026-02-22",
+    });
+  });
+
+  it("changes a group's columns together", () => {
+    const result = mergeWarWeekSettings(input, {
+      startDate: "2026-02-21",
+      endDate: "2026-02-28",
+    });
+    expect(result).toMatchObject({
+      ok: true,
+      value: { changed: { startDate: "2026-02-21", endDate: "2026-02-28" } },
+    });
+  });
+
+  it("refuses a field the whole settings would refuse, at that field", () => {
+    expectRefused(
+      mergeWarWeekSettings(input, { slackChannelUrl: "http://x.example" }),
+      "Slack URL must be an https URL.",
+    );
+  });
+
+  it("checks rules across fields against the stored ones", () => {
+    // The stored end date is 2026-02-27.
+    expectRefused(
+      mergeWarWeekSettings(input, { startDate: "2026-03-01" }),
+      "Start date must not be after the end date.",
+    );
   });
 });

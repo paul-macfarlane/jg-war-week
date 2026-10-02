@@ -1,25 +1,30 @@
 /**
- * Every `/admin` section, in side-column order. `organizerOnly` sections
- * are hidden from Hosts; `tab` is the section's label on the phone's
- * bottom bar, where only tab sections get a tab (the rest go in More).
- * `icon` is a key; components map it to the icon (`AdminSectionIcon`), as
- * src/lib never imports icons (ADR 0001).
+ * Every `/admin` section, in nav order: the side column and, on a phone,
+ * the bottom bar and its More Sheet. `organizerOnly` sections are hidden
+ * from Hosts; `tab` sections get a tab on the phone's bottom bar (the rest
+ * go in More). `icon` is a key; components map it to the icon
+ * (`AdminSectionIcon`), as src/lib never imports icons (ADR 0001).
  */
 const ADMIN_SECTIONS = [
-  { label: "Overview", icon: "overview", href: "/admin", tab: "Overview" },
-  { label: "Guide", icon: "guide", href: "/admin/guide" },
+  { label: "Points", icon: "points", href: "/admin/points", tab: true },
   {
-    label: "Points Entries",
-    icon: "points",
-    href: "/admin/points",
-    tab: "Points",
+    label: "Competitions",
+    icon: "competitions",
+    href: "/admin/competitions",
+    tab: true,
   },
-  { label: "Finale", icon: "finale", href: "/admin/standings" },
+  { label: "Schedule", icon: "schedule", href: "/admin/schedule", tab: true },
+  {
+    label: "Roster",
+    icon: "roster",
+    href: "/admin/roster",
+    organizerOnly: true,
+  },
   {
     label: "Announcements",
     icon: "announcements",
     href: "/admin/announcements",
-    tab: "Announcements",
+    tab: true,
   },
   {
     label: "Awards",
@@ -27,13 +32,21 @@ const ADMIN_SECTIONS = [
     href: "/admin/awards",
     organizerOnly: true,
   },
-  { label: "Setup", icon: "setup", href: "/admin/setup", tab: "Setup" },
+  { label: "FAQ", icon: "faq", href: "/admin/faq", organizerOnly: true },
+  { label: "Finale", icon: "finale", href: "/admin/finale" },
+  {
+    label: "Settings",
+    icon: "settings",
+    href: "/admin/settings",
+    organizerOnly: true,
+  },
   {
     label: "Organizers",
     icon: "organizers",
     href: "/admin/organizers",
     organizerOnly: true,
   },
+  { label: "Guide", icon: "guide", href: "/admin/guide" },
 ] as const;
 
 /** A section an admin page can be. */
@@ -49,7 +62,7 @@ export function adminSectionsFor(isOrganizer: boolean) {
 /** Which icon a section shows; components map it to the icon itself. */
 export type AdminSectionIconKey = (typeof ADMIN_SECTIONS)[number]["icon"];
 
-export type AdminNavItem = {
+type AdminNavItem = {
   label: string;
   href: string;
   icon: AdminSectionIconKey;
@@ -57,9 +70,9 @@ export type AdminNavItem = {
 };
 
 /**
- * The phone's admin nav: the bottom bar's tabs (Overview, Points,
- * Announcements, Setup) and the rest of the viewer's sections for the More
- * Sheet. `moreCurrent` is true when `current` is one of the More sections.
+ * The phone's admin nav: the bottom bar's tabs (Points, Competitions,
+ * Schedule, Announcements) and the rest of the viewer's sections for the
+ * More Sheet. `moreCurrent` is true when `current` is one of the More sections.
  */
 export function adminNavFor(
   isOrganizer: boolean,
@@ -71,7 +84,7 @@ export function adminNavFor(
     const { label, href, icon } = section;
     const isCurrent = label === current;
     if ("tab" in section) {
-      tabs.push({ label: section.tab, href, icon, current: isCurrent });
+      tabs.push({ label, href, icon, current: isCurrent });
     } else {
       more.push({ label, href, icon, current: isCurrent });
     }

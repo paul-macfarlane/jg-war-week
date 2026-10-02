@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { OrganizersEditor } from "@/components/organizers-editor";
@@ -30,7 +31,14 @@ export default async function AdminOrganizersPage() {
         <h1 className="text-2xl font-bold">Organizers</h1>
         <p className="text-foreground/70 text-sm">
           Organizers run every War Week. Hosts are assigned per Competition, on
-          its setup in Setup → Competitions.
+          its row in{" "}
+          <Link
+            href="/admin/competitions"
+            className="text-primary underline-offset-4 hover:underline"
+          >
+            Competitions
+          </Link>
+          .
         </p>
         <OrganizersEditor organizers={organizers} actorEmail={email} />
       </section>

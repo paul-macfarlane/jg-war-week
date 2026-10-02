@@ -12,7 +12,7 @@ import type { Standings } from "@/lib/standings";
 
 type Status = WarWeek["status"];
 
-/** How the admin names each status (the edition switcher, `/admin/setup`). */
+/** How the admin names each status (the edition switcher, `/admin/settings`). */
 export const STATUS_LABELS: Record<Status, string> = {
   upcoming: "Upcoming",
   live: "Live",

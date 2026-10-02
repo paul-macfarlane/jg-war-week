@@ -75,12 +75,12 @@ before it says it's done.
 | ------------------------------------------ | ---------------------------------------------------------------------- |
 | Participant pages (home, leaderboard, schedule, teams, competitions, announcements, awards, FAQ) | `src/app/[edition]/`                    |
 | History page                               | `src/app/history/`                                                     |
-| Organizer screens                          | `src/app/admin/` (setup, points, standings, announcements, awards)     |
+| Organizer screens                          | `src/app/admin/` (points, competitions, schedule, roster, settings…)  |
 | Server actions behind admin forms          | `src/actions/`                                                         |
 | Database reads / writes                    | `src/queries/`, `src/mutations/`                                       |
 | Rules with unit tests (standings, schedule, Finale, access…) | `src/lib/` (`*.test.ts` next to each file)           |
 | The Bracket engine (seeding, Rounds/Heats, advancing winners, Bracket → Points Entries) | `src/lib/bracket/` (`*.test.ts` next to each file) |
-| Bracket builder and results screens                | `src/app/admin/setup/competitions/[id]/bracket/`, `src/app/admin/brackets/[id]/` |
+| Bracket builder and results screens                | `src/app/admin/competitions/[id]/bracket/`, `src/app/admin/brackets/[id]/` |
 | Database schema                            | `src/db/schema.ts`                                                     |
 | Migrations (generated, never hand-edited)  | `drizzle/`                                                             |
 | Seed data, one file per War Week           | `seeds/i.json` … `seeds/xi.json`, the tentative upcoming `seeds/xii.json`; the live XI demo in `seeds/demo/xi.json` |
@@ -177,48 +177,62 @@ Never add or replace only one of a pair.
 
 ### Run a new War Week or change this year's theme (no code first)
 
-Organizer screens cover it. Sign in and go to `/admin`:
+Organizer screens cover it. Sign in and go to `/admin` (it opens on
+Points). The admin is one flat nav: **Points, Competitions, Schedule,
+Roster, Announcements, Awards, FAQ, Finale, Settings, Organizers, Guide**.
+There is no Overview and no Setup hub; the old `/admin/setup/...` URLs
+redirect to their new homes.
 
-- **`/admin/setup`**: the **Lifecycle** box (Start, End with the computed
-  Winner and highlights, Reopen), War Week settings (Story Theme, dates,
-  mode, Team Label, Leader Title, links, Winner and highlights, editable
-  directly for corrections; a free-for-all hides Team Label, Leader Title and
-  the roster's Team controls, and keeps their saved values for if you switch
-  back to Teams), the Appearance Theme
-  (colors, font, logo, banner), Days, Teams and roster, Competitions (with
-  their Hosts), Schedule and FAQ. The Appearance Theme form shows both
-  color schemes: whichever one the five colors you set are the base
-  palette for, and the other scheme's colors, derived from them
+- **`/admin/settings`**: War Week settings (Story Theme, dates, mode, Team
+  Label, Leader Title, links, Winner and highlights, editable directly for
+  corrections; a free-for-all hides Team Label, Leader Title and the
+  Roster's Team controls, and keeps their saved values for if you switch
+  back to Teams), the Appearance Theme (colors, font, logo, banner), the
+  **Lifecycle** box (Start, End with the computed Winner and highlights,
+  Reopen) and **Create next War Week**. The seed-overwrite warning shows
+  here. **The form saves itself**: each field saves a moment after you stop
+  typing, with "Saving…" then "Saved" by the heading and no Save button; a
+  value the server refuses (a Slack URL that isn't `https`) shows its error
+  at the field, keeps what you typed and isn't saved. The Appearance Theme
+  form shows both color schemes: whichever one the five colors you set are
+  the base palette for, and the other scheme's colors, derived from them
   automatically. Any of the derived scheme's five colors can be
   overridden; changing a background across light and dark clears every
-  override you haven't touched yourself. Viewers never see your Setup
+  override you haven't touched yourself. Viewers never see your Settings
   screen's scheme — each picks their own Display (Light, Dark or System)
-  from the header menu (the phone More Sheet, the desktop TopNav, or the
-  Admin header).
+  from the avatar **account menu** at the top right of every header.
+- **`/admin/schedule`**: the War Week's Days (with Day Themes) and each
+  Day's Schedule Items on one page. **`/admin/roster`**: Teams and
+  Participants. **`/admin/competitions`**: Competitions, with their Hosts.
 - **On a phone**, the admin sections are a bar fixed to the bottom of the
-  screen (Overview, Points, Announcements, Setup, More); More opens a Sheet
-  with the other sections you can see, the edition switcher, Display and
-  your account. From `md` up it is the side column and header as before.
-  The sections live in `src/lib/admin-sections.ts`.
-- **Setup rows open in a Sheet on phones, a Dialog from 768px.** On Teams & roster and Competitions, each
-  row is one "Edit <name>" button that opens its form in a
-  `ResponsiveSheetDialog`, with Save and Delete in a sticky footer; "Add …"
-  opens the empty form. A Team's row reads "Edit <Team Label> <name>". "Assign
-  Hosts" (the Hosts field) is inside the Competition's Sheet, and its one
-  Save saves the Hosts with the rest.
+  screen (Points, Competitions, Schedule, Announcements, More); More opens a
+  Sheet with the other sections you can see and the edition switcher.
+  Display, the way back to the War Week, Slack and Sign out are in the
+  avatar account menu in the header. From `md` up it is the side column and
+  header. The sections live in `src/lib/admin-sections.ts`.
+- **Every admin list row has a visible Edit and Delete button.** The row is
+  `SetupListRow` in `src/components/setup-row.tsx`: Edit opens the form in a
+  `ResponsiveSheetDialog` (a Sheet on phones, a Dialog from 768px) and
+  Delete opens a `ConfirmDialog` and ends in a toast. The Add button sits
+  below the list. Competitions, Days, Schedule Items, Teams, Participants,
+  FAQ, Awards and Organizers all use it; Announcements' Edit links to their
+  own full page. There are no `/new` or `/[id]` pages for Schedule, FAQ or
+  Awards. A Team's row reads "Edit <Team Label> <name>". "Assign Hosts" (the
+  Hosts field) is inside the Competition's Edit form, and its one Save
+  saves the Hosts with the rest.
 - **You comes from the roster email only.** A signed-in person is "You" (the
   highlight, Log a Game, reporting a Heat) only when their email matches a
   Participant's roster email; there is no "Which one is you?" pick. A
   Participant row without an email shows "No email: won't be linked when they
-  sign in" on Teams & roster.
+  sign in" on Roster.
 - **`/admin/organizers`**: the Organizer list (see
   [Add an Organizer or assign Hosts](#add-an-organizer-or-assign-hosts)).
-- **`/admin/points`**, **`/admin/standings`** (Run the Finale: "Open Finale" at closing ceremonies, and "Finale: <Competition>" for each finalized Bracket),
+- **`/admin/points`**, **`/admin/finale`** (Run the Finale: "Open Finale" at closing ceremonies, and "Finale: <Competition>" for each finalized Bracket),
   **`/admin/announcements`**, **`/admin/awards`**.
 
 To start next year's edition in the app:
 
-1. In `/admin/setup`, press **Create next War Week**. The edition, number
+1. In `/admin/settings`, press **Create next War Week**. The edition, number
    and year are prefilled (XII, 12, next year); add the dates and Story
    Theme, and choose what to copy (settings are on; Competitions, with
    their Hosts, and the FAQ are off). Organizers are global, so there's
@@ -255,8 +269,8 @@ signed in is a **Participant** (`CONTEXT.md`, "Access rules").
   in the Admin nav). Add a `@jahnelgroup.com` email; it works on their next
   page load. Any Organizer can remove any other, or themselves, as long as
   one Organizer is left. The list is global: one list for every War Week.
-- **Assign Hosts**: `/admin/setup/competitions`, the Hosts field in each
-  Competition's Sheet, saved with its Save (Organizers only). A Host needs
+- **Assign Hosts**: `/admin/competitions`, the Hosts field in each
+  Competition's Edit form, saved with its Save (Organizers only). A Host needs
   no Participant record. They get the Admin link and see only their Competitions in Admin: its Points
   Entries, Bracket, setup and linked Schedule Items, plus Announcements for
   that War Week. Remove the email to take it away; it applies on their next
@@ -277,7 +291,7 @@ signed in is a **Participant** (`CONTEXT.md`, "Access rules").
 ### Run a knockout Competition as a Bracket
 
 Organizer screens cover setting one up and running it. Under
-**Setup → Competitions**, tap **Add Competition** (it opens a Sheet) and
+**Competitions**, tap **Add Competition** (it opens a Sheet) and
 choose its **Format**: "Single elimination" ("A knockout Bracket: one loss
 and an Entrant is out.") or "Heats" ("A Bracket where Entrants play in
 Heats; a set number advance each Round."). **Add Competition**, and you land
@@ -290,7 +304,7 @@ Finalize to write its placings as Points Entries. No code needed for any of
 that. While a Bracket is finalized, its Competition's scoring and Placement
 Points can't change ("Un-finalize the Bracket first."); its name and
 description still can. Changing an existing Competition's Format happens on
-its Bracket page, not the Setup form.
+its Bracket page, not the Competition's Edit form.
 
 A Bracket reads as a tree by default on its Competition page: single
 elimination shows its Rounds left to right joined by lines; Heats shows one
@@ -309,7 +323,7 @@ joins the home page's Now/Next once its Entrants are known. A re-draw
 clears every time, so the builder asks first. Once finalized, the Bracket
 has its own **Bracket Finale** at `/<edition>/finale/<competitionId>` for
 the projector, linked from its champion card, the results screen and
-`/admin/standings` ("Finale: <Competition>"). The rules are under "Bracket
+`/admin/finale` ("Finale: <Competition>"). The rules are under "Bracket
 rules", "Schedule display rules" and "Finale rules" in `CONTEXT.md`.
 
 Single elimination is a straight 1v1 knockout. Heats plays several Entrants
@@ -359,7 +373,7 @@ Format's rules are unit-testable on their own before any screen uses them.
 ### Run a Competition as Games
 
 For a showdown, a best of X, or a week-long ladder of casual games — no code
-needed. Under **Setup → Competitions**, tap **Add Competition** (it opens a
+needed. Under **Competitions**, tap **Add Competition** (it opens a
 Sheet) and choose its **Format**: "Games". A **Game Type** select appears — Head-to-head (a
 winner, or a draw when allowed), Best score (each Game records a score;
 best or total, higher or lower is better) or Ranked (a finishing order,
@@ -467,29 +481,35 @@ Notes:
   min-w-11`, then from `sm` back to today's size — `sm:min-h-0 sm:min-w-0`,
   or `sm:min-h-<the variant's height>` (e.g. `sm:min-h-6` for `xs`,
   `sm:min-h-7` for `sm`, `sm:min-h-9` for `default`/`lg`) so desktop is
-  unchanged. `Input`, the combobox and the Setup buttons follow it. The shadcn select trigger's
+  unchanged. `Input`, the combobox and the list-row buttons follow it. The shadcn select trigger's
   default height is now 44px below `sm` and 36px from `sm` (an edit in
   `ui/select.tsx`), so it sits level with an `Input`, and its list opens
   below the trigger rather than over the field above it.
 - A bottom Sheet (`ui/sheet.tsx`) and `ResponsiveSheetDialog` dismiss any
   open toast as they open (`DismissToasts` in `ui/sonner.tsx`), so a toast
   never covers their fields.
-- A long admin form puts its submit row in `StickyFormActions`
-  (`src/components/sticky-form-actions.tsx`): below `md` it sticks above the
-  admin section bar so Save stays in reach; from `md` it sits in the flow.
-  Give the form `pb-*` and its fields `scroll-mb-*` so a focused field is
-  not hidden under it.
+- Admin forms save with their own Save button inside the sheet or dialog;
+  the War Week settings form is the exception: it autosaves (debounced per
+  field, "Saving…" / "Saved" by the heading) and has no Save button.
+  Each save sends only its own fields (`updateWarWeekSettingsFields`),
+  merged over the stored row, so it never writes back over a newer value;
+  leaving with a refused field asks first.
+- Every admin list is a column of `SetupListRow`s
+  (`src/components/setup-row.tsx`): one visible Edit and one Delete per
+  row, Edit in a `ResponsiveSheetDialog`, Delete in a `ConfirmDialog` with
+  a toast. Reuse it for a new list instead of an inline editor or a
+  whole-row button.
 - Popups portal into the themed root through `ThemeRoot`, which is wired
   into `ui/popover`, `ui/select`, `ui/combobox`, `ui/alert-dialog`,
   `ui/dialog` and `ui/sheet`, so they keep the War Week's Appearance Theme.
   `ThemeRoot`'s `scheme` prop pins its subtree to one color scheme whatever
-  the viewer's Display — the Setup form's two previews use it so an
+  the viewer's Display — the Settings form's two previews use it so an
   Organizer sees both the light and the dark palette rendered live, side by
   side, regardless of their own Display.
 - A warning that still lets the save through uses the `--warning` token
   (`text-warning`), not a hardcoded amber — it's tuned to pass AA against
   each color scheme's background, unlike a raw Tailwind amber class. Its
-  users today: Setup's contrast warnings and its flip notice (an Organizer
+  users today: Settings' contrast warnings and its flip notice (an Organizer
   override about to be cleared), the Points Entry form's Max points
   warning, and the Announcement form's hint.
 - Lay out every field with `Field` / `FieldLabel htmlFor` /
@@ -506,7 +526,7 @@ Notes:
   Validation runs on the server only; the form reads `FormData` when every
   control posts a named input, and closes over React state when a field is
   rich text or a list (Announcement, Award participants, FAQ, Schedule
-  description, setup rows).
+  description, list-row forms).
 - Confirm anything destructive with `ConfirmDialog` or `ConfirmActionButton`
   (`src/components/confirm-dialog.tsx`), never `window.confirm`. Report
   results with `toast.success` / `toast.error` from `sonner`, never

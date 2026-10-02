@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { DBTx } from "@/db";
 import { isLocalDatabaseUrl } from "@/db/local-url";
 import { inRolledBackTransaction } from "@/db/test-transaction";
-import type { WarWeekSettingsValues } from "@/lib/setup";
+import type { WarWeekSettingsInput, WarWeekSettingsValues } from "@/lib/setup";
 
 // Runs only against a local Postgres (CI's service or docker compose; see
 // vitest.config.ts), never a hosted database.
@@ -34,6 +34,33 @@ const settings: WarWeekSettingsValues = {
   fontPreset: "serif",
   winner: null,
   highlights: [],
+};
+
+/** The same settings as the form sends them: every field a string. */
+const settingsInput: WarWeekSettingsInput = {
+  storyTheme: "Setup test",
+  startDate: "2099-01-01",
+  endDate: "2099-01-05",
+  mode: "teams",
+  teamLabel: "House",
+  leaderTitle: "Captain",
+  slackChannelUrl: "https://example.slack.com/archives/x",
+  wikiUrl: "",
+  primaryColor: "#123456",
+  primaryForegroundColor: "#ffffff",
+  accentColor: "#000000",
+  backgroundColor: "#ffffff",
+  foregroundColor: "#000000",
+  overridePrimaryColor: "",
+  overridePrimaryForegroundColor: "",
+  overrideAccentColor: "",
+  overrideBackgroundColor: "",
+  overrideForegroundColor: "",
+  logoUrl: "",
+  bannerUrl: "",
+  fontPreset: "serif",
+  winner: "",
+  highlights: "",
 };
 
 /** Two War Weeks; home has two Days, one with a Schedule Item. */
@@ -72,210 +99,277 @@ async function fixture(tx: DBTx) {
   return { schema, home, other, busyId: busy.id, quietId: quiet.id, ctx };
 }
 
-describe.skipIf(!isLocalDatabase)("updateWarWeekSettings", () => {
-  it("saves the settings and Appearance Theme of only this War Week", async () => {
+describe.skipIf(!isLocalDatabase)("updateWarWeekSettingsFields", () => {
+  it("writes only the fields sent, so a newer stored value survives", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { updateWarWeekSettings } = await import("@/mutations/setup");
-      const { schema, home, other, ctx } = await fixture(tx);
-
-      const result = await updateWarWeekSettings(
-        { ...settings, storyTheme: "Renamed", primaryColor: "#ff0000" },
-        ctx,
-        tx,
-      );
-      expect(result).toEqual({ ok: true });
-
-      const rows = await tx.select().from(schema.warWeek);
-      const byId = new Map(rows.map((r) => [r.id, r]));
-      expect(byId.get(home)).toMatchObject({
-        storyTheme: "Renamed",
-        primaryColor: "#ff0000",
-        fontPreset: "serif",
-      });
-      expect(byId.get(other)).toMatchObject({
-        storyTheme: "Setup test",
-        primaryColor: "#123456",
-      });
-    });
-  });
-
-  /** The home War Week's five override columns. */
-  async function overridesOf(tx: DBTx, id: string) {
-    const schema = await import("@/db/schema");
-    const [row] = await tx
-      .select({
-        primary: schema.warWeek.overridePrimaryColor,
-        primaryForeground: schema.warWeek.overridePrimaryForegroundColor,
-        accent: schema.warWeek.overrideAccentColor,
-        background: schema.warWeek.overrideBackgroundColor,
-        foreground: schema.warWeek.overrideForegroundColor,
-      })
-      .from(schema.warWeek)
-      .where(eq(schema.warWeek.id, id));
-    return row;
-  }
-
-  const noOverrides = {
-    overridePrimaryColor: null,
-    overridePrimaryForegroundColor: null,
-    overrideAccentColor: null,
-    overrideBackgroundColor: null,
-    overrideForegroundColor: null,
-  };
-
-  it("saves the derived palette's overrides", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { updateWarWeekSettings } = await import("@/mutations/setup");
-      const { home, ctx } = await fixture(tx);
-
-      const result = await updateWarWeekSettings(
-        {
-          ...settings,
-          ...noOverrides,
-          overridePrimaryColor: "#0a7a1f",
-          overrideBackgroundColor: "#111111",
-        },
-        ctx,
-        tx,
-      );
-      expect(result).toEqual({ ok: true });
-      expect(await overridesOf(tx, home)).toEqual({
-        primary: "#0a7a1f",
-        primaryForeground: null,
-        accent: null,
-        background: "#111111",
-        foreground: null,
-      });
-    });
-  });
-
-  it("leaves the overrides alone when a save carries none", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { updateWarWeekSettings } = await import("@/mutations/setup");
-      const { home, ctx } = await fixture(tx);
-      await updateWarWeekSettings(
-        { ...settings, ...noOverrides, overrideAccentColor: "#445566" },
-        ctx,
-        tx,
-      );
-
-      await updateWarWeekSettings(
-        { ...settings, storyTheme: "Renamed" },
-        ctx,
-        tx,
-      );
-      expect(await overridesOf(tx, home)).toMatchObject({
-        accent: "#445566",
-      });
-    });
-  });
-
-  it("clears untouched overrides when the background crosses light and dark, keeping ones set in the same save", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { updateWarWeekSettings } = await import("@/mutations/setup");
-      const { home, ctx } = await fixture(tx);
-      // The fixture's base background is white: its overrides dress dark.
-      await updateWarWeekSettings(
-        {
-          ...settings,
-          ...noOverrides,
-          overridePrimaryColor: "#aaaaaa",
-          overrideAccentColor: "#cccccc",
-        },
-        ctx,
-        tx,
-      );
-
-      // A black background: the overrides would now dress light. The
-      // accent is posted as stored (untouched); the primary was set anew.
-      const result = await updateWarWeekSettings(
-        {
-          ...settings,
-          ...noOverrides,
-          backgroundColor: "#000000",
-          foregroundColor: "#ffffff",
-          overridePrimaryColor: "#0a7a1f",
-          overrideAccentColor: "#cccccc",
-        },
-        ctx,
-        tx,
-      );
-      expect(result).toEqual({ ok: true });
-      expect(await overridesOf(tx, home)).toEqual({
-        primary: "#0a7a1f",
-        primaryForeground: null,
-        accent: null,
-        background: null,
-        foreground: null,
-      });
-    });
-  });
-
-  it("keeps untouched overrides when the background stays in its scheme", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { updateWarWeekSettings } = await import("@/mutations/setup");
-      const { home, ctx } = await fixture(tx);
-      const kept = {
-        ...settings,
-        ...noOverrides,
-        overrideAccentColor: "#cccccc",
-      };
-      await updateWarWeekSettings(kept, ctx, tx);
-
-      await updateWarWeekSettings(
-        { ...kept, backgroundColor: "#f5ecd7" },
-        ctx,
-        tx,
-      );
-      expect(await overridesOf(tx, home)).toMatchObject({ accent: "#cccccc" });
-    });
-  });
-
-  it("refuses free-for-all while the War Week has Teams", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { updateWarWeekSettings } = await import("@/mutations/setup");
+      const { updateWarWeekSettingsFields } = await import("@/mutations/setup");
       const { schema, home, ctx } = await fixture(tx);
+      // Written after the form loaded (End War Week, another tab).
       await tx
-        .insert(schema.team)
-        .values({ warWeekId: home, name: "Red", color: "#f00" });
+        .update(schema.warWeek)
+        .set({ winner: "Red", highlights: ["Won it"] })
+        .where(eq(schema.warWeek.id, home));
 
-      expect(
-        await updateWarWeekSettings(
-          { ...settings, mode: "free-for-all" },
-          ctx,
-          tx,
-        ),
-      ).toEqual({
-        ok: false,
-        error:
-          "This War Week has 1 Team. Delete it before switching to free-for-all.",
-      });
+      const result = await updateWarWeekSettingsFields(
+        { storyTheme: "Renamed" },
+        ctx,
+        tx,
+      );
+      expect(result).toEqual({ ok: true });
       const [row] = await tx
-        .select({ mode: schema.warWeek.mode })
+        .select()
         .from(schema.warWeek)
         .where(eq(schema.warWeek.id, home));
-      expect(row.mode).toBe("teams");
+      expect(row).toMatchObject({
+        storyTheme: "Renamed",
+        winner: "Red",
+        highlights: ["Won it"],
+      });
     });
   });
 
-  it("refuses dates that leave a Day outside the War Week", async () => {
+  it("refuses a field at that field, checked against the stored row", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { updateWarWeekSettings } = await import("@/mutations/setup");
+      const { updateWarWeekSettingsFields } = await import("@/mutations/setup");
       const { ctx } = await fixture(tx);
+      // The stored end date is 2099-01-05.
       expect(
-        await updateWarWeekSettings(
-          { ...settings, startDate: "2099-01-03" },
-          ctx,
-          tx,
-        ),
-      ).toEqual({
+        await updateWarWeekSettingsFields({ startDate: "2099-01-09" }, ctx, tx),
+      ).toMatchObject({
         ok: false,
-        error:
-          "The Day on 2099-01-02 falls outside the new dates. Move or delete it first.",
+        fieldErrors: {
+          startDate: "Start date must not be after the end date.",
+        },
       });
+    });
+  });
+
+  it("refuses dates that would strand a Day", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { updateWarWeekSettingsFields } = await import("@/mutations/setup");
+      const { ctx } = await fixture(tx);
+      const result = await updateWarWeekSettingsFields(
+        { startDate: "2099-01-04", endDate: "2099-01-05" },
+        ctx,
+        tx,
+      );
+      expect(result.ok).toBe(false);
     });
   });
 });
+
+describe.skipIf(!isLocalDatabase)(
+  "updateWarWeekSettingsFields with the whole form",
+  () => {
+    it("saves the settings and Appearance Theme of only this War Week", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { updateWarWeekSettingsFields } =
+          await import("@/mutations/setup");
+        const { schema, home, other, ctx } = await fixture(tx);
+
+        const result = await updateWarWeekSettingsFields(
+          { ...settingsInput, storyTheme: "Renamed", primaryColor: "#ff0000" },
+          ctx,
+          tx,
+        );
+        expect(result).toEqual({ ok: true });
+
+        const rows = await tx.select().from(schema.warWeek);
+        const byId = new Map(rows.map((r) => [r.id, r]));
+        expect(byId.get(home)).toMatchObject({
+          storyTheme: "Renamed",
+          primaryColor: "#ff0000",
+          fontPreset: "serif",
+        });
+        expect(byId.get(other)).toMatchObject({
+          storyTheme: "Setup test",
+          primaryColor: "#123456",
+        });
+      });
+    });
+
+    /** The home War Week's five override columns. */
+    async function overridesOf(tx: DBTx, id: string) {
+      const schema = await import("@/db/schema");
+      const [row] = await tx
+        .select({
+          primary: schema.warWeek.overridePrimaryColor,
+          primaryForeground: schema.warWeek.overridePrimaryForegroundColor,
+          accent: schema.warWeek.overrideAccentColor,
+          background: schema.warWeek.overrideBackgroundColor,
+          foreground: schema.warWeek.overrideForegroundColor,
+        })
+        .from(schema.warWeek)
+        .where(eq(schema.warWeek.id, id));
+      return row;
+    }
+
+    const noOverrides = {
+      overridePrimaryColor: "",
+      overridePrimaryForegroundColor: "",
+      overrideAccentColor: "",
+      overrideBackgroundColor: "",
+      overrideForegroundColor: "",
+    };
+
+    it("saves the derived palette's overrides", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { updateWarWeekSettingsFields } =
+          await import("@/mutations/setup");
+        const { home, ctx } = await fixture(tx);
+
+        const result = await updateWarWeekSettingsFields(
+          {
+            ...settingsInput,
+            ...noOverrides,
+            overridePrimaryColor: "#0a7a1f",
+            overrideBackgroundColor: "#111111",
+          },
+          ctx,
+          tx,
+        );
+        expect(result).toEqual({ ok: true });
+        expect(await overridesOf(tx, home)).toEqual({
+          primary: "#0a7a1f",
+          primaryForeground: null,
+          accent: null,
+          background: "#111111",
+          foreground: null,
+        });
+      });
+    });
+
+    it("leaves the overrides alone when a save carries none", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { updateWarWeekSettingsFields } =
+          await import("@/mutations/setup");
+        const { home, ctx } = await fixture(tx);
+        await updateWarWeekSettingsFields(
+          { ...settingsInput, ...noOverrides, overrideAccentColor: "#445566" },
+          ctx,
+          tx,
+        );
+
+        await updateWarWeekSettingsFields({ storyTheme: "Renamed" }, ctx, tx);
+        expect(await overridesOf(tx, home)).toMatchObject({
+          accent: "#445566",
+        });
+      });
+    });
+
+    it("clears untouched overrides when the background crosses light and dark, keeping ones set in the same save", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { updateWarWeekSettingsFields } =
+          await import("@/mutations/setup");
+        const { home, ctx } = await fixture(tx);
+        // The fixture's base background is white: its overrides dress dark.
+        await updateWarWeekSettingsFields(
+          {
+            ...settingsInput,
+            ...noOverrides,
+            overridePrimaryColor: "#aaaaaa",
+            overrideAccentColor: "#cccccc",
+          },
+          ctx,
+          tx,
+        );
+
+        // A black background: the overrides would now dress light. The
+        // accent is posted as stored (untouched); the primary was set anew.
+        const result = await updateWarWeekSettingsFields(
+          {
+            ...settingsInput,
+            ...noOverrides,
+            backgroundColor: "#000000",
+            foregroundColor: "#ffffff",
+            overridePrimaryColor: "#0a7a1f",
+            overrideAccentColor: "#cccccc",
+          },
+          ctx,
+          tx,
+        );
+        expect(result).toEqual({ ok: true });
+        expect(await overridesOf(tx, home)).toEqual({
+          primary: "#0a7a1f",
+          primaryForeground: null,
+          accent: null,
+          background: null,
+          foreground: null,
+        });
+      });
+    });
+
+    it("keeps untouched overrides when the background stays in its scheme", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { updateWarWeekSettingsFields } =
+          await import("@/mutations/setup");
+        const { home, ctx } = await fixture(tx);
+        const kept = {
+          ...settingsInput,
+          ...noOverrides,
+          overrideAccentColor: "#cccccc",
+        };
+        await updateWarWeekSettingsFields(kept, ctx, tx);
+
+        await updateWarWeekSettingsFields(
+          { ...kept, backgroundColor: "#f5ecd7" },
+          ctx,
+          tx,
+        );
+        expect(await overridesOf(tx, home)).toMatchObject({
+          accent: "#cccccc",
+        });
+      });
+    });
+
+    it("refuses free-for-all while the War Week has Teams", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { updateWarWeekSettingsFields } =
+          await import("@/mutations/setup");
+        const { schema, home, ctx } = await fixture(tx);
+        await tx
+          .insert(schema.team)
+          .values({ warWeekId: home, name: "Red", color: "#f00" });
+
+        expect(
+          await updateWarWeekSettingsFields(
+            { ...settingsInput, mode: "free-for-all" },
+            ctx,
+            tx,
+          ),
+        ).toEqual({
+          ok: false,
+          error:
+            "This War Week has 1 Team. Delete it before switching to free-for-all.",
+        });
+        const [row] = await tx
+          .select({ mode: schema.warWeek.mode })
+          .from(schema.warWeek)
+          .where(eq(schema.warWeek.id, home));
+        expect(row.mode).toBe("teams");
+      });
+    });
+
+    it("refuses dates that leave a Day outside the War Week", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { updateWarWeekSettingsFields } =
+          await import("@/mutations/setup");
+        const { ctx } = await fixture(tx);
+        expect(
+          await updateWarWeekSettingsFields(
+            { ...settingsInput, startDate: "2099-01-03" },
+            ctx,
+            tx,
+          ),
+        ).toEqual({
+          ok: false,
+          error:
+            "The Day on 2099-01-02 falls outside the new dates. Move or delete it first.",
+        });
+      });
+    });
+  },
+);
 
 describe.skipIf(!isLocalDatabase)("Day mutations", () => {
   it("creates, edits and deletes a Day of this War Week", async () => {
@@ -912,15 +1006,16 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
 });
 
 describe.skipIf(!isLocalDatabase)(
-  "updateWarWeekSettings and the Organizer list",
+  "updateWarWeekSettingsFields and the Organizer list",
   () => {
     it("saves for an actor on no War Week's organizer emails", async () => {
       await inRolledBackTransaction(async (tx) => {
-        const { updateWarWeekSettings } = await import("@/mutations/setup");
+        const { updateWarWeekSettingsFields } =
+          await import("@/mutations/setup");
         const { schema, home } = await fixture(tx);
 
-        const result = await updateWarWeekSettings(
-          { ...settings, storyTheme: "Corrected" },
+        const result = await updateWarWeekSettingsFields(
+          { ...settingsInput, storyTheme: "Corrected" },
           { warWeekId: home, actorEmail: "unlisted@jahnelgroup.com" },
           tx,
         );

@@ -33,7 +33,7 @@ type ThemeRootProps = {
   style?: CSSProperties;
   /**
    * Pins the root to one color scheme whatever the viewer's Display, for
-   * the Setup form's two previews. Rendered as `data-scheme`.
+   * the settings form's two previews. Rendered as `data-scheme`.
    */
   scheme?: ColorScheme;
   className?: string;

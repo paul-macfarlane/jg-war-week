@@ -1,15 +1,16 @@
 import Link from "next/link";
 
+import { AccountMenu } from "@/components/account-menu";
 import { AdminBottomBar } from "@/components/admin-bottom-bar";
 import { AdminEditionSwitcher } from "@/components/admin-edition-switcher";
 import { AdminSectionIcon } from "@/components/admin-section-icon";
 import { SignOutButton } from "@/components/auth-buttons";
-import { DisplayMenu } from "@/components/display-menu";
 import { SiteFooter } from "@/components/site-footer";
 import { ThemeRoot } from "@/components/theme-root";
 import { Toaster } from "@/components/ui/sonner";
 import type { WarWeek } from "@/db/schema";
 import { ADMIN_REFUSAL, type AdminEdition } from "@/lib/access";
+import { nameFromEmail } from "@/lib/account";
 import { type AdminSection, adminSectionsFor } from "@/lib/admin-sections";
 import { warWeekThemeStyle } from "@/lib/theme";
 
@@ -62,11 +63,11 @@ export function AdminShell({
   return (
     <ThemeRoot
       style={warWeekThemeStyle(warWeek)}
-      className="bg-background text-foreground flex min-h-dvh flex-col pb-(--admin-bar-inset) font-sans [--admin-bar-height:4.5rem] [--admin-bar-inset:calc(var(--admin-bar-height)+env(safe-area-inset-bottom))] md:[--admin-bar-height:0px] md:[--admin-bar-inset:0px] md:[--admin-sticky-height:0px]"
+      className="bg-background text-foreground flex min-h-dvh flex-col pb-(--admin-bar-inset) font-sans [--admin-bar-height:4.5rem] [--admin-bar-inset:calc(var(--admin-bar-height)+env(safe-area-inset-bottom))] md:[--admin-bar-height:0px] md:[--admin-bar-inset:0px]"
     >
       <header className="border-border flex items-center gap-x-4 gap-y-1 border-b px-4 py-3 md:flex-wrap md:px-6">
         <Link
-          href="/admin"
+          href="/admin/points"
           className="min-w-0 truncate font-bold whitespace-nowrap"
         >
           War Week {warWeek.edition.toUpperCase()} admin
@@ -83,16 +84,23 @@ export function AdminShell({
             />
           </span>
         )}
-        <div className="hidden min-w-0 flex-wrap items-center gap-3 text-sm md:ml-auto md:flex">
+        <div className="ml-auto flex min-w-0 items-center gap-3 text-sm">
+          {/* Below `md` the way back is in the account menu. */}
           <Link
             href={`/${warWeek.edition}`}
-            className="text-primary underline-offset-4 hover:underline"
+            className="text-primary hidden underline-offset-4 hover:underline md:inline"
           >
             Back to War Week {warWeek.edition.toUpperCase()}
           </Link>
-          <DisplayMenu iconOnly />
-          <span className="text-foreground/70 truncate">{email}</span>
-          <SignOutButton />
+          <AccountMenu
+            name={nameFromEmail(email)}
+            email={email}
+            edition={warWeek.edition}
+            primaryColor={warWeek.primaryColor}
+            canOpenAdmin
+            inAdmin
+            slackUrl={warWeek.slackChannelUrl}
+          />
         </div>
       </header>
       {banner && (
@@ -110,34 +118,21 @@ export function AdminShell({
         >
           <ul className="flex flex-col gap-1">
             {adminSectionsFor(isOrganizer).map(({ label, icon, href }) => {
-              const content = (
-                <>
-                  <AdminSectionIcon icon={icon} className="size-4 shrink-0" />
-                  <span className="flex-1">{label}</span>
-                  {!href && <span className="text-xs">Soon</span>}
-                </>
-              );
-              const base =
-                "flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm";
+              const isCurrent = label === current;
               return (
                 <li key={label}>
-                  {href && label === current ? (
-                    <Link
-                      href={href}
-                      aria-current="page"
-                      className={`${base} bg-primary/10 text-primary font-medium`}
-                    >
-                      {content}
-                    </Link>
-                  ) : href ? (
-                    <Link href={href} className={`${base} hover:bg-muted`}>
-                      {content}
-                    </Link>
-                  ) : (
-                    <span className={`${base} text-foreground/50`}>
-                      {content}
-                    </span>
-                  )}
+                  <Link
+                    href={href}
+                    aria-current={isCurrent ? "page" : undefined}
+                    className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm whitespace-nowrap ${
+                      isCurrent
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "hover:bg-muted"
+                    }`}
+                  >
+                    <AdminSectionIcon icon={icon} className="size-4 shrink-0" />
+                    <span className="flex-1">{label}</span>
+                  </Link>
                 </li>
               );
             })}
@@ -149,25 +144,21 @@ export function AdminShell({
       <AdminBottomBar
         edition={warWeek.edition}
         storyTheme={warWeek.storyTheme}
-        email={email}
         isOrganizer={isOrganizer}
         current={current}
         editions={editions}
       />
       {/* Inside the themed root so the edition's colors apply to toasts.
           The offsets are Sonner's defaults (24px, and 16px up to 600px
-          wide) plus the bar's inset and any sticky form actions' height
-          (`StickyFormActions`), both 0 from `md`. */}
+          wide) plus the bottom bar's inset, which is 0 from `md`. */}
       <Toaster
         position="bottom-center"
         closeButton
         offset={{
-          bottom:
-            "calc(var(--admin-bar-inset) + var(--admin-sticky-height, 0px) + 24px)",
+          bottom: "calc(var(--admin-bar-inset) + 24px)",
         }}
         mobileOffset={{
-          bottom:
-            "calc(var(--admin-bar-inset) + var(--admin-sticky-height, 0px) + 16px)",
+          bottom: "calc(var(--admin-bar-inset) + 16px)",
         }}
       />
     </ThemeRoot>

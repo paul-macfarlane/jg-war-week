@@ -18,7 +18,7 @@ export const ABOUT_FALLBACK_THEME: ThemeColors = {
 };
 
 /**
- * The feature cards, in the app's navigation order with setup first. Each
+ * The feature cards, in the app's navigation order with the Admin card first. Each
  * `slug` names a still at `public/about/<slug>.png`, written by
  * `scripts/about-media.ts`. The hero is the Standings stills; the Finale is a
  * still poster below the grid, not a card. Copy is mode-neutral: it reads
@@ -26,10 +26,10 @@ export const ABOUT_FALLBACK_THEME: ThemeColors = {
  */
 export const ABOUT_FEATURES = [
   {
-    slug: "organizer-setup",
-    title: "Organizer and Host setup",
-    text: "Organizers set up the War Week, Days, schedule, roster and Competitions under Admin. Hosts get just their Competition and enter its points themselves.",
-    alt: "The Admin Setup screen listing War Week, Days, Teams & roster, Competitions, Schedule and FAQ.",
+    slug: "organizer-admin",
+    title: "Organizer and Host admin",
+    text: "Organizers run the whole War Week from one Admin nav: the Days and schedule, the roster, Competitions, Announcements, Awards, FAQ and settings. Hosts get just their Competition and enter its points themselves.",
+    alt: "The Admin Schedule page with the flat Admin nav (Points, Competitions, Schedule, Roster and more) beside the War Week's Days and their Schedule Items.",
   },
   {
     slug: "schedule",

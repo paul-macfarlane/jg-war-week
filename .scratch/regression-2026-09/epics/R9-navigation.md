@@ -8,7 +8,9 @@
 
 **Blocked by:** R8 merged into `staging` (shared nav files).
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
 **Red-team:** not required (no Drizzle schema, auth or access change; Host trimming is preserved, not changed).
 
@@ -22,11 +24,12 @@ Participant side: 54 → 55, and 56 alone. Admin side: 57 → 58 and 57 → 59.
 
 Each ticket's own, plus:
 
-- [ ] `docs/regression-checklist.md` User Pages and Admin sections updated for the new nav.
-- [ ] `/about` (nav-order cards and stills via `scripts/about-media.ts`) and `docs/maintainers-guide.md` updated.
-- [ ] Each ticket file records its closeout and is `done` in this branch.
+- [x] `docs/regression-checklist.md` User Pages and Admin sections updated for the new nav.
+- [x] `/about` (nav-order cards and stills via `scripts/about-media.ts`) and `docs/maintainers-guide.md` updated.
+- [x] Each ticket file records its closeout and is `done` in this branch.
 - [ ] CI on the PR passes; `pnpm format:check && pnpm gate` passes.
 
 ## Comments
 
 - 2026-10-01 (Paul): grilled and approved; tickets `ready-for-agent`.
+- 2026-10-02 [CLOSEOUT] (atlas-implement): tickets 54–59 done on `feat/regression-r9-navigation`; record in `R9-execution.md`. PR: https://github.com/paul-macfarlane/jg-war-week/pull/114. `pnpm format:check && pnpm gate` passes at `6360357`; CI pending at closeout.

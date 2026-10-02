@@ -187,8 +187,8 @@ async function assertHostAllowedAndRefused(fixture: HostFixture) {
 
   for (const [label, action, args, expected, unchanged] of [
     [
-      "updateWarWeekSettings for XI",
-      "updateWarWeekSettings",
+      "updateWarWeekSettingsFields for XI",
+      "updateWarWeekSettingsFields",
       [xiId, { storyTheme: "smoke-host-theme" }],
       "Only an Organizer can change War Week settings.",
       async () => {
@@ -379,12 +379,52 @@ async function assertAdminTrimmedForHost(sessions: {
   );
 
   await runCheck(
-    `GET /admin/setup/war-week as a Host shows '${ADMIN_REFUSAL_TEXT}'`,
+    "GET /admin/points as a Host shows the Host's nav: Points, Competitions, Schedule, Announcements, Finale and Guide only",
     async () => {
-      const { status, body } = await get(
-        "/admin/setup/war-week",
-        sessions.host,
-      );
+      const { status, body } = await get("/admin/points", sessions.host);
+      const shown = (section: string) =>
+        body.includes(`href="/admin/${section}"`);
+      const result = {
+        status,
+        shown: [
+          "points",
+          "competitions",
+          "schedule",
+          "announcements",
+          "finale",
+          "guide",
+        ].filter((section) => !shown(section)),
+        hidden: ["roster", "awards", "faq", "settings", "organizers"].filter(
+          shown,
+        ),
+      };
+      return status === 200 &&
+        result.shown.length === 0 &&
+        result.hidden.length === 0
+        ? null
+        : JSON.stringify(result);
+    },
+  );
+
+  await runCheck(
+    "GET /admin/schedule as a Host shows the Schedule Items and not the Days editor",
+    async () => {
+      const { status, body } = await get("/admin/schedule", sessions.host);
+      const result = {
+        status,
+        items: body.includes('aria-label="Schedule Items"'),
+        days: body.includes('aria-label="Days"'),
+      };
+      return status === 200 && result.items && !result.days
+        ? null
+        : JSON.stringify(result);
+    },
+  );
+
+  await runCheck(
+    `GET /admin/settings as a Host shows '${ADMIN_REFUSAL_TEXT}'`,
+    async () => {
+      const { status, body } = await get("/admin/settings", sessions.host);
       return status === 200 &&
         body.includes(ADMIN_REFUSAL_TEXT) &&
         !body.includes(">War Week settings</h1>")
@@ -406,23 +446,27 @@ async function assertAdminTrimmedForHost(sessions: {
   );
 }
 
-/** The Admin link in the edition navigation (`canOpenAdmin`). */
+/**
+ * The account menu is in the edition header for a Host and a Participant
+ * alike. Its Admin item (`canOpenAdmin`) renders only when the menu opens,
+ * so the e2e `regression-r9-account` spec covers who sees it.
+ */
 async function assertAdminLinkForHost(sessions: {
   host: SmokeSession;
   notOrganizer: SmokeSession;
 }) {
   for (const [label, session, expected] of [
     ["a Host", sessions.host, true],
-    ["a Participant", sessions.notOrganizer, false],
+    ["a Participant", sessions.notOrganizer, true],
   ] as const) {
     await runCheck(
-      `GET /xi as ${label} ${expected ? "shows" : "hides"} the Admin link`,
+      `GET /xi as ${label} has the account menu in the header`,
       async () => {
         const res = await fetch(`${BASE_URL}/xi`, {
           headers: { cookie: session.cookie },
         });
         const body = await res.text();
-        const shown = body.includes('href="/admin"');
+        const shown = body.includes('aria-label="Account menu"');
         return res.status === 200 && shown === expected
           ? null
           : `status=${res.status} shown=${shown}`;
@@ -489,7 +533,7 @@ async function assertAccessBeforeValidation(
   }[] = [
     {
       family: "settings",
-      action: "updateWarWeekSettings",
+      action: "updateWarWeekSettingsFields",
       args: [fixture.xiId, "not settings"],
       participant: organizerOnly("change War Week settings"),
       host: organizerOnly("change War Week settings"),
@@ -685,7 +729,7 @@ export async function assertParticipantRefused(sessions: {
   const cases: [string, string, unknown[], string][] = [
     [
       "settings",
-      "updateWarWeekSettings",
+      "updateWarWeekSettingsFields",
       [xi, { storyTheme: "smoke-participant" }],
       organizerOnly("change War Week settings"),
     ],

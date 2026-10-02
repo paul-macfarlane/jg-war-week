@@ -92,7 +92,7 @@
 }
 
 /* The viewer's Display (Light / Dark / System; `html[data-display]`, set by
-   the inline script in the root layout and by `DisplayMenu`) picks the
+   the inline script in the root layout and by `AccountMenu`) picks the
    color scheme. Unthemed chrome (/history's page, not-found, admin error)
    takes these defaults; System is pure CSS. */
 html[data-display="dark"] {
@@ -190,7 +190,7 @@ html[data-display="dark"] {
 /* Themed roots (`ThemeRoot`, `data-theme-root`) carry both palettes inline
    as `--light-*` and `--dark-*` (`warWeekThemeStyle`); map the shadcn
    tokens to the set for the viewer's scheme. A root pinned with
-   `data-scheme` (the Setup previews) skips the `:not([data-scheme])`
+   `data-scheme` (the Settings previews) skips the `:not([data-scheme])`
    rules; `data-scheme="light"` needs no rule of its own. */
 [data-theme-root] {
   color-scheme: light;

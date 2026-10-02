@@ -1,4 +1,4 @@
-/** Setup pages' warning that reloading the seed replaces what's edited here. */
+/** Settings' warning that reloading the seed replaces what's edited here. */
 export function SeedOverwriteWarning() {
   return (
     <p
