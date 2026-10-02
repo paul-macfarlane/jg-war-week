@@ -409,6 +409,45 @@ describe.skipIf(!isLocalDatabase)("Day mutations", () => {
     });
   });
 
+  it("saves and edits a Day's description", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { createDay, updateDay } = await import("@/mutations/setup");
+      const { getSetupDays } = await import("@/queries/setup");
+      const { home, quietId, ctx } = await fixture(tx);
+
+      await createDay(
+        { date: "2099-01-05", dayTheme: "Finale", description: "Wear red." },
+        ctx,
+        tx,
+      );
+      await updateDay(
+        quietId,
+        { date: "2099-01-03", dayTheme: "Quiet", description: "Shh." },
+        ctx,
+        tx,
+      );
+      const byDate = async () =>
+        Object.fromEntries(
+          (await getSetupDays({ id: home }, tx)).map((d) => [
+            d.date,
+            d.description,
+          ]),
+        );
+      expect(await byDate()).toEqual({
+        "2099-01-02": null,
+        "2099-01-03": "Shh.",
+        "2099-01-05": "Wear red.",
+      });
+      await updateDay(
+        quietId,
+        { date: "2099-01-03", dayTheme: "Quiet", description: null },
+        ctx,
+        tx,
+      );
+      expect((await byDate())["2099-01-03"]).toBeNull();
+    });
+  });
+
   it("refuses a duplicate date, a date outside the War Week, and deleting a Day with Schedule Items", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { createDay, updateDay, deleteDay } =
@@ -782,6 +821,128 @@ describe.skipIf(!isLocalDatabase)("Participant mutations", () => {
         error:
           "This Participant has 1 Points Entry and 1 Award. Delete them or remove the Participant from them first.",
       });
+    });
+  });
+});
+
+describe.skipIf(!isLocalDatabase)("importParticipants", () => {
+  const text = [
+    "Name\tEmail\tTeam\tCompany tag",
+    "Smith\tsmith@jahnelgroup.com\tBlue\tIL",
+    "Neo\tNEO@jahnelgroup.com\tBlue\t",
+  ].join("\n");
+  // What the preview showed: Smith added, Neo moved to Blue.
+  const expected = [
+    { row: 2, kind: "add" as const, changes: [] },
+    { row: 3, kind: "update" as const, changes: ["House: Red → Blue"] },
+  ];
+
+  it("adds and updates the previewed rows in one transaction", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { importParticipants } = await import("@/mutations/setup");
+      const { schema, home, blueId, ctx } = await rosterFixture(tx);
+
+      expect(await importParticipants({ text, expected }, ctx, tx)).toEqual({
+        ok: true,
+        added: 1,
+        updated: 1,
+      });
+      const rows = await tx
+        .select({
+          displayName: schema.participant.displayName,
+          email: schema.participant.email,
+          companyTag: schema.participant.companyTag,
+          teamId: schema.participant.teamId,
+          isLeader: schema.participant.isLeader,
+        })
+        .from(schema.participant)
+        .where(eq(schema.participant.warWeekId, home));
+      expect(rows).toEqual(
+        expect.arrayContaining([
+          {
+            displayName: "Smith",
+            email: "smith@jahnelgroup.com",
+            companyTag: "IL",
+            teamId: blueId,
+            isLeader: false,
+          },
+          {
+            displayName: "Neo",
+            email: "neo@jahnelgroup.com",
+            companyTag: null,
+            teamId: blueId,
+            isLeader: true,
+          },
+        ]),
+      );
+      expect(rows).toHaveLength(3);
+    });
+  });
+
+  it("refuses, writing nothing, when the roster changed since the preview", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { importParticipants } = await import("@/mutations/setup");
+      const { schema, home, neoId, blueId, ctx } = await rosterFixture(tx);
+      // Another tab moved Neo to Blue after the preview.
+      await tx
+        .update(schema.participant)
+        .set({ teamId: blueId })
+        .where(eq(schema.participant.id, neoId));
+
+      expect(await importParticipants({ text, expected }, ctx, tx)).toEqual({
+        ok: false,
+        error: "The roster changed since the preview. Review it again.",
+      });
+      expect(
+        await tx.$count(
+          schema.participant,
+          eq(schema.participant.warWeekId, home),
+        ),
+      ).toBe(2);
+    });
+  });
+
+  it("refuses a file with nothing to import", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { importParticipants } = await import("@/mutations/setup");
+      const { ctx } = await rosterFixture(tx);
+
+      expect(
+        await importParticipants({ text: "", expected: [] }, ctx, tx),
+      ).toEqual({ ok: false, error: "Paste some rows or upload a CSV first." });
+      expect(
+        await importParticipants(
+          {
+            text: "Neo\tneo@jahnelgroup.com",
+            expected: [{ row: 1, kind: "unchanged", changes: [] }],
+          },
+          ctx,
+          tx,
+        ),
+      ).toEqual({ ok: false, error: "There's nothing to add or update." });
+    });
+  });
+});
+
+describe("importParticipants when a Team is deleted mid-import", () => {
+  it("refuses as a changed roster on a foreign-key violation", async () => {
+    const { importParticipants } = await import("@/mutations/setup");
+    // The database boundary: the write hits Postgres 23503.
+    const db = {
+      transaction: async () => {
+        throw Object.assign(new Error("fk"), { code: "23503" });
+      },
+    } as unknown as DBTx;
+
+    expect(
+      await importParticipants(
+        { text: "Neo", expected: [] },
+        { warWeekId: "w", actorEmail: "organizer@jahnelgroup.com" },
+        db,
+      ),
+    ).toEqual({
+      ok: false,
+      error: "The roster changed since the preview. Review it again.",
     });
   });
 });

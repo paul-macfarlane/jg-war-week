@@ -10,6 +10,7 @@ import {
   endWarWeek,
   reopenWarWeek,
   startWarWeek,
+  unstartWarWeek,
 } from "@/actions/war-week-lifecycle";
 import {
   ConfirmActionButton,
@@ -35,8 +36,8 @@ import type { OpenGamesCompetition } from "@/queries/open-games-competitions";
 
 /**
  * The lifecycle action for a War Week's status, behind a confirm that says
- * what changes: Start (`upcoming`), End with the Winner and highlights
- * (`live`) or Reopen (`complete`).
+ * what changes: Start (`upcoming`), End with the Winner and highlights or
+ * Unstart (`live`) or Reopen (`complete`).
  */
 export function WarWeekLifecycleControls({
   warWeekId,
@@ -98,14 +99,28 @@ export function WarWeekLifecycleControls({
   }
 
   return (
-    <EndWarWeekButton
-      warWeekId={warWeekId}
-      name={name}
-      suggestedWinner={suggestedWinner}
-      highlights={highlights}
-      unfinalizedBrackets={unfinalizedBrackets}
-      openGamesCompetitions={openGamesCompetitions}
-    />
+    <>
+      <EndWarWeekButton
+        warWeekId={warWeekId}
+        name={name}
+        suggestedWinner={suggestedWinner}
+        highlights={highlights}
+        unfinalizedBrackets={unfinalizedBrackets}
+        openGamesCompetitions={openGamesCompetitions}
+      />
+      <ConfirmActionButton
+        title={`Unstart War Week ${name}?`}
+        description="It goes back to Upcoming. Only possible while nothing has been scored."
+        confirmLabel="Unstart"
+        variant="outline"
+        size="lg"
+        className="min-h-11 self-start sm:min-h-9"
+        successMessage={`War Week ${name} is upcoming again`}
+        action={() => unstartWarWeek(warWeekId)}
+      >
+        Unstart
+      </ConfirmActionButton>
+    </>
   );
 }
 

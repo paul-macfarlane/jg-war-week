@@ -191,8 +191,9 @@ redirect to their new homes.
   Roster's Team controls, and keeps their saved values for if you switch
   back to Teams), the Appearance Theme (colors, font, logo, banner), the
   **Lifecycle** box (Start, End with the computed Winner and highlights,
-  Reopen) and **Create next War Week**. The seed-overwrite warning shows
-  here. **The form saves itself**: each field saves a moment after you stop
+  Unstart while nothing is scored and it has never been ended, Reopen) and
+  **Create next War Week**. The seed-overwrite warning shows here. **The
+  form saves itself**: each field saves a moment after you stop
   typing, with "Saving…" then "Saved" by the heading and no Save button; a
   value the server refuses (a Slack URL that isn't `https`) shows its error
   at the field, keeps what you typed and isn't saved. The Appearance Theme
@@ -203,9 +204,11 @@ redirect to their new homes.
   override you haven't touched yourself. Viewers never see your Settings
   screen's scheme — each picks their own Display (Light, Dark or System)
   from the avatar **account menu** at the top right of every header.
-- **`/admin/schedule`**: the War Week's Days (with Day Themes) and each
-  Day's Schedule Items on one page. **`/admin/roster`**: Teams and
-  Participants. **`/admin/competitions`**: Competitions, with their Hosts.
+- **`/admin/schedule`**: the War Week's Days (with Day Themes and an
+  optional short Day description) and each Day's Schedule Items on one
+  page. **`/admin/roster`**: Teams and Participants, with an Organizer-only
+  Import (paste from Google Sheets or upload a CSV, preview, then Import).
+  **`/admin/competitions`**: Competitions, with their Hosts.
 - **On a phone**, the admin sections are a bar fixed to the bottom of the
   screen (Points, Competitions, Schedule, Announcements, More); More opens a
   Sheet with the other sections you can see and the edition switcher.
@@ -259,7 +262,8 @@ A seed file for a new edition is optional (for demo data or a bulk
 import). If you use one, load it with the **Seed** workflow in the GitHub
 Actions tab (pick the environment and the file). A reload never changes a
 War Week's status, Winner or highlights. Once organizers edit a War Week in
-the app, stop reloading its seed: a reload overwrites their other edits.
+the app, stop reloading its seed: a reload overwrites their other edits,
+including each seeded Day's Day Theme and description.
 
 ### Add an Organizer or assign Hosts
 
@@ -288,7 +292,10 @@ signed in is a **Participant** (`CONTEXT.md`, "Access rules").
   and E had run on `main` long enough that rolling back past them was no
   longer a concern. The same expand-then-contract shape applies to any
   future column removal: land the column unused first, wait out the
-  rollback window, then drop it in its own migration.
+  rollback window, then drop it in its own migration. R11 is a deliberate,
+  approved exception (decision H1-a, 2026-10-02): it moves
+  `announcement.video_urls` into the body and drops the column in the same
+  release (see [Rolling out R11](#rolling-out-r11-migrations-00200022)).
 
 ### Test as someone else (Test sign-in)
 
@@ -364,6 +371,24 @@ the order each time R10 reaches staging, and again on promotion to `main`:
 2. If the deploy went live first, re-run the Migrate job.
 3. A Vercel rollback is safe: the new columns and table are unused by the
    previous build.
+
+### Rolling out R11 (migrations 0020–0022)
+
+- **0020** adds `day.description`. Additive.
+- **0021** moves each Announcement's video links into its body, as video
+  blocks after the existing text.
+- **0022** drops `announcement.video_urls`. **Destructive: it can't be
+  rolled back.**
+
+So R11 doesn't follow the usual expand-then-contract wait:
+
+1. Merge to `staging`, and promote to `main`, **outside War Week**.
+2. Between the Migrate job and the new deployment going live, Announcement
+   pages on the old deployment error (the old code reads the dropped
+   column). Confirm the **Migrate** job succeeded, then that the new
+   deployment is live, and check an Announcement page.
+3. **A Vercel rollback past R11 isn't safe**: the old build reads
+   `announcement.video_urls`, which no longer exists. Fix forward instead.
 
 ### Run a knockout Competition as a Bracket
 
@@ -603,7 +628,10 @@ Notes:
   Validation runs on the server only; the form reads `FormData` when every
   control posts a named input, and closes over React state when a field is
   rich text or a list (Announcement, Award participants, FAQ, Schedule
-  description, list-row forms).
+  description, list-row forms). The rich-text editor
+  (`src/components/rich-text-editor.tsx`) is the one place a video goes:
+  an Announcement has no separate video field, and images are added by
+  URL (no upload).
 - Confirm anything destructive with `ConfirmDialog` or `ConfirmActionButton`
   (`src/components/confirm-dialog.tsx`), never `window.confirm`. Report
   results with `toast.success` / `toast.error` from `sonner`, never
@@ -630,14 +658,14 @@ emails.
 
 `/llms.txt` picks the new tool up from `src/mcp/tools.ts`. The tools today
 are `get_current_war_week`, `get_leaderboard`, `get_schedule`,
-`get_announcements`, `get_awards`, `get_faq`, `list_history`,
-`get_history`, `get_bracket` (a Competition's Bracket by name, with each
-Heat's time and place, and a Squad's `participants` by name; never who
-reported a result) and `get_games` (a Competition run as Games, by name:
-its settings, leaderboard ranked by Game Type and its Games newest first;
-never an email or who logged one). `get_bracket` (`src/mcp/bracket.ts`) is
-the model for a tool that looks something up by name and whitelists what
-it returns.
+`get_announcements` (a video is its URL in the plain-text body),
+`get_awards`, `get_faq`, `list_history`, `get_history`, `get_bracket` (a
+Competition's Bracket by name, with each Heat's time and place, and a
+Squad's `participants` by name; never who reported a result) and
+`get_games` (a Competition run as Games, by name: its settings, leaderboard
+ranked by Game Type and its Games newest first; never an email or who
+logged one). `get_bracket` (`src/mcp/bracket.ts`) is the model for a tool
+that looks something up by name and whitelists what it returns.
 
 ### Add or fix history
 

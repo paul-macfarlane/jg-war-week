@@ -295,6 +295,7 @@ export function ScheduleItemForm({
             onChange={(description) => set("description", description)}
             label="Description"
             labelId="schedule-description-label"
+            placeholder="Add details (optional)…"
           />
           <FieldError>{fieldErrors.description}</FieldError>
         </Field>

@@ -136,6 +136,9 @@ export const day = pgTable(
       .references(() => warWeek.id, { onDelete: "cascade" }),
     date: date("date").notNull(),
     dayTheme: varchar("day_theme", { length: 120 }).notNull(),
+    // `DAY_DESCRIPTION_MAX` in `@/lib/setup`; kept a literal so the schema
+    // imports nothing from the app.
+    description: varchar("description", { length: 280 }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -595,10 +598,6 @@ export const announcement = pgTable(
       .references(() => warWeek.id, { onDelete: "cascade" }),
     title: varchar("title", { length: 200 }).notNull(),
     body: jsonb("body").$type<Content>().notNull(),
-    videoUrls: varchar("video_urls", { length: 500 })
-      .array()
-      .notNull()
-      .default([]),
     pinned: boolean("pinned").notNull().default(false),
     authorEmail: varchar("author_email", { length: 254 }).notNull(),
     publishedAt: timestamp("published_at", { withTimezone: true })

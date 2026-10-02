@@ -14,7 +14,7 @@ const welcomeBody: Content = {
 };
 
 describe("toAnnouncementsResult", () => {
-  it("serializes title, resolved author name (never the email), published-at, plain-text body and video links", () => {
+  it("serializes title, resolved author name (never the email), published-at, plain-text body (a video as its URL)", () => {
     // As `getAnnouncementsWithAuthors` returns them: the author's email too.
     const rows = [
       {
@@ -24,7 +24,7 @@ describe("toAnnouncementsResult", () => {
         authorEmail: "olivia@jahnelgroup.com",
         publishedAt: new Date("2026-02-23T18:00:00.000Z"),
         body: welcomeBody,
-        videoUrls: ["https://www.youtube.com/watch?v=abc123"],
+        // A video is a block of the body.
       },
       {
         title: "Reminder",
@@ -33,7 +33,6 @@ describe("toAnnouncementsResult", () => {
         authorEmail: "b@jahnelgroup.com",
         publishedAt: new Date("2026-02-24T12:00:00.000Z"),
         body: { type: "doc", content: [] } satisfies Content,
-        videoUrls: [],
       },
     ];
 
@@ -49,7 +48,7 @@ describe("toAnnouncementsResult", () => {
           author: "Olivia Organizer",
           publishedAt: "2026-02-23T18:00:00.000Z",
           body: "Let's go.",
-          videoUrls: ["https://www.youtube.com/watch?v=abc123"],
+          // A video is a block of the body.
         },
         {
           title: "Reminder",
@@ -57,7 +56,6 @@ describe("toAnnouncementsResult", () => {
           author: "b",
           publishedAt: "2026-02-24T12:00:00.000Z",
           body: null,
-          videoUrls: [] as string[],
         },
       ],
     });

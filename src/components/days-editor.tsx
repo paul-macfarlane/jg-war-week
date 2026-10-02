@@ -16,13 +16,16 @@ import {
 } from "@/components/setup-row";
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { dayDateDisabled } from "@/lib/day-range";
 import { formatDayHeading } from "@/lib/schedule";
+import { DAY_DESCRIPTION_MAX } from "@/lib/setup";
 import type { SetupDay } from "@/queries/setup";
 
 /** "2 Schedule Items": what keeps the Day from being deleted. */
@@ -56,9 +59,10 @@ function DayForm({
   const id = useId();
   const [date, setDate] = useState(day?.date ?? "");
   const [dayTheme, setDayTheme] = useState(day?.dayTheme ?? "");
+  const [description, setDescription] = useState(day?.description ?? "");
   const { pending, formRef, formAction, fieldErrors, error } = useSetupRow(
     () => {
-      const input = { date, dayTheme };
+      const input = { date, dayTheme, description };
       return day ? updateDay(day.id, input) : createDay(warWeekId, input);
     },
     "Day saved",
@@ -106,6 +110,24 @@ function DayForm({
             onChange={(event) => setDayTheme(event.target.value)}
           />
           <FieldError>{fieldErrors.dayTheme}</FieldError>
+        </Field>
+        <Field data-invalid={!!fieldErrors.description}>
+          <FieldLabel htmlFor={`${id}-description`}>
+            Description (optional)
+          </FieldLabel>
+          <Textarea
+            id={`${id}-description`}
+            name="description"
+            rows={3}
+            maxLength={DAY_DESCRIPTION_MAX}
+            aria-invalid={!!fieldErrors.description}
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+          />
+          <FieldDescription>
+            {description.length}/{DAY_DESCRIPTION_MAX}
+          </FieldDescription>
+          <FieldError>{fieldErrors.description}</FieldError>
         </Field>
       </FieldGroup>
       <SetupSheetFooter>

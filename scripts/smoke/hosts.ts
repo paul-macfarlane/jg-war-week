@@ -111,6 +111,7 @@ export async function assertHostChecks(sessions: {
     await assertAdminTrimmedForHost(sessions);
     await assertAdminLinkForHost(sessions);
     await assertAccessBeforeValidation(sessions, fixture);
+    await assertImportOrganizerOnly(sessions, fixture);
     await assertFormerHostRefused(fixture);
   } finally {
     await deleteSmokeHosts().catch((error) =>
@@ -309,7 +310,7 @@ async function assertHostKeepsOwnPin(fixture: HostFixture) {
       async () => {
         const result = await callAction(
           ids.updateAnnouncement,
-          [row.id, { title: `${title}-edited`, body, videoUrls: [] }],
+          [row.id, { title: `${title}-edited`, body }],
           fixture.session,
         );
         const after = await pinned(row.id);
@@ -326,10 +327,7 @@ async function assertHostKeepsOwnPin(fixture: HostFixture) {
       async () => {
         const result = await callAction(
           ids.updateAnnouncement,
-          [
-            row.id,
-            { title: `${title}-unpinned`, body, videoUrls: [], pinned: false },
-          ],
+          [row.id, { title: `${title}-unpinned`, body, pinned: false }],
           fixture.session,
         );
         const after = await pinned(row.id);
@@ -639,6 +637,13 @@ async function assertAccessBeforeValidation(
       host: organizerOnly("end a War Week"),
     },
     {
+      family: "lifecycle",
+      action: "unstartWarWeek",
+      args: [fixture.xiId],
+      participant: organizerOnly("unstart a War Week"),
+      host: organizerOnly("unstart a War Week"),
+    },
+    {
       family: "Organizer list",
       action: "addOrganizer",
       args: [42],
@@ -662,6 +667,48 @@ async function assertAccessBeforeValidation(
           }
         }
         return wrong.length === 0 ? null : wrong.join("; ");
+      },
+    );
+  }
+}
+
+/**
+ * Ticket 67: importing the roster is Organizer-only. A Host (of an XI
+ * Competition) and a Participant both get the refusal, and the roster gains
+ * no row.
+ */
+async function assertImportOrganizerOnly(
+  sessions: { host: SmokeSession; notOrganizer: SmokeSession },
+  fixture: HostFixture,
+) {
+  const ids = serverActionIds();
+  const name = "Smoke Refused Import";
+  const refusal = "Only an Organizer can import Participants.";
+  for (const [label, session] of [
+    ["a Host", sessions.host],
+    ["a Participant", sessions.notOrganizer],
+  ] as const) {
+    await runCheck(
+      `importParticipants as ${label} is refused with '${refusal}' and writes nothing`,
+      async () => {
+        if (!ids.importParticipants) {
+          return "no server action id for importParticipants";
+        }
+        const result = await callAction(
+          ids.importParticipants,
+          [
+            fixture.xiId,
+            { text: name, expected: [{ row: 1, kind: "add", changes: [] }] },
+          ],
+          session,
+        );
+        const [{ count }] = await runQuery<{ count: string }>(
+          `select count(*) from participant where display_name = $1`,
+          [name],
+        );
+        return !result.ok && result.error === refusal && count === "0"
+          ? null
+          : `result=${JSON.stringify(result)} rows=${count}`;
       },
     );
   }
@@ -863,6 +910,7 @@ export async function assertParticipantRefused(sessions: {
       SELF_REPORT_OFF,
     ],
     ["lifecycle", "startWarWeek", [xi], organizerOnly("start a War Week")],
+    ["lifecycle", "unstartWarWeek", [xi], organizerOnly("unstart a War Week")],
     [
       "Organizer list",
       "removeOrganizer",

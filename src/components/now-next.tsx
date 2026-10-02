@@ -77,6 +77,11 @@ export function NowNextSection({
             <span className="text-primary text-lg font-semibold">
               {today.dayTheme}
             </span>
+            {today.description ? (
+              <span className="text-foreground/70 text-sm">
+                {today.description}
+              </span>
+            ) : null}
           </div>
         ) : (
           <span className="text-foreground/70 text-sm">

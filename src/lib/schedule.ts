@@ -33,7 +33,10 @@ export type ScheduleEntry = Pick<
   entrants?: string;
 };
 
-export type ScheduleDay = Pick<Day, "id" | "date" | "dayTheme"> & {
+export type ScheduleDay = Pick<
+  Day,
+  "id" | "date" | "dayTheme" | "description"
+> & {
   items: ScheduleEntry[];
 };
 
@@ -90,7 +93,8 @@ function compareItems(a: ScheduleEntry, b: ScheduleEntry): number {
  * start time then title.
  */
 export function groupSchedule(
-  days: Pick<Day, "id" | "date" | "dayTheme">[],
+  days: (Pick<Day, "id" | "date" | "dayTheme"> &
+    Partial<Pick<Day, "description">>)[],
   items: { dayId: string; entry: ScheduleEntry }[],
 ): ScheduleDay[] {
   return [...days]
@@ -99,6 +103,7 @@ export function groupSchedule(
       id: day.id,
       date: day.date,
       dayTheme: day.dayTheme,
+      description: day.description ?? null,
       items: items
         .filter((item) => item.dayId === day.id)
         .map((item) => item.entry)

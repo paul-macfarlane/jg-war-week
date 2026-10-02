@@ -7,8 +7,22 @@ function doc(...content: unknown[]) {
   return { type: "doc", content };
 }
 
-function render(content: unknown) {
-  return renderToStaticMarkup(<RichText content={content} />);
+function render(content: unknown, headingFloor?: number) {
+  return renderToStaticMarkup(
+    <RichText content={content} headingFloor={headingFloor} />,
+  );
+}
+
+function heading(level: number, text: string) {
+  return {
+    type: "heading",
+    attrs: { level },
+    content: [{ type: "text", text }],
+  };
+}
+
+function headingTags(html: string) {
+  return [...html.matchAll(/<(h[1-6])>/g)].map((match) => match[1]);
 }
 
 describe("RichText", () => {
@@ -62,8 +76,91 @@ describe("RichText", () => {
       '<ol start="3"><li><p><span>Neo</span></p></li></ol>',
     );
     expect(html).toContain(
-      '<img src="https://example.com/red-pill.png" alt="Red pill"/>',
+      '<figure><img src="https://example.com/red-pill.png" alt="Red pill"/></figure>',
     );
+  });
+
+  it("renders underline, strike, a hard break, a quote and a caption", () => {
+    const html = render(
+      doc(
+        {
+          type: "paragraph",
+          content: [
+            { type: "text", text: "under", marks: [{ type: "underline" }] },
+            { type: "hardBreak" },
+            { type: "text", text: "struck", marks: [{ type: "strike" }] },
+          ],
+        },
+        {
+          type: "blockquote",
+          content: [
+            { type: "paragraph", content: [{ type: "text", text: "said" }] },
+          ],
+        },
+        {
+          type: "image",
+          attrs: {
+            src: "https://example.com/a.png",
+            alt: "A key",
+            caption: "Photo: Trinity",
+          },
+        },
+      ),
+    );
+
+    expect(html).toContain(
+      "<p><span><u>under</u></span><br/><span><s>struck</s></span></p>",
+    );
+    expect(html).toContain("<blockquote><p><span>said</span></p></blockquote>");
+    expect(html).toContain(
+      '<figure><img src="https://example.com/a.png" alt="A key"/><figcaption>Photo: Trinity</figcaption></figure>',
+    );
+  });
+
+  describe("heading levels", () => {
+    it("renders the first heading at the default floor, h2", () => {
+      expect(headingTags(render(doc(heading(1, "A"))))).toEqual(["h2"]);
+    });
+
+    it("renders the first heading at the floor whatever its stored level", () => {
+      expect(headingTags(render(doc(heading(3, "A")), 4))).toEqual(["h4"]);
+      expect(headingTags(render(doc(heading(1, "A")), 2))).toEqual(["h2"]);
+    });
+
+    it("keeps later headings relative to the first, never skipping a level", () => {
+      // Stored H1, H3, H2, H1, H3: rendered from a floor of 3.
+      expect(
+        headingTags(
+          render(
+            doc(
+              heading(1, "a"),
+              heading(3, "b"),
+              heading(2, "c"),
+              heading(1, "d"),
+              heading(3, "e"),
+            ),
+            3,
+          ),
+        ),
+      ).toEqual(["h3", "h4", "h4", "h3", "h4"]);
+    });
+
+    it("never renders above the floor or past h6", () => {
+      expect(
+        headingTags(
+          render(
+            doc(
+              heading(2, "a"),
+              heading(1, "b"),
+              heading(3, "c"),
+              heading(4, "d"),
+              heading(5, "e"),
+            ),
+            5,
+          ),
+        ),
+      ).toEqual(["h5", "h5", "h6", "h6", "h6"]);
+    });
   });
 
   it("strips a javascript: link on render but keeps its text", () => {
@@ -106,7 +203,7 @@ describe("RichText", () => {
               text: "kept",
               marks: [{ type: "textStyle", attrs: { style: "x" } }],
             },
-            { type: "hardBreak" },
+            { type: "mention", attrs: { id: "x" } },
           ],
         },
       ),
@@ -133,6 +230,23 @@ describe("RichText", () => {
     expect(html).toContain('allow="fullscreen"');
     expect(html).toContain('referrerPolicy="strict-origin-when-cross-origin"');
     expect(html).toContain("aspect-video");
+  });
+
+  it("titles each video with videoTitle when given, keeping its other attributes", () => {
+    const html = renderToStaticMarkup(
+      <RichText
+        content={doc({
+          type: "video",
+          attrs: { src: "https://www.youtube.com/watch?v=abc123" },
+        })}
+        videoTitle="Video: Kickoff"
+      />,
+    );
+
+    expect(html).toContain('title="Video: Kickoff"');
+    expect(html).not.toContain('title="Embedded video"');
+    expect(html).toContain('loading="lazy"');
+    expect(html).toContain('allow="fullscreen"');
   });
 
   it("drops a video outside the allow-list on render", () => {

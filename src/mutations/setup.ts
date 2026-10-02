@@ -23,6 +23,11 @@ import { defaultGamesConfig } from "@/lib/games/config";
 import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
 import type { FieldErrors } from "@/lib/result";
 import {
+  type RosterImportSignature,
+  planRosterText,
+  planSignature,
+} from "@/lib/roster-import";
+import {
   type CompetitionCreateValues,
   type CompetitionValues,
   type DayValues,
@@ -43,6 +48,7 @@ import {
 } from "@/lib/setup";
 import { backgroundColorScheme } from "@/lib/theme";
 import type { MutationContext, MutationResult } from "@/mutations/types";
+import { getSetupParticipants, getSetupTeams } from "@/queries/setup";
 
 const WAR_WEEK_NOT_FOUND = "That War Week no longer exists.";
 const DAY_NOT_FOUND = "That Day no longer exists.";
@@ -55,6 +61,14 @@ export function isUniqueViolation(error: unknown): boolean {
   const cause = (error as { cause?: { code?: string } })?.cause;
   return (
     (error as { code?: string })?.code === "23505" || cause?.code === "23505"
+  );
+}
+
+/** Postgres foreign_key_violation: a row it points at was deleted meanwhile. */
+export function isForeignKeyViolation(error: unknown): boolean {
+  const cause = (error as { cause?: { code?: string } })?.cause;
+  return (
+    (error as { code?: string })?.code === "23503" || cause?.code === "23503"
   );
 }
 
@@ -525,6 +539,99 @@ export async function updateParticipant(
         : { ok: false, error: PARTICIPANT_NOT_FOUND };
     }),
   );
+}
+
+/** A roster import as the preview posts it: the text and what it showed. */
+export type ImportParticipantsInput = {
+  text: string;
+  expected: RosterImportSignature;
+};
+
+export type ImportParticipantsResult =
+  { ok: true; added: number; updated: number } | { ok: false; error: string };
+
+const ROSTER_CHANGED = "The roster changed since the preview. Review it again.";
+
+/**
+ * Imports the roster from a spreadsheet (ticket 67) in one transaction:
+ * locks this War Week's Participants, re-plans the posted text against the
+ * roster, Teams and Squad membership as they stand now, refuses if that
+ * plan isn't the one the preview showed (`expected`), then inserts the
+ * Adds and writes the Updates. Error and Unchanged rows are skipped. A Team
+ * deleted meanwhile (a foreign-key violation) refuses as a changed roster.
+ */
+export async function importParticipants(
+  input: ImportParticipantsInput,
+  ctx: MutationContext,
+  dbOrTx: DBOrTx = db,
+): Promise<ImportParticipantsResult> {
+  return refusingDuplicate(PARTICIPANT_TAKEN, async () => {
+    try {
+      return await importRoster(input, ctx, dbOrTx);
+    } catch (error) {
+      if (!isForeignKeyViolation(error)) throw error;
+      return { ok: false, error: ROSTER_CHANGED };
+    }
+  });
+}
+
+async function importRoster(
+  input: ImportParticipantsInput,
+  ctx: MutationContext,
+  dbOrTx: DBOrTx,
+): Promise<ImportParticipantsResult> {
+  return dbOrTx.transaction(async (tx): Promise<ImportParticipantsResult> => {
+    const [week] = await tx
+      .select({
+        id: warWeek.id,
+        mode: warWeek.mode,
+        teamLabel: warWeek.teamLabel,
+        leaderTitle: warWeek.leaderTitle,
+      })
+      .from(warWeek)
+      .where(eq(warWeek.id, ctx.warWeekId));
+    if (!week) return { ok: false, error: WAR_WEEK_NOT_FOUND };
+    // A Squad write takes a Participant `for share`, so a Team change
+    // here and a Squad write on the same Participant run one at a time.
+    await tx
+      .select({ id: participant.id })
+      .from(participant)
+      .where(eq(participant.warWeekId, ctx.warWeekId))
+      .for("update");
+    const roster = await getSetupParticipants(week, tx);
+    const teams = week.mode === "teams" ? await getSetupTeams(week, tx) : [];
+
+    const plan = planRosterText(input.text, { ...week, roster, teams });
+    if (!plan.ok) return plan;
+    if (
+      JSON.stringify(planSignature(plan.entries)) !==
+      JSON.stringify(input.expected)
+    ) {
+      return { ok: false, error: ROSTER_CHANGED };
+    }
+
+    const adds = plan.entries.flatMap((entry) =>
+      entry.kind === "add"
+        ? [{ warWeekId: ctx.warWeekId, ...entry.values }]
+        : [],
+    );
+    const updates = plan.entries.flatMap((entry) =>
+      entry.kind === "update" ? [entry] : [],
+    );
+    if (adds.length === 0 && updates.length === 0) {
+      return { ok: false, error: "There's nothing to add or update." };
+    }
+    if (adds.length > 0) await tx.insert(participant).values(adds);
+    for (const { id, values } of updates) {
+      await tx
+        .update(participant)
+        .set({ ...values, updatedAt: sql`now()` })
+        .where(
+          and(eq(participant.id, id), eq(participant.warWeekId, ctx.warWeekId)),
+        );
+    }
+    return { ok: true, added: adds.length, updated: updates.length };
+  });
 }
 
 /**

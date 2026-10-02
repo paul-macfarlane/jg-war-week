@@ -226,13 +226,17 @@ on the matching War Week page.
 - [ ] **Days.** On `/admin/schedule` the Days sit together with their
       Schedule Items on one page. Add a Day inside the War Week with a Day
       Theme (Add Day, a dialog or sheet); it shows on
-      `/<edition>/schedule`. Edit it through its Edit button. The Day picker greys out dates that already have
-      a Day (not the edited Day's own date) and dates outside the War Week,
-      so the form can't post a duplicate (the server's "There's already a
-      Day on <date>." is unit-tested in `src/mutations/setup.test.ts`).
-      Delete the added Day through its Delete button and confirm. When every date already has
-      a Day (the XI demo), widen the War Week's dates by one in settings
-      first and restore them after.
+      `/<edition>/schedule`. Give it a Day description (up to 280
+      characters, counted under the field); it shows under the Day Theme on
+      `/<edition>/schedule` and, for today's Day, in Home's Now/Next Today
+      header. Edit it through its Edit button. The Day picker greys out
+      dates that already have a Day (not the edited Day's own date) and
+      dates outside the War Week, so the form can't post a duplicate (the
+      server's "There's already a Day on <date>." is unit-tested in
+      `src/mutations/setup.test.ts`). Delete the added Day through its
+      Delete button and confirm. When every date already has a Day (the XI
+      demo), widen the War Week's dates by one in settings first and
+      restore them after.
 - [ ] **Roster: add, link, edit, delete.** On `/admin/roster`, add a
       Participant (on a Team, *(teams)*); edit an existing Participant's email to
       `e2e-participant@jahnelgroup.com` (this is the linked Participant the
@@ -246,6 +250,14 @@ on the matching War Week page.
       the new Team, as Captain); the Captain title shows on
       `/<edition>/teams`; delete the Team (a Team with Participants can't
       be deleted, so delete its Participant first).
+- [ ] **Roster import.** On `/admin/roster` as an Organizer, Import: paste
+      rows from a sheet without a header (*(teams)* name, email, Team,
+      Company Tag, Leader; *(free-for-all)* name, email, Company Tag, as
+      the hint says). The preview badges each row Add, Update (matched by
+      email, shows the changes, a cleared field in bold), Unchanged or
+      Error (an unknown Team is an Error, never created); Import adds and
+      updates only the valid rows. As a Host there is no Import and the
+      server refuses it. Delete what you added.
 - [ ] **Competitions, one of each Format.** Create a `points` Competition
       with Placement Points 5/3/1, a `single-elimination` Competition, and a
       `games` Competition with `head-to-head` (Add Competition lands on its
@@ -280,14 +292,19 @@ on the matching War Week page.
       that Day with its time in ET and links to the Competition. Edit it
       (sheet or dialog, no separate page), then delete it (confirm and
       toast).
-- [ ] **Announcements.** Post an Announcement with a heading, a link, an
-      image and a video, then pin it. It shows first on the Announcements
-      page and as the pinned card on Home, with every element rendered.
+- [ ] **Announcements.** Post an Announcement with a heading, a quote, a
+      link, a captioned image (by URL) and a video (the editor's Video
+      button), then pin it. The form has no Video links field, and the
+      editor's toolbar buttons show their keyboard shortcut in a tooltip. It
+      shows first on the Announcements page and as the pinned card on Home,
+      with every element rendered.
       Pinned Announcements sort newest first and a demo's are dated in its
       War Week, after anything posted today, so unpin the seeded pinned one
       first and pin it again at the end. Unpin, then delete. The admin list
       shows "Posted by <name>" (the poster's display name or the part of
-      their email before the @, never the email) and no video count.
+      their email before the @, never the email) and no video count. MCP
+      `get_announcements` returns no `videoUrls`; the video shows as its URL
+      in the plain-text body.
 - [ ] **Awards.** Give an Award to two Participants (and a Team,
       *(teams)*); it shows on `/<edition>/awards`. Delete it.
 - [ ] **FAQ.** Add an FAQ Item and move it first; `/<edition>/faq` shows it
@@ -305,13 +322,20 @@ on the matching War Week page.
       ("End <X> first."). End the current War Week: its confirm names any
       generated Bracket that isn't finalized and any open `games`
       Competition with at least one Game, and on End it records the Winner
-      from first place. Reopen makes it live again. Reopen is refused while
-      a later edition is upcoming ("War Week <Y> is next; reopen isn't
+      from first place. Unstart on a live edition with nothing scored (an
+      edition freshly started, e.g. XII) goes back to Upcoming behind a
+      confirm; on one with a Points Entry, Heat result or Game it is
+      refused. Reopen makes it live again. Reopen is refused while a later
+      edition is upcoming ("War Week <Y> is next; reopen isn't
       available."), so before Reopen delete the edition this line created
       from the local database (`delete from war_week where edition =
       '<new>'`; `--reset` doesn't remove it). In the teams pass XII is
       upcoming too: delete it as well; the closing `pnpm seed:demo`
       restores it.
+- [ ] **Unstart a reopened edition.** On the edition the Lifecycle line
+      reopened (ended before, so it has a Winner), Unstart is refused:
+      "This War Week has been ended; Unstart isn't available." It stays
+      live.
 - [ ] **Finale links.** `/admin/finale` links to the Finale and to each
       finalized Bracket's Finale; both open.
 - [ ] **Forms behave the same everywhere.** On a long form (Competition),
@@ -398,7 +422,9 @@ that nothing personal shows (no You highlight, no Log a Game).
       Participant enrolls, withdraws and enrolls again; the Entrant list
       follows each step.
 - [ ] **Schedule.** `/<edition>/schedule` lists every Day with its Day
-      Theme and Items in time order (ET), filterable by Day; each linked
+      Theme, Day description (when it has one: in the XI demo, Sun Feb 22
+      "The Matrix Has You" reads "Opening Sunday: Black Midnight from 12:01
+      AM, …") and Items in time order (ET), filterable by Day; each linked
       Competition opens.
 - [ ] **Competitions.** `/<edition>/competitions` lists every Competition.
       Open one of each Format: a `points` Competition shows its Points
@@ -417,8 +443,10 @@ that nothing personal shows (no You highlight, no Log a Game).
       points breakdown per row, and the linked Participant highlighted.
 - [ ] **Announcements.** The Announcements page (`/<edition>/announcements`;
       at 390 it is More's first item and More is highlighted there)
-      lists the pinned Announcement first, renders rich text and videos, and
-      shows who posted each by name, never an email.
+      lists the pinned Announcement first, renders rich text (headings,
+      quotes, captioned images) and videos, each player titled "Video:
+      <Announcement title>", and shows who posted each by name, never an
+      email.
 - [ ] **Roster.** `/<edition>/teams` *(teams)* shows each Team in its
       color with its Captain and Participants; *(free-for-all)* the
       Participants. The linked Participant is highlighted.

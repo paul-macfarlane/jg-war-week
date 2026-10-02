@@ -26,6 +26,7 @@ export type SetupDay = {
   id: string;
   date: string;
   dayTheme: string;
+  description: string | null;
   scheduleItemCount: number;
 };
 
@@ -39,6 +40,7 @@ export async function getSetupDays(
       id: day.id,
       date: day.date,
       dayTheme: day.dayTheme,
+      description: day.description,
       scheduleItemCount: count(scheduleItem.id),
     })
     .from(day)

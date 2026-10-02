@@ -14,6 +14,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Edition**                   | The War Week's number (XI = 11). Used in URLs (`/xi`).                                                                            |
 | **Story Theme**               | The year's narrative (The Matrix, Survivor).                                                                                      |
 | **Day Theme**                 | A single day's theme ("Tournament Day").                                                                                          |
+| **Day description**           | An optional plain-text line (up to 280 characters) about a Day, set in the Day form. Shows under the Day Theme on the Schedule and in Home's Now/Next "Today" header. |
 | **Appearance Theme**          | Colors, logo, banner and font preset for a War Week, in both color schemes: the Organizer's five colors plus whatever the other scheme derives or overrides. |
 | **Display**                   | A viewer's own choice of Light, Dark or System (the default), stored per device (`ww:display`) and never synced to their account. Not a Participant's display name — see **Participant**. |
 | **Color scheme**              | `light` or `dark`, the CSS term for which of a War Week's two palettes a page renders.                                            |
@@ -44,7 +45,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Standings**                 | The main leaderboard, computed from Points Entries.                                                                               |
 | **Finale**                    | The closing-ceremony screen at `/<edition>/finale`: press Start and the Standings count in from last place to first. A finalized Bracket has its own **Bracket Finale** at `/<edition>/finale/<competitionId>`. |
 | **Award**                     | A named honor given to participants or a team. It doesn't affect points.                                                          |
-| **Announcement**              | A post by an Organizer or Host (rich text plus video links).                                                                      |
+| **Announcement**              | A post by an Organizer or Host (rich text, videos included).                                                                      |
 | **FAQ Item**                  | A question and answer pair for a War Week.                                                                                        |
 | **Archive**                   | The past War Weeks shown at `/history`.                                                                                           |
 | **Recent results**            | Home's section of the latest results: finalized Brackets, closed `games` Competitions and Points Entries, newest first, up to 5. |
@@ -154,8 +155,18 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   don't yet.
 - A Participant-facing Announcement card shows its author's Profile name,
   else their Participant display name when the author's email matches a
-  Participant's (account linking), else the part of the email before the `@`. The admin pages show
-  the same name; the email is only used for the edit/ownership check.
+  Participant's (account linking), else the part of the email before the
+  `@`. The admin pages show the same name; the email is only used for the
+  edit/ownership check.
+- **Roster import** (`/admin/roster`, Organizers only; Hosts can't): paste
+  from Google Sheets or upload a CSV (name, email, Team, Company Tag,
+  Leader; a free-for-all's are name, email, Company Tag; headers
+  forgiving; at most 500 rows or 256 KB). The preview marks each row Add,
+  Update (matched by email, case-insensitive, listing the changes),
+  Unchanged or Error; Import commits the valid rows in one transaction,
+  and refuses if the roster changed since the preview. A Team that doesn't
+  exist is an Error: import never creates one. On Update an empty cell
+  clears that field; a column that isn't in the file leaves it alone.
 
 ## Profile rules
 
@@ -338,7 +349,11 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
     afterwards in Settings. Both the Winner and highlights show in the
     Archive.
   - **Reopen**: `complete → live`, for corrections in the live view.
-  There's no way back to `upcoming`.
+  - **Unstart**: `live → upcoming`, for an edition started by mistake. Only
+    while nothing is scored: refused once the edition has a Points Entry, a
+    Heat result or a Game. Never for an edition that has been ended before
+    (it has a Winner, which Reopen keeps): "This War Week has been ended;
+    Unstart isn't available."
 - Every lifecycle action is Organizer-only: `can` refuses anyone else
   first. Then the status rules (`lifecycleActionError` in
   `src/lib/war-week-lifecycle.ts`, re-checked by every lifecycle action):

@@ -101,6 +101,9 @@ export default async function SchedulePage({
                 ) : null}
               </h2>
               <p className="text-primary font-medium">{day.dayTheme}</p>
+              {day.description ? (
+                <p className="text-foreground/70 text-sm">{day.description}</p>
+              ) : null}
             </div>
             {day.items.length === 0 ? (
               <p className="text-foreground/70 text-sm">Nothing scheduled.</p>

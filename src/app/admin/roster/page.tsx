@@ -66,6 +66,7 @@ export default async function AdminRosterPage() {
             warWeekId={warWeek.id}
             participants={participants}
             teams={isTeams ? teams : []}
+            mode={warWeek.mode}
             teamLabel={teamLabel}
             leaderTitle={leaderTitle}
             tagSuggestions={tagSuggestions}

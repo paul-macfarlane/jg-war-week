@@ -25,6 +25,7 @@
     {
       "date": "2026-02-22",
       "dayTheme": "The Matrix Has You",
+      "description": "Opening Sunday: Black Midnight from 12:01 AM, qualifiers and the Learning Symposium at JGHQ, then Catan and cards.",
       "scheduleItems": [
         {
           "startTime": "00:01",
@@ -1309,10 +1310,13 @@
                 "text": " until closing ceremonies."
               }
             ]
+          },
+          {
+            "type": "video",
+            "attrs": { "src": "https://www.youtube.com/watch?v=vKQi3bBA1y8" }
           }
         ]
-      },
-      "videoUrls": ["https://www.youtube.com/watch?v=vKQi3bBA1y8"]
+      }
     },
     {
       "key": "tournament-night-recap",

@@ -6,6 +6,7 @@ import { type TargetKind, authorize } from "@/auth/authorize";
 import type { WarWeekAction } from "@/lib/access";
 import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
 import type { Parsed } from "@/lib/result";
+import { rosterImportInputSchema } from "@/lib/roster-import";
 import {
   type CompetitionInput,
   type DayInput,
@@ -20,10 +21,17 @@ import {
   parseWarWeekSettingsFields,
 } from "@/lib/setup";
 import * as mutations from "@/mutations/setup";
-import type { CreateCompetitionResult } from "@/mutations/setup";
+import type {
+  CreateCompetitionResult,
+  ImportParticipantsInput,
+  ImportParticipantsResult,
+} from "@/mutations/setup";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 
 export type SetupActionResult = MutationResult;
+
+/** A setup write's refusal: access, input, or the write itself. */
+type Refusal = Extract<SetupActionResult, { ok: false }>;
 
 /**
  * Runs a setup write: authorizes `action` on the row `id` names (or, for a
@@ -33,14 +41,14 @@ export type SetupActionResult = MutationResult;
  * (`revalidateSite`). Every setup action goes through here, so
  * none of them throws (`guarded`).
  */
-async function setupWrite<T>(
+async function setupWrite<T, R extends MutationResult = MutationResult>(
   action: WarWeekAction,
   kind: TargetKind,
   id: unknown,
   parse: () => Parsed<T>,
-  write: (value: T, ctx: MutationContext) => Promise<MutationResult>,
+  write: (value: T, ctx: MutationContext) => Promise<R>,
   reach: "edition" | "site" = "edition",
-): Promise<SetupActionResult> {
+): Promise<R | Refusal> {
   return guarded(async () => {
     const authorized = await authorize(action, kind, id);
     if (!authorized.ok) return authorized;
@@ -179,6 +187,29 @@ export async function deleteParticipant(
     id,
     nothing,
     (_, ctx) => mutations.deleteParticipant(id, ctx),
+  );
+}
+
+/**
+ * Imports the roster from pasted cells or a CSV (ticket 67), Organizer
+ * only: the Adds and Updates the preview showed (`expected`), or nothing
+ * if the roster changed since.
+ */
+export async function importParticipants(
+  warWeekId: string,
+  input: ImportParticipantsInput,
+): Promise<ImportParticipantsResult> {
+  return setupWrite(
+    "participant.import",
+    "warWeek",
+    warWeekId,
+    (): Parsed<ImportParticipantsInput> => {
+      const parsed = rosterImportInputSchema.safeParse(input);
+      return parsed.success
+        ? { ok: true, value: parsed.data }
+        : { ok: false, error: "The import's rows are missing." };
+    },
+    mutations.importParticipants,
   );
 }
 

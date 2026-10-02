@@ -25,6 +25,8 @@ export type TargetWarWeek = {
   /** What the lifecycle status rules (`lifecycleActionError`) compare. */
   editionNumber: number;
   startDate: string;
+  /** Set once the War Week has been ended (Unstart refuses it). */
+  winner: string | null;
 };
 
 /** A row an action changes: its War Week and what `can` checks on it. */
@@ -44,6 +46,7 @@ const warWeekColumns = {
   status: warWeek.status,
   editionNumber: warWeek.editionNumber,
   startDate: warWeek.startDate,
+  winner: warWeek.winner,
 };
 
 /*

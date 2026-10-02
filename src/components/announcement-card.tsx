@@ -5,9 +5,8 @@ import {
   type AnnouncementCardData,
   formatPublishedAt,
 } from "@/lib/announcements";
-import { videoEmbedUrl } from "@/lib/video";
 
-/** One Announcement: title, author and time, body, then any video embeds. */
+/** One Announcement: title, author and time, then the body (videos included). */
 export function AnnouncementCard({
   announcement,
   headingLevel = "h2",
@@ -33,23 +32,12 @@ export function AnnouncementCard({
           </p>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
-          <RichText content={announcement.body} />
-          {announcement.videoUrls.map((url, index) => {
-            const src = videoEmbedUrl(url);
-            if (!src) return null;
-            return (
-              <iframe
-                key={`${index}-${url}`}
-                src={src}
-                title={`Video: ${announcement.title}`}
-                allow="autoplay; fullscreen; picture-in-picture"
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="strict-origin-when-cross-origin"
-                className="aspect-video w-full rounded-lg"
-              />
-            );
-          })}
+          {/* Body headings sit one below the title's own level. */}
+          <RichText
+            content={announcement.body}
+            headingFloor={headingLevel === "h2" ? 3 : 4}
+            videoTitle={`Video: ${announcement.title}`}
+          />
         </CardContent>
       </Card>
     </article>

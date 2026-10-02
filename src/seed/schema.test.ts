@@ -64,6 +64,23 @@ describe("warWeekSeedSchema", () => {
     });
   });
 
+  it("accepts a day with or without a description and rejects 281 characters", () => {
+    const fixture = loadFixture();
+    const withDay = (day: object) => ({
+      ...fixture,
+      days: [{ ...fixture.days[0], ...day }, ...fixture.days.slice(1)],
+    });
+    expect(
+      warWeekSeedSchema.safeParse(withDay({ description: "Hello" })).success,
+    ).toBe(true);
+    expect(
+      warWeekSeedSchema.safeParse(withDay({ description: "" })).success,
+    ).toBe(true);
+    expect(rejectionOf(withDay({ description: "x".repeat(281) }))).toEqual([
+      expect.stringMatching(/^days\.0\.description: /),
+    ]);
+  });
+
   it("rejects a non-hex appearance color", () => {
     rejectionOf({ ...loadFixture(), primary: "not-a-color" });
   });
@@ -301,24 +318,14 @@ describe("warWeekSeedSchema", () => {
     );
   });
 
-  it("rejects an Announcement video URL outside the allow-list", () => {
-    const fixture = loadFixture();
-    fixture.announcements[0].videoUrls = ["https://evil.example.com/watch?v=1"];
-    expect(rejectionOf(fixture)).toContain(
-      "announcements.0.videoUrls.0: must be a YouTube, Loom, Vimeo or Google Drive video link",
-    );
-  });
-
-  it("accepts each allow-listed video host", () => {
+  it("refuses a seed that still carries videoUrls, naming where videos go", () => {
     const fixture = loadFixture();
     fixture.announcements[0].videoUrls = [
       "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-      "https://youtu.be/dQw4w9WgXcQ",
-      "https://www.loom.com/share/abc",
-      "https://vimeo.com/123",
-      "https://drive.google.com/file/d/abc/view",
     ];
-    expect(warWeekSeedSchema.safeParse(fixture).success).toBe(true);
+    expect(rejectionOf(fixture)).toContain(
+      "announcements.0.videoUrls: videoUrls is gone; put each video in body as a video block",
+    );
   });
 
   it("rejects duplicate Participant emails, ignoring case", () => {

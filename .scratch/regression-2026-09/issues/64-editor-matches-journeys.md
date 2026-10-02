@@ -4,7 +4,9 @@
 
 **Blocked by:** 60 (Blob storage)
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
 **Source:** Paul's regression feedback 2026-10-01, A5; grilling Q15
 
@@ -17,6 +19,18 @@
 
 ## Acceptance criteria
 
-- [ ] Ported unit tests pass; the sanitizer keeps every new mark/node and strips anything else.
-- [ ] e2e: an Organizer posts an Announcement with a heading, a quote, an uploaded captioned image and a video; the participant page renders all four. Screenshots at both viewports.
-- [ ] `pnpm gate` passes.
+- [x] Ported unit tests pass; the sanitizer keeps every new mark/node and strips anything else.
+- [x] e2e: an Organizer posts an Announcement with a heading, a quote, an uploaded captioned image and a video; the participant page renders all four. Screenshots at both viewports.
+- [x] `pnpm gate` passes.
+
+## Comments
+
+- 2026-10-02 [SCOPE CHANGE] (Paul): images by URL only in R11; no upload and no Blob (R10 shipped without Blob, so "Blocked by: 60 (Blob storage)" no longer holds). AC2's "uploaded captioned image" becomes "a captioned image added by URL". Upload returns with Blob in a later ticket. Plan: `../epics/R11-execution.md`.
+
+## [AI CODE REVIEW]
+
+See `../epics/R11-execution.md` [AI CODE REVIEW] (one review for the epic, both axes; no open blocking findings).
+
+## [CLOSEOUT]
+
+2026-10-02, branch `feat/regression-r11-content`. AC1 PASS (`src/lib/rich-text/*.test.ts`, `src/components/rich-text.test.tsx`); AC2 PASS (`e2e/regression-r11-editor.spec.ts`, captioned image by URL per the scope change; screenshots under `test-results/e2e/regression-r11-editor-*/`); AC3 PASS (`test-results/r11-content/gate-final.txt`). Commits `d30033c`, `565ca74`, `de713eb`. Full record: `../epics/R11-execution.md` [CLOSEOUT]. PR: https://github.com/paul-macfarlane/jg-war-week/pull/118

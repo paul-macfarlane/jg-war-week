@@ -4,7 +4,9 @@
 
 **Blocked by:** none (uses the list pattern from ticket 58 if R9 has merged)
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
 **Source:** Paul's regression feedback 2026-10-01, A6; grilling Q16
 
@@ -17,6 +19,16 @@
 
 ## Acceptance criteria
 
-- [ ] Unit tests: TSV and CSV (quoted commas), header and headerless, update-by-email ignoring case, every error kind.
-- [ ] e2e: paste three rows (one existing email), preview shows 2 Add and 1 Update, import, the roster shows them.
-- [ ] `pnpm gate` passes.
+- [x] Unit tests: TSV and CSV (quoted commas), header and headerless, update-by-email ignoring case, every error kind.
+- [x] e2e: paste three rows (one existing email), preview shows 2 Add and 1 Update, import, the roster shows them.
+- [x] `pnpm gate` passes.
+
+## Comments
+
+## [AI CODE REVIEW]
+
+See `../epics/R11-execution.md` [AI CODE REVIEW] (one review for the epic, both axes; no open blocking findings).
+
+## [CLOSEOUT]
+
+2026-10-02, branch `feat/regression-r11-content`. AC1 PASS (`src/lib/roster-import.test.ts`); AC2 PASS (`e2e/regression-r11-roster-import.spec.ts`: 2 Add, 1 Update, imported); AC3 PASS (gate). Also: Organizer-only refusal over HTTP for Host and Participant (smoke). Empty cell clears (H2); a short row's missing cells stay unchanged. Commits `27c1d45`, orchestrator fix, `de713eb`. Full record: `../epics/R11-execution.md` [CLOSEOUT]. PR: https://github.com/paul-macfarlane/jg-war-week/pull/118

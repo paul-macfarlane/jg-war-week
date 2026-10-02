@@ -108,8 +108,15 @@ describe("War Week XI", () => {
 
   it("keeps the demo's schedule, roster and Appearance Theme", () => {
     const { days, participants, teams, primary, background, storyTheme } = demo;
+    // Only the demo describes a Day: the history seed carries no Day
+    // descriptions, so they're left out of the match.
+    const undescribed = days.map((day) => {
+      const copy = { ...day };
+      delete copy.description;
+      return copy;
+    });
     expect(xi).toMatchObject({
-      days,
+      days: undescribed,
       participants,
       teams,
       primary,
@@ -216,9 +223,13 @@ describe("War Week XI demo", () => {
     );
   });
 
-  it("has Announcements (one pinned, one with a video), Awards and organizers", () => {
+  it("has Announcements (one pinned, one with a video in its body), Awards and organizers", () => {
     expect(xi.announcements.filter((a) => a.pinned)).toHaveLength(1);
-    expect(xi.announcements.some((a) => a.videoUrls.length > 0)).toBe(true);
+    expect(
+      xi.announcements.some((a) =>
+        a.body.content.some((block) => block.type === "video"),
+      ),
+    ).toBe(true);
     expect(xi.awards.length).toBeGreaterThanOrEqual(2);
     expect(xi.organizers.length).toBeGreaterThan(0);
   });

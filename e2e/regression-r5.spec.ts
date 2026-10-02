@@ -203,6 +203,12 @@ test("r5 30 admin header and section bar on a phone", async ({
 
 /** A visible control's bounding box must be at least 44x44. */
 async function expectTouchTarget(locator: Locator, what: string) {
+  // A dialog zooms in as it opens: measure once its animation has finished.
+  await locator
+    .first()
+    .evaluate(() =>
+      Promise.all(document.getAnimations().map((a) => a.finished)),
+    );
   const rect = await locator.first().boundingBox();
   if (!rect) throw new Error(`${what} isn't visible`);
   expect(rect.width, `${what} width`).toBeGreaterThanOrEqual(44 - TOLERANCE);
@@ -1072,13 +1078,11 @@ test("r5 37 pinned Announcement card fits its content", async ({
     await page.getByRole("button", { name: "Post Announcement" }).click();
     await expect(page).toHaveURL(/\/admin\/announcements$/);
 
-    const [stored] = await runQuery<{ body: unknown; video_urls: unknown }>(
-      `select body, video_urls from announcement where title = $1`,
+    const [stored] = await runQuery<{ body: unknown }>(
+      `select body from announcement where title = $1`,
       [title],
     );
-    console.log(
-      `r5 37 stored body: ${JSON.stringify(stored.body)} video_urls: ${JSON.stringify(stored.video_urls)}`,
-    );
+    console.log(`r5 37 stored body: ${JSON.stringify(stored.body)}`);
 
     // 37-1: the card is as tall as its header, the line and the padding.
     for (const path of ["/xi", "/xi/announcements"]) {
@@ -1103,12 +1107,19 @@ test("r5 37 pinned Announcement card fits its content", async ({
     // content and the only gap above it is the card's own.
     await runQuery(`delete from announcement where title = $1`, [title]);
     await runQuery(
-      `insert into announcement (war_week_id, title, body, video_urls, pinned, author_email)
-       select id, $1, $2::jsonb, $3::varchar[], true, $4 from war_week where edition = 'xi'`,
+      `insert into announcement (war_week_id, title, body, pinned, author_email)
+       select id, $1, $2::jsonb, true, $3 from war_week where edition = 'xi'`,
       [
         videoTitle,
-        JSON.stringify({ type: "doc", content: [{ type: "paragraph" }] }),
-        ["https://www.youtube.com/watch?v=dQw4w9WgXcQ"],
+        JSON.stringify({
+          type: "doc",
+          content: [
+            {
+              type: "video",
+              attrs: { src: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
+            },
+          ],
+        }),
         E2E_HOST_EMAIL,
       ],
     );
@@ -1119,11 +1130,9 @@ test("r5 37 pinned Announcement card fits its content", async ({
         .filter({ has: page.getByRole("heading", { name: videoTitle }) });
       await expect(card).toBeVisible();
       const content = card.locator('[data-slot="card-content"]');
+      // The video is a body block now; it's the only thing in the card.
       await expect(content.locator("> *")).toHaveCount(1);
-      await expect(content.locator("> :first-child")).toHaveJSProperty(
-        "tagName",
-        "IFRAME",
-      );
+      await expect(content.locator("iframe")).toHaveCount(1);
       const height = (await card.boundingBox())?.height ?? 0;
       console.log(
         `r5 37 pinned video card at 375 on ${path}: ${Math.round(height)}px`,

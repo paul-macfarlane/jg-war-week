@@ -330,24 +330,22 @@ export async function assertMcp() {
           announcements: {
             title: string;
             pinned: boolean;
-            videoUrls: string[];
             body: string | null;
           }[];
         }
       | undefined;
     const firstAnnouncement = limited?.announcements?.[0];
     const limitedCheck =
-      "MCP get_announcements(limit: 2) returns edition xi, 2 Announcements, welcome pinned first with its video and body";
+      "MCP get_announcements(limit: 2) returns edition xi, 2 Announcements, welcome pinned first with its video URL and body";
     if (
       limited?.edition === "xi" &&
       limited.announcements.length === 2 &&
       firstAnnouncement?.pinned === true &&
       firstAnnouncement.title === "Welcome to War Week XI" &&
-      firstAnnouncement.videoUrls.includes(
+      typeof firstAnnouncement.body === "string" &&
+      firstAnnouncement.body.includes(
         "https://www.youtube.com/watch?v=vKQi3bBA1y8",
       ) &&
-      typeof firstAnnouncement.body === "string" &&
-      firstAnnouncement.body.length > 0 &&
       firstAnnouncement.body.includes("Choose your pill")
     ) {
       ok(limitedCheck);
