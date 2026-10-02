@@ -191,7 +191,7 @@ test("a Bracket is built, run and finalized into Points Entries", async ({
     await expect(upNext).toContainText("Main room");
     await expect(upNext).toContainText(TIMED_ENTRANT);
     await checkViewports(you.page, testInfo, "now-next-heat");
-    await you.context.close();
+    await you.close();
 
     await page.getByRole("link", { name: "Run results" }).click();
     await expect(

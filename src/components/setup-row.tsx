@@ -282,6 +282,7 @@ export function SetupListRow({
   name,
   label = name,
   details,
+  note,
   leading,
   aside,
   form,
@@ -291,6 +292,8 @@ export function SetupListRow({
   /** What "Edit …" calls the row, e.g. "Team Red"; the name by default. */
   label?: string;
   details: string;
+  /** A quiet extra line under the details, e.g. a roster hint. */
+  note?: string;
   /** Before the name, e.g. a Team's color. */
   leading?: ReactNode;
   aside?: ReactNode;
@@ -307,16 +310,20 @@ export function SetupListRow({
         type="button"
         variant="ghost"
         aria-label={`Edit ${label}`}
-        aria-describedby={details ? detailsId : undefined}
+        aria-describedby={details || note ? detailsId : undefined}
         className="h-auto min-h-11 min-w-0 flex-1 justify-start gap-2 px-2 py-1.5 text-left font-normal whitespace-normal sm:min-h-9"
         onClick={() => setOpen(true)}
       >
         {leading}
         <span className="flex min-w-0 flex-col">
           <span className="font-medium">{name}</span>
-          {details && (
-            <span id={detailsId} className="text-foreground/60 text-xs">
-              {details}
+          {(details || note) && (
+            <span
+              id={detailsId}
+              className="text-foreground/60 flex flex-col text-xs"
+            >
+              {details && <span>{details}</span>}
+              {note && <span>{note}</span>}
             </span>
           )}
         </span>

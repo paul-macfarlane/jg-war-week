@@ -15,7 +15,7 @@ const HOST = "host@jahnelgroup.com";
 const NEO = "neo@jahnelgroup.com";
 const TRINITY = "trinity@jahnelgroup.com";
 const MORPHEUS = "morpheus@jahnelgroup.com";
-/** Matches no Participant: Tank has no email, so only the pick names him. */
+/** Matches no Participant: Tank has no email, so nothing links him. */
 const TANK = "tank@jahnelgroup.com";
 
 const PAST = new Date("2020-01-01T00:00:00Z");
@@ -256,7 +256,7 @@ describe.skipIf(!isLocalDatabase)("enroll (individual scoring)", () => {
     });
   });
 
-  it("refuses an actor no Participant's email matches: the pick grants nothing", async () => {
+  it("refuses an actor no Participant's email matches: nothing links them", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { enroll } = await mutations();
       const { NOT_LINKED } = await rule();

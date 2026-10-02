@@ -118,7 +118,7 @@ export async function authorize(
  * The authorize step for self-report, the one Participant write (ADR 0005),
  * in ADR 0003's order: authenticate; both ids shaped like row ids; load the
  * Competition and its War Week; load the Heat's facts for the actor's email
- * (account linking, never the pick); run `can("bracket.heat-report")`,
+ * (account linking); run `can("bracket.heat-report")`,
  * which binds Organizers and Hosts too. The caller parses its input only
  * after this. Never throws on a refusal.
  */
@@ -168,7 +168,7 @@ export async function authorizeHeatReport(
  * or with a `squadId` join or leave that Squad. In ADR 0003's order:
  * authenticate; the ids shaped like row ids; load the Competition and its
  * War Week; load the enrollment facts for the actor's email (account
- * linking, never the pick); run `can`, which binds Organizers and Hosts
+ * linking); run `can`, which binds Organizers and Hosts
  * too. Never throws on a refusal.
  */
 export async function authorizeEnroll(
@@ -219,7 +219,7 @@ export async function authorizeEnroll(
  * The authorize step for logging, editing and deleting a Game (ADR 0006),
  * in ADR 0003's order: authenticate; the ids shaped like row ids; load the
  * Competition and its War Week; load the Game facts for the actor's email
- * (whether they run this Competition, account linking, never the pick) with
+ * (whether they run this Competition, account linking) with
  * the player ids `input` posts for the Competition's Game Type
  * (`postedGamePlayerIds`, so another type's keys never reach `can`; none
  * for a delete); run

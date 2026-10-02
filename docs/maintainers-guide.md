@@ -73,7 +73,7 @@ before it says it's done.
 
 | Thing                                      | Where                                                                  |
 | ------------------------------------------ | ---------------------------------------------------------------------- |
-| Participant pages (home, leaderboard, schedule, teams, competitions, news, awards, FAQ) | `src/app/[edition]/`                    |
+| Participant pages (home, leaderboard, schedule, teams, competitions, announcements, awards, FAQ) | `src/app/[edition]/`                    |
 | History page                               | `src/app/history/`                                                     |
 | Organizer screens                          | `src/app/admin/` (setup, points, standings, announcements, awards)     |
 | Server actions behind admin forms          | `src/actions/`                                                         |
@@ -182,7 +182,9 @@ Organizer screens cover it. Sign in and go to `/admin`:
 - **`/admin/setup`**: the **Lifecycle** box (Start, End with the computed
   Winner and highlights, Reopen), War Week settings (Story Theme, dates,
   mode, Team Label, Leader Title, links, Winner and highlights, editable
-  directly for corrections), the Appearance Theme
+  directly for corrections; a free-for-all hides Team Label, Leader Title and
+  the roster's Team controls, and keeps their saved values for if you switch
+  back to Teams), the Appearance Theme
   (colors, font, logo, banner), Days, Teams and roster, Competitions (with
   their Hosts), Schedule and FAQ. The Appearance Theme form shows both
   color schemes: whichever one the five colors you set are the base
@@ -198,12 +200,17 @@ Organizer screens cover it. Sign in and go to `/admin`:
   with the other sections you can see, the edition switcher, Display and
   your account. From `md` up it is the side column and header as before.
   The sections live in `src/lib/admin-sections.ts`.
-- **Setup rows open in a Sheet.** On Teams & roster and Competitions, each
+- **Setup rows open in a Sheet on phones, a Dialog from 768px.** On Teams & roster and Competitions, each
   row is one "Edit <name>" button that opens its form in a
   `ResponsiveSheetDialog`, with Save and Delete in a sticky footer; "Add …"
   opens the empty form. A Team's row reads "Edit <Team Label> <name>". "Assign
   Hosts" (the Hosts field) is inside the Competition's Sheet, and its one
   Save saves the Hosts with the rest.
+- **You comes from the roster email only.** A signed-in person is "You" (the
+  highlight, Log a Game, reporting a Heat) only when their email matches a
+  Participant's roster email; there is no "Which one is you?" pick. A
+  Participant row without an email shows "No email: won't be linked when they
+  sign in" on Teams & roster.
 - **`/admin/organizers`**: the Organizer list (see
   [Add an Organizer or assign Hosts](#add-an-organizer-or-assign-hosts)).
 - **`/admin/points`**, **`/admin/standings`** (Run the Finale: "Open Finale" at closing ceremonies, and "Finale: <Competition>" for each finalized Bracket),
@@ -453,7 +460,7 @@ Notes:
   with hand-rolled `aria-pressed`.
 - The app's own wrappers — `EntityCombobox`, `DatePicker`,
   `DateRangePicker`, `TimeCombobox`, `ColorField`, and `ResponsiveSheetDialog`
-  (a centered Dialog at `lg` and up, a bottom Sheet below) — live in
+  (a centered Dialog at `md`, 768px, and up; a bottom Sheet on phones below) — live in
   `src/components/`. Reach for one of those before building a new control.
   Only `EntityCombobox` does search and chips.
 - Below `sm`, every admin control is at least 44px tall and wide: `min-h-11

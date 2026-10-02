@@ -85,12 +85,3 @@ export function buildRoster({
       .sort(byRosterOrder),
   };
 }
-
-/** Every Participant on a roster, by display name. */
-export function rosterParticipants(roster: Roster): RosterParticipant[] {
-  const all =
-    roster.kind === "free-for-all"
-      ? roster.participants
-      : [...roster.teams.flatMap((t) => t.participants), ...roster.unassigned];
-  return [...all].sort((a, b) => a.displayName.localeCompare(b.displayName));
-}

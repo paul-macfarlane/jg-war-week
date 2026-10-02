@@ -596,10 +596,10 @@ export async function assertYouHighlight(sessions: {
 
     const unlinked = await get("/xi/teams", sessions.notOrganizer);
     report(
-      "a signed-in user with no email match gets the 'Which one is you?' picker and no 'You'",
+      "a signed-in user with no email match gets no 'You' and no picker",
       unlinked.status,
       {
-        picker: unlinked.body.includes("Which one is you?"),
+        noPicker: !unlinked.body.includes("Which one is you?"),
         noTag: !unlinked.body.includes(YOU_TAG),
         noEmails: !unlinked.body.includes(SMOKE_YOU_EMAIL),
       },

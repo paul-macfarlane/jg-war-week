@@ -49,7 +49,7 @@ export default async function EditionHomePage({
     getSchedule(warWeek.id),
     getPinnedAnnouncementCard(warWeek),
     getTimedHeats(warWeek),
-    // Only an email-linked Participant can log, so a pick-only You sees none.
+    // Only an email-linked Participant can log.
     getActor().then((actor) =>
       getLoggableCompetitions(warWeek.id, actor?.email),
     ),
@@ -89,10 +89,10 @@ export default async function EditionHomePage({
             <div className="flex items-baseline justify-between">
               <h2 className="text-lg font-semibold">Pinned</h2>
               <Link
-                href={`/${warWeek.edition}/news`}
+                href={`/${warWeek.edition}/announcements`}
                 className="text-primary text-sm font-medium"
               >
-                All news
+                All announcements
               </Link>
             </div>
             <AnnouncementCard

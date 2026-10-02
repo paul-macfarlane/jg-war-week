@@ -27,6 +27,8 @@ type DatePickerProps = {
   min?: string;
   /** Latest pickable date, `YYYY-MM-DD`. */
   max?: string;
+  /** Extra dates to grey out, on top of `min` and `max`. */
+  disabledDates?: (date: Date) => boolean;
   required?: boolean;
   id?: string;
   "aria-label"?: string;
@@ -44,6 +46,7 @@ export function DatePicker({
   onValueChange,
   min,
   max,
+  disabledDates,
   required,
   id,
   "aria-label": ariaLabel,
@@ -56,6 +59,7 @@ export function DatePicker({
   const disabled: Matcher[] = [];
   if (minDate) disabled.push({ before: minDate });
   if (maxDate) disabled.push({ after: maxDate });
+  if (disabledDates) disabled.push(disabledDates);
 
   return (
     <span className="relative flex">

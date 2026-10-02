@@ -10,8 +10,8 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { can } from "@/lib/access";
-import { announcementVideoCount, formatPublishedAt } from "@/lib/announcements";
-import { getAnnouncements } from "@/queries/announcements";
+import { formatPublishedAt } from "@/lib/announcements";
+import { getAdminAnnouncementRows } from "@/queries/announcements";
 
 import { loadAdminPage } from "../gate";
 
@@ -24,7 +24,7 @@ export default async function AdminAnnouncementsPage() {
     await loadAdminPage("/admin/announcements");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
-  const announcements = await getAnnouncements(warWeek);
+  const announcements = await getAdminAnnouncementRows(warWeek);
   // A Host edits and deletes only their own Announcements; only an
   // Organizer pins.
   const mayChange = (authorEmail: string) =>
@@ -71,38 +71,29 @@ export default async function AdminAnnouncementsPage() {
         ) : (
           <>
             <ul className="flex flex-col gap-3 md:hidden">
-              {announcements.map((row) => {
-                const videos = announcementVideoCount(row);
-                return (
-                  <li key={row.id}>
-                    <Card size="sm" className="gap-2 px-4 py-3">
-                      <p className="font-medium break-words">
-                        {row.title}
-                        {row.pinned && (
-                          <span className="bg-primary/10 text-primary ml-2 rounded px-1.5 py-0.5 text-xs font-medium">
-                            Pinned
-                          </span>
-                        )}
-                      </p>
-                      <p className="text-foreground/60 text-xs break-words">
-                        Posted by {row.authorEmail}
-                      </p>
-                      <p className="text-foreground/60 text-xs">
-                        Published {formatPublishedAt(row.publishedAt)} (ET)
-                        {videos > 0 && (
-                          <>
-                            {" · "}
-                            {videos} {videos === 1 ? "video" : "videos"}
-                          </>
-                        )}
-                      </p>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {rowActions(row)}
-                      </div>
-                    </Card>
-                  </li>
-                );
-              })}
+              {announcements.map((row) => (
+                <li key={row.id}>
+                  <Card size="sm" className="gap-2 px-4 py-3">
+                    <p className="font-medium break-words">
+                      {row.title}
+                      {row.pinned && (
+                        <span className="bg-primary/10 text-primary ml-2 rounded px-1.5 py-0.5 text-xs font-medium">
+                          Pinned
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-foreground/60 text-xs break-words">
+                      Posted by {row.authorName}
+                    </p>
+                    <p className="text-foreground/60 text-xs">
+                      Published {formatPublishedAt(row.publishedAt)} (ET)
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {rowActions(row)}
+                    </div>
+                  </Card>
+                </li>
+              ))}
             </ul>
             <div className="relative hidden overflow-x-auto md:block">
               <table className="w-full text-left text-sm">
@@ -111,7 +102,6 @@ export default async function AdminAnnouncementsPage() {
                     <th className="py-2 pr-4 font-medium">Title</th>
                     <th className="py-2 pr-4 font-medium">Posted by</th>
                     <th className="py-2 pr-4 font-medium">Published (ET)</th>
-                    <th className="py-2 pr-4 text-right font-medium">Videos</th>
                     <th className="py-2 font-medium">
                       <span className="sr-only">Actions</span>
                     </th>
@@ -128,12 +118,9 @@ export default async function AdminAnnouncementsPage() {
                           </span>
                         )}
                       </td>
-                      <td className="py-2 pr-4">{row.authorEmail}</td>
+                      <td className="py-2 pr-4">{row.authorName}</td>
                       <td className="py-2 pr-4 whitespace-nowrap">
                         {formatPublishedAt(row.publishedAt)}
-                      </td>
-                      <td className="py-2 pr-4 text-right tabular-nums">
-                        {announcementVideoCount(row)}
                       </td>
                       <td className="py-2">
                         <div className="flex items-center gap-2">

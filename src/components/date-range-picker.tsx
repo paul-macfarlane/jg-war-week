@@ -19,7 +19,11 @@ import {
   formatDateValue,
   parseDateValue,
 } from "@/lib/date-value";
-import { type PendingRange, nextRangeSelection } from "@/lib/day-range";
+import {
+  type PendingRange,
+  nextRangeSelection,
+  rangeToCommit,
+} from "@/lib/day-range";
 
 // Tailwind's `sm` breakpoint: two months side by side from here up.
 const WIDE_QUERY = "(min-width: 40rem)";
@@ -60,8 +64,8 @@ export function DateRangePicker({
 }: DateRangePickerProps) {
   const wide = useMediaQuery(WIDE_QUERY);
   const [open, setOpen] = useState(false);
-  // A half-picked or refused range stays on screen until the next tap;
-  // only an accepted range reaches `onValueChange`.
+  // Taps build `pending`; closing (Done, outside click, Escape) commits a
+  // complete allowed range via `rangeToCommit`.
   const [pending, setPending] = useState<PendingRange | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,9 +89,13 @@ export function DateRangePicker({
   const toDates = (dates: string[]) =>
     dates.flatMap((date) => parseDateValue(date) ?? []);
 
+  // Closing by any route (Done, outside click, Escape) saves a complete
+  // range and drops a half-picked or refused one.
   function openChange(next: boolean) {
     setOpen(next);
     if (!next) {
+      const commit = rangeToCommit(pending, days);
+      if (commit) onValueChange(commit);
       setPending(null);
       setError(null);
     }
@@ -100,10 +108,6 @@ export function DateRangePicker({
     const next = nextRangeSelection(pending, formatDateValue(date), days);
     setPending(next.pending);
     setError(next.error ?? null);
-    if (next.commit) {
-      onValueChange(next.commit);
-      setOpen(false);
-    }
   }
 
   return (
@@ -158,6 +162,11 @@ export function DateRangePicker({
             }}
             className="[--cell-size:--spacing(11)] sm:[--cell-size:--spacing(8)]"
           />
+          <div className="flex justify-end px-3 pb-3">
+            <Button type="button" size="sm" onClick={() => openChange(false)}>
+              Done
+            </Button>
+          </div>
           {error && (
             <p
               role="alert"

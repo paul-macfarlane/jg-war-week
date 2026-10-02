@@ -26,7 +26,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Leader** / **Leader Title** | A participant flagged as a team leader, displayed with the year's title (Captain, Head of House). A label only, not a permission. |
 | **Participant**               | A person in a War Week. A record, not a user.                                                                                     |
 | **Avatar**                    | A Participant's visual marker: their initials in their Team's color for now, a portrait later.                                    |
-| **You**                       | The Participant the signed-in person is, in the War Week being viewed. Found by **account linking** or the "Which one is you?" pick. |
+| **You**                       | The Participant the signed-in person is, in the War Week being viewed. Found by **account linking** only (the roster email matches the session email). |
 | **Account linking**           | Matching the session email to a Participant email, ignoring case. Read-time only; nothing is stored.                             |
 | **Company Tag**               | An optional affiliation label on a participant (LTI, IL, …).                                                                      |
 | **Organizer**                 | A signed-in `@jahnelgroup.com` user on the global Organizer list. Can change anything in any War Week (ADR 0002).                 |
@@ -77,6 +77,7 @@ Do not use these words in code (identifiers, comments, UI copy). Use the
 | ELO         | Points, Points Entry, Standings                                      |
 | Placeholder | "Coming in a later slice", stub, or name the concrete future feature |
 | Tournament  | Competition                                                          |
+| News        | Announcement (the page, nav item and route are all "Announcements")  |
 | Admin (a person or role) | Organizer or Host; "Admin" names only the `/admin` area   |
 
 (Exception: "the Jahnel Group admins" on Privacy and Terms means the
@@ -131,16 +132,14 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 - **You** is highlighted with a "You" tag and an accent ring on the Teams
   roster, the individual leaderboard (home, `/leaderboard`, the Finale) and
   Award recipients. Account linking wins: when the session email matches a
-  Participant, that Participant is You and the picker isn't shown. Otherwise
-  the Teams page offers "Which one is you?", stored per War Week in
-  `localStorage` under `ww:you:<edition>` (a Participant id; an id not in the
-  War Week is ignored) with "Not me / clear" to undo. Participant emails
-  never reach the client, only the matched id. Past editions use their own
-  roster.
+  Participant, that Participant is You; otherwise nobody is. There is no
+  self-pick. The roster admin shows "No email: won't be linked when they sign
+  in" on a Participant row without an email. Participant emails never reach
+  the client, only the matched id. Past editions use their own roster.
 - A Participant-facing Announcement card shows its author's Participant
   display name when the author's email matches a Participant's (account
-  linking), else the part of the email before the `@`. Only the admin pages
-  show the author's email.
+  linking), else the part of the email before the `@`. The admin pages show
+  the same name; the email is only used for the edit/ownership check.
 
 ## Light and dark Display rules
 
@@ -193,8 +192,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
     Competition, so a Host of one War Week's Competition has no say in
     another War Week's.
   - Everyone else signed in is a **Participant** for access purposes. They
-    have four writes, each found by account linking (never the "Which one
-    is you?" pick), checked in `can` and again in the mutation: reporting
+    have four writes, each found by account linking, checked in `can` and again in the mutation: reporting
     the result of a Heat they're in when self-report is on (ADR 0005);
     logging a Game they're a player in (or on a Team that is), and editing
     or deleting a Game they logged, in a `games` Competition until it
@@ -269,8 +267,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   order: not signed in with a JG email ("Sign in to continue."); the facts
   weren't loaded ("Organizers and Hosts only."); "Self-report is off for
   this Competition."; "Your sign-in doesn't match a Participant of this War
-  Week." (linked by the roster email, ignoring case — never the "Which one
-  is you?" pick); "That Heat no longer exists."; "You're not in this
+  Week." (linked by the roster email, ignoring case); "That Heat no longer exists."; "You're not in this
   Heat." (not its Participant, not on its Team Entrant, not in its Squad);
   "A bye isn't played."; "This Heat is still waiting for its Entrants.";
   "This Heat already has a result.". The mutation checks the Heat's facts
@@ -436,7 +433,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   logging close time and after a Best of is decided — they're the
   correction path, as with Bracket results.
 - **Who may log, edit or delete a Game.** To log: a Participant linked by
-  email (never the "Which one is you?" pick) who is a player in the posted
+  email who is a player in the posted
   Game, or on a Team that is, while logging is open for them; or a Host or
   Organizer, always. To edit or delete: the Participant who logged it,
   while logging is still open for them and, for an edit, still a player of

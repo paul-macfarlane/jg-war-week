@@ -467,7 +467,7 @@ describe("can: logging, editing and deleting a Game (ADR 0006)", () => {
     expect(can(ACTORS.participant, "games.log", target())).toBeNull();
   });
 
-  it('the "Which one is you?" pick grants nothing: no linked Participant', () => {
+  it("no linked Participant grants nothing", () => {
     for (const action of writes) {
       expect(
         can(ACTORS.participant, action, target({ linked: null })),
@@ -640,7 +640,7 @@ describe("can: enrolling and withdrawing (ADR 0006)", () => {
     ).toBe(ENROLL_CLOSED_BUILT);
   });
 
-  it("the pick grants nothing: no linked Participant", () => {
+  it("no linked Participant grants nothing", () => {
     for (const action of [
       "competition.enroll",
       "competition.withdraw",

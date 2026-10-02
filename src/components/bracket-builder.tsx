@@ -18,6 +18,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DatePicker } from "@/components/date-picker";
 import { EntrantsPicker } from "@/components/entrants-picker";
 import { OptionSelect } from "@/components/option-select";
+import { ResponsiveSheetDialog } from "@/components/responsive-sheet-dialog";
 import { SquadForm } from "@/components/squad-form";
 import { TimeCombobox } from "@/components/time-combobox";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -31,7 +32,6 @@ import {
   FieldSet,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import {
   ADVANCE_PER_HEAT_OPTIONS,
@@ -886,35 +886,33 @@ export function BracketBuilder({
         </>
       )}
 
-      <Sheet
+      <ResponsiveSheetDialog
         open={squadSheet !== null}
         onOpenChange={(open) => {
           if (!open) setSquadSheet(null);
         }}
       >
-        <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto">
-          {squadSheet !== null && (
-            <SquadForm
-              key={editing?.id ?? "new"}
-              competitionId={competition.id}
-              squad={editing}
-              teams={teams}
-              participants={participants.map((p) => ({
-                id: p.id,
-                name: p.name,
-                teamId: p.teamId ?? null,
-              }))}
-              taken={taken}
-              teamLabel={teamLabel}
-              entered={
-                editing !== undefined &&
-                entrants.some((e) => e.squadId === editing.id)
-              }
-              onDone={() => setSquadSheet(null)}
-            />
-          )}
-        </SheetContent>
-      </Sheet>
+        {squadSheet !== null && (
+          <SquadForm
+            key={editing?.id ?? "new"}
+            competitionId={competition.id}
+            squad={editing}
+            teams={teams}
+            participants={participants.map((p) => ({
+              id: p.id,
+              name: p.name,
+              teamId: p.teamId ?? null,
+            }))}
+            taken={taken}
+            teamLabel={teamLabel}
+            entered={
+              editing !== undefined &&
+              entrants.some((e) => e.squadId === editing.id)
+            }
+            onDone={() => setSquadSheet(null)}
+          />
+        )}
+      </ResponsiveSheetDialog>
 
       <ConfirmDialog
         open={deleting !== null}

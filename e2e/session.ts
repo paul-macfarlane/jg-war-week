@@ -2,7 +2,7 @@ import type { Browser, BrowserContext } from "@playwright/test";
 import { makeSignature } from "better-auth/crypto";
 import { randomUUID } from "node:crypto";
 
-import { runQuery, xiParticipantId } from "./db";
+import { runQuery, setParticipantEmail, xiParticipantId } from "./db";
 import { E2E_AUTH_SECRET, E2E_BASE_URL } from "./env";
 
 const SESSION_COOKIE = "better-auth.session_token";
@@ -64,16 +64,27 @@ export async function asHost(context: BrowserContext) {
 }
 
 /**
- * A signed-in Participant's page, with "Which one is you?" already picked
- * as `displayName` (XI's Participants have no emails to link by).
+ * A signed-in Participant's page, linked to `displayName` by account: XI's
+ * Participants have no emails, so this gives that Participant a roster email
+ * and signs in as it.
  */
 export async function participantPageAs(browser: Browser, displayName: string) {
   const participantId = await xiParticipantId(displayName);
   const context = await browser.newContext({ baseURL: E2E_BASE_URL });
-  await signIn(context, E2E_PARTICIPANT_EMAIL);
-  await context.addInitScript(
-    ([key, id]) => window.localStorage.setItem(key, id),
-    ["ww:you:xi", participantId] as const,
+  const email = `e2e-p-${participantId}@jahnelgroup.com`;
+  const [{ email: original }] = await runQuery<{ email: string | null }>(
+    `select email from participant where id = $1`,
+    [participantId],
   );
-  return { context, page: await context.newPage() };
+  await setParticipantEmail(participantId, email);
+  await signIn(context, email);
+  return {
+    context,
+    page: await context.newPage(),
+    /** Closes the context and gives the Participant back its own email. */
+    async close() {
+      await context.close();
+      await setParticipantEmail(participantId, original);
+    },
+  };
 }

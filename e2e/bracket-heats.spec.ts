@@ -169,7 +169,7 @@ test("a Heats Bracket is built, run and finalized into Points Entries", async ({
   for (const opponent of [heat1[1], heat2[0], heat2[1]]) {
     await expect(nextHeat).toContainText(opponent);
   }
-  await you.context.close();
+  await you.close();
 
   const finalOrder = await recordHeat(page, "Final");
   const champion = finalOrder[0];

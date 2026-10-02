@@ -39,11 +39,28 @@ export async function deleteSmokeAnnouncements() {
 
 /** AC1: pinned first, then newest first; AC2: an allow-listed embed. */
 export async function assertAnnouncementFeed() {
+  const redirectCheck =
+    "GET /xi/news permanently redirects (308) to /xi/announcements";
+  try {
+    const res = await fetch(`${BASE_URL}/xi/news`, { redirect: "manual" });
+    const location = res.headers.get("location") ?? "";
+    if (
+      res.status === 308 &&
+      new URL(location, BASE_URL).pathname === "/xi/announcements"
+    ) {
+      ok(redirectCheck);
+    } else {
+      fail(redirectCheck, `status=${res.status} location=${location}`);
+    }
+  } catch (error) {
+    fail(redirectCheck, String(error));
+  }
+
   const check =
-    "GET /xi/news orders the pinned welcome first, then Wellness Wednesday, then Tournament Night recap";
+    "GET /xi/announcements orders the pinned welcome first, then Wellness Wednesday, then Tournament Night recap";
   let body = "";
   try {
-    const res = await signedInFetch(`${BASE_URL}/xi/news`);
+    const res = await signedInFetch(`${BASE_URL}/xi/announcements`);
     body = await res.text();
     const positions = {
       welcome: body.indexOf("Welcome to War Week XI"),
@@ -68,7 +85,7 @@ export async function assertAnnouncementFeed() {
   }
 
   const embedCheck =
-    "GET /xi/news embeds the welcome Announcement's video as a YouTube iframe";
+    "GET /xi/announcements embeds the welcome Announcement's video as a YouTube iframe";
   if (
     /<iframe[^>]*src="https:\/\/www\.youtube-nocookie\.com\/embed\/vKQi3bBA1y8"/.test(
       body,
@@ -99,12 +116,14 @@ export async function assertAnnouncementHomePinned() {
     fail(check, String(error));
   }
 
-  const badgeCheck = "GET /xi/news and /xi both show the Pinned badge";
+  const badgeCheck = "GET /xi/announcements and /xi both show the Pinned badge";
   const pinnedBadge = /<span[^>]*>Pinned<\/span>/;
   try {
-    const news = await (await signedInFetch(`${BASE_URL}/xi/news`)).text();
+    const feed = await (
+      await signedInFetch(`${BASE_URL}/xi/announcements`)
+    ).text();
     const home = await (await signedInFetch(`${BASE_URL}/xi`)).text();
-    if (pinnedBadge.test(news) && pinnedBadge.test(home)) {
+    if (pinnedBadge.test(feed) && pinnedBadge.test(home)) {
       ok(badgeCheck);
     } else {
       fail(badgeCheck, "Pinned badge markup missing on one of the pages");
@@ -320,7 +339,7 @@ export async function assertAnnouncementActions(sessions: {
       );
 
       await run(
-        "pinAnnouncement pins it, and it now sorts first on /xi/news",
+        "pinAnnouncement pins it, and it now sorts first on /xi/announcements",
         async () => {
           const result = await callAction(
             ids.pinAnnouncement,
@@ -329,7 +348,7 @@ export async function assertAnnouncementActions(sessions: {
           );
           const [row] = await smokeAnnouncements();
           const body = await (
-            await signedInFetch(`${BASE_URL}/xi/news`)
+            await signedInFetch(`${BASE_URL}/xi/announcements`)
           ).text();
           const welcomePos = body.indexOf("Welcome to War Week XI");
           const editedPos = body.indexOf(editedTitle);
@@ -352,7 +371,7 @@ export async function assertAnnouncementActions(sessions: {
           );
           const [row] = await smokeAnnouncements();
           const body = await (
-            await signedInFetch(`${BASE_URL}/xi/news`)
+            await signedInFetch(`${BASE_URL}/xi/announcements`)
           ).text();
           const welcomePos = body.indexOf("Welcome to War Week XI");
           const editedPos = body.indexOf(editedTitle);
@@ -457,9 +476,11 @@ export async function assertAnnouncementUnsafeContentStripped(sessions: {
       return;
     }
 
-    const feed = await (await signedInFetch(`${BASE_URL}/xi/news`)).text();
+    const feed = await (
+      await signedInFetch(`${BASE_URL}/xi/announcements`)
+    ).text();
     if (feed.includes("javascript:")) {
-      fail(check, "rendered /xi/news still contains javascript:");
+      fail(check, "rendered /xi/announcements still contains javascript:");
       return;
     }
     ok(check);

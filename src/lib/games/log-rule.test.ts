@@ -68,7 +68,7 @@ describe("gameLogError: logging a Game", () => {
     expect(gameLogError(facet())).toBeNull();
   });
 
-  it("refuses the pick-only You: no account-linked Participant", () => {
+  it("refuses a sign-in that links no Participant", () => {
     expect(gameLogError(facet({ linked: null }))).toBe(NOT_LINKED);
   });
 
@@ -178,7 +178,7 @@ describe("gameChangeError: editing or deleting a Game", () => {
     ).toBe(NOT_THE_LOGGER);
   });
 
-  it("refuses the pick-only You", () => {
+  it("refuses a sign-in that links no Participant", () => {
     expect(gameChangeError(change({ linked: null }))).toBe(NOT_LINKED);
   });
 

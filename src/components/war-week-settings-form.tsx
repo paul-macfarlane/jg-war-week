@@ -300,11 +300,25 @@ export function WarWeekSettingsForm({
             />
             <FieldError>{fieldErrors.mode}</FieldError>
           </Field>
-          {text("teamLabel", "Team Label", { required: true, maxLength: 40 })}
-          {text("leaderTitle", "Leader Title", {
-            required: true,
-            maxLength: 40,
-          })}
+          {/* A free-for-all has no Teams: hide the fields, keep (and post)
+              their saved values so saving never wipes them. */}
+          {values.mode === "free-for-all" ? (
+            <>
+              <FormValueInput name="teamLabel" value={initial.teamLabel} />
+              <FormValueInput name="leaderTitle" value={initial.leaderTitle} />
+            </>
+          ) : (
+            <>
+              {text("teamLabel", "Team Label", {
+                required: true,
+                maxLength: 40,
+              })}
+              {text("leaderTitle", "Leader Title", {
+                required: true,
+                maxLength: 40,
+              })}
+            </>
+          )}
         </FieldGroup>
       </FieldSet>
 

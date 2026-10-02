@@ -19,6 +19,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { dayDateDisabled } from "@/lib/day-range";
 import type { SetupDay } from "@/queries/setup";
 
 /**
@@ -29,11 +30,14 @@ import type { SetupDay } from "@/queries/setup";
 function DayRow({
   warWeekId,
   day,
+  dayDates,
   startDate,
   endDate,
 }: {
   warWeekId: string;
   day?: SetupDay;
+  /** Every Day's date in this War Week; taken dates are greyed out. */
+  dayDates: string[];
   startDate: string;
   endDate: string;
 }) {
@@ -74,6 +78,12 @@ function DayRow({
               required
               min={startDate}
               max={endDate}
+              disabledDates={dayDateDisabled(
+                startDate,
+                endDate,
+                dayDates,
+                day?.date,
+              )}
               aria-invalid={!!fieldErrors.date}
               value={date}
               onValueChange={setDate}
@@ -124,6 +134,7 @@ export function DaysEditor({
   startDate: string;
   endDate: string;
 }) {
+  const dayDates = days.map((day) => day.date);
   return (
     <div {...SETUP_EDITOR} className="flex flex-col gap-6">
       {days.length === 0 ? (
@@ -136,6 +147,7 @@ export function DaysEditor({
               key={`${day.id}-${day.date}-${day.dayTheme}`}
               warWeekId={warWeekId}
               day={day}
+              dayDates={dayDates}
               startDate={startDate}
               endDate={endDate}
             />
@@ -147,6 +159,7 @@ export function DaysEditor({
         <ul>
           <DayRow
             warWeekId={warWeekId}
+            dayDates={dayDates}
             startDate={startDate}
             endDate={endDate}
           />

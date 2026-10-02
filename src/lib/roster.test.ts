@@ -5,7 +5,6 @@ import {
   buildRoster,
   participantCountLabel,
   rosterHeading,
-  rosterParticipants,
 } from "@/lib/roster";
 
 const red = { id: "t-red", name: "Red", color: "#ff3b3b", logoUrl: null };
@@ -157,42 +156,6 @@ describe("rosterHeading", () => {
     ["free-for-all", "Team", "Participants"],
   ] as const)("%s mode with label %s is %s", (mode, label, expected) => {
     expect(rosterHeading(mode, label)).toBe(expected);
-  });
-});
-
-describe("rosterParticipants", () => {
-  it("lists every Participant by name, on a Team or not", () => {
-    const roster = buildRoster({
-      mode: "teams",
-      teams: [red, blue],
-      participants: [
-        person("Zed", "t-red"),
-        person("Morpheus", "t-red", { isLeader: true }),
-        person("Apoc", null),
-        person("Niobe", "t-blue"),
-      ],
-    });
-    expect(rosterParticipants(roster).map((p) => p.displayName)).toEqual([
-      "Apoc",
-      "Morpheus",
-      "Niobe",
-      "Zed",
-    ]);
-  });
-
-  it("lists a free-for-all's Participants by name", () => {
-    const roster = buildRoster({
-      mode: "free-for-all",
-      teams: [],
-      participants: [
-        person("Trinity", null, { isLeader: true }),
-        person("Neo", null),
-      ],
-    });
-    expect(rosterParticipants(roster).map((p) => p.displayName)).toEqual([
-      "Neo",
-      "Trinity",
-    ]);
   });
 });
 
