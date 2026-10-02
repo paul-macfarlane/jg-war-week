@@ -202,7 +202,7 @@ describe("AboutPage", () => {
       (m) => m[1],
     );
     expect(slugs).toEqual([
-      "organizer-setup",
+      "organizer-admin",
       "schedule",
       "points",
       "announcements",
@@ -211,7 +211,7 @@ describe("AboutPage", () => {
     ]);
     const titles = ABOUT_FEATURES.map((f) => f.title);
     expect(titles).toEqual([
-      "Organizer and Host setup",
+      "Organizer and Host admin",
       "Schedule, Now and Next",
       "Points and Standings",
       "Announcements",

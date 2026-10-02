@@ -1255,7 +1255,7 @@ async function main() {
       for (const scheme of SCHEMES) await recordFinale(cookie, scheme);
 
     const slugs = ABOUT_FEATURES.map((f) => f.slug);
-    await still("organizer-setup", cookie, "/admin/setup");
+    await still("organizer-admin", cookie, "/admin/schedule");
     await still("points", cookie, "/admin/points", async (page) => {
       const picked = await selectCompetition(
         page,
