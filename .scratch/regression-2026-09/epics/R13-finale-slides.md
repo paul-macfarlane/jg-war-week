@@ -8,7 +8,9 @@
 
 **Blocked by:** R12 merged into `staging` (Award Categories; R11's editor).
 
-**Status:** ready-for-agent
+**Status:** in-progress
+
+**Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
 **Red-team:** required (Drizzle schema change for slides). Finale rule: never reorder or recompute Standings.
 

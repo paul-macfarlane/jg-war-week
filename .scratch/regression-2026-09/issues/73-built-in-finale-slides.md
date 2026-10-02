@@ -10,7 +10,9 @@
 
 **Blocked by:** 72, 70 (Categories)
 
-**Status:** ready-for-agent
+**Status:** in-progress
+
+**Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
 **Source:** grilling Q19, Q27
 

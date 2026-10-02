@@ -38,7 +38,7 @@ test("r12 70 an Organizer adds a Category, gives an Award in it, and the Awards 
     await dialog.getByRole("button", { name: "Add Category" }).click();
     await expect(page.getByText("Category added")).toBeVisible();
     await expect(
-      page.getByRole("list", { name: "Award Categories" }),
+      page.getByRole("list", { name: "Award Categories", exact: true }),
     ).toContainText(category);
 
     // A rename to an existing name is refused, ignoring case.
@@ -66,7 +66,7 @@ test("r12 70 an Organizer adds a Category, gives an Award in it, and the Awards 
     await page.getByRole("button", { name: `Restore ${renamed}` }).click();
     await expect(page.getByText("Category restored")).toBeVisible();
     await expect(
-      page.getByRole("list", { name: "Award Categories" }),
+      page.getByRole("list", { name: "Award Categories", exact: true }),
     ).toContainText(renamed);
 
     // Give an Award in it.
