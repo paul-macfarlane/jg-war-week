@@ -51,7 +51,8 @@ export async function assertAwardCategoriesSeeded() {
     );
     if (
       midnight?.key === "black-midnight" &&
-      JSON.stringify(stored.map((r) => r.tag)) ===
+      // Sorted here: the database's collation orders text differently.
+      JSON.stringify(stored.map((r) => r.tag).sort()) ===
         JSON.stringify([...tagged].sort())
     ) {
       ok(tagCheck);

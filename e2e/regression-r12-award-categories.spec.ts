@@ -32,8 +32,10 @@ test("r12 70 an Organizer adds a Category, gives an Award in it, and the Awards 
 
     await page.goto("/admin/awards");
     await page.getByRole("button", { name: "Add Category" }).click();
-    await page.getByLabel("Name").fill(category);
-    await page.getByRole("button", { name: "Add Category" }).last().click();
+    // The Sheet's own fields: the Awards list's rows have Names too.
+    const dialog = page.getByRole("dialog");
+    await dialog.getByLabel("Name").fill(category);
+    await dialog.getByRole("button", { name: "Add Category" }).click();
     await expect(page.getByText("Category added")).toBeVisible();
     await expect(
       page.getByRole("list", { name: "Award Categories" }),
@@ -41,13 +43,13 @@ test("r12 70 an Organizer adds a Category, gives an Award in it, and the Awards 
 
     // A rename to an existing name is refused, ignoring case.
     await page.getByRole("button", { name: `Rename ${category}` }).click();
-    await page.getByLabel("Name").fill("war week mvp");
-    await page.getByRole("button", { name: "Save" }).click();
+    await dialog.getByLabel("Name").fill("war week mvp");
+    await dialog.getByRole("button", { name: "Save" }).click();
     await expect(
       page.getByText("There's already a Category named war week mvp.").first(),
     ).toBeVisible();
-    await page.getByLabel("Name").fill(renamed);
-    await page.getByRole("button", { name: "Save" }).click();
+    await dialog.getByLabel("Name").fill(renamed);
+    await dialog.getByRole("button", { name: "Save" }).click();
     await expect(page.getByText("Category renamed")).toBeVisible();
 
     // Archive, then restore.
@@ -69,12 +71,12 @@ test("r12 70 an Organizer adds a Category, gives an Award in it, and the Awards 
 
     // Give an Award in it.
     await page.getByRole("button", { name: "Add Award" }).click();
-    await page.getByLabel("Name").first().fill(awardName);
+    await dialog.getByLabel("Name").fill(awardName);
     await page.locator("#award-team").click();
     await page.getByRole("option", { name: "Red" }).click();
     await page.locator("#award-category").click();
     await page.getByRole("option", { name: renamed }).click();
-    await page.getByRole("button", { name: "Add Award" }).last().click();
+    await dialog.getByRole("button", { name: "Add Award" }).click();
     await expect(page.getByText("Award saved")).toBeVisible();
 
     // The Awards page groups it under its Category, linked to its history.
