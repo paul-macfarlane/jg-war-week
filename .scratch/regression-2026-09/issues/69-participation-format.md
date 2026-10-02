@@ -4,7 +4,9 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** in-progress
+
+**Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
 **Source:** Paul's regression feedback 2026-10-01, A17; grilling Q17, Q25; wiki survey in `../grilling-2026-10-01.md`
 

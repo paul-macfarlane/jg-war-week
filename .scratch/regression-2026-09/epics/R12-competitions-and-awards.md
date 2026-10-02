@@ -8,7 +8,9 @@
 
 **Blocked by:** R11 merged into `staging` (one schema-changing epic at a time).
 
-**Status:** ready-for-agent
+**Status:** in-progress
+
+**Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
 **Red-team:** **required** (Drizzle schema change; a new Participant write).
 
