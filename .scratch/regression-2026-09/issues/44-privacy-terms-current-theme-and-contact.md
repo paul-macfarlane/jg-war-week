@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** in-progress
+**Status:** done
 
 **Source:** Paul's public-pages review, 2026-10-01, items 15 and 16
 
@@ -29,3 +29,5 @@
 - [ ] `pnpm gate` passes.
 
 ## Comments
+- 2026-10-01: claimed, `ready-for-agent` → `in-progress` (Epic R7).
+- 2026-10-01 [CLOSEOUT]: `f8c6039` (D44, Sonnet) + review fixes `d434462`. `/privacy` and `/terms` read `getCurrentWarWeek`, `force-dynamic`, fall back to `ABOUT_FALLBACK_THEME`; unit tests cover both. `STATIC_PAGE_THEME` deleted (grep empty). Both say "Contact the Jahnel Group admins."; Last updated October 1, 2026. Copy check found two untrue passages in Privacy, now corrected: "Who did what" (Organizers are global; Hosts also see Points Entry and Announcement author emails in Admin; the public Announcement shows the roster name or handle, not the email) and the roster email (it also links a person to their Participant for enrolling, logging Games and reporting Heats). Checklist with XII demo: XII theme tokens, no horizontal scroll or clipped text at 390 and 1440 (`privacy-*/`, `terms-*/`). Gate exit 0. All ACs PASS. `in-progress` → `done`. PR https://github.com/paul-macfarlane/jg-war-week/pull/110.

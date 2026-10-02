@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** in-progress
+**Status:** done
 
 **Source:** Paul's public-pages review, 2026-10-01, items 1, 2, 4–14
 
@@ -50,3 +50,5 @@ Approved copy is quoted; write it as given.
 - [ ] `pnpm gate` passes.
 
 ## Comments
+- 2026-10-01: claimed, `ready-for-agent` → `in-progress`; branch `feat/regression-r7-public-pages` from `staging` `ab28972` (Epic R7, `../epics/R7-execution.md`).
+- 2026-10-01 [CLOSEOUT]: `e8efb9f` (D42, Sonnet) + review fixes `d434462`. Approved headline, hero and "Why we built this" verbatim; the eight phrases absent; six cards `organizer-setup`, `schedule`, `points`, `announcements`, `competitions`, `archive` in nav order, 1–2 sentences, mode-neutral (alt text too). Overflow cause: the hero grid's implicit column sized to `AboutStandingsDemo`'s stepper, clipped by the root's `overflow-hidden`; fixed with `grid-cols-1` + `min-w-0` and stepper phones `w-[min(6rem,26vw)] sm:w-32`. At 390 and 1440: scrollWidth = clientWidth and no text past the viewport (`test-results/r7-public-pages/checklist.txt`, screenshots `about-390/`, `about-1440/`). `page.test.tsx` asserts absences and card order. `pnpm format:check && pnpm gate` exit 0 (`test-results/r7-gate/gate.txt`). AI code review in `../epics/R7-execution.md`. All ACs PASS. `in-progress` → `done`. PR https://github.com/paul-macfarlane/jg-war-week/pull/110.
