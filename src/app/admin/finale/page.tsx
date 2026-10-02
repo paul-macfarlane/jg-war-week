@@ -20,7 +20,7 @@ export const metadata: Metadata = {
  */
 export default async function AdminFinalePage() {
   const { warWeek, email, allowed, isOrganizer, editions } =
-    await loadAdminPage("/admin/standings");
+    await loadAdminPage("/admin/finale");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const edition = warWeek.edition;

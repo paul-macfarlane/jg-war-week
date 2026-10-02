@@ -31,7 +31,7 @@ describe("AdminShell", () => {
         warWeek={fakeWarWeek}
         email="o@jahnelgroup.com"
         isOrganizer
-        current="Overview"
+        current="Points"
       >
         x
       </AdminShell>,
@@ -47,7 +47,7 @@ describe("AdminShell", () => {
         warWeek={fakeWarWeek}
         email="o@jahnelgroup.com"
         isOrganizer
-        current="Overview"
+        current="Points"
       >
         x
       </AdminShell>,
@@ -56,21 +56,26 @@ describe("AdminShell", () => {
     expect(html).toContain('href="/admin/organizers"');
   });
 
-  it("hides Awards and the Organizer list from a Host", () => {
+  it("hides the Organizer-only sections from a Host", () => {
     const html = renderToStaticMarkup(
       <AdminShell
         warWeek={fakeWarWeek}
         email="host@jahnelgroup.com"
         isOrganizer={false}
-        current="Overview"
+        current="Points"
       >
         x
       </AdminShell>,
     );
     expect(html).not.toContain('href="/admin/awards"');
     expect(html).not.toContain('href="/admin/organizers"');
+    expect(html).not.toContain('href="/admin/roster"');
+    expect(html).not.toContain('href="/admin/faq"');
+    expect(html).not.toContain('href="/admin/settings"');
     expect(html).toContain('href="/admin/points"');
-    expect(html).toContain('href="/admin/setup"');
+    expect(html).toContain('href="/admin/competitions"');
+    expect(html).toContain('href="/admin/schedule"');
+    expect(html).toContain('href="/admin/finale"');
   });
 });
 
@@ -91,13 +96,19 @@ describe("AdminShell bottom bar (phone)", () => {
   const moreTab = (html: string) =>
     html.match(/<button[^>]*>(?:(?!<\/button>).)*More<\/button>/)?.[0];
 
+  it("links the header's title to Points, the first section", () => {
+    expect(shell("Points")).toMatch(
+      /<a[^>]*href="\/admin\/points"[^>]*>War Week (?:<!-- -->)?XI(?:<!-- -->)? admin<\/a>/,
+    );
+  });
+
   it("labels both the side column and the bar Admin sections", () => {
-    const html = shell("Overview");
+    const html = shell("Points");
     expect(html.match(/aria-label="Admin sections"/g)).toHaveLength(2);
   });
 
   it("gives the bar a Points tab and a More tab", () => {
-    const html = shell("Overview");
+    const html = shell("Points");
     expect(html).toMatch(
       /href="\/admin\/points"[^>]*>(?:(?!<\/a>).)*Points<\/a>/,
     );
@@ -110,10 +121,10 @@ describe("AdminShell bottom bar (phone)", () => {
   });
 
   it("doesn't mark the More tab current for a tab section", () => {
-    const html = shell("Setup");
+    const html = shell("Schedule");
     expect(moreTab(html)).not.toContain('aria-current="page"');
     expect(html).toMatch(
-      /<a[^>]*href="\/admin\/setup"[^>]*aria-current="page"|<a[^>]*aria-current="page"[^>]*href="\/admin\/setup"/,
+      /<a[^>]*href="\/admin\/schedule"[^>]*aria-current="page"|<a[^>]*aria-current="page"[^>]*href="\/admin\/schedule"/,
     );
   });
 
@@ -132,7 +143,7 @@ describe("AdminShell footer", () => {
         warWeek={fakeWarWeek}
         email="o@jahnelgroup.com"
         isOrganizer
-        current="Overview"
+        current="Points"
       >
         x
       </AdminShell>,
@@ -184,7 +195,7 @@ describe("editingBanner", () => {
         email="o@jahnelgroup.com"
         isOrganizer
         editions={editions}
-        current="Overview"
+        current="Points"
       >
         x
       </AdminShell>,

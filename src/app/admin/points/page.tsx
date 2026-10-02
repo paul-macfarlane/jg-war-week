@@ -59,7 +59,7 @@ export default async function AdminPointsPage() {
     entry.generatedByBracket ? (
       entry.competitionFormat === "games" ? (
         <Link
-          href={`/admin/setup/competitions/${entry.competitionId}/games`}
+          href={`/admin/competitions/${entry.competitionId}/games`}
           className={changeLink}
         >
           Change in Games
@@ -98,7 +98,7 @@ export default async function AdminPointsPage() {
       email={email}
       isOrganizer={isOrganizer}
       editions={editions}
-      current="Points Entries"
+      current="Points"
     >
       {brackets.length > 0 && (
         <section
@@ -134,7 +134,7 @@ export default async function AdminPointsPage() {
             {games.map((g) => (
               <li key={g.id}>
                 <Link
-                  href={`/admin/setup/competitions/${g.id}/games`}
+                  href={`/admin/competitions/${g.id}/games`}
                   className="border-border hover:bg-muted inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium"
                 >
                   {g.name}

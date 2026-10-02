@@ -9,6 +9,7 @@ import {
   assertAdminGate,
   assertAdminGuidePage,
   assertAdminLink,
+  assertAdminRedirects,
   assertAdminWording,
   assertSignInRequired,
 } from "./admin";
@@ -198,6 +199,7 @@ async function main() {
       await assertSignInPage();
       await assertAdminGate(sessions);
       await assertAdminWording(sessions);
+      await assertAdminRedirects(sessions);
       await assertSignInRequired();
       await assertAdminLink(sessions);
       await assertAdminGuidePage(sessions);

@@ -12,13 +12,15 @@ export async function assertAdminGate(sessions: {
   notOrganizer: SmokeSession;
   outsider: SmokeSession;
 }) {
-  const anonymousCheck = "anonymous GET /admin redirects to sign-in";
+  const anonymousCheck = "anonymous GET /admin/points redirects to sign-in";
   try {
-    const res = await fetch(`${BASE_URL}/admin`, { redirect: "manual" });
+    const res = await fetch(`${BASE_URL}/admin/points`, {
+      redirect: "manual",
+    });
     const location = res.headers.get("location") ?? "";
     if (
       res.status === 307 &&
-      location.includes("/sign-in?callbackURL=%2Fadmin")
+      location.includes("/sign-in?callbackURL=%2Fadmin%2Fpoints")
     ) {
       ok(anonymousCheck);
     } else {
@@ -32,7 +34,7 @@ export async function assertAdminGate(sessions: {
   const shows = {
     "the admin shell": ({ status, body }: AdminResult) =>
       status === 200 &&
-      body.includes("Organizer overview") &&
+      body.includes("Add a Points Entry") &&
       body.includes("Admin sections"),
     "the refusal": ({ status, body }: AdminResult) =>
       status === 200 &&
@@ -51,9 +53,9 @@ export async function assertAdminGate(sessions: {
     ],
     ["a session with a non-JG email", sessions.outsider, "sign-in"],
   ] as const) {
-    const check = `GET /admin as ${label} shows ${expected}`;
+    const check = `GET /admin/points as ${label} shows ${expected}`;
     try {
-      const res = await fetch(`${BASE_URL}/admin`, {
+      const res = await fetch(`${BASE_URL}/admin/points`, {
         headers: { cookie: session.cookie },
         redirect: "manual",
       });
@@ -76,7 +78,7 @@ export async function assertAdminGate(sessions: {
 export async function assertAdminWording(sessions: {
   organizer: SmokeSession;
 }) {
-  for (const route of ["/admin", "/admin/standings", "/admin/points"]) {
+  for (const route of ["/admin/points", "/admin/finale", "/admin/settings"]) {
     const check = `GET ${route} as an Organizer says 'Back to War Week XI' and never 'public site'`;
     try {
       const res = await fetch(`${BASE_URL}${route}`, {
@@ -97,6 +99,77 @@ export async function assertAdminWording(sessions: {
     } catch (error) {
       fail(check, String(error));
     }
+  }
+}
+
+/**
+ * The flat admin nav (ticket 57): `/admin` opens Points, and every old
+ * Setup, Overview and Standings path permanently redirects to its new home.
+ */
+export async function assertAdminRedirects(sessions: {
+  organizer: SmokeSession;
+}) {
+  const id = "00000000-0000-4000-8000-000000000000";
+  for (const [from, to] of [
+    ["/admin", "/admin/points"],
+    ["/admin/setup", "/admin/settings"],
+    ["/admin/setup/war-week", "/admin/settings"],
+    ["/admin/setup/next", "/admin/settings"],
+    ["/admin/setup/days", "/admin/schedule"],
+    ["/admin/setup/schedule", "/admin/schedule"],
+    ["/admin/setup/schedule/new", "/admin/schedule"],
+    [`/admin/setup/schedule/${id}`, "/admin/schedule"],
+    ["/admin/setup/teams", "/admin/roster"],
+    ["/admin/setup/competitions", "/admin/competitions"],
+    [
+      `/admin/setup/competitions/${id}/bracket`,
+      `/admin/competitions/${id}/bracket`,
+    ],
+    [
+      `/admin/setup/competitions/${id}/games`,
+      `/admin/competitions/${id}/games`,
+    ],
+    ["/admin/setup/faq", "/admin/faq"],
+    ["/admin/setup/faq/new", "/admin/faq"],
+    [`/admin/setup/faq/${id}`, "/admin/faq"],
+    ["/admin/standings", "/admin/finale"],
+  ] as const) {
+    const check = `GET ${from} permanently redirects to ${to}`;
+    try {
+      const res = await fetch(`${BASE_URL}${from}`, {
+        headers: { cookie: sessions.organizer.cookie },
+        redirect: "manual",
+      });
+      const location = res.headers.get("location") ?? "";
+      const pathname = new URL(location, BASE_URL).pathname;
+      if (res.status === 308 && pathname === to) {
+        ok(check);
+      } else {
+        fail(check, `status=${res.status} location=${location}`);
+      }
+    } catch (error) {
+      fail(check, String(error));
+    }
+  }
+
+  const followCheck =
+    "GET /admin as an Organizer lands on Points, the first admin section";
+  try {
+    const res = await fetch(`${BASE_URL}/admin`, {
+      headers: { cookie: sessions.organizer.cookie },
+    });
+    const body = await res.text();
+    if (
+      res.status === 200 &&
+      new URL(res.url).pathname === "/admin/points" &&
+      body.includes("Add a Points Entry")
+    ) {
+      ok(followCheck);
+    } else {
+      fail(followCheck, `status=${res.status} url=${res.url}`);
+    }
+  } catch (error) {
+    fail(followCheck, String(error));
   }
 }
 

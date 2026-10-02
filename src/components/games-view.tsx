@@ -323,7 +323,7 @@ export function GamesView(props: GamesViewProps) {
             <>
               Best of decided: {bestOfWinner} —{" "}
               <Link
-                href={`/admin/setup/competitions/${competitionId}/games`}
+                href={`/admin/competitions/${competitionId}/games`}
                 className="text-primary font-medium underline underline-offset-4"
               >
                 Close it

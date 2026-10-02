@@ -41,7 +41,7 @@ export default async function EditPointsEntryPage({
       email={email}
       isOrganizer={isOrganizer}
       editions={editions}
-      current="Points Entries"
+      current="Points"
     >
       <section className="flex max-w-md flex-col gap-4">
         <h1 className="text-2xl font-bold">Edit Points Entry</h1>

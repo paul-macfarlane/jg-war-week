@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { RosterEditor, TeamsEditor } from "@/components/teams-editor";
@@ -10,15 +9,15 @@ import {
   getSetupTeams,
 } from "@/queries/setup";
 
-import { loadAdminPage } from "../../gate";
+import { loadAdminPage } from "../gate";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Teams & roster · JG War Week" };
 
-export default async function SetupTeamsPage() {
+export default async function AdminRosterPage() {
   const { warWeek, email, allowed, isOrganizer, editions } =
-    await loadAdminPage("/admin/setup/teams", "organizers");
+    await loadAdminPage("/admin/roster", "organizers");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const [teams, participants, tagSuggestions] = await Promise.all([
@@ -35,15 +34,9 @@ export default async function SetupTeamsPage() {
       email={email}
       isOrganizer={isOrganizer}
       editions={editions}
-      current="Setup"
+      current="Roster"
     >
       <section className="flex max-w-5xl flex-col gap-4">
-        <Link
-          href="/admin/setup"
-          className="text-primary text-sm underline-offset-4 hover:underline"
-        >
-          ← Setup
-        </Link>
         <h1 className="text-2xl font-bold">
           {isTeams ? `${teamLabel}s & roster` : "Roster"}
         </h1>

@@ -245,8 +245,8 @@ test("r1 05 the End War Week dialog shows the computed Winner read-only", async 
   page,
 }, testInfo) => {
   await asOrganizer(context);
-  // War Week XI is the live one, so /admin/setup shows End War Week.
-  await page.goto("/admin/setup");
+  // War Week XI is the live one, so /admin/settings shows End War Week.
+  await page.goto("/admin/settings");
   await page.getByRole("button", { name: "End War Week" }).click();
   const dialog = page.getByRole("alertdialog", { name: "End War Week XI?" });
   await expect(dialog).toBeVisible();
@@ -275,7 +275,7 @@ test("r1 06 09 the Competitions form explains Max points and offers Format inclu
   page,
 }, testInfo) => {
   await asOrganizer(context);
-  await page.goto("/admin/setup/competitions");
+  await page.goto("/admin/competitions");
 
   // The empty form opens in a Sheet from the list's Add button.
   await page.getByRole("button", { name: "Add Competition" }).click();
@@ -317,9 +317,7 @@ test("r1 06 09 the Competitions form explains Max points and offers Format inclu
     await page.getByRole("option", { name: "Single elimination" }).click();
     await addForm.getByRole("button", { name: "Add Competition" }).click();
     await expect(page.getByText("Competition saved")).toBeVisible();
-    await expect(page).toHaveURL(
-      /\/admin\/setup\/competitions\/[0-9a-f-]+\/bracket$/,
-    );
+    await expect(page).toHaveURL(/\/admin\/competitions\/[0-9a-f-]+\/bracket$/);
     await page.screenshot({
       path: testInfo.outputPath("created-links-to-bracket.png"),
     });

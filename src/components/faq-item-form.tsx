@@ -28,7 +28,7 @@ import type { Content } from "@/lib/rich-text/content";
 
 const EMPTY_ANSWER: Content = { type: "doc", content: [] };
 
-const BACK = "/admin/setup/faq";
+const BACK = "/admin/faq";
 
 /** Add or edit one FAQ Item: a question and its rich-text answer. */
 export function FaqItemForm({

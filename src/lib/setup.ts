@@ -36,7 +36,7 @@ const themeUrl = z
 export const emailSchema = z.email().max(254).toLowerCase();
 
 /**
- * The War Week fields an Organizer can also edit in `/admin/setup`, so the
+ * The War Week fields an Organizer can also edit in `/admin/settings`, so the
  * seed and the setup form share one set of field rules.
  */
 export const warWeekSettingsSeedShape = {

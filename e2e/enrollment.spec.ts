@@ -202,7 +202,7 @@ test("enrollment: a Participant enrolls, withdraws and enrolls again; once the H
 
     // The Host generates the Bracket.
     await asHost(context);
-    await page.goto(`/admin/setup/competitions/${id}/bracket`);
+    await page.goto(`/admin/competitions/${id}/bracket`);
     await page.getByRole("button", { name: "Generate" }).click();
     await expect(page.getByText("Bracket generated")).toBeVisible();
     await shoot(page, testInfo, "generated");

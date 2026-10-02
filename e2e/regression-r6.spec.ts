@@ -49,7 +49,7 @@ test("r6 39 a refusal toast sits above the sticky Save, not over it", async ({
 
   // Below `md`: the toast clears the sticky Save row and the error under it.
   await page.setViewportSize(PHONE);
-  await page.goto("/admin/setup/war-week");
+  await page.goto("/admin/settings");
   const sticky = page.locator('[data-slot="sticky-form-actions"]');
   const toast = await refuseSettingsSave(page);
   const toastBox = await toast.boundingBox();
@@ -62,7 +62,7 @@ test("r6 39 a refusal toast sits above the sticky Save, not over it", async ({
 
   // From `md`: Sonner's default offset, as before.
   await page.setViewportSize(DESKTOP);
-  await page.goto("/admin/setup/war-week");
+  await page.goto("/admin/settings");
   const wide = await refuseSettingsSave(page);
   const wideBox = await wide.boundingBox();
   if (!wideBox) throw new Error("Toast missing");

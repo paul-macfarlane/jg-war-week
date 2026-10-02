@@ -1,6 +1,7 @@
 import {
   BookOpen,
-  LayoutDashboard,
+  CircleHelp,
+  ListChecks,
   type LucideIcon,
   Medal,
   Megaphone,
@@ -8,20 +9,25 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
+  Trophy,
+  Users,
 } from "lucide-react";
 
 import type { AdminSectionIconKey } from "@/lib/admin-sections";
 
 /** The icon each admin section shows, in the side column and the bar. */
 const ICONS: Record<AdminSectionIconKey, LucideIcon> = {
-  overview: LayoutDashboard,
-  guide: BookOpen,
   points: PlusCircle,
-  finale: Sparkles,
+  competitions: Trophy,
+  schedule: ListChecks,
+  roster: Users,
   announcements: Megaphone,
   awards: Medal,
-  setup: Settings,
+  faq: CircleHelp,
+  finale: Sparkles,
+  settings: Settings,
   organizers: ShieldCheck,
+  guide: BookOpen,
 };
 
 export function AdminSectionIcon({

@@ -183,7 +183,7 @@ function EndWarWeekButton({
             <span key={c.id}>
               {i > 0 && ", "}
               <Link
-                href={`/admin/setup/competitions/${c.id}/games`}
+                href={`/admin/competitions/${c.id}/games`}
                 className="text-primary underline underline-offset-4"
               >
                 {c.name}

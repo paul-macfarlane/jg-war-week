@@ -57,7 +57,7 @@ const EMPTY: ScheduleItemInput = {
   description: { type: "doc", content: [] },
 };
 
-const BACK = "/admin/setup/schedule";
+const BACK = "/admin/schedule";
 
 /**
  * Add or edit one Schedule Item. Times are ET wall-clock times on the chosen

@@ -12,7 +12,7 @@ import {
   getScheduleItemForEdit,
 } from "@/queries/setup-schedule-faq";
 
-import { loadAdminPage } from "../../../gate";
+import { loadAdminPage } from "../../gate";
 
 export const dynamic = "force-dynamic";
 
@@ -20,10 +20,10 @@ export const metadata: Metadata = { title: "Edit Schedule Item · JG War Week" }
 
 export default async function EditScheduleItemPage({
   params,
-}: PageProps<"/admin/setup/schedule/[id]">) {
+}: PageProps<"/admin/schedule/[id]">) {
   const { id } = await params;
   const { warWeek, email, allowed, isOrganizer, editions, runs } =
-    await loadAdminPage(`/admin/setup/schedule/${id}`);
+    await loadAdminPage(`/admin/schedule/${id}`);
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const [item, days, allCompetitions] = await Promise.all([
@@ -46,11 +46,11 @@ export default async function EditScheduleItemPage({
       email={email}
       isOrganizer={isOrganizer}
       editions={editions}
-      current="Setup"
+      current="Schedule"
     >
       <section className="flex max-w-3xl flex-col gap-4">
         <Link
-          href="/admin/setup/schedule"
+          href="/admin/schedule"
           className="text-primary text-sm underline-offset-4 hover:underline"
         >
           ← Schedule

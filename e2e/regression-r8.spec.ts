@@ -12,7 +12,7 @@ test("r8 50 the date range picker stays open until Done", async ({
 }) => {
   await asOrganizer(context);
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto("/admin/setup/war-week");
+  await page.goto("/admin/settings");
 
   const trigger = page.getByLabel("Dates");
   await trigger.click();

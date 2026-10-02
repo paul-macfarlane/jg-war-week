@@ -226,14 +226,14 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     try {
       await asOrganizer(organizerContext);
       const organizerPage = await organizerContext.newPage();
-      await organizerPage.goto("/admin/setup");
+      await organizerPage.goto("/admin/settings");
       await organizerPage.getByRole("button", { name: "End War Week" }).click();
       const endDialog = organizerPage.getByRole("alertdialog");
       await expect(endDialog).toContainText("Still open:");
       await expect(endDialog).toContainText(COMPETITION);
       await expect(
         endDialog.getByRole("link", { name: COMPETITION }),
-      ).toHaveAttribute("href", `/admin/setup/competitions/${id}/games`);
+      ).toHaveAttribute("href", `/admin/competitions/${id}/games`);
       await shoot(organizerPage, testInfo, "end-warning");
       await endDialog.getByRole("button", { name: "Cancel" }).click();
       await expect(endDialog).toBeHidden();
@@ -242,7 +242,7 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     }
 
     // The Host closes it from the Games setup page.
-    await page.goto(`/admin/setup/competitions/${id}/games`);
+    await page.goto(`/admin/competitions/${id}/games`);
     await page.getByRole("button", { name: "Close", exact: true }).click();
     const closeConfirm = page.getByRole("alertdialog", {
       name: "Close this Competition?",
@@ -282,7 +282,7 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     await shoot(page, testInfo, "standings");
 
     // Reopen and delete the Game: the Standings go back.
-    await page.goto(`/admin/setup/competitions/${id}/games`);
+    await page.goto(`/admin/competitions/${id}/games`);
     await page.getByRole("button", { name: "Reopen" }).click();
     await page
       .getByRole("alertdialog", { name: "Reopen this Competition?" })

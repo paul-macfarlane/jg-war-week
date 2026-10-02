@@ -38,7 +38,7 @@ export default async function BracketResultsPage({
         email={email}
         isOrganizer={isOrganizer}
         editions={editions}
-        current="Points Entries"
+        current="Points"
       >
         <section className="flex max-w-xl min-w-0 flex-col gap-4">
           <Link
@@ -51,7 +51,7 @@ export default async function BracketResultsPage({
           <p className="text-foreground/70 text-sm">
             This Competition is run as Games, not a Bracket.{" "}
             <Link
-              href={`/admin/setup/competitions/${runAsGames.id}/games`}
+              href={`/admin/competitions/${runAsGames.id}/games`}
               className="text-primary underline-offset-4 hover:underline"
             >
               Open its Games
@@ -73,7 +73,7 @@ export default async function BracketResultsPage({
       email={email}
       isOrganizer={isOrganizer}
       editions={editions}
-      current="Points Entries"
+      current="Points"
     >
       <section className="flex max-w-xl min-w-0 flex-col gap-4">
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
@@ -84,7 +84,7 @@ export default async function BracketResultsPage({
             ← Points Entries
           </Link>
           <Link
-            href={`/admin/setup/competitions/${competition.id}/bracket`}
+            href={`/admin/competitions/${competition.id}/bracket`}
             className="text-primary underline-offset-4 hover:underline"
           >
             Builder
