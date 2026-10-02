@@ -8,7 +8,7 @@
 
 **Blocked by:** R12 merged into `staging` (Award Categories; R11's editor).
 
-**Status:** in-progress
+**Status:** ai-review
 
 **Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 

@@ -4,7 +4,7 @@
 
 **Blocked by:** 72, 64 (editor)
 
-**Status:** in-progress
+**Status:** ai-review
 
 **Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
