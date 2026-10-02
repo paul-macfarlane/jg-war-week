@@ -50,17 +50,14 @@ describe.skipIf(!isLocalDatabase)("getCategoryHistory", () => {
   it("lists every War Week's Awards newest first, with Profile names where linked", async () => {
     await inRolledBackTransaction(async (tx) => {
       const schema = await import("@/db/schema");
-      const { eq } = await import("drizzle-orm");
       const { getCategoryHistory, getCategoriesWithAwards } =
         await import("@/queries/award-category-history");
-      const [mvp] = await tx
-        .select({ id: schema.awardCategory.id })
-        .from(schema.awardCategory)
-        .where(eq(schema.awardCategory.key, "war-week-mvp"));
-      const [grow] = await tx
-        .select({ id: schema.awardCategory.id })
-        .from(schema.awardCategory)
-        .where(eq(schema.awardCategory.key, "grow"));
+      // Its own Categories: a seeded one may already hold the history
+      // seeds' Awards in the local database.
+      const [mvp, grow] = await tx
+        .insert(schema.awardCategory)
+        .values([{ name: "History Test MVP" }, { name: "History Test Grow" }])
+        .returning({ id: schema.awardCategory.id });
 
       const older = await warWeekWith(tx, 1, "complete");
       const newer = await warWeekWith(tx, 2, "upcoming");
@@ -106,7 +103,7 @@ describe.skipIf(!isLocalDatabase)("getCategoryHistory", () => {
       const history = await getCategoryHistory(mvp.id, tx);
       expect(history?.category).toEqual({
         id: mvp.id,
-        name: "War Week MVP",
+        name: "History Test MVP",
         archived: false,
       });
       expect(
