@@ -237,7 +237,7 @@ describe.skipIf(!isLocalDatabase)("logGame", () => {
     });
   });
 
-  it("refuses an unlinked You: a sign-in no Participant's email matches", async () => {
+  it("refuses a sign-in that links no Participant", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { logGame } = await load();
       const f = await fixture(tx);

@@ -116,7 +116,7 @@ describe("enrollError: a Participant enrolls", () => {
     expect(enrollError(facet({ selfEnroll: false }))).toBe(ENROLL_OFF);
   });
 
-  it("refuses an unlinked You: account linking is required", () => {
+  it("refuses a sign-in that links no Participant", () => {
     expect(enrollError(facet({ linked: null }))).toBe(NOT_LINKED);
   });
 

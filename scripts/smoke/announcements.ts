@@ -119,11 +119,11 @@ export async function assertAnnouncementHomePinned() {
   const badgeCheck = "GET /xi/announcements and /xi both show the Pinned badge";
   const pinnedBadge = /<span[^>]*>Pinned<\/span>/;
   try {
-    const news = await (
+    const feed = await (
       await signedInFetch(`${BASE_URL}/xi/announcements`)
     ).text();
     const home = await (await signedInFetch(`${BASE_URL}/xi`)).text();
-    if (pinnedBadge.test(news) && pinnedBadge.test(home)) {
+    if (pinnedBadge.test(feed) && pinnedBadge.test(home)) {
       ok(badgeCheck);
     } else {
       fail(badgeCheck, "Pinned badge markup missing on one of the pages");

@@ -320,7 +320,7 @@ export function SetupListRow({
           {(details || note) && (
             <span
               id={detailsId}
-              className="text-muted-foreground flex flex-col text-xs"
+              className="text-foreground/60 flex flex-col text-xs"
             >
               {details && <span>{details}</span>}
               {note && <span>{note}</span>}

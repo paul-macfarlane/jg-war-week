@@ -8,7 +8,7 @@ export const YOU_ROW_CLASS =
 
 export type YouCandidate = { id: string; email?: string | null };
 
-/** Who "you" are in a War Week, and how the app knows. */
+/** Who "you" are in a War Week. */
 export type You = { participantId: string } | null;
 
 const normalize = (email: string | null | undefined) =>

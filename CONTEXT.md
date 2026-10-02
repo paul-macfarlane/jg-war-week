@@ -138,8 +138,8 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   the client, only the matched id. Past editions use their own roster.
 - A Participant-facing Announcement card shows its author's Participant
   display name when the author's email matches a Participant's (account
-  linking), else the part of the email before the `@`. Only the admin pages
-  show the author's email.
+  linking), else the part of the email before the `@`. The admin pages show
+  the same name; the email is only used for the edit/ownership check.
 
 ## Light and dark Display rules
 

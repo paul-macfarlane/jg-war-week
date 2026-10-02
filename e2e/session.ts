@@ -72,7 +72,19 @@ export async function participantPageAs(browser: Browser, displayName: string) {
   const participantId = await xiParticipantId(displayName);
   const context = await browser.newContext({ baseURL: E2E_BASE_URL });
   const email = `e2e-p-${participantId}@jahnelgroup.com`;
+  const [{ email: original }] = await runQuery<{ email: string | null }>(
+    `select email from participant where id = $1`,
+    [participantId],
+  );
   await setParticipantEmail(participantId, email);
   await signIn(context, email);
-  return { context, page: await context.newPage() };
+  return {
+    context,
+    page: await context.newPage(),
+    /** Closes the context and gives the Participant back its own email. */
+    async close() {
+      await context.close();
+      await setParticipantEmail(participantId, original);
+    },
+  };
 }

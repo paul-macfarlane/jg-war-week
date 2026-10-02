@@ -154,7 +154,9 @@ on the matching War Week page.
 - [ ] **Roster: add, link, edit, delete.** Add a Participant (on a Team,
       *(teams)*); edit an existing Participant's email to
       `e2e-participant@jahnelgroup.com` (this is the linked Participant the
-      User Pages use); delete the added Participant through its confirm.
+      User Pages use); a Participant row without an email shows "No email: won't be
+      linked when they sign in"; delete the added Participant through its
+      confirm.
       *(teams)* Add a Team, mark a Leader; the Captain title shows on
       `/<edition>/teams`; delete the Team.
 - [ ] **Competitions, one of each Format.** Create a `points` Competition
@@ -181,7 +183,8 @@ on the matching War Week page.
 - [ ] **Announcements.** Post an Announcement with a heading, a link, an
       image and a video, then pin it. It shows first on the Announcements
       page and as the pinned card on Home, with every element rendered.
-      Unpin, then delete.
+      Unpin, then delete. The admin list shows "Posted by <name>" (no email)
+      and no video count.
 - [ ] **Awards.** Give an Award to two Participants (and a Team,
       *(teams)*); it shows on `/<edition>/awards`. Delete it.
 - [ ] **FAQ.** Add an FAQ Item and move it first; `/<edition>/faq` shows it

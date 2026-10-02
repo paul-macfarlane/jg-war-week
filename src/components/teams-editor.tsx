@@ -429,6 +429,8 @@ export function RosterEditor({
               details={[
                 p.companyTag,
                 p.teamId && teamName.get(p.teamId),
+                // The page passes no Teams in a free-for-all, and a teams War
+                // Week with no Teams has no Leaders to show.
                 teams.length > 0 && p.isLeader && leaderTitle,
               ]
                 .filter(Boolean)

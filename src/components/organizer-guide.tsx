@@ -90,8 +90,8 @@ export function OrganizerGuide({
           @jahnelgroup.com email matches a roster Participant&apos;s email, that
           Participant and their {teamLower} are highlighted as &quot;You&quot;
           wherever they appear, and they can log Games and report Heats. A
-          Participant without an email is never linked. Nothing else reads it —
-          it isn&apos;t used for sign-in or access.
+          Participant without an email is never linked. It isn&apos;t used for
+          sign-in and grants nothing beyond those Participant writes.
         </p>
       </section>
 

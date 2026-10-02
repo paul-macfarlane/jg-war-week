@@ -64,8 +64,8 @@ export function DateRangePicker({
 }: DateRangePickerProps) {
   const wide = useMediaQuery(WIDE_QUERY);
   const [open, setOpen] = useState(false);
-  // A half-picked or refused range stays on screen until the next tap;
-  // only an accepted range reaches `onValueChange`.
+  // Taps build `pending`; closing (Done, outside click, Escape) commits a
+  // complete allowed range via `rangeToCommit`.
   const [pending, setPending] = useState<PendingRange | null>(null);
   const [error, setError] = useState<string | null>(null);
 

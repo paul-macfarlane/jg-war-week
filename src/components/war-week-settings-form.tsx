@@ -304,8 +304,8 @@ export function WarWeekSettingsForm({
               their saved values so saving never wipes them. */}
           {values.mode === "free-for-all" ? (
             <>
-              <FormValueInput name="teamLabel" value={values.teamLabel} />
-              <FormValueInput name="leaderTitle" value={values.leaderTitle} />
+              <FormValueInput name="teamLabel" value={initial.teamLabel} />
+              <FormValueInput name="leaderTitle" value={initial.leaderTitle} />
             </>
           ) : (
             <>

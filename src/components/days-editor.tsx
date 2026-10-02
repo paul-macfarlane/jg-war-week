@@ -78,7 +78,7 @@ function DayRow({
               required
               min={startDate}
               max={endDate}
-              disabled={dayDateDisabled(
+              disabledDates={dayDateDisabled(
                 startDate,
                 endDate,
                 dayDates,
