@@ -229,7 +229,7 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     // The Host builds: Format, four Squads, Squads as the Entrants,
     // self-report on (and off and on again), Generate.
     await asHost(context);
-    await page.goto(`/admin/setup/competitions/${id}/bracket`);
+    await page.goto(`/admin/competitions/${id}/bracket`);
     await page.getByRole("combobox", { name: "Format" }).click();
     await page.getByRole("option", { name: "Single elimination" }).click();
     await expect(

@@ -132,7 +132,7 @@ export async function assertWarWeekLifecycle(sessions: {
       );
     }
     const archiveAdmin = await (
-      await fetch(`${BASE_URL}/admin/setup`, {
+      await fetch(`${BASE_URL}/admin/settings`, {
         headers: { cookie: `${sessions.organizer.cookie}; admin_edition=xi` },
       })
     ).text();

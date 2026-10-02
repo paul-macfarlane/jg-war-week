@@ -279,8 +279,8 @@ test("every themed surface follows the Display: the Finale, the Archive, /about,
       );
 
       const admin = await organizer.newPage();
-      await admin.goto("/admin/setup");
-      expect(await rootBackground(admin), `/admin/setup ${scheme}`).toBe(
+      await admin.goto("/admin/settings");
+      expect(await rootBackground(admin), `/admin/settings ${scheme}`).toBe(
         rgb(xi[scheme].background),
       );
     } finally {
@@ -318,7 +318,7 @@ async function saveSettings(page: Page) {
     page.waitForResponse(
       (response) =>
         response.request().method() === "POST" &&
-        new URL(response.url()).pathname === "/admin/setup/war-week",
+        new URL(response.url()).pathname === "/admin/settings",
     ),
     form.getByRole("button", { name: "Save settings" }).click(),
   ]);
@@ -329,7 +329,7 @@ async function saveSettings(page: Page) {
 
 async function openSetup(context: BrowserContext) {
   const page = await context.newPage();
-  await page.goto("/admin/setup/war-week");
+  await page.goto("/admin/settings");
   const form = page.getByRole("form", { name: "War Week settings" });
   await expect(form).toBeVisible();
   return { page, form };

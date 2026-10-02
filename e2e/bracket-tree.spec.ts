@@ -254,7 +254,7 @@ test("a single-elimination Bracket shows as a tree, and a result records in a Di
   const id = await xiCompetitionId(KNOCKOUT);
   const rounds = ["Round 1", "Semifinal", "Final"];
 
-  await page.goto(`/admin/setup/competitions/${id}/bracket`);
+  await page.goto(`/admin/competitions/${id}/bracket`);
   await page.getByRole("combobox", { name: "Format" }).click();
   await page.getByRole("option", { name: "Single elimination" }).click();
   await expect(
@@ -302,7 +302,7 @@ test("a Heats Bracket shows as a tree of Heat boxes, advancers highlighted", asy
   const id = await xiCompetitionId(HEATS);
   const rounds = ["Round 1", "Final"];
 
-  await page.goto(`/admin/setup/competitions/${id}/bracket`);
+  await page.goto(`/admin/competitions/${id}/bracket`);
   await page.getByRole("combobox", { name: "Format" }).click();
   await page.getByRole("option", { name: "Heats" }).click();
   await expect(page.getByText("Format set to Heats")).toBeVisible();

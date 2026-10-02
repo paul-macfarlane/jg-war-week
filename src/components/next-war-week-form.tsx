@@ -113,7 +113,7 @@ export function NextWarWeekForm({
         return result;
       }
       toast.success(`War Week ${result.edition.toUpperCase()} created`);
-      router.push("/admin/setup");
+      router.push("/admin/settings");
       router.refresh();
       return result;
     },

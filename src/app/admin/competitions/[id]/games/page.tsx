@@ -8,7 +8,7 @@ import { getBracketEntrants } from "@/queries/brackets";
 import { getGamesView } from "@/queries/games";
 import { getPointsEntryFormOptions } from "@/queries/points-entries";
 
-import { loadAdminPage } from "../../../../gate";
+import { loadAdminPage } from "../../../gate";
 
 export const dynamic = "force-dynamic";
 
@@ -16,10 +16,10 @@ export const metadata: Metadata = { title: "Games · JG War Week" };
 
 export default async function GamesBuilderPage({
   params,
-}: PageProps<"/admin/setup/competitions/[id]/games">) {
+}: PageProps<"/admin/competitions/[id]/games">) {
   const { id } = await params;
   const { warWeek, email, allowed, isOrganizer, editions, runs } =
-    await loadAdminPage(`/admin/setup/competitions/${id}/games`);
+    await loadAdminPage(`/admin/competitions/${id}/games`);
   if (!allowed || !runs(id)) {
     return <AdminRefused warWeek={warWeek} email={email} />;
   }
@@ -38,11 +38,11 @@ export default async function GamesBuilderPage({
       email={email}
       isOrganizer={isOrganizer}
       editions={editions}
-      current="Setup"
+      current="Competitions"
     >
       <section className="flex max-w-3xl min-w-0 flex-col gap-4">
         <Link
-          href="/admin/setup/competitions"
+          href="/admin/competitions"
           className="text-primary text-sm underline-offset-4 hover:underline"
         >
           ← Competitions

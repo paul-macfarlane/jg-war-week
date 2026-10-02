@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { SETUP_SECTIONS } from "@/app/admin/setup/sections";
+import { type AdminSection, adminSectionsFor } from "@/lib/admin-sections";
 
 /**
  * The in-app guide for a first-time Organizer, at `/admin/guide`. Plain
@@ -17,10 +17,83 @@ export function OrganizerGuide({
   leaderTitle: string;
 }) {
   const teamLower = teamLabel.toLowerCase();
+  /** What each admin section is for, in the tour of the nav. */
+  const help: Record<AdminSection, string> = {
+    Points:
+      "Add Points Entries and see the current Standings; Brackets and Games waiting on results are linked at the top.",
+    Competitions:
+      "Competitions, their scoring, Placement Points and Hosts, and each one's Bracket or Games setup.",
+    Schedule:
+      "The War Week's Days with their Day Themes, and each Day's Schedule Items.",
+    Roster: `${teamLabel}s, Participants and ${leaderTitle}s.`,
+    Announcements: "Post, pin and edit Announcements.",
+    Awards: `Give Awards to a ${teamLower} or to Participants.`,
+    FAQ: "FAQ Items and their order on the public FAQ.",
+    Finale:
+      "Open the Finale, and each finalized Bracket's Finale, on the projector.",
+    Settings:
+      "Story Theme, dates, mode, labels, links and the Appearance Theme; the Lifecycle box (Start, End, Reopen) and Create next War Week.",
+    Organizers: "Who the Organizers are.",
+    Guide: "This page.",
+  };
+  const link = (href: string, label: string) => (
+    <Link href={href} className="text-primary underline underline-offset-4">
+      {label}
+    </Link>
+  );
+  const setupOrder = [
+    [
+      "/admin/settings",
+      "Settings",
+      "the Story Theme, dates, mode and labels first.",
+    ],
+    ["/admin/schedule", "Schedule", "add the Days and their Day Themes."],
+    [
+      "/admin/roster",
+      "Roster",
+      `${teamLabel}s, Participants and ${leaderTitle}s.`,
+    ],
+    [
+      "/admin/competitions",
+      "Competitions",
+      "Competitions, scoring, Placement Points and Hosts.",
+    ],
+    [
+      "/admin/schedule",
+      "Schedule",
+      "each Day's Schedule Items, once the Days and Competitions exist.",
+    ],
+    ["/admin/faq", "FAQ", "FAQ Items and their order."],
+  ] as const;
 
   return (
     <div className="flex max-w-3xl flex-col gap-8">
       <h1 className="text-2xl font-bold">Organizer guide</h1>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="text-lg font-semibold">Finding your way</h2>
+        <p className="text-foreground/70">
+          Every admin page is one click from the nav, in this order:
+        </p>
+        <ul className="text-foreground/70 list-disc space-y-1 pl-5">
+          {adminSectionsFor(true).map(({ label, href }) => (
+            <li key={label}>
+              {link(href, label)}
+              {" — "}
+              {help[label]}
+            </li>
+          ))}
+        </ul>
+        <p className="text-foreground/70">
+          On a phone, Points, Competitions, Schedule and Announcements are tabs
+          on the bar at the bottom of the screen; the rest are under More, with
+          the edition switcher, Display and the way back to the War Week.
+        </p>
+        <p className="text-foreground/70">
+          A Host sees Points, Competitions, Schedule, Announcements, Finale and
+          Guide; the other pages are for Organizers.
+        </p>
+      </section>
 
       <section className="flex flex-col gap-2">
         <h2 className="text-lg font-semibold">First-time setup order</h2>
@@ -29,24 +102,11 @@ export function OrganizerGuide({
           it:
         </p>
         <ol className="text-foreground/70 list-decimal space-y-1 pl-5">
-          {SETUP_SECTIONS.map((section) => (
-            <li key={section.label}>
-              {section.href ? (
-                <Link
-                  href={section.href}
-                  className="text-primary underline underline-offset-4"
-                >
-                  {section.label === "Teams & roster"
-                    ? `${teamLabel} & roster`
-                    : section.label}
-                </Link>
-              ) : (
-                section.label
-              )}
+          {setupOrder.map(([href, label, what], index) => (
+            <li key={index}>
+              {link(href, label)}
               {" — "}
-              {section.label === "Teams & roster"
-                ? `${teamLabel}s, Participants and ${leaderTitle}s.`
-                : section.description}
+              {what}
             </li>
           ))}
         </ol>
@@ -69,7 +129,7 @@ export function OrganizerGuide({
         <p className="text-foreground/70">
           A Host runs one Competition for you. Assign Hosts on{" "}
           <Link
-            href="/admin/setup/competitions"
+            href="/admin/competitions"
             className="text-primary underline underline-offset-4"
           >
             Competitions
@@ -101,7 +161,7 @@ export function OrganizerGuide({
           For points that aren&apos;t tied to a specific Competition, make a
           Competition such as &quot;Spirit / Discretionary&quot; under{" "}
           <Link
-            href="/admin/setup/competitions"
+            href="/admin/competitions"
             className="text-primary underline underline-offset-4"
           >
             Competitions
@@ -136,7 +196,7 @@ export function OrganizerGuide({
           Choose a Competition&apos;s Format — Single elimination or Heats —
           when you add it under{" "}
           <Link
-            href="/admin/setup/competitions"
+            href="/admin/competitions"
             className="text-primary underline underline-offset-4"
           >
             Competitions
@@ -195,7 +255,7 @@ export function OrganizerGuide({
           Standings are always visible to Participants and Claude. At closing
           ceremonies, open the{" "}
           <Link
-            href="/admin/standings"
+            href="/admin/finale"
             className="text-primary underline underline-offset-4"
           >
             Finale
@@ -219,25 +279,25 @@ export function OrganizerGuide({
         <p className="text-foreground/70">
           The{" "}
           <Link
-            href="/admin/setup"
+            href="/admin/settings"
             className="text-primary underline underline-offset-4"
           >
-            Setup
+            Settings
           </Link>{" "}
           page&apos;s Lifecycle box moves a War Week through Start, End and
           Reopen. Only one War Week is ever live: End this one (it shows the
           Winner it will record — first place in the Standings, a &quot;Tie: A
           &amp; B&quot; when Teams or Participants tie, blank when nobody
           scored, with no way to type a different one — and any highlights)
-          before the next can Start. Create next War Week copies what you choose
-          (settings by default; Competitions, with their Hosts, and the FAQ are
-          off) and opens the new edition as upcoming, so you can set it up while
-          this one stays live. The End confirm names any Bracket that isn&apos;t
-          finalized: finalize it first so its placings count (it warns, it
-          doesn&apos;t stop you). The header&apos;s edition switcher (in More on
-          a phone) moves the admin between editions you may administer — a
-          banner marks the Archive so you don&apos;t mistake it for the live
-          one.
+          before the next can Start. Create next War Week, further down
+          Settings, copies what you choose (settings by default; Competitions,
+          with their Hosts, and the FAQ are off) and opens the new edition as
+          upcoming, so you can set it up while this one stays live. The End
+          confirm names any Bracket that isn&apos;t finalized: finalize it first
+          so its placings count (it warns, it doesn&apos;t stop you). The
+          header&apos;s edition switcher (in More on a phone) moves the admin
+          between editions you may administer — a banner marks the Archive so
+          you don&apos;t mistake it for the live one.
         </p>
       </section>
 
@@ -263,7 +323,7 @@ export function OrganizerGuide({
           Reloading this War Week&apos;s seed file (
           <code>pnpm seed:load seeds/{edition}.json</code>) overwrites the setup
           edited here with the seed&apos;s values. Update the seed too, or
-          don&apos;t reload it.
+          don&apos;t reload it. Settings shows this warning at the top.
         </p>
       </section>
     </div>

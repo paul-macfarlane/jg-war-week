@@ -9,15 +9,15 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import { getFaqItems } from "@/queries/faq";
 
-import { loadAdminPage } from "../../gate";
+import { loadAdminPage } from "../gate";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "FAQ · JG War Week" };
 
-export default async function SetupFaqPage() {
+export default async function AdminFaqPage() {
   const { warWeek, email, allowed, isOrganizer, editions } =
-    await loadAdminPage("/admin/setup/faq", "organizers");
+    await loadAdminPage("/admin/faq", "organizers");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const items = await getFaqItems(warWeek);
@@ -28,19 +28,13 @@ export default async function SetupFaqPage() {
       email={email}
       isOrganizer={isOrganizer}
       editions={editions}
-      current="Setup"
+      current="FAQ"
     >
       <section className="flex max-w-3xl flex-col gap-4">
-        <Link
-          href="/admin/setup"
-          className="text-primary text-sm underline-offset-4 hover:underline"
-        >
-          ← Setup
-        </Link>
         <div className="flex flex-wrap items-center gap-4">
           <h1 className="text-2xl font-bold">FAQ</h1>
           <Link
-            href="/admin/setup/faq/new"
+            href="/admin/faq/new"
             className={buttonVariants({ className: "ml-auto" })}
           >
             New FAQ Item
@@ -73,7 +67,7 @@ export default async function SetupFaqPage() {
                     last={index === items.length - 1}
                   />
                   <Link
-                    href={`/admin/setup/faq/${item.id}`}
+                    href={`/admin/faq/${item.id}`}
                     className={buttonVariants({
                       variant: "outline",
                       size: "xs",

@@ -10,7 +10,7 @@ import { mcpLeaderboard } from "./mcp";
 
 /**
  * The Finale (brackets ticket 1): `/xi/finale` opens on Start for any
- * signed-in user, `/admin/standings` is the Organizer's way in, and MCP
+ * signed-in user, `/admin/finale` is the Organizer's way in, and MCP
  * `get_leaderboard` always returns Standings.
  */
 export async function assertFinale(sessions: {
@@ -50,13 +50,10 @@ export async function assertFinale(sessions: {
   );
 
   await run(
-    "GET /admin/standings shows the Finale page with Open Finale to an Organizer and the refusal to a non-Organizer",
+    "GET /admin/finale shows the Finale page with Open Finale to an Organizer and the refusal to a non-Organizer",
     async () => {
-      const organizer = await page("/admin/standings", sessions.organizer);
-      const notOrganizer = await page(
-        "/admin/standings",
-        sessions.notOrganizer,
-      );
+      const organizer = await page("/admin/finale", sessions.organizer);
+      const notOrganizer = await page("/admin/finale", sessions.notOrganizer);
       const checks = {
         heading: /<h1[^>]*>Finale<\/h1>/.test(organizer.body),
         open:

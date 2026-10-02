@@ -47,7 +47,7 @@ test.describe("forms", () => {
     page,
   }, testInfo) => {
     await asOrganizer(context);
-    await page.goto("/admin/setup/war-week");
+    await page.goto("/admin/settings");
     const form = page.getByRole("form", { name: "War Week settings" });
     const slackUrl = form.getByLabel("Slack URL");
     await slackUrl.fill("http://slack.example.com/x");

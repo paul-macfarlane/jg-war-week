@@ -66,7 +66,7 @@ export function AdminShell({
     >
       <header className="border-border flex items-center gap-x-4 gap-y-1 border-b px-4 py-3 md:flex-wrap md:px-6">
         <Link
-          href="/admin"
+          href="/admin/points"
           className="min-w-0 truncate font-bold whitespace-nowrap"
         >
           War Week {warWeek.edition.toUpperCase()} admin
@@ -110,34 +110,21 @@ export function AdminShell({
         >
           <ul className="flex flex-col gap-1">
             {adminSectionsFor(isOrganizer).map(({ label, icon, href }) => {
-              const content = (
-                <>
-                  <AdminSectionIcon icon={icon} className="size-4 shrink-0" />
-                  <span className="flex-1">{label}</span>
-                  {!href && <span className="text-xs">Soon</span>}
-                </>
-              );
-              const base =
-                "flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm";
+              const isCurrent = label === current;
               return (
                 <li key={label}>
-                  {href && label === current ? (
-                    <Link
-                      href={href}
-                      aria-current="page"
-                      className={`${base} bg-primary/10 text-primary font-medium`}
-                    >
-                      {content}
-                    </Link>
-                  ) : href ? (
-                    <Link href={href} className={`${base} hover:bg-muted`}>
-                      {content}
-                    </Link>
-                  ) : (
-                    <span className={`${base} text-foreground/50`}>
-                      {content}
-                    </span>
-                  )}
+                  <Link
+                    href={href}
+                    aria-current={isCurrent ? "page" : undefined}
+                    className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm whitespace-nowrap ${
+                      isCurrent
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "hover:bg-muted"
+                    }`}
+                  >
+                    <AdminSectionIcon icon={icon} className="size-4 shrink-0" />
+                    <span className="flex-1">{label}</span>
+                  </Link>
                 </li>
               );
             })}

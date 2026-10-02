@@ -61,8 +61,8 @@ const GAME_TYPE_DESCRIPTIONS: Record<GameType, string> = {
 /** Where a saved Competition of this Format is set up, or null for points. */
 function setupHref(competition: Pick<SetupCompetition, "id" | "format">) {
   return competition.format === "games"
-    ? `/admin/setup/competitions/${competition.id}/games`
-    : `/admin/setup/competitions/${competition.id}/bracket`;
+    ? `/admin/competitions/${competition.id}/games`
+    : `/admin/competitions/${competition.id}/bracket`;
 }
 
 function emptyCompetition(mode: WarWeek["mode"]): CompetitionInput {

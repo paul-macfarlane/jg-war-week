@@ -118,7 +118,7 @@ test("a Bracket is built, run and finalized into Points Entries", async ({
     [id, E2E_HOST_EMAIL],
   );
   try {
-    await page.goto(`/admin/setup/competitions/${id}/bracket`);
+    await page.goto(`/admin/competitions/${id}/bracket`);
     await page.getByRole("combobox", { name: "Format" }).click();
     await page.getByRole("option", { name: "Single elimination" }).click();
     await expect(

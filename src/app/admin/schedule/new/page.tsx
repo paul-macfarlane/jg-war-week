@@ -6,7 +6,7 @@ import { ScheduleItemForm } from "@/components/schedule-item-form";
 import { getSetupDays } from "@/queries/setup";
 import { getCompetitionOptions } from "@/queries/setup-schedule-faq";
 
-import { loadAdminPage } from "../../../gate";
+import { loadAdminPage } from "../../gate";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: "New Schedule Item · JG War Week" };
 
 export default async function NewScheduleItemPage() {
   const { warWeek, email, allowed, isOrganizer, editions, runs } =
-    await loadAdminPage("/admin/setup/schedule/new");
+    await loadAdminPage("/admin/schedule/new");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const [days, allCompetitions] = await Promise.all([
@@ -30,11 +30,11 @@ export default async function NewScheduleItemPage() {
       email={email}
       isOrganizer={isOrganizer}
       editions={editions}
-      current="Setup"
+      current="Schedule"
     >
       <section className="flex max-w-3xl flex-col gap-4">
         <Link
-          href="/admin/setup/schedule"
+          href="/admin/schedule"
           className="text-primary text-sm underline-offset-4 hover:underline"
         >
           ← Schedule
@@ -42,14 +42,14 @@ export default async function NewScheduleItemPage() {
         <h1 className="text-2xl font-bold">New Schedule Item</h1>
         {days.length === 0 ? (
           <p className="text-foreground/70 text-sm">
-            Add a Day in{" "}
+            Add a Day on the{" "}
             <Link
-              href="/admin/setup/days"
+              href="/admin/schedule"
               className="text-primary underline-offset-4 hover:underline"
             >
-              Days
+              Schedule
             </Link>{" "}
-            first.
+            page first.
           </p>
         ) : (
           <ScheduleItemForm

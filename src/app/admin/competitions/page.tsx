@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { CompetitionsEditor } from "@/components/competitions-editor";
@@ -9,15 +8,15 @@ import {
   getSetupCompetitions,
 } from "@/queries/setup";
 
-import { loadAdminPage } from "../../gate";
+import { loadAdminPage } from "../gate";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Competitions · JG War Week" };
 
-export default async function SetupCompetitionsPage() {
+export default async function AdminCompetitionsPage() {
   const { warWeek, email, allowed, isOrganizer, editions, runs } =
-    await loadAdminPage("/admin/setup/competitions");
+    await loadAdminPage("/admin/competitions");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const [allCompetitions, groupSuggestions, hosts] = await Promise.all([
@@ -34,15 +33,9 @@ export default async function SetupCompetitionsPage() {
       email={email}
       isOrganizer={isOrganizer}
       editions={editions}
-      current="Setup"
+      current="Competitions"
     >
       <section className="flex max-w-3xl flex-col gap-4">
-        <Link
-          href="/admin/setup"
-          className="text-primary text-sm underline-offset-4 hover:underline"
-        >
-          ← Setup
-        </Link>
         <h1 className="text-2xl font-bold">Competitions</h1>
         <p className="text-foreground/70 text-sm">
           Placement Points are the preset points for 1st, 2nd, 3rd…, highest

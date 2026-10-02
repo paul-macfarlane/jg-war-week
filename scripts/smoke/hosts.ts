@@ -379,12 +379,52 @@ async function assertAdminTrimmedForHost(sessions: {
   );
 
   await runCheck(
-    `GET /admin/setup/war-week as a Host shows '${ADMIN_REFUSAL_TEXT}'`,
+    "GET /admin/points as a Host shows the Host's nav: Points, Competitions, Schedule, Announcements, Finale and Guide only",
     async () => {
-      const { status, body } = await get(
-        "/admin/setup/war-week",
-        sessions.host,
-      );
+      const { status, body } = await get("/admin/points", sessions.host);
+      const shown = (section: string) =>
+        body.includes(`href="/admin/${section}"`);
+      const result = {
+        status,
+        shown: [
+          "points",
+          "competitions",
+          "schedule",
+          "announcements",
+          "finale",
+          "guide",
+        ].filter((section) => !shown(section)),
+        hidden: ["roster", "awards", "faq", "settings", "organizers"].filter(
+          shown,
+        ),
+      };
+      return status === 200 &&
+        result.shown.length === 0 &&
+        result.hidden.length === 0
+        ? null
+        : JSON.stringify(result);
+    },
+  );
+
+  await runCheck(
+    "GET /admin/schedule as a Host shows the Schedule Items and not the Days editor",
+    async () => {
+      const { status, body } = await get("/admin/schedule", sessions.host);
+      const result = {
+        status,
+        items: body.includes('aria-label="Schedule Items"'),
+        days: body.includes('aria-label="Days"'),
+      };
+      return status === 200 && result.items && !result.days
+        ? null
+        : JSON.stringify(result);
+    },
+  );
+
+  await runCheck(
+    `GET /admin/settings as a Host shows '${ADMIN_REFUSAL_TEXT}'`,
+    async () => {
+      const { status, body } = await get("/admin/settings", sessions.host);
       return status === 200 &&
         body.includes(ADMIN_REFUSAL_TEXT) &&
         !body.includes(">War Week settings</h1>")

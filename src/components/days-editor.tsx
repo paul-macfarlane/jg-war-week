@@ -155,7 +155,7 @@ export function DaysEditor({
         </ul>
       )}
       <section className="flex flex-col gap-1">
-        <h2 className="text-lg font-semibold">Add a Day</h2>
+        <h3 className="font-semibold">Add a Day</h3>
         <ul>
           <DayRow
             warWeekId={warWeekId}
