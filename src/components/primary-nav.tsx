@@ -20,8 +20,13 @@ import { type NavKey, destinationsFor, isActive } from "@/lib/primary-nav";
 /** The signed-in user, as shown in the navigation. */
 export type NavAccount = {
   email: string;
-  /** The roster name when linked to a Participant, else the email's local part. */
+  /**
+   * The Profile name, else the roster name when linked to a Participant,
+   * else the email's local part.
+   */
   name: string;
+  /** The Profile picture URL, else the Google photo; null for initials. */
+  image?: string | null;
   canOpenAdmin: boolean;
 };
 
@@ -180,6 +185,7 @@ export function TopNav({
         </nav>
         <AccountMenu
           name={account.name}
+          image={account.image}
           email={account.email}
           edition={edition}
           primaryColor={primaryColor}

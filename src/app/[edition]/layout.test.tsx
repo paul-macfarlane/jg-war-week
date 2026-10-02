@@ -14,6 +14,9 @@ vi.mock("./war-week", () => ({
 vi.mock("@/queries/roster", () => ({
   getYouCandidates: vi.fn(async () => []),
 }));
+vi.mock("@/queries/profile-join", () => ({
+  getProfilesByEmail: vi.fn(async () => new Map()),
+}));
 vi.mock("@/components/primary-nav", () => ({
   TopNav: () => null,
   BottomTabBar: () => null,

@@ -645,6 +645,29 @@ export const organizer = pgTable(
   ],
 );
 
+/**
+ * A person's Profile, by lowercase email: the name and picture URL they set
+ * themselves, shown wherever that email is linked (ADR 0007). Not columns
+ * on `user`: better-auth writes `user`, and a Profile resolves by email for
+ * Participants who never signed in. Empty fields mean the roster name and
+ * the Google photo (`user.image`).
+ */
+export const profile = pgTable(
+  "profile",
+  {
+    email: varchar("email", { length: 254 }).primaryKey(),
+    name: varchar("name", { length: 120 }),
+    imageUrl: varchar("image_url", { length: 2048 }),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    check(
+      "profile_email_lowercase",
+      sql`${table.email} = lower(${table.email})`,
+    ),
+  ],
+);
+
 /** A Host: a JG email that runs one Competition. */
 export const competitionHost = pgTable(
   "competition_host",
@@ -857,4 +880,5 @@ export type HeatEntrantRow = InferSelectModel<typeof heatEntrant>;
 export type GameRow = InferSelectModel<typeof game>;
 export type GamePlayerRow = InferSelectModel<typeof gamePlayer>;
 export type Organizer = InferSelectModel<typeof organizer>;
+export type Profile = InferSelectModel<typeof profile>;
 export type CompetitionHost = InferSelectModel<typeof competitionHost>;

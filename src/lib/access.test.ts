@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   type Actor,
   type OrganizerListAction,
+  type SelfAction,
   type WarWeekAction,
   adminEditions,
   can,
@@ -157,6 +158,41 @@ describe("can: the Organizer list", () => {
       expect(can(ACTORS[name], action), name).toBe(expected[name]);
     }
   });
+});
+
+describe("can: self actions (your own Profile and account)", () => {
+  it.each<SelfAction>(["profile.save", "account.delete"])(
+    "%s is allowed for anyone signed in, Organizer or not",
+    (action) => {
+      for (const name of Object.keys(ACTORS) as ActorName[]) {
+        expect(can(ACTORS[name], action), name).toBe(
+          name === "anonymous" ? SIGN_IN : null,
+        );
+      }
+    },
+  );
+
+  it.each<SelfAction>(["profile.save", "account.delete"])(
+    "%s is refused to a non-JG session",
+    (action) => {
+      expect(
+        can(
+          { email: "someone@example.com", isOrganizer: false, hosts: [] },
+          action,
+        ),
+      ).toBe(SIGN_IN);
+      expect(
+        can(
+          {
+            email: "jason@jahnelgroup.com.evil.example",
+            isOrganizer: true,
+            hosts: [],
+          },
+          action,
+        ),
+      ).toBe(SIGN_IN);
+    },
+  );
 });
 
 describe("can: Organizer-only War Week families", () => {

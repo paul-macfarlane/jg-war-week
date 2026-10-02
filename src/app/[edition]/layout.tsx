@@ -5,8 +5,10 @@ import { BottomTabBar, TopNav } from "@/components/primary-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { ThemeRoot } from "@/components/theme-root";
 import { YouProvider } from "@/components/you";
+import { resolveProfileForEmail } from "@/lib/profile";
 import { warWeekThemeStyle } from "@/lib/theme";
 import { resolveYou } from "@/lib/you";
+import { getProfilesByEmail } from "@/queries/profile-join";
 import { getYouCandidates } from "@/queries/roster";
 
 import { getNavAccount, getWarWeekForEdition } from "./war-week";
@@ -32,9 +34,10 @@ export default async function EditionLayout({
   const { edition } = await params;
   const warWeek = await getWarWeekForEdition(edition);
   if (!warWeek) notFound();
-  const [account, candidates] = await Promise.all([
-    getNavAccount(),
+  const account = await getNavAccount();
+  const [candidates, profiles] = await Promise.all([
     getYouCandidates(warWeek),
+    getProfilesByEmail([account.email]),
   ]);
   // Account linking happens here, on the server, so Participant emails
   // never reach the client: only the matched id does.
@@ -46,6 +49,11 @@ export default async function EditionLayout({
   const rosterName = candidates.find(
     (c) => c.id === linked?.participantId,
   )?.displayName;
+  const { name, image } = resolveProfileForEmail(
+    account.email,
+    profiles,
+    rosterName,
+  );
 
   const themeStyle = warWeekThemeStyle(warWeek);
 
@@ -59,7 +67,7 @@ export default async function EditionLayout({
         storyTheme={warWeek.storyTheme}
         primaryColor={warWeek.primaryColor}
         slackUrl={warWeek.slackChannelUrl}
-        account={{ ...account, name: rosterName ?? account.name }}
+        account={{ ...account, name, image }}
       />
       <div className="flex-1">
         <YouProvider linkedId={linked?.participantId ?? null}>

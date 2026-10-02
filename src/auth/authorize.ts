@@ -4,6 +4,7 @@ import {
   type Actor,
   type OrganizerListAction,
   SIGN_IN_REFUSAL,
+  type SelfAction,
   type WarWeekAction,
   can,
 } from "@/lib/access";
@@ -291,6 +292,21 @@ export async function authorizeOrganizerList(
   if (!actor) return { ok: false, error: SIGN_IN_REFUSAL };
   const refusal = can(actor, action);
   return refusal ? { ok: false, error: refusal } : { ok: true, actor };
+}
+
+/**
+ * The authorize step for a self action (your own Profile or account): no
+ * target to load; the caller keys its write on the returned actor's email.
+ * Never throws on a refusal.
+ */
+export async function authorizeSelf(
+  action: SelfAction,
+): Promise<{ ok: true; actor: NonNullable<Actor> } | Refused> {
+  const actor = await getActor();
+  const refusal = can(actor, action);
+  if (refusal || !actor)
+    return { ok: false, error: refusal ?? SIGN_IN_REFUSAL };
+  return { ok: true, actor };
 }
 
 /**

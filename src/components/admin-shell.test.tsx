@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import type { WarWeek } from "@/db/schema";
+import type { AdminEdition } from "@/lib/access";
 import type { AdminSection } from "@/lib/admin-sections";
 
 import { AdminRefused, AdminShell, editingBanner } from "./admin-shell";
@@ -9,9 +10,19 @@ import { AdminRefused, AdminShell, editingBanner } from "./admin-shell";
 vi.mock("@/components/auth-buttons", () => ({
   SignOutButton: () => null,
 }));
-vi.mock("@/components/account-menu", () => ({
-  AccountMenu: ({ name, email }: { name: string; email: string }) => (
-    <button aria-label="Account menu" data-name={name} data-email={email} />
+vi.mock("@/components/admin-account-menu", () => ({
+  AdminAccountMenu: ({
+    email,
+    profileEdition,
+  }: {
+    email: string;
+    profileEdition: string;
+  }) => (
+    <button
+      aria-label="Account menu"
+      data-email={email}
+      data-profile-edition={profileEdition}
+    />
   ),
 }));
 vi.mock("@/components/admin-edition-switcher", () => ({
@@ -59,8 +70,32 @@ describe("AdminShell", () => {
     );
 
     expect(html).toContain('aria-label="Account menu"');
-    expect(html).toContain('data-name="o"');
+    expect(html).toContain('data-email="o@jahnelgroup.com"');
     expect(html).not.toContain("Signed in as");
+  });
+
+  it("opens the current War Week's Profile page from the account menu", () => {
+    const shell = (editions: AdminEdition[]) =>
+      renderToStaticMarkup(
+        <AdminShell
+          warWeek={fakeWarWeek}
+          email="o@jahnelgroup.com"
+          isOrganizer
+          editions={editions}
+          current="Points"
+        >
+          x
+        </AdminShell>,
+      );
+    // Administering XI while XII is current.
+    expect(
+      shell([
+        { edition: "xii", status: "live", current: true },
+        { edition: "xi", status: "complete", current: false },
+      ]),
+    ).toContain('data-profile-edition="xii"');
+    // A Host who can't open the current War Week: the one shown.
+    expect(shell([])).toContain('data-profile-edition="xi"');
   });
 
   it("links an Organizer to Awards and the Organizer list", () => {
