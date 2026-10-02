@@ -65,4 +65,7 @@ Participant name ("Reported by Ashley Schuliger").
 - ADR 0002's role table reads "Read; one write, self-report (ADR 0005)"
   for a Participant.
 
-- 2026-10-02: the "Which one is you?" pick was removed (regression ticket 52); account linking is the only way You is found.
+## Later notes
+
+- 2026-10-02: the "Which one is you?" pick was removed (regression
+  ticket 52); account linking is the only way You is found.

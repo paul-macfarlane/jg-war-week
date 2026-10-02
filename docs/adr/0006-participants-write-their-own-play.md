@@ -60,4 +60,7 @@ writes from everyone; reopen, edit, close again (hardening decision 4).
   writes from ADR 0005 and this ADR.
 - The plan changes access, so it is red-teamed (`docs/agents/planning.md`).
 
-- 2026-10-02: the "Which one is you?" pick was removed (regression ticket 52); account linking is the only way You is found.
+## Later notes
+
+- 2026-10-02: the "Which one is you?" pick was removed (regression
+  ticket 52); account linking is the only way You is found.
