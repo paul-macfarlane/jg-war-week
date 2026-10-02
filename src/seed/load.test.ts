@@ -204,6 +204,82 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed lifecycle fields", () => {
     });
   });
 
+  it("sets a participation Competition's settings on insert only, and its team scoring by the seed's scoring", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { loadWarWeekSeed } = await import("@/seed/load");
+      const schema = await import("@/db/schema");
+      const { eq } = await import("drizzle-orm");
+      await clearLive(tx);
+      const workout = {
+        name: "Workout",
+        scoring: "team",
+        format: "participation",
+        placementPoints: [5, 3, 1],
+        selfCheckIn: true,
+      };
+      const seeded = await seed("sp", 4, "upcoming", {
+        competitions: [workout],
+      });
+      const first = await loadWarWeekSeed(seeded, tx);
+      const read = async () =>
+        (
+          await tx
+            .select({
+              format: schema.competition.format,
+              scoring: schema.competition.scoring,
+              participationPoints: schema.competition.participationPoints,
+              participationTeamScoring:
+                schema.competition.participationTeamScoring,
+              selfCheckIn: schema.competition.selfCheckIn,
+              checkInClosesAt: schema.competition.checkInClosesAt,
+            })
+            .from(schema.competition)
+            .where(eq(schema.competition.warWeekId, first.id))
+        )[0];
+      expect(await read()).toEqual({
+        format: "participation",
+        scoring: "team",
+        participationPoints: 1,
+        participationTeamScoring: "ranked",
+        selfCheckIn: true,
+        checkInClosesAt: null,
+      });
+
+      // A Host's changes survive a reload.
+      await tx
+        .update(schema.competition)
+        .set({
+          participationPoints: 3,
+          participationTeamScoring: "per-person",
+          selfCheckIn: false,
+        })
+        .where(eq(schema.competition.warWeekId, first.id));
+      await loadWarWeekSeed(seeded, tx);
+      expect(await read()).toMatchObject({
+        participationPoints: 3,
+        participationTeamScoring: "per-person",
+        selfCheckIn: false,
+      });
+
+      // A reload that changes the scoring sets the team scoring to match.
+      await loadWarWeekSeed(
+        await seed("sp", 4, "upcoming", {
+          competitions: [{ ...workout, scoring: "individual" }],
+        }),
+        tx,
+      );
+      expect(await read()).toMatchObject({
+        scoring: "individual",
+        participationTeamScoring: null,
+      });
+      await loadWarWeekSeed(seeded, tx);
+      expect(await read()).toMatchObject({
+        scoring: "team",
+        participationTeamScoring: "ranked",
+      });
+    });
+  });
+
   it("refuses a seed that would insert a second live War Week", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { loadWarWeekSeed } = await import("@/seed/load");

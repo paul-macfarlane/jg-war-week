@@ -173,6 +173,59 @@ describe("shapeRecentResults", () => {
     expect(row).toMatchObject({ kind: "games-closed", winners: [red, blue] });
   });
 
+  it("shows a closed team participation Competition's top Team, listing a tie", () => {
+    const workout: ResultCompetition = {
+      id: "p",
+      name: "Workout",
+      format: "participation",
+      finalizedAt: at(7),
+    };
+    const green: ResultTarget = { ...red, id: "t-green", name: "Green" };
+    const [row] = shapeRecentResults(
+      [workout],
+      [
+        entry("p", red, 5, at(7), true),
+        entry("p", blue, 5, at(7), true),
+        entry("p", green, 1, at(7), true),
+      ],
+    );
+    expect(row).toEqual({
+      kind: "participation-closed",
+      key: "final-p",
+      competitionId: "p",
+      competition: "Workout",
+      when: at(7),
+      winners: [red, blue],
+      tookPart: null,
+    });
+  });
+
+  it("shows how many took part in a closed individual participation Competition", () => {
+    const spirit: ResultCompetition = {
+      id: "s",
+      name: "Spirit",
+      format: "participation",
+      finalizedAt: at(9),
+    };
+    const person = (id: string): ResultTarget => ({
+      id,
+      name: id,
+      color: null,
+      kind: "participant",
+    });
+    const [row] = shapeRecentResults(
+      [spirit],
+      ["neo", "trinity", "tank"].map((id) =>
+        entry("s", person(id), 1, at(9), true),
+      ),
+    );
+    expect(row).toMatchObject({
+      kind: "participation-closed",
+      winners: [],
+      tookPart: 3,
+    });
+  });
+
   it("orders newest first and keeps at most the limit", () => {
     const comps = Array.from({ length: RECENT_RESULTS_LIMIT + 2 }, (_, i) => ({
       ...trivia,

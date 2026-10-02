@@ -17,6 +17,7 @@ const FORMAT_LABELS: Record<Format, string> = {
   "single-elimination": "Single elimination",
   heats: "Heats",
   games: "Games",
+  participation: "Participation",
 };
 
 /** A Format as Organizers read it. */
@@ -24,11 +25,19 @@ export function formatLabel(format: Format): string {
   return FORMAT_LABELS[format];
 }
 
-/** Whether a Format runs as a Bracket (anything but "points" or "games"). */
+/**
+ * Whether a Format runs as a Bracket (anything but "points", "games" or
+ * "participation").
+ */
 export function isBracketFormat(
   format: string | null | undefined,
 ): format is BracketFormat {
-  return format != null && format !== "points" && format !== "games";
+  return (
+    format != null &&
+    format !== "points" &&
+    format !== "games" &&
+    format !== "participation"
+  );
 }
 
 /** Every Format that runs as a Bracket. */

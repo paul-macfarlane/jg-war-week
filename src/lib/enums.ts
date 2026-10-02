@@ -27,7 +27,17 @@ export const COMPETITION_FORMATS = [
   "single-elimination",
   "heats",
   "games",
+  "participation",
 ] as const;
+
+/**
+ * How a team `participation` Competition scores who took part: Teams
+ * ranked by headcount for Placement Points, or N points per Participant.
+ */
+export const PARTICIPATION_TEAM_SCORINGS = ["ranked", "per-person"] as const;
+
+export type ParticipationTeamScoring =
+  (typeof PARTICIPATION_TEAM_SCORINGS)[number];
 
 /** How a `games` Competition's Games are decided (CONTEXT.md, Game Type). */
 export const GAME_TYPES = ["head-to-head", "best-score", "ranked"] as const;

@@ -64,3 +64,5 @@ writes from everyone; reopen, edit, close again (hardening decision 4).
 
 - 2026-10-02: the "Which one is you?" pick was removed (regression
   ticket 52); account linking is the only way You is found.
+- 2026-10-02: a fourth Participant write, Check in to a `participation`
+  Competition, is ADR 0009.

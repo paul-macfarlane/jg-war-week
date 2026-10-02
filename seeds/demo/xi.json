@@ -1101,6 +1101,17 @@
       "group": "Team Night Events"
     },
     {
+      "name": "Daily Workout Check-in",
+      "scoring": "team",
+      "maxPoints": 5,
+      "placementPoints": [5, 3, 1],
+      "format": "participation",
+      "participationTeamScoring": "ranked",
+      "selfCheckIn": true,
+      "group": "Pre-War Week and General",
+      "description": "Check in each day you work out. The Team with the most check-ins takes 1st."
+    },
+    {
       "name": "Winning the Day Challenge",
       "scoring": "individual",
       "countsTowardTeam": false,

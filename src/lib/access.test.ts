@@ -25,6 +25,17 @@ import {
   NOT_LINKED,
   NOT_THE_LOGGER,
 } from "@/lib/games/log-rule";
+import {
+  ALREADY_CHECKED_IN,
+  CHECK_IN_CLOSED,
+  CHECK_IN_OFF,
+  type CheckInFacet,
+  MARKED_BY_HOST,
+  NOT_CHECKED_IN,
+  NOT_PARTICIPATION,
+  PARTICIPATION_CLOSED,
+  notOnATeam,
+} from "@/lib/participation/check-in-rule";
 
 describe("isJahnelGroupEmail", () => {
   it.each([
@@ -718,6 +729,199 @@ describe("can: enrolling and withdrawing (ADR 0006)", () => {
 
   it("never lets a Participant flip the enroll switch", () => {
     expect(can(ACTORS.participant, "competition.self-enroll", target())).toBe(
+      NOT_HOST,
+    );
+  });
+});
+
+describe("can: running a participation Competition", () => {
+  it.each(
+    cases(
+      (
+        [
+          "participation.settings",
+          "participation.mark",
+          "participation.close",
+          "participation.reopen",
+        ] as WarWeekAction[]
+      ).map((action) => [
+        action,
+        { warWeekId: XI, competitionId: CATAN },
+        catanHostOr(),
+      ]),
+    ),
+  )("%s", (_, action, target, actor, expected) => {
+    expect(can(ACTORS[actor], action, target)).toBe(expected);
+  });
+});
+
+describe("can: checking in and out (ADR 0009)", () => {
+  const ME = "participant-me";
+  const RED = "team-red";
+  const ADMIN = "Organizers and Hosts only.";
+  const NOW = new Date("2027-02-22T15:00:00Z");
+
+  /** Individual scoring, check-in on and open; I'm linked and not in. */
+  const facet = (over: Partial<CheckInFacet> = {}): CheckInFacet => ({
+    isParticipation: true,
+    closed: false,
+    selfCheckIn: true,
+    checkInClosesAt: null,
+    now: NOW,
+    scoring: "individual",
+    teamLabel: "House",
+    linked: { participantId: ME, teamId: RED },
+    mark: null,
+    ...over,
+  });
+  const checkedIn = { mark: { checkedIn: true } };
+  const target = (over: Partial<CheckInFacet> = {}) => ({
+    warWeekId: XI,
+    competitionId: CATAN,
+    checkIn: facet(over),
+  });
+
+  it("lets a linked Participant check in, then check out", () => {
+    expect(
+      can(ACTORS.participant, "participation.check-in", target()),
+    ).toBeNull();
+    expect(
+      can(ACTORS.participant, "participation.check-out", target(checkedIn)),
+    ).toBeNull();
+  });
+
+  it("refuses checking in twice, and checking out when not in", () => {
+    expect(
+      can(ACTORS.participant, "participation.check-in", target(checkedIn)),
+    ).toBe(ALREADY_CHECKED_IN);
+    expect(can(ACTORS.participant, "participation.check-out", target())).toBe(
+      NOT_CHECKED_IN,
+    );
+  });
+
+  it("refuses checking out of a mark the Host made", () => {
+    expect(
+      can(
+        ACTORS.participant,
+        "participation.check-out",
+        target({ mark: { checkedIn: false } }),
+      ),
+    ).toBe(MARKED_BY_HOST);
+  });
+
+  it("refuses with check-in off, after the close time, and once closed", () => {
+    for (const action of [
+      "participation.check-in",
+      "participation.check-out",
+    ] as const) {
+      const over = action === "participation.check-out" ? checkedIn : {};
+      expect(
+        can(
+          ACTORS.participant,
+          action,
+          target({ ...over, selfCheckIn: false }),
+        ),
+        action,
+      ).toBe(CHECK_IN_OFF);
+      expect(
+        can(
+          ACTORS.participant,
+          action,
+          target({ ...over, checkInClosesAt: NOW }),
+        ),
+        action,
+      ).toBe(CHECK_IN_CLOSED);
+      expect(
+        can(ACTORS.participant, action, target({ ...over, closed: true })),
+        action,
+      ).toBe(PARTICIPATION_CLOSED);
+    }
+  });
+
+  it("allows check-in before the close time", () => {
+    expect(
+      can(
+        ACTORS.participant,
+        "participation.check-in",
+        target({ checkInClosesAt: new Date(NOW.getTime() + 60_000) }),
+      ),
+    ).toBeNull();
+  });
+
+  it("refuses a Competition that isn't run as Participation", () => {
+    expect(
+      can(
+        ACTORS.participant,
+        "participation.check-in",
+        target({ isParticipation: false }),
+      ),
+    ).toBe(NOT_PARTICIPATION);
+  });
+
+  it("in team scoring, refuses a Participant on no Team", () => {
+    expect(
+      can(
+        ACTORS.participant,
+        "participation.check-in",
+        target({
+          scoring: "team",
+          linked: { participantId: ME, teamId: null },
+        }),
+      ),
+    ).toBe(notOnATeam("House"));
+    expect(notOnATeam("House")).toBe(
+      "Only Participants on a House can take part in a team Competition.",
+    );
+    expect(
+      can(
+        ACTORS.participant,
+        "participation.check-in",
+        target({ scoring: "team" }),
+      ),
+    ).toBeNull();
+  });
+
+  it("no linked Participant grants nothing", () => {
+    for (const action of [
+      "participation.check-in",
+      "participation.check-out",
+    ] as const) {
+      expect(
+        can(ACTORS.participant, action, target({ linked: null })),
+        action,
+      ).toBe(NOT_LINKED);
+    }
+  });
+
+  it("binds an Organizer and the Host too", () => {
+    for (const actor of [ACTORS.organizer, ACTORS.host]) {
+      expect(
+        can(actor, "participation.check-in", target({ selfCheckIn: false })),
+      ).toBe(CHECK_IN_OFF);
+      expect(can(actor, "participation.check-in", target())).toBeNull();
+    }
+  });
+
+  it("refuses when the check-in facts weren't loaded, whoever asks", () => {
+    for (const actor of [ACTORS.participant, ACTORS.organizer]) {
+      for (const action of [
+        "participation.check-in",
+        "participation.check-out",
+      ] as const) {
+        expect(
+          can(actor, action, { warWeekId: XI, competitionId: CATAN }),
+          action,
+        ).toBe(ADMIN);
+      }
+    }
+  });
+
+  it("refuses an anonymous visitor", () => {
+    expect(can(null, "participation.check-in", target())).toBe(SIGN_IN);
+  });
+
+  it("never lets a Participant mark someone", () => {
+    expect(can(ACTORS.participant, "participation.mark", target())).toBe(
       NOT_HOST,
     );
   });

@@ -179,6 +179,12 @@ describe("generated Points Entries", () => {
       "This Points Entry comes from a Games Competition. Change it there.",
     );
   });
+  it("say participation for a participation Competition", () => {
+    expect(generatedNote("participation")).toBe("From participation");
+    expect(generatedRefusal("participation")).toBe(
+      "This Points Entry comes from a Participation Competition. Change it there.",
+    );
+  });
 });
 
 describe("overMaxWarning", () => {

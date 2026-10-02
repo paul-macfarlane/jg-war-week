@@ -47,6 +47,17 @@ export type RecentResult =
       winners: ResultTarget[];
     }
   | {
+      kind: "participation-closed";
+      key: string;
+      competitionId: string;
+      competition: string;
+      when: Date;
+      /** Team scoring: the top Team; more than one on a tie. Else empty. */
+      winners: ResultTarget[];
+      /** Individual scoring: how many took part. Null in team scoring. */
+      tookPart: number | null;
+    }
+  | {
       kind: "points";
       key: string;
       competitionId: string;
@@ -65,6 +76,9 @@ export type RecentResult =
  *   "games-closed" row, both at `finalizedAt`. The champion or winner is the
  *   target of the highest generated Points Entry (the 1st-place entry its
  *   finalize or close wrote); a tie for first lists every target.
+ * - A closed `participation` Competition is one "participation-closed" row
+ *   at `finalizedAt`: in team scoring its top Team (as above), in
+ *   individual scoring how many took part (one generated entry each).
  * - The generated entries themselves are not rows of their own.
  * - Manual Points Entries of one Competition added "together" collapse into
  *   one "points" row. Together means chained by time: sorted by `enteredAt`,
@@ -95,6 +109,19 @@ export function shapeRecentResults(
       }
     }
     if (winners.length === 0) continue;
+    if (c.format === "participation") {
+      const individual = generated.every((e) => e.target.kind !== "team");
+      results.push({
+        kind: "participation-closed",
+        key: `final-${c.id}`,
+        competitionId: c.id,
+        competition: c.name,
+        when: c.finalizedAt,
+        winners: individual ? [] : winners,
+        tookPart: individual ? generated.length : null,
+      });
+      continue;
+    }
     results.push({
       kind: c.format === "games" ? "games-closed" : "bracket-finalized",
       key: `final-${c.id}`,

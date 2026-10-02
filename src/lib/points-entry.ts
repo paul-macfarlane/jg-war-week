@@ -122,17 +122,24 @@ export function overMaxWarning(
 
 /**
  * The ledger's mark on a generated Points Entry: its Competition's Format
- * says whether a Bracket or a `games` Competition wrote it.
+ * says whether a Bracket, a `games` or a `participation` Competition wrote
+ * it.
  */
 export function generatedNote(format: Competition["format"]): string {
-  return format === "games" ? "From games" : "From bracket";
+  if (format === "games") return "From games";
+  if (format === "participation") return "From participation";
+  return "From bracket";
 }
 
 /** Why a generated Points Entry can't be edited or deleted in the ledger. */
 export function generatedRefusal(format: Competition["format"]): string {
-  return format === "games"
-    ? "This Points Entry comes from a Games Competition. Change it there."
-    : "This Points Entry comes from a bracket. Change it there.";
+  if (format === "games") {
+    return "This Points Entry comes from a Games Competition. Change it there.";
+  }
+  if (format === "participation") {
+    return "This Points Entry comes from a Participation Competition. Change it there.";
+  }
+  return "This Points Entry comes from a bracket. Change it there.";
 }
 
 export type AdminLedgerRow = Pick<

@@ -10,10 +10,12 @@ import {
   COMPETITION_SCORINGS,
   FONT_PRESETS,
   GAME_TYPES,
+  PARTICIPATION_TEAM_SCORINGS,
   WAR_WEEK_MODES,
 } from "@/lib/enums";
 import { fieldErrorsFrom } from "@/lib/form-errors";
 import { gamesConfigSchema } from "@/lib/games/config";
+import { participationPointsSchema } from "@/lib/participation/input";
 import { POINTS_NUMBER, pointsSchema as points } from "@/lib/points-entry";
 import type { Parsed } from "@/lib/result";
 
@@ -120,6 +122,14 @@ export const competitionSeedSchema = z
     gameConfig: z.unknown().optional(),
     /** A `games` Competition open to everyone eligible; omitted means a fixed list. */
     entrantsOpen: z.boolean().optional(),
+    /** A `participation` Competition's points per Participant; omitted is 1. */
+    participationPoints: participationPointsSchema.nullish(),
+    /** A team `participation` Competition's scoring; omitted is `ranked`. */
+    participationTeamScoring: z.enum(PARTICIPATION_TEAM_SCORINGS).nullish(),
+    /** A `participation` Competition's Self check-in switch; omitted is off. */
+    selfCheckIn: z.boolean().nullish(),
+    /** A `participation` Competition's check-in close time; omitted is none. */
+    checkInClosesAt: z.iso.datetime({ offset: true }).nullish(),
   })
   .refine(
     (c) =>
@@ -142,6 +152,32 @@ export const competitionSeedSchema = z
         code: "custom",
         message: "bracketConfig is only for a heats Competition",
         path: ["bracketConfig"],
+      });
+    }
+    // Participation settings only on a `participation` Competition, its
+    // team scoring only in team scoring (the database CHECK
+    // `competition_participation_columns`).
+    const participationKeys = [
+      "participationPoints",
+      "participationTeamScoring",
+      "selfCheckIn",
+      "checkInClosesAt",
+    ] as const;
+    if (c.format !== "participation") {
+      for (const key of participationKeys) {
+        if (c[key] != null) {
+          ctx.addIssue({
+            code: "custom",
+            message: `${key} is only for a participation Competition`,
+            path: [key],
+          });
+        }
+      }
+    } else if (c.scoring !== "team" && c.participationTeamScoring != null) {
+      ctx.addIssue({
+        code: "custom",
+        message: "participationTeamScoring is only for a team Competition",
+        path: ["participationTeamScoring"],
       });
     }
     // A Game Type exactly when the Format is games (the database CHECK
@@ -848,8 +884,9 @@ export function competitionGuardError(
     (existing.scoring !== values.scoring ||
       placementPointsChanged(existing.placementPoints, values.placementPoints))
   ) {
-    // A closed `games` Competition reuses `finalized_at` (R3 decision 1).
-    return existing.format === "games"
+    // A closed `games` or `participation` Competition reuses `finalized_at`
+    // (R3 decision 1).
+    return existing.format === "games" || existing.format === "participation"
       ? "This Competition is closed. Reopen the Competition first."
       : "This Competition's Bracket is finalized. Un-finalize the Bracket first.";
   }

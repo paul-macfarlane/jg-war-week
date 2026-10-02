@@ -59,7 +59,10 @@ export function WarWeekLifecycleControls({
   highlights: string[];
   /** Names of Brackets not yet finalized, to warn about when ending. */
   unfinalizedBrackets: string[];
-  /** Open `games` Competitions with Games, to warn about when ending. */
+  /**
+   * Open `games` Competitions with Games and `participation` ones with
+   * anyone marked, to warn about when ending.
+   */
   openGamesCompetitions: OpenGamesCompetition[];
 }) {
   const name = edition.toUpperCase();
@@ -198,15 +201,14 @@ function EndWarWeekButton({
             <span key={c.id}>
               {i > 0 && ", "}
               <Link
-                href={`/admin/competitions/${c.id}/games`}
+                href={`/admin/competitions/${c.id}/${c.format}`}
                 className="text-primary underline underline-offset-4"
               >
                 {c.name}
               </Link>
             </span>
           ))}
-          . Their Placement Points aren&apos;t in the Standings until you close
-          them.
+          . Their points aren&apos;t in the Standings until you close them.
         </>
       )}
     </>

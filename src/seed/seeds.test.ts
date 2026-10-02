@@ -192,6 +192,29 @@ describe("War Week XI demo", () => {
     });
   });
 
+  it("runs one team Competition as Participation, ranked by headcount with self check-in", () => {
+    const participation = xi.competitions
+      .filter((c) => c.format === "participation")
+      .map((c) => ({
+        name: c.name,
+        scoring: c.scoring,
+        placementPoints: c.placementPoints,
+        participationTeamScoring: c.participationTeamScoring,
+        selfCheckIn: c.selfCheckIn,
+        checkInClosesAt: c.checkInClosesAt,
+      }));
+    expect(participation).toEqual([
+      {
+        name: "Daily Workout Check-in",
+        scoring: "team",
+        placementPoints: [5, 3, 1],
+        participationTeamScoring: "ranked",
+        selfCheckIn: true,
+        checkInClosesAt: undefined,
+      },
+    ]);
+  });
+
   it("has a close mid-week race with a fractional and a Counts-Toward-Team-off entry", () => {
     const competitions = new Map(xi.competitions.map((c) => [c.name, c]));
     const teamOf = new Map(xi.participants.map((p) => [p.displayName, p.team]));
