@@ -59,5 +59,6 @@ view in production.
   alias at `/admin/organizers` makes it an Organizer.
 - Test users are real `user` rows, and Delete my account removes them like
   any other.
-- A leaked secret is contained to non-production, and rotating or removing
-  it ends every test session at once.
+- A leaked secret is contained to non-production. Removing it ends every
+  test session at once; rotating it only stops new Test sign-ins (sessions
+  don't record which secret made them), so remove it, then set the new one.
