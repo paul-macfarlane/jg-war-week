@@ -616,6 +616,32 @@ export const participation = pgTable(
   ],
 );
 
+/**
+ * A global Award Category (e.g. War Week MVP): what Awards of different War
+ * Weeks share, so one view lists a Category's recipients through the years.
+ * Archived, never deleted: an archived Category stays on past Awards but
+ * can't be newly picked. `key` is set only on the seeded Categories, which
+ * seeds name so a rename never breaks them.
+ */
+export const awardCategory = pgTable(
+  "award_category",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: varchar("name", { length: 80 }).notNull(),
+    key: varchar("key", { length: 80 }).unique(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("award_category_name_lower").on(sql`lower(${table.name})`),
+  ],
+);
+
 export const award = pgTable(
   "award",
   {
@@ -628,6 +654,9 @@ export const award = pgTable(
     teamId: uuid("team_id").references(() => team.id, {
       onDelete: "set null",
     }),
+    categoryId: uuid("category_id").references(() => awardCategory.id, {
+      onDelete: "restrict",
+    }),
     seedKey: varchar("seed_key", { length: 80 }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -635,6 +664,7 @@ export const award = pgTable(
   (table) => [
     unique().on(table.warWeekId, table.seedKey),
     index("award_team_id_idx").on(table.teamId),
+    index("award_category_id_idx").on(table.categoryId),
   ],
 );
 
@@ -892,6 +922,10 @@ export const awardRelations = relations(award, ({ one, many }) => ({
     references: [warWeek.id],
   }),
   team: one(team, { fields: [award.teamId], references: [team.id] }),
+  category: one(awardCategory, {
+    fields: [award.categoryId],
+    references: [awardCategory.id],
+  }),
   participants: many(awardParticipant),
 }));
 
@@ -933,6 +967,7 @@ export type Competition = InferSelectModel<typeof competition>;
 export type ScheduleItem = InferSelectModel<typeof scheduleItem>;
 export type PointsEntry = InferSelectModel<typeof pointsEntry>;
 export type Award = InferSelectModel<typeof award>;
+export type AwardCategory = InferSelectModel<typeof awardCategory>;
 export type AwardParticipant = InferSelectModel<typeof awardParticipant>;
 export type Announcement = InferSelectModel<typeof announcement>;
 export type FaqItem = InferSelectModel<typeof faqItem>;

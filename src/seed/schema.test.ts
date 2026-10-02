@@ -425,6 +425,16 @@ describe("warWeekSeedSchema", () => {
     );
   });
 
+  it("accepts an Award's Category key and refuses a name-like value", () => {
+    const fixture = loadFixture();
+    fixture.awards[0].category = "war-week-mvp";
+    expect(warWeekSeedSchema.parse(fixture).awards[0].category).toBe(
+      "war-week-mvp",
+    );
+    fixture.awards[0].category = "War Week MVP";
+    expect(rejectionOf(fixture).join("\n")).toContain("awards.0.category");
+  });
+
   it("rejects Teams in a free-for-all War Week", () => {
     expect(rejectionOf({ ...loadFixture(), mode: "free-for-all" })).toContain(
       "teams: a free-for-all War Week has no Teams",

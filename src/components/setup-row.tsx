@@ -203,6 +203,8 @@ export function SetupListRow({
   deleteTitle,
   deleteDescription,
   deleteSuccess,
+  editLabel = "Edit",
+  deleteLabel = "Delete",
 }: {
   id: string;
   name: ReactNode;
@@ -228,6 +230,10 @@ export function SetupListRow({
   deleteDescription?: ReactNode;
   /** The toast after a delete, e.g. "Team deleted". */
   deleteSuccess?: string;
+  /** What the Edit control says instead, e.g. "Rename". */
+  editLabel?: string;
+  /** What the Delete control says instead, e.g. "Archive". */
+  deleteLabel?: string;
 }) {
   const router = useRouter();
   const rowRef = useRef<HTMLLIElement>(null);
@@ -279,7 +285,7 @@ export function SetupListRow({
         {editHref ? (
           <Link
             href={editHref}
-            aria-label={`Edit ${rowLabel}`}
+            aria-label={`${editLabel} ${rowLabel}`}
             aria-describedby={described}
             className={buttonVariants({
               variant: "outline",
@@ -288,7 +294,7 @@ export function SetupListRow({
             })}
             {...{ [EDIT_ATTR]: "" }}
           >
-            Edit
+            {editLabel}
           </Link>
         ) : (
           form && (
@@ -296,13 +302,13 @@ export function SetupListRow({
               type="button"
               variant="outline"
               size="sm"
-              aria-label={`Edit ${rowLabel}`}
+              aria-label={`${editLabel} ${rowLabel}`}
               aria-describedby={described}
               className={ROW_ACTION}
               onClick={() => setEditing(true)}
               {...{ [EDIT_ATTR]: "" }}
             >
-              Edit
+              {editLabel}
             </Button>
           )
         )}
@@ -311,12 +317,12 @@ export function SetupListRow({
             type="button"
             variant="destructive"
             size="sm"
-            aria-label={`Delete ${rowLabel}`}
+            aria-label={`${deleteLabel} ${rowLabel}`}
             className={ROW_ACTION}
             disabled={pending}
             onClick={() => setConfirming(true)}
           >
-            Delete
+            {deleteLabel}
           </Button>
         )}
       </div>
@@ -324,7 +330,7 @@ export function SetupListRow({
         <SetupSheet
           open={editing}
           onOpenChange={setEditing}
-          title={`Edit ${rowLabel}`}
+          title={`${editLabel} ${rowLabel}`}
           form={form}
         />
       )}
@@ -332,8 +338,9 @@ export function SetupListRow({
         <ConfirmDialog
           open={confirming}
           onOpenChange={setConfirming}
-          title={deleteTitle ?? `Delete ${rowLabel}?`}
+          title={deleteTitle ?? `${deleteLabel} ${rowLabel}?`}
           description={deleteDescription}
+          confirmLabel={deleteLabel}
           pending={pending}
           onConfirm={confirmDelete}
         />

@@ -74,6 +74,8 @@ export const awardSeedSchema = z
     team: z.string().min(1).max(80).nullish(),
     /** Participant display names from this seed. */
     participants: z.array(z.string().min(1).max(120)).default([]),
+    /** An Award Category's key (not its name, which an Organizer may rename). */
+    category: seedKey.nullish(),
   })
   .refine((a) => a.team != null || a.participants.length > 0, {
     message: "an Award needs at least one recipient (a team or participants)",

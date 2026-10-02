@@ -119,7 +119,8 @@
     {
       "key": "mvp-1st-place",
       "name": "MVP 1st Place",
-      "participants": ["Ian Ballard"]
+      "participants": ["Ian Ballard"],
+      "category": "war-week-mvp"
     },
     {
       "key": "mvp-2nd-place",
@@ -139,7 +140,8 @@
     {
       "key": "billing-hours-champ",
       "name": "Billing Hours Champ",
-      "participants": ["Kelly Byrnes"]
+      "participants": ["Kelly Byrnes"],
+      "category": "billable-hours-champ"
     },
     {
       "key": "four-score-club",

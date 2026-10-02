@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { parseAwardInput } from "@/lib/awards";
+import {
+  type AwardView,
+  groupAwardsByCategory,
+  parseAwardInput,
+} from "@/lib/awards";
 
 const TEAM = "11111111-1111-4111-8111-111111111111";
 const ALICE = "22222222-2222-4222-8222-222222222222";
@@ -24,8 +28,21 @@ describe("parseAwardInput", () => {
         name: "MVP",
         description: "Most valuable",
         teamId: null,
+        categoryId: null,
         participantIds: [ALICE],
       },
+    });
+  });
+
+  it("takes an optional Category id and refuses a malformed one", () => {
+    const id = "33333333-3333-4333-8333-333333333333";
+    expect(parseAwardInput(input({ categoryId: id }))).toMatchObject({
+      ok: true,
+      value: { categoryId: id },
+    });
+    expect(parseAwardInput(input({ categoryId: "mvp" }))).toMatchObject({
+      ok: false,
+      fieldErrors: { categoryId: "Choose a Category from the list." },
     });
   });
 
@@ -125,5 +142,50 @@ describe("parseAwardInput field errors", () => {
         participantIds: "Choose a Team or at least one Participant.",
       },
     });
+  });
+});
+
+describe("groupAwardsByCategory", () => {
+  const award = (
+    name: string,
+    category: { id: string; name: string } | null,
+  ): AwardView => ({
+    id: name,
+    name,
+    description: null,
+    team: null,
+    category: category && { ...category, archived: false },
+    participants: [],
+  });
+  const mvp = { id: "c-mvp", name: "War Week MVP" };
+  const grow = { id: "c-grow", name: "Grow" };
+
+  it("orders Categories by name and puts the uncategorized last", () => {
+    const groups = groupAwardsByCategory([
+      award("Catan", null),
+      award("MVP 1st Place", mvp),
+      award("Grow Award", grow),
+      award("MVP 2nd Place", mvp),
+    ]);
+    expect(
+      groups.map((g) => [
+        g.category?.name ?? null,
+        g.awards.map((a) => a.name),
+      ]),
+    ).toEqual([
+      ["Grow", ["Grow Award"]],
+      ["War Week MVP", ["MVP 1st Place", "MVP 2nd Place"]],
+      [null, ["Catan"]],
+    ]);
+  });
+
+  it("is one uncategorized group when no Award has a Category", () => {
+    const groups = groupAwardsByCategory([award("A", null), award("B", null)]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].category).toBeNull();
+  });
+
+  it("is empty with no Awards", () => {
+    expect(groupAwardsByCategory([])).toEqual([]);
   });
 });

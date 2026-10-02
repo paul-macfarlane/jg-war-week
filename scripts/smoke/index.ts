@@ -22,6 +22,11 @@ import {
 } from "./announcements";
 import { assertArchiveDetail, assertHistory } from "./archive";
 import {
+  assertAwardCategoriesSeeded,
+  assertAwardsPageGrouped,
+} from "./award-categories";
+import { assertAwardHistoryRoute } from "./award-history";
+import {
   assertAwardActions,
   assertAwardAdminPages,
   assertAwardsPage,
@@ -147,6 +152,7 @@ async function main() {
   await assertSeedLoadedOnce();
   await assertPointsEntryTargetConstraint();
   await assertPlacementPointsSeeded();
+  await assertAwardCategoriesSeeded();
 
   // Clear leftovers from an interrupted run, then add the smoke Organizer
   // to XI's allowlist until the run ends.
@@ -190,6 +196,7 @@ async function main() {
       await assertLlmsTxt();
       await assertHistory();
       await assertArchiveDetail();
+      await assertAwardHistoryRoute();
       await assertCompetitions();
       await assertCompetitionDetail();
       await assertTeams();
@@ -215,6 +222,7 @@ async function main() {
       await assertAnnouncementUnsafeContentStripped(sessions);
       await assertAnnouncementAdminPages(sessions);
       await assertAwardsPage();
+      await assertAwardsPageGrouped();
       await assertFaqPage();
       await assertAwardActions(sessions);
       await assertAwardAdminPages(sessions);
