@@ -24,8 +24,8 @@ export function OrganizerGuide({
     Competitions:
       "Competitions, their scoring, Placement Points and Hosts, and each one's Bracket or Games setup.",
     Schedule:
-      "The War Week's Days with their Day Themes, and each Day's Schedule Items.",
-    Roster: `${teamLabel}s, Participants and ${leaderTitle}s.`,
+      "The War Week's Days with their Day Themes and short descriptions, and each Day's Schedule Items.",
+    Roster: `${teamLabel}s, Participants and ${leaderTitle}s, with Import from a sheet or CSV.`,
     Announcements: "Post, pin and edit Announcements.",
     Awards: `Give Awards to a ${teamLower} or to Participants.`,
     FAQ: "FAQ Items and their order on the public FAQ.",
@@ -51,7 +51,7 @@ export function OrganizerGuide({
     [
       "/admin/roster",
       "Roster",
-      `${teamLabel}s, Participants and ${leaderTitle}s.`,
+      `${teamLabel}s, Participants and ${leaderTitle}s (or Import them from a sheet or CSV).`,
     ],
     [
       "/admin/competitions",

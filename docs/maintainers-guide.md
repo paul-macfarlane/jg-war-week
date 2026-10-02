@@ -191,7 +191,7 @@ redirect to their new homes.
   Roster's Team controls, and keeps their saved values for if you switch
   back to Teams), the Appearance Theme (colors, font, logo, banner), the
   **Lifecycle** box (Start, End with the computed Winner and highlights,
-  Reopen) and **Create next War Week**. The seed-overwrite warning shows
+  Unstart while nothing is scored, Reopen) and **Create next War Week**. The seed-overwrite warning shows
   here. **The form saves itself**: each field saves a moment after you stop
   typing, with "Saving…" then "Saved" by the heading and no Save button; a
   value the server refuses (a Slack URL that isn't `https`) shows its error
@@ -203,9 +203,10 @@ redirect to their new homes.
   override you haven't touched yourself. Viewers never see your Settings
   screen's scheme — each picks their own Display (Light, Dark or System)
   from the avatar **account menu** at the top right of every header.
-- **`/admin/schedule`**: the War Week's Days (with Day Themes) and each
-  Day's Schedule Items on one page. **`/admin/roster`**: Teams and
-  Participants. **`/admin/competitions`**: Competitions, with their Hosts.
+- **`/admin/schedule`**: the War Week's Days (with Day Themes and an optional short
+  Day description) and each Day's Schedule Items on one page.
+  **`/admin/roster`**: Teams and Participants, with an Organizer-only Import
+  (paste from Google Sheets or upload a CSV, preview, then Import). **`/admin/competitions`**: Competitions, with their Hosts.
 - **On a phone**, the admin sections are a bar fixed to the bottom of the
   screen (Points, Competitions, Schedule, Announcements, More); More opens a
   Sheet with the other sections you can see and the edition switcher.
@@ -603,7 +604,10 @@ Notes:
   Validation runs on the server only; the form reads `FormData` when every
   control posts a named input, and closes over React state when a field is
   rich text or a list (Announcement, Award participants, FAQ, Schedule
-  description, list-row forms).
+  description, list-row forms). The rich-text editor
+  (`src/components/rich-text-editor.tsx`) is the one place a video goes: an
+  Announcement has no separate video field, and images are added by URL
+  (no upload).
 - Confirm anything destructive with `ConfirmDialog` or `ConfirmActionButton`
   (`src/components/confirm-dialog.tsx`), never `window.confirm`. Report
   results with `toast.success` / `toast.error` from `sonner`, never
@@ -630,7 +634,7 @@ emails.
 
 `/llms.txt` picks the new tool up from `src/mcp/tools.ts`. The tools today
 are `get_current_war_week`, `get_leaderboard`, `get_schedule`,
-`get_announcements`, `get_awards`, `get_faq`, `list_history`,
+`get_announcements` (a video is its URL in the plain-text body), `get_awards`, `get_faq`, `list_history`,
 `get_history`, `get_bracket` (a Competition's Bracket by name, with each
 Heat's time and place, and a Squad's `participants` by name; never who
 reported a result) and `get_games` (a Competition run as Games, by name:

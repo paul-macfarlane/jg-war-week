@@ -28,13 +28,13 @@ export const ABOUT_FEATURES = [
   {
     slug: "organizer-admin",
     title: "Organizer and Host admin",
-    text: "Organizers run the whole War Week from one Admin nav: the Days and schedule, the roster, Competitions, Announcements, Awards, FAQ and settings. Hosts get just their Competition and enter its points themselves.",
+    text: "Organizers run the whole War Week from one Admin nav: the Days and schedule, the roster (paste it in from a sheet), Competitions, Announcements, Awards, FAQ and settings. Hosts get just their Competition and enter its points themselves.",
     alt: "The Admin Schedule page with the flat Admin nav (Points, Competitions, Schedule, Roster and more) beside the War Week's Days and their Schedule Items.",
   },
   {
     slug: "schedule",
     title: "Schedule, Now and Next",
-    text: "Every Day Theme and every item on the ET clock. The home screen says what's on now and what's up next, so nobody has to ask.",
+    text: "Every Day Theme, with a line about each Day, and every item on the ET clock. The home screen says what's on now and what's up next, so nobody has to ask.",
     alt: "The current War Week's home: today's Day Theme, what's on now and what's up next on the ET clock, then the pinned Announcement.",
   },
   {
@@ -46,7 +46,7 @@ export const ABOUT_FEATURES = [
   {
     slug: "announcements",
     title: "Announcements",
-    text: "Organizers post rich-text Announcements with video and pin one to the home screen for everyone.",
+    text: "Organizers post rich-text Announcements, videos included, and pin one to the home screen for everyone.",
     alt: "The current War Week's Announcements feed with its pinned welcome Announcement.",
   },
   {
