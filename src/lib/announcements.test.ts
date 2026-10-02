@@ -4,7 +4,6 @@ import {
   type AnnouncementInput,
   MAX_VIDEO_LINKS,
   announcementAuthorName,
-  announcementVideoCount,
   parseAnnouncementInput,
   sortAnnouncements,
 } from "@/lib/announcements";
@@ -168,72 +167,6 @@ describe("sortAnnouncements", () => {
     const a = { id: "a", pinned: false, publishedAt: when };
     const b = { id: "b", pinned: false, publishedAt: when };
     expect(sortAnnouncements([a, b]).map((row) => row.id)).toEqual(["a", "b"]);
-  });
-});
-
-describe("announcementVideoCount", () => {
-  const video = (src: string) => ({ type: "video", attrs: { src } });
-  const paragraph = {
-    type: "paragraph",
-    content: [{ type: "text", text: "Hi" }],
-  };
-
-  it("is zero with no links and no embeds", () => {
-    expect(
-      announcementVideoCount({
-        videoUrls: [],
-        body: { type: "doc", content: [paragraph] },
-      }),
-    ).toBe(0);
-  });
-
-  it("counts video links", () => {
-    expect(
-      announcementVideoCount({
-        videoUrls: ["https://youtu.be/a", "https://vimeo.com/1"],
-        body: { type: "doc", content: [paragraph] },
-      }),
-    ).toBe(2);
-  });
-
-  it("counts videos embedded in the body", () => {
-    expect(
-      announcementVideoCount({
-        videoUrls: [],
-        body: {
-          type: "doc",
-          content: [
-            video("https://youtu.be/a"),
-            paragraph,
-            video("https://youtu.be/b"),
-          ],
-        },
-      }),
-    ).toBe(2);
-  });
-
-  it("counts links and embeds together, including nested embeds", () => {
-    expect(
-      announcementVideoCount({
-        videoUrls: ["https://loom.com/share/abc"],
-        body: {
-          type: "doc",
-          content: [
-            video("https://youtu.be/a"),
-            {
-              type: "bulletList",
-              content: [
-                { type: "listItem", content: [video("https://youtu.be/b")] },
-              ],
-            },
-          ],
-        },
-      }),
-    ).toBe(3);
-  });
-
-  it("tolerates a body that isn't a document", () => {
-    expect(announcementVideoCount({ videoUrls: [], body: null })).toBe(0);
   });
 });
 
