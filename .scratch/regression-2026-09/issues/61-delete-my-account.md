@@ -4,7 +4,7 @@
 
 **Blocked by:** 60
 
-**Status:** in-progress
+**Status:** done
 
 **Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
@@ -24,3 +24,11 @@
 ## Comments
 
 - 2026-10-02 [SCOPE CHANGE] (Paul, during /atlas-plan): "pictures should just be urls, we don't want or need blob storage at this time" and "Users should be able to set the url for their image as well … just no need to upload yet." The picture is a URL the person sets on their Profile, else the Google photo URL, else initials; no upload, no Vercel Blob. Uploads move to Blob later, with AI-edited portraits. See `../epics/R10-execution.md` D12. For this ticket: there is no Blob object to delete, so the Blob checks in AC1 are N/A; the picture URL goes with the `profile` row.
+
+## [AI CODE REVIEW]
+
+See `../epics/R10-execution.md` [AI CODE REVIEW] (one review for the epic, both axes; no open blocking findings).
+
+## [CLOSEOUT]
+
+2026-10-02, branch `feat/regression-r10-accounts`. AC1 PASS (`e2e/delete-account.spec.ts`, `src/mutations/account.test.ts`; the Blob part SKIPPED by the approved scope change); AC2 PASS (last Organizer refused); AC3 PASS (`gate-final.txt`). Commits `046db75`, `9214232`, `0df77f7`. Full record: `../epics/R10-execution.md` [CLOSEOUT].

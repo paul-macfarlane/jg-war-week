@@ -364,3 +364,95 @@ Round 2, 2026-10-02: **PASS**. B1 and B2 confirmed resolved. Three minor should-
 - D10 refined at wave 2: the Avatar picture uses shadcn `AvatarImage` (already in `src/components/ui/avatar`), which falls back to the initials, instead of a hand-rolled `<img>`.
 - Wave 2 integrated: D60a (`e1e3248`, Opus) accepted. Candidate gate at `e1e3248`: unit (3307), build, smoke (227 ok; seeds twice with migration 0019) and e2e (75 passed) all pass (`test-results/r10-accounts/gate-wave2.txt`). Accepted D60a decisions: the write lives in `src/mutations/profile.ts` (action → mutation); both fields empty deletes the Profile row; `AdminAccountMenu` is a separate async server component so `AdminShell` stays synchronous; the Profile page renders its own `<Toaster>`; the picture field is a text input with `inputMode="url"`, so zod reports errors at the field. Carried into wave 3: the Profile page's "Shown as <roster name>" hint must keep reading the raw `display_name` after D9 changes `getYouCandidates`.
 - Wave 3 integrated: D60b (`934e72b`, Sonnet) merged at `919bc19`, D61 (`046db75`, Sonnet) at `e09ac9a`, with no conflicts; the predicted Profile page collision didn't happen, because D60b left the page alone and D61 only replaced the slot comment. Orchestrator fix `9214232`: the session cookie is deleted with its attributes, since a `__Secure-` cookie is only cleared by a Secure Set-Cookie; the delete e2e asserts the roster name before and after. Candidate gate at `9214232`: unit (3320), build, smoke (227 ok) and e2e (79 passed, including the profile, profile-core and delete-account specs) all pass (`test-results/r10-accounts/gate-wave3.txt`). Accepted decisions: optional `image` fields so fixtures needed no churn; announcement authors resolve through `getProfilesByEmail`, so a non-Participant author's Profile name shows; `ConfirmDialog` gains `confirmText` and `onConfirm(typed)`; deleting a never-Organizer account skips the Organizer list.
+- Wave 4 integrated: DX (`46e00b9`, Sonnet) accepted, with orchestrator wording fix `c8a25e7`. Review fixes RF (`0df77f7`, Opus); orchestrator `0e729b5` moved the admin account menu back to `src/components` (S4).
+
+## [AI CODE REVIEW]
+
+2026-10-02. One formal review over `812bb7c..0e729b5`, two fresh Opus readers (one per axis); the orchestrator adjudicated every candidate.
+
+**Technical implementation and spec conformity.** Sound: Test sign-in can't run on production (`VERCEL_ENV` checked per request in page and action) or for a non-JG email (`jgEmailSchema`, then the user-create hook); the cookie name, attributes and signature are right; a disabled test session is anonymous to pages, the proxy, MCP, actions and the admin gate. Every D9 surface resolves the Profile name and picture; MCP adds no email or image URL.
+- F1 (blocking): closeouts and a final gate after the docs wave were missing. Resolved by this closeout and `gate-final.txt`.
+- F2: rotating the secret revives unexpired test sessions; ADR 0008 and the guide said otherwise. Resolved: docs say to `delete from session where test_sign_in` before setting a new secret.
+- F3: `deleteAccount` read the Organizer list unlocked. Resolved: locks `organizer` rows first.
+- F4: the typed confirm text survived a parent-driven close. Resolved: the dialog body remounts on `open`.
+- F5: the delete e2e's session check was vacuous. Resolved: asserts by user id on `session` and `account`.
+- F6: e2e cleanup skipped `profile`. Resolved.
+- F7: MCP proof was thin. Resolved: unit rows carry `authorEmail`; three smoke checks assert no `@` in `get_announcements` and `get_leaderboard`.
+- F8: the Profile e2e didn't assert the Game log entry. Resolved.
+- F9: the edition layout serialized a query. Resolved: parallel again.
+- F10: no test of Test sign-in's success path. Resolved: integration test checks `email_verified`, `test_sign_in` and the cookie name.
+- F11 (accepted): a disabled test session can still call better-auth's own `/api/auth/*` routes, which return only that account's own data.
+
+**Coding standards.**
+- Resolved:
+  - S1: revalidate after delete.
+  - S2: `confirmTextMatches` and `deleteAccountSchema` live in `src/lib`.
+  - S3: one `identityFromSession`.
+  - S5: unused `YouCandidate.name` and its join removed.
+  - S6: comments on the resolved `displayName` fields.
+  - S7: shared `profileOn` join condition.
+  - S8: error toast on the Profile form.
+  - S9: `googlePhotoOf` exported.
+  - S10: shared `firstParam`.
+  - S11: `src/auth/session-cookie.ts`.
+  - S12: `checkTestSignIn` rename, wrapped comments.
+- Open, non-blocking: S4. `AdminAccountMenu` is an async server component in `src/components` that loads its own data. Moving it to `src/app` made `admin-shell.tsx` import from the app layer, so the move was reverted (`0e729b5`). Threading the account through the 18 pages that render `AdminShell` is a later cleanup.
+
+Fixes: RF `0df77f7` (Opus worker), orchestrator `c8a25e7` and `0e729b5`.
+
+## [CLOSEOUT]
+
+2026-10-02. Branch `feat/regression-r10-accounts`, head `0e729b5` at verification; base `staging` at `812bb7c`.
+
+**Deliverables**
+
+| Deliverable | Commit | Worker |
+|---|---|---|
+| D62 Test sign-in | `e4d36b1` | Opus |
+| D60a Profile core | `e1e3248` | Opus |
+| D60b Profile surfaces | `934e72b`, merged `919bc19` | Sonnet |
+| D61 Delete my account | `046db75`, merged `e09ac9a`, orchestrator fix `9214232` | Sonnet |
+| DX docs | `46e00b9`, orchestrator fix `c8a25e7` | Sonnet |
+| RF review fixes | `0df77f7`, orchestrator `0e729b5` | Opus |
+
+**Isolation check.** Wave 3 ran D60b and D61 in parallel worktrees. The predicted shared file, the Profile page, never collided: D60b didn't touch it, and D61 replaced only the slot comment. Waves 1, 2 and 4 were sequential by dependency, not by file conflict.
+
+**Verified run command.** `set -a; . ./.env.example; set +a; pnpm format:check && pnpm gate` → exit 0 at `0e729b5`: unit 3321, build, smoke 230 ok, e2e 79 passed (`test-results/r10-accounts/gate-final.txt`).
+
+**Verdicts**
+
+| Criterion | Verdict | Evidence |
+|---|---|---|
+| 62-AC1 refusals and runtime gate | PASS | `src/lib/test-sign-in.test.ts`, `src/actions/test-sign-in.test.ts`; smoke `/sign-in/test` 404 |
+| 62-AC2 e2e (linked You, banner) | PASS | `e2e/test-sign-in.spec.ts`; `test-results/r10-accounts/test-sign-in-{390,1440}/` |
+| 62 disabled session anonymous | PASS | `sessionIdentity` unit tests |
+| 62-AC3a staging Test sign-in | BLOCKED | Human gate: Paul sets `TEST_SIGN_IN_SECRET` on staging, signs in as `paul+participant@jahnelgroup.com` after the staging deploy, and sends a screenshot. The agent then checks `/sign-in/test` returns 200 on staging |
+| 62-AC3b production 404 | BLOCKED | Until `staging` → `main` promotion deploys; then `curl -sI <prod>/sign-in/test` |
+| 62-AC4 / 60-AC4 / 61-AC3 gate | PASS | `gate-final.txt` |
+| 60 `/update-user` disabled | PASS | smoke |
+| 60 self actions | PASS | `src/lib/access.test.ts` |
+| 60-AC1 resolver | PASS | `src/lib/profile.test.ts`, `src/queries/profile-join.test.ts` |
+| 60-AC2 e2e (name and picture on leaderboard, teams, Game log; roster form read-only) | PASS | `e2e/profile.spec.ts`, `e2e/profile-core.spec.ts`; `test-results/r10-accounts/profile-*` |
+| 60-AC3 Google photo on staging | BLOCKED | Human gate after the staging deploy: Paul signs in with Google and sends a screenshot of the menu and Standings |
+| 60-AC4 seeds twice with migrations | PASS | smoke (seeds `--reset` then plain) |
+| 60 MCP resolved names, no emails | PASS | `src/mcp/announcements.test.ts`; smoke MCP no-`@` checks |
+| 61-AC1 e2e (signed out, roster name returns, rows gone) | PASS | `e2e/delete-account.spec.ts`; `test-results/r10-accounts/delete-{390,1440}/` |
+| 61-AC1 rows gone (integration) | PASS | `src/mutations/account.test.ts` |
+| 61-AC1 Blob object gone | SKIPPED | Approved scope change: pictures are URLs, nothing stored |
+| 61-AC2 last Organizer refused | PASS | `src/mutations/account.test.ts` |
+| Epic ADRs | PASS | `docs/adr/0007-profiles-resolve-by-email.md`, `docs/adr/0008-test-sign-in.md` |
+| Epic docs (Privacy, Terms, `/about`, maintainers' guide, checklist) | PASS | diff reviewed in the code review. `/about` stills unchanged: the demo has no Profiles |
+| Epic closeouts `done` | PASS | this record and the ticket files |
+| Epic CI | pending | read after the PR opens |
+
+**Deviations and scope changes**
+- Ticket 63 (View as) was dropped.
+- Pictures are URLs.
+- `AvatarImage` is used instead of `<img>`.
+- The e2e uses XI.
+- `/_not-found` is now dynamic.
+- S4 is left open.
+
+**Rollout.** Migrations 0018 and 0019 must apply before the staging deploy is checked (maintainers' guide).
+
+**PR:** see the PR link below.

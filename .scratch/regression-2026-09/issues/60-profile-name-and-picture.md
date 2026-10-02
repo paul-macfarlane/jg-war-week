@@ -4,7 +4,7 @@
 
 **Blocked by:** R9 (ticket 55's account menu)
 
-**Status:** in-progress
+**Status:** done
 
 **Owner:** atlas-implement (Claude Opus 5.5), claimed 2026-10-02
 
@@ -33,3 +33,11 @@
 ## Comments
 
 - 2026-10-02 [SCOPE CHANGE] (Paul, during /atlas-plan): "pictures should just be urls, we don't want or need blob storage at this time" and "Users should be able to set the url for their image as well … just no need to upload yet." The picture is a URL the person sets on their Profile, else the Google photo URL, else initials; no upload, no Vercel Blob. Uploads move to Blob later, with AI-edited portraits. See `../epics/R10-execution.md` D12. For this ticket: the e2e sets a picture URL instead of uploading, the preview shows Light and Dark, and AC3 becomes a staging screenshot after a real Google sign-in.
+
+## [AI CODE REVIEW]
+
+See `../epics/R10-execution.md` [AI CODE REVIEW] (one review for the epic, both axes; no open blocking findings).
+
+## [CLOSEOUT]
+
+2026-10-02, branch `feat/regression-r10-accounts`. AC1 PASS (`src/lib/profile.test.ts`); AC2 PASS (`e2e/profile.spec.ts`, `e2e/profile-core.spec.ts`; picture set by URL per the scope change); AC3 BLOCKED on the human gate (Google photo on staging); AC4 PASS (smoke, seeds twice; gate). Commits `e1e3248`, `934e72b`, `0df77f7`. Full record: `../epics/R10-execution.md` [CLOSEOUT].
