@@ -159,12 +159,14 @@ Week is current, in its theme and mode, so first load that edition's demo
 demo.
 
 ```bash
-pnpm tsx scripts/about-media.ts --stills
+pnpm tsx scripts/about-media.ts
 ```
 
-Without `--stills` it also re-records the Finale poster still
-(`finale-poster.png`); only do that when the Finale screen itself changed.
-`--stills` also rewrites the home Standings hero's three stills
+On an edition change, run it with no flag: the Finale poster
+(`finale-poster.png`) wears the old edition's theme, so it must be
+re-recorded too. Use `--stills` only when the poster's edition is unchanged
+(`pnpm tsx scripts/about-media.ts --stills` rewrites the feature-card and
+Standings stills and leaves the poster alone). Either way it rewrites the home Standings hero's three stills
 (`standings-before.png`, `standings-entry.png`, `standings-after.png`).
 
 ### Run a new War Week or change this year's theme (no code first)

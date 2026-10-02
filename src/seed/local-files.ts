@@ -10,14 +10,6 @@ import path from "node:path";
 export const DEMO_SEED = "seeds/demo/xi.json";
 
 /**
- * A live, free-for-all War Week XII demo with fictional Participants, for
- * About's stills (`scripts/about-media.ts`, loaded by `pnpm seed:demo:xii`
- * with the history in place of the upcoming XII). Smoke and e2e never load
- * it: they run on the XI demo.
- */
-export const XII_DEMO_SEED = "seeds/demo/xii.json";
-
-/**
  * Every seed a local test database loads, relative to the repo root: the
  * committed history, with the XI demo in place of the real XI. The live XI
  * demo loads last, so a live demo of another edition (`seed:demo:xii`) is

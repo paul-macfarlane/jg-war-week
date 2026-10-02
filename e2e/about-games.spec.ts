@@ -7,8 +7,9 @@ const EVIDENCE = path.resolve(
 );
 
 /**
- * R3 17-7/15-5, R7 42: `/about`'s Competitions (Brackets and Games) feature card (ticket 03's public page,
- * `src/lib/about.ts`'s `ABOUT_FEATURES`). `/about` is anonymous-accessible
+ * R3 17-7/15-5, R7 42: `/about`'s Competitions (Brackets and Games)
+ * feature card (ticket 03's public page, `src/lib/about.ts`'s
+ * `ABOUT_FEATURES`). `/about` is anonymous-accessible
  * (`PUBLIC_PATHS`), so this needs no sign-in.
  */
 test("about the Competitions feature card shows and screenshots on /about", async ({

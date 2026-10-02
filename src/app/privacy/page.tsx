@@ -80,21 +80,24 @@ export default async function PrivacyPage() {
           </h2>
           <p className="text-foreground/80 leading-relaxed">
             Organizers enter each Participant&apos;s display name, Company Tag,
-            Team and whether that Participant leads it, and an optional email.
-            That email is used only to highlight &quot;You&quot; for the
-            matching signed-in visitor.
+            their Team and whether they lead it (when the War Week has Teams),
+            and an optional email. That email links a signed-in visitor to their
+            Participant: it highlights &quot;You&quot;, and lets them enroll in
+            a Bracket, log Games and report Heats.
           </p>
         </section>
 
         <section className="flex flex-col gap-3">
           <h2 className="text-xl font-semibold tracking-tight">Who did what</h2>
           <p className="text-foreground/80 leading-relaxed">
-            A War Week keeps its Organizer email list and each
-            Competition&apos;s Host emails; the email of whoever entered each
-            Points Entry, shown only to Organizers; and each Announcement
-            author&apos;s email, which is shown on the Announcement to everyone
-            signed in. The email of whoever logs a Game or reports a Bracket
-            result is kept for audit and never shown.
+            The Organizer email list is kept once, for every War Week, and each
+            Competition keeps its Host emails. The email of whoever entered a
+            Points Entry is shown in Admin to Organizers and to that
+            Competition&apos;s Hosts. An Announcement author&apos;s email is
+            shown in Admin to Organizers and Hosts; everyone else sees only the
+            author&apos;s roster name, or the part of their email before the @.
+            The email of whoever logs a Game or reports a Bracket result is kept
+            for audit and never shown.
           </p>
         </section>
 

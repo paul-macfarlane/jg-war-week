@@ -15,12 +15,18 @@ says how to check it.
 - **Viewports:** run every line at laptop **1440×900** and iPhone
   **390×844**.
 - **Theme check:** a page "wears the current War Week" when its themed root
-  (`[data-theme-root]`) carries the same inline theme style as the edition's
-  own home page `/<edition>` (`warWeekThemeStyle` of that War Week: the
-  `--light-*` and `--dark-*` palette tokens and `--font-sans`), and the
-  screenshot shows that edition's colors and font, not a past edition's.
+  (`[data-theme-root]`) carries the inline `--light-*`, `--dark-*` and
+  `--font-sans` of `warWeekThemeStyle` (`src/lib/theme.ts`) for the current
+  War Week, taken from `seeds/demo/<edition>.json`'s colors and font (or, to
+  compare against the app itself, sign in and read `/<edition>`'s root,
+  since `/<edition>` is not public), and the screenshot shows that
+  edition's colors and font, not a past edition's.
 - **No horizontal scroll:** on each page,
   `document.documentElement.scrollWidth <= document.documentElement.clientWidth`.
+  That alone cannot catch clipping (`/about`'s root has `overflow-hidden`),
+  so also check that no visible text element (`h1,h2,h3,p,li,a,button,span`)
+  has a `getBoundingClientRect()` that extends past the viewport's left or
+  right edge.
 - Save a screenshot per page per viewport under
   `test-results/<work-package>/<page>-<width>/` and record each line's result
   in the ticket's closeout.

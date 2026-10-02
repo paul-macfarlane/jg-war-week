@@ -95,6 +95,19 @@ describe("PrivacyPage", () => {
     expect(text).toMatch(/Neon/i);
   });
 
+  it("says who sees the emails of whoever did what", async () => {
+    getCurrentWarWeek.mockResolvedValue(undefined);
+    const { text } = await render();
+    expect(text).toMatch(
+      /Organizer email list is kept once, for every War Week/,
+    );
+    expect(text).toMatch(
+      /Points Entry is shown in Admin to Organizers and to that Competition.{1,6}s Hosts/,
+    );
+    expect(text).toMatch(/log Games and report Heats/);
+    expect(text).toMatch(/kept for audit and never shown/);
+  });
+
   it("says there is no analytics and shows no email address", async () => {
     getCurrentWarWeek.mockResolvedValue(undefined);
     const { html, text } = await render();

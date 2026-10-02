@@ -357,8 +357,9 @@ const PUBLIC_PATHS = ["/about", "/privacy", "/terms"];
 
 /**
  * The only paths reachable without a session: the sign-in page,
- * better-auth's own routes and the About, Privacy and Terms pages (static
- * copy and media, no War Week data). Everything else needs a Jahnel Group
+ * better-auth's own routes and the About, Privacy and Terms pages (copy and
+ * media; they read only the current War Week's Appearance Theme, no other War
+ * Week data). Everything else needs a Jahnel Group
  * sign-in, except that `/api/mcp` also takes `canUseMcp` (see CONTEXT.md,
  * "Access rules"). A prefix matches itself or a `/`-separated subpath,
  * never `/sign-inx`.

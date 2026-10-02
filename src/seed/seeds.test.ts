@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { DEMO_SEED, XII_DEMO_SEED } from "@/seed/local-files";
+import { DEMO_SEED } from "@/seed/local-files";
 import { type WarWeekSeed, warWeekSeedSchema } from "@/seed/schema";
 
 /**
@@ -27,7 +27,10 @@ const all = files.map(load).sort((a, b) => a.year - b.year);
 const seeds = all.filter((s) => s.status === "complete");
 const demo = load(path.relative(SEEDS_DIR, DEMO_SEED_PATH));
 const xiiDemo = load(
-  path.relative(SEEDS_DIR, path.resolve(__dirname, "../..", XII_DEMO_SEED)),
+  path.relative(
+    SEEDS_DIR,
+    path.resolve(__dirname, "../..", "seeds/demo/xii.json"),
+  ),
 );
 
 describe("War Week history", () => {
@@ -225,7 +228,6 @@ describe("War Week XII demo", () => {
   const xii = all.find((s) => s.edition === "xii")!;
 
   it("is a live, free-for-all XII in XII's Story Theme, colors and font", () => {
-    expect(path.basename(XII_DEMO_SEED)).toBe("xii.json");
     expect(xiiDemo).toMatchObject({
       edition: "xii",
       year: 2027,

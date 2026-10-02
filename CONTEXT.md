@@ -79,6 +79,10 @@ Do not use these words in code (identifiers, comments, UI copy). Use the
 | Tournament  | Competition                                                          |
 | Admin (a person or role) | Organizer or Host; "Admin" names only the `/admin` area   |
 
+(Exception: "the Jahnel Group admins" on Privacy and Terms means the
+company's administrators, who act on data requests. It is not an app role,
+so it is allowed there.)
+
 Seed content copied verbatim from `old-wikis/` (e.g. a day theme literally
 called "Tournament Day") is exempt: it is historical data, not code, and the
 banned-term scan only covers `src/`, `scripts/`, and `drizzle/`.

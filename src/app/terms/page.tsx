@@ -16,8 +16,8 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 /**
- * The public Terms page: plain-language terms for using JG War Week. Static
- * Copy only, but like `/about` it wears the current War Week's Appearance
+ * The public Terms page: plain-language terms for using JG War Week. Copy only,
+ * but like `/about` it wears the current War Week's Appearance
  * Theme (`getCurrentWarWeek`), else `ABOUT_FALLBACK_THEME`. No session reads;
  * still one of the `PUBLIC_PATHS` in `src/lib/access.ts`.
  */

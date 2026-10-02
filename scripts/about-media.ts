@@ -1,7 +1,7 @@
 /**
  * Writes the About page's media (tickets 28, 03, 04, 43) from the current
  * War Week's seeded demo, never by hand: `public/about/finale-poster.png`
- * (its Finale on a phone, mid-countdown; a still only — no Finale video is
+ * (its Finale's Start screen on a phone; a still only — no Finale video is
  * written or shown), the hero's `standings-before.png` /
  * `standings-entry.png` / `standings-after.png` (an Organizer's real Points
  * Entry moving the home Standings), and one still per feature card at
@@ -136,14 +136,17 @@ async function createSession(email: string): Promise<string> {
 /**
  * The current War Week, resolved as `getCurrentWarWeek` does
  * (`selectCurrentWarWeek`): live, else the earliest upcoming, else the
- * latest completed.
+ * latest completed, with the same `editionNumber` tie-breaks (the SQL
+ * mirrors it, as importing the selector would load the app's database).
  */
 async function resolveCurrentWarWeek(): Promise<CurrentWarWeek> {
   const [row] = await query<CurrentWarWeek>(
     `select id, edition, mode, background_color from war_week
+     where status in ('live', 'upcoming', 'complete')
      order by case status when 'live' then 0 when 'upcoming' then 1 else 2 end,
        case when status = 'upcoming' then start_date end asc,
-       start_date desc
+       case when status = 'upcoming' then edition_number end asc,
+       start_date desc, edition_number desc
      limit 1`,
   );
   if (!row) {
@@ -294,7 +297,7 @@ class Page {
 
   async goto(target: string, settleMs = 2_500) {
     await this.send("Page.navigate", {
-      url: target.startsWith("data:") ? target : `${BASE_URL}${target}`,
+      url: `${BASE_URL}${target}`,
     });
     await sleep(settleMs);
   }
@@ -575,22 +578,20 @@ async function setupBracketDemo(): Promise<{
 
 async function still(
   slug: string,
-  cookie: string | null,
+  cookie: string,
   target: string,
   prepare?: (page: Page) => Promise<void>,
   viewport: { width: number; height: number } = STILL,
 ) {
   const page = await Page.open();
   await page.viewport(viewport, viewport === PHONE);
-  if (cookie) await page.cookie(cookie);
+  await page.cookie(cookie);
   await page.goto(target);
   if (prepare) await prepare(page);
   await assertNoRealEmail(page, slug);
   await page.screenshot(path.join(MEDIA, `${slug}.png`));
   await page.close();
-  note(
-    `still: ${slug} from ${target.startsWith("data:") ? "a rendered card" : target}`,
-  );
+  note(`still: ${slug} from ${target}`);
 }
 
 /**
@@ -759,13 +760,10 @@ async function selectLabeledCombobox(
 /**
  * Logs one head-to-head Game through the real Game form (the
  * `logGame` action, as the demo Organizer): opens "Log a Game" from the
- * Competition page, picks both players and who won, and saves. Returns the
- * logged Game's id so the caller can undo it in `finally`.
+ * Competition page, picks both players and who won, and saves. The
+ * `finally` undoes the Game by the demo email (`teardownGamesDemo`).
  */
-async function captureGamesDemo(cookie: string): Promise<{
-  gameId: string;
-  competitionId: string;
-}> {
+async function captureGamesDemo(cookie: string): Promise<void> {
   const { competitionId, playerA, playerB } = await findGamesDemo();
   const page = await Page.open();
   await page.viewport(STILL, false);
@@ -881,19 +879,14 @@ async function captureGamesDemo(cookie: string): Promise<{
     `evidence: games from ${home()}/competitions/${competitionId}, one Game logged`,
   );
   await page.close();
-
-  const [row] = await query<{ id: string }>(
-    `select id from game where competition_id = $1 and logged_by_email = $2
-     order by created_at desc limit 1`,
-    [competitionId, DEMO_EMAIL],
-  );
-  if (!row) throw new Error("could not find the demo Game to undo");
-  return { gameId: row.id, competitionId };
 }
 
-/** Undoes the one Game `captureGamesDemo` logged. */
-async function teardownGamesDemo(gameId: string) {
-  await query(`delete from game where id = $1`, [gameId]);
+/**
+ * Undoes every Game the demo Organizer logged (the one `captureGamesDemo`
+ * saves), by the demo email, so a throw after the save still cleans up.
+ */
+async function teardownGamesDemo() {
+  await query(`delete from game where logged_by_email = $1`, [DEMO_EMAIL]);
 }
 
 // ---------------------------------------------------------------------------
@@ -928,7 +921,7 @@ async function standingsDemoCompetition(): Promise<string> {
  * form and the real `get_leaderboard` MCP tool to read the Standings, not a
  * hand-crafted fixture.
  */
-async function captureStandingsDemo(cookie: string): Promise<string> {
+async function captureStandingsDemo(cookie: string): Promise<void> {
   const competition = await standingsDemoCompetition();
   await still(
     "standings-before",
@@ -968,6 +961,9 @@ async function captureStandingsDemo(cookie: string): Promise<string> {
   await page.screenshot(path.join(MEDIA, "standings-entry.png"));
   note("still: standings-entry from /admin/points, filled in");
 
+  // The save may land even if a later check throws: remember how many
+  // entries the demo Organizer holds now, so the teardown can tell.
+  standingsEntryBaseline = await demoEntryCount();
   await page.evaluate(
     `document.querySelector('form[aria-label="Points Entry"] button[type="submit"]').click()`,
   );
@@ -1003,18 +999,37 @@ async function captureStandingsDemo(cookie: string): Promise<string> {
   if (after.standings[0]?.name !== last.name) {
     throw new Error("the demo Points Entry did not move last place to first");
   }
-
-  const [entry] = await query<{ id: string }>(
-    `select id from points_entry where entered_by_email = $1 order by created_at desc limit 1`,
-    [DEMO_EMAIL],
-  );
-  if (!entry) throw new Error("could not find the demo Points Entry to undo");
-  return entry.id;
 }
 
-/** Undoes the one Points Entry `captureStandingsDemo` created. */
-async function teardownStandingsDemo(entryId: string) {
-  await query(`delete from points_entry where id = $1`, [entryId]);
+/** Points Entries credited to the demo Organizer (the lent seeded ones too). */
+async function demoEntryCount(): Promise<number> {
+  const [row] = await query<{ n: string }>(
+    `select count(*)::text as n from points_entry where entered_by_email = $1`,
+    [DEMO_EMAIL],
+  );
+  return Number(row.n);
+}
+
+/** The demo Organizer's entry count just before the Standings save; null before. */
+let standingsEntryBaseline: number | null = null;
+
+/**
+ * Undoes the Points Entry `captureStandingsDemo` saved, if one landed: the
+ * seeded entries are lent to the demo Organizer (`lendAuthorship`), so this
+ * runs before the authorship is restored and removes only the newest one,
+ * and only when the count grew past the baseline.
+ */
+async function teardownStandingsDemo() {
+  if (standingsEntryBaseline === null) return;
+  if ((await demoEntryCount()) > standingsEntryBaseline) {
+    await query(
+      `delete from points_entry where id = (
+         select id from points_entry where entered_by_email = $1
+         order by created_at desc limit 1)`,
+      [DEMO_EMAIL],
+    );
+  }
+  standingsEntryBaseline = null;
 }
 
 // ---------------------------------------------------------------------------
@@ -1139,14 +1154,6 @@ async function main() {
     `current War Week: ${current.edition} (${current.mode}, ${pinnedDisplay()} base palette)`,
   );
   const scheduleAt = await scheduleTime();
-  await query(
-    `insert into organizer (email) values ($1) on conflict (email) do nothing`,
-    [DEMO_EMAIL],
-  );
-  const restoreAuthorship = await lendAuthorship();
-  const cookie = await createSession(DEMO_EMAIL);
-  const bracketDemo = await setupBracketDemo();
-
   const server = spawn("pnpm", ["start", "-p", String(PORT)], {
     env: {
       ...process.env,
@@ -1160,10 +1167,20 @@ async function main() {
     detached: true,
   });
   const chrome = launchChrome();
-  let standingsEntryId: string | undefined;
-  let gamesDemoGameId: string | undefined;
+  let restoreAuthorship: (() => Promise<void>) | undefined;
+  let bracketDemo: Awaited<ReturnType<typeof setupBracketDemo>> | undefined;
 
   try {
+    // Setup is inside the `try`, so the `finally` undoes whatever got done.
+    await query(
+      `insert into organizer (email) values ($1) on conflict (email) do nothing`,
+      [DEMO_EMAIL],
+    );
+    restoreAuthorship = await lendAuthorship();
+    const cookie = await createSession(DEMO_EMAIL);
+    bracketDemo = await setupBracketDemo();
+    const bracketCompetitionId = bracketDemo.competitionId;
+
     for (let i = 0; i < 60; i++) {
       await sleep(500);
       if (
@@ -1177,9 +1194,8 @@ async function main() {
     await waitForChrome();
 
     // Undone straight away, so the later stills show the seeded Standings.
-    standingsEntryId = await captureStandingsDemo(cookie);
-    await teardownStandingsDemo(standingsEntryId);
-    standingsEntryId = undefined;
+    await captureStandingsDemo(cookie);
+    await teardownStandingsDemo();
 
     if (!STILLS_ONLY) await recordFinale(cookie);
 
@@ -1213,15 +1229,14 @@ async function main() {
     await still(
       "competitions",
       cookie,
-      `${home()}/competitions/${bracketDemo.competitionId}`,
+      `${home()}/competitions/${bracketCompetitionId}`,
       async (page) => {
         const found = await page.evaluate<boolean>(scrollToText("champion"));
         await sleep(300);
         if (!found) throw new Error("no champion card on the Bracket view");
       },
     );
-    const gamesDemo = await captureGamesDemo(cookie);
-    gamesDemoGameId = gamesDemo.gameId;
+    await captureGamesDemo(cookie);
     await still("archive", cookie, "/history");
     await evidence();
 
@@ -1237,24 +1252,41 @@ async function main() {
       );
     }
   } finally {
-    chrome.process.kill();
-    try {
+    // Every undo runs on its own: one throwing must not skip the rest.
+    const errors: unknown[] = [];
+    const attempt = async (step: () => Promise<unknown> | unknown) => {
+      try {
+        await step();
+      } catch (error) {
+        errors.push(error);
+      }
+    };
+    await attempt(() => chrome.process.kill());
+    await attempt(() => {
       if (server.pid) process.kill(-server.pid, "SIGTERM");
-    } catch {
-      // server already gone
-    }
+    });
     await sleep(1_000);
-    rmSync(chrome.dir, { recursive: true, force: true, maxRetries: 3 });
-    if (standingsEntryId) await teardownStandingsDemo(standingsEntryId);
-    if (gamesDemoGameId) await teardownGamesDemo(gamesDemoGameId);
-    await query(`delete from organizer where email = $1`, [DEMO_EMAIL]);
-    await restoreAuthorship();
-    await query(`delete from "user" where email = $1`, [DEMO_EMAIL]);
-    await bracketDemo.teardown();
-    writeFileSync(
-      path.join(EVIDENCE, "about-media.txt"),
-      log.join("\n") + "\n",
+    await attempt(() =>
+      rmSync(chrome.dir, { recursive: true, force: true, maxRetries: 3 }),
     );
+    await attempt(() => teardownStandingsDemo());
+    await attempt(() => teardownGamesDemo());
+    await attempt(() =>
+      query(`delete from organizer where email = $1`, [DEMO_EMAIL]),
+    );
+    if (restoreAuthorship) await attempt(restoreAuthorship);
+    await attempt(() =>
+      query(`delete from "user" where email = $1`, [DEMO_EMAIL]),
+    );
+    if (bracketDemo) await attempt(bracketDemo.teardown);
+    await attempt(() =>
+      writeFileSync(
+        path.join(EVIDENCE, "about-media.txt"),
+        log.join("\n") + "\n",
+      ),
+    );
+    for (const error of errors) console.error("cleanup failed:", error);
+    if (errors.length > 0) process.exitCode = 1;
   }
 }
 

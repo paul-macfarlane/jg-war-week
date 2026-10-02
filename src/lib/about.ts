@@ -1,9 +1,9 @@
 import type { ThemeColors } from "@/lib/theme";
 
 /**
- * The theme of `/about`, `/privacy` and `/terms` (tickets 03, 44) when no War Week exists at all (an empty
- * database, e.g. before the first `seed:load`): a neutral black-on-white
- * look so the page stays readable rather than wearing a stale edition's
+ * The theme of `/about`, `/privacy` and `/terms` (tickets 03, 44) when no
+ * War Week exists at all (an empty database, e.g. before the first
+ * `seed:load`): a neutral black-on-white look so the page stays readable rather than wearing a stale edition's
  * colors. Whenever a War Week exists, those pages wear *its* Appearance
  * Theme instead (`getCurrentWarWeek`, same resolution the root page uses:
  * live, else next upcoming, else most recent completed).
@@ -20,21 +20,22 @@ export const ABOUT_FALLBACK_THEME: ThemeColors = {
 /**
  * The feature cards, in the app's navigation order with setup first. Each
  * `slug` names a still at `public/about/<slug>.png`, written by
- * `scripts/about-media.ts`; the Finale is the video hero, not a card. Copy is
- * mode-neutral: it reads the same for Teams and free-for-all editions.
+ * `scripts/about-media.ts`. The hero is the Standings stills; the Finale is a
+ * still poster below the grid, not a card. Copy is mode-neutral: it reads
+ * the same for Teams and free-for-all editions.
  */
 export const ABOUT_FEATURES = [
   {
     slug: "organizer-setup",
     title: "Organizer and Host setup",
     text: "Organizers set up the War Week, Days, schedule, roster and Competitions under Admin. Hosts get just their Competition and enter its points themselves.",
-    alt: "The Admin Setup screen listing War Week, Days, Teams, Competitions, Schedule and FAQ.",
+    alt: "The Admin Setup screen listing War Week, Days, Teams & roster, Competitions, Schedule and FAQ.",
   },
   {
     slug: "schedule",
     title: "Schedule, Now and Next",
     text: "Every Day Theme and every item on the ET clock. The home screen says what's on now and what's up next, so nobody has to ask.",
-    alt: "War Week XII's home: today's Day Theme, what's on now and what's up next on the ET clock, then the pinned Announcement.",
+    alt: "The current War Week's home: today's Day Theme, what's on now and what's up next on the ET clock, then the pinned Announcement.",
   },
   {
     slug: "points",
@@ -46,7 +47,7 @@ export const ABOUT_FEATURES = [
     slug: "announcements",
     title: "Announcements",
     text: "Organizers post rich-text Announcements with video and pin one to the home screen for everyone.",
-    alt: "War Week XII's Announcements feed with its pinned welcome Announcement.",
+    alt: "The current War Week's Announcements feed with its pinned welcome Announcement.",
   },
   {
     slug: "competitions",

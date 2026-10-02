@@ -20,7 +20,8 @@ docker compose up -d          # starts local Postgres on localhost:2345
 pnpm install
 pnpm db:migrate
 pnpm seed:all                 # loads every War Week, 2016 (I) to 2026 (XI)
-pnpm seed:demo                # optional: replaces XI with the live demo
+pnpm seed:demo                # optional: the XI demo, live (smoke/e2e use it)
+pnpm seed:demo:xii            # optional: the XII demo, live (About's stills)
 pnpm dev                      # http://localhost:3000
 ```
 
@@ -31,7 +32,10 @@ pnpm dev                      # http://localhost:3000
 Drive documents it links to; XI holds its real final scoreboard.
 `seeds/demo/xi.json` is a live War Week XI with fictional mid-week demo
 data (a close race, Announcements, Awards and Games). Smoke, e2e and
-`pnpm seed:demo` load it in place of the real XI; the Seed workflow only
+`pnpm seed:demo` load it in place of the real XI. `seeds/demo/xii.json` is a
+live, free-for-all War Week XII with fictional Participants, loaded by
+`pnpm seed:demo:xii` (in place of the upcoming XII) for About's stills
+(`scripts/about-media.ts`); smoke and e2e never load it. The Seed workflow only
 loads `seeds/*.json`, so it never reaches a deployed database. Edit a file and reload it; setup data follows the seed, while keyed
 Points Entries, Awards and Announcements are only inserted once (see
 `CONTEXT.md`, "Seed idempotence rules"). Organizers can also edit War Week
