@@ -16,3 +16,16 @@ export const E2E_AUTH_SECRET =
 
 /** e2e users never share an email with a real person. */
 export const E2E_EMAIL_PATTERN = "e2e-%";
+
+/**
+ * Test sign-in's secret for the e2e server: a fixed 40-character test value,
+ * not a secret. Test sign-in is never on in Production.
+ */
+export const E2E_TEST_SIGN_IN_SECRET =
+  "e2e-test-sign-in-secret-not-a-real-value";
+
+/**
+ * e2e users outside `E2E_EMAIL_PATTERN` (a `+` alias can't start `e2e-`),
+ * removed by exact match.
+ */
+export const E2E_EXACT_EMAILS = ["e2e+linked@jahnelgroup.com"];

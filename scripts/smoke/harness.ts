@@ -32,6 +32,9 @@ export const childEnv = {
   GOOGLE_CLIENT_ID: "",
   GOOGLE_CLIENT_SECRET: "",
   MCP_TOKEN,
+  // Test sign-in off, as on Production. Explicit blanks win over .env.local.
+  TEST_SIGN_IN_SECRET: "",
+  VERCEL_ENV: "",
 };
 
 /**

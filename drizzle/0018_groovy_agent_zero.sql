@@ -1,0 +1,1 @@
+ALTER TABLE "session" ADD COLUMN "test_sign_in" boolean DEFAULT false NOT NULL;

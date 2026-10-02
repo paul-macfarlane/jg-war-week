@@ -692,6 +692,8 @@ export const session = pgTable(
       .references(() => user.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    // Written only by Test sign-in (`src/actions/test-sign-in.ts`).
+    testSignIn: boolean("test_sign_in").notNull().default(false),
   },
   (table) => [index("session_user_id_idx").on(table.userId)],
 );

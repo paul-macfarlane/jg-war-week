@@ -7,6 +7,7 @@ import { trustedOrigins } from "@/auth/trusted-origins";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { JG_EMAIL_DOMAIN, isJahnelGroupEmail } from "@/lib/access";
+import { type SessionIdentity, sessionIdentity } from "@/lib/test-sign-in";
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -41,6 +42,20 @@ export const auth = betterAuth({
       verification: schema.verification,
     },
   }),
+  session: {
+    additionalFields: {
+      // Set only by Test sign-in; never from a request body.
+      testSignIn: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+        input: false,
+      },
+    },
+  },
+  // No self-service profile edits: otherwise any signed-in user could set
+  // their own `user.name` or `user.image` to anything.
+  disabledPaths: ["/update-user"],
   socialProviders: isGoogleConfigured
     ? {
         google: {
@@ -72,11 +87,26 @@ export const auth = betterAuth({
 });
 
 /**
- * The signed-in user's email for this request, or `null` when anonymous.
- * A session whose email isn't a Jahnel Group email counts as anonymous.
+ * Who is signed in for this request, or `null` when anonymous. A session
+ * counts as anonymous when its email isn't a Jahnel Group email, or when it
+ * is a Test sign-in session and Test sign-in is off (`sessionIdentity`).
  */
-export const getSessionEmail = cache(async (): Promise<string | null> => {
-  const session = await auth.api.getSession({ headers: await headers() });
-  const email = session?.user.email;
-  return isJahnelGroupEmail(email) ? email!.trim().toLowerCase() : null;
-});
+export const getSessionIdentity = cache(
+  async (): Promise<SessionIdentity | null> => {
+    const session = await auth.api.getSession({ headers: await headers() });
+    return sessionIdentity(
+      session && {
+        email: session.user.email,
+        sessionId: session.session.id,
+        testSignIn: session.session.testSignIn === true,
+      },
+      process.env,
+    );
+  },
+);
+
+/** The signed-in user's email for this request, or `null` when anonymous. */
+export const getSessionEmail = cache(
+  async (): Promise<string | null> =>
+    (await getSessionIdentity())?.email ?? null,
+);
