@@ -102,12 +102,13 @@ export default async function AdminSettingsPage() {
           aria-labelledby="war-week-settings-heading"
           className="flex flex-col gap-2"
         >
-          <h2 id="war-week-settings-heading" className="text-lg font-semibold">
-            War Week settings
-          </h2>
           <WarWeekSettingsForm
             warWeekId={warWeek.id}
-            key={warWeek.updatedAt.toISOString()}
+            headingId="war-week-settings-heading"
+            // Its own saves refresh the page without remounting it (that
+            // would drop typing in flight); End and Reopen, which change
+            // the Winner and highlights, remount it with theirs.
+            key={`${warWeek.id}:${warWeek.status}`}
             initial={settingsInputFrom(warWeek)}
             dayDates={days.map((day) => day.date)}
             teamSwatches={teamSwatches(teams)}

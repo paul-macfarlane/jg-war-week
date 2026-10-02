@@ -42,7 +42,7 @@ test.describe("forms", () => {
     });
   });
 
-  test("the settings form refused on the server shows under Slack URL and focuses it", async ({
+  test("a settings autosave refused on the server shows under Slack URL and keeps the value", async ({
     context,
     page,
   }, testInfo) => {
@@ -50,8 +50,8 @@ test.describe("forms", () => {
     await page.goto("/admin/settings");
     const form = page.getByRole("form", { name: "War Week settings" });
     const slackUrl = form.getByLabel("Slack URL");
+    // No Save: the field saves itself once typing stops (r9 59).
     await slackUrl.fill("http://slack.example.com/x");
-    await form.getByRole("button", { name: "Save settings" }).click();
 
     const slackField = form
       .getByRole("group")
@@ -62,9 +62,7 @@ test.describe("forms", () => {
       }),
     ).toBeVisible();
     await expect(slackUrl).toHaveAttribute("aria-invalid", "true");
-    await expect
-      .poll(() => page.evaluate(() => document.activeElement?.id))
-      .toBe("settings-slackChannelUrl");
+    await expect(slackUrl).toHaveValue("http://slack.example.com/x");
     await page.screenshot({
       path: testInfo.outputPath("settings-field-error.png"),
       fullPage: true,

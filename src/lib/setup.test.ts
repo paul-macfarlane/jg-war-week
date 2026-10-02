@@ -19,6 +19,7 @@ import {
   parseWarWeekSettingsInput,
   participantGuardError,
   settingsGuardError,
+  settingsSaveGroup,
   teamGuardError,
 } from "@/lib/setup";
 
@@ -824,5 +825,30 @@ describe("setup parsers' field errors", () => {
       error: "The form's fields are missing.",
       fieldErrors: {},
     });
+  });
+});
+
+describe("settingsSaveGroup", () => {
+  it("saves a text field on its own", () => {
+    expect(settingsSaveGroup("storyTheme")).toEqual(["storyTheme"]);
+    expect(settingsSaveGroup("slackChannelUrl")).toEqual(["slackChannelUrl"]);
+  });
+
+  it("saves the date range as one", () => {
+    expect(settingsSaveGroup("startDate")).toEqual(["startDate", "endDate"]);
+    expect(settingsSaveGroup("endDate")).toEqual(["startDate", "endDate"]);
+  });
+
+  it("saves the background with every override, so a light/dark flip and the overrides it clears land together", () => {
+    const group = [
+      "backgroundColor",
+      "overridePrimaryColor",
+      "overridePrimaryForegroundColor",
+      "overrideAccentColor",
+      "overrideBackgroundColor",
+      "overrideForegroundColor",
+    ];
+    expect(settingsSaveGroup("backgroundColor")).toEqual(group);
+    expect(settingsSaveGroup("overrideAccentColor")).toEqual(group);
   });
 });

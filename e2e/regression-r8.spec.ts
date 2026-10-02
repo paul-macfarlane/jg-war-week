@@ -1,16 +1,37 @@
-import { expect, test } from "@playwright/test";
+import { type Page, expect, test } from "@playwright/test";
 
 import { formatDateLabel, parseDateValue } from "@/lib/date-value";
 
+import { runQuery } from "./db";
 import { asOrganizer } from "./session";
 
 // Epic R8: quick fixes (.scratch/regression-2026-09/epics/R8-*).
 
-test("r8 50 the date range picker stays open until Done", async ({
+type XiDates = { start_date: string; end_date: string };
+
+function readXiDates() {
+  return runQuery<XiDates>(
+    "select start_date::text, end_date::text from war_week where edition = 'xi'",
+  ).then(([row]) => row);
+}
+
+test("r8 50 the date range picker stays open until Done, then the range saves itself", async ({
   context,
   page,
 }) => {
   await asOrganizer(context);
+  const before = await readXiDates();
+  try {
+    await rangePickerStaysOpenUntilDone(page);
+  } finally {
+    await runQuery(
+      "update war_week set start_date = $1::date, end_date = $2::date where edition = 'xi'",
+      [before.start_date, before.end_date],
+    );
+  }
+});
+
+async function rangePickerStaysOpenUntilDone(page: Page) {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/admin/settings");
 
@@ -48,4 +69,10 @@ test("r8 50 the date range picker stays open until Done", async ({
   );
   await expect(form.locator('input[name="startDate"]')).toHaveValue(start);
   await expect(form.locator('input[name="endDate"]')).toHaveValue(end);
-});
+
+  // r9 59: after Done the range autosaves, start and end together.
+  await expect(page.locator('[data-slot="autosave-status"]')).toHaveText(
+    "Saved",
+  );
+  expect(await readXiDates()).toEqual({ start_date: start, end_date: end });
+}
