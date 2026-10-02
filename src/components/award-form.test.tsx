@@ -14,6 +14,7 @@ vi.mock("@/actions/awards", () => ({
 const options = {
   teams: [{ id: "team-red", name: "Red" }],
   participants: [],
+  categories: [{ id: "cat-mvp", name: "War Week MVP" }],
 };
 
 function render(

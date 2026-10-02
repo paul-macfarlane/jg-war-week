@@ -48,9 +48,15 @@ export type Actor = {
  */
 export type SelfAction = "profile.save" | "account.delete";
 
-/** The Organizer list family: global, so it takes no target. */
+/**
+ * The global Organizer-only families (the Organizer list, Award Categories):
+ * no War Week, so they take no target.
+ */
 export type OrganizerListAction =
-  "organizers.view" | "organizers.add" | "organizers.remove";
+  | "organizers.view"
+  | "organizers.add"
+  | "organizers.remove"
+  | `award-category.${"create" | "rename" | "archive" | "restore"}`;
 
 type Crud = "create" | "edit" | "delete";
 
@@ -127,6 +133,10 @@ const ORGANIZER_ONLY: Partial<
   "organizers.view": "see the Organizer list",
   "organizers.add": "add an Organizer",
   "organizers.remove": "remove an Organizer",
+  "award-category.create": "add Award Categories",
+  "award-category.rename": "rename Award Categories",
+  "award-category.archive": "archive Award Categories",
+  "award-category.restore": "restore Award Categories",
   "settings.save": "change War Week settings",
   "lifecycle.start": "start a War Week",
   "lifecycle.end": "end a War Week",

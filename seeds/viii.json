@@ -651,13 +651,15 @@
       "key": "billable-hours-champ",
       "name": "Billable Hours Champ",
       "description": "Ravenclaw earned the top 10 points in Billable Hours in the final standings.",
-      "team": "Ravenclaw"
+      "team": "Ravenclaw",
+      "category": "billable-hours-champ"
     },
     {
       "key": "midnight-club-winning-house",
       "name": "Midnight Club Winning House",
       "description": "Slytherin had 13 Midnight Club members.",
-      "team": "Slytherin"
+      "team": "Slytherin",
+      "category": "black-midnight"
     },
     {
       "key": "tri-wizard-tournament-champion",

@@ -1,7 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
-import { award, awardParticipant } from "@/db/schema";
+import { award, awardCategory, awardParticipant } from "@/db/schema";
 import type { AwardValues } from "@/lib/awards";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 import { recipientsInWarWeek } from "@/queries/awards";
@@ -22,6 +22,27 @@ async function recipientsError(
   const found = await recipientsInWarWeek(warWeekId, values, dbOrTx);
   if (!found.team) return "Choose a Team of this War Week.";
   if (!found.participants) return "Choose Participants of this War Week.";
+  return null;
+}
+
+/**
+ * Refuses an unknown Category, and an archived one that isn't already the
+ * Award's (`currentId`): archiving keeps it on past Awards, not new picks.
+ */
+async function categoryError(
+  categoryId: string | null,
+  currentId: string | null,
+  dbOrTx: DBOrTx,
+): Promise<string | null> {
+  if (!categoryId) return null;
+  const [found] = await dbOrTx
+    .select({ archivedAt: awardCategory.archivedAt })
+    .from(awardCategory)
+    .where(eq(awardCategory.id, categoryId));
+  if (!found) return "Choose a Category from the list.";
+  if (found.archivedAt && categoryId !== currentId) {
+    return "That Category is archived. Choose another.";
+  }
   return null;
 }
 
@@ -46,6 +67,12 @@ export async function createAward(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const refusal = await recipientsError(values, ctx.warWeekId, tx);
     if (refusal) return { ok: false, error: refusal };
+    const categoryRefusal = await categoryError(
+      values.categoryId ?? null,
+      null,
+      tx,
+    );
+    if (categoryRefusal) return { ok: false, error: categoryRefusal };
 
     const [created] = await tx
       .insert(award)
@@ -54,6 +81,7 @@ export async function createAward(
         name: values.name,
         description: values.description,
         teamId: values.teamId,
+        categoryId: values.categoryId ?? null,
       })
       .returning({ id: award.id });
     await insertRecipients(created.id, values.participantIds, tx);
@@ -71,6 +99,17 @@ export async function updateAward(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const refusal = await recipientsError(values, ctx.warWeekId, tx);
     if (refusal) return { ok: false, error: refusal };
+    const [current] = await tx
+      .select({ categoryId: award.categoryId })
+      .from(award)
+      .where(inWarWeek(id, ctx.warWeekId));
+    if (!current) return { ok: false, error: NOT_FOUND };
+    const categoryRefusal = await categoryError(
+      values.categoryId ?? null,
+      current.categoryId,
+      tx,
+    );
+    if (categoryRefusal) return { ok: false, error: categoryRefusal };
 
     const updated = await tx
       .update(award)
@@ -78,6 +117,7 @@ export async function updateAward(
         name: values.name,
         description: values.description,
         teamId: values.teamId,
+        categoryId: values.categoryId ?? null,
         updatedAt: sql`now()`,
       })
       .where(inWarWeek(id, ctx.warWeekId))
