@@ -21,7 +21,9 @@ test("about the Competitions feature card shows and screenshots on /about", asyn
   const card = page.locator('[data-feature="competitions"]');
   await card.scrollIntoViewIfNeeded();
   await expect(
-    card.getByRole("heading", { name: /Competitions: Brackets and Games/ }),
+    card.getByRole("heading", {
+      name: /Competitions: Brackets, Games and Participation/,
+    }),
   ).toBeVisible();
 
   await card.screenshot({ path: EVIDENCE });

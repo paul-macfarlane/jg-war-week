@@ -191,6 +191,7 @@ export async function assertMcp() {
       "get_history",
       "get_bracket",
       "get_games",
+      "get_participation",
     ]) {
       if (tools.some((tool) => tool.name === name)) {
         ok(`MCP tools/list includes ${name}`);
@@ -431,6 +432,22 @@ export async function assertMcp() {
       ok(gamesBracketCheck);
     } else {
       fail(gamesBracketCheck, `result=${JSON.stringify(gamesBracket.raw)}`);
+    }
+
+    const participation = await callTool(18, "get_participation", {
+      competition: "Daily Workout Check-in",
+    });
+    const participationCheck =
+      "MCP get_participation(Daily Workout Check-in) returns its settings and who took part with no @";
+    if (
+      participation.parsed?.found === true &&
+      participation.parsed.competition?.name === "Daily Workout Check-in" &&
+      Array.isArray(participation.parsed.tookPart) &&
+      !JSON.stringify(participation.parsed).includes("@")
+    ) {
+      ok(participationCheck);
+    } else {
+      fail(participationCheck, `result=${JSON.stringify(participation.raw)}`);
     }
 
     const faq = await callTool(15, "get_faq", {});

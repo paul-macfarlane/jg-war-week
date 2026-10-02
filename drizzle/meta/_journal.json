@@ -162,6 +162,34 @@
       "when": 1790970769295,
       "tag": "0022_drop-announcement-video-urls",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790975067721,
+      "tag": "0023_spotty_fantastic_four",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790975086830,
+      "tag": "0024_broken_thunderbolt",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790976310449,
+      "tag": "0025_large_exodus",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1790976311201,
+      "tag": "0026_seed-award-categories",
+      "breakpoints": true
     }
   ]
 }

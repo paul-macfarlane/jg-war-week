@@ -36,6 +36,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { WarWeek } from "@/db/schema";
 import { type Format, formatLabel, isBracketFormat } from "@/lib/bracket/view";
+import { setupHref, setupLinkLabel } from "@/lib/competitions";
 import { COMPETITION_FORMATS, GAME_TYPES, type GameType } from "@/lib/enums";
 import { gameTypeLabel } from "@/lib/games/config";
 import type { CompetitionInput } from "@/lib/setup";
@@ -49,6 +50,8 @@ const FORMAT_DESCRIPTIONS: Record<Format, string> = {
     "A Bracket where Entrants play in Heats; a set number advance each Round.",
   games:
     "Players log Games themselves and a leaderboard ranks them. Chosen only here: a Games Competition keeps its Format.",
+  participation:
+    "Points for taking part: the Host ticks who took part, or Participants check in. Chosen only here: a Participation Competition keeps its Format.",
 };
 
 /** How each Game Type decides a Game, shown when Games is chosen. */
@@ -57,13 +60,6 @@ const GAME_TYPE_DESCRIPTIONS: Record<GameType, string> = {
   "best-score": "Each Game records a score; the best or the total counts.",
   ranked: "Each Game records a finishing order, worth Finish Points.",
 };
-
-/** Where a saved Competition of this Format is set up, or null for points. */
-function setupHref(competition: Pick<SetupCompetition, "id" | "format">) {
-  return competition.format === "games"
-    ? `/admin/competitions/${competition.id}/games`
-    : `/admin/competitions/${competition.id}/bracket`;
-}
 
 function emptyCompetition(mode: WarWeek["mode"]): CompetitionInput {
   return {
@@ -171,14 +167,14 @@ function CompetitionForm({
         return setCompetitionHosts(competition.id, hostEmails);
       }
       const result = await createCompetition(warWeekId, input);
-      // A Bracket or Games Format links straight to its setup.
+      // A Bracket, Games or Participation Format links straight to its setup.
       if (
         result.ok &&
-        (isBracketFormat(input.format) || input.format === "games")
+        (isBracketFormat(input.format) ||
+          input.format === "games" ||
+          input.format === "participation")
       ) {
-        router.push(
-          setupHref({ id: result.id, format: input.format as Format }),
-        );
+        router.push(setupHref(input.format as Format, result.id));
       }
       return result;
     },
@@ -443,14 +439,10 @@ export function CompetitionsEditor({
                   .join(" · ")}
                 aside={
                   <Link
-                    href={setupHref(c)}
+                    href={setupHref(c.format, c.id)}
                     className="text-primary inline-flex min-h-11 shrink-0 items-center px-2 text-sm underline-offset-4 hover:underline sm:min-h-0"
                   >
-                    {c.format === "points"
-                      ? "Run as a Bracket"
-                      : c.format === "games"
-                        ? "Games"
-                        : "Bracket"}
+                    {setupLinkLabel(c.format)}
                   </Link>
                 }
                 form={(close) => (

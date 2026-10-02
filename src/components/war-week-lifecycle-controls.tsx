@@ -32,7 +32,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { WarWeek } from "@/db/schema";
-import type { OpenGamesCompetition } from "@/queries/open-games-competitions";
+import { setupHref } from "@/lib/competitions";
+import type { OpenUnscoredCompetition } from "@/queries/open-unscored-competitions";
 
 /**
  * The lifecycle action for a War Week's status, behind a confirm that says
@@ -46,7 +47,7 @@ export function WarWeekLifecycleControls({
   suggestedWinner,
   highlights,
   unfinalizedBrackets,
-  openGamesCompetitions,
+  openUnscoredCompetitions,
 }: {
   warWeekId: string;
   edition: string;
@@ -59,8 +60,11 @@ export function WarWeekLifecycleControls({
   highlights: string[];
   /** Names of Brackets not yet finalized, to warn about when ending. */
   unfinalizedBrackets: string[];
-  /** Open `games` Competitions with Games, to warn about when ending. */
-  openGamesCompetitions: OpenGamesCompetition[];
+  /**
+   * Open `games` Competitions with Games and `participation` ones with
+   * anyone marked, to warn about when ending.
+   */
+  openUnscoredCompetitions: OpenUnscoredCompetition[];
 }) {
   const name = edition.toUpperCase();
 
@@ -106,7 +110,7 @@ export function WarWeekLifecycleControls({
         suggestedWinner={suggestedWinner}
         highlights={highlights}
         unfinalizedBrackets={unfinalizedBrackets}
-        openGamesCompetitions={openGamesCompetitions}
+        openUnscoredCompetitions={openUnscoredCompetitions}
       />
       <ConfirmActionButton
         title={`Unstart War Week ${name}?`}
@@ -130,14 +134,14 @@ function EndWarWeekButton({
   suggestedWinner,
   highlights: initialHighlights,
   unfinalizedBrackets,
-  openGamesCompetitions,
+  openUnscoredCompetitions,
 }: {
   warWeekId: string;
   name: string;
   suggestedWinner: string;
   highlights: string[];
   unfinalizedBrackets: string[];
-  openGamesCompetitions: OpenGamesCompetition[];
+  openUnscoredCompetitions: OpenUnscoredCompetition[];
 }) {
   const router = useRouter();
   const formId = useId();
@@ -190,23 +194,22 @@ function EndWarWeekButton({
           aren&apos;t in the Standings until you finalize them.
         </>
       )}
-      {openGamesCompetitions.length > 0 && (
+      {openUnscoredCompetitions.length > 0 && (
         <>
           {" "}
           Still open:{" "}
-          {openGamesCompetitions.map((c, i) => (
+          {openUnscoredCompetitions.map((c, i) => (
             <span key={c.id}>
               {i > 0 && ", "}
               <Link
-                href={`/admin/competitions/${c.id}/games`}
+                href={setupHref(c.format, c.id)}
                 className="text-primary underline underline-offset-4"
               >
                 {c.name}
               </Link>
             </span>
           ))}
-          . Their Placement Points aren&apos;t in the Standings until you close
-          them.
+          . Their points aren&apos;t in the Standings until you close them.
         </>
       )}
     </>

@@ -34,6 +34,11 @@ export function CompetitionFacts({
           Games · {gameTypeLabel(competition.gameType)}
         </Badge>
       ) : null}
+      {competition.format === "participation" ? (
+        <Badge variant="outline" className="text-foreground/70">
+          Participation
+        </Badge>
+      ) : null}
     </div>
   );
 }

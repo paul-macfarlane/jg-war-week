@@ -48,8 +48,8 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Announcement**              | A post by an Organizer or Host (rich text, videos included).                                                                      |
 | **FAQ Item**                  | A question and answer pair for a War Week.                                                                                        |
 | **Archive**                   | The past War Weeks shown at `/history`.                                                                                           |
-| **Recent results**            | Home's section of the latest results: finalized Brackets, closed `games` Competitions and Points Entries, newest first, up to 5. |
-| **Format**                    | How a Competition is run: `points` (Points Entries only), `games` (decided by Games, once or recurring; not a Bracket), or `single-elimination` or `heats` (a Bracket, for tournaments).                            |
+| **Recent results**            | Home's section of the latest results: finalized Brackets, closed `games` and `participation` Competitions and Points Entries, newest first, up to 5. |
+| **Format**                    | How a Competition is run: `points` (Points Entries only), `games` (decided by Games, once or recurring; not a Bracket), `participation` (decided by who took part, ticked by the Host or checked in by the Participants themselves), or `single-elimination` or `heats` (a Bracket, for tournaments).                            |
 | **Bracket**                   | The Rounds and Heats of a non-`points` Competition.                                                                               |
 | **Round**                     | One step of a Bracket, holding Heats that can be played at the same time. Round 1 is the first.                                   |
 | **Heat**                      | One game between Entrants in a Bracket. Covers 1v1 and multi-entrant games. May have a time and place: a Day and a start time (ET) together, and a location. |
@@ -62,9 +62,12 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Game Type**                 | How a `games` Competition's Games are decided, one per Competition: `head-to-head` (a winner, or a draw when allowed), `best-score` (each Game records a score; higher or lower is better, counted as best or total) or `ranked` (a finishing order). |
 | **Finish Points**             | A `ranked` `games` Competition's points per finishing position within one Game, set by the Host. Summed across Games for its leaderboard. Not Placement Points, which go to the Standings. |
 | **Log a Game**                | A Participant's write, recording one Game they played in a `games` Competition, in seconds, from their phone.                    |
-| **Close** / **Reopen**        | A `games` Competition's Finalize / Un-finalize: Close turns its leaderboard's places into Placement Points Entries; Reopen withdraws them. |
+| **Close** / **Reopen**        | A `games` or `participation` Competition's Finalize / Un-finalize: Close turns its leaderboard's places (or, for Participation, who took part) into Points Entries; Reopen withdraws them. |
 | **Entrants open** / **fixed Entrant list** | A `games` Competition's Entrants are either open (anyone eligible may log a Game) or a fixed list the Host sets, like a Bracket's. |
 | **Enroll** / **Withdraw**     | A Participant's writes entering or leaving a fixed-list Competition themselves, when its "Participants can enroll" switch is on. |
+| **Participation**             | A `participation` Competition: scored by who took part (Black Midnight, a daily workout, HQ attendance). The Host or an Organizer ticks Participants as having **taken part**, and Participants can **Check in** themselves; points land at **Close**. The Format, not a Participant's act. |
+| **Check in** / **Check out**  | A Participant's write saying they took part in a `participation` Competition, when its **Self check-in** switch is on (ADR 0009). Check out removes only their own check-in, never a tick the Host made. |
+| **Award Category**            | A global name that groups Awards across War Weeks (War Week MVP, Grow, Black Midnight…). Managed by Organizers at `/admin/awards`; archived, never deleted. An Award has at most one. |
 
 **Reveal** is retired: Standings are never hidden any more, and the
 countdown it played is now the **Finale**.
@@ -244,18 +247,22 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
     Competition (a `competition_host` row, set in Admin → Competitions). A
     Host runs their own Competitions: their setup (not creating, deleting or
     assigning Hosts), their Bracket, their Points Entries and the Schedule
-    Items linked to them. A Host can also post Announcements in a War Week
+    Items linked to them, and for a `participation` Competition its
+    settings, who took part, Close and Reopen (`participation.settings`,
+    `.mark`, `.close`, `.reopen`). A Host can also post Announcements in a War Week
     where they host, and edit or delete their own. Hosting is per
     Competition, so a Host of one War Week's Competition has no say in
     another War Week's.
-  - Everyone else signed in is a **Participant** for access purposes. They
-    have four writes, each found by account linking, checked in `can` and again in the mutation: reporting
+  - Everyone else signed in is a **Participant** for access purposes. Their
+    writes are each found by account linking, checked in `can` and again in the mutation: reporting
     the result of a Heat they're in when self-report is on (ADR 0005);
     logging a Game they're a player in (or on a Team that is), and editing
     or deleting a Game they logged, in a `games` Competition until it
-    closes (ADR 0006); and enrolling or withdrawing — themselves, their
+    closes (ADR 0006); enrolling or withdrawing — themselves, their
     Team, or a Squad they join or leave — in a Competition whose
-    "Participants can enroll" switch is on (ADR 0006).
+    "Participants can enroll" switch is on (ADR 0006); and, the fourth of
+    these kinds, **Check in** or Check out of a `participation`
+    Competition whose Self check-in switch is on (ADR 0009).
 - `can(actor, action, target)` in `src/lib/access.ts` is the one access
   rule: it returns why the actor can't take the action, or null. It's pure;
   the caller loads the actor and the target. A Points Entry or Schedule Item
@@ -310,6 +317,10 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   Competition's Bracket of the current War Week by name: Entrants and Heats
   by name, with places, scores, time and place, and the champion; a
   Squad's Participants by name, and never who reported a result.
+- **Award Categories** are global (no War Week), so every `award-category.*`
+  action (create, rename, archive, restore) is Organizer-only and takes no
+  target, like the Organizer list. A Host or Participant is refused. Awards
+  themselves stay Organizer-only too.
 - Standings are always visible to every signed-in user. `/<edition>/finale`
   and a finalized Bracket's `/<edition>/finale/<competitionId>` are readable
   by any signed-in JG user; Organizers and Hosts see the links to them in
@@ -524,6 +535,75 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 - A Competition with any Game logged can't be deleted; delete its Games
   first, or leave the Competition in place.
 
+## Participation rules
+
+- A `participation` Competition is decided by who took part. Its Format is
+  chosen at create and kept, like `games`' (its scoring decides how it pays). Its setup page
+  is `/admin/competitions/<id>/participation`: Points per Participant (N,
+  more than 0), for a team Competition how Teams score, the **Self check-in**
+  switch (off by default) with an optional check-in close time, and the
+  took-part list the Host or an Organizer ticks.
+- **Scoring**: *individual* gives N to each Participant who took part.
+  *Team* is either **ranked by headcount** (each Team's headcount ranks its
+  place, ties sharing the higher place, and the Competition's Placement
+  Points pay each place; a place without Placement Points gets nothing) or
+  **per person** (N × headcount to each Team). A new team Competition starts
+  ranked by headcount, one point per Participant.
+- **Team scoring needs a Team.** A Participant on no Team can't be ticked or
+  check in to a team Competition ("Only Participants on a <Team Label> can
+  take part in a team Competition."). A Team is counted at **Close**, as it
+  is then, so moving a Participant before Close moves the count.
+- Nothing is scored until **Close**. Close turns who took part into Points
+  Entries marked generated and "From participation", un-editable in the
+  ledger; **Reopen** deletes them again (hand-entered Points Entries on the
+  same Competition are never touched). Nobody ticked closes with no entries.
+  A **closed** Competition refuses every tick, untick, check-in and
+  settings save, from everyone, Organizers included: Reopen, correct, Close.
+- **Check in** (ADR 0009): a linked Participant checks themselves in while
+  Self check-in is on, the optional close time hasn't passed and the
+  Competition isn't closed. **Check out** removes only their own
+  check-in; a tick the Host or an Organizer made stays ("The Host marked you;
+  ask them to remove it."). A Host or Organizer ticks and unticks anyone
+  until Close, and checking themselves in is bound by the same rule as any
+  Participant. A Participant whose check-in the Host removed can check in
+  again while check-in is open; the Host turns Self check-in off or sets a
+  close time to stop that.
+- Who ticked someone is kept for audit and never sent to a page, an action
+  payload or MCP (`get_participation`: names, Teams and whether they checked
+  in themselves).
+- Changing a Competition's scoring is refused while anyone is marked ("Remove
+  who took part before changing its scoring."), and so is deleting it ("Remove
+  who took part first.").
+- A War Week ending isn't a rule here: the End War Week confirm only warns,
+  naming a Participation Competition left open with anyone marked (linked to
+  its setup page), because its points aren't in the Standings until Close.
+- Recent results shows a closed Participation Competition as one row: in
+  team scoring its top Team, in individual scoring how many took part.
+- Who took part isn't seeded, like Games.
+
+## Award Category rules
+
+- An **Award Category** is global: one list across every War Week, managed
+  by Organizers in a Categories section on `/admin/awards`. Seven come from
+  a migration: War Week MVP, Billable Hours Champ, Black Midnight, Grow,
+  Grind, Serve, Inspire.
+- Names are trimmed, at most 80 characters and unique ignoring case. A
+  Category is **renamed**, **archived** and **restored**, never deleted. An
+  archived Category stays on the past Awards that have it (and is labeled
+  archived) but can't be picked for another Award; restoring it makes it
+  pickable again. An Award has one Category or none ("None" in the Award
+  form's Category select).
+- A seeded Category has a stable key, so renaming never breaks a seed.
+- `/<edition>/awards` groups Awards under their Category's heading, linked
+  to its page, then "Other Awards" for those with none; with no Category on
+  any Award there are no headings. The Award's own name always shows here.
+- **Through the years**: `/history` lists every Category that has an Award
+  under "Awards through the years", and `/history/awards/<categoryId>` shows
+  that Category's Awards by War Week, newest first, with their recipients
+  (Profile names). An Award's own name shows there only when it adds to its
+  Category's ("MVP 1st Place" under War Week MVP). It is keyed by id, so a rename never breaks the link; an
+  unknown or malformed id is a 404.
+
 ## Enrollment rules
 
 - **"Participants can enroll"** is a per-Competition switch, off by
@@ -605,7 +685,7 @@ same rows with the same values (only `updated_at` moves).
 - **Organizers** in a seed's `organizers` list are added to the global
   Organizer list when missing, ignoring case. A load only ever inserts
   them: it never removes an Organizer, even with `--reset`.
-- **Squads**, reporters and Games aren't in seeds, and neither is a
+- **Squads**, reporters, Games and who took part aren't in seeds, and neither is a
   Competition's self-report setting, a `games` Competition's Entrants or its
   logging close time, or the enrollment switch, Entrant limit and close
   time. A reload that removes or moves a Participant leaves their Squads to
@@ -629,6 +709,21 @@ same rows with the same values (only `updated_at` moves).
     its Format, undoes its Heats settings, or touches a `games`
     Competition's Game Type, Games settings, or open-to-everyone switch
     once it exists.
+  - A `participation` Competition's four columns — `participationPoints`,
+    `participationTeamScoring`, `selfCheckIn` and `checkInClosesAt` — are
+    insert-only too (defaults: 1 point, `ranked` in team scoring, Self
+    check-in off, no close time), so a reload never undoes what a Host set.
+    The one thing a reload does touch is the team scoring, which follows the
+    Competition's `scoring`: kept while team, `ranked` on becoming team, none
+    otherwise.
+  - An Award's `category` in a seed is a seeded Category's **key**, never
+    its name; an unknown key fails the load naming it. It is applied when
+    the Award is inserted. The one exception to "never updated" is
+    fill-if-empty: a seeded Award that has no Category and was never edited
+    in the app (`updated_at` still equals `created_at`) gets the seed's. An
+    Organizer's choice, "None" included, is never overwritten.
+  - **Award Categories** themselves come from a migration, not a seed, are
+    global, and survive `--reset`.
 
 **Setup in the UI.** Organizers can also edit setup in `/admin`: War Week
 settings and the Appearance Theme in `/admin/settings`, Days and Schedule

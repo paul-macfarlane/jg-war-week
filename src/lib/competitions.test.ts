@@ -10,6 +10,8 @@ import {
   hostName,
   placementLabel,
   pointsForPlacement,
+  setupHref,
+  setupLinkLabel,
 } from "@/lib/competitions";
 
 function competition(
@@ -236,5 +238,23 @@ describe("hostName", () => {
     expect(hostName("new@jahnelgroup.com", profiles)).toBe(
       "new@jahnelgroup.com",
     );
+  });
+});
+
+describe("setupHref and setupLinkLabel", () => {
+  it("point each Format at its own setup page", () => {
+    expect(setupHref("games", "c1")).toBe("/admin/competitions/c1/games");
+    expect(setupHref("participation", "c1")).toBe(
+      "/admin/competitions/c1/participation",
+    );
+    expect(setupHref("heats", "c1")).toBe("/admin/competitions/c1/bracket");
+    expect(setupHref("points", "c1")).toBe("/admin/competitions/c1/bracket");
+  });
+
+  it("label the link by Format", () => {
+    expect(setupLinkLabel("participation")).toBe("Who took part");
+    expect(setupLinkLabel("games")).toBe("Games");
+    expect(setupLinkLabel("points")).toBe("Run as a Bracket");
+    expect(setupLinkLabel("heats")).toBe("Bracket");
   });
 });

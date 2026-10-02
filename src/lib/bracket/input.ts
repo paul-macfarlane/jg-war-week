@@ -21,9 +21,15 @@ const id = (error: string) => z.uuid({ error });
 /** The most Entrants a Bracket takes. */
 export const MAX_ENTRANTS = 64;
 
+/** A Format chosen only at create: a Competition keeps it. */
+type FixedFormat = "games" | "participation";
+
 export type FormatInput = {
-  /** Never `games`: a Competition is `games` from creation, and stays so. */
-  format: Exclude<Format, "games">;
+  /**
+   * Never `games` or `participation`: a Competition is one of those from
+   * creation, and stays so.
+   */
+  format: Exclude<Format, FixedFormat>;
   /** The heats Format's config; omitted keeps (or defaults) the saved one. */
   config?: HeatsConfig | null;
   /** Clears Heat Results when a different config clears the Heats. */
@@ -34,7 +40,8 @@ const formatSchema = z
   .object({
     format: z.enum(
       COMPETITION_FORMATS.filter(
-        (format): format is Exclude<Format, "games"> => format !== "games",
+        (format): format is Exclude<Format, FixedFormat> =>
+          format !== "games" && format !== "participation",
       ),
       { error: "Choose a Format." },
     ),

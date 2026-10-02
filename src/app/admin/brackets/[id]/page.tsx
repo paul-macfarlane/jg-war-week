@@ -4,8 +4,10 @@ import { notFound } from "next/navigation";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { BracketResults } from "@/components/bracket-results";
+import { setupHref } from "@/lib/competitions";
 import { getBracket, getHeatReporters } from "@/queries/brackets";
 import { getGamesCompetitions } from "@/queries/games";
+import { getParticipationCompetitions } from "@/queries/participation";
 import { getSetupDays } from "@/queries/setup";
 
 import { loadAdminPage } from "../../gate";
@@ -24,14 +26,23 @@ export default async function BracketResultsPage({
     return <AdminRefused warWeek={warWeek} email={email} />;
   }
 
-  const [view, days, games] = await Promise.all([
+  const [view, days, games, participations] = await Promise.all([
     getBracket(id),
     getSetupDays(warWeek),
     getGamesCompetitions(warWeek),
+    getParticipationCompetitions(warWeek),
   ]);
-  // A `games` Competition is never a Bracket: point to its Games setup.
+  // A `games` or `participation` Competition is never a Bracket: point to
+  // its own setup.
   const runAsGames = games.find((competition) => competition.id === id);
-  if (runAsGames) {
+  const runAsParticipation = participations.find(
+    (competition) => competition.id === id,
+  );
+  if (runAsGames || runAsParticipation) {
+    const other = (runAsGames ?? runAsParticipation)!;
+    const [label, format] = runAsGames
+      ? (["Games", "games"] as const)
+      : (["Participation", "participation"] as const);
     return (
       <AdminShell
         warWeek={warWeek}
@@ -47,14 +58,14 @@ export default async function BracketResultsPage({
           >
             ← Points Entries
           </Link>
-          <h1 className="text-2xl font-bold">{runAsGames.name}</h1>
+          <h1 className="text-2xl font-bold">{other.name}</h1>
           <p className="text-foreground/70 text-sm">
-            This Competition is run as Games, not a Bracket.{" "}
+            This Competition is run as {label}, not a Bracket.{" "}
             <Link
-              href={`/admin/competitions/${runAsGames.id}/games`}
+              href={setupHref(format, other.id)}
               className="text-primary underline-offset-4 hover:underline"
             >
-              Open its Games
+              Open its {label}
             </Link>
             .
           </p>

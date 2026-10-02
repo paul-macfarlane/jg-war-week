@@ -480,7 +480,7 @@ describe("parseCreateCompetitionInput", () => {
   it("refuses an unknown Format", () => {
     expectRefused(
       parseCreateCompetitionInput({ ...competition, format: "swiss" }),
-      "Format must be one of points, single-elimination, heats, games.",
+      "Format must be one of points, single-elimination, heats, games, participation.",
     );
   });
 
@@ -528,7 +528,7 @@ describe("parseCreateCompetitionInput", () => {
         ...competition,
         format: 123 as unknown as string,
       }),
-      "Format must be one of points, single-elimination, heats, games.",
+      "Format must be one of points, single-elimination, heats, games, participation.",
     );
   });
 });

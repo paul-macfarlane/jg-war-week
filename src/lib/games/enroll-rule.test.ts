@@ -358,6 +358,16 @@ describe("enrollmentUnavailable: where enrollment is offered", () => {
       "A Best of is set by the Host; enrollment is off.",
     ],
     [
+      "a Participation Competition takes check-ins instead",
+      {
+        format: "participation" as const,
+        entrantsOpen: false,
+        gameType: null,
+        gameConfig: null,
+      },
+      "A Participation Competition takes check-ins, not Entrants.",
+    ],
+    [
       "a fixed-list Games Competition offers it",
       {
         format: "games" as const,

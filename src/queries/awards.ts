@@ -1,9 +1,10 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import {
   type WarWeek,
   award,
+  awardCategory,
   awardParticipant,
   participant,
   team,
@@ -30,9 +31,13 @@ export async function getAwards(
       teamId: team.id,
       teamName: team.name,
       teamColor: team.color,
+      categoryId: awardCategory.id,
+      categoryName: awardCategory.name,
+      categoryArchivedAt: awardCategory.archivedAt,
     })
     .from(award)
     .leftJoin(team, eq(award.teamId, team.id))
+    .leftJoin(awardCategory, eq(award.categoryId, awardCategory.id))
     .where(eq(award.warWeekId, warWeek.id))
     .orderBy(asc(award.name), asc(award.id));
 
@@ -72,6 +77,14 @@ export async function getAwards(
       row.teamId && row.teamName && row.teamColor
         ? { id: row.teamId, name: row.teamName, color: row.teamColor }
         : null,
+    category:
+      row.categoryId && row.categoryName
+        ? {
+            id: row.categoryId,
+            name: row.categoryName,
+            archived: row.categoryArchivedAt !== null,
+          }
+        : null,
     participants: recipients
       .filter((r) => r.awardId === row.id)
       .map(({ id, displayName, image, teamColor }) => ({
@@ -87,14 +100,16 @@ export type AwardFormOptions = {
   teams: { id: string; name: string }[];
   /** `team` is the Participant's Team name, when they have one. */
   participants: { id: string; name: string; team: string | null }[];
+  /** Active Award Categories, by name. */
+  categories: { id: string; name: string }[];
 };
 
-/** The Teams and Participants an Award of this War Week may go to. */
+/** The Teams, Participants and active Categories an Award of this War Week may use. */
 export async function getAwardFormOptions(
   warWeek: Pick<WarWeek, "id">,
   dbOrTx: DBOrTx = db,
 ): Promise<AwardFormOptions> {
-  const [teams, participants] = await Promise.all([
+  const [teams, participants, categories] = await Promise.all([
     dbOrTx
       .select({ id: team.id, name: team.name })
       .from(team)
@@ -113,8 +128,13 @@ export async function getAwardFormOptions(
     )
       .where(eq(participant.warWeekId, warWeek.id))
       .orderBy(asc(participantNameSql())),
+    dbOrTx
+      .select({ id: awardCategory.id, name: awardCategory.name })
+      .from(awardCategory)
+      .where(isNull(awardCategory.archivedAt))
+      .orderBy(asc(awardCategory.name)),
   ]);
-  return { teams, participants };
+  return { teams, participants, categories };
 }
 
 /**

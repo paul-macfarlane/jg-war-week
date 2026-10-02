@@ -27,7 +27,7 @@ export function OrganizerGuide({
       "The War Week's Days with their Day Themes and short descriptions, and each Day's Schedule Items.",
     Roster: `${teamLabel}s, Participants and ${leaderTitle}s, with Import from a sheet or CSV.`,
     Announcements: "Post, pin and edit Announcements.",
-    Awards: `Give Awards to a ${teamLower} or to Participants.`,
+    Awards: `Give Awards to a ${teamLower} or to Participants, and manage the Award Categories that group them.`,
     FAQ: "FAQ Items and their order on the public FAQ.",
     Finale:
       "Open the Finale, and each finalized Bracket's Finale, on the projector.",
@@ -150,9 +150,9 @@ export function OrganizerGuide({
           A Participant&apos;s email is optional. When a signed-in
           @jahnelgroup.com email matches a roster Participant&apos;s email, that
           Participant and their {teamLower} are highlighted as &quot;You&quot;
-          wherever they appear, and they can log Games and report Heats. A
-          Participant without an email is never linked. It isn&apos;t used for
-          sign-in and grants nothing beyond those Participant writes.
+          wherever they appear, and they can log Games, report Heats and check
+          in. A Participant without an email is never linked. It isn&apos;t used
+          for sign-in and grants nothing beyond those Participant writes.
         </p>
       </section>
 
@@ -245,6 +245,49 @@ export function OrganizerGuide({
           screen shows &quot;Reported by&quot; on that Heat, and you can still
           change any result there. Turn Self-report off to stop new reports;
           results already reported stand.
+        </p>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="text-lg font-semibold">
+          Running a Participation Competition
+        </h2>
+        <p className="text-foreground/70">
+          For something people either did or didn&apos;t (Black Midnight, a
+          daily workout). Choose the Format Participation when you add it under{" "}
+          <Link
+            href="/admin/competitions"
+            className="text-primary underline underline-offset-4"
+          >
+            Competitions
+          </Link>{" "}
+          and you land on its setup page; the Format can&apos;t change later.
+          Set the points per Participant and, for a {teamLower} Competition,
+          whether {teamLower}s are ranked by headcount (Placement Points pay
+          each place) or earn the points per person. Tick who took part, or turn
+          on Self check-in so Participants can Check in themselves (they can
+          only remove their own check-in, never your tick). Nothing scores until
+          you Close it, which turns who took part into Points Entries; Reopen
+          withdraws them. Close it before you end the War Week: End warns about
+          one left open.
+        </p>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="text-lg font-semibold">Award Categories</h2>
+        <p className="text-foreground/70">
+          A Category groups Awards across War Weeks (War Week MVP, Grow…).
+          Manage them in the Categories section of{" "}
+          <Link
+            href="/admin/awards"
+            className="text-primary underline underline-offset-4"
+          >
+            Awards
+          </Link>
+          : add, rename, archive or restore, never delete. An archived Category
+          stays on its past Awards but can&apos;t be picked for new ones. Pick
+          an Award&apos;s Category in the Award form; the Awards page groups by
+          it, and History shows each Category through the years.
         </p>
       </section>
 

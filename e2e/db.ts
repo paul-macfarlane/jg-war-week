@@ -45,6 +45,17 @@ export async function deleteE2eUsers() {
   ]);
 }
 
+/**
+ * Deletes the Award Categories an e2e run added: only the seeded ones have a
+ * `key`. Awards go with their War Week's reset first (`on delete restrict`).
+ */
+export async function deleteE2eAwardCategories() {
+  await runQuery(
+    `delete from award_category c where c.key is null
+     and not exists (select 1 from award a where a.category_id = c.id)`,
+  );
+}
+
 /** Deletes a War Week XI Competition by name, if it exists. Test cleanup. */
 export async function deleteXiCompetition(name: string) {
   await runQuery(

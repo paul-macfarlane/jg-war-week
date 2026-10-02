@@ -60,10 +60,22 @@ function ResultSummary({
       </span>
     );
   }
+  if (result.kind === "participation-closed" && result.tookPart !== null) {
+    return (
+      <span className="text-sm">
+        <span className="font-semibold tabular-nums">{result.tookPart}</span>{" "}
+        took part
+      </span>
+    );
+  }
   return (
     <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
       <span className="text-foreground/70">
-        {result.kind === "games-closed" ? "Winner" : "Champion"}
+        {result.kind === "games-closed"
+          ? "Winner"
+          : result.kind === "participation-closed"
+            ? "Top"
+            : "Champion"}
       </span>
       {result.winners.map((target) => (
         <TargetName
@@ -118,7 +130,8 @@ export function RecentResultsSection({
                 {result.kind === "bracket-finalized" ? (
                   <Badge variant="secondary">Bracket finalized</Badge>
                 ) : null}
-                {result.kind === "games-closed" ? (
+                {result.kind === "games-closed" ||
+                result.kind === "participation-closed" ? (
                   <Badge variant="secondary">Closed</Badge>
                 ) : null}
                 <span className="text-foreground/60 ml-auto text-xs">

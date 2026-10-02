@@ -81,6 +81,10 @@ before it says it's done.
 | Rules with unit tests (standings, schedule, Finale, access…) | `src/lib/` (`*.test.ts` next to each file)           |
 | The Bracket engine (seeding, Rounds/Heats, advancing winners, Bracket → Points Entries) | `src/lib/bracket/` (`*.test.ts` next to each file) |
 | Bracket builder and results screens                | `src/app/admin/competitions/[id]/bracket/`, `src/app/admin/brackets/[id]/` |
+| Participation (scoring, Check in rule)     | `src/lib/participation/` (`score.ts`, `check-in-rule.ts`, `input.ts`), `src/mutations/participation.ts`, `src/queries/participation.ts` |
+| Participation setup page, and its Competition page parts | `src/app/admin/competitions/[id]/participation/`, `src/components/participation-builder.tsx`, `participation-view.tsx`, `check-in-button.tsx` |
+| Award Categories (list, rename, archive, restore) | `src/lib/award-categories.ts`, `src/mutations/award-categories.ts`, `src/components/award-categories-editor.tsx` (on `/admin/awards`) |
+| Awards grouped by Category; a Category through the years | `src/app/[edition]/awards/`, `src/app/history/awards/[id]/`, `src/queries/award-category-history.ts`; the list on `/history` is `src/app/history/(list)/` |
 | Database schema                            | `src/db/schema.ts`                                                     |
 | Migrations (generated, never hand-edited)  | `drizzle/`                                                             |
 | Seed data, one file per War Week           | `seeds/i.json` … `seeds/xi.json`, the tentative upcoming `seeds/xii.json`; the live XI demo in `seeds/demo/xi.json` |
@@ -249,8 +253,8 @@ To start next year's edition in the app:
    or Participants tie for first, blank when nobody scored — and lets you
    add any highlights. There is no way to type a different Winner. XI moves
    to the Archive. The confirm also names any Bracket that isn't finalized
-   and any open `games` Competition with Games, each `games` one linked to
-   its Games setup page. Finalize or close them first so their placings
+   and any open `games` Competition with Games or `participation` Competition
+   with anyone marked, each linked to its setup page. Finalize or close them first so their placings
    count; it warns, it doesn't stop you.
 3. Switch to XII and press **Start War Week**. `/` and `/admin` now go to
    XII. Only one War Week can be live, so XI must end first.
@@ -472,6 +476,67 @@ The engine is deliberately separate from the UI: `src/lib/bracket/` has no
 React imports and never reads or writes the database itself, so a new
 Format's rules are unit-testable on their own before any screen uses them.
 
+### Rolling out R12 (migrations 0023–0026)
+
+Migrations 0023–0026 add the Participation columns and table, the Award
+Category tables and the seven seeded Categories. They are additive, so a
+Vercel rollback is safe (the previous build ignores them). As for R10, check
+the order each time R12 reaches staging, and again on promotion to `main`:
+
+1. Confirm the **Migrate** GitHub job succeeded **before** checking the
+   deploy. Until the new columns exist the Competition and Awards queries
+   fail and those pages error.
+2. If the deploy went live first, re-run the Migrate job.
+3. **Tag the already-loaded Awards.** The seeds now carry an Award
+   `category`, but a reload never updates an Award it already has, apart from
+   one fill: an Award with no Category that was never edited in the app gets
+   the seed's. So rerun the **Seed** workflow once for each past edition's
+   file, `seeds/i.json` … `seeds/xi.json`, with reset **off** (never reset)
+   and never for the edition being run: a reload overwrites that edition's
+   setup. Then check `/history` shows "Awards through the years".
+
+### Run a Competition as Participation
+
+For a thing people either did or didn't (Black Midnight, a daily workout,
+Spirit submissions, HQ attendance). Under **Competitions**, **Add
+Competition** and choose the **Format** "Participation"; you land on its
+setup page, where the Host or an Organizer sets:
+
+- **Points per Participant** (N). Individual scoring gives N to each
+  Participant who took part. In team scoring choose **ranked by headcount**
+  (each Team's headcount ranks its place, ties sharing the higher place, paid
+  by the Competition's Placement Points) or **per person** (N × headcount to
+  each Team). A Participant on no Team can't take part in a team
+  Competition.
+- **Self check-in** (off by default) with an optional close time: linked
+  Participants then see **Check in** on the Competition page. Check out
+  removes only their own check-in, never a tick you made. If you remove
+  someone's check-in they can check in again while it's open; turn Self
+  check-in off or set a close time to stop that.
+- The took-part list: tick or untick anyone until Close.
+- **Close** / **Reopen**, behind a confirm, as for Games. Teams are counted
+  at Close, as they are then. The format is fixed once created. Changing
+  scoring, or deleting the Competition, is refused while anyone is marked.
+
+Who took part isn't seeded. A seed's `participation` Competition may set
+`participationPoints`, `participationTeamScoring`, `selfCheckIn` and
+`checkInClosesAt`, but they are applied only when the Competition is first
+inserted, never on a reload. The one exception: a seed reload does set a
+Participation Competition's team scoring from the seed's scoring (kept while
+team, `ranked` on becoming team, none for individual).
+
+### Manage Award Categories
+
+On `/admin/awards` (Organizers only) the **Categories** section adds, renames,
+archives and restores global Award Categories; there is no delete. An
+archived one stays on its past Awards but can't be picked for another. Give an
+Award a Category in the Award form's **Category** select ("None" is allowed).
+`/<edition>/awards` groups by Category, and `/history` and
+`/history/awards/<id>` show each Category through the years. A seed's Award
+`category` is a Category's **key** (the seven seeded: `war-week-mvp`,
+`billable-hours-champ`, `black-midnight`, `grow`, `grind`, `serve`,
+`inspire`), never its name, so a rename doesn't break a seed.
+
 ### Run a Competition as Games
 
 For a showdown, a best of X, or a week-long ladder of casual games — no code
@@ -540,7 +605,8 @@ migration, accept it in the seed format and seeds, and show it on <page>.
 The chain is schema → `pnpm db:generate` → migration in `drizzle/` →
 `pnpm db:migrate` locally → seed format and seed files → UI. Never hand-edit
 a migration. The one exception is a data step that the schema diff can't
-express (copying rows between tables): create it with
+express (copying rows between tables, or inserting fixed reference rows
+such as the seeded Award Categories): create it with
 `pnpm db:generate --custom --name <what-it-copies>` so it gets its
 own journal entry, and write only that file.
 
@@ -664,7 +730,9 @@ Competition's Bracket by name, with each Heat's time and place, and a
 Squad's `participants` by name; never who reported a result) and
 `get_games` (a Competition run as Games, by name: its settings, leaderboard
 ranked by Game Type and its Games newest first; never an email or who
-logged one). `get_bracket` (`src/mcp/bracket.ts`) is the model for a tool
+logged one) and `get_participation` (a Competition run as Participation, by
+name: its settings, closed state, who took part by name and, in team
+scoring, each Team's headcount; never an email or who marked anyone). `get_bracket` (`src/mcp/bracket.ts`) is the model for a tool
 that looks something up by name and whitelists what it returns.
 
 ### Add or fix history

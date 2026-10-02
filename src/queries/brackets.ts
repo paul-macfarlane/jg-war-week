@@ -286,7 +286,9 @@ export async function getBracket(
     .from(competition)
     .where(eq(competition.id, competitionId))
     .limit(1);
-  if (!found || found.format === "games") return undefined;
+  if (!found || found.format === "games" || found.format === "participation") {
+    return undefined;
+  }
   // The config reaches the view through the Bracket, not the Competition.
   const { bracketConfig, ...shown } = found;
   const [entrants, bracket] = await Promise.all([

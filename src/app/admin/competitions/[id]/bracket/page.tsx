@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { BracketBuilder } from "@/components/bracket-builder";
 import { getBracket, getSquads } from "@/queries/brackets";
+import { getParticipationView } from "@/queries/participation";
 import { getPointsEntryFormOptions } from "@/queries/points-entries";
 
 import { loadAdminPage } from "../../../gate";
@@ -23,10 +24,45 @@ export default async function BracketBuilderPage({
     return <AdminRefused warWeek={warWeek} email={email} />;
   }
 
-  const [view, options] = await Promise.all([
+  const [view, options, participation] = await Promise.all([
     getBracket(id),
     getPointsEntryFormOptions(warWeek),
+    getParticipationView(id),
   ]);
+  // A `participation` Competition is never a Bracket: point to its setup.
+  if (participation && participation.competition.warWeekId === warWeek.id) {
+    return (
+      <AdminShell
+        warWeek={warWeek}
+        email={email}
+        isOrganizer={isOrganizer}
+        editions={editions}
+        current="Competitions"
+      >
+        <section className="flex max-w-xl min-w-0 flex-col gap-4">
+          <Link
+            href="/admin/competitions"
+            className="text-primary text-sm underline-offset-4 hover:underline"
+          >
+            ← Competitions
+          </Link>
+          <h1 className="text-2xl font-bold">
+            {participation.competition.name}
+          </h1>
+          <p className="text-foreground/70 text-sm">
+            This Competition is run as Participation, not a Bracket.{" "}
+            <Link
+              href={`/admin/competitions/${id}/participation`}
+              className="text-primary underline-offset-4 hover:underline"
+            >
+              Open who took part
+            </Link>
+            .
+          </p>
+        </section>
+      </AdminShell>
+    );
+  }
   if (!view || view.competition.warWeekId !== warWeek.id) notFound();
   const { competition } = view;
   const squads = await getSquads(competition.id);

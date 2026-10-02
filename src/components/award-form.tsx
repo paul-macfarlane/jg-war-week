@@ -16,6 +16,7 @@ import {
   useFocusFirstInvalid,
 } from "@/components/form-field-errors";
 import { FormValueInput } from "@/components/form-value-input";
+import { OptionSelect } from "@/components/option-select";
 import {
   SetupRowError,
   SetupSaveButton,
@@ -60,6 +61,7 @@ export function AwardForm({
   warWeekId,
   awardId,
   initial,
+  currentCategory,
   options,
   teamLabel,
   mode,
@@ -70,6 +72,8 @@ export function AwardForm({
   /** Set when editing an existing Award. */
   awardId?: string;
   initial?: AwardInput;
+  /** The Award's Category when editing; an archived one stays selectable. */
+  currentCategory?: { id: string; name: string; archived: boolean } | null;
   options: AwardFormOptions;
   /** The War Week's Team Label, e.g. "House". */
   teamLabel: string;
@@ -82,6 +86,7 @@ export function AwardForm({
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [teamId, setTeamId] = useState(initial?.teamId ?? "");
+  const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
   const [participantIds, setParticipantIds] = useState<string[]>(
     initial?.participantIds ?? [],
   );
@@ -95,6 +100,18 @@ export function AwardForm({
   const teamItems = [
     { value: NO_TEAM, label: `No ${teamLabel}` },
     ...options.teams.map((team) => ({ value: team.id, label: team.name })),
+  ];
+  const categoryItems = [
+    { value: "", label: "None" },
+    ...options.categories.map((c) => ({ value: c.id, label: c.name })),
+    ...(currentCategory?.archived
+      ? [
+          {
+            value: currentCategory.id,
+            label: `${currentCategory.name} (archived)`,
+          },
+        ]
+      : []),
   ];
   const participantItems = options.participants.map((p) => ({
     id: p.id,
@@ -110,6 +127,7 @@ export function AwardForm({
         name,
         description,
         teamId: teamId || null,
+        categoryId: categoryId || null,
         participantIds,
       };
       const saved = awardId
@@ -165,6 +183,22 @@ export function AwardForm({
             onChange={(event) => setDescription(event.target.value)}
           />
           <FieldError>{fieldErrors.description}</FieldError>
+        </Field>
+
+        <Field data-invalid={!!fieldErrors.categoryId}>
+          <FieldLabel htmlFor="award-category">Category</FieldLabel>
+          <OptionSelect
+            id="award-category"
+            name="categoryId"
+            value={categoryId}
+            onValueChange={setCategoryId}
+            options={categoryItems}
+            aria-invalid={!!fieldErrors.categoryId}
+          />
+          <FieldDescription>
+            Groups this Award with the same Category in other War Weeks.
+          </FieldDescription>
+          <FieldError>{fieldErrors.categoryId}</FieldError>
         </Field>
 
         <FieldSet>

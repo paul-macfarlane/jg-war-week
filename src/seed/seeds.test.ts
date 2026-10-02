@@ -2,6 +2,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { categoryKeyForAwardName } from "@/lib/award-categories";
 import { DEMO_SEED } from "@/seed/local-files";
 import { type WarWeekSeed, warWeekSeedSchema } from "@/seed/schema";
 
@@ -90,6 +91,35 @@ describe("War Week history", () => {
     expect(
       seeds.filter((s) => s.pointsEntries.length > 0).map((s) => s.edition),
     ).toEqual(["xi"]);
+  });
+});
+
+describe("Award Categories", () => {
+  it("tag every seed Award exactly as the name matcher says", () => {
+    const tagged = [...all, demo, xiiDemo].flatMap((s) =>
+      s.awards.map((a) => ({
+        edition: s.edition,
+        name: a.name,
+        category: a.category ?? null,
+        expected: categoryKeyForAwardName(a.name),
+      })),
+    );
+    expect(tagged.length).toBeGreaterThan(0);
+    for (const a of tagged) {
+      expect(a.category, `${a.edition}: ${a.name}`).toBe(a.expected);
+    }
+  });
+
+  it("tags the Awards the wikis name for each seeded Category", () => {
+    const keysOf = (edition: string) =>
+      all
+        .find((s) => s.edition === edition)
+        ?.awards.flatMap((a) => (a.category ? [a.category] : [])) ?? [];
+    expect(keysOf("iv")).toEqual(["war-week-mvp", "billable-hours-champ"]);
+    expect(keysOf("viii")).toEqual(["billable-hours-champ", "black-midnight"]);
+    expect(demo.awards.find((a) => a.name === "Black Midnight")?.category).toBe(
+      "black-midnight",
+    );
   });
 });
 
@@ -190,6 +220,29 @@ describe("War Week XI demo", () => {
       countsTowardTeam: true,
       placementPoints: [3, 2, 1],
     });
+  });
+
+  it("runs one team Competition as Participation, ranked by headcount with self check-in", () => {
+    const participation = xi.competitions
+      .filter((c) => c.format === "participation")
+      .map((c) => ({
+        name: c.name,
+        scoring: c.scoring,
+        placementPoints: c.placementPoints,
+        participationTeamScoring: c.participationTeamScoring,
+        selfCheckIn: c.selfCheckIn,
+        checkInClosesAt: c.checkInClosesAt,
+      }));
+    expect(participation).toEqual([
+      {
+        name: "Daily Workout Check-in",
+        scoring: "team",
+        placementPoints: [5, 3, 1],
+        participationTeamScoring: "ranked",
+        selfCheckIn: true,
+        checkInClosesAt: undefined,
+      },
+    ]);
   });
 
   it("has a close mid-week race with a fractional and a Counts-Toward-Team-off entry", () => {

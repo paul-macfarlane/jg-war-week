@@ -15,7 +15,10 @@ export type BracketResult =
       competition: {
         name: string;
         scoring: Competition["scoring"];
-        format: Exclude<Competition["format"], "points" | "games">;
+        format: Exclude<
+          Competition["format"],
+          "points" | "games" | "participation"
+        >;
         finalized: boolean;
       };
       entrants: {
@@ -59,7 +62,7 @@ export type BracketResult =
       competition: {
         name: string;
         scoring: Competition["scoring"];
-        format: "games";
+        format: "games" | "participation";
       };
       bracket: null;
       message: string;
@@ -86,6 +89,25 @@ export function toGamesBracketResult(
 }
 
 /**
+ * The `get_bracket` answer for a `participation` Competition, which is
+ * never a Bracket: no Bracket, and a pointer to `get_participation`. Pure.
+ */
+export function toParticipationBracketResult(
+  competition: Pick<Competition, "name" | "scoring">,
+): BracketResult {
+  return {
+    found: true,
+    competition: {
+      name: competition.name,
+      scoring: competition.scoring,
+      format: "participation",
+    },
+    bracket: null,
+    message: `${competition.name} isn't run as a Bracket; it's run as Participation. Call get_participation instead.`,
+  };
+}
+
+/**
  * Serializes a Bracket (or its absence, or a points Competition) into the
  * `get_bracket` MCP tool payload. Names only: never an email, the Organizer
  * list, Hosts or who self-reported a Heat. Pure: the route resolves the
@@ -105,6 +127,9 @@ export function toBracketResult(
 
   if (view.competition.format === "games") {
     return toGamesBracketResult(view.competition);
+  }
+  if (view.competition.format === "participation") {
+    return toParticipationBracketResult(view.competition);
   }
 
   if (view.competition.format === "points") {

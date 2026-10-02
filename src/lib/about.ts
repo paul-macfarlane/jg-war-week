@@ -51,14 +51,14 @@ export const ABOUT_FEATURES = [
   },
   {
     slug: "competitions",
-    title: "Competitions: Brackets and Games",
-    text: "Run a Competition as a Bracket or as Games players log themselves from a phone. Finalizing or closing it turns the results into Placement Points.",
+    title: "Competitions: Brackets, Games and Participation",
+    text: "Run a Competition as a Bracket, as Games players log themselves from a phone, or as Participation: the Host ticks who took part, or people check themselves in. Finalizing or closing it turns the results into points.",
     alt: "A finished Bracket on its Competition page: two Round 1 Heats of Participants feeding the Final, with its champion on top.",
   },
   {
     slug: "archive",
     title: "The Archive",
-    text: "Past War Weeks, each in its own theme: the Story Theme, the winner, the Awards and the highlights.",
+    text: "Past War Weeks, each in its own theme: the Story Theme, the winner, the Awards and the highlights. Award Categories show every year's recipients through the years.",
     alt: "The War Week history page: one card per edition, each in its own colors.",
   },
 ] as const;

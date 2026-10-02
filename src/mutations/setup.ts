@@ -1,6 +1,7 @@
 import { type SQL, and, count, eq, ne, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
+import { participationTeamScoringFor } from "@/db/participation-sql";
 import {
   award,
   awardParticipant,
@@ -11,6 +12,7 @@ import {
   game,
   gamePlayer,
   participant,
+  participation,
   pointsEntry,
   scheduleItem,
   squad,
@@ -774,6 +776,22 @@ async function competitionRefusal(
     "Delete them before changing its scoring.",
   );
   if (gameRefusal) return gameRefusal;
+  // Who took part is checked against Teams in team scoring (ADR 0009).
+  const participationRefusal = inUseError(
+    "Competition",
+    [
+      [
+        await tx.$count(
+          participation,
+          eq(participation.competitionId, exceptId),
+        ),
+        "Participant who took part",
+        "Participants who took part",
+      ],
+    ],
+    "Remove who took part before changing its scoring.",
+  );
+  if (participationRefusal) return participationRefusal;
   // Squads are only for team Competitions.
   return inUseError(
     "Competition",
@@ -798,6 +816,8 @@ export type CreateCompetitionResult =
  * "points") and, for a heats Format with none given, the Bracket builder's
  * default config (`defaultConfig`). A `games` Competition stores its Game
  * Type and that type's default settings; any other Format has no Game Type.
+ * A `participation` Competition starts at 1 point per Participant, ranked
+ * by headcount in team scoring, with Self check-in off.
  */
 export async function createCompetition(
   values: CompetitionCreateValues,
@@ -826,6 +846,13 @@ export async function createCompetition(
             gameConfig: gameType ? defaultGamesConfig(gameType) : null,
             // A new `games` Competition is open to everyone (Best of is off).
             entrantsOpen: format === "games",
+            ...(format === "participation"
+              ? {
+                  participationPoints: 1,
+                  participationTeamScoring:
+                    values.scoring === "team" ? ("ranked" as const) : null,
+                }
+              : {}),
           })
           .returning({ id: competition.id });
         return { ok: true, id: created.id };
@@ -852,7 +879,13 @@ export async function updateCompetition(
         if (refusal) return { ok: false, error: refusal };
         const updated = await tx
           .update(competition)
-          .set({ ...values, updatedAt: sql`now()` })
+          .set({
+            ...values,
+            participationTeamScoring: participationTeamScoringFor(
+              values.scoring,
+            ),
+            updatedAt: sql`now()`,
+          })
           .where(
             and(
               eq(competition.id, id),
@@ -869,7 +902,7 @@ export async function updateCompetition(
 
 /**
  * Deletes a Competition of this War Week, refusing one with Points Entries,
- * Schedule Items or Games.
+ * Schedule Items, Games or anyone who took part.
  */
 export async function deleteCompetition(
   id: string,
@@ -898,6 +931,18 @@ export async function deleteCompetition(
       "Delete or move them first.",
     );
     if (refusal) return { ok: false, error: refusal };
+    const tookPart = inUseError(
+      "Competition",
+      [
+        [
+          await tx.$count(participation, eq(participation.competitionId, id)),
+          "Participant who took part",
+          "Participants who took part",
+        ],
+      ],
+      "Remove who took part first.",
+    );
+    if (tookPart) return { ok: false, error: tookPart };
 
     const deleted = await tx
       .delete(competition)

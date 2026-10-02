@@ -207,6 +207,78 @@ describe("warWeekSeedSchema", () => {
     });
   });
 
+  describe("Participation", () => {
+    function withCompetition(competition: Record<string, unknown>) {
+      const fixture = loadFixture();
+      return {
+        ...fixture,
+        competitions: [
+          ...fixture.competitions,
+          { name: "Fixture Check-in", scoring: "team", ...competition },
+        ],
+      };
+    }
+    const at = `competitions.${loadFixture().competitions.length}`;
+
+    it("accepts a participation Competition with or without its settings", () => {
+      for (const extra of [
+        {
+          participationPoints: 2,
+          participationTeamScoring: "per-person",
+          selfCheckIn: true,
+          checkInClosesAt: "2026-02-27T22:00:00Z",
+        },
+        {},
+      ]) {
+        const result = warWeekSeedSchema.safeParse(
+          withCompetition({ format: "participation", ...extra }),
+        );
+        expect(result.success ? [] : result.error.issues).toEqual([]);
+      }
+    });
+
+    it("rejects the settings on another Format", () => {
+      const issues = rejectionOf(
+        withCompetition({
+          format: "points",
+          participationPoints: 1,
+          participationTeamScoring: "ranked",
+          selfCheckIn: true,
+          checkInClosesAt: "2026-02-27T22:00:00Z",
+        }),
+      );
+      for (const key of [
+        "participationPoints",
+        "participationTeamScoring",
+        "selfCheckIn",
+        "checkInClosesAt",
+      ]) {
+        expect(issues).toContain(
+          `${at}.${key}: ${key} is only for a participation Competition`,
+        );
+      }
+    });
+
+    it("rejects a team scoring on an individual Competition, and N of 0", () => {
+      expect(
+        rejectionOf(
+          withCompetition({
+            format: "participation",
+            scoring: "individual",
+            participationTeamScoring: "ranked",
+          }),
+        ),
+      ).toContain(
+        `${at}.participationTeamScoring: participationTeamScoring is only for a team Competition`,
+      );
+      expect(
+        rejectionOf(
+          withCompetition({ format: "participation", participationPoints: 0 }),
+        ),
+      ).toContain(`${at}.participationPoints: must be more than 0`);
+    });
+  });
+
   describe("Points Entries", () => {
     function withEntry(entry: Record<string, unknown>) {
       const fixture = loadFixture();
@@ -351,6 +423,16 @@ describe("warWeekSeedSchema", () => {
     expect(rejectionOf(fixture)).toContain(
       "awards.0.participants: an Award needs at least one recipient (a team or participants)",
     );
+  });
+
+  it("accepts an Award's Category key and refuses a name-like value", () => {
+    const fixture = loadFixture();
+    fixture.awards[0].category = "war-week-mvp";
+    expect(warWeekSeedSchema.parse(fixture).awards[0].category).toBe(
+      "war-week-mvp",
+    );
+    fixture.awards[0].category = "War Week MVP";
+    expect(rejectionOf(fixture).join("\n")).toContain("awards.0.category");
   });
 
   it("rejects Teams in a free-for-all War Week", () => {
