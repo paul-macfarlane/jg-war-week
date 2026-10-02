@@ -1,8 +1,12 @@
 import { type Page, expect } from "@playwright/test";
 
-/** The slideshow's stage: the slide on screen. */
+/**
+ * The slideshow's stage: the slide on screen. Only the hydrated stage, so
+ * the copy React streams into a hidden `<div hidden id="S:0">` before
+ * swapping it in never makes this match two elements.
+ */
 export const finaleStage = (page: Page) =>
-  page.locator("[data-finale-slide-index]");
+  page.locator("[data-finale-hydrated]");
 
 /** Opens `/xi/finale` and waits until the slideshow takes keys. */
 export async function openFinale(page: Page, path = "/xi/finale") {

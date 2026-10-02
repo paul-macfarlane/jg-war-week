@@ -3,7 +3,7 @@ import { type Page, expect, test } from "@playwright/test";
 
 import { resetXiFinaleSlides } from "./db";
 import { E2E_BASE_URL } from "./env";
-import { openFinale } from "./finale-slides";
+import { finaleStage, openFinale } from "./finale-slides";
 import { asOrganizer } from "./session";
 
 /**
@@ -22,9 +22,6 @@ const PHONE = { width: 390, height: 844 };
 const IMAGE_URL = `${E2E_BASE_URL}/about/announcements.png`;
 const HEADING = "R13 Custom slide";
 const BACKGROUND = "#1e3a5f";
-
-// The one live stage (the hydrated one).
-const finaleStage = (page: Page) => page.locator("[data-finale-hydrated]");
 
 const slideList = (page: Page) =>
   page.getByRole("list", { name: "Finale slides" });
