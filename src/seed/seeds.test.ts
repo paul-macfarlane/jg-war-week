@@ -8,7 +8,8 @@ import { type WarWeekSeed, warWeekSeedSchema } from "@/seed/schema";
 /**
  * Content checks on the committed seeds: eleven years of history, the
  * tentative upcoming War Week XII, plus the War Week XI demo that local test
- * databases load in its place. Schema validity itself is covered in
+ * databases load in its place and the War Week XII demo About's stills are
+ * taken from. Schema validity itself is covered in
  * schema.test.ts.
  */
 
@@ -25,6 +26,12 @@ const files = readdirSync(SEEDS_DIR).filter((f) => f.endsWith(".json"));
 const all = files.map(load).sort((a, b) => a.year - b.year);
 const seeds = all.filter((s) => s.status === "complete");
 const demo = load(path.relative(SEEDS_DIR, DEMO_SEED_PATH));
+const xiiDemo = load(
+  path.relative(
+    SEEDS_DIR,
+    path.resolve(__dirname, "../..", "seeds/demo/xii.json"),
+  ),
+);
 
 describe("War Week history", () => {
   it("has one seed per year from 2016 to 2026", () => {
@@ -214,5 +221,61 @@ describe("War Week XI demo", () => {
     expect(xi.announcements.some((a) => a.videoUrls.length > 0)).toBe(true);
     expect(xi.awards.length).toBeGreaterThanOrEqual(2);
     expect(xi.organizers.length).toBeGreaterThan(0);
+  });
+});
+
+describe("War Week XII demo", () => {
+  const xii = all.find((s) => s.edition === "xii")!;
+
+  it("is a live, free-for-all XII in XII's Story Theme, colors and font", () => {
+    expect(xiiDemo).toMatchObject({
+      edition: "xii",
+      year: 2027,
+      status: "live",
+      mode: "free-for-all",
+      teams: [],
+      storyTheme: xii.storyTheme,
+      primary: xii.primary,
+      primaryForeground: xii.primaryForeground,
+      accent: xii.accent,
+      background: xii.background,
+      foreground: xii.foreground,
+      fontPreset: xii.fontPreset,
+    });
+    expect(xiiDemo.logoUrl ?? null).toBeNull();
+    expect(xiiDemo.bannerUrl ?? null).toBeNull();
+  });
+
+  it("has about 12 Participants, none of them a name from a real roster", () => {
+    const real = new Set(
+      [...all, demo].flatMap((s) => s.participants.map((p) => p.displayName)),
+    );
+    expect(xiiDemo.participants.length).toBeGreaterThanOrEqual(10);
+    expect(xiiDemo.participants.length).toBeLessThanOrEqual(14);
+    expect(xiiDemo.participants.filter((p) => real.has(p.displayName))).toEqual(
+      [],
+    );
+    expect(xiiDemo.participants.every((p) => p.team == null)).toBe(true);
+  });
+
+  it("has a few scheduled Days and one Bracket, one Games and two points-only Competitions", () => {
+    expect(xiiDemo.days.length).toBeGreaterThanOrEqual(3);
+    expect(xiiDemo.days.every((d) => d.scheduleItems.length > 0)).toBe(true);
+    expect(xiiDemo.competitions.map((c) => c.format).sort()).toEqual([
+      "games",
+      "heats",
+      "points",
+      "points",
+    ]);
+    expect(xiiDemo.competitions.every((c) => c.scoring === "individual")).toBe(
+      true,
+    );
+  });
+
+  it("has one pinned Announcement and Points Entries for most Participants", () => {
+    expect(xiiDemo.announcements.filter((a) => a.pinned)).toHaveLength(1);
+    const scored = new Set(xiiDemo.pointsEntries.map((e) => e.participant));
+    expect(scored.size).toBeGreaterThanOrEqual(10);
+    expect(xiiDemo.awards).toEqual([]);
   });
 });

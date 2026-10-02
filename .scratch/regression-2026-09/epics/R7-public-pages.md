@@ -8,7 +8,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Red-team:** not required (no Drizzle schema, auth or access change; Privacy and Terms stay in `PUBLIC_PATHS`).
 
@@ -30,3 +30,4 @@ Each ticket's own, plus:
 ## Comments
 
 - 2026-10-01 (Paul): grilled and approved; tickets 42–45 `ready-for-agent`.
+- 2026-10-01 [CLOSEOUT]: delivered on `feat/regression-r7-public-pages`, PR https://github.com/paul-macfarlane/jg-war-week/pull/110; tickets 42–45 `done`; see `R7-execution.md`. `in-progress` → `done`.

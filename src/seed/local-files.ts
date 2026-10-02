@@ -11,10 +11,16 @@ export const DEMO_SEED = "seeds/demo/xi.json";
 
 /**
  * Every seed a local test database loads, relative to the repo root: the
- * committed history, with the XI demo in place of the real XI.
+ * committed history, with the XI demo in place of the real XI. The live XI
+ * demo loads last, so a live demo of another edition (`seed:demo:xii`) is
+ * reset to its committed seed first rather than refusing a second live War
+ * Week.
  */
 export function localSeedFiles(root = process.cwd()): string[] {
-  return readdirSync(path.resolve(root, "seeds"))
-    .filter((f) => f.endsWith(".json"))
-    .map((f) => (f === "xi.json" ? DEMO_SEED : `seeds/${f}`));
+  return [
+    ...readdirSync(path.resolve(root, "seeds"))
+      .filter((f) => f.endsWith(".json") && f !== "xi.json")
+      .map((f) => `seeds/${f}`),
+    DEMO_SEED,
+  ];
 }

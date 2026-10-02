@@ -15,7 +15,7 @@ const STEPS = [
   {
     slug: "standings-entry",
     label: "Points Entry",
-    alt: "An Organizer saving a Points Entry with Placement Points.",
+    alt: "An Organizer saving a Points Entry for whoever is in last place.",
   },
   {
     slug: "standings-after",
@@ -31,7 +31,7 @@ export function AboutStandingsDemo() {
         {STEPS.map((step, index) => (
           <li key={step.slug} className="flex items-center gap-2 sm:gap-3">
             <div className="flex flex-col items-center gap-1.5">
-              <div className="border-foreground/20 bg-background w-28 overflow-hidden rounded-2xl border-4 shadow-[0_0_40px_-15px_var(--primary)] sm:w-32">
+              <div className="border-foreground/20 bg-background w-[min(6rem,26vw)] overflow-hidden rounded-2xl border-4 shadow-[0_0_40px_-15px_var(--primary)] sm:w-32">
                 <img
                   className="aspect-[390/844] w-full object-cover"
                   src={`/about/${step.slug}.png`}

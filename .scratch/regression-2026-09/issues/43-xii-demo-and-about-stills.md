@@ -4,7 +4,7 @@
 
 **Blocked by:** 42 (settles the six feature cards and their slugs)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Source:** Paul's public-pages review, 2026-10-01, item 3; regression checklist "About page has the theme of the latest war week, including the screenshots/video"
 
@@ -30,3 +30,5 @@
 - [ ] `pnpm gate` passes.
 
 ## Comments
+- 2026-10-01: claimed, `ready-for-agent` → `in-progress` (Epic R7).
+- 2026-10-01 [CLOSEOUT]: `ea37484` (D43, Opus) + review fixes `d434462` + regenerated stills `20abc56`. `seeds/demo/xii.json`: live, free-for-all, XII theme, 12 fictional Participants, 4 placeholder Days, Chess Heats (Bracket), Ping Pong (Games), Mile Run and Step Challenge (points-only), pinned Announcement; validated in `seeds.test.ts` and `archive-contrast.test.ts` (both schemes). `pnpm seed:demo:xii` loads I–XI plus the demo with `--reset`. `about-media.ts` resolves the current War Week (same order and tie-breaks as `selectCurrentWarWeek`), no `/xi` left, Standings by Participant and a Participant Bracket in free-for-all, restores on failure; exit 0 after `pnpm build && pnpm seed:demo:xii`; `public/about/` = 3 hero stills, Finale poster, 6 card stills. Every still in XII's colors (`test-results/r7-public-pages/about-stills-390/`, `about-stills-1440/`). Smoke and e2e stay on the XI demo and pass (`seed:demo` and `localSeedFiles()` now load the XI demo last so a live XII demo can't block the reset). Follow-up: the Finale poster is the Start screen (empty Standings), as XI's was. All ACs PASS. `in-progress` → `done`. PR https://github.com/paul-macfarlane/jg-war-week/pull/110.

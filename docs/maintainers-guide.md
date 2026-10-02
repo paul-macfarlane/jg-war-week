@@ -146,18 +146,27 @@ Each has a prompt you can paste into Claude. Replace the `<…>` parts.
 Words must follow `CONTEXT.md`. If Claude refuses a word, that's why.
 
 A change people can see also updates `/about` in the same PR: its copy
-(`src/app/about/page.tsx`, `src/lib/about.ts`) and, when a feature card's
-screen changed, its still. Regenerate the stills from the seeded demo, never
-by hand, after `pnpm build` with a freshly loaded seed
-(`pnpm seed:load --reset seeds/*.json && pnpm seed:demo`):
+(`src/app/about/page.tsx`, `src/lib/about.ts`: six key-feature cards, copy
+that reads the same for Teams and free-for-all) and, when a feature card's
+screen changed, its still. Regenerate the stills from the current War
+Week's demo, never by hand: `scripts/about-media.ts` captures whichever War
+Week is current, in its theme and mode, so first load that edition's demo
+(`seeds/demo/<edition>.json`) as the one live War Week. For XII:
+`pnpm build && pnpm seed:demo:xii`. Next year, write
+`seeds/demo/<edition>.json` and a matching `seed:demo:<edition>` script in
+`package.json`, then rerun. Afterwards `pnpm seed:demo` (or `pnpm smoke` /
+`pnpm e2e`, which load it themselves) puts the local database back on the XI
+demo.
 
 ```bash
-pnpm tsx scripts/about-media.ts --stills
+pnpm tsx scripts/about-media.ts
 ```
 
-Without `--stills` it also re-records the Finale poster still
-(`finale-poster.png`); only do that when the Finale screen itself changed.
-`--stills` also rewrites the home Standings hero's three stills
+On an edition change, run it with no flag: the Finale poster
+(`finale-poster.png`) wears the old edition's theme, so it must be
+re-recorded too. Use `--stills` only when the poster's edition is unchanged
+(`pnpm tsx scripts/about-media.ts --stills` rewrites the feature-card and
+Standings stills and leaves the poster alone). Either way it rewrites the home Standings hero's three stills
 (`standings-before.png`, `standings-entry.png`, `standings-after.png`).
 
 ### Run a new War Week or change this year's theme (no code first)

@@ -21,11 +21,18 @@ import { warWeekSeedSchema } from "@/seed/schema";
 
 const SEEDS_DIR = path.resolve(__dirname, "../../seeds");
 
-const themes = readdirSync(SEEDS_DIR)
-  .filter((file) => file.endsWith(".json"))
-  .map((file) => {
+// The committed seeds, then the local demos (`seeds/demo/`, labeled
+// `demo/<edition>`), whose themes the app wears just the same.
+const themes = [
+  ...readdirSync(SEEDS_DIR).map((file) => ["", file] as const),
+  ...readdirSync(path.join(SEEDS_DIR, "demo")).map(
+    (file) => ["demo/", file] as const,
+  ),
+]
+  .filter(([, file]) => file.endsWith(".json"))
+  .map(([dir, file]) => {
     const seed = warWeekSeedSchema.parse(
-      JSON.parse(readFileSync(path.join(SEEDS_DIR, file), "utf-8")),
+      JSON.parse(readFileSync(path.join(SEEDS_DIR, dir, file), "utf-8")),
     );
     // The seed loader's mapping onto the War Week's theme columns.
     const theme: ThemeColors = {
@@ -41,7 +48,7 @@ const themes = readdirSync(SEEDS_DIR)
       overrideBackgroundColor: seed.overrideBackground ?? null,
       overrideForegroundColor: seed.overrideForeground ?? null,
     };
-    return [seed.edition, theme] as const;
+    return [`${dir}${seed.edition}`, theme] as const;
   });
 
 // [text utility, text token, surface token]
@@ -88,8 +95,11 @@ function surfaceColor(
 }
 
 describe("archive text contrast", () => {
-  it("covers every seed", () => {
+  it("covers every seed and both demos", () => {
     expect(themes.length).toBeGreaterThanOrEqual(11);
+    expect(themes.map(([edition]) => edition)).toEqual(
+      expect.arrayContaining(["demo/xi", "demo/xii"]),
+    );
   });
 
   it("carries War Week XI's seeded override into its light scheme", () => {
