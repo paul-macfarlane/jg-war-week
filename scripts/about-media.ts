@@ -1280,7 +1280,9 @@ async function main() {
         if (!found) throw new Error(`no Now / Next section on ${home()}`);
       },
     );
-    await still("announcements", cookie, `${home()}/news`, () => sleep(2_000));
+    await still("announcements", cookie, `${home()}/announcements`, () =>
+      sleep(2_000),
+    );
     await still(
       "competitions",
       cookie,

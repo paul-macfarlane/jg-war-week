@@ -5,9 +5,9 @@ import { getAnnouncementCards } from "@/queries/announcements";
 
 import { getWarWeekForEdition } from "../war-week";
 
-export default async function NewsPage({
+export default async function AnnouncementsPage({
   params,
-}: PageProps<"/[edition]/news">) {
+}: PageProps<"/[edition]/announcements">) {
   const { edition } = await params;
   const warWeek = await getWarWeekForEdition(edition);
   if (!warWeek) notFound();
@@ -16,7 +16,7 @@ export default async function NewsPage({
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 px-4 py-6 md:max-w-3xl">
-      <h1 className="text-2xl font-bold">News</h1>
+      <h1 className="text-2xl font-bold">Announcements</h1>
       {announcements.length === 0 ? (
         <p className="text-foreground/70 text-sm">No Announcements yet.</p>
       ) : (

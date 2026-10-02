@@ -33,7 +33,11 @@ function destinationsFor(edition: string): Destination[] {
     { label: "Home", href: `/${edition}`, icon: Home },
     { label: "Schedule", href: `/${edition}/schedule`, icon: ListChecks },
     { label: "Leaderboard", href: `/${edition}/leaderboard`, icon: Trophy },
-    { label: "News", href: `/${edition}/news`, icon: Newspaper },
+    {
+      label: "Announcements",
+      href: `/${edition}/announcements`,
+      icon: Newspaper,
+    },
     {
       label: "More",
       href: `/${edition}/more`,

@@ -73,7 +73,7 @@ before it says it's done.
 
 | Thing                                      | Where                                                                  |
 | ------------------------------------------ | ---------------------------------------------------------------------- |
-| Participant pages (home, leaderboard, schedule, teams, competitions, news, awards, FAQ) | `src/app/[edition]/`                    |
+| Participant pages (home, leaderboard, schedule, teams, competitions, announcements, awards, FAQ) | `src/app/[edition]/`                    |
 | History page                               | `src/app/history/`                                                     |
 | Organizer screens                          | `src/app/admin/` (setup, points, standings, announcements, awards)     |
 | Server actions behind admin forms          | `src/actions/`                                                         |

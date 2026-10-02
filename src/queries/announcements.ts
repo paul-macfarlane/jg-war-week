@@ -92,7 +92,7 @@ function toCardData(
 
 /**
  * A War Week's Announcements as `AnnouncementCard` data (author display
- * name, not email). `/news` and the home feed both use this; only the
+ * name, not email). `/announcements` and the home feed both use this; only the
  * admin pages keep the email (MCP shows the handle before the `@`).
  */
 export async function getAnnouncementCards(
