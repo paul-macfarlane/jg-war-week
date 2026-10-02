@@ -44,9 +44,20 @@ line that no longer matches the app is a bug in this file.
 
 ## Setup
 
-- Seed the current edition's demo and build: `docker compose up -d`, then
-  `pnpm build && pnpm seed:demo:<edition>` (e.g. `pnpm seed:demo:xii`), then
-  `pnpm start -p 3200`. The demo makes `<edition>` the one live War Week,
+- Seed the current edition's demo and build: `docker compose up -d`, then,
+  in a shell with the local database's `DATABASE_URL` and
+  `DATABASE_DRIVER` exported (the local values are in `.env.example`),
+  `pnpm build && pnpm seed:demo:<edition>` (e.g. `pnpm seed:demo:xii`).
+  Then start the server the way `playwright.config.ts` does, with the e2e
+  secret and no Google, or every signed-in page 500s on the session check:
+
+  ```sh
+  BETTER_AUTH_SECRET=e2e-only-secret-never-used-in-production \
+    BETTER_AUTH_URL=http://localhost:3200 GOOGLE_CLIENT_ID= GOOGLE_CLIENT_SECRET= \
+    pnpm start -p 3200
+  ```
+
+  The demo makes `<edition>` the one live War Week,
   so it is the "current War Week" (`getCurrentWarWeek`: live, else next
   upcoming, else latest complete) every themed page reads. Port 3200 is the
   one `e2e/session.ts` signs cookies for.
@@ -57,15 +68,27 @@ line that no longer matches the app is a bug in this file.
   - **Teams pass:** `pnpm seed:demo` (the demo XI, teams mode, live, with
     two Teams, Captains, Awards, FAQ and `games` Competitions).
   - Each pass reseeds with `--reset`, which wipes only the seeded War Weeks
-    in the local database. Never run against a hosted database.
+    in the local database: a War Week the run creates (Lifecycle) survives
+    it, so delete that one yourself. Never run against a hosted database.
 - **Run order:** Public Pages, then Admin as an Organizer (it links the
   Participant account and assigns the Host the later sections use), then
   Host, then User Pages.
 - **Accounts:** sign in without Google using `e2e/session.ts` from a
   Playwright script against port 3200. It writes a session for the email
-  and sets the cookie with the server's own secret, so there's no need to
-  read any `.env` file. Once Test sign-in (ticket 62) ships, use
-  `/sign-in/test` instead.
+  and signs the cookie with the e2e secret the server was started with, so
+  there's no need to read any `.env` file. Export
+  `BETTER_AUTH_SECRET=e2e-only-secret-never-used-in-production` in the
+  script's shell too: `e2e/env.ts` loads `.env.local`, and a secret there
+  would sign cookies the server rejects. Once Test sign-in (ticket 62)
+  ships, use `/sign-in/test` instead.
+  - **Driver:** `scripts/regression/driver.ts` does this for you.
+    `openAs(browser, role, width)` gives a signed-in page at a checklist
+    viewport, and `pageBasics(page, dir)` runs the theme check, the
+    no-horizontal-scroll and clipping checks, and saves a full-page
+    screenshot. From the shell,
+    `pnpm tsx scripts/regression/driver.ts <role> <width> test-results/<run>/checklist --tag=<pass> <path>...`
+    prints one JSON line of results per page. Roles: `organizer`, `host`,
+    `participant`, `unlinked`, `anon`.
   - **Organizer:** `asOrganizer(context)` (`e2e-organizer@jahnelgroup.com`).
   - **Linked Participant:** `signIn(context, "e2e-participant@jahnelgroup.com")`,
     after the Admin run puts that email on a Participant.
@@ -81,7 +104,11 @@ line that no longer matches the app is a bug in this file.
   War Week, taken from `seeds/demo/<edition>.json`'s colors and font (or, to
   compare against the app itself, sign in and read `/<edition>`'s root,
   since `/<edition>` is not public), and the screenshot shows that
-  edition's colors and font, not a past edition's.
+  edition's colors and font, not a past edition's. Two by-design
+  exceptions: `/admin` wears the edition being edited (an Archive edition
+  picked in the switcher wears its own theme), and the History list and
+  each Archive view (`/history`, `/<past edition>`) wear each past
+  edition's own theme.
 - **No horizontal scroll:** on each page,
   `document.documentElement.scrollWidth <= document.documentElement.clientWidth`.
   That alone cannot catch clipping (`/about`'s root has `overflow-hidden`),
@@ -92,8 +119,10 @@ line that no longer matches the app is a bug in this file.
   the no-horizontal-scroll check and a screenshot. Those three are implied by
   each line and not repeated.
 - Save a screenshot per page per viewport under
-  `test-results/<run>/<page>-<width>/` and record each line's verdict in the
-  run's report (the ticket's closeout when a ticket asked for the run).
+  `test-results/<run>/<page>-<pass>-<width>/` (e.g.
+  `admin-announcements-ffa-390/`, `admin-announcements-teams-390/`, so the
+  two passes don't overwrite each other) and record each line's verdict in
+  the run's report (the ticket's closeout when a ticket asked for the run).
 
 ## Public Pages
 
@@ -129,51 +158,65 @@ otherwise. Every create, edit and delete below ends with the change visible
 on the matching War Week page.
 
 - [ ] **Lands on the current War Week.** Open `/admin`; the header names the
-      current War Week, and the edition switcher lists every edition.
-      Switch to a past edition: the banner reads "Editing the Archive: War
-      Week <X>". Switch back.
+      current War Week, and the edition switcher (in the header at 1440, in
+      More at 390) lists every edition. Switch to a past edition: the
+      banner reads "Editing the Archive: War Week <X>". Switch back.
 - [ ] **Settings save and show.** In War Week settings, change the Story
       Theme, the dates (DateRangePicker: picking the end date leaves it open until
       Done), the Slack URL and one Appearance
       Theme color, then save. The preview shows both schemes, and
       `/<edition>` shows the new Story Theme, dates and color after a
       reload. Restore the originals.
-- [ ] **Settings refuse bad input at the field.** A malformed Slack URL and
-      an end date before the start date each show an error at their field,
-      the field takes focus, and nothing is saved.
+- [ ] **Settings refuse bad input at the field.** A Slack URL that isn't
+      `https` (e.g. `http://jahnelgroup.slack.com/x`) shows "Slack URL must
+      be an https URL." at its field (text that isn't a URL at all is
+      stopped earlier by the browser's own "Please enter a URL."). An end
+      date before the start date shows "Start date must not be after the
+      end date." at Dates: the DateRangePicker can't produce one (a second
+      tap before the first just reorders the range), so set the form's
+      `startDate` and `endDate` inputs in the page (e.g. `2027-02-26` and
+      `2027-02-21`) and save. Each time the field takes focus, and nothing
+      is saved.
 - [ ] **Settings: Team fields follow Mode.** In War Week settings,
       *(free-for-all)* Team Label and Leader Title are hidden and the roster
       has no Team controls; set Mode to Teams (before saving) and they show
       with their saved values.
 - [ ] **Days.** Add a Day inside the War Week with a Day Theme; it shows on
       `/<edition>/schedule`. The Day picker greys out dates that already have
-      a Day (not the edited Day's own date) and dates outside the War Week;
-      the server still refuses a duplicate with "There's already a Day on
-      <date>.". Delete the added Day
-      through its confirm.
+      a Day (not the edited Day's own date) and dates outside the War Week,
+      so the form can't post a duplicate (the server's "There's already a
+      Day on <date>." is unit-tested in `src/mutations/setup.test.ts`).
+      Delete the added Day through its confirm.
 - [ ] **Roster: add, link, edit, delete.** Add a Participant (on a Team,
       *(teams)*); edit an existing Participant's email to
       `e2e-participant@jahnelgroup.com` (this is the linked Participant the
-      User Pages use); a Participant row without an email shows "No email: won't be
+      User Pages use; pick one in the top five of the Standings, e.g. Cass
+      Comet in the XII demo, so Home's Standings show the You highlight);
+      a Participant row without an email shows "No email: won't be
       linked when they sign in"; delete the added Participant through its
       confirm.
       *(teams)* Add a Team, mark a Leader; the Captain title shows on
       `/<edition>/teams`; delete the Team.
 - [ ] **Competitions, one of each Format.** Create a `points` Competition
       with Placement Points 5/3/1, a `single-elimination` Competition, and a
-      `games` Competition with `head-to-head` and self-enroll on; assign
-      `e2e-host@jahnelgroup.com` as Host of the `points` one. Each shows on
-      `/<edition>/competitions`.
-- [ ] **Run a Bracket end to end.** Enter Entrants in the
-      `single-elimination` Competition, seed them, build it, give a Heat a
-      Day, time and location (it shows in Now/Next with `?at=` set to that
-      time), record every Heat (a dialog at 820 and 1440, a sheet at 390), and
-      finalize. The finalized Bracket's Placement Points appear in Points
-      Entries and the Standings, and "Play the Finale" opens its Bracket
-      Finale.
+      `games` Competition with `head-to-head` (Add Competition lands on its
+      Games page: set Entrants to "A fixed list", turn on "Participants can
+      enroll", Save settings); assign `e2e-host@jahnelgroup.com` as Host of
+      the `points` one (the Hosts field is on its Edit form, not Add). Each
+      shows on `/<edition>/competitions`.
+- [ ] **Run a Bracket end to end.** In the `single-elimination`
+      Competition's Bracket setup, pick Entrants and Save Entrants, then
+      Generate (or By Standings) to seed and build it. On its results
+      screen, give a Heat a Day, time and location with Time & place (it
+      shows in Home's Up next with `?at=` set just before that time), record
+      every Heat (a dialog at 1440, a bottom sheet at 390), and finalize.
+      The finalized Bracket's Placement Points appear in Points Entries and
+      the Standings, and "Play the Finale" opens its Bracket Finale.
 - [ ] **Close a `games` Competition.** Log two Games as the Organizer in
-      the `head-to-head` Competition, then Close: its top finishers get
-      Placement Points and the Standings move. Reopen withdraws them.
+      a `head-to-head` Competition with Placement Points (Log a Game on its
+      public Competition page), then Close on its Games page: its top
+      finishers get Placement Points and the Standings move. Reopen
+      withdraws them.
 - [ ] **Points Entries.** Add a Points Entry with a Placement Points button,
       edit its points, delete it; `/<edition>/leaderboard` follows each
       change within about 10 s without a reload.
@@ -183,28 +226,36 @@ on the matching War Week page.
 - [ ] **Announcements.** Post an Announcement with a heading, a link, an
       image and a video, then pin it. It shows first on the Announcements
       page and as the pinned card on Home, with every element rendered.
-      Unpin, then delete. The admin list shows "Posted by <name>" (no email)
-      and no video count.
+      Pinned Announcements sort newest first and a demo's are dated in its
+      War Week, after anything posted today, so unpin the seeded pinned one
+      first and pin it again at the end. Unpin, then delete. The admin list
+      shows "Posted by <name>" (the poster's display name or the part of
+      their email before the @, never the email) and no video count.
 - [ ] **Awards.** Give an Award to two Participants (and a Team,
       *(teams)*); it shows on `/<edition>/awards`. Delete it.
 - [ ] **FAQ.** Add an FAQ Item and move it first; `/<edition>/faq` shows it
       first. Delete it.
-- [ ] **Organizers.** Add `e2e-extra@jahnelgroup.com`, then remove it.
-      Removing the last Organizer is refused (check the message; don't
-      leave the list empty).
+- [ ] **Organizers.** Add `e2e-extra@jahnelgroup.com`, then remove it
+      through its confirm. The last Organizer can't be removed: with only
+      one Organizer listed, its Remove control is gone and the page says
+      "The last Organizer can't be removed." If others are listed, delete
+      their rows from the local `organizer` table for this check and put
+      them back after; never remove a real Organizer in the app.
 - [ ] **Lifecycle.** Create next War Week makes an Upcoming edition (copy
       settings only). Start on it is refused while the current one is live
-      ("End <X> first"). End the current War Week: with an open Bracket or
-      `games` Competition it warns first, and on End it records the Winner
-      from first place. Reopen makes it live again. Delete nothing here;
-      the next pass reseeds.
+      ("End <X> first."). End the current War Week: its confirm names any
+      generated Bracket that isn't finalized and any open `games`
+      Competition with at least one Game, and on End it records the Winner
+      from first place. Reopen makes it live again. `--reset` doesn't
+      remove the edition this line created, so delete it afterwards from
+      the local database (`delete from war_week where edition = '<new>'`).
 - [ ] **Finale links.** `/admin/standings` links to the Finale and to each
       finalized Bracket's Finale; both open.
 - [ ] **Forms behave the same everywhere.** On a long form (Competition),
       resize from 1440 to 390 (crossing 768) with typed input: the input
       survives the dialog-to-sheet switch. At 820 the add-Participant and
-      Squad forms are dialogs; at 390, bottom sheets. Every delete above used `ConfirmDialog`, and
-      every save and delete showed a toast.
+      *(teams)* Squad forms are dialogs; at 390, bottom sheets. Every delete
+      above used `ConfirmDialog`, and every save and delete showed a toast.
 - [ ] **The Guide is true.** Read `/admin/guide`: every step names a page
       and control that exists and works as described.
 - [ ] **No admin page carries more than it needs.** *(judgment)* Apply the
@@ -215,18 +266,23 @@ on the matching War Week page.
 `/admin/**` as `e2e-host@jahnelgroup.com`, Host of one `points`
 Competition (from the Organizer run).
 
-- [ ] **Trimmed to their Competitions.** The admin nav and Points Entries,
-      Brackets, Setup → Competitions and Setup → Schedule list only the
-      Host's Competition and its Schedule Items.
+- [ ] **Trimmed to their Competitions.** The admin nav, Points Entries (its
+      Competition picker and its Brackets and Games lists), Setup →
+      Competitions and Setup → Schedule list only the Host's Competition
+      and its Schedule Items.
 - [ ] **Organizer-only pages refuse.** War Week settings, Days, Teams &
       roster, FAQ, Awards, Organizers and Create next War Week each show
       "Organizers and Hosts only."; there is no lifecycle box.
 - [ ] **What a Host can do works.** Add, edit and delete a Points Entry on
       their Competition; post an Announcement, edit it and delete it. They
-      can't create or delete a Competition or assign Hosts (no control, and
-      the action is refused if posted).
-- [ ] **Not a Host elsewhere.** Switch to another edition (if offered) or
-      open another War Week's admin URL: nothing to manage there.
+      can't create or delete a Competition or assign Hosts: no Add
+      Competition, Delete or Hosts control (the server's refusal is
+      unit-tested in `src/lib/access.test.ts`).
+- [ ] **Not a Host elsewhere.** Switch to another edition (if offered), or
+      set the `admin_edition` cookie to a past edition, and open another
+      War Week's admin URL (e.g. `/admin/points/<an XI Points Entry id>`,
+      `/admin/brackets/<a Competition they don't host>`): nothing to manage
+      there.
 
 ## User Pages
 
@@ -238,12 +294,16 @@ that nothing personal shows (no You highlight, no Log a Game).
       `?at=` (pick a time with a Schedule Item and a timed Heat), the
       pinned Announcement, and the top of the Standings with the linked
       Participant highlighted as You. With a `games` Competition open, the
-      "Log a Game" shortcut shows for the linked Participant only.
+      "Log a Game" shortcut shows for the linked Participant only. The XII
+      demo has no timed Heat: as the Organizer, generate a Bracket with the
+      linked Participant in it (e.g. Chess Heats) and time an unplayed Heat,
+      then use a `?at=` just before it.
 - [ ] **Log a Game from a phone.** At 390, log a head-to-head Game from
       Home's shortcut against another Entrant; it shows in that
       Competition's Game log as the newest Game, and its leaderboard
-      updates. As the unlinked account, there's no shortcut, and posting the
-      form is refused.
+      updates. As the unlinked account, there's no shortcut and no Log a
+      Game on the Competition page (the server's refusal of a posted Game
+      is unit-tested in `src/lib/access.test.ts`).
 - [ ] **Enroll and withdraw.** In the self-enroll Competition, the linked
       Participant enrolls, withdraws and enrolls again; the Entrant list
       follows each step.
@@ -271,17 +331,21 @@ that nothing personal shows (no You highlight, no Log a Game).
       Theme and Winner; open three past editions, including the oldest:
       each shows its archive view.
 - [ ] **Finale.** `/<edition>/finale` opens on Start. Pressing Start counts
-      the main Standings in from last place to first, ties together, in
-      under 8 s, ending in the same order as the Leaderboard. Replay works.
-      With `prefers-reduced-motion` it still waits for Start, then jumps to
-      the end.
+      the main Standings in from last place to first, ties together, within
+      8 s (`FINALE_MAX_MS`; time it in the page, from the Start click to
+      `[data-finale="done"]`: a frame or two over 8000 ms is the animation
+      clock, Playwright's own waits add more), ending in the same order as
+      the Leaderboard. Replay works. With `prefers-reduced-motion` it still
+      waits for Start, then jumps to the end.
 - [ ] **Display.** Light, Dark and System each restyle every page above,
       and the choice survives a reload. In Dark, text passes contrast (axe)
       on Home, Leaderboard and a Competition.
 - [ ] **More.** Every link in More (the page at 1440, the sheet at 390)
       opens its page; Admin shows only for the Organizer and the Host.
-- [ ] **Access.** Signed out, `/<edition>` goes to `/sign-in` and returns
-      after sign-in. As the linked Participant, `/admin` shows "Organizers
+- [ ] **Access.** Signed out, `/<edition>` goes to
+      `/sign-in?callbackURL=%2F<edition>` (finishing the sign-in needs
+      Google until Test sign-in, ticket 62, ships; then check it returns to
+      `/<edition>`). As the linked Participant, `/admin` shows "Organizers
       and Hosts only."
 - [ ] **No page carries more than it needs.** *(judgment)* Apply the
       judgment rule to every page above, at 390 first.
