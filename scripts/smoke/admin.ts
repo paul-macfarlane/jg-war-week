@@ -104,7 +104,8 @@ export async function assertAdminWording(sessions: {
 
 /**
  * The flat admin nav (ticket 57): `/admin` opens Points, and every old
- * Setup, Overview and Standings path permanently redirects to its new home.
+ * Setup, Overview and Standings path permanently redirects to its new home;
+ * so do the Schedule Item, FAQ Item and Award pages (ticket 58).
  */
 export async function assertAdminRedirects(sessions: {
   organizer: SmokeSession;
@@ -133,6 +134,13 @@ export async function assertAdminRedirects(sessions: {
     ["/admin/setup/faq/new", "/admin/faq"],
     [`/admin/setup/faq/${id}`, "/admin/faq"],
     ["/admin/standings", "/admin/finale"],
+    // Add and edit open in a Sheet on the list (ticket 58).
+    ["/admin/schedule/new", "/admin/schedule"],
+    [`/admin/schedule/${id}`, "/admin/schedule"],
+    ["/admin/faq/new", "/admin/faq"],
+    [`/admin/faq/${id}`, "/admin/faq"],
+    ["/admin/awards/new", "/admin/awards"],
+    [`/admin/awards/${id}`, "/admin/awards"],
   ] as const) {
     const check = `GET ${from} permanently redirects to ${to}`;
     try {

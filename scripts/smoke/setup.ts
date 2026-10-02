@@ -513,9 +513,10 @@ export async function assertSetupScheduleFaq(sessions: {
       for (const [page, marker] of [
         ["/admin/settings", 'href="/admin/faq"'],
         ["/admin/schedule", 'aria-label="Schedule Items"'],
-        ["/admin/schedule/new", 'aria-label="Schedule Item"'],
+        // Add and edit open in a Sheet on the list (ticket 58).
+        ["/admin/schedule", "Add Schedule Item"],
         ["/admin/faq", 'aria-label="FAQ Items"'],
-        ["/admin/faq/new", 'aria-label="FAQ Item"'],
+        ["/admin/faq", "Add FAQ Item"],
       ] as const) {
         const organizer = await fetch(`${BASE_URL}${page}`, {
           headers: { cookie: sessions.organizer.cookie },

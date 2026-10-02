@@ -9,7 +9,6 @@ import {
   team,
 } from "@/db/schema";
 import { type AwardView } from "@/lib/awards";
-import { isUuid } from "@/lib/uuid";
 
 export type { AwardView };
 
@@ -72,17 +71,6 @@ export async function getAwards(
         teamColor,
       })),
   }));
-}
-
-/** One Award of a War Week, for the edit form. */
-export async function getAwardForEdit(
-  warWeek: Pick<WarWeek, "id">,
-  id: string,
-  dbOrTx: DBOrTx = db,
-): Promise<AwardView | undefined> {
-  if (!isUuid(id)) return undefined;
-  const awards = await getAwards(warWeek, dbOrTx);
-  return awards.find((a) => a.id === id);
 }
 
 export type AwardFormOptions = {

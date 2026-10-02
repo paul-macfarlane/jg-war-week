@@ -16,8 +16,8 @@ import {
   SETUP_EDITOR,
   SetupAddButton,
   SetupListRow,
-  SetupRowButtons,
   SetupRowError,
+  SetupSaveButton,
   SetupSheetFooter,
   usageSummary,
   useSetupRow,
@@ -70,13 +70,11 @@ function TeamForm({
     : EMPTY_TEAM;
   const id = useId();
   const [values, setValues] = useState(initial);
-  const { pending, formRef, formAction, fieldErrors, error, remove } =
-    useSetupRow(
-      () =>
-        team ? updateTeam(team.id, values) : createTeam(warWeekId, values),
-      `${teamLabel} saved`,
-      onSaved,
-    );
+  const { pending, formRef, formAction, fieldErrors, error } = useSetupRow(
+    () => (team ? updateTeam(team.id, values) : createTeam(warWeekId, values)),
+    `${teamLabel} saved`,
+    onSaved,
+  );
   const set =
     (field: keyof TeamInput) => (event: React.ChangeEvent<HTMLInputElement>) =>
       setValues((v) => ({ ...v, [field]: event.target.value }));
@@ -131,21 +129,24 @@ function TeamForm({
         </Field>
       </FieldGroup>
       <SetupSheetFooter>
-        <SetupRowButtons
+        <SetupSaveButton
           pending={pending}
-          addLabel={`Add ${teamLabel}`}
-          rowId={team?.id}
-          onDelete={
-            team &&
-            (() => remove(() => deleteTeam(team.id), `${teamLabel} deleted`))
-          }
-          deleteTitle={team && `Delete ${teamLabel} ${team.name}?`}
-          deleteDescription={team && teamUsage(team)}
+          label={team ? "Save" : `Add ${teamLabel}`}
         />
         <SetupRowError error={error} />
       </SetupSheetFooter>
     </form>
   );
+}
+
+/** What deleting the Participant takes with it. */
+function participantUsage(participant: SetupParticipant): string {
+  return usageSummary([
+    [participant.pointsEntryCount, "Points Entry", "Points Entries"],
+    [participant.awardCount, "Award", "Awards"],
+    [participant.entrantCount, "Bracket Entrant", "Bracket Entrants"],
+    [participant.squadCount, "Squad", "Squads"],
+  ]);
 }
 
 const EMPTY_PARTICIPANT: ParticipantInput = {
@@ -191,15 +192,14 @@ function ParticipantForm({
     : EMPTY_PARTICIPANT;
   const id = useId();
   const [values, setValues] = useState(initial);
-  const { pending, formRef, formAction, fieldErrors, error, remove } =
-    useSetupRow(
-      () =>
-        participant
-          ? updateParticipant(participant.id, values)
-          : createParticipant(warWeekId, values),
-      "Participant saved",
-      onSaved,
-    );
+  const { pending, formRef, formAction, fieldErrors, error } = useSetupRow(
+    () =>
+      participant
+        ? updateParticipant(participant.id, values)
+        : createParticipant(warWeekId, values),
+    "Participant saved",
+    onSaved,
+  );
   const set =
     (field: Exclude<keyof ParticipantInput, "isLeader">) =>
     (event: React.ChangeEvent<HTMLInputElement>) =>
@@ -209,14 +209,7 @@ function ParticipantForm({
     ...teams.map((team) => ({ value: team.id, label: team.name })),
   ];
 
-  const usage = participant
-    ? usageSummary([
-        [participant.pointsEntryCount, "Points Entry", "Points Entries"],
-        [participant.awardCount, "Award", "Awards"],
-        [participant.entrantCount, "Bracket Entrant", "Bracket Entrants"],
-        [participant.squadCount, "Squad", "Squads"],
-      ])
-    : "";
+  const usage = participant ? participantUsage(participant) : "";
 
   return (
     <form
@@ -306,20 +299,9 @@ function ParticipantForm({
           )}
       </FieldGroup>
       <SetupSheetFooter>
-        <SetupRowButtons
+        <SetupSaveButton
           pending={pending}
-          addLabel="Add Participant"
-          rowId={participant?.id}
-          onDelete={
-            participant &&
-            (() =>
-              remove(
-                () => deleteParticipant(participant.id),
-                "Participant deleted",
-              ))
-          }
-          deleteTitle={participant && `Delete ${participant.displayName}?`}
-          deleteDescription={usage}
+          label={participant ? "Save" : "Add Participant"}
         />
         <SetupRowError error={error} />
       </SetupSheetFooter>
@@ -327,7 +309,7 @@ function ParticipantForm({
   );
 }
 
-/** The War Week's Teams, each opening in a Sheet, plus an Add button. */
+/** The War Week's Teams, each with Edit (a Sheet) and Delete, plus an Add button. */
 export function TeamsEditor({
   warWeekId,
   teams,
@@ -375,6 +357,10 @@ export function TeamsEditor({
                   onSaved={close}
                 />
               )}
+              onDelete={() => deleteTeam(team.id)}
+              deleteTitle={`Delete ${teamLabel} ${team.name}?`}
+              deleteDescription={teamUsage(team)}
+              deleteSuccess={`${teamLabel} deleted`}
             />
           ))}
         </ul>
@@ -389,7 +375,7 @@ export function TeamsEditor({
   );
 }
 
-/** The roster: every Participant, each opening in a Sheet, then "Add Participant". */
+/** The roster: every Participant, each with Edit (a Sheet) and Delete, then "Add Participant". */
 export function RosterEditor({
   warWeekId,
   participants,
@@ -447,6 +433,10 @@ export function RosterEditor({
                   onSaved={close}
                 />
               )}
+              onDelete={() => deleteParticipant(p.id)}
+              deleteTitle={`Delete ${p.displayName}?`}
+              deleteDescription={participantUsage(p)}
+              deleteSuccess="Participant deleted"
             />
           ))}
         </ul>

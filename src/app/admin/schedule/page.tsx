@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { DaysEditor } from "@/components/days-editor";
 import { CategoryBadge } from "@/components/schedule-item";
-import { DeleteSetupItemButton } from "@/components/setup-schedule-faq-buttons";
-import { buttonVariants } from "@/components/ui/button";
-import { formatDayHeading, formatTimeRange } from "@/lib/schedule";
+import { ScheduleItemsEditor } from "@/components/schedule-items-editor";
+import { sanitizeContent } from "@/lib/rich-text/content";
+import { formatTimeRange } from "@/lib/schedule";
+import { scheduleItemInputFrom } from "@/lib/setup-schedule-faq";
 import { formatDateRange } from "@/lib/war-week-display";
 import { getSchedule } from "@/queries/schedule";
 import { getSetupDays } from "@/queries/setup";
+import { getCompetitionOptions } from "@/queries/setup-schedule-faq";
 
 import { loadAdminPage } from "../gate";
 
@@ -19,22 +20,52 @@ export const metadata: Metadata = { title: "Schedule · JG War Week" };
 
 /**
  * The War Week's Days (with their Day Themes) and each Day's Schedule
- * Items on one page. An Organizer edits the Days; a Host sees only the
- * Schedule Items linked to their Competitions.
+ * Items on one page, each row with Edit (a Sheet) and Delete. An Organizer
+ * edits the Days; a Host sees, adds and edits only the Schedule Items
+ * linked to their Competitions.
  */
 export default async function AdminSchedulePage() {
   const { warWeek, email, allowed, isOrganizer, editions, runs } =
     await loadAdminPage("/admin/schedule");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
-  const [schedule, setupDays] = await Promise.all([
+  const [schedule, setupDays, allCompetitions] = await Promise.all([
     getSchedule(warWeek.id),
     isOrganizer ? getSetupDays(warWeek) : [],
+    getCompetitionOptions(warWeek),
   ]);
+  // A Host links an item only to one of their own Competitions.
+  const competitions = allCompetitions.filter((c) => runs(c.id));
   // The same grouping and order as the public Schedule page.
   const days = schedule.map((day) => ({
-    ...day,
-    items: day.items.filter((item) => runs(item.competition?.id)),
+    id: day.id,
+    date: day.date,
+    dayTheme: day.dayTheme,
+    items: day.items
+      .filter((item) => runs(item.competition?.id))
+      .map((item) => {
+        // Sanitized on write; again here so the editor only gets the
+        // closed set.
+        const description =
+          item.description && sanitizeContent(item.description);
+        return {
+          id: item.id,
+          title: item.title,
+          details: (
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="tabular-nums">{formatTimeRange(item)}</span>
+              <CategoryBadge category={item.category} />
+              {item.competition && <span>{item.competition.name}</span>}
+            </span>
+          ),
+          initial: scheduleItemInputFrom({
+            ...item,
+            dayId: day.id,
+            competitionId: item.competition?.id ?? null,
+            description: description?.ok ? description.content : null,
+          }),
+        };
+      }),
   }));
 
   return (
@@ -46,17 +77,7 @@ export default async function AdminSchedulePage() {
       current="Schedule"
     >
       <section className="flex max-w-3xl flex-col gap-6">
-        <div className="flex flex-wrap items-center gap-4">
-          <h1 className="text-2xl font-bold">Schedule</h1>
-          {days.length > 0 && (
-            <Link
-              href="/admin/schedule/new"
-              className={buttonVariants({ className: "ml-auto" })}
-            >
-              New Schedule Item
-            </Link>
-          )}
-        </div>
+        <h1 className="text-2xl font-bold">Schedule</h1>
 
         {isOrganizer && (
           <section
@@ -98,65 +119,12 @@ export default async function AdminSchedulePage() {
                 : "No Days yet. An Organizer adds the Days first."}
             </p>
           ) : (
-            <div aria-label="Schedule Items" className="flex flex-col gap-6">
-              {days.map((day) => (
-                <section key={day.id} className="flex flex-col gap-2">
-                  <h3 className="font-semibold">
-                    {formatDayHeading(day.date)}{" "}
-                    <span className="text-foreground/60 font-normal">
-                      · {day.dayTheme}
-                    </span>
-                  </h3>
-                  {day.items.length === 0 ? (
-                    <p className="text-foreground/60 text-sm">
-                      Nothing scheduled.
-                    </p>
-                  ) : (
-                    <ul className="border-border divide-border divide-y rounded-lg border">
-                      {day.items.map((item) => (
-                        <li
-                          key={item.id}
-                          className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center"
-                        >
-                          <div className="flex min-w-0 flex-1 flex-col gap-1">
-                            <span className="text-foreground/70 text-xs tabular-nums">
-                              {formatTimeRange(item)}
-                            </span>
-                            <span className="font-medium">{item.title}</span>
-                            <span className="flex flex-wrap items-center gap-2 text-xs">
-                              <CategoryBadge category={item.category} />
-                              {item.competition && (
-                                <span className="text-foreground/70">
-                                  {item.competition.name}
-                                </span>
-                              )}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Link
-                              href={`/admin/schedule/${item.id}`}
-                              className={buttonVariants({
-                                variant: "outline",
-                                size: "xs",
-                                className:
-                                  "min-h-11 min-w-11 sm:min-h-6 sm:min-w-0",
-                              })}
-                            >
-                              Edit
-                            </Link>
-                            <DeleteSetupItemButton
-                              id={item.id}
-                              name={item.title}
-                              kind="schedule-item"
-                            />
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </section>
-              ))}
-            </div>
+            <ScheduleItemsEditor
+              warWeekId={warWeek.id}
+              requireCompetition={!isOrganizer}
+              days={days}
+              competitions={competitions}
+            />
           )}
         </section>
       </section>

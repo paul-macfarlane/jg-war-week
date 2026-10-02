@@ -54,6 +54,14 @@ describe("the admin redirects (next.config)", () => {
     ["/admin/setup/faq/new", "/admin/faq"],
     ["/admin/setup/faq/abc-123", "/admin/faq"],
     ["/admin/standings", "/admin/finale"],
+    // Schedule Items, FAQ Items and Awards add and edit in a Sheet on their
+    // list (ticket 58).
+    ["/admin/schedule/new", "/admin/schedule"],
+    ["/admin/schedule/abc-123", "/admin/schedule"],
+    ["/admin/faq/new", "/admin/faq"],
+    ["/admin/faq/abc-123", "/admin/faq"],
+    ["/admin/awards/new", "/admin/awards"],
+    ["/admin/awards/abc-123", "/admin/awards"],
   ])("sends %s to %s permanently", async (from, to) => {
     expect(await redirectFor(from)).toEqual({ to, permanent: true });
   });
@@ -66,6 +74,11 @@ describe("the admin redirects (next.config)", () => {
     "/admin/faq",
     "/admin/finale",
     "/admin/settings",
+    "/admin/awards",
+    // Announcements keep their full-page editor.
+    "/admin/announcements/new",
+    "/admin/announcements/abc-123",
+    "/admin/points/abc-123",
   ])("leaves the new home %s alone", async (path) => {
     expect(await redirectFor(path)).toBeNull();
   });
