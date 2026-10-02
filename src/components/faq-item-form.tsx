@@ -15,7 +15,11 @@ import {
   useFocusFirstInvalid,
 } from "@/components/form-field-errors";
 import { RichTextEditor } from "@/components/rich-text-editor";
-import { Button } from "@/components/ui/button";
+import {
+  SetupRowError,
+  SetupSaveButton,
+  SetupSheetFooter,
+} from "@/components/setup-row";
 import {
   Field,
   FieldError,
@@ -28,19 +32,22 @@ import type { Content } from "@/lib/rich-text/content";
 
 const EMPTY_ANSWER: Content = { type: "doc", content: [] };
 
-const BACK = "/admin/faq";
-
-/** Add or edit one FAQ Item: a question and its rich-text answer. */
+/**
+ * Add or edit one FAQ Item, in its Sheet on the FAQ page: a question and
+ * its rich-text answer. `onSaved` closes the Sheet.
+ */
 export function FaqItemForm({
   warWeekId,
   itemId,
   initial,
+  onSaved,
 }: {
   /** The War Week this page was rendered for; creates post it. */
   warWeekId: string;
   /** Set when editing an existing FAQ Item. */
   itemId?: string;
   initial?: { question: string; answer: Content };
+  onSaved?: () => void;
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -63,7 +70,7 @@ export function FaqItemForm({
         return saved;
       }
       toast.success("FAQ Item saved");
-      router.push(BACK);
+      onSaved?.();
       router.refresh();
       return saved;
     },
@@ -80,7 +87,7 @@ export function FaqItemForm({
       className="flex flex-col gap-5"
       aria-label="FAQ Item"
     >
-      <FieldGroup>
+      <FieldGroup className="px-4">
         <Field data-invalid={!!fieldErrors.question}>
           <FieldLabel htmlFor="faq-question">Question</FieldLabel>
           <Input
@@ -108,26 +115,13 @@ export function FaqItemForm({
         </Field>
       </FieldGroup>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
-          type="submit"
-          size="lg"
-          className="min-h-11 sm:min-h-9"
-          disabled={pending}
-        >
-          {pending ? "Saving…" : itemId ? "Save changes" : "Add FAQ Item"}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          className="min-h-11 sm:min-h-9"
-          onClick={() => router.push(BACK)}
-        >
-          Cancel
-        </Button>
-      </div>
-      {formError && !pending && <FieldError>{formError}</FieldError>}
+      <SetupSheetFooter>
+        <SetupSaveButton
+          pending={pending}
+          label={itemId ? "Save" : "Add FAQ Item"}
+        />
+        <SetupRowError error={pending ? null : formError} />
+      </SetupSheetFooter>
     </form>
   );
 }

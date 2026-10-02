@@ -238,8 +238,9 @@ test("r5 34 admin controls are 44px on a phone", async ({
     // 34-2: at 1280 the controls are as before (compare the before/after PNGs).
     await page.setViewportSize(DESKTOP);
     await page.goto("/admin/faq");
+    // Each row's Edit and Delete are buttons named for the row (r9 58).
     await expect(
-      page.getByRole("link", { name: "Edit" }).first(),
+      page.getByRole("button", { name: /^Edit / }).first(),
     ).toBeVisible();
     await shoot(page, testInfo, "after-1280-faq", true);
     await page.goto("/admin/announcements/new");
@@ -266,7 +267,9 @@ test("r5 34 admin controls are 44px on a phone", async ({
       "Pin/Unpin",
     );
     await expectTouchTarget(
-      page.getByRole("button", { name: "Delete", exact: true }),
+      page
+        .getByRole("list", { name: "Announcements" })
+        .getByRole("button", { name: /^Delete / }),
       "announcement Delete",
     );
     await shoot(page, testInfo, "announcements-375");
@@ -292,11 +295,11 @@ test("r5 34 admin controls are 44px on a phone", async ({
     // The Schedule Items, not the Days above them (r9 57).
     const scheduleItems = page.locator('[aria-label="Schedule Items"]');
     await expectTouchTarget(
-      scheduleItems.getByRole("link", { name: "Edit" }),
+      scheduleItems.getByRole("button", { name: /^Edit / }),
       "schedule Edit",
     );
     await expectTouchTarget(
-      scheduleItems.getByRole("button", { name: "Delete", exact: true }),
+      scheduleItems.getByRole("button", { name: /^Delete / }),
       "schedule Delete",
     );
     await shoot(page, testInfo, "schedule-375");
@@ -310,12 +313,13 @@ test("r5 34 admin controls are 44px on a phone", async ({
       page.getByRole("button", { name: /Move ".*" up/ }).last(),
       "FAQ up",
     );
+    const faqItems = page.getByRole("list", { name: "FAQ Items" });
     await expectTouchTarget(
-      page.getByRole("link", { name: "Edit" }),
+      faqItems.getByRole("button", { name: /^Edit / }),
       "FAQ Edit",
     );
     await expectTouchTarget(
-      page.getByRole("button", { name: "Delete", exact: true }),
+      faqItems.getByRole("button", { name: /^Delete / }),
       "FAQ Delete",
     );
     await shoot(page, testInfo, "faq-375");
@@ -378,7 +382,9 @@ test("r5 35 selects and the color picker on a phone", async ({
   ).toBeGreaterThanOrEqual(mode1280.x + mode1280.width);
   expect(mode1280.y).toBeCloseTo(label1280.y, 0);
   expect(mode1280.height).toBeCloseTo(label1280.height, 0);
-  await page.goto("/admin/awards/new");
+  // The Award form opens in a Sheet from the Awards list (r9 58).
+  await page.goto("/admin/awards");
+  await page.getByRole("button", { name: "Add Award" }).click();
   expect(
     (await rect(page.locator("#award-team"), "Award Team")).height,
   ).toBeCloseTo(36, 0);
@@ -397,7 +403,8 @@ test("r5 35 selects and the color picker on a phone", async ({
     .getByRole("combobox", { name: "War Week to administer" });
   expect((await rect(sheetSwitcher, "switcher")).height).toBeCloseTo(44, 0);
   await page.keyboard.press("Escape");
-  await page.goto("/admin/awards/new");
+  await page.goto("/admin/awards");
+  await page.getByRole("button", { name: "Add Award" }).click();
   expect(
     (await rect(page.locator("#award-team"), "Award Team")).height,
   ).toBeCloseTo(44, 0);
@@ -507,7 +514,8 @@ test("r5 31 setup rows open in a Sheet", async ({
     await expect(roster).toBeVisible();
     expect(await pageHeight(page, "Teams & roster")).toBeLessThan(11_000);
 
-    // 31-1: each row is one "Edit <name>" button, 44px tall on a phone; a
+    // 31-1: each row's Edit button is "Edit <name>", 44px tall on a phone
+    // (r9 58: a visible Edit beside Delete, not a whole-row button); a
     // Team's reads its Team Label too.
     await expectTouchTarget(
       teams.getByRole("button", { name: "Edit Team Red", exact: true }),
@@ -517,8 +525,9 @@ test("r5 31 setup rows open in a Sheet", async ({
       name: `Edit ${participant}`,
       exact: true,
     });
+    const rowItem = roster.getByRole("listitem").filter({ has: row });
     await expectTouchTarget(row, "Participant row");
-    await expect(row).toContainText("Blue");
+    await expect(rowItem).toContainText("Blue");
     await shoot(page, testInfo, "teams-list-375");
 
     await row.click();
@@ -544,11 +553,11 @@ test("r5 31 setup rows open in a Sheet", async ({
     await sheet.getByRole("button", { name: "Save", exact: true }).click();
     await expect(page.getByText("Participant saved")).toBeVisible();
     await expect(sheet).toBeHidden();
-    await expect(row).toContainText("Red");
-    await expect(row).not.toContainText("Blue");
+    await expect(rowItem).toContainText("Red");
+    await expect(rowItem).not.toContainText("Blue");
 
-    // 31-3: add a Team through its Sheet, then delete it from its own:
-    // focus lands on the next row's Edit button.
+    // 31-3: add a Team through its Sheet, then delete it from its row's
+    // Delete (r9 58): focus lands on the next row's Edit button.
     await page.getByRole("button", { name: "Add Team", exact: true }).click();
     const addSheet = page.getByRole("dialog", { name: "Add Team" });
     await addSheet.getByRole("textbox", { name: "Name" }).fill(throwaway);
@@ -556,19 +565,13 @@ test("r5 31 setup rows open in a Sheet", async ({
     await expect(page.getByText("Team saved")).toBeVisible();
     await expect(addSheet).toBeHidden();
     await teams
-      .getByRole("button", { name: `Edit Team ${throwaway}`, exact: true })
-      .click();
-    const teamSheet = page.getByRole("dialog", {
-      name: `Edit Team ${throwaway}`,
-    });
-    await teamSheet
-      .getByRole("button", { name: "Delete", exact: true })
+      .getByRole("button", { name: `Delete Team ${throwaway}`, exact: true })
       .click();
     await page
       .getByRole("alertdialog")
       .getByRole("button", { name: "Delete", exact: true })
       .click();
-    await expect(teamSheet).toBeHidden();
+    await expect(page.getByText("Team deleted")).toBeVisible();
     await expect(
       teams.getByRole("button", {
         name: `Edit Team ${throwaway}`,
@@ -672,7 +675,13 @@ test("r5 32 admin lists fit a phone; free-for-all drops Team", async ({
   const poolId = await xiCompetitionId("Pool");
   const awardIds: string[] = [];
   const entryIds: string[] = [];
+  // Points keeps its cards and table; Announcements and Awards are list
+  // rows with Edit and Delete (r9 58).
   const pages = ["points", "announcements", "awards"];
+  const rowLists: Record<string, string> = {
+    announcements: "Announcements",
+    awards: "Awards",
+  };
   try {
     const [teamAward] = await runQuery<{ id: string }>(
       `insert into award (war_week_id, name, team_id)
@@ -706,22 +715,31 @@ test("r5 32 admin lists fit a phone; free-for-all drops Team", async ({
     entryIds.push(entry.id);
     await asOrganizer(context);
 
-    // 32-2, 32-6: at 1280 the tables render as today.
+    // 32-2, 32-6: at 1280 Points' table renders as today; the others' rows.
     await page.setViewportSize(DESKTOP);
     for (const name of pages) {
       await page.goto(`/admin/${name}`);
-      await expect(page.getByRole("table")).toBeVisible();
+      await expect(
+        rowLists[name]
+          ? page.getByRole("list", { name: rowLists[name] })
+          : page.getByRole("table"),
+      ).toBeVisible();
       await shoot(page, testInfo, `after-1280-${name}`, true);
     }
     await expect(
-      page.getByRole("columnheader", { name: teamLabel }),
-    ).toBeVisible();
+      page
+        .getByRole("list", { name: "Awards" })
+        .getByRole("listitem")
+        .filter({ hasText: awardName }),
+    ).toContainText(`${teamLabel}: Red`);
 
     // 32-1, 32-3, 32-6: at 375 each list is cards that fit, actions in view.
     await page.setViewportSize(PHONE);
     for (const name of pages) {
       await page.goto(`/admin/${name}`);
-      const list = page.locator("ul:has(> li > [data-slot=card])").last();
+      const list = rowLists[name]
+        ? page.getByRole("list", { name: rowLists[name] })
+        : page.locator("ul:has(> li > [data-slot=card])").last();
       await expect(list).toBeVisible();
       await expect(page.getByRole("table")).toBeHidden();
       expect(
@@ -749,7 +767,11 @@ test("r5 32 admin lists fit a phone; free-for-all drops Team", async ({
           await expect(actions.nth(j)).toBeInViewport();
         }
       }
-      const edits = list.getByRole("link", { name: "Edit", exact: true });
+      const edits = rowLists[name]
+        ? list.getByRole(name === "announcements" ? "link" : "button", {
+            name: /^Edit /,
+          })
+        : list.getByRole("link", { name: "Edit", exact: true });
       expect(await edits.count(), `${name} Edit links`).toBeGreaterThan(0);
       for (let i = 0; i < (await edits.count()); i++) {
         await expectTouchTarget(edits.nth(i), `${name} Edit`);
@@ -764,17 +786,17 @@ test("r5 32 admin lists fit a phone; free-for-all drops Team", async ({
       await shoot(page, testInfo, `${name}-375`, true);
     }
     const award = page
-      .locator("ul:has(> li > [data-slot=card])")
-      .last()
+      .getByRole("list", { name: "Awards" })
       .getByRole("listitem")
       .filter({ hasText: awardName });
     await expect(award).toContainText(`${teamLabel}: Red`);
     await expect(award).toContainText("Abby Rivera");
 
-    // 32-4: XI shows Team in the Award form.
-    await page.goto("/admin/awards/new");
+    // 32-4: XI shows Team in the Award form (in its Sheet, r9 58).
+    await page.getByRole("button", { name: "Add Award" }).click();
     await expect(page.locator("#award-team")).toBeVisible();
-    await shoot(page, testInfo, "award-form-xi-375", true);
+    await shoot(page, testInfo, "award-form-xi-375");
+    await page.keyboard.press("Escape");
 
     // 32-5: the Points Entry target reads the Team Label on XI.
     await page.goto("/admin/points");
@@ -786,11 +808,12 @@ test("r5 32 admin lists fit a phone; free-for-all drops Team", async ({
     await page.setViewportSize(DESKTOP);
     await administer(page, "XII");
     await page.goto("/admin/awards");
-    await expect(page.getByRole("cell", { name: ffaAwardName })).toBeVisible();
-    await expect(page.getByRole("columnheader")).toHaveCount(3);
-    await expect(
-      page.getByRole("columnheader", { name: teamLabel }),
-    ).toHaveCount(0);
+    const ffaAwardRow = page
+      .getByRole("list", { name: "Awards" })
+      .getByRole("listitem")
+      .filter({ hasText: ffaAwardName });
+    await expect(ffaAwardRow).toBeVisible();
+    await expect(ffaAwardRow).not.toContainText(`${teamLabel}:`);
     await shoot(page, testInfo, "awards-xii-1280", true);
     await page.setViewportSize(PHONE);
     await page.goto("/admin/awards");
@@ -798,13 +821,15 @@ test("r5 32 admin lists fit a phone; free-for-all drops Team", async ({
       page.getByRole("listitem").filter({ hasText: ffaAwardName }),
     ).not.toContainText(`${teamLabel}:`);
     await shoot(page, testInfo, "awards-xii-375", true);
-    await page.goto("/admin/awards/new");
+    await page.getByRole("button", { name: "Add Award" }).click();
+    const ffaSheet = page.getByRole("dialog", { name: "Add Award" });
     await expect(
-      page.getByRole("textbox", { name: "Name", exact: true }),
+      ffaSheet.getByRole("textbox", { name: "Name", exact: true }),
     ).toBeVisible();
-    await expect(page.locator("#award-team")).toHaveCount(0);
-    await expect(page.getByText(teamLabel, { exact: true })).toHaveCount(0);
-    await shoot(page, testInfo, "award-form-xii-375", true);
+    await expect(ffaSheet.locator("#award-team")).toHaveCount(0);
+    await expect(ffaSheet.getByText(teamLabel, { exact: true })).toHaveCount(0);
+    await shoot(page, testInfo, "award-form-xii-375");
+    await page.keyboard.press("Escape");
     await page.goto("/admin/points");
     await expect(
       page.getByRole("combobox", { name: "Participant", exact: true }),
@@ -844,15 +869,14 @@ test("r5 33 Save stays in reach on long admin forms", async ({
   // 33-4: the other forms' heights at 375 on XI; each over two screens
   // uses the sticky Save row.
   // Create next War Week is on Settings, after the settings form (r9 57).
+  // Schedule Items and Awards edit in a Sheet whose footer sticks (r9 58).
   const others = [
     ["announcement", "/admin/announcements/new", "main form"],
-    ["schedule item", "/admin/schedule/new", "main form"],
     [
       "next War Week",
       "/admin/settings",
       'main form[aria-label="Create next War Week"]',
     ],
-    ["award", "/admin/awards/new", "main form"],
   ];
   for (const [name, path, selector] of others) {
     await page.goto(path);

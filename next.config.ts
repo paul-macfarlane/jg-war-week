@@ -23,6 +23,11 @@ const nextConfig: NextConfig = {
           ["/admin/setup/competitions/:path*", "/admin/competitions/:path*"],
           ["/admin/setup/faq/:path*", "/admin/faq"],
           ["/admin/standings", "/admin/finale"],
+          // Schedule Items, FAQ Items and Awards add and edit in a Sheet on
+          // their list (ticket 58); their /new and /[id] pages are gone.
+          ["/admin/schedule/:id", "/admin/schedule"],
+          ["/admin/faq/:id", "/admin/faq"],
+          ["/admin/awards/:id", "/admin/awards"],
         ] as const
       ).map(([source, destination]) => ({
         source,

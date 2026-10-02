@@ -1,5 +1,7 @@
-// Only client components import this; it holds their shared row plumbing.
+// Only client components import this: the one admin list row (Edit and
+// Delete) and its Sheet plumbing.
 import { PlusIcon } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   type ReactNode,
@@ -11,7 +13,6 @@ import {
 } from "react";
 import { toast } from "sonner";
 
-import type { SetupActionResult } from "@/actions/setup";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
   FOCUSABLE,
@@ -25,8 +26,9 @@ import {
   ResponsiveSheetDialogHeader,
   ResponsiveSheetDialogTitle,
 } from "@/components/responsive-sheet-dialog";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
+import type { WriteResult } from "@/lib/result";
 import type { UsageCount } from "@/lib/setup";
 import {
   ADD_BUTTON_ATTR,
@@ -49,10 +51,12 @@ export function setupRowProps(id?: string) {
 /** Marks the add row's Add button, where focus goes once a list empties. */
 const ADD_BUTTON = { [ADD_BUTTON_ATTR]: "" };
 
+/** Marks a row's Edit control, where focus goes after a neighbor's delete. */
+const EDIT_ATTR = "data-setup-edit";
+
 /**
- * Once `row` (a deleted setup row) leaves the page, focuses the first
- * control of its next row (its Edit button in a list whose rows open in a
- * Sheet), else its previous row, else the Add button, so
+ * Once `row` (a deleted setup row) leaves the page, focuses the Edit
+ * control of its next row, else its previous row, else the Add button, so
  * focus doesn't fall to `<body>`. The row goes when `router.refresh()`
  * lands, so this waits for it frame by frame (up to ten seconds).
  */
@@ -74,43 +78,34 @@ function focusNeighborOnceRemoved(row: HTMLElement) {
     const target = scope.querySelector(
       `[${ROW_ATTR}="${CSS.escape(targetId)}"]`,
     );
-    // An emptied list lands on the Add button; a row, on its first control.
-    target
-      ?.querySelector<HTMLElement>(setupRowFocusSelector(targetId) ?? FOCUSABLE)
-      ?.focus();
+    // An emptied list lands on the Add button; a row, on its Edit control
+    // (or its first control, when it has no Edit).
+    const control =
+      target?.querySelector<HTMLElement>(
+        setupRowFocusSelector(targetId) ?? `[${EDIT_ATTR}]`,
+      ) ?? target?.querySelector<HTMLElement>(FOCUSABLE);
+    control?.focus();
   }
   requestAnimationFrame(focusTarget);
 }
 
 /**
- * Runs one setup row's server action on `useActionState`, so the row's own
+ * Runs one setup form's server action on `useActionState`, so its
  * `<form action={formAction}>` posts it, a field error shows under its
  * field (`fieldErrors`), and focus moves to the first invalid field. On
- * success it toasts `successMessage`, runs `onSaved` (the add row clears its
- * fields there) and refreshes the page. Delete has no fields, so it keeps a
- * plain transition (`remove`), sharing this row's `pending` and `error`.
- * Only the latest action's refusal shows: a save clears a refused
- * delete's, and a delete clears a refused save's.
+ * success it toasts `successMessage`, runs `onSaved` (which closes the
+ * Sheet) and refreshes the page.
  */
 export function useSetupRow(
-  action: () => Promise<SetupActionResult>,
+  action: () => Promise<WriteResult>,
   successMessage: string,
   onSaved?: () => void,
 ) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
-  const [deletePending, startDeleteTransition] = useTransition();
-  const [deleteResult, setDeleteResult] = useState<SetupActionResult | null>(
-    null,
-  );
-  // The save result a later delete hid.
-  const [dismissedSave, setDismissedSave] = useState<SetupActionResult | null>(
-    null,
-  );
 
-  const [result, formAction, savePending] = useActionState(
-    async (): Promise<SetupActionResult> => {
-      setDeleteResult(null);
+  const [result, formAction, pending] = useActionState(
+    async (): Promise<WriteResult | null> => {
       const saved = await action();
       if (!saved.ok) {
         toast.error(saved.error);
@@ -125,120 +120,29 @@ export function useSetupRow(
   );
   useFocusFirstInvalid(formRef, result);
 
-  /** Runs a Delete (or other field-less write) in its own transition. */
-  function remove(
-    deleteAction: () => Promise<SetupActionResult>,
-    deleteSuccessMessage?: string,
-  ): Promise<SetupActionResult> {
-    return new Promise((resolve) => {
-      startDeleteTransition(async () => {
-        setDismissedSave(result);
-        const saved = await deleteAction();
-        setDeleteResult(saved);
-        resolve(saved);
-        if (!saved.ok) {
-          toast.error(saved.error);
-          return;
-        }
-        if (deleteSuccessMessage) toast.success(deleteSuccessMessage);
-        router.refresh();
-      });
-    });
-  }
+  const fieldErrors = fieldErrorsOf(result);
+  const error = pending ? null : formErrorOf(result);
 
-  const pending = savePending || deletePending;
-  const saveResult = result === dismissedSave ? null : result;
-  const fieldErrors = fieldErrorsOf(saveResult);
-  const deleteError =
-    deleteResult && !deleteResult.ok ? deleteResult.error : null;
-  const error = pending ? null : (deleteError ?? formErrorOf(saveResult));
-
-  return { pending, formRef, formAction, fieldErrors, error, remove };
+  return { pending, formRef, formAction, fieldErrors, error };
 }
 
-/**
- * A setup row's Save (or Add) and Delete buttons. Delete asks in a
- * `ConfirmDialog` titled `deleteTitle` before calling `onDelete`; the dialog
- * stays open, pending, until the delete settles. After a delete, focus moves
- * to the next row (or the add row) of the `SETUP_EDITOR` holding this row,
- * each marked with `setupRowProps`. In a Sheet, which is portalled out of
- * the list, `rowId` names the row; inline, the buttons sit inside it.
- */
-export function SetupRowButtons({
+/** A setup Sheet's submit button: `label` ("Save", "Add Team"…). */
+export function SetupSaveButton({
   pending,
-  addLabel,
-  rowId,
-  onDelete,
-  deleteTitle,
-  deleteDescription,
+  label,
 }: {
   pending: boolean;
-  addLabel: string;
-  /** The row these buttons edit, when they're not inside it. */
-  rowId?: string;
-  /** Absent on the add row. Runs once the Organizer confirms. */
-  onDelete?: () => Promise<SetupActionResult>;
-  /** Names what will be deleted, e.g. "Delete Team Red?". */
-  deleteTitle?: string;
-  /** What goes with it, e.g. the row's usage counts. */
-  deleteDescription?: ReactNode;
+  label: string;
 }) {
-  const buttonsRef = useRef<HTMLDivElement>(null);
-  const [confirming, setConfirming] = useState(false);
-  // Close the confirm once the delete settles: a refusal keeps the row, a
-  // success removes it (and the dialog with it). Adjusting state during
-  // render: https://react.dev/learn/you-might-not-need-an-effect
-  const [wasPending, setWasPending] = useState(pending);
-  if (pending !== wasPending) {
-    setWasPending(pending);
-    if (!pending) setConfirming(false);
-  }
-
-  async function confirmDelete() {
-    if (!onDelete) return;
-    const row = rowId
-      ? document.querySelector<HTMLElement>(
-          `[${ROW_ATTR}="${CSS.escape(rowId)}"]`,
-        )
-      : buttonsRef.current?.closest<HTMLElement>(`[${ROW_ATTR}]`);
-    const result = await onDelete();
-    if (result.ok && row) focusNeighborOnceRemoved(row);
-  }
-
   return (
-    <div ref={buttonsRef} className="flex items-center gap-2">
-      <Button
-        type="submit"
-        size="lg"
-        className="min-h-11 sm:min-h-9"
-        disabled={pending}
-        {...(onDelete ? {} : ADD_BUTTON)}
-      >
-        {pending ? "Saving…" : onDelete ? "Save" : addLabel}
-      </Button>
-      {onDelete && (
-        <>
-          <Button
-            type="button"
-            variant="destructive"
-            size="lg"
-            className="min-h-11 sm:min-h-9"
-            disabled={pending}
-            onClick={() => setConfirming(true)}
-          >
-            Delete
-          </Button>
-          <ConfirmDialog
-            open={confirming}
-            onOpenChange={setConfirming}
-            title={deleteTitle ?? "Delete this row?"}
-            description={deleteDescription}
-            pending={pending}
-            onConfirm={confirmDelete}
-          />
-        </>
-      )}
-    </div>
+    <Button
+      type="submit"
+      size="lg"
+      className="min-h-11 sm:min-h-9"
+      disabled={pending}
+    >
+      {pending ? "Saving…" : label}
+    </Button>
   );
 }
 
@@ -272,69 +176,168 @@ function SetupSheet({
   );
 }
 
+/** A row action's classes: at least 44px on phones. */
+const ROW_ACTION = "min-h-11 min-w-11 sm:min-h-8";
+
 /**
- * One row of a setup list: an "Edit <label>" button showing the row's name
- * and `details`, then `aside` (a link of its own), opening `form` in a
- * Sheet titled like the button.
+ * One row of an admin list, the one pattern every list uses: the row's
+ * name and `details`, then its own controls (`aside`), then a visible
+ * **Edit** and **Delete**. Edit opens `form` in a Sheet titled "Edit
+ * <label>", or links to `editHref` (a full-page editor). Delete asks in a
+ * `ConfirmDialog` titled `deleteTitle`, runs `onDelete`, toasts the result,
+ * refreshes the page and moves focus to the next row's Edit. Without
+ * `form`/`editHref` or `onDelete` (the viewer may not), that button is
+ * absent.
  */
 export function SetupListRow({
   id,
   name,
-  label = name,
+  label,
   details,
   note,
   leading,
   aside,
   form,
+  editHref,
+  onDelete,
+  deleteTitle,
+  deleteDescription,
+  deleteSuccess,
 }: {
   id: string;
-  name: string;
-  /** What "Edit …" calls the row, e.g. "Team Red"; the name by default. */
+  name: ReactNode;
+  /** What "Edit …" and "Delete …" call the row, e.g. "Team Red". */
   label?: string;
-  details: string;
+  /** A line under the name: usage counts, a time and category… */
+  details?: ReactNode;
   /** A quiet extra line under the details, e.g. a roster hint. */
   note?: string;
   /** Before the name, e.g. a Team's color. */
   leading?: ReactNode;
+  /** The row's own controls, before Edit, e.g. a Bracket link. */
   aside?: ReactNode;
-  form: (close: () => void) => ReactNode;
+  /** The edit form, opened in a Sheet. */
+  form?: (close: () => void) => ReactNode;
+  /** Instead of `form`: the row's full-page editor. */
+  editHref?: string;
+  /** Runs once the Organizer confirms the delete. */
+  onDelete?: () => Promise<WriteResult>;
+  /** Names what will be deleted, e.g. "Delete Team Red?". */
+  deleteTitle?: string;
+  /** What goes with it, e.g. the row's usage counts. */
+  deleteDescription?: ReactNode;
+  /** The toast after a delete, e.g. "Team deleted". */
+  deleteSuccess?: string;
 }) {
-  const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const rowRef = useRef<HTMLLIElement>(null);
+  const [editing, setEditing] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [pending, startTransition] = useTransition();
   const detailsId = useId();
+  const rowLabel = label ?? (typeof name === "string" ? name : id);
+  const described = details || note ? detailsId : undefined;
+
+  function confirmDelete() {
+    if (!onDelete) return;
+    startTransition(async () => {
+      const result = await onDelete();
+      setConfirming(false);
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      if (deleteSuccess) toast.success(deleteSuccess);
+      if (rowRef.current) focusNeighborOnceRemoved(rowRef.current);
+      router.refresh();
+    });
+  }
+
   return (
     <li
+      ref={rowRef}
       {...setupRowProps(id)}
-      className="border-border flex items-center gap-2 border-b py-1 last:border-b-0"
+      className="border-border flex flex-wrap items-center gap-x-3 gap-y-2 border-b py-2 last:border-b-0"
     >
-      <Button
-        type="button"
-        variant="ghost"
-        aria-label={`Edit ${label}`}
-        aria-describedby={details || note ? detailsId : undefined}
-        className="h-auto min-h-11 min-w-0 flex-1 justify-start gap-2 px-2 py-1.5 text-left font-normal whitespace-normal sm:min-h-9"
-        onClick={() => setOpen(true)}
-      >
+      <div className="flex min-w-0 flex-1 basis-48 items-center gap-2">
         {leading}
-        <span className="flex min-w-0 flex-col">
-          <span className="font-medium">{name}</span>
-          {(details || note) && (
+        <div className="flex min-w-0 flex-col">
+          <span className="font-medium break-words">{name}</span>
+          {described && (
             <span
               id={detailsId}
-              className="text-foreground/60 flex flex-col text-xs"
+              className="text-foreground/60 flex flex-col text-xs break-words"
             >
               {details && <span>{details}</span>}
               {note && <span>{note}</span>}
             </span>
           )}
-        </span>
-      </Button>
-      {aside}
-      <SetupSheet
-        open={open}
-        onOpenChange={setOpen}
-        title={`Edit ${label}`}
-        form={form}
-      />
+        </div>
+      </div>
+      <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
+        {aside}
+        {editHref ? (
+          <Link
+            href={editHref}
+            aria-label={`Edit ${rowLabel}`}
+            aria-describedby={described}
+            className={buttonVariants({
+              variant: "outline",
+              size: "sm",
+              className: ROW_ACTION,
+            })}
+            {...{ [EDIT_ATTR]: "" }}
+          >
+            Edit
+          </Link>
+        ) : (
+          form && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-label={`Edit ${rowLabel}`}
+              aria-describedby={described}
+              className={ROW_ACTION}
+              onClick={() => setEditing(true)}
+              {...{ [EDIT_ATTR]: "" }}
+            >
+              Edit
+            </Button>
+          )
+        )}
+        {onDelete && (
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            aria-label={`Delete ${rowLabel}`}
+            className={ROW_ACTION}
+            disabled={pending}
+            onClick={() => setConfirming(true)}
+          >
+            Delete
+          </Button>
+        )}
+      </div>
+      {form && (
+        <SetupSheet
+          open={editing}
+          onOpenChange={setEditing}
+          title={`Edit ${rowLabel}`}
+          form={form}
+        />
+      )}
+      {onDelete && (
+        <ConfirmDialog
+          open={confirming}
+          onOpenChange={setConfirming}
+          title={deleteTitle ?? `Delete ${rowLabel}?`}
+          description={deleteDescription}
+          pending={pending}
+          onConfirm={confirmDelete}
+        />
+      )}
     </li>
   );
 }

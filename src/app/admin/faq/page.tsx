@@ -1,12 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
-import {
-  DeleteSetupItemButton,
-  MoveFaqItemButtons,
-} from "@/components/setup-schedule-faq-buttons";
-import { buttonVariants } from "@/components/ui/button";
+import { FaqEditor } from "@/components/faq-editor";
+import { sanitizeContent } from "@/lib/rich-text/content";
 import { getFaqItems } from "@/queries/faq";
 
 import { loadAdminPage } from "../gate";
@@ -20,7 +16,17 @@ export default async function AdminFaqPage() {
     await loadAdminPage("/admin/faq", "organizers");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
-  const items = await getFaqItems(warWeek);
+  const items = (await getFaqItems(warWeek)).map((item) => {
+    // Sanitized on write; again here so the editor only gets the closed set.
+    const answer = sanitizeContent(item.answer);
+    return {
+      id: item.id,
+      question: item.question,
+      answer: answer.ok
+        ? answer.content
+        : { type: "doc" as const, content: [] },
+    };
+  });
 
   return (
     <AdminShell
@@ -31,61 +37,11 @@ export default async function AdminFaqPage() {
       current="FAQ"
     >
       <section className="flex max-w-3xl flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-4">
-          <h1 className="text-2xl font-bold">FAQ</h1>
-          <Link
-            href="/admin/faq/new"
-            className={buttonVariants({ className: "ml-auto" })}
-          >
-            New FAQ Item
-          </Link>
-        </div>
+        <h1 className="text-2xl font-bold">FAQ</h1>
         <p className="text-foreground/70 text-sm">
           FAQ Items show on the public FAQ in this order.
         </p>
-
-        {items.length === 0 ? (
-          <p className="text-foreground/70 text-sm">No FAQ Items yet.</p>
-        ) : (
-          <ol
-            aria-label="FAQ Items"
-            className="border-border divide-border divide-y rounded-lg border"
-          >
-            {items.map((item, index) => (
-              <li
-                key={item.id}
-                className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center"
-              >
-                <span className="min-w-0 flex-1 font-medium">
-                  {item.question}
-                </span>
-                <div className="flex items-center gap-2">
-                  <MoveFaqItemButtons
-                    id={item.id}
-                    question={item.question}
-                    first={index === 0}
-                    last={index === items.length - 1}
-                  />
-                  <Link
-                    href={`/admin/faq/${item.id}`}
-                    className={buttonVariants({
-                      variant: "outline",
-                      size: "xs",
-                      className: "min-h-11 min-w-11 sm:min-h-6 sm:min-w-0",
-                    })}
-                  >
-                    Edit
-                  </Link>
-                  <DeleteSetupItemButton
-                    id={item.id}
-                    name={item.question}
-                    kind="faq-item"
-                  />
-                </div>
-              </li>
-            ))}
-          </ol>
-        )}
+        <FaqEditor warWeekId={warWeek.id} items={items} />
       </section>
     </AdminShell>
   );

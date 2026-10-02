@@ -5,7 +5,6 @@ import {
   callAction,
   escapeHtml,
   fail,
-  hasNameProp,
   ok,
   runQuery,
   serverActionIds,
@@ -387,19 +386,26 @@ export async function assertAwardActions(sessions: {
   }
 }
 
-/** /admin/awards, its New form and the edit form for a seeded Award. */
+/**
+ * /admin/awards: the seeded Awards, each row with Edit and Delete, and Add
+ * Award (the form opens in a Sheet, ticket 58).
+ */
 export async function assertAwardAdminPages(sessions: {
   organizer: SmokeSession;
   notOrganizer: SmokeSession;
 }) {
   const listCheck =
-    "GET /admin/awards as an Organizer lists the seeded Awards and New Award, and refuses a non-Organizer";
+    "GET /admin/awards as an Organizer lists the seeded Awards with Edit and Delete and Add Award, and refuses a non-Organizer";
   try {
     const organizerRes = await fetch(`${BASE_URL}/admin/awards`, {
       headers: { cookie: sessions.organizer.cookie },
     });
     const organizerBody = await organizerRes.text();
-    const hasAll = XI_AWARDS.every((a) => organizerBody.includes(a.name));
+    const hasAll = XI_AWARDS.every(
+      (a) =>
+        organizerBody.includes(`aria-label="Edit ${a.name}"`) &&
+        organizerBody.includes(`aria-label="Delete ${a.name}"`),
+    );
     const notOrganizerRes = await fetch(`${BASE_URL}/admin/awards`, {
       headers: { cookie: sessions.notOrganizer.cookie },
     });
@@ -407,7 +413,7 @@ export async function assertAwardAdminPages(sessions: {
     if (
       organizerRes.status === 200 &&
       hasAll &&
-      organizerBody.includes("New Award") &&
+      organizerBody.includes("Add Award") &&
       notOrganizerRes.status === 200 &&
       notOrganizerBody.includes(ADMIN_REFUSAL_TEXT)
     ) {
@@ -420,50 +426,5 @@ export async function assertAwardAdminPages(sessions: {
     }
   } catch (error) {
     fail(listCheck, String(error));
-  }
-
-  const newCheck =
-    "GET /admin/awards/new as an Organizer shows the Award form with XI's Teams and Participants";
-  try {
-    const res = await fetch(`${BASE_URL}/admin/awards/new`, {
-      headers: { cookie: sessions.organizer.cookie },
-    });
-    const body = await res.text();
-    if (
-      res.status === 200 &&
-      body.includes('aria-label="Award"') &&
-      hasNameProp(body, "Red") &&
-      hasNameProp(body, "Anthony Conway")
-    ) {
-      ok(newCheck);
-    } else {
-      fail(newCheck, `status=${res.status}`);
-    }
-  } catch (error) {
-    fail(newCheck, String(error));
-  }
-
-  const editCheck =
-    "GET /admin/awards/[id] as an Organizer shows Edit Award for the seeded Catan Champion";
-  try {
-    const [catan] = await runQuery<{ id: string }>(
-      `select a.id from award a join war_week w on w.id = a.war_week_id
-       where w.edition = 'xi' and a.name = 'Catan Champion'`,
-    );
-    const res = await fetch(`${BASE_URL}/admin/awards/${catan.id}`, {
-      headers: { cookie: sessions.organizer.cookie },
-    });
-    const body = await res.text();
-    if (
-      res.status === 200 &&
-      body.includes("Edit Award") &&
-      body.includes('value="Catan Champion"')
-    ) {
-      ok(editCheck);
-    } else {
-      fail(editCheck, `status=${res.status}`);
-    }
-  } catch (error) {
-    fail(editCheck, String(error));
   }
 }
