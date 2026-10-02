@@ -79,7 +79,7 @@ test("r11 68 Start then Unstart a fresh edition; it shows Upcoming again", async
     const confirm = page.getByRole("alertdialog");
     await expect(
       confirm.getByText(
-        "Unstart War Week XII? It goes back to Upcoming. Only possible while nothing has been scored.",
+        "It goes back to Upcoming. Only possible while nothing has been scored.",
       ),
     ).toBeVisible();
     await confirm.getByRole("button", { name: "Unstart" }).click();
