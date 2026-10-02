@@ -22,7 +22,7 @@ Participant side: 54 → 55, and 56 alone. Admin side: 57 → 58 and 57 → 59.
 
 Each ticket's own, plus:
 
-- [ ] `docs/regression-checklist.md` User Pages and Admin sections updated for the new nav and run once at both viewports.
+- [ ] `docs/regression-checklist.md` User Pages and Admin sections updated for the new nav.
 - [ ] `/about` (nav-order cards and stills via `scripts/about-media.ts`) and `docs/maintainers-guide.md` updated.
 - [ ] Each ticket file records its closeout and is `done` in this branch.
 - [ ] CI on the PR passes; `pnpm format:check && pnpm gate` passes.
