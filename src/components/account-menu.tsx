@@ -116,7 +116,7 @@ export function AccountMenu({
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label="Account menu"
-        className="focus-visible:ring-ring -my-1.5 flex size-11 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-2 md:size-10"
+        className="focus-visible:ring-ring -my-2 flex size-11 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-2 md:size-10"
       >
         <Avatar name={name} teamColor={null} primaryColor={primaryColor} />
       </DropdownMenuTrigger>
