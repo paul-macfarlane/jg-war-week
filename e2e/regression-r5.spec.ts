@@ -856,50 +856,23 @@ test("r5 32 admin lists fit a phone; free-for-all drops Team", async ({
   }
 });
 
-test("r5 33 Save stays in reach on long admin forms", async ({
+test("r5 33 Reset to derived is a 44px target on a phone", async ({
   page,
   context,
 }) => {
   await asOrganizer(context);
-  // The War Week settings form autosaves and has no Save row (r9 59); its
-  // 33-1/33-2/33-3 checks went with it.
+  // The War Week settings form autosaves and has no Save row (r9 59), and
+  // no admin form has a sticky Save row any more: Schedule Items and Awards
+  // edit in a Sheet whose footer sticks (r9 58). 33-1 to 33-4 went with it.
   const form = page.getByRole("form", { name: "War Week settings" });
   await page.setViewportSize(PHONE);
   await page.goto("/admin/settings");
   await expect(form).toBeVisible();
-  await expect(form.locator('[data-slot="sticky-form-actions"]')).toHaveCount(
-    0,
-  );
 
   // 33-5: "Reset to derived" is a 44px target below sm.
   const reset = form.getByRole("button", { name: "Reset to derived" }).first();
   await reset.scrollIntoViewIfNeeded();
   expect((await reset.boundingBox())?.height).toBeGreaterThanOrEqual(44);
-
-  // 33-4: the other forms' heights at 375 on XI; each over two screens
-  // uses the sticky Save row.
-  // Create next War Week is on Settings, after the settings form (r9 57).
-  // Schedule Items and Awards edit in a Sheet whose footer sticks (r9 58).
-  const others = [
-    ["announcement", "/admin/announcements/new", "main form"],
-    [
-      "next War Week",
-      "/admin/settings",
-      'main form[aria-label="Create next War Week"]',
-    ],
-  ];
-  for (const [name, path, selector] of others) {
-    await page.goto(path);
-    const other = page.locator(selector).first();
-    await expect(other).toBeVisible();
-    const height = (await other.boundingBox())?.height ?? 0;
-    console.log(`r5 33 ${name} form at 375: ${Math.round(height)}px`);
-    if (height > 1624) {
-      await expect(
-        other.locator('[data-slot="sticky-form-actions"]'),
-      ).toHaveCount(1);
-    }
-  }
 });
 
 test("r5 38 Escape keeps chosen Entrants; Tree shows a Heat's place; Format help", async ({

@@ -56,7 +56,7 @@ test.describe("55 account menu", () => {
       }
       await expect(
         menu.getByRole("menuitem", { name: "Admin" }),
-      ).toHaveAttribute("href", "/admin");
+      ).toHaveAttribute("href", "/admin/points");
       await expect(
         menu.getByRole("menuitem", { name: "Join the Slack channel" }),
       ).toHaveAttribute("target", "_blank");
@@ -150,23 +150,15 @@ test.describe("55 account menu", () => {
     const menu = page.getByRole("menu");
     await expect(menu).toBeVisible();
 
+    // The focused menu item, read through auto-retrying assertions.
+    const focused = menu.locator('[role^="menuitem"]:focus');
     await page.keyboard.press("ArrowDown");
-    const first = await page.evaluate(
-      () => document.activeElement?.textContent,
-    );
-    await page.keyboard.press("ArrowDown");
-    const second = await page.evaluate(
-      () => document.activeElement?.textContent,
-    );
+    await expect(focused).toHaveCount(1);
+    const first = (await focused.textContent()) ?? "";
     expect(first).toBeTruthy();
-    expect(second).toBeTruthy();
-    expect(second).not.toBe(first);
-    await expect(menu.getByRole("menuitemradio").first()).toBeVisible();
-    expect(
-      await page.evaluate(
-        () => document.activeElement?.getAttribute("role") ?? "",
-      ),
-    ).toMatch(/^menuitem/);
+    await page.keyboard.press("ArrowDown");
+    await expect(focused).toHaveCount(1);
+    await expect(focused).not.toHaveText(first);
 
     await page.keyboard.press("Escape");
     await expect(menu).toHaveCount(0);

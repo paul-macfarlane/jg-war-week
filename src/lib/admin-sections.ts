@@ -62,7 +62,7 @@ export function adminSectionsFor(isOrganizer: boolean) {
 /** Which icon a section shows; components map it to the icon itself. */
 export type AdminSectionIconKey = (typeof ADMIN_SECTIONS)[number]["icon"];
 
-export type AdminNavItem = {
+type AdminNavItem = {
   label: string;
   href: string;
   icon: AdminSectionIconKey;

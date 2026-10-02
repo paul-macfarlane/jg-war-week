@@ -3,6 +3,7 @@
 import { deleteAnnouncement } from "@/actions/announcements";
 import { PinAnnouncementButton } from "@/components/announcement-admin-buttons";
 import { SETUP_EDITOR, SetupListRow } from "@/components/setup-row";
+import { Badge } from "@/components/ui/badge";
 
 /**
  * The admin Announcements list: each row's title, author and publish
@@ -37,9 +38,9 @@ export function AnnouncementsList({
               <>
                 {row.title}
                 {row.pinned && (
-                  <span className="bg-primary/10 text-primary ml-2 rounded px-1.5 py-0.5 text-xs font-medium">
+                  <Badge variant="secondary" className="ml-2">
                     Pinned
-                  </span>
+                  </Badge>
                 )}
               </>
             }

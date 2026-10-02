@@ -104,3 +104,71 @@ test("r9 59-2 a bad Slack URL shows its error at the field and isn't saved; othe
     await restoreXi(before);
   }
 });
+
+test("r9 59-3 a value stored after the page loaded survives another field's save", async ({
+  context,
+  page,
+}) => {
+  await asOrganizer(context);
+  const before = await readXi();
+  const [{ winner }] = await runQuery<{ winner: string | null }>(
+    "select winner from war_week where edition = 'xi'",
+  );
+  const newer = "Tie: Red & Blue (r9 59)";
+  try {
+    const { form, status } = await openSettings(page);
+    // Written elsewhere (End War Week, another tab) after the form loaded.
+    await runQuery("update war_week set winner = $1 where edition = 'xi'", [
+      newer,
+    ]);
+
+    const changed = `${before.story_theme} (r9 59)`.slice(0, 120);
+    await form.getByLabel("Story Theme").fill(changed);
+    await expect(status).toHaveText("Saved");
+    expect((await readXi()).story_theme).toBe(changed);
+    const [after] = await runQuery<{ winner: string | null }>(
+      "select winner from war_week where edition = 'xi'",
+    );
+    expect(after.winner).toBe(newer);
+  } finally {
+    await restoreXi(before);
+    await runQuery("update war_week set winner = $1 where edition = 'xi'", [
+      winner,
+    ]);
+  }
+});
+
+test("r9 59-4 leaving Settings with a refused field asks first; Cancel stays", async ({
+  context,
+  page,
+}) => {
+  await asOrganizer(context);
+  const before = await readXi();
+  try {
+    const { form, status } = await openSettings(page);
+    await form.getByLabel("Slack URL").fill("http://slack.example.com/x");
+    await expect(status).toHaveText(/^Not saved/);
+
+    await page
+      .getByRole("navigation", { name: "Admin sections" })
+      .getByRole("link", { name: "Points" })
+      .click();
+    const dialog = page.getByRole("alertdialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText("Leave without saving?");
+    await expect(dialog).toContainText(
+      "Slack URL wasn't saved: Slack URL must be an https URL.",
+    );
+
+    await dialog.getByRole("button", { name: "Cancel" }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(page).toHaveURL(/\/admin\/settings$/);
+    await expect(form.getByLabel("Slack URL")).toHaveValue(
+      "http://slack.example.com/x",
+    );
+    // The refused value still isn't saved: let the page go without asking.
+    page.on("dialog", (beforeUnload) => void beforeUnload.accept());
+  } finally {
+    await restoreXi(before);
+  }
+});

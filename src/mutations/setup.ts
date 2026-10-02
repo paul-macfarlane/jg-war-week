@@ -29,13 +29,16 @@ import {
   type OverrideColumn,
   type ParticipantValues,
   type TeamValues,
+  type WarWeekSettingsInput,
   type WarWeekSettingsValues,
   competitionGuardError,
   dayDeleteGuardError,
   dayGuardError,
   inUseError,
+  mergeWarWeekSettings,
   participantGuardError,
   settingsGuardError,
+  settingsInputFrom,
   teamGuardError,
 } from "@/lib/setup";
 import { backgroundColorScheme } from "@/lib/theme";
@@ -181,6 +184,52 @@ export async function updateWarWeekSettings(
     return updated.length > 0
       ? { ok: true }
       : { ok: false, error: WAR_WEEK_NOT_FOUND };
+  });
+}
+
+/**
+ * Saves some of the War Week's settings (one autosave's fields): laid over
+ * the row as it stands now, locked, and checked whole, then only those
+ * columns are written, so a value stored since the form loaded (another
+ * tab, End War Week's Winner) is never written back over. Refuses as
+ * `updateWarWeekSettings` does, and clears overrides on a light/dark flip
+ * the same way.
+ */
+export async function updateWarWeekSettingsFields(
+  fields: Partial<WarWeekSettingsInput>,
+  ctx: MutationContext,
+  dbOrTx: DBOrTx = db,
+): Promise<MutationResult> {
+  return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
+    const [stored] = await tx
+      .select()
+      .from(warWeek)
+      .where(eq(warWeek.id, ctx.warWeekId))
+      .for("update");
+    if (!stored) return { ok: false, error: WAR_WEEK_NOT_FOUND };
+    const merged = mergeWarWeekSettings(settingsInputFrom(stored), fields);
+    if (!merged.ok) return merged;
+    const { values, changed } = merged.value;
+
+    const [teams] = await tx
+      .select({ count: count() })
+      .from(team)
+      .where(eq(team.warWeekId, ctx.warWeekId));
+    const refusal = settingsGuardError(values, {
+      teamCount: teams.count,
+      dayDates: await dayDates(ctx.warWeekId, tx),
+    });
+    if (refusal) return { ok: false, error: refusal };
+
+    await tx
+      .update(warWeek)
+      .set({
+        ...changed,
+        ...overridesClearedByFlip(values, stored),
+        updatedAt: sql`now()`,
+      })
+      .where(eq(warWeek.id, ctx.warWeekId));
+    return { ok: true };
   });
 }
 

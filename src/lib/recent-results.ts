@@ -11,6 +11,8 @@ export const RECENT_RESULTS_GROUP_GAP_MS = 10 * 60 * 1000;
 
 /** Who a Points Entry or result is for: a Team, or a Participant. */
 export type ResultTarget = {
+  /** The Team's or Participant's id: two of one name are still two. */
+  id: string;
   name: string;
   /** The Team's color, or the Participant's Team's color; null without one. */
   color: string | null;
@@ -154,5 +156,5 @@ export function shapeRecentResults(
 }
 
 function sameTarget(a: ResultTarget, b: ResultTarget): boolean {
-  return a.kind === b.kind && a.name === b.name;
+  return a.kind === b.kind && a.id === b.id;
 }

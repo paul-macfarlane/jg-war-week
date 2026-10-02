@@ -63,7 +63,7 @@ export function AdminShell({
   return (
     <ThemeRoot
       style={warWeekThemeStyle(warWeek)}
-      className="bg-background text-foreground flex min-h-dvh flex-col pb-(--admin-bar-inset) font-sans [--admin-bar-height:4.5rem] [--admin-bar-inset:calc(var(--admin-bar-height)+env(safe-area-inset-bottom))] md:[--admin-bar-height:0px] md:[--admin-bar-inset:0px] md:[--admin-sticky-height:0px]"
+      className="bg-background text-foreground flex min-h-dvh flex-col pb-(--admin-bar-inset) font-sans [--admin-bar-height:4.5rem] [--admin-bar-inset:calc(var(--admin-bar-height)+env(safe-area-inset-bottom))] md:[--admin-bar-height:0px] md:[--admin-bar-inset:0px]"
     >
       <header className="border-border flex items-center gap-x-4 gap-y-1 border-b px-4 py-3 md:flex-wrap md:px-6">
         <Link
@@ -150,18 +150,15 @@ export function AdminShell({
       />
       {/* Inside the themed root so the edition's colors apply to toasts.
           The offsets are Sonner's defaults (24px, and 16px up to 600px
-          wide) plus the bar's inset and any sticky form actions' height
-          (`StickyFormActions`), both 0 from `md`. */}
+          wide) plus the bottom bar's inset, which is 0 from `md`. */}
       <Toaster
         position="bottom-center"
         closeButton
         offset={{
-          bottom:
-            "calc(var(--admin-bar-inset) + var(--admin-sticky-height, 0px) + 24px)",
+          bottom: "calc(var(--admin-bar-inset) + 24px)",
         }}
         mobileOffset={{
-          bottom:
-            "calc(var(--admin-bar-inset) + var(--admin-sticky-height, 0px) + 16px)",
+          bottom: "calc(var(--admin-bar-inset) + 16px)",
         }}
       />
     </ThemeRoot>

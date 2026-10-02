@@ -28,8 +28,9 @@ export const SAVE_FAILED_ERROR =
 /**
  * Autosaves a form of string fields: a change saves `delayMs` after the
  * last edit, one field (or one `groupOf` group, saved together) per save.
- * Each save posts the last saved values with only its own fields changed,
- * so a refused field or another field still being typed never rides along,
+ * Each save posts only its own fields, so a refused field, another field
+ * still being typed, or a value stored since the page loaded never rides
+ * along,
  * and saves run one at a time, in order, so a later save never lands
  * under an earlier one. A refusal's errors stay at its fields (one naming
  * no field goes to the group's first) until they save. `onSettled` runs
@@ -44,8 +45,11 @@ export function createAutosave<T extends Record<string, string>>({
   onSettled,
 }: {
   saved: T;
-  /** Never throws by contract (ADR 0004); a throw shows as a refusal. */
-  save: (input: T) => Promise<WriteResult>;
+  /**
+   * Saves one field or group: only those fields. Never throws by contract
+   * (ADR 0004); a throw shows as a refusal.
+   */
+  save: (fields: Partial<T>) => Promise<WriteResult>;
   groupOf: (field: keyof T & string) => readonly (keyof T & string)[];
   delayMs: number;
   onChange: (snapshot: AutosaveSnapshot) => void;
@@ -86,7 +90,7 @@ export function createAutosave<T extends Record<string, string>>({
         fieldErrors = withoutErrors(group);
         return;
       }
-      const input: T = { ...saved };
+      const input: Partial<T> = {};
       for (const field of group) input[field] = values[field];
       let result: WriteResult;
       try {
@@ -95,7 +99,7 @@ export function createAutosave<T extends Record<string, string>>({
         result = { ok: false, error: SAVE_FAILED_ERROR };
       }
       if (result.ok) {
-        saved = input;
+        saved = { ...saved, ...input };
         everSaved = true;
         savedThisRun = true;
         fieldErrors = withoutErrors(group);

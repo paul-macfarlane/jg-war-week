@@ -72,6 +72,65 @@ async function fixture(tx: DBTx) {
   return { schema, home, other, busyId: busy.id, quietId: quiet.id, ctx };
 }
 
+describe.skipIf(!isLocalDatabase)("updateWarWeekSettingsFields", () => {
+  it("writes only the fields sent, so a newer stored value survives", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { updateWarWeekSettingsFields } = await import("@/mutations/setup");
+      const { schema, home, ctx } = await fixture(tx);
+      // Written after the form loaded (End War Week, another tab).
+      await tx
+        .update(schema.warWeek)
+        .set({ winner: "Red", highlights: ["Won it"] })
+        .where(eq(schema.warWeek.id, home));
+
+      const result = await updateWarWeekSettingsFields(
+        { storyTheme: "Renamed" },
+        ctx,
+        tx,
+      );
+      expect(result).toEqual({ ok: true });
+      const [row] = await tx
+        .select()
+        .from(schema.warWeek)
+        .where(eq(schema.warWeek.id, home));
+      expect(row).toMatchObject({
+        storyTheme: "Renamed",
+        winner: "Red",
+        highlights: ["Won it"],
+      });
+    });
+  });
+
+  it("refuses a field at that field, checked against the stored row", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { updateWarWeekSettingsFields } = await import("@/mutations/setup");
+      const { ctx } = await fixture(tx);
+      // The stored end date is 2099-01-05.
+      expect(
+        await updateWarWeekSettingsFields({ startDate: "2099-01-09" }, ctx, tx),
+      ).toMatchObject({
+        ok: false,
+        fieldErrors: {
+          startDate: "Start date must not be after the end date.",
+        },
+      });
+    });
+  });
+
+  it("refuses dates that would strand a Day", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { updateWarWeekSettingsFields } = await import("@/mutations/setup");
+      const { ctx } = await fixture(tx);
+      const result = await updateWarWeekSettingsFields(
+        { startDate: "2099-01-04", endDate: "2099-01-05" },
+        ctx,
+        tx,
+      );
+      expect(result.ok).toBe(false);
+    });
+  });
+});
+
 describe.skipIf(!isLocalDatabase)("updateWarWeekSettings", () => {
   it("saves the settings and Appearance Theme of only this War Week", async () => {
     await inRolledBackTransaction(async (tx) => {

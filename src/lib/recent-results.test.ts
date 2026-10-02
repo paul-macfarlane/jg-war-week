@@ -1,14 +1,26 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  RECENT_RESULTS_GROUP_GAP_MS,
+  RECENT_RESULTS_LIMIT,
   type ResultCompetition,
   type ResultEntry,
   type ResultTarget,
   shapeRecentResults,
 } from "./recent-results";
 
-const red: ResultTarget = { name: "Red", color: "#f00", kind: "team" };
-const blue: ResultTarget = { name: "Blue", color: "#00f", kind: "team" };
+const red: ResultTarget = {
+  id: "t-red",
+  name: "Red",
+  color: "#f00",
+  kind: "team",
+};
+const blue: ResultTarget = {
+  id: "t-blue",
+  name: "Blue",
+  color: "#00f",
+  kind: "team",
+};
 const at = (minute: number) => new Date(Date.UTC(2027, 1, 22, 12, minute));
 
 const trivia: ResultCompetition = {
@@ -58,12 +70,57 @@ describe("shapeRecentResults", () => {
     });
   });
 
-  it("splits entries of one Competition added more than 10 minutes apart", () => {
+  it("splits entries of one Competition added more than the gap apart", () => {
+    const later = new Date(at(0).getTime() + RECENT_RESULTS_GROUP_GAP_MS + 1);
     const rows = shapeRecentResults(
       [trivia],
-      [entry("trivia", red, 10, at(0)), entry("trivia", blue, 5, at(30))],
+      [entry("trivia", red, 10, at(0)), entry("trivia", blue, 5, later)],
     );
-    expect(rows.map((r) => r.when)).toEqual([at(30), at(0)]);
+    expect(rows.map((r) => r.when)).toEqual([later, at(0)]);
+  });
+
+  it("keeps entries exactly the gap apart in one row", () => {
+    const later = new Date(at(0).getTime() + RECENT_RESULTS_GROUP_GAP_MS);
+    const rows = shapeRecentResults(
+      [trivia],
+      [entry("trivia", red, 10, at(0)), entry("trivia", blue, 5, later)],
+    );
+    expect(rows).toHaveLength(1);
+  });
+
+  it("keeps two Teams with the same name apart", () => {
+    const otherRed: ResultTarget = { ...red, id: "t-red-2", color: "#c00" };
+    const [row] = shapeRecentResults(
+      [trivia],
+      [entry("trivia", red, 4, at(0)), entry("trivia", otherRed, 6, at(1))],
+    );
+    expect(row).toMatchObject({
+      scores: [
+        { target: otherRed, points: 6 },
+        { target: red, points: 4 },
+      ],
+    });
+  });
+
+  it("lists a tie for first between same-named Participants as two winners", () => {
+    const sam: ResultTarget = {
+      id: "p-sam",
+      name: "Sam",
+      color: null,
+      kind: "participant",
+    };
+    const otherSam: ResultTarget = { ...sam, id: "p-sam-2" };
+    const games: ResultCompetition = {
+      id: "g",
+      name: "Darts",
+      format: "games",
+      finalizedAt: at(5),
+    };
+    const [row] = shapeRecentResults(
+      [games],
+      [entry("g", sam, 10, at(5), true), entry("g", otherSam, 10, at(5), true)],
+    );
+    expect(row).toMatchObject({ winners: [sam, otherSam] });
   });
 
   it("does not merge entries of different Competitions", () => {
@@ -116,8 +173,8 @@ describe("shapeRecentResults", () => {
     expect(row).toMatchObject({ kind: "games-closed", winners: [red, blue] });
   });
 
-  it("orders newest first and keeps at most 5 rows", () => {
-    const comps = Array.from({ length: 7 }, (_, i) => ({
+  it("orders newest first and keeps at most the limit", () => {
+    const comps = Array.from({ length: RECENT_RESULTS_LIMIT + 2 }, (_, i) => ({
       ...trivia,
       id: `c${i}`,
       name: `C${i}`,
@@ -126,12 +183,8 @@ describe("shapeRecentResults", () => {
       comps,
       comps.map((c, i) => entry(c.id, red, 1, at(i * 30))),
     );
-    expect(rows.map((r) => r.competition)).toEqual([
-      "C6",
-      "C5",
-      "C4",
-      "C3",
-      "C2",
-    ]);
+    expect(rows).toHaveLength(RECENT_RESULTS_LIMIT);
+    expect(rows[0].competition).toBe(`C${RECENT_RESULTS_LIMIT + 1}`);
+    expect(rows.at(-1)?.competition).toBe("C2");
   });
 });
