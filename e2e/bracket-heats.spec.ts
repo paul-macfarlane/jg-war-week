@@ -155,7 +155,11 @@ test("a Heats Bracket is built, run and finalized into Points Entries", async ({
   const advancer = heat1[0];
   const you = await participantPageAs(browser, advancer);
   await you.page.goto(`/xi/competitions/${id}`);
-  const nextHeat = you.page.getByLabel("Your next Heat");
+  // Visible only: while a reload streams, React holds the new page in a
+  // hidden container before swapping it in, and getByLabel counts it.
+  const nextHeat = you.page
+    .getByLabel("Your next Heat")
+    .filter({ visible: true });
   await expect(nextHeat).toContainText(
     "Advanced to Round 2 · waiting for Round 1 to finish",
   );

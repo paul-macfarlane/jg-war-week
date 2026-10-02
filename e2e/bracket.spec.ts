@@ -177,7 +177,11 @@ test("a Bracket is built, run and finalized into Points Entries", async ({
     // TIMED_ENTRANT sees it in "Your next Heat" and in the home page's Up next.
     const you = await participantPageAs(browser, TIMED_ENTRANT);
     await you.page.goto(`/xi/competitions/${id}`);
-    const nextHeat = you.page.getByLabel("Your next Heat");
+    // Visible only: while a reload streams, React holds the new page in a
+    // hidden container before swapping it in, and getByLabel counts it.
+    const nextHeat = you.page
+      .getByLabel("Your next Heat")
+      .filter({ visible: true });
     await expect(nextHeat).toContainText(`Your next Heat · ${timedHeat}`);
     await expect(nextHeat).toContainText("7:00 PM ET");
     await expect(nextHeat).toContainText("Main room");
