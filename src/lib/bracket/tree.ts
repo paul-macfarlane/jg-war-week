@@ -23,7 +23,6 @@ export type TreeSlot =
       /** The finishing place once the Heat is decided; null before. */
       place: number | null;
       score: string | null;
-      forfeited: boolean;
       /**
        * Through to the next Round (a bye's Entrant too), or, in the Final,
        * the winner: the tree highlights it.
@@ -124,7 +123,6 @@ function treeSlots(bracket: Bracket, heat: Heat, bye: boolean): TreeSlot[] {
       entrantId: slot.entrantId,
       place: slot.place,
       score: slot.score,
-      forfeited: slot.forfeited,
       advances: advancesFromPlace(bracket, heat, slot.place),
     };
   });

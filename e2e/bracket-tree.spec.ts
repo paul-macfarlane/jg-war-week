@@ -269,10 +269,8 @@ test("a single-elimination Bracket shows as a tree, and a result records in a Di
 
   await page.goto(`/admin/competitions/${id}/bracket`);
   await page.getByRole("combobox", { name: "Format" }).click();
-  await page.getByRole("option", { name: "Single elimination" }).click();
-  await expect(
-    page.getByText("Format set to Single elimination"),
-  ).toBeVisible();
+  await page.getByRole("option", { name: "Bracket", exact: true }).click();
+  await expect(page.getByText("Format set to Bracket")).toBeVisible();
   // Five Entrants: three first-Round byes.
   await enterAndGenerate(page, KNOCKOUT_ENTRANTS);
 
@@ -317,8 +315,8 @@ test("a Heats Bracket shows as a tree of Heat boxes, advancers highlighted", asy
 
   await page.goto(`/admin/competitions/${id}/bracket`);
   await page.getByRole("combobox", { name: "Format" }).click();
-  await page.getByRole("option", { name: "Heats" }).click();
-  await expect(page.getByText("Format set to Heats")).toBeVisible();
+  await page.getByRole("option", { name: "Bracket", exact: true }).click();
+  await expect(page.getByText("Format set to Bracket")).toBeVisible();
   await page.getByRole("combobox", { name: "Entrants per Heat" }).click();
   await page.getByRole("option", { name: "4 per Heat" }).click();
   await page.getByRole("combobox", { name: "How many advance" }).click();

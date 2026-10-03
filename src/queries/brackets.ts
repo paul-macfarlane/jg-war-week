@@ -212,9 +212,7 @@ export async function loadBracket(
       slotCount: heat.slotCount,
       winnerToHeatId: heat.winnerToHeatId,
       winnerToSlot: heat.winnerToSlot,
-      dayId: heat.dayId,
-      startTime: heat.startTime,
-      location: heat.location,
+      recordedAt: heat.recordedAt,
     })
     .from(heat)
     .where(eq(heat.competitionId, competitionId))
@@ -241,16 +239,13 @@ export async function loadBracket(
         row.winnerToHeatId !== null && row.winnerToSlot !== null
           ? { heatId: row.winnerToHeatId, slot: row.winnerToSlot }
           : null,
-      dayId: row.dayId,
-      startTime: row.startTime,
-      location: row.location,
+      recordedAt: row.recordedAt,
       slots: Array.from({ length: row.slotCount }, (_, slot) => {
         const found = slots.find((s) => s.heatId === row.id && s.slot === slot);
         return {
           entrantId: found?.entrantId ?? null,
           place: found?.place ?? null,
           score: found?.score ?? null,
-          forfeited: found?.forfeited ?? false,
         };
       }),
     })),

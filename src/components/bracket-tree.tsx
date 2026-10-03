@@ -14,7 +14,7 @@ import {
   bracketTree,
 } from "@/lib/bracket/tree";
 import type { Bracket } from "@/lib/bracket/types";
-import { formatHeatWhen } from "@/lib/bracket/view";
+import { formatRecordedAt } from "@/lib/bracket/view";
 import { YOU_ROW_CLASS } from "@/lib/you";
 
 type Scoring = "team" | "individual";
@@ -122,9 +122,6 @@ function SlotRow({
           (You)
         </span>
       )}
-      {slot.forfeited && (
-        <span className="text-foreground/60 shrink-0 text-xs">Forfeit</span>
-      )}
       {slot.score && (
         <span className="ml-auto shrink-0 tabular-nums">{slot.score}</span>
       )}
@@ -155,15 +152,12 @@ export function BracketTree({
   scoring,
   primaryColor,
   youEntrantId = null,
-  days = [],
 }: {
   bracket: Bracket;
   entrantsById: Map<string, BracketViewEntrant>;
   scoring: Scoring;
   primaryColor: string;
   youEntrantId?: string | null;
-  /** The War Week's Days, for a timed Heat's Day, time and place. */
-  days?: { id: string; date: string }[];
 }) {
   const heatsById = new Map(bracket.heats.map((h) => [h.id, h]));
   const tree = bracketTree(bracket);
@@ -209,7 +203,9 @@ export function BracketTree({
               >
                 {round.heats.map((heat) => {
                   const source = heatsById.get(heat.id);
-                  const when = source ? formatHeatWhen(source, days) : "";
+                  const recorded = source?.recordedAt
+                    ? formatRecordedAt(source.recordedAt)
+                    : "";
                   return (
                     <div
                       key={heat.id}
@@ -229,9 +225,9 @@ export function BracketTree({
                         <span className="text-foreground/60 px-1.5 text-xs font-medium">
                           {heat.name}
                         </span>
-                        {when && (
+                        {recorded && (
                           <span className="text-foreground/70 px-1.5 text-xs">
-                            {when}
+                            {recorded}
                           </span>
                         )}
                         {heat.slots.map((slot, i) => (

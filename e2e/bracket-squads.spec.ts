@@ -24,7 +24,7 @@ import {
 
 // Cypher is a team-scoring War Week XI Competition with no Points Entries
 // and no Placement Points; the flow gives it 3 / 2 / 1 (inside its max of
-// 3) and runs it as a single-elimination Bracket of four Squads.
+// 3) and runs it as a head-to-head Bracket of four Squads.
 const COMPETITION = "Cypher";
 
 const SQUADS = [
@@ -231,10 +231,8 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await asHost(context);
     await page.goto(`/admin/competitions/${id}/bracket`);
     await page.getByRole("combobox", { name: "Format" }).click();
-    await page.getByRole("option", { name: "Single elimination" }).click();
-    await expect(
-      page.getByText("Format set to Single elimination"),
-    ).toBeVisible();
+    await page.getByRole("option", { name: "Bracket", exact: true }).click();
+    await expect(page.getByText("Format set to Bracket")).toBeVisible();
 
     for (const squad of SQUADS) await addSquad(page, squad);
     // 15-3: the Squad help line in the builder's Squads section.

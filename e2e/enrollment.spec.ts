@@ -25,7 +25,7 @@ import {
 } from "./session";
 
 // Pool is an individual War Week XI Competition (counts toward Team) that
-// no other flow touches: the flow runs it as a single-elimination Bracket
+// no other flow touches: the flow runs it as a head-to-head Bracket
 // with "Participants can enroll" on, then puts it back.
 const COMPETITION = "Pool";
 
@@ -160,7 +160,9 @@ test("enrollment: a Participant enrolls, withdraws and enrolls again; once the H
     [id],
   );
   await runQuery(
-    `update competition set format = 'single-elimination', self_enroll = true
+    `update competition set format = 'bracket',
+       bracket_config = '{"entrantsPerHeat":2,"advancePerHeat":1,"thirdPlaceGame":false}'::jsonb,
+       self_enroll = true
      where id = $1`,
     [id],
   );

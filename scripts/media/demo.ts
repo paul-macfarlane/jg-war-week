@@ -221,13 +221,12 @@ export async function setupBracketDemo(
          ($11, $2, 0, 1), ($11, $7, 1, 2), ($11, $3, 2, 3), ($11, $8, 3, 4)`,
       [heatA.id, e1, e2, e3, e4, heatB.id, e5, e6, e7, e8, finalHeat.id],
     );
-    // One Heat's time and place, so the still shows a when-line
-    // ("Sunday, Feb 21 · 7:00 PM ET · Main room") on its card.
+    // Every played Heat was recorded, so the still shows "Recorded <time>"
+    // on its card.
     await query(
-      `update heat set day_id = (select id from day where war_week_id = $2 order by date limit 1),
-         start_time = '19:00', location = 'Main room'
-       where id = $1`,
-      [heatA.id, warWeek.id],
+      `update heat set recorded_at = '2026-02-21T19:00:00-05:00'
+       where competition_id = $1`,
+      [competitionId],
     );
     note(
       `bracket demo: ${seeded ? "seeded" : "added"} competition ${competitionId}, champion entrant ${e1}`,

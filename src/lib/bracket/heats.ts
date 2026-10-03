@@ -78,7 +78,7 @@ export function validateConfig(
 }
 
 function emptySlot(): HeatSlot {
-  return { entrantId: null, place: null, score: null, forfeited: false };
+  return { entrantId: null, place: null, score: null };
 }
 
 function finalRound(bracket: Bracket): number {
@@ -180,9 +180,7 @@ export function generate(
         slots: Array.from({ length: size }, emptySlot),
         winnerTo: null,
         status: "pending",
-        dayId: null,
-        startTime: null,
-        location: null,
+        recordedAt: null,
       });
     });
   });
@@ -203,8 +201,7 @@ function findHeat(bracket: Bracket, heatId: string): Heat {
 
 /**
  * Sets a Heat's places from a Heat Result, refusing one that isn't a clear
- * order of every Entrant. Forfeiting Entrants finish behind the rest, in
- * the order given.
+ * order of every Entrant.
  */
 function record(bracket: Bracket, heat: Heat, result: HeatResult) {
   if (isBye(bracket, heat)) throw new BracketError("A bye has no Heat Result.");
@@ -222,32 +219,19 @@ function record(bracket: Bracket, heat: Heat, result: HeatResult) {
       "Put every Entrant of this Heat in finishing order, once each.",
     );
   }
-  const forfeits = new Set(result.forfeits ?? []);
-  if ([...forfeits].some((id) => !ids.includes(id))) {
-    throw new BracketError("Only an Entrant of this Heat can forfeit it.");
-  }
-  if (forfeits.size === ids.length) {
-    throw new BracketError(
-      "Someone has to advance, so not every Entrant can forfeit.",
-    );
-  }
   const scores = result.scores ?? {};
   if (Object.keys(scores).some((id) => !ids.includes(id))) {
     throw new BracketError(
       "Scores can only be given for this Heat's Entrants.",
     );
   }
-  const finishing = [
-    ...order.filter((id) => !forfeits.has(id)),
-    ...order.filter((id) => forfeits.has(id)),
-  ];
+  const finishing = order;
   heat.slots = heat.slots.map((slot) => ({
     entrantId: slot.entrantId,
     place: finishing.indexOf(slot.entrantId!) + 1,
     score: scores[slot.entrantId!]?.trim() || null,
-    forfeited: forfeits.has(slot.entrantId!),
   }));
-  heat.status = forfeits.size > 0 ? "forfeit" : "played";
+  heat.status = "played";
 }
 
 /**

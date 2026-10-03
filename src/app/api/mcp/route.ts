@@ -30,7 +30,6 @@ import { getGamesView } from "@/queries/games";
 import { getParticipationView } from "@/queries/participation";
 import { getPlacementsView } from "@/queries/placements";
 import { getSchedule } from "@/queries/schedule";
-import { getSetupDays } from "@/queries/setup";
 import { getStandings } from "@/queries/standings";
 import { getCurrentWarWeek } from "@/queries/war-weeks";
 
@@ -286,11 +285,8 @@ const handler = createMcpHandler(
             ],
           };
         }
-        const [view, days] = await Promise.all([
-          found ? getBracket(found.id) : Promise.resolve(undefined),
-          getSetupDays(warWeek),
-        ]);
-        const result = toBracketResult(view, days, competition);
+        const view = found ? await getBracket(found.id) : undefined;
+        const result = toBracketResult(view, competition);
 
         return {
           content: [{ type: "text", text: JSON.stringify(result) }],

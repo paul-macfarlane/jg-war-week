@@ -103,7 +103,6 @@ describe("bracketTree, single elimination", () => {
         entrantId: "A",
         place: 2,
         score: "1",
-        forfeited: false,
         advances: false,
       },
       {
@@ -111,7 +110,6 @@ describe("bracketTree, single elimination", () => {
         entrantId: "H",
         place: 1,
         score: "3",
-        forfeited: false,
         advances: true,
       },
     ]);

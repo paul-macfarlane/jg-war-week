@@ -123,8 +123,8 @@ test("a Heats Bracket is built, run and finalized into Points Entries", async ({
 
   await page.goto(`/admin/competitions/${id}/bracket`);
   await page.getByRole("combobox", { name: "Format" }).click();
-  await page.getByRole("option", { name: "Heats" }).click();
-  await expect(page.getByText("Format set to Heats")).toBeVisible();
+  await page.getByRole("option", { name: "Bracket", exact: true }).click();
+  await expect(page.getByText("Format set to Bracket")).toBeVisible();
 
   await page.getByRole("combobox", { name: "Entrants per Heat" }).click();
   await page.getByRole("option", { name: "4 per Heat" }).click();
@@ -191,6 +191,8 @@ test("a Heats Bracket is built, run and finalized into Points Entries", async ({
   await expect(page.getByLabel("Champion", { exact: true })).toContainText(
     champion,
   );
+  // Every played Heat says when it was recorded.
+  await expect(page.getByText(/^Recorded .+ ET$/)).toHaveCount(3);
 
   await checkViewports(page, testInfo, "results-final");
 

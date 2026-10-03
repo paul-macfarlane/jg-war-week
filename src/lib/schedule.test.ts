@@ -12,7 +12,6 @@ import {
   groupSchedule,
   resolveClock,
   toEasternClock,
-  withHeats,
 } from "@/lib/schedule";
 
 function entry(
@@ -385,46 +384,4 @@ describe("resolveClock", () => {
       );
     },
   );
-});
-
-describe("withHeats", () => {
-  const heat = (startTime: string, title: string): ScheduleEntry => ({
-    ...entry(startTime, title),
-    kind: "heat",
-    category: "competition",
-  });
-
-  it("adds each entry under its Day, in start time then title order", () => {
-    const merged = withHeats(week, [
-      { dayId: "d1", entry: heat("12:00:00", "Beyblades · Final") },
-      { dayId: "d2", entry: heat("08:00:00", "Chess · Semifinal 1") },
-    ]);
-
-    expect(merged.map((d) => d.items.map((i) => i.title))).toEqual([
-      [
-        "Workout",
-        "Breakfast",
-        "Beyblades · Final",
-        "Chess",
-        "Lunch",
-        "Game Night",
-      ],
-      ["Chess · Semifinal 1", "Kickoff"],
-    ]);
-  });
-
-  it("drops an entry whose Day isn't in the schedule", () => {
-    const merged = withHeats(week, [
-      { dayId: "gone", entry: heat("12:00:00", "Beyblades · Final") },
-    ]);
-
-    expect(merged).toEqual(week);
-  });
-
-  it("leaves the schedule it was given unchanged", () => {
-    const before = structuredClone(week);
-    withHeats(week, [{ dayId: "d1", entry: heat("09:00:00", "Darts") }]);
-
-    expect(week).toEqual(before);
-  });
 });

@@ -180,8 +180,8 @@ describe("applyResult", () => {
     expect(heat(bracket, "r1h1")).toMatchObject({
       status: "played",
       slots: [
-        { entrantId: "s1", place: 2, score: "17", forfeited: false },
-        { entrantId: "s4", place: 1, score: "21", forfeited: false },
+        { entrantId: "s1", place: 2, score: "17" },
+        { entrantId: "s4", place: 1, score: "21" },
       ],
     });
     expect(pairing(heat(bracket, "r2h1"))).toBe("s4 v -");
@@ -194,17 +194,16 @@ describe("applyResult", () => {
     expect(heat(both, "r2h1").status).toBe("ready");
   });
 
-  it("makes a forfeiting Entrant lose, even when listed first", () => {
+  it("makes the Entrant listed last lose: a no-show just loses", () => {
     const bracket = applyResult(generate(entrants(2)), "r1h1", {
-      order: ["s1", "s2"],
-      forfeits: ["s1"],
+      order: ["s2", "s1"],
     });
 
     expect(heat(bracket, "r1h1")).toMatchObject({
-      status: "forfeit",
+      status: "played",
       slots: [
-        { entrantId: "s1", place: 2, forfeited: true },
-        { entrantId: "s2", place: 1, forfeited: false },
+        { entrantId: "s1", place: 2 },
+        { entrantId: "s2", place: 1 },
       ],
     });
     expect(champion(bracket)).toBe("s2");
@@ -214,16 +213,6 @@ describe("applyResult", () => {
     ["an Entrant missing", { order: ["s1"] }, "Put every Entrant"],
     ["an Entrant twice", { order: ["s1", "s1"] }, "Put every Entrant"],
     ["an outsider", { order: ["s1", "s2"] }, "Put every Entrant"],
-    [
-      "everyone forfeiting",
-      { order: ["s1", "s4"], forfeits: ["s1", "s4"] },
-      "not every Entrant can forfeit",
-    ],
-    [
-      "an outsider forfeiting",
-      { order: ["s1", "s4"], forfeits: ["s2"] },
-      "Only an Entrant of this Heat",
-    ],
     [
       "an outsider's score",
       { order: ["s1", "s4"], scores: { s2: "3" } },

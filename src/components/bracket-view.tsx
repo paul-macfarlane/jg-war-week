@@ -24,7 +24,7 @@ import type { Bracket, Heat } from "@/lib/bracket/types";
 import {
   type NextHeat,
   entrantForYou,
-  formatHeatWhen,
+  formatRecordedAt,
   groupRounds,
   heatName,
   isDecided,
@@ -60,7 +60,7 @@ function listNames(names: string[]): string {
 }
 
 /**
- * A Heat's places: each Entrant with its mark, scores and forfeits. A
+ * A Heat's places: each Entrant with its mark and score. A
  * decided two-slot Heat marks its winner bold with a ✓; a decided Heat of
  * more lists its Entrants by place with their place numbers. An empty
  * single-elimination place reads "Bye" or "Waiting for …"; a Heats Round
@@ -161,7 +161,6 @@ export function HeatRows({
                 ✓
               </span>
             )}
-            {slot.forfeited && <Badge variant="outline">Forfeit</Badge>}
             {entrant.id === youEntrantId && <YouMark />}
             {slot.score && (
               <span
@@ -183,7 +182,7 @@ export function HeatRows({
 }
 
 /**
- * The "Your next Heat" card (props only): the Heat You play next, when and
+ * The "Your next Heat" card (props only): the Heat You play next and
  * against whom, or the Round You advanced to. `canReport` adds **Report
  * result** (the server found the Heat reportable by You, known by account
  * linking).
@@ -192,15 +191,12 @@ export function YourNextHeatCard({
   next,
   bracket,
   entrantsById,
-  when,
   canReport,
   onReport,
 }: {
   next: NextHeat;
   bracket: Bracket;
   entrantsById: Map<string, BracketViewEntrant>;
-  /** The Heat's Day, time and place, when it has them. */
-  when: string | null;
   canReport: boolean;
   onReport: () => void;
 }) {
@@ -222,7 +218,6 @@ export function YourNextHeatCard({
             <span className="text-foreground/60 text-xs font-medium uppercase">
               Your next Heat · {heatName(bracket, next.heat)}
             </span>
-            {when && <span className="text-foreground/70 text-sm">{when}</span>}
             {next.opponentIds.length > 0 ? (
               <span className="font-semibold break-words">
                 vs{" "}
@@ -285,7 +280,6 @@ export function BracketView({
   primaryColor,
   participantTeams,
   participantSquads,
-  days,
   finaleHref,
   selfReport,
 }: {
@@ -299,8 +293,6 @@ export function BracketView({
   participantTeams: Record<string, string>;
   /** Each Participant's Squad id in this Competition, for Your Squad's Entrant. */
   participantSquads: Record<string, string>;
-  /** The War Week's Days, for a timed Heat's Day, time and place. */
-  days: { id: string; date: string }[];
   /** The Bracket Finale, once the Bracket is finalized; null before. */
   finaleHref: string | null;
   selfReport: BracketViewSelfReport;
@@ -321,8 +313,6 @@ export function BracketView({
     scoring,
   );
   const next = youEntrantId ? nextHeatFor(bracket, youEntrantId) : null;
-  const nextWhen =
-    next && next.kind === "heat" ? formatHeatWhen(next.heat, days) : null;
   const winner = champion ? entrantsById.get(champion) : undefined;
   const heatsById = new Map(bracket.heats.map((h) => [h.id, h]));
   const canReport =
@@ -411,7 +401,6 @@ export function BracketView({
           next={next}
           bracket={bracket}
           entrantsById={entrantsById}
-          when={nextWhen}
           canReport={canReport}
           onReport={() => {
             if (next.kind === "heat") setReporting(next.heat.id);
@@ -426,7 +415,6 @@ export function BracketView({
           scoring={scoring}
           primaryColor={primaryColor}
           youEntrantId={youEntrantId}
-          days={days}
         />
       ) : (
         <div className="flex flex-col gap-4">
@@ -443,7 +431,6 @@ export function BracketView({
                     isHeadToHead(bracket.config) && heat.winnerTo
                       ? heatsById.get(heat.winnerTo.heatId)
                       : undefined;
-                  const when = formatHeatWhen(heat, days);
                   return (
                     <li key={heat.id}>
                       <Card size="sm">
@@ -451,9 +438,9 @@ export function BracketView({
                           <span className="text-foreground/60 text-xs font-medium">
                             {heatName(bracket, heat)}
                           </span>
-                          {when && (
+                          {heat.recordedAt && (
                             <span className="text-foreground/70 text-xs">
-                              {when}
+                              {formatRecordedAt(heat.recordedAt)}
                             </span>
                           )}
                           <HeatRows

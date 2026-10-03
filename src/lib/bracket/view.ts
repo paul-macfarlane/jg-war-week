@@ -6,7 +6,7 @@ import { isHeadToHead } from "@/lib/bracket/config";
 import { isBye } from "@/lib/bracket/formats";
 import { isDecided } from "@/lib/bracket/heat-status";
 import type { Bracket, BracketFormat, Format, Heat } from "@/lib/bracket/types";
-import { formatDayHeading, formatEtTime } from "@/lib/schedule";
+import { WAR_WEEK_TIME_ZONE } from "@/lib/schedule";
 
 export type { Format } from "@/lib/bracket/types";
 export { isDecided };
@@ -90,11 +90,6 @@ export function heatName(
   });
 }
 
-/** A Heat with both a Day and a start time: the only Heats Now/Next shows. */
-export function isTimed(heat: Pick<Heat, "dayId" | "startTime">): boolean {
-  return heat.dayId !== null && heat.startTime !== null;
-}
-
 /**
  * A Heat's Entrants as one line: "A vs B" for two, "A, B, C and D" for more.
  * An empty slot (waiting for an Entrant, or a bye) is skipped.
@@ -112,21 +107,17 @@ export function heatEntrantLabels(
 }
 
 /**
- * A Heat's time and place, like "Sunday, Feb 22 · 7:00 PM ET · Main room";
- * just the location when only that is set; "" when neither is.
+ * When a Heat's Result was recorded, like "Recorded Sun 7:05 PM ET": the
+ * ET wall clock, whatever the viewer's timezone.
  */
-export function formatHeatWhen(
-  heat: Pick<Heat, "dayId" | "startTime" | "location">,
-  days: { id: string; date: string }[],
-): string {
-  const day = heat.dayId ? days.find((d) => d.id === heat.dayId) : undefined;
-  const parts: string[] = [];
-  if (day && heat.startTime) {
-    parts.push(formatDayHeading(day.date));
-    parts.push(`${formatEtTime(heat.startTime)} ET`);
-  }
-  if (heat.location) parts.push(heat.location);
-  return parts.join(" · ");
+export function formatRecordedAt(recordedAt: Date): string {
+  const when = new Intl.DateTimeFormat("en-US", {
+    timeZone: WAR_WEEK_TIME_ZONE,
+    weekday: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(recordedAt);
+  return `Recorded ${when} ET`;
 }
 
 export type BracketRound = { round: number; name: string; heats: Heat[] };

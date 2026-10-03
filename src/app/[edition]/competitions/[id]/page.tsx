@@ -29,7 +29,6 @@ import { getHeatReportFacts } from "@/queries/heat-reports";
 import { getParticipationView } from "@/queries/participation";
 import { getPlacementsView } from "@/queries/placements";
 import { getYouCandidates } from "@/queries/roster";
-import { getSetupDays } from "@/queries/setup";
 
 import { checkInOfferFor } from "./check-in";
 import { getCompetitionPage } from "./competition";
@@ -108,15 +107,14 @@ export default async function CompetitionPage({
   const { warWeek, competition, ledger } = found;
   const bracket = await getBracket(competition.id);
   const isBracket = bracket && bracket.competition.format !== "placement";
-  const [participantTeams, participantSquads, days] = isBracket
+  const [participantTeams, participantSquads] = isBracket
     ? await Promise.all([
         competition.scoring === "team"
           ? getParticipantTeamIds(warWeek)
           : Promise.resolve({}),
         getParticipantSquadIds(competition.id),
-        getSetupDays(warWeek),
       ])
-    : [{}, {}, []];
+    : [{}, {}];
   const selfReport = isBracket
     ? await selfReportFor(warWeek, bracket, participantTeams, participantSquads)
     : SELF_REPORT_OFF;
@@ -208,7 +206,6 @@ export default async function CompetitionPage({
           primaryColor={warWeek.primaryColor}
           participantTeams={participantTeams}
           participantSquads={participantSquads}
-          days={days}
           finaleHref={
             bracket.finalized
               ? `/${warWeek.edition}/finale/${competition.id}`

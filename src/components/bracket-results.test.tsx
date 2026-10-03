@@ -26,7 +26,7 @@ const bracket: Bracket = {
   ...generated,
   heats: generated.heats.map((h) =>
     h.id === "r1h2"
-      ? { ...h, dayId: "d1", startTime: "19:00:00", location: "Main room" }
+      ? { ...h, status: "played", recordedAt: new Date("2026-02-22T00:05:00Z") }
       : h,
   ),
 };
@@ -49,7 +49,6 @@ const props = {
   finalized: false,
   finaleHref: null,
   primaryColor: "#000",
-  days: [{ id: "d1", date: "2026-02-22" }],
   onOpenSheetChange: () => {},
 };
 
@@ -72,22 +71,12 @@ describe("BracketResultsView", () => {
     );
   });
 
-  it("stops refreshing while a Time & place Sheet is open", () => {
-    expect(render({ kind: "schedule", heatId: "r1h2" })).not.toContain(
-      "data-auto-refresh",
-    );
+  it("offers no time and place on any Heat", () => {
+    expect(render(null)).not.toContain("Time &amp; place");
   });
 
-  it("offers Time & place on each Heat that is played, not on a bye", () => {
-    const html = render(null);
-
-    expect(html).toContain('aria-label="Time &amp; place for Semifinal 2"');
-    expect(html).toContain('aria-label="Time &amp; place for Final"');
-    expect(html).not.toContain('aria-label="Time &amp; place for Semifinal 1"');
-  });
-
-  it("shows a timed Heat's Day, time and place on its card", () => {
-    expect(render(null)).toContain("Sunday, Feb 22 · 7:00 PM ET · Main room");
+  it("shows when a played Heat was recorded, in ET, on its card", () => {
+    expect(render(null)).toContain("Recorded Sat 7:05 PM ET");
   });
 
   it("links a finalized Bracket's note to its Finale", () => {

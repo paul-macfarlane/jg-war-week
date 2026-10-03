@@ -19,14 +19,13 @@ import {
   HeatResultForm,
   type HeatResultFormProps,
 } from "@/components/heat-result-form";
-import { HeatScheduleForm } from "@/components/heat-schedule-form";
 import { ResponsiveSheetDialog } from "@/components/responsive-sheet-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { isBye, isRecordable } from "@/lib/bracket/formats";
+import { isRecordable } from "@/lib/bracket/formats";
 import type { Bracket } from "@/lib/bracket/types";
 import {
-  formatHeatWhen,
+  formatRecordedAt,
   groupRounds,
   heatName,
   isDecided,
@@ -74,8 +73,8 @@ export function finalizeCopy(placementPoints: number[] | null) {
       };
 }
 
-/** Which Sheet is open, for which Heat: a Heat Result or its time and place. */
-export type OpenSheet = { kind: "result" | "schedule"; heatId: string } | null;
+/** Which Sheet is open: the Heat Result of a Heat. */
+export type OpenSheet = { kind: "result"; heatId: string } | null;
 
 type BracketResultsProps = {
   competitionId: string;
@@ -87,8 +86,6 @@ type BracketResultsProps = {
   champion: string | null;
   finalized: boolean;
   primaryColor: string;
-  /** The War Week's Days, for a Heat's time and place. */
-  days: { id: string; date: string }[];
   /** The Bracket Finale, once the Bracket is finalized; null before. */
   finaleHref: string | null;
   /** Who self-reported each Heat's current result, by Heat id: a name. */
@@ -97,9 +94,8 @@ type BracketResultsProps = {
 
 /**
  * Runs a Bracket on a phone: Heats by Round as Cards, a tap opens the Heat
- * Result popup, "Time & place" opens the Heat's time popup — both a bottom
- * Sheet on a phone and a centered Dialog on large screens
- * (`ResponsiveSheetDialog`); the champion and Finalize / Un-finalize sit on
+ * Result popup, a bottom Sheet on a phone and a centered Dialog on large
+ * screens (`ResponsiveSheetDialog`); the champion and Finalize / Un-finalize sit on
  * top. Refreshes live while no popup is open.
  */
 export function BracketResults(props: BracketResultsProps) {
@@ -116,7 +112,7 @@ export function BracketResults(props: BracketResultsProps) {
 /**
  * The results screen for a given open Sheet (props only). Live refresh runs
  * only while no Sheet is open, so it never interrupts an unsaved Heat
- * Result or time.
+ * Result.
  */
 export function BracketResultsView({
   competitionId,
@@ -127,7 +123,6 @@ export function BracketResultsView({
   champion,
   finalized,
   primaryColor,
-  days,
   finaleHref,
   reporters = {},
   openSheet,
@@ -140,8 +135,7 @@ export function BracketResultsView({
   const sheetHeat = openSheet
     ? bracket.heats.find((h) => h.id === openSheet.heatId)
     : undefined;
-  const resultHeat = openSheet?.kind === "result" ? sheetHeat : undefined;
-  const scheduleHeat = openSheet?.kind === "schedule" ? sheetHeat : undefined;
+  const resultHeat = sheetHeat;
   const winner = champion ? entrantsById.get(champion) : undefined;
   const close = () => onOpenSheetChange(null);
   const copy = finalizeCopy(placementPoints);
@@ -241,8 +235,6 @@ export function BracketResultsView({
             {round.heats.map((heat) => {
               const name = heatName(bracket, heat);
               const tappable = !finalized && isRecordable(bracket, heat.id);
-              const schedulable = !finalized && !isBye(bracket, heat);
-              const when = formatHeatWhen(heat, days);
               const reporter = reporters[heat.id];
               const rows = (
                 <HeatRows
@@ -259,29 +251,10 @@ export function BracketResultsView({
                     <CardContent className="flex min-w-0 flex-col gap-2">
                       <div className="text-foreground/60 flex min-h-8 items-center justify-between gap-2 text-xs font-medium">
                         <span>{name}</span>
-                        {schedulable && (
-                          // Above the full-card overlay, so it opens its
-                          // own Sheet rather than the Heat Result.
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            aria-label={`Time & place for ${name}`}
-                            className="relative z-10 min-h-11 sm:min-h-8"
-                            onClick={() =>
-                              onOpenSheetChange({
-                                kind: "schedule",
-                                heatId: heat.id,
-                              })
-                            }
-                          >
-                            Time &amp; place
-                          </Button>
-                        )}
                       </div>
-                      {when && (
+                      {heat.recordedAt && (
                         <span className="text-foreground/70 text-xs">
-                          {when}
+                          {formatRecordedAt(heat.recordedAt)}
                         </span>
                       )}
                       {rows}
@@ -336,24 +309,6 @@ export function BracketResultsView({
             entrantsById={entrantsById}
             scoring={scoring}
             primaryColor={primaryColor}
-            onSaved={close}
-          />
-        )}
-      </ResponsiveSheetDialog>
-
-      <ResponsiveSheetDialog
-        open={scheduleHeat !== undefined}
-        onOpenChange={(open) => {
-          if (!open) close();
-        }}
-      >
-        {scheduleHeat && (
-          <HeatScheduleForm
-            key={scheduleHeat.id}
-            competitionId={competitionId}
-            heat={scheduleHeat}
-            name={heatName(bracket, scheduleHeat)}
-            days={days}
             onSaved={close}
           />
         )}

@@ -59,11 +59,10 @@ describe("a 2 per Heat, 1 advancing Bracket through the Format dispatch", () => 
       { entrantId: "b", place: 3 },
     ]);
 
-    // A new winner in Round 1 clears the decided final; the first
-    // non-forfeit is the winner.
-    expect(
-      resetByResult(bracket, "r1h2", { order: ["c", "b"], forfeits: ["c"] }),
-    ).toEqual(["r2h1"]);
+    // A new winner in Round 1 clears the decided final.
+    expect(resetByResult(bracket, "r1h2", { order: ["b", "c"] })).toEqual([
+      "r2h1",
+    ]);
     expect(resetByResult(bracket, "r1h2", { order: ["c", "b"] })).toEqual([]);
   });
 });

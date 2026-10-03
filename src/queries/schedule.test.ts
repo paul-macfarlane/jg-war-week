@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 import type { DBTx } from "@/db";
 import { isLocalDatabaseUrl } from "@/db/local-url";
 import { inRolledBackTransaction } from "@/db/test-transaction";
-import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 
 // Runs only against a local Postgres (CI's service or docker compose; see
 // vitest.config.ts), never a hosted database.
@@ -151,206 +150,47 @@ async function bracket(
   return { id: row.id, heatId };
 }
 
-describe.skipIf(!isLocalDatabase)("getTimedHeats", () => {
-  it("returns only the timed ready Heats of the War Week, with their Entrant labels", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { mutations, queries } = await modules();
-      const f = await fixture(tx);
-      const at = (dayId: string, startTime: string, location: string | null) =>
-        ({ dayId, startTime, location }) as const;
-
-      // Red v Gold (Semifinal 1), Blue v Green (Semifinal 2), the Final.
-      const beyblades = await bracket(tx, f, f.ctx, "Beyblades", "team", [
-        ...f.teamIds,
-      ]);
-      const semi1 = await beyblades.heatId(1, 1);
-      const semi2 = await beyblades.heatId(1, 2);
-      const final = await beyblades.heatId(2, 1);
-      // Ashley v Sam: one Heat, the Final.
-      const chess = await bracket(
-        tx,
-        f,
-        f.ctx,
-        "Chess",
-        "individual",
-        f.participantIds,
-      );
-      const chessFinal = await chess.heatId(1, 1);
-      // Ready but never timed.
-      const darts = await bracket(tx, f, f.ctx, "Darts", "team", [
-        ...f.teamIds,
-      ]);
-      await mutations.setHeatSchedule(
-        darts.id,
-        await darts.heatId(1, 1),
-        { dayId: null, startTime: null, location: "Table 3" },
-        f.ctx,
-        tx,
-      );
-      // Another War Week's timed ready Heat.
-      const other = await bracket(
-        tx,
-        f,
-        f.otherCtx,
-        "Beyblades",
-        "team",
-        f.otherTeamIds,
-      );
-
-      for (const [competitionId, heatId, values, ctx] of [
-        [beyblades.id, semi1, at(f.dayId, "19:00", "Main room"), f.ctx],
-        [beyblades.id, semi2, at(f.dayId, "19:30", null), f.ctx],
-        [beyblades.id, final, at(f.dayId, "21:00", null), f.ctx],
-        [chess.id, chessFinal, at(f.dayId, "12:00", null), f.ctx],
-        [
-          other.id,
-          await other.heatId(1, 1),
-          at(f.otherDayId, "12:00", null),
-          f.otherCtx,
-        ],
-      ] as const) {
-        expect(
-          await mutations.setHeatSchedule(
-            competitionId,
-            heatId,
-            values,
-            ctx,
-            tx,
-          ),
-        ).toEqual({ ok: true });
-      }
-      // Semifinal 2 is decided; the Final is still pending.
-      const [blueEntrant, greenEntrant] = await Promise.all(
-        [f.teamIds[1], f.teamIds[2]].map(async (teamId) => {
-          const [row] = await tx
-            .select({ id: f.schema.entrant.id })
-            .from(f.schema.entrant)
-            .where(
-              and(
-                eq(f.schema.entrant.competitionId, beyblades.id),
-                eq(f.schema.entrant.teamId, teamId),
-              ),
-            );
-          return row.id;
-        }),
-      );
-      const recorded = await mutations.recordHeatResult(
-        beyblades.id,
-        semi2,
-        { order: [blueEntrant, greenEntrant] },
-        f.ctx,
-        tx,
-      );
-      expect(recorded.ok).toBe(true);
-
-      const rows = await queries.getTimedHeats({ id: f.ctx.warWeekId }, tx);
-      const shown = rows
-        .map((row) => ({
-          competition: row.competition.name,
-          config: row.competition.config,
-          finalRound: row.finalRound,
-          heatId: row.heat.id,
-          status: row.heat.status,
-          dayId: row.heat.dayId,
-          startTime: row.heat.startTime,
-          location: row.heat.location,
-          entrants: row.heat.slots.map((s) =>
-            s.entrantId ? row.labels[s.entrantId] : null,
-          ),
-        }))
-        .sort((a, b) => a.competition.localeCompare(b.competition));
-
-      expect(shown).toEqual([
-        {
-          competition: "Beyblades",
-          config: DEFAULT_BRACKET_CONFIG,
-          finalRound: 2,
-          heatId: semi1,
-          status: "ready",
-          dayId: f.dayId,
-          startTime: "19:00:00",
-          location: "Main room",
-          entrants: ["Red", "Gold"],
-        },
-        {
-          competition: "Chess",
-          config: DEFAULT_BRACKET_CONFIG,
-          finalRound: 1,
-          heatId: chessFinal,
-          status: "ready",
-          dayId: f.dayId,
-          startTime: "12:00:00",
-          location: null,
-          entrants: ["Ashley Schuliger", "Sam Schantz"],
-        },
-      ]);
-    });
-  });
-
-  it("labels a timed Squad Heat by its Squads' names", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { mutations, queries } = await modules();
-      const f = await fixture(tx);
-      const [cypher] = await tx
-        .insert(f.schema.competition)
-        .values({
-          warWeekId: f.ctx.warWeekId,
-          name: "Cypher",
-          scoring: "team",
-          format: "bracket",
-        })
-        .returning({ id: f.schema.competition.id });
-      const squads = await tx
-        .insert(f.schema.squad)
-        .values([
-          { competitionId: cypher.id, teamId: f.teamIds[0], name: "Red Alpha" },
-          {
-            competitionId: cypher.id,
-            teamId: f.teamIds[1],
-            name: "Blue Bravo",
-          },
-        ])
-        .returning({ id: f.schema.squad.id });
-      await tx.insert(f.schema.entrant).values(
-        squads.map((squad, i) => ({
-          competitionId: cypher.id,
-          squadId: squad.id,
-          seedPosition: i + 1,
-        })),
-      );
-      expect(
-        await mutations.generateBracket(cypher.id, { rng: rngKeep }, f.ctx, tx),
-      ).toEqual({ ok: true });
-      const [final] = await tx
-        .select({ id: f.schema.heat.id })
-        .from(f.schema.heat)
-        .where(eq(f.schema.heat.competitionId, cypher.id));
-      await mutations.setHeatSchedule(
-        cypher.id,
-        final.id,
-        { dayId: f.dayId, startTime: "19:00", location: null },
-        f.ctx,
-        tx,
-      );
-
-      const [row] = await queries.getTimedHeats({ id: f.ctx.warWeekId }, tx);
-      expect(
-        row.heat.slots.map((s) =>
-          s.entrantId ? row.labels[s.entrantId] : null,
-        ),
-      ).toEqual(["Red Alpha", "Blue Bravo"]);
-    });
-  });
-
-  it("returns nothing for a War Week with no timed Heats", async () => {
+describe.skipIf(!isLocalDatabase)("getSchedule", () => {
+  it("lists a Competition's own Schedule Items and no Heat, however ready the Heats are", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { queries } = await modules();
       const f = await fixture(tx);
-      await bracket(tx, f, f.ctx, "Beyblades", "team", [...f.teamIds]);
+      // Two ready Heats (Semifinals) and a pending Final.
+      const beyblades = await bracket(tx, f, f.ctx, "Beyblades", "team", [
+        ...f.teamIds,
+      ]);
+      await tx.insert(f.schema.scheduleItem).values({
+        dayId: f.dayId,
+        title: "Beyblades",
+        startTime: "19:00:00",
+        category: "competition",
+        competitionId: beyblades.id,
+      });
 
-      expect(await queries.getTimedHeats({ id: f.ctx.warWeekId }, tx)).toEqual(
-        [],
-      );
+      const readyHeats = await tx
+        .select({ id: f.schema.heat.id })
+        .from(f.schema.heat)
+        .where(
+          and(
+            eq(f.schema.heat.competitionId, beyblades.id),
+            eq(f.schema.heat.status, "ready"),
+          ),
+        );
+      expect(readyHeats).toHaveLength(2);
+
+      const days = await queries.getSchedule(f.ctx.warWeekId, {}, tx);
+      expect(days.flatMap((day) => day.items.map((i) => i.title))).toEqual([
+        "Beyblades",
+      ]);
+      const [item] = days.flatMap((day) => day.items);
+      expect(item.competition).toEqual({
+        id: beyblades.id,
+        name: "Beyblades",
+      });
+      for (const heat of readyHeats) {
+        expect(item.id).not.toBe(heat.id);
+      }
+      expect(JSON.stringify(days)).not.toMatch(/Semifinal|Round 1/);
     });
   });
 });

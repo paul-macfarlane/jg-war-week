@@ -19,7 +19,7 @@ import {
 } from "@/lib/bracket/types";
 
 function emptySlot(): HeatSlot {
-  return { entrantId: null, place: null, score: null, forfeited: false };
+  return { entrantId: null, place: null, score: null };
 }
 
 /** The Bracket size for `count` Entrants: the next power of two. */
@@ -105,9 +105,7 @@ export function generate(
               }
             : null,
         status: "pending",
-        dayId: null,
-        startTime: null,
-        location: null,
+        recordedAt: null,
       });
     }
   }
@@ -200,7 +198,7 @@ export function resetByResult(
 
 /**
  * Records a Heat Result and advances the winner. A knockout Heat needs a
- * clear order of every Entrant; forfeiting Entrants finish behind the rest.
+ * clear order of every Entrant.
  * Re-recording a decided Heat with a new winner first clears the old winner
  * from the later Heats it reached (see `resetByResult`); keeping the winner
  * changes only this Heat.
@@ -227,15 +225,6 @@ export function applyResult(
       "Put every Entrant of this Heat in finishing order, once each.",
     );
   }
-  const forfeits = new Set(result.forfeits ?? []);
-  if ([...forfeits].some((id) => !ids.includes(id))) {
-    throw new BracketError("Only an Entrant of this Heat can forfeit it.");
-  }
-  if (forfeits.size === ids.length) {
-    throw new BracketError(
-      "Someone has to advance, so not every Entrant can forfeit.",
-    );
-  }
   const scores = result.scores ?? {};
   if (Object.keys(scores).some((id) => !ids.includes(id))) {
     throw new BracketError(
@@ -243,10 +232,7 @@ export function applyResult(
     );
   }
 
-  const finishing = [
-    ...order.filter((id) => !forfeits.has(id)),
-    ...order.filter((id) => forfeits.has(id)),
-  ];
+  const finishing = order;
   if (isDecided(heat) && winnerOf(heat) !== finishing[0]) {
     clearDownstream(next, heat);
   }
@@ -255,9 +241,8 @@ export function applyResult(
     entrantId: slot.entrantId,
     place: finishing.indexOf(slot.entrantId!) + 1,
     score: scores[slot.entrantId!]?.trim() || null,
-    forfeited: forfeits.has(slot.entrantId!),
   }));
-  heat.status = forfeits.size > 0 ? "forfeit" : "played";
+  heat.status = "played";
   advance(next, heat, finishing[0]);
   return next;
 }
@@ -305,10 +290,7 @@ export const singleElimination: FormatEngine = {
   generate: (config, entrants, newId) => generate(entrants, newId, config),
   applyResult,
   resetByResult(bracket, heatId, result) {
-    // A forfeiting Entrant loses, so the winner is the first who didn't.
-    const forfeits = result.forfeits ?? [];
-    const winner = result.order.find((id) => !forfeits.includes(id));
-    return resetByResult(bracket, heatId, winner ?? null);
+    return resetByResult(bracket, heatId, result.order[0] ?? null);
   },
   isRecordable(bracket, heatId) {
     const heat = bracket.heats.find((h) => h.id === heatId);

@@ -28,8 +28,8 @@ test("r15 87 the admin Bracket's unrecorded Heat has a solid Record result butto
   try {
     await page.goto(`/admin/competitions/${id}/bracket`);
     await page.getByRole("combobox", { name: "Format" }).click();
-    await page.getByRole("option", { name: "Heats" }).click();
-    await expect(page.getByText("Format set to Heats")).toBeVisible();
+    await page.getByRole("option", { name: "Bracket", exact: true }).click();
+    await expect(page.getByText("Format set to Bracket")).toBeVisible();
 
     const find = page.locator("#bracket-entrants");
     for (const entrant of ENTRANTS) {

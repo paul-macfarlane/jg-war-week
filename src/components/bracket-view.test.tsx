@@ -39,7 +39,6 @@ function card(options: { canReport: boolean }) {
       next={nextHeatFor(bracket, "e1")!}
       bracket={bracket}
       entrantsById={entrantsById}
-      when={null}
       onReport={() => {}}
       {...options}
     />,
@@ -68,7 +67,6 @@ describe("BracketView", () => {
     primaryColor: "#000",
     participantTeams: {},
     participantSquads: {},
-    days: [],
     finaleHref: null,
     selfReport: { on: true, linkedParticipantId: null, reportableHeatId: null },
   };
@@ -95,23 +93,30 @@ describe("BracketView", () => {
     expect(html).toMatch(/<button[^>]*role="tab"[^>]*>List<\/button>/);
   });
 
-  it("shows a timed Heat's Day, time and place in the default tree", () => {
-    const timed = {
+  it("shows when a played Heat was recorded, in the default tree", () => {
+    const played = {
       ...bracket,
       heats: bracket.heats.map((h, i) =>
         i === 0
-          ? { ...h, dayId: "d1", startTime: "19:00:00", location: "Main room" }
+          ? {
+              ...h,
+              status: "played" as const,
+              recordedAt: new Date("2026-02-22T00:05:00Z"),
+            }
           : h,
       ),
     };
     const html = renderToStaticMarkup(
-      <BracketView
-        {...props}
-        days={[{ id: "d1", date: "2026-02-22" }]}
-        bracket={timed}
-      />,
+      <BracketView {...props} bracket={played} />,
     );
-    expect(html).toContain("Sunday, Feb 22 · 7:00 PM ET · Main room");
+    expect(html).toContain("Recorded Sat 7:05 PM ET");
+  });
+
+  it("shows no time on Heats that aren't played", () => {
+    const html = renderToStaticMarkup(
+      <BracketView {...props} bracket={bracket} />,
+    );
+    expect(html).not.toContain("Recorded");
   });
 
   it("explains Squads beside a Squads Bracket's Entrants", () => {

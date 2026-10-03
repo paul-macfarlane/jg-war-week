@@ -32,8 +32,8 @@ test("r15 84 a recorded Heat of 4 with 2 advancing highlights both advancers in 
   try {
     await page.goto(`/admin/competitions/${id}/bracket`);
     await page.getByRole("combobox", { name: "Format" }).click();
-    await page.getByRole("option", { name: "Heats" }).click();
-    await expect(page.getByText("Format set to Heats")).toBeVisible();
+    await page.getByRole("option", { name: "Bracket", exact: true }).click();
+    await expect(page.getByText("Format set to Bracket")).toBeVisible();
     await page.getByRole("combobox", { name: "Entrants per Heat" }).click();
     await page.getByRole("option", { name: "4 per Heat" }).click();
     await page.getByRole("combobox", { name: "How many advance" }).click();

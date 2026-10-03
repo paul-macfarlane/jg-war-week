@@ -1,4 +1,4 @@
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import { competition, game, heat, pointsEntry } from "@/db/schema";
@@ -6,7 +6,7 @@ import type { ScoredCounts } from "@/lib/war-week-lifecycle";
 
 /**
  * What has been scored in a War Week, for Unstart: its Points Entries, its
- * Heat results (a Heat that is `played` or `forfeit`) and its Games, all
+ * Heat results (a Heat that is `played`) and its Games, all
  * through the War Week's Competitions.
  */
 export async function getScoredCounts(
@@ -23,10 +23,7 @@ export async function getScoredCounts(
       .from(heat)
       .innerJoin(competition, eq(competition.id, heat.competitionId))
       .where(
-        and(
-          eq(competition.warWeekId, warWeekId),
-          inArray(heat.status, ["played", "forfeit"]),
-        ),
+        and(eq(competition.warWeekId, warWeekId), eq(heat.status, "played")),
       ),
     dbOrTx
       .select({ n: count() })

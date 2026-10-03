@@ -133,8 +133,6 @@ export function parseSquadInput(input: unknown): Parsed<SquadInput> {
 }
 
 const generateSchema = z.object({
-  /** Random Seed Positions, or by the current Standings; default random. */
-  seeding: z.enum(["random", "standings"]).optional(),
   force: z.boolean().optional(),
 });
 
@@ -156,7 +154,6 @@ const heatResultSchema = z.object({
       z.string().trim().max(40, { error: "Scores are at most 40 characters." }),
     )
     .optional(),
-  forfeits: z.array(entrantId).optional(),
 });
 
 export function parseHeatResultInput(input: unknown): Parsed<HeatResult> {

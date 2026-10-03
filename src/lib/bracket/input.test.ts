@@ -104,9 +104,10 @@ describe("Bracket action input", () => {
   it("accepts a four-Entrant finishing order", () => {
     const c = "3c2b1a0f-9e8d-4c7b-8a69-5f4e3d2c1b0a";
     const d = "7d6c5b4a-3f2e-4d1c-9b0a-8f7e6d5c4b3a";
-    expect(
-      parseHeatResultInput({ order: [a, b, c, d], forfeits: [d] }),
-    ).toEqual({ ok: true, value: { order: [a, b, c, d], forfeits: [d] } });
+    expect(parseHeatResultInput({ order: [a, b, c, d] })).toEqual({
+      ok: true,
+      value: { order: [a, b, c, d] },
+    });
   });
 
   it("trims scores and refuses long ones", () => {
@@ -118,18 +119,12 @@ describe("Bracket action input", () => {
     ).toEqual({ ok: false, error: "Scores are at most 40 characters." });
   });
 
-  it("accepts a Generate with seeding, and defaults it to nothing", () => {
-    expect(parseGenerateInput({ seeding: "standings" })).toEqual({
+  it("accepts a Generate with force, and defaults it to nothing; seeding is always random", () => {
+    expect(parseGenerateInput({ force: true })).toEqual({
       ok: true,
-      value: { seeding: "standings" },
+      value: { force: true },
     });
     expect(parseGenerateInput({})).toEqual({ ok: true, value: {} });
-  });
-
-  it("refuses an unknown seeding", () => {
-    expect(parseGenerateInput({ seeding: "drag" })).toMatchObject({
-      ok: false,
-    });
   });
 
   it("refuses Entrants that aren't row ids", () => {

@@ -10,7 +10,6 @@ import { gameFormatLabel } from "@/lib/games/config";
 import { getBracket, getHeatReporters } from "@/queries/brackets";
 import { getGamesCompetitions } from "@/queries/games";
 import { getParticipationCompetitions } from "@/queries/participation";
-import { getSetupDays } from "@/queries/setup";
 
 import { loadAdminPage } from "../../gate";
 
@@ -28,9 +27,8 @@ export default async function BracketResultsPage({
     return <AdminRefused warWeek={warWeek} email={email} />;
   }
 
-  const [view, days, games, participations] = await Promise.all([
+  const [view, games, participations] = await Promise.all([
     getBracket(id),
-    getSetupDays(warWeek),
     getGamesCompetitions(warWeek),
     getParticipationCompetitions(warWeek),
   ]);
@@ -125,7 +123,6 @@ export default async function BracketResultsPage({
             champion={view.champion}
             finalized={view.finalized}
             primaryColor={warWeek.primaryColor}
-            days={days}
             reporters={reporters}
             finaleHref={
               view.finalized

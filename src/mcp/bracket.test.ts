@@ -11,8 +11,6 @@ import {
 } from "@/mcp/bracket";
 import type { BracketEntrant, BracketView } from "@/queries/brackets";
 
-const days = [{ id: "d1", date: "2026-02-22" }];
-
 const entrants: Entrant[] = [
   { id: "e1", seedPosition: 1, label: "Alpha" },
   { id: "e2", seedPosition: 2, label: "Bravo" },
@@ -87,7 +85,7 @@ describe("toGamesBracketResult", () => {
 
 describe("toBracketResult", () => {
   it("returns found: false for an unknown Competition", () => {
-    const result = toBracketResult(undefined, days, "Nonexistent");
+    const result = toBracketResult(undefined, "Nonexistent");
 
     expect(result).toEqual({
       found: false,
@@ -116,7 +114,7 @@ describe("toBracketResult", () => {
       finalized: false,
     };
 
-    expect(toBracketResult(view, days, "Trivia")).toEqual({
+    expect(toBracketResult(view, "Trivia")).toEqual({
       found: true,
       competition: { name: "Trivia", scoring: "team", format: "placement" },
       bracket: null,
@@ -125,18 +123,18 @@ describe("toBracketResult", () => {
     });
   });
 
-  it("shows an unfinalized Bracket's bye, decided Heat and timed Heat", () => {
+  it("shows an unfinalized Bracket's bye, played Heat with when it was recorded, and ready Heat", () => {
     let bracket = bracketFixture();
     // Round 1's non-bye Heat (Bravo v Charlie): Bravo wins.
     const round1Heat = bracket.heats.find(
       (h) => h.round === 1 && h.slots.every((s) => s.entrantId !== null),
     )!;
     bracket = applyResult(bracket, round1Heat.id, { order: ["e2", "e3"] });
-    // The final is now ready (Alpha v Bravo): time it, but don't decide it.
-    const final = bracket.heats.find((h) => h.round === 2)!;
-    final.dayId = "d1";
-    final.startTime = "19:00:00";
-    final.location = "Main room";
+    // The mutation stamps when the Result was saved; the engine doesn't.
+    bracket.heats.find((h) => h.id === round1Heat.id)!.recordedAt = new Date(
+      "2026-02-22T00:05:00Z",
+    );
+    // The final is now ready (Alpha v Bravo) but not decided.
 
     const view: BracketView = {
       competition: {
@@ -160,7 +158,7 @@ describe("toBracketResult", () => {
       finalized: false,
     };
 
-    const result = toBracketResult(view, days, "Beyblades");
+    const result = toBracketResult(view, "Beyblades");
 
     expect(result.found).toBe(true);
     if (!result.found || "bracket" in result) throw new Error("unreachable");
@@ -198,23 +196,23 @@ describe("toBracketResult", () => {
     const round1 = result.rounds.find((r) => r.round === 1)!;
     const bye = round1.heats.find((h) => h.entrants.length === 1)!;
     expect(bye.status).toBe("bye");
-    expect(bye.entrants).toEqual([
-      { name: "Alpha", place: 1, score: null, forfeited: false },
-    ]);
+    expect(bye.entrants).toEqual([{ name: "Alpha", place: 1, score: null }]);
     const decided = round1.heats.find((h) => h.entrants.length === 2)!;
     expect(decided.status).toBe("played");
+    expect(decided.recordedAt).toBe("2026-02-22T00:05:00.000Z");
+    expect(bye.recordedAt).toBeNull();
     expect(decided.entrants).toEqual([
-      { name: "Bravo", place: 1, score: null, forfeited: false },
-      { name: "Charlie", place: 2, score: null, forfeited: false },
+      { name: "Bravo", place: 1, score: null },
+      { name: "Charlie", place: 2, score: null },
     ]);
 
     const round2 = result.rounds.find((r) => r.round === 2)!;
-    const timed = round2.heats[0];
-    expect(timed.name).toBe("Final");
-    expect(timed.status).toBe("ready");
-    expect(timed.date).toBe("2026-02-22");
-    expect(timed.startTime).toBe("19:00");
-    expect(timed.location).toBe("Main room");
+    const ready = round2.heats[0];
+    expect(ready.name).toBe("Final");
+    expect(ready.status).toBe("ready");
+    expect(ready.recordedAt).toBeNull();
+    expect(ready).not.toHaveProperty("startTime");
+    expect(ready).not.toHaveProperty("location");
   });
 
   it("returns champion: null for a decided but unfinalized Bracket", () => {
@@ -250,7 +248,7 @@ describe("toBracketResult", () => {
       finalized: false,
     };
 
-    const result = toBracketResult(view, days, "Beyblades");
+    const result = toBracketResult(view, "Beyblades");
 
     expect(result.found).toBe(true);
     if (!result.found || "bracket" in result) throw new Error("unreachable");
@@ -291,7 +289,7 @@ describe("toBracketResult", () => {
       finalized: true,
     };
 
-    const result = toBracketResult(view, days, "Beyblades");
+    const result = toBracketResult(view, "Beyblades");
 
     expect(result.found).toBe(true);
     if (!result.found || "bracket" in result) throw new Error("unreachable");
@@ -348,7 +346,7 @@ describe("toBracketResult", () => {
       finalized: false,
     };
 
-    const result = toBracketResult(view, days, "Cypher");
+    const result = toBracketResult(view, "Cypher");
 
     if (!result.found || "bracket" in result) throw new Error("unreachable");
     expect(result.entrants).toEqual([
@@ -369,6 +367,7 @@ describe("toBracketResult", () => {
 
   it("serializes only whitelisted keys, even when the Entrant carries an email and Hosts", () => {
     const bracket = bracketFixture();
+    bracket.heats[0].recordedAt = new Date("2026-02-22T00:05:00Z");
     // A self-reported Heat: its reporter must never reach the payload.
     for (const heat of bracket.heats) {
       Object.assign(heat, {
@@ -406,7 +405,7 @@ describe("toBracketResult", () => {
       finalized: false,
     };
 
-    const result = toBracketResult(view, days, "Beyblades");
+    const result = toBracketResult(view, "Beyblades");
     const serialized = JSON.stringify(result);
 
     expect(serialized).not.toContain("@");
@@ -423,7 +422,7 @@ describe("toBracketResult", () => {
     expect(result.entrants[0].participants).toEqual(["Ashley Schuliger"]);
     for (const heat of result.rounds.flatMap((r) => r.heats)) {
       expect(Object.keys(heat).sort()).toEqual(
-        ["date", "entrants", "location", "name", "startTime", "status"].sort(),
+        ["entrants", "name", "recordedAt", "status"].sort(),
       );
     }
   });

@@ -272,7 +272,7 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     );
     const [decidedLater] = await runQuery<{ count: string }>(
       `select count(*) from heat
-       where competition_id = $1 and round > 1 and status in ('played', 'forfeit')`,
+       where competition_id = $1 and round > 1 and status = 'played'`,
       [id],
     );
     const redHeat = semis.find((s) => s.team_name === "Red")?.heat_id;

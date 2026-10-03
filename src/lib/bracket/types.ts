@@ -22,7 +22,7 @@ export type BracketFormat = Exclude<
 /** A Team or Participant entered in a Bracket, at its Seed Position. */
 export type Entrant = { id: string; seedPosition: number; label: string };
 
-export type HeatStatus = "pending" | "ready" | "played" | "forfeit";
+export type HeatStatus = "pending" | "ready" | "played";
 
 /** One place in a Heat. An empty slot is waiting for an Entrant (or a bye). */
 export type HeatSlot = {
@@ -30,7 +30,6 @@ export type HeatSlot = {
   /** The finishing place, 1…n (1 is the winner); null until decided. */
   place: number | null;
   score: string | null;
-  forfeited: boolean;
 };
 
 /** Where a Heat's winner goes: a later Heat and its slot index. */
@@ -46,11 +45,11 @@ export type Heat = {
   slots: HeatSlot[];
   winnerTo: WinnerTo | null;
   status: HeatStatus;
-  /** Optional time and place, set from the results screen; both null until set. */
-  dayId: string | null;
-  /** A wall-clock ET time, `HH:MM` or `HH:MM:SS` as the row returns it. */
-  startTime: string | null;
-  location: string | null;
+  /**
+   * When the Heat's Result was last saved; null until it is played. The
+   * engines never set it: the mutation stamps it when it saves a Result.
+   */
+  recordedAt: Date | null;
 };
 
 export type Bracket = {
@@ -61,12 +60,11 @@ export type Bracket = {
 
 /**
  * A Heat Result: every Entrant of the Heat in finishing order, with optional
- * scores and forfeits (a forfeiting Entrant finishes behind the others).
+ * scores (a no-show just loses: it is last in the order).
  */
 export type HeatResult = {
   order: string[];
   scores?: Record<string, string>;
-  forfeits?: string[];
 };
 
 export type Placing = { entrantId: string; place: number };

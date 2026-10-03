@@ -895,7 +895,7 @@ test("r5 38 Escape keeps chosen Entrants; Tree shows a Heat's place; Format help
       .getByRole("form", { name: "New Competition" });
     await addForm.getByRole("textbox", { name: "Name" }).fill(name);
     await addForm.getByRole("combobox", { name: "Format" }).click();
-    await page.getByRole("option", { name: "Single elimination" }).click();
+    await page.getByRole("option", { name: "Bracket", exact: true }).click();
     await addForm.getByRole("button", { name: "Add Competition" }).click();
     await expect(page).toHaveURL(/\/admin\/competitions\/[0-9a-f-]+\/bracket$/);
     const id = page.url().split("/").at(-2) ?? "";
@@ -951,16 +951,18 @@ test("r5 38 Escape keeps chosen Entrants; Tree shows a Heat's place; Format help
 
     await page.goto(`/admin/brackets/${id}`);
     await page
-      .getByRole("button", { name: "Time & place for Semifinal 1" })
+      .getByRole("button", { name: "Record result for Semifinal 1" })
       .click();
-    const form = page.getByRole("form", {
-      name: "Time & place for Semifinal 1",
-    });
-    await form.getByLabel("Location (optional)").fill("Team Room 4");
-    await form.getByRole("button", { name: "Save", exact: true }).click();
-    await expect(page.getByText("Time and place saved")).toBeVisible();
+    const sheet = page.getByRole("dialog", { name: "Semifinal 1" });
+    await sheet
+      .getByRole("group", { name: "Winner" })
+      .getByRole("button")
+      .first()
+      .click();
+    await sheet.getByRole("button", { name: "Save Heat Result" }).click();
+    await expect(sheet).toBeHidden();
 
-    // 38-1: the Tree (the default layout) shows the Heat's place.
+    // 38-1: the Tree (the default layout) shows when the Heat was recorded.
     for (const viewport of [PHONE, DESKTOP]) {
       await page.setViewportSize(viewport);
       await page.goto(`/xi/competitions/${id}`);
@@ -969,9 +971,9 @@ test("r5 38 Escape keeps chosen Entrants; Tree shows a Heat's place; Format help
       await expect(
         tree
           .getByRole("group", { name: "Semifinal 1" })
-          .getByText("Team Room 4"),
+          .getByText(/^Recorded .+ ET$/),
       ).toBeVisible();
-      await shoot(page, testInfo, `tree-heat-place-${viewport.width}`, true);
+      await shoot(page, testInfo, `tree-heat-recorded-${viewport.width}`, true);
     }
   } finally {
     await deleteXiCompetition(name);

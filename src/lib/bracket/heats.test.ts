@@ -311,10 +311,10 @@ describe("applyResult", () => {
     expect(heat(after, "r1h1")).toMatchObject({
       status: "played",
       slots: [
-        { entrantId: "s1", place: 2, score: null, forfeited: false },
-        { entrantId: "s4", place: 4, score: null, forfeited: false },
-        { entrantId: "s5", place: 1, score: "12", forfeited: false },
-        { entrantId: "s8", place: 3, score: null, forfeited: false },
+        { entrantId: "s1", place: 2, score: null },
+        { entrantId: "s4", place: 4, score: null },
+        { entrantId: "s5", place: 1, score: "12" },
+        { entrantId: "s8", place: 3, score: null },
       ],
     });
     expect(heats.hasResults(after)).toBe(true);
@@ -357,15 +357,6 @@ describe("applyResult", () => {
         "Put every Entrant of this Heat in finishing order, once each.",
       ],
       [
-        "a forfeit from outside the Heat",
-        [
-          bracket,
-          "r1h1",
-          { order: ["s1", "s4", "s5", "s8"], forfeits: ["s2"] },
-        ],
-        "Only an Entrant of this Heat can forfeit it.",
-      ],
-      [
         "a score from outside the Heat",
         [
           bracket,
@@ -374,53 +365,12 @@ describe("applyResult", () => {
         ],
         "Scores can only be given for this Heat's Entrants.",
       ],
-      [
-        "every Entrant forfeiting",
-        [
-          bracket,
-          "r1h1",
-          {
-            order: ["s1", "s4", "s5", "s8"],
-            forfeits: ["s1", "s4", "s5", "s8"],
-          },
-        ],
-        "Someone has to advance, so not every Entrant can forfeit.",
-      ],
     ];
     for (const [, args, message] of refusals) {
       expect(() => heats.applyResult(...args)).toThrow(
         new BracketError(message),
       );
     }
-  });
-
-  it("puts a forfeiter listed first behind everyone who didn't forfeit", () => {
-    const bracket = heats.applyResult(build(8, 4, 2), "r1h1", {
-      order: ["s1", "s4", "s5", "s8"],
-      forfeits: ["s1"],
-    });
-    const h = heat(bracket, "r1h1");
-    expect(h.status).toBe("forfeit");
-    expect(places(h)).toEqual([4, 1, 2, 3]);
-    expect(h.slots.map((s) => s.forfeited)).toEqual([
-      true,
-      false,
-      false,
-      false,
-    ]);
-  });
-
-  it("advances a forfeiter only when fewer than the advancing number didn't forfeit", () => {
-    // Top 2 advance; only s8 didn't forfeit, so s1 (first of the forfeiters)
-    // is 2nd and goes on with s8.
-    let bracket = heats.applyResult(build(8, 4, 2), "r1h1", {
-      order: ["s1", "s4", "s5", "s8"],
-      forfeits: ["s1", "s4", "s5"],
-    });
-    expect(places(heat(bracket, "r1h1"))).toEqual([2, 3, 4, 1]);
-    bracket = recordInSlotOrder(bracket, "r1h2");
-    // 1sts: s8, s2; 2nds: s1, s3.
-    expect(lineup(heat(bracket, "r2h1"))).toBe("s8 s2 s1 s3");
   });
 
   it("fills the next Round by place, then Heat position, once the Round is complete", () => {

@@ -408,6 +408,36 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
     });
   });
 
+  it("sets the Heat's recorded_at when a Participant self-reports, and not on any other Heat", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const f = await reportFixture(tx);
+      const { submitHeatReport } = await import("@/mutations/heat-reports");
+      const { heat } = await import("@/db/schema");
+      const recordedAtOf = async (heatId: string) =>
+        (
+          await tx
+            .select({ recordedAt: heat.recordedAt })
+            .from(heat)
+            .where(eq(heat.id, heatId))
+        )[0].recordedAt;
+      expect(await recordedAtOf(f.semi1)).toBeNull();
+
+      expect(
+        await submitHeatReport(
+          f.competitionId,
+          f.semi1,
+          { order: [f.entrantOf("Red"), f.entrantOf("Blue")] },
+          { warWeekId: f.ctx.warWeekId, actorEmail: NEO },
+          tx,
+        ),
+      ).toEqual({ ok: true, resetHeatIds: [] });
+
+      expect(await recordedAtOf(f.semi1)).toBeInstanceOf(Date);
+      expect(await recordedAtOf(f.semi2)).toBeNull();
+      expect(await recordedAtOf(f.final)).toBeNull();
+    });
+  });
+
   it("refuses a second report on the now-decided Heat, changing nothing", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { submitHeatReport } = await import("@/mutations/heat-reports");
