@@ -7,7 +7,8 @@ const EVIDENCE = path.resolve(
 );
 
 /**
- * R3 17-7/15-5, R7 42: `/about`'s Competitions (Brackets and Games)
+ * R3 17-7/15-5, R7 42: `/about`'s Competitions (Placements, Brackets, Head-to-head, Best score
+ * and Participation)
  * feature card (ticket 03's public page, `src/lib/about.ts`'s
  * `ABOUT_FEATURES`). `/about` is anonymous-accessible
  * (`PUBLIC_PATHS`), so this needs no sign-in.
@@ -22,7 +23,7 @@ test("about the Competitions feature card shows and screenshots on /about", asyn
   await card.scrollIntoViewIfNeeded();
   await expect(
     card.getByRole("heading", {
-      name: /Competitions: Brackets, Games and Participation/,
+      name: /Competitions: Placements, Brackets, Head-to-head, Best score and Participation/,
     }),
   ).toBeVisible();
 
