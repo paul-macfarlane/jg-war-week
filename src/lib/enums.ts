@@ -24,8 +24,7 @@ export const COMPETITION_SCORINGS = ["team", "individual"] as const;
 
 export const COMPETITION_FORMATS = [
   "placement",
-  "single-elimination",
-  "heats",
+  "bracket",
   "head-to-head",
   "best-score",
   "participation",
@@ -40,7 +39,7 @@ export const SCORE_DIRECTIONS = ["none", "higher", "lower"] as const;
 
 export type ScoreDirection = (typeof SCORE_DIRECTIONS)[number];
 
-export const HEAT_STATUSES = ["pending", "ready", "played", "forfeit"] as const;
+export const HEAT_STATUSES = ["pending", "ready", "played"] as const;
 
 /**
  * A Finale slide's kind: the built-in slides, in their default order, then

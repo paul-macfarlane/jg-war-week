@@ -104,7 +104,7 @@ describe.skipIf(!isLocalDatabase)(
 
 /** A copy of `drizzle/` whose journal stops at migration `lastIdx`. */
 function migrationsUpTo(lastIdx: number): string {
-  const dir = mkdtempSync(path.join(tmpdir(), "r16-migrations-"));
+  const dir = mkdtempSync(path.join(tmpdir(), "migrations-"));
   cpSync(DRIZZLE_DIR, dir, { recursive: true });
   const journalPath = path.join(dir, "meta", "_journal.json");
   const journal = JSON.parse(readFileSync(journalPath, "utf-8")) as {
@@ -218,6 +218,7 @@ describe.skipIf(!isLocalDatabase)(
   () => {
     it("commits, maps every old shape to its new Format and backfills each Points Entry's War Week", async () => {
       const upTo0027 = migrationsUpTo(27);
+      const upTo0028 = migrationsUpTo(28);
       try {
         await withThrowawayDatabase(
           async (url) => {
@@ -228,7 +229,7 @@ describe.skipIf(!isLocalDatabase)(
             try {
               await client.query(PRE_R16_ROWS);
 
-              await migrateTo(url, DRIZZLE_DIR);
+              await migrateTo(url, upTo0028);
 
               const applied = await client.query(
                 "select count(*)::int as n from drizzle.__drizzle_migrations",
@@ -342,6 +343,209 @@ describe.skipIf(!isLocalDatabase)(
         );
       } finally {
         rmSync(upTo0027, { recursive: true, force: true });
+        rmSync(upTo0028, { recursive: true, force: true });
+      }
+    }, 60_000);
+  },
+);
+
+const SINGLE_ELIMINATION = id(301);
+const HEATS = id(302);
+const CHESS_DAY = id(303);
+const FORFEIT_HEAT = id(311);
+const TIMED_HEAT = id(312);
+const HEATS_HEAT = id(313);
+const ANA_ENTRANT = id(321);
+const BEN_ENTRANT = id(322);
+const HEATS_ANA = id(323);
+const HEATS_BEN = id(324);
+
+/** A finalized single-elimination Bracket and a Heats one, as of 0028. */
+const PRE_R17_ROWS = `
+  insert into war_week (id, edition, edition_number, year, start_date,
+    end_date, story_theme, status, mode, team_label, leader_title,
+    slack_channel_url, primary_color, primary_foreground_color, accent_color,
+    background_color, foreground_color, font_preset)
+  values ('${WW_XI}', 'xi', 9811, 9811, '2026-02-23', '2026-02-27', 'Eleven',
+    'live', 'teams', 'Team', 'Captain', 'https://slack.example',
+    '#000000', '#ffffff', '#ff0000', '#ffffff', '#000000', 'sans');
+
+  insert into team (id, war_week_id, name, color) values
+    ('${RED}', '${WW_XI}', 'Red', '#ff0000'),
+    ('${BLUE}', '${WW_XI}', 'Blue', '#0000ff');
+
+  insert into participant (id, war_week_id, display_name, team_id) values
+    ('${ANA}', '${WW_XI}', 'Ana', '${RED}'),
+    ('${BEN}', '${WW_XI}', 'Ben', '${BLUE}');
+
+  insert into day (id, war_week_id, date, day_theme) values
+    ('${CHESS_DAY}', '${WW_XI}', '2026-02-24', 'Tuesday');
+
+  insert into competition (id, war_week_id, name, scoring, format,
+    placement_points, bracket_config, finalized_at)
+  values
+    ('${SINGLE_ELIMINATION}', '${WW_XI}', 'Ping Pong', 'individual',
+      'single-elimination', '{5,3}', null, '2026-02-25T17:00:00Z'),
+    ('${HEATS}', '${WW_XI}', 'Chess Heats', 'individual', 'heats',
+      '{9,7,5,3,1}', '{"entrantsPerHeat":4,"advancePerHeat":2}', null);
+
+  insert into entrant (id, competition_id, participant_id, seed_position) values
+    ('${ANA_ENTRANT}', '${SINGLE_ELIMINATION}', '${ANA}', 1),
+    ('${BEN_ENTRANT}', '${SINGLE_ELIMINATION}', '${BEN}', 2),
+    ('${HEATS_ANA}', '${HEATS}', '${ANA}', 1),
+    ('${HEATS_BEN}', '${HEATS}', '${BEN}', 2);
+
+  insert into heat (id, competition_id, round, position, status, slot_count,
+    day_id, start_time, location)
+  values
+    ('${FORFEIT_HEAT}', '${SINGLE_ELIMINATION}', 1, 0, 'forfeit', 2,
+      null, null, null),
+    ('${TIMED_HEAT}', '${SINGLE_ELIMINATION}', 1, 1, 'played', 2,
+      '${CHESS_DAY}', '14:30', 'Break room'),
+    ('${HEATS_HEAT}', '${HEATS}', 1, 0, 'ready', 4, null, null, null);
+
+  insert into heat_entrant (heat_id, entrant_id, slot, place, forfeited) values
+    ('${FORFEIT_HEAT}', '${ANA_ENTRANT}', 0, 1, false),
+    ('${FORFEIT_HEAT}', '${BEN_ENTRANT}', 1, null, true),
+    ('${TIMED_HEAT}', '${BEN_ENTRANT}', 0, 1, false),
+    ('${HEATS_HEAT}', '${HEATS_ANA}', 0, null, false),
+    ('${HEATS_HEAT}', '${HEATS_BEN}', 1, null, false);
+
+  insert into points_entry (war_week_id, competition_id, participant_id,
+    points, note, entered_by_email, generated_by_bracket)
+  values
+    ('${WW_XI}', '${SINGLE_ELIMINATION}', '${ANA}', 5, null,
+      'organizer@example.com', true),
+    ('${WW_XI}', '${SINGLE_ELIMINATION}', '${BEN}', 3, null,
+      'organizer@example.com', true),
+    ('${WW_XI}', '${SINGLE_ELIMINATION}', '${BEN}', 1, 'Good sport',
+      'host@example.com', false);
+`;
+
+describe.skipIf(!isLocalDatabase)(
+  "migrating populated pre-R17 Brackets to the one Bracket Format",
+  () => {
+    it("commits, makes both Brackets not generated with a full config and at most 4 Placement Points", async () => {
+      const upTo0028 = migrationsUpTo(28);
+      try {
+        await withThrowawayDatabase(
+          async (url) => {
+            await migrateTo(url, upTo0028);
+
+            const client = new Client({ connectionString: url });
+            await client.connect();
+            try {
+              await client.query(PRE_R17_ROWS);
+
+              await migrateTo(url, DRIZZLE_DIR);
+
+              const applied = await client.query(
+                "select count(*)::int as n from drizzle.__drizzle_migrations",
+              );
+              expect(applied.rows[0].n).toBe(30);
+
+              const brackets = await client.query(
+                `select id, format::text as format, bracket_config,
+                  placement_points, finalized_at,
+                  (select count(*)::int from heat
+                    where competition_id = competition.id) as heats,
+                  (select count(*)::int from points_entry
+                    where competition_id = competition.id
+                      and generated_by_bracket) as generated
+                from competition order by name`,
+              );
+              expect(brackets.rows).toEqual([
+                {
+                  id: HEATS,
+                  format: "bracket",
+                  bracket_config: {
+                    entrantsPerHeat: 4,
+                    advancePerHeat: 2,
+                    thirdPlaceGame: false,
+                  },
+                  placement_points: [9, 7, 5, 3],
+                  finalized_at: null,
+                  heats: 0,
+                  generated: 0,
+                },
+                {
+                  id: SINGLE_ELIMINATION,
+                  format: "bracket",
+                  bracket_config: {
+                    entrantsPerHeat: 2,
+                    advancePerHeat: 1,
+                    thirdPlaceGame: false,
+                  },
+                  placement_points: [5, 3],
+                  finalized_at: null,
+                  heats: 0,
+                  generated: 0,
+                },
+              ]);
+
+              // A hand-entered Points Entry is not the Bracket's to delete.
+              const kept = await client.query("select note from points_entry");
+              expect(kept.rows).toEqual([{ note: "Good sport" }]);
+
+              const heatEntrants = await client.query(
+                "select count(*)::int as n from heat_entrant",
+              );
+              expect(heatEntrants.rows[0].n).toBe(0);
+
+              const formats = await client.query<{ value: string }>(
+                `select unnest(enum_range(null::competition_format))::text as value`,
+              );
+              expect(formats.rows.map((r) => r.value)).toEqual([
+                "placement",
+                "bracket",
+                "head-to-head",
+                "best-score",
+                "participation",
+              ]);
+              const statuses = await client.query<{ value: string }>(
+                `select unnest(enum_range(null::heat_status))::text as value`,
+              );
+              expect(statuses.rows.map((r) => r.value)).toEqual([
+                "pending",
+                "ready",
+                "played",
+              ]);
+
+              const columns = await client.query<{
+                table_name: string;
+                column_name: string;
+              }>(
+                `select table_name, column_name from information_schema.columns
+                where table_schema = 'public'
+                  and table_name in ('heat', 'heat_entrant')`,
+              );
+              const heatColumns = columns.rows
+                .filter((r) => r.table_name === "heat")
+                .map((r) => r.column_name);
+              expect(heatColumns).not.toContain("day_id");
+              expect(heatColumns).not.toContain("start_time");
+              expect(heatColumns).not.toContain("location");
+              expect(heatColumns).toEqual(
+                expect.arrayContaining([
+                  "recorded_at",
+                  "loser_to_heat_id",
+                  "loser_to_slot",
+                  "third_place",
+                ]),
+              );
+              expect(
+                columns.rows
+                  .filter((r) => r.table_name === "heat_entrant")
+                  .map((r) => r.column_name),
+              ).not.toContain("forfeited");
+            } finally {
+              await client.end();
+            }
+          },
+          { migrations: false },
+        );
+      } finally {
+        rmSync(upTo0028, { recursive: true, force: true });
       }
     }, 60_000);
   },

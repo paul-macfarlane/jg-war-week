@@ -26,7 +26,6 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-import type { HeatsConfig } from "@/lib/bracket/config";
 import {
   COMPETITION_FORMATS,
   COMPETITION_SCORINGS,
@@ -223,9 +222,14 @@ export const competition = pgTable(
     // Placement only (the CHECK below): whether a higher or lower Score
     // wins, filling Places from Scores; `none` means Places are set by hand.
     scoreDirection: scoreDirection("score_direction").notNull().default("none"),
-    // The Format's settings (`src/lib/bracket/config.ts`); null means the
-    // Format's default, and single elimination has none.
-    bracketConfig: jsonb("bracket_config").$type<HeatsConfig | null>(),
+    // A Bracket's settings (`src/lib/bracket/config.ts`): heat size,
+    // advancing per Heat and the 3rd place game. Set for every Bracket (app
+    // logic, not a CHECK); null for every other Format.
+    bracketConfig: jsonb("bracket_config").$type<{
+      entrantsPerHeat: number;
+      advancePerHeat: number;
+      thirdPlaceGame: boolean;
+    } | null>(),
     // Participants in a Heat may enter its result themselves (ADR 0005).
     selfReport: boolean("self_report").notNull().default(false),
     // Set while the Competition's generated Points Entries exist: a
@@ -504,9 +508,10 @@ export const entrant = pgTable(
 );
 
 /**
- * One game of a Bracket, with `slotCount` places (two in single elimination;
- * a Heats Format's Heats may hold more). A single-elimination winner feeds
- * `winnerToHeatId`.
+ * One game of a Bracket, with `slotCount` places (two at heat size 2; larger
+ * Heats may hold more). A head-to-head winner feeds `winnerToHeatId`; with a
+ * 3rd place game, each semifinal's loser feeds `loserToHeatId`, and the 3rd
+ * place game is the Heat marked `thirdPlace`.
  */
 export const heat = pgTable(
   "heat",
@@ -525,12 +530,16 @@ export const heat = pgTable(
       { onDelete: "set null" },
     ),
     winnerToSlot: integer("winner_to_slot"),
-    // Optional time and place, set from the results screen; a Day delete
-    // nulls this rather than being refused (see CONTEXT.md, Bracket rules).
-    dayId: uuid("day_id").references(() => day.id, { onDelete: "set null" }),
-    // Wall-clock time in ET, like a Schedule Item's.
-    startTime: time("start_time"),
-    location: varchar("location", { length: 200 }),
+    // A semifinal's loser feeds the 3rd place game (part 98).
+    loserToHeatId: uuid("loser_to_heat_id").references(
+      (): AnyPgColumn => heat.id,
+      { onDelete: "set null" },
+    ),
+    loserToSlot: integer("loser_to_slot"),
+    // The 3rd place game: in the final's round, beside the final.
+    thirdPlace: boolean("third_place").notNull().default(false),
+    // When the Heat's result was last saved; null until it is played.
+    recordedAt: timestamp("recorded_at", { withTimezone: true }),
     // Set when a Participant self-reported the current result; cleared when
     // a later save changes the Heat. The email is kept for audit and never
     // read back to a page or MCP (see CONTEXT.md, Access rules).
@@ -545,7 +554,7 @@ export const heat = pgTable(
   (table) => [
     unique().on(table.competitionId, table.round, table.position),
     index("heat_winner_to_heat_id_idx").on(table.winnerToHeatId),
-    index("heat_day_id_idx").on(table.dayId),
+    index("heat_loser_to_heat_id_idx").on(table.loserToHeatId),
     index("heat_reported_by_participant_id_idx").on(
       table.reportedByParticipantId,
     ),
@@ -565,7 +574,6 @@ export const heatEntrant = pgTable(
     slot: integer("slot").notNull(),
     place: integer("place"),
     score: varchar("score", { length: 40 }),
-    forfeited: boolean("forfeited").notNull().default(false),
   },
   (table) => [
     primaryKey({ columns: [table.heatId, table.slot] }),
