@@ -4,7 +4,7 @@
 
 **Part of:** Epic R16's one work package (`../epics/R16-competition-model.md`): no gate, order or migration of its own. Schema changes go into `src/db/schema.ts`; the epic generates and hand-edits the one migration and converts the seeds.
 
-**Status:** ai-review
+**Status:** done
 
 **Source:** grilling Q4 (Paul: "no limits unless there's a clear reason"; Brackets at 4 to limit complexity, without closing the door); red-team 2026-10-03 (M2)
 
@@ -20,3 +20,4 @@
 ## Comments
 
 - 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r16`): claimed with Epic R16; `ready-for-agent` → `in-progress`. Execution record: [`R16-execution.md`](../epics/R16-execution.md).
+- 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r16`): done. `placementLimit` in `src/lib/competitions.ts` is the one rule (Brackets 5, every other Format unlimited), applied on create, edit, Format change and seed, with one message. `PlacementPointsRows` is a list editor (add, remove any place, 5·3·1). Tests: 12 places for Placement, 6 refused for a Bracket, non-increasing; `placement-points-rows.test.tsx` adds 20 places and saves; `e2e/placement-points.spec.ts` shot `test-results/e2e/placement-points-20-places/390.png` with no horizontal scroll. Evidence and review: [`R16-execution.md`](../epics/R16-execution.md).

@@ -4,7 +4,7 @@
 
 **Part of:** Epic R16's one work package (`../epics/R16-competition-model.md`): no gate, order or migration of its own. Schema changes go into `src/db/schema.ts`; the epic generates and hand-edits the one migration and converts the seeds.
 
-**Status:** ai-review
+**Status:** done
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: participation max and placement points); grilling Q5, Q27. Amends ticket 69's team modes; red-team 2026-10-03 (W7).
 
@@ -24,3 +24,4 @@
 ## Comments
 
 - 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r16`): claimed with Epic R16; `ready-for-agent` → `in-progress`. Execution record: [`R16-execution.md`](../epics/R16-execution.md).
+- 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r16`): done. Individual: N to each who took part (toward their Team when counting); team: Teams ranked by headcount, Placement Points (ties share). `participation_team_scoring` dropped; settings show only the fields that apply; team default Placement Points `[3, 2, 1]`. Deleted: the per-person describe in `score.test.ts`; rewritten: participation input, mutation and loader tests; e2e `regression-r12-participation.spec.ts` (team ranked; individual N each). Evidence and review: [`R16-execution.md`](../epics/R16-execution.md).
