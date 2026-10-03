@@ -118,9 +118,10 @@ line that no longer matches the app is a bug in this file.
   since `/<edition>` is not public), and the screenshot shows that
   edition's colors and font, not a past edition's. Two by-design
   exceptions: `/admin` wears the edition being edited (an Archive edition
-  picked in the switcher wears its own theme), and the History list and
-  each Archive view (`/history`, `/<past edition>`) wear each past
-  edition's own theme.
+  picked in the switcher wears its own theme), and each Archive view
+  (`/<past edition>`) wears that past edition's own theme. `/history` and
+  `/history/awards/<id>` wear the current War Week, like any participant
+  page; only the edition cards on `/history` show their own colors.
 - **No horizontal scroll:** on each page,
   `document.documentElement.scrollWidth <= document.documentElement.clientWidth`.
   That alone cannot catch clipping (`/about`'s root has `overflow-hidden`),
@@ -282,6 +283,21 @@ on the matching War Week page.
       every Heat (a dialog at 1440, a bottom sheet at 390), and finalize.
       The finalized Bracket's Placement Points appear in Points Entries and
       the Standings, and "Play the Finale" opens its Bracket Finale.
+- [ ] **Bracket results: advancers and buttons.** On
+      `/admin/brackets/<id>` for a Heats Bracket, record a Heat: every
+      Entrant that advances (place up to the Heat's advancing count) is
+      highlighted on its card, as on the Participant tree, and the Heat
+      result form marks "Advances" beside those places. In the final, only
+      1st is highlighted. An unplayed Heat has a solid "Record result"
+      button; a recorded one has an outline "Edit".
+- [ ] **Games settings show what was saved.** On a `games` Competition's
+      Games page, change a setting (for Ranked, the Finish Points) and
+      press Save settings: the fields keep the saved values with no reload;
+      reload and come back later, and they are still there. A trailing or
+      doubled comma in Finish Points ("5, 3, 1,") saves 5, 3, 1, with no
+      extra 0. Finish Points says it is per finishing place in one Game;
+      Placement Points says it is set in the Competition's Edit sheet and
+      is what the leaderboard's top places earn in the Standings.
 - [ ] **Close a `games` Competition.** Log two Games as the Organizer in
       a `head-to-head` Competition with Placement Points (Log a Game on its
       public Competition page), then Close on its Games page: its top
@@ -525,6 +541,24 @@ that nothing personal shows (no You highlight, no Log a Game).
       Once an Award has a Category, Awards sit under Category headings (each
       a link to its through-the-years page), then "Other Awards"; with no
       Category anywhere there are no headings.
+- [ ] **Top nav is centred.** At 1440, on `/<edition>` and `/history`, the
+      links in the header's top nav sit in the header's true centre (their
+      midpoint within a few px of the viewport's midpoint, with the brand on
+      the left and the avatar on the right); a long tagline truncates
+      rather than pushing them off centre.
+- [ ] **Cursors.** At 1440, hover a link, a button, a tab and a menu item
+      on a participant page and in admin: each shows the pointer cursor; a
+      disabled button (e.g. Save settings on a closed Participation
+      Competition) shows not-allowed.
+- [ ] **Buttons follow the rule.** On the admin Competitions, Roster and
+      Schedule lists, the primary action ("Add Competition", "Add Squad",
+      etc.) is a solid button, secondary ones are outline, and only icon or
+      tertiary actions are ghost.
+- [ ] **History wears the War Week chrome.** `/history` and a Category page
+      (`/history/awards/<id>`) show the current War Week's top nav (at
+      1440), phone tab bar (at 390) and footer, in the current War Week's
+      Appearance Theme and the viewer's Display; there is no "Back to War
+      Week" link; the edition cards keep their own colors.
 - [ ] **History.** `/history` lists every past War Week with its Story
       Theme and Winner; open three past editions, including the oldest:
       each shows its archive view (an edition with no Banner URL shows no

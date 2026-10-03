@@ -417,14 +417,17 @@ its Bracket page, not the Competition's Edit form.
 
 A Bracket reads as a tree by default on its Competition page: single
 elimination shows its Rounds left to right joined by lines; Heats shows one
-box per Heat with the advancers highlighted. On a phone it's one Round at a
+box per Heat with the advancers highlighted (the same on the admin results
+screen, where the Heat result form also marks "Advances" on the advancing
+places). On a phone it's one Round at a
 time, with Round tabs. Results fill in live as they're recorded, and a
 **List** toggle switches back to the plain list. `/admin/brackets/<id>` (the
 results screen) still shows the list.
 
 On the day: the builder's **By Standings** button draws Seed Positions
 from the current Standings (ties at random) instead of Generate's random
-draw. On the results screen, each Heat's **Time & place** button sets its
+draw. On the results screen, each Heat card has a solid **Record result**
+button (an outline **Edit** once it's recorded) and a **Time & place** button that sets its
 Day, start time (ET) and location; Hosts can do it for their own
 Competitions. A timed Heat shows its when-line ("Sunday, Feb 22 · 7:00 PM
 ET · Main room") on its card and in the Participant's "Your next Heat", and
@@ -600,7 +603,11 @@ different way.
 
 - The Game Type's own settings (draws and Best of off/3/5/7 for
   head-to-head; count best or total, direction and a unit label for
-  best-score; a Finish Points table for ranked).
+  best-score; a Finish Points table for ranked: points per finishing place
+  in one Game, 1st first, blank meaning one point per player beaten; empty
+  entries such as a trailing comma are ignored. Not the Competition's
+  Placement Points, which pay the Standings and are set in its Edit sheet).
+  Saving shows the saved values on the page and when you return.
 - **Entrants**: open to everyone eligible, or a fixed list (pick Teams or
   Participants, as for a Bracket). A Best of needs a fixed list of exactly
   two Entrants.
@@ -683,6 +690,11 @@ Notes:
   `<input type="time">`, or `<input type="color">`. Add a missing primitive
   with `pnpm dlx shadcn@latest add <name>`; don't hand-roll a control shadcn
   already has.
+- **Button variants.** A page's primary action is a solid `default`
+  Button (Add …, Record result, Save); secondary actions are `outline`
+  (Edit, Cancel); `ghost` is only for icon buttons and tertiary actions.
+  Every clickable control shows the pointer cursor and a disabled one
+  not-allowed (a rule in `globals.css`), so don't restyle that per button.
 - A single choice among a few options (who won, which Entrant) is a
   `ToggleGroup` from `ui/toggle-group`: single-select, and kept
   non-deselectable by ignoring an empty `onValueChange` — never `Button`s
@@ -793,7 +805,8 @@ Competiscore data is gone; `old-wikis/`, the live wiki pages (and the Drive
 folders they link to) and what you remember are the only sources. For
 Claude to read the wiki, sign in to it in the Claude Code browser first.
 Leave `seeds/demo/xi.json` alone unless a test needs different demo data. Load locally with `pnpm seed:load seeds/<edition>.json`, then check
-`/history` and `/<edition>`.
+`/history` and `/<edition>`. `/history` and a Category page wear the
+current War Week's nav, tab bar, footer and theme (`src/app/history/layout.tsx`).
 
 ## Guardrails
 
