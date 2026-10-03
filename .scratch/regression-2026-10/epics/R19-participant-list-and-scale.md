@@ -1,0 +1,32 @@
+# Epic R19: Participant list and scale
+
+**What to build:** The Participant Competitions list shows status, round, Winner and a description preview (105); a 100-Participant demo seed and a scale pass (106).
+
+**Tickets:** `105`, `106` (files under `../issues/`)
+
+**Branch:** `feat/regression-r19-list-and-scale`
+
+**Blocked by:** R17 merged into `staging` (R18 preferred, for rich-text previews).
+
+**Status:** ready-for-agent
+
+**Red-team:** not required unless the scale pass needs a schema change.
+
+**Source:** Paul's regression feedback, 2026-10-03; grilled the same day (`../grilling-2026-10-03.md`); spec `../spec.md`.
+
+## Order
+
+105 → 106 (the scale pass covers the new list).
+
+## Acceptance criteria
+
+Each ticket's own, plus:
+
+- [ ] `/about` (copy and media via `scripts/about-media.ts`), `docs/maintainers-guide.md` and `docs/regression-checklist.md` updated where user-visible (team rules).
+- [ ] `CONTEXT.md` updated per the grilling record's glossary list for what ships here.
+- [ ] Each ticket file records its closeout and is `done` in this branch.
+- [ ] `pnpm format:check && pnpm gate` passes; CI on the PR passes.
+
+## Comments
+
+- 2026-10-03 (Paul): grilled and approved; tickets `ready-for-agent`.
