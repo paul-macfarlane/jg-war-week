@@ -697,7 +697,14 @@ Notes:
   Every clickable control shows the pointer cursor, and a disabled
   button, toggle or tab shows not-allowed (a rule in `globals.css`; menu and
   list items stay inert but keep the plain cursor), so don't restyle that per
-  button.
+  button. A component added with `shadcn add` may bring back
+  `disabled:pointer-events-none` or `cursor-default`; strip them.
+- **Forms seeded from server data follow it after a save.** A client form
+  that copies its props into `useState` keeps what it first loaded after
+  `router.refresh()`, so a saved value looks lost. Re-derive the fields
+  when the saved values change, as `GamesBuilder` does (`games-builder.tsx`,
+  tested in `games-builder.refresh.test.tsx`); edits in progress survive a
+  refresh that changes nothing saved.
 - A single choice among a few options (who won, which Entrant) is a
   `ToggleGroup` from `ui/toggle-group`: single-select, and kept
   non-deselectable by ignoring an empty `onValueChange` — never `Button`s

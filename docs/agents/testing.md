@@ -75,3 +75,11 @@ retained artifact before storage or sharing.
   role's access updates that page's lines in the same PR. Part of every
   Definition of Done. Running it is on demand, never in CI. Decided
   2026-10-01.
+- **Every test assertion can fail.** A spec never skips an assertion
+  because an element wasn't found (`if (await x.count() > 0)`), and never
+  asserts something that holds either way (`toBeDefined()` on a value that
+  may be null). A missing element is a failure. Decided 2026-10-03 (R15).
+- **A spec that changes shared seeded data puts it back.** A spec either
+  owns a seeded record no other spec touches, and says so in a comment, or
+  snapshots it and restores it in `finally` (`snapshotBracket` /
+  `restoreBracket` in `e2e/db.ts` for Brackets). Decided 2026-10-03 (R15).
