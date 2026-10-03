@@ -178,6 +178,44 @@ describe("shapeRecentResults", () => {
     expect(row).toMatchObject({ kind: "games-closed", winners: [red, blue] });
   });
 
+  it("shows a Finalized Placement's winner instead of its generated entries, listing a tie for first", () => {
+    const darts: ResultCompetition = {
+      id: "darts",
+      name: "Darts",
+      format: "placement",
+      finalizedAt: at(30),
+    };
+    const rows = shapeRecentResults(
+      [darts, trivia],
+      [
+        entry("darts", red, 10, at(30), true),
+        entry("darts", blue, 10, at(30), true),
+        entry(
+          "darts",
+          { ...red, id: "t-green", name: "Green" },
+          3,
+          at(30),
+          true,
+        ),
+        entry("trivia", red, 3, at(10)),
+      ],
+    );
+    expect(rows.map((r) => r.kind)).toEqual(["placement-finalized", "points"]);
+    expect(rows[0]).toMatchObject({
+      competition: "Darts",
+      when: at(30),
+      winners: [red, blue],
+    });
+  });
+
+  it("an open Placement's hand-entered entries stay a points row", () => {
+    const [row] = shapeRecentResults(
+      [trivia],
+      [entry("trivia", red, 3, at(10))],
+    );
+    expect(row.kind).toBe("points");
+  });
+
   it("shows a closed team participation Competition's top Team, listing a tie", () => {
     const workout: ResultCompetition = {
       id: "p",

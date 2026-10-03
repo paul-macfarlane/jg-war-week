@@ -35,14 +35,14 @@ export type ResultEntry = {
   /** A Discretionary entry's reason; a Competition entry's note. */
   note?: string | null;
   enteredAt: Date;
-  /** Written by finalizing a Bracket or closing a `games` Competition. */
+  /** Written by finalizing a Bracket or Placement or closing a `games` Competition. */
   generatedByBracket: boolean;
   target: ResultTarget;
 };
 
 export type RecentResult =
   | {
-      kind: "bracket-finalized" | "games-closed";
+      kind: "bracket-finalized" | "games-closed" | "placement-finalized";
       key: string;
       competitionId: string;
       competition: string;
@@ -85,8 +85,9 @@ export type RecentResult =
  * `RECENT_RESULTS_LIMIT` rows:
  *
  * - A finalized Bracket (`single-elimination` / `heats`) is one
- *   "bracket-finalized" row and a closed `games` Competition one
- *   "games-closed" row, both at `finalizedAt`. The champion or winner is the
+ *   "bracket-finalized" row, a Finalized Placement one
+ *   "placement-finalized" row and a closed `games` Competition one
+ *   "games-closed" row, all at `finalizedAt`. The champion or winner is the
  *   target of the highest generated Points Entry (the 1st-place entry its
  *   finalize or close wrote); a tie for first lists every target.
  * - A closed `participation` Competition is one "participation-closed" row
@@ -101,8 +102,7 @@ export type RecentResult =
  *   `RECENT_RESULTS_GROUP_GAP_MS` of it; a longer gap starts a new group.
  *   The row's time is its newest entry. Entries for one target add up.
  * - Competitions without a finalize time and entries of unknown Competitions
- *   contribute nothing; a `placement`-Format Competition never has a finalize
- *   row.
+ *   contribute nothing.
  */
 export function shapeRecentResults(
   competitions: ResultCompetition[],
@@ -129,7 +129,11 @@ export function shapeRecentResults(
       continue;
     }
     results.push({
-      kind: isGameFormat(c.format) ? "games-closed" : "bracket-finalized",
+      kind: isGameFormat(c.format)
+        ? "games-closed"
+        : c.format === "placement"
+          ? "placement-finalized"
+          : "bracket-finalized",
       ...base,
       winners: final.winners,
     });
@@ -218,11 +222,11 @@ export type FinalWinners = {
 };
 
 /**
- * The winner of each finalized Bracket, closed `games` Competition and
- * closed `participation` Competition, in `competitions` order: the one
- * rule Recent results and the Finale's Champions slide share. A
- * Competition with no finalize time, a `placement`-Format one, or one with no
- * generated Points Entries has none and is left out.
+ * The winner of each finalized Bracket or Placement, closed `games`
+ * Competition and closed `participation` Competition, in `competitions`
+ * order: the one rule Recent results and the Finale's Champions slide
+ * share. A Competition with no finalize time, or one with no generated
+ * Points Entries, has none and is left out.
  */
 export function finalWinners(
   competitions: ResultCompetition[],
@@ -231,7 +235,7 @@ export function finalWinners(
   const results: FinalWinners[] = [];
   for (const c of competitions) {
     const finalizedAt = c.finalizedAt;
-    if (!finalizedAt || c.format === "placement") continue;
+    if (!finalizedAt) continue;
     const generated = entries.filter(
       (e) => e.competitionId === c.id && e.generatedByBracket,
     );

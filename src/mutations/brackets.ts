@@ -12,6 +12,7 @@ import {
   heat,
   heatEntrant,
   participant,
+  placement,
   pointsEntry,
   squad,
   squadParticipant,
@@ -301,6 +302,24 @@ export async function setCompetitionFormat(
     }
     if (found.finalizedAt) return refuse(FINALIZED);
     const formatChanges = found.format !== values.format;
+    if (formatChanges && found.format === "placement") {
+      // A Placement's rows are its result; they don't carry to a Bracket.
+      const refusal = inUseError(
+        "Competition",
+        [
+          [
+            await tx.$count(
+              placement,
+              eq(placement.competitionId, competitionId),
+            ),
+            "Placement",
+            "Placements",
+          ],
+        ],
+        "Remove its Placements first.",
+      );
+      if (refusal) return refuse(refusal);
+    }
     if (formatChanges) {
       const tooMany = placementLimitRefusal(
         values.format,
@@ -372,6 +391,8 @@ export async function setCompetitionFormat(
       .set({
         format: values.format,
         bracketConfig,
+        // Only a Placement has a Score direction (the CHECK).
+        ...(values.format === "placement" ? {} : { scoreDirection: "none" }),
         updatedAt: sql`now()`,
       })
       .where(eq(competition.id, competitionId));

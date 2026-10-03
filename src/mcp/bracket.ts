@@ -144,7 +144,7 @@ export function toBracketResult(
         format: "placement",
       },
       bracket: null,
-      message: `${view.competition.name} isn't run as a Bracket; ask about its Standings instead.`,
+      message: `${view.competition.name} isn't run as a Bracket; it's run as Placement: call get_placements.`,
     };
   }
 

@@ -5,6 +5,7 @@ import { AWARD_DESCRIPTION_MAX, AWARD_NAME_MAX } from "@/lib/awards";
 import { FINALE_AWARDS_LAYOUTS, WAR_WEEK_STATUSES } from "@/lib/enums";
 import { finaleSlideSeedSchema } from "@/lib/finale-slides";
 import { jgEmailSchema } from "@/lib/jg-email";
+import { MAX_SCORE } from "@/lib/placement/input";
 import {
   pointsSchema as points,
   pointsEntryNoteSchema,
@@ -92,6 +93,29 @@ export type DiscretionaryPointsSeed = z.infer<
   typeof discretionaryPointsSeedSchema
 >;
 
+/**
+ * One row of a Placement Competition's sheet (CONTEXT.md, Placement). The
+ * loader inserts a keyed row only if it is absent and never updates it.
+ */
+export const placementSeedSchema = z
+  .object({
+    key: seedKey,
+    /** A Placement Competition's name from this seed. */
+    competition: z.string().min(1).max(120),
+    /** A Team name from this seed; exactly one of team or participant. */
+    team: z.string().min(1).max(80).nullish(),
+    /** A Participant display name from this seed. */
+    participant: z.string().min(1).max(120).nullish(),
+    place: z.number().int().min(1),
+    score: z.number().min(-MAX_SCORE).max(MAX_SCORE).nullish(),
+  })
+  .refine((row) => (row.team == null) !== (row.participant == null), {
+    message: "a Placement must be for exactly one of team or participant",
+    path: ["team"],
+  });
+
+export type PlacementSeed = z.infer<typeof placementSeedSchema>;
+
 export const awardSeedSchema = z
   .object({
     key: seedKey,
@@ -153,6 +177,7 @@ export const warWeekSeedSchema = z
     competitions: z.array(competitionSeedSchema).default([]),
     pointsEntries: z.array(pointsEntrySeedSchema).default([]),
     discretionaryPoints: z.array(discretionaryPointsSeedSchema).default([]),
+    placements: z.array(placementSeedSchema).default([]),
     awards: z.array(awardSeedSchema).default([]),
     announcements: z.array(announcementSeedSchema).default([]),
     faqItems: z.array(faqItemSeedSchema).default([]),
@@ -256,6 +281,7 @@ export const warWeekSeedSchema = z
         );
       }
     });
+    unique("placements", seed.placements, (p) => p.key, "key", "Placement key");
     unique("awards", seed.awards, (a) => a.key, "key", "Award key");
     unique(
       "announcements",
@@ -351,6 +377,45 @@ export const warWeekSeedSchema = z
           [...path, "participant"],
           `unknown Participant "${entry.participant}"`,
         );
+      }
+    });
+
+    seed.placements.forEach((row, index) => {
+      const path = ["placements", index];
+      const comp = competitions.get(row.competition);
+      if (!comp) {
+        issue(
+          [...path, "competition"],
+          `unknown Competition "${row.competition}"`,
+        );
+      } else if (comp.format !== "placement") {
+        issue(
+          [...path, "competition"],
+          `${comp.name} isn't a placement Competition`,
+        );
+      }
+      if (row.team != null) {
+        if (comp?.scoring === "individual") {
+          issue(
+            [...path, "team"],
+            "an individual Competition takes participants, not teams",
+          );
+        } else if (!teams.has(row.team)) {
+          issue([...path, "team"], `unknown Team "${row.team}"`);
+        }
+      }
+      if (row.participant != null) {
+        if (comp?.scoring === "team") {
+          issue(
+            [...path, "participant"],
+            "a team Competition takes teams, not participants",
+          );
+        } else if (!participants.has(row.participant)) {
+          issue(
+            [...path, "participant"],
+            `unknown Participant "${row.participant}"`,
+          );
+        }
       }
     });
 

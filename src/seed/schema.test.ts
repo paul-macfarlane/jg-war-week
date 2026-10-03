@@ -695,3 +695,116 @@ describe("warWeekSeedSchema Finale slides", () => {
     ).toEqual(["finaleSlides.0.backgroundColor", "finaleSlides.1.kind"]);
   });
 });
+
+describe("warWeekSeedSchema Placements", () => {
+  const base = () => ({
+    ...loadFixture(),
+    competitions: [
+      {
+        name: "Darts",
+        scoring: "individual",
+        placementPoints: [10, 6, 3],
+        scoreDirection: "higher",
+        finalized: true,
+        finalizedAt: "2099-01-03T18:00:00.000Z",
+        finalizedByEmail: "host@jahnelgroup.com",
+      },
+      { name: "Quiz", scoring: "team" },
+      { name: "Pong", scoring: "individual", format: "head-to-head" },
+    ],
+    pointsEntries: [],
+    days: [],
+  });
+  const participant = () => loadFixture().participants[0].displayName;
+  const team = () => loadFixture().teams[0].name;
+
+  it("parses Placements and a Finalized Placement Competition", () => {
+    const seed = warWeekSeedSchema.parse({
+      ...base(),
+      placements: [
+        {
+          key: "darts-1",
+          competition: "Darts",
+          participant: participant(),
+          place: 1,
+          score: 12.5,
+        },
+        { key: "quiz-1", competition: "Quiz", team: team(), place: 2 },
+      ],
+    });
+    expect(seed.placements).toHaveLength(2);
+    expect(seed.competitions[0]).toMatchObject({
+      scoreDirection: "higher",
+      finalized: true,
+    });
+  });
+
+  it("requires finalizedAt and finalizedByEmail with finalized, and only on a Placement Competition", () => {
+    const [darts, quiz, pong] = base().competitions;
+    const withoutEmail = { ...darts, finalizedByEmail: undefined };
+    expect(
+      rejectionOf({ ...base(), competitions: [withoutEmail, quiz, pong] }),
+    ).toEqual([
+      "competitions.0.finalized: finalized needs finalizedAt and finalizedByEmail together",
+    ]);
+    expect(
+      rejectionOf({
+        ...base(),
+        competitions: [
+          darts,
+          quiz,
+          {
+            ...pong,
+            scoreDirection: "lower",
+            finalized: true,
+            finalizedAt: darts.finalizedAt,
+            finalizedByEmail: darts.finalizedByEmail,
+          },
+        ],
+      }),
+    ).toEqual([
+      "competitions.2.scoreDirection: scoreDirection is only for a placement Competition",
+      "competitions.2.finalized: finalized is only for a placement Competition",
+    ]);
+  });
+
+  it("refuses a Placement on an unknown or non-Placement Competition, the wrong kind of row, an unknown name and a duplicate key", () => {
+    expect(
+      rejectionOf({
+        ...base(),
+        placements: [
+          {
+            key: "a",
+            competition: "Nope",
+            participant: participant(),
+            place: 1,
+          },
+          {
+            key: "b",
+            competition: "Pong",
+            participant: participant(),
+            place: 1,
+          },
+          { key: "c", competition: "Darts", team: team(), place: 1 },
+          {
+            key: "d",
+            competition: "Quiz",
+            participant: participant(),
+            place: 1,
+          },
+          { key: "e", competition: "Darts", participant: "Nobody", place: 1 },
+          { key: "e", competition: "Quiz", team: "Nobody", place: 0 },
+        ],
+      }),
+    ).toEqual([
+      "placements.5.place: Too small: expected number to be >=1",
+      'placements.5.key: duplicate Placement key "e"',
+      'placements.0.competition: unknown Competition "Nope"',
+      "placements.1.competition: Pong isn't a placement Competition",
+      "placements.2.team: an individual Competition takes participants, not teams",
+      "placements.3.participant: a team Competition takes teams, not participants",
+      'placements.4.participant: unknown Participant "Nobody"',
+      'placements.5.team: unknown Team "Nobody"',
+    ]);
+  });
+});

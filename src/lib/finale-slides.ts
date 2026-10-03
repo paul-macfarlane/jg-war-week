@@ -343,7 +343,8 @@ export type FinaleChampion = {
 
 /**
  * The Champions slide's lines: every finalized Bracket's champion and every
- * closed `games` or team-scoring `participation` Competition's winner (ties
+ * Finalized Placement's or closed `games` or team-scoring `participation`
+ * Competition's winner (ties
  * listed together), by the rule Recent results uses (`finalWinners`), never
  * capped, ordered by when each was finalized or closed. An
  * individual-scoring Participation Competition has no winner and is left

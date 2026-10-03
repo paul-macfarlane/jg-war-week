@@ -407,6 +407,31 @@ describe("championsList", () => {
     ]);
   });
 
+  it("lists a Finalized Placement's winner", () => {
+    expect(
+      championsList(
+        [
+          {
+            id: "mile",
+            name: "Mile Run",
+            format: "placement",
+            finalizedAt: at(1),
+          },
+        ],
+        [generated("mile", jax, 10), generated("mile", ada, 6)],
+      ),
+    ).toEqual([
+      {
+        competitionId: "mile",
+        competition: "Mile Run",
+        format: "placement",
+        label: "Winner",
+        title: "Jax Jetpack",
+        winners: [jax],
+      },
+    ]);
+  });
+
   it("is empty with nothing finalized", () => {
     expect(
       championsList(

@@ -193,6 +193,7 @@ export async function assertMcp() {
       "get_bracket",
       "get_games",
       "get_participation",
+      "get_placements",
     ]) {
       if (tools.some((tool) => tool.name === name)) {
         ok(`MCP tools/list includes ${name}`);
@@ -451,6 +452,24 @@ export async function assertMcp() {
       ok(participationCheck);
     } else {
       fail(participationCheck, `result=${JSON.stringify(participation.raw)}`);
+    }
+
+    // Speed Chess is seeded as an individual Placement Competition; its
+    // rows (none until the seeds carry Placements) come by name only.
+    const placements = await callTool(19, "get_placements", {
+      competition: "Speed Chess",
+    });
+    const placementsCheck =
+      "MCP get_placements(Speed Chess) returns its sheet by name with no @";
+    if (
+      placements.parsed?.found === true &&
+      placements.parsed.competition?.name === "Speed Chess" &&
+      Array.isArray(placements.parsed.placements) &&
+      !JSON.stringify(placements.parsed).includes("@")
+    ) {
+      ok(placementsCheck);
+    } else {
+      fail(placementsCheck, `result=${JSON.stringify(placements.raw)}`);
     }
 
     const faq = await callTool(15, "get_faq", {});

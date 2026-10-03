@@ -705,3 +705,207 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Finale slides", () => {
     });
   });
 });
+
+describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Placements", () => {
+  const HOST = "seed-placement-host@jahnelgroup.com";
+  const FINALIZED_AT = "2099-01-03T18:00:00.000Z";
+
+  /** Darts (individual, Finalized by HOST at FINALIZED_AT) and Quiz (team, open), each with seeded Placements. */
+  async function placementSeed() {
+    return seed("spl", 7, "upcoming", {
+      teams: [
+        { name: "Red", color: "#ff0000" },
+        { name: "Blue", color: "#0000ff" },
+      ],
+      participants: [
+        { displayName: "Neo", team: "Red" },
+        { displayName: "Trinity", team: "Blue" },
+        { displayName: "Tank", team: "Blue" },
+      ],
+      competitions: [
+        {
+          name: "Darts",
+          scoring: "individual",
+          countsTowardTeam: true,
+          placementPoints: [10, 6, 3],
+          scoreDirection: "higher",
+          finalized: true,
+          finalizedAt: FINALIZED_AT,
+          finalizedByEmail: HOST,
+        },
+        { name: "Quiz", scoring: "team", placementPoints: [5, 3] },
+      ],
+      placements: [
+        {
+          key: "darts-neo",
+          competition: "Darts",
+          participant: "Neo",
+          place: 1,
+          score: 30,
+        },
+        {
+          key: "darts-trinity",
+          competition: "Darts",
+          participant: "Trinity",
+          place: 1,
+          score: 30,
+        },
+        {
+          key: "darts-tank",
+          competition: "Darts",
+          participant: "Tank",
+          place: 3,
+        },
+        { key: "quiz-blue", competition: "Quiz", team: "Blue", place: 1 },
+      ],
+    });
+  }
+
+  async function read(tx: DBTx, warWeekId: string) {
+    const schema = await import("@/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const competitions = await tx
+      .select({
+        id: schema.competition.id,
+        name: schema.competition.name,
+        scoreDirection: schema.competition.scoreDirection,
+        finalizedAt: schema.competition.finalizedAt,
+      })
+      .from(schema.competition)
+      .where(eq(schema.competition.warWeekId, warWeekId));
+    const byName = (name: string) => competitions.find((c) => c.name === name)!;
+    const rows = await tx
+      .select({
+        id: schema.placement.id,
+        competitionId: schema.placement.competitionId,
+        seedKey: schema.placement.seedKey,
+        place: schema.placement.place,
+        score: schema.placement.score,
+        teamId: schema.placement.teamId,
+        participantId: schema.placement.participantId,
+      })
+      .from(schema.placement)
+      .innerJoin(
+        schema.competition,
+        eq(schema.competition.id, schema.placement.competitionId),
+      )
+      .where(eq(schema.competition.warWeekId, warWeekId));
+    const entries = await tx
+      .select({
+        id: schema.pointsEntry.id,
+        competitionId: schema.pointsEntry.competitionId,
+        participantId: schema.pointsEntry.participantId,
+        points: schema.pointsEntry.points,
+        seedKey: schema.pointsEntry.seedKey,
+        enteredByEmail: schema.pointsEntry.enteredByEmail,
+        enteredAt: schema.pointsEntry.enteredAt,
+        note: schema.pointsEntry.note,
+        generated: schema.pointsEntry.generatedByBracket,
+      })
+      .from(schema.pointsEntry)
+      .where(eq(schema.pointsEntry.warWeekId, warWeekId));
+    const bySeedKey = <T extends { seedKey: string | null }>(list: T[]) =>
+      [...list].sort((a, b) =>
+        String(a.seedKey).localeCompare(String(b.seedKey)),
+      );
+    return {
+      darts: byName("Darts"),
+      quiz: byName("Quiz"),
+      rows: bySeedKey(rows),
+      entries: bySeedKey(entries),
+    };
+  }
+
+  it("writes the Placements and a Finalized Competition's entries with the seed's time and author; a reload changes nothing", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { loadWarWeekSeed } = await import("@/seed/load");
+      await clearLive(tx);
+      const first = await loadWarWeekSeed(await placementSeed(), tx);
+      const loaded = await read(tx, first.id);
+
+      expect(loaded.darts).toMatchObject({
+        scoreDirection: "higher",
+        finalizedAt: new Date(FINALIZED_AT),
+      });
+      expect(loaded.quiz).toMatchObject({
+        scoreDirection: "none",
+        finalizedAt: null,
+      });
+      expect(
+        loaded.rows.map(({ seedKey, place, score, competitionId }) => ({
+          seedKey,
+          place,
+          score,
+          competition: competitionId === loaded.darts.id ? "Darts" : "Quiz",
+        })),
+      ).toEqual([
+        { seedKey: "darts-neo", place: 1, score: 30, competition: "Darts" },
+        { seedKey: "darts-tank", place: 3, score: null, competition: "Darts" },
+        { seedKey: "darts-trinity", place: 1, score: 30, competition: "Darts" },
+        { seedKey: "quiz-blue", place: 1, score: null, competition: "Quiz" },
+      ]);
+      // The tie shares 1st's 10; Tank's 3rd earns 3; the open Quiz none.
+      expect(
+        loaded.entries.map((e) => ({
+          competitionId: e.competitionId,
+          points: e.points,
+          seedKey: e.seedKey,
+          enteredByEmail: e.enteredByEmail,
+          enteredAt: e.enteredAt,
+          note: e.note,
+          generated: e.generated,
+        })),
+      ).toEqual(
+        [
+          ["placement:darts-neo", 10],
+          ["placement:darts-tank", 3],
+          ["placement:darts-trinity", 10],
+        ].map(([seedKey, points]) => ({
+          competitionId: loaded.darts.id,
+          points,
+          seedKey,
+          enteredByEmail: HOST,
+          enteredAt: new Date(FINALIZED_AT),
+          note: "From placement",
+          generated: true,
+        })),
+      );
+
+      await loadWarWeekSeed(await placementSeed(), tx);
+      expect(await read(tx, first.id)).toEqual(loaded);
+    });
+  });
+
+  it("a reload after the Host reopens and edits the sheet keeps their changes and writes no entries", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { loadWarWeekSeed } = await import("@/seed/load");
+      const { reopenPlacements, savePlacements } =
+        await import("@/mutations/placements");
+      await clearLive(tx);
+      const first = await loadWarWeekSeed(await placementSeed(), tx);
+      const loaded = await read(tx, first.id);
+      const ctx = ctxOf(first.id);
+      expect(await reopenPlacements(loaded.darts.id, ctx, tx)).toEqual({
+        ok: true,
+      });
+      const tank = loaded.rows.find((r) => r.seedKey === "darts-tank")!;
+      await savePlacements(
+        loaded.darts.id,
+        {
+          scoreDirection: "lower",
+          rows: [{ id: tank.id, place: 2, score: 4 }],
+        },
+        ctx,
+        tx,
+      );
+      const edited = await read(tx, first.id);
+
+      await loadWarWeekSeed(await placementSeed(), tx);
+      const reloaded = await read(tx, first.id);
+      expect(reloaded).toEqual(edited);
+      expect(reloaded.darts.finalizedAt).toBeNull();
+      expect(reloaded.darts.scoreDirection).toBe("lower");
+      expect(reloaded.entries).toEqual([]);
+    });
+  });
+});

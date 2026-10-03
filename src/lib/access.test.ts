@@ -771,6 +771,29 @@ describe("can: running a participation Competition", () => {
   });
 });
 
+describe("can: recording a Placement Competition's placements", () => {
+  // An Organizer and Catan's Host may; a Host of another Competition (in
+  // this War Week or a namesake in another), a Participant and anonymous
+  // are refused.
+  it.each(
+    cases(
+      (
+        [
+          "placement.edit",
+          "placement.finalize",
+          "placement.reopen",
+        ] as WarWeekAction[]
+      ).map((action) => [
+        action,
+        { warWeekId: XI, competitionId: CATAN },
+        catanHostOr(),
+      ]),
+    ),
+  )("%s", (_, action, target, actor, expected) => {
+    expect(can(ACTORS[actor], action, target)).toBe(expected);
+  });
+});
+
 describe("can: checking in and out (ADR 0009)", () => {
   const ME = "participant-me";
   const RED = "team-red";

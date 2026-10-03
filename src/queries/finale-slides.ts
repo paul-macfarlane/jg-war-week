@@ -5,7 +5,6 @@ import {
   eq,
   inArray,
   isNotNull,
-  ne,
   sql,
 } from "drizzle-orm";
 
@@ -121,7 +120,6 @@ export async function getChampions(
       and(
         eq(competition.warWeekId, warWeek.id),
         isNotNull(competition.finalizedAt),
-        ne(competition.format, "placement"),
       ),
     );
   if (competitions.length === 0) return [];

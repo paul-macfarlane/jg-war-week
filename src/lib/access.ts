@@ -109,6 +109,13 @@ export type WarWeekAction =
   | "participation.mark"
   | "participation.close"
   | "participation.reopen"
+  /**
+   * A Placement Competition's sheet: adding, changing and removing rows and
+   * the Score direction, then Finalize and Reopen.
+   */
+  | "placement.edit"
+  | "placement.finalize"
+  | "placement.reopen"
   /** Checking yourself in or out (ADR 0009). */
   | "participation.check-in"
   | "participation.check-out"
@@ -350,6 +357,12 @@ export function can(
     case "participation.reopen":
       // A `participation` Competition's setup, who took part and its close:
       // the Host of this Competition, like `games`.
+      return hostsCurrent ? null : NOT_HOST;
+    case "placement.edit":
+    case "placement.finalize":
+    case "placement.reopen":
+      // A Placement Competition's sheet, Finalize and Reopen: the Host of
+      // this Competition. Participants never record Placements.
       return hostsCurrent ? null : NOT_HOST;
     default:
       // A Competition's setup and Bracket, and deleting a Points Entry or

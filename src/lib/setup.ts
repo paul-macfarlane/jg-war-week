@@ -9,6 +9,7 @@ import {
   COMPETITION_FORMATS,
   COMPETITION_SCORINGS,
   FONT_PRESETS,
+  SCORE_DIRECTIONS,
   WAR_WEEK_MODES,
   isGameFormat,
 } from "@/lib/enums";
@@ -126,6 +127,16 @@ export const competitionSeedSchema = z
     selfCheckIn: z.boolean().nullish(),
     /** A `participation` Competition's check-in close time; omitted is none. */
     checkInClosesAt: z.iso.datetime({ offset: true }).nullish(),
+    /** A Placement Competition's Score direction; omitted is none. Set on insert only. */
+    scoreDirection: z.enum(SCORE_DIRECTIONS).optional(),
+    /**
+     * A Placement Competition seeded Finalized, with its real time and
+     * author (all three together): the loader writes its generated Points
+     * Entries as Finalize does. Set on insert only.
+     */
+    finalized: z.literal(true).optional(),
+    finalizedAt: z.iso.datetime({ offset: true }).optional(),
+    finalizedByEmail: emailSchema.optional(),
   })
   .refine((c) => !c.countsTowardTeam || c.scoring === "individual", {
     message: "countsTowardTeam can only be set on an individual Competition",
@@ -142,6 +153,29 @@ export const competitionSeedSchema = z
         code: "custom",
         message: placeRefusal,
         path: ["placementPoints"],
+      });
+    }
+    // The Score direction and a seeded Finalize are Placement's alone.
+    if (c.format !== "placement") {
+      for (const key of ["scoreDirection", "finalized"] as const) {
+        if (c[key] !== undefined) {
+          ctx.addIssue({
+            code: "custom",
+            message: `${key} is only for a placement Competition`,
+            path: [key],
+          });
+        }
+      }
+    }
+    const finalizeKeys = [c.finalized, c.finalizedAt, c.finalizedByEmail];
+    if (
+      finalizeKeys.some((v) => v !== undefined) &&
+      !finalizeKeys.every((v) => v !== undefined)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "finalized needs finalizedAt and finalizedByEmail together",
+        path: ["finalized"],
       });
     }
     // A heats config is checked by its field; any other Format takes none.

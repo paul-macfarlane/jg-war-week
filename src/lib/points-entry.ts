@@ -63,6 +63,7 @@ export function generatedNote(format: Competition["format"]): string {
   if (isGameFormat(format))
     return `From ${gameFormatLabel(format).toLowerCase()}`;
   if (format === "participation") return "From participation";
+  if (format === "placement") return "From placement";
   return "From bracket";
 }
 
@@ -73,6 +74,9 @@ export function generatedRefusal(format: Competition["format"]): string {
   }
   if (format === "participation") {
     return "This Points Entry comes from a Participation Competition. Change it there.";
+  }
+  if (format === "placement") {
+    return "This Points Entry comes from a Placement. Change it there.";
   }
   return "This Points Entry comes from a bracket. Change it there.";
 }

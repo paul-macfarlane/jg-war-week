@@ -119,7 +119,8 @@ describe("toBracketResult", () => {
       found: true,
       competition: { name: "Trivia", scoring: "team", format: "placement" },
       bracket: null,
-      message: expect.stringContaining("isn't run as a Bracket"),
+      message:
+        "Trivia isn't run as a Bracket; it's run as Placement: call get_placements.",
     });
   });
 

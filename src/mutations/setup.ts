@@ -12,6 +12,7 @@ import {
   gamePlayer,
   participant,
   participation,
+  placement,
   pointsEntry,
   scheduleItem,
   squad,
@@ -792,6 +793,19 @@ async function competitionRefusal(
     "Remove who took part before changing its scoring.",
   );
   if (participationRefusal) return participationRefusal;
+  // A Placement's rows are Teams or Participants by its scoring.
+  const placementRefusal = inUseError(
+    "Competition",
+    [
+      [
+        await tx.$count(placement, eq(placement.competitionId, exceptId)),
+        "Placement",
+        "Placements",
+      ],
+    ],
+    "Remove them before changing its scoring.",
+  );
+  if (placementRefusal) return placementRefusal;
   // Squads are only for team Competitions.
   return inUseError(
     "Competition",

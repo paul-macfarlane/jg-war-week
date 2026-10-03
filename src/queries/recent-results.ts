@@ -48,9 +48,7 @@ export async function getRecentResults(
     .where(eq(competition.warWeekId, warWeek.id));
   const newestFinalized = competitions
     .flatMap((c) =>
-      c.finalizedAt && c.format !== "placement"
-        ? [{ id: c.id, at: c.finalizedAt.getTime() }]
-        : [],
+      c.finalizedAt ? [{ id: c.id, at: c.finalizedAt.getTime() }] : [],
     )
     .sort((a, b) => b.at - a.at)
     .slice(0, RECENT_RESULTS_LIMIT)

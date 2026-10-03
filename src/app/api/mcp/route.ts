@@ -15,6 +15,7 @@ import { toGamesResult } from "@/mcp/games";
 import { toHistoryListResult, toHistoryResult } from "@/mcp/history";
 import { toLeaderboardResult } from "@/mcp/leaderboard";
 import { toParticipationResult } from "@/mcp/participation";
+import { toPlacementsResult } from "@/mcp/placements";
 import { toScheduleResult } from "@/mcp/schedule";
 import { MCP_TOOLS } from "@/mcp/tools";
 import { toCurrentWarWeekResult } from "@/mcp/war-week";
@@ -27,6 +28,7 @@ import { getDiscretionaryLedger } from "@/queries/discretionary-points";
 import { getFaqItems } from "@/queries/faq";
 import { getGamesView } from "@/queries/games";
 import { getParticipationView } from "@/queries/participation";
+import { getPlacementsView } from "@/queries/placements";
 import { getSchedule } from "@/queries/schedule";
 import { getSetupDays } from "@/queries/setup";
 import { getStandings } from "@/queries/standings";
@@ -357,6 +359,40 @@ const handler = createMcpHandler(
             ? await getParticipationView(found.id)
             : undefined;
         const result = toParticipationResult(found, view, competition);
+
+        return {
+          content: [{ type: "text", text: JSON.stringify(result) }],
+        };
+      },
+    );
+
+    server.registerTool(
+      "get_placements",
+      {
+        ...MCP_TOOLS.get_placements,
+        inputSchema: z.object({
+          competition: z
+            .string()
+            .trim()
+            .min(1)
+            .describe("The Competition's name, in the current War Week."),
+        }),
+      },
+      async ({ competition }) => {
+        const warWeek = await getCurrentWarWeek();
+        if (!warWeek) {
+          return {
+            content: [
+              { type: "text", text: JSON.stringify({ warWeek: null }) },
+            ],
+          };
+        }
+        const found = await getCompetitionByName(warWeek, competition);
+        const view =
+          found?.format === "placement"
+            ? await getPlacementsView(found.id)
+            : undefined;
+        const result = toPlacementsResult(found, view, competition);
 
         return {
           content: [{ type: "text", text: JSON.stringify(result) }],
