@@ -2,7 +2,7 @@
 
 **What to build:** Each row on the Participant Competitions list shows the name, a two-line **description preview**, a **status** and the Format and scoring badges; no max badge (`92`).
 
-**Blocked by:** R17 merged into `staging`; `103` for rich-text previews (plain text works before it)
+**Blocked by:** R18 merged into `staging` (`103` makes the description rich text; the preview is its plain text via `toPlainText`)
 
 **Status:** ready-for-agent
 
