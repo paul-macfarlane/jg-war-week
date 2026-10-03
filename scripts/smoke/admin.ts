@@ -130,6 +130,13 @@ export async function assertAdminRedirects(sessions: {
     ["/admin/setup/competitions", "/admin/competitions"],
     [`/admin/setup/competitions/${id}/bracket`, `/admin/competitions/${id}`],
     [`/admin/setup/competitions/${id}/games`, `/admin/competitions/${id}`],
+    // A Competition's one admin page holds these now (ticket 101); a
+    // Bracket's id is its Competition's.
+    [`/admin/competitions/${id}/bracket`, `/admin/competitions/${id}`],
+    [`/admin/competitions/${id}/games`, `/admin/competitions/${id}`],
+    [`/admin/competitions/${id}/participation`, `/admin/competitions/${id}`],
+    [`/admin/brackets/${id}`, `/admin/competitions/${id}`],
+    [`/admin/placements/${id}`, `/admin/competitions/${id}`],
     ["/admin/setup/faq", "/admin/faq"],
     ["/admin/setup/faq/new", "/admin/faq"],
     [`/admin/setup/faq/${id}`, "/admin/faq"],
