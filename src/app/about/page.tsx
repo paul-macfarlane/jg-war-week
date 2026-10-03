@@ -115,8 +115,9 @@ export default async function AboutPage() {
           <div className="border-border bg-background/60 flex flex-col items-center gap-4 rounded-xl border p-6 sm:flex-row sm:justify-center sm:gap-10">
             <AboutFinaleDemo />
             <p className="text-foreground/75 max-w-sm text-sm leading-relaxed">
-              And at closing ceremonies, the Finale plays the Standings counting
-              up into place on the projector, from last to first.
+              And at closing ceremonies, the Finale is a slideshow on the
+              projector: By the numbers, Awards and Champions, then the
+              Standings countdown, from last place to first.
             </p>
           </div>
           <p className="text-foreground/75 max-w-3xl leading-relaxed">

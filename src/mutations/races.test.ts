@@ -816,3 +816,63 @@ describe.skipIf(!isLocalDatabase)(
     );
   },
 );
+
+describe.skipIf(!isLocalDatabase)(
+  "Finale slide changes on two connections",
+  () => {
+    const edition = "zz-r-fs";
+    beforeEach(() => clearWarWeek(edition));
+    afterEach(() => clearWarWeek(edition));
+
+    it("saves the default list once when two first changes race, and keeps both", async () => {
+      const { moveFinaleSlide, setFinaleSlideHidden } =
+        await import("@/mutations/finale-slides");
+      const { getFinaleSlides } = await import("@/queries/finale-slides");
+      const f = await committedWarWeek(edition, 9);
+      const { warWeek, finaleSlide } = f.schema;
+
+      for (const order of ["move first", "hide first"] as const) {
+        await f.db
+          .delete(finaleSlide)
+          .where(eq(finaleSlide.warWeekId, f.ctx.warWeekId));
+        await withConnections(1, async ([other]) => {
+          const move = () =>
+            moveFinaleSlide({ kind: "standings" }, 0, f.ctx, f.db);
+          const hide = () =>
+            setFinaleSlideHidden({ kind: "numbers" }, true, f.ctx, other);
+          const results = await staggered(
+            (tx) =>
+              tx
+                .select({ id: warWeek.id })
+                .from(warWeek)
+                .where(eq(warWeek.id, f.ctx.warWeekId))
+                .for("update"),
+            order === "move first" ? move : hide,
+            order === "move first" ? hide : move,
+          );
+          expect(results, order).toEqual([{ ok: true }, { ok: true }]);
+        });
+
+        const slides = await getFinaleSlides(f.ctx.warWeekId, f.db);
+        expect(
+          slides.map((s) => (s.hidden ? `(${s.kind})` : s.kind)),
+          order,
+        ).toEqual([
+          "standings",
+          "title",
+          "(numbers)",
+          "awards",
+          "champions",
+          "winner",
+        ]);
+        expect(
+          await f.db.$count(
+            finaleSlide,
+            eq(finaleSlide.warWeekId, f.ctx.warWeekId),
+          ),
+          order,
+        ).toBe(6);
+      }
+    });
+  },
+);

@@ -304,9 +304,16 @@ export function OrganizerGuide({
           >
             Finale
           </Link>{" "}
-          on the projector and press Start: the Standings count in from last
-          place to first. Replay runs it again. The Finale never changes the
-          Standings, it only plays them.
+          on the projector: it is a slideshow, and you step through it with the
+          right arrow, Space or a click (the left arrow goes back, Escape
+          returns to the first slide). Nothing moves on its own. The slides are
+          Title, By the numbers, Awards, Champions, the Standings countdown
+          (last place to first) and Winner; the countdown plays when you arrive
+          on it, and Replay runs it again. On the Finale page you can reorder or
+          hide the slides, add your own Custom slides, and choose whether the
+          Awards are on one slide or one per Category (Hosts see the list but
+          can&apos;t change it). The Finale never changes the Standings, it only
+          plays them.
         </p>
         <p className="text-foreground/70">
           A finalized Bracket has its own Finale: open it from the same page

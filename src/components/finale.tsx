@@ -1,127 +1,231 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
+import Link from "next/link";
 import {
-  IndividualStandingsList,
-  TeamStandingsList,
-} from "@/components/standings";
-import { Button } from "@/components/ui/button";
-import { useFinale } from "@/components/use-finale";
-import type { Standings } from "@/lib/standings";
+  type MouseEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
+
+import { FinaleSlideView } from "@/components/finale-slides";
+import {
+  type FinalePosition,
+  type FinaleSlideData,
+  backFinalePosition,
+  completeFinaleSlide,
+  finaleSlideSteps,
+  nextFinalePosition,
+} from "@/lib/finale-slides";
+
+/** Controls that handle their own clicks and `Space`: never "next". */
+const INTERACTIVE =
+  "a, button, input, select, textarea, summary, video, audio, iframe, label, [role='button'], [contenteditable='true']";
 
 /**
- * The Finale player (`/<edition>/finale`): the closing-ceremony screen for
- * the projector. It opens on a Start button (also `Space`, or a click
- * anywhere on the stage), then counts in the main leaderboard, team
- * Standings in `teams` mode or individual Standings in free-for-all, and
- * ends on a Replay button. See CONTEXT.md, "Finale rules": it shows
- * `standings` exactly as given and never reorders or recomputes them.
+ * An image in a Custom slide's body (`CustomSlide`) is the Organizer's
+ * content, looked at rather than clicked through: a click on it never
+ * advances. Any other image (an Avatar, the Title logo) advances like the
+ * stage; one inside a link is the link's (`INTERACTIVE`).
  */
-export function Finale({
-  standings,
+const CUSTOM_BODY_IMAGE = "[data-finale-custom-body] img";
+
+/** Where typing happens: no slideshow key works there. */
+const TYPING = "input, textarea, select, [contenteditable='true']";
+
+/** A visit: the position, plus a count bumped on every arrival on a slide. */
+type Visit = FinalePosition & { arrival: number };
+
+const noSubscription = () => () => {};
+
+/**
+ * The Finale (`/<edition>/finale`): the closing-ceremony slideshow for the
+ * projector. One slide fills the screen at a time, over the edition's
+ * navigation. `→`, `Space`, `PageDown` or a click on the stage shows the
+ * slide's next step, else the next slide; `←`/`PageUp` goes back (the
+ * previous slide in its final state); `Escape` returns to the first slide.
+ * Nothing auto-advances. See CONTEXT.md, "Finale rules".
+ */
+export function FinaleSlideshow({
+  slides,
   edition,
   storyTheme,
-  teamLabel,
-  primaryColor,
+  isOrganizer,
 }: {
-  standings: Standings;
+  /** The visible slides, in order, each with its data. */
+  slides: FinaleSlideData[];
   edition: string;
   storyTheme: string;
-  teamLabel: string;
-  /** The Appearance Theme primary color, for Avatars with no Team. */
-  primaryColor: string;
+  /** Offers "Set up the Finale" when there's nothing to show. */
+  isOrganizer: boolean;
 }) {
-  const main = standings.main;
-  const [ranks] = useState(() =>
-    (main === "team" ? standings.team : standings.individual).map(
-      (row) => row.rank,
-    ),
+  const steps = useMemo(() => slides.map(finaleSlideSteps), [slides]);
+  const [visit, setVisit] = useState<Visit>({ index: 0, step: 0, arrival: 0 });
+  // True once hydrated: the keys work from then on (a hook for e2e).
+  const hydrated = useSyncExternalStore(
+    noSubscription,
+    () => true,
+    () => false,
   );
-  const { phase, start, rows, startedAt } = useFinale(ranks);
+
+  const go = useCallback(
+    (to: (position: FinalePosition) => FinalePosition) =>
+      setVisit((current) => {
+        const next = to(current);
+        if (next.index === current.index && next.step === current.step) {
+          return current;
+        }
+        return {
+          ...next,
+          arrival:
+            next.index === current.index
+              ? current.arrival
+              : current.arrival + 1,
+        };
+      }),
+    [],
+  );
+  const next = useCallback(
+    () => go((p) => nextFinalePosition(p, steps)),
+    [go, steps],
+  );
+  const back = useCallback(
+    () => go((p) => backFinalePosition(p, steps)),
+    [go, steps],
+  );
+  const first = useCallback(
+    () =>
+      setVisit((current) => ({
+        index: 0,
+        step: 0,
+        arrival: current.arrival + 1,
+      })),
+    [],
+  );
+  const index = visit.index;
+  const complete = useCallback(
+    () =>
+      setVisit((current) => ({
+        ...current,
+        ...completeFinaleSlide(current, index, steps),
+      })),
+    [index, steps],
+  );
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      // A focused button handles its own Space press.
-      if (event.key !== " " || event.target instanceof HTMLButtonElement) {
-        return;
+      if (event.altKey || event.ctrlKey || event.metaKey) return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest(TYPING)) return;
+      switch (event.key) {
+        case "ArrowRight":
+        case "PageDown":
+          next();
+          break;
+        case "ArrowLeft":
+        case "PageUp":
+          back();
+          break;
+        case "Escape":
+          first();
+          break;
+        case " ":
+          // A focused button or link handles its own Space press.
+          if (target?.closest(INTERACTIVE)) return;
+          next();
+          break;
+        default:
+          return;
       }
       event.preventDefault();
-      if (phase !== "playing") start();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, start]);
+  }, [next, back, first]);
 
-  const title = main === "team" ? `${teamLabel} standings` : "Standings";
+  const onStageClick = (event: MouseEvent<HTMLDivElement>) => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (target?.closest(INTERACTIVE) || target?.closest(CUSTOM_BODY_IMAGE)) {
+      return;
+    }
+    next();
+  };
+
+  const slide = slides[index];
+  // A Custom slide with a background paints the whole stage with it, and
+  // its text colors read on it (so do the Exit link and the hint).
+  const custom =
+    slide?.kind === "custom" && slide.backgroundColor && slide.colors
+      ? { backgroundColor: slide.backgroundColor, ...slide.colors }
+      : null;
 
   return (
     <div
-      data-finale={phase}
-      data-finale-started-at={startedAt ?? undefined}
-      className="relative flex min-h-[calc(100dvh-4rem)] cursor-default flex-col items-center overflow-hidden px-4 py-8 md:py-12"
-      onClick={() => {
-        if (phase === "ready") start();
-      }}
+      data-finale-slide={slide?.kind}
+      data-finale-slide-index={slide ? index : undefined}
+      data-finale-step={slide ? visit.step : undefined}
+      data-finale-hydrated={hydrated ? "" : undefined}
+      className="bg-background text-foreground fixed inset-0 z-[60] cursor-default overflow-hidden"
+      style={custom ?? undefined}
+      onClick={slide ? onStageClick : undefined}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-[40rem] bg-[radial-gradient(ellipse_at_top,color-mix(in_oklch,var(--primary)_22%,transparent),transparent_60%)]"
-      />
-      <div className="relative flex w-full max-w-3xl flex-1 flex-col gap-8">
-        <header className="flex flex-col items-center gap-2 text-center">
-          <p className="text-primary text-xs font-semibold tracking-[0.25em] uppercase md:text-sm">
-            War Week {edition.toUpperCase()} · {storyTheme}
+      {custom ? null : (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-[60vh] bg-[radial-gradient(ellipse_at_top,color-mix(in_oklch,var(--primary)_22%,transparent),transparent_60%)]"
+        />
+      )}
+      <Link
+        href={`/${edition}`}
+        className={`${custom ? "text-foreground" : "text-foreground/60"} hover:text-foreground absolute top-3 right-4 z-10 rounded px-2 py-1 text-sm underline-offset-4 hover:underline`}
+      >
+        Exit
+      </Link>
+      {slide ? (
+        <>
+          {/* On a phone the slide starts below the Exit link. */}
+          <section
+            aria-label={slide.name}
+            className="relative h-full w-full max-sm:pt-10"
+          >
+            <FinaleSlideView
+              key={`${slide.key}:${visit.arrival}`}
+              data={slide}
+              step={visit.step}
+              final={visit.step >= steps[index]}
+              complete={complete}
+              edition={edition}
+              storyTheme={storyTheme}
+            />
+          </section>
+          <p aria-live="polite" className="sr-only">
+            Slide {index + 1} of {slides.length}: {slide.name}
           </p>
-          <h1 className="text-4xl font-bold tracking-tight md:text-6xl">
-            Finale
-          </h1>
-          <p className="text-foreground/70 text-lg md:text-xl">{title}</p>
-        </header>
-
-        {phase === "ready" ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-4">
-            <Button
-              className="h-20 rounded-2xl px-16 text-3xl font-bold md:h-24 md:text-4xl"
-              onClick={(event) => {
-                event.stopPropagation();
-                start();
-              }}
+          {index === 0 ? (
+            <p
+              className={`${custom ? "text-foreground" : "text-foreground/60"} pointer-events-none absolute inset-x-0 bottom-[4vh] text-center text-sm`}
             >
-              Start
-            </Button>
-            <p className="text-foreground/60 text-sm">
-              Press Space or tap anywhere to start.
+              → next · ← back
             </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-6 md:text-lg">
-            {main === "team" ? (
-              <TeamStandingsList rows={standings.team} finale={rows} />
-            ) : (
-              <IndividualStandingsList
-                rows={standings.individual}
-                finale={rows}
-                primaryColor={primaryColor}
-              />
-            )}
-            {phase === "done" ? (
-              <div className="flex justify-center">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    start();
-                  }}
-                >
-                  Replay
-                </Button>
-              </div>
-            ) : null}
-          </div>
-        )}
-      </div>
+          ) : null}
+        </>
+      ) : (
+        <div className="relative flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
+          <p className="text-[clamp(1.5rem,3vw,2.5rem)] font-semibold">
+            Nothing to show yet.
+          </p>
+          {isOrganizer ? (
+            <Link
+              href="/admin/finale"
+              className="text-primary underline underline-offset-4"
+            >
+              Set up the Finale
+            </Link>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }

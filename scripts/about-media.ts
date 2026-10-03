@@ -1,17 +1,17 @@
 /**
  * Writes the About page's media (tickets 28, 03, 04, 43) from the current
  * War Week's seeded demo, never by hand: `public/about/finale-poster.png`
- * (its Finale's Start screen on a phone; a still only — no Finale video is
- * written or shown), the hero's `standings-before.png` /
- * `standings-entry.png` / `standings-after.png` (an Organizer's real Points
- * Entry moving the home Standings), and one still per feature card at
- * `public/about/<slug>.png`. Every one of them is written twice (the About
- * dark stills fix): `<name>.png` under the light Display and
- * `<name>-dark.png` under the dark one, so `/about` can show the still
- * matching its viewer's Display. Afterwards it screenshots `/about` as an
- * anonymous visitor at 390px, desktop (light and dark) and with reduced
- * motion into `test-results/about-media/`, with a log (and a logged-Game
- * still there as evidence).
+ * (its Finale's Title slide on a phone, which gives nothing away; a still
+ * only — no Finale video is written or shown), the hero's
+ * `standings-before.png` / `standings-entry.png` / `standings-after.png`
+ * (an Organizer's real Points Entry moving the home Standings), and one
+ * still per feature card at `public/about/<slug>.png`. Every one of them is
+ * written twice (the About dark stills fix): `<name>.png` under the light
+ * Display and `<name>-dark.png` under the dark one, so `/about` can show
+ * the still matching its viewer's Display. Afterwards it screenshots
+ * `/about` as an anonymous visitor at 390px, desktop (light and dark) and
+ * with reduced motion into `test-results/about-media/`, with a log (and a
+ * logged-Game still there as evidence).
  *
  * Every page is the current War Week's (live, else next upcoming, else most
  * recent completed: the same resolution as `/` and `/about`), in its
@@ -32,7 +32,6 @@
  */
 import { TZDate } from "@date-fns/tz";
 import { loadEnvConfig } from "@next/env";
-import { makeSignature } from "better-auth/crypto";
 import { type ChildProcess, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import {
@@ -45,13 +44,22 @@ import {
 } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { Client } from "pg";
 
 import { ABOUT_FEATURES } from "@/lib/about";
 import { DISPLAY_CHANGE_EVENT, DISPLAY_STORAGE_KEY } from "@/lib/display";
 import { FINALE_MAX_MS } from "@/lib/finale";
 import { backgroundColorScheme } from "@/lib/theme";
 import type { LeaderboardResult } from "@/mcp/leaderboard";
+
+import {
+  type DemoServer,
+  SESSION_COOKIE,
+  createDemoSession,
+  displayInitScript,
+  query,
+  setupBracketDemo as setupBracketDemoOn,
+  startDemoServer,
+} from "./media/demo";
 
 loadEnvConfig(process.cwd());
 
@@ -67,9 +75,10 @@ const AUTH_SECRET = `about-media-secret-${randomUUID()}`;
 const DEMO_EMAIL = "about-demo@jahnelgroup.com";
 const STILL = { width: 1280, height: 720 };
 const PHONE = { width: 390, height: 844 };
-/** Around the Finale: this much of the Start screen before, and after. */
-const LEAD_IN_MS = 2_500;
+/** After the Standings countdown: this long on its final state. */
 const HOLD_MS = 3_500;
+/** Between the presenter's → presses on the way to the countdown. */
+const STEP_MS = 700;
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const log: string[] = [];
@@ -123,35 +132,8 @@ const switchDisplay = (scheme: Scheme) =>
 const standingsKind = () =>
   current.mode === "teams" ? ("team" as const) : ("individual" as const);
 
-async function query<T = Record<string, unknown>>(
-  sql: string,
-  params: unknown[] = [],
-): Promise<T[]> {
-  const client = new Client({ connectionString: process.env.DATABASE_URL });
-  await client.connect();
-  try {
-    return (await client.query(sql, params)).rows as T[];
-  } finally {
-    await client.end();
-  }
-}
-
-async function createSession(email: string): Promise<string> {
-  const userId = `smoke-${randomUUID()}`;
-  const token = `smoke-${randomUUID()}`;
-  await query(`delete from "user" where email = $1`, [email]);
-  await query(
-    `insert into "user" (id, name, email, email_verified) values ($1, 'About demo', $2, true)`,
-    [userId, email],
-  );
-  await query(
-    `insert into session (id, token, user_id, expires_at) values ($1, $2, $3, now() + interval '1 hour')`,
-    [`smoke-${randomUUID()}`, token, userId],
-  );
-  return encodeURIComponent(
-    `${token}.${await makeSignature(token, AUTH_SECRET)}`,
-  );
-}
+const createSession = (email: string) =>
+  createDemoSession(email, AUTH_SECRET, "About demo");
 
 /**
  * The current War Week, resolved as `getCurrentWarWeek` does
@@ -262,7 +244,7 @@ class Page {
     await page.send("Network.enable");
     await page.send("Runtime.enable");
     await page.send("Page.addScriptToEvaluateOnNewDocument", {
-      source: `try{localStorage.setItem(${JSON.stringify(DISPLAY_STORAGE_KEY)},${JSON.stringify(display)})}catch(e){}`,
+      source: displayInitScript(display),
     });
     return page;
   }
@@ -308,7 +290,7 @@ class Page {
 
   async cookie(value: string) {
     await this.send("Network.setCookie", {
-      name: "better-auth.session_token",
+      name: SESSION_COOKIE,
       value,
       url: BASE_URL,
       httpOnly: true,
@@ -442,12 +424,51 @@ async function recordFinale(cookie: string, scheme: Scheme) {
     maxWidth: PHONE.width * 2,
     maxHeight: PHONE.height * 2,
   });
-  await sleep(LEAD_IN_MS);
 
-  const pressedAt = Date.now();
-  await page.evaluate(
-    `Array.from(document.querySelectorAll("button")).find((b) => b.innerText.trim() === "Start")?.click()`,
-  );
+  // The slideshow's keys work once it has hydrated.
+  for (let i = 0; i < 100; i++) {
+    const hydrated = await page.evaluate<boolean>(
+      `document.querySelector("[data-finale-hydrated]") !== null`,
+    );
+    if (hydrated) break;
+    await sleep(100);
+  }
+  await sleep(1_000);
+  const slideKind = () =>
+    page.evaluate<string | null>(
+      `document.querySelector("[data-finale-slide]")?.dataset.finaleSlide ?? null`,
+    );
+  // The poster is the Title slide: it opens the slideshow and shows no
+  // Standings.
+  const titleKind = await slideKind();
+  if (titleKind !== "title") {
+    throw new Error(`the Finale opened on "${titleKind}", not its Title slide`);
+  }
+  const poster = frames.at(-1);
+  if (!poster) throw new Error("no frame recorded of the Title slide");
+
+  // The presenter's →, one press at a time, until the next press lands on
+  // the Standings countdown: that press is the "pressed" moment.
+  const press = async () => {
+    for (const type of ["rawKeyDown", "keyUp"]) {
+      await page.send("Input.dispatchKeyEvent", {
+        type,
+        key: "ArrowRight",
+        code: "ArrowRight",
+        windowsVirtualKeyCode: 39,
+      });
+    }
+  };
+  let pressedAt = Date.now();
+  let presses = 0;
+  while ((await slideKind()) !== "standings") {
+    if (++presses > 60) throw new Error("→ never reached the Standings slide");
+    pressedAt = Date.now();
+    await press();
+    await sleep(STEP_MS);
+  }
+  note(`finale (${scheme}): reached Standings after ${presses} presses`);
+
   let startedAt: number | null = null;
   while (Date.now() - pressedAt < 20_000 && startedAt === null) {
     const value = await page.evaluate<string | null>(
@@ -456,25 +477,20 @@ async function recordFinale(cookie: string, scheme: Scheme) {
     if (value) startedAt = Number(value);
     else await sleep(100);
   }
-  if (startedAt === null) throw new Error("the Finale never started");
+  if (startedAt === null) throw new Error("the countdown never started");
   note(
-    `finale (${scheme}): countdown started ${startedAt - pressedAt} ms after Start`,
+    `finale (${scheme}): countdown started ${startedAt - pressedAt} ms after the → onto Standings`,
   );
   await sleep(FINALE_MAX_MS + HOLD_MS);
   await page.send("Page.stopScreencast");
   await page.close();
 
-  // Keep the lead-in before the Finale and the hold after it; a frame only
-  // arrives when something changes, so each one lasts until the next.
-  const from = startedAt - LEAD_IN_MS;
+  // A sanity check only (no video is written): the countdown really
+  // played. A frame only arrives when something changes.
   const to = startedAt + FINALE_MAX_MS + HOLD_MS;
-  const before = frames.filter((f) => f.at <= from).at(-1);
-  const kept = [
-    ...(before ? [{ ...before, at: from }] : []),
-    ...frames.filter((f) => f.at > from && f.at <= to),
-  ];
+  const kept = frames.filter((f) => f.at >= startedAt && f.at <= to);
   if (kept.length < 10) {
-    throw new Error(`only ${kept.length} frames recorded around the Finale`);
+    throw new Error(`only ${kept.length} frames recorded of the countdown`);
   }
   note(
     `finale (${scheme}): ${frames.length} frames captured, ${kept.length} kept`,
@@ -483,120 +499,15 @@ async function recordFinale(cookie: string, scheme: Scheme) {
   // Only the poster still is kept; no Finale video is written or shown.
   writeFileSync(
     path.join(MEDIA, stillFile("finale-poster", scheme)),
-    Buffer.from(kept[0].data, "base64"),
+    Buffer.from(poster.data, "base64"),
   );
 }
 
 // ---------------------------------------------------------------------------
-// A finished Heats Bracket for the "competitions" still
+// A finished Heats Bracket for the "competitions" still (`setupBracketDemo`
+// in `scripts/media/demo.ts`, shared with the Finale stills)
 
-const BRACKET_COMP_NAME = "Capture the Flag";
-
-/**
- * Fills a small, already-finished Heats Bracket on the current War Week (8
- * Participant Entrants, 4 per Heat with the top 2 advancing, two Round 1
- * Heats and a decided Final) directly in SQL: its Entrants at Seed
- * Positions 1–8, and each Heat with its slots and places. It uses the
- * demo's own seeded heats Competition when it has one with no Entrants yet
- * (seeds can't seed Entrants), else adds a Competition of its own. Returns
- * the Competition and the undo: delete the added Competition (which cascades
- * its Entrants and Heats), or the seeded one's Heats and Entrants.
- */
-async function setupBracketDemo(): Promise<{
-  competitionId: string;
-  teardown: () => Promise<void>;
-}> {
-  const [seeded] = await query<{ id: string }>(
-    `select c.id from competition c
-     where c.war_week_id = $1 and c.format = 'heats' and c.scoring = 'individual'
-       and not exists (select 1 from entrant e where e.competition_id = c.id)
-     order by c.name limit 1`,
-    [current.id],
-  );
-  const competitionId =
-    seeded?.id ??
-    (
-      await query<{ id: string }>(
-        `insert into competition (war_week_id, name, scoring, format, bracket_config)
-         values ($1, $2, 'individual', 'heats', $3) returning id`,
-        [
-          current.id,
-          BRACKET_COMP_NAME,
-          { entrantsPerHeat: 4, advancePerHeat: 2 },
-        ],
-      )
-    )[0].id;
-  const teardown = seeded
-    ? async () => {
-        await query(`delete from heat where competition_id = $1`, [
-          competitionId,
-        ]);
-        await query(`delete from entrant where competition_id = $1`, [
-          competitionId,
-        ]);
-      }
-    : async () => {
-        await query(`delete from competition where id = $1`, [competitionId]);
-      };
-  try {
-    const participants = await query<{ id: string }>(
-      `select id from participant where war_week_id = $1 order by display_name limit 8`,
-      [current.id],
-    );
-    if (participants.length < 8) {
-      throw new Error(
-        `${current.edition} needs at least 8 Participants for the Bracket demo`,
-      );
-    }
-    const entrantIds: string[] = [];
-    for (const [i, p] of participants.entries()) {
-      const [entrant] = await query<{ id: string }>(
-        `insert into entrant (competition_id, participant_id, seed_position)
-         values ($1, $2, $3) returning id`,
-        [competitionId, p.id, i + 1],
-      );
-      entrantIds.push(entrant.id);
-    }
-    const [e1, e2, e3, e4, e5, e6, e7, e8] = entrantIds;
-    const [finalHeat] = await query<{ id: string }>(
-      `insert into heat (competition_id, round, position, status, slot_count)
-       values ($1, 2, 1, 'played', 4) returning id`,
-      [competitionId],
-    );
-    const [heatA] = await query<{ id: string }>(
-      `insert into heat (competition_id, round, position, status, slot_count)
-       values ($1, 1, 1, 'played', 4) returning id`,
-      [competitionId],
-    );
-    const [heatB] = await query<{ id: string }>(
-      `insert into heat (competition_id, round, position, status, slot_count)
-       values ($1, 1, 2, 'played', 4) returning id`,
-      [competitionId],
-    );
-    await query(
-      `insert into heat_entrant (heat_id, entrant_id, slot, place) values
-         ($1, $2, 0, 1), ($1, $3, 1, 2), ($1, $4, 2, 3), ($1, $5, 3, 4),
-         ($6, $7, 0, 1), ($6, $8, 1, 2), ($6, $9, 2, 3), ($6, $10, 3, 4),
-         ($11, $2, 0, 1), ($11, $7, 1, 2), ($11, $3, 2, 3), ($11, $8, 3, 4)`,
-      [heatA.id, e1, e2, e3, e4, heatB.id, e5, e6, e7, e8, finalHeat.id],
-    );
-    // One Heat's time and place, so the still shows a when-line
-    // ("Sunday, Feb 21 · 7:00 PM ET · Main room") on its card.
-    await query(
-      `update heat set day_id = (select id from day where war_week_id = $2 order by date limit 1),
-         start_time = '19:00', location = 'Main room'
-       where id = $1`,
-      [heatA.id, current.id],
-    );
-    note(
-      `bracket demo: ${seeded ? "seeded" : "added"} competition ${competitionId}, champion entrant ${e1}`,
-    );
-  } catch (error) {
-    await teardown();
-    throw error;
-  }
-  return { competitionId, teardown };
-}
+const setupBracketDemo = () => setupBracketDemoOn(current, note);
 
 // ---------------------------------------------------------------------------
 // The stills
@@ -1187,18 +1098,6 @@ async function placementPointsCompetition(): Promise<string> {
 const STILLS_ONLY = process.argv.includes("--stills");
 
 async function main() {
-  if (!existsSync(path.resolve(process.cwd(), ".next/BUILD_ID"))) {
-    console.error("No production build in .next: run `pnpm build` first.");
-    process.exit(1);
-  }
-  if (
-    await fetch(BASE_URL).then(
-      () => true,
-      () => false,
-    )
-  ) {
-    throw new Error(`something is already listening on ${BASE_URL}`);
-  }
   mkdirSync(MEDIA, { recursive: true });
   rmSync(EVIDENCE, { recursive: true, force: true });
   mkdirSync(EVIDENCE, { recursive: true });
@@ -1208,18 +1107,7 @@ async function main() {
     `current War Week: ${current.edition} (${current.mode}, ${pinnedDisplay()} base palette)`,
   );
   const scheduleAt = await scheduleTime();
-  const server = spawn("pnpm", ["start", "-p", String(PORT)], {
-    env: {
-      ...process.env,
-      BETTER_AUTH_SECRET: AUTH_SECRET,
-      BETTER_AUTH_URL: BASE_URL,
-      GOOGLE_CLIENT_ID: "",
-      GOOGLE_CLIENT_SECRET: "",
-      MCP_TOKEN: "",
-    },
-    stdio: "ignore",
-    detached: true,
-  });
+  const server: DemoServer = await startDemoServer(PORT, AUTH_SECRET);
   const chrome = launchChrome();
   let restoreAuthorship: (() => Promise<void>) | undefined;
   let bracketDemo: Awaited<ReturnType<typeof setupBracketDemo>> | undefined;
@@ -1235,16 +1123,7 @@ async function main() {
     bracketDemo = await setupBracketDemo();
     const bracketCompetitionId = bracketDemo.competitionId;
 
-    for (let i = 0; i < 60; i++) {
-      await sleep(500);
-      if (
-        await fetch(`${BASE_URL}/sign-in`).then(
-          (r) => r.ok,
-          () => false,
-        )
-      )
-        break;
-    }
+    await server.ready();
     await waitForChrome();
 
     // Undone straight away, so the later stills show the seeded Standings.
@@ -1319,9 +1198,7 @@ async function main() {
       }
     };
     await attempt(() => chrome.process.kill());
-    await attempt(() => {
-      if (server.pid) process.kill(-server.pid, "SIGTERM");
-    });
+    await attempt(() => server.stop());
     await sleep(1_000);
     await attempt(() =>
       rmSync(chrome.dir, { recursive: true, force: true, maxRetries: 3 }),

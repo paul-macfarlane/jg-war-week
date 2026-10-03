@@ -1,9 +1,11 @@
 // Only client components import this: the one admin list row (Edit and
 // Delete) and its Sheet plumbing.
+import { cn } from "cn";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  type LiHTMLAttributes,
   type ReactNode,
   useActionState,
   useId,
@@ -177,7 +179,51 @@ function SetupSheet({
 }
 
 /** A row action's classes: at least 44px on phones. */
-const ROW_ACTION = "min-h-11 min-w-11 sm:min-h-8";
+export const ROW_ACTION = "min-h-11 min-w-11 sm:min-h-8";
+
+/**
+ * A row's Move up and Move down buttons (`Move "<label>" up`); the first
+ * row's up and the last row's down are disabled.
+ */
+export function MoveUpDownButtons({
+  label,
+  first,
+  last,
+  disabled,
+  onMove,
+}: {
+  label: string;
+  first: boolean;
+  last: boolean;
+  /** While a change is saving. */
+  disabled?: boolean;
+  onMove: (direction: "up" | "down") => void;
+}) {
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        className={ROW_ACTION}
+        disabled={disabled || first}
+        aria-label={`Move "${label}" up`}
+        onClick={() => onMove("up")}
+      >
+        ↑
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        className={ROW_ACTION}
+        disabled={disabled || last}
+        aria-label={`Move "${label}" down`}
+        onClick={() => onMove("down")}
+      >
+        ↓
+      </Button>
+    </>
+  );
+}
 
 /**
  * One row of an admin list, the one pattern every list uses: the row's
@@ -205,6 +251,7 @@ export function SetupListRow({
   deleteSuccess,
   editLabel = "Edit",
   deleteLabel = "Delete",
+  rowProps,
 }: {
   id: string;
   name: ReactNode;
@@ -234,6 +281,8 @@ export function SetupListRow({
   editLabel?: string;
   /** What the Delete control says instead, e.g. "Archive". */
   deleteLabel?: string;
+  /** More props for the row's `<li>`, e.g. drag handlers. */
+  rowProps?: LiHTMLAttributes<HTMLLIElement>;
 }) {
   const router = useRouter();
   const rowRef = useRef<HTMLLIElement>(null);
@@ -262,8 +311,12 @@ export function SetupListRow({
   return (
     <li
       ref={rowRef}
+      {...rowProps}
       {...setupRowProps(id)}
-      className="border-border flex flex-wrap items-center gap-x-3 gap-y-2 border-b py-2 last:border-b-0"
+      className={cn(
+        "border-border flex flex-wrap items-center gap-x-3 gap-y-2 border-b py-2 last:border-b-0",
+        rowProps?.className,
+      )}
     >
       <div className="flex min-w-0 flex-1 basis-48 items-center gap-2">
         {leading}

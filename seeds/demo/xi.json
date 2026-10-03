@@ -1514,5 +1514,31 @@
     }
   ],
   "wikiUrl": "https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/home/war-week/war-week-2026",
-  "winner": null
+  "winner": null,
+  "finaleSlides": [
+    { "kind": "title" },
+    { "kind": "numbers" },
+    { "kind": "awards" },
+    { "kind": "champions" },
+    { "kind": "standings" },
+    { "kind": "winner" },
+    {
+      "kind": "custom",
+      "heading": "Thank you",
+      "body": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Thanks for playing War Week XI. See you next year!"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

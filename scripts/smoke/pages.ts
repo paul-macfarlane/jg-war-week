@@ -41,6 +41,7 @@ function expectedXiCounts(): Record<string, number> {
     award: count(seed.awards),
     announcement: count(seed.announcements),
     faq_item: count(seed.faqItems),
+    finale_slide: count(seed.finaleSlides),
   };
 }
 
@@ -62,7 +63,36 @@ const XI_COUNT_QUERIES: Record<string, string> = {
     "select count(*) from announcement a join war_week w on w.id = a.war_week_id where w.edition = 'xi'",
   faq_item:
     "select count(*) from faq_item f join war_week w on w.id = f.war_week_id where w.edition = 'xi'",
+  finale_slide:
+    "select count(*) from finale_slide s join war_week w on w.id = s.war_week_id where w.edition = 'xi'",
 };
+
+/** War Week XI's Finale slide ids in their order, after a seed load. */
+export async function xiFinaleSlideIds(): Promise<string[]> {
+  const rows = await runQuery<{ id: string }>(
+    `select s.id from finale_slide s join war_week w on w.id = s.war_week_id
+     where w.edition = 'xi' order by s.sort_order, s.id`,
+  );
+  return rows.map((row) => row.id);
+}
+
+/**
+ * The demo's Finale slides keep their ids across a reload (the loader
+ * upserts them by kind and heading): the ids after the second load equal
+ * those after the first.
+ */
+export async function assertFinaleSlidesKeptIds(afterFirstLoad: string[]) {
+  await runCheck(
+    "after loading the seed twice, War Week XI's Finale slides keep the ids the first load gave them",
+    async () => {
+      const afterSecondLoad = await xiFinaleSlideIds();
+      return afterFirstLoad.length > 0 &&
+        JSON.stringify(afterSecondLoad) === JSON.stringify(afterFirstLoad)
+        ? null
+        : `first=${JSON.stringify(afterFirstLoad)} second=${JSON.stringify(afterSecondLoad)}`;
+    },
+  );
+}
 
 export async function assertSeedLoadedOnce() {
   const client = new Client({ connectionString: process.env.DATABASE_URL });

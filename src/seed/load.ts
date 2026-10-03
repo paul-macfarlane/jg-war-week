@@ -27,6 +27,7 @@ import {
   competition,
   day,
   faqItem,
+  finaleSlide,
   organizer,
   participant,
   pointsEntry,
@@ -77,6 +78,7 @@ export async function loadWarWeekSeed(
     const competitionIds = await syncCompetitions(tx, warWeekId, seed);
     await syncDays(tx, warWeekId, seed, competitionIds);
     await syncFaqItems(tx, warWeekId, seed);
+    await syncFinaleSlides(tx, warWeekId, seed);
 
     await insertPointsEntries(
       tx,
@@ -147,6 +149,7 @@ async function upsertWarWeek(tx: DBTx, seed: WarWeekSeed): Promise<WarWeek> {
       status: seed.status,
       winner: seed.winner ?? null,
       highlights: seed.highlights,
+      finaleAwardsLayout: seed.finaleAwardsLayout ?? "one-slide",
     })
     .onConflictDoUpdate({ target: warWeek.edition, set: values })
     .returning();
@@ -418,6 +421,42 @@ async function syncFaqItems(tx: DBTx, warWeekId: string, seed: WarWeekSeed) {
     scope: eq(faqItem.warWeekId, warWeekId),
     key: faqItem.question,
     keep: () => seed.faqItems.map((f) => f.question),
+  });
+}
+
+/**
+ * Keeps the War Week's Finale slide list equal to the seed's `finaleSlides`
+ * (order, hidden, a Custom slide's fields), upserted by kind and heading so
+ * ids stay the same across loads; a seed without `finaleSlides` leaves the
+ * saved list alone.
+ */
+async function syncFinaleSlides(
+  tx: DBTx,
+  warWeekId: string,
+  seed: WarWeekSeed,
+) {
+  if (!seed.finaleSlides) return;
+  await upsertDeletingAbsent(tx, finaleSlide, {
+    rows: seed.finaleSlides.map((slide, index) => ({
+      warWeekId,
+      kind: slide.kind,
+      sortOrder: index,
+      hidden: slide.hidden,
+      heading: slide.heading ?? null,
+      body: slide.body ?? null,
+      backgroundColor: slide.backgroundColor ?? null,
+    })),
+    target: [finaleSlide.warWeekId, finaleSlide.kind, finaleSlide.heading],
+    set: {
+      sortOrder: sql`excluded.sort_order`,
+      hidden: sql`excluded.hidden`,
+      body: sql`excluded.body`,
+      backgroundColor: sql`excluded.background_color`,
+      updatedAt: new Date(),
+    },
+    scope: eq(finaleSlide.warWeekId, warWeekId),
+    key: finaleSlide.id,
+    keep: (kept) => kept.map((k) => k.id),
   });
 }
 

@@ -227,9 +227,12 @@ export function defaultWinner(standings: Standings): string {
   const rows =
     standings.main === "team" ? standings.team : standings.individual;
   if (rows.length === 0 || rows.every((row) => row.total === 0)) return "";
-  const names = rows.filter((row) => row.rank === 1).map((row) => row.name);
-  if (names.length <= 1) return names.join("");
-  return `Tie: ${names.join(" & ")}`;
+  return tieTitle(rows.filter((row) => row.rank === 1).map((row) => row.name));
+}
+
+/** One name as is; more than one (a tie) as "Tie: A & B & C". */
+export function tieTitle(names: string[]): string {
+  return names.length > 1 ? `Tie: ${names.join(" & ")}` : names.join("");
 }
 
 const closingSchema = z.object({

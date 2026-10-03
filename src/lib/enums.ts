@@ -45,3 +45,24 @@ export const GAME_TYPES = ["head-to-head", "best-score", "ranked"] as const;
 export type GameType = (typeof GAME_TYPES)[number];
 
 export const HEAT_STATUSES = ["pending", "ready", "played", "forfeit"] as const;
+
+/**
+ * A Finale slide's kind: the built-in slides, in their default order, then
+ * `custom` (CONTEXT.md, Finale slide).
+ */
+export const FINALE_SLIDE_KINDS = [
+  "title",
+  "numbers",
+  "awards",
+  "champions",
+  "standings",
+  "winner",
+  "custom",
+] as const;
+
+export type FinaleSlideKind = (typeof FINALE_SLIDE_KINDS)[number];
+
+/** How the Finale shows Awards: one slide, or one slide per Award Category. */
+export const FINALE_AWARDS_LAYOUTS = ["one-slide", "per-category"] as const;
+
+export type FinaleAwardsLayout = (typeof FINALE_AWARDS_LAYOUTS)[number];
