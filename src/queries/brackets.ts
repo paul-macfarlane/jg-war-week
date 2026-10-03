@@ -212,6 +212,9 @@ export async function loadBracket(
       slotCount: heat.slotCount,
       winnerToHeatId: heat.winnerToHeatId,
       winnerToSlot: heat.winnerToSlot,
+      loserToHeatId: heat.loserToHeatId,
+      loserToSlot: heat.loserToSlot,
+      thirdPlace: heat.thirdPlace,
       recordedAt: heat.recordedAt,
     })
     .from(heat)
@@ -239,6 +242,11 @@ export async function loadBracket(
         row.winnerToHeatId !== null && row.winnerToSlot !== null
           ? { heatId: row.winnerToHeatId, slot: row.winnerToSlot }
           : null,
+      loserTo:
+        row.loserToHeatId !== null && row.loserToSlot !== null
+          ? { heatId: row.loserToHeatId, slot: row.loserToSlot }
+          : null,
+      thirdPlace: row.thirdPlace,
       recordedAt: row.recordedAt,
       slots: Array.from({ length: row.slotCount }, (_, slot) => {
         const found = slots.find((s) => s.heatId === row.id && s.slot === slot);

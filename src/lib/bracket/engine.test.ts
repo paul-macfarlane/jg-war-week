@@ -354,7 +354,7 @@ describe("resetByResult", () => {
 });
 
 describe("finalPlacings", () => {
-  it("places 8 Entrants 1st, 2nd, tied 3rd and tied 5th", () => {
+  it("places 8 Entrants 1st, 2nd and tied 3rd, nobody else", () => {
     const list = entrants(8);
     let bracket = generate(list);
     for (const [id, winner] of [
@@ -376,10 +376,6 @@ describe("finalPlacings", () => {
       { entrantId: "s5", place: 2 },
       { entrantId: "s1", place: 3 },
       { entrantId: "s3", place: 3 },
-      { entrantId: "s4", place: 5 },
-      { entrantId: "s6", place: 5 },
-      { entrantId: "s7", place: 5 },
-      { entrantId: "s8", place: 5 },
     ]);
   });
 
@@ -397,7 +393,7 @@ describe("finalPlacings", () => {
     ]);
   });
 
-  it("places 5 Entrants 1st, 2nd, 3rd, 3rd, 5th", () => {
+  it("places 5 Entrants 1st, 2nd, 3rd, 3rd: the first-Round loser isn't placed", () => {
     const list = entrants(5);
     let bracket = generate(list);
     bracket = win(bracket, "r1h2", "s4");
@@ -410,7 +406,6 @@ describe("finalPlacings", () => {
       { entrantId: "s3", place: 2 },
       { entrantId: "s2", place: 3 },
       { entrantId: "s4", place: 3 },
-      { entrantId: "s5", place: 5 },
     ]);
   });
 

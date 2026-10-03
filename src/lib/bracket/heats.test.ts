@@ -606,7 +606,7 @@ describe("resetByResult", () => {
 });
 
 describe("finalPlacings", () => {
-  it("places the final in order and ties each Round's losers", () => {
+  it("places the final in order, and nobody outside it", () => {
     // 8 Entrants, 4 per Heat, 2 advancing; the final finishes s2 s1 s4 s3.
     let bracket = recordInSlotOrder(build(8, 4, 2), "r1h1");
     bracket = recordInSlotOrder(bracket, "r1h2");
@@ -621,14 +621,10 @@ describe("finalPlacings", () => {
       { entrantId: "s1", place: 2 },
       { entrantId: "s4", place: 3 },
       { entrantId: "s3", place: 4 },
-      { entrantId: "s5", place: 5 },
-      { entrantId: "s6", place: 5 },
-      { entrantId: "s7", place: 5 },
-      { entrantId: "s8", place: 5 },
     ]);
   });
 
-  it("ranks those who went out later above those who went out earlier", () => {
+  it("places only the final of a three-Round Bracket", () => {
     // 10 Entrants, 4 per Heat, 2 advancing, every Heat in slot order:
     // Round 1 loses s7, s8, s9, s10; Round 2 loses s5, s4; final s1 s2 s6 s3.
     let bracket = build(10, 4, 2);
@@ -640,16 +636,10 @@ describe("finalPlacings", () => {
       { entrantId: "s2", place: 2 },
       { entrantId: "s6", place: 3 },
       { entrantId: "s3", place: 4 },
-      { entrantId: "s4", place: 5 },
-      { entrantId: "s5", place: 5 },
-      { entrantId: "s7", place: 7 },
-      { entrantId: "s8", place: 7 },
-      { entrantId: "s9", place: 7 },
-      { entrantId: "s10", place: 7 },
     ]);
   });
 
-  it("counts a bye as going through, not going out", () => {
+  it("places a final of 2 1st and 2nd, after a bye", () => {
     // 6 Entrants, 2 per Heat, 1 advancing: s6 beats s1, takes Round 2's bye
     // and loses the final to s3, who beat s2 in Round 2.
     let bracket = heats.applyResult(build(6, 2, 1), "r1h1", {
@@ -661,10 +651,6 @@ describe("finalPlacings", () => {
     expect(heats.finalPlacings(bracket, entrants(6))).toEqual([
       { entrantId: "s3", place: 1 },
       { entrantId: "s6", place: 2 },
-      { entrantId: "s2", place: 3 },
-      { entrantId: "s1", place: 4 },
-      { entrantId: "s4", place: 4 },
-      { entrantId: "s5", place: 4 },
     ]);
   });
 });

@@ -3,7 +3,12 @@
  * advancing, Round after Round until one Heat is left. Every function is
  * pure: it takes a Bracket and returns a new one, never changing its input.
  */
-import { type BracketConfig, bracketConfigSchema } from "@/lib/bracket/config";
+import {
+  type BracketConfig,
+  bracketConfigSchema,
+  thirdPlaceRefusal,
+} from "@/lib/bracket/config";
+import { finalHeatOf, finalRoundOf } from "@/lib/bracket/final";
 import { isDecided } from "@/lib/bracket/heat-status";
 import {
   type Bracket,
@@ -15,6 +20,7 @@ import {
   type HeatSlot,
   type Placing,
 } from "@/lib/bracket/types";
+import { BRACKET_PLACEMENTS } from "@/lib/competitions";
 
 /** More Rounds than any Bracket the builder allows could need. */
 const MAX_ROUNDS = 64;
@@ -68,6 +74,8 @@ export function validateConfig(
 ): string | null {
   const parsed = bracketConfigSchema.safeParse(config);
   if (!parsed.success) return parsed.error.issues[0].message;
+  const thirdPlace = thirdPlaceRefusal(parsed.data, entrantCount);
+  if (thirdPlace) return thirdPlace;
   if (entrantCount < 2) return "A Bracket needs at least 2 Entrants.";
   const shape = roundShape(entrantCount, parsed.data);
   if ("neverEnds" in shape) {
@@ -79,10 +87,6 @@ export function validateConfig(
 
 function emptySlot(): HeatSlot {
   return { entrantId: null, place: null, score: null };
-}
-
-function finalRound(bracket: Bracket): number {
-  return Math.max(...bracket.heats.map((h) => h.round));
 }
 
 function roundHeats(bracket: Bracket, round: number): Heat[] {
@@ -97,7 +101,7 @@ function roundHeats(bracket: Bracket, round: number): Heat[] {
  */
 export function isBye(bracket: Bracket, heat: Heat): boolean {
   return (
-    heat.round < finalRound(bracket) &&
+    heat.round < finalRoundOf(bracket) &&
     heat.slots.length <= bracket.config.advancePerHeat
   );
 }
@@ -131,7 +135,7 @@ function fillRound(bracket: Bracket, round: number, ranked: string[]) {
 
 /** Once every Heat of `round` is decided, its advancers fill the next. */
 function fillNextIfComplete(bracket: Bracket, round: number) {
-  if (round >= finalRound(bracket)) return;
+  if (round >= finalRoundOf(bracket)) return;
   const advancers = advancersOf(bracket, round);
   if (advancers) fillRound(bracket, round + 1, advancers);
 }
@@ -179,6 +183,8 @@ export function generate(
         position: p + 1,
         slots: Array.from({ length: size }, emptySlot),
         winnerTo: null,
+        loserTo: null,
+        thirdPlace: false,
         status: "pending",
         recordedAt: null,
       });
@@ -271,7 +277,7 @@ function rerecord(
   const heat = findHeat(next, heatId);
   const before = advancersOf(next, heat.round);
   record(next, heat, result);
-  if (heat.round === finalRound(next)) return { next, resetHeatIds: [] };
+  if (heat.round === finalRoundOf(next)) return { next, resetHeatIds: [] };
   if (before === null) {
     fillNextIfComplete(next, heat.round);
     return { next, resetHeatIds: [] };
@@ -329,28 +335,22 @@ export function hasResults(bracket: Bracket): boolean {
   return bracket.heats.some((h) => isDecided(h) && !isBye(bracket, h));
 }
 
-function finalHeat(bracket: Bracket): Heat | undefined {
-  return roundHeats(bracket, finalRound(bracket))[0];
-}
-
 /** Whether the final Heat has been decided. */
 export function isComplete(bracket: Bracket): boolean {
-  const final = finalHeat(bracket);
+  const final = finalHeatOf(bracket);
   return final !== undefined && isDecided(final);
 }
 
 /** The Entrant 1st in the final Heat, or null while it's undecided. */
 export function champion(bracket: Bracket): string | null {
-  const final = finalHeat(bracket);
+  const final = finalHeatOf(bracket);
   if (!final || !isDecided(final)) return null;
   return final.slots.find((s) => s.place === 1)?.entrantId ?? null;
 }
 
 /**
- * Final placings of a finished Bracket: the final Heat's Entrants in its
- * order, then everyone else by the Round they went out in, later Rounds
- * first. Those who went out in the same Round tie, one place after everyone
- * who got further. Sorted by place, then Seed Position.
+ * Final placings of a finished Bracket, from the final only: its finishing
+ * order gives places 1 to 4; nobody else is placed. Sorted by place.
  */
 export function finalPlacings(
   bracket: Bracket,
@@ -359,31 +359,12 @@ export function finalPlacings(
   if (!isComplete(bracket)) {
     throw new BracketError("The Bracket isn't finished yet.");
   }
-  const final = finalHeat(bracket)!;
-  const { advancePerHeat } = bracket.config;
-  const finalPlace = new Map(
-    final.slots.map((s) => [s.entrantId!, s.place!] as const),
-  );
-  // The Round each Entrant went out in; the final's Entrants never did.
-  const wentOut = new Map<string, number>();
-  for (const heat of bracket.heats) {
-    if (heat.round === final.round || !isDecided(heat)) continue;
-    for (const slot of heat.slots) {
-      if (slot.place! > advancePerHeat) {
-        wentOut.set(slot.entrantId!, heat.round);
-      }
-    }
-  }
-  const depth = (id: string) =>
-    finalPlace.has(id) ? final.round : (wentOut.get(id) ?? 0);
-  return [...entrants]
-    .sort((a, b) => a.seedPosition - b.seedPosition)
-    .map((e) => ({
-      entrantId: e.id,
-      place:
-        finalPlace.get(e.id) ??
-        1 + entrants.filter((o) => depth(o.id) > depth(e.id)).length,
-    }))
+  const entered = new Set(entrants.map((e) => e.id));
+  return finalHeatOf(bracket)!
+    .slots.filter(
+      (s) => entered.has(s.entrantId!) && s.place! <= BRACKET_PLACEMENTS,
+    )
+    .map((s) => ({ entrantId: s.entrantId!, place: s.place! }))
     .sort((a, b) => a.place - b.place);
 }
 

@@ -3,13 +3,14 @@
  * the Heat an Entrant plays next. Pure, like the engine.
  */
 import { isHeadToHead } from "@/lib/bracket/config";
+import { finalRoundOf } from "@/lib/bracket/final";
 import { isBye } from "@/lib/bracket/formats";
 import { isDecided } from "@/lib/bracket/heat-status";
 import type { Bracket, BracketFormat, Format, Heat } from "@/lib/bracket/types";
 import { WAR_WEEK_TIME_ZONE } from "@/lib/schedule";
 
 export type { Format } from "@/lib/bracket/types";
-export { isDecided };
+export { finalRoundOf, isDecided };
 
 const FORMAT_LABELS: Record<Format, string> = {
   placement: "Placement",
@@ -34,27 +35,29 @@ export function isBracketFormat(
 /** Every Format that runs as a Bracket. */
 export const BRACKET_FORMATS: BracketFormat[] = ["bracket"];
 
-/** The final's Round number; 0 before Generate. */
-export function finalRoundOf(bracket: Bracket): number {
-  return bracket.heats.reduce((max, h) => Math.max(max, h.round), 0);
-}
+/** The 3rd place game's name, beside the final. */
+export const THIRD_PLACE_GAME = "3rd place game";
 
 /**
  * "Final", "Round N", or (head-to-head only) "Semifinal", by distance
  * from the final Round; with a `position`, "Round N Heat P" or
- * "Semifinal P" instead of the bare Round name.
+ * "Semifinal P" instead of the bare Round name. The 3rd place game is
+ * "3rd place game".
  */
 export function heatNameAt({
   headToHead,
   finalRound,
   round,
   position,
+  thirdPlace = false,
 }: {
   headToHead: boolean;
   finalRound: number;
   round: number;
   position?: number;
+  thirdPlace?: boolean;
 }): string {
+  if (thirdPlace) return THIRD_PLACE_GAME;
   if (round === finalRound) return "Final";
   const isSemifinal = headToHead && round === finalRound - 1;
   if (isSemifinal) {
@@ -77,16 +80,20 @@ export function roundName(bracket: Bracket, round: number): string {
   });
 }
 
-/** "Final", "Round 1 Heat 4", or (head-to-head only) "Semifinal 2". */
+/**
+ * "Final", "3rd place game", "Round 1 Heat 4", or (head-to-head only)
+ * "Semifinal 2".
+ */
 export function heatName(
   bracket: Bracket,
-  heat: Pick<Heat, "round" | "position">,
+  heat: Pick<Heat, "round" | "position"> & { thirdPlace?: boolean },
 ): string {
   return heatNameAt({
     headToHead: isHeadToHead(bracket.config),
     finalRound: finalRoundOf(bracket),
     round: heat.round,
     position: heat.position,
+    thirdPlace: heat.thirdPlace,
   });
 }
 
@@ -145,8 +152,8 @@ export type NextHeat =
       /** The other Entrants already in the Heat. */
       opponentIds: string[];
       /**
-       * Single elimination: the Heat whose winner fills the empty slot,
-       * while there is one.
+       * Single elimination: the Heat whose winner (or, for the 3rd place
+       * game, loser) fills the empty slot, while there is one.
        */
       waitingFor: Heat | null;
     }
@@ -184,7 +191,9 @@ export function nextHeatFor(
           ? null
           : (bracket.heats.find(
               (h) =>
-                h.winnerTo?.heatId === heat.id && h.winnerTo.slot === emptySlot,
+                (h.winnerTo?.heatId === heat.id &&
+                  h.winnerTo.slot === emptySlot) ||
+                (h.loserTo?.heatId === heat.id && h.loserTo.slot === emptySlot),
             ) ?? null),
     };
   }

@@ -8,7 +8,10 @@ import { z } from "zod";
 export type BracketConfig = {
   entrantsPerHeat: number;
   advancePerHeat: number;
-  /** Stored and validated as a boolean here; its behavior is part 98's. */
+  /**
+   * A 3rd place game between the semifinal losers: head-to-head only, with
+   * at least 4 Entrants (see `thirdPlaceRefusal`).
+   */
   thirdPlaceGame: boolean;
 };
 
@@ -26,6 +29,28 @@ export const DEFAULT_BRACKET_CONFIG: BracketConfig = {
  */
 export function isHeadToHead(config: BracketConfig): boolean {
   return config.entrantsPerHeat === 2 && config.advancePerHeat === 1;
+}
+
+/** A 3rd place game on any config but head-to-head. */
+export const THIRD_PLACE_HEAD_TO_HEAD_ONLY =
+  "A 3rd place game is only for 2 per Heat with 1 advancing.";
+
+/** A 3rd place game with fewer than two real semifinals. */
+export const THIRD_PLACE_NEEDS_FOUR =
+  "A 3rd place game needs at least 4 Entrants.";
+
+/**
+ * Why this config's 3rd place game is refused for `entrantCount` Entrants,
+ * or null: it needs head-to-head and two real semifinals (4 Entrants).
+ */
+export function thirdPlaceRefusal(
+  config: BracketConfig,
+  entrantCount: number,
+): string | null {
+  if (!config.thirdPlaceGame) return null;
+  if (!isHeadToHead(config)) return THIRD_PLACE_HEAD_TO_HEAD_ONLY;
+  if (entrantCount < 4) return THIRD_PLACE_NEEDS_FOUR;
+  return null;
 }
 
 /** The Heat sizes the builder offers. */

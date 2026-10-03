@@ -256,8 +256,8 @@ describe("setupHref and setupLinkLabel", () => {
 describe("placementLimit and placementLimitRefusal", () => {
   const places = (n: number) => Array.from({ length: n }, (_, i) => n - i);
 
-  it("limits Brackets to 5 places and every other Format to none", () => {
-    expect(placementLimit("bracket")).toBe(5);
+  it("limits Brackets to 4 places and every other Format to none", () => {
+    expect(placementLimit("bracket")).toBe(4);
     for (const format of [
       "placement",
       "head-to-head",
@@ -268,11 +268,11 @@ describe("placementLimit and placementLimitRefusal", () => {
     }
   });
 
-  it("accepts 12 places for Placement and refuses 6 for a Bracket", () => {
+  it("accepts 12 places for Placement and refuses 5 for a Bracket", () => {
     expect(placementLimitRefusal("placement", places(12))).toBeNull();
-    expect(placementLimitRefusal("bracket", places(5))).toBeNull();
-    expect(placementLimitRefusal("bracket", places(6))).toBe(
-      "Placement Points cover at most 5 places for this Format.",
+    expect(placementLimitRefusal("bracket", places(4))).toBeNull();
+    expect(placementLimitRefusal("bracket", places(5))).toBe(
+      "Placement Points cover at most 4 places for this Format.",
     );
     expect(placementLimitRefusal("bracket", null)).toBeNull();
   });

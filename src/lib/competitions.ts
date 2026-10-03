@@ -14,8 +14,11 @@ export type CompetitionListItem = Pick<
   | "format"
 >;
 
-/** The most places a Bracket can preset Placement Points for. */
-const BRACKET_PLACEMENTS = 5;
+/**
+ * The most places a Bracket can preset Placement Points for: its places
+ * come only from the final (and the 3rd place game), up to 4th.
+ */
+export const BRACKET_PLACEMENTS = 4;
 
 /**
  * The most places a Competition of this Format can preset Placement Points

@@ -463,7 +463,7 @@ describe("parseCreateCompetitionInput", () => {
     });
   });
 
-  it("takes 12 places for Placement and refuses 6 for a Bracket", () => {
+  it("takes 12 places for Placement and refuses 5 for a Bracket", () => {
     const twelve = Array.from({ length: 12 }, (_, i) => 12 - i).join(", ");
     expect(
       parseCreateCompetitionInput({ ...competition, placementPoints: twelve }),
@@ -472,14 +472,14 @@ describe("parseCreateCompetitionInput", () => {
       parseCreateCompetitionInput({
         ...competition,
         format: "bracket",
-        placementPoints: "6, 5, 4, 3, 2, 1",
+        placementPoints: "5, 4, 3, 2, 1",
       }),
     ).toEqual({
       ok: false,
-      error: "Placement Points cover at most 5 places for this Format.",
+      error: "Placement Points cover at most 4 places for this Format.",
       fieldErrors: {
         placementPoints:
-          "Placement Points cover at most 5 places for this Format.",
+          "Placement Points cover at most 4 places for this Format.",
       },
     });
   });
@@ -716,9 +716,9 @@ describe("competitionGuardError", () => {
     finalizedAt: null as Date | null,
   };
 
-  it("refuses more than 5 places for a Bracket, on create and on edit, but not for Placement", () => {
-    const six = { ...values, placementPoints: [6, 5, 4, 3, 2, 1] };
-    const refusal = "Placement Points cover at most 5 places for this Format.";
+  it("refuses more than 4 places for a Bracket, on create and on edit, but not for Placement", () => {
+    const six = { ...values, placementPoints: [5, 4, 3, 2, 1] };
+    const refusal = "Placement Points cover at most 4 places for this Format.";
     expect(competitionGuardError({ ...six, format: "bracket" }, ctx)).toBe(
       refusal,
     );

@@ -22,7 +22,7 @@ import {
 import { ResponsiveSheetDialog } from "@/components/responsive-sheet-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { isRecordable } from "@/lib/bracket/formats";
+import { isComplete, isRecordable } from "@/lib/bracket/formats";
 import type { Bracket } from "@/lib/bracket/types";
 import {
   formatRecordedAt,
@@ -194,7 +194,8 @@ export function BracketResultsView({
               Un-finalize
             </ConfirmActionButton>
           </>
-        ) : winner ? (
+        ) : winner && isComplete(bracket) ? (
+          // With a 3rd place game, the champion is known before it's played.
           <ConfirmActionButton
             title={copy.confirmTitle}
             confirmLabel="Finalize"

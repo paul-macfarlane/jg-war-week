@@ -37,6 +37,7 @@ import {
   ADVANCE_PER_HEAT_OPTIONS,
   type BracketConfig,
   ENTRANTS_PER_HEAT_OPTIONS,
+  THIRD_PLACE_NEEDS_FOUR,
   advancePerHeatLabel,
   entrantsPerHeatLabel,
   isHeadToHead,
@@ -83,7 +84,8 @@ type ForceableAction = {
  * many of them advance; 2 with 1 advancing is "Head-to-head (single
  * elimination)", offered as a preset. With a saved Entrant count, a "how many advance"
  * that Generate would refuse is disabled, and the refusal is shown when the
- * current choice is one.
+ * current choice is one. Head-to-head adds the 3rd place game switch, off
+ * by default and disabled, with its reason, under 4 Entrants.
  */
 function HeatSettingsForm({
   competitionId,
@@ -102,6 +104,14 @@ function HeatSettingsForm({
   const router = useRouter();
   const [perHeat, setPerHeat] = useState(config.entrantsPerHeat);
   const [advance, setAdvance] = useState(config.advancePerHeat);
+  const [thirdPlace, setThirdPlace] = useState(config.thirdPlaceGame);
+  const headToHead = isHeadToHead({
+    ...config,
+    entrantsPerHeat: perHeat,
+    advancePerHeat: advance,
+  });
+  const thirdPlaceAllowed = headToHead && entrantCount >= 4;
+  const thirdPlaceGame = thirdPlaceAllowed && thirdPlace;
 
   const [, formAction, saving] = useActionState(
     async (
@@ -111,8 +121,7 @@ function HeatSettingsForm({
       const next = {
         entrantsPerHeat: Number(formData.get("entrantsPerHeat")),
         advancePerHeat: Number(formData.get("advancePerHeat")),
-        // Part 98 adds the switch; until then the saved value passes through.
-        thirdPlaceGame: config.thirdPlaceGame,
+        thirdPlaceGame,
       };
       const run = (force: boolean) =>
         setCompetitionFormat(competitionId, {
@@ -176,11 +185,7 @@ function HeatSettingsForm({
             variant="outline"
             size="lg"
             className="min-h-11"
-            aria-pressed={isHeadToHead({
-              ...config,
-              entrantsPerHeat: perHeat,
-              advancePerHeat: advance,
-            })}
+            aria-pressed={headToHead}
             disabled={off}
             onClick={() => {
               setPerHeat(2);
@@ -224,6 +229,31 @@ function HeatSettingsForm({
           </Field>
         </FieldGroup>
         {refusal && <FieldDescription>{refusal}</FieldDescription>}
+        {headToHead && (
+          <Field
+            orientation="horizontal"
+            className="max-w-xl"
+            // Dims the label along with the disabled Switch.
+            data-disabled={off || !thirdPlaceAllowed}
+          >
+            <Switch
+              id="bracket-third-place"
+              checked={thirdPlaceGame}
+              disabled={off || !thirdPlaceAllowed}
+              onCheckedChange={setThirdPlace}
+            />
+            <FieldContent>
+              <FieldLabel htmlFor="bracket-third-place">
+                3rd place game
+              </FieldLabel>
+              <FieldDescription>
+                {thirdPlaceAllowed
+                  ? "The semifinal losers play for 3rd and 4th. Without it, they tie 3rd."
+                  : THIRD_PLACE_NEEDS_FOUR}
+              </FieldDescription>
+            </FieldContent>
+          </Field>
+        )}
       </FieldSet>
       <Button
         type="submit"

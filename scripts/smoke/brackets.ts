@@ -922,7 +922,7 @@ export async function assertSquadSelfReportLoop(sessions: {
     );
 
     const [finalHeat] = await runQuery<{ id: string }>(
-      `select id from heat where competition_id = $1 and round = 2 limit 1`,
+      `select id from heat where competition_id = $1 and round = 2 and not third_place limit 1`,
       [id],
     );
     expectOk(

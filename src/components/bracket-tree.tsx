@@ -199,7 +199,7 @@ export function BracketTree({
                 {round.name}
               </h3>
               <div
-                className={`flex flex-1 flex-col ${knockout ? "" : "justify-center gap-3"}`}
+                className={`relative flex flex-1 flex-col ${knockout ? "" : "justify-center gap-3"}`}
               >
                 {round.heats.map((heat) => {
                   const source = heatsById.get(heat.id);
@@ -209,9 +209,18 @@ export function BracketTree({
                   return (
                     <div
                       key={heat.id}
-                      className={`relative flex items-center ${knockout ? "flex-1 py-2" : ""}`}
+                      data-third-place={heat.thirdPlace ? "" : undefined}
+                      className={`relative flex items-center ${
+                        heat.thirdPlace
+                          ? // Beside the final, under it, and no lines: it
+                            // keeps the final where its semifinals meet.
+                            "py-2 md:absolute md:inset-x-0 md:bottom-0"
+                          : knockout
+                            ? "flex-1 py-2"
+                            : ""
+                      }`}
                     >
-                      {knockout && (
+                      {knockout && !heat.thirdPlace && (
                         <Connectors
                           incoming={heat.round > 1}
                           out={outOf.get(heat.id)}
@@ -220,7 +229,11 @@ export function BracketTree({
                       <div
                         role="group"
                         aria-label={heat.name}
-                        className="bg-card text-card-foreground ring-foreground/10 flex w-full min-w-0 flex-col gap-1 rounded-lg p-2 ring-1"
+                        className={`text-card-foreground flex w-full min-w-0 flex-col gap-1 rounded-lg p-2 ring-1 ${
+                          heat.thirdPlace
+                            ? "bg-muted/40 ring-foreground/5 opacity-90"
+                            : "bg-card ring-foreground/10"
+                        }`}
                       >
                         <span className="text-foreground/60 px-1.5 text-xs font-medium">
                           {heat.name}

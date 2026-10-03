@@ -221,8 +221,8 @@ test("a Heats Bracket is built, run and finalized into Points Entries", async ({
     .getByRole("listitem")
     .filter({ hasText: "From bracket" });
   // Placement Points 5 / 3 / 1: the champion, the runner-up and the Final's
-  // third place. The Final's fourth place and the four Round 1
-  // non-advancers (tied 5th) get nothing.
+  // third place. The Final's fourth place gets nothing, and nobody outside
+  // the Final is placed.
   await expect(entries).toHaveCount(3);
   await expect(entries.filter({ hasText: champion })).toHaveText(
     /From bracket\s*5$/,

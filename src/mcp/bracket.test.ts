@@ -422,8 +422,69 @@ describe("toBracketResult", () => {
     expect(result.entrants[0].participants).toEqual(["Ashley Schuliger"]);
     for (const heat of result.rounds.flatMap((r) => r.heats)) {
       expect(Object.keys(heat).sort()).toEqual(
-        ["entrants", "name", "recordedAt", "status"].sort(),
+        ["entrants", "name", "recordedAt", "status", "thirdPlace"].sort(),
       );
     }
+  });
+});
+
+describe("toBracketResult with a 3rd place game", () => {
+  it("gives the final's winner as champion and marks the 3rd place game", () => {
+    const eight: Entrant[] = Array.from({ length: 8 }, (_, i) => ({
+      id: `s${i + 1}`,
+      seedPosition: i + 1,
+      label: `S${i + 1}`,
+    }));
+    let bracket = generate(eight, undefined, {
+      entrantsPerHeat: 2,
+      advancePerHeat: 1,
+      thirdPlaceGame: true,
+    });
+    for (const [heatId, order] of [
+      ["r1h1", ["s1", "s8"]],
+      ["r1h2", ["s4", "s5"]],
+      ["r1h3", ["s2", "s7"]],
+      ["r1h4", ["s3", "s6"]],
+      ["r2h1", ["s1", "s4"]],
+      ["r2h2", ["s2", "s3"]],
+      ["r3h1", ["s2", "s1"]],
+      // The 3rd place game last: the champion is still the final's winner.
+      ["r3h2", ["s3", "s4"]],
+    ] as const) {
+      bracket = applyResult(bracket, heatId, { order: [...order] });
+    }
+    const view: BracketView = {
+      competition: {
+        id: "c1",
+        warWeekId: "w1",
+        name: "Beyblades",
+        scoring: "team",
+        format: "bracket",
+        placementPoints: [10, 7, 5, 3],
+        finalizedAt: new Date("2026-02-22T00:00:00Z"),
+        selfReport: false,
+        selfEnroll: false,
+        entrantLimit: null,
+        enrollClosesAt: null,
+      },
+      entrants: eight.map((e) => bracketEntrantFixture(e, null)),
+      bracket,
+      champion: championOf(bracket),
+      finalized: true,
+    };
+
+    const result = toBracketResult(view, "Beyblades");
+    if (!result.found || !("rounds" in result)) throw new Error("no rounds");
+    expect(result.champion).toBe("S2");
+    expect(result.competition.thirdPlaceGame).toBe(true);
+    expect(
+      result.rounds.at(-1)!.heats.map((h) => [h.name, h.thirdPlace]),
+    ).toEqual([
+      ["Final", false],
+      ["3rd place game", true],
+    ]);
+    expect(result.rounds[1].heats.every((h) => h.thirdPlace === false)).toBe(
+      true,
+    );
   });
 });

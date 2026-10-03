@@ -1075,6 +1075,157 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
     });
   });
 
+  it("runs a 3rd place game: refused under 4 Entrants or off 2 / 1, locked once a Heat Result exists, placed from the final", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations, queries } = await modules();
+      const f = await fixture(tx);
+      const withGame = {
+        entrantsPerHeat: 2,
+        advancePerHeat: 1,
+        thirdPlaceGame: true,
+      };
+      const setGame = (config: typeof withGame) =>
+        mutations.setCompetitionFormat(
+          f.competitionId,
+          { format: "bracket", config },
+          f.ctx,
+          tx,
+        );
+
+      await mutations.replaceEntrants(
+        f.competitionId,
+        { targetIds: [f.red, f.blue, f.green] },
+        f.ctx,
+        tx,
+      );
+      expect(await setGame(withGame)).toEqual({
+        ok: false,
+        error: "A 3rd place game needs at least 4 Entrants.",
+      });
+      await mutations.replaceEntrants(
+        f.competitionId,
+        { targetIds: [f.red, f.blue, f.green, f.gold] },
+        f.ctx,
+        tx,
+      );
+      expect(
+        await setGame({ ...withGame, entrantsPerHeat: 4, advancePerHeat: 2 }),
+      ).toEqual({
+        ok: false,
+        error: "A 3rd place game is only for 2 per Heat with 1 advancing.",
+      });
+      expect(await setGame(withGame)).toEqual({ ok: true });
+      expect(await savedConfig(tx, f, f.competitionId)).toEqual(withGame);
+      expect(
+        await mutations.generateBracket(
+          f.competitionId,
+          { rng: rngZero },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+
+      // Seeded Blue 1, Green 2, Gold 3, Red 4: Blue v Red, Green v Gold.
+      let view = (await queries.getBracket(f.competitionId, tx))!;
+      const id = (label: string) =>
+        view.entrants.find((e) => e.label === label)!.id;
+      const third = heatAt(view, 2, 2).heat;
+      expect(third.thirdPlace).toBe(true);
+      expect(heatAt(view, 2, 1).heat.thirdPlace).toBe(false);
+      expect(heatAt(view, 1, 1).heat.loserTo).toEqual({
+        heatId: third.id,
+        slot: 0,
+      });
+      expect(heatAt(view, 1, 2).heat.loserTo).toEqual({
+        heatId: third.id,
+        slot: 1,
+      });
+
+      const record = async (
+        round: number,
+        position: number,
+        winner: string,
+      ) => {
+        view = (await queries.getBracket(f.competitionId, tx))!;
+        const heat = heatAt(view, round, position).heat;
+        const ids = heat.slots.map((s) => s.entrantId!);
+        return mutations.recordHeatResult(
+          f.competitionId,
+          heat.id,
+          { order: [id(winner), ...ids.filter((i) => i !== id(winner))] },
+          f.ctx,
+          tx,
+        );
+      };
+      await record(1, 1, "Blue");
+      view = (await queries.getBracket(f.competitionId, tx))!;
+      expect(heatAt(view, 2, 2).labels).toEqual(["Red", null]);
+
+      // Locked once a Heat Result exists, like every Bracket setting.
+      expect(await setGame({ ...withGame, thirdPlaceGame: false })).toEqual({
+        ok: false,
+        error:
+          "This Bracket has Heat Results. Confirm to clear them and start over.",
+      });
+      expect(await savedConfig(tx, f, f.competitionId)).toEqual(withGame);
+      expect(
+        (await queries.getBracket(f.competitionId, tx))!.bracket.heats,
+      ).toHaveLength(4);
+
+      await record(1, 2, "Green");
+      await record(2, 1, "Green");
+      expect(
+        await mutations.finalizeBracket(f.competitionId, f.ctx, tx),
+      ).toEqual({ ok: false, error: "Finish every Heat before finalizing." });
+      expect((await queries.getBracket(f.competitionId, tx))!.champion).toBe(
+        id("Green"),
+      );
+      await record(2, 2, "Gold");
+      expect((await queries.getBracket(f.competitionId, tx))!.champion).toBe(
+        id("Green"),
+      );
+      expect(
+        await mutations.finalizeBracket(f.competitionId, f.ctx, tx),
+      ).toEqual({ ok: true });
+
+      // Placement Points 10 · 6 · 3: 4th (Red) gets none.
+      const generated = await tx
+        .select({
+          teamId: f.schema.pointsEntry.teamId,
+          points: f.schema.pointsEntry.points,
+        })
+        .from(f.schema.pointsEntry)
+        .where(eq(f.schema.pointsEntry.competitionId, f.competitionId));
+      expect(generated.sort((a, b) => b.points - a.points)).toEqual([
+        { teamId: f.green, points: 10 },
+        { teamId: f.blue, points: 6 },
+        { teamId: f.gold, points: 3 },
+      ]);
+    });
+  });
+
+  it("refuses Placement Points over 4 for a Bracket", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations } = await modules();
+      const f = await fixture(tx);
+      await tx
+        .update(f.schema.competition)
+        .set({ format: "placement", placementPoints: [5, 4, 3, 2, 1] })
+        .where(eq(f.schema.competition.id, f.competitionId));
+      expect(
+        await mutations.setCompetitionFormat(
+          f.competitionId,
+          { format: "bracket" },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({
+        ok: false,
+        error: "Placement Points cover at most 4 places for this Format.",
+      });
+    });
+  });
+
   it("refuses deleting a Team or Participant that is an Entrant", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations } = await modules();

@@ -35,6 +35,11 @@ export type BracketResult =
           status: string;
           /** When a played Heat's Result was recorded (ISO instant); else null. */
           recordedAt: string | null;
+          /**
+           * The 3rd place game, beside the final in the last Round; the
+           * final is the last Round's other Heat.
+           */
+          thirdPlace: boolean;
           entrants: {
             name: string;
             place: number | null;
@@ -173,6 +178,7 @@ export function toBracketResult(
         name: heatName(view.bracket, heat),
         status: isBye(view.bracket, heat) ? "bye" : heat.status,
         recordedAt: heat.recordedAt ? heat.recordedAt.toISOString() : null,
+        thirdPlace: heat.thirdPlace,
         entrants: heat.slots
           .filter((slot) => slot.entrantId !== null)
           .map((slot) => ({

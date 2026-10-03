@@ -81,4 +81,30 @@ describe("BracketBuilder", () => {
     const html = renderToStaticMarkup(<BracketBuilder {...baseProps} />);
     expect(html).toContain("Participants can enroll");
   });
+
+  it("shows the 3rd place game switch at head-to-head, off and disabled with its reason under 4 Entrants", () => {
+    const html = renderToStaticMarkup(<BracketBuilder {...baseProps} />);
+    expect(html).toContain("3rd place game");
+    expect(html).toContain("A 3rd place game needs at least 4 Entrants.");
+    const control = html.match(/<[^>]*id="bracket-third-place"[^>]*>/)![0];
+    expect(control).toMatch(/data-disabled|disabled=""/);
+    expect(control).not.toContain('aria-checked="true"');
+  });
+
+  it("offers no 3rd place game at another Heat size", () => {
+    const html = renderToStaticMarkup(
+      <BracketBuilder
+        {...baseProps}
+        bracket={{
+          config: {
+            entrantsPerHeat: 4,
+            advancePerHeat: 2,
+            thirdPlaceGame: false,
+          },
+          heats: [],
+        }}
+      />,
+    );
+    expect(html).not.toContain("3rd place game");
+  });
 });

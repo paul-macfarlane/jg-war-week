@@ -22,6 +22,7 @@ import {
   type BracketConfig,
   DEFAULT_BRACKET_CONFIG,
   configOf,
+  thirdPlaceRefusal,
 } from "@/lib/bracket/config";
 import {
   applyResult,
@@ -178,7 +179,8 @@ async function insertBracket(
   competitionId: string,
   bracket: Bracket,
 ) {
-  // One statement, so each winner's Heat exists when the row is checked.
+  // One statement, so each winner's (and loser's) Heat exists when the row
+  // is checked.
   await tx.insert(heat).values(
     bracket.heats.map((h) => ({
       id: h.id,
@@ -189,6 +191,9 @@ async function insertBracket(
       slotCount: h.slots.length,
       winnerToHeatId: h.winnerTo?.heatId ?? null,
       winnerToSlot: h.winnerTo?.slot ?? null,
+      loserToHeatId: h.loserTo?.heatId ?? null,
+      loserToSlot: h.loserTo?.slot ?? null,
+      thirdPlace: h.thirdPlace,
       // A freshly generated Heat is never played: a re-draw clears results.
       recordedAt: null,
     })),
@@ -387,6 +392,9 @@ export async function setCompetitionFormat(
         .select({ count: count() })
         .from(entrant)
         .where(eq(entrant.competitionId, competitionId));
+      // A 3rd place game needs 2 / 1 and 4 Entrants, entered or not yet.
+      const thirdPlace = thirdPlaceRefusal(bracketConfig, entrants.count);
+      if (thirdPlace) return refuse(thirdPlace);
       if (entrants.count >= 2) {
         const refusal = validateConfig(bracketConfig, entrants.count);
         if (refusal) return refuse(refusal);

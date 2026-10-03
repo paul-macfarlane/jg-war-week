@@ -156,11 +156,11 @@ describe("warWeekSeedSchema", () => {
               advancePerHeat: 2,
               thirdPlaceGame: false,
             },
-            placementPoints: [6, 5, 4, 3, 2, 1],
+            placementPoints: [5, 4, 3, 2, 1],
           }),
         ),
       ).toContain(
-        `${at}: Placement Points cover at most 5 places for this Format.`,
+        `${at}: Placement Points cover at most 4 places for this Format.`,
       );
     });
 

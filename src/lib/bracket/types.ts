@@ -32,18 +32,28 @@ export type HeatSlot = {
   score: string | null;
 };
 
-/** Where a Heat's winner goes: a later Heat and its slot index. */
+/** Where a Heat's winner (or loser) goes: a later Heat and its slot index. */
 export type WinnerTo = { heatId: string; slot: number };
 
 export type Heat = {
   id: string;
-  /** 1 is the first Round; the last Round holds the final. */
+  /**
+   * 1 is the first Round; the last Round holds the final (and, beside it,
+   * the 3rd place game).
+   */
   round: number;
-  /** 1-based, top to bottom within the Round. */
+  /** 1-based, top to bottom within the Round; the final is 1. */
   position: number;
   /** One per place in the Heat: its length is the Heat's slot count. */
   slots: HeatSlot[];
   winnerTo: WinnerTo | null;
+  /** A semifinal with a 3rd place game: where its loser goes. */
+  loserTo: WinnerTo | null;
+  /**
+   * The 3rd place game: in the final's Round, beside the final. The final
+   * is the Heat of the last Round that isn't this.
+   */
+  thirdPlace: boolean;
   status: HeatStatus;
   /**
    * When the Heat's Result was last saved; null until it is played. The

@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import { generate } from "@/lib/bracket/engine";
+import { applyResult, generate } from "@/lib/bracket/engine";
 import type { Bracket, Entrant } from "@/lib/bracket/types";
 
 import { BracketResultsView, finalizeCopy } from "./bracket-results";
@@ -134,5 +134,41 @@ describe("BracketResultsView", () => {
 
   it("shows no reporter on a Heat the Host entered", () => {
     expect(render(null)).not.toContain("Reported by");
+  });
+
+  it("keeps Finalize off until the 3rd place game is recorded, though the champion is known", () => {
+    const four: Entrant[] = ["Red", "Blue", "Green", "Gold"].map(
+      (label, i) => ({ id: `e${i + 1}`, seedPosition: i + 1, label }),
+    );
+    const config = {
+      entrantsPerHeat: 2,
+      advancePerHeat: 1,
+      thirdPlaceGame: true,
+    };
+    let played = generate(four, undefined, config);
+    played = applyResult(played, "r1h1", { order: ["e1", "e4"] });
+    played = applyResult(played, "r1h2", { order: ["e2", "e3"] });
+    played = applyResult(played, "r2h1", { order: ["e1", "e2"] });
+    const entrants = four.map((e) => ({
+      ...props.entrants[0],
+      id: e.id,
+      label: e.label,
+    }));
+    const view = (b: Bracket) =>
+      renderToStaticMarkup(
+        <BracketResultsView
+          {...props}
+          entrants={entrants}
+          bracket={b}
+          champion="e1"
+          openSheet={null}
+        />,
+      );
+
+    const before = view(played);
+    expect(before).toContain("Finish every Heat to finalize.");
+    expect(before).toContain("3rd place game");
+    const after = view(applyResult(played, "r2h2", { order: ["e3", "e4"] }));
+    expect(after).not.toContain("Finish every Heat to finalize.");
   });
 });

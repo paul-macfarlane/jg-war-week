@@ -46,6 +46,8 @@ export type TreeHeat = {
   decided: boolean;
   /** Never played: its Entrants advance as they are. */
   bye: boolean;
+  /** The 3rd place game, beside the final and drawn secondary to it. */
+  thirdPlace: boolean;
   /**
    * Single elimination: in slot order, so connectors meet the right slot.
    * Heats: by finishing place once decided.
@@ -113,9 +115,16 @@ function treeSlots(bracket: Bracket, heat: Heat, bye: boolean): TreeSlot[] {
       const feeder = bracket.heats.find(
         (h) => h.winnerTo?.heatId === heat.id && h.winnerTo.slot === i,
       );
+      const loserFeeder = bracket.heats.find(
+        (h) => h.loserTo?.heatId === heat.id && h.loserTo.slot === i,
+      );
       return {
         kind: "waiting",
-        waitingFor: feeder ? heatName(bracket, feeder) : "an Entrant",
+        waitingFor: feeder
+          ? heatName(bracket, feeder)
+          : loserFeeder
+            ? `${heatName(bracket, loserFeeder)}'s loser`
+            : "an Entrant",
       };
     }
     return {
@@ -148,6 +157,7 @@ export function bracketTree(bracket: Bracket): BracketTree {
         position: heat.position,
         decided: isDecided(heat),
         bye,
+        thirdPlace: heat.thirdPlace,
         slots: treeSlots(bracket, heat, bye),
       };
     }),

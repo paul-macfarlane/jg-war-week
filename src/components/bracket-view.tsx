@@ -46,11 +46,16 @@ export function YouMark() {
   );
 }
 
-/** The Heat whose winner fills `slot` of `heat`, if any. */
-function feederOf(bracket: Bracket, heat: Heat, slot: number) {
-  return bracket.heats.find(
+/** What fills `slot` of `heat`: a Heat's winner, or a semifinal's loser. */
+function feederLabel(bracket: Bracket, heat: Heat, slot: number) {
+  const winner = bracket.heats.find(
     (h) => h.winnerTo?.heatId === heat.id && h.winnerTo.slot === slot,
   );
+  if (winner) return heatName(bracket, winner);
+  const loser = bracket.heats.find(
+    (h) => h.loserTo?.heatId === heat.id && h.loserTo.slot === slot,
+  );
+  return loser ? `${heatName(bracket, loser)}'s loser` : null;
 }
 
 /** "A", "A and B", "A, B and C". */
@@ -104,17 +109,13 @@ export function HeatRows({
           ? entrantsById.get(slot.entrantId)
           : undefined;
         if (!entrant) {
-          const feeder = feederOf(bracket, heat, i);
+          const feeder = feederLabel(bracket, heat, i);
           return (
             <li
               key={i}
               className="text-foreground/60 flex min-h-8 items-center px-1 italic"
             >
-              {bye
-                ? "Bye"
-                : feeder
-                  ? `Waiting for ${heatName(bracket, feeder)}`
-                  : "Waiting"}
+              {bye ? "Bye" : feeder ? `Waiting for ${feeder}` : "Waiting"}
             </li>
           );
         }
@@ -431,6 +432,9 @@ export function BracketView({
                     isHeadToHead(bracket.config) && heat.winnerTo
                       ? heatsById.get(heat.winnerTo.heatId)
                       : undefined;
+                  const loserTo = heat.loserTo
+                    ? heatsById.get(heat.loserTo.heatId)
+                    : undefined;
                   return (
                     <li key={heat.id}>
                       <Card size="sm">
@@ -454,6 +458,11 @@ export function BracketView({
                           {to && (
                             <Badge variant="secondary">
                               Winner → {heatName(bracket, to)}
+                            </Badge>
+                          )}
+                          {loserTo && (
+                            <Badge variant="outline">
+                              Loser → {heatName(bracket, loserTo)}
                             </Badge>
                           )}
                         </CardContent>
