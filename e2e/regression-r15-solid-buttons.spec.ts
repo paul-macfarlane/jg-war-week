@@ -3,9 +3,9 @@ import { expect, test } from "@playwright/test";
 import { xiCompetitionId } from "./db";
 import { asOrganizer } from "./session";
 
-// Settlers of Catan is an individual War Week XI Competition (see
-// bracket-heats.spec.ts); its Bracket is built here from scratch.
-const COMPETITION = "Settlers of Catan";
+// Winning the Day Challenge is an individual War Week XI Competition no
+// other spec runs as a Bracket; its Bracket is built here from scratch.
+const COMPETITION = "Winning the Day Challenge";
 const ENTRANTS = [
   "Albert Hernandez",
   "Alex Nikolis",

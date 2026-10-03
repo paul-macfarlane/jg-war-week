@@ -64,4 +64,25 @@ test.describe("86 Centre the top nav", () => {
       });
     }
   });
+
+  test("at 390 wide the header keeps the name left and the account menu right", async ({
+    context,
+    page,
+  }, testInfo) => {
+    await asOrganizer(context);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/xi");
+
+    const header = page.locator("header").first();
+    const account = header.getByRole("button", { name: /account/i }).first();
+    await expect(account).toBeVisible();
+    const box = await account.boundingBox();
+    expect(box).not.toBeNull();
+    expect(390 - (box!.x + box!.width)).toBeLessThanOrEqual(24);
+
+    await page.screenshot({
+      path: testInfo.outputPath("86-header-xi-390.png"),
+      animations: "disabled",
+    });
+  });
 });

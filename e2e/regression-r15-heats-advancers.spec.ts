@@ -3,9 +3,9 @@ import { expect, test } from "@playwright/test";
 import { xiCompetitionId } from "./db";
 import { asOrganizer } from "./session";
 
-// Bouncy Pong is an individual War Week XI Competition no other spec runs as
+// Pool is an individual War Week XI Competition no other spec runs as
 // a Bracket. The eight are the Participants bracket-heats.spec.ts uses.
-const COMPETITION = "Bouncy Pong";
+const COMPETITION = "Pool";
 const ENTRANTS = [
   "Albert Hernandez",
   "Alex Nikolis",
@@ -50,7 +50,7 @@ test("a recorded Heat of 4 with 2 advancing highlights both advancers in admin",
 
   await page.goto(`/admin/brackets/${id}`);
   const heat = "Round 1 Heat 1";
-  await page.getByRole("button", { name: `Record ${heat}` }).click();
+  await page.getByRole("button", { name: `Record result for ${heat}` }).click();
   const sheet = page.getByRole("dialog", { name: heat });
   await expect(sheet).toBeVisible();
   const buttons = sheet
