@@ -2,7 +2,7 @@
 
 **What to build:** Placement Points can cover any number of places for Placement, Head-to-head, Best score and Participation (team). Brackets keep their current limit of 5 here; R17's `98` lowers it to 4 when it defines places from the final. Today `MAX_PLACEMENTS = 5` (`src/lib/competitions.ts:20`).
 
-**Blocked by:** none
+**Part of:** Epic R16's one work package (`../epics/R16-competition-model.md`): no gate, order or migration of its own. Schema changes go into `src/db/schema.ts`; the epic generates and hand-edits the one migration and converts the seeds.
 
 **Status:** ready-for-agent
 
@@ -16,4 +16,3 @@
 ## Acceptance criteria
 
 - [ ] Unit tests: 12 places accepted for Placement; 6 refused for a Bracket (5 until `98`); non-increasing enforced.
-- [ ] `pnpm typecheck && pnpm lint && pnpm test` pass (the full gate runs once, in `96`).
