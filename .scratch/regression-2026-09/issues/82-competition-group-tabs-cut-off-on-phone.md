@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** in-progress
+**Status:** ai-review
 
 **Source:** regression checklist run, ticket 53 (teams pass, `pnpm seed:demo`, 2026-10-02)
 

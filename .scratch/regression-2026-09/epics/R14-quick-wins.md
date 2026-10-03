@@ -8,7 +8,7 @@
 
 **Blocked by:** none
 
-**Status:** in-progress
+**Status:** ai-review
 
 **Red-team:** not required (no Drizzle schema, auth or access change).
 

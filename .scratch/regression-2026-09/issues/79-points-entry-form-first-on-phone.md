@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** in-progress
+**Status:** ai-review
 
 **Source:** regression checklist run, ticket 53 (free-for-all pass, `pnpm seed:demo:xii`, 2026-10-02)
 
