@@ -634,6 +634,8 @@ test("r5 31 setup rows open in a Sheet", async ({
       "Ashley Schuliger",
       sheetHost,
       async () => {
+        // The page read the roster before the email was set: reload it.
+        await page.reload();
         const picker = settings.getByRole("combobox", {
           name: "Hosts",
           exact: true,

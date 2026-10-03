@@ -45,6 +45,8 @@ async function leaveAndReturn(page: Page, name: string, id: string) {
  */
 type FormatCase = {
   format: FormatName;
+  /** The Add sheet's Scoring, when not the War Week's Team default. */
+  scoring?: string;
   change: (page: Page) => Promise<void>;
   kept: (page: Page) => Promise<void>;
   addResult: (page: Page) => Promise<void>;
@@ -73,6 +75,8 @@ async function addGamesEntrants(page: Page) {
 const CASES: FormatCase[] = [
   {
     format: "Placement",
+    // Its result adds a Participant, so the sheet lists Participants.
+    scoring: "Individual",
     change: (page) =>
       chooseOption(page, "Score direction", "Higher Score wins"),
     kept: (page) =>
@@ -152,7 +156,7 @@ const CASES: FormatCase[] = [
   },
 ];
 
-for (const { format, change, kept, addResult } of CASES) {
+for (const { format, scoring, change, kept, addResult } of CASES) {
   test(`r18 101 a ${format} Competition's setting autosaves, survives reload and leaving, and locks with its reason once it has a result`, async ({
     context,
     page,
@@ -162,7 +166,7 @@ for (const { format, change, kept, addResult } of CASES) {
     try {
       await asOrganizer(context);
       await page.setViewportSize({ width: 1440, height: 900 });
-      const id = await addCompetition(page, { name, format });
+      const id = await addCompetition(page, { name, format, scoring });
       await expect(
         page.getByRole("heading", {
           level: 2,
@@ -219,7 +223,8 @@ test("r18 101 a new Competition with no result changes Format, Placement → Bra
   try {
     await asOrganizer(context);
     await page.setViewportSize({ width: 1440, height: 900 });
-    const id = await addCompetition(page, { name });
+    // Individual, so Record placements adds Participants.
+    const id = await addCompetition(page, { name, scoring: "Individual" });
 
     // Placement: Score direction, and Record placements.
     await expect(

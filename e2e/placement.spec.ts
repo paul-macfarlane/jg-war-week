@@ -117,7 +117,10 @@ test("r16 90 a Host records placements with Scores, breaks a tie and Finalizes: 
     await expect(page.getByText("No one yet.")).toBeVisible();
     const search = page.getByRole("combobox", { name: "Add a Participant" });
     for (const row of ROWS) {
-      await search.click();
+      // Focus, not click: low on the page the list opens above the search,
+      // and Base UI commits a press released over an item (drag-select), so
+      // a click's instant release can pick the first candidate as well.
+      await search.focus();
       await search.fill(row.name);
       await page.getByRole("option", { name: new RegExp(row.name) }).click();
       await expect(page.getByText(`${row.name} added`)).toBeVisible();
