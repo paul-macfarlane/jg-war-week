@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** ai-review
+**Status:** done
 
 **Source:** regression checklist run, ticket 53 (teams pass, `pnpm seed:demo`, 2026-10-02)
 
@@ -23,9 +23,10 @@
 
 ## Acceptance criteria
 
-- [ ] At 390×844 with the XI demo, `/xi/competitions` passes the clipping check and shows all three Group tabs without scrolling sideways.
+- [x] At 390×844 with the XI demo, `/xi/competitions` passes the clipping check and shows all three Group tabs without scrolling sideways.
 
 ## Comments
 
 - **2026-10-02, triage (Paul):** Decided: wrap the Group tabs so every Group shows on a phone; no dropdown. Batched into epic R14 (`../epics/R14-quick-wins.md`).
 - 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r14`): claimed; `ready-for-agent` → `in-progress`. Execution record: `../epics/R14-execution.md`.
+- 2026-10-03 [CLOSEOUT] (atlas-implement): delivered in epic R14 on `fix/regression-r14-quick-wins`; the acceptance criterion is PASS with evidence under `test-results/r14/ac82-*/`. Review, verification and closeout are in `../epics/R14-execution.md`. `ai-review` → `done`.

@@ -8,7 +8,7 @@
 
 **Blocked by:** none
 
-**Status:** ai-review
+**Status:** done
 
 **Red-team:** not required (no Drizzle schema, auth or access change).
 
@@ -22,11 +22,12 @@ All independent; one PR.
 
 Each ticket's own, plus:
 
-- [ ] `/about`, `docs/maintainers-guide.md` and `docs/regression-checklist.md` updated where a change is user-visible (team rules).
-- [ ] Each ticket file records its closeout and is `done` in this branch.
-- [ ] `pnpm format:check && pnpm gate` passes; CI on the PR passes.
+- [x] `/about`, `docs/maintainers-guide.md` and `docs/regression-checklist.md` updated where a change is user-visible (team rules).
+- [x] Each ticket file records its closeout and is `done` in this branch.
+- [x] `pnpm format:check && pnpm gate` passes; CI on the PR passes.
 
 ## Comments
 
 - 2026-10-02 (Paul): triaged. 79: the form first, Bracket and Games links below it. 80: drop the placeholder. 81: fix the guide, no Team highlight. 82: wrap the tabs. Tickets `ready-for-agent`, batched into one PR.
 - 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r14`): claimed with tickets 78–82; `ready-for-agent` → `in-progress`. Execution record: [`R14-execution.md`](./R14-execution.md).
+- 2026-10-03 [CLOSEOUT] (atlas-implement): all five tickets are done; `pnpm format:check && pnpm gate` passes. See [`R14-execution.md`](./R14-execution.md).

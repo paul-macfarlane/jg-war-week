@@ -73,3 +73,71 @@ Human gates: none. No deploy in this work package. CI on the PR runs automatical
   - D79 (Haiku): `cf3cd34`.
   - D80 (Haiku): `2d8bbda`. Orchestrator fix: JSDoc wording, amended.
 - Acceptance screens passed. Every worker ran format, typecheck, lint and unit green. The integrated typecheck and the focused tests pass. Visual criteria await EV.
+- 2026-10-03, wave 2 (DX, Sonnet) `deecf4f`: the checklist lines for 78–82.
+  - The worker found no change needed in the maintainers guide, `/about` copy or CONTEXT.md.
+  - It could not regenerate the stills: its shell had no `DATABASE_URL`, so the scripts fell back to a non-local database and refused.
+  - Orchestrator fix `745c34b`: regenerated `points*.png` and `standings-entry*.png` with the local URL from `.env.example`. The other stills differed only in bytes and were reverted.
+- 2026-10-03, wave 3 (EV, Sonnet, an independent agent) at `745c34b`: all five checks PASS.
+  - Setup: it linked the e2e participant by email and enrolled XI Teams in Tuesday Stairs to show "Your Team". The final reseed reset both.
+  - Its ad-hoc sign-ins left 4 stub e2e users (normally removed by the e2e global teardown). These broke `src/mutations/account.test.ts`, which counts users and sessions across the whole database. The orchestrator deleted them and the test passed (3/3).
+
+## [AI CODE REVIEW]
+
+2026-10-03. Two independent Opus reviewers read `5e2b34b..356616e` (src, docs, public, CONTEXT.md); the orchestrator adjudicated.
+The fixes are in `a1b7ba3`, and the stills were regenerated again in `26181c3`.
+
+- **Both axes, blocking (resolved):** the guide's Points blurb still said Brackets and Games are "linked at the top". Ticket 79 made that false. It now reads "…the Brackets, Games and Participation Competitions waiting on results are linked under the form."
+- **Spec conformity, non-blocking (all resolved):**
+  - F2: on a phone, the quick links landed below the full Standings, an extra scroll for a Host who wants a Bracket (a need ticket 79 names). They now share the form's column: form, then links, then Standings on a phone; the form still opens the page.
+  - F3: the You paragraph names team Brackets (their Squad or Team) and "Award recipients on the Awards page".
+  - F4: CONTEXT.md's You entry is extended to match the guide.
+  - F5: the `/about` "highlighted wherever you appear" now names the leaderboards, the roster and your Brackets.
+  - F6: the checklist's Home line counts the name "in the hero" and checks Log a Game on the first screen at 390.
+  - F7: the hero test fixture uses `bannerUrl: null` and `status`.
+  - F8: a long Group tab name wraps (`max-w-full whitespace-normal text-left`).
+  - F9: the refusal test asserts the footer sits inside the themed root.
+- **Coding standards, non-blocking (all resolved):**
+  - The checklist was re-wrapped to the file's width.
+  - The hero test names use domain words.
+  - `|| []` became `?? []`.
+  - A guide test now pins the You copy ("Your Team"; "Squad standings rows are not highlighted").
+- **Noted, not in scope:** `src/app/admin/error.tsx` (a `ThemeRoot` with no War Week style) and the root `not-found.tsx` aren't themed. Neither is the refusal page AC78 covers.
+- No finding was rejected.
+
+## [VERIFICATION]
+
+2026-10-03. Every criterion has a final evidence-backed verdict. Evidence is committed under `test-results/r14/`.
+
+| Criterion | Verdict | Proven at | Evidence |
+|---|---|---|---|
+| AC78 | PASS | `745c34b` (runtime unchanged through `26181c3`) | `ac78-refusal-{ffa,teams}-{1440,390}/`: 12 cases (Host on `/admin/organizers` and on a Competition they don't host, unlinked on `/admin`). Each has `[data-theme-root]`, the edition's `--light-primary` (XII `#c2185b`, XI `#0a7a1f`) and `--font-sans`, a themed link color, and the footer pinned. |
+| AC79 | PASS | `26181c3` | `ac79-points-{ffa,teams}-390/`: at 390×844 the heading bottom is 101, and the Competition, Participant/Team and Points fields end at 182, 274 and 371, all at or above the bottom bar's top (771). The quick links sit above Current standings. 1440 screenshots too. |
+| AC80 | PASS | `745c34b` (runtime unchanged) | `ac80-home-xii-{390,1440}/`: no banner block; "War Week XII" once in the hero; the Log a Game heading at 353 of 844 (390) and 393 of 900 (1440). The Archive `/x` hero has no block. |
+| AC81 | PASS | `26181c3` (guide text); participant pages at `745c34b`, You logic unchanged | `ac81-guide/`: the paragraph text recorded. Team standings rows untagged on Home and the Leaderboard; You on the individual leaderboard, the roster and Awards; "Your Team" on a `games` leaderboard. The Bracket mark couldn't be checked on XI (the demo has no Bracket) and is proven by `e2e/bracket.spec.ts` ("Your next Heat" and the You mark). |
+| AC82 | PASS | `26181c3` | `ac82-tabs-{linked,unlinked}-390/`: the tablist wraps, `scrollWidth` 358 = `clientWidth` 358, all 3 tabs inside 0–390, no clipped text, the third tab opens its panel, and arrow keys move focus. |
+| DoD1 | PASS | `26181c3` | The checklist lines for 78–82, CONTEXT.md You, the `/about` copy, the guide, and the `points` and `standings-entry` stills (light and dark). The maintainers guide needed no change. |
+| DoD2 | PASS | closeout commit | `[CLOSEOUT]` and `Status: done` in tickets 78–82 and the epic. |
+| DoD3 | PASS (local); CI pending on the PR | `26181c3` | `pnpm format:check && pnpm gate` exit 0: 174 unit test files (3733 tests); build; smoke; e2e 91 passed. Log: `test-results/r14/gate/gate.log`. |
+
+## [CLOSEOUT]
+
+2026-10-03, `/atlas-implement`.
+
+- **Repository:** `war-weeker`, branch `fix/regression-r14-quick-wins`, base `staging` at `40f63a7` (comparison point `5e2b34b`).
+- **Deliverables:**
+  - D78, D81, D82: Sonnet.
+  - D79, D80: Haiku.
+  - DX: Sonnet.
+  - EV: Sonnet, independent.
+  - Reviews: two Opus reviewers.
+  - Orchestrator fixes: D81 wording, D80 JSDoc, the stills, and the review-fix batch `a1b7ba3`.
+- **Parallelism:** wave 1 ran 5 workers in parallel worktrees, with no source conflicts. That matches the plan, which predicted none. `organizer-guide.tsx` was later touched by both D81 and the review fixes, in sequence, with no conflict.
+- **Deviations (approved in the plan):**
+  - 79 also moves the Participation links.
+  - 80 also drops the hero's "War Week" eyebrow.
+  - Review F2 placed the quick links in the form's column (form, links, Standings on a phone). This still meets AC79 and Paul's "below the form" decision.
+- **Verified run command:** `pnpm format:check && pnpm gate`, with `DATABASE_URL=postgres://postgres:postgres@localhost:2345/war_weeker?sslmode=disable DATABASE_DRIVER=pg` (the local values from `.env.example`). No deploy in this work package.
+- **Remaining risks:**
+  - `/admin` error and root 404 pages are unthemed (outside 78).
+  - `src/mutations/account.test.ts` fails if stray `e2e-*` users remain in the local database. Ad-hoc browser runs that skip the e2e teardown leave them.
+- **PR:** see below.

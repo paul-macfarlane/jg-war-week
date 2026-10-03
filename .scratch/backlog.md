@@ -13,11 +13,13 @@ it the week of 2026-10-05).
 
 October regression feedback, grilled 2026-10-01 ([`regression-2026-09/grilling-2026-10-01.md`](./regression-2026-09/grilling-2026-10-01.md)). Run in order; R10 onward change the schema and are red-teamed.
 
-- [ ] **Epic R9, navigation**: Competitions in the main nav (54), avatar account menu (55), Home's Recent results (56), flat admin nav (57), one Edit/Delete pattern (58), Settings autosave (59). [`regression-2026-09/epics/R9`](./regression-2026-09/epics/R9-navigation.md) (`ready-for-agent`)
+- [ ] **Epic R9, navigation**: Competitions in the main nav (54), avatar account menu (55), Home's Recent results (56), flat admin nav (57), one Edit/Delete pattern (58), Settings autosave (59). [`regression-2026-09/epics/R9`](./regression-2026-09/epics/R9-navigation.md) (`done`)
 - [ ] **Epic R10, accounts and testing**: Profile name and picture URL (60), delete my account (61), staging Test sign-in (62). Delivered on `feat/regression-r10-accounts` (PR into `staging`); needs `TEST_SIGN_IN_SECRET` on staging and the staging checks. [`regression-2026-09/epics/R10`](./regression-2026-09/epics/R10-accounts-and-testing.md) (`done`)
 - [ ] **Epic R11, content**: journeys editor parity, images by URL (64), videos only in the post (65), Day description (66), roster import (67), Unstart (68). After R10. [`regression-2026-09/epics/R11`](./regression-2026-09/epics/R11-content.md) (`done`)
 - [ ] **Epic R12, Participation and Award Categories**: Participation Format (69), Award Categories (70), a Category through the years (71). After R11. [`regression-2026-09/epics/R12`](./regression-2026-09/epics/R12-competitions-and-awards.md) (`done`)
-- [ ] **Epic R13, Finale slides**: slideshow framework (72), built-in slides (73), custom slides (74). After R12. [`regression-2026-09/epics/R13`](./regression-2026-09/epics/R13-finale-slides.md) (`ready-for-agent`)
+- [ ] **Epic R13, Finale slides**: slideshow framework (72), built-in slides (73), custom slides (74). After R12. [`regression-2026-09/epics/R13`](./regression-2026-09/epics/R13-finale-slides.md) (`done`)
+
+- [x] **Epic R14, quick wins** from the R8 checklist run: admin refusal themed (78), Points form first (79), no banner placeholder (80), the guide says where You shows (81), Group tabs wrap (82). [`regression-2026-09/epics/R14`](./regression-2026-09/epics/R14-quick-wins.md) (`done`)
 
 ## Ready, waiting on someone else
 
@@ -39,11 +41,6 @@ October regression feedback, grilled 2026-10-01 ([`regression-2026-09/grilling-2
 - [ ] **Sign in with LTI and InfoLink emails**: waiting on the domains; auth change. [`regression-2026-09/issues/75`](./regression-2026-09/issues/75-sign-in-lti-and-infolink.md) (`needs-info`)
 - [ ] **Billable hours from Tense**: owner, API access, visibility of hours. [`regression-2026-09/issues/76`](./regression-2026-09/issues/76-tense-billable-hours.md) (`needs-info`)
 - [ ] **Your War Week, on your phone**: personal recap after R13. [`regression-2026-09/issues/77`](./regression-2026-09/issues/77-personal-war-week-wrapped.md) (`needs-triage`)
-- [ ] **Admin refusal page wears the War Week**: the "Organizers and Hosts only" page renders outside the themed root (from the R8 checklist run). [`regression-2026-09/issues/78`](./regression-2026-09/issues/78-admin-refusal-wears-war-week.md) (`needs-triage`)
-- [ ] **Points Entry form first on a phone**: the Brackets and Games lists push "Add a Points Entry" below the fold at 390. [`regression-2026-09/issues/79`](./regression-2026-09/issues/79-points-entry-form-first-on-phone.md) (`needs-triage`)
-- [ ] **Home banner placeholder repeats the name**: the no-banner placeholder repeats the War Week name above the fold. [`regression-2026-09/issues/80`](./regression-2026-09/issues/80-home-banner-placeholder-repeats-name.md) (`needs-triage`)
-- [ ] **Guide promises a Team You highlight**: Team standings rows are never highlighted as You. [`regression-2026-09/issues/81`](./regression-2026-09/issues/81-guide-team-you-highlight.md) (`needs-triage`)
-- [ ] **Competition Group tabs cut off on a phone**: the third Group tab is off screen at 390. [`regression-2026-09/issues/82`](./regression-2026-09/issues/82-competition-group-tabs-cut-off-on-phone.md) (`needs-triage`)
 
 ## Deferred on purpose
 
