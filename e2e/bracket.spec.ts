@@ -86,7 +86,7 @@ async function xiFirstDay(): Promise<string> {
 
 /** Records the Heat named `heat`, with its first-listed Entrant winning. */
 async function recordHeat(page: Page, heat: string): Promise<string> {
-  await page.getByRole("button", { name: `Record ${heat}` }).click();
+  await page.getByRole("button", { name: `Record result for ${heat}` }).click();
   const sheet = page.getByRole("dialog", { name: heat });
   const winner = sheet
     .getByRole("group", { name: "Winner" })

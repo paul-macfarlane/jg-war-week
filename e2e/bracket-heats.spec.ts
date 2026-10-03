@@ -77,7 +77,7 @@ async function recordHeat(
   heat: string,
   onOpen?: (sheet: Locator) => Promise<void>,
 ): Promise<string[]> {
-  await page.getByRole("button", { name: `Record ${heat}` }).click();
+  await page.getByRole("button", { name: `Record result for ${heat}` }).click();
   const sheet = page.getByRole("dialog", { name: heat });
   await expect(sheet).toBeVisible();
   if (onOpen) await onOpen(sheet);
