@@ -40,9 +40,9 @@ export default async function AdminCompetitionsPage() {
         <h1 className="text-2xl font-bold">Competitions</h1>
         <p className="text-foreground/70 text-sm">
           Placement Points are the preset points for 1st, 2nd, 3rd…, highest
-          first; they show as buttons in points entry. A Competition with Points
-          Entries or Schedule Items can&apos;t be deleted, and its scoring
-          can&apos;t change while it has Points Entries.
+          first; a result earns them by place. A Competition with Points Entries
+          or Schedule Items can&apos;t be deleted, and its scoring can&apos;t
+          change while it has Points Entries.
         </p>
         <CompetitionsEditor
           warWeekId={warWeek.id}

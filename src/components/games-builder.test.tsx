@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import type { GameType } from "@/lib/enums";
+import type { GameFormat } from "@/lib/enums";
 import type { GamesConfig } from "@/lib/games/config";
 
 import { GamesBuilder } from "./games-builder";
@@ -11,7 +11,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 function competition(
-  gameType: GameType,
+  gameFormat: GameFormat,
   config: GamesConfig,
   over: Partial<Parameters<typeof GamesBuilder>[0]["competition"]> = {},
 ): Parameters<typeof GamesBuilder>[0]["competition"] {
@@ -19,7 +19,7 @@ function competition(
     id: "c1",
     name: "Bouncy Pong",
     scoring: "individual",
-    gameType,
+    gameFormat,
     config,
     entrantsOpen: true,
     loggingClosesAt: null,
@@ -75,13 +75,24 @@ describe("GamesBuilder", () => {
     expect(html).not.toContain("Draws allowed");
   });
 
-  it("shows the Finish Points field, with its blank-default help, for ranked", () => {
-    const html = render({
-      competition: competition("ranked", { finishPoints: [] }),
-    });
-    expect(html).toContain("Finish Points");
-    expect(html).toContain("Blank: one point per player beaten.");
-    expect(html).not.toContain("Best of");
+  it("has no Finish Points field for either Games Format", () => {
+    for (const html of [
+      render({
+        competition: competition("head-to-head", {
+          drawsAllowed: false,
+          bestOf: null,
+        }),
+      }),
+      render({
+        competition: competition("best-score", {
+          count: "best",
+          betterIs: "higher",
+          unit: "",
+        }),
+      }),
+    ]) {
+      expect(html).not.toContain("Finish Points");
+    }
   });
 
   it("hides the enroll switch once a fixed list has a Best of set", () => {
@@ -181,19 +192,5 @@ describe("GamesBuilder", () => {
     });
     expect(html).toContain(">Close<");
     expect(html).not.toContain("Reopen");
-  });
-});
-
-describe("GamesBuilder field help", () => {
-  it("says what Finish Points and Placement Points are, each in its own words", () => {
-    const html = render({
-      competition: competition("ranked", { finishPoints: [] }),
-    });
-    expect(html).toContain(
-      "What a player earns for each finishing place in one Game, 1st first. Blank: one point per player beaten.",
-    );
-    expect(html).toContain(
-      "Placement Points, set in the Competition&#x27;s Edit sheet on the Competitions page, are what the leaderboard&#x27;s top places earn in the Standings.",
-    );
   });
 });

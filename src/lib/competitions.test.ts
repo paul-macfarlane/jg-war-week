@@ -4,11 +4,12 @@ import {
   type LedgerRow,
   buildCompetitionLedger,
   describeScoring,
-  formatMaxPoints,
   groupCompetitions,
   hasPlacementPoints,
   hostName,
   placementLabel,
+  placementLimit,
+  placementLimitRefusal,
   pointsForPlacement,
   setupHref,
   setupLinkLabel,
@@ -78,17 +79,6 @@ describe("describeScoring", () => {
     ],
   ] as const)("describes %o as %s", (c, expected) => {
     expect(describeScoring(c, "House")).toBe(expected);
-  });
-});
-
-describe("formatMaxPoints", () => {
-  it.each([
-    [3, "Max 3 pts"],
-    [1, "Max 1 pt"],
-    [1.5, "Max 1.5 pts"],
-    [null, "No max"],
-  ])("formats %s as %s", (maxPoints, expected) => {
-    expect(formatMaxPoints(maxPoints)).toBe(expected);
   });
 });
 
@@ -243,18 +233,51 @@ describe("hostName", () => {
 
 describe("setupHref and setupLinkLabel", () => {
   it("point each Format at its own setup page", () => {
-    expect(setupHref("games", "c1")).toBe("/admin/competitions/c1/games");
+    expect(setupHref("head-to-head", "c1")).toBe(
+      "/admin/competitions/c1/games",
+    );
+    expect(setupHref("best-score", "c1")).toBe("/admin/competitions/c1/games");
     expect(setupHref("participation", "c1")).toBe(
       "/admin/competitions/c1/participation",
     );
     expect(setupHref("heats", "c1")).toBe("/admin/competitions/c1/bracket");
-    expect(setupHref("points", "c1")).toBe("/admin/competitions/c1/bracket");
+    expect(setupHref("placement", "c1")).toBe("/admin/placements/c1");
   });
 
   it("label the link by Format", () => {
     expect(setupLinkLabel("participation")).toBe("Who took part");
-    expect(setupLinkLabel("games")).toBe("Games");
-    expect(setupLinkLabel("points")).toBe("Run as a Bracket");
+    expect(setupLinkLabel("head-to-head")).toBe("Entrants and Games");
+    expect(setupLinkLabel("best-score")).toBe("Entrants and Games");
+    expect(setupLinkLabel("placement")).toBe("Record placements");
     expect(setupLinkLabel("heats")).toBe("Bracket");
+  });
+});
+
+describe("placementLimit and placementLimitRefusal", () => {
+  const places = (n: number) => Array.from({ length: n }, (_, i) => n - i);
+
+  it("limits Brackets to 5 places and every other Format to none", () => {
+    expect(placementLimit("single-elimination")).toBe(5);
+    expect(placementLimit("heats")).toBe(5);
+    for (const format of [
+      "placement",
+      "head-to-head",
+      "best-score",
+      "participation",
+    ] as const) {
+      expect(placementLimit(format)).toBeNull();
+    }
+  });
+
+  it("accepts 12 places for Placement and refuses 6 for a Bracket", () => {
+    expect(placementLimitRefusal("placement", places(12))).toBeNull();
+    expect(placementLimitRefusal("heats", places(5))).toBeNull();
+    expect(placementLimitRefusal("heats", places(6))).toBe(
+      "Placement Points cover at most 5 places for this Format.",
+    );
+    expect(placementLimitRefusal("single-elimination", places(6))).toMatch(
+      /at most 5 places/,
+    );
+    expect(placementLimitRefusal("heats", null)).toBeNull();
   });
 });

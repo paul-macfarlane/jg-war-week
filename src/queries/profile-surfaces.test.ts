@@ -70,11 +70,12 @@ async function fixture(tx: DBTx) {
       warWeekId: warWeek.id,
       name: "Darts",
       scoring: "individual",
-      format: "points",
+      format: "placement",
     })
     .returning({ id: schema.competition.id });
   await tx.insert(schema.pointsEntry).values(
     people.map((p) => ({
+      warWeekId: warWeek.id,
       competitionId: comp.id,
       participantId: p.id,
       points: 3,

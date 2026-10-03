@@ -15,7 +15,7 @@
  * one JSON line per page:
  *   BETTER_AUTH_SECRET=e2e-only-secret-never-used-in-production \
  *     pnpm tsx scripts/regression/driver.ts <role> <width> <outRoot> <path>...
- * e.g. `organizer 390 test-results/run/checklist /admin /admin/points`
+ * e.g. `organizer 390 test-results/run/checklist /admin /admin/discretionary-points`
  * writes `test-results/run/checklist/admin-390/page.png` and
  * `.../admin-points-390/page.png`; `--tag=ffa` makes them `admin-ffa-390/`
  * and `admin-points-ffa-390/`, so the two passes don't overwrite each other. Roles: organizer, host, participant

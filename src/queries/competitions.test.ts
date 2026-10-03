@@ -52,7 +52,7 @@ describe.skipIf(!isLocalDatabase)("getCompetitionByName", () => {
       expect(await getCompetitionByName(warWeek, "Beyblades", tx)).toEqual({
         id: pool.id,
         name: "Beyblades",
-        format: "points",
+        format: "placement",
         scoring: "team",
       });
     });
@@ -74,7 +74,7 @@ describe.skipIf(!isLocalDatabase)("getCompetitionByName", () => {
       expect(await getCompetitionByName(warWeek, "beyblades", tx)).toEqual({
         id: exact.id,
         name: "beyblades",
-        format: "points",
+        format: "placement",
         scoring: "team",
       });
     });
@@ -91,7 +91,7 @@ describe.skipIf(!isLocalDatabase)("getCompetitionByName", () => {
       expect(await getCompetitionByName(warWeek, "beyblades", tx)).toEqual({
         id: pool.id,
         name: "Beyblades",
-        format: "points",
+        format: "placement",
         scoring: "team",
       });
     });

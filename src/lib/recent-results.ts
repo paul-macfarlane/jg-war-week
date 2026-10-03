@@ -1,13 +1,8 @@
 import type { Competition } from "@/db/schema";
+import { isGameFormat } from "@/lib/enums";
 
 /** Home shows at most this many Recent results rows. */
 export const RECENT_RESULTS_LIMIT = 5;
-
-/**
- * Points Entries of one Competition belong to one row when each is added
- * within this many milliseconds of the previous one (10 minutes).
- */
-export const RECENT_RESULTS_GROUP_GAP_MS = 10 * 60 * 1000;
 
 /** Who a Points Entry or result is for: a Team, or a Participant. */
 export type ResultTarget = {
@@ -28,17 +23,20 @@ export type ResultCompetition = Pick<
 
 export type ResultEntry = {
   id: string;
-  competitionId: string;
+  /** Null for Discretionary points, which belong to no Competition. */
+  competitionId: string | null;
   points: number;
+  /** A Discretionary entry's reason; a Competition entry's note. */
+  note?: string | null;
   enteredAt: Date;
-  /** Written by finalizing a Bracket or closing a `games` Competition. */
+  /** Written by finalizing a Bracket or Placement or closing a Head-to-head or Best score Competition. */
   generatedByBracket: boolean;
   target: ResultTarget;
 };
 
 export type RecentResult =
   | {
-      kind: "bracket-finalized" | "games-closed";
+      kind: "bracket-finalized" | "games-closed" | "placement-finalized";
       key: string;
       competitionId: string;
       competition: string;
@@ -58,13 +56,13 @@ export type RecentResult =
       tookPart: number | null;
     }
   | {
-      kind: "points";
+      /** Discretionary points: one row per entry, with its reason. */
+      kind: "discretionary";
       key: string;
-      competitionId: string;
-      competition: string;
       when: Date;
-      /** One per target, highest points first. */
-      scores: { target: ResultTarget; points: number }[];
+      target: ResultTarget;
+      points: number;
+      reason: string;
     };
 
 /**
@@ -72,28 +70,24 @@ export type RecentResult =
  * `RECENT_RESULTS_LIMIT` rows:
  *
  * - A finalized Bracket (`single-elimination` / `heats`) is one
- *   "bracket-finalized" row and a closed `games` Competition one
- *   "games-closed" row, both at `finalizedAt`. The champion or winner is the
+ *   "bracket-finalized" row, a Finalized Placement one
+ *   "placement-finalized" row and a closed Head-to-head or Best score Competition one
+ *   "games-closed" row, all at `finalizedAt`. The champion or winner is the
  *   target of the highest generated Points Entry (the 1st-place entry its
  *   finalize or close wrote); a tie for first lists every target.
  * - A closed `participation` Competition is one "participation-closed" row
  *   at `finalizedAt`: in team scoring its top Team (as above), in
  *   individual scoring how many took part (one generated entry each).
  * - The generated entries themselves are not rows of their own.
- * - Manual Points Entries of one Competition added "together" collapse into
- *   one "points" row. Together means chained by time: sorted by `enteredAt`,
- *   an entry joins the previous entry's group when it was added within
- *   `RECENT_RESULTS_GROUP_GAP_MS` of it; a longer gap starts a new group.
- *   The row's time is its newest entry. Entries for one target add up.
+ * - Each Discretionary entry (no Competition) is a "discretionary" row of
+ *   its own at `enteredAt`, with its reason.
  * - Competitions without a finalize time and entries of unknown Competitions
- *   contribute nothing; a `points`-Format Competition never has a finalize
- *   row.
+ *   contribute nothing.
  */
 export function shapeRecentResults(
   competitions: ResultCompetition[],
   entries: ResultEntry[],
 ): RecentResult[] {
-  const byId = new Map(competitions.map((c) => [c.id, c]));
   const results: RecentResult[] = [];
 
   for (const final of finalWinners(competitions, entries)) {
@@ -114,53 +108,25 @@ export function shapeRecentResults(
       continue;
     }
     results.push({
-      kind: c.format === "games" ? "games-closed" : "bracket-finalized",
+      kind: isGameFormat(c.format)
+        ? "games-closed"
+        : c.format === "placement"
+          ? "placement-finalized"
+          : "bracket-finalized",
       ...base,
       winners: final.winners,
     });
   }
 
-  const manual = entries
-    .filter((e) => !e.generatedByBracket && byId.has(e.competitionId))
-    .sort((a, b) => a.enteredAt.getTime() - b.enteredAt.getTime());
-  const groups: ResultEntry[][] = [];
-  const open = new Map<string, ResultEntry[]>();
-  for (const e of manual) {
-    const group = open.get(e.competitionId);
-    const last = group?.[group.length - 1];
-    if (
-      group &&
-      last &&
-      e.enteredAt.getTime() - last.enteredAt.getTime() <=
-        RECENT_RESULTS_GROUP_GAP_MS
-    ) {
-      group.push(e);
-    } else {
-      const fresh = [e];
-      open.set(e.competitionId, fresh);
-      groups.push(fresh);
-    }
-  }
-  for (const group of groups) {
-    const competition = byId.get(group[0].competitionId);
-    if (!competition) continue;
-    const scores: { target: ResultTarget; points: number }[] = [];
-    for (const e of group) {
-      const existing = scores.find((s) => sameTarget(s.target, e.target));
-      if (existing) existing.points += e.points;
-      else scores.push({ target: e.target, points: e.points });
-    }
-    scores.sort(
-      (a, b) =>
-        b.points - a.points || a.target.name.localeCompare(b.target.name),
-    );
+  for (const e of entries) {
+    if (e.competitionId !== null || e.generatedByBracket) continue;
     results.push({
-      kind: "points",
-      key: `points-${group[0].id}`,
-      competitionId: competition.id,
-      competition: competition.name,
-      when: group[group.length - 1].enteredAt,
-      scores,
+      kind: "discretionary",
+      key: `discretionary-${e.id}`,
+      when: e.enteredAt,
+      target: e.target,
+      points: e.points,
+      reason: e.note ?? "",
     });
   }
 
@@ -186,11 +152,11 @@ export type FinalWinners = {
 };
 
 /**
- * The winner of each finalized Bracket, closed `games` Competition and
- * closed `participation` Competition, in `competitions` order: the one
- * rule Recent results and the Finale's Champions slide share. A
- * Competition with no finalize time, a `points`-Format one, or one with no
- * generated Points Entries has none and is left out.
+ * The winner of each finalized Bracket or Placement, closed Head-to-head or Best score
+ * Competition and closed `participation` Competition, in `competitions`
+ * order: the one rule Recent results and the Finale's Champions slide
+ * share. A Competition with no finalize time, or one with no generated
+ * Points Entries, has none and is left out.
  */
 export function finalWinners(
   competitions: ResultCompetition[],
@@ -199,7 +165,7 @@ export function finalWinners(
   const results: FinalWinners[] = [];
   for (const c of competitions) {
     const finalizedAt = c.finalizedAt;
-    if (!finalizedAt || c.format === "points") continue;
+    if (!finalizedAt) continue;
     const generated = entries.filter(
       (e) => e.competitionId === c.id && e.generatedByBracket,
     );

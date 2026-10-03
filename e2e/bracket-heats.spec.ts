@@ -6,13 +6,24 @@ import {
   test,
 } from "@playwright/test";
 
-import { xiCompetitionId } from "./db";
+import { openForBracket, xiCompetitionId } from "./db";
 import { asOrganizer, participantPageAs } from "./session";
 
 // Settlers of Catan is an individual War Week XI Competition with Placement
-// Points 5 / 3 / 1. None of these eight has a hand-entered Catan Points
-// Entry (Anthony Conway does; he's excluded).
+// Points 5 / 3 / 1. None of these eight is on the seeded Catan sheet (it
+// places only a Team).
 const COMPETITION = "Settlers of Catan";
+
+// The seeded Competitions are Finalized Placement sheets; open each for a
+// Bracket and put the sheet back afterwards.
+let restoreCompetition: (() => Promise<void>) | null = null;
+test.beforeEach(async () => {
+  restoreCompetition = await openForBracket(await xiCompetitionId(COMPETITION));
+});
+test.afterEach(async () => {
+  await restoreCompetition?.();
+  restoreCompetition = null;
+});
 const ENTRANTS = [
   "Albert Hernandez",
   "Alex Nikolis",

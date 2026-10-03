@@ -52,7 +52,7 @@ async function fixture(tx: DBTx) {
         scoring: "team",
         format: "single-elimination",
       },
-      { warWeekId, name: "Trivia", scoring: "team", format: "points" },
+      { warWeekId, name: "Trivia", scoring: "team", format: "placement" },
     ])
     .returning({ id: schema.competition.id });
   const selfReportOf = async (id: string) =>

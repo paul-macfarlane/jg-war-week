@@ -546,49 +546,42 @@
     {
       "name": "Midnight Club",
       "description": "One point per house member who works from 12:00 AM to noon Sunday; houses ranked 10 / 5 / 3 / 1.",
-      "maxPoints": 10,
       "scoring": "team",
       "group": "Challenges Decided by Houses"
     },
     {
       "name": "Black Tuesday",
       "description": "No talking from 6:00 AM to 1:00 PM Tuesday; houses ranked 10 / 5 / 3 / 1.",
-      "maxPoints": 10,
       "scoring": "team",
       "group": "Challenges Decided by Houses"
     },
     {
       "name": "Daily Workouts",
       "description": "One point per member completing all four workouts (2 Beast Mode, 2 Yoga); houses ranked 10 / 5 / 3 / 1.",
-      "maxPoints": 10,
       "scoring": "team",
       "group": "Challenges Decided by Houses"
     },
     {
       "name": "Stairs Challenge",
       "description": "One point per member per day with at least 5 full trips; houses ranked 10 / 5 / 3 / 1.",
-      "maxPoints": 10,
       "scoring": "team",
       "group": "Challenges Decided by Houses"
     },
     {
       "name": "Tri-Wizard Tournament",
       "description": "Elimination-style wizarding challenges; each house puts forth its 12 best. Points 10 / 5 / 3 / 1 by order of elimination.",
-      "maxPoints": 10,
       "scoring": "team",
       "group": "Challenges Decided by Houses"
     },
     {
       "name": "Battle of the Memes",
       "description": "Live meme showdown at the talent show; points 10 / 5 / 3 / 1 by team voting.",
-      "maxPoints": 10,
       "scoring": "team",
       "group": "Challenges Decided by Houses"
     },
     {
       "name": "Billable Hours",
       "description": "House War Week billable hours vs. its four-week average; 10 / 5 / 3 / 1 by percentage.",
-      "maxPoints": 10,
       "scoring": "team",
       "group": "Challenges Decided by Houses"
     },
@@ -601,7 +594,6 @@
     {
       "name": "Settlers of Catan",
       "description": "5 House Cup points to the winner's house; 3 to the second table winner.",
-      "maxPoints": 5,
       "scoring": "individual",
       "countsTowardTeam": true,
       "group": "Challenges Decided by Individuals"
@@ -609,7 +601,6 @@
     {
       "name": "Magic the Gathering",
       "description": "3 House Cup points for the advanced champ, 1 for the beginner champ.",
-      "maxPoints": 3,
       "scoring": "individual",
       "countsTowardTeam": true,
       "group": "Challenges Decided by Individuals"
@@ -617,7 +608,6 @@
     {
       "name": "War Week Beer & Cards",
       "description": "3 House Cup points for the advanced champ, 1 for the beginner champ.",
-      "maxPoints": 3,
       "scoring": "individual",
       "countsTowardTeam": true,
       "group": "Challenges Decided by Individuals"
@@ -625,7 +615,6 @@
     {
       "name": "Gaming Night",
       "description": "Super Smash Bros. Ultimate, Mario Kart and CS:GO tournaments; each winner earns 3 points for their house.",
-      "maxPoints": 3,
       "scoring": "individual",
       "countsTowardTeam": true,
       "group": "Challenges Decided by Individuals"
@@ -633,13 +622,11 @@
     {
       "name": "Wizard's Chess Tournament",
       "description": "5 / 3 / 1 House Cup points for 1st, 2nd and 3rd; 1 point to the beginners bracket winner.",
-      "maxPoints": 5,
       "scoring": "individual",
       "countsTowardTeam": true,
       "group": "Challenges Decided by Individuals"
     }
   ],
-  "pointsEntries": [],
   "awards": [
     {
       "key": "house-cup",

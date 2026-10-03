@@ -9,8 +9,8 @@ describe("LogAGame", () => {
       <LogAGame
         edition="xii"
         competitions={[
-          { id: "c1", name: "Bouncy Pong", gameType: "head-to-head" },
-          { id: "c2", name: "Mini Golf", gameType: "best-score" },
+          { id: "c1", name: "Bouncy Pong", gameFormat: "head-to-head" },
+          { id: "c2", name: "Mini Golf", gameFormat: "best-score" },
         ]}
       />,
     );

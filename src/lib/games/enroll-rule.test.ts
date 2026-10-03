@@ -318,31 +318,28 @@ describe("enrollmentUnavailable: where enrollment is offered", () => {
 
   it.each([
     [
-      "a points Competition has no Entrant list",
+      "a placement Competition has no Entrant list",
       {
-        format: "points" as const,
+        format: "placement" as const,
         entrantsOpen: false,
-        gameType: null,
         gameConfig: null,
       },
-      "Participants enroll only in a Bracket or a Games Competition.",
+      "Participants enroll only in a Bracket, Head-to-head or Best score Competition.",
     ],
     [
       "a Bracket offers it",
       {
         format: "single-elimination" as const,
         entrantsOpen: false,
-        gameType: null,
         gameConfig: null,
       },
       null,
     ],
     [
-      "a Games Competition open to everyone has no list",
+      "a Head-to-head Competition open to everyone has no list",
       {
-        format: "games" as const,
+        format: "head-to-head" as const,
         entrantsOpen: true,
-        gameType: "head-to-head" as const,
         gameConfig: h2h,
       },
       "Everyone can play already; there's no list to enroll in.",
@@ -350,9 +347,8 @@ describe("enrollmentUnavailable: where enrollment is offered", () => {
     [
       "a Best of is set by the Host",
       {
-        format: "games" as const,
+        format: "head-to-head" as const,
         entrantsOpen: false,
-        gameType: "head-to-head" as const,
         gameConfig: { drawsAllowed: false, bestOf: 5 as const },
       },
       "A Best of is set by the Host; enrollment is off.",
@@ -362,18 +358,20 @@ describe("enrollmentUnavailable: where enrollment is offered", () => {
       {
         format: "participation" as const,
         entrantsOpen: false,
-        gameType: null,
         gameConfig: null,
       },
       "A Participation Competition takes check-ins, not Entrants.",
     ],
     [
-      "a fixed-list Games Competition offers it",
+      "a fixed-list Best score Competition offers it",
       {
-        format: "games" as const,
+        format: "best-score" as const,
         entrantsOpen: false,
-        gameType: "ranked" as const,
-        gameConfig: { finishPoints: [] },
+        gameConfig: {
+          count: "best" as const,
+          betterIs: "higher" as const,
+          unit: "",
+        },
       },
       null,
     ],

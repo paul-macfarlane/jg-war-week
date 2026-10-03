@@ -262,7 +262,6 @@ export async function createNextWarWeek(
                 warWeekId: created.id,
                 name: c.name,
                 description: c.description,
-                maxPoints: c.maxPoints,
                 placementPoints: c.placementPoints,
                 scoring: c.scoring,
                 countsTowardTeam: c.countsTowardTeam,

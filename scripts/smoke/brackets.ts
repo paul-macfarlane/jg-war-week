@@ -86,7 +86,6 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
             name: SMOKE_BRACKET_COMPETITION,
             description: "",
             scoring: "team",
-            maxPoints: "",
             placementPoints: "10, 6, 3",
             countsTowardTeam: false,
             group: "",
@@ -231,9 +230,9 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
       );
     }
 
-    const ledger = await (await get("/admin/points")).text();
-    if (!ledger.includes("From bracket")) {
-      problems.push("/admin/points shows no From bracket row");
+    const competitionPage = await (await get(`/xi/competitions/${id}`)).text();
+    if (!competitionPage.includes("From bracket")) {
+      problems.push("/xi/competitions/<id> shows no From bracket row");
     }
 
     expectOk(
@@ -401,7 +400,6 @@ export async function assertHeatsLoop(sessions: { organizer: SmokeSession }) {
             name: SMOKE_HEATS_COMPETITION,
             description: "",
             scoring: "team",
-            maxPoints: "",
             placementPoints: "10, 6, 3",
             countsTowardTeam: false,
             group: "",
@@ -600,7 +598,6 @@ export async function assertSquadSelfReportLoop(sessions: {
             name: SMOKE_SQUAD_COMPETITION,
             description: "",
             scoring: "team",
-            maxPoints: "",
             placementPoints: "10, 6, 3",
             countsTowardTeam: false,
             group: "",
@@ -798,7 +795,7 @@ export async function assertSquadSelfReportLoop(sessions: {
     // The outsider's session has a non-JG email, so `src/proxy.ts` answers
     // with a 307 to /sign-in before any action runs; `callAction` can't be
     // used (it expects a 200 RSC reply), so this POSTs directly.
-    const outsiderRes = await fetch(`${BASE_URL}/admin/points`, {
+    const outsiderRes = await fetch(`${BASE_URL}/admin/competitions`, {
       method: "POST",
       headers: {
         "next-action": ids.reportHeatResult,

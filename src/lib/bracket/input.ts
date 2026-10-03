@@ -7,7 +7,11 @@ import { z } from "zod";
 import { type HeatsConfig, bracketConfigSchema } from "@/lib/bracket/config";
 import { SQUAD_PARTICIPANTS_MAX } from "@/lib/bracket/squads";
 import type { Format, HeatResult } from "@/lib/bracket/types";
-import { COMPETITION_FORMATS } from "@/lib/enums";
+import {
+  COMPETITION_FORMATS,
+  type GameFormat,
+  isGameFormat,
+} from "@/lib/enums";
 import type { Parsed } from "@/lib/result";
 
 function parse<T>(schema: z.ZodType<T, unknown>, input: unknown): Parsed<T> {
@@ -22,11 +26,11 @@ const id = (error: string) => z.uuid({ error });
 export const MAX_ENTRANTS = 64;
 
 /** A Format chosen only at create: a Competition keeps it. */
-type FixedFormat = "games" | "participation";
+type FixedFormat = GameFormat | "participation";
 
 export type FormatInput = {
   /**
-   * Never `games` or `participation`: a Competition is one of those from
+   * Never a Games Format or `participation`: a Competition is one of those from
    * creation, and stays so.
    */
   format: Exclude<Format, FixedFormat>;
@@ -41,7 +45,7 @@ const formatSchema = z
     format: z.enum(
       COMPETITION_FORMATS.filter(
         (format): format is Exclude<Format, FixedFormat> =>
-          format !== "games" && format !== "participation",
+          !isGameFormat(format) && format !== "participation",
       ),
       { error: "Choose a Format." },
     ),

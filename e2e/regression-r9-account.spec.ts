@@ -56,7 +56,7 @@ test.describe("55 account menu", () => {
       }
       await expect(
         menu.getByRole("menuitem", { name: "Admin" }),
-      ).toHaveAttribute("href", "/admin/points");
+      ).toHaveAttribute("href", "/admin/competitions");
       await expect(
         menu.getByRole("menuitem", { name: "Join the Slack channel" }),
       ).toHaveAttribute("target", "_blank");

@@ -32,7 +32,10 @@ async function redirectFor(pathname: string) {
 
 describe("the admin redirects (next.config)", () => {
   it.each([
-    ["/admin", "/admin/points"],
+    ["/admin", "/admin/competitions"],
+    // Points became Discretionary points (part 91); old links still work.
+    ["/admin/points", "/admin/discretionary-points"],
+    ["/admin/points/abc-123", "/admin/discretionary-points"],
     ["/admin/setup", "/admin/settings"],
     ["/admin/setup/war-week", "/admin/settings"],
     ["/admin/setup/next", "/admin/settings"],
@@ -67,7 +70,7 @@ describe("the admin redirects (next.config)", () => {
   });
 
   it.each([
-    "/admin/points",
+    "/admin/discretionary-points",
     "/admin/competitions",
     "/admin/schedule",
     "/admin/roster",
@@ -78,7 +81,6 @@ describe("the admin redirects (next.config)", () => {
     // Announcements keep their full-page editor.
     "/admin/announcements/new",
     "/admin/announcements/abc-123",
-    "/admin/points/abc-123",
   ])("leaves the new home %s alone", async (path) => {
     expect(await redirectFor(path)).toBeNull();
   });

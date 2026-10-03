@@ -224,7 +224,8 @@ export async function callAction(
   args: unknown[],
   session: SmokeSession,
 ): Promise<WriteResult> {
-  const res = await fetch(`${BASE_URL}/admin/points`, {
+  // A route that exists (not a redirect), since a redirect would break the POST.
+  const res = await fetch(`${BASE_URL}/admin/competitions`, {
     method: "POST",
     headers: {
       "next-action": actionId,

@@ -284,17 +284,19 @@ describe("entrantForYou with Squads", () => {
 
 describe("formatLabel", () => {
   it("names each Format for Organizers", () => {
-    expect(formatLabel("points")).toBe("Points");
+    expect(formatLabel("placement")).toBe("Placement");
     expect(formatLabel("single-elimination")).toBe("Single elimination");
     expect(formatLabel("heats")).toBe("Heats");
-    expect(formatLabel("games")).toBe("Games");
+    expect(formatLabel("head-to-head")).toBe("Head-to-head");
+    expect(formatLabel("best-score")).toBe("Best score");
   });
 });
 
 describe("isBracketFormat", () => {
-  it("is false for points, games or no Format chosen", () => {
-    expect(isBracketFormat("points")).toBe(false);
-    expect(isBracketFormat("games")).toBe(false);
+  it("is false for placement, a Games Format or no Format chosen", () => {
+    expect(isBracketFormat("placement")).toBe(false);
+    expect(isBracketFormat("head-to-head")).toBe(false);
+    expect(isBracketFormat("best-score")).toBe(false);
     expect(isBracketFormat(null)).toBe(false);
     expect(isBracketFormat(undefined)).toBe(false);
   });

@@ -1,6 +1,7 @@
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
 
+import { isGameFormat } from "@/lib/enums";
 import { toAnnouncementsResult } from "@/mcp/announcements";
 import { toAwardsResult } from "@/mcp/awards";
 import {
@@ -8,11 +9,13 @@ import {
   toGamesBracketResult,
   toParticipationBracketResult,
 } from "@/mcp/bracket";
+import { toDiscretionaryPointsResult } from "@/mcp/discretionary-points";
 import { toFaqResult } from "@/mcp/faq";
 import { toGamesResult } from "@/mcp/games";
 import { toHistoryListResult, toHistoryResult } from "@/mcp/history";
 import { toLeaderboardResult } from "@/mcp/leaderboard";
 import { toParticipationResult } from "@/mcp/participation";
+import { toPlacementsResult } from "@/mcp/placements";
 import { toScheduleResult } from "@/mcp/schedule";
 import { MCP_TOOLS } from "@/mcp/tools";
 import { toCurrentWarWeekResult } from "@/mcp/war-week";
@@ -21,9 +24,11 @@ import { getArchiveDetailByYear, listArchive } from "@/queries/archive";
 import { getAwards } from "@/queries/awards";
 import { getBracket } from "@/queries/brackets";
 import { getCompetitionByName } from "@/queries/competitions";
+import { getDiscretionaryLedger } from "@/queries/discretionary-points";
 import { getFaqItems } from "@/queries/faq";
 import { getGamesView } from "@/queries/games";
 import { getParticipationView } from "@/queries/participation";
+import { getPlacementsView } from "@/queries/placements";
 import { getSchedule } from "@/queries/schedule";
 import { getSetupDays } from "@/queries/setup";
 import { getStandings } from "@/queries/standings";
@@ -157,6 +162,27 @@ const handler = createMcpHandler(
     );
 
     server.registerTool(
+      "get_discretionary_points",
+      {
+        ...MCP_TOOLS.get_discretionary_points,
+        inputSchema: z.object({}),
+      },
+      async () => {
+        const warWeek = await getCurrentWarWeek();
+        const result = warWeek
+          ? toDiscretionaryPointsResult(
+              warWeek.edition,
+              await getDiscretionaryLedger(warWeek),
+            )
+          : { warWeek: null };
+
+        return {
+          content: [{ type: "text", text: JSON.stringify(result) }],
+        };
+      },
+    );
+
+    server.registerTool(
       "get_faq",
       {
         ...MCP_TOOLS.get_faq,
@@ -231,13 +257,20 @@ const handler = createMcpHandler(
           };
         }
         const found = await getCompetitionByName(warWeek, competition);
-        // A `games` Competition is never a Bracket: point to `get_games`.
-        if (found?.format === "games") {
+        // A Head-to-head or Best score Competition is never a Bracket: point
+        // to `get_games`.
+        if (found && isGameFormat(found.format)) {
           return {
             content: [
               {
                 type: "text",
-                text: JSON.stringify(toGamesBracketResult(found)),
+                text: JSON.stringify(
+                  toGamesBracketResult({
+                    name: found.name,
+                    scoring: found.scoring,
+                    format: found.format,
+                  }),
+                ),
               },
             ],
           };
@@ -288,7 +321,7 @@ const handler = createMcpHandler(
         }
         const found = await getCompetitionByName(warWeek, competition);
         const view =
-          found?.format === "games"
+          found && isGameFormat(found.format)
             ? await getGamesView(found.id, null)
             : undefined;
         const result = toGamesResult(found, view ?? undefined, competition);
@@ -326,6 +359,40 @@ const handler = createMcpHandler(
             ? await getParticipationView(found.id)
             : undefined;
         const result = toParticipationResult(found, view, competition);
+
+        return {
+          content: [{ type: "text", text: JSON.stringify(result) }],
+        };
+      },
+    );
+
+    server.registerTool(
+      "get_placements",
+      {
+        ...MCP_TOOLS.get_placements,
+        inputSchema: z.object({
+          competition: z
+            .string()
+            .trim()
+            .min(1)
+            .describe("The Competition's name, in the current War Week."),
+        }),
+      },
+      async ({ competition }) => {
+        const warWeek = await getCurrentWarWeek();
+        if (!warWeek) {
+          return {
+            content: [
+              { type: "text", text: JSON.stringify({ warWeek: null }) },
+            ],
+          };
+        }
+        const found = await getCompetitionByName(warWeek, competition);
+        const view =
+          found?.format === "placement"
+            ? await getPlacementsView(found.id)
+            : undefined;
+        const result = toPlacementsResult(found, view, competition);
 
         return {
           content: [{ type: "text", text: JSON.stringify(result) }],

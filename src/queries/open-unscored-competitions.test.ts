@@ -16,7 +16,7 @@ const actorEmail = "organizer@jahnelgroup.com";
 
 /**
  * A War Week with two Teams, plus a Team of another War Week, for building
- * `games` Competitions in various states.
+ * Head-to-head or Best score Competitions in various states.
  */
 async function fixture(tx: DBTx) {
   const schema = await import("@/db/schema");
@@ -29,7 +29,7 @@ async function fixture(tx: DBTx) {
         year: 9200 + n,
         startDate: "2099-01-01",
         endDate: "2099-01-05",
-        storyTheme: "Open Games Competitions test",
+        storyTheme: "Open Head-to-head Competitions test",
         status: "upcoming",
         mode: "teams",
         teamLabel: "Team",
@@ -62,7 +62,7 @@ async function fixture(tx: DBTx) {
     .insert(schema.organizer)
     .values({ email: actorEmail })
     .onConflictDoNothing();
-  /** A head-to-head, team-scored `games` Competition open to everyone. */
+  /** A Head-to-head, team-scored Competition open to everyone. */
   const pong = async (inWarWeek: string, name = "Pong") => {
     const [row] = await tx
       .insert(schema.competition)
@@ -70,8 +70,7 @@ async function fixture(tx: DBTx) {
         warWeekId: inWarWeek,
         name,
         scoring: "team",
-        format: "games",
-        gameType: "head-to-head",
+        format: "head-to-head",
         gameConfig: { drawsAllowed: false, bestOf: null },
         entrantsOpen: true,
       })
@@ -105,7 +104,7 @@ const redBeatsBlue = (red: string, blue: string) => ({
 });
 
 describe.skipIf(!isLocalDatabase)("getOpenUnscoredCompetitions", () => {
-  it("lists an open games Competition with a Game", async () => {
+  it("lists an open Head-to-head or Best score Competition with a Game", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await fixture(tx);
@@ -114,11 +113,11 @@ describe.skipIf(!isLocalDatabase)("getOpenUnscoredCompetitions", () => {
 
       expect(
         await queries.getOpenUnscoredCompetitions({ id: f.ctx.warWeekId }, tx),
-      ).toEqual([{ id: pong, name: "Pong", format: "games" }]);
+      ).toEqual([{ id: pong, name: "Pong", format: "head-to-head" }]);
     });
   });
 
-  it("excludes a games Competition with no Game", async () => {
+  it("excludes a Head-to-head or Best score Competition with no Game", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { queries } = await modules();
       const f = await fixture(tx);
@@ -130,7 +129,7 @@ describe.skipIf(!isLocalDatabase)("getOpenUnscoredCompetitions", () => {
     });
   });
 
-  it("excludes a closed games Competition", async () => {
+  it("excludes a closed Head-to-head or Best score Competition", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await fixture(tx);
@@ -147,7 +146,7 @@ describe.skipIf(!isLocalDatabase)("getOpenUnscoredCompetitions", () => {
     });
   });
 
-  it("excludes a games Competition of another War Week", async () => {
+  it("excludes a Head-to-head or Best score Competition of another War Week", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await fixture(tx);
@@ -201,8 +200,8 @@ describe.skipIf(!isLocalDatabase)("getOpenUnscoredCompetitions", () => {
       expect(
         await queries.getOpenUnscoredCompetitions({ id: f.ctx.warWeekId }, tx),
       ).toEqual([
-        { id: alpha, name: "Alpha Games", format: "games" },
-        { id: zed, name: "Zed Games", format: "games" },
+        { id: alpha, name: "Alpha Games", format: "head-to-head" },
+        { id: zed, name: "Zed Games", format: "head-to-head" },
       ]);
     });
   });
@@ -228,8 +227,7 @@ describe.skipIf(!isLocalDatabase)("getOpenUnscoredCompetitions", () => {
             name,
             scoring: "team",
             format: "participation",
-            participationPoints: 1,
-            participationTeamScoring: "ranked",
+            placementPoints: [3, 2, 1],
           })
           .returning({ id: f.schema.competition.id });
         return row.id;

@@ -445,7 +445,7 @@ export async function assertSetupTeamsAndCompetitions(sessions: {
     );
 
     await run(
-      "an Organizer adds a Competition with Placement Points and GET /admin/points offers them as presets",
+      "an Organizer adds a Competition with Placement Points and GET /admin/competitions lists it",
       async () => {
         const created = await callAction(
           ids.createCompetition,
@@ -455,7 +455,6 @@ export async function assertSetupTeamsAndCompetitions(sessions: {
               name: smokeCompetition,
               description: "",
               scoring: "team",
-              maxPoints: "10",
               placementPoints: "9, 4",
               countsTowardTeam: false,
               group: "",
@@ -464,16 +463,14 @@ export async function assertSetupTeamsAndCompetitions(sessions: {
           sessions.organizer,
         );
         const body = await (
-          await fetch(`${BASE_URL}/admin/points`, {
+          await fetch(`${BASE_URL}/admin/competitions`, {
             headers: { cookie: sessions.organizer.cookie },
           })
         ).text();
-        const offered =
-          body.includes(smokeCompetition) &&
-          /placementPoints\\?":\[9,4\]/.test(body);
-        return created.ok && offered
+        const listed = body.includes(smokeCompetition);
+        return created.ok && listed
           ? null
-          : `created=${JSON.stringify(created)} offered=${offered}`;
+          : `created=${JSON.stringify(created)} listed=${listed}`;
       },
     );
   } finally {

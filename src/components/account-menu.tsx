@@ -174,7 +174,7 @@ export function AccountMenu({
             className="min-h-11 md:min-h-8"
             render={
               <Link
-                href={inAdmin ? `/${edition}` : "/admin/points"}
+                href={inAdmin ? `/${edition}` : "/admin/competitions"}
                 prefetch={false}
               />
             }

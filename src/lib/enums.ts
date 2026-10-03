@@ -23,26 +23,22 @@ export const SCHEDULE_ITEM_CATEGORIES = [
 export const COMPETITION_SCORINGS = ["team", "individual"] as const;
 
 export const COMPETITION_FORMATS = [
-  "points",
+  "placement",
   "single-elimination",
   "heats",
-  "games",
+  "head-to-head",
+  "best-score",
   "participation",
 ] as const;
 
 /**
- * How a team `participation` Competition scores who took part: Teams
- * ranked by headcount for Placement Points, or N points per Participant.
+ * A Placement Competition's Score direction (CONTEXT.md): whether a higher
+ * or lower Score wins, or `none` when Places are set by hand. Other Formats
+ * keep `none`.
  */
-export const PARTICIPATION_TEAM_SCORINGS = ["ranked", "per-person"] as const;
+export const SCORE_DIRECTIONS = ["none", "higher", "lower"] as const;
 
-export type ParticipationTeamScoring =
-  (typeof PARTICIPATION_TEAM_SCORINGS)[number];
-
-/** How a `games` Competition's Games are decided (CONTEXT.md, Game Type). */
-export const GAME_TYPES = ["head-to-head", "best-score", "ranked"] as const;
-
-export type GameType = (typeof GAME_TYPES)[number];
+export type ScoreDirection = (typeof SCORE_DIRECTIONS)[number];
 
 export const HEAT_STATUSES = ["pending", "ready", "played", "forfeit"] as const;
 
@@ -66,3 +62,18 @@ export type FinaleSlideKind = (typeof FINALE_SLIDE_KINDS)[number];
 export const FINALE_AWARDS_LAYOUTS = ["one-slide", "per-category"] as const;
 
 export type FinaleAwardsLayout = (typeof FINALE_AWARDS_LAYOUTS)[number];
+
+/**
+ * The two Formats run as Games (CONTEXT.md): a Head-to-head or Best score
+ * Competition's Games are logged, then it is closed for its Placement Points.
+ */
+export const GAME_FORMATS = ["head-to-head", "best-score"] as const;
+
+export type GameFormat = (typeof GAME_FORMATS)[number];
+
+/** Whether a Competition Format is one of the Games Formats. */
+export function isGameFormat(
+  format: (typeof COMPETITION_FORMATS)[number],
+): format is GameFormat {
+  return (GAME_FORMATS as readonly string[]).includes(format);
+}

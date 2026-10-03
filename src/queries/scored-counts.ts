@@ -17,8 +17,7 @@ export async function getScoredCounts(
     dbOrTx
       .select({ n: count() })
       .from(pointsEntry)
-      .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
-      .where(eq(competition.warWeekId, warWeekId)),
+      .where(eq(pointsEntry.warWeekId, warWeekId)),
     dbOrTx
       .select({ n: count() })
       .from(heat)

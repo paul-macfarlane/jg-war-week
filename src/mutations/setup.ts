@@ -1,7 +1,6 @@
 import { type SQL, and, count, eq, ne, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
-import { participationTeamScoringFor } from "@/db/participation-sql";
 import {
   award,
   awardParticipant,
@@ -13,6 +12,7 @@ import {
   gamePlayer,
   participant,
   participation,
+  placement,
   pointsEntry,
   scheduleItem,
   squad,
@@ -21,6 +21,7 @@ import {
   warWeek,
 } from "@/db/schema";
 import { defaultConfig } from "@/lib/bracket/config";
+import { isGameFormat } from "@/lib/enums";
 import { defaultGamesConfig } from "@/lib/games/config";
 import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
 import type { FieldErrors } from "@/lib/result";
@@ -792,6 +793,19 @@ async function competitionRefusal(
     "Remove who took part before changing its scoring.",
   );
   if (participationRefusal) return participationRefusal;
+  // A Placement's rows are Teams or Participants by its scoring.
+  const placementRefusal = inUseError(
+    "Competition",
+    [
+      [
+        await tx.$count(placement, eq(placement.competitionId, exceptId)),
+        "Placement",
+        "Placements",
+      ],
+    ],
+    "Remove them before changing its scoring.",
+  );
+  if (placementRefusal) return placementRefusal;
   // Squads are only for team Competitions.
   return inUseError(
     "Competition",
@@ -813,11 +827,12 @@ export type CreateCompetitionResult =
 
 /**
  * Creates a Competition, with the Format an Organizer chose (default
- * "points") and, for a heats Format with none given, the Bracket builder's
- * default config (`defaultConfig`). A `games` Competition stores its Game
- * Type and that type's default settings; any other Format has no Game Type.
- * A `participation` Competition starts at 1 point per Participant, ranked
- * by headcount in team scoring, with Self check-in off.
+ * "placement") and, for a heats Format with none given, the Bracket builder's
+ * default config (`defaultConfig`). A Head-to-head or Best score Competition
+ * stores that Format's default settings; any other Format has none.
+ * A `participation` Competition starts at 1 point per Participant when
+ * individual, or at the Placement Points 3, 2, 1 (ranked by headcount) when
+ * team, with Self check-in off.
  */
 export async function createCompetition(
   values: CompetitionCreateValues,
@@ -830,11 +845,7 @@ export async function createCompetition(
       dbOrTx.transaction(async (tx): Promise<CreateCompetitionResult> => {
         const refusal = await competitionRefusal(values, ctx, tx);
         if (refusal) return { ok: false, error: refusal };
-        const format = values.format ?? "points";
-        const gameType = format === "games" ? (values.gameType ?? null) : null;
-        if (format === "games" && !gameType) {
-          return { ok: false, error: "Choose a Game Type." };
-        }
+        const format = values.format ?? "placement";
         const [created] = await tx
           .insert(competition)
           .values({
@@ -842,16 +853,19 @@ export async function createCompetition(
             ...values,
             format,
             bracketConfig: defaultConfig(format),
-            gameType,
-            gameConfig: gameType ? defaultGamesConfig(gameType) : null,
-            // A new `games` Competition is open to everyone (Best of is off).
-            entrantsOpen: format === "games",
+            gameConfig: isGameFormat(format)
+              ? defaultGamesConfig(format)
+              : null,
+            // A new Head-to-head or Best score Competition is open to
+            // everyone (Best of is off).
+            entrantsOpen: isGameFormat(format),
             ...(format === "participation"
-              ? {
-                  participationPoints: 1,
-                  participationTeamScoring:
-                    values.scoring === "team" ? ("ranked" as const) : null,
-                }
+              ? values.scoring === "team"
+                ? {
+                    participationPoints: null,
+                    placementPoints: values.placementPoints ?? [3, 2, 1],
+                  }
+                : { participationPoints: 1, placementPoints: null }
               : {}),
           })
           .returning({ id: competition.id });
@@ -870,20 +884,42 @@ export async function updateCompetition(
     `There's already a Competition named "${values.name}".`,
     () =>
       dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-        // Adding a Points Entry or Entrant, or finalizing the Bracket, takes
-        // the same lock, so the counts below hold until this commits.
+        // Adding a Placement or Entrant, and Finalizing or closing (which
+        // write its Points Entries), take the same lock, so the counts below
+        // hold until this commits.
         if (!(await locked(competition, id, ctx, tx))) {
           return { ok: false, error: COMPETITION_NOT_FOUND };
         }
         const refusal = await competitionRefusal(values, ctx, tx, id);
         if (refusal) return { ok: false, error: refusal };
+        // A `participation` Competition keeps the columns its scoring takes
+        // (the CHECK `competition_participation_columns`).
+        const [existing] = await tx
+          .select({
+            format: competition.format,
+            placementPoints: competition.placementPoints,
+            participationPoints: competition.participationPoints,
+          })
+          .from(competition)
+          .where(eq(competition.id, id));
+        const participationColumns =
+          existing?.format === "participation"
+            ? values.scoring === "team"
+              ? {
+                  participationPoints: null,
+                  placementPoints: values.placementPoints ??
+                    existing.placementPoints ?? [3, 2, 1],
+                }
+              : {
+                  participationPoints: existing.participationPoints ?? 1,
+                  placementPoints: null,
+                }
+            : {};
         const updated = await tx
           .update(competition)
           .set({
             ...values,
-            participationTeamScoring: participationTeamScoringFor(
-              values.scoring,
-            ),
+            ...participationColumns,
             updatedAt: sql`now()`,
           })
           .where(

@@ -11,7 +11,7 @@ function baseView(
     warWeekId: "w1",
     name: "Bouncy Pong",
     scoring: "individual",
-    gameType: "head-to-head",
+    gameFormat: "head-to-head",
     config: { drawsAllowed: false, bestOf: 5 },
     entrantsOpen: true,
     loggingClosesAt: null,
@@ -38,16 +38,18 @@ describe("toGamesResult", () => {
 
   it("returns games: null with a message for a non-games Competition", () => {
     const result = toGamesResult(
-      { name: "Trivia", scoring: "team", format: "points" },
+      { name: "Trivia", scoring: "team", format: "placement" },
       undefined,
       "Trivia",
     );
 
     expect(result).toEqual({
       found: true,
-      competition: { name: "Trivia", scoring: "team", format: "points" },
+      competition: { name: "Trivia", scoring: "team", format: "placement" },
       games: null,
-      message: expect.stringContaining("isn't run as Games"),
+      message: expect.stringContaining(
+        "isn't run as Head-to-head or Best score",
+      ),
     });
   });
 
@@ -62,7 +64,7 @@ describe("toGamesResult", () => {
       found: true,
       games: null,
       message:
-        "Workout isn't run as Games; it's run as Participation. Call get_participation instead.",
+        "Workout isn't run as Head-to-head or Best score; it's run as Participation. Call get_participation instead.",
     });
   });
 
@@ -79,7 +81,6 @@ describe("toGamesResult", () => {
           draws: 0,
           best: null,
           total: null,
-          finishPoints: 0,
           name: "Ashley Schuliger",
           color: null,
         },
@@ -92,7 +93,6 @@ describe("toGamesResult", () => {
           draws: 0,
           best: null,
           total: null,
-          finishPoints: 0,
           name: "Sam Schantz",
           color: null,
         },
@@ -131,7 +131,7 @@ describe("toGamesResult", () => {
     };
 
     const result = toGamesResult(
-      { name: "Bouncy Pong", scoring: "individual", format: "games" },
+      { name: "Bouncy Pong", scoring: "individual", format: "head-to-head" },
       view,
       "Bouncy Pong",
     );
@@ -141,7 +141,7 @@ describe("toGamesResult", () => {
       competition: {
         name: "Bouncy Pong",
         scoring: "individual",
-        gameType: "head-to-head",
+        format: "head-to-head",
         settings: "Head-to-head · draws off · Best of 5",
         entrants: "open to everyone",
         closed: false,
@@ -180,7 +180,7 @@ describe("toGamesResult", () => {
   it("serializes a best-score Competition counting the total, with a fixed Entrant list", () => {
     const view: GamesView = {
       competition: baseView({
-        gameType: "best-score",
+        gameFormat: "best-score",
         config: { count: "total", betterIs: "higher", unit: "trips" },
         entrantsOpen: false,
       }),
@@ -194,7 +194,6 @@ describe("toGamesResult", () => {
           draws: 0,
           best: 42,
           total: 42,
-          finishPoints: 0,
           name: "Alec Haring",
           color: null,
         },
@@ -220,13 +219,15 @@ describe("toGamesResult", () => {
     };
 
     const result = toGamesResult(
-      { name: "Beer Pong", scoring: "individual", format: "games" },
+      { name: "Beer Pong", scoring: "individual", format: "head-to-head" },
       view,
       "Beer Pong",
     );
 
     expect(result.found).toBe(true);
     if (!result.found || result.games === null) throw new Error("unreachable");
+    expect(result.competition).toMatchObject({ format: "best-score" });
+    expect(result.competition).not.toHaveProperty("gameFormat");
     expect(result.competition.settings).toBe(
       "Best score · total · higher is better · trips",
     );
@@ -235,89 +236,6 @@ describe("toGamesResult", () => {
       { rank: 1, name: "Alec Haring", played: 1, total: 42 },
     ]);
     expect(result.games[0].summary).toBe("Alec Haring · 42 trips");
-  });
-
-  it("serializes a ranked Competition with no configured Finish Points", () => {
-    const view: GamesView = {
-      competition: baseView({
-        gameType: "ranked",
-        config: { finishPoints: [] },
-      }),
-      leaderboard: [
-        {
-          id: "t1",
-          rank: 1,
-          played: 1,
-          wins: 1,
-          losses: 0,
-          draws: 0,
-          best: null,
-          total: null,
-          finishPoints: 2,
-          name: "Red",
-          color: "#f00",
-        },
-      ],
-      games: [
-        {
-          id: "g1",
-          loggedAt: LOGGED_AT,
-          players: [
-            { id: "t1", name: "Red", color: "#f00", place: 1, score: null },
-          ],
-          canEdit: true,
-          canDelete: true,
-        },
-      ],
-      linked: null,
-      runs: false,
-      viewerCanLog: false,
-      loggingOpen: true,
-      bestOfDecided: false,
-      bestOfWinner: null,
-      entrantOptions: [],
-    };
-
-    const result = toGamesResult(
-      { name: "Trivia Scramble", scoring: "team", format: "games" },
-      view,
-      "Trivia Scramble",
-    );
-
-    expect(result.found).toBe(true);
-    if (!result.found || result.games === null) throw new Error("unreachable");
-    expect(result.competition.settings).toBe("Ranked · one per player beaten");
-    expect(result.leaderboard).toEqual([
-      { rank: 1, name: "Red", played: 1, wins: 1, finishPoints: 2 },
-    ]);
-  });
-
-  it("serializes a ranked Competition's configured Finish Points", () => {
-    const view: GamesView = {
-      competition: baseView({
-        gameType: "ranked",
-        config: { finishPoints: [3, 2, 1] },
-      }),
-      leaderboard: [],
-      games: [],
-      linked: null,
-      runs: false,
-      viewerCanLog: false,
-      loggingOpen: true,
-      bestOfDecided: false,
-      bestOfWinner: null,
-      entrantOptions: [],
-    };
-
-    const result = toGamesResult(
-      { name: "Board Games", scoring: "individual", format: "games" },
-      view,
-      "Board Games",
-    );
-
-    expect(result.found).toBe(true);
-    if (!result.found || result.games === null) throw new Error("unreachable");
-    expect(result.competition.settings).toBe("Ranked · Finish Points 3, 2, 1");
   });
 
   it("serializes only whitelisted keys, even when the view carries an email, loggedBy and canEdit", () => {
@@ -333,7 +251,6 @@ describe("toGamesResult", () => {
           draws: 0,
           best: null,
           total: null,
-          finishPoints: 0,
           name: "Ashley Schuliger",
           color: null,
         },
@@ -346,7 +263,6 @@ describe("toGamesResult", () => {
           draws: 0,
           best: null,
           total: null,
-          finishPoints: 0,
           name: "Sam Schantz",
           color: null,
         },
@@ -388,7 +304,7 @@ describe("toGamesResult", () => {
     } as unknown as GamesView;
 
     const result = toGamesResult(
-      { name: "Bouncy Pong", scoring: "individual", format: "games" },
+      { name: "Bouncy Pong", scoring: "individual", format: "head-to-head" },
       view,
       "Bouncy Pong",
     );

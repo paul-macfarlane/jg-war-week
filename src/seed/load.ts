@@ -17,7 +17,6 @@ import type {
 } from "drizzle-orm/pg-core";
 
 import { DBOrTx, DBTx, db } from "@/db";
-import { participationTeamScoringFor } from "@/db/participation-sql";
 import {
   WarWeek,
   announcement,
@@ -30,12 +29,15 @@ import {
   finaleSlide,
   organizer,
   participant,
+  placement,
   pointsEntry,
   scheduleItem,
   team,
   warWeek,
 } from "@/db/schema";
 import type { GamesConfig } from "@/lib/games/config";
+import { placementEntryValues } from "@/lib/placement/score";
+import { getPlacementRows } from "@/queries/placements";
 import { WarWeekSeed } from "@/seed/schema";
 
 /**
@@ -80,8 +82,16 @@ export async function loadWarWeekSeed(
     await syncFaqItems(tx, warWeekId, seed);
     await syncFinaleSlides(tx, warWeekId, seed);
 
-    await insertPointsEntries(
+    await insertDiscretionaryPoints(
       tx,
+      warWeekId,
+      seed,
+      teamIds,
+      participantIds,
+    );
+    await insertPlacements(
+      tx,
+      warWeekId,
       seed,
       competitionIds,
       teamIds,
@@ -293,24 +303,27 @@ async function syncCompetitions(
       warWeekId,
       name: c.name,
       description: c.description ?? null,
-      maxPoints: c.maxPoints ?? null,
-      placementPoints: c.placementPoints ?? null,
+      // An individual `participation` Competition has none; a team one has
+      // them, not N (the CHECK `competition_participation_columns`).
+      placementPoints:
+        c.format === "participation" && c.scoring === "individual"
+          ? null
+          : (c.placementPoints ?? null),
       scoring: c.scoring,
       countsTowardTeam: c.countsTowardTeam,
       competitionGroup: c.group ?? null,
       format: c.format,
       bracketConfig: c.bracketConfig ?? null,
-      gameType: c.gameType ?? null,
-      // Checked against the Game Type by `competitionSeedSchema`.
+      // Checked against the Format by `competitionSeedSchema`.
       gameConfig: (c.gameConfig ?? null) as GamesConfig | null,
       entrantsOpen: c.entrantsOpen ?? false,
+      // Placement only (the seed schema); like `format`, set on insert only.
+      scoreDirection: c.scoreDirection ?? "none",
+      finalizedAt: c.finalizedAt ? new Date(c.finalizedAt) : null,
       ...(c.format === "participation"
         ? {
-            participationPoints: c.participationPoints ?? 1,
-            participationTeamScoring:
-              c.scoring === "team"
-                ? (c.participationTeamScoring ?? "ranked")
-                : null,
+            participationPoints:
+              c.scoring === "individual" ? (c.participationPoints ?? 1) : null,
             selfCheckIn: c.selfCheckIn ?? false,
             checkInClosesAt: c.checkInClosesAt
               ? new Date(c.checkInClosesAt)
@@ -321,20 +334,22 @@ async function syncCompetitions(
     target: [competition.warWeekId, competition.name],
     set: {
       description: sql`excluded.description`,
-      maxPoints: sql`excluded.max_points`,
       placementPoints: sql`excluded.placement_points`,
       scoring: sql`excluded.scoring`,
       countsTowardTeam: sql`excluded.counts_toward_team`,
       competitionGroup: sql`excluded.competition_group`,
-      // A `participation` Competition's team scoring follows the scoring:
-      // kept while team, `ranked` on becoming team, null otherwise.
-      participationTeamScoring: participationTeamScoringFor(
-        sql`excluded.scoring`,
-      ),
-      // `format`, `bracketConfig`, `gameType`, `gameConfig`,
-      // `entrantsOpen` and the Participation settings are set on insert
-      // only: a reload must never turn an Organizer's Bracket back into
-      // `points` or undo its Heats, Games or Participation settings.
+      // A `participation` Competition's N follows its scoring (the CHECK
+      // `competition_participation_columns`, with the Placement Points
+      // above): none for a team one, the Host's N kept (else the seed's) for
+      // an individual one.
+      participationPoints: sql`case when excluded.participation_points is null
+        then null
+        else coalesce(${competition.participationPoints}, excluded.participation_points) end`,
+      // `format`, `bracketConfig`, `gameConfig`, `entrantsOpen`, the Score
+      // direction, a seeded Finalize and the other Participation settings
+      // are set on insert only: a reload must
+      // never turn an Organizer's Bracket back into `placement` or undo its
+      // Heats, Games or Participation settings.
       updatedAt: new Date(),
     },
     scope: eq(competition.warWeekId, warWeekId),
@@ -460,31 +475,105 @@ async function syncFinaleSlides(
   });
 }
 
-async function insertPointsEntries(
+/** Discretionary points: no Competition; the reason is the note. */
+async function insertDiscretionaryPoints(
   tx: DBTx,
+  warWeekId: string,
+  seed: WarWeekSeed,
+  teamIds: Map<string, string>,
+  participantIds: Map<string, string>,
+) {
+  const rows = seed.discretionaryPoints.map((e) => ({
+    warWeekId,
+    competitionId: null,
+    teamId: resolveOptional(teamIds, e.team),
+    participantId: resolveOptional(participantIds, e.participant),
+    points: e.points,
+    note: e.reason,
+    enteredByEmail: e.enteredByEmail,
+    enteredAt: new Date(e.enteredAt),
+    seedKey: e.key,
+  }));
+  if (!rows.length) return;
+  await tx
+    .insert(pointsEntry)
+    .values(rows)
+    .onConflictDoNothing({
+      target: [pointsEntry.warWeekId, pointsEntry.seedKey],
+    });
+}
+
+/**
+ * Inserts the seed's Placements, each only if absent (by any of the
+ * sheet's unique keys, `seed_key` among them), never updating one. Then,
+ * for a Competition seeded Finalized that is still Finalized and has no
+ * generated Points Entries yet, writes them as Finalize does, at the seed's
+ * time and author, keyed `placement:<placement key>`: so a reload, or a
+ * Host's Reopen or re-Finalize, is never doubled or undone.
+ */
+async function insertPlacements(
+  tx: DBTx,
+  warWeekId: string,
   seed: WarWeekSeed,
   competitionIds: Map<string, string>,
   teamIds: Map<string, string>,
   participantIds: Map<string, string>,
 ) {
-  if (!seed.pointsEntries.length) return;
-  await tx
-    .insert(pointsEntry)
-    .values(
-      seed.pointsEntries.map((e) => ({
-        competitionId: resolve(competitionIds, e.competition),
-        teamId: resolveOptional(teamIds, e.team),
-        participantId: resolveOptional(participantIds, e.participant),
-        points: e.points,
-        note: e.note ?? null,
-        enteredByEmail: e.enteredByEmail,
-        enteredAt: new Date(e.enteredAt),
-        seedKey: e.key,
-      })),
-    )
-    .onConflictDoNothing({
-      target: [pointsEntry.competitionId, pointsEntry.seedKey],
+  if (seed.placements.length) {
+    await tx
+      .insert(placement)
+      .values(
+        seed.placements.map((p) => ({
+          competitionId: resolve(competitionIds, p.competition),
+          teamId: resolveOptional(teamIds, p.team),
+          participantId: resolveOptional(participantIds, p.participant),
+          place: p.place,
+          score: p.score ?? null,
+          seedKey: p.key,
+        })),
+      )
+      .onConflictDoNothing();
+  }
+  for (const c of seed.competitions) {
+    if (!c.finalized || !c.finalizedAt || !c.finalizedByEmail) continue;
+    const competitionId = resolve(competitionIds, c.name);
+    const [found] = await tx
+      .select({
+        id: competition.id,
+        warWeekId: competition.warWeekId,
+        placementPoints: competition.placementPoints,
+        finalizedAt: competition.finalizedAt,
+      })
+      .from(competition)
+      .where(eq(competition.id, competitionId));
+    if (!found.finalizedAt) continue;
+    const generated = await tx.$count(
+      pointsEntry,
+      and(
+        eq(pointsEntry.competitionId, competitionId),
+        eq(pointsEntry.generatedByBracket, true),
+      ),
+    );
+    if (generated > 0) continue;
+    const rows = await getPlacementRows(found, tx);
+    const seedKeys = new Map(rows.map((r) => [r.id, r.seedKey]));
+    const values = placementEntryValues(rows, found, {
+      actorEmail: c.finalizedByEmail,
+      enteredAt: new Date(c.finalizedAt),
+      seedKeyOf: (rowId) => {
+        const key = seedKeys.get(rowId);
+        return key ? `placement:${key}` : null;
+      },
     });
+    if (values.length) {
+      await tx
+        .insert(pointsEntry)
+        .values(values.map((v) => ({ ...v, warWeekId })))
+        .onConflictDoNothing({
+          target: [pointsEntry.warWeekId, pointsEntry.seedKey],
+        });
+    }
+  }
 }
 
 /** The seed's Award Category keys as ids; an unknown key fails naming it. */

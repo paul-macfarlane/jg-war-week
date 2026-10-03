@@ -24,7 +24,7 @@ import type { AdminEdition } from "@/lib/access";
 import { type AdminSection, adminNavFor } from "@/lib/admin-sections";
 
 const TAB_CLASS =
-  "flex h-full flex-col items-center justify-center gap-1 text-xs";
+  "flex h-full flex-col items-center justify-center gap-1 px-1 text-center text-xs leading-tight";
 
 /**
  * Below `md`: the admin's fixed bottom section bar, for one-thumb use. Four

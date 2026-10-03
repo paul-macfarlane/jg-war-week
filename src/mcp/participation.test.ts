@@ -15,9 +15,7 @@ function view(
       name: "Daily Workout Check-in",
       scoring: "team",
       placementPoints: [5, 3, 1],
-      maxPoints: null,
-      participationPoints: 1,
-      participationTeamScoring: "ranked",
+      participationPoints: null,
       selfCheckIn: true,
       checkInClosesAt: CLOSES,
       closed: false,
@@ -61,7 +59,7 @@ describe("toParticipationResult", () => {
   it("points a Competition run another way elsewhere", () => {
     expect(
       toParticipationResult(
-        { name: "Bouncy Pong", scoring: "individual", format: "games" },
+        { name: "Bouncy Pong", scoring: "individual", format: "head-to-head" },
         undefined,
         "Bouncy Pong",
       ),
@@ -70,7 +68,7 @@ describe("toParticipationResult", () => {
       competition: {
         name: "Bouncy Pong",
         scoring: "individual",
-        format: "games",
+        format: "head-to-head",
       },
       participation: null,
       message:
@@ -95,7 +93,7 @@ describe("toParticipationResult", () => {
         name: "Daily Workout Check-in",
         scoring: "team",
         teamScoring: "ranked by headcount",
-        pointsPerParticipant: 1,
+        pointsPerParticipant: null,
         placementPoints: [5, 3, 1],
         selfCheckIn: true,
         checkInClosesAt: "2027-02-26T22:00:00.000Z",
@@ -119,7 +117,8 @@ describe("toParticipationResult", () => {
         ...view({
           name: "Spirit",
           scoring: "individual",
-          participationTeamScoring: null,
+          participationPoints: 2,
+          placementPoints: null,
           checkInClosesAt: null,
           closed: true,
         }),

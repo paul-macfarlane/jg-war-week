@@ -13,7 +13,11 @@ const nextConfig: NextConfig = {
       // hub; keep old admin links and bookmarks working.
       ...(
         [
-          ["/admin", "/admin/points"],
+          ["/admin", "/admin/competitions"],
+          // Points became Discretionary points (part 91): Competitions are
+          // recorded on their own pages.
+          ["/admin/points", "/admin/discretionary-points"],
+          ["/admin/points/:id", "/admin/discretionary-points"],
           ["/admin/setup", "/admin/settings"],
           ["/admin/setup/war-week", "/admin/settings"],
           ["/admin/setup/next", "/admin/settings"],

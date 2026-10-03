@@ -30,7 +30,7 @@ const PAGES: [path: string, purpose: string][] = [
   ["/install", "How to install JG War Week as an app."],
   [
     "/admin",
-    "For Organizers and Hosts; opens Points. Points (Points Entry and Standings), Competitions (Bracket builder and results with each Heat's time and place, Games settings and log), Schedule (Days and Schedule Items), Roster, Announcements, Awards, FAQ, Finale, Settings (War Week settings, Appearance Theme, Lifecycle), Organizers and the Guide.",
+    "For Organizers and Hosts; opens Competitions. Competitions (Bracket builder and results with each Heat's time and place, Head-to-head and Best score settings and Game log), Discretionary points (Organizers only), Schedule (Days and Schedule Items), Roster, Announcements, Awards, FAQ, Finale, Settings (War Week settings, Appearance Theme, Lifecycle), Organizers and the Guide.",
   ],
   ["/sign-in", "Google sign-in with a @jahnelgroup.com account."],
 ];
@@ -49,7 +49,7 @@ export function llmsTxt(origin: string): string {
 
   return `# JG War Week
 
-> The JG War Week app is where Jahnel Group organizers run War Week, the company's annual week of team competitions, and where participants follow it: themes, schedule, teams, competitions (points-based, or Brackets run single elimination or Heats), points, awards and announcements, the Finale, plus a history of past War Weeks.
+> The JG War Week app is where Jahnel Group organizers run War Week, the company's annual week of team competitions, and where participants follow it: themes, schedule, teams, competitions (a Placement sheet, Head-to-head or Best score Games, Participation, or Brackets run single elimination or Heats), points, awards and announcements, the Finale, plus a history of past War Weeks.
 
 Every page and API route except sign-in needs a signed-in Jahnel Group account.
 
@@ -59,7 +59,7 @@ editions stay in the Archive at \`/history\`. Standings are never hidden: they
 are always the current Standings, live or complete. The Finale
 (\`/<edition>/finale\`) is a closing-ceremony slideshow whose countdown plays those
 Standings, not a separate result — it changes nothing. Some Competitions run as a Bracket
-(single elimination or Heats) instead of plain points; \`get_bracket\` reads
+(single elimination or Heats) instead of a Placement sheet; \`get_bracket\` reads
 one by Competition name, with its Squads by name.
 
 ## Pages

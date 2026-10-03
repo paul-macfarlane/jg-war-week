@@ -9,29 +9,45 @@ const competition: CompetitionListItem = {
   id: "c1",
   name: "Bouncy Pong",
   description: null,
-  maxPoints: 10,
   scoring: "individual",
   countsTowardTeam: false,
   competitionGroup: null,
-  format: "games",
-  gameType: "head-to-head",
+  format: "head-to-head",
 };
 
 describe("CompetitionFacts", () => {
-  it("names a games Competition's Game Type", () => {
+  it("names a Head-to-head Competition's Format", () => {
     const html = renderToStaticMarkup(
       <CompetitionFacts competition={competition} teamLabel="House" />,
     );
-    expect(html).toContain("Games · Head-to-head");
+    expect(html).toContain("Head-to-head");
   });
 
-  it("shows no Games badge for another Format", () => {
+  it("names a Best score Competition's Format", () => {
     const html = renderToStaticMarkup(
       <CompetitionFacts
-        competition={{ ...competition, format: "points", gameType: null }}
+        competition={{ ...competition, format: "best-score" }}
         teamLabel="House"
       />,
     );
-    expect(html).not.toContain("Games ·");
+    expect(html).toContain("Best score");
+  });
+
+  it("shows only the scoring and Format badges, with no points-cap badge", () => {
+    const html = renderToStaticMarkup(
+      <CompetitionFacts competition={competition} teamLabel="House" />,
+    );
+    expect(html).not.toMatch(/\bpts?\b|\bcap\b|\bmax\b/i);
+    expect(html.match(/<span/g)).toHaveLength(2);
+  });
+
+  it("shows no Games Format badge for another Format", () => {
+    const html = renderToStaticMarkup(
+      <CompetitionFacts
+        competition={{ ...competition, format: "placement" }}
+        teamLabel="House"
+      />,
+    );
+    expect(html).not.toMatch(/Head-to-head|Best score|Games/);
   });
 });

@@ -2,6 +2,7 @@
 
 - Status: accepted (built in `.scratch/hardening/issues/03`)
 - Date: 2026-09-26
+- Extended by: ADR 0009 (Check in), ADR 0010 (Placement and Discretionary points)
 - Context: post-hackathon grilling session
 
 ## Context
@@ -28,9 +29,9 @@ Three roles:
 
 | Role | Scope | Can |
 |---|---|---|
-| **Organizer** | Global: one list across every War Week, stored in the database and managed by Organizers in `/admin` | Everything, in every War Week, including the global Award Categories (create, rename, archive, restore) |
-| **Host** | Per Competition: an Organizer assigns JG emails to a Competition | Everything on that Competition (setup including scoring and Placement Points, its Bracket, its Points Entries, its Schedule Items; for a `participation` Competition, its setup, ticking who took part, Close and Reopen); post Announcements and edit or delete their own |
-| **Participant** | Any signed-in JG user | Read; self-report (ADR 0005); logging, editing and deleting their own Games, and enrolling or withdrawing (themselves, their Team, or a Squad) in a Competition that allows it (ADR 0006); Check in or out of a `participation` Competition that allows it (ADR 0009) |
+| **Organizer** | Global: one list across every War Week, stored in the database and managed by Organizers in `/admin` | Everything, in every War Week, including the global Award Categories (create, rename, archive, restore) and Discretionary points (give, edit, delete: ADR 0010) |
+| **Host** | Per Competition: an Organizer assigns JG emails to a Competition | Everything on that Competition (setup including scoring and Placement Points, its Bracket, its Placements (add rows, Finalize, Reopen: ADR 0010), its Schedule Items; for a `participation` Competition, its setup, ticking who took part, Close and Reopen); post Announcements and edit or delete their own |
+| **Participant** | Any signed-in JG user | Read; self-report (ADR 0005); logging, editing and deleting their own Games, and enrolling or withdrawing (themselves, their Team, or a Squad) in a Competition that allows it (ADR 0006); Check in or out of a `participation` Competition that allows it (ADR 0009); never record Placements (ADR 0010) |
 
 - The per-edition `organizerEmails` list is removed. The migration seeds the
   global list from the current War Week's `organizerEmails`.
@@ -38,8 +39,8 @@ Three roles:
 - A Host doesn't have to be a Participant.
 - "Create next War Week", when it copies Competitions, copies their Hosts too.
 - Organizer-only: creating or deleting Competitions, assigning Hosts, Teams,
-  Participants, Awards, FAQ, War Week settings and lifecycle, and the
-  Organizer list.
+  Participants, Awards, FAQ, War Week settings and lifecycle, Discretionary
+  points, and the Organizer list.
 - Hosts work in the same `/admin` pages, trimmed to their Competitions.
   "Admin" is the name of that area, never a role.
 - One `can(actor, action, target)` rule in `src/lib/access.ts` decides every

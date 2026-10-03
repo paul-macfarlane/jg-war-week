@@ -8,7 +8,7 @@ import {
   type WarWeekAction,
   can,
 } from "@/lib/access";
-import type { GameType } from "@/lib/enums";
+import type { GameFormat } from "@/lib/enums";
 import type { GamesConfig } from "@/lib/games/config";
 import { SQUAD_MISSING } from "@/lib/games/enroll-rule";
 import { postedGamePlayerIds } from "@/lib/games/input";
@@ -265,11 +265,11 @@ export async function authorizeCheckIn(
  * in ADR 0003's order: authenticate; the ids shaped like row ids; load the
  * Competition and its War Week; load the Game facts for the actor's email
  * (whether they run this Competition, account linking) with
- * the player ids `input` posts for the Competition's Game Type
+ * the player ids `input` posts for the Competition's Format
  * (`postedGamePlayerIds`, so another type's keys never reach `can`; none
  * for a delete); run
  * `can`, which binds Organizers and Hosts too when closed. Returns the
- * Competition's Game Type and config, which the caller parses its input
+ * Competition's Format and config, which the caller parses its input
  * with only after this. Never throws on a refusal.
  */
 export async function authorizeGameWrite(
@@ -283,7 +283,7 @@ export async function authorizeGameWrite(
       actor: NonNullable<Actor>;
       warWeek: TargetWarWeek;
       ctx: MutationContext;
-      competition: { gameType: GameType; config: GamesConfig };
+      competition: { gameFormat: GameFormat; config: GamesConfig };
     }
   | Refused
 > {
@@ -301,8 +301,8 @@ export async function authorizeGameWrite(
     isLog ? null : (gameId as string),
     actor.email,
     {
-      playerIds: (gameType) =>
-        action === "games.delete" ? [] : postedGamePlayerIds(gameType, input),
+      playerIds: (gameFormat) =>
+        action === "games.delete" ? [] : postedGamePlayerIds(gameFormat, input),
     },
   );
   if (!facts.competition) return { ok: false, error: NOT_GAMES };
@@ -322,7 +322,7 @@ export async function authorizeGameWrite(
     warWeek: target.warWeek,
     ctx: { warWeekId: target.warWeek.id, actorEmail: actor.email },
     competition: {
-      gameType: facts.competition.gameType,
+      gameFormat: facts.competition.gameFormat,
       config: facts.competition.config,
     },
   };

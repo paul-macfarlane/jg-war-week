@@ -1,4 +1,4 @@
-import { aliasedTable, and, desc, eq, inArray } from "drizzle-orm";
+import { aliasedTable, and, desc, eq, inArray, isNull } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import {
@@ -21,15 +21,8 @@ import {
 } from "@/queries/profile-join";
 
 /**
- * The most manual Points Entries Home reads: far more than the newest
- * `RECENT_RESULTS_LIMIT` rows' groups need, so the War Week's whole ledger
- * isn't loaded for five rows.
- */
-const MANUAL_ENTRY_LIMIT = 200;
-
-/**
  * A War Week's Recent results for Home, newest first (shaping rules in
- * `shapeRecentResults`). Reads the newest manual Points Entries and the
+ * `shapeRecentResults`). Reads the newest Discretionary entries and the
  * generated ones of only the newest finalized Competitions: the rest
  * can't reach the newest `RECENT_RESULTS_LIMIT` rows.
  */
@@ -48,25 +41,23 @@ export async function getRecentResults(
     .where(eq(competition.warWeekId, warWeek.id));
   const newestFinalized = competitions
     .flatMap((c) =>
-      c.finalizedAt && c.format !== "points"
-        ? [{ id: c.id, at: c.finalizedAt.getTime() }]
-        : [],
+      c.finalizedAt ? [{ id: c.id, at: c.finalizedAt.getTime() }] : [],
     )
     .sort((a, b) => b.at - a.at)
     .slice(0, RECENT_RESULTS_LIMIT)
     .map((c) => c.id);
 
   const entries = () => resultEntryQuery(dbOrTx);
-  const [manual, generated] = await Promise.all([
+  const [discretionary, generated] = await Promise.all([
     entries()
       .where(
         and(
-          eq(competition.warWeekId, warWeek.id),
-          eq(pointsEntry.generatedByBracket, false),
+          eq(pointsEntry.warWeekId, warWeek.id),
+          isNull(pointsEntry.competitionId),
         ),
       )
       .orderBy(desc(pointsEntry.enteredAt))
-      .limit(MANUAL_ENTRY_LIMIT),
+      .limit(RECENT_RESULTS_LIMIT),
     newestFinalized.length > 0
       ? entries().where(
           and(
@@ -77,13 +68,13 @@ export async function getRecentResults(
       : Promise.resolve([]),
   ]);
 
-  const shaped = [...manual, ...generated].map(toResultEntry);
+  const shaped = [...discretionary, ...generated].map(toResultEntry);
   return shapeRecentResults(competitions, shaped);
 }
 
 /**
- * Points Entries with who each is for, as Recent results and the Finale's
- * Champions read them: a query to add `where`, `orderBy` and `limit` to.
+ * Points Entries (Discretionary ones included: no Competition) with who each
+ * is for, as Recent results and the Finale's Champions read them: a query to add `where`, `orderBy` and `limit` to.
  */
 export function resultEntryQuery(dbOrTx: DBOrTx) {
   const participantTeam = aliasedTable(team, "participant_team");
@@ -93,6 +84,7 @@ export function resultEntryQuery(dbOrTx: DBOrTx) {
         id: pointsEntry.id,
         competitionId: pointsEntry.competitionId,
         points: pointsEntry.points,
+        note: pointsEntry.note,
         enteredAt: pointsEntry.enteredAt,
         generatedByBracket: pointsEntry.generatedByBracket,
         teamId: pointsEntry.teamId,
@@ -104,7 +96,6 @@ export function resultEntryQuery(dbOrTx: DBOrTx) {
         participantTeamColor: participantTeam.color,
       })
       .from(pointsEntry)
-      .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
       .leftJoin(team, eq(team.id, pointsEntry.teamId))
       .leftJoin(participant, eq(participant.id, pointsEntry.participantId))
       .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))
@@ -120,6 +111,7 @@ export function toResultEntry(
     id: r.id,
     competitionId: r.competitionId,
     points: r.points,
+    note: r.note,
     enteredAt: r.enteredAt,
     generatedByBracket: r.generatedByBracket,
     target: r.teamId

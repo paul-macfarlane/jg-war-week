@@ -6,12 +6,18 @@
  * (`AdminSectionIcon`), as src/lib never imports icons (ADR 0001).
  */
 const ADMIN_SECTIONS = [
-  { label: "Points", icon: "points", href: "/admin/points", tab: true },
   {
     label: "Competitions",
     icon: "competitions",
     href: "/admin/competitions",
     tab: true,
+  },
+  {
+    label: "Discretionary points",
+    icon: "points",
+    href: "/admin/discretionary-points",
+    tab: true,
+    organizerOnly: true,
   },
   { label: "Schedule", icon: "schedule", href: "/admin/schedule", tab: true },
   {
@@ -70,8 +76,8 @@ type AdminNavItem = {
 };
 
 /**
- * The phone's admin nav: the bottom bar's tabs (Points, Competitions,
- * Schedule, Announcements) and the rest of the viewer's sections for the
+ * The phone's admin nav: the bottom bar's tabs (Competitions, Discretionary
+ * points, Schedule, Announcements) and the rest of the viewer's sections for the
  * More Sheet. `moreCurrent` is true when `current` is one of the More sections.
  */
 export function adminNavFor(

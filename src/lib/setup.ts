@@ -3,24 +3,21 @@ import { type ZodType, z } from "zod";
 import type { Competition, Participant, Team, WarWeek } from "@/db/schema";
 import { heatsConfigSchema } from "@/lib/bracket/config";
 import { HEX_COLOR } from "@/lib/color";
-import { MAX_PLACEMENTS } from "@/lib/competitions";
+import { placementLimitRefusal } from "@/lib/competitions";
 import { dayOutsideRangeError } from "@/lib/day-range";
 import {
   COMPETITION_FORMATS,
   COMPETITION_SCORINGS,
   FONT_PRESETS,
-  GAME_TYPES,
-  PARTICIPATION_TEAM_SCORINGS,
+  SCORE_DIRECTIONS,
   WAR_WEEK_MODES,
+  isGameFormat,
 } from "@/lib/enums";
 import { fieldErrorsFrom } from "@/lib/form-errors";
 import { gamesConfigSchema } from "@/lib/games/config";
 import { participationPointsSchema } from "@/lib/participation/input";
-import {
-  FIRST_OVER_MAX,
-  parsePlacementPointsText,
-} from "@/lib/placement-points";
-import { POINTS_NUMBER, pointsSchema as points } from "@/lib/points-entry";
+import { parsePlacementPointsText } from "@/lib/placement-points";
+import { pointsSchema as points } from "@/lib/points-entry";
 import type { Parsed } from "@/lib/result";
 
 export { dayOutsideRangeError } from "@/lib/day-range";
@@ -100,15 +97,15 @@ export const participantSeedSchema = z.object({
 });
 
 export const competitionSeedSchema = z
-  .object({
+  // Strict: a key that no longer exists in a seed (a removed setting) is an
+  // error, never silently ignored.
+  .strictObject({
     name: z.string().min(1).max(120),
     description: z.string().max(2000).nullish(),
-    maxPoints: points.positive().nullish(),
     /** Placement Points for 1st, 2nd, 3rd…, highest first. */
     placementPoints: z
       .array(points.min(0, { error: "must be at least 0" }))
       .min(1, { error: "at least 1 place" })
-      .max(MAX_PLACEMENTS, { error: `at most ${MAX_PLACEMENTS} places` })
       .refine((list) => list.every((p, i) => i === 0 || p <= list[i - 1]), {
         error: "each place must be worth no more than the one above it",
       })
@@ -117,39 +114,70 @@ export const competitionSeedSchema = z
     countsTowardTeam: z.boolean().default(false),
     group: z.string().min(1).max(120).nullish(),
     /** How the Competition is run; a Bracket's Entrants aren't seeded yet. */
-    format: z.enum(COMPETITION_FORMATS).default("points"),
+    format: z.enum(COMPETITION_FORMATS).default("placement"),
     /** The Format's settings; a heats Competition without one gets the default. */
     bracketConfig: heatsConfigSchema.nullish(),
-    /** A `games` Competition's Game Type: required for `games`, else absent. */
-    gameType: z.enum(GAME_TYPES).nullish(),
-    /** The Game Type's settings (`src/lib/games/config.ts`); omitted for the default. */
+    /** A Head-to-head or Best score Competition's settings (`src/lib/games/config.ts`); omitted for the default. */
     gameConfig: z.unknown().optional(),
-    /** A `games` Competition open to everyone eligible; omitted means a fixed list. */
+    /** A Head-to-head or Best score Competition open to everyone eligible; omitted means a fixed list. */
     entrantsOpen: z.boolean().optional(),
-    /** A `participation` Competition's points per Participant; omitted is 1. */
+    /** An individual `participation` Competition's points per Participant; omitted is 1. A team one takes `placementPoints` instead. */
     participationPoints: participationPointsSchema.nullish(),
-    /** A team `participation` Competition's scoring; omitted is `ranked`. */
-    participationTeamScoring: z.enum(PARTICIPATION_TEAM_SCORINGS).nullish(),
     /** A `participation` Competition's Self check-in switch; omitted is off. */
     selfCheckIn: z.boolean().nullish(),
     /** A `participation` Competition's check-in close time; omitted is none. */
     checkInClosesAt: z.iso.datetime({ offset: true }).nullish(),
+    /** A Placement Competition's Score direction; omitted is none. Set on insert only. */
+    scoreDirection: z.enum(SCORE_DIRECTIONS).optional(),
+    /**
+     * A Placement Competition seeded Finalized, with its real time and
+     * author (all three together): the loader writes its generated Points
+     * Entries as Finalize does. Set on insert only.
+     */
+    finalized: z.literal(true).optional(),
+    finalizedAt: z.iso.datetime({ offset: true }).optional(),
+    finalizedByEmail: emailSchema.optional(),
   })
-  .refine(
-    (c) =>
-      c.maxPoints == null ||
-      c.placementPoints == null ||
-      c.placementPoints[0] <= c.maxPoints,
-    {
-      message: "1st place can't be worth more than maxPoints",
-      path: ["placementPoints"],
-    },
-  )
   .refine((c) => !c.countsTowardTeam || c.scoring === "individual", {
     message: "countsTowardTeam can only be set on an individual Competition",
     path: ["countsTowardTeam"],
   })
   .superRefine((c, ctx) => {
+    // The Format's limit on places (a Bracket's), one rule for every caller.
+    const placeRefusal = placementLimitRefusal(
+      c.format,
+      c.placementPoints ?? null,
+    );
+    if (placeRefusal) {
+      ctx.addIssue({
+        code: "custom",
+        message: placeRefusal,
+        path: ["placementPoints"],
+      });
+    }
+    // The Score direction and a seeded Finalize are Placement's alone.
+    if (c.format !== "placement") {
+      for (const key of ["scoreDirection", "finalized"] as const) {
+        if (c[key] !== undefined) {
+          ctx.addIssue({
+            code: "custom",
+            message: `${key} is only for a placement Competition`,
+            path: [key],
+          });
+        }
+      }
+    }
+    const finalizeKeys = [c.finalized, c.finalizedAt, c.finalizedByEmail];
+    if (
+      finalizeKeys.some((v) => v !== undefined) &&
+      !finalizeKeys.every((v) => v !== undefined)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "finalized needs finalizedAt and finalizedByEmail together",
+        path: ["finalized"],
+      });
+    }
     // A heats config is checked by its field; any other Format takes none.
     if (c.bracketConfig != null && c.format !== "heats") {
       ctx.addIssue({
@@ -158,12 +186,11 @@ export const competitionSeedSchema = z
         path: ["bracketConfig"],
       });
     }
-    // Participation settings only on a `participation` Competition, its
-    // team scoring only in team scoring (the database CHECK
-    // `competition_participation_columns`).
+    // Participation settings only on a `participation` Competition: an
+    // individual one takes N and no Placement Points, a team one Placement
+    // Points and no N (the database CHECK `competition_participation_columns`).
     const participationKeys = [
       "participationPoints",
-      "participationTeamScoring",
       "selfCheckIn",
       "checkInClosesAt",
     ] as const;
@@ -177,24 +204,35 @@ export const competitionSeedSchema = z
           });
         }
       }
-    } else if (c.scoring !== "team" && c.participationTeamScoring != null) {
-      ctx.addIssue({
-        code: "custom",
-        message: "participationTeamScoring is only for a team Competition",
-        path: ["participationTeamScoring"],
-      });
-    }
-    // A Game Type exactly when the Format is games (the database CHECK
-    // `competition_game_type_iff_games`), so a bad seed is a zod error.
-    if (c.format === "games") {
-      if (c.gameType == null) {
+    } else if (c.scoring === "team") {
+      if (c.participationPoints != null) {
         ctx.addIssue({
           code: "custom",
-          message: "gameType is required for a games Competition",
-          path: ["gameType"],
+          message: "participationPoints is only for an individual Competition",
+          path: ["participationPoints"],
         });
-      } else if (c.gameConfig != null) {
-        const config = gamesConfigSchema(c.gameType).safeParse(c.gameConfig);
+      }
+      if (c.placementPoints == null) {
+        ctx.addIssue({
+          code: "custom",
+          message:
+            "placementPoints is required for a team participation Competition",
+          path: ["placementPoints"],
+        });
+      }
+    } else if (c.placementPoints != null) {
+      ctx.addIssue({
+        code: "custom",
+        message: "placementPoints is only for a team participation Competition",
+        path: ["placementPoints"],
+      });
+    }
+    // Game config only on a Head-to-head or Best score Competition (the
+    // database CHECK `competition_game_config_head_to_head_or_best_score`),
+    // so a bad seed is a zod error.
+    if (isGameFormat(c.format)) {
+      if (c.gameConfig != null) {
+        const config = gamesConfigSchema(c.format).safeParse(c.gameConfig);
         if (!config.success) {
           ctx.addIssue({
             code: "custom",
@@ -205,11 +243,11 @@ export const competitionSeedSchema = z
       }
       return;
     }
-    for (const key of ["gameType", "gameConfig", "entrantsOpen"] as const) {
+    for (const key of ["gameConfig", "entrantsOpen"] as const) {
       if (c[key] != null) {
         ctx.addIssue({
           code: "custom",
-          message: `${key} is only for a games Competition`,
+          message: `${key} is only for a head-to-head or best-score Competition`,
           path: [key],
         });
       }
@@ -458,7 +496,6 @@ export type CompetitionInput = {
   name: string;
   description: string;
   scoring: string;
-  maxPoints: string;
   /** Points for 1st, 2nd, 3rd…, separated by commas or spaces. */
   placementPoints: string;
   countsTowardTeam: boolean;
@@ -466,18 +503,15 @@ export type CompetitionInput = {
   /**
    * How to run the Competition, chosen only on create; the edit form never
    * sends one (the Format changes only through the Bracket actions).
-   * Blank (or omitted) means "points".
+   * Blank (or omitted) means "placement".
    */
   format?: string;
-  /** The Game Type, read only when the Format is `games`. */
-  gameType?: string;
 };
 export type CompetitionValues = Pick<
   Competition,
   | "name"
   | "description"
   | "scoring"
-  | "maxPoints"
   | "placementPoints"
   | "countsTowardTeam"
   | "competitionGroup"
@@ -486,11 +520,11 @@ export type CompetitionValues = Pick<
 /**
  * A new Competition's fields, with the Format an Organizer chose on create.
  * Defaults in `createCompetition` when omitted (a direct mutation call that
- * predates the create form's Format field), to "points". `createCompetition`
+ * predates the create form's Format field), to "placement". `createCompetition`
  * alone owns the Format's `bracketConfig` default (`defaultConfig`).
  */
 export type CompetitionCreateValues = CompetitionValues &
-  Partial<Pick<Competition, "format" | "gameType">>;
+  Partial<Pick<Competition, "format">>;
 
 const FIELD_LABELS: Record<string, string> = {
   storyTheme: "Story Theme",
@@ -525,7 +559,6 @@ const FIELD_LABELS: Record<string, string> = {
   email: "Email",
   description: "Description",
   scoring: "Scoring",
-  maxPoints: "Max points",
   placementPoints: "Placement Points",
   group: "Group",
   format: "Format",
@@ -683,7 +716,6 @@ const competitionInputShape = z.object({
   name: z.string(),
   description: z.string(),
   scoring: z.string(),
-  maxPoints: z.string(),
   placementPoints: z.string(),
   countsTowardTeam: z.boolean(),
   group: z.string(),
@@ -700,11 +732,6 @@ export function parseCompetitionInput(
   const shape = parseWith(competitionInputShape, input);
   if (!shape.ok) return shape;
   input = shape.value;
-  const maxPoints = input.maxPoints.trim();
-  if (maxPoints && !POINTS_NUMBER.test(maxPoints)) {
-    const error = "Max points must be a number.";
-    return { ok: false, error, fieldErrors: { maxPoints: error } };
-  }
   const places = parsePlacementPointsText(input.placementPoints);
   if (!places.ok) return places;
 
@@ -714,7 +741,6 @@ export function parseCompetitionInput(
       name: input.name.trim(),
       description: input.description.trim() || null,
       scoring: input.scoring,
-      maxPoints: maxPoints ? Number(maxPoints) : null,
       placementPoints: places.value,
       countsTowardTeam: input.countsTowardTeam,
       group: input.group.trim() || null,
@@ -727,14 +753,8 @@ export function parseCompetitionInput(
       if (issue.path[0] !== "placementPoints" || issue.path.length > 1) {
         return null;
       }
-      if (issue.code === "too_big") {
-        return `Placement Points cover at most ${issue.maximum} places.`;
-      }
       if (issue.code !== "custom") return null;
-      // Two seed refines share this path; the 1st-vs-max one names 1st.
-      return issue.message.startsWith("1st")
-        ? FIRST_OVER_MAX
-        : "Each place's Placement Points must be no more than the place above it.";
+      return "Each place's Placement Points must be no more than the place above it.";
     },
   );
   if (!parsed.ok) return parsed;
@@ -747,7 +767,6 @@ export function parseCompetitionInput(
       name: value.name,
       description: value.description ?? null,
       scoring: value.scoring,
-      maxPoints: value.maxPoints ?? null,
       placementPoints: value.placementPoints ?? null,
       countsTowardTeam: value.countsTowardTeam,
       competitionGroup: value.group ?? null,
@@ -756,7 +775,7 @@ export function parseCompetitionInput(
 }
 
 const formatFieldSchema = z.object({
-  format: z.enum(COMPETITION_FORMATS).default("points"),
+  format: z.enum(COMPETITION_FORMATS).default("placement"),
 });
 
 /**
@@ -775,21 +794,20 @@ export function parseCreateCompetitionInput(
   const formatParsed = parseWith(formatFieldSchema, {
     format:
       typeof input.format === "string"
-        ? input.format.trim() || "points"
-        : (input.format ?? "points"),
+        ? input.format.trim() || "placement"
+        : (input.format ?? "placement"),
   });
   if (!formatParsed.ok) return formatParsed;
   const { format } = formatParsed.value;
-  if (format !== "games") return { ok: true, value: { ...base.value, format } };
-  const gameType = z.enum(GAME_TYPES).safeParse(input.gameType);
-  if (!gameType.success) {
-    const error = "Choose a Game Type.";
-    return { ok: false, error, fieldErrors: { gameType: error } };
+  const tooMany = placementLimitRefusal(format, base.value.placementPoints);
+  if (tooMany) {
+    return {
+      ok: false,
+      error: tooMany,
+      fieldErrors: { placementPoints: tooMany },
+    };
   }
-  return {
-    ok: true,
-    value: { ...base.value, format, gameType: gameType.data },
-  };
+  return { ok: true, value: { ...base.value, format } };
 }
 
 const FREE_FOR_ALL_HAS_NO_TEAMS = "A free-for-all War Week has no Teams.";
@@ -850,13 +868,20 @@ function placementPointsChanged(
   return a.length !== b.length || a.some((value, index) => value !== b[index]);
 }
 
+/** A Finalized Placement Competition's refusal of a setup or Format change. */
+export const PLACEMENT_IS_FINALIZED =
+  "This Competition is finalized. Reopen it first.";
+
 /**
  * Refuses a Competition whose name is taken, a team Competition in a
  * free-for-all, a scoring change that would strand its Points Entries, or a
- * scoring or Placement Points change while its Bracket is finalized.
+ * scoring or Placement Points change while it's Finalized or closed.
  */
 export function competitionGuardError(
-  values: Pick<CompetitionValues, "name" | "scoring" | "placementPoints">,
+  values: Pick<CompetitionValues, "name" | "scoring" | "placementPoints"> & {
+    /** The chosen Format on create; an edit keeps `existing.format`. */
+    format?: Competition["format"];
+  },
   ctx: {
     mode: WarWeek["mode"];
     nameTaken: boolean;
@@ -866,7 +891,7 @@ export function competitionGuardError(
       placementPoints: Competition["placementPoints"];
       pointsEntryCount: number;
       finalizedAt: Competition["finalizedAt"];
-      /** Omitted for a Competition that predates Formats: not `games`. */
+      /** Omitted for a Competition that predates Formats: not Head-to-head or Best score. */
       format?: Competition["format"];
     } | null;
   },
@@ -878,15 +903,21 @@ export function competitionGuardError(
     return "A free-for-all War Week has no Teams, so its Competitions are individual.";
   }
   const existing = ctx.existing;
+  const format = values.format ?? existing?.format;
+  const tooMany =
+    format && placementLimitRefusal(format, values.placementPoints);
+  if (tooMany) return tooMany;
   if (
     existing &&
     existing.finalizedAt &&
     (existing.scoring !== values.scoring ||
       placementPointsChanged(existing.placementPoints, values.placementPoints))
   ) {
-    // A closed `games` or `participation` Competition reuses `finalized_at`
-    // (R3 decision 1).
-    return existing.format === "games" || existing.format === "participation"
+    // A closed Head-to-head, Best score or `participation` Competition
+    // reuses `finalized_at` (R3 decision 1); so does a Finalized Placement.
+    if (existing.format === "placement") return PLACEMENT_IS_FINALIZED;
+    return (existing.format !== undefined && isGameFormat(existing.format)) ||
+      existing.format === "participation"
       ? "This Competition is closed. Reopen the Competition first."
       : "This Competition's Bracket is finalized. Un-finalize the Bracket first.";
   }

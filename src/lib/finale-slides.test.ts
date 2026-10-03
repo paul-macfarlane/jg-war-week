@@ -232,25 +232,27 @@ const xii = JSON.parse(
   readFileSync(path.resolve(__dirname, "../../seeds/demo/xii.json"), "utf8"),
 ) as {
   participants: unknown[];
-  pointsEntries: { competition: string; points: number }[];
+  placements: { competition: string }[];
 };
 
 describe("byTheNumbers", () => {
   it("shows the XII demo's figures, leaving out the zeros", () => {
-    // What the XII demo loads: its roster and its Points Entries; no Game
-    // is logged and no Heat played.
+    // What the XII demo loads: its roster and its two Finalized Placement
+    // Competitions, one generated Points Entry per Placement; no Game is
+    // logged and no Heat played. Points handed out is Mile Run's 3 + 2 + 1
+    // plus Step Challenge's 7 + 6.5 + 5.5 + 4.5 + 3.5 + 3 + 2.5 + 2 + 1.5 +
+    // 1 + 1 + 0.5, worked by hand.
     const figures = byTheNumbers({
-      competitionsRun: new Set(xii.pointsEntries.map((e) => e.competition))
-        .size,
+      competitionsRun: new Set(xii.placements.map((p) => p.competition)).size,
       gamesLogged: 0,
       heatsPlayed: 0,
-      pointsEntries: xii.pointsEntries.length,
-      pointsHandedOut: xii.pointsEntries.reduce((sum, e) => sum + e.points, 0),
+      pointsEntries: xii.placements.length,
+      pointsHandedOut: 44.5,
       participants: xii.participants.length,
     });
     expect(figures).toEqual([
       { label: "Competitions run", value: "2" },
-      { label: "Points Entries", value: "18" },
+      { label: "Points Entries", value: "15" },
       { label: "Points handed out", value: "44.5" },
       { label: "Participants", value: "12" },
     ]);
@@ -332,7 +334,12 @@ describe("championsList", () => {
           format: "heats",
           finalizedAt: at(30),
         },
-        { id: "pong", name: "Ping Pong", format: "games", finalizedAt: at(10) },
+        {
+          id: "pong",
+          name: "Ping Pong",
+          format: "head-to-head",
+          finalizedAt: at(10),
+        },
         {
           id: "workout",
           name: "Daily Workout Check-in",
@@ -353,7 +360,12 @@ describe("championsList", () => {
           format: "single-elimination",
           finalizedAt: null,
         },
-        { id: "mile", name: "Mile Run", format: "points", finalizedAt: at(1) },
+        {
+          id: "mile",
+          name: "Mile Run",
+          format: "placement",
+          finalizedAt: at(1),
+        },
       ],
       [
         generated("chess", ada, 5),
@@ -373,7 +385,7 @@ describe("championsList", () => {
       {
         competitionId: "pong",
         competition: "Ping Pong",
-        format: "games",
+        format: "head-to-head",
         label: "Winner",
         title: "Tie: Fay Falcon & Jax Jetpack",
         winners: [fay, jax],
@@ -397,10 +409,42 @@ describe("championsList", () => {
     ]);
   });
 
+  it("lists a Finalized Placement's winner", () => {
+    expect(
+      championsList(
+        [
+          {
+            id: "mile",
+            name: "Mile Run",
+            format: "placement",
+            finalizedAt: at(1),
+          },
+        ],
+        [generated("mile", jax, 10), generated("mile", ada, 6)],
+      ),
+    ).toEqual([
+      {
+        competitionId: "mile",
+        competition: "Mile Run",
+        format: "placement",
+        label: "Winner",
+        title: "Jax Jetpack",
+        winners: [jax],
+      },
+    ]);
+  });
+
   it("is empty with nothing finalized", () => {
     expect(
       championsList(
-        [{ id: "mile", name: "Mile Run", format: "points", finalizedAt: null }],
+        [
+          {
+            id: "mile",
+            name: "Mile Run",
+            format: "placement",
+            finalizedAt: null,
+          },
+        ],
         [],
       ),
     ).toEqual([]);
@@ -468,7 +512,7 @@ describe("finaleSlideData", () => {
       {
         competitionId: "pong",
         competition: "Ping Pong",
-        format: "games",
+        format: "head-to-head",
         label: "Winner",
         title: "Ada Anvil",
         winners: [

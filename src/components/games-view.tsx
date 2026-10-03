@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { YouTag } from "@/components/you";
-import type { GameType } from "@/lib/enums";
+import type { GameFormat } from "@/lib/enums";
 import type {
   BestScoreConfig,
   GamesConfig,
@@ -30,12 +30,12 @@ type Linked = { participantId: string; teamId: string | null } | null;
 type Filter = "all" | "mine";
 
 /**
- * What a `games` Competition's page shows, computed on the server for one
+ * What a Head-to-head or Best score Competition's page shows, computed on the server for one
  * viewer: names, ids and booleans only, never an email (R3 decision 17).
  */
 export type GamesViewProps = {
   competitionId: string;
-  gameType: GameType;
+  gameFormat: GameFormat;
   config: GamesConfig;
   scoring: Scoring;
   closed: boolean;
@@ -85,16 +85,16 @@ function statValue(row: GamesViewRow, key: string): string {
   return value === null || value === undefined ? "—" : String(value);
 }
 
-/** The leaderboard: rank, player, and the Game Type's stats (Games rules). */
+/** The leaderboard: rank, player, and the Format's stats (Games rules). */
 export function GamesLeaderboard({
-  gameType,
+  gameFormat,
   config,
   scoring,
   rows,
   linked,
   primaryColor,
 }: {
-  gameType: GameType;
+  gameFormat: GameFormat;
   config: GamesConfig;
   scoring: Scoring;
   rows: GamesViewRow[];
@@ -102,8 +102,8 @@ export function GamesLeaderboard({
   primaryColor: string;
 }) {
   const columns = leaderboardColumns(
-    gameType,
-    config as GamesConfigFor<typeof gameType>,
+    gameFormat,
+    config as GamesConfigFor<typeof gameFormat>,
   );
   if (rows.length === 0) {
     return <p className="text-foreground/70 text-sm">No players yet.</p>;
@@ -185,7 +185,7 @@ export function GamesLeaderboard({
  */
 export function GameLog({
   competitionId,
-  gameType,
+  gameFormat,
   unit,
   games,
   filter,
@@ -194,7 +194,7 @@ export function GameLog({
   onEdit,
 }: {
   competitionId: string;
-  gameType: GameType;
+  gameFormat: GameFormat;
   unit: string;
   games: GamesViewGame[];
   filter: Filter;
@@ -219,7 +219,7 @@ export function GameLog({
     <Card size="sm" className="py-1">
       <ol className="flex flex-col divide-y px-(--card-spacing)">
         {shown.map((g) => {
-          const summary = gameSummary(gameType, g.players, unit);
+          const summary = gameSummary(gameFormat, g.players, unit);
           return (
             <li
               key={g.id}
@@ -271,14 +271,14 @@ export function GameLog({
 }
 
 /**
- * A `games` Competition on its page: the closed or Best of banner, Log a
+ * A Head-to-head or Best score Competition on its page: the closed or Best of banner, Log a
  * Game (when the viewer may), the leaderboard, and the Game log with an
  * All / Mine filter for a linked Participant.
  */
 export function GamesView(props: GamesViewProps) {
   const {
     competitionId,
-    gameType,
+    gameFormat,
     config,
     scoring,
     closed,
@@ -299,7 +299,7 @@ export function GamesView(props: GamesViewProps) {
   const [formOpen, setFormOpen] = useState(openLog && viewerCanLog);
   const [editing, setEditing] = useState<GameFormGame | null>(null);
   const unit =
-    gameType === "best-score" ? (config as BestScoreConfig).unit : "";
+    gameFormat === "best-score" ? (config as BestScoreConfig).unit : "";
 
   function openForm(game: GameFormGame | null) {
     setEditing(game);
@@ -352,7 +352,7 @@ export function GamesView(props: GamesViewProps) {
       <div className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Leaderboard</h2>
         <GamesLeaderboard
-          gameType={gameType}
+          gameFormat={gameFormat}
           config={config}
           scoring={scoring}
           rows={leaderboard}
@@ -382,7 +382,7 @@ export function GamesView(props: GamesViewProps) {
         </div>
         <GameLog
           competitionId={competitionId}
-          gameType={gameType}
+          gameFormat={gameFormat}
           unit={unit}
           games={games}
           filter={filter}
@@ -397,7 +397,7 @@ export function GamesView(props: GamesViewProps) {
           open={formOpen}
           onOpenChange={setFormOpen}
           competitionId={competitionId}
-          gameType={gameType}
+          gameFormat={gameFormat}
           config={config}
           scoring={scoring}
           entrantOptions={entrantOptions}

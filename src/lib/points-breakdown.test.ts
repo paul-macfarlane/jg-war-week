@@ -33,7 +33,11 @@ const wellness = {
   countsTowardTeam: false,
 } as const;
 
-type Entry = StandingsPointsEntry & { id: string; enteredAt: Date };
+type Entry = StandingsPointsEntry & {
+  id: string;
+  enteredAt: Date;
+  note?: string | null;
+};
 
 function teamEntry(
   id: string,
@@ -222,5 +226,42 @@ describe("buildPointsBreakdown", () => {
     });
 
     expect(byTeam.has("team-unknown")).toBe(false);
+  });
+
+  it("shows a Discretionary entry as 'Discretionary: <reason>' for a Team and, with its Team too, for a Participant", () => {
+    const at = new Date("2026-02-02T10:00:00Z");
+    const toTeam: Entry = {
+      ...teamEntry("e1", "c-tug", "team-blue", 4, at),
+      competitionId: null,
+      note: "Spirit award",
+    };
+    const toParticipant: Entry = {
+      ...participantEntry("e2", "c-tug", "p-neo", 3, at),
+      competitionId: null,
+      note: "Great sportsmanship",
+    };
+    const { byTeam, byParticipant } = buildPointsBreakdown({
+      teams,
+      participants,
+      competitions,
+      pointsEntries: [toTeam, toParticipant],
+    });
+
+    expect(byTeam.get("team-blue")).toEqual([
+      {
+        id: "e1",
+        competition: "Discretionary: Spirit award",
+        points: 4,
+        when: at,
+      },
+    ]);
+    const neoRow = {
+      id: "e2",
+      competition: "Discretionary: Great sportsmanship",
+      points: 3,
+      when: at,
+    };
+    expect(byParticipant.get("p-neo")).toEqual([neoRow]);
+    expect(byTeam.get("team-red")).toEqual([neoRow]);
   });
 });

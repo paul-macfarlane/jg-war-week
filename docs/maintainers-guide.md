@@ -75,7 +75,10 @@ before it says it's done.
 | ------------------------------------------ | ---------------------------------------------------------------------- |
 | Participant pages (home, leaderboard, schedule, teams, competitions, announcements, awards, FAQ) | `src/app/[edition]/`                    |
 | History page                               | `src/app/history/`                                                     |
-| Organizer screens                          | `src/app/admin/` (points, competitions, schedule, roster, settings…)  |
+| Organizer screens                          | `src/app/admin/` (competitions, discretionary-points, schedule, roster, settings…)  |
+| Placement sheet, Score direction, Finalize / Reopen | `src/lib/placement/` (`score.ts`, `input.ts`), `src/lib/placement-rows.ts`, `src/mutations/placements.ts`, `src/queries/placements.ts`, `src/app/admin/placements/[competitionId]/`, `src/components/placement-sheet.tsx`, `placement-view.tsx` |
+| Discretionary points                       | `src/mutations/discretionary-points.ts`, `src/queries/discretionary-points.ts`, `src/app/admin/discretionary-points/`, `src/components/discretionary-points-editor.tsx` |
+| Placement Points limit and list editor     | `placementLimit` in `src/lib/competitions.ts` (the one place; Brackets 5, every other Format no limit), `src/components/placement-points-rows.tsx` |
 | Server actions behind admin forms          | `src/actions/`                                                         |
 | Database reads / writes                    | `src/queries/`, `src/mutations/`                                       |
 | Rules with unit tests (standings, schedule, Finale, access…) | `src/lib/` (`*.test.ts` next to each file)           |
@@ -188,8 +191,9 @@ Never add or replace only one of a pair.
 ### Run a new War Week or change this year's theme (no code first)
 
 Organizer screens cover it. Sign in and go to `/admin` (it opens on
-Points). The admin is one flat nav: **Points, Competitions, Schedule,
-Roster, Announcements, Awards, FAQ, Finale, Settings, Organizers, Guide**.
+Competitions). The admin is one flat nav: **Competitions, Discretionary
+points, Schedule, Roster, Announcements, Awards, FAQ, Finale, Settings,
+Organizers, Guide**.
 There is no Overview and no Setup hub; the old `/admin/setup/...` URLs
 redirect to their new homes.
 
@@ -216,9 +220,11 @@ redirect to their new homes.
   optional short Day description) and each Day's Schedule Items on one
   page. **`/admin/roster`**: Teams and Participants, with an Organizer-only
   Import (paste from Google Sheets or upload a CSV, preview, then Import).
-  **`/admin/competitions`**: Competitions, with their Hosts.
+  **`/admin/competitions`**: Competitions, with their Hosts. A Placement
+  Competition's row has a **Record placements** link; a Head-to-head or
+  Best score one "Entrants and Games".
 - **On a phone**, the admin sections are a bar fixed to the bottom of the
-  screen (Points, Competitions, Schedule, Announcements, More); More opens a
+  screen (Competitions, Discretionary points, Schedule, Announcements, More); More opens a
   Sheet with the other sections you can see and the edition switcher.
   Display, the way back to the War Week, Slack and Sign out are in the
   avatar account menu in the header. From `md` up it is the side column and
@@ -240,7 +246,7 @@ redirect to their new homes.
   sign in" on Roster.
 - **`/admin/organizers`**: the Organizer list (see
   [Add an Organizer or assign Hosts](#add-an-organizer-or-assign-hosts)).
-- **`/admin/points`**, **`/admin/finale`** (Run the Finale: the slide list and Awards layout, "Open Finale" at closing ceremonies, and "Finale: <Competition>" for each finalized Bracket),
+- **`/admin/discretionary-points`** (Organizers only: give, edit or delete points with no Competition, each with a required reason; the old `/admin/points` redirects here), **`/admin/finale`** (Run the Finale: the slide list and Awards layout, "Open Finale" at closing ceremonies, and "Finale: <Competition>" for each finalized Bracket),
   **`/admin/announcements`**, **`/admin/awards`**.
 
 To start next year's edition in the app:
@@ -257,7 +263,7 @@ To start next year's edition in the app:
    or Participants tie for first, blank when nobody scored — and lets you
    add any highlights. There is no way to type a different Winner. XI moves
    to the Archive. The confirm also names any Bracket that isn't finalized
-   and any open `games` Competition with Games or `participation` Competition
+   and any open Head-to-head or Best score Competition with Games or `participation` Competition
    with anyone marked, each linked to its setup page. Finalize or close them first so their placings
    count; it warns, it doesn't stop you.
 3. Switch to XII and press **Start War Week**. `/` and `/admin` now go to
@@ -285,8 +291,8 @@ signed in is a **Participant** (`CONTEXT.md`, "Access rules").
   one Organizer is left. The list is global: one list for every War Week.
 - **Assign Hosts**: `/admin/competitions`, the Hosts field in each
   Competition's Edit form, saved with its Save (Organizers only). A Host needs
-  no Participant record. They get the Admin link and see only their Competitions in Admin: its Points
-  Entries, Bracket, setup and linked Schedule Items, plus Announcements for
+  no Participant record. They get the Admin link and see only their Competitions in Admin: its Placements,
+  Bracket, setup and linked Schedule Items, plus Announcements for
   that War Week. Remove the email to take it away; it applies on their next
   request. A Schedule Item's "host" text is only what the schedule shows;
   it doesn't make anyone a Host.
@@ -410,7 +416,7 @@ straight on that Competition's Bracket setup page. There, pick Entrants
 Generate; then record each Heat's result — from the results screen
 (`/admin/brackets/<id>`) or straight from the Competition page, either one
 opening a dialog centered on a screen and a bottom sheet on a phone — and
-Finalize to write its placings as Points Entries. No code needed for any of
+Finalize to write its placings as Points Entries (Placement Points up to 5 places for a Bracket). No code needed for any of
 that. While a Bracket is finalized, its Competition's scoring and Placement
 Points can't change ("Un-finalize the Bracket first."); its name and
 description still can. Changing an existing Competition's Format happens on
@@ -458,7 +464,9 @@ screen shows "Reported by <name>" on that Heat, and the Host or an
 Organizer can still change any result there (which clears the line). ADR
 0005 explains why this is the one Participant write.
 
-Format behavior goes through `src/lib/bracket/formats.ts`: it dispatches
+(Placement, Head-to-head, Best score and Participation have their own engines under `src/lib/placement/`, `src/lib/games/` and `src/lib/participation/`.)
+
+Bracket Format behavior goes through `src/lib/bracket/formats.ts`: it dispatches
 every Bracket operation (generate, record a result, finalize…) to that
 Format's `FormatEngine`, defined in `engine.ts` (single elimination) or
 `heats.ts`. The display helpers in `src/lib/bracket/view.ts` (Round and
@@ -553,11 +561,11 @@ Spirit submissions, HQ attendance). Under **Competitions**, **Add
 Competition** and choose the **Format** "Participation"; you land on its
 setup page, where the Host or an Organizer sets:
 
-- **Points per Participant** (N). Individual scoring gives N to each
-  Participant who took part. In team scoring choose **ranked by headcount**
-  (each Team's headcount ranks its place, ties sharing the higher place, paid
-  by the Competition's Placement Points) or **per person** (N × headcount to
-  each Team). A Participant on no Team can't take part in a team
+- **Points per Participant** (N), for individual scoring only: N to each
+  Participant who took part. **Team scoring** ranks the Teams by headcount
+  (ties sharing the higher place) and pays each place its Placement Points
+  (default 3, 2, 1; shown only for team scoring). There is no per-person
+  team mode. A Participant on no Team can't take part in a team
   Competition.
 - **Self check-in** (off by default) with an optional close time: linked
   Participants then see **Check in** on the Competition page. Check out
@@ -570,11 +578,9 @@ setup page, where the Host or an Organizer sets:
   scoring, or deleting the Competition, is refused while anyone is marked.
 
 Who took part isn't seeded. A seed's `participation` Competition may set
-`participationPoints`, `participationTeamScoring`, `selfCheckIn` and
+`participationPoints` (individual only), `selfCheckIn` and
 `checkInClosesAt`, but they are applied only when the Competition is first
-inserted, never on a reload. The one exception: a seed reload does set a
-Participation Competition's team scoring from the seed's scoring (kept while
-team, `ranked` on becoming team, none for individual).
+inserted, never on a reload.
 
 ### Manage Award Categories
 
@@ -588,27 +594,77 @@ Award a Category in the Award form's **Category** select ("None" is allowed).
 `billable-hours-champ`, `black-midnight`, `grow`, `grind`, `serve`,
 `inspire`), never its name, so a rename doesn't break a seed.
 
-### Run a Competition as Games
+### Record a Placement (the default Format)
+
+For one result that is decided once: a trivia night, a step challenge, HQ
+attendance. Under **Competitions**, **Add Competition** (the Format starts
+as **Placement**), then tap **Record placements** on its row (or the link
+on its Competition page) to open its sheet at `/admin/placements/<id>`.
+Organizers and the Competition's Hosts can use it; a Participant only sees
+the result.
+
+- **Add rows** by search, or **Add everyone** (a Team Competition takes
+  Teams, an individual one Participants). Adding, removing and Add everyone
+  save at once. Give each row a **Place** and, if you have one, a **Score**;
+  Place and Score edits and the **Score direction** save with the one Save
+  button.
+- **Score direction** (none, higher wins, lower wins) lives on the sheet
+  only. With a direction, Places fill in from the Scores as you type and
+  stay editable, for ties and judgement. Ties share a Place (1, 1, 3).
+- **Finalize** (behind a confirm) turns Places into points through the
+  Competition's Placement Points: tied rows each get that place's full
+  points, rows with no Place and Places beyond the list earn nothing. It
+  refuses a row with a Score but no Place ("Give every row with a Score a
+  Place, or clear its Score."), naming the rows, and a sheet with nobody
+  placed, and it is disabled while edits are unsaved. **Reopen** withdraws
+  the points; rows can't change while Finalized.
+- Changing the Format or scoring is refused while rows exist ("Remove its
+  Placements first.").
+- A Finalized Placement shows in the Standings, Recent results and the
+  Finale's Champions. The Participant's Competition page lists the
+  Placements (place, name, Score, points).
+
+### Set Placement Points
+
+Each Competition's Placement Points are an open list, highest first, never
+increasing, each 0 or more, in its Edit sheet. Add a place, remove any
+place, or use the **5·3·1** quick fill; the list is usable at 20 or more
+places on a phone. A Competition's top prize is its 1st place. The only
+limit is a Bracket's 5 places, set by `placementLimit` in
+`src/lib/competitions.ts` (the one place the rule lives; Epic R17 lowers it
+to 4 there).
+
+### Give Discretionary points
+
+Points that belong to no Competition (War Week XI's "Subjective Points"):
+**Discretionary points** in the Admin nav, Organizers only (a Host sees the
+refusal page). **Give Discretionary points** takes a Team or Participant, a
+number of points and a required reason. A Participant's points count for
+them and toward their Team. Edit (target, points, reason) keeps who entered
+it and marks it edited; Delete asks first. They show in the Standings, in a
+Team's "where points came from" as "Discretionary: <reason>", Recent results
+and the Finale totals. Points a Competition generates are never edited
+here; Reopen the Competition instead. The old `/admin/points` URL
+redirects. ADR 0010 explains who may do what.
+
+### Run a Competition as Head-to-head or Best score
 
 For a showdown, a best of X, or a week-long ladder of casual games — no code
 needed. Under **Competitions**, tap **Add Competition** (it opens a
-Sheet) and choose its **Format**: "Games". A **Game Type** select appears — Head-to-head (a
-winner, or a draw when allowed), Best score (each Game records a score;
-best or total, higher or lower is better) or Ranked (a finishing order,
-with Finish Points per place). **A `games` Competition's Format and Game
-Type are fixed once it's created**: add a new Competition to run it a
-different way.
+Sheet) and choose its **Format**: **Head-to-head** (a winner, or a draw
+when allowed) or **Best score** (each Game records a score; best or total,
+higher or lower is better). **A Competition's Format is fixed once it's
+created**: add a new Competition to run it a different way. (One logged
+play is a **Game**; "Games" is no longer a Format.)
 
 **Add Competition**, and you land on that Competition's Games setup page
 (the twin of a Bracket's), where the Host or an Organizer sets:
 
-- The Game Type's own settings (draws and Best of off/3/5/7 for
-  head-to-head; count best or total, direction and a unit label for
-  best-score; a Finish Points table for ranked: points per finishing place
-  in one Game, 1st first, blank meaning one point per player beaten; empty
-  entries such as a trailing comma are ignored. Not the Competition's
-  Placement Points, which pay the Standings and are set in its Edit sheet).
-  Saving shows the saved values on the page and when you return.
+- The Format's own settings (draws and Best of off/3/5/7 for
+  Head-to-head; count best or total, direction and a unit label for
+  Best score). Points for the places come from the Competition's
+  Placement Points, set in its Edit sheet. Saving shows the saved values on
+  the page and when you return.
 - **Entrants**: open to everyone eligible, or a fixed list (pick Teams or
   Participants, as for a Bracket). A Best of needs a fixed list of exactly
   two Entrants.
@@ -619,26 +675,27 @@ different way.
 - An optional **logging close time**, after which only the Host or an
   Organizer can log, edit or delete a Game.
 - **Close** / **Reopen**, behind a confirm: Close turns the leaderboard's
-  places into Placement Points Entries, the same tie rule as finalizing a
+  places into Points Entries ("From head-to-head" or "From best score"), the same tie rule as finalizing a
   Bracket; Reopen withdraws them. A closed Competition refuses every Game
   write, even the Host's, until it's reopened.
 
 Participants log, edit or delete Games straight from the Competition page —
 there's no separate results page. A **Log a Game** card on the home page
-lists every open `games` Competition the signed-in Participant may log in
+lists every open Head-to-head or Best score Competition the signed-in Participant may log in
 right now, straight to the form. The leaderboard and Game log (newest
 first, with a "Mine" filter) live on the Competition page for everyone, in
-the Archive too once the War Week ends: a `games` Competition left open
+the Archive too once the War Week ends: a Head-to-head or Best score Competition left open
 when its War Week ends keeps taking Games until the Host closes it.
 
 ### Let Participants enroll themselves
 
 The **"Participants can enroll"** switch (off by default) is on a
-Bracket's builder and a fixed-list `games` Competition's settings — never
-on a `points` Competition, an open-to-everyone `games` Competition, or a
+Bracket's builder and a fixed-list Head-to-head or Best score Competition's
+settings — never on a Placement or Participation Competition, an
+open-to-everyone Head-to-head or Best score Competition, or a
 Best of (the Host sets those two Entrants by hand). Turn it on, and
 optionally set an Entrant limit and a close time; enrollment also closes
-the moment the Bracket is built, or (for `games`) the first Game is
+the moment the Bracket is built, or (for Games) the first Game is
 logged, or whenever the Host closes the Competition.
 
 In team scoring, any Participant on a Team enters or withdraws the whole
@@ -747,13 +804,12 @@ Notes:
   (`text-warning`), not a hardcoded amber — it's tuned to pass AA against
   each color scheme's background, unlike a raw Tailwind amber class. Its
   users today: Settings' contrast warnings and its flip notice (an Organizer
-  override about to be cleared), the Points Entry form's Max points
-  warning, and the Announcement form's hint.
+  override about to be cleared) and the Announcement form's hint.
 - Lay out every field with `Field` / `FieldLabel htmlFor` /
   `FieldDescription` from `ui/field`, and show a form's server error in a
   `FieldError` under its buttons.
 - Admin forms post through React's `useActionState` (ADR 0004;
-  `src/components/points-entry-form.tsx` is the reference). The server
+  `src/components/discretionary-points-form.tsx` is the reference). The server
   action validates with the form's Zod schema and returns `fieldErrors`
   (built by `fieldErrorsFrom` in `src/lib/form-errors.ts`); the form shows
   each one in a `FieldError` under its field (`Field data-invalid`, the
@@ -797,11 +853,11 @@ are `get_current_war_week`, `get_leaderboard`, `get_schedule`,
 `get_awards`, `get_faq`, `list_history`, `get_history`, `get_bracket` (a
 Competition's Bracket by name, with each Heat's time and place, and a
 Squad's `participants` by name; never who reported a result) and
-`get_games` (a Competition run as Games, by name: its settings, leaderboard
-ranked by Game Type and its Games newest first; never an email or who
+`get_games` (a Head-to-head or Best score Competition, by name: its Format and settings, leaderboard
+ranked by that Format and its Games newest first; never an email or who
 logged one) and `get_participation` (a Competition run as Participation, by
 name: its settings, closed state, who took part by name and, in team
-scoring, each Team's headcount; never an email or who marked anyone). `get_bracket` (`src/mcp/bracket.ts`) is the model for a tool
+scoring, each Team's headcount; never an email or who marked anyone), `get_placements` (a Placement Competition by name: Score direction, Placement Points, whether it's finalized and each row by place with name, Team, Score and points; no emails; `get_bracket` on a Placement points to it) and `get_discretionary_points` (the current War Week's Discretionary points by name and reason; no emails). `get_bracket` (`src/mcp/bracket.ts`) is the model for a tool
 that looks something up by name and whitelists what it returns.
 
 ### Add or fix history
@@ -817,6 +873,39 @@ Claude to read the wiki, sign in to it in the Claude Code browser first.
 Leave `seeds/demo/xi.json` alone unless a test needs different demo data. Load locally with `pnpm seed:load seeds/<edition>.json`, then check
 `/history` and `/<edition>`. `/history` and a Category page wear the
 current War Week's nav, tab bar, footer and theme (`src/app/history/layout.tsx`).
+
+### How R16 reached staging and production (the reset)
+
+Epic R16 (the Competition model: Placement, Discretionary points, the new
+Formats) changed the schema with one migration (`drizzle/0028_*`) and
+**reset** the deployed data rather than converting it: neither database
+held real users' work worth keeping, and the seed JSON is where the old
+shapes were converted (finalized Placements by the old totals, XI's
+Subjective Points as Discretionary points, demo XII's Step Challenge as a
+Placement with Scores). The migration only coerces old rows enough to
+apply. Use this as the procedure for any later reset:
+
+1. **Staging.** After the PR merges into `staging` and `migrate.yml`'s run
+   on that push is green, run the **Seed** workflow (Actions tab) on
+   `staging`, file blank (all seeds), **reset** ticked, `staging` typed in
+   **confirm_reset**. Expected: green. Check: `/xi/leaderboard` shows Red
+   38.5, Blue 31 (the frozen XI totals); Admin has Discretionary points and
+   no Points page; a Team's "where points came from" shows "Discretionary:
+   Subjective Points".
+2. **Production pre-check, before the `staging` → `main` PR merges** (that
+   merge runs the production migration, which can't be undone). In
+   production Admin, check War Week XII holds nothing an Organizer entered
+   that should be kept (a reset of `seeds/xii.json` deletes its
+   Competitions, Hosts and Points Entries), and that every War Week comes
+   from a seed (`/history` lists only seeded editions). If either fails,
+   don't merge; ask Paul.
+3. **Production.** After the `staging` → `main` PR merges and its migrate
+   run is green, run the Seed workflow **from `main`** (`seed.yml` refuses
+   another branch for production), as for staging, on `production`. Check
+   as for staging, on the production URL.
+
+If a migrate run fails, **don't reseed**: the migration test missed an
+old-row shape. Fix it on a `fix/…` branch.
 
 ## Guardrails
 

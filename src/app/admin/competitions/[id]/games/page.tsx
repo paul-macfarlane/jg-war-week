@@ -6,7 +6,7 @@ import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { GamesBuilder } from "@/components/games-builder";
 import { getBracketEntrants } from "@/queries/brackets";
 import { getGamesView } from "@/queries/games";
-import { getPointsEntryFormOptions } from "@/queries/points-entries";
+import { getTargetOptions } from "@/queries/target-options";
 
 import { loadAdminPage } from "../../../gate";
 
@@ -26,7 +26,7 @@ export default async function GamesBuilderPage({
 
   const [view, options, entrants] = await Promise.all([
     getGamesView(id, email),
-    getPointsEntryFormOptions(warWeek),
+    getTargetOptions(warWeek),
     getBracketEntrants(id),
   ]);
   if (!view || view.competition.warWeekId !== warWeek.id) notFound();
@@ -52,7 +52,7 @@ export default async function GamesBuilderPage({
             id: competition.id,
             name: competition.name,
             scoring: competition.scoring,
-            gameType: competition.gameType,
+            gameFormat: competition.gameFormat,
             config: competition.config,
             entrantsOpen: competition.entrantsOpen,
             loggingClosesAt: competition.loggingClosesAt,

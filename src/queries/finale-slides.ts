@@ -5,7 +5,6 @@ import {
   eq,
   inArray,
   isNotNull,
-  ne,
   sql,
 } from "drizzle-orm";
 
@@ -59,7 +58,7 @@ export async function getFinaleSlides(
 /**
  * A War Week's figures for the By the numbers slide (`byTheNumbers` labels
  * and filters them): Competitions with a Points Entry, Games logged, Heats
- * played, Points Entries and the points they hand out, and the roster.
+ * played, Points Entries (Discretionary points too) and the points they hand out, and the roster.
  */
 export async function getFinaleCounts(
   warWeekId: string,
@@ -74,8 +73,7 @@ export async function getFinaleCounts(
         points: sql<string>`coalesce(sum(${pointsEntry.points}), 0)`,
       })
       .from(pointsEntry)
-      .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
-      .where(ofWarWeek),
+      .where(eq(pointsEntry.warWeekId, warWeekId)),
     dbOrTx
       .select({ n: sql<number>`count(*)::int` })
       .from(game)
@@ -122,7 +120,6 @@ export async function getChampions(
       and(
         eq(competition.warWeekId, warWeek.id),
         isNotNull(competition.finalizedAt),
-        ne(competition.format, "points"),
       ),
     );
   if (competitions.length === 0) return [];

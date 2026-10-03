@@ -12,6 +12,7 @@ import {
   heat,
   heatEntrant,
   participant,
+  placement,
   pointsEntry,
   squad,
   squadParticipant,
@@ -48,9 +49,11 @@ import {
   type HeatResult,
 } from "@/lib/bracket/types";
 import { isBracketFormat } from "@/lib/bracket/view";
+import { placementLimitRefusal } from "@/lib/competitions";
+import { isGameFormat } from "@/lib/enums";
 import { gamesConfigOf } from "@/lib/games/config";
 import { NOT_GAMES } from "@/lib/games/log-rule";
-import { inUseError } from "@/lib/setup";
+import { PLACEMENT_IS_FINALIZED, inUseError } from "@/lib/setup";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 import { getBracketEntrants, loadBracket } from "@/queries/brackets";
 import { getStandings } from "@/queries/standings";
@@ -64,15 +67,19 @@ export const FINALIZED = "Un-finalize the Bracket before changing it.";
 export const SQUAD_NOT_FOUND = "That Squad no longer exists.";
 const NOT_A_TEAM_COMPETITION = "Squads are only for team Competitions.";
 const SQUADS_SEEDED_AT_RANDOM = "Squads are seeded at random.";
-/** Changing a `games` Competition's Format, or making one `games` later. */
+/**
+ * Changing a Head-to-head or Best score Competition's Format, or making one
+ * Head-to-head or Best score later.
+ */
 export const GAMES_KEEP_FORMAT =
-  "A Games Competition keeps its Format; add a new Competition to run it another way.";
+  "A Head-to-head or Best score Competition keeps its Format; add a new Competition to run it another way.";
 /** Changing a `participation` Competition's Format, or making one later. */
 export const PARTICIPATION_KEEPS_FORMAT =
   "A Participation Competition keeps its Format; add a new Competition to run it another way.";
-/** A closed `games` Competition's Entrants can't change. */
+/** A closed Head-to-head or Best score Competition's Entrants can't change. */
 export const GAMES_CLOSED = "Reopen the Competition first.";
-const NO_SQUADS_IN_GAMES = "Squads aren't entered in a Games Competition.";
+const NO_SQUADS_IN_GAMES =
+  "Squads aren't entered in a Head-to-head or Best score Competition.";
 export const BEST_OF_NEEDS_TWO = "A Best of needs exactly 2 Entrants.";
 /** The note on every Points Entry a finalized Bracket generates. */
 export const FROM_BRACKET_NOTE = "From bracket";
@@ -86,7 +93,6 @@ export type BracketCompetition = Pick<
   | "bracketConfig"
   | "placementPoints"
   | "finalizedAt"
-  | "gameType"
   | "gameConfig"
   | "entrantsOpen"
   | "loggingClosesAt"
@@ -95,7 +101,7 @@ export type BracketCompetition = Pick<
   | "enrollClosesAt"
 >;
 
-/** A Competition run as a Bracket (its Format isn't points or games). */
+/** A Competition run as a Bracket (its Format isn't placement, Head-to-head, Best score or participation). */
 export type BracketRun = BracketCompetition & { format: BracketFormat };
 
 /**
@@ -117,7 +123,6 @@ export async function lockedCompetition(
       bracketConfig: competition.bracketConfig,
       placementPoints: competition.placementPoints,
       finalizedAt: competition.finalizedAt,
-      gameType: competition.gameType,
       gameConfig: competition.gameConfig,
       entrantsOpen: competition.entrantsOpen,
       loggingClosesAt: competition.loggingClosesAt,
@@ -273,7 +278,7 @@ async function saveBracket(
 /**
  * Sets how a Competition is run, and the heats Format's config. Its Format
  * can't change while it has Entrants or Games, nor either while it's
- * finalized; a `games` or `participation` Competition is that Format from
+ * finalized; a Head-to-head, Best score or Participation Competition is that Format from
  * creation, and stays so.
  * Saving a different heats config clears the Heats (keeping the Entrants);
  * once a Heat has a Heat Result, only with `force`. Omitting the config
@@ -292,15 +297,42 @@ export async function setCompetitionFormat(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedCompetition(tx, competitionId, ctx);
     if (!found) return refuse(COMPETITION_NOT_FOUND);
-    if (found.format === "games" || values.format === "games") {
+    if (isGameFormat(found.format) || isGameFormat(values.format)) {
       return refuse(GAMES_KEEP_FORMAT);
     }
     if (found.format === "participation" || values.format === "participation") {
       return refuse(PARTICIPATION_KEEPS_FORMAT);
     }
-    if (found.finalizedAt) return refuse(FINALIZED);
+    if (found.finalizedAt) {
+      return refuse(
+        found.format === "placement" ? PLACEMENT_IS_FINALIZED : FINALIZED,
+      );
+    }
     const formatChanges = found.format !== values.format;
+    if (formatChanges && found.format === "placement") {
+      // A Placement's rows are its result; they don't carry to a Bracket.
+      const refusal = inUseError(
+        "Competition",
+        [
+          [
+            await tx.$count(
+              placement,
+              eq(placement.competitionId, competitionId),
+            ),
+            "Placement",
+            "Placements",
+          ],
+        ],
+        "Remove its Placements first.",
+      );
+      if (refusal) return refuse(refusal);
+    }
     if (formatChanges) {
+      const tooMany = placementLimitRefusal(
+        values.format,
+        found.placementPoints,
+      );
+      if (tooMany) return refuse(tooMany);
       const [entrants] = await tx
         .select({ count: count() })
         .from(entrant)
@@ -319,7 +351,7 @@ export async function setCompetitionFormat(
       );
       if (refusal) return refuse(refusal);
     }
-    if (values.format === "points" && found.format !== "points") {
+    if (values.format === "placement" && found.format !== "placement") {
       // Squads are entered only in a Bracket.
       const refusal = inUseError(
         "Competition",
@@ -366,6 +398,8 @@ export async function setCompetitionFormat(
       .set({
         format: values.format,
         bracketConfig,
+        // Only a Placement has a Score direction (the CHECK).
+        ...(values.format === "placement" ? {} : { scoreDirection: "none" }),
         updatedAt: sql`now()`,
       })
       .where(eq(competition.id, competitionId));
@@ -379,13 +413,13 @@ export async function setCompetitionFormat(
  * Positions in the given order. Squads must be this Competition's. It
  * clears the Bracket; once a Heat has a Heat Result, only with `force`.
  *
- * A `games` Competition's fixed Entrant list takes the same Teams or
+ * A Head-to-head or Best score Competition's fixed Entrant list takes the same Teams or
  * Participants (never Squads), in the order added; it has no Heats to
  * clear. While Best of is on it takes exactly 2, and an Entrant who has
  * logged Games can't be removed until they're deleted.
  *
  * `format` says which the caller sets: a Bracket's Entrants refuse a
- * `games` Competition, a `games` Competition's refuse any other Format.
+ * Head-to-head or Best score Competition, theirs refuse any other Format.
  */
 export async function replaceEntrants(
   competitionId: string,
@@ -405,7 +439,7 @@ export async function replaceEntrants(
 ): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedCompetition(tx, competitionId, ctx);
-    const isGames = found?.format === "games";
+    const isGames = found !== undefined && isGameFormat(found.format);
     if (found && format === "games" && !isGames) return refuse(NOT_GAMES);
     if (found && format === "bracket" && isGames) return refuse(NOT_A_BRACKET);
     if (isGames) {
@@ -463,9 +497,9 @@ export async function replaceEntrants(
       }
     }
     if (isGames) {
-      const config = found.gameType
+      const config = isGameFormat(found.format)
         ? gamesConfigOf({
-            gameType: found.gameType,
+            format: found.format,
             gameConfig: found.gameConfig,
           })
         : null;
@@ -503,7 +537,7 @@ export async function replaceEntrants(
 }
 
 /**
- * The name of a current Entrant of this `games` Competition, left out of
+ * The name of a current Entrant of this Head-to-head or Best score Competition, left out of
  * `keptIds`, who is a player in one of its Games; null when there's none.
  * Games reference Teams and Participants, never Entrant rows.
  */
@@ -733,8 +767,8 @@ export async function setHeatSchedule(
 
 /**
  * Finalizes a finished Bracket: replaces its generated Points Entries with
- * new ones from the final placings and Placement Points (hand-entered
- * Points Entries are untouched), and marks it finalized.
+ * new ones from the final placings and Placement Points, and marks it
+ * finalized.
  */
 export async function finalizeBracket(
   competitionId: string,
@@ -760,6 +794,7 @@ export async function finalizeBracket(
     if (awarded.length) {
       await tx.insert(pointsEntry).values(
         awarded.map(({ entrantId, points }) => ({
+          warWeekId: ctx.warWeekId,
           competitionId,
           // A Team's, or a Squad's Team's; null for a Participant.
           teamId: byId.get(entrantId)!.pointsTeamId,
@@ -781,7 +816,8 @@ export async function finalizeBracket(
 
 /**
  * Deletes a Competition's generated Points Entries: a Bracket's on
- * un-finalize or re-finalize, a `games` Competition's on Reopen.
+ * un-finalize or re-finalize; a Head-to-head, Best score, Participation
+ * or Placement Competition's on Reopen.
  */
 export function deleteGenerated(tx: DBOrTx, competitionId: string) {
   return tx

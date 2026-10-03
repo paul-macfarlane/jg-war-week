@@ -109,6 +109,13 @@ export type WarWeekAction =
   | "participation.mark"
   | "participation.close"
   | "participation.reopen"
+  /**
+   * A Placement Competition's sheet: adding, changing and removing rows and
+   * the Score direction, then Finalize and Reopen.
+   */
+  | "placement.edit"
+  | "placement.finalize"
+  | "placement.reopen"
   /** Checking yourself in or out (ADR 0009). */
   | "participation.check-in"
   | "participation.check-out"
@@ -121,7 +128,8 @@ export type WarWeekAction =
   /** Self-enrollment (ADR 0006). */
   | "competition.enroll"
   | "competition.withdraw"
-  | `points-entry.${Crud}`
+  /** Discretionary points: points with no Competition behind them. */
+  | `discretionary.${Crud}`
   | `schedule-item.${Crud}`
   | `announcement.${Crud | "pin" | "unpin"}`;
 
@@ -186,6 +194,9 @@ const ORGANIZER_ONLY: Partial<
   "finale-slide.update": "change Custom Finale slides",
   "finale-slide.delete": "delete Custom Finale slides",
   "finale.awards-layout": "change how the Finale shows Awards",
+  "discretionary.create": "give Discretionary points",
+  "discretionary.edit": "change Discretionary points",
+  "discretionary.delete": "delete Discretionary points",
   "award.create": "give Awards",
   "award.edit": "change Awards",
   "award.delete": "delete Awards",
@@ -231,7 +242,7 @@ export const sameEmail = (a: string | null | undefined, b: string) =>
  * they're in when self-report is on (ADR 0005), and logging Games,
  * changing the Games they logged, and enrolling or withdrawing (ADR 0006),
  * and checking in or out (ADR 0009). Those facet-bound rules bind
- * everyone, Organizers included: a Host or Organizer runs a `games`
+ * everyone, Organizers included: a Host or Organizer runs a Head-to-head or Best score
  * Competition through the Game facet's `runs`, adds Entrants through the
  * picker and marks who took part through `participation.mark`. Pure: the
  * caller loads the actor and the target.
@@ -309,10 +320,6 @@ export function can(
   switch (action) {
     case "admin.view":
       return hostsIn(actor, warWeekId) ? null : ADMIN_REFUSAL;
-    case "points-entry.create":
-      return hostsPosted ? null : NOT_HOST;
-    case "points-entry.edit":
-      return hostsCurrent && hostsPosted ? null : NOT_HOST;
     case "schedule-item.create":
       if (!postedCompetitionId) {
         return "Link the Schedule Item to a Competition you host.";
@@ -341,7 +348,7 @@ export function can(
     case "games.close":
     case "games.reopen":
     case "competition.self-enroll":
-      // A `games` Competition's setup, Entrants and close, and the enroll
+      // A Head-to-head or Best score Competition's setup, Entrants and close, and the enroll
       // switch: the Host of this Competition, beside their Bracket twins.
       return hostsCurrent ? null : NOT_HOST;
     case "participation.settings":
@@ -349,7 +356,13 @@ export function can(
     case "participation.close":
     case "participation.reopen":
       // A `participation` Competition's setup, who took part and its close:
-      // the Host of this Competition, like `games`.
+      // the Host of this Competition, like a Head-to-head or Best score Competition.
+      return hostsCurrent ? null : NOT_HOST;
+    case "placement.edit":
+    case "placement.finalize":
+    case "placement.reopen":
+      // A Placement Competition's sheet, Finalize and Reopen: the Host of
+      // this Competition. Participants never record Placements.
       return hostsCurrent ? null : NOT_HOST;
     default:
       // A Competition's setup and Bracket, and deleting a Points Entry or

@@ -9,12 +9,11 @@ import {
   serverActionIds,
 } from "./harness";
 
-// The seeded `games` Competitions of XI (R3 decision 14), by name, with the
-// Game Type label their pages show.
+// The seeded Head-to-head and Best score Competitions of XI, by name, with the
+// Format label their pages show.
 const GAMES_COMPETITIONS = [
   { name: "Bouncy Pong", label: "Head-to-head" },
   { name: "Tuesday Stairs", label: "Best score" },
-  { name: "Electric City Matrix", label: "Ranked" },
 ] as const;
 const LOG_COMPETITION = "Bouncy Pong";
 /** Linked to the smoke Participant's email for the length of the check. */
@@ -70,7 +69,7 @@ function otherEmails(body: string, own: string): string[] {
 const LOG_BUTTON = />Log a Game</;
 
 /**
- * The seeded `games` Competitions (17-5, 17-A): each page renders its Game
+ * The seeded Head-to-head or Best score Competitions (17-5, 17-A): each page renders its Game
  * Type and an empty log with no email in it; `logGame` over HTTP is refused
  * before the smoke Participant's email links them, then succeeds and shows
  * in the log; closed and with XI ended, the page still renders the
@@ -95,7 +94,7 @@ export async function assertGamesLoop(sessions: {
   try {
     for (const { name, label } of GAMES_COMPETITIONS) {
       await runCheck(
-        `games: /xi/competitions/<${name}> answers 200 with "Games · ${label}", an empty log and no email but the viewer's`,
+        `games: /xi/competitions/<${name}> answers 200 with "${label}", an empty log and no email but the viewer's`,
         async () => {
           const id = await xiCompetitionIdByName(name);
           const { status, body } = await getPage(

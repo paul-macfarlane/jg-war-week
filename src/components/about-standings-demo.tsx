@@ -2,8 +2,8 @@ import { AboutStill } from "@/components/about-still";
 
 /**
  * The About page's hero (ticket 04): a Participant favorite, Standings
- * moving after a Points Entry, shown as three stills captured by
- * `scripts/about-media.ts` — before the entry, the Organizer saving it, and
+ * moving after Discretionary points, shown as three stills captured by
+ * `scripts/about-media.ts` — before the points, the Organizer giving them, and
  * the Standings reordered after — presented as a small before → after
  * stepper rather than a video. All three are written to
  * `public/about/standings-<step>.png` (and `standings-<step>-dark.png` for a
@@ -13,17 +13,17 @@ const STEPS = [
   {
     slug: "standings-before",
     label: "Before",
-    alt: "Home Standings before an Organizer records a Points Entry.",
+    alt: "Home Standings before an Organizer gives Discretionary points.",
   },
   {
     slug: "standings-entry",
-    label: "Points Entry",
-    alt: "An Organizer saving a Points Entry for whoever is in last place.",
+    label: "Discretionary points",
+    alt: "An Organizer giving Discretionary points, with a reason, to whoever is in last place.",
   },
   {
     slug: "standings-after",
     label: "After",
-    alt: "The same home Standings, reordered right after the Points Entry saves.",
+    alt: "The same home Standings, reordered right after the Discretionary points save.",
   },
 ] as const;
 
@@ -57,8 +57,8 @@ export function AboutStandingsDemo() {
         ))}
       </ol>
       <figcaption className="text-foreground/60 max-w-xs text-center text-xs">
-        An Organizer records a Points Entry and the home Standings reorder, on
-        the spot.
+        An Organizer gives Discretionary points and the home Standings reorder,
+        on the spot.
       </figcaption>
     </figure>
   );

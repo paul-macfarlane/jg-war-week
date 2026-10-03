@@ -1,0 +1,761 @@
+
+> war-weeker@0.1.0 format:check /Users/paulmacfarlane/Code/jg-war-week
+> prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+
+> war-weeker@0.1.0 gate /Users/paulmacfarlane/Code/jg-war-week
+> pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm smoke && pnpm e2e
+
+
+> war-weeker@0.1.0 typecheck /Users/paulmacfarlane/Code/jg-war-week
+> next typegen && tsc --noEmit
+
+Generating route types...
+✓ Types generated successfully
+
+> war-weeker@0.1.0 lint /Users/paulmacfarlane/Code/jg-war-week
+> eslint .
+
+
+/Users/paulmacfarlane/Code/jg-war-week/e2e/regression-r13-built-in-slides.spec.ts
+  6:3  warning  'nextSlide' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/paulmacfarlane/Code/jg-war-week/src/app/sign-in/page.tsx
+  46:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  57:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/paulmacfarlane/Code/jg-war-week/src/components/about-still.tsx
+  21:7  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  28:7  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/paulmacfarlane/Code/jg-war-week/src/components/finale-slides/title-slide.tsx
+  13:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  26:9   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/paulmacfarlane/Code/jg-war-week/src/components/roster.tsx
+  77:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/paulmacfarlane/Code/jg-war-week/src/components/war-week-hero.tsx
+  15:9   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  25:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+✖ 10 problems (0 errors, 10 warnings)
+
+
+> war-weeker@0.1.0 test /Users/paulmacfarlane/Code/jg-war-week
+> vitest run
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.11 /Users/paulmacfarlane/Code/jg-war-week
+
+(node:55564) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:55565) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:55560) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:55561) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:55567) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:55571) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:55572) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:55577) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:55581) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:55582) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:55584) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:55585) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:55588) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:55592) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+ Test Files  184 passed (184)
+      Tests  3800 passed (3800)
+   Start at  12:37:06
+   Duration  21.27s (transform 8.39s, setup 0ms, import 88.49s, tests 75.14s, environment 1.10s)
+
+
+> war-weeker@0.1.0 build /Users/paulmacfarlane/Code/jg-war-week
+> next build
+
+▲ Next.js 16.3.6 (Turbopack)
+✓ Running next.config.ts took 58ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1165ms
+  Running TypeScript ...
+  Finished TypeScript in 2.6s ...
+  Collecting page data using 9 workers ...
+2026-10-03T16:37:33.266Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-10-03T16:37:33.273Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-10-03T16:37:33.301Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-10-03T16:37:33.301Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-10-03T16:37:33.313Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-10-03T16:37:33.339Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-10-03T16:37:33.340Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-10-03T16:37:33.351Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-10-03T16:37:33.435Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-10-03T16:37:33.435Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+  Generating static pages using 9 workers (0/5) ...
+  Generating static pages using 9 workers (1/5) 
+  Generating static pages using 9 workers (2/5) 
+  Generating static pages using 9 workers (3/5) 
+✓ Generating static pages using 9 workers (5/5) in 77ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ƒ /_not-found
+├ ƒ /[edition]
+├ ƒ /[edition]/announcements
+├ ƒ /[edition]/awards
+├ ƒ /[edition]/competitions
+├ ƒ /[edition]/competitions/[id]
+├ ƒ /[edition]/faq
+├ ƒ /[edition]/finale
+├ ƒ /[edition]/finale/[competition]
+├ ƒ /[edition]/leaderboard
+├ ƒ /[edition]/more
+├ ƒ /[edition]/profile
+├ ƒ /[edition]/schedule
+├ ƒ /[edition]/teams
+├ ƒ /about
+├ ƒ /admin/announcements
+├ ƒ /admin/announcements/[id]
+├ ƒ /admin/announcements/new
+├ ƒ /admin/awards
+├ ƒ /admin/brackets/[id]
+├ ƒ /admin/competitions
+├ ƒ /admin/competitions/[id]/bracket
+├ ƒ /admin/competitions/[id]/games
+├ ƒ /admin/competitions/[id]/participation
+├ ƒ /admin/discretionary-points
+├ ƒ /admin/faq
+├ ƒ /admin/finale
+├ ƒ /admin/guide
+├ ƒ /admin/organizers
+├ ƒ /admin/placements/[competitionId]
+├ ƒ /admin/roster
+├ ƒ /admin/schedule
+├ ƒ /admin/settings
+├ ƒ /api/auth/[...all]
+├ ƒ /api/mcp
+├ ƒ /history
+├ ƒ /history/awards/[id]
+├ ƒ /install
+├ ƒ /llms.txt
+├ ○ /manifest.webmanifest
+├ ƒ /privacy
+├ ƒ /sign-in
+├ ƒ /sign-in/test
+└ ƒ /terms
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> war-weeker@0.1.0 smoke /Users/paulmacfarlane/Code/jg-war-week
+> tsx scripts/smoke/index.ts
+
+
+> war-weeker@0.1.0 db:migrate /Users/paulmacfarlane/Code/jg-war-week
+> drizzle-kit migrate
+
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/Users/paulmacfarlane/Code/jg-war-week/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] applying migrations...[2K[1G[✓] migrations applied successfully!ok - pnpm db:migrate
+
+> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week
+> tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xii.json seeds/demo/xi.json
+
+Loaded War Week i (reset)
+Loaded War Week ii (reset)
+Loaded War Week iii (reset)
+Loaded War Week iv (reset)
+Loaded War Week ix (reset)
+Loaded War Week v (reset)
+Loaded War Week vi (reset)
+Loaded War Week vii (reset)
+Loaded War Week viii (reset)
+Loaded War Week x (reset)
+Loaded War Week xii (reset)
+Loaded War Week xi (reset)
+ok - pnpm seed:load --reset (12 seeds, load 1)
+
+> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week
+> tsx scripts/seed-load.ts seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xii.json seeds/demo/xi.json
+
+Loaded War Week i
+Loaded War Week ii
+Loaded War Week iii
+Loaded War Week iv
+Loaded War Week ix
+Loaded War Week v
+Loaded War Week vi
+Loaded War Week vii
+Loaded War Week viii
+Loaded War Week x
+Loaded War Week xii
+Loaded War Week xi
+ok - pnpm seed:load (12 seeds, load 2)
+ok - after loading the seed twice, War Week XI has 1 war_week rows
+ok - after loading the seed twice, War Week XI has 6 day rows
+ok - after loading the seed twice, War Week XI has 47 schedule_item rows
+ok - after loading the seed twice, War Week XI has 2 team rows
+ok - after loading the seed twice, War Week XI has 101 participant rows
+ok - after loading the seed twice, War Week XI has 23 competition rows
+ok - after loading the seed twice, War Week XI has 13 placement rows
+ok - after loading the seed twice, War Week XI has 13 points_entry rows
+ok - after loading the seed twice, War Week XI has 3 award rows
+ok - after loading the seed twice, War Week XI has 3 announcement rows
+ok - after loading the seed twice, War Week XI has 6 faq_item rows
+ok - after loading the seed twice, War Week XI has 7 finale_slide rows
+ok - after loading the seed twice, War Week XI's Finale slides keep the ids the first load gave them
+ok - the database rejects a Points Entry with both a Team and a Participant
+ok - the database rejects a Points Entry with no Competition and no reason
+ok - the database rejects a Placement with both a Team and a Participant
+ok - the database rejects a Placement with neither a Team nor a Participant
+ok - the database rejects an individual Participation Competition with Placement Points and no N
+ok - the database rejects a team Participation Competition with N and no Placement Points
+ok - the database rejects a Placement Competition with participation points
+ok - the XI seed loads 5/3/1 Placement Points for Catan and the lone-winner 3 for Beast Mode
+ok - the seven seeded Award Category keys exist
+ok - after loading the seeds twice, the demo XI Black Midnight Award is tagged and seeded Awards carry exactly the seeds' Categories
+
+> war-weeker@0.1.0 start /Users/paulmacfarlane/Code/jg-war-week
+> next start -p 3100
+
+▲ Next.js 16.3.6
+- Local:         http://localhost:3100
+- Network:       http://192.168.1.184:3100
+✓ Ready in 121ms
+✓ Running next.config.ts took 77ms
+ok - server ready
+ok - signed-in GET / redirects to /xi
+ok - GET /xi renders War Week XI with the Team Standings
+ok - GET /xi carries the Display's inline script inside <head>, before <body>
+ok - War Week XI's seeded light scheme primary override is stored and GET /xi carries it as --light-primary
+ok - GET /zz returns 404
+ok - GET /xi/leaderboard responds and shows the Team Standings for the demo seed
+ok - GET /xi/schedule groups by Day with Day Themes, ET times and Competition links
+ok - GET /xi?at=<Tue Feb 24 12:30 ET> shows today's Day Theme and now/next
+ok - GET /xi/more links to Teams, Awards, FAQ, history, Install app and About
+ok - PWA: manifest, icons and service worker load without a session, pages link them, and /install renders
+ok - GET /llms.txt returns 200 text/plain without a session and names every MCP tool
+ok - GET /history lists every complete War Week, newest first, each in its own theme
+ok - GET /viii renders 2023 in its Harry Potter theme with stored winner, Houses, Awards, highlights and wiki link
+ok - GET /i and /ii render as link-only cards, /iii with its Awards, each with the wiki link
+ok - GET /history/awards/<War Week MVP> is 200 newest first and linked from /history; an unknown or malformed id is 404
+ok - GET /xi/competitions groups Competitions with their scoring and no points cap
+ok - GET /xi/competitions/[id] shows the Competition and shows its Placement and the Points Entries it generated
+ok - GET /xi/competitions/00000000-0000-4000-8000-000000000000 returns 404
+ok - GET /xi/competitions/not-a-uuid returns 404
+ok - GET /xi/teams shows each Team with Leaders marked by Leader Title and Company Tags
+ok - GET /iv/teams shows one roster of all Participants for a free-for-all War Week
+ok - a signed-in user linked by email sees one 'You' on /xi/teams and no picker
+ok - a signed-in user linked by email sees one 'You' on the individual leaderboard
+ok - a signed-in user linked by email sees 'You' on their Award on /xi/awards
+ok - a signed-in user with no email match gets no 'You' and no picker
+ok - MCP tools/list includes get_current_war_week
+ok - MCP tools/list includes get_leaderboard
+ok - MCP tools/list includes get_schedule
+ok - MCP tools/list includes get_announcements
+ok - MCP tools/list includes get_awards
+ok - MCP tools/list includes get_discretionary_points
+ok - MCP tools/list includes get_faq
+ok - MCP tools/list includes list_history
+ok - MCP tools/list includes get_history
+ok - MCP tools/list includes get_bracket
+ok - MCP tools/list includes get_games
+ok - MCP tools/list includes get_participation
+ok - MCP tools/list includes get_placements
+ok - MCP tools/call get_current_war_week returns edition xi
+ok - MCP get_leaderboard(team) returns Standings with numeric totals
+ok - MCP get_leaderboard(individual) returns Standings with numeric totals
+ok - MCP get_schedule(2026-02-24) returns only that Day
+ok - MCP get_schedule() returns all six XI Days
+ok - MCP get_announcements(limit: 2) returns edition xi, 2 Announcements, welcome pinned first with its video URL and body
+ok - MCP get_announcements() returns all 3 Announcements
+ok - MCP get_announcements({}) returns no @ anywhere
+ok - MCP get_leaderboard({"kind":"team"}) returns no @ anywhere
+ok - MCP get_leaderboard({"kind":"individual"}) returns no @ anywhere
+ok - MCP get_awards returns XI's three seeded Awards with the same recipients as /xi/awards
+ok - MCP get_games(Bouncy Pong) returns its head-to-head settings, leaderboard and Games with no @
+ok - MCP get_bracket(Bouncy Pong) answers bracket: null, run as Head-to-head, pointing to get_games
+ok - MCP get_participation(Daily Workout Check-in) returns its settings and who took part with no @
+ok - MCP get_placements(Speed Chess) returns its sheet by name with no @
+ok - MCP get_games(Tuesday Stairs) returns the Best score Format with no @
+ok - MCP get_bracket(Daily Workout Check-in) answers bracket: null with no @
+ok - MCP get_bracket(Speed Chess) answers bracket: null, run as Placement, pointing to get_placements
+ok - MCP get_discretionary_points returns edition xi and its list with no @
+ok - MCP get_faq returns XI's six FAQ Items in seed order with plain-text answers
+ok - MCP list_history returns 2025 down to 2016
+ok - MCP get_history(2023) returns the stored winner, Houses, Awards and wiki link
+ok - MCP get_history(2030) returns a clear not-found result
+ok - MCP get_history(2026) returns a clear not-found result
+ok - anonymous GET /about is 200 with the Standings-hero stills, the Finale still, every feature card, the XI link and no sign-in redirect
+ok - anonymous GET /about/leaderboard redirects to sign-in
+ok - anonymous GET /aboutx redirects to sign-in
+ok - anonymous GET /privacy is 200 with its "Privacy" heading, "Last updated" and no sign-in redirect
+ok - anonymous GET /terms is 200 with its "Terms" heading, "Last updated" and no sign-in redirect
+ok - anonymous GET /privacy/x redirects to sign-in
+ok - anonymous GET /termsx redirects to sign-in
+ok - GET /sign-in renders without OAuth credentials and says Google isn't configured
+ok - GET /api/auth/get-session answers null with no session
+ok - GET /sign-in/test is 404 with no TEST_SIGN_IN_SECRET
+ok - POST /api/auth/update-user is 404 for a signed-in user
+ok - anonymous GET /admin/competitions redirects to sign-in
+ok - GET /admin/competitions as an allowlisted Organizer shows the admin shell
+ok - GET /admin/competitions as a signed-in JG user off the allowlist shows the refusal
+ok - GET /admin/competitions as a session with a non-JG email shows sign-in
+ok - GET /admin/competitions as an Organizer says 'Back to War Week XI' and never 'public site'
+ok - GET /admin/finale as an Organizer says 'Back to War Week XI' and never 'public site'
+ok - GET /admin/settings as an Organizer says 'Back to War Week XI' and never 'public site'
+ok - GET /admin permanently redirects to /admin/competitions
+ok - GET /admin/points permanently redirects to /admin/discretionary-points
+ok - GET /admin/points/00000000-0000-4000-8000-000000000000 permanently redirects to /admin/discretionary-points
+ok - GET /admin/setup permanently redirects to /admin/settings
+ok - GET /admin/setup/war-week permanently redirects to /admin/settings
+ok - GET /admin/setup/next permanently redirects to /admin/settings
+ok - GET /admin/setup/days permanently redirects to /admin/schedule
+ok - GET /admin/setup/schedule permanently redirects to /admin/schedule
+ok - GET /admin/setup/schedule/new permanently redirects to /admin/schedule
+ok - GET /admin/setup/schedule/00000000-0000-4000-8000-000000000000 permanently redirects to /admin/schedule
+ok - GET /admin/setup/teams permanently redirects to /admin/roster
+ok - GET /admin/setup/competitions permanently redirects to /admin/competitions
+ok - GET /admin/setup/competitions/00000000-0000-4000-8000-000000000000/bracket permanently redirects to /admin/competitions/00000000-0000-4000-8000-000000000000/bracket
+ok - GET /admin/setup/competitions/00000000-0000-4000-8000-000000000000/games permanently redirects to /admin/competitions/00000000-0000-4000-8000-000000000000/games
+ok - GET /admin/setup/faq permanently redirects to /admin/faq
+ok - GET /admin/setup/faq/new permanently redirects to /admin/faq
+ok - GET /admin/setup/faq/00000000-0000-4000-8000-000000000000 permanently redirects to /admin/faq
+ok - GET /admin/standings permanently redirects to /admin/finale
+ok - GET /admin/schedule/new permanently redirects to /admin/schedule
+ok - GET /admin/schedule/00000000-0000-4000-8000-000000000000 permanently redirects to /admin/schedule
+ok - GET /admin/faq/new permanently redirects to /admin/faq
+ok - GET /admin/faq/00000000-0000-4000-8000-000000000000 permanently redirects to /admin/faq
+ok - GET /admin/awards/new permanently redirects to /admin/awards
+ok - GET /admin/awards/00000000-0000-4000-8000-000000000000 permanently redirects to /admin/awards
+ok - GET /admin as an Organizer lands on Competitions, the first admin section
+ok - anonymous GET / redirects to sign-in
+ok - anonymous GET /xi redirects to sign-in
+ok - anonymous GET /xi/leaderboard redirects to sign-in
+ok - anonymous POST /api/mcp answers 401
+ok - POST /api/mcp with a wrong bearer token answers 401
+ok - POST /api/mcp with the bearer token and no session completes initialize and get_current_war_week
+ok - GET /xi/more as an Organizer has no Admin link or account rows (the account menu holds them)
+ok - GET /xi/more as a non-Organizer has no Admin link or account rows (the account menu holds them)
+ok - GET /admin/guide as an Organizer shows the guide, linked in the admin nav
+ok - GET /admin/guide as a signed-in non-Organizer shows the refusal
+ok - GET /admin/discretionary-points as an Organizer shows Discretionary points and the Give button
+ok - GET /admin/discretionary-points as a non-Organizer shows the refusal
+ok - createDiscretionaryPoints is refused for a non-Organizer and writes nothing
+ok - createDiscretionaryPoints without a reason is refused
+ok - createDiscretionaryPoints as an Organizer saves an entry with no Competition, entered by them
+ok - Discretionary points show up on /xi/leaderboard on the next refresh
+ok - updateDiscretionaryPoints and deleteDiscretionaryPoints are refused for a non-Organizer
+ok - updateDiscretionaryPoints as an Organizer edits points and keeps entered-by
+ok - updateDiscretionaryPoints and deleteDiscretionaryPoints refuse a Competition's Points Entry
+ok - deleteDiscretionaryPoints as an Organizer removes it
+ok - GET /xi/finale as a signed-in user opens the slideshow on its Title slide, with nothing waiting on Start
+ok - GET /admin/finale shows the Finale page with Open Finale, the slide list and the Awards layout control to an Organizer and the refusal to a non-Organizer
+ok - GET /admin/finale lists the seeded Custom "Thank you" slide on XI with its Edit and Delete, and offers Add Custom slide, to an Organizer
+ok - MCP get_leaderboard(team) returns the same Team totals as /xi/leaderboard
+ok - GET /xi/news permanently redirects (308) to /xi/announcements
+ok - GET /xi/announcements orders the pinned welcome first, then Wellness Wednesday, then Tournament Night recap
+ok - GET /xi/announcements embeds the welcome Announcement's video as a YouTube iframe
+ok - GET /xi shows a Pinned section with the welcome Announcement
+ok - GET /xi/announcements and /xi both show the Pinned badge
+ok - createAnnouncement rejects a signed-in JG user off the allowlist
+ok - createAnnouncement strips a body video node from a disallowed host
+ok - createAnnouncement as an Organizer saves a valid Announcement with author-email and a recent published-at
+ok - updateAnnouncement, pinAnnouncement, unpinAnnouncement and deleteAnnouncement each reject a non-Organizer and leave the row unchanged
+ok - updateAnnouncement changes the title and keeps author-email and published-at
+ok - pinAnnouncement pins it, and it now sorts first on /xi/announcements
+ok - unpinAnnouncement unpins it, and the welcome Announcement sorts first again
+ok - deleteAnnouncement as an Organizer removes it
+ok - deleteAnnouncement of an id that no longer exists says so
+ok - createAnnouncement strips a javascript: link, a data: image and an unrecognized iframe block on write
+ok - GET /admin/announcements as an Organizer lists the seeded titles and New Announcement, and refuses a non-Organizer
+ok - GET /admin/announcements/new as an Organizer shows the Announcement form
+ok - GET /admin/announcements/[id] as an Organizer shows Edit Announcement for the seeded welcome Announcement
+ok - GET /xi/awards lists the seeded Awards with descriptions and recipients, and says Awards don't affect Standings
+ok - GET /xi/awards groups Black Midnight under its Category heading, linked to /history/awards/<id>, with the rest under Other Awards
+ok - GET /xi/faq lists the six seeded FAQ Items in seed order with their answers
+ok - createAward rejects a signed-in JG user off the allowlist
+ok - createAward refuses an Award with no recipients
+ok - createAward refuses a Participant of another War Week
+ok - createAward as an Organizer saves an Award to a Team and two Participants, shown on /xi/awards
+ok - updateAward rejects a signed-in JG user off the allowlist
+ok - deleteAward rejects a signed-in JG user off the allowlist
+ok - updateAward as an Organizer renames it and replaces the recipients with one Participant and no Team
+ok - Giving and editing Awards adds no Points Entries
+ok - deleteAward as an Organizer removes it
+ok - deleteAward of an id that no longer exists says so
+ok - GET /admin/awards as an Organizer lists the seeded Awards with Edit and Delete and Add Award, and refuses a non-Organizer
+ok - GET /admin/settings and /admin/schedule show the pages to an Organizer and the refusal to a non-Organizer; Settings has the setup warning, the Lifecycle box and Create next War Week; Schedule has the Days and their Schedule Items
+ok - updateWarWeekSettingsFields rejects a signed-in JG user off the allowlist
+ok - updateWarWeekSettingsFields refuses free-for-all while XI has Teams
+ok - an Organizer saves a new primary color and GET /xi is themed with it
+ok - an Organizer overrides the other scheme's primary color: the row stores it and GET /xi carries it under that scheme's prefix
+ok - an Organizer edits a Day Theme and GET /xi/schedule shows it; deleting a Day with Schedule Items is refused
+ok - GET /admin/roster and /admin/competitions show the editors to an Organizer and the refusal to a non-Organizer; the admin nav links them
+ok - createParticipant refuses a signed-in JG user off the allowlist
+ok - an Organizer adds a Participant and GET /xi/teams shows them; a second with the same email is refused
+ok - deleteTeam refuses a Team that has Participants, naming the count
+ok - an Organizer adds a Competition with Placement Points and GET /admin/competitions lists it
+ok - GET /admin/schedule and /admin/faq show the setup pages to an Organizer and the refusal to a non-Organizer
+ok - createScheduleItem refuses an end before the start and a non-Organizer
+ok - an Organizer adds a Schedule Item; GET /xi/schedule lists it, GET /xi shows it in Now/Next while it's on, and a duplicate is refused
+ok - an Organizer adds an FAQ Item and GET /xi/faq lists it last
+ok - an Organizer deletes the new Schedule Item and FAQ Item
+ok - bracket loop: an Organizer sets single elimination on a Competition, enters 4 Teams, generates, records 3 Heat Results, finalizes; GET /xi/competitions/<id> shows the champion and /xi/leaderboard includes the generated points and /xi/finale/<id> answers 200; un-finalize removes them and /xi/finale/<id> answers 404; then cleans up
+ok - heats loop: an Organizer sets heats (4 per Heat, 2 advance) on a Competition, enters 4 Teams, generates one Heat of four, records its four-Entrant Heat Result, finalizes; GET /xi/competitions/<id> shows the champion and /xi/leaderboard includes the generated points; un-finalize removes them; then cleans up
+ok - squad loop: an Organizer builds a single-elimination Bracket of four Squads from XI's two Teams, turns on self-report; a linked Participant reports their Heat and their Squad advances, a second report and an outsider's POST are refused, the Organizer overwrites and re-records, the Participant reports the Final, finalize splits Points Entries two per Team; then cleans up
+ok - the smoke Host hosts one XI Competition
+ok - createDiscretionaryPoints as a Host is refused with 'Only an Organizer can give Discretionary points.' and writes nothing
+ok - updateDiscretionaryPoints and deleteDiscretionaryPoints as a Host are refused and change nothing
+ok - updateWarWeekSettingsFields as a Host is refused on updateWarWeekSettingsFields for XI with 'Only an Organizer can change War Week settings.'
+ok - createDay as a Host is refused on createDay for XI with 'Only an Organizer can add Days.'
+ok - pinAnnouncement as a Host is refused on pinAnnouncement on a seeded Announcement with 'Only an Organizer can pin Announcements.'
+ok - setSelfReport as a Host on their own points Competition is refused with 'This Competition isn't run as a Bracket.'
+ok - setSelfReport as a Host on another Competition is refused with 'You're not a Host of that Competition.'
+ok - createSquad as a Host on their own points Competition is refused with 'This Competition isn't run as a Bracket.'
+ok - createSquad as a Host on another Competition is refused with 'You're not a Host of that Competition.'
+ok - updateAnnouncement as a Host without pinned keeps their Organizer-pinned Announcement pinned
+ok - updateAnnouncement as a Host with pinned: false on their pinned Announcement is refused with 'Only an Organizer can unpin Announcements.'
+ok - GET /admin/discretionary-points as a Host shows the refusal, not the form
+ok - GET /admin/competitions as a Host shows the Host's nav: Competitions, Schedule, Announcements, Finale and Guide only
+ok - GET /admin/schedule as a Host shows the Schedule Items and not the Days editor
+ok - GET /admin/settings as a Host shows 'Organizers and Hosts only.'
+ok - GET /admin as a Participant shows 'Organizers and Hosts only.'
+ok - GET /xi as a Host has the account menu in the header
+ok - GET /xi as a Participant has the account menu in the header
+ok - malformed input from a Participant gets the access refusal, not a validation message, in every family
+ok - malformed input from a Host outside their Competition gets the access refusal, not a validation message, in every family
+ok - importParticipants as a Host is refused with 'Only an Organizer can import Participants.' and writes nothing
+ok - importParticipants as a Participant is refused with 'Only an Organizer can import Participants.' and writes nothing
+ok - updateCompetition as a former Host is refused on the Competition they no longer host
+ok - updateWarWeekSettingsFields as a Participant is refused (settings) with 'Only an Organizer can change War Week settings.'
+ok - createDay as a Participant is refused (Day) with 'Only an Organizer can add Days.'
+ok - createTeam as a Participant is refused (Team) with 'Only an Organizer can add Teams.'
+ok - createParticipant as a Participant is refused (Participant) with 'Only an Organizer can add Participants.'
+ok - createCompetition as a Participant is refused (Competition) with 'Only an Organizer can add Competitions.'
+ok - createScheduleItem as a Participant is refused (Schedule Item) with 'You're not a Host of that Competition.'
+ok - createFaqItem as a Participant is refused (FAQ) with 'Only an Organizer can add FAQ Items.'
+ok - createAward as a Participant is refused (Award) with 'Only an Organizer can give Awards.'
+ok - createAnnouncement as a Participant is refused (Announcement) with 'Only an Organizer or a Host of this War Week can post Announcements.'
+ok - createDiscretionaryPoints as a Participant is refused (Discretionary points) with 'Only an Organizer can give Discretionary points.'
+ok - generateBracket as a Participant is refused (Bracket) with 'You're not a Host of that Competition.'
+ok - setHeatSchedule as a Participant is refused (Heat time) with 'You're not a Host of that Competition.'
+ok - createSquad as a Participant is refused (Squad) with 'You're not a Host of that Competition.'
+ok - setSelfReport as a Participant is refused (Self-report) with 'You're not a Host of that Competition.'
+ok - reportHeatResult as a Participant is refused (Heat report) with 'Self-report is off for this Competition.'
+ok - startWarWeek as a Participant is refused (lifecycle) with 'Only an Organizer can start a War Week.'
+ok - unstartWarWeek as a Participant is refused (lifecycle) with 'Only an Organizer can unstart a War Week.'
+ok - removeOrganizer as a Participant is refused (Organizer list) with 'Only an Organizer can remove an Organizer.'
+ok - the Participant's refused calls wrote nothing
+ok - participation: /xi/competitions/<Daily Workout Check-in> answers 200 with "Took part", "Participation" and no email but the viewer's
+ok - participation: checkIn by a signed-in JG user linked to no Participant is refused
+ok - participation: checkIn as the linked smoke Participant succeeds and the page lists them
+ok - participation: clear Daily Workout Check-in's check-ins
+ok - games: /xi/competitions/<Bouncy Pong> answers 200 with "Head-to-head", an empty log and no email but the viewer's
+ok - games: /xi/competitions/<Tuesday Stairs> answers 200 with "Best score", an empty log and no email but the viewer's
+ok - games: logGame by a signed-in JG user linked to no Participant is refused
+(node:56008) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ok - games: logGame as the linked smoke Participant succeeds and the page shows the Game
+ok - games: closed and with XI ended, the page still renders the leaderboard and log, with no Log a Game
+ok - games: reopen Bouncy Pong and delete the smoke Game
+ok - createFaqItem posting XI's warWeekId with admin_edition=x in the cookie writes to XI and leaves X unchanged
+ok - lifecycle: create XII, end XI with a Winner, start XII; an Organizer corrects XI but a Participant can't reopen it; then restore
+⨯ Error: Failed query: select "id", "war_week_id", "question", "answer", "sort_order", "created_at", "updated_at" from "faq_item" where "faq_item"."war_week_id" = $1 order by "faq_item"."sort_order" asc, "faq_item"."id" asc
+params: bc56d246-ea16-4ab5-a483-7fa14f8d6d65
+    at o.queryWithCache (.next/server/chunks/ssr/_06a5mlc._.js:25:37181)
+    at async (.next/server/chunks/ssr/_06a5mlc._.js:18:6014)
+    at async k (.next/server/chunks/ssr/[root-of-the-server]__1tnyg3a._.js:1:4473) {
+  query: 'select "id", "war_week_id", "question", "answer", "sort_order", "created_at", "updated_at" from "faq_item" where "faq_item"."war_week_id" = $1 order by "faq_item"."sort_order" asc, "faq_item"."id" asc',
+  params: [ 'bc56d246-ea16-4ab5-a483-7fa14f8d6d65' ],
+  digest: '3104843603',
+  [cause]: error: relation "faq_item" does not exist
+      at async (.next/server/chunks/ssr/_06a5mlc._.js:18:6229)
+      at async o.queryWithCache (.next/server/chunks/ssr/_06a5mlc._.js:25:37156)
+      at async (.next/server/chunks/ssr/_06a5mlc._.js:18:6014)
+      at async k (.next/server/chunks/ssr/[root-of-the-server]__1tnyg3a._.js:1:4473) {
+    length: 107,
+    severity: 'ERROR',
+    code: '42P01',
+    detail: undefined,
+    hint: undefined,
+    position: '97',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '1449',
+    routine: 'parserOpenTable'
+  }
+}
+  /xi/faq with faq_item missing answered 200
+ok - GET /xi/faq with its table missing streams the edition error boundary (ErrorScreen copy), not Next's default error page
+ ELIFECYCLE  Command failed with exit code 143.
+
+> war-weeker@0.1.0 e2e /Users/paulmacfarlane/Code/jg-war-week
+> playwright test
+
+
+> war-weeker@0.1.0 db:migrate /Users/paulmacfarlane/Code/jg-war-week
+> drizzle-kit migrate
+
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/Users/paulmacfarlane/Code/jg-war-week/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] applying migrations...[2K[1G[✓] migrations applied successfully!
+> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week
+> tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xii.json seeds/demo/xi.json
+
+Loaded War Week i (reset)
+Loaded War Week ii (reset)
+Loaded War Week iii (reset)
+Loaded War Week iv (reset)
+Loaded War Week ix (reset)
+Loaded War Week v (reset)
+Loaded War Week vi (reset)
+Loaded War Week vii (reset)
+Loaded War Week viii (reset)
+Loaded War Week x (reset)
+Loaded War Week xii (reset)
+Loaded War Week xi (reset)
+
+Running 106 tests using 1 worker
+
+  ✓    1 [chromium] › e2e/about-games.spec.ts:16:5 › about the Competitions feature card shows and screenshots on /about (553ms)
+  ✓    2 [chromium] › e2e/archive.spec.ts:25:5 › the Archive lists every past War Week (384ms)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓    3 [chromium] › e2e/archive.spec.ts:46:7 › past edition /i renders (210ms)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓    4 [chromium] › e2e/archive.spec.ts:46:7 › past edition /ii renders (213ms)
+  ✓    5 [chromium] › e2e/archive.spec.ts:46:7 › past edition /iii renders (255ms)
+  ✓    6 [chromium] › e2e/archive.spec.ts:46:7 › past edition /iv renders (277ms)
+  ✓    7 [chromium] › e2e/archive.spec.ts:46:7 › past edition /ix renders (265ms)
+  ✓    8 [chromium] › e2e/archive.spec.ts:46:7 › past edition /v renders (230ms)
+  ✓    9 [chromium] › e2e/archive.spec.ts:46:7 › past edition /vi renders (231ms)
+  ✓   10 [chromium] › e2e/archive.spec.ts:46:7 › past edition /vii renders (274ms)
+  ✓   11 [chromium] › e2e/archive.spec.ts:46:7 › past edition /viii renders (276ms)
+  ✓   12 [chromium] › e2e/archive.spec.ts:46:7 › past edition /x renders (232ms)
+  ✓   13 [chromium] › e2e/axe.spec.ts:36:9 › xi has no color-contrast violations (light) (1.2s)
+  ✓   14 [chromium] › e2e/axe.spec.ts:36:9 › xi has no color-contrast violations (dark) (1.1s)
+  ✓   15 [chromium] › e2e/axe.spec.ts:36:9 › history has no color-contrast violations (light) (390ms)
+  ✓   16 [chromium] › e2e/axe.spec.ts:36:9 › history has no color-contrast violations (dark) (424ms)
+  ✓   17 [chromium] › e2e/axe.spec.ts:36:9 › about has no color-contrast violations (light) (1.1s)
+  ✓   18 [chromium] › e2e/axe.spec.ts:36:9 › about has no color-contrast violations (dark) (1.1s)
+  ✓   19 [chromium] › e2e/bracket-heats.spec.ts:115:5 › a Heats Bracket is built, run and finalized into Points Entries (6.9s)
+  ✓   20 [chromium] › e2e/bracket-squads.spec.ts:194:5 › a Squad Bracket with self-report: a Participant reports, a second report is refused, the Host overwrites (11.2s)
+  ✓   21 [chromium] › e2e/bracket-tree.spec.ts:260:5 › a single-elimination Bracket shows as a tree, and a result records in a Dialog on large screens (5.5s)
+  ✓   22 [chromium] › e2e/bracket-tree.spec.ts:308:5 › a Heats Bracket shows as a tree of Heat boxes, advancers highlighted (6.4s)
+  ✓   23 [chromium] › e2e/bracket.spec.ts:117:5 › a Bracket is built, run and finalized into Points Entries (10.8s)
+  ✓   24 [chromium] › e2e/delete-account.spec.ts:31:7 › 61 a signed-in person deletes their account by typing their email, and lands signed out, at 390 (825ms)
+  ✓   25 [chromium] › e2e/delete-account.spec.ts:31:7 › 61 a signed-in person deletes their account by typing their email, and lands signed out, at 1440 (949ms)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓   26 [chromium] › e2e/discretionary-points.spec.ts:16:5 › an Organizer gives 3 Discretionary points to a Team, edits it to 4 and deletes it, and the leaderboard follows (1.9s)
+  ✓   27 [chromium] › e2e/discretionary-points.spec.ts:88:5 › a Discretionary entry without a reason is refused under Reason (738ms)
+  ✓   28 [chromium] › e2e/discretionary-points.spec.ts:121:5 › a Host gets the refusal page and no nav link for Discretionary points (319ms)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓   29 [chromium] › e2e/discretionary-points.spec.ts:153:5 › the old Points links redirect, and /admin lands on Competitions (432ms)
+[WebServer] (node:56101) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+[WebServer] (Use `node --trace-deprecation ...` to show where the warning was created)
+  ✓   30 [chromium] › e2e/enrollment.spec.ts:142:5 › enrollment: a Participant enrolls, withdraws and enrolls again; once the Host builds the Bracket, enrollment is refused (2.8s)
+  ✓   31 [chromium] › e2e/finale.spec.ts:11:5 › the Finale's Standings countdown ends on first place (3.4s)
+  ✓   32 [chromium] › e2e/forms.spec.ts:7:7 › forms › Discretionary points refused on the server show under Points and focus it (799ms)
+  ✓   33 [chromium] › e2e/forms.spec.ts:44:7 › forms › a settings autosave refused on the server shows under Slack URL and keeps the value (1.8s)
+  ✓   34 [chromium] › e2e/games.spec.ts:98:5 › games: a Participant logs a head-to-head Game from home, the Host edits it and closes the Competition, the Standings move (6.0s)
+  ✓   35 [chromium] › e2e/placement-points.spec.ts:11:5 › r16 95 twenty Placement Points places are all reachable at 390 wide without horizontal scroll (3.5s)
+  ✓   36 [chromium] › e2e/placement.spec.ts:85:5 › r16 90 a Host records placements with Scores, breaks a tie and Finalizes: the Standings move, Recent results shows it, Reopen withdraws, a Participant is refused (4.3s)
+  ✓   37 [chromium] › e2e/profile-core.spec.ts:29:7 › 60 a Participant sets a Profile name and picture URL; the menu and both previews show them, at 390 (1.3s)
+  ✓   38 [chromium] › e2e/profile-core.spec.ts:29:7 › 60 a Participant sets a Profile name and picture URL; the menu and both previews show them, at 1440 (1.4s)
+  ✓   39 [chromium] › e2e/profile.spec.ts:44:7 › 60 the Profile name and picture show on the leaderboard, teams and a Games Competition, and the roster form reads the name read-only, at 390 (1.9s)
+  ✓   40 [chromium] › e2e/profile.spec.ts:44:7 › 60 the Profile name and picture show on the leaderboard, teams and a Games Competition, and the roster form reads the name read-only, at 1440 (2.1s)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓   41 [chromium] › e2e/regression-r1.spec.ts:91:5 › r1 01 the site footer sits at the bottom of a short page and follows a long page's content (1.5s)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓   42 [chromium] › e2e/regression-r1.spec.ts:106:5 › r1 02 a free-for-all edition shows only a Standings heading; a teams edition still shows the Team label (955ms)
+  ✓   43 [chromium] › e2e/regression-r1.spec.ts:158:5 › r1 10 expanding a Team or Participant row on the leaderboard shows its Points Entries, newest first, summing to the row total (705ms)
+  ✓   44 [chromium] › e2e/regression-r1.spec.ts:243:5 › r1 05 the End War Week dialog shows the computed Winner read-only (723ms)
+  ✓   45 [chromium] › e2e/regression-r1.spec.ts:273:5 › r1 06 09 the Competitions form offers Format including Bracket formats and no points cap, linking a Bracket Competition to its Bracket setup (993ms)
+  ✓   46 [chromium] › e2e/regression-r1.spec.ts:345:5 › r1 08 the Schedule defaults to All and filters to one Day by URL (954ms)
+  ✓   47 [chromium] › e2e/regression-r11-day-description.spec.ts:23:5 › r11 66 a Day saved with a description shows on the Schedule and in Home's Today header (2.6s)
+r11 64 stored body: {"type":"doc","content":[{"type":"heading","attrs":{"level":2},"content":[{"text":"Closing Ceremonies","type":"text"}]},{"type":"blockquote","content":[{"type":"paragraph","content":[{"text":"There is no spoon.","type":"text"}]}]},{"type":"paragraph","content":[{"text":"Doors open at nine.","type":"text"}]},{"type":"image","attrs":{"alt":"The Announcements page","src":"http://localhost:3200/about/announcements.png","caption":"Edited: the Announcements page"}},{"type":"video","attrs":{"src":"https://youtu.be/dQw4w9WgXcQ"}}]}
+  ✓   48 [chromium] › e2e/regression-r11-editor.spec.ts:40:5 › r11 64 an Organizer posts a heading, a quote, a captioned image and a video; the participant page shows all four (4.6s)
+  ✓   49 [chromium] › e2e/regression-r11-roster-import.spec.ts:21:5 › r11 67 paste three rows, preview 2 Add and 1 Update, import, and the roster shows them (1.3s)
+  ✓   50 [chromium] › e2e/regression-r11-unstart.spec.ts:35:5 › r11 68 Start then Unstart a fresh edition; it shows Upcoming again (1.5s)
+  ✓   51 [chromium] › e2e/regression-r12-award-categories.spec.ts:6:5 › r12 70 an Organizer adds a Category, gives an Award in it, and the Awards page groups it (2.4s)
+  ✓   52 [chromium] › e2e/regression-r12-award-history.spec.ts:17:5 › r12 71 History lists Awards through the years and a Category lists its War Weeks newest first (713ms)
+  ✓   53 [chromium] › e2e/regression-r12-participation.spec.ts:67:5 › r12 69 a Host runs a team Participation Competition: check-ins, a tick, Close moves the Standings, Reopen withdraws (24.7s)
+  ✓   54 [chromium] › e2e/regression-r12-participation.spec.ts:223:5 › r16 94 an individual Participation Competition gives N points to each Participant who took part (1.7s)
+  ✓   55 [chromium] › e2e/regression-r13-built-in-slides.spec.ts:29:5 › 73: the Awards slide reveals one Award per step, grouped by Category (516ms)
+  ✓   56 [chromium] › e2e/regression-r13-built-in-slides.spec.ts:73:5 › 73: the Winner slide shows the leaderboard's first place (651ms)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓   57 [chromium] › e2e/regression-r13-built-in-slides.spec.ts:102:5 › 73: the per-Category Awards layout, set in admin → Finale, plays one Awards slide per Category (6.0s)
+  ✓   58 [chromium] › e2e/regression-r13-custom-slides.spec.ts:45:5 › 74-AC1 74-AC2: an Organizer adds a Custom slide with an image between Awards and Standings, the Finale shows it with readable text, and the Organizer edits and deletes it (3.7s)
+  ✓   59 [chromium] › e2e/regression-r13-finale.spec.ts:22:5 › 72-AC2: an Organizer moves the Standings slide and hides one, and the Finale plays in that order (7.0s)
+  ✓   60 [chromium] › e2e/regression-r15-cursor.spec.ts:12:7 › cursors › r15 85 buttons, links, combobox options and tabs show a pointer (606ms)
+  ✓   61 [chromium] › e2e/regression-r15-cursor.spec.ts:42:7 › cursors › r15 85 a disabled button shows not-allowed and is what the pointer is over (265ms)
+  ✓   62 [chromium] › e2e/regression-r15-games-settings.spec.ts:9:5 › r15 89 Games settings and Placement Points show what was saved after leaving and returning (1.7s)
+  ✓   63 [chromium] › e2e/regression-r15-heats-advancers.spec.ts:23:5 › r15 84 a recorded Heat of 4 with 2 advancing highlights both advancers in admin (7.6s)
+  ✓   64 [chromium] › e2e/regression-r15-history-chrome.spec.ts:26:5 › r15 88 History and a Category page wear the current War Week's nav, tab bar and theme (1.4s)
+  ✓   65 [chromium] › e2e/regression-r15-nav-centre.spec.ts:9:7 › r15 86 the top nav is centred at 1280 wide on XI and XII (846ms)
+  ✓   66 [chromium] › e2e/regression-r15-nav-centre.spec.ts:9:7 › r15 86 the top nav is centred at 1024 wide on XI and XII (876ms)
+  ✓   67 [chromium] › e2e/regression-r15-nav-centre.spec.ts:38:5 › r15 86 at 390 wide the header keeps the brand left and the account menu right (772ms)
+  ✓   68 [chromium] › e2e/regression-r15-solid-buttons.spec.ts:19:5 › r15 87 the admin Bracket's unrecorded Heat has a solid Record result button, and the whole card is one tap target (1.7s)
+  ✓   69 [chromium] › e2e/regression-r5.spec.ts:48:5 › r5 30 admin header and section bar on a phone (2.4s)
+  ✓   70 [chromium] › e2e/regression-r5.spec.ts:236:5 › r5 34 admin controls are 44px on a phone (1.9s)
+  ✓   71 [chromium] › e2e/regression-r5.spec.ts:365:5 › r5 35 selects and the color picker on a phone (2.5s)
+Teams & roster at 375px: 9671px tall
+Competitions at 375px: 3397px tall
+  ✓   72 [chromium] › e2e/regression-r5.spec.ts:506:5 › r5 31 setup rows open in a Sheet (3.2s)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓   73 [chromium] › e2e/regression-r5.spec.ts:683:5 › r5 32 admin lists fit a phone; free-for-all drops Team (2.9s)
+  ✓   74 [chromium] › e2e/regression-r5.spec.ts:856:5 › r5 33 Reset to derived is a 44px target on a phone (319ms)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓   75 [chromium] › e2e/regression-r5.spec.ts:875:5 › r5 38 Escape keeps chosen Entrants; Tree shows a Heat's place; Format help (2.4s)
+  ✓   76 [chromium] › e2e/regression-r5.spec.ts:995:5 › r5 epic admin pages at 375 and 1280, as Organizer and Host (4.6s)
+r5 37 stored body: {"type":"doc","content":[{"type":"paragraph","content":[{"text":"Doors open at nine.","type":"text"}]}]}
+r5 37 pinned card at 375 on /xi: 112px
+r5 37 pinned card at 375 on /xi/announcements: 112px
+r5 37 pinned video card at 375 on /xi: 325px
+r5 37 pinned video card at 375 on /xi/announcements: 325px
+  ✓   77 [chromium] › e2e/regression-r5.spec.ts:1052:5 › r5 37 pinned Announcement card fits its content (2.0s)
+  ✓   78 [chromium] › e2e/regression-r6.spec.ts:51:5 › r6 39 a refusal toast clears the section bar, and keeps Sonner's offset from md (5.1s)
+  ✓   79 [chromium] › e2e/regression-r8.spec.ts:18:5 › r8 50 the date range picker stays open until Done, then the range saves itself (1.7s)
+  ✓   80 [chromium] › e2e/regression-r9-account.spec.ts:39:9 › 55 account menu › Organizer: participant and admin headers show only the avatar, menu has every item at 390 (559ms)
+  ✓   81 [chromium] › e2e/regression-r9-account.spec.ts:96:9 › 55 account menu › a plain Participant has no Admin item at 390 (835ms)
+  ✓   82 [chromium] › e2e/regression-r9-account.spec.ts:39:9 › 55 account menu › Organizer: participant and admin headers show only the avatar, menu has every item at 1440 (604ms)
+  ✓   83 [chromium] › e2e/regression-r9-account.spec.ts:96:9 › 55 account menu › a plain Participant has no Admin item at 1440 (877ms)
+  ✓   84 [chromium] › e2e/regression-r9-account.spec.ts:123:7 › 55 account menu › Home no longer has a Slack button, and More has no Admin, Display or account rows (300ms)
+  ✓   85 [chromium] › e2e/regression-r9-account.spec.ts:143:7 › 55 account menu › keyboard: Enter opens, arrows move, Escape closes and returns focus (455ms)
+  ✓   86 [chromium] › e2e/regression-r9-home.spec.ts:18:5 › r9 56 Home shows Recent results newest first, one row per Discretionary entry (1.2s)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓   87 [chromium] › e2e/regression-r9-lists.spec.ts:58:7 › 58 one Edit and Delete pattern for every admin list › every admin list shows Edit and Delete per row at 390 and 1440 (4.5s)
+  ✓   88 [chromium] › e2e/regression-r9-lists.spec.ts:101:7 › 58 one Edit and Delete pattern for every admin list › edit and delete a Participant and a Schedule Item through the row buttons (2.2s)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓   89 [chromium] › e2e/regression-r9-lists.spec.ts:219:7 › 58 one Edit and Delete pattern for every admin list › the old Schedule Item, FAQ and Award pages land on their lists (590ms)
+  ✓   90 [chromium] › e2e/regression-r9-nav.spec.ts:17:7 › 54 Competitions in the main nav › phone tab bar order, highlighting and Announcements in More (496ms)
+  ✓   91 [chromium] › e2e/regression-r9-nav.spec.ts:59:7 › 54 Competitions in the main nav › desktop top nav order and highlighting (208ms)
+  ✓   92 [chromium] › e2e/regression-r9-settings.spec.ts:33:5 › r9 59-1 a Story Theme change saves itself and survives a reload (1.7s)
+  ✓   93 [chromium] › e2e/regression-r9-settings.spec.ts:60:5 › r9 59-2 a bad Slack URL shows its error at the field and isn't saved; other fields still save (2.7s)
+  ✓   94 [chromium] › e2e/regression-r9-settings.spec.ts:108:5 › r9 59-3 a value stored after the page loaded survives another field's save (1.6s)
+  ✓   95 [chromium] › e2e/regression-r9-settings.spec.ts:141:5 › r9 59-4 leaving Settings with a refused field asks first; Cancel stays (2.0s)
+  ✓   96 [chromium] › e2e/sign-in.spec.ts:5:5 › an anonymous visit to /xi lands on /sign-in (237ms)
+  ✓   97 [chromium] › e2e/sign-in.spec.ts:20:5 › a session with a non-JG email is refused /xi (238ms)
+  ✓   98 [chromium] › e2e/sign-in.spec.ts:38:5 › a JG session opens /xi (678ms)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓   99 [chromium] › e2e/test-sign-in.spec.ts:37:9 › 62 Test sign-in › signs in as a linked + alias: You on the roster, the banner on every page, at 390 (581ms)
+  ✓  100 [chromium] › e2e/test-sign-in.spec.ts:37:9 › 62 Test sign-in › signs in as a linked + alias: You on the roster, the banner on every page, at 1440 (623ms)
+  ✓  101 [chromium] › e2e/test-sign-in.spec.ts:76:7 › 62 Test sign-in › refuses a wrong secret and stays signed out (304ms)
+  ✓  102 [chromium] › e2e/theme.spec.ts:116:7 › Display: Light, Dark and System › XI (dark base) follows the account menu's Display, across reloads and the system setting (2.7s)
+  ✓  103 [chromium] › e2e/theme.spec.ts:166:7 › Display: Light, Dark and System › VII (light base) follows it in reverse (1.5s)
+  ✓  104 [chromium] › e2e/theme.spec.ts:196:5 › a stored Dark applies before any client JavaScript loads: no flash (180ms)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓  105 [chromium] › e2e/theme.spec.ts:225:5 › every themed surface follows the Display: the Finale, the Archive, /about, /privacy, /terms, sign-in and /admin (2.2s)
+  ✓  106 [chromium] › e2e/theme.spec.ts:331:5 › Setup: the other scheme's colors are derived, overridable and reset; an untouched form stores no override (6.3s)
+
+  106 passed (4.1m)
+exit 0

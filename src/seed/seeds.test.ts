@@ -87,10 +87,18 @@ describe("War Week history", () => {
     },
   );
 
-  it("has Points Entries only for War Week XI, the first scored in the app's terms", () => {
+  it("has Placements and Discretionary points only for War Week XI, the first scored in the app's terms", () => {
     expect(
-      seeds.filter((s) => s.pointsEntries.length > 0).map((s) => s.edition),
+      seeds.filter((s) => s.placements.length > 0).map((s) => s.edition),
     ).toEqual(["xi"]);
+    expect(
+      seeds
+        .filter((s) => s.discretionaryPoints.length > 0)
+        .map((s) => s.edition),
+    ).toEqual(["xi"]);
+    expect(seeds.flatMap((s) => s.competitions.map((c) => c.format))).toEqual(
+      expect.not.arrayContaining(["head-to-head", "best-score"]),
+    );
   });
 });
 
@@ -126,14 +134,33 @@ describe("Award Categories", () => {
 describe("War Week XI", () => {
   const xi = seeds.find((s) => s.edition === "xi")!;
 
-  it("matches the wiki's final scoreboard: Red 38.5, Blue 31", () => {
-    const totals = new Map<string, number>();
-    for (const entry of xi.pointsEntries) {
-      expect(entry.team).not.toBeNull();
-      totals.set(entry.team!, (totals.get(entry.team!) ?? 0) + entry.points);
-    }
-    expect(Object.fromEntries(totals)).toEqual({ Red: 38.5, Blue: 31 });
+  it("holds Subjective Points as Discretionary points, one per Team, and no Subjective Points Competition", () => {
+    expect(xi.competitions.map((c) => c.name)).not.toContain(
+      "Subjective Points",
+    );
+    expect(
+      xi.discretionaryPoints.map((e) => [e.team, e.points, e.reason]),
+    ).toEqual([
+      ["Red", 6, "Subjective Points"],
+      ["Blue", 4, "Subjective Points"],
+    ]);
     expect(xi.winner).toBe("Red");
+  });
+
+  it("holds every wiki result as a Finalized Placement at the wiki scoreboard's time", () => {
+    const placed = new Set(xi.placements.map((p) => p.competition));
+    expect(placed.size).toBe(19);
+    for (const name of placed) {
+      const comp = xi.competitions.find((c) => c.name === name)!;
+      expect(comp.format, name).toBe("placement");
+      expect(comp.finalized, name).toBe(true);
+      expect(comp.finalizedAt, name).toBe("2026-02-27T15:00:00-05:00");
+      expect(comp.finalizedByEmail, name).toBe("pmacfarlane@jahnelgroup.com");
+    }
+    expect(xi.placements.every((p) => p.team != null)).toBe(true);
+    // HQ Attendance and AI Survey Completion are Placements, not Discretionary.
+    expect(placed).toContain("HQ Attendance");
+    expect(placed).toContain("AI Survey Completion");
   });
 
   it("keeps the demo's schedule, roster and Appearance Theme", () => {
@@ -182,13 +209,14 @@ describe("War Week XI demo", () => {
     expect(xi.competitions.length).toBeGreaterThan(15);
   });
 
-  it("runs one Competition of each Game Type as Games", () => {
+  it("runs a Head-to-head and a Best score Competition as Games, and the old ranked one as an empty Placement", () => {
+    const formats = ["head-to-head", "best-score"];
     const games = xi.competitions
-      .filter((c) => c.format === "games")
+      .filter((c) => formats.includes(c.format))
       .map((c) => ({
         name: c.name,
         scoring: c.scoring,
-        gameType: c.gameType,
+        format: c.format,
         gameConfig: c.gameConfig,
         entrantsOpen: c.entrantsOpen,
       }));
@@ -196,22 +224,15 @@ describe("War Week XI demo", () => {
       {
         name: "Bouncy Pong",
         scoring: "individual",
-        gameType: "head-to-head",
+        format: "head-to-head",
         gameConfig: { drawsAllowed: false, bestOf: null },
         entrantsOpen: true,
       },
       {
         name: "Tuesday Stairs",
         scoring: "team",
-        gameType: "best-score",
+        format: "best-score",
         gameConfig: { count: "total", betterIs: "higher", unit: "trips" },
-        entrantsOpen: true,
-      },
-      {
-        name: "Electric City Matrix",
-        scoring: "team",
-        gameType: "ranked",
-        gameConfig: undefined,
         entrantsOpen: true,
       },
     ]);
@@ -220,6 +241,20 @@ describe("War Week XI demo", () => {
       countsTowardTeam: true,
       placementPoints: [3, 2, 1],
     });
+    const matrix = xi.competitions.find(
+      (c) => c.name === "Electric City Matrix",
+    )!;
+    expect(matrix.format).toBe("placement");
+    expect(matrix.finalized).toBeUndefined();
+    expect(xi.placements.filter((p) => p.competition === matrix.name)).toEqual(
+      [],
+    );
+    // Games aren't seeded: no Placements stand in for Pong or Stairs.
+    expect(
+      xi.placements.filter((p) =>
+        ["Bouncy Pong", "Tuesday Stairs"].includes(p.competition),
+      ),
+    ).toEqual([]);
   });
 
   it("runs one team Competition as Participation, ranked by headcount with self check-in", () => {
@@ -229,7 +264,7 @@ describe("War Week XI demo", () => {
         name: c.name,
         scoring: c.scoring,
         placementPoints: c.placementPoints,
-        participationTeamScoring: c.participationTeamScoring,
+        participationPoints: c.participationPoints,
         selfCheckIn: c.selfCheckIn,
         checkInClosesAt: c.checkInClosesAt,
       }));
@@ -238,42 +273,40 @@ describe("War Week XI demo", () => {
         name: "Daily Workout Check-in",
         scoring: "team",
         placementPoints: [5, 3, 1],
-        participationTeamScoring: "ranked",
+        participationPoints: undefined,
         selfCheckIn: true,
         checkInClosesAt: undefined,
       },
     ]);
   });
 
-  it("has a close mid-week race with a fractional and a Counts-Toward-Team-off entry", () => {
+  it("has Finalized Placements: a fractional Placement Point value, a Counts-Toward-Team-off Competition, and the Settlers [5, 3, 1] kept", () => {
     const competitions = new Map(xi.competitions.map((c) => [c.name, c]));
-    const teamOf = new Map(xi.participants.map((p) => [p.displayName, p.team]));
-    const totals = new Map<string, number>();
-    for (const entry of xi.pointsEntries) {
-      const comp = competitions.get(entry.competition)!;
-      const team =
-        entry.team ??
-        (comp.countsTowardTeam ? teamOf.get(entry.participant!) : null);
-      if (team) totals.set(team, (totals.get(team) ?? 0) + entry.points);
-    }
-
-    const [red, blue] = [totals.get("Red") ?? 0, totals.get("Blue") ?? 0];
-    expect(red).toBeGreaterThan(0);
-    expect(blue).toBeGreaterThan(0);
-    expect(Math.abs(red - blue)).toBeLessThanOrEqual(3);
-
-    expect(xi.pointsEntries.some((e) => !Number.isInteger(e.points))).toBe(
-      true,
-    );
+    const finalized = xi.competitions.filter((c) => c.finalized);
+    expect(finalized.length).toBe(12);
+    expect(finalized.every((c) => c.finalizedAt! < "2026-02-26")).toBe(true);
     expect(
-      xi.pointsEntries.some((e) => {
-        const comp = competitions.get(e.competition)!;
-        return comp.scoring === "individual" && !comp.countsTowardTeam;
-      }),
+      finalized.some((c) =>
+        c.placementPoints?.some((n) => !Number.isInteger(n)),
+      ),
     ).toBe(true);
-    expect(xi.pointsEntries.every((e) => e.enteredAt < "2026-02-26")).toBe(
-      true,
-    );
+    expect(
+      finalized.some((c) => c.scoring === "individual" && !c.countsTowardTeam),
+    ).toBe(true);
+    expect(competitions.get("Settlers of Catan")).toMatchObject({
+      placementPoints: [5, 3, 1],
+      finalized: true,
+    });
+    expect(
+      xi.placements.filter((p) => p.competition === "Settlers of Catan"),
+    ).toEqual([
+      {
+        key: "settlers-of-catan-anthony-conway",
+        competition: "Settlers of Catan",
+        participant: "Anthony Conway",
+        place: 1,
+      },
+    ]);
   });
 
   it("has Announcements (one pinned, one with a video in its body), Awards and organizers", () => {
@@ -322,24 +355,47 @@ describe("War Week XII demo", () => {
     expect(xiiDemo.participants.every((p) => p.team == null)).toBe(true);
   });
 
-  it("has a few scheduled Days and one Bracket, one Games and two points-only Competitions", () => {
+  it("has a few scheduled Days and one Bracket, one Head-to-head and two placement-only Competitions", () => {
     expect(xiiDemo.days.length).toBeGreaterThanOrEqual(3);
     expect(xiiDemo.days.every((d) => d.scheduleItems.length > 0)).toBe(true);
     expect(xiiDemo.competitions.map((c) => c.format).sort()).toEqual([
-      "games",
+      "head-to-head",
       "heats",
-      "points",
-      "points",
+      "placement",
+      "placement",
     ]);
     expect(xiiDemo.competitions.every((c) => c.scoring === "individual")).toBe(
       true,
     );
   });
 
-  it("has one pinned Announcement and Points Entries for most Participants", () => {
+  it("has one pinned Announcement, a Finalized Mile Run, and a Finalized Step Challenge scored by steps", () => {
     expect(xiiDemo.announcements.filter((a) => a.pinned)).toHaveLength(1);
-    const scored = new Set(xiiDemo.pointsEntries.map((e) => e.participant));
-    expect(scored.size).toBeGreaterThanOrEqual(10);
+    const rows = (name: string) =>
+      xiiDemo.placements.filter((p) => p.competition === name);
+    expect(
+      rows("Mile Run").map((p) => [p.participant, p.place, p.score]),
+    ).toEqual([
+      ["Fay Falcon", 1, undefined],
+      ["Ada Anvil", 2, undefined],
+      ["Jax Jetpack", 3, undefined],
+    ]);
+    const steps = rows("Step Challenge");
+    expect(
+      new Set(steps.map((p) => p.participant)).size,
+    ).toBeGreaterThanOrEqual(10);
+    expect(steps.every((p) => typeof p.score === "number")).toBe(true);
+    // Hal and Jax tie on 1, so they share place 10 and 11 is skipped.
+    expect(
+      steps
+        .filter((p) => p.place === 10)
+        .map((p) => p.participant)
+        .sort(),
+    ).toEqual(["Hal Harbor", "Jax Jetpack"]);
+    expect(steps.some((p) => p.place === 11)).toBe(false);
+    expect(
+      xiiDemo.competitions.find((c) => c.name === "Step Challenge"),
+    ).toMatchObject({ scoreDirection: "higher", finalized: true });
     expect(xiiDemo.awards).toEqual([]);
   });
 });

@@ -14,7 +14,7 @@
  * show what the Organizer presents. So every built-in slide has something
  * to show, it adds, and removes again afterwards: two Awards in Award
  * Categories, a finalized Heats Bracket (`setupBracketDemo`, finalized
- * here with its placings' points) and the seeded Ping Pong `games`
+ * here with its placings' points) and the seeded Ping Pong Head-to-head
  * Competition closed with a winner. Pass an edition to shoot another War
  * Week's demo:
  *   pnpm stills:finale xiii
@@ -136,8 +136,8 @@ async function finalize(
   });
   for (const [participantId, points] of placings) {
     await query(
-      `insert into points_entry (competition_id, participant_id, points, note, entered_by_email, generated_by_bracket)
-       values ($1, $2, $3, 'Finale stills', $4, true)`,
+      `insert into points_entry (war_week_id, competition_id, participant_id, points, note, entered_by_email, generated_by_bracket)
+       select war_week_id, id, $2, $3, 'Finale stills', $4, true from competition where id = $1`,
       [competitionId, participantId, points, DEMO_EMAIL],
     );
   }
@@ -167,10 +167,10 @@ async function addFinalizedBracket(warWeek: StillsWarWeek) {
   );
 }
 
-/** The seeded Ping Pong `games` Competition, closed with a winner. */
+/** The seeded Ping Pong (Head-to-head) Competition, closed with a winner. */
 async function closePingPong(warWeek: StillsWarWeek) {
   const [pong] = await query<{ id: string }>(
-    `select id from competition where war_week_id = $1 and name = 'Ping Pong' and format = 'games'`,
+    `select id from competition where war_week_id = $1 and name = 'Ping Pong' and format in ('head-to-head', 'best-score')`,
     [warWeek.id],
   );
   if (!pong) throw new Error(`${warWeek.edition} has no Ping Pong to close`);

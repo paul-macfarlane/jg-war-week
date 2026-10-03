@@ -78,8 +78,6 @@ async function fixture(tx: DBTx) {
       name: "Workout",
       scoring: "team",
       format: "participation",
-      participationPoints: 1,
-      participationTeamScoring: "ranked",
       selfCheckIn: true,
       placementPoints: [5, 3, 1],
     })

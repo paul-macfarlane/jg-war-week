@@ -64,6 +64,7 @@ async function fixture(tx: DBTx) {
 
   // Home's own entry.
   await tx.insert(schema.pointsEntry).values({
+    warWeekId: home.id,
     competitionId: home.tugId,
     teamId: home.teamId,
     points: 3,
@@ -71,6 +72,7 @@ async function fixture(tx: DBTx) {
   });
   // The other War Week's own entry.
   await tx.insert(schema.pointsEntry).values({
+    warWeekId: other.id,
     competitionId: other.tugId,
     teamId: other.teamId,
     points: 100,
@@ -80,6 +82,7 @@ async function fixture(tx: DBTx) {
   // home's Team. Only the join's War Week scope keeps it out of home's
   // Standings.
   await tx.insert(schema.pointsEntry).values({
+    warWeekId: other.id,
     competitionId: other.tugId,
     teamId: home.teamId,
     points: 1000,

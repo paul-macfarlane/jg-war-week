@@ -19,7 +19,7 @@ import {
 } from "./session";
 import { teamTotal } from "./standings";
 
-// Bouncy Pong is seeded as an open head-to-head individual `games`
+// Bouncy Pong is seeded as an open individual Head-to-head
 // Competition (counts toward Team) with Placement Points 3 / 2 / 1.
 const COMPETITION = "Bouncy Pong";
 /** Logs the Game; linked to the e2e Participant session by email. */
@@ -128,7 +128,9 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     await shoot(you, testInfo, "home-shortcut");
     await shortcut.getByRole("link", { name: new RegExp(COMPETITION) }).click();
     await expect(you).toHaveURL(`${E2E_BASE_URL}/xi/competitions/${id}?log=1`);
-    await expect(you.getByText("Games · Head-to-head")).toBeVisible();
+    await expect(
+      you.getByText("Head-to-head", { exact: true }).first(),
+    ).toBeVisible();
 
     const form = you.getByRole("dialog", { name: "Log a Game" });
     await expect(form).toBeVisible();

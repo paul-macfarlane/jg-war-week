@@ -63,19 +63,23 @@ describe("toParticipationBracketResult", () => {
 });
 
 describe("toGamesBracketResult", () => {
-  it("answers bracket: null and points to get_games for a games Competition", () => {
+  it("answers bracket: null and points to get_games for a Head-to-head or Best score Competition", () => {
     expect(
-      toGamesBracketResult({ name: "Bouncy Pong", scoring: "individual" }),
+      toGamesBracketResult({
+        name: "Bouncy Pong",
+        scoring: "individual",
+        format: "head-to-head",
+      }),
     ).toEqual({
       found: true,
       competition: {
         name: "Bouncy Pong",
         scoring: "individual",
-        format: "games",
+        format: "head-to-head",
       },
       bracket: null,
       message:
-        "Bouncy Pong isn't run as a Bracket; it's run as Games. Call get_games instead.",
+        "Bouncy Pong isn't run as a Bracket; it's run as Head-to-head or Best score. Call get_games instead.",
     });
   });
 });
@@ -97,7 +101,7 @@ describe("toBracketResult", () => {
         warWeekId: "w1",
         name: "Trivia",
         scoring: "team",
-        format: "points",
+        format: "placement",
         placementPoints: null,
         finalizedAt: null,
         selfReport: false,
@@ -113,9 +117,10 @@ describe("toBracketResult", () => {
 
     expect(toBracketResult(view, days, "Trivia")).toEqual({
       found: true,
-      competition: { name: "Trivia", scoring: "team", format: "points" },
+      competition: { name: "Trivia", scoring: "team", format: "placement" },
       bracket: null,
-      message: expect.stringContaining("isn't run as a Bracket"),
+      message:
+        "Trivia isn't run as a Bracket; it's run as Placement: call get_placements.",
     });
   });
 

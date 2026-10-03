@@ -51,7 +51,7 @@ import {
   heatName,
   isTimed,
 } from "@/lib/bracket/view";
-import { COMPETITION_FORMATS } from "@/lib/enums";
+import { COMPETITION_FORMATS, isGameFormat } from "@/lib/enums";
 import { fromEasternClock, toEasternClock } from "@/lib/schedule";
 import type { BracketEntrant, SquadRow } from "@/queries/brackets";
 
@@ -63,10 +63,10 @@ type Target = {
   teamId?: string | null;
 };
 
-// Never `games` or `participation`: a Competition is one of those from
+// Never Head-to-head, Best score or `participation`: a Competition is one of those from
 // creation, and stays so.
 const FORMAT_OPTIONS = COMPETITION_FORMATS.filter(
-  (format) => format !== "games" && format !== "participation",
+  (format) => !isGameFormat(format) && format !== "participation",
 ).map((format) => ({
   value: format,
   label: formatLabel(format),
@@ -600,7 +600,7 @@ export function BracketBuilder({
         />
       )}
 
-      {competition.format !== "points" && (
+      {competition.format !== "placement" && (
         <>
           {isTeam && (
             <section className="flex flex-col gap-3" aria-label="Squads">

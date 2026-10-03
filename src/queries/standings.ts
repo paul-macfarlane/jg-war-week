@@ -56,8 +56,7 @@ export async function getStandings(
         points: pointsEntry.points,
       })
       .from(pointsEntry)
-      .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
-      .where(eq(competition.warWeekId, warWeek.id)),
+      .where(eq(pointsEntry.warWeekId, warWeek.id)),
   ]);
 
   return computeStandings({
@@ -71,7 +70,8 @@ export async function getStandings(
 
 /**
  * The Points Entries behind every Standings total, for the row disclosures
- * on the leaderboard and home page. Mirrors `getStandings`'s joins.
+ * on the leaderboard and home page. Mirrors `getStandings`'s scope: every
+ * entry of the War Week, Discretionary points included.
  */
 export async function getPointsBreakdown(
   warWeek: Pick<WarWeek, "id">,
@@ -102,11 +102,11 @@ export async function getPointsBreakdown(
         teamId: pointsEntry.teamId,
         participantId: pointsEntry.participantId,
         points: pointsEntry.points,
+        note: pointsEntry.note,
         enteredAt: pointsEntry.enteredAt,
       })
       .from(pointsEntry)
-      .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
-      .where(eq(competition.warWeekId, warWeek.id)),
+      .where(eq(pointsEntry.warWeekId, warWeek.id)),
   ]);
 
   return buildPointsBreakdown({

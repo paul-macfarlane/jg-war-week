@@ -119,10 +119,12 @@ export async function loadPointsEntryTarget(
   dbOrTx: DBOrTx = db,
 ): Promise<LoadedTarget | undefined> {
   const [found] = await dbOrTx
-    .select({ warWeek: warWeekColumns, competitionId: competition.id })
+    .select({
+      warWeek: warWeekColumns,
+      competitionId: pointsEntry.competitionId,
+    })
     .from(pointsEntry)
-    .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
-    .innerJoin(warWeek, eq(warWeek.id, competition.warWeekId))
+    .innerJoin(warWeek, eq(warWeek.id, pointsEntry.warWeekId))
     .where(eq(pointsEntry.id, id))
     .limit(1);
   return found;

@@ -14,6 +14,11 @@ export const MCP_TOOLS = {
     description:
       "Returns the current War Week's team or individual Standings, ranked by total points.",
   },
+  get_discretionary_points: {
+    title: "Get Discretionary points",
+    description:
+      "Returns the current War Week's Discretionary points, which an Organizer gives to a Team or Participant with a reason and no Competition behind them, newest first: who got them, how many, why and when. They already count in the leaderboard.",
+  },
   get_schedule: {
     title: "Get schedule",
     description:
@@ -47,16 +52,21 @@ export const MCP_TOOLS = {
   get_bracket: {
     title: "Get Bracket",
     description:
-      "Returns a Competition's Bracket by name: Entrants by Seed Position, each Round's Heats with status, time and place, and the champion once finalized. A Competition run by points instead returns bracket: null; an unknown Competition returns found: false.",
+      "Returns a Competition's Bracket by name: Entrants by Seed Position, each Round's Heats with status, time and place, and the champion once finalized. A Competition run another way instead returns bracket: null; an unknown Competition returns found: false.",
   },
   get_games: {
-    title: "Get Games",
+    title: "Get Head-to-head and Best score",
     description:
-      "Returns a Competition run as Games by name: its settings, leaderboard ranked by Game Type, and its logged Games newest first. A Competition run another way instead returns games: null; an unknown Competition returns found: false.",
+      "Returns a Head-to-head or Best score Competition by name: its Format, settings, leaderboard ranked by that Format, and its logged Games newest first. A Competition run another way instead returns games: null; an unknown Competition returns found: false.",
   },
   get_participation: {
     title: "Get Participation",
     description:
       "Returns a Competition run as Participation (points for taking part) by name: its scoring settings, whether Participants can check in and until when, whether it's closed, who took part by name, and in team scoring each Team's headcount and place. A Competition run another way instead returns participation: null; an unknown Competition returns found: false.",
+  },
+  get_placements: {
+    title: "Get Placements",
+    description:
+      "Returns a Competition run as Placement (one result recorded on one sheet) by name: its Score direction, Placement Points, whether it's finalized, and each row by place with name, Team, Score and points; unplaced rows last. A Competition run another way instead returns placements: null; an unknown Competition returns found: false.",
   },
 } satisfies Record<string, { title: string; description: string }>;

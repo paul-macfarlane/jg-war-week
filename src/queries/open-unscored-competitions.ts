@@ -1,17 +1,18 @@
-import { and, eq, exists, isNull, or } from "drizzle-orm";
+import { and, eq, exists, inArray, isNull, or } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import { type WarWeek, competition, game, participation } from "@/db/schema";
+import { GAME_FORMATS, type GameFormat } from "@/lib/enums";
 
-/** An open `games` or `participation` Competition, named in the End War Week warning. */
+/** An open Head-to-head, Best score or `participation` Competition, named in the End War Week warning. */
 export type OpenUnscoredCompetition = {
   id: string;
   name: string;
-  format: "games" | "participation";
+  format: GameFormat | "participation";
 };
 
 /**
- * A War Week's open `games` Competitions with at least one Game, and open
+ * A War Week's open Head-to-head or Best score Competitions with at least one Game, and open
  * `participation` Competitions with anyone marked (not closed:
  * `finalized_at` is null until Close sets it), by name. Used to warn when
  * ending a War Week with Competitions whose points aren't yet in the
@@ -34,7 +35,7 @@ export async function getOpenUnscoredCompetitions(
         isNull(competition.finalizedAt),
         or(
           and(
-            eq(competition.format, "games"),
+            inArray(competition.format, [...GAME_FORMATS]),
             exists(
               dbOrTx
                 .select()

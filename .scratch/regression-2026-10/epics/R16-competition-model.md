@@ -8,7 +8,7 @@
 
 **Blocked by:** the R16 planning PR (`docs/regression-r16-red-team`) merged into `staging`, so the branch starts from this contract. R15 merged 2026-10-03 (PR #124).
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Red-team:** **required** (Drizzle schema change; Hosts record Placements; Discretionary points are Organizer-only). Passes 1–3 on 2026-10-03, each BLOCKED; resolved below. After pass 3 Paul accepted the contract with its fixes applied, without a fourth pass.
 
@@ -87,3 +87,5 @@ The parts' own, plus:
 - 2026-10-03 (Paul, on pass 2): do R16 as one work package rather than interdependent tickets; parts keep their decisions and checks. Applied: one migration and one throwaway-database migration test (B1); part 91 lists every Points-page dependant (W1); Postgres tests must not skip, narrowed grep (W2); the seed test loads every file (W3); schema work is serial (W4); prod reset pre-check (W5); part 90's e2e counts toward team and cleans up (W6); minors resolved in place.
 - 2026-10-03 (red-team pass 3): BLOCKED, 1 blocking (the load-twice test loaded clashing seeds into one database), 6 warnings, 7 minor.
 - 2026-10-03 (Paul, on pass 3): apply the fixes and accept without a fourth pass. Applied: three seed sets in throwaway databases (B1); drizzle-kit under `script` (W1); frozen XI test under a rewritten edition, totals Red 38.5 / Blue 31 (W2, M6); Participation migration steps match part 94 (W3); prod pre-check before the `main` merge, Seed from `main` (W4); blocked by this planning PR's merge (W5); raw-SQL `points_entry` writers in scope (W6); minors in place.
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r16`): claimed with parts 90–95; `ready-for-agent` → `in-progress`. Execution record: [`R16-execution.md`](./R16-execution.md).
+- 2026-10-03 [CLOSEOUT] (atlas-implement, work package `regression-r16`): done; parts 90–95 `done`. One branch, one migration (`drizzle/0028_flimsy_vertigo.sql`), one seed conversion, one gate: `pnpm format:check && pnpm gate` green at `b1b8758` (184 files / 3800 tests, smoke 263 ok, e2e 106 passed). After merge, Paul resets staging then prod (Human prerequisite above). Record, review and verification: [`R16-execution.md`](./R16-execution.md). PR: https://github.com/paul-macfarlane/jg-war-week/pull/126.

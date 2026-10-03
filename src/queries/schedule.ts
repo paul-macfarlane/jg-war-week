@@ -104,7 +104,7 @@ export async function getTimedHeats(
     .where(
       and(
         eq(competition.warWeekId, warWeek.id),
-        // Only a Bracket has Heats; kept exact for the `games` Format.
+        // Only a Bracket has Heats; kept exact for the Head-to-head or Best score Format.
         inArray(competition.format, BRACKET_FORMATS),
         eq(heat.status, "ready"),
         isNotNull(heat.dayId),

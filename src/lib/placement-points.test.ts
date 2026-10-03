@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  firstPlaceOverMax,
-  parsePlacementPointsText,
-} from "@/lib/placement-points";
+import { parsePlacementPointsText } from "@/lib/placement-points";
 
 describe("parsePlacementPointsText", () => {
   it("reads comma or space separated points, highest first", () => {
@@ -21,7 +18,7 @@ describe("parsePlacementPointsText", () => {
     });
   });
 
-  it("refuses non-numbers, a rise, negatives and too many places", () => {
+  it("refuses non-numbers, a rise and negatives", () => {
     const error = (text: string) => {
       const parsed = parsePlacementPointsText(text);
       return parsed.ok ? null : parsed.error;
@@ -36,15 +33,18 @@ describe("parsePlacementPointsText", () => {
     expect(error("1.234")).toBe(
       "Placement Points must have at most two decimal places.",
     );
-    expect(error("6, 5, 4, 3, 2, 1, 0")).toMatch(/cover at most/);
   });
-});
 
-describe("firstPlaceOverMax", () => {
-  it("is true only when 1st place beats Max points", () => {
-    expect(firstPlaceOverMax([5, 3], 4)).toBe(true);
-    expect(firstPlaceOverMax([4, 3], 4)).toBe(false);
-    expect(firstPlaceOverMax([5], null)).toBe(false);
-    expect(firstPlaceOverMax(null, 4)).toBe(false);
+  it("takes any number of places, as long as each is no more than the one above", () => {
+    const twelve = [24, 22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2];
+    expect(parsePlacementPointsText(twelve.join(", "))).toEqual({
+      ok: true,
+      value: twelve,
+    });
+    const twenty = Array.from({ length: 20 }, (_, i) => 20 - i);
+    expect(parsePlacementPointsText(twenty.join(" "))).toEqual({
+      ok: true,
+      value: twenty,
+    });
   });
 });

@@ -1,23 +1,22 @@
 import { expect, test } from "@playwright/test";
 
+import { fillDiscretionary, openGiveForm } from "./discretionary";
 import { asOrganizer } from "./session";
 
 test.describe("forms", () => {
-  test("a Points Entry refused on the server shows under Points and focuses it", async ({
+  test("Discretionary points refused on the server show under Points and focus it", async ({
     context,
     page,
   }, testInfo) => {
     await asOrganizer(context);
-    await page.goto("/admin/points");
-    const form = page.getByRole("form", { name: "Points Entry" });
-    await form
-      .getByRole("combobox", { name: "Competition" })
-      .fill("HQ Attendance");
-    await page.getByRole("option", { name: /^HQ Attendance/ }).click();
-    await form.getByRole("combobox", { name: "Team" }).fill("Blue");
-    await page.getByRole("option", { name: /^Blue/ }).click();
+    await page.goto("/admin/discretionary-points");
+    const form = await openGiveForm(page);
+    await fillDiscretionary(page, form, {
+      target: "Blue",
+      points: "9999999",
+      reason: "e2e refused",
+    });
     const points = form.getByLabel("Points", { exact: true });
-    await points.fill("9999999");
     // Enter in Points submits; the refused value must survive the
     // post-action form reset.
     await points.press("Enter");
@@ -37,7 +36,7 @@ test.describe("forms", () => {
       .poll(() => page.evaluate(() => document.activeElement?.id))
       .toBe(pointsId);
     await page.screenshot({
-      path: testInfo.outputPath("points-entry-field-error.png"),
+      path: testInfo.outputPath("discretionary-points-field-error.png"),
       fullPage: true,
     });
   });

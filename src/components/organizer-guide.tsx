@@ -19,10 +19,10 @@ export function OrganizerGuide({
   const teamLower = teamLabel.toLowerCase();
   /** What each admin section is for, in the tour of the nav. */
   const help: Record<AdminSection, string> = {
-    Points:
-      "Add Points Entries and see the current Standings; the Brackets, Games and Participation Competitions waiting on results are linked under the form.",
     Competitions:
-      "Competitions, their scoring, Placement Points and Hosts, and each one's Bracket or Games setup.",
+      "Competitions, their scoring, Placement Points and Hosts, and each one's Bracket, Head-to-head, Best score or Participation setup.",
+    "Discretionary points":
+      "Give points to a Team or Participant with a reason and no Competition behind them; edit or delete them in the ledger.",
     Schedule:
       "The War Week's Days with their Day Themes and short descriptions, and each Day's Schedule Items.",
     Roster: `${teamLabel}s, Participants and ${leaderTitle}s, with Import from a sheet or CSV.`,
@@ -85,14 +85,14 @@ export function OrganizerGuide({
           ))}
         </ul>
         <p className="text-foreground/70">
-          On a phone, Points, Competitions, Schedule and Announcements are tabs
-          on the bar at the bottom of the screen; the rest are under More, with
-          the edition switcher. Display, Back to War Week and Sign out are in
-          the account menu (your initials, top right).
+          On a phone, Competitions, Discretionary points, Schedule and
+          Announcements are tabs on the bar at the bottom of the screen; the
+          rest are under More, with the edition switcher. Display, Back to War
+          Week and Sign out are in the account menu (your initials, top right).
         </p>
         <p className="text-foreground/70">
-          A Host sees Points, Competitions, Schedule, Announcements, Finale and
-          Guide; the other pages are for Organizers.
+          A Host sees Competitions, Schedule, Announcements, Finale and Guide;
+          the other pages are for Organizers.
         </p>
       </section>
 
@@ -136,8 +136,8 @@ export function OrganizerGuide({
             Competitions
           </Link>{" "}
           (the Hosts field on each Competition). A Host sees only their
-          Competitions in Admin: they add its Points Entries, run its Bracket,
-          edit its setup and linked Schedule Items, and can post Announcements.
+          Competitions in Admin: they record its results, run its Bracket, edit
+          its setup and linked Schedule Items, and can post Announcements.
           Everything else stays with Organizers. A Schedule Item&apos;s host
           text is just what the schedule shows; it doesn&apos;t make anyone a
           Host.
@@ -153,7 +153,7 @@ export function OrganizerGuide({
           the individual leaderboards, Award recipients on the Awards page and
           Participation lists; their Entrant in a Bracket (themselves, their
           Squad, or their {teamLower} in a team Bracket) is marked
-          &quot;You&quot;; and a games Competition&apos;s leaderboard marks
+          &quot;You&quot;; and a Games Competition&apos;s leaderboard marks
           their enrolled {teamLower} &quot;Your Team&quot;. {teamLabel}{" "}
           standings rows are not highlighted. They can log Games, report Heats
           and check in. A Participant without an email is never linked. It
@@ -165,24 +165,16 @@ export function OrganizerGuide({
       <section className="flex flex-col gap-2">
         <h2 className="text-lg font-semibold">Discretionary points</h2>
         <p className="text-foreground/70">
-          For points that aren&apos;t tied to a specific Competition, make a
-          Competition such as &quot;Spirit / Discretionary&quot; under{" "}
+          For points that aren&apos;t tied to a Competition, give{" "}
           <Link
-            href="/admin/competitions"
+            href="/admin/discretionary-points"
             className="text-primary underline underline-offset-4"
           >
-            Competitions
-          </Link>
-          , then add{" "}
-          <Link
-            href="/admin/points"
-            className="text-primary underline underline-offset-4"
-          >
-            Points Entries
+            Discretionary points
           </Link>{" "}
-          against it with a note explaining why. Going over the
-          Competition&apos;s max points only shows a warning — it still saves,
-          in case the entry is a bonus.
+          to a {teamLower} or a Participant with a reason. Only Organizers do
+          this. A Participant&apos;s points also count toward their {teamLower}.
+          You can edit or delete an entry in the ledger below the form.
         </p>
       </section>
 
@@ -190,10 +182,12 @@ export function OrganizerGuide({
         <h2 className="text-lg font-semibold">Placement Points</h2>
         <p className="text-foreground/70">
           Each Competition can preset Placement Points for 1st, 2nd, 3rd and on,
-          highest place first, up to 5 places. They show up as one-tap buttons
-          in Points Entry, so entering a result is a single click. 1st
-          place&apos;s preset can&apos;t exceed the Competition&apos;s max
-          points.
+          highest place first and never rising, with as many places as you need
+          (a Bracket allows up to 5). A new Competition is a Placement: open its
+          Record placements sheet, add who took part, give each a Place (or a
+          Score, with a Score direction that fills the Places) and Finalize, and
+          the Standings move through its Placement Points. Reopen withdraws
+          them. A Competition&apos;s top prize is its 1st place.
         </p>
       </section>
 
@@ -266,14 +260,14 @@ export function OrganizerGuide({
             Competitions
           </Link>{" "}
           and you land on its setup page; the Format can&apos;t change later.
-          Set the points per Participant and, for a {teamLower} Competition,
-          whether {teamLower}s are ranked by headcount (Placement Points pay
-          each place) or earn the points per person. Tick who took part, or turn
-          on Self check-in so Participants can Check in themselves (they can
-          only remove their own check-in, never your tick). Nothing scores until
-          you Close it, which turns who took part into Points Entries; Reopen
-          withdraws them. Close it before you end the War Week: End warns about
-          one left open.
+          Set the points per Participant for an individual Competition; a{" "}
+          {teamLower} Competition ranks {teamLower}s by headcount and pays its
+          Placement Points for each place. Tick who took part, or turn on Self
+          check-in so Participants can Check in themselves (they can only remove
+          their own check-in, never your tick). Nothing scores until you Close
+          it, which turns who took part into Points Entries; Reopen withdraws
+          them. Close it before you end the War Week: End warns about one left
+          open.
         </p>
       </section>
 

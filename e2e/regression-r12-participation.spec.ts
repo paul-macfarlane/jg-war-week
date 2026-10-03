@@ -1,6 +1,10 @@
 import { type Page, type TestInfo, expect, test } from "@playwright/test";
 
-import { deleteXiCompetition, xiTeamPointsBreakdown } from "./db";
+import {
+  deleteXiCompetition,
+  xiCompetitionEntries,
+  xiTeamPointsBreakdown,
+} from "./db";
 import { E2E_BASE_URL } from "./env";
 import {
   E2E_HOST_EMAIL,
@@ -12,8 +16,8 @@ import { teamTotal } from "./standings";
 
 // Epic R12, ticket 69 (69-AC2 as red-team C1 reads it): an Organizer
 // creates a team Participation Competition and assigns its Host; the Host
-// sets it ranked by headcount with Placement Points 5 / 3 / 1 and Self
-// check-in on; two Participants check in; the Host ticks a third; Close
+// sets its Placement Points (a team Competition is always ranked by
+// headcount) to 5 / 3 / 1 and Self check-in on; two Participants check in; the Host ticks a third; Close
 // moves the Standings and Reopen withdraws them. Fixture: the live XI demo
 // (seeds/demo/xi.json), Red against Blue.
 
@@ -110,7 +114,9 @@ test("r12 69 a Host runs a team Participation Competition: check-ins, a tick, Cl
     const before = await breakdownTotals();
     expect(await leaderboardTotals(page)).toEqual(before);
 
-    // The Host sets ranked by headcount, 5 / 3 / 1, and Self check-in.
+    // The Host sets the Placement Points to 5 / 3 / 1 and Self check-in on. A
+    // team Competition has no mode to choose and no N: Teams are ranked by
+    // headcount, so only Placement Points are offered.
     await asHost(hostContext);
     const host = await hostContext.newPage();
     await host.setViewportSize({ width: 1440, height: 900 });
@@ -118,7 +124,11 @@ test("r12 69 a Host runs a team Participation Competition: check-ins, a tick, Cl
     await expect(host.getByRole("heading", { name })).toBeVisible();
     await expect(
       host.getByRole("button", { name: "Ranked by headcount" }),
-    ).toHaveAttribute("aria-pressed", "true");
+    ).toHaveCount(0);
+    await expect(host.getByLabel("Points per Participant")).toHaveCount(0);
+    await expect(
+      host.getByRole("group", { name: "Placement Points" }),
+    ).toBeVisible();
     await host.getByRole("button", { name: "Fill 5, 3, 1" }).click();
     await host
       .getByRole("switch", { name: "Participants can check in" })
@@ -204,6 +214,71 @@ test("r12 69 a Host runs a team Participation Competition: check-ins, a tick, Cl
     for (const participant of participants) await participant.close();
     await hostContext.close();
     // Its check-ins, Host row and any generated entries go with it.
+    await deleteXiCompetition(name);
+  }
+});
+
+// Epic R16, ticket 94: an individual Participation Competition gives N points
+// to each Participant who took part, and offers no Placement Points.
+test("r16 94 an individual Participation Competition gives N points to each Participant who took part", async ({
+  context,
+  page,
+}) => {
+  test.setTimeout(180_000);
+  const name = `R16 Spirit Week ${Date.now()}`;
+  const TOOK_PART = ["Adam Wilson-Hwang", "Alec Haring"] as const;
+  try {
+    await asOrganizer(context);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/admin/competitions");
+    await page.getByRole("button", { name: "Add Competition" }).click();
+    const addForm = page
+      .getByRole("dialog", { name: "Add Competition" })
+      .getByRole("form", { name: "New Competition" });
+    await addForm.getByRole("textbox", { name: "Name" }).fill(name);
+    await addForm.getByRole("combobox", { name: "Scoring" }).click();
+    await page.getByRole("option", { name: "Individual" }).click();
+    await addForm.getByRole("combobox", { name: "Format" }).click();
+    await page.getByRole("option", { name: "Participation" }).click();
+    // An individual Participation Competition has no Placement Points.
+    await expect(addForm.getByText("Placement Points")).toHaveCount(0);
+    await addForm.getByRole("button", { name: "Add Competition" }).click();
+    await expect(page.getByText("Competition saved")).toBeVisible();
+    await expect(page).toHaveURL(
+      /\/admin\/competitions\/[0-9a-f-]+\/participation$/,
+    );
+
+    // N, and no Placement Points or ranking choice.
+    await expect(page.getByLabel("Points per Participant")).toHaveValue("1");
+    await expect(
+      page.getByRole("group", { name: "Placement Points" }),
+    ).toHaveCount(0);
+    await page.getByLabel("Points per Participant").fill("2");
+    await page.getByRole("button", { name: "Save settings" }).click();
+    await expect(page.getByText("Participation settings saved")).toBeVisible();
+
+    for (const who of TOOK_PART) {
+      await page
+        .getByRole("searchbox", { name: "Search the roster" })
+        .fill(who);
+      await page.getByRole("checkbox", { name: new RegExp(who) }).click();
+      await expect(page.getByText(`${who} took part`)).toBeVisible();
+    }
+
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "Close", exact: true })
+      .click();
+    await expect(page.getByText("Competition closed")).toBeVisible();
+
+    // Each who took part gets N (2) as a Points Entry of their own.
+    expect(await xiCompetitionEntries(name)).toEqual(
+      [...TOOK_PART]
+        .sort()
+        .map((target) => ({ target, points: 2, generated: true })),
+    );
+  } finally {
     await deleteXiCompetition(name);
   }
 });

@@ -186,12 +186,14 @@ export async function assertMcp() {
       "get_schedule",
       "get_announcements",
       "get_awards",
+      "get_discretionary_points",
       "get_faq",
       "list_history",
       "get_history",
       "get_bracket",
       "get_games",
       "get_participation",
+      "get_placements",
     ]) {
       if (tools.some((tool) => tool.name === name)) {
         ok(`MCP tools/list includes ${name}`);
@@ -399,7 +401,7 @@ export async function assertMcp() {
     if (sameAwards) ok(awardsCheck);
     else fail(awardsCheck, `result=${JSON.stringify(awards.raw)}`);
 
-    // 17-M: a `games` Competition by name, never an email; get_bracket
+    // 17-M: a Head-to-head Competition by name, never an email; get_bracket
     // points to get_games.
     const games = await callTool(16, "get_games", {
       competition: "Bouncy Pong",
@@ -409,7 +411,7 @@ export async function assertMcp() {
     if (
       games.parsed?.found === true &&
       games.parsed.competition?.name === "Bouncy Pong" &&
-      games.parsed.competition?.gameType === "head-to-head" &&
+      games.parsed.competition?.format === "head-to-head" &&
       Array.isArray(games.parsed.leaderboard) &&
       Array.isArray(games.parsed.games) &&
       !JSON.stringify(games.parsed).includes("@")
@@ -422,11 +424,13 @@ export async function assertMcp() {
       competition: "Bouncy Pong",
     });
     const gamesBracketCheck =
-      "MCP get_bracket(Bouncy Pong) answers bracket: null, run as Games, pointing to get_games";
+      "MCP get_bracket(Bouncy Pong) answers bracket: null, run as Head-to-head, pointing to get_games";
     if (
       gamesBracket.parsed?.found === true &&
       gamesBracket.parsed.bracket === null &&
-      String(gamesBracket.parsed.message).includes("run as Games") &&
+      String(gamesBracket.parsed.message).includes(
+        "run as Head-to-head or Best score",
+      ) &&
       String(gamesBracket.parsed.message).includes("get_games")
     ) {
       ok(gamesBracketCheck);
@@ -448,6 +452,91 @@ export async function assertMcp() {
       ok(participationCheck);
     } else {
       fail(participationCheck, `result=${JSON.stringify(participation.raw)}`);
+    }
+
+    // Speed Chess is seeded as an individual, Finalized Placement Competition
+    // with one row (James Novak, 1st); the sheet comes by name only.
+    const placements = await callTool(19, "get_placements", {
+      competition: "Speed Chess",
+    });
+    const placementsCheck =
+      "MCP get_placements(Speed Chess) returns its sheet by name with no @";
+    if (
+      placements.parsed?.found === true &&
+      placements.parsed.competition?.name === "Speed Chess" &&
+      Array.isArray(placements.parsed.placements) &&
+      placements.parsed.placements.length === 1 &&
+      !JSON.stringify(placements.parsed).includes("@")
+    ) {
+      ok(placementsCheck);
+    } else {
+      fail(placementsCheck, `result=${JSON.stringify(placements.raw)}`);
+    }
+
+    // Every Format reads back by name: Best score and Participation through
+    // get_games and get_bracket, Placement through get_bracket, and the
+    // Discretionary points list.
+    const bestScore = await callTool(20, "get_games", {
+      competition: "Tuesday Stairs",
+    });
+    const bestScoreCheck =
+      "MCP get_games(Tuesday Stairs) returns the Best score Format with no @";
+    if (
+      bestScore.parsed?.found === true &&
+      bestScore.parsed.competition?.format === "best-score" &&
+      Array.isArray(bestScore.parsed.games) &&
+      !JSON.stringify(bestScore.parsed).includes("@")
+    ) {
+      ok(bestScoreCheck);
+    } else {
+      fail(bestScoreCheck, `result=${JSON.stringify(bestScore.raw)}`);
+    }
+    const participationBracket = await callTool(21, "get_bracket", {
+      competition: "Daily Workout Check-in",
+    });
+    const participationBracketCheck =
+      "MCP get_bracket(Daily Workout Check-in) answers bracket: null with no @";
+    if (
+      participationBracket.parsed?.found === true &&
+      participationBracket.parsed.bracket === null &&
+      !JSON.stringify(participationBracket.parsed).includes("@")
+    ) {
+      ok(participationBracketCheck);
+    } else {
+      fail(
+        participationBracketCheck,
+        `result=${JSON.stringify(participationBracket.raw)}`,
+      );
+    }
+    const placementBracket = await callTool(22, "get_bracket", {
+      competition: "Speed Chess",
+    });
+    const placementBracketCheck =
+      "MCP get_bracket(Speed Chess) answers bracket: null, run as Placement, pointing to get_placements";
+    if (
+      placementBracket.parsed?.found === true &&
+      placementBracket.parsed.bracket === null &&
+      placementBracket.parsed.competition?.format === "placement" &&
+      String(placementBracket.parsed.message).includes("get_placements")
+    ) {
+      ok(placementBracketCheck);
+    } else {
+      fail(
+        placementBracketCheck,
+        `result=${JSON.stringify(placementBracket.raw)}`,
+      );
+    }
+    const discretionary = await callTool(23, "get_discretionary_points", {});
+    const discretionaryCheck =
+      "MCP get_discretionary_points returns edition xi and its list with no @";
+    if (
+      discretionary.parsed?.edition === "xi" &&
+      Array.isArray(discretionary.parsed.discretionaryPoints) &&
+      !JSON.stringify(discretionary.parsed).includes("@")
+    ) {
+      ok(discretionaryCheck);
+    } else {
+      fail(discretionaryCheck, `result=${JSON.stringify(discretionary.raw)}`);
     }
 
     const faq = await callTool(15, "get_faq", {});

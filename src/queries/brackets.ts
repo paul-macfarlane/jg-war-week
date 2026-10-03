@@ -18,6 +18,7 @@ import { configOf } from "@/lib/bracket/config";
 import { champion } from "@/lib/bracket/formats";
 import type { Bracket, Entrant, Heat } from "@/lib/bracket/types";
 import { BRACKET_FORMATS, isBracketFormat } from "@/lib/bracket/view";
+import { isGameFormat } from "@/lib/enums";
 import { isUuid } from "@/lib/uuid";
 import {
   participantImageSql,
@@ -194,7 +195,7 @@ export async function loadBracket(
         .limit(1)
     )[0];
   if (!found || !isBracketFormat(found.format)) {
-    // A points or games Competition (or a missing one) has no Bracket and
+    // A Placement, Head-to-head, Best score or Participation Competition (or a missing one) has no Bracket and
     // so no Heats: the Format returned here is arbitrary, since nothing
     // reads its rules for an empty Bracket, and getBracket shows no
     // champion for a points Competition.
@@ -260,7 +261,7 @@ export async function loadBracket(
 /**
  * A Competition's Bracket for display: its Entrants with labels and colors,
  * its Heats, the champion and whether it's finalized. Undefined when there's
- * no such Competition, or it's run as Games (a `games` Competition is never
+ * no such Competition, or it's run as Games (a Head-to-head or Best score Competition is never
  * a Bracket). A points Competition returns an empty Bracket.
  */
 export async function getBracket(
@@ -286,7 +287,11 @@ export async function getBracket(
     .from(competition)
     .where(eq(competition.id, competitionId))
     .limit(1);
-  if (!found || found.format === "games" || found.format === "participation") {
+  if (
+    !found ||
+    isGameFormat(found.format) ||
+    found.format === "participation"
+  ) {
     return undefined;
   }
   // The config reaches the view through the Bracket, not the Competition.
@@ -310,7 +315,7 @@ export type BracketCompetitionLink = Pick<
   "id" | "name" | "format" | "finalizedAt"
 >;
 
-/** A War Week's Competitions run as a Bracket (never `games`), by name. */
+/** A War Week's Competitions run as a Bracket (never Head-to-head or Best score), by name. */
 export async function getBracketCompetitions(
   warWeek: Pick<WarWeek, "id">,
   dbOrTx: DBOrTx = db,

@@ -36,29 +36,24 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { WarWeek } from "@/db/schema";
 import { type Format, formatLabel, isBracketFormat } from "@/lib/bracket/view";
-import { setupHref, setupLinkLabel } from "@/lib/competitions";
-import { COMPETITION_FORMATS, GAME_TYPES, type GameType } from "@/lib/enums";
-import { gameTypeLabel } from "@/lib/games/config";
+import { placementLimit, setupHref, setupLinkLabel } from "@/lib/competitions";
+import { COMPETITION_FORMATS, isGameFormat } from "@/lib/enums";
 import type { CompetitionInput } from "@/lib/setup";
 import type { SetupCompetition } from "@/queries/setup";
 
 /** How each Format runs a Competition, shown on the create form. */
 const FORMAT_DESCRIPTIONS: Record<Format, string> = {
-  points: "Only Points Entries; no Bracket.",
+  placement:
+    "One result on one sheet: give each Team or Participant a Place, optionally a Score, then Finalize.",
   "single-elimination": "A knockout Bracket: one loss and an Entrant is out.",
   heats:
     "A Bracket where Entrants play in Heats; a set number advance each Round.",
-  games:
-    "Players log Games themselves and a leaderboard ranks them. Chosen only here: a Games Competition keeps its Format.",
+  "head-to-head":
+    "Two players per Game; a winner, or a draw when allowed. Players log Games themselves and a leaderboard ranks them. Chosen only here: a Competition keeps its Format.",
+  "best-score":
+    "Each Game records a score; the best or the total counts. Players log Games themselves and a leaderboard ranks them. Chosen only here: a Competition keeps its Format.",
   participation:
     "Points for taking part: the Host ticks who took part, or Participants check in. Chosen only here: a Participation Competition keeps its Format.",
-};
-
-/** How each Game Type decides a Game, shown when Games is chosen. */
-const GAME_TYPE_DESCRIPTIONS: Record<GameType, string> = {
-  "head-to-head": "Two players; a winner, or a draw when allowed.",
-  "best-score": "Each Game records a score; the best or the total counts.",
-  ranked: "Each Game records a finishing order, worth Finish Points.",
 };
 
 function emptyCompetition(mode: WarWeek["mode"]): CompetitionInput {
@@ -66,12 +61,10 @@ function emptyCompetition(mode: WarWeek["mode"]): CompetitionInput {
     name: "",
     description: "",
     scoring: mode === "free-for-all" ? "individual" : "team",
-    maxPoints: "",
     placementPoints: "",
     countsTowardTeam: false,
     group: "",
-    format: "points",
-    gameType: "head-to-head",
+    format: "placement",
   };
 }
 
@@ -80,7 +73,6 @@ function inputFrom(competition: SetupCompetition): CompetitionInput {
     name: competition.name,
     description: competition.description ?? "",
     scoring: competition.scoring,
-    maxPoints: competition.maxPoints?.toString() ?? "",
     placementPoints: competition.placementPoints?.join(", ") ?? "",
     countsTowardTeam: competition.countsTowardTeam,
     group: competition.competitionGroup ?? "",
@@ -171,7 +163,8 @@ function CompetitionForm({
       if (
         result.ok &&
         (isBracketFormat(input.format) ||
-          input.format === "games" ||
+          (input.format !== undefined &&
+            isGameFormat(input.format as Format)) ||
           input.format === "participation")
       ) {
         router.push(setupHref(input.format as Format, result.id));
@@ -291,7 +284,7 @@ function CompetitionForm({
                 value: format,
                 label: formatLabel(format),
               }))}
-              value={values.format ?? "points"}
+              value={values.format ?? "placement"}
               onValueChange={(format) => setValues((v) => ({ ...v, format }))}
             />
             <FieldDescription>
@@ -305,72 +298,27 @@ function CompetitionForm({
             <FieldError>{fieldErrors.format}</FieldError>
           </Field>
         )}
-        {!competition && values.format === "games" && (
-          <Field
-            className="sm:col-span-2"
-            data-invalid={!!fieldErrors.gameType}
-          >
-            <FieldLabel htmlFor={`${id}-game-type`}>Game Type</FieldLabel>
-            <OptionSelect
-              id={`${id}-game-type`}
-              name="gameType"
-              aria-invalid={!!fieldErrors.gameType}
-              options={GAME_TYPES.map((gameType) => ({
-                value: gameType,
-                label: gameTypeLabel(gameType),
-              }))}
-              value={values.gameType ?? "head-to-head"}
-              onValueChange={(gameType) =>
-                setValues((v) => ({ ...v, gameType }))
+        {/* An individual Participation Competition gives N to each person who
+            took part, set on its own page, and has no Placement Points. */}
+        {(competition?.format ?? values.format) === "participation" &&
+        values.scoring === "individual" ? null : (
+          <Field data-invalid={!!fieldErrors.placementPoints}>
+            <PlacementPointsRows
+              value={values.placementPoints}
+              invalid={!!fieldErrors.placementPoints}
+              limit={placementLimit(
+                (competition?.format ?? values.format ?? "placement") as Format,
+              )}
+              onChange={(placementPoints) =>
+                setValues((v) => ({ ...v, placementPoints }))
               }
             />
             <FieldDescription>
-              {GAME_TYPES.map((gameType) => (
-                <span key={gameType} className="block">
-                  <strong>{gameTypeLabel(gameType)}:</strong>{" "}
-                  {GAME_TYPE_DESCRIPTIONS[gameType]}
-                </span>
-              ))}
+              What each place earns in the Standings.
             </FieldDescription>
-            <FieldError>{fieldErrors.gameType}</FieldError>
+            <FieldError>{fieldErrors.placementPoints}</FieldError>
           </Field>
         )}
-        <Field
-          className="sm:col-start-1"
-          data-invalid={!!fieldErrors.maxPoints}
-        >
-          <FieldLabel htmlFor={`${id}-max`}>Max points</FieldLabel>
-          <Input
-            id={`${id}-max`}
-            name="maxPoints"
-            inputMode="decimal"
-            placeholder="Optional"
-            className="h-11 sm:h-9"
-            aria-invalid={!!fieldErrors.maxPoints}
-            value={values.maxPoints}
-            onChange={set("maxPoints")}
-          />
-          <FieldDescription>
-            Optional. The most points 1st place&rsquo;s Placement Points can be
-            worth. A single Points Entry over it still saves, with a warning.
-          </FieldDescription>
-          <FieldError>{fieldErrors.maxPoints}</FieldError>
-        </Field>
-        <Field data-invalid={!!fieldErrors.placementPoints}>
-          <PlacementPointsRows
-            value={values.placementPoints}
-            maxPoints={values.maxPoints}
-            invalid={!!fieldErrors.placementPoints}
-            onChange={(placementPoints) =>
-              setValues((v) => ({ ...v, placementPoints }))
-            }
-          />
-          <FieldDescription>
-            What each place earns in the Standings. A Games Competition also has
-            Finish Points, per Game, on its Games setup page.
-          </FieldDescription>
-          <FieldError>{fieldErrors.placementPoints}</FieldError>
-        </Field>
         {competition && hosts && (
           <HostsField
             value={hostEmails}

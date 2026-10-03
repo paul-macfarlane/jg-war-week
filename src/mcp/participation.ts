@@ -12,9 +12,9 @@ export type ParticipationResult =
         name: string;
         scoring: Competition["scoring"];
         /** Team scoring only; null for individual. */
-        teamScoring: "ranked by headcount" | "per person" | null;
-        /** N: individual, and team per person. */
-        pointsPerParticipant: number;
+        teamScoring: "ranked by headcount" | null;
+        /** N for an individual Competition; null for a team one. */
+        pointsPerParticipant: number | null;
         /** Ranked by headcount: the places' points, highest first. */
         placementPoints: number[] | null;
         selfCheckIn: boolean;
@@ -71,12 +71,8 @@ export function toParticipationResult(
       name: competition.name,
       scoring: competition.scoring,
       teamScoring:
-        competition.participationTeamScoring === "ranked"
-          ? "ranked by headcount"
-          : competition.participationTeamScoring === "per-person"
-            ? "per person"
-            : null,
-      pointsPerParticipant: competition.participationPoints ?? 0,
+        competition.scoring === "team" ? "ranked by headcount" : null,
+      pointsPerParticipant: competition.participationPoints,
       placementPoints: competition.placementPoints,
       selfCheckIn: competition.selfCheckIn,
       checkInClosesAt: competition.checkInClosesAt?.toISOString() ?? null,

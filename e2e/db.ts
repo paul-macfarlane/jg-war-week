@@ -81,6 +81,28 @@ export async function deleteXiCompetition(name: string) {
   );
 }
 
+/**
+ * The Points Entries of a War Week XI Competition, by Participant name (or
+ * Team name), as an independent check of what Close wrote: `war_week_id` is
+ * the War Week's, whoever it targets.
+ */
+export async function xiCompetitionEntries(
+  name: string,
+): Promise<{ target: string; points: number; generated: boolean }[]> {
+  return runQuery<{ target: string; points: number; generated: boolean }>(
+    `select coalesce(p.display_name, t.name) as target,
+       pe.points::float as points, pe.generated_by_bracket as generated
+     from points_entry pe
+     join war_week w on w.id = pe.war_week_id and w.edition = 'xi'
+     left join competition c on c.id = pe.competition_id
+     left join participant p on p.id = pe.participant_id
+     left join team t on t.id = pe.team_id
+     where c.name = $1
+     order by target`,
+    [name],
+  );
+}
+
 /** A War Week XI Competition's id, by name. */
 export async function xiCompetitionId(name: string): Promise<string> {
   const [row] = await runQuery<{ id: string }>(
@@ -159,7 +181,10 @@ export async function withParticipantEmail<T>(
  * (`src/lib/points-breakdown.ts`), reimplemented directly in SQL so it's an
  * independent check of what the UI shows: entries targeting the Team
  * directly, plus entries targeting its Participants in individual
- * Competitions with Counts Toward Team on. Newest first.
+ * Competitions with Counts Toward Team on, plus Discretionary points (no
+ * Competition, labelled "Discretionary: <reason>") targeting its
+ * Participants. Scoped by `war_week_id`, so a Discretionary entry counts.
+ * Newest first.
  */
 export async function xiTeamPointsBreakdown(
   teamName: string,
@@ -167,17 +192,20 @@ export async function xiTeamPointsBreakdown(
   const teamId = await xiTeamId(teamName);
   return runQuery<{ competition: string; points: number; when: Date }>(
     `select competition, points, "when" from (
-       select c.name as competition, pe.points::float as points,
+       select coalesce(c.name, 'Discretionary: ' || pe.note) as competition,
+         pe.points::float as points,
          pe.entered_at as "when", pe.id::text collate "C" as id
-       from points_entry pe join competition c on c.id = pe.competition_id
+       from points_entry pe left join competition c on c.id = pe.competition_id
        where pe.team_id = $1
        union all
-       select c.name as competition, pe.points::float as points,
+       select coalesce(c.name, 'Discretionary: ' || pe.note) as competition,
+         pe.points::float as points,
          pe.entered_at as "when", pe.id::text collate "C" as id
        from points_entry pe
-       join competition c on c.id = pe.competition_id
+       left join competition c on c.id = pe.competition_id
        join participant p on p.id = pe.participant_id
-       where c.counts_toward_team and p.team_id = $1
+       where (pe.competition_id is null or c.counts_toward_team)
+         and p.team_id = $1
      ) rows
      order by "when" desc, id asc`,
     [teamId],
@@ -187,16 +215,19 @@ export async function xiTeamPointsBreakdown(
 /**
  * A Participant's Points Entries as the Points breakdown rule computes
  * them: entries targeting the Participant directly in individual
- * Competitions. Newest first. Independent SQL, not the app's function.
+ * Competitions, plus Discretionary points. Newest first. Independent SQL,
+ * not the app's function.
  */
 export async function xiParticipantPointsBreakdown(
   displayName: string,
 ): Promise<{ competition: string; points: number; when: Date }[]> {
   const participantId = await xiParticipantId(displayName);
   return runQuery<{ competition: string; points: number; when: Date }>(
-    `select c.name as competition, pe.points::float as points, pe.entered_at as "when"
-     from points_entry pe join competition c on c.id = pe.competition_id
-     where pe.participant_id = $1 and c.scoring = 'individual'
+    `select coalesce(c.name, 'Discretionary: ' || pe.note) as competition,
+       pe.points::float as points, pe.entered_at as "when"
+     from points_entry pe left join competition c on c.id = pe.competition_id
+     where pe.participant_id = $1
+       and (pe.competition_id is null or c.scoring = 'individual')
      order by pe.entered_at desc, pe.id::text collate "C" asc`,
     [participantId],
   );
@@ -208,13 +239,15 @@ export type BracketSnapshot = {
   bracket_config: unknown;
   self_enroll: boolean;
   finalized_at: Date | null;
+  score_direction: string;
 };
 
 export async function snapshotBracket(
   competitionId: string,
 ): Promise<BracketSnapshot> {
   const [row] = await runQuery<BracketSnapshot>(
-    `select format::text as format, bracket_config, self_enroll, finalized_at
+    `select format::text as format, bracket_config, self_enroll, finalized_at,
+       score_direction::text as score_direction
      from competition where id = $1`,
     [competitionId],
   );
@@ -232,7 +265,8 @@ export async function restoreBracket(
   ]);
   await runQuery(
     `update competition set format = $2::competition_format,
-       bracket_config = $3, self_enroll = $4, finalized_at = $5
+       bracket_config = $3, self_enroll = $4, finalized_at = $5,
+       score_direction = $6::score_direction
      where id = $1`,
     [
       competitionId,
@@ -242,6 +276,55 @@ export async function restoreBracket(
         : JSON.stringify(snapshot.bracket_config),
       snapshot.self_enroll,
       snapshot.finalized_at,
+      snapshot.score_direction,
     ],
   );
+}
+
+/**
+ * The seeded individual Competitions are Finalized Placement sheets (R16),
+ * and a Finalized Competition's Format is locked. A Bracket flow calls this
+ * first: it snapshots the Competition (Format, Bracket settings, its
+ * Placements and Points Entries), then clears them and un-finalizes it so a
+ * Bracket can be built. The returned function puts everything back; call it
+ * in `finally` or `afterEach`.
+ */
+export async function openForBracket(
+  competitionId: string,
+): Promise<() => Promise<void>> {
+  const bracket = await snapshotBracket(competitionId);
+  const [saved] = await runQuery<{ placements: string; entries: string }>(
+    `select
+       (select coalesce(json_agg(row_to_json(p)), '[]'::json)
+        from placement p where p.competition_id = $1)::text as placements,
+       (select coalesce(json_agg(row_to_json(e)), '[]'::json)
+        from points_entry e where e.competition_id = $1)::text as entries`,
+    [competitionId],
+  );
+  await runQuery(`delete from points_entry where competition_id = $1`, [
+    competitionId,
+  ]);
+  await runQuery(`delete from placement where competition_id = $1`, [
+    competitionId,
+  ]);
+  await runQuery(`update competition set finalized_at = null where id = $1`, [
+    competitionId,
+  ]);
+  return async () => {
+    await restoreBracket(competitionId, bracket);
+    await runQuery(`delete from points_entry where competition_id = $1`, [
+      competitionId,
+    ]);
+    await runQuery(`delete from placement where competition_id = $1`, [
+      competitionId,
+    ]);
+    await runQuery(
+      `insert into placement select * from json_populate_recordset(null::placement, $1::json)`,
+      [saved.placements],
+    );
+    await runQuery(
+      `insert into points_entry select * from json_populate_recordset(null::points_entry, $1::json)`,
+      [saved.entries],
+    );
+  };
 }

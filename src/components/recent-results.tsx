@@ -43,20 +43,14 @@ function ResultSummary({
   result: RecentResult;
   primaryColor: string;
 }) {
-  if (result.kind === "points") {
+  if (result.kind === "discretionary") {
     return (
       <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-        {result.scores.map(({ target, points }) => (
-          <span
-            key={`${target.kind}-${target.id}`}
-            className="inline-flex items-center gap-1.5"
-          >
-            <TargetName target={target} primaryColor={primaryColor} />
-            <span className="font-semibold tabular-nums">
-              {formatPoints(points)}
-            </span>
-          </span>
-        ))}
+        <TargetName target={result.target} primaryColor={primaryColor} />
+        <span className="font-semibold tabular-nums">
+          {formatPoints(result.points)}
+        </span>
+        <span className="text-foreground/70 break-words">{result.reason}</span>
       </span>
     );
   }
@@ -71,7 +65,7 @@ function ResultSummary({
   return (
     <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
       <span className="text-foreground/70">
-        {result.kind === "games-closed"
+        {result.kind === "games-closed" || result.kind === "placement-finalized"
           ? "Winner"
           : result.kind === "participation-closed"
             ? "Top"
@@ -121,14 +115,21 @@ export function RecentResultsSection({
           {results.map((result) => (
             <li key={result.key} className="flex flex-col gap-1 py-2">
               <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  href={`/${edition}/competitions/${result.competitionId}`}
-                  className="font-semibold underline-offset-4 hover:underline"
-                >
-                  {result.competition}
-                </Link>
+                {result.kind === "discretionary" ? (
+                  <span className="font-semibold">Discretionary points</span>
+                ) : (
+                  <Link
+                    href={`/${edition}/competitions/${result.competitionId}`}
+                    className="font-semibold underline-offset-4 hover:underline"
+                  >
+                    {result.competition}
+                  </Link>
+                )}
                 {result.kind === "bracket-finalized" ? (
                   <Badge variant="secondary">Bracket finalized</Badge>
+                ) : null}
+                {result.kind === "placement-finalized" ? (
+                  <Badge variant="secondary">Finalized</Badge>
                 ) : null}
                 {result.kind === "games-closed" ||
                 result.kind === "participation-closed" ? (

@@ -4,21 +4,19 @@
  * Competition's settings), with one set of messages (ADR 0001: rules
  * shared, not copied). Zero-dependency on zod so it stays cheap to import.
  */
-import { MAX_PLACEMENTS } from "@/lib/competitions";
 import { POINTS_NUMBER, pointsSchema } from "@/lib/points-entry";
 import type { Parsed } from "@/lib/result";
 
 const FIELD = "placementPoints";
 
-/** The refusal when 1st place is worth more than Max points. */
-export const FIRST_OVER_MAX =
-  "1st place's Placement Points can't be more than Max points.";
-
 function refuse(error: string): Parsed<never> {
   return { ok: false, error, fieldErrors: { [FIELD]: error } };
 }
 
-/** "5, 3, 1" as Placement Points, highest first; blank is none. */
+/**
+ * "5, 3, 1" as Placement Points, highest first; blank is none. Any number
+ * of places: the caller that knows the Format checks its `placementLimit`.
+ */
 export function parsePlacementPointsText(
   value: unknown,
 ): Parsed<number[] | null> {
@@ -34,9 +32,6 @@ export function parsePlacementPointsText(
     );
   }
   const points = places.map(Number);
-  if (points.length > MAX_PLACEMENTS) {
-    return refuse(`Placement Points cover at most ${MAX_PLACEMENTS} places.`);
-  }
   if (points.some((p) => p < 0)) {
     return refuse("Placement Points must be at least 0.");
   }
@@ -49,17 +44,4 @@ export function parsePlacementPointsText(
     );
   }
   return { ok: true, value: points };
-}
-
-/** Whether 1st place is worth more than Max points (neither set: no). */
-export function firstPlaceOverMax(
-  placementPoints: number[] | null,
-  maxPoints: number | null,
-): boolean {
-  return (
-    maxPoints !== null &&
-    placementPoints !== null &&
-    placementPoints.length > 0 &&
-    placementPoints[0] > maxPoints
-  );
 }

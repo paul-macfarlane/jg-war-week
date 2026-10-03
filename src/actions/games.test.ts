@@ -35,7 +35,7 @@ const PLAYER_OK = {
   warWeek: { id: WAR_WEEK, edition: "xi" },
   ctx: CTX,
   competition: {
-    gameType: "head-to-head",
+    gameFormat: "head-to-head",
     config: { drawsAllowed: false, bestOf: null },
   },
 };
@@ -85,7 +85,7 @@ describe("logGame", () => {
       logGame(ID, { playerA: A, playerB: B, outcome: "sideways" }),
     ).resolves.toEqual(REFUSED);
     // The raw input goes to authorize, which reads its players by the
-    // Competition's Game Type.
+    // Competition's Format.
     expect(authorizeGameWrite).toHaveBeenCalledWith("games.log", ID, null, {
       playerA: A,
       playerB: B,
@@ -95,7 +95,7 @@ describe("logGame", () => {
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 
-  it("parses by the Competition's Game Type once authorized", async () => {
+  it("parses by the Competition's Format once authorized", async () => {
     authorized.current = PLAYER_OK;
     const mutations = await import("@/mutations/games");
 
@@ -156,7 +156,7 @@ describe("updateGame and deleteGame", () => {
 
 describe("Host and Organizer Games writes", () => {
   const settings = {
-    gameType: "head-to-head",
+    gameFormat: "head-to-head",
     drawsAllowed: true,
     bestOf: "off",
     entrantsOpen: true,

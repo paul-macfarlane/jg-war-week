@@ -477,7 +477,7 @@ describe("can: reporting a Heat's result (self-report)", () => {
   });
 });
 
-describe("can: running a games Competition and the enroll switch", () => {
+describe("can: running a Head-to-head or Best score Competition and the enroll switch", () => {
   it.each(
     cases(
       (
@@ -771,6 +771,29 @@ describe("can: running a participation Competition", () => {
   });
 });
 
+describe("can: recording a Placement Competition's placements", () => {
+  // An Organizer and Catan's Host may; a Host of another Competition (in
+  // this War Week or a namesake in another), a Participant and anonymous
+  // are refused.
+  it.each(
+    cases(
+      (
+        [
+          "placement.edit",
+          "placement.finalize",
+          "placement.reopen",
+        ] as WarWeekAction[]
+      ).map((action) => [
+        action,
+        { warWeekId: XI, competitionId: CATAN },
+        catanHostOr(),
+      ]),
+    ),
+  )("%s", (_, action, target, actor, expected) => {
+    expect(can(ACTORS[actor], action, target)).toBe(expected);
+  });
+});
+
 describe("can: checking in and out (ADR 0009)", () => {
   const ME = "participant-me";
   const RED = "team-red";
@@ -943,38 +966,44 @@ describe("can: checking in and out (ADR 0009)", () => {
   });
 });
 
-describe("can: Points Entries", () => {
+describe("can: Discretionary points", () => {
   it.each(
     cases([
       [
-        "points-entry.create",
-        { warWeekId: XI, postedCompetitionId: CATAN },
-        catanHostOr(),
+        "discretionary.create",
+        { warWeekId: XI },
+        organizerOnly("Only an Organizer can give Discretionary points."),
       ],
       [
-        "points-entry.edit",
-        { warWeekId: XI, competitionId: CATAN, postedCompetitionId: CATAN },
-        catanHostOr(),
+        "discretionary.edit",
+        { warWeekId: XI, competitionId: null },
+        organizerOnly("Only an Organizer can change Discretionary points."),
       ],
       [
-        "points-entry.delete",
-        { warWeekId: XI, competitionId: CATAN },
-        catanHostOr(),
-      ],
-      // Moving an entry off their Competition, or onto it: both must be theirs.
-      [
-        "points-entry.edit",
-        { warWeekId: XI, competitionId: CATAN, postedCompetitionId: MTG },
-        { ...catanHostOr(), host: NOT_HOST },
-      ],
-      [
-        "points-entry.edit",
-        { warWeekId: XI, competitionId: MTG, postedCompetitionId: CATAN },
-        { ...catanHostOr(), host: NOT_HOST },
+        "discretionary.delete",
+        { warWeekId: XI, competitionId: null },
+        organizerOnly("Only an Organizer can delete Discretionary points."),
       ],
     ]),
   )("%s", (_, action, target, actor, expected) => {
     expect(can(ACTORS[actor], action, target)).toBe(expected);
+  });
+
+  it("refuses a Host of every Competition, whatever the target names", () => {
+    for (const action of [
+      "discretionary.create",
+      "discretionary.edit",
+      "discretionary.delete",
+    ] as const) {
+      expect(
+        can(ACTORS.host, action, {
+          warWeekId: XI,
+          competitionId: CATAN,
+          postedCompetitionId: CATAN,
+        }),
+        action,
+      ).toMatch(/^Only an Organizer can /);
+    }
   });
 });
 

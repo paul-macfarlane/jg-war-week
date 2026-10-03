@@ -13,10 +13,11 @@ export type { Format } from "@/lib/bracket/types";
 export { isDecided };
 
 const FORMAT_LABELS: Record<Format, string> = {
-  points: "Points",
+  placement: "Placement",
   "single-elimination": "Single elimination",
   heats: "Heats",
-  games: "Games",
+  "head-to-head": "Head-to-head",
+  "best-score": "Best score",
   participation: "Participation",
 };
 
@@ -26,16 +27,17 @@ export function formatLabel(format: Format): string {
 }
 
 /**
- * Whether a Format runs as a Bracket (anything but "points", "games" or
- * "participation").
+ * Whether a Format runs as a Bracket (anything but "placement", a Games
+ * Format or "participation").
  */
 export function isBracketFormat(
   format: string | null | undefined,
 ): format is BracketFormat {
   return (
     format != null &&
-    format !== "points" &&
-    format !== "games" &&
+    format !== "placement" &&
+    format !== "head-to-head" &&
+    format !== "best-score" &&
     format !== "participation"
   );
 }

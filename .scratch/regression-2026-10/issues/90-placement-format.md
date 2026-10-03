@@ -4,7 +4,7 @@
 
 **Part of:** Epic R16's one work package (`../epics/R16-competition-model.md`): no gate, order or migration of its own. Schema changes go into `src/db/schema.ts`; the epic generates and hand-edits the one migration and converts the seeds.
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: placement scoring, one-at-a-time entry, free-form points, re-grill points); grilling Q1, Q24, Q25, Q34, Q35; red-team 2026-10-03 pass 1 (W2, W3, W4, W8, M1, M5, M6, M7) and pass 2 (W6, M5, M8)
 
@@ -46,3 +46,8 @@
 - [ ] Action test (Postgres): each placement server action, called as a Participant and as a Host of another Competition, returns the refusal and writes nothing; adding a Participant from another War Week is refused; a Team in an individual Competition (and a Participant in a team one) is refused; any row change while Finalized is refused; a placement action on a non-Placement Competition is refused; changing the Format of a Placement with rows is refused.
 - [ ] e2e (red-team W8): the spec inserts an **individual** Placement Competition with **counts toward team on** (score direction *higher wins*) into demo XI and a `competition_host` row for `E2E_HOST_EMAIL` (the `e2e/games.spec.ts` pattern), then `asHost` records 6 Participants with Scores, edits a tie, Finalizes; `/xi/leaderboard` moves by those Participants' Teams' points; Recent results shows the Finalize; Reopen withdraws; a signed-in Participant (`signIn(context, E2E_PARTICIPANT_EMAIL)`) gets the refusal at `/admin/placements/[competitionId]`. The spec deletes the Competition it inserted afterwards (cascade), so demo XI is unchanged for other specs. Screenshots at 1440 and 390.
 - [ ] MCP exposes Placements read-only, no emails (test in `src/mcp/`; see the epic's MCP criterion).
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r16`): claimed with Epic R16; `ready-for-agent` → `in-progress`. Execution record: [`R16-execution.md`](../epics/R16-execution.md).
+- 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r16`): done. The Placement Format: `placement` table, `score_direction`, the sheet at `/admin/placements/[competitionId]` (add by search or Add everyone, Place and Score, one Save, Finalize, Reopen), `placement.edit/finalize/reopen` for Organizers and that Competition's Hosts. Rules in `src/lib/placement/score.ts` (Places from Scores in both directions, ties share full points, a manual tie-break survives later Score edits). Server refuses: a Score without a Place on Finalize (naming rows), any row change while Finalized, other-War-Week or wrong-kind targets, a Format or scoring change while rows exist. Participant page, Recent results ("Finalized"), Finale Champions and MCP `get_placements` (no emails). Seed `placements` and `finalized*`; a seeded Finalize's entries use seed key `placement:<placement key>` (Competitions have no seed key; recorded deviation). Tests: `src/lib/placement/*.test.ts`, `access.test.ts`, `src/actions/placements.test.ts`, `src/mutations/placements.test.ts`, `races.test.ts` (add beside a scoring change), `src/mcp/placements.test.ts`, `src/seed/load.test.ts`; e2e `e2e/placement.spec.ts` with shots at 1440 and 390. Deleted: none (the typed-entry tests went in 91). Evidence and review: [`R16-execution.md`](../epics/R16-execution.md). PR: https://github.com/paul-macfarlane/jg-war-week/pull/126.

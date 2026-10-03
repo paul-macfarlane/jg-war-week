@@ -4,16 +4,14 @@
  */
 import { z } from "zod";
 
-import { GAME_TYPES, type GameType } from "@/lib/enums";
+import { GAME_FORMATS, type GameFormat } from "@/lib/enums";
 import {
   type BestScoreConfig,
   type GamesConfig,
   type GamesConfigFor,
   type HeadToHeadConfig,
-  type RankedConfig,
   bestScoreConfigSchema,
   headToHeadConfigSchema,
-  rankedConfigSchema,
 } from "@/lib/games/config";
 import {
   ENTRANT_LIMIT_TOO_LOW,
@@ -122,77 +120,16 @@ function parseBestScoreInput(
   };
 }
 
-/**
- * Raw shape for a ranked Game: `order`, an array of `{ id, place }`
- * (chosen over a bare id list so the caller can express ties directly).
- * Places are normalized to standard competition ranking (1, 1, 3) by their
- * relative order, not taken as already-correct.
- */
-const rankedOrderSchema = z.object({
-  order: z
-    .array(
-      z.object({
-        id: uuid("List at least two players."),
-        place: z.number({ error: "List at least two players." }).int().min(1),
-      }),
-    )
-    .min(2, { error: "List at least two players." }),
-});
-
-function normalizeRanking(
-  entries: { id: string; place: number }[],
-): { id: string; place: number }[] {
-  const sorted = [...entries].sort(
-    (a, b) => a.place - b.place || a.id.localeCompare(b.id),
-  );
-  const out: { id: string; place: number }[] = [];
-  let rank = 0;
-  let prevInput: number | null = null;
-  sorted.forEach((entry, i) => {
-    if (entry.place !== prevInput) rank = i + 1;
-    out.push({ id: entry.id, place: rank });
-    prevInput = entry.place;
-  });
-  return out;
-}
-
-function parseRankedInput(
-  _config: RankedConfig,
-  raw: Record<string, unknown>,
-): Parsed<GameInput> {
-  const result = rankedOrderSchema.safeParse(raw);
-  if (!result.success) return firstError(result);
-  const { order } = result.data;
-  const ids = new Set(order.map((o) => o.id));
-  if (ids.size !== order.length) {
-    return { ok: false, error: "List at least two players." };
-  }
-  const normalized = normalizeRanking(order);
-  return {
-    ok: true,
-    value: {
-      players: normalized.map((o) => ({
-        id: o.id,
-        place: o.place,
-        score: null,
-      })),
-    },
-  };
-}
-
-/** A logged Game's players, per Game Type (CONTEXT.md, Game Type). */
-export function parseGameInput<T extends GameType>(
-  gameType: T,
+/** A logged Game's players, per Games Format (CONTEXT.md). */
+export function parseGameInput<T extends GameFormat>(
+  gameFormat: T,
   config: GamesConfigFor<T>,
   raw: Record<string, unknown>,
 ): Parsed<GameInput> {
-  if (gameType === "head-to-head") {
+  if (gameFormat === "head-to-head") {
     return parseHeadToHeadInput(config as HeadToHeadConfig, raw);
   }
-  if (gameType === "best-score") {
-    return parseBestScoreInput(config as BestScoreConfig, raw);
-  }
-  return parseRankedInput(config as RankedConfig, raw);
+  return parseBestScoreInput(config as BestScoreConfig, raw);
 }
 
 export type GamesSettingsInput = {
@@ -207,10 +144,10 @@ export type GamesSettingsInput = {
 const BEST_OF_RAW = ["off", "3", "5", "7"] as const;
 
 function parseGameConfig(
-  gameType: GameType,
+  gameFormat: GameFormat,
   raw: Record<string, unknown>,
 ): Parsed<GamesConfig> {
-  if (gameType === "head-to-head") {
+  if (gameFormat === "head-to-head") {
     const bestOfRaw = raw.bestOf ?? "off";
     const bestOfResult = z
       .enum(BEST_OF_RAW, { error: "Best of is off, 3, 5 or 7." })
@@ -226,34 +163,11 @@ function parseGameConfig(
     if (!parsed.success) return firstError(parsed);
     return { ok: true, value: parsed.data };
   }
-  if (gameType === "best-score") {
-    const parsed = bestScoreConfigSchema.safeParse({
-      count: raw.count,
-      betterIs: raw.betterIs,
-      unit: raw.unit ?? "",
-    });
-    if (!parsed.success) return firstError(parsed);
-    return { ok: true, value: parsed.data };
-  }
-  const rawFinishPoints = raw.finishPoints;
-  const finishPointsText =
-    typeof rawFinishPoints === "string" ? rawFinishPoints.trim() : "";
-  const finishPoints =
-    finishPointsText === ""
-      ? []
-      : finishPointsText
-          .split(/[\s,]+/)
-          .filter((entry) => entry !== "")
-          .map((entry) => Number(entry));
-  if (finishPoints.some((n) => Number.isNaN(n))) {
-    const message = "Finish Points are numbers.";
-    return {
-      ok: false,
-      error: message,
-      fieldErrors: { finishPoints: message },
-    };
-  }
-  const parsed = rankedConfigSchema.safeParse({ finishPoints });
+  const parsed = bestScoreConfigSchema.safeParse({
+    count: raw.count,
+    betterIs: raw.betterIs,
+    unit: raw.unit ?? "",
+  });
   if (!parsed.success) return firstError(parsed);
   return { ok: true, value: parsed.data };
 }
@@ -280,20 +194,20 @@ function parseOptionalEntrantLimit(value: unknown): Parsed<number | null> {
 }
 
 /**
- * A `games` Competition's settings: its Game Type config (per the posted
- * `gameType`), Entrants open or fixed, the logging close time, and
+ * A Head-to-head or Best score Competition's settings: its Format's config
+ * (per the posted `gameFormat`), Entrants open or fixed, the logging close time, and
  * self-enrollment.
  */
 export function parseGamesSettingsInput(
   raw: Record<string, unknown>,
 ): Parsed<GamesSettingsInput> {
-  const gameTypeResult = z
-    .enum(GAME_TYPES, { error: "Choose a Game Type." })
-    .safeParse(raw.gameType);
-  if (!gameTypeResult.success) return firstError(gameTypeResult);
-  const gameType = gameTypeResult.data;
+  const gameFormatResult = z
+    .enum(GAME_FORMATS, { error: "Choose Head-to-head or Best score." })
+    .safeParse(raw.gameFormat);
+  if (!gameFormatResult.success) return firstError(gameFormatResult);
+  const gameFormat = gameFormatResult.data;
 
-  const gameConfig = parseGameConfig(gameType, raw);
+  const gameConfig = parseGameConfig(gameFormat, raw);
   if (!gameConfig.ok) return gameConfig;
 
   const entrantsOpenResult = z
@@ -335,27 +249,20 @@ export function parseGamesSettingsInput(
 }
 
 /**
- * The player ids a Game request posts for this Game Type, read before the
+ * The player ids a Game request posts for this Games Format, read before the
  * input is parsed so the authorize step can check the posted player set
  * (like `postedCompetitionId`): head-to-head's `playerA` and `playerB`,
- * best-score's `player`, ranked's `order[].id`. Another type's keys and
- * anything else are ignored; the parser owns the shape.
+ * best-score's `player`. Another Format's keys and anything else are
+ * ignored; the parser owns the shape.
  */
 export function postedGamePlayerIds(
-  gameType: GameType,
+  gameFormat: GameFormat,
   input: unknown,
 ): string[] {
   if (typeof input !== "object" || input === null) return [];
   const raw = input as Record<string, unknown>;
   const ids: unknown[] = [];
-  if (gameType === "head-to-head") ids.push(raw.playerA, raw.playerB);
-  if (gameType === "best-score") ids.push(raw.player);
-  if (gameType === "ranked" && Array.isArray(raw.order)) {
-    for (const entry of raw.order) {
-      if (typeof entry === "object" && entry !== null) {
-        ids.push((entry as { id?: unknown }).id);
-      }
-    }
-  }
+  if (gameFormat === "head-to-head") ids.push(raw.playerA, raw.playerB);
+  if (gameFormat === "best-score") ids.push(raw.player);
   return ids.filter((id): id is string => typeof id === "string" && id !== "");
 }

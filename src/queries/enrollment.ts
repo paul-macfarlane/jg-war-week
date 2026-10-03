@@ -10,6 +10,7 @@ import {
   squad,
   squadParticipant,
 } from "@/db/schema";
+import { isGameFormat } from "@/lib/enums";
 import { gamesConfigOf } from "@/lib/games/config";
 import {
   type EnrollFacet,
@@ -67,7 +68,6 @@ export async function getEnrollFacts(
           scoring: competition.scoring,
           format: competition.format,
           finalizedAt: competition.finalizedAt,
-          gameType: competition.gameType,
           gameConfig: competition.gameConfig,
           entrantsOpen: competition.entrantsOpen,
           selfEnroll: competition.selfEnroll,
@@ -104,10 +104,9 @@ export async function getEnrollFacts(
       enrollmentUnavailable({
         format: found.format,
         entrantsOpen: found.entrantsOpen,
-        gameType: found.gameType,
-        gameConfig: found.gameType
+        gameConfig: isGameFormat(found.format)
           ? gamesConfigOf({
-              gameType: found.gameType,
+              format: found.format,
               gameConfig: found.gameConfig,
             })
           : null,

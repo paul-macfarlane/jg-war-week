@@ -26,7 +26,6 @@ describe("scoreParticipation: individual", () => {
         scoreParticipation([took("neo", RED), took("trinity", BLUE)], {
           scoring: "individual",
           participationPoints: 2,
-          participationTeamScoring: null,
           placementPoints: [10, 6, 3],
         }),
       ),
@@ -41,7 +40,6 @@ describe("scoreParticipation: individual", () => {
       scoreParticipation([took("cypher")], {
         scoring: "individual",
         participationPoints: 1,
-        participationTeamScoring: null,
         placementPoints: null,
       }),
     ).toEqual([{ teamId: null, participantId: "cypher", points: 1 }]);
@@ -52,7 +50,6 @@ describe("scoreParticipation: individual", () => {
       scoreParticipation([], {
         scoring: "individual",
         participationPoints: 1,
-        participationTeamScoring: null,
         placementPoints: null,
       }),
     ).toEqual([]);
@@ -62,8 +59,7 @@ describe("scoreParticipation: individual", () => {
 describe("scoreParticipation: team, ranked by headcount", () => {
   const ranked = {
     scoring: "team" as const,
-    participationPoints: 1,
-    participationTeamScoring: "ranked" as const,
+    participationPoints: null,
     placementPoints: [5, 3, 1],
   };
 
@@ -151,44 +147,6 @@ describe("scoreParticipation: team, ranked by headcount", () => {
     expect(scoreParticipation([took("a", RED), took("b")], ranked)).toEqual([
       { teamId: RED, participantId: null, points: 5 },
     ]);
-  });
-});
-
-describe("scoreParticipation: team, per person", () => {
-  const perPerson = {
-    scoring: "team" as const,
-    participationPoints: 2,
-    participationTeamScoring: "per-person" as const,
-    placementPoints: [5, 3, 1],
-  };
-
-  it("gives each Team N times its headcount", () => {
-    expect(
-      sorted(
-        scoreParticipation(
-          [
-            took("a", RED),
-            took("b", RED),
-            took("c", RED),
-            took("d", BLUE),
-            took("e"),
-          ],
-          perPerson,
-        ),
-      ),
-    ).toEqual([
-      { teamId: RED, participantId: null, points: 6 },
-      { teamId: BLUE, participantId: null, points: 2 },
-    ]);
-  });
-
-  it("keeps fractional points to the cent", () => {
-    expect(
-      scoreParticipation([took("a", RED), took("b", RED), took("c", RED)], {
-        ...perPerson,
-        participationPoints: 0.1,
-      }),
-    ).toEqual([{ teamId: RED, participantId: null, points: 0.3 }]);
   });
 });
 

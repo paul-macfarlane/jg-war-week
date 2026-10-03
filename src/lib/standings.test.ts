@@ -286,3 +286,66 @@ describe("computeStandings with resolved names", () => {
     expect(standings.individual[1].image).toBeNull();
   });
 });
+
+describe("computeStandings with Discretionary points (no Competition)", () => {
+  const discretionary = (
+    target: { teamId: string } | { participantId: string },
+    points: number,
+  ): StandingsPointsEntry => ({
+    competitionId: null,
+    teamId: null,
+    participantId: null,
+    points,
+    ...target,
+  });
+
+  it("adds a Team's Discretionary points to its total", () => {
+    const standings = computeStandings(
+      input({
+        pointsEntries: [
+          teamEntry("c-tug", "team-red", 5),
+          discretionary({ teamId: "team-red" }, 6),
+          discretionary({ teamId: "team-blue" }, 4),
+        ],
+      }),
+    );
+    expect(rows(standings.team)).toEqual([
+      { name: "Red", total: 11, rank: 1 },
+      { name: "Blue", total: 4, rank: 2 },
+    ]);
+  });
+
+  it("counts a Participant's Discretionary points for them and toward their Team, even where the Competition's counts-toward-team is off", () => {
+    const standings = computeStandings(
+      input({
+        pointsEntries: [
+          participantEntry("c-wellness", "p-neo", 2),
+          discretionary({ participantId: "p-neo" }, 3),
+          discretionary({ participantId: "p-morpheus" }, 1),
+        ],
+      }),
+    );
+    expect(rows(standings.individual)).toEqual([
+      { name: "Neo", total: 5, rank: 1 },
+      { name: "Morpheus", total: 1, rank: 2 },
+    ]);
+    // Wellness doesn't count toward Team; the Discretionary 3 does.
+    expect(rows(standings.team)).toEqual([
+      { name: "Red", total: 3, rank: 1 },
+      { name: "Blue", total: 0, rank: 2 },
+    ]);
+  });
+
+  it("ignores Discretionary points for an unknown target", () => {
+    const standings = computeStandings(
+      input({
+        pointsEntries: [
+          discretionary({ participantId: "p-nobody" }, 3),
+          discretionary({ teamId: "team-nobody" }, 3),
+        ],
+      }),
+    );
+    expect(standings.individual).toEqual([]);
+    expect(standings.team.map((t) => t.total)).toEqual([0, 0]);
+  });
+});

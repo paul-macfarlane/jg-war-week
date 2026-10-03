@@ -92,15 +92,20 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
     });
   });
 
-  it("lists a finalized Bracket's champion and a closed games Competition's tied winners", async () => {
+  it("lists a finalized Bracket's champion and a closed Head-to-head or Best score Competition's tied winners", async () => {
     await inRolledBackTransaction(async (tx) => {
       const schema = await import("@/db/schema");
       const { asc, eq } = await import("drizzle-orm");
       const { getChampions } = await import("@/queries/finale-slides");
       const xi = await loadXiDemo(tx);
 
-      // Nothing is finalized in the demo as seeded.
-      expect(await getChampions(xi, tx)).toEqual([]);
+      // As seeded, only the demo's twelve Finalized Placement Competitions
+      // have a champion; no Bracket or Games Competition is finalized.
+      const seeded = await getChampions(xi, tx);
+      expect(seeded).toHaveLength(12);
+      expect(seeded.map((champion) => champion.format)).toEqual(
+        Array(12).fill("placement"),
+      );
 
       const people = await tx
         .select({ id: schema.participant.id })
@@ -111,7 +116,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
       const [a, b, c] = people.map((p) => p.id);
       const competition = async (
         name: string,
-        format: "games" | "single-elimination",
+        format: "head-to-head" | "single-elimination",
         finalizedAt: Date,
       ) => {
         const [row] = await tx
@@ -122,11 +127,8 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
             scoring: "individual",
             format,
             finalizedAt,
-            ...(format === "games"
-              ? {
-                  gameType: "head-to-head" as const,
-                  gameConfig: { drawsAllowed: false, bestOf: null },
-                }
+            ...(format === "head-to-head"
+              ? { gameConfig: { drawsAllowed: false, bestOf: null } }
               : {}),
           })
           .returning({ id: schema.competition.id });
@@ -138,6 +140,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
         points: number,
       ) =>
         tx.insert(schema.pointsEntry).values({
+          warWeekId: xi.id,
           competitionId,
           participantId,
           points,
@@ -147,7 +150,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
 
       const pong = await competition(
         "Finale Pong",
-        "games",
+        "head-to-head",
         new Date("2026-02-26T18:00:00Z"),
       );
       await generated(pong, a, 3);
@@ -161,7 +164,9 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
       await generated(foosball, c, 5);
       await generated(foosball, a, 3);
 
-      const champions = await getChampions(xi, tx);
+      const champions = (await getChampions(xi, tx)).filter(
+        (champion) => champion.format !== "placement",
+      );
       expect(
         champions.map((champion) => ({
           competition: champion.competition,
@@ -174,7 +179,11 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
           format: "single-elimination",
           winners: [c],
         },
-        { competition: "Finale Pong", format: "games", winners: [a, b].sort() },
+        {
+          competition: "Finale Pong",
+          format: "head-to-head",
+          winners: [a, b].sort(),
+        },
       ]);
     });
   });

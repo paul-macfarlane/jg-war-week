@@ -7,8 +7,8 @@ const labels = (items: { label: string }[]) => items.map((i) => i.label);
 describe("adminSectionsFor", () => {
   it("gives an Organizer the flat nav, in order", () => {
     expect(labels(adminSectionsFor(true))).toEqual([
-      "Points",
       "Competitions",
+      "Discretionary points",
       "Schedule",
       "Roster",
       "Announcements",
@@ -20,8 +20,8 @@ describe("adminSectionsFor", () => {
       "Guide",
     ]);
     expect(adminSectionsFor(true).map((s) => s.href)).toEqual([
-      "/admin/points",
       "/admin/competitions",
+      "/admin/discretionary-points",
       "/admin/schedule",
       "/admin/roster",
       "/admin/announcements",
@@ -34,9 +34,8 @@ describe("adminSectionsFor", () => {
     ]);
   });
 
-  it("trims a Host's nav to Points, Competitions, Schedule, Announcements, Finale and Guide", () => {
+  it("trims a Host's nav to Competitions, Schedule, Announcements, Finale and Guide (no Discretionary points)", () => {
     expect(labels(adminSectionsFor(false))).toEqual([
-      "Points",
       "Competitions",
       "Schedule",
       "Announcements",
@@ -47,24 +46,24 @@ describe("adminSectionsFor", () => {
 });
 
 describe("adminNavFor", () => {
-  it("gives an Organizer the four tabs Points, Competitions, Schedule and Announcements", () => {
-    const { tabs } = adminNavFor(true, "Points");
+  it("gives an Organizer the four tabs Competitions, Discretionary points, Schedule and Announcements", () => {
+    const { tabs } = adminNavFor(true, "Competitions");
     expect(labels(tabs)).toEqual([
-      "Points",
       "Competitions",
+      "Discretionary points",
       "Schedule",
       "Announcements",
     ]);
     expect(tabs.map((t) => t.href)).toEqual([
-      "/admin/points",
       "/admin/competitions",
+      "/admin/discretionary-points",
       "/admin/schedule",
       "/admin/announcements",
     ]);
   });
 
   it("puts the rest of an Organizer's sections in More, in nav order", () => {
-    const { more } = adminNavFor(true, "Points");
+    const { more } = adminNavFor(true, "Competitions");
     expect(labels(more)).toEqual([
       "Roster",
       "Awards",
@@ -76,14 +75,9 @@ describe("adminNavFor", () => {
     ]);
   });
 
-  it("gives a Host the same tabs and only Finale and Guide in More", () => {
-    const { tabs, more } = adminNavFor(false, "Points");
-    expect(labels(tabs)).toEqual([
-      "Points",
-      "Competitions",
-      "Schedule",
-      "Announcements",
-    ]);
+  it("gives a Host three tabs and only Finale and Guide in More", () => {
+    const { tabs, more } = adminNavFor(false, "Competitions");
+    expect(labels(tabs)).toEqual(["Competitions", "Schedule", "Announcements"]);
     expect(labels(more)).toEqual(["Finale", "Guide"]);
   });
 

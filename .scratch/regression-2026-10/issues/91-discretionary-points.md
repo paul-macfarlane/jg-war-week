@@ -4,7 +4,7 @@
 
 **Part of:** Epic R16's one work package (`../epics/R16-competition-model.md`): no gate, order or migration of its own. Schema changes go into `src/db/schema.ts`; the epic generates and hand-edits the one migration and converts the seeds.
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: the Points page is weird; ad hoc points); grilling Q2, Q28, Q29; red-team 2026-10-03 pass 1 (B2, W3, W5, W9, M8) and pass 2 (W1, M6)
 
@@ -53,3 +53,8 @@
 - [ ] MCP test: the standings/points tool reports the entry and its reason, no emails.
 - [ ] Loader test (Postgres): a fixture seed with a Discretionary entry loaded twice leaves exactly one.
 - [ ] e2e: an Organizer gives 3 Discretionary points to a Team with a reason and the leaderboard moves, edits it to 4, deletes it and the leaderboard returns; a Host gets the refusal page at `/admin/discretionary-points`; `/admin/points` redirects there; `/admin` lands on Competitions.
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r16`): claimed with Epic R16; `ready-for-agent` → `in-progress`. Execution record: [`R16-execution.md`](../epics/R16-execution.md).
+- 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r16`): done. Discretionary points at `/admin/discretionary-points` (give, ledger, edit, delete), Organizers only via `discretionary.create/edit/delete`; a Team target only in a teams War Week, enforced server-side. `points_entry.war_week_id`; every Points Entry read scopes by it (standings, breakdown "Discretionary: <reason>", Recent results, Finale counts, scored counts, targets). `/admin/points` and `/admin/points/:id` redirect; `/admin` lands on Competitions; nav order as decided. MCP `get_discretionary_points` (separate tool; recorded deviation from "the standings/points tool"). Seed `discretionaryPoints`; seed `pointsEntries` retired. Deleted: `e2e/points-entry.spec.ts`, `src/actions/points-entries.test.ts`, `src/mutations/points-entries.test.ts`, `src/components/points-entry-form.test.tsx`, `scripts/smoke/points-entries.ts`, the typed-entry races in `races.test.ts`, Recent results' manual-entry grouping tests. Rewritten: `/admin/points` visits in `regression-r5`, `-r6`, `forms`, `-r9-account`, `-r15-cursor` (its disabled-button case now uses `/admin/faq`), `regression-r9-home` (Recent results via Discretionary entries), `admin-sections`, `admin-shell`, `admin-redirects`, `access` tests; smoke `harness.ts` posts to `/admin/competitions`. `getPointsEntryFormOptions` is now `getTargetOptions` (`src/queries/target-options.ts`). Evidence and review: [`R16-execution.md`](../epics/R16-execution.md). PR: https://github.com/paul-macfarlane/jg-war-week/pull/126.

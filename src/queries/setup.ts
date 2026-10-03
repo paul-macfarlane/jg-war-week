@@ -147,7 +147,6 @@ export type SetupCompetition = Pick<
   | "name"
   | "description"
   | "scoring"
-  | "maxPoints"
   | "placementPoints"
   | "countsTowardTeam"
   | "competitionGroup"
@@ -165,7 +164,6 @@ export async function getSetupCompetitions(
       name: competition.name,
       description: competition.description,
       scoring: competition.scoring,
-      maxPoints: competition.maxPoints,
       placementPoints: competition.placementPoints,
       countsTowardTeam: competition.countsTowardTeam,
       competitionGroup: competition.competitionGroup,

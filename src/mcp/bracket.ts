@@ -1,6 +1,8 @@
 import type { Competition } from "@/db/schema";
 import { isBye } from "@/lib/bracket/formats";
+import type { BracketFormat } from "@/lib/bracket/types";
 import { groupRounds, heatName } from "@/lib/bracket/view";
+import { type GameFormat, isGameFormat } from "@/lib/enums";
 import { notFoundMessage } from "@/mcp/not-found";
 import type { BracketView } from "@/queries/brackets";
 
@@ -15,10 +17,7 @@ export type BracketResult =
       competition: {
         name: string;
         scoring: Competition["scoring"];
-        format: Exclude<
-          Competition["format"],
-          "points" | "games" | "participation"
-        >;
+        format: BracketFormat;
         finalized: boolean;
       };
       entrants: {
@@ -52,7 +51,7 @@ export type BracketResult =
       competition: {
         name: string;
         scoring: Competition["scoring"];
-        format: "points";
+        format: "placement";
       };
       bracket: null;
       message: string;
@@ -62,7 +61,7 @@ export type BracketResult =
       competition: {
         name: string;
         scoring: Competition["scoring"];
-        format: "games" | "participation";
+        format: GameFormat | "participation";
       };
       bracket: null;
       message: string;
@@ -70,21 +69,21 @@ export type BracketResult =
   | { found: false; message: string };
 
 /**
- * The `get_bracket` answer for a `games` Competition, which is never a
- * Bracket: no Bracket, and a pointer to `get_games`. Pure.
+ * The `get_bracket` answer for a Head-to-head or Best score Competition,
+ * which is never a Bracket: no Bracket, and a pointer to `get_games`. Pure.
  */
 export function toGamesBracketResult(
-  competition: Pick<Competition, "name" | "scoring">,
+  competition: Pick<Competition, "name" | "scoring"> & { format: GameFormat },
 ): BracketResult {
   return {
     found: true,
     competition: {
       name: competition.name,
       scoring: competition.scoring,
-      format: "games",
+      format: competition.format,
     },
     bracket: null,
-    message: `${competition.name} isn't run as a Bracket; it's run as Games. Call get_games instead.`,
+    message: `${competition.name} isn't run as a Bracket; it's run as Head-to-head or Best score. Call get_games instead.`,
   };
 }
 
@@ -108,7 +107,7 @@ export function toParticipationBracketResult(
 }
 
 /**
- * Serializes a Bracket (or its absence, or a points Competition) into the
+ * Serializes a Bracket (or its absence, or a Placement Competition) into the
  * `get_bracket` MCP tool payload. Names only: never an email, the Organizer
  * list, Hosts or who self-reported a Heat. Pure: the route resolves the
  * Competition by name and loads `view` and `days`.
@@ -125,23 +124,27 @@ export function toBracketResult(
     };
   }
 
-  if (view.competition.format === "games") {
-    return toGamesBracketResult(view.competition);
+  if (isGameFormat(view.competition.format)) {
+    return toGamesBracketResult({
+      name: view.competition.name,
+      scoring: view.competition.scoring,
+      format: view.competition.format,
+    });
   }
   if (view.competition.format === "participation") {
     return toParticipationBracketResult(view.competition);
   }
 
-  if (view.competition.format === "points") {
+  if (view.competition.format === "placement") {
     return {
       found: true,
       competition: {
         name: view.competition.name,
         scoring: view.competition.scoring,
-        format: "points",
+        format: "placement",
       },
       bracket: null,
-      message: `${view.competition.name} isn't run as a Bracket; ask about its Standings instead.`,
+      message: `${view.competition.name} isn't run as a Bracket; it's run as Placement: call get_placements.`,
     };
   }
 

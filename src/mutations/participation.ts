@@ -17,7 +17,6 @@ import {
 } from "@/lib/participation/check-in-rule";
 import type { ParticipationSettings } from "@/lib/participation/input";
 import { scoreParticipation } from "@/lib/participation/score";
-import { FIRST_OVER_MAX, firstPlaceOverMax } from "@/lib/placement-points";
 import { generatedNote } from "@/lib/points-entry";
 import {
   COMPETITION_NOT_FOUND,
@@ -30,9 +29,12 @@ import type { MutationContext, MutationResult } from "@/mutations/types";
 import { getCheckInFacts } from "@/queries/participation";
 
 const PARTICIPANT_MISSING = "That Participant no longer exists.";
-const INDIVIDUAL_NO_TEAM_SCORING =
-  "An individual Competition doesn't score Teams.";
-const CHOOSE_TEAM_SCORING = "Choose how Teams score.";
+const INDIVIDUAL_NO_PLACEMENT_POINTS =
+  "An individual Competition gives points to each Participant, not Placement Points.";
+const TEAM_NO_POINTS_PER_PARTICIPANT =
+  "A team Competition awards Placement Points, not points per Participant.";
+const POINTS_PER_PARTICIPANT_REQUIRED = "Enter the points per Participant.";
+const PLACEMENT_POINTS_REQUIRED = "Enter the Placement Points.";
 
 /**
  * Locks a `participation` Competition of this War Week, so a mark, a
@@ -50,10 +52,8 @@ async function lockedParticipation(
       id: competition.id,
       format: competition.format,
       scoring: competition.scoring,
-      maxPoints: competition.maxPoints,
       placementPoints: competition.placementPoints,
       participationPoints: competition.participationPoints,
-      participationTeamScoring: competition.participationTeamScoring,
       finalizedAt: competition.finalizedAt,
       teamLabel: warWeek.teamLabel,
     })
@@ -72,10 +72,9 @@ async function lockedParticipation(
 }
 
 /**
- * Saves a `participation` Competition's settings: N, the team scoring
- * (exactly in team scoring), Self check-in and its close time, and, when
- * ranked by headcount, its Placement Points (1st never over Max points).
- * Refused while closed.
+ * Saves a `participation` Competition's settings: N when individual, its
+ * Placement Points when team (ranked by headcount), and Self check-in with
+ * its close time. Refused while closed.
  */
 export async function setParticipationSettings(
   competitionId: string,
@@ -87,26 +86,25 @@ export async function setParticipationSettings(
     const found = await lockedParticipation(tx, competitionId, ctx);
     if (typeof found === "string") return refuse(found);
     if (found.finalizedAt) return refuse(GAMES_CLOSED);
-    const teamScoring = input.participationTeamScoring;
-    if (found.scoring === "individual" && teamScoring) {
-      return refuse(INDIVIDUAL_NO_TEAM_SCORING);
-    }
-    if (found.scoring === "team" && !teamScoring) {
-      return refuse(CHOOSE_TEAM_SCORING);
-    }
-    const ranked = teamScoring === "ranked";
-    if (ranked && firstPlaceOverMax(input.placementPoints, found.maxPoints)) {
-      return refuse(FIRST_OVER_MAX);
+    const individual = found.scoring === "individual";
+    if (individual) {
+      if (input.placementPoints) return refuse(INDIVIDUAL_NO_PLACEMENT_POINTS);
+      if (input.participationPoints === null) {
+        return refuse(POINTS_PER_PARTICIPANT_REQUIRED);
+      }
+    } else {
+      if (input.participationPoints !== null) {
+        return refuse(TEAM_NO_POINTS_PER_PARTICIPANT);
+      }
+      if (!input.placementPoints) return refuse(PLACEMENT_POINTS_REQUIRED);
     }
     await tx
       .update(competition)
       .set({
-        participationPoints: input.participationPoints,
-        participationTeamScoring: teamScoring,
+        participationPoints: individual ? input.participationPoints : null,
+        placementPoints: individual ? null : input.placementPoints,
         selfCheckIn: input.selfCheckIn,
         checkInClosesAt: input.checkInClosesAt,
-        // Placement Points only score a ranked Competition.
-        ...(ranked ? { placementPoints: input.placementPoints } : {}),
         updatedAt: sql`now()`,
       })
       .where(eq(competition.id, competitionId));
@@ -270,6 +268,7 @@ export async function closeParticipation(
     if (scored.length) {
       await tx.insert(pointsEntry).values(
         scored.map(({ teamId, participantId, points }) => ({
+          warWeekId: ctx.warWeekId,
           competitionId,
           teamId,
           participantId,
@@ -290,7 +289,7 @@ export async function closeParticipation(
 
 /**
  * Reopens a `participation` Competition: deletes its generated Points
- * Entries (hand-entered ones are untouched) and clears `finalized_at`.
+ * Entries and clears `finalized_at`.
  */
 export async function reopenParticipation(
   competitionId: string,
