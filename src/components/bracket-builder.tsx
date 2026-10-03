@@ -33,16 +33,18 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Toggle } from "@/components/ui/toggle";
 import {
   ADVANCE_PER_HEAT_OPTIONS,
   type BracketConfig,
   ENTRANTS_PER_HEAT_OPTIONS,
-  THIRD_PLACE_NEEDS_FOUR,
+  THIRD_PLACE_LOCKED,
   advancePerHeatLabel,
   entrantsPerHeatLabel,
   isHeadToHead,
+  thirdPlaceRefusal,
 } from "@/lib/bracket/config";
-import { isBye, validateConfig } from "@/lib/bracket/formats";
+import { hasResults, isBye, validateConfig } from "@/lib/bracket/formats";
 import { type EntrantKind, squadLabel } from "@/lib/bracket/squads";
 import { type Bracket, HAS_RESULTS_ERROR } from "@/lib/bracket/types";
 import {
@@ -85,18 +87,24 @@ type ForceableAction = {
  * elimination)", offered as a preset. With a saved Entrant count, a "how many advance"
  * that Generate would refuse is disabled, and the refusal is shown when the
  * current choice is one. Head-to-head adds the 3rd place game switch, off
- * by default and disabled, with its reason, under 4 Entrants.
+ * by default. It shows the saved value; turning it on is disabled, with its
+ * reason, where Generate would refuse it (under 4 Entrants), though a saved
+ * one can still be turned off. Once the Bracket has a Heat Result it is
+ * locked, and no save (forced or not) carries a change to it.
  */
 function HeatSettingsForm({
   competitionId,
   config,
   entrantCount,
+  started,
   disabled,
   onRefused,
 }: {
   competitionId: string;
   config: BracketConfig;
   entrantCount: number;
+  /** The Bracket has a Heat Result: the 3rd place game is locked. */
+  started: boolean;
   disabled: boolean;
   /** A save refused for clearing Heat Results: confirm, then force it. */
   onRefused: (action: ForceableAction) => void;
@@ -110,8 +118,17 @@ function HeatSettingsForm({
     entrantsPerHeat: perHeat,
     advancePerHeat: advance,
   });
-  const thirdPlaceAllowed = headToHead && entrantCount >= 4;
-  const thirdPlaceGame = thirdPlaceAllowed && thirdPlace;
+  const thirdPlaceGame = headToHead && thirdPlace;
+  // Why turning it on would be refused here (Generate's rule), or null.
+  const turnOnRefusal = thirdPlaceRefusal(
+    { entrantsPerHeat: perHeat, advancePerHeat: advance, thirdPlaceGame: true },
+    entrantCount,
+  );
+  const thirdPlaceReason = started
+    ? THIRD_PLACE_LOCKED
+    : turnOnRefusal && thirdPlace
+      ? `${turnOnRefusal} Turn it off, or enter 4, to generate.`
+      : turnOnRefusal;
 
   const [, formAction, saving] = useActionState(
     async (
@@ -123,6 +140,11 @@ function HeatSettingsForm({
         advancePerHeat: Number(formData.get("advancePerHeat")),
         thirdPlaceGame,
       };
+      // Locked once started: never sent, so no forced save can carry it.
+      if (started && next.thirdPlaceGame !== config.thirdPlaceGame) {
+        toast.error(THIRD_PLACE_LOCKED);
+        return { ok: false, error: THIRD_PLACE_LOCKED };
+      }
       const run = (force: boolean) =>
         setCompetitionFormat(competitionId, {
           format: "bracket",
@@ -170,6 +192,8 @@ function HeatSettingsForm({
     };
   });
   const off = disabled || saving;
+  const thirdPlaceOff =
+    off || started || (turnOnRefusal !== null && !thirdPlace);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -180,20 +204,21 @@ function HeatSettingsForm({
           the next Round until one Heat, the Final, is left.
         </FieldDescription>
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
+          <Toggle
             variant="outline"
             size="lg"
-            className="min-h-11"
-            aria-pressed={headToHead}
+            className="min-h-11 px-3"
+            pressed={headToHead}
             disabled={off}
-            onClick={() => {
+            onPressedChange={(pressed) => {
+              // A preset: pressing sets it; pressing again leaves it.
+              if (!pressed) return;
               setPerHeat(2);
               setAdvance(1);
             }}
           >
             Head-to-head (single elimination)
-          </Button>
+          </Toggle>
         </div>
         <FieldGroup className="gap-4 sm:flex-row">
           <Field className="sm:max-w-48">
@@ -234,12 +259,12 @@ function HeatSettingsForm({
             orientation="horizontal"
             className="max-w-xl"
             // Dims the label along with the disabled Switch.
-            data-disabled={off || !thirdPlaceAllowed}
+            data-disabled={thirdPlaceOff}
           >
             <Switch
               id="bracket-third-place"
               checked={thirdPlaceGame}
-              disabled={off || !thirdPlaceAllowed}
+              disabled={thirdPlaceOff}
               onCheckedChange={setThirdPlace}
             />
             <FieldContent>
@@ -247,9 +272,8 @@ function HeatSettingsForm({
                 3rd place game
               </FieldLabel>
               <FieldDescription>
-                {thirdPlaceAllowed
-                  ? "The semifinal losers play for 3rd and 4th. Without it, they tie 3rd."
-                  : THIRD_PLACE_NEEDS_FOUR}
+                {thirdPlaceReason ??
+                  "The semifinal losers play for 3rd and 4th. Without it, they tie 3rd."}
               </FieldDescription>
             </FieldContent>
           </Field>
@@ -562,10 +586,11 @@ export function BracketBuilder({
       {bracketConfig && (
         <HeatSettingsForm
           // A saved change (after the refresh) starts the form from it.
-          key={`${bracketConfig.entrantsPerHeat}-${bracketConfig.advancePerHeat}`}
+          key={`${bracketConfig.entrantsPerHeat}-${bracketConfig.advancePerHeat}-${bracketConfig.thirdPlaceGame}`}
           competitionId={competition.id}
           config={bracketConfig}
           entrantCount={entrants.length}
+          started={hasResults(bracket)}
           disabled={pending || locked}
           onRefused={setConfirm}
         />

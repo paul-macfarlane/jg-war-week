@@ -323,8 +323,9 @@ export function finalPlacings(
 }
 
 /**
- * Single elimination as a Format: two Entrants a Heat, the winner advances.
- * Its one setting is the 3rd place game.
+ * The engine for a Bracket of 2 per Heat with 1 advancing (a head-to-head
+ * knockout, not a Format of its own): the winner advances. Its one extra
+ * setting is the 3rd place game.
  */
 export const singleElimination: FormatEngine = {
   validateConfig: thirdPlaceRefusal,

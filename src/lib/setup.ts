@@ -1,7 +1,7 @@
 import { type ZodType, z } from "zod";
 
 import type { Competition, Participant, Team, WarWeek } from "@/db/schema";
-import { bracketConfigSchema } from "@/lib/bracket/config";
+import { bracketConfigSchema, thirdPlaceRefusal } from "@/lib/bracket/config";
 import { HEX_COLOR } from "@/lib/color";
 import { placementLimitRefusal } from "@/lib/competitions";
 import { dayOutsideRangeError } from "@/lib/day-range";
@@ -186,6 +186,18 @@ export const competitionSeedSchema = z
         message:
           "a Bracket needs its bracketConfig (entrantsPerHeat, advancePerHeat, thirdPlaceGame)",
         path: ["bracketConfig"],
+      });
+    }
+    // A seed has no Entrants yet, so only the config half of the 3rd place
+    // game rule applies; Generate checks the Entrant count.
+    const thirdPlace =
+      c.bracketConfig &&
+      thirdPlaceRefusal(c.bracketConfig, Number.POSITIVE_INFINITY);
+    if (thirdPlace) {
+      ctx.addIssue({
+        code: "custom",
+        message: thirdPlace,
+        path: ["bracketConfig", "thirdPlaceGame"],
       });
     }
     if (c.bracketConfig != null && c.format !== "bracket") {

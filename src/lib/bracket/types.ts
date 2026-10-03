@@ -10,9 +10,10 @@ import type { COMPETITION_FORMATS, GameFormat } from "@/lib/enums";
 export type Format = (typeof COMPETITION_FORMATS)[number];
 
 /**
- * A Format that runs as a Bracket: every Format but `placement`, the
- * Games Formats (a Head-to-head or Best score Competition is decided by
- * logged Games, never Heats) and `participation` (decided by who took part).
+ * The Format that runs as a Bracket, `bracket`: what's left once
+ * `placement`, the Games Formats (a Head-to-head or Best score Competition
+ * is decided by logged Games, never Heats) and `participation` (decided by
+ * who took part) are excluded.
  */
 export type BracketFormat = Exclude<
   Format,

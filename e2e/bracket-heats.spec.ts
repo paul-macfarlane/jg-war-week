@@ -116,7 +116,7 @@ async function recordHeat(
   return order;
 }
 
-test("a Heats Bracket is built, run and finalized into Points Entries", async ({
+test("a Bracket of 4 per Heat is built, run and finalized into Points Entries", async ({
   browser,
   context,
   page,

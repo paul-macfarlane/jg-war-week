@@ -1161,12 +1161,26 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       view = (await queries.getBracket(f.competitionId, tx))!;
       expect(heatAt(view, 2, 2).labels).toEqual(["Red", null]);
 
-      // Locked once a Heat Result exists, like every Bracket setting.
-      expect(await setGame({ ...withGame, thirdPlaceGame: false })).toEqual({
+      // Locked once a Heat Result exists: not even a forced save changes it.
+      const locked = {
         ok: false,
-        error:
-          "This Bracket has Heat Results. Confirm to clear them and start over.",
-      });
+        error: "The 3rd place game can't be changed once a Heat Result exists.",
+      };
+      expect(await setGame({ ...withGame, thirdPlaceGame: false })).toEqual(
+        locked,
+      );
+      expect(
+        await mutations.setCompetitionFormat(
+          f.competitionId,
+          {
+            format: "bracket",
+            config: { ...withGame, thirdPlaceGame: false },
+            force: true,
+          },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual(locked);
       expect(await savedConfig(tx, f, f.competitionId)).toEqual(withGame);
       expect(
         (await queries.getBracket(f.competitionId, tx))!.bracket.heats,

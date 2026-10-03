@@ -1,7 +1,9 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 import { applyResult, generate } from "@/lib/bracket/engine";
+import * as formats from "@/lib/bracket/formats";
 import { heats } from "@/lib/bracket/heats";
 import type { Entrant } from "@/lib/bracket/types";
 
@@ -65,7 +67,6 @@ describe("BracketTree's Record result buttons", () => {
     const html = tree({ recordableHeatIds: ["r1h2"], onRecord: () => {} });
     expect(buttonNames(html)).toEqual(["Record result for Semifinal 2"]);
     const button = html.match(/<button[^>]*>Record result<\/button>/)?.[0];
-    expect(button).toBeDefined();
     // The solid primary variant (87's rule), not a ghost overlay.
     expect(button).toContain("bg-primary");
   });
@@ -99,7 +100,6 @@ describe("BracketTree's layout", () => {
     const region = html.match(/<div[^>]*aria-label="Rounds"[^>]*>/)![0];
     expect(region).toContain('tabindex="0"');
     expect(region).toContain("overflow-x-auto");
-    expect(region).toContain('data-testid="bracket-tree-scroll"');
     expect(html).not.toContain('role="tablist"');
   });
 
@@ -168,5 +168,50 @@ describe("BracketTree's layout", () => {
     play("r1h2");
     play("r2h1");
     expect(advancing("Final")).toEqual(["1"]);
+  });
+});
+
+describe("BracketTree's 3rd place game", () => {
+  it("names the final's winner the winner, and the 3rd place game's winner 3rd", () => {
+    const four: Entrant[] = ["A", "B", "C", "D"].map((label, i) => ({
+      id: label,
+      seedPosition: i + 1,
+      label,
+    }));
+    let bracket = formats.generate(
+      { ...DEFAULT_BRACKET_CONFIG, thirdPlaceGame: true },
+      four,
+      (round, position) => `r${round}h${position}`,
+    );
+    for (const [id, winner] of [
+      ["r1h1", "A"],
+      ["r1h2", "B"],
+      ["r2h1", "A"],
+      ["r2h2", "D"],
+    ]) {
+      const others = bracket.heats
+        .find((h) => h.id === id)!
+        .slots.map((s) => s.entrantId!)
+        .filter((e) => e !== winner);
+      bracket = formats.applyResult(bracket, id, {
+        order: [winner, ...others],
+      });
+    }
+    const html = tree(
+      {},
+      bracket,
+      new Map(four.map((e) => [e.id, entrant(e.id, e.label)])),
+    );
+    /** The screen-reader notes in Heat `name`'s box. */
+    const notes = (name: string) =>
+      [
+        ...html
+          .split(`aria-label="${name}"`)
+          .at(-1)!
+          .split('role="group"')[0]
+          .matchAll(/class="sr-only">([^<]*)</g),
+      ].map((m) => m[1].trim());
+    expect(notes("Final")).toEqual(["wins"]);
+    expect(notes("3rd place game")).toEqual(["takes 3rd"]);
   });
 });

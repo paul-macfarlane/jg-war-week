@@ -872,7 +872,7 @@ test("r5 33 Reset to derived is a 44px target on a phone", async ({
   expect((await reset.boundingBox())?.height).toBeGreaterThanOrEqual(44);
 });
 
-test("r5 38 Escape keeps chosen Entrants; Tree shows a Heat's place; Format help", async ({
+test("r5 38 Escape keeps chosen Entrants; Tree shows Recorded <time>; Format help", async ({
   context,
   page,
 }, testInfo) => {

@@ -289,7 +289,7 @@ export type FinaleCounts = {
   competitionsRun: number;
   /** Games logged in Head-to-head or Best score Competitions. */
   gamesLogged: number;
-  /** Heats played (a forfeit is not played). */
+  /** Heats played (a bye is not played). */
   heatsPlayed: number;
   pointsEntries: number;
   pointsHandedOut: number;

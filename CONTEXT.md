@@ -52,7 +52,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **FAQ Item**                  | A question and answer pair for a War Week.                                                                                        |
 | **Archive**                   | The past War Weeks shown at `/history`.                                                                                           |
 | **Recent results**            | Home's section of the latest results: finalized Brackets, finalized Placements, closed Head-to-head, Best score and Participation Competitions and Discretionary points, newest first, up to 5. |
-| **Format**                    | How a Competition is run, one of six: **Placement** (one result recorded on a sheet), **Head-to-head** and **Best score** (decided by Games players log, once or recurring), **Participation** (decided by who took part, ticked by the Host or checked in by the Participants themselves), or **Bracket** (a tournament: Entrants play Heats, Round after Round, to a final). "Single elimination" and "Heats" are retired as Format names: a Bracket is one Format, and a head-to-head knockout is just a Bracket of 2 per Heat with 1 advancing. Chosen when the Competition is created and kept. |
+| **Format**                    | How a Competition is run, one of five: **Placement** (one result recorded on a sheet), **Head-to-head** and **Best score** (decided by Games players log, once or recurring), **Participation** (decided by who took part, ticked by the Host or checked in by the Participants themselves), or **Bracket** (a tournament: Entrants play Heats, Round after Round, to a final). "Single elimination" and "Heats" are retired as Format names: a Bracket is one Format, and a head-to-head knockout is just a Bracket of 2 per Heat with 1 advancing. Chosen when the Competition is created and kept. |
 | **Placement** (Format)        | A Competition whose one result is recorded on one sheet, with no Games and no Bracket. A new Competition starts as one.            |
 | **Placement** (row)           | A Team's or Participant's row on a Placement sheet: a **Place** (1, 2, 3…, or none yet) and an optional **Score**. Ties share a Place.  |
 | **Record placements**         | The link on a Placement Competition in Admin → Competitions that opens its sheet (`/admin/placements/<id>`), where an Organizer or its Host adds rows (search, or Add everyone), sets Places and Scores, then **Finalizes**. |
@@ -60,7 +60,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Bracket**                   | The one Format for tournaments, and the Rounds and Heats of such a Competition. Set by a **heat size** (Entrants per Heat) and **how many advance** from each Heat; 2 per Heat with 1 advancing is a head-to-head knockout (the builder's "Head-to-head (single elimination)" preset), and may have a **3rd place game**. |
 | **Round**                     | One step of a Bracket, holding Heats that can be played at the same time. Round 1 is the first.                                   |
 | **Heat**                      | One game between Entrants in a Bracket. Covers 1v1 and multi-entrant games. Has no Day, time or location of its own: it isn't scheduled. Once played it shows its **recorded time**, when its Heat Result was recorded ("Recorded <time>"). |
-| **3rd place game**            | An optional extra Heat of a head-to-head (2 per Heat, 1 advancing) Bracket of at least 4 Entrants, beside the final in the last Round: the two semifinal losers play it for 3rd and 4th. Off by default; set in the builder before any Heat Result exists, and locked once one does. |
+| **3rd place game**            | An optional extra Heat of a head-to-head (2 per Heat, 1 advancing) Bracket of at least 4 Entrants, beside the final in the last Round: the two semifinal losers play it for 3rd and 4th. Off by default; set in the builder before any Heat Result exists, and locked once one does: not even a forced save changes it. |
 | **Recorded time**             | When a played Heat's Heat Result was recorded (shown as "Recorded <time>", and `recordedAt` in `get_bracket`). It is the time the result was saved, never a scheduled time. |
 | **Entrant**                   | A Team, Participant or Squad entered in a Bracket or a fixed-list Head-to-head or Best score Competition.                                           |
 | **Squad**                     | A named group of Participants of one Team, entered as one Entrant in a team-scoring Bracket — "a pair or group from one Team, playing as one entrant". Belongs to one Competition; a Participant is in at most one Squad per Competition. |
@@ -501,8 +501,9 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   at least 4 Entrants (the server refuses it otherwise). It is a Heat beside
   the final, between the two semifinal losers, and the final is always the
   last Round's other Heat: the champion, Finalize and the Finale all read the
-  final, never the 3rd place game. Turning it on or off rebuilds the Heats,
-  so it is refused once any Heat Result exists, like a heat size change.
+  final, never the 3rd place game. Turning it on or off rebuilds the Heats.
+  Once any Heat Result exists the server refuses the change, even with the
+  `force` that lets a heat size change clear the Heat Results.
   Finalize needs it recorded when it is on.
 - Regenerating, or replacing the Entrants, before any Heat Result is free.
   After one, it needs a confirmation and clears every Heat Result.
@@ -519,7 +520,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   phone the tree scrolls sideways in its own region, never the page.
 - A Heat Result needs a clear finishing order (a head-to-head Heat's is just its
   winner). There is no Forfeit: a Heat that isn't played isn't recorded. Changing the
-  winner of a decided knockout Heat, or a Heats Heat's result so different
+  winner of a decided knockout Heat, or a bigger Heat's result so different
   Entrants advance or in a different order, sends the later Heats that
   followed from it back to unplayed; an edit that changes nothing about who
   advances (scores only, or a knockout winner unchanged) changes nothing

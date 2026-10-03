@@ -98,22 +98,6 @@ export function heatName(
 }
 
 /**
- * A Heat's Entrants as one line: "A vs B" for two, "A, B, C and D" for more.
- * An empty slot (waiting for an Entrant, or a bye) is skipped.
- */
-export function heatEntrantLabels(
-  heat: Pick<Heat, "slots">,
-  entrantsById: Record<string, string>,
-): string {
-  const names = heat.slots
-    .map((slot) => (slot.entrantId ? entrantsById[slot.entrantId] : undefined))
-    .filter((name): name is string => name !== undefined);
-  if (names.length === 2) return `${names[0]} vs ${names[1]}`;
-  if (names.length <= 1) return names[0] ?? "";
-  return `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
-}
-
-/**
  * When a Heat's Result was recorded, like "Recorded Sun 7:05 PM ET": the
  * ET wall clock, whatever the viewer's timezone.
  */

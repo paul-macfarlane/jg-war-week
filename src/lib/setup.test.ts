@@ -574,6 +574,19 @@ describe("competitionSeedSchema, games", () => {
     ).toEqual(["bracketConfig is only for a Bracket"]);
   });
 
+  it("refuses a 3rd place game on a Bracket config other than 2 per Heat with 1 advancing", () => {
+    const bracket = (config: object) =>
+      issues({
+        ...base,
+        format: "bracket",
+        bracketConfig: { thirdPlaceGame: true, ...config },
+      });
+    expect(bracket({ entrantsPerHeat: 4, advancePerHeat: 2 })).toEqual([
+      "A 3rd place game is only for 2 per Heat with 1 advancing.",
+    ]);
+    expect(bracket({ entrantsPerHeat: 2, advancePerHeat: 1 })).toEqual([]);
+  });
+
   it("refuses the removed gameType and finishPoints keys", () => {
     for (const extra of [
       { gameType: "head-to-head" },

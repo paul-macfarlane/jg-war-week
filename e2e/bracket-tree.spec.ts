@@ -40,7 +40,9 @@ const HEATS = "Super Smash Bros";
 let restoreCompetition: (() => Promise<void>) | null = null;
 test.beforeEach(async ({}, testInfo) => {
   restoreCompetition = await openForBracket(
-    await xiCompetitionId(testInfo.title.includes("Heats") ? HEATS : KNOCKOUT),
+    await xiCompetitionId(
+      testInfo.title.includes("4 per Heat") ? HEATS : KNOCKOUT,
+    ),
   );
 });
 test.afterEach(async () => {
@@ -241,9 +243,8 @@ async function checkTree(
   await page.setViewportSize(PHONE);
   // One tree, no Round tabs.
   await expect(tree.getByRole("tablist")).toHaveCount(0);
-  const scroller = tree.getByTestId("bracket-tree-scroll");
-  await expect(scroller).toHaveAttribute("role", "region");
-  await expect(scroller).toHaveAccessibleName("Rounds");
+  const scroller = tree.getByRole("region", { name: "Rounds" });
+  await expect(scroller).toBeVisible();
   await expect(
     tree.getByRole("group", { name: rounds[0], exact: true }).first(),
   ).toBeVisible();
@@ -408,7 +409,7 @@ test("a head-to-head Bracket is one tree: the Organizer records from it in admin
   await finalize(page, "Un-finalize");
 });
 
-test("a Heats Bracket is the same tree of Heat boxes, advancers highlighted", async ({
+test("a Bracket of 4 per Heat is the same tree of Heat boxes, advancers highlighted", async ({
   browser,
   context,
   page,

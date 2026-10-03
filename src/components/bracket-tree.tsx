@@ -20,7 +20,7 @@ type Scoring = "team" | "individual";
 const LINE = "pointer-events-none absolute border-foreground/30";
 
 /**
- * A single-elimination Heat's connector lines: in from the Heat that feeds
+ * A head-to-head Heat's connector lines: in from the Heat that feeds
  * it, and out to the Heat its winner goes to, half of the bracket shape
  * joining it to its pair.
  */
@@ -59,8 +59,7 @@ function Connectors({
 function SlotRow({
   slot,
   heat,
-  heatsFormat,
-  isFinal,
+  multiEntrant,
   entrantsById,
   scoring,
   primaryColor,
@@ -68,8 +67,8 @@ function SlotRow({
 }: {
   slot: TreeSlot;
   heat: TreeHeat;
-  heatsFormat: boolean;
-  isFinal: boolean;
+  /** More than 2 per Heat: places shown, a waiting Heat as one line. */
+  multiEntrant: boolean;
   entrantsById: Map<string, BracketViewEntrant>;
   scoring: Scoring;
   primaryColor: string;
@@ -79,7 +78,7 @@ function SlotRow({
     const text =
       slot.kind === "bye"
         ? "Bye"
-        : heatsFormat
+        : multiEntrant
           ? `Waiting for ${slot.waitingFor} to finish`
           : `Waiting for ${slot.waitingFor}`;
     return (
@@ -99,7 +98,7 @@ function SlotRow({
       data-advances={slot.advances || undefined}
       className={`flex min-h-8 min-w-0 items-center gap-2 rounded-md px-1.5 text-sm ${slot.advances ? "bg-primary/15 font-semibold" : out ? "text-foreground/60" : ""} ${YOU_ROW_CLASS}`}
     >
-      {heatsFormat && heat.decided && slot.place !== null && (
+      {multiEntrant && heat.decided && slot.place !== null && (
         <span
           aria-label={`Place ${slot.place}`}
           className="w-4 shrink-0 text-right text-xs tabular-nums"
@@ -125,7 +124,9 @@ function SlotRow({
         <span className="min-w-0 truncate">{entrant?.label ?? "Unknown"}</span>
       )}
       {slot.advances && (
-        <span className="sr-only">{isFinal ? " wins" : " advances"}</span>
+        <span className="sr-only">
+          {heat.final ? " wins" : heat.thirdPlace ? " takes 3rd" : " advances"}
+        </span>
       )}
       {slot.entrantId === youEntrantId && (
         <span data-you className="sr-only">
@@ -142,7 +143,7 @@ function SlotRow({
 /**
  * The one tree of a Bracket, for admin and Participants alike: Rounds as
  * columns left to right, each Heat a box of its Entrants with those going
- * through highlighted, and (single elimination) connector lines to the Heat
+ * through highlighted, and (head-to-head) connector lines to the Heat
  * each winner goes to. The Rounds scroll sideways inside their own region
  * when they don't fit, so the page itself never does. Each Heat in
  * `recordableHeatIds` carries a visible Record result (Edit once played)
@@ -174,8 +175,7 @@ export function BracketTree({
   const recordable = new Set(onRecord ? recordableHeatIds : []);
   const tree = bracketTree(bracket);
   const knockout = tree.headToHead;
-  const heatsFormat = !tree.headToHead;
-  const finalRound = tree.rounds.at(-1)?.round ?? 0;
+  const multiEntrant = !tree.headToHead;
   const outOf = new Map(tree.connectors.map((c) => [c.fromHeatId, c]));
 
   /** One Heat's box in its slot of the Round's column (`place` sizes it). */
@@ -216,15 +216,14 @@ export function BracketTree({
               key={i}
               slot={slot}
               heat={heat}
-              heatsFormat={heatsFormat}
-              isFinal={heat.round === finalRound}
+              multiEntrant={multiEntrant}
               entrantsById={entrantsById}
               scoring={scoring}
               primaryColor={primaryColor}
               youEntrantId={youEntrantId}
             />
           ))}
-          {heat.bye && heatsFormat && (
+          {heat.bye && multiEntrant && (
             <span className="text-foreground/60 px-1.5 text-sm italic">
               Bye — advances
             </span>
@@ -259,7 +258,6 @@ export function BracketTree({
         role="region"
         aria-label="Rounds"
         tabIndex={0}
-        data-testid="bracket-tree-scroll"
         className="focus-visible:ring-ring/50 min-w-0 overflow-x-auto rounded-lg pb-2 outline-none focus-visible:ring-3"
       >
         <div className="flex w-max min-w-full gap-8">

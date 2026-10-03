@@ -2,7 +2,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
+import { applyResult, generate } from "@/lib/bracket/formats";
 import type { Bracket } from "@/lib/bracket/types";
+import type { BracketEntrant } from "@/queries/brackets";
 
 import { BracketBuilder } from "./bracket-builder";
 
@@ -34,6 +36,32 @@ const baseProps = {
   squads: [],
   teamLabel: "Team",
 };
+
+/** `count` saved Entrants E1…EN, by Seed Position. */
+function savedEntrants(count: number): BracketEntrant[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `e${i + 1}`,
+    seedPosition: i + 1,
+    label: `E${i + 1}`,
+    teamId: `t${i + 1}`,
+    participantId: null,
+    squadId: null,
+    participantNames: [],
+    pointsTeamId: `t${i + 1}`,
+    color: null,
+    teamName: null,
+  }));
+}
+
+const withGame = { ...DEFAULT_BRACKET_CONFIG, thirdPlaceGame: true };
+
+/** The 3rd place game switch's checkbox (it carries the id) in `html`. */
+function thirdPlaceSwitch(html: string): string {
+  return html.match(/<input[^>]*id="bracket-third-place"[^>]*>/)![0];
+}
+
+const CHECKED = /\schecked=""/;
+const DISABLED = /\sdisabled=""/;
 
 describe("BracketBuilder", () => {
   it("shows the Squad help text under the Squads heading", () => {
@@ -86,9 +114,46 @@ describe("BracketBuilder", () => {
     const html = renderToStaticMarkup(<BracketBuilder {...baseProps} />);
     expect(html).toContain("3rd place game");
     expect(html).toContain("A 3rd place game needs at least 4 Entrants.");
-    const control = html.match(/<[^>]*id="bracket-third-place"[^>]*>/)![0];
-    expect(control).toMatch(/data-disabled|disabled=""/);
-    expect(control).not.toContain('aria-checked="true"');
+    const control = thirdPlaceSwitch(html);
+    expect(control).toMatch(DISABLED);
+    expect(control).not.toMatch(CHECKED);
+  });
+
+  it("shows a saved 3rd place game as on under 4 Entrants, and lets it be turned off", () => {
+    const html = renderToStaticMarkup(
+      <BracketBuilder
+        {...baseProps}
+        entrants={savedEntrants(3)}
+        bracket={{ config: withGame, heats: [] }}
+      />,
+    );
+    const control = thirdPlaceSwitch(html);
+    expect(control).toMatch(CHECKED);
+    expect(control).not.toMatch(DISABLED);
+    expect(html).toContain(
+      "A 3rd place game needs at least 4 Entrants. Turn it off, or enter 4, to generate.",
+    );
+  });
+
+  it("locks the 3rd place game once the Bracket has a Heat Result", () => {
+    const entrants = savedEntrants(4);
+    const generated = generate(
+      withGame,
+      entrants,
+      (round, position) => `r${round}h${position}`,
+    );
+    const started = applyResult(generated, "r1h1", {
+      order: generated.heats[0].slots.map((s) => s.entrantId!),
+    });
+    const html = renderToStaticMarkup(
+      <BracketBuilder {...baseProps} entrants={entrants} bracket={started} />,
+    );
+    const control = thirdPlaceSwitch(html);
+    expect(control).toMatch(CHECKED);
+    expect(control).toMatch(DISABLED);
+    expect(html).toContain(
+      "The 3rd place game can&#x27;t be changed once a Heat Result exists.",
+    );
   });
 
   it("offers no 3rd place game at another Heat size", () => {

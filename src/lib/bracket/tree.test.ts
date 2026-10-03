@@ -191,3 +191,37 @@ describe("bracketTree, Heats", () => {
     ]);
   });
 });
+
+describe("bracketTree, 3rd place game", () => {
+  it("flags only the final as the final, never the 3rd place game beside it", () => {
+    let bracket = generate(
+      { ...DEFAULT_BRACKET_CONFIG, thirdPlaceGame: true },
+      entrants(["A", "B", "C", "D"]),
+      newId,
+    );
+    for (const [id, winner] of [
+      ["r1h1", "A"],
+      ["r1h2", "B"],
+      ["r2h1", "A"],
+      ["r2h2", "D"],
+    ]) {
+      const others = bracket.heats
+        .find((h) => h.id === id)!
+        .slots.map((s) => s.entrantId!)
+        .filter((e) => e !== winner);
+      bracket = applyResult(bracket, id, { order: [winner, ...others] });
+    }
+    const last = bracketTree(bracket).rounds.at(-1)!;
+    expect(
+      last.heats.map((heat) => [
+        heat.name,
+        heat.final,
+        heat.thirdPlace,
+        heat.slots.map(show),
+      ]),
+    ).toEqual([
+      ["Final", true, false, ["A>", "B"]],
+      ["3rd place game", false, true, ["D>", "C"]],
+    ]);
+  });
+});

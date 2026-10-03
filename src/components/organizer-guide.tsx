@@ -208,16 +208,19 @@ export function OrganizerGuide({
           the winner going on; bigger Heats send their top few on, Round after
           Round, until one Heat is left. With one against one and at least 4
           Entrants, turn on the 3rd place game to have the semifinal losers play
-          for 3rd beside the final. The final placings come from the final (and
-          the 3rd place game), then everyone else tied by the Round they went
-          out in. Open the Bracket builder to pick Entrants — all {teamLower}s,
-          or specific Participants — and Generate the Bracket (Seed Positions
-          are random; Re-roll before any Heat is played to try again). Then open
-          Results: the Bracket&apos;s tree, the same one Participants see. Press
-          Record result on a Heat in the tree (Edit once it&apos;s recorded) to
-          enter it: its winner, or for a bigger Heat its Entrants in finishing
-          order, with scores, in a dialog centered on a screen or a bottom sheet
-          on a phone; the tree shows when each Heat was recorded. Changing who
+          for 3rd and 4th beside the final. Placings come only from the final
+          and the 3rd place game: the final gives 1st and 2nd, the 3rd place
+          game 3rd and 4th; without one, both semifinal losers tie 3rd. With
+          more per Heat, the final&apos;s finishing order gives places 1 to 4.
+          Nothing goes past 4th, and nobody else is placed. Open the Bracket
+          builder to pick Entrants — all {teamLower}s, or specific Participants
+          — and Generate the Bracket (Seed Positions are random; Re-roll before
+          any Heat is played to try again). Then open Results: the
+          Bracket&apos;s tree, the same one Participants see. Press Record
+          result on a Heat in the tree (Edit once it&apos;s recorded) to enter
+          it: its winner, or for a bigger Heat its Entrants in finishing order,
+          with scores, in a dialog centered on a screen or a bottom sheet on a
+          phone; the tree shows when each Heat was recorded. Changing who
           advances resets the later Heats that followed from it, while a
           score-only edit keeps them. Finalize, once every Heat is played (the
           3rd place game too), turns the Bracket&apos;s placings into Points

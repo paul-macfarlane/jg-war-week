@@ -827,7 +827,7 @@ export type CreateCompetitionResult =
 
 /**
  * Creates a Competition, with the Format an Organizer chose (default
- * "placement") and, for a heats Format with none given, the Bracket builder's
+ * "placement") and, for a Bracket with none given, the Bracket builder's
  * default config (`DEFAULT_BRACKET_CONFIG`). A Head-to-head or Best score Competition
  * stores that Format's default settings; any other Format has none.
  * A `participation` Competition starts at 1 point per Participant when

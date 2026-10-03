@@ -15,7 +15,7 @@ import { loadAdminPage } from "../../gate";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = { title: "Bracket results · JG War Week" };
+export const metadata: Metadata = { title: "Bracket · Results · JG War Week" };
 
 export default async function BracketAdminPage({
   params,

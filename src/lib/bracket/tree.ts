@@ -1,14 +1,14 @@
 /**
  * The tree view of a Bracket: its Rounds as columns, first to final, each
- * Heat's slots as they read in the tree, and (single elimination) the
- * connector from each Heat to the slot its winner fills. Pure, like the
- * engine; `src/components/bracket-tree.tsx` draws it.
+ * Heat's slots as they read in the tree, and (head-to-head) the connector
+ * from each Heat to the slot its winner fills. Pure, like the engine;
+ * `src/components/bracket-tree.tsx` draws it.
  */
 import { isHeadToHead } from "@/lib/bracket/config";
+import { finalHeatOf } from "@/lib/bracket/final";
 import { isBye } from "@/lib/bracket/formats";
 import type { Bracket, Heat } from "@/lib/bracket/types";
 import {
-  finalRoundOf,
   groupRounds,
   heatName,
   isDecided,
@@ -24,17 +24,18 @@ export type TreeSlot =
       place: number | null;
       score: string | null;
       /**
-       * Through to the next Round (a bye's Entrant too), or, in the Final,
-       * the winner: the tree highlights it.
+       * Through to the next Round (a bye's Entrant too), or, in the final,
+       * the winner, or, in the 3rd place game, who takes 3rd: the tree
+       * highlights it.
        */
       advances: boolean;
     }
-  /** Single elimination: the empty side of a first-Round bye. */
+  /** Head-to-head: the empty side of a first-Round bye. */
   | { kind: "bye" }
   /**
-   * Waiting for an Entrant: the feeding Heat's name (single elimination),
-   * or the previous Round's (a Heats Round not filled yet, shown as one
-   * line for the whole Heat).
+   * Waiting for an Entrant: the feeding Heat's name (head-to-head), or the
+   * previous Round's (a Round of more than 2 per Heat not filled yet, shown
+   * as one line for the whole Heat).
    */
   | { kind: "waiting"; waitingFor: string };
 
@@ -46,18 +47,20 @@ export type TreeHeat = {
   decided: boolean;
   /** Never played: its Entrants advance as they are. */
   bye: boolean;
+  /** The final (`finalHeatOf`): its winner wins the Bracket. */
+  final: boolean;
   /** The 3rd place game, beside the final and drawn secondary to it. */
   thirdPlace: boolean;
   /**
-   * Single elimination: in slot order, so connectors meet the right slot.
-   * Heats: by finishing place once decided.
+   * Head-to-head: in slot order, so connectors meet the right slot. More
+   * than 2 per Heat: by finishing place once decided.
    */
   slots: TreeSlot[];
 };
 
 export type TreeRound = { round: number; name: string; heats: TreeHeat[] };
 
-/** A single-elimination Heat's winner goes to `toSlot` of `toHeatId`. */
+/** A head-to-head Heat's winner goes to `toSlot` of `toHeatId`. */
 export type TreeConnector = {
   fromHeatId: string;
   toHeatId: string;
@@ -68,14 +71,17 @@ export type BracketTree = {
   /** Head-to-head Brackets draw winner lines; others advance by place. */
   headToHead: boolean;
   rounds: TreeRound[];
-  /** Single elimination only; Heats Brackets advance by place, not a line. */
+  /** Head-to-head only; other Brackets advance by place, not a line. */
   connectors: TreeConnector[];
 };
 
-/** How many of a decided Heat's places go through (the Final: 1, the winner). */
+/**
+ * How many of a decided Heat's places go through: head-to-head, 1 (in the
+ * 3rd place game, who takes 3rd); the final, 1, the winner.
+ */
 export function advancingPlaces(bracket: Bracket, heat: Heat): number {
   if (isHeadToHead(bracket.config)) return 1;
-  if (heat.round >= finalRoundOf(bracket)) return 1;
+  if (heat.id === finalHeatOf(bracket)?.id) return 1;
   return bracket.config.advancePerHeat;
 }
 
@@ -145,6 +151,7 @@ function treeSlots(bracket: Bracket, heat: Heat, bye: boolean): TreeSlot[] {
 
 /** The Bracket as a tree: Rounds, their Heats' slots, and connectors. */
 export function bracketTree(bracket: Bracket): BracketTree {
+  const final = finalHeatOf(bracket);
   const rounds = groupRounds(bracket).map((round) => ({
     round: round.round,
     name: round.name,
@@ -157,6 +164,7 @@ export function bracketTree(bracket: Bracket): BracketTree {
         position: heat.position,
         decided: isDecided(heat),
         bye,
+        final: heat.id === final?.id,
         thirdPlace: heat.thirdPlace,
         slots: treeSlots(bracket, heat, bye),
       };

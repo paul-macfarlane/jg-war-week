@@ -21,6 +21,7 @@ import {
 import {
   type BracketConfig,
   DEFAULT_BRACKET_CONFIG,
+  THIRD_PLACE_LOCKED,
   configOf,
   thirdPlaceRefusal,
 } from "@/lib/bracket/config";
@@ -291,12 +292,13 @@ async function saveBracket(
 }
 
 /**
- * Sets how a Competition is run, and the heats Format's config. Its Format
+ * Sets how a Competition is run, and a Bracket's config. Its Format
  * can't change while it has Entrants or Games, nor either while it's
  * finalized; a Head-to-head, Best score or Participation Competition is that Format from
  * creation, and stays so.
  * Saving a different Bracket config clears the Heats (keeping the Entrants);
- * once a Heat has a Heat Result, only with `force`. Omitting the config
+ * once a Heat has a Heat Result, only with `force`, and never a change to
+ * the 3rd place game, which is locked from then on. Omitting the config
  * keeps the saved one, unless the Format changes; the default (2 per Heat, 1 advancing) then applies.
  */
 export async function setCompetitionFormat(
@@ -380,6 +382,18 @@ export async function setCompetitionFormat(
         "Delete them before changing its Format.",
       );
       if (refusal) return refuse(refusal);
+    }
+
+    // The 3rd place game is locked once the Bracket starts: not even a
+    // forced save (which clears the Heat Results) changes it.
+    if (
+      !formatChanges &&
+      isBracketRun(found) &&
+      values.config != null &&
+      values.config.thirdPlaceGame !== configOf(found).thirdPlaceGame &&
+      hasResults(await bracketOf(tx, found))
+    ) {
+      return refuse(THIRD_PLACE_LOCKED);
     }
 
     let bracketConfig: BracketConfig | null = null;

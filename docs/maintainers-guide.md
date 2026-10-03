@@ -425,7 +425,8 @@ page, not the Competition's Edit form.
 A head-to-head Bracket with at least 4 Entrants can have an optional **3rd
 place game**, a switch in the builder (off by default): the two semifinal
 losers play it beside the final, and it decides 3rd and 4th. It is locked
-once any Heat has a result, like the heat size. Without it, both semifinal
+once any Heat Result exists: unlike the heat size, not even a forced save
+(the one that clears the Heat Results) changes it. Without it, both semifinal
 losers tie 3rd and there is no 4th. Places come only from the final (and the
 3rd place game), so a Bracket's Placement Points stop at 4 places; the
 champion is always the final's winner.
@@ -843,7 +844,8 @@ emails.
 are `get_current_war_week`, `get_leaderboard`, `get_schedule`,
 `get_announcements` (a video is its URL in the plain-text body),
 `get_awards`, `get_faq`, `list_history`, `get_history`, `get_bracket` (a
-Competition's Bracket by name, with each Heat's time and place, and a
+Competition's Bracket by name, with its heat size, how many advance and
+whether it has a 3rd place game, each played Heat's recorded time, and a
 Squad's `participants` by name; never who reported a result) and
 `get_games` (a Head-to-head or Best score Competition, by name: its Format and settings, leaderboard
 ranked by that Format and its Games newest first; never an email or who

@@ -1,5 +1,5 @@
 /**
- * The Heats Format engine: Heats of up to S Entrants, the top A of each
+ * The engine for a Bracket of any other heat size: Heats of up to S Entrants, the top A of each
  * advancing, Round after Round until one Heat is left. Every function is
  * pure: it takes a Bracket and returns a new one, never changing its input.
  */
@@ -369,7 +369,7 @@ export function finalPlacings(
 }
 
 /**
- * Heats as a Format: Heats of up to `entrantsPerHeat` Entrants, the top
+ * A Bracket of any config but 2 / 1: Heats of up to `entrantsPerHeat` Entrants, the top
  * `advancePerHeat` of each going on, Round after Round until one Heat is
  * left.
  */
