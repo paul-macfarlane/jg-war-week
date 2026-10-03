@@ -30,3 +30,4 @@
 - 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r17`): claimed; `ready-for-agent` → `in-progress`. Execution record: [`R17-execution.md`](../epics/R17-execution.md).
 
 - 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r17`): D97 `11e0f33` (Sonnet). Dispatch `engineFor(config)`; engine tests through `bracket` at 2/1 and 4/2; builder one Format with the preset; migration test covers the mapping. Rewritten: `formats.test.ts`, `seed/schema.test.ts` ("only for a Bracket"); deleted: the two null-config Heats tests. Every AC PASS; evidence and the AI Code Review in [`R17-execution.md`](../epics/R17-execution.md). `ai-review` → `done`.
+- 2026-10-03 [PR] https://github.com/paul-macfarlane/jg-war-week/pull/128

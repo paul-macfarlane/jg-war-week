@@ -152,3 +152,4 @@ Remaining risks: an Organizer or Host records from the admin tree, not from the 
 | P100-delete | PASS | grep empty |
 
 **Human prerequisite (post-merge, Paul):** the epic's reset of staging, the prod pre-check, then prod (see the PR description and `docs/maintainers-guide.md`).
+- **PR:** https://github.com/paul-macfarlane/jg-war-week/pull/128

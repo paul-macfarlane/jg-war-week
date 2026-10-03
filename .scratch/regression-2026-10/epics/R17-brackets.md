@@ -89,3 +89,4 @@ The parts' own, plus:
 - 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r17`): claimed; `ready-for-agent` → `in-progress`. Execution record: [`R17-execution.md`](./R17-execution.md).
 
 - 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r17`): Work package delivered on `feat/regression-r17-brackets` (8 deliverables). Gate `pnpm format:check && pnpm gate` exit 0 (vitest 3803 passed, 0 skipped; smoke 261 ok; e2e 108 passed); evidence `test-results/r17/`. Every AC PASS; evidence and the AI Code Review in [`R17-execution.md`](./R17-execution.md). `ai-review` → `done`.
+- 2026-10-03 [PR] https://github.com/paul-macfarlane/jg-war-week/pull/128

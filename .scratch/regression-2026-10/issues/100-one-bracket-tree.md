@@ -30,3 +30,4 @@
 - 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r17`): claimed; `ready-for-agent` → `in-progress`. Execution record: [`R17-execution.md`](../epics/R17-execution.md).
 
 - 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r17`): D100 `ad8916a`, `c6cc902` (Opus). `bracket-results.tsx` → `bracket-admin.tsx` (round cards gone), `heat-rows.test.tsx` deleted, new `bracket-tree.test.tsx` and `src/actions/heat-reports-refusals.test.ts`; `e2e/bracket-tree.spec.ts` rewritten (admin and self-report recording, access, 390 scroll, axe both schemes). Every AC PASS; evidence and the AI Code Review in [`R17-execution.md`](../epics/R17-execution.md). `ai-review` → `done`.
+- 2026-10-03 [PR] https://github.com/paul-macfarlane/jg-war-week/pull/128

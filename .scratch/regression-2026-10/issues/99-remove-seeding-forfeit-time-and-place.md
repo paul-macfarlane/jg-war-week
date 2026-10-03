@@ -38,3 +38,4 @@
 - 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r17`): claimed; `ready-for-agent` → `in-progress`. Execution record: [`R17-execution.md`](../epics/R17-execution.md).
 
 - 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r17`): D99 `9591ced` (Sonnet). Deleted: `heat-schedule-form.tsx`, `heat-schedule.ts`(+test), `now-next.ts`(+test), Forfeit and Standings seeding tests, `setHeatSchedule` tests; rewritten e2e `bracket`, `bracket-heats`, `bracket-squads`, `regression-r5`. Both greps empty. Every AC PASS; evidence and the AI Code Review in [`R17-execution.md`](../epics/R17-execution.md). `ai-review` → `done`.
+- 2026-10-03 [PR] https://github.com/paul-macfarlane/jg-war-week/pull/128

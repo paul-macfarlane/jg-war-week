@@ -36,3 +36,4 @@
 - 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r17`): claimed; `ready-for-agent` → `in-progress`. Execution record: [`R17-execution.md`](../epics/R17-execution.md).
 
 - 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r17`): D98 `1281384` (Opus), hardened in `f9710cf` (a hard lock, even with force). The final is identified in `src/lib/bracket/final.ts`; 3rd place game at position 2 (positions are 1-based); new `third-place.test.ts`, `e2e/bracket-third-place.spec.ts` (10/7/5/3, 1440 shot); rewritten the 5th-place tests. Every AC PASS; evidence and the AI Code Review in [`R17-execution.md`](../epics/R17-execution.md). `ai-review` → `done`.
+- 2026-10-03 [PR] https://github.com/paul-macfarlane/jg-war-week/pull/128
