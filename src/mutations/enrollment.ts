@@ -36,7 +36,7 @@ export type SelfEnrollValues = SelfEnrollInput;
  * close time (ADR 0006), under the Competition's row lock so an enrollment
  * in flight runs before or after it. Refused on a points Competition, a
  * finalized (closed) one, and, when turning it on, a Best of or an
- * open-to-everyone `games` Competition (R3 decision 12;
+ * open-to-everyone Head-to-head or Best score Competition (R3 decision 12;
  * `enrollmentUnavailable`). The parser and the column's CHECK bound the
  * Entrant limit.
  */

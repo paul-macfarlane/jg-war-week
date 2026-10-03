@@ -636,7 +636,7 @@ async function askMcp(cookie: string): Promise<LeaderboardResult> {
 
 /**
  * The current War Week's seeded head-to-head, individual, open-to-everyone
- * `games` Competition, and two Participant names to log a Game between.
+ * Head-to-head or Best score Competition, and two Participant names to log a Game between.
  */
 async function findGamesDemo(): Promise<{
   competitionId: string;

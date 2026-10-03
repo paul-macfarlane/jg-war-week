@@ -30,7 +30,7 @@ type Linked = { participantId: string; teamId: string | null } | null;
 type Filter = "all" | "mine";
 
 /**
- * What a `games` Competition's page shows, computed on the server for one
+ * What a Head-to-head or Best score Competition's page shows, computed on the server for one
  * viewer: names, ids and booleans only, never an email (R3 decision 17).
  */
 export type GamesViewProps = {
@@ -271,7 +271,7 @@ export function GameLog({
 }
 
 /**
- * A `games` Competition on its page: the closed or Best of banner, Log a
+ * A Head-to-head or Best score Competition on its page: the closed or Best of banner, Log a
  * Game (when the viewer may), the leaderboard, and the Game log with an
  * All / Mine filter for a linked Participant.
  */

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   type DiscretionaryLedgerRow,
   buildDiscretionaryLedger,
+  discretionaryAllowsTeams,
   discretionaryLabel,
   parseDiscretionaryInput,
 } from "@/lib/discretionary-points";
@@ -155,5 +156,18 @@ describe("buildDiscretionaryLedger", () => {
     expect(changed.enteredByEmail).toBe("o@jahnelgroup.com");
     expect(changed.enteredAt).toEqual(saved);
     expect(seeded.editedAt).toBeNull();
+  });
+
+  it("marks an entry edited when its row changed even a millisecond after it was saved", () => {
+    const later = new Date(saved.getTime() + 1);
+    const [entry] = buildDiscretionaryLedger([row({ updatedAt: later })]);
+    expect(entry.editedAt).toEqual(later);
+  });
+});
+
+describe("discretionaryAllowsTeams", () => {
+  it("allows Teams only in a teams War Week", () => {
+    expect(discretionaryAllowsTeams("teams")).toBe(true);
+    expect(discretionaryAllowsTeams("free-for-all")).toBe(false);
   });
 });

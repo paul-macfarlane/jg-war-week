@@ -61,7 +61,7 @@ export function WarWeekLifecycleControls({
   /** Names of Brackets not yet finalized, to warn about when ending. */
   unfinalizedBrackets: string[];
   /**
-   * Open `games` Competitions with Games and `participation` ones with
+   * Open Head-to-head or Best score Competitions with Games and `participation` ones with
    * anyone marked, to warn about when ending.
    */
   openUnscoredCompetitions: OpenUnscoredCompetition[];

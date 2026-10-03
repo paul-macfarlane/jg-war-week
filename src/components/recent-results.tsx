@@ -54,23 +54,6 @@ function ResultSummary({
       </span>
     );
   }
-  if (result.kind === "points") {
-    return (
-      <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-        {result.scores.map(({ target, points }) => (
-          <span
-            key={`${target.kind}-${target.id}`}
-            className="inline-flex items-center gap-1.5"
-          >
-            <TargetName target={target} primaryColor={primaryColor} />
-            <span className="font-semibold tabular-nums">
-              {formatPoints(points)}
-            </span>
-          </span>
-        ))}
-      </span>
-    );
-  }
   if (result.kind === "participation-closed" && result.tookPart !== null) {
     return (
       <span className="text-sm">

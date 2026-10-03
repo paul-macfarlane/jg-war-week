@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { ParticipationBuilder } from "@/components/participation-builder";
 import { getParticipationView } from "@/queries/participation";
-import { getPointsEntryFormOptions } from "@/queries/points-entries";
+import { getTargetOptions } from "@/queries/target-options";
 
 import { loadAdminPage } from "../../../gate";
 
@@ -25,7 +25,7 @@ export default async function ParticipationBuilderPage({
 
   const [view, options] = await Promise.all([
     getParticipationView(id),
-    getPointsEntryFormOptions(warWeek),
+    getTargetOptions(warWeek),
   ]);
   if (!view || view.competition.warWeekId !== warWeek.id) notFound();
   const { competition } = view;

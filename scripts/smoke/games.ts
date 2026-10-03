@@ -69,7 +69,7 @@ function otherEmails(body: string, own: string): string[] {
 const LOG_BUTTON = />Log a Game</;
 
 /**
- * The seeded `games` Competitions (17-5, 17-A): each page renders its Game
+ * The seeded Head-to-head or Best score Competitions (17-5, 17-A): each page renders its Game
  * Type and an empty log with no email in it; `logGame` over HTTP is refused
  * before the smoke Participant's email links them, then succeeds and shows
  * in the log; closed and with XI ended, the page still renders the

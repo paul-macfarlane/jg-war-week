@@ -19,7 +19,7 @@ import {
 } from "./session";
 import { teamTotal } from "./standings";
 
-// Bouncy Pong is seeded as an open head-to-head individual `games`
+// Bouncy Pong is seeded as an open individual Head-to-head
 // Competition (counts toward Team) with Placement Points 3 / 2 / 1.
 const COMPETITION = "Bouncy Pong";
 /** Logs the Game; linked to the e2e Participant session by email. */

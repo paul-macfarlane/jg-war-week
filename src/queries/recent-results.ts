@@ -1,4 +1,4 @@
-import { aliasedTable, and, desc, eq, inArray } from "drizzle-orm";
+import { aliasedTable, and, desc, eq, inArray, isNull } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import {
@@ -21,15 +21,8 @@ import {
 } from "@/queries/profile-join";
 
 /**
- * The most manual Points Entries Home reads: far more than the newest
- * `RECENT_RESULTS_LIMIT` rows' groups need, so the War Week's whole ledger
- * isn't loaded for five rows.
- */
-const MANUAL_ENTRY_LIMIT = 200;
-
-/**
  * A War Week's Recent results for Home, newest first (shaping rules in
- * `shapeRecentResults`). Reads the newest manual Points Entries and the
+ * `shapeRecentResults`). Reads the newest Discretionary entries and the
  * generated ones of only the newest finalized Competitions: the rest
  * can't reach the newest `RECENT_RESULTS_LIMIT` rows.
  */
@@ -55,16 +48,16 @@ export async function getRecentResults(
     .map((c) => c.id);
 
   const entries = () => resultEntryQuery(dbOrTx);
-  const [manual, generated] = await Promise.all([
+  const [discretionary, generated] = await Promise.all([
     entries()
       .where(
         and(
           eq(pointsEntry.warWeekId, warWeek.id),
-          eq(pointsEntry.generatedByBracket, false),
+          isNull(pointsEntry.competitionId),
         ),
       )
       .orderBy(desc(pointsEntry.enteredAt))
-      .limit(MANUAL_ENTRY_LIMIT),
+      .limit(RECENT_RESULTS_LIMIT),
     newestFinalized.length > 0
       ? entries().where(
           and(
@@ -75,7 +68,7 @@ export async function getRecentResults(
       : Promise.resolve([]),
   ]);
 
-  const shaped = [...manual, ...generated].map(toResultEntry);
+  const shaped = [...discretionary, ...generated].map(toResultEntry);
   return shapeRecentResults(competitions, shaped);
 }
 

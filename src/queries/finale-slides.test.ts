@@ -92,7 +92,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
     });
   });
 
-  it("lists a finalized Bracket's champion and a closed games Competition's tied winners", async () => {
+  it("lists a finalized Bracket's champion and a closed Head-to-head or Best score Competition's tied winners", async () => {
     await inRolledBackTransaction(async (tx) => {
       const schema = await import("@/db/schema");
       const { asc, eq } = await import("drizzle-orm");

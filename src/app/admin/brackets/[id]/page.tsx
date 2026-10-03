@@ -34,7 +34,7 @@ export default async function BracketResultsPage({
     getGamesCompetitions(warWeek),
     getParticipationCompetitions(warWeek),
   ]);
-  // A `games` or `participation` Competition is never a Bracket: point to
+  // A Head-to-head, Best score or `participation` Competition is never a Bracket: point to
   // its own setup.
   const runAsGames = games.find((competition) => competition.id === id);
   const runAsParticipation = participations.find(

@@ -204,10 +204,11 @@ describe("parseGamesSettingsInput", () => {
       expect(result.error).toBe("An Entrant limit is at least 2.");
   });
 
-  it("refuses an unknown Game Format", () => {
+  it("refuses an unknown Format", () => {
     const result = parseGamesSettingsInput({ gameFormat: "not-a-type" });
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toBe("Choose a Game Format.");
+    if (!result.ok)
+      expect(result.error).toBe("Choose Head-to-head or Best score.");
   });
 });
 

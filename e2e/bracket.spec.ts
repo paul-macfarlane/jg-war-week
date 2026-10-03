@@ -14,7 +14,7 @@ import {
 } from "./session";
 
 // Beyblades is an individual War Week XI Competition with Placement Points
-// 5 / 3 / 1. None of these four has a hand-entered Beyblades Points Entry.
+// 5 / 3 / 1. None of these four is on the seeded Beyblades sheet (it places only a Team).
 const COMPETITION = "Beyblades";
 
 // The seeded Competitions are Finalized Placement sheets; open each for a

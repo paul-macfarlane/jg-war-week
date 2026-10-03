@@ -202,7 +202,7 @@ export function parseGamesSettingsInput(
   raw: Record<string, unknown>,
 ): Parsed<GamesSettingsInput> {
   const gameFormatResult = z
-    .enum(GAME_FORMATS, { error: "Choose a Game Format." })
+    .enum(GAME_FORMATS, { error: "Choose Head-to-head or Best score." })
     .safeParse(raw.gameFormat);
   if (!gameFormatResult.success) return firstError(gameFormatResult);
   const gameFormat = gameFormatResult.data;

@@ -1,6 +1,6 @@
 /**
  * The Game facts that bound logging, editing and deleting a Game in a
- * `games` Competition (ADR 0006). Pure, and deliberately free of zod and
+ * Head-to-head or Best score Competition (ADR 0006). Pure, and deliberately free of zod and
  * the Bracket engine: `src/lib/access.ts` imports it, and that module
  * reaches the client bundle.
  */

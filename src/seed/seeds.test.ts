@@ -147,7 +147,7 @@ describe("War Week XI", () => {
     expect(xi.winner).toBe("Red");
   });
 
-  it("holds every wiki result as a Finalized Placement at the wiki scoreboard's time, and no hand-entered points", () => {
+  it("holds every wiki result as a Finalized Placement at the wiki scoreboard's time", () => {
     const placed = new Set(xi.placements.map((p) => p.competition));
     expect(placed.size).toBe(19);
     for (const name of placed) {

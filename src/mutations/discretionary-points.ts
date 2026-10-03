@@ -42,7 +42,7 @@ async function resolveColumns(
 
 /**
  * Why an entry of this War Week can't be changed here: it is gone, or a
- * Competition (a generated or typed Points Entry) owns it.
+ * Competition (a generated Points Entry) owns it.
  */
 async function refusalFor(
   id: string,

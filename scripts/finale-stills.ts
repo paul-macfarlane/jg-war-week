@@ -14,7 +14,7 @@
  * show what the Organizer presents. So every built-in slide has something
  * to show, it adds, and removes again afterwards: two Awards in Award
  * Categories, a finalized Heats Bracket (`setupBracketDemo`, finalized
- * here with its placings' points) and the seeded Ping Pong `games`
+ * here with its placings' points) and the seeded Ping Pong Head-to-head
  * Competition closed with a winner. Pass an edition to shoot another War
  * Week's demo:
  *   pnpm stills:finale xiii

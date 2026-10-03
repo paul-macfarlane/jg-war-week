@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  RECENT_RESULTS_GROUP_GAP_MS,
   RECENT_RESULTS_LIMIT,
   type RecentResult,
   type ResultCompetition,
@@ -58,55 +57,6 @@ describe("shapeRecentResults", () => {
     expect(shapeRecentResults([trivia], [])).toEqual([]);
   });
 
-  it("collapses Points Entries of one Competition added together into one row", () => {
-    const rows = shapeRecentResults(
-      [trivia],
-      [entry("trivia", blue, 5, at(1)), entry("trivia", red, 10, at(3))],
-    );
-    expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({
-      kind: "points",
-      competition: "Trivia",
-      when: at(3),
-      scores: [
-        { target: red, points: 10 },
-        { target: blue, points: 5 },
-      ],
-    });
-  });
-
-  it("splits entries of one Competition added more than the gap apart", () => {
-    const later = new Date(at(0).getTime() + RECENT_RESULTS_GROUP_GAP_MS + 1);
-    const rows = shapeRecentResults(
-      [trivia],
-      [entry("trivia", red, 10, at(0)), entry("trivia", blue, 5, later)],
-    );
-    expect(rows.map((r) => r.when)).toEqual([later, at(0)]);
-  });
-
-  it("keeps entries exactly the gap apart in one row", () => {
-    const later = new Date(at(0).getTime() + RECENT_RESULTS_GROUP_GAP_MS);
-    const rows = shapeRecentResults(
-      [trivia],
-      [entry("trivia", red, 10, at(0)), entry("trivia", blue, 5, later)],
-    );
-    expect(rows).toHaveLength(1);
-  });
-
-  it("keeps two Teams with the same name apart", () => {
-    const otherRed: ResultTarget = { ...red, id: "t-red-2", color: "#c00" };
-    const [row] = shapeRecentResults(
-      [trivia],
-      [entry("trivia", red, 4, at(0)), entry("trivia", otherRed, 6, at(1))],
-    );
-    expect(row).toMatchObject({
-      scores: [
-        { target: otherRed, points: 6 },
-        { target: red, points: 4 },
-      ],
-    });
-  });
-
   it("lists a tie for first between same-named Participants as two winners", () => {
     const sam: ResultTarget = {
       id: "p-sam",
@@ -128,23 +78,6 @@ describe("shapeRecentResults", () => {
     expect(row).toMatchObject({ winners: [sam, otherSam] });
   });
 
-  it("does not merge entries of different Competitions", () => {
-    const quiz = { ...trivia, id: "quiz", name: "Quiz" };
-    const rows = shapeRecentResults(
-      [trivia, quiz],
-      [entry("trivia", red, 1, at(0)), entry("quiz", red, 2, at(1))],
-    );
-    expect(rows.map(competitionOf)).toEqual(["Quiz", "Trivia"]);
-  });
-
-  it("adds up entries for one target within a row", () => {
-    const [row] = shapeRecentResults(
-      [trivia],
-      [entry("trivia", red, 4, at(0)), entry("trivia", red, 6, at(1))],
-    );
-    expect(row).toMatchObject({ scores: [{ target: red, points: 10 }] });
-  });
-
   it("shows a finalized Bracket's champion instead of its generated entries", () => {
     const bracket: ResultCompetition = {
       id: "b",
@@ -154,17 +87,13 @@ describe("shapeRecentResults", () => {
     };
     const rows = shapeRecentResults(
       [bracket, trivia],
-      [
-        entry("b", blue, 5, at(20), true),
-        entry("b", red, 10, at(20), true),
-        entry("trivia", red, 3, at(10)),
-      ],
+      [entry("b", blue, 5, at(20), true), entry("b", red, 10, at(20), true)],
     );
-    expect(rows.map((r) => r.kind)).toEqual(["bracket-finalized", "points"]);
+    expect(rows.map((r) => r.kind)).toEqual(["bracket-finalized"]);
     expect(rows[0]).toMatchObject({ winners: [red], competition: "Foosball" });
   });
 
-  it("shows a closed games Competition's winner, listing a tie for first", () => {
+  it("shows a closed Head-to-head Competition's winner, listing a tie for first", () => {
     const games: ResultCompetition = {
       id: "g",
       name: "Darts",
@@ -197,23 +126,14 @@ describe("shapeRecentResults", () => {
           at(30),
           true,
         ),
-        entry("trivia", red, 3, at(10)),
       ],
     );
-    expect(rows.map((r) => r.kind)).toEqual(["placement-finalized", "points"]);
+    expect(rows.map((r) => r.kind)).toEqual(["placement-finalized"]);
     expect(rows[0]).toMatchObject({
       competition: "Darts",
       when: at(30),
       winners: [red, blue],
     });
-  });
-
-  it("an open Placement's hand-entered entries stay a points row", () => {
-    const [row] = shapeRecentResults(
-      [trivia],
-      [entry("trivia", red, 3, at(10))],
-    );
-    expect(row.kind).toBe("points");
   });
 
   it("shows a closed team participation Competition's top Team, listing a tie", () => {
@@ -276,8 +196,8 @@ describe("shapeRecentResults", () => {
       name: `C${i}`,
     }));
     const rows = shapeRecentResults(
-      comps,
-      comps.map((c, i) => entry(c.id, red, 1, at(i * 30))),
+      comps.map((c, i) => ({ ...c, finalizedAt: at(i * 30) })),
+      comps.map((c, i) => entry(c.id, red, 1, at(i * 30), true)),
     );
     expect(rows).toHaveLength(RECENT_RESULTS_LIMIT);
     expect(competitionOf(rows[0])).toBe(`C${RECENT_RESULTS_LIMIT + 1}`);
@@ -303,9 +223,9 @@ describe("shapeRecentResults with Discretionary points", () => {
 
   it("makes each entry a row of its own, with its reason, among the Competition rows", () => {
     const rows = shapeRecentResults(
-      [trivia],
+      [{ ...trivia, id: "darts", name: "Darts", finalizedAt: at(0) }],
       [
-        entry("trivia", red, 3, at(0)),
+        entry("darts", red, 3, at(0), true),
         discretionary(blue, 4, "Spirit", at(30)),
         discretionary(blue, 1, "Cleanup", at(31)),
       ],
@@ -313,7 +233,7 @@ describe("shapeRecentResults with Discretionary points", () => {
     expect(rows.map((r) => r.kind)).toEqual([
       "discretionary",
       "discretionary",
-      "points",
+      "placement-finalized",
     ]);
     expect(rows[0]).toMatchObject({
       target: blue,

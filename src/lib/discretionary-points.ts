@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { PointsEntry } from "@/db/schema";
+import type { PointsEntry, WarWeek } from "@/db/schema";
 import { fieldErrorsFrom } from "@/lib/form-errors";
 import { POINTS_NUMBER, pointsSchema } from "@/lib/points-entry";
 import type { Parsed } from "@/lib/result";
@@ -55,6 +55,14 @@ export function parseDiscretionaryInput(
   };
 }
 
+/**
+ * Whether Discretionary points may go to a Team in this War Week: a
+ * free-for-all War Week has no Teams to give points to.
+ */
+export function discretionaryAllowsTeams(mode: WarWeek["mode"]): boolean {
+  return mode === "teams";
+}
+
 /** How a Discretionary entry reads in "where points came from". */
 export function discretionaryLabel(reason: string | null): string {
   return `Discretionary: ${reason ?? ""}`.trimEnd();
@@ -91,9 +99,9 @@ export type DiscretionaryLedgerEntry = {
 
 /**
  * The Discretionary ledger: every entry, newest first, with its target's
- * name. An entry counts as edited when its row changed after it was saved;
- * a seeded entry's `enteredAt` is historical, so it isn't the comparison
- * point.
+ * name. An entry counts as edited when `updatedAt` is after `createdAt`
+ * (both the database's `now()`, equal until an edit); a seeded entry's
+ * `enteredAt` is historical, so it isn't the comparison point.
  */
 export function buildDiscretionaryLedger(
   rows: DiscretionaryLedgerRow[],
@@ -112,9 +120,6 @@ export function buildDiscretionaryLedger(
       reason: row.note ?? "",
       enteredByEmail: row.enteredByEmail,
       enteredAt: row.enteredAt,
-      editedAt:
-        row.updatedAt.getTime() - row.createdAt.getTime() > 1000
-          ? row.updatedAt
-          : null,
+      editedAt: row.updatedAt > row.createdAt ? row.updatedAt : null,
     }));
 }

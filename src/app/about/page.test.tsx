@@ -215,7 +215,7 @@ describe("AboutPage", () => {
       "Schedule, Now and Next",
       "Points and Standings",
       "Announcements",
-      "Competitions: Placements, Brackets, Games and Participation",
+      "Competitions: Placements, Brackets, Head-to-head, Best score and Participation",
       "The Archive",
     ]);
   });

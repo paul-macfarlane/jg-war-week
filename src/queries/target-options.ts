@@ -5,14 +5,14 @@ import { DBOrTx, db } from "@/db";
 import { WarWeek, competition, participant, team } from "@/db/schema";
 import { participantNameSql, withProfile } from "@/queries/profile-join";
 
-export type PointsEntryFormCompetition = {
+export type TargetOptionsCompetition = {
   id: string;
   name: string;
   scoring: "team" | "individual";
   placementPoints: number[] | null;
 };
 
-export type PointsEntryFormTarget = {
+export type TargetOptionsTarget = {
   id: string;
   name: string;
   /** A Participant's Team name; null for Teams and unassigned Participants. */
@@ -20,14 +20,14 @@ export type PointsEntryFormTarget = {
 };
 
 /** A Participant as the forms offer one, with their Team's id (or null). */
-export type PointsEntryFormParticipant = PointsEntryFormTarget & {
+export type TargetOptionsParticipant = TargetOptionsTarget & {
   teamId: string | null;
 };
 
-export type PointsEntryFormOptions = {
-  competitions: PointsEntryFormCompetition[];
-  teams: PointsEntryFormTarget[];
-  participants: PointsEntryFormParticipant[];
+export type TargetOptions = {
+  competitions: TargetOptionsCompetition[];
+  teams: TargetOptionsTarget[];
+  participants: TargetOptionsParticipant[];
 };
 
 const participantTeam = alias(team, "participant_team");
@@ -36,10 +36,10 @@ const participantTeam = alias(team, "participant_team");
  * Every Competition, Team and Participant of the War Week, each by name, for
  * the pickers on the Competition pages.
  */
-export async function getPointsEntryFormOptions(
+export async function getTargetOptions(
   warWeek: Pick<WarWeek, "id">,
   dbOrTx: DBOrTx = db,
-): Promise<PointsEntryFormOptions> {
+): Promise<TargetOptions> {
   const [competitions, teams, participants] = await Promise.all([
     dbOrTx
       .select({

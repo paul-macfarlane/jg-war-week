@@ -1,5 +1,5 @@
 /**
- * Whether logging is open in a `games` Competition for a Participant: the
+ * Whether logging is open in a Head-to-head or Best score Competition for a Participant: the
  * logging close time and a decided Best of (ADR 0006). Pure; the queries
  * load the Competition and its Games and pass them here with the time.
  * Kept apart from `log-rule.ts` because the Best of count pulls in the

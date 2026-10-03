@@ -287,7 +287,7 @@ type SlideBase = { key: string; name: string };
 export type FinaleCounts = {
   /** Competitions with at least one Points Entry. */
   competitionsRun: number;
-  /** Games logged in `games` Competitions. */
+  /** Games logged in Head-to-head or Best score Competitions. */
   gamesLogged: number;
   /** Heats played (a forfeit is not played). */
   heatsPlayed: number;
@@ -343,7 +343,7 @@ export type FinaleChampion = {
 
 /**
  * The Champions slide's lines: every finalized Bracket's champion and every
- * Finalized Placement's or closed `games` or team-scoring `participation`
+ * Finalized Placement's or closed Head-to-head, Best score or team-scoring `participation`
  * Competition's winner (ties
  * listed together), by the rule Recent results uses (`finalWinners`), never
  * capped, ordered by when each was finalized or closed. An

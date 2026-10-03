@@ -45,14 +45,13 @@ async function fixture(tx: DBTx) {
   return { warWeekId: warWeek.id, red: red.id };
 }
 
-describe.skipIf(!isLocalDatabase)("getPointsEntryFormOptions", () => {
+describe.skipIf(!isLocalDatabase)("getTargetOptions", () => {
   it("gives each Participant their Team's id beside its name", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { getPointsEntryFormOptions } =
-        await import("@/queries/points-entries");
+      const { getTargetOptions } = await import("@/queries/target-options");
       const f = await fixture(tx);
 
-      const options = await getPointsEntryFormOptions({ id: f.warWeekId }, tx);
+      const options = await getTargetOptions({ id: f.warWeekId }, tx);
       expect(options.participants).toEqual([
         {
           id: expect.any(String),

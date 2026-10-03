@@ -29,7 +29,7 @@ async function parseSeed(file: string): Promise<WarWeekSeed> {
 describe.skipIf(!isLocalDatabase)("War Week XI's frozen Standings", () => {
   it("are Red 38.5 and Blue 31 after the real XI seed is converted and loaded", async () => {
     // The totals below are literals from `seeds/xi.json` at f6d1605, summed
-    // per Team over its 24 typed entries before the Placement conversion;
+    // per Team over its 24 entries before the Placement conversion;
     // nothing here computes them from the converted seed.
     const FROZEN = { Red: 38.5, Blue: 31 };
     await inRolledBackTransaction(async (tx) => {

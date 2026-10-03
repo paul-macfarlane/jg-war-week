@@ -459,7 +459,7 @@ describe.skipIf(!isLocalDatabase)(
       });
     });
 
-    it("individual: N to each, counting toward the House; a hand-entered entry stays through Reopen", async () => {
+    it("individual: N to each, counting toward the House; a non-generated entry stays through Reopen", async () => {
       await inRolledBackTransaction(async (tx) => {
         const {
           checkIn,

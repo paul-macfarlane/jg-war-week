@@ -774,7 +774,7 @@ describe("competitionGuardError", () => {
     ).toBeNull();
   });
 
-  it("asks to reopen a closed games Competition before a scoring or Placement Points change", () => {
+  it("asks to reopen a closed Head-to-head or Best score Competition before a scoring or Placement Points change", () => {
     const closed = {
       ...existingBase,
       format: "head-to-head" as const,

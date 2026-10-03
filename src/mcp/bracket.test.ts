@@ -63,7 +63,7 @@ describe("toParticipationBracketResult", () => {
 });
 
 describe("toGamesBracketResult", () => {
-  it("answers bracket: null and points to get_games for a games Competition", () => {
+  it("answers bracket: null and points to get_games for a Head-to-head or Best score Competition", () => {
     expect(
       toGamesBracketResult({
         name: "Bouncy Pong",

@@ -137,7 +137,7 @@ function rawSettingsOf(gameFormat: GameFormat, fields: SettingsFields) {
 }
 
 /**
- * The `games` Competition's setup: its Format (fixed) and settings, its
+ * The Head-to-head or Best score Competition's setup: its Format (fixed) and settings, its
  * Entrants (open or a fixed list, R3 decision 11), the logging close time,
  * self-enrollment (decision 12) and Close / Reopen (decision 1).
  */

@@ -1,5 +1,5 @@
 /**
- * What a `games` Competition's settings change must leave consistent with
+ * What a Head-to-head or Best score Competition's settings change must leave consistent with
  * the Games already logged (R3 decision 11): a Best of fits its Games, a
  * fixed list keeps everyone who has played, draws stay on while a Game is
  * a draw. Pure; the mutation loads the rows under the Competition's lock.

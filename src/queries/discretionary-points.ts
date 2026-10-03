@@ -1,10 +1,11 @@
 import { and, eq, isNull } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
-import { WarWeek, participant, pointsEntry, team } from "@/db/schema";
+import { WarWeek, participant, pointsEntry, team, warWeek } from "@/db/schema";
 import {
   type DiscretionaryLedgerEntry,
   buildDiscretionaryLedger,
+  discretionaryAllowsTeams,
 } from "@/lib/discretionary-points";
 import type { PointsEntryTargetKind } from "@/lib/points-entry";
 import { participantNameSql, withProfile } from "@/queries/profile-join";
@@ -47,13 +48,20 @@ export async function getDiscretionaryLedger(
 
 /**
  * Whether `targetId` is a Team or a Participant of this War Week, or
- * neither (including one from another War Week).
+ * neither (including one from another War Week). A free-for-all War Week has
+ * no Teams to give points to (`discretionaryAllowsTeams`), so a Team's id
+ * there is neither.
  */
 export async function getTargetKind(
   warWeekId: string,
   targetId: string,
   dbOrTx: DBOrTx = db,
 ): Promise<PointsEntryTargetKind | null> {
+  const [week] = await dbOrTx
+    .select({ mode: warWeek.mode })
+    .from(warWeek)
+    .where(eq(warWeek.id, warWeekId));
+  if (!week) return null;
   const [teams, participants] = await Promise.all([
     dbOrTx
       .select({ id: team.id })
@@ -66,7 +74,7 @@ export async function getTargetKind(
         and(eq(participant.id, targetId), eq(participant.warWeekId, warWeekId)),
       ),
   ]);
-  if (teams.length > 0) return "team";
+  if (teams.length > 0 && discretionaryAllowsTeams(week.mode)) return "team";
   if (participants.length > 0) return "participant";
   return null;
 }

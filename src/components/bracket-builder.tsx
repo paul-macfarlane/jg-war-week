@@ -63,7 +63,7 @@ type Target = {
   teamId?: string | null;
 };
 
-// Never `games` or `participation`: a Competition is one of those from
+// Never Head-to-head, Best score or `participation`: a Competition is one of those from
 // creation, and stays so.
 const FORMAT_OPTIONS = COMPETITION_FORMATS.filter(
   (format) => !isGameFormat(format) && format !== "participation",

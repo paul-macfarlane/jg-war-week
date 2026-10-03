@@ -7,7 +7,7 @@ import type { FinaleSlideProps } from "./types";
 
 /**
  * The Champions slide: each finalized Bracket's champion and each closed
- * `games` or team-scoring `participation` Competition's winner, ties
+ * Head-to-head, Best score or team-scoring `participation` Competition's winner, ties
  * together, in the order they were decided.
  */
 export function ChampionsSlide({

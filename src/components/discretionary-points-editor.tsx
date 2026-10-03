@@ -11,19 +11,9 @@ import {
   SetupListRow,
 } from "@/components/setup-row";
 import type { WarWeek } from "@/db/schema";
+import type { DiscretionaryLedgerEntry } from "@/lib/discretionary-points";
 import { formatPoints, formatPointsLabel } from "@/lib/points";
 import { formatLedgerTime } from "@/lib/points-entry";
-
-export type DiscretionaryLedgerItem = {
-  id: string;
-  targetId: string;
-  target: string;
-  points: number;
-  reason: string;
-  enteredByEmail: string;
-  enteredAt: Date;
-  editedAt: Date | null;
-};
 
 /**
  * The Discretionary points ledger, newest first: each entry with its
@@ -38,14 +28,14 @@ export function DiscretionaryPointsEditor({
   mode,
 }: {
   warWeekId: string;
-  entries: DiscretionaryLedgerItem[];
+  entries: DiscretionaryLedgerEntry[];
   targets: DiscretionaryTarget[];
   teamLabel: string;
   mode: WarWeek["mode"];
 }) {
   const form = (
     close: () => void,
-    entry?: DiscretionaryLedgerItem,
+    entry?: DiscretionaryLedgerEntry,
   ): React.ReactNode => (
     <DiscretionaryPointsForm
       warWeekId={warWeekId}

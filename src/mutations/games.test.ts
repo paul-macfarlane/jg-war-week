@@ -709,7 +709,7 @@ describe.skipIf(!isLocalDatabase)("closeGames and reopenGames", () => {
         const r = await logGame(f.ids.bowl, scored(id, score), f.ctx(HOST), tx);
         expect(r).toMatchObject({ ok: true });
       }
-      // A hand-entered Points Entry on the same Competition.
+      // A non-generated Points Entry (inserted directly) on the same Competition.
       await tx.insert(f.schema.pointsEntry).values({
         warWeekId: f.warWeekId,
         competitionId: f.ids.bowl,

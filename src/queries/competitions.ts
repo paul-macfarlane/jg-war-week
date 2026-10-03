@@ -31,7 +31,7 @@ const competitionColumns = {
 
 /**
  * Finds a War Week's Competition by name for `get_bracket`, with its Format
- * and scoring so the tool can answer a `games` Competition: an exact name
+ * and scoring so the tool can answer a Head-to-head or Best score Competition: an exact name
  * wins; else a case-insensitive (trimmed) name when exactly one Competition
  * has it; else `undefined` (names are unique per War Week only
  * case-sensitively).

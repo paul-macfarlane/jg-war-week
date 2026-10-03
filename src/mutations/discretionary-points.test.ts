@@ -118,6 +118,58 @@ describe.skipIf(!isLocalDatabase)("Discretionary points mutations", () => {
     });
   });
 
+  it("refuses a Team target in a free-for-all War Week, create and edit, but still gives a Participant points", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { createDiscretionaryPoints, updateDiscretionaryPoints } =
+        await import("@/mutations/discretionary-points");
+      const { home, schema } = await fixture(tx);
+      const [{ id }] = await tx
+        .insert(schema.pointsEntry)
+        .values({
+          warWeekId: home.ctx.warWeekId,
+          participantId: home.participantId,
+          points: 1,
+          note: "Helped",
+          enteredByEmail: actorEmail,
+        })
+        .returning({ id: schema.pointsEntry.id });
+      await tx
+        .update(schema.warWeek)
+        .set({ mode: "free-for-all" })
+        .where(eq(schema.warWeek.id, home.ctx.warWeekId));
+
+      const refusal = {
+        ok: false,
+        error: "Choose a Team or Participant of this War Week.",
+      };
+      expect(
+        await createDiscretionaryPoints(
+          { targetId: home.teamId, points: 2, reason: "Spirit" },
+          home.ctx,
+          tx,
+        ),
+      ).toEqual(refusal);
+      expect(
+        await updateDiscretionaryPoints(
+          id,
+          { targetId: home.teamId, points: 2, reason: "Spirit" },
+          home.ctx,
+          tx,
+        ),
+      ).toEqual(refusal);
+      expect(await entries(tx, home.ctx.warWeekId)).toHaveLength(1);
+
+      expect(
+        await createDiscretionaryPoints(
+          { targetId: home.participantId, points: 2, reason: "Spirit" },
+          home.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+      expect(await entries(tx, home.ctx.warWeekId)).toHaveLength(2);
+    });
+  });
+
   it("refuses a Team or Participant of another War Week on create and writes nothing", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { createDiscretionaryPoints } =

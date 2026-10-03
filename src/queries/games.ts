@@ -41,7 +41,7 @@ import {
 type Scoring = GameLogFacet["scoring"];
 type Linked = GameLogFacet["linked"];
 
-/** A `games` Competition's facts, explicit columns only. */
+/** A Head-to-head or Best score Competition's facts, explicit columns only. */
 export type GamesCompetition = {
   id: string;
   warWeekId: string;
@@ -352,7 +352,7 @@ export async function getGameLogFacts(
 }
 
 /**
- * A `games` Competition's leaderboard rows (`rankGames`): every Entrant on
+ * A Head-to-head or Best score Competition's leaderboard rows (`rankGames`): every Entrant on
  * a fixed list, or everyone who has played when open. Empty when the
  * Competition is gone or not run as Games.
  */
@@ -374,7 +374,7 @@ export async function getGamesLeaderboard(
   );
 }
 
-/** A Team or Participant as a `games` page shows it: name and Team color. */
+/** A Team or Participant as a Head-to-head or Best score page shows it: name and Team color. */
 export type GamesViewName = { id: string; name: string; color: string | null };
 
 export type GamesViewRow = LeaderboardRow & {
@@ -400,7 +400,7 @@ export type GamesViewGame = {
 };
 
 /**
- * Everything a `games` Competition's page shows, for one viewer. Names,
+ * Everything a Head-to-head or Best score Competition's page shows, for one viewer. Names,
  * ids and booleans only: no email is ever selected (R3 decision 17).
  */
 export type GamesView = {
@@ -424,7 +424,7 @@ export type GamesView = {
 };
 
 /**
- * A `games` Competition's leaderboard, Game log and form options for
+ * A Head-to-head or Best score Competition's leaderboard, Game log and form options for
  * `viewerEmail` (null when anonymous), with `canEdit`/`canDelete` per Game
  * computed here. Null when the Competition is gone or not run as Games.
  */

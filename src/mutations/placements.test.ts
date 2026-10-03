@@ -517,7 +517,7 @@ describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
     });
   });
 
-  it("refuses every row change while Finalized; Reopen withdraws the generated entries and keeps a hand-entered one", async () => {
+  it("refuses every row change while Finalized; Reopen withdraws the generated entries and keeps a non-generated one", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { m, f } = await placed(tx);
       await tx.insert(f.schema.pointsEntry).values({

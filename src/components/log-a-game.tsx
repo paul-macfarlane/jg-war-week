@@ -6,7 +6,7 @@ import type { GameFormat } from "@/lib/enums";
 import { gameFormatLabel } from "@/lib/games/config";
 
 /**
- * The home page's "Log a Game" card (Games rules): the open `games` Competitions
+ * The home page's "Log a Game" card (Games rules): the open Head-to-head or Best score Competitions
  * the linked Participant may log in right now, each opening its page with
  * the Game form up. Nothing when there are none, so a signed-in person no Participant email
  * matches (who can't log) never sees it.

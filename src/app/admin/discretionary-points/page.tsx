@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { DiscretionaryPointsEditor } from "@/components/discretionary-points-editor";
+import { discretionaryAllowsTeams } from "@/lib/discretionary-points";
 import { getDiscretionaryLedger } from "@/queries/discretionary-points";
-import { getPointsEntryFormOptions } from "@/queries/points-entries";
+import { getTargetOptions } from "@/queries/target-options";
 
 import { loadAdminPage } from "../gate";
 
@@ -20,11 +21,10 @@ export default async function AdminDiscretionaryPointsPage() {
 
   const [ledger, options] = await Promise.all([
     getDiscretionaryLedger(warWeek),
-    getPointsEntryFormOptions(warWeek),
+    getTargetOptions(warWeek),
   ]);
-  // A free-for-all War Week has no Teams to give points to.
   const targets = [
-    ...(warWeek.mode === "teams"
+    ...(discretionaryAllowsTeams(warWeek.mode)
       ? options.teams.map((t) => ({
           id: t.id,
           name: t.name,

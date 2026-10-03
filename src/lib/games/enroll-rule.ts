@@ -27,7 +27,7 @@ export type EnrollEntrant = {
  * - `selfEnroll`: the "Participants can enroll" switch.
  * - The close conditions: `built` (the Bracket has Heats), `entrantLimit`
  *   against `entrantCount`, `enrollClosesAt` against `now`, `closed`
- *   (finalized), `hasGames` (a `games` Competition's first Game).
+ *   (finalized), `hasGames` (a Head-to-head or Best score Competition's first Game).
  * - `linked`: the Participant the actor's email links to, with their Team
  *   and their Squad in this Competition.
  * - `scoring` and `entrants`: who is entered.
@@ -96,16 +96,16 @@ export const PARTICIPATION_NO_ENROLL =
 /** The enroll switch on a Best of: the Host sets its two Entrants. */
 export const BEST_OF_NO_ENROLL =
   "A Best of is set by the Host; enrollment is off.";
-/** The enroll switch on an open-to-everyone `games` Competition. */
+/** The enroll switch on an open-to-everyone Head-to-head or Best score Competition. */
 export const OPEN_NO_ENROLL =
   "Everyone can play already; there's no list to enroll in.";
 
 /**
  * Why this Competition offers no enrollment whatever its switch says, or
  * null when it does: a points or `participation` Competition has no Entrant
- * list; a `games`
+ * list; a Head-to-head or Best score
  * Competition open to everyone needs none; a Best of's two Entrants are
- * set by the Host. A Bracket and a fixed-list `games` Competition offer it.
+ * set by the Host. A Bracket and a fixed-list Head-to-head or Best score Competition offer it.
  * `gameConfig` is the parsed config (null for any other Format).
  */
 export function enrollmentUnavailable({

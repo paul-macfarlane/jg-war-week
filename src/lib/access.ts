@@ -242,7 +242,7 @@ export const sameEmail = (a: string | null | undefined, b: string) =>
  * they're in when self-report is on (ADR 0005), and logging Games,
  * changing the Games they logged, and enrolling or withdrawing (ADR 0006),
  * and checking in or out (ADR 0009). Those facet-bound rules bind
- * everyone, Organizers included: a Host or Organizer runs a `games`
+ * everyone, Organizers included: a Host or Organizer runs a Head-to-head or Best score
  * Competition through the Game facet's `runs`, adds Entrants through the
  * picker and marks who took part through `participation.mark`. Pure: the
  * caller loads the actor and the target.
@@ -348,7 +348,7 @@ export function can(
     case "games.close":
     case "games.reopen":
     case "competition.self-enroll":
-      // A `games` Competition's setup, Entrants and close, and the enroll
+      // A Head-to-head or Best score Competition's setup, Entrants and close, and the enroll
       // switch: the Host of this Competition, beside their Bracket twins.
       return hostsCurrent ? null : NOT_HOST;
     case "participation.settings":
@@ -356,7 +356,7 @@ export function can(
     case "participation.close":
     case "participation.reopen":
       // A `participation` Competition's setup, who took part and its close:
-      // the Host of this Competition, like `games`.
+      // the Host of this Competition, like a Head-to-head or Best score Competition.
       return hostsCurrent ? null : NOT_HOST;
     case "placement.edit":
     case "placement.finalize":

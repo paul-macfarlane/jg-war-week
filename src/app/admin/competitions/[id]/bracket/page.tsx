@@ -6,7 +6,7 @@ import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { BracketBuilder } from "@/components/bracket-builder";
 import { getBracket, getSquads } from "@/queries/brackets";
 import { getParticipationView } from "@/queries/participation";
-import { getPointsEntryFormOptions } from "@/queries/points-entries";
+import { getTargetOptions } from "@/queries/target-options";
 
 import { loadAdminPage } from "../../../gate";
 
@@ -26,7 +26,7 @@ export default async function BracketBuilderPage({
 
   const [view, options, participation] = await Promise.all([
     getBracket(id),
-    getPointsEntryFormOptions(warWeek),
+    getTargetOptions(warWeek),
     getParticipationView(id),
   ]);
   // A `participation` Competition is never a Bracket: point to its setup.

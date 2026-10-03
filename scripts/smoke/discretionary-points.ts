@@ -228,26 +228,26 @@ export async function assertDiscretionaryPoints(sessions: {
     await run(
       "updateDiscretionaryPoints and deleteDiscretionaryPoints refuse a Competition's Points Entry",
       async () => {
-        const [typed] = await runQuery<{ id: string }>(
+        const [competitionEntry] = await runQuery<{ id: string }>(
           `select pe.id from points_entry pe
            join competition c on c.id = pe.competition_id
            join war_week w on w.id = c.war_week_id
            where w.edition = 'xi' limit 1`,
         );
-        if (!typed) return "no Competition Points Entry in XI";
+        if (!competitionEntry) return "no Competition Points Entry in XI";
         const update = await callAction(
           ids.updateDiscretionaryPoints,
-          [typed.id, input("1")],
+          [competitionEntry.id, input("1")],
           sessions.organizer,
         );
         const remove = await callAction(
           ids.deleteDiscretionaryPoints,
-          [typed.id],
+          [competitionEntry.id],
           sessions.organizer,
         );
         const [still] = await runQuery<{ n: string }>(
           `select count(*) as n from points_entry where id = $1`,
-          [typed.id],
+          [competitionEntry.id],
         );
         return !update.ok && !remove.ok && still.n === "1"
           ? null

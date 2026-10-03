@@ -477,7 +477,7 @@ describe("can: reporting a Heat's result (self-report)", () => {
   });
 });
 
-describe("can: running a games Competition and the enroll switch", () => {
+describe("can: running a Head-to-head or Best score Competition and the enroll switch", () => {
   it.each(
     cases(
       (

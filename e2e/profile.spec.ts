@@ -12,7 +12,7 @@ import { asOrganizer, participantPageAs } from "./session";
 // puts the Google photo back.
 
 // XI's live demo has a roster and Points Entries, but no logged Games, so
-// the flow logs one for Bouncy Pong (an open individual `games`
+// the flow logs one for Bouncy Pong (an open individual Head-to-head or Best score
 // Competition) and removes it after.
 const PARTICIPANT = "Anthony Conway";
 const OPPONENT = "Alec Haring";
