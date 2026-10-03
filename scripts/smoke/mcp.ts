@@ -454,8 +454,8 @@ export async function assertMcp() {
       fail(participationCheck, `result=${JSON.stringify(participation.raw)}`);
     }
 
-    // Speed Chess is seeded as an individual Placement Competition; its
-    // rows (none until the seeds carry Placements) come by name only.
+    // Speed Chess is seeded as an individual, Finalized Placement Competition
+    // with one row (James Novak, 1st); the sheet comes by name only.
     const placements = await callTool(19, "get_placements", {
       competition: "Speed Chess",
     });
@@ -465,6 +465,7 @@ export async function assertMcp() {
       placements.parsed?.found === true &&
       placements.parsed.competition?.name === "Speed Chess" &&
       Array.isArray(placements.parsed.placements) &&
+      placements.parsed.placements.length === 1 &&
       !JSON.stringify(placements.parsed).includes("@")
     ) {
       ok(placementsCheck);

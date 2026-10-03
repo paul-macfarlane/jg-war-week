@@ -961,29 +961,39 @@
       "name": "HQ Attendance",
       "scoring": "team",
       "group": "Pre-War Week and General",
-      "description": "Attendance at JGHQ over the 14 business days before War Week, tracked with the stairs app."
+      "description": "Attendance at JGHQ over the 14 business days before War Week, tracked with the stairs app.",
+      "placementPoints": [3],
+      "finalized": true,
+      "finalizedAt": "2026-02-27T15:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "AI Survey Completion",
       "scoring": "team",
       "group": "Pre-War Week and General",
-      "description": "The team with the highest completion rate of the AI questionnaire by Tuesday morning."
-    },
-    {
-      "name": "Subjective Points",
-      "scoring": "team",
-      "group": "Pre-War Week and General",
-      "description": "One-point bonuses for each of six secret categories. Not head to head: done or not done."
+      "description": "The team with the highest completion rate of the AI questionnaire by Tuesday morning.",
+      "placementPoints": [1],
+      "finalized": true,
+      "finalizedAt": "2026-02-27T15:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Black Midnight",
       "scoring": "team",
-      "description": "The team with the most people who go from 12:01 AM Sunday to noon with no nonsense."
+      "description": "The team with the most people who go from 12:01 AM Sunday to noon with no nonsense.",
+      "placementPoints": [3],
+      "finalized": true,
+      "finalizedAt": "2026-02-27T15:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Settlers of Catan",
       "scoring": "team",
-      "description": "The 9th annual Catan tournament hosted by Tony Mercadante."
+      "description": "The 9th annual Catan tournament hosted by Tony Mercadante.",
+      "placementPoints": [5],
+      "finalized": true,
+      "finalizedAt": "2026-02-27T15:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Beast Mode Workout",
@@ -993,301 +1003,143 @@
     {
       "name": "Speed Chess",
       "scoring": "team",
-      "description": "Run by Ben Sadick in a new format. Finals Monday night."
+      "description": "Run by Ben Sadick in a new format. Finals Monday night.",
+      "placementPoints": [1.5],
+      "finalized": true,
+      "finalizedAt": "2026-02-27T15:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Beyblades",
       "scoring": "team",
-      "description": "Finals Monday night in Team Room 4's new Beyblade Terrordome."
+      "description": "Finals Monday night in Team Room 4's new Beyblade Terrordome.",
+      "placementPoints": [5],
+      "finalized": true,
+      "finalizedAt": "2026-02-27T15:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Pool",
       "scoring": "team",
-      "description": "Organized by Dom Favata. Preliminaries before War Week, finals Monday night."
+      "description": "Organized by Dom Favata. Preliminaries before War Week, finals Monday night.",
+      "placementPoints": [3],
+      "finalized": true,
+      "finalizedAt": "2026-02-27T15:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Super Smash Bros",
       "scoring": "team",
-      "description": "Paul Macfarlane runs back this classic JG gaming competition."
+      "description": "Paul Macfarlane runs back this classic JG gaming competition.",
+      "placementPoints": [3],
+      "finalized": true,
+      "finalizedAt": "2026-02-27T15:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Bouncy Pong",
       "scoring": "team",
-      "description": "The inaugural Bouncy Ping Pong, run by Casey Snow."
+      "description": "The inaugural Bouncy Ping Pong, run by Casey Snow.",
+      "placementPoints": [3],
+      "finalized": true,
+      "finalizedAt": "2026-02-27T15:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Tuesday Stairs",
       "scoring": "team",
-      "description": "Stairway to Heaven: of course stairs on Tuesday counts."
+      "description": "Stairway to Heaven: of course stairs on Tuesday counts.",
+      "placementPoints": [2, 1],
+      "finalized": true,
+      "finalizedAt": "2026-02-27T15:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "This is Zion",
       "scoring": "team",
-      "group": "Team Night Events"
+      "group": "Team Night Events",
+      "placementPoints": [3],
+      "finalized": true,
+      "finalizedAt": "2026-02-27T15:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Hard Line / White Rabbit",
       "scoring": "team",
-      "group": "Team Night Events"
+      "group": "Team Night Events",
+      "placementPoints": [2, 1],
+      "finalized": true,
+      "finalizedAt": "2026-02-27T15:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Cypher",
       "scoring": "team",
-      "group": "Team Night Events"
+      "group": "Team Night Events",
+      "placementPoints": [2, 1],
+      "finalized": true,
+      "finalizedAt": "2026-02-27T15:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Red Pill / Blue Pill",
       "scoring": "team",
-      "group": "Team Night Events"
+      "group": "Team Night Events",
+      "placementPoints": [3],
+      "finalized": true,
+      "finalizedAt": "2026-02-27T15:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "There is No Spoon",
       "scoring": "team",
-      "group": "Team Night Events"
+      "group": "Team Night Events",
+      "placementPoints": [3],
+      "finalized": true,
+      "finalizedAt": "2026-02-27T15:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "The Keymaker",
       "scoring": "team",
-      "group": "Team Night Events"
+      "group": "Team Night Events",
+      "placementPoints": [3],
+      "finalized": true,
+      "finalizedAt": "2026-02-27T15:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Deja Vu",
       "scoring": "team",
-      "group": "Team Night Events"
+      "group": "Team Night Events",
+      "placementPoints": [3],
+      "finalized": true,
+      "finalizedAt": "2026-02-27T15:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Guns, Lots of Guns",
       "scoring": "team",
-      "group": "Team Night Events"
+      "group": "Team Night Events",
+      "placementPoints": [3],
+      "finalized": true,
+      "finalizedAt": "2026-02-27T15:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Electric City Matrix",
       "scoring": "team",
-      "group": "Team Night Events"
+      "group": "Team Night Events",
+      "placementPoints": [5],
+      "finalized": true,
+      "finalizedAt": "2026-02-27T15:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Winning the Day Challenge",
       "scoring": "individual",
       "countsTowardTeam": false,
       "description": "Complete 10 wellness tasks to have the best day possible. Recognition only; does not count toward team totals."
-    }
-  ],
-  "pointsEntries": [
-    {
-      "key": "hq-attendance-red",
-      "competition": "HQ Attendance",
-      "team": "Red",
-      "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "ai-survey-completion-red",
-      "competition": "AI Survey Completion",
-      "team": "Red",
-      "points": 1,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "subjective-points-red",
-      "competition": "Subjective Points",
-      "team": "Red",
-      "points": 6,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "subjective-points-blue",
-      "competition": "Subjective Points",
-      "team": "Blue",
-      "points": 4,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "black-midnight-blue",
-      "competition": "Black Midnight",
-      "team": "Blue",
-      "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "settlers-of-catan-red",
-      "competition": "Settlers of Catan",
-      "team": "Red",
-      "points": 5,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "speed-chess-red",
-      "competition": "Speed Chess",
-      "team": "Red",
-      "points": 1.5,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "beyblades-blue",
-      "competition": "Beyblades",
-      "team": "Blue",
-      "points": 5,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "pool-red",
-      "competition": "Pool",
-      "team": "Red",
-      "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "super-smash-bros-blue",
-      "competition": "Super Smash Bros",
-      "team": "Blue",
-      "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "bouncy-pong-blue",
-      "competition": "Bouncy Pong",
-      "team": "Blue",
-      "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "tuesday-stairs-red",
-      "competition": "Tuesday Stairs",
-      "team": "Red",
-      "points": 2,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "tuesday-stairs-blue",
-      "competition": "Tuesday Stairs",
-      "team": "Blue",
-      "points": 1,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "this-is-zion-red",
-      "competition": "This is Zion",
-      "team": "Red",
-      "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "hard-line-white-rabbit-red",
-      "competition": "Hard Line / White Rabbit",
-      "team": "Red",
-      "points": 1,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "hard-line-white-rabbit-blue",
-      "competition": "Hard Line / White Rabbit",
-      "team": "Blue",
-      "points": 2,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "electric-city-matrix-red",
-      "competition": "Electric City Matrix",
-      "team": "Red",
-      "points": 5,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "cypher-red",
-      "competition": "Cypher",
-      "team": "Red",
-      "points": 2,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "cypher-blue",
-      "competition": "Cypher",
-      "team": "Blue",
-      "points": 1,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "red-pill-blue-pill-blue",
-      "competition": "Red Pill / Blue Pill",
-      "team": "Blue",
-      "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "there-is-no-spoon-blue",
-      "competition": "There is No Spoon",
-      "team": "Blue",
-      "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "the-keymaker-blue",
-      "competition": "The Keymaker",
-      "team": "Blue",
-      "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "deja-vu-red",
-      "competition": "Deja Vu",
-      "team": "Red",
-      "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
-    },
-    {
-      "key": "guns-lots-of-guns-red",
-      "competition": "Guns, Lots of Guns",
-      "team": "Red",
-      "points": 3,
-      "note": "From the final scoreboard on the War Week 2026 wiki page",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-27T15:00:00-05:00"
     }
   ],
   "awards": [],
@@ -1397,5 +1249,157 @@
     }
   ],
   "wikiUrl": "https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/home/war-week/war-week-2026",
-  "winner": "Red"
+  "winner": "Red",
+  "placements": [
+    {
+      "key": "hq-attendance-red",
+      "competition": "HQ Attendance",
+      "team": "Red",
+      "place": 1
+    },
+    {
+      "key": "ai-survey-completion-red",
+      "competition": "AI Survey Completion",
+      "team": "Red",
+      "place": 1
+    },
+    {
+      "key": "black-midnight-blue",
+      "competition": "Black Midnight",
+      "team": "Blue",
+      "place": 1
+    },
+    {
+      "key": "settlers-of-catan-red",
+      "competition": "Settlers of Catan",
+      "team": "Red",
+      "place": 1
+    },
+    {
+      "key": "speed-chess-red",
+      "competition": "Speed Chess",
+      "team": "Red",
+      "place": 1
+    },
+    {
+      "key": "beyblades-blue",
+      "competition": "Beyblades",
+      "team": "Blue",
+      "place": 1
+    },
+    {
+      "key": "pool-red",
+      "competition": "Pool",
+      "team": "Red",
+      "place": 1
+    },
+    {
+      "key": "super-smash-bros-blue",
+      "competition": "Super Smash Bros",
+      "team": "Blue",
+      "place": 1
+    },
+    {
+      "key": "bouncy-pong-blue",
+      "competition": "Bouncy Pong",
+      "team": "Blue",
+      "place": 1
+    },
+    {
+      "key": "tuesday-stairs-red",
+      "competition": "Tuesday Stairs",
+      "team": "Red",
+      "place": 1
+    },
+    {
+      "key": "tuesday-stairs-blue",
+      "competition": "Tuesday Stairs",
+      "team": "Blue",
+      "place": 2
+    },
+    {
+      "key": "this-is-zion-red",
+      "competition": "This is Zion",
+      "team": "Red",
+      "place": 1
+    },
+    {
+      "key": "hard-line-white-rabbit-blue",
+      "competition": "Hard Line / White Rabbit",
+      "team": "Blue",
+      "place": 1
+    },
+    {
+      "key": "hard-line-white-rabbit-red",
+      "competition": "Hard Line / White Rabbit",
+      "team": "Red",
+      "place": 2
+    },
+    {
+      "key": "electric-city-matrix-red",
+      "competition": "Electric City Matrix",
+      "team": "Red",
+      "place": 1
+    },
+    {
+      "key": "cypher-red",
+      "competition": "Cypher",
+      "team": "Red",
+      "place": 1
+    },
+    {
+      "key": "cypher-blue",
+      "competition": "Cypher",
+      "team": "Blue",
+      "place": 2
+    },
+    {
+      "key": "red-pill-blue-pill-blue",
+      "competition": "Red Pill / Blue Pill",
+      "team": "Blue",
+      "place": 1
+    },
+    {
+      "key": "there-is-no-spoon-blue",
+      "competition": "There is No Spoon",
+      "team": "Blue",
+      "place": 1
+    },
+    {
+      "key": "the-keymaker-blue",
+      "competition": "The Keymaker",
+      "team": "Blue",
+      "place": 1
+    },
+    {
+      "key": "deja-vu-red",
+      "competition": "Deja Vu",
+      "team": "Red",
+      "place": 1
+    },
+    {
+      "key": "guns-lots-of-guns-red",
+      "competition": "Guns, Lots of Guns",
+      "team": "Red",
+      "place": 1
+    }
+  ],
+  "discretionaryPoints": [
+    {
+      "key": "discretionary-subjective-points-red",
+      "team": "Red",
+      "points": 6,
+      "reason": "Subjective Points",
+      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
+      "enteredAt": "2026-02-27T15:00:00-05:00"
+    },
+    {
+      "key": "discretionary-subjective-points-blue",
+      "team": "Blue",
+      "points": 4,
+      "reason": "Subjective Points",
+      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
+      "enteredAt": "2026-02-27T15:00:00-05:00"
+    }
+  ]
 }

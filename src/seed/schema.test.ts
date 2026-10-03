@@ -42,7 +42,7 @@ describe("warWeekSeedSchema", () => {
     expect(seed.participants.length).toBeGreaterThan(0);
     expect(seed.competitions.length).toBeGreaterThan(0);
     expect(seed.days.some((d) => d.scheduleItems.length > 0)).toBe(true);
-    expect(seed.pointsEntries.length).toBeGreaterThan(0);
+    expect(seed.placements.length).toBeGreaterThan(0);
     expect(seed.awards.length).toBeGreaterThan(0);
     expect(seed.announcements.length).toBeGreaterThan(0);
     expect(seed.faqItems.length).toBeGreaterThan(0);
@@ -328,6 +328,12 @@ describe("warWeekSeedSchema", () => {
     });
   });
 
+  it("refuses the retired pointsEntries list rather than dropping it", () => {
+    expect(
+      rejectionOf({ ...loadFixture(), pointsEntries: [] }).join("|"),
+    ).toContain("pointsEntries is gone");
+  });
+
   describe("Discretionary points", () => {
     function withDiscretionary(entry: Record<string, unknown>, rest = {}) {
       return {
@@ -383,109 +389,6 @@ describe("warWeekSeedSchema", () => {
       ).toContain(
         'discretionaryPoints.0.participant: unknown Participant "Nobody"',
       );
-    });
-
-    it("rejects a key that is also a Points Entry key", () => {
-      const seed = withDiscretionary(
-        { team: "Red", key: "clash" },
-        {
-          pointsEntries: [
-            {
-              key: "clash",
-              competition: "Black Midnight",
-              team: "Red",
-              points: 1,
-              enteredByEmail: "organizer@jahnelgroup.com",
-              enteredAt: "2026-02-23T20:00:00-05:00",
-            },
-          ],
-        },
-      );
-      expect(rejectionOf(seed)).toContain(
-        'discretionaryPoints.0.key: Discretionary points key "clash" is already a Points Entry key',
-      );
-    });
-  });
-
-  describe("Points Entries", () => {
-    function withEntry(entry: Record<string, unknown>) {
-      const fixture = loadFixture();
-      return {
-        ...fixture,
-        pointsEntries: [
-          {
-            key: "fixture-entry",
-            enteredByEmail: "organizer@jahnelgroup.com",
-            enteredAt: "2026-02-23T20:00:00-05:00",
-            points: 5,
-            ...entry,
-          },
-        ],
-      };
-    }
-
-    it("rejects an entry with both a team and a participant", () => {
-      expect(
-        rejectionOf(
-          withEntry({
-            competition: "Black Midnight",
-            team: "Red",
-            participant: "Paul Macfarlane",
-          }),
-        ),
-      ).toContain(
-        "pointsEntries.0.team: a Points Entry must target exactly one of team or participant",
-      );
-    });
-
-    it("rejects an entry with neither a team nor a participant", () => {
-      expect(
-        rejectionOf(withEntry({ competition: "Black Midnight" })),
-      ).toContain(
-        "pointsEntries.0.team: a Points Entry must target exactly one of team or participant",
-      );
-    });
-
-    it("rejects a participant target on a team Competition", () => {
-      expect(
-        rejectionOf(
-          withEntry({
-            competition: "Black Midnight",
-            participant: "Paul Macfarlane",
-          }),
-        ),
-      ).toContain(
-        'pointsEntries.0.participant: "Black Midnight" is a team Competition, so its Points Entries must target a team',
-      );
-    });
-
-    it("rejects a team target on an individual Competition", () => {
-      expect(
-        rejectionOf(withEntry({ competition: "Speed Chess", team: "Red" })),
-      ).toContain(
-        'pointsEntries.0.team: "Speed Chess" is an individual Competition, so its Points Entries must target a participant',
-      );
-    });
-
-    it("rejects an unknown Competition or target", () => {
-      const issues = rejectionOf(
-        withEntry({ competition: "Pod Racing", team: "Green" }),
-      );
-      expect(issues).toContain(
-        'pointsEntries.0.competition: unknown Competition "Pod Racing"',
-      );
-      expect(issues).toContain('pointsEntries.0.team: unknown Team "Green"');
-    });
-
-    it("accepts fractional points", () => {
-      const result = warWeekSeedSchema.safeParse(
-        withEntry({
-          competition: "Black Midnight",
-          team: "Red",
-          points: 1.5,
-        }),
-      );
-      expect(result.success).toBe(true);
     });
   });
 
@@ -712,7 +615,7 @@ describe("warWeekSeedSchema Placements", () => {
       { name: "Quiz", scoring: "team" },
       { name: "Pong", scoring: "individual", format: "head-to-head" },
     ],
-    pointsEntries: [],
+    placements: [],
     days: [],
   });
   const participant = () => loadFixture().participants[0].displayName;

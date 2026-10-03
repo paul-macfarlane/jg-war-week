@@ -6,11 +6,7 @@ import { FINALE_AWARDS_LAYOUTS, WAR_WEEK_STATUSES } from "@/lib/enums";
 import { finaleSlideSeedSchema } from "@/lib/finale-slides";
 import { jgEmailSchema } from "@/lib/jg-email";
 import { MAX_SCORE } from "@/lib/placement/input";
-import {
-  pointsSchema as points,
-  pointsEntryNoteSchema,
-  pointsEntryTargetError,
-} from "@/lib/points-entry";
+import { pointsSchema as points } from "@/lib/points-entry";
 import { contentInputSchema } from "@/lib/rich-text/content";
 import {
   competitionSeedSchema,
@@ -29,7 +25,8 @@ import {
 // (ADR 0001); the seed composes them into the file format.
 
 /**
- * A stable id for a seeded organizer-owned record (Points Entry, Award,
+ * A stable id for a seeded organizer-owned record (Placement, Discretionary
+ * points, Award,
  * Announcement), unique within its list. The loader inserts a keyed record
  * only if it is absent and never updates or deletes it; see CONTEXT.md.
  */
@@ -45,27 +42,6 @@ export const daySeedSchema = z.object({
 });
 
 export type DaySeed = z.infer<typeof daySeedSchema>;
-
-export const pointsEntrySeedSchema = z
-  .object({
-    key: seedKey,
-    /** A Competition name from this seed. */
-    competition: z.string().min(1).max(120),
-    /** A Team name from this seed; exactly one of team or participant. */
-    team: z.string().min(1).max(80).nullish(),
-    /** A Participant display name from this seed. */
-    participant: z.string().min(1).max(120).nullish(),
-    points,
-    note: pointsEntryNoteSchema.nullish(),
-    enteredByEmail: emailSchema,
-    enteredAt: z.iso.datetime({ offset: true }),
-  })
-  .refine((entry) => (entry.team == null) !== (entry.participant == null), {
-    message: "a Points Entry must target exactly one of team or participant",
-    path: ["team"],
-  });
-
-export type PointsEntrySeed = z.infer<typeof pointsEntrySeedSchema>;
 
 /**
  * Discretionary points: a Points Entry with no Competition, to one Team or
@@ -175,7 +151,13 @@ export const warWeekSeedSchema = z
     teams: z.array(teamSeedSchema).default([]),
     participants: z.array(participantSeedSchema).default([]),
     competitions: z.array(competitionSeedSchema).default([]),
-    pointsEntries: z.array(pointsEntrySeedSchema).default([]),
+    // zod would strip an unknown key and lose the entries silently, so refuse it.
+    pointsEntries: z
+      .never({
+        error:
+          "pointsEntries is gone; use placements (with finalized) or discretionaryPoints",
+      })
+      .optional(),
     discretionaryPoints: z.array(discretionaryPointsSeedSchema).default([]),
     placements: z.array(placementSeedSchema).default([]),
     awards: z.array(awardSeedSchema).default([]),
@@ -258,29 +240,12 @@ export const warWeekSeedSchema = z
       "Competition name",
     );
     unique(
-      "pointsEntries",
-      seed.pointsEntries,
-      (e) => e.key,
-      "key",
-      "Points Entry key",
-    );
-    unique(
       "discretionaryPoints",
       seed.discretionaryPoints,
       (e) => e.key,
       "key",
       "Discretionary points key",
     );
-    // Both lists seed `points_entry`, whose seed key is unique per War Week.
-    const pointsEntryKeys = new Set(seed.pointsEntries.map((e) => e.key));
-    seed.discretionaryPoints.forEach((e, index) => {
-      if (pointsEntryKeys.has(e.key)) {
-        issue(
-          ["discretionaryPoints", index, "key"],
-          `Discretionary points key "${e.key}" is already a Points Entry key`,
-        );
-      }
-    });
     unique("placements", seed.placements, (p) => p.key, "key", "Placement key");
     unique("awards", seed.awards, (a) => a.key, "key", "Award key");
     unique(
@@ -338,34 +303,6 @@ export const warWeekSeedSchema = z
         }
       }),
     );
-
-    seed.pointsEntries.forEach((entry, index) => {
-      const path = ["pointsEntries", index];
-      const comp = competitions.get(entry.competition);
-      if (!comp) {
-        issue(
-          [...path, "competition"],
-          `unknown Competition "${entry.competition}"`,
-        );
-      }
-      if (entry.team != null) {
-        if (!teams.has(entry.team)) {
-          issue([...path, "team"], `unknown Team "${entry.team}"`);
-        }
-        const refusal = comp && pointsEntryTargetError(comp, "team");
-        if (refusal) issue([...path, "team"], refusal);
-      }
-      if (entry.participant != null) {
-        if (!participants.has(entry.participant)) {
-          issue(
-            [...path, "participant"],
-            `unknown Participant "${entry.participant}"`,
-          );
-        }
-        const refusal = comp && pointsEntryTargetError(comp, "participant");
-        if (refusal) issue([...path, "participant"], refusal);
-      }
-    });
 
     seed.discretionaryPoints.forEach((entry, index) => {
       const path = ["discretionaryPoints", index];

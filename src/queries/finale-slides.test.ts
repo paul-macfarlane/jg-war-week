@@ -99,8 +99,13 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
       const { getChampions } = await import("@/queries/finale-slides");
       const xi = await loadXiDemo(tx);
 
-      // Nothing is finalized in the demo as seeded.
-      expect(await getChampions(xi, tx)).toEqual([]);
+      // As seeded, only the demo's twelve Finalized Placement Competitions
+      // have a champion; no Bracket or Games Competition is finalized.
+      const seeded = await getChampions(xi, tx);
+      expect(seeded).toHaveLength(12);
+      expect(seeded.map((champion) => champion.format)).toEqual(
+        Array(12).fill("placement"),
+      );
 
       const people = await tx
         .select({ id: schema.participant.id })
@@ -159,7 +164,9 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
       await generated(foosball, c, 5);
       await generated(foosball, a, 3);
 
-      const champions = await getChampions(xi, tx);
+      const champions = (await getChampions(xi, tx)).filter(
+        (champion) => champion.format !== "placement",
+      );
       expect(
         champions.map((champion) => ({
           competition: champion.competition,

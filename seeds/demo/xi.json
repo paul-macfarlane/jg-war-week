@@ -955,13 +955,21 @@
       "name": "HQ Attendance",
       "scoring": "team",
       "group": "Pre-War Week and General",
-      "description": "Attendance at JGHQ over the 14 business days before War Week, tracked with the stairs app."
+      "description": "Attendance at JGHQ over the 14 business days before War Week, tracked with the stairs app.",
+      "placementPoints": [2, 1],
+      "finalized": true,
+      "finalizedAt": "2026-02-22T09:01:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "AI Survey Completion",
       "scoring": "team",
       "group": "Pre-War Week and General",
-      "description": "The team with the highest completion rate of the AI questionnaire by Tuesday morning."
+      "description": "The team with the highest completion rate of the AI questionnaire by Tuesday morning.",
+      "placementPoints": [1],
+      "finalized": true,
+      "finalizedAt": "2026-02-24T09:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Subjective Points",
@@ -972,44 +980,70 @@
     {
       "name": "Black Midnight",
       "scoring": "team",
-      "description": "The team with the most people who go from 12:01 AM Sunday to noon with no nonsense."
+      "description": "The team with the most people who go from 12:01 AM Sunday to noon with no nonsense.",
+      "placementPoints": [3],
+      "finalized": true,
+      "finalizedAt": "2026-02-22T12:30:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Settlers of Catan",
       "scoring": "individual",
       "countsTowardTeam": true,
       "placementPoints": [5, 3, 1],
-      "description": "The 9th annual Catan tournament hosted by Tony Mercadante."
+      "description": "The 9th annual Catan tournament hosted by Tony Mercadante.",
+      "finalized": true,
+      "finalizedAt": "2026-02-22T21:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Beast Mode Workout",
       "scoring": "team",
-      "description": "The team with the most people who complete Lucier's workout, at JGHQ or virtually."
+      "description": "The team with the most people who complete Lucier's workout, at JGHQ or virtually.",
+      "placementPoints": [3],
+      "finalized": true,
+      "finalizedAt": "2026-02-23T08:30:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Speed Chess",
       "scoring": "individual",
       "countsTowardTeam": true,
-      "description": "Run by Ben Sadick in a new format. Finals Monday night."
+      "description": "Run by Ben Sadick in a new format. Finals Monday night.",
+      "placementPoints": [1.5],
+      "finalized": true,
+      "finalizedAt": "2026-02-23T21:30:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Beyblades",
       "scoring": "individual",
       "countsTowardTeam": true,
       "placementPoints": [5, 3, 1],
-      "description": "Finals Monday night in Team Room 4's new Beyblade Terrordome."
+      "description": "Finals Monday night in Team Room 4's new Beyblade Terrordome.",
+      "finalized": true,
+      "finalizedAt": "2026-02-23T21:45:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Pool",
       "scoring": "individual",
       "countsTowardTeam": true,
-      "description": "Organized by Dom Favata. Preliminaries before War Week, finals Monday night."
+      "description": "Organized by Dom Favata. Preliminaries before War Week, finals Monday night.",
+      "placementPoints": [3],
+      "finalized": true,
+      "finalizedAt": "2026-02-23T22:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Super Smash Bros",
       "scoring": "individual",
       "countsTowardTeam": true,
-      "description": "Paul Macfarlane runs back this classic JG gaming competition."
+      "description": "Paul Macfarlane runs back this classic JG gaming competition.",
+      "placementPoints": [3],
+      "finalized": true,
+      "finalizedAt": "2026-02-23T22:10:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Bouncy Pong",
@@ -1017,7 +1051,10 @@
       "countsTowardTeam": true,
       "placementPoints": [3, 2, 1],
       "format": "head-to-head",
-      "gameConfig": { "drawsAllowed": false, "bestOf": null },
+      "gameConfig": {
+        "drawsAllowed": false,
+        "bestOf": null
+      },
       "entrantsOpen": true,
       "description": "The inaugural Bouncy Ping Pong, run by Casey Snow."
     },
@@ -1025,19 +1062,31 @@
       "name": "Tuesday Stairs",
       "scoring": "team",
       "format": "best-score",
-      "gameConfig": { "count": "total", "betterIs": "higher", "unit": "trips" },
+      "gameConfig": {
+        "count": "total",
+        "betterIs": "higher",
+        "unit": "trips"
+      },
       "entrantsOpen": true,
       "description": "Stairway to Heaven: of course stairs on Tuesday counts."
     },
     {
       "name": "This is Zion",
       "scoring": "team",
-      "group": "Team Night Events"
+      "group": "Team Night Events",
+      "placementPoints": [3],
+      "finalized": true,
+      "finalizedAt": "2026-02-24T19:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Hard Line / White Rabbit",
       "scoring": "team",
-      "group": "Team Night Events"
+      "group": "Team Night Events",
+      "placementPoints": [3],
+      "finalized": true,
+      "finalizedAt": "2026-02-24T19:30:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Cypher",
@@ -1088,118 +1137,11 @@
       "name": "Winning the Day Challenge",
       "scoring": "individual",
       "countsTowardTeam": false,
-      "description": "Complete 10 wellness tasks to have the best day possible. Recognition only; does not count toward team totals."
-    }
-  ],
-  "pointsEntries": [
-    {
-      "key": "hq-attendance-red",
-      "competition": "HQ Attendance",
-      "team": "Red",
-      "points": 2,
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-22T09:00:00-05:00"
-    },
-    {
-      "key": "hq-attendance-blue",
-      "competition": "HQ Attendance",
-      "team": "Blue",
-      "points": 1,
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-22T09:01:00-05:00"
-    },
-    {
-      "key": "black-midnight-blue",
-      "competition": "Black Midnight",
-      "team": "Blue",
-      "points": 3,
-      "note": "Most finishers",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-22T12:30:00-05:00"
-    },
-    {
-      "key": "catan-anthony-conway",
-      "competition": "Settlers of Catan",
-      "participant": "Anthony Conway",
-      "points": 5,
-      "note": "Catan champion",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-22T21:00:00-05:00"
-    },
-    {
-      "key": "beast-mode-red",
-      "competition": "Beast Mode Workout",
-      "team": "Red",
-      "points": 3,
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-23T08:30:00-05:00"
-    },
-    {
-      "key": "ai-survey-blue",
-      "competition": "AI Survey Completion",
-      "team": "Blue",
-      "points": 1,
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-24T09:00:00-05:00"
-    },
-    {
-      "key": "speed-chess-james-novak",
-      "competition": "Speed Chess",
-      "participant": "James Novak",
-      "points": 1.5,
-      "note": "Tied for first",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-23T21:30:00-05:00"
-    },
-    {
-      "key": "beyblades-jory-hutchins",
-      "competition": "Beyblades",
-      "participant": "Jory Hutchins",
-      "points": 5,
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-23T21:45:00-05:00"
-    },
-    {
-      "key": "pool-peter-hodges",
-      "competition": "Pool",
-      "participant": "Peter Hodges",
-      "points": 3,
-      "note": "Won on the last ball",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-23T22:00:00-05:00"
-    },
-    {
-      "key": "smash-tommy-kneeland",
-      "competition": "Super Smash Bros",
-      "participant": "Tommy Kneeland",
-      "points": 3,
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-23T22:10:00-05:00"
-    },
-    {
-      "key": "this-is-zion-red",
-      "competition": "This is Zion",
-      "team": "Red",
-      "points": 3,
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-24T19:00:00-05:00"
-    },
-    {
-      "key": "hard-line-blue",
-      "competition": "Hard Line / White Rabbit",
-      "team": "Blue",
-      "points": 3,
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-24T19:30:00-05:00"
-    },
-    {
-      "key": "winning-the-day-dani-milliken",
-      "competition": "Winning the Day Challenge",
-      "participant": "Dani Milliken",
-      "points": 1,
-      "note": "First to finish all 10 wellness tasks",
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-25T13:00:00-05:00"
+      "description": "Complete 10 wellness tasks to have the best day possible. Recognition only; does not count toward team totals.",
+      "placementPoints": [1],
+      "finalized": true,
+      "finalizedAt": "2026-02-25T13:00:00-05:00",
+      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
     }
   ],
   "awards": [
@@ -1274,7 +1216,9 @@
           },
           {
             "type": "video",
-            "attrs": { "src": "https://www.youtube.com/watch?v=vKQi3bBA1y8" }
+            "attrs": {
+              "src": "https://www.youtube.com/watch?v=vKQi3bBA1y8"
+            }
           }
         ]
       }
@@ -1465,12 +1409,24 @@
   "wikiUrl": "https://sites.google.com/jahnelgroup.com/jahnel-group-wiki/home/war-week/war-week-2026",
   "winner": null,
   "finaleSlides": [
-    { "kind": "title" },
-    { "kind": "numbers" },
-    { "kind": "awards" },
-    { "kind": "champions" },
-    { "kind": "standings" },
-    { "kind": "winner" },
+    {
+      "kind": "title"
+    },
+    {
+      "kind": "numbers"
+    },
+    {
+      "kind": "awards"
+    },
+    {
+      "kind": "champions"
+    },
+    {
+      "kind": "standings"
+    },
+    {
+      "kind": "winner"
+    },
     {
       "kind": "custom",
       "heading": "Thank you",
@@ -1488,6 +1444,86 @@
           }
         ]
       }
+    }
+  ],
+  "placements": [
+    {
+      "key": "hq-attendance-red",
+      "competition": "HQ Attendance",
+      "team": "Red",
+      "place": 1
+    },
+    {
+      "key": "hq-attendance-blue",
+      "competition": "HQ Attendance",
+      "team": "Blue",
+      "place": 2
+    },
+    {
+      "key": "black-midnight-blue",
+      "competition": "Black Midnight",
+      "team": "Blue",
+      "place": 1
+    },
+    {
+      "key": "settlers-of-catan-anthony-conway",
+      "competition": "Settlers of Catan",
+      "participant": "Anthony Conway",
+      "place": 1
+    },
+    {
+      "key": "beast-mode-workout-red",
+      "competition": "Beast Mode Workout",
+      "team": "Red",
+      "place": 1
+    },
+    {
+      "key": "ai-survey-completion-blue",
+      "competition": "AI Survey Completion",
+      "team": "Blue",
+      "place": 1
+    },
+    {
+      "key": "speed-chess-james-novak",
+      "competition": "Speed Chess",
+      "participant": "James Novak",
+      "place": 1
+    },
+    {
+      "key": "beyblades-jory-hutchins",
+      "competition": "Beyblades",
+      "participant": "Jory Hutchins",
+      "place": 1
+    },
+    {
+      "key": "pool-peter-hodges",
+      "competition": "Pool",
+      "participant": "Peter Hodges",
+      "place": 1
+    },
+    {
+      "key": "super-smash-bros-tommy-kneeland",
+      "competition": "Super Smash Bros",
+      "participant": "Tommy Kneeland",
+      "place": 1
+    },
+    {
+      "key": "this-is-zion-red",
+      "competition": "This is Zion",
+      "team": "Red",
+      "place": 1
+    },
+    {
+      "key": "hard-line-white-rabbit-blue",
+      "competition": "Hard Line / White Rabbit",
+      "team": "Blue",
+      "place": 1
+    },
+    {
+      "key": "winning-the-day-challenge-dani-milliken",
+      "competition": "Winning the Day Challenge",
+      "participant": "Dani Milliken",
+      "place": 1
     }
   ]
 }

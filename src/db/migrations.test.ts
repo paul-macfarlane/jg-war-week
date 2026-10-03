@@ -1,6 +1,4 @@
 import { sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
 import {
   cpSync,
   mkdtempSync,
@@ -15,14 +13,17 @@ import { Client } from "pg";
 import { describe, expect, it } from "vitest";
 
 import { isLocalDatabaseUrl } from "@/db/local-url";
+import {
+  DRIZZLE_DIR,
+  migrateTo,
+  withThrowawayDatabase,
+} from "@/db/test-database";
 import { inRolledBackTransaction } from "@/db/test-transaction";
 
 const isLocalDatabase = isLocalDatabaseUrl(
   process.env.DATABASE_URL,
   process.env.DATABASE_DRIVER,
 );
-
-const DRIZZLE_DIR = path.resolve(__dirname, "../../drizzle");
 
 /** A committed migration's statements, found by its fixed tag. */
 function statementsOf(tag: string): string[] {
@@ -101,13 +102,6 @@ describe.skipIf(!isLocalDatabase)(
   },
 );
 
-/** The URL of another database on the same server as `DATABASE_URL`. */
-function databaseUrl(name: string): string {
-  const url = new URL(process.env.DATABASE_URL!);
-  url.pathname = `/${name}`;
-  return url.toString();
-}
-
 /** A copy of `drizzle/` whose journal stops at migration `lastIdx`. */
 function migrationsUpTo(lastIdx: number): string {
   const dir = mkdtempSync(path.join(tmpdir(), "r16-migrations-"));
@@ -119,16 +113,6 @@ function migrationsUpTo(lastIdx: number): string {
   journal.entries = journal.entries.filter((entry) => entry.idx <= lastIdx);
   writeFileSync(journalPath, JSON.stringify(journal));
   return dir;
-}
-
-async function migrateTo(url: string, migrationsFolder: string) {
-  const client = new Client({ connectionString: url });
-  await client.connect();
-  try {
-    await migrate(drizzle(client), { migrationsFolder });
-  } finally {
-    await client.end();
-  }
 }
 
 // Fixed ids, so the assertions read like the rows they describe.
@@ -230,122 +214,121 @@ describe.skipIf(!isLocalDatabase)(
   "migrating populated pre-R16 data to the Competition model",
   () => {
     it("commits, maps every old shape to its new Format and backfills each Points Entry's War Week", async () => {
-      const name = `r16_migration_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
-      const server = new Client({ connectionString: databaseUrl("postgres") });
-      await server.connect();
       const upTo0027 = migrationsUpTo(27);
       try {
-        await server.query(`create database "${name}"`);
-        const url = databaseUrl(name);
-        await migrateTo(url, upTo0027);
+        await withThrowawayDatabase(
+          async (url) => {
+            await migrateTo(url, upTo0027);
 
-        const client = new Client({ connectionString: url });
-        await client.connect();
-        try {
-          await client.query(PRE_R16_ROWS);
+            const client = new Client({ connectionString: url });
+            await client.connect();
+            try {
+              await client.query(PRE_R16_ROWS);
 
-          await migrateTo(url, DRIZZLE_DIR);
+              await migrateTo(url, DRIZZLE_DIR);
 
-          const applied = await client.query(
-            "select count(*)::int as n from drizzle.__drizzle_migrations",
-          );
-          expect(applied.rows[0].n).toBe(29);
+              const applied = await client.query(
+                "select count(*)::int as n from drizzle.__drizzle_migrations",
+              );
+              expect(applied.rows[0].n).toBe(29);
 
-          const formats = await client.query<{ id: string; format: string }>(
-            "select id, format::text from competition",
-          );
-          expect(
-            Object.fromEntries(formats.rows.map((r) => [r.id, r.format])),
-          ).toEqual({
-            [POINTS_X]: "placement",
-            [POINTS_XI]: "placement",
-            [HEAD_TO_HEAD]: "head-to-head",
-            [BEST_SCORE]: "best-score",
-            [RANKED]: "placement",
-            [PER_PERSON]: "participation",
-            [RANKED_TEAM]: "participation",
-            [BRACKET]: "single-elimination",
-          });
+              const formats = await client.query<{
+                id: string;
+                format: string;
+              }>("select id, format::text from competition");
+              expect(
+                Object.fromEntries(formats.rows.map((r) => [r.id, r.format])),
+              ).toEqual({
+                [POINTS_X]: "placement",
+                [POINTS_XI]: "placement",
+                [HEAD_TO_HEAD]: "head-to-head",
+                [BEST_SCORE]: "best-score",
+                [RANKED]: "placement",
+                [PER_PERSON]: "participation",
+                [RANKED_TEAM]: "participation",
+                [BRACKET]: "single-elimination",
+              });
 
-          const ranked = await client.query(
-            `select finalized_at, game_config, logging_closes_at, entrants_open,
-              (select count(*)::int from game where competition_id = $1) as games,
-              (select count(*)::int from entrant where competition_id = $1) as entrants,
-              (select count(*)::int from points_entry where competition_id = $1) as entries
-            from competition where id = $1`,
-            [RANKED],
-          );
-          expect(ranked.rows[0]).toEqual({
-            finalized_at: null,
-            game_config: null,
-            logging_closes_at: null,
-            entrants_open: false,
-            games: 0,
-            entrants: 0,
-            entries: 0,
-          });
+              const ranked = await client.query(
+                `select finalized_at, game_config, logging_closes_at, entrants_open,
+                (select count(*)::int from game where competition_id = $1) as games,
+                (select count(*)::int from entrant where competition_id = $1) as entrants,
+                (select count(*)::int from points_entry where competition_id = $1) as entries
+              from competition where id = $1`,
+                [RANKED],
+              );
+              expect(ranked.rows[0]).toEqual({
+                finalized_at: null,
+                game_config: null,
+                logging_closes_at: null,
+                entrants_open: false,
+                games: 0,
+                entrants: 0,
+                entries: 0,
+              });
 
-          const headToHead = await client.query(
-            `select game_config,
-              (select count(*)::int from game where competition_id = $1) as games,
-              (select count(*)::int from entrant where competition_id = $1) as entrants
-            from competition where id = $1`,
-            [HEAD_TO_HEAD],
-          );
-          expect(headToHead.rows[0]).toEqual({
-            game_config: { drawsAllowed: false, bestOf: null },
-            games: 1,
-            entrants: 2,
-          });
+              const headToHead = await client.query(
+                `select game_config,
+                (select count(*)::int from game where competition_id = $1) as games,
+                (select count(*)::int from entrant where competition_id = $1) as entrants
+              from competition where id = $1`,
+                [HEAD_TO_HEAD],
+              );
+              expect(headToHead.rows[0]).toEqual({
+                game_config: { drawsAllowed: false, bestOf: null },
+                games: 1,
+                entrants: 2,
+              });
 
-          const teamParticipation = await client.query<{
-            id: string;
-            placement_points: number[] | null;
-            participation_points: number | null;
-          }>(
-            `select id, placement_points, participation_points from competition
-            where id in ($1, $2) order by name`,
-            [PER_PERSON, RANKED_TEAM],
-          );
-          expect(teamParticipation.rows).toEqual([
-            {
-              id: PER_PERSON,
-              placement_points: [2],
-              participation_points: null,
-            },
-            {
-              id: RANKED_TEAM,
-              placement_points: [4, 2],
-              participation_points: null,
-            },
-          ]);
+              const teamParticipation = await client.query<{
+                id: string;
+                placement_points: number[] | null;
+                participation_points: number | null;
+              }>(
+                `select id, placement_points, participation_points from competition
+              where id in ($1, $2) order by name`,
+                [PER_PERSON, RANKED_TEAM],
+              );
+              expect(teamParticipation.rows).toEqual([
+                {
+                  id: PER_PERSON,
+                  placement_points: [2],
+                  participation_points: null,
+                },
+                {
+                  id: RANKED_TEAM,
+                  placement_points: [4, 2],
+                  participation_points: null,
+                },
+              ]);
 
-          const entries = await client.query<{
-            competition_id: string;
-            war_week_id: string;
-          }>(
-            "select competition_id, war_week_id from points_entry order by competition_id",
-          );
-          expect(entries.rows).toEqual([
-            { competition_id: POINTS_X, war_week_id: WW_X },
-            { competition_id: POINTS_XI, war_week_id: WW_XI },
-            { competition_id: POINTS_XI, war_week_id: WW_XI },
-          ]);
+              const entries = await client.query<{
+                competition_id: string;
+                war_week_id: string;
+              }>(
+                "select competition_id, war_week_id from points_entry order by competition_id",
+              );
+              expect(entries.rows).toEqual([
+                { competition_id: POINTS_X, war_week_id: WW_X },
+                { competition_id: POINTS_XI, war_week_id: WW_XI },
+                { competition_id: POINTS_XI, war_week_id: WW_XI },
+              ]);
 
-          const columns = await client.query<{ column_name: string }>(
-            `select column_name from information_schema.columns
-            where table_schema = 'public' and table_name = 'competition'`,
-          );
-          const columnNames = columns.rows.map((r) => r.column_name);
-          expect(columnNames).not.toContain("max_points");
-          expect(columnNames).not.toContain("game_type");
-          expect(columnNames).not.toContain("participation_team_scoring");
-        } finally {
-          await client.end();
-        }
+              const columns = await client.query<{ column_name: string }>(
+                `select column_name from information_schema.columns
+              where table_schema = 'public' and table_name = 'competition'`,
+              );
+              const columnNames = columns.rows.map((r) => r.column_name);
+              expect(columnNames).not.toContain("max_points");
+              expect(columnNames).not.toContain("game_type");
+              expect(columnNames).not.toContain("participation_team_scoring");
+            } finally {
+              await client.end();
+            }
+          },
+          { migrations: false },
+        );
       } finally {
-        await server.query(`drop database if exists "${name}" with (force)`);
-        await server.end();
         rmSync(upTo0027, { recursive: true, force: true });
       }
     }, 60_000);

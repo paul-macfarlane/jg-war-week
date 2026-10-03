@@ -26,6 +26,16 @@ function expectedXiCounts(): Record<string, number> {
     readFileSync(path.resolve(process.cwd(), DEMO_SEED), "utf-8"),
   );
   const count = (list: unknown[] | undefined) => list?.length ?? 0;
+  // Finalized Competitions write one generated Points Entry per Placement
+  // (seed key `placement:<key>`), on top of the Discretionary points.
+  const finalized = new Set(
+    seed.competitions
+      .filter((c: { finalized?: boolean }) => c.finalized)
+      .map((c: { name: string }) => c.name),
+  );
+  const generated = (seed.placements ?? []).filter(
+    (p: { competition: string }) => finalized.has(p.competition),
+  ).length;
   return {
     war_week: 1,
     day: count(seed.days),
@@ -37,7 +47,8 @@ function expectedXiCounts(): Record<string, number> {
     team: count(seed.teams),
     participant: count(seed.participants),
     competition: count(seed.competitions),
-    points_entry: count(seed.pointsEntries) + count(seed.discretionaryPoints),
+    placement: count(seed.placements),
+    points_entry: generated + count(seed.discretionaryPoints),
     award: count(seed.awards),
     announcement: count(seed.announcements),
     faq_item: count(seed.faqItems),
@@ -55,6 +66,8 @@ const XI_COUNT_QUERIES: Record<string, string> = {
     "select count(*) from participant p join war_week w on w.id = p.war_week_id where w.edition = 'xi'",
   competition:
     "select count(*) from competition c join war_week w on w.id = c.war_week_id where w.edition = 'xi'",
+  placement:
+    "select count(*) from placement p join competition c on c.id = p.competition_id join war_week w on w.id = c.war_week_id where w.edition = 'xi'",
   points_entry:
     "select count(*) from points_entry e join war_week w on w.id = e.war_week_id where w.edition = 'xi'",
   award:
@@ -336,7 +349,7 @@ export async function assertHomeNowNext() {
 
 export async function assertPlacementPointsSeeded() {
   const check =
-    "the XI seed loads 5/3/1 Placement Points for Catan and none for Beast Mode";
+    "the XI seed loads 5/3/1 Placement Points for Catan and the lone-winner 3 for Beast Mode";
   try {
     const rows = await runQuery<{ name: string; placement_points: string }>(
       `select c.name, c.placement_points::text
@@ -348,7 +361,7 @@ export async function assertPlacementPointsSeeded() {
     );
     if (
       byName["Settlers of Catan"] === "{5.00,3.00,1.00}" &&
-      byName["Beast Mode Workout"] === null
+      byName["Beast Mode Workout"] === "{3.00}"
     ) {
       ok(check);
     } else {

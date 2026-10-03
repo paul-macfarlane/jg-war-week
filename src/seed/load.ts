@@ -82,11 +82,10 @@ export async function loadWarWeekSeed(
     await syncFaqItems(tx, warWeekId, seed);
     await syncFinaleSlides(tx, warWeekId, seed);
 
-    await insertPointsEntries(
+    await insertDiscretionaryPoints(
       tx,
       warWeekId,
       seed,
-      competitionIds,
       teamIds,
       participantIds,
     );
@@ -476,39 +475,25 @@ async function syncFinaleSlides(
   });
 }
 
-async function insertPointsEntries(
+/** Discretionary points: no Competition; the reason is the note. */
+async function insertDiscretionaryPoints(
   tx: DBTx,
   warWeekId: string,
   seed: WarWeekSeed,
-  competitionIds: Map<string, string>,
   teamIds: Map<string, string>,
   participantIds: Map<string, string>,
 ) {
-  const rows = [
-    ...seed.pointsEntries.map((e) => ({
-      warWeekId,
-      competitionId: resolve(competitionIds, e.competition) as string | null,
-      teamId: resolveOptional(teamIds, e.team),
-      participantId: resolveOptional(participantIds, e.participant),
-      points: e.points,
-      note: e.note ?? null,
-      enteredByEmail: e.enteredByEmail,
-      enteredAt: new Date(e.enteredAt),
-      seedKey: e.key,
-    })),
-    // Discretionary points: no Competition; the reason is the note.
-    ...seed.discretionaryPoints.map((e) => ({
-      warWeekId,
-      competitionId: null,
-      teamId: resolveOptional(teamIds, e.team),
-      participantId: resolveOptional(participantIds, e.participant),
-      points: e.points,
-      note: e.reason,
-      enteredByEmail: e.enteredByEmail,
-      enteredAt: new Date(e.enteredAt),
-      seedKey: e.key,
-    })),
-  ];
+  const rows = seed.discretionaryPoints.map((e) => ({
+    warWeekId,
+    competitionId: null,
+    teamId: resolveOptional(teamIds, e.team),
+    participantId: resolveOptional(participantIds, e.participant),
+    points: e.points,
+    note: e.reason,
+    enteredByEmail: e.enteredByEmail,
+    enteredAt: new Date(e.enteredAt),
+    seedKey: e.key,
+  }));
   if (!rows.length) return;
   await tx
     .insert(pointsEntry)
