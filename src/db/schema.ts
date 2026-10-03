@@ -33,10 +33,9 @@ import {
   FINALE_AWARDS_LAYOUTS,
   FINALE_SLIDE_KINDS,
   FONT_PRESETS,
-  GAME_TYPES,
   HEAT_STATUSES,
-  PARTICIPATION_TEAM_SCORINGS,
   SCHEDULE_ITEM_CATEGORIES,
+  SCORE_DIRECTIONS,
   WAR_WEEK_MODES,
   WAR_WEEK_STATUSES,
 } from "@/lib/enums";
@@ -68,12 +67,7 @@ export const competitionFormat = pgEnum(
 
 export const heatStatus = pgEnum("heat_status", HEAT_STATUSES);
 
-export const gameType = pgEnum("game_type", GAME_TYPES);
-
-export const participationTeamScoring = pgEnum(
-  "participation_team_scoring",
-  PARTICIPATION_TEAM_SCORINGS,
-);
+export const scoreDirection = pgEnum("score_direction", SCORE_DIRECTIONS);
 
 export const finaleSlideKind = pgEnum("finale_slide_kind", FINALE_SLIDE_KINDS);
 
@@ -216,11 +210,6 @@ export const competition = pgTable(
       .references(() => warWeek.id, { onDelete: "cascade" }),
     name: varchar("name", { length: 120 }).notNull(),
     description: varchar("description", { length: 2000 }),
-    maxPoints: numeric("max_points", {
-      precision: 8,
-      scale: 2,
-      mode: "number",
-    }),
     // Placement Points: points for 1st, 2nd, 3rd…, highest first.
     placementPoints: numeric("placement_points", {
       precision: 8,
@@ -230,26 +219,27 @@ export const competition = pgTable(
     scoring: competitionScoring("scoring").notNull(),
     countsTowardTeam: boolean("counts_toward_team").notNull().default(false),
     competitionGroup: varchar("competition_group", { length: 120 }),
-    format: competitionFormat("format").notNull().default("points"),
+    format: competitionFormat("format").notNull().default("placement"),
+    // Placement only (the CHECK below): whether a higher or lower Score
+    // wins, filling Places from Scores; `none` means Places are set by hand.
+    scoreDirection: scoreDirection("score_direction").notNull().default("none"),
     // The Format's settings (`src/lib/bracket/config.ts`); null means the
     // Format's default, and single elimination has none.
     bracketConfig: jsonb("bracket_config").$type<HeatsConfig | null>(),
     // Participants in a Heat may enter its result themselves (ADR 0005).
     selfReport: boolean("self_report").notNull().default(false),
     // Set while the Competition's generated Points Entries exist: a
-    // finalized Bracket, or a closed `games` Competition (the name predates
-    // `games`; R3 decision 1 keeps it).
+    // finalized Bracket or Placement, or a closed Head-to-head or Best score
+    // Competition.
     finalizedAt: timestamp("finalized_at", { withTimezone: true }),
-    // `games` only: how its Games are decided; set exactly when the Format
-    // is `games` (the CHECK below).
-    gameType: gameType("game_type"),
-    // The Game Type's settings (`src/lib/games/config.ts`); null means the
-    // Game Type's default.
+    // Head-to-head and Best score only (the CHECK below): the Format's
+    // settings (`src/lib/games/config.ts`); null means the Format's default.
     gameConfig: jsonb("game_config").$type<GamesConfig | null>(),
-    // `games` only: true lets everyone eligible play; false keeps a fixed
-    // Entrant list (`entrant` rows).
+    // Head-to-head and Best score: true lets everyone eligible play; false
+    // keeps a fixed Entrant list (`entrant` rows).
     entrantsOpen: boolean("entrants_open").notNull().default(false),
-    // `games` only: Participants can't log Games after it. Awards nothing.
+    // Head-to-head and Best score: Participants can't log Games after it.
+    // Awards nothing.
     loggingClosesAt: timestamp("logging_closes_at", { withTimezone: true }),
     // Participants may enroll themselves as Entrants (ticket 15).
     selfEnroll: boolean("self_enroll").notNull().default(false),
@@ -257,18 +247,14 @@ export const competition = pgTable(
     entrantLimit: integer("entrant_limit"),
     // Enrollment closes after this time; null for no close time.
     enrollClosesAt: timestamp("enroll_closes_at", { withTimezone: true }),
-    // `participation` only (the CHECK below): N, the points per Participant
-    // who took part (individual, and team "per person").
+    // `participation` with individual scoring only (the CHECK below): N, the
+    // points per Participant who took part. A team `participation`
+    // Competition ranks Teams by headcount for its Placement Points instead.
     participationPoints: numeric("participation_points", {
       precision: 8,
       scale: 2,
       mode: "number",
     }),
-    // `participation` with team scoring only: ranked by headcount, or per
-    // person. Null for individual scoring.
-    participationTeamScoring: participationTeamScoring(
-      "participation_team_scoring",
-    ),
     // `participation` only: Participants may check themselves in (ADR 0009).
     selfCheckIn: boolean("self_check_in").notNull().default(false),
     // `participation` only: Participants can't check in or out after it.
@@ -282,26 +268,35 @@ export const competition = pgTable(
       "competition_counts_toward_team_individual_only",
       sql`not ${table.countsTowardTeam} or ${table.scoring} = 'individual'`,
     ),
-    // On the text form, never the enum literal: the migration adding the
-    // `games` value runs in the same transaction (R3 decision 13).
+    // Format CHECKs compare the text form, never the enum literal, so a
+    // migration that changes the enum can re-add them in the same
+    // transaction (R3 decision 13).
     check(
-      "competition_game_type_iff_games",
-      sql`(${table.gameType} is not null) = (${table.format}::text = 'games')`,
+      "competition_score_direction_placement_only",
+      sql`${table.scoreDirection}::text = 'none' or ${table.format}::text = 'placement'`,
+    ),
+    check(
+      "competition_game_config_head_to_head_or_best_score",
+      sql`${table.gameConfig} is null or ${table.format}::text in ('head-to-head', 'best-score')`,
     ),
     check(
       "competition_entrant_limit_above_1",
       sql`${table.entrantLimit} is null or ${table.entrantLimit} > 1`,
     ),
-    // The `participation` settings exist exactly on a `participation`
-    // Competition, the team scoring choice exactly in team scoring. On the
-    // text form, as above.
+    // A `participation` Competition scores by its scoring: individual takes
+    // N (`participation_points`) and no Placement Points, team takes
+    // Placement Points and no N. Other Formats have no `participation`
+    // settings.
     check(
       "competition_participation_columns",
       sql`case when ${table.format}::text = 'participation'
-        then ${table.participationPoints} is not null
-          and (${table.scoring} = 'team') = (${table.participationTeamScoring} is not null)
+        then case when ${table.scoring} = 'individual'
+          then ${table.participationPoints} is not null
+            and ${table.placementPoints} is null
+          else ${table.placementPoints} is not null
+            and ${table.participationPoints} is null
+          end
         else ${table.participationPoints} is null
-          and ${table.participationTeamScoring} is null
           and ${table.checkInClosesAt} is null
           and not ${table.selfCheckIn}
         end`,
@@ -341,9 +336,16 @@ export const pointsEntry = pgTable(
   "points_entry",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    competitionId: uuid("competition_id")
+    // Every read scopes by this, not through the Competition: a
+    // Discretionary points entry has no Competition.
+    warWeekId: uuid("war_week_id")
       .notNull()
-      .references(() => competition.id, { onDelete: "cascade" }),
+      .references(() => warWeek.id, { onDelete: "cascade" }),
+    // Null for Discretionary points, whose reason is the `note` (the CHECK
+    // below).
+    competitionId: uuid("competition_id").references(() => competition.id, {
+      onDelete: "cascade",
+    }),
     teamId: uuid("team_id").references(() => team.id, {
       onDelete: "cascade",
     }),
@@ -362,9 +364,9 @@ export const pointsEntry = pgTable(
       .defaultNow(),
     // Set only on rows that came from a seed file; see CONTEXT.md.
     seedKey: varchar("seed_key", { length: 80 }),
-    // Written by finalizing a Bracket or closing a `games` Competition;
-    // changed only through that Competition. The name predates `games`
-    // (R3 decision 1 keeps it).
+    // Written by finalizing a Bracket or Placement or closing a Head-to-head
+    // or Best score Competition; changed only through that Competition. The
+    // name predates those Formats (R3 decision 1 keeps it).
     generatedByBracket: boolean("generated_by_bracket")
       .notNull()
       .default(false),
@@ -372,12 +374,58 @@ export const pointsEntry = pgTable(
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (table) => [
-    unique().on(table.competitionId, table.seedKey),
+    unique().on(table.warWeekId, table.seedKey),
+    index("points_entry_competition_id_idx").on(table.competitionId),
     index("points_entry_team_id_idx").on(table.teamId),
     index("points_entry_participant_id_idx").on(table.participantId),
     check(
       "points_entry_exactly_one_target",
       sql`num_nonnulls(${table.teamId}, ${table.participantId}) = 1`,
+    ),
+    check(
+      "points_entry_reason_without_competition",
+      sql`${table.competitionId} is not null or ${table.note} is not null`,
+    ),
+  ],
+);
+
+/**
+ * One row of a Placement Competition's sheet: a Team or Participant with its
+ * Place (null while unplaced) and optional Score. Finalize turns Places into
+ * generated Points Entries by the Competition's Placement Points.
+ */
+export const placement = pgTable(
+  "placement",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competition.id, { onDelete: "cascade" }),
+    teamId: uuid("team_id").references(() => team.id, {
+      onDelete: "cascade",
+    }),
+    participantId: uuid("participant_id").references(() => participant.id, {
+      onDelete: "cascade",
+    }),
+    place: integer("place"),
+    score: numeric("score", { precision: 12, scale: 3, mode: "number" }),
+    // Set only on rows that came from a seed file; see CONTEXT.md.
+    seedKey: varchar("seed_key", { length: 80 }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    unique().on(table.competitionId, table.teamId),
+    unique().on(table.competitionId, table.participantId),
+    unique().on(table.competitionId, table.seedKey),
+    index("placement_competition_id_idx").on(table.competitionId),
+    check(
+      "placement_exactly_one_target",
+      sql`num_nonnulls(${table.teamId}, ${table.participantId}) = 1`,
+    ),
+    check(
+      "placement_place_from_1",
+      sql`${table.place} is null or ${table.place} >= 1`,
     ),
   ],
 );
@@ -533,7 +581,8 @@ export const heatEntrant = pgTable(
 );
 
 /**
- * One recorded contest in a `games` Competition, logged by a player in it or
+ * One recorded contest in a Head-to-head or Best score Competition, logged
+ * by a player in it or
  * by a Host or Organizer. Games have no scheduled time: `logged_at` orders
  * the log.
  */
@@ -566,8 +615,8 @@ export const game = pgTable(
 
 /**
  * A Team or Participant in a Game, never an Entrant row (an open Competition
- * has none): its place (head-to-head 1/2, 1/1 for a draw; ranked 1-based
- * with ties) or its score (best-score).
+ * has none): its place (Head-to-head 1/2, 1/1 for a draw) or its score
+ * (Best score).
  */
 export const gamePlayer = pgTable(
   "game_player",
@@ -916,6 +965,7 @@ export const warWeekRelations = relations(warWeek, ({ many }) => ({
   announcements: many(announcement),
   faqItems: many(faqItem),
   finaleSlides: many(finaleSlide),
+  pointsEntries: many(pointsEntry),
 }));
 
 export const dayRelations = relations(day, ({ one, many }) => ({
@@ -933,6 +983,7 @@ export const teamRelations = relations(team, ({ one, many }) => ({
   }),
   participants: many(participant),
   pointsEntries: many(pointsEntry),
+  placements: many(placement),
 }));
 
 export const participantRelations = relations(participant, ({ one, many }) => ({
@@ -942,6 +993,7 @@ export const participantRelations = relations(participant, ({ one, many }) => ({
   }),
   team: one(team, { fields: [participant.teamId], references: [team.id] }),
   pointsEntries: many(pointsEntry),
+  placements: many(placement),
   awards: many(awardParticipant),
 }));
 
@@ -951,6 +1003,7 @@ export const competitionRelations = relations(competition, ({ one, many }) => ({
     references: [warWeek.id],
   }),
   pointsEntries: many(pointsEntry),
+  placements: many(placement),
   scheduleItems: many(scheduleItem),
 }));
 
@@ -963,6 +1016,10 @@ export const scheduleItemRelations = relations(scheduleItem, ({ one }) => ({
 }));
 
 export const pointsEntryRelations = relations(pointsEntry, ({ one }) => ({
+  warWeek: one(warWeek, {
+    fields: [pointsEntry.warWeekId],
+    references: [warWeek.id],
+  }),
   competition: one(competition, {
     fields: [pointsEntry.competitionId],
     references: [competition.id],
@@ -970,6 +1027,18 @@ export const pointsEntryRelations = relations(pointsEntry, ({ one }) => ({
   team: one(team, { fields: [pointsEntry.teamId], references: [team.id] }),
   participant: one(participant, {
     fields: [pointsEntry.participantId],
+    references: [participant.id],
+  }),
+}));
+
+export const placementRelations = relations(placement, ({ one }) => ({
+  competition: one(competition, {
+    fields: [placement.competitionId],
+    references: [competition.id],
+  }),
+  team: one(team, { fields: [placement.teamId], references: [team.id] }),
+  participant: one(participant, {
+    fields: [placement.participantId],
     references: [participant.id],
   }),
 }));
@@ -1031,6 +1100,7 @@ export type Participant = InferSelectModel<typeof participant>;
 export type Competition = InferSelectModel<typeof competition>;
 export type ScheduleItem = InferSelectModel<typeof scheduleItem>;
 export type PointsEntry = InferSelectModel<typeof pointsEntry>;
+export type PlacementRow = InferSelectModel<typeof placement>;
 export type Award = InferSelectModel<typeof award>;
 export type AwardCategory = InferSelectModel<typeof awardCategory>;
 export type AwardParticipant = InferSelectModel<typeof awardParticipant>;
