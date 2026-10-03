@@ -75,3 +75,80 @@ Human gates: none before or during delivery. **Announced for later (outside this
 - 2026-10-03, D100 (Opus): `ad8916a`, `c6cc902`. One `BracketTree` for admin (`bracket-results.tsx` → `bracket-admin.tsx`, round cards gone) and Participants (no List toggle); `recordableHeatIds` / `onRecord` give a solid Record result (outline Edit when played) only where the viewer may record; tree scrolls in its own `Rounds` region; builder link renamed **Results**. Postgres action refusal test `src/actions/heat-reports-refusals.test.ts`. `organizer-guide.tsx` copy brought up to date. Vitest 184 files / 3797 passed. An Organizer or Host records from admin, not from the public page (no second submit path added).
 - 2026-10-03, DE (Opus): `df1dcf1`, `56072bb`. Smoke's Bracket loop now builds a head-to-head Bracket with a 3rd place game and checks `get_bracket` (heat size, advancing, 3rd place game, `recordedAt` per played Heat, no time/place/Forfeit keys, one 3rd place game and one final, champion = final's winner, no `@`). Two test-side e2e fixes (`bracket-tree.spec.ts` button count with byes; `regression-r15-solid-buttons.spec.ts` card locator). No product fixes. Smoke 261 ok / 0 FAIL; e2e 108 passed, 0 failed, 0 skipped, 0 flaky. Smoke loads no seed with a Bracket, so the seeded Chess Heats MCP check goes to DX as a Postgres test.
 - 2026-10-03, DX (Sonnet): `bffef1d`, `b78e57c`. `CONTEXT.md`, `docs/agents/testing.md` smoke and e2e cells, `docs/maintainers-guide.md` (Bracket section and "How R17 reached staging and production (the reset)"), `docs/regression-checklist.md`; `/about` copy needed no change, stills regenerated (5 changed). `src/mcp/bracket-seeded.test.ts` loads the `seed:demo:xii` set into a throwaway DB and checks `get_bracket` on Chess Heats (Bracket, 4/2/false, no `@`, no time/place/Forfeit). Vitest 185 files / 3798 passed.
+- 2026-10-03, DR (Opus): `f9710cf`. Aggregate review fixes (below). Vitest 185 files / 3803 passed; the 8 affected e2e specs 18 passed.
+
+## [AI CODE REVIEW]
+
+2026-10-03. Diff `8ceb8f3..HEAD` (excluding `test-results/`, `public/`, `drizzle/meta/`). Two fresh Opus reviewers read one axis each; the orchestrator adjudicated every candidate against the cited hunks. All findings were resolved in `f9710cf`; none remain open.
+
+### Axis 1: technical implementation and spec conformity
+
+No defect in the migration, engine dispatch, final identification, loser links, `recorded_at` or server-side authorization. Verified against the contract: migration safety on old rows and its test; one dispatch `engineFor(config)`; the final identified only in `src/lib/bracket/final.ts` and read by both engines, `isComplete`, placings, Finale and MCP; loser links generated and cleared; places with and without the 3rd place game; cap of 4; `recorded_at` set on every save path and cleared on every reset; removals and greps; one tree with server authorization unchanged; MCP; seed conversion; backlog 25 untouched.
+
+| ID | Severity | Paths | Finding | Disposition |
+| --- | --- | --- | --- | --- |
+| F1 | blocking | `src/mutations/brackets.ts`, `bracket-builder.tsx` | The 3rd place game could still be toggled after Heat Results through the force (clear and save) path; W2 says it can't be toggled once the Bracket starts. | Resolved: refused once any Heat Result exists, even with `force`; switch disabled with the reason; Postgres test with and without `force`; `CONTEXT.md` and guide agree. |
+| F2 | non-blocking | `bracket-builder.tsx` | A saved 3rd place game outlived a drop below 4 Entrants and the disabled switch showed it off. | Resolved: the switch shows the saved value and can always be turned off; the reason says Generate needs 4 or the game off. |
+| F3 | non-blocking | `src/lib/bracket/tree.ts`, `bracket-tree.tsx` | The 3rd place game's winner got the champion's " wins". | Resolved: " wins" only on the final; the 3rd place winner "takes 3rd". |
+| F4 | non-blocking | `docs/maintainers-guide.md` | `get_bracket` described with Heat time and place. | Resolved. |
+| F5 | non-blocking | `src/lib/setup.ts` | Seed schema accepted a 3rd place game off 2/1. | Resolved with `thirdPlaceRefusal`'s config half; seed test. |
+| F6 | non-blocking | several | Stale retired-Format comments; admin page title "Bracket results". | Resolved. |
+| F7 | — | `tree.ts`, `view.ts` | `isHeadToHead` read outside the dispatch. | No change: display only; no engine chosen outside `engineFor`. |
+
+### Axis 2: coding standards
+
+Clean: no skips added, retired tests deleted, no `cursor-*` or `disabled:pointer-events-none`, button variants per 87, dialogs and toasts through the app wrappers, failable assertions, seeded data restored, lint boundaries kept, no `.env` reads.
+
+| ID | Severity | Paths | Finding | Disposition |
+| --- | --- | --- | --- | --- |
+| S1 | blocking | `src/components/organizer-guide.tsx` | The guide still said everyone else is placed by the Round they went out in. | Resolved: places only from the final and 3rd place game, up to 4th. |
+| S2 | non-blocking | `docs/maintainers-guide.md` | Same as F4. | Resolved. |
+| S3 | non-blocking | `README.md` | Single elimination / Heats Formats and timed Heats. | Resolved. |
+| S4 | non-blocking | `CONTEXT.md` | "one of six" Formats; "a Heats Heat". | Resolved. |
+| S5 | non-blocking | `src/lib/finale-slides.ts` | Forfeit comment. | Resolved. |
+| S6 | non-blocking | lib comments, `bracket-tree.tsx`, e2e titles | Retired Format names; `heatsFormat` prop. | Resolved (`multiEntrant`; titles; lookups kept consistent). |
+| S7 | non-blocking | `src/lib/bracket/view.ts` | Dead `heatEntrantLabels`. | Removed. |
+| S8 | non-blocking | `bracket-builder.tsx` | Second copy of the 3rd place game rule. | Resolved: derived from `thirdPlaceRefusal`. |
+| S9 | non-blocking | `bracket-builder.tsx` | Preset hand-rolled as an outline Button with `aria-pressed`. | Resolved: shadcn `Toggle`. |
+| S10 | non-blocking | `bracket-builder.tsx` | Settings form key omitted `thirdPlaceGame`. | Resolved. |
+| S11 | non-blocking | `bracket-tree.tsx` | Only `data-testid` in production source. | Removed; specs use the `Rounds` region. |
+| S12 | non-blocking | `bracket-tree.test.tsx` | Redundant `toBeDefined()`. | Removed. |
+
+Remaining risks: an Organizer or Host records from the admin tree, not from the public Competition page (no second submit path added, per "prefer removing to adding"); while a 3rd place game is on and a Heat Result exists, the heat size can't change either (follows the lock).
+
+## [CLOSEOUT]
+
+2026-10-03. Every criterion has a final, evidence-backed verdict against the integrated commit `f9710cf9` (plus this closeout commit, docs and evidence only). Commands were run with `DATABASE_URL=postgres://postgres:postgres@localhost:2345/war_weeker?sslmode=disable DATABASE_DRIVER=pg`.
+
+- **Repository delivery:** `war-weeker`, branch `feat/regression-r17-brackets` from `staging` at `8ceb8f3`; direct checkout, no worktrees.
+- **Deliverables:** D1 schema and migration (Opus, `8715387`); D97 one Bracket Format (Sonnet, `11e0f33`); D99 removals and `recorded_at` (Sonnet, `9591ced`); D98 3rd place game (Opus, `1281384`); D100 one tree (Opus, `ad8916a`, `c6cc902`); DE smoke and e2e (Opus, `df1dcf1`, `56072bb`); DX docs and the Chess Heats MCP test (Sonnet, `bffef1d`, `b78e57c`); DR review fixes (Opus, `f9710cf`). Orchestrator: Opus 5.5.
+- **Isolation re-check:** sequential was chosen on predicted collisions in the shared Bracket files (`src/lib/bracket/*`, `src/mutations/brackets.ts`, `bracket-builder.tsx`, `bracket-tree.tsx`, `bracket-view.tsx`, `e2e/bracket*.spec.ts`). The real diffs confirm it: D97, D99, D98 and D100 each changed `src/mutations/brackets.ts`, `bracket-builder.tsx` and the bracket lib; D99, D98 and D100 each changed `e2e/bracket.spec.ts` and `bracket-tree.tsx`.
+- **Approved deviations:** migration step 4 runs inside step 3 while `format` is text; Heat positions are 1-based (final 1, 3rd place game 2); the seeded Chess Heats MCP check is a Postgres vitest (`src/mcp/bracket-seeded.test.ts`) because smoke loads no seed with a Bracket, and smoke's own Bracket loop carries the `get_bracket` checks.
+- **Verified run command:** `pnpm format:check && pnpm gate`, exit 0: vitest 185 files / 3803 tests passed, 0 skipped; smoke 261 ok, 0 FAIL; e2e 108 passed (4.2m), 0 failed, 0 skipped, 0 flaky. Log: `test-results/r17/gate.log`. Focused vitest (verbose, 40 files / 1234 tests, 0 skipped): `test-results/r17/vitest.txt`. No deploy in this work package.
+
+| Criterion | Verdict | Evidence |
+| --- | --- | --- |
+| E1 migration on old rows | PASS | `test-results/r17/vitest.txt` ("migrating populated pre-R17 Brackets…" ran and passed) |
+| E2 seeds load twice | PASS | `test-results/r17/vitest.txt` (three `every seed loads twice` cases) |
+| E3 Format grep | PASS | empty |
+| E4 skip grep | PASS | `git diff 8ceb8f3 -- e2e src scripts \| grep …` empty |
+| E5 MCP | PASS | `src/mcp/*.test.ts` incl. `bracket-seeded.test.ts` (vitest.txt); smoke bracket loop `get_bracket` check (gate.log) |
+| E6 testing.md rows | PASS | `docs/agents/testing.md` smoke and e2e cells (`bffef1d`) |
+| E7 showcase | PASS | `/about` copy unchanged (already says Bracket), stills regenerated, guide incl. the R17 reset, checklist (`bffef1d`, `f9710cf`) |
+| E8 CONTEXT | PASS | `CONTEXT.md` (`bffef1d`, `f9710cf`) |
+| E9 closeouts | PASS | this record, the epic and parts 97–100 `done` |
+| E10 PR step | PASS | PR description lists the reset as Paul's post-merge step |
+| E11 gate | PASS (local); CI on the PR pending | gate.log; CI reported on the PR |
+| P97-engines, P97-dispatch, P97-builder | PASS | vitest.txt (`formats.test.ts`, engine tests, `bracket-builder.test.tsx`) |
+| P99-grep | PASS | both greps empty |
+| P99-recorded | PASS | vitest.txt (`Heat recorded_at` in `brackets.test.ts`, `heat-reports.test.ts`) |
+| P99-schedule | PASS | vitest.txt (`schedule.test.ts`) |
+| P99-e2e | PASS | gate.log; `test-results/e2e/bracket-a-Bracket-is-built-*` |
+| P98-unit, P98-pg, P98-cap | PASS | vitest.txt (`third-place.test.ts`, `brackets.test.ts`, `competitions.test.ts`) |
+| P98-e2e | PASS | `test-results/e2e/bracket-third-place-*/third-place-finalized-1440.png`; gate.log |
+| P100-record, P100-access | PASS | `test-results/e2e/bracket-tree-*`; `src/actions/heat-reports-refusals.test.ts` (vitest.txt) |
+| P100-390 | PASS | `test-results/e2e/bracket-tree-a-head-to-hea-*` (1440 and 390 shots) |
+| P100-axe | PASS | `…/admin-knockout-axe-{light,dark}.json`, `participant-knockout-axe-{light,dark}.json` |
+| P100-delete | PASS | grep empty |
+
+**Human prerequisite (post-merge, Paul):** the epic's reset of staging, the prod pre-check, then prod (see the PR description and `docs/maintainers-guide.md`).

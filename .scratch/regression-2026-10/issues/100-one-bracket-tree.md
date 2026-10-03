@@ -6,7 +6,7 @@
 
 **Blocked by:** `97`, `99`, `98` (order inside R17)
 
-**Status:** ai-review
+**Status:** done
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: run results naming, bracket display in admin; Participant: drop list view); grilling Q10, Q21; red-team pass 1 W6, W7
 
@@ -19,12 +19,14 @@
 
 ## Acceptance criteria
 
-- [ ] e2e: an Organizer records a Heat from the admin tree; a self-reporting Participant records their own Heat from the public tree; no List toggle exists.
-- [ ] e2e: a Participant not in a Heat sees no **Record result** on it; with self-report off, a Participant in the Heat sees none; a Postgres action test shows both are refused server-side.
-- [ ] e2e at 390: the tree container's `scrollWidth` > its `clientWidth`, and `document.documentElement.scrollWidth` ≤ the viewport width; screenshots at 1440 and 390.
-- [ ] axe passes on the tree in both schemes.
-- [ ] `bracket-results.tsx` and its tests are deleted; `grep -rn 'Run results\|BracketResults' src e2e` finds nothing.
+- [x] e2e: an Organizer records a Heat from the admin tree; a self-reporting Participant records their own Heat from the public tree; no List toggle exists.
+- [x] e2e: a Participant not in a Heat sees no **Record result** on it; with self-report off, a Participant in the Heat sees none; a Postgres action test shows both are refused server-side.
+- [x] e2e at 390: the tree container's `scrollWidth` > its `clientWidth`, and `document.documentElement.scrollWidth` ≤ the viewport width; screenshots at 1440 and 390.
+- [x] axe passes on the tree in both schemes.
+- [x] `bracket-results.tsx` and its tests are deleted; `grep -rn 'Run results\|BracketResults' src e2e` finds nothing.
 
 ## Comments
 
 - 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r17`): claimed; `ready-for-agent` → `in-progress`. Execution record: [`R17-execution.md`](../epics/R17-execution.md).
+
+- 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r17`): D100 `ad8916a`, `c6cc902` (Opus). `bracket-results.tsx` → `bracket-admin.tsx` (round cards gone), `heat-rows.test.tsx` deleted, new `bracket-tree.test.tsx` and `src/actions/heat-reports-refusals.test.ts`; `e2e/bracket-tree.spec.ts` rewritten (admin and self-report recording, access, 390 scroll, axe both schemes). Every AC PASS; evidence and the AI Code Review in [`R17-execution.md`](../epics/R17-execution.md). `ai-review` → `done`.

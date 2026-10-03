@@ -8,7 +8,7 @@
 
 **Blocked by:** R16 (`feat/regression-r16-competition-model`) merged into `staging`, so the branch starts from its schema (`drizzle/0028_*`); and this planning change (`docs/regression-r17-red-team`) merged into `staging` (one schema-changing epic at a time).
 
-**Status:** ai-review
+**Status:** done
 
 **Red-team:** **required** (Drizzle schema change; recording from the shared tree). Pass 1 on 2026-10-03 BLOCKED; resolved below.
 
@@ -68,17 +68,17 @@ If a migrate run fails, don't reseed; fix the migration on a `fix/…` branch.
 
 The parts' own, plus:
 
-- [ ] **Migration on old rows** (`src/db/migrations.test.ts`; the closeout shows it ran, not skipped): in a throwaway database, migrate with a copy of `drizzle/` whose journal stops at `0028`; insert a finalized `single-elimination` Competition with `bracket_config` null, Heats (one `forfeit` with a `forfeited` Entrant, one with a `day_id`, `start_time` and `location`) and generated Points Entries; and a `heats` one with config `{4, 2}` and 5 Placement Points; run the full `drizzle/` (one transaction). Assert it commits; both are `bracket`; their configs are `{2, 1, false}` and `{4, 2, false}`; neither has Heats, generated entries or `finalized_at`; the second has 4 Placement Points. Drop the database.
-- [ ] **Every seed loads twice** in R16's three seed sets (`src/seed/seed-sets.test.ts`); row counts don't change on the second load.
-- [ ] `grep -rn '"single-elimination"\|"heats"' src/lib/enums.ts src/seed/schema.ts seeds` finds nothing (the Format values' sources; the engines may keep internal names).
-- [ ] `git diff $(git merge-base HEAD origin/staging) -- e2e src scripts | grep -n '^+.*\(\.skip(\|\.fixme(\|\.only(\)'` finds nothing (`skipIf` is allowed).
-- [ ] **MCP** names the Format **Bracket** with heat size, advancing and 3rd place game; `get_bracket` has no Heat time, place or Forfeit, gives `recordedAt` per played Heat, marks the 3rd place game, and its champion is the final's winner; `src/mcp/llms-txt.ts` no longer promises a Heat's time and place. Covered by `src/mcp/*.test.ts` (including no `@` in output) and smoke's MCP check on the seeded Chess Heats.
-- [ ] `docs/agents/testing.md`'s smoke and e2e rows describe the rewritten Bracket flows (no timed Heat, no Forfeit, no By Standings; the tree recording flows and the 3rd place game added).
-- [ ] `/about` copy and stills (`pnpm tsx scripts/about-media.ts --stills`), `docs/maintainers-guide.md` (including the reset as how R17 reached staging and prod) and `docs/regression-checklist.md` updated where user-visible.
-- [ ] `CONTEXT.md`: **Bracket** with heat size, advancing and **3rd place game**; single elimination and Heats retired as Format names (a **Heat** is still one game); **Forfeit** and a Heat's Day, time and location retired, including in the Bracket rules; a played Heat's **recorded time**.
-- [ ] Each part file records its closeout and is `done`; this epic records the work-package closeout (evidence paths, vitest summary with skipped count, gate result) and the PR URL.
-- [ ] The PR description lists the human prerequisite as a post-merge step for Paul.
-- [ ] `pnpm format:check && pnpm gate` passes; CI on the PR passes.
+- [x] **Migration on old rows** (`src/db/migrations.test.ts`; the closeout shows it ran, not skipped): in a throwaway database, migrate with a copy of `drizzle/` whose journal stops at `0028`; insert a finalized `single-elimination` Competition with `bracket_config` null, Heats (one `forfeit` with a `forfeited` Entrant, one with a `day_id`, `start_time` and `location`) and generated Points Entries; and a `heats` one with config `{4, 2}` and 5 Placement Points; run the full `drizzle/` (one transaction). Assert it commits; both are `bracket`; their configs are `{2, 1, false}` and `{4, 2, false}`; neither has Heats, generated entries or `finalized_at`; the second has 4 Placement Points. Drop the database.
+- [x] **Every seed loads twice** in R16's three seed sets (`src/seed/seed-sets.test.ts`); row counts don't change on the second load.
+- [x] `grep -rn '"single-elimination"\|"heats"' src/lib/enums.ts src/seed/schema.ts seeds` finds nothing (the Format values' sources; the engines may keep internal names).
+- [x] `git diff $(git merge-base HEAD origin/staging) -- e2e src scripts | grep -n '^+.*\(\.skip(\|\.fixme(\|\.only(\)'` finds nothing (`skipIf` is allowed).
+- [x] **MCP** names the Format **Bracket** with heat size, advancing and 3rd place game; `get_bracket` has no Heat time, place or Forfeit, gives `recordedAt` per played Heat, marks the 3rd place game, and its champion is the final's winner; `src/mcp/llms-txt.ts` no longer promises a Heat's time and place. Covered by `src/mcp/*.test.ts` (including no `@` in output) and smoke's MCP check on the seeded Chess Heats.
+- [x] `docs/agents/testing.md`'s smoke and e2e rows describe the rewritten Bracket flows (no timed Heat, no Forfeit, no By Standings; the tree recording flows and the 3rd place game added).
+- [x] `/about` copy and stills (`pnpm tsx scripts/about-media.ts --stills`), `docs/maintainers-guide.md` (including the reset as how R17 reached staging and prod) and `docs/regression-checklist.md` updated where user-visible.
+- [x] `CONTEXT.md`: **Bracket** with heat size, advancing and **3rd place game**; single elimination and Heats retired as Format names (a **Heat** is still one game); **Forfeit** and a Heat's Day, time and location retired, including in the Bracket rules; a played Heat's **recorded time**.
+- [x] Each part file records its closeout and is `done`; this epic records the work-package closeout (evidence paths, vitest summary with skipped count, gate result) and the PR URL.
+- [x] The PR description lists the human prerequisite as a post-merge step for Paul.
+- [x] `pnpm format:check && pnpm gate` passes; CI on the PR passes.
 
 ## Comments
 
@@ -87,3 +87,5 @@ The parts' own, plus:
 - 2026-10-03 (Paul, on pass 1): B1 one work package; B2 nothing uses Forfeit, recreating enums is fine, treat it as a full reset (all data is in seeds); W1 store the recorded time; W2 the 3rd place game decides 3rd and 4th, is optional when configuring, can't be toggled once the Bracket starts, single elimination only; W3 make clear which Heat is which; W4 Heat times aren't needed; the rest at the agent's discretion. Applied: one work package with part order and serial shared files (B1, W8); the migration resets every Bracket, with a test on old rows, and the human reset (B2); `heat.recorded_at` (W1); the 3rd place game stored as `thirdPlaceGame` plus `loser_to_*` links and a `third_place` Heat, locked once any Heat Result exists (W2); every final reader excludes the `third_place` Heat, with tests (W3); Heat times removed with no fallback, every reader listed (W4); MCP and seed DoD (W5); assertive scroll and points checks (W6); tree access checks (W7); exact greps, rewritten e2e, no manual reordering, evidence and closeout, one engine dispatch as the default, backlog 25 deferred, branch from merged R16 (M1–M7).
 
 - 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r17`): claimed; `ready-for-agent` → `in-progress`. Execution record: [`R17-execution.md`](./R17-execution.md).
+
+- 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r17`): Work package delivered on `feat/regression-r17-brackets` (8 deliverables). Gate `pnpm format:check && pnpm gate` exit 0 (vitest 3803 passed, 0 skipped; smoke 261 ok; e2e 108 passed); evidence `test-results/r17/`. Every AC PASS; evidence and the AI Code Review in [`R17-execution.md`](./R17-execution.md). `ai-review` → `done`.
