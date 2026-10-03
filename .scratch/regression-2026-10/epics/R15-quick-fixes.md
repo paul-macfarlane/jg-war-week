@@ -8,7 +8,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Red-team:** not required (no Drizzle schema, auth or access change).
 
@@ -30,3 +30,4 @@ Each ticket's own, plus:
 ## Comments
 
 - 2026-10-03 (Paul): grilled and approved; tickets `ready-for-agent`.
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r15`): claimed with tickets 84–89; `ready-for-agent` → `in-progress`. Execution record: [`R15-execution.md`](./R15-execution.md).

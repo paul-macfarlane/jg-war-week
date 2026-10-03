@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: ghost buttons); grilling Q12
 
@@ -18,3 +18,7 @@
 - [ ] Audit list (each primary action and its variant) in the ticket's closeout.
 - [ ] Screenshot of the admin Bracket with a solid Record result.
 - [ ] `pnpm gate` passes.
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r15`): claimed with Epic R15; `ready-for-agent` → `in-progress`. Execution record: [`R15-execution.md`](../epics/R15-execution.md).

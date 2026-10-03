@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: games scoring not shown after reopen)
 
@@ -17,3 +17,7 @@
 - [ ] Reproduction steps recorded in the closeout.
 - [ ] e2e: set Games settings and Placement Points, save, leave and come back: both show what was saved.
 - [ ] `pnpm gate` passes.
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r15`): claimed with Epic R15; `ready-for-agent` → `in-progress`. Execution record: [`R15-execution.md`](../epics/R15-execution.md).

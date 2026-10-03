@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** Paul's regression feedback 2026-10-03 (Participant: nav uncentred); grilling Q12
 
@@ -16,3 +16,7 @@
 
 - [ ] Screenshots at 1280 and 1024 wide with War Week XI and XII (different name/tagline widths): the links' centre is within a few pixels of the header's centre (asserted in e2e by bounding boxes).
 - [ ] `pnpm gate` passes.
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r15`): claimed with Epic R15; `ready-for-agent` → `in-progress`. Execution record: [`R15-execution.md`](../epics/R15-execution.md).

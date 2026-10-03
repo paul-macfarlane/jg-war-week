@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** Paul's regression feedback 2026-10-03 (Participant: history missing navbar); grilling Q11
 
@@ -19,3 +19,7 @@
 - [ ] e2e: `/history` and a Category page show the top nav (desktop) and tab bar (390px) in the current War Week's theme.
 - [ ] Smoke still checks `/history` (200).
 - [ ] `pnpm gate` passes.
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r15`): claimed with Epic R15; `ready-for-agent` → `in-progress`. Execution record: [`R15-execution.md`](../epics/R15-execution.md).

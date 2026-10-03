@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: heat recording highlight); `../grilling-2026-10-03.md` facts
 
@@ -19,3 +19,7 @@
 - [ ] Unit test: a 4-entrant Heat with 2 advancing highlights places 1 and 2 in `HeatRows`; the final highlights only 1st.
 - [ ] Screenshot of the admin Bracket after recording such a Heat, `test-results/e2e/<test>/`.
 - [ ] `pnpm gate` passes.
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r15`): claimed with Epic R15; `ready-for-agent` → `in-progress`. Execution record: [`R15-execution.md`](../epics/R15-execution.md).
