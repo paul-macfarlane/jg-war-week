@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** in-progress
+**Status:** done
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: games scoring not shown after reopen)
 
@@ -14,10 +14,20 @@
 
 ## Acceptance criteria
 
-- [ ] Reproduction steps recorded in the closeout.
-- [ ] e2e: set Games settings and Placement Points, save, leave and come back: both show what was saved.
-- [ ] `pnpm gate` passes.
+- [x] Reproduction steps recorded in the closeout.
+- [x] e2e: set Games settings and Placement Points, save, leave and come back: both show what was saved.
+- [x] `pnpm gate` passes.
 
 ## Comments
 
 - 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r15`): claimed with Epic R15; `ready-for-agent` → `in-progress`. Execution record: [`R15-execution.md`](../epics/R15-execution.md).
+- 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r15`): done.
+
+  Reproduction (from code and failing tests; not seen in the running app before the fix):
+  1. `/admin/competitions/<id>/games` on a Games Competition: type "5, 3, 1" in Finish Points, Save settings. The save stores `{finishPoints:[5,3,1]}` and calls `router.refresh()`.
+  2. `GamesBuilder` held its fields in `useState(initialFields…)` read once, so after the refresh the form kept what it first loaded; a form opened before the value existed stayed empty although the database held it. Failing test: mount with `[]`, re-render with `[5,3,1]`, field stays "".
+  3. "5, 3, 1," stored `[5,3,1,0]` (an empty entry parsed as 0). Failing unit test in `input.test.ts`.
+  4. Finish Points (per Game, Games page) and Placement Points (Standings, the Competition's Edit sheet) had no text saying which was which, so "5, 3, 1" could have gone into the other. Placement Points itself already showed its saved value on reopen.
+  A fresh page load always showed the saved Finish Points, so Paul's empty field is best explained by 2 (stale form after saving) or 4 (the other field).
+
+  Fix: the form re-derives its fields when the saved values change (edits survive an unrelated refresh), empty entries are ignored, and both fields' descriptions say which is which. Tests: `games-builder.test.tsx`, `games-builder.refresh.test.tsx`, `input.test.ts`; e2e `e2e/regression-r15-games-settings.spec.ts` (save, leave, return: both fields show what was saved). R18's tests should keep this case.

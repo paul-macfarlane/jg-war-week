@@ -62,3 +62,65 @@ Branch: `fix/regression-r15-quick-fixes`.
 | DoD4 | `pnpm format:check && pnpm gate` on the final integrated commit; PR CI | local + CI | exit 0; CI green | `test-results/r15/gate/gate.log` | after DX | any change |
 
 Human gates: none. No deploy in this work package. CI on the PR runs automatically.
+
+## [PROGRESS]
+
+- 2026-10-03, wave 1 integrated into `fix/regression-r15-quick-fixes` (claim commit `04ccfa5`), in order D87, D84, D88, D89, D85, D86.
+  - D87 (Sonnet): `9a59f94`. Also made Setup "Add …" solid and renamed the Heat button in `bracket*.spec.ts`.
+  - D84 (Sonnet): `22ff698`.
+  - D88 (Sonnet): `890e879`. `/history` was already behind sign-in (`src/lib/access.ts`), so the chrome changes no access.
+  - D89 (Sonnet): `6cd6799`.
+  - D85 (Haiku): `c93361a`. Its spec was false-green (every assertion inside `if (count > 0)`), so E2E rewrote it.
+  - D86 (Haiku): `1ed76c3`. Orchestrator fix: below `lg` the hidden nav left the grid and the account menu fell into the middle column, so it was pinned to the last column; the spec was scoped to the header's nav and its null-box checks made real.
+  - Integrated format, typecheck, lint and unit (3736) green.
+- Wave 2 (E2E, Sonnet) `57b00f4`: the six R15 specs pass on the build; four existing specs needed the new "Record result for <heat>" name or a different Competition. Full e2e 100 passed. Orchestrator follow-up `69c68cc`: the advancers screenshot waits for the Sheet overlay and toast, and asserts Edit is outline.
+- Wave 3 (DX, Sonnet) `ad457e7`: checklist, maintainers guide (button rule), Organizer guide, and the `/about` stills whose header or Add button changed (archive, schedule, announcements, competitions, organizer-admin; light and dark). `/about` copy and CONTEXT.md needed no change. The worker's worry that the nav looked off-centre in the stills was checked: the links are centred within a few pixels; the truncated tagline is ticket 86's chosen trade-off.
+- Review fixes (RF, Sonnet) `dda89e8`, and the orchestrator's smoke fix `9ef6100` (see below).
+- Parallelism: wave 1 ran 6 workers in parallel worktrees, as planned. The predicted "no source collisions" held: every cherry-pick applied cleanly.
+
+## [AI CODE REVIEW]
+
+2026-10-03. Two independent Opus reviewers read `04ccfa5..ad457e7` (src, e2e, docs); the orchestrator adjudicated. Fixes in `dda89e8` and `9ef6100`.
+
+- **Spec conformity, blocking (resolved):**
+  - F1: the Heat card's stretched `::after` collapsed on `:active` (the Button's `translate-y-px` made it the containing block), so a click on the card body was lost. Fixed with `active:not-aria-[haspopup]:translate-none`; the spec now clicks the card body. The worker confirmed the test fails without the class.
+  - F2: `disabled:pointer-events-none` on Button, Toggle and TabsTrigger meant users never saw `not-allowed`. Removed; native `disabled` and Base UI's tab guard still block activation. Disabled menu and list items keep the plain cursor; the docs now say so, and the spec checks `elementFromPoint`.
+  - F9: closeouts, ticket 87's audit and ticket 89's reproduction, now in the tickets.
+- **Coding standards, blocking (resolved):**
+  - S2: the two Bracket specs left Pool and Winning the Day changed for later specs. They now snapshot and restore (`snapshotBracket`/`restoreBracket` in `e2e/db.ts`).
+  - S13: `WarWeekChrome` imported from a route folder (ADR 0001). `getNavAccount` moved to `src/auth/nav-account.ts`; the maintainers guide's "Where things live" names the chrome.
+- **Non-blocking (all resolved):** missing menu/radio roles in the cursor rule (F3); below `lg` the header's empty middle column halved the brand's width (F4); the solid-button spec couldn't tell solid from outline (F5); the form says "Wins" in the final and uses the shared predicate (F6); an edit survives an unrelated refresh, tested (F8); the Organizer guide placed Record result on the Competition page (F11); checklist examples (S3, S5); the testing.md e2e row (S6); `won` → `advances` (S7); spec titles, headers and loops (S8–S10); the happy-dom test in its own file with clean setup (S12); a why-comment on the cursor rule (S14); leftover wrappers, wrapping, `&apos;` (S15–S17).
+- **Noted, not changed:** a forfeiter placed inside the advancing places is highlighted in results but not marked in the form (F6a; rare, R17 replaces these cards). No unit test renders `FinishingOrderForm` (its Dialog parts need a Base UI root); the e2e covers it (F7). `/history` 404s with no current War Week, per decision 88 (F10b).
+- No finding was rejected.
+
+## [VERIFICATION]
+
+2026-10-03. Every criterion has a final evidence-backed verdict.
+
+| Criterion | Verdict | Proven at | Evidence |
+|---|---|---|---|
+| AC84-unit | PASS | `9ef6100` | `bracket-view.test.tsx` "HeatRows advancers" in the gate's unit run |
+| AC84-shot | PASS | `9ef6100` | `test-results/e2e/regression-r15-heats-advan-*/admin-bracket-advancers.png`: places 1 and 2 bold, 3 and 4 greyed, outline Edit, solid Record result on the next Heat |
+| AC85 | PASS | `9ef6100` | `e2e/regression-r15-cursor.spec.ts` in the gate: pointer on a tab, a link, a button and a combobox option; `not-allowed` on a disabled button that `elementFromPoint` hits |
+| AC86 | PASS | `9ef6100` | `test-results/e2e/regression-r15-nav-centre-*/`: centre within 4px at 1280 and 1024 on XI and XII; brand left and menu right at 390 |
+| AC87-audit | PASS | — | ticket 87 closeout |
+| AC87-shot | PASS | `9ef6100` | `test-results/e2e/regression-r15-solid-butto-*/admin-bracket-record-result.png`; `bg-primary` asserted; a card-body click opens the result |
+| AC88 | PASS | `9ef6100` | `e2e/regression-r15-history-chrome.spec.ts` (nav at 1280, tab bar at 390, current theme on `/history` and a Category page); smoke "GET /history lists every complete War Week…" ok |
+| AC89-repro | PASS | — | ticket 89 closeout |
+| AC89-e2e | PASS | `9ef6100` | `e2e/regression-r15-games-settings.spec.ts`: Finish Points and Placement Points show what was saved after leaving and returning |
+| DoD1 | PASS | `9ef6100` | checklist, maintainers guide, Organizer guide, testing.md e2e row, `/about` stills |
+| DoD2 | PASS | — | CONTEXT.md checked against the grilling's glossary list; no R15 term owed and none disagrees |
+| DoD3 | PASS | closeout commit | `[CLOSEOUT]` and `Status: done` in tickets 84–89 and the epic |
+| DoD4 | PASS (local); CI pending on the PR | `9ef6100` | `pnpm format:check && pnpm gate` exit 0: 175 unit files (3738 tests), build, smoke 246 ok, e2e 100 passed. Log: `test-results/r15/gate/gate.log` |
+
+The first gate run failed one smoke check: `/history`'s "excludes the live War Week" looked for "The Matrix" anywhere in the page, and the new chrome's tagline names it. The check now reads the page's own `<main>` (the last one; an earlier `<main>` is the loading skeleton) — `9ef6100`.
+
+## [CLOSEOUT]
+
+2026-10-03, `/atlas-implement`.
+
+- **Repository:** `war-weeker`, branch `fix/regression-r15-quick-fixes`, base `staging` at `ed09689` (comparison point `04ccfa5`).
+- **Deliverables and models:** D84, D87, D88, D89: Sonnet. D85, D86: Haiku. E2E, DX, RF: Sonnet. Reviews: two Opus reviewers. Orchestrator fixes: D86's grid column and spec, the advancers screenshot, the `/history` smoke check.
+- **Deviations (approved during the run):** Setup "Add …" buttons made solid (87); help text on Finish Points and Placement Points (89); `pointer-events-none` removed from disabled Button, Toggle and TabsTrigger so `not-allowed` is visible (85, review F2); `getNavAccount` moved to `src/auth/` (88, ADR 0001).
+- **Verified run command:** `pnpm format:check && pnpm gate`, with `DATABASE_URL=postgres://postgres:postgres@localhost:2345/war_weeker?sslmode=disable DATABASE_DRIVER=pg` (the local values from `.env.example`). No deploy in this work package.
+- **Remaining risks:** XII's tagline truncates in the desktop header (ticket 86's trade-off); the forfeit edge in F6a; Paul's exact "empty after reopen" path was explained from code, not watched in the app (ticket 89).
