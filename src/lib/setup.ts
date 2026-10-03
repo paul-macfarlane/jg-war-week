@@ -891,7 +891,7 @@ export function competitionGuardError(
       placementPoints: Competition["placementPoints"];
       pointsEntryCount: number;
       finalizedAt: Competition["finalizedAt"];
-      /** Omitted for a Competition that predates Formats: not `games`. */
+      /** Omitted for a Competition that predates Formats: not Head-to-head or Best score. */
       format?: Competition["format"];
     } | null;
   },

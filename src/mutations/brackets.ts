@@ -67,13 +67,16 @@ export const FINALIZED = "Un-finalize the Bracket before changing it.";
 export const SQUAD_NOT_FOUND = "That Squad no longer exists.";
 const NOT_A_TEAM_COMPETITION = "Squads are only for team Competitions.";
 const SQUADS_SEEDED_AT_RANDOM = "Squads are seeded at random.";
-/** Changing a `games` Competition's Format, or making one `games` later. */
+/**
+ * Changing a Head-to-head or Best score Competition's Format, or making one
+ * Head-to-head or Best score later.
+ */
 export const GAMES_KEEP_FORMAT =
   "A Head-to-head or Best score Competition keeps its Format; add a new Competition to run it another way.";
 /** Changing a `participation` Competition's Format, or making one later. */
 export const PARTICIPATION_KEEPS_FORMAT =
   "A Participation Competition keeps its Format; add a new Competition to run it another way.";
-/** A closed `games` Competition's Entrants can't change. */
+/** A closed Head-to-head or Best score Competition's Entrants can't change. */
 export const GAMES_CLOSED = "Reopen the Competition first.";
 const NO_SQUADS_IN_GAMES =
   "Squads aren't entered in a Head-to-head or Best score Competition.";
@@ -275,7 +278,7 @@ async function saveBracket(
 /**
  * Sets how a Competition is run, and the heats Format's config. Its Format
  * can't change while it has Entrants or Games, nor either while it's
- * finalized; a `games` or `participation` Competition is that Format from
+ * finalized; a Head-to-head, Best score or Participation Competition is that Format from
  * creation, and stays so.
  * Saving a different heats config clears the Heats (keeping the Entrants);
  * once a Heat has a Heat Result, only with `force`. Omitting the config
@@ -410,13 +413,13 @@ export async function setCompetitionFormat(
  * Positions in the given order. Squads must be this Competition's. It
  * clears the Bracket; once a Heat has a Heat Result, only with `force`.
  *
- * A `games` Competition's fixed Entrant list takes the same Teams or
+ * A Head-to-head or Best score Competition's fixed Entrant list takes the same Teams or
  * Participants (never Squads), in the order added; it has no Heats to
  * clear. While Best of is on it takes exactly 2, and an Entrant who has
  * logged Games can't be removed until they're deleted.
  *
  * `format` says which the caller sets: a Bracket's Entrants refuse a
- * `games` Competition, a `games` Competition's refuse any other Format.
+ * Head-to-head or Best score Competition, theirs refuse any other Format.
  */
 export async function replaceEntrants(
   competitionId: string,
@@ -534,7 +537,7 @@ export async function replaceEntrants(
 }
 
 /**
- * The name of a current Entrant of this `games` Competition, left out of
+ * The name of a current Entrant of this Head-to-head or Best score Competition, left out of
  * `keptIds`, who is a player in one of its Games; null when there's none.
  * Games reference Teams and Participants, never Entrant rows.
  */
@@ -764,8 +767,8 @@ export async function setHeatSchedule(
 
 /**
  * Finalizes a finished Bracket: replaces its generated Points Entries with
- * new ones from the final placings and Placement Points (hand-entered
- * Points Entries are untouched), and marks it finalized.
+ * new ones from the final placings and Placement Points, and marks it
+ * finalized.
  */
 export async function finalizeBracket(
   competitionId: string,
@@ -813,7 +816,8 @@ export async function finalizeBracket(
 
 /**
  * Deletes a Competition's generated Points Entries: a Bracket's on
- * un-finalize or re-finalize, a `games` Competition's on Reopen.
+ * un-finalize or re-finalize; a Head-to-head, Best score, Participation
+ * or Placement Competition's on Reopen.
  */
 export function deleteGenerated(tx: DBOrTx, competitionId: string) {
   return tx

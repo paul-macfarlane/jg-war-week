@@ -262,8 +262,8 @@ export async function finalizePlacements(
 }
 
 /**
- * Reopens the sheet: deletes its generated Points Entries (hand-entered
- * ones stay) and clears `finalized_at`. Reopening an open sheet changes
+ * Reopens the sheet: deletes its generated Points Entries and clears
+ * `finalized_at`. Reopening an open sheet changes
  * nothing.
  */
 export async function reopenPlacements(

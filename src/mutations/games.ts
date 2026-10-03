@@ -263,7 +263,7 @@ export async function deleteGame(
 }
 
 /**
- * Saves a `games` Competition's settings (R3 decision 11). Its Format
+ * Saves a Head-to-head or Best score Competition's settings (R3 decision 11). Its Format
  * is fixed: only that type's settings change. A Best of needs a fixed list
  * of exactly two Entrants and takes no enrollment; enrollment is for a
  * fixed list only (`enrollmentUnavailable`). The logged Games must still
@@ -334,7 +334,7 @@ export async function setGamesSettings(
 }
 
 /**
- * Closes a `games` Competition: its leaderboard's places become Placement
+ * Closes a Head-to-head or Best score Competition: its leaderboard's places become Placement
  * Points Entries (`pointsFor`, ties sharing a place's points, as when
  * finalizing a Bracket), marked generated and noted "From head-to-head" or "From best score", to the
  * Team or the Participant by scoring; then no Game changes until Reopen.
@@ -374,7 +374,7 @@ export async function closeGames(
 }
 
 /**
- * Reopens a closed `games` Competition: deletes its generated Points
+ * Reopens a closed Head-to-head or Best score Competition: deletes its generated Points
  * Entries and clears `finalized_at`.
  */
 export async function reopenGames(
