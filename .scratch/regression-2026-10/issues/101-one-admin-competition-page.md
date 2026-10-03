@@ -6,7 +6,7 @@
 
 **Blocked by:** none inside R18 (first part)
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: autosave, "Run as a bracket"); grilling Q6, Q14, Q30, Q31; red-team pass 1 W1, W2, W3, W5, W8, M1, M4
 
@@ -41,3 +41,7 @@
 - [ ] Postgres tests: a Host is refused changing Hosts; a Host of another Competition is refused any field; a Participant is refused any field; a Format change applies the new Format's defaults and keeps 4 Placement Points for a Bracket.
 - [ ] Test: each old route answers 308 to the new page (smoke over HTTP).
 - [ ] No test or code refers to `HAS_RESULTS_ERROR` or a `force` option on the Bracket mutations.
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r18`): claimed with Epic R18; `ready-for-agent` → `in-progress`. Execution record: [`R18-execution.md`](../epics/R18-execution.md).

@@ -6,7 +6,7 @@
 
 **Blocked by:** `101` (order inside R18)
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: where to record games and scores); grilling Q22, Q36; red-team pass 1 M2
 
@@ -19,3 +19,7 @@
 
 - [ ] e2e: a Host (of an `E2E R18 …` Best score Competition) logs a Best score attempt for a Participant from admin, edits it, and the Competition's Games leaderboard shows the edited score (M2: the Competition leaderboard, not War Week Standings, which move only at Close).
 - [ ] e2e: the same Host deletes the Game behind a `ConfirmDialog`, and it leaves the leaderboard.
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r18`): claimed with Epic R18; `ready-for-agent` → `in-progress`. Execution record: [`R18-execution.md`](../epics/R18-execution.md).

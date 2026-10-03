@@ -6,7 +6,7 @@
 
 **Blocked by:** `101` (order inside R18)
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: descriptions and rules); grilling Q8; red-team pass 1 B1, W6, W7, M4
 
@@ -24,3 +24,7 @@
 - [ ] e2e: an Organizer writes a description with a heading, a list and a link on an `E2E R18 …` Competition; the Participant page renders them.
 - [ ] Unit test: the seed helper turns "Line one\nLine two\n\nLine three" into three paragraphs, in order.
 - [ ] Postgres test: a description with a `javascript:` link or a `<script>`-carrying node is refused or stripped on save, as an Announcement body is.
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r18`): claimed with Epic R18; `ready-for-agent` → `in-progress`. Execution record: [`R18-execution.md`](../epics/R18-execution.md).

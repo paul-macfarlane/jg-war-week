@@ -8,7 +8,7 @@
 
 **Blocked by:** this planning change (`docs/regression-r18-red-team`) merged into `staging`. R17 merged 2026-10-03 (PR #128), so the branch starts from its schema (`drizzle/0029_*`).
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Red-team:** **required** (Drizzle schema change for the description; Host access on the new page). Pass 1 on 2026-10-03 BLOCKED; resolved below.
 
@@ -71,3 +71,5 @@ The parts' own, plus:
 - 2026-10-03 (atlas-implement, R15): when these forms are rebuilt, keep the "forms seeded from server data follow it after a save" rule (`docs/maintainers-guide.md`, UI) and the ticket 89 case: save, leave, return, and the saved values show (`e2e/regression-r15-games-settings.spec.ts`).
 - 2026-10-03 (red-team pass 1): BLOCKED, 1 blocking (the description migration unspecified, with no old-row test, seed conversion or deployed-data decision), 9 warnings, 7 minor.
 - 2026-10-03 (Paul, on pass 1): B1 don't convert old data, reset staging and prod as a human step; W1 Format locks once any result exists; W2 what affects how the game runs can't change once it started, but name, description and Placement Points can; W3 add the tests; W4 anyone who can sign in can be a Host; W5 add redirects where needed; W6 images by URL only, no upload; W7 build the epic as one work package; W8 one work package, and Reset bracket wasn't asked for: lock with no reset (today's "confirm to clear and start over" goes too); W9 and the minors at the agent's discretion. Applied: one work package with part order and serial shared files (W7, W8); the migration `USING NULL`, seed conversion and the human reset (B1); Format changes between any Formats until a result exists, applying the new Format's create defaults (W1); one lock table, enforced server-side, with name, description, Group, Hosts and Placement Points never locked (W2); server-side Host and Participant refusals and no emails sent to Hosts (W3); only `@jahnelgroup.com` roster emails pickable (W4); every old route redirected and its callers updated (W5); images by URL, sanitised on write and render (W6); the list preview left to ticket 105, and R19 now blocked by R18 (W7); Reset bracket and the forced clear removed (W8); test data per spec (W9); autosave for non-string fields, Standings named, a similar-names fixture, description size, 308 redirects, CONTEXT entries, evidence path, seed and migration together (M1–M7).
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r18`): claimed; `ready-for-agent` → `in-progress`. Built in worktree `.claude/worktrees/regression-r18/war-weeker` (separate local database and ports so R19 work in the main checkout is undisturbed). Execution record: [`R18-execution.md`](./R18-execution.md).
