@@ -81,8 +81,19 @@ test("a recorded Heat of 4 with 2 advancing highlights both advancers in admin",
     advancers.filter({ has: page.getByLabel("Place 3", { exact: true }) }),
   ).toHaveCount(0);
 
+  // The recorded Heat's Edit is secondary (outline), not the solid primary.
+  await expect(
+    page.getByRole("button", { name: `Edit ${heat}`, exact: true }),
+  ).toHaveClass(/\bbg-background\b/);
+
+  // Shoot once the Sheet's overlay and the toast have gone.
+  await expect(page.locator('[data-slot="sheet-overlay"]')).toHaveCount(0);
+  await expect(page.getByText(`${winner} wins ${heat}`)).toBeHidden({
+    timeout: 15_000,
+  });
   await page.screenshot({
     path: testInfo.outputPath("admin-bracket-advancers.png"),
     fullPage: true,
+    animations: "disabled",
   });
 });
