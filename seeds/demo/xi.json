@@ -954,56 +954,48 @@
     {
       "name": "HQ Attendance",
       "scoring": "team",
-      "maxPoints": 3,
       "group": "Pre-War Week and General",
       "description": "Attendance at JGHQ over the 14 business days before War Week, tracked with the stairs app."
     },
     {
       "name": "AI Survey Completion",
       "scoring": "team",
-      "maxPoints": 1,
       "group": "Pre-War Week and General",
       "description": "The team with the highest completion rate of the AI questionnaire by Tuesday morning."
     },
     {
       "name": "Subjective Points",
       "scoring": "team",
-      "maxPoints": 6,
       "group": "Pre-War Week and General",
       "description": "One-point bonuses for each of six secret categories. Not head to head: done or not done."
     },
     {
       "name": "Black Midnight",
       "scoring": "team",
-      "maxPoints": 3,
       "description": "The team with the most people who go from 12:01 AM Sunday to noon with no nonsense."
     },
     {
       "name": "Settlers of Catan",
       "scoring": "individual",
       "countsTowardTeam": true,
-      "maxPoints": 5,
       "placementPoints": [5, 3, 1],
       "description": "The 9th annual Catan tournament hosted by Tony Mercadante."
     },
     {
       "name": "Beast Mode Workout",
       "scoring": "team",
-      "maxPoints": null,
       "description": "The team with the most people who complete Lucier's workout, at JGHQ or virtually."
     },
     {
       "name": "Speed Chess",
       "scoring": "individual",
       "countsTowardTeam": true,
-      "maxPoints": 1.5,
       "description": "Run by Ben Sadick in a new format. Finals Monday night."
     },
     {
       "name": "Beyblades",
       "scoring": "individual",
       "countsTowardTeam": true,
-      "maxPoints": 5,
       "placementPoints": [5, 3, 1],
       "description": "Finals Monday night in Team Room 4's new Beyblade Terrordome."
     },
@@ -1011,24 +1003,20 @@
       "name": "Pool",
       "scoring": "individual",
       "countsTowardTeam": true,
-      "maxPoints": 3,
       "description": "Organized by Dom Favata. Preliminaries before War Week, finals Monday night."
     },
     {
       "name": "Super Smash Bros",
       "scoring": "individual",
       "countsTowardTeam": true,
-      "maxPoints": 3,
       "description": "Paul Macfarlane runs back this classic JG gaming competition."
     },
     {
       "name": "Bouncy Pong",
       "scoring": "individual",
       "countsTowardTeam": true,
-      "maxPoints": 3,
       "placementPoints": [3, 2, 1],
-      "format": "games",
-      "gameType": "head-to-head",
+      "format": "head-to-head",
       "gameConfig": { "drawsAllowed": false, "bestOf": null },
       "entrantsOpen": true,
       "description": "The inaugural Bouncy Ping Pong, run by Casey Snow."
@@ -1036,9 +1024,7 @@
     {
       "name": "Tuesday Stairs",
       "scoring": "team",
-      "maxPoints": 3,
-      "format": "games",
-      "gameType": "best-score",
+      "format": "best-score",
       "gameConfig": { "count": "total", "betterIs": "higher", "unit": "trips" },
       "entrantsOpen": true,
       "description": "Stairway to Heaven: of course stairs on Tuesday counts."
@@ -1046,67 +1032,54 @@
     {
       "name": "This is Zion",
       "scoring": "team",
-      "maxPoints": 3,
       "group": "Team Night Events"
     },
     {
       "name": "Hard Line / White Rabbit",
       "scoring": "team",
-      "maxPoints": 3,
       "group": "Team Night Events"
     },
     {
       "name": "Cypher",
       "scoring": "team",
-      "maxPoints": 3,
       "group": "Team Night Events"
     },
     {
       "name": "Red Pill / Blue Pill",
       "scoring": "team",
-      "maxPoints": 3,
       "group": "Team Night Events"
     },
     {
       "name": "There is No Spoon",
       "scoring": "team",
-      "maxPoints": 3,
       "group": "Team Night Events"
     },
     {
       "name": "The Keymaker",
       "scoring": "team",
-      "maxPoints": 3,
       "group": "Team Night Events"
     },
     {
       "name": "Deja Vu",
       "scoring": "team",
-      "maxPoints": 3,
       "group": "Team Night Events"
     },
     {
       "name": "Guns, Lots of Guns",
       "scoring": "team",
-      "maxPoints": 3,
       "group": "Team Night Events"
     },
     {
       "name": "Electric City Matrix",
       "scoring": "team",
-      "maxPoints": 5,
-      "format": "games",
-      "gameType": "ranked",
-      "entrantsOpen": true,
+      "format": "placement",
       "group": "Team Night Events"
     },
     {
       "name": "Daily Workout Check-in",
       "scoring": "team",
-      "maxPoints": 5,
       "placementPoints": [5, 3, 1],
       "format": "participation",
-      "participationTeamScoring": "ranked",
       "selfCheckIn": true,
       "group": "Pre-War Week and General",
       "description": "Check in each day you work out. The Team with the most check-ins takes 1st."
@@ -1202,30 +1175,6 @@
       "points": 3,
       "enteredByEmail": "pmacfarlane@jahnelgroup.com",
       "enteredAt": "2026-02-23T22:10:00-05:00"
-    },
-    {
-      "key": "bouncy-pong-nick-brown",
-      "competition": "Bouncy Pong",
-      "participant": "Nick Brown",
-      "points": 3,
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-23T22:20:00-05:00"
-    },
-    {
-      "key": "tuesday-stairs-red",
-      "competition": "Tuesday Stairs",
-      "team": "Red",
-      "points": 2,
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-24T17:00:00-05:00"
-    },
-    {
-      "key": "tuesday-stairs-blue",
-      "competition": "Tuesday Stairs",
-      "team": "Blue",
-      "points": 1,
-      "enteredByEmail": "pmacfarlane@jahnelgroup.com",
-      "enteredAt": "2026-02-24T17:01:00-05:00"
     },
     {
       "key": "this-is-zion-red",
