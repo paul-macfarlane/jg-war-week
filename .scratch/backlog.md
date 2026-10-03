@@ -45,4 +45,4 @@ Done: Epics R9–R14 (`regression-2026-09`, PRs through #122).
 
 ## Deferred on purpose
 
-- [ ] **Rename `finalized_at` / `generated_by_bracket`**: internal naming; do it alongside the next red-teamed schema change (R16 or R17). [`regression-2026-09/issues/25`](./regression-2026-09/issues/25-rename-finalized-generated-columns.md) (`needs-triage`)
+- [ ] **Rename `finalized_at` / `generated_by_bracket`**: internal naming; do it alongside a red-teamed schema change after R17 (R16 and R17 declined it, 2026-10-03). [`regression-2026-09/issues/25`](./regression-2026-09/issues/25-rename-finalized-generated-columns.md) (`needs-triage`)
