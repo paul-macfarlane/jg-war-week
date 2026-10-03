@@ -99,7 +99,7 @@ describe("AboutPage", () => {
     expect(html).not.toMatch(/<video/i);
   });
 
-  it("shows the Standings-moving-after-a-Points-Entry stepper in the hero", async () => {
+  it("shows the Standings-moving-after-Discretionary-points stepper in the hero", async () => {
     getCurrentWarWeek.mockResolvedValue(warWeekFixture());
     const { html, text } = await renderAbout();
 
@@ -109,7 +109,7 @@ describe("AboutPage", () => {
     expect(html).toContain('src="/about/standings-before-dark.png"');
     expect(html).toContain('src="/about/standings-entry-dark.png"');
     expect(html).toContain('src="/about/standings-after-dark.png"');
-    expect(text).toContain("Points Entry");
+    expect(text).toContain("Discretionary points");
     // Accessible alt text on every step.
     expect(html).toMatch(/alt="[^"]*Standings[^"]*"/);
   });
@@ -215,7 +215,7 @@ describe("AboutPage", () => {
       "Schedule, Now and Next",
       "Points and Standings",
       "Announcements",
-      "Competitions: Brackets, Games and Participation",
+      "Competitions: Placements, Brackets, Games and Participation",
       "The Archive",
     ]);
   });

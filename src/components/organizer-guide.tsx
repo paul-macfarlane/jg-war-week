@@ -153,7 +153,7 @@ export function OrganizerGuide({
           the individual leaderboards, Award recipients on the Awards page and
           Participation lists; their Entrant in a Bracket (themselves, their
           Squad, or their {teamLower} in a team Bracket) is marked
-          &quot;You&quot;; and a games Competition&apos;s leaderboard marks
+          &quot;You&quot;; and a Games Competition&apos;s leaderboard marks
           their enrolled {teamLower} &quot;Your Team&quot;. {teamLabel}{" "}
           standings rows are not highlighted. They can log Games, report Heats
           and check in. A Participant without an email is never linked. It
@@ -182,10 +182,12 @@ export function OrganizerGuide({
         <h2 className="text-lg font-semibold">Placement Points</h2>
         <p className="text-foreground/70">
           Each Competition can preset Placement Points for 1st, 2nd, 3rd and on,
-          highest place first, up to 5 places. They show up as one-tap buttons
-          in Points Entry, so entering a result is a single click. 1st
-          place&apos;s preset can&apos;t exceed the Competition&apos;s max
-          points.
+          highest place first and never rising, with as many places as you need
+          (a Bracket allows up to 5). A new Competition is a Placement: open its
+          Record placements sheet, add who took part, give each a Place (or a
+          Score, with a Score direction that fills the Places) and Finalize, and
+          the Standings move through its Placement Points. Reopen withdraws
+          them. A Competition&apos;s top prize is its 1st place.
         </p>
       </section>
 

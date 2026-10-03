@@ -28,8 +28,8 @@ export const ABOUT_FEATURES = [
   {
     slug: "organizer-admin",
     title: "Organizer and Host admin",
-    text: "Organizers run the whole War Week from one Admin nav: the Days and schedule, the roster (paste it in from a sheet), Competitions, Announcements, Awards, FAQ and settings. Hosts get just their Competition and enter its points themselves.",
-    alt: "The Admin Schedule page with the flat Admin nav (Points, Competitions, Schedule, Roster and more) beside the War Week's Days and their Schedule Items.",
+    text: "Organizers run the whole War Week from one Admin nav: the Days and schedule, the roster (paste it in from a sheet), Competitions, Announcements, Awards, FAQ and settings. Hosts get just their Competition and record its results themselves.",
+    alt: "The Admin Schedule page with the flat Admin nav (Competitions, Discretionary points, Schedule, Roster and more) beside the War Week's Days and their Schedule Items.",
   },
   {
     slug: "schedule",
@@ -40,8 +40,8 @@ export const ABOUT_FEATURES = [
   {
     slug: "points",
     title: "Points and Standings",
-    text: "Scoring is one tap with Placement Points, and the Standings move on the spot. Sign in and you're highlighted on the leaderboards, the roster and your Brackets, under the name and picture you set in your Profile.",
-    alt: "The Points Entry form with Mile Run selected, a Participant to choose, and the 1st, 2nd and 3rd Placement Points buttons beside the current Standings.",
+    text: "A Competition's results turn into points through its Placement Points, and Discretionary points reward what no Competition covers; the Standings move on the spot. Sign in and you're highlighted on the leaderboards, the roster and your Brackets, under the name and picture you set in your Profile.",
+    alt: "The Give Discretionary points form open over the Admin Discretionary points page, asking for a Participant, a number of points and a reason.",
   },
   {
     slug: "announcements",
@@ -51,8 +51,8 @@ export const ABOUT_FEATURES = [
   },
   {
     slug: "competitions",
-    title: "Competitions: Brackets, Games and Participation",
-    text: "Run a Competition as a Bracket, as Games players log themselves from a phone, or as Participation: the Host ticks who took part, or people check themselves in. Finalizing or closing it turns the results into points.",
+    title: "Competitions: Placements, Brackets, Games and Participation",
+    text: "Run a Competition as a Placement sheet (who came 1st, 2nd, 3rd, with or without a Score), a Bracket, Head-to-head or Best score Games players log themselves from a phone, or Participation: the Host ticks who took part, or people check themselves in. Finalizing or closing it turns the results into points.",
     alt: "A finished Bracket on its Competition page: two Round 1 Heats of Participants feeding the Final, with its champion on top.",
   },
   {

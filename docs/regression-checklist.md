@@ -67,17 +67,17 @@ line that no longer matches the app is a bug in this file.
   - **Free-for-all pass:** `pnpm seed:demo:xii` (XII, free-for-all, live;
     XI and earlier are the Archive).
   - **Teams pass:** `pnpm seed:demo` (the demo XI, teams mode, live, with
-    two Teams, Captains, Awards, FAQ and `games` Competitions).
+    two Teams, Captains, Awards, FAQ and Head-to-head and Best score Competitions).
   - Each pass reseeds with `--reset`, which wipes only the seeded War Weeks
     in the local database: a War Week the run creates (Lifecycle) survives
     it, so delete that one yourself. Never run against a hosted database.
 - **Navigation, for the lines below.** Participant pages: the phone tab bar
   is Home, Schedule, Competitions, Leaderboard, More (Announcements is
   More's first item); the desktop top nav adds Announcements. Admin: one
-  flat nav, Points, Competitions, Schedule, Roster, Announcements, Awards,
-  FAQ, Finale, Settings, Organizers, Guide (a Host sees Points,
-  Competitions, Schedule, Announcements, Finale, Guide); the phone bar is
-  Points, Competitions, Schedule, Announcements, More. The avatar button
+  flat nav, Competitions, Discretionary points, Schedule, Roster,
+  Announcements, Awards, FAQ, Finale, Settings, Organizers, Guide (a Host
+  sees Competitions, Schedule, Announcements, Finale, Guide); the phone bar
+  is Competitions, Discretionary points, Schedule, Announcements, More. The avatar button
   (**Account menu**) at the top right of both headers holds the account.
 - **Run order:** Public Pages, then Admin as an Organizer (it links the
   Participant account and assigns the Host the later sections use), then
@@ -170,22 +170,19 @@ line that no longer matches the app is a bug in this file.
 otherwise. Every create, edit and delete below ends with the change visible
 on the matching War Week page.
 
-- [ ] **Lands on the current War Week, on Points.** Open `/admin`; it
-      redirects to `/admin/points` (there is no Overview or Setup hub). The
-      header names the current War Week, and the edition switcher (in the
-      header at 1440, in More at 390) lists every edition. `/admin/points`
-      opens with "Add a Points Entry"; the Brackets, Games and Participation
-      quick links follow it in its column, before the Standings, so at 390
-      the heading and the Competition, Participant and Points fields are on
-      the first screen. Switch to a past
-      edition: the banner reads "Editing the Archive: War Week <X>". Switch
-      back.
-- [ ] **Flat admin nav.** At 1440 the side nav lists Points, Competitions,
-      Schedule, Roster, Announcements, Awards, FAQ, Finale, Settings,
-      Organizers, Guide, in that order, current page highlighted. At 390 the
-      bottom bar is Points, Competitions, Schedule, Announcements, More, and
-      More's Sheet holds the other seven plus the edition switcher; More is
-      highlighted on a page that lives in it (e.g. Settings).
+- [ ] **Lands on the current War Week, on Competitions.** Open `/admin`; it
+      redirects to `/admin/competitions` (there is no Overview, Setup hub or
+      Points page). The header names the current War Week, and the edition
+      switcher (in the header at 1440, in More at 390) lists every edition.
+      Switch to a past edition: the banner reads "Editing the Archive: War
+      Week <X>". Switch back.
+- [ ] **Flat admin nav.** At 1440 the side nav lists Competitions,
+      Discretionary points, Schedule, Roster, Announcements, Awards, FAQ,
+      Finale, Settings, Organizers, Guide, in that order, current page
+      highlighted. At 390 the bottom bar is Competitions, Discretionary
+      points, Schedule, Announcements, More, and More's Sheet holds the other
+      six plus the edition switcher; More is highlighted on a page that lives
+      in it (e.g. Settings).
 - [ ] **Old Setup URLs redirect.** `/admin/setup` and `/admin/setup/war-week`
       land on `/admin/settings`; `/admin/setup/days` and
       `/admin/setup/schedule` on `/admin/schedule`; `/admin/setup/teams` on
@@ -263,15 +260,63 @@ on the matching War Week page.
       Error (an unknown Team is an Error, never created); Import adds and
       updates only the valid rows. As a Host there is no Import and the
       server refuses it. Delete what you added.
-- [ ] **Competitions, one of each Format.** Create a `points` Competition
-      with Placement Points 5/3/1, a `single-elimination` Competition, and a
-      `games` Competition with `head-to-head` (Add Competition lands on its
-      Games page: set Entrants to "A fixed list", turn on "Participants can
-      enroll", Save settings); assign `e2e-host@jahnelgroup.com` as Host of
-      the `points` one (the Hosts field is on its Edit form, not Add). Each
+- [ ] **Competitions, one of each Format.** Create a Placement Competition
+      with Placement Points 5/3/1, a Single-elimination Competition, and a
+      Head-to-head Competition (Add Competition lands on its Games page: set
+      Entrants to "A fixed list", turn on "Participants can enroll", Save
+      settings); assign `e2e-host@jahnelgroup.com` as Host of the Placement
+      one (the Hosts field is on its Edit form, not Add). The Format select
+      offers Placement, Single-elimination, Heats, Head-to-head, Best score
+      and Participation, and there is no "Games" Format or Game Type. Each
       shows on `/<edition>/competitions` (when the War Week has Groups, as
       the XI demo does, one without a Group is under the Other
       Competitions tab).
+- [ ] **Placement Points: 20 places at 390.** At 390, in a new
+      Competition's Edit sheet, add Placement Points places up to 20 with
+      "add a place": every place is reachable with no sideways scroll, a
+      place can be removed from anywhere in the list, and the 5·3·1 quick
+      fill works; a list that rises (1, 3) is refused. On a Bracket the list
+      stops at 5 places with the message naming the limit.
+- [ ] **Record placements: add rows.** On the Placement Competition's
+      "Record placements" sheet, add a row by search and press Add everyone
+      (Teams for a team Competition, Participants for an individual one):
+      each saves at once. Remove one. Edit a Place and press Save.
+- [ ] **Record placements: Score direction.** Set Score direction to Higher
+      wins and type Scores: the Places fill from the Scores (highest first);
+      switch to Lower wins and they refill (lowest first); the Places stay
+      editable (make two tie: 1, 1, then 3). Set it to none and Places are
+      manual.
+- [ ] **Record placements: Score without a Place.** Type a Score on a row
+      and clear its Place: Finalize is refused with "Give every row with a
+      Score a Place, or clear its Score.", naming the row(s). A sheet with
+      nobody placed refuses too, and Finalize is disabled while there are
+      unsaved edits.
+- [ ] **Record placements: Finalize and Reopen.** Finalize behind its
+      confirm: the Standings move (ties share the place's points, 1st gets
+      the 1st Placement Points, unplaced rows nothing), the Competition
+      shows in Home's Recent results and in the Finale's Champions, and its
+      page lists the Placements (place, name, Score, points) for a
+      Participant. Rows can't change while Finalized. Reopen withdraws the
+      points from the Standings. Changing the Format while rows exist is
+      refused ("Remove its Placements first.").
+- [ ] **Record placements: a Participant is refused.** As the linked
+      Participant, open `/admin/placements/<id>`: "Organizers and Hosts
+      only." and no sheet; their Competition page shows the result read-only.
+- [ ] **Discretionary points: give, edit, delete.** On
+      `/admin/discretionary-points` (the page opens with the Standings beside
+      the ledger), give points to a Team or Participant with a reason (an
+      empty Reason is refused), edit its points and reason, then delete it
+      behind a confirm; `/<edition>/leaderboard` follows each change within
+      about 10 s, and the points breakdown reads "Discretionary: <reason>".
+      `/admin/points` redirects to this page. *(Host refused: see Admin, as a
+      Host.)*
+- [ ] **MCP: `get_placements` and `get_discretionary_points`.** Call each
+      against a signed-in session or `MCP_TOKEN`: `get_placements` for the
+      Placement Competition by name returns its Score direction, Placement
+      Points, finalized state and rows by place with names, Teams, Scores and
+      points; `get_discretionary_points` returns the current War Week's
+      entries by name and reason. Neither output contains an `@`. For a
+      Placement Competition `get_bracket` points to `get_placements`.
 - [ ] **Run a Bracket end to end.** In the `single-elimination`
       Competition's Bracket setup, pick Entrants and Save Entrants, then
       Generate (or By Standings) to seed and build it. *(teams)* A new
@@ -291,33 +336,31 @@ on the matching War Week page.
       1st is highlighted and the form says "Wins" beside it. An unplayed
       Heat has a solid "Record result" button; a recorded one has an outline
       "Edit".
-- [ ] **Games settings show what was saved.** On a `games` Competition's
-      Games page, change a setting (for Ranked, the Finish Points) and
-      press Save settings: the fields keep the saved values with no reload;
-      reload and come back later, and they are still there. A trailing or
-      doubled comma in Finish Points ("5, 3, 1,") saves 5, 3, 1, with no
-      extra 0. Finish Points says it is per finishing place in one Game and
-      points to Placement Points in the Competition's Edit sheet; Placement
-      Points (in the Edit sheet) says it is what each place earns in the
-      Standings and points to Finish Points.
-- [ ] **Close a `games` Competition.** Log two Games as the Organizer in
-      a `head-to-head` Competition with Placement Points (Log a Game on its
+- [ ] **Games settings show what was saved.** On a Head-to-head or Best
+      score Competition's Games page, change a setting (Draws or Best of; for
+      Best score, count best or total, direction, unit label) and press Save
+      settings: the fields keep the saved values with no reload; reload and
+      come back later, and they are still there. There is no Finish Points
+      table. The Competition's Edit sheet shows Placement Points as what
+      each place earns in the Standings.
+- [ ] **Close a Head-to-head Competition.** Log two Games as the Organizer
+      in a Head-to-head Competition with Placement Points (Log a Game on its
       public Competition page), then Close on its Games page: its top
-      finishers get Placement Points and the Standings move. Reopen
-      withdraws them. *(teams)* Add it with Scoring Individual and Counts
-      toward the Team on, so the Team Standings move.
-- [ ] **Run a Competition as Participation.** Add a `participation`
+      finishers get Placement Points ("From head-to-head" in the ledger) and
+      the Standings move. Reopen withdraws them. *(teams)* Add it with
+      Scoring Individual and Counts toward the Team on, so the Team Standings
+      move. Do the same with a Best score Competition ("From best score");
+      its Competitions-list link reads "Entrants and Games".
+- [ ] **Run a Competition as Participation.** Add a Participation
       Competition (Add Competition lands on its setup page; the list's link
-      reads "Who took part"). Settings: Points per Participant, and *(teams)*
-      ranked by headcount with Placement Points 5/3/1, or per person; turn on
+      reads "Who took part"). Settings: *(individual)* Points per
+      Participant; *(teams)* Placement Points 3/2/1 by headcount (there is no
+      per-Participant N and no per-person mode); turn on
       Self check-in. Tick two Participants, untick one, then Close: the
       generated Points Entries ("From participation") appear in the ledger
       and the Standings move. Closed, the ticks and "Save settings" are disabled (the server's
       refusals are covered by unit tests and smoke). Reopen withdraws them. Changing the scoring, or deleting the
       Competition, while anyone is ticked is refused with the count.
-- [ ] **Points Entries.** Add a Points Entry with a Placement Points button,
-      edit its points, delete it; `/<edition>/leaderboard` follows each
-      change within about 10 s without a reload.
 - [ ] **Schedule Items.** On `/admin/schedule`, add a Schedule Item on a
       Day, linked to a Competition; it shows on `/<edition>/schedule` under
       that Day with its time in ET and links to the Competition. Edit it
@@ -358,12 +401,12 @@ on the matching War Week page.
       shows there too, and only there), Create next War Week makes an Upcoming edition (copy
       settings only). Start on it is refused while the current one is live
       ("End <X> first."). End the current War Week: its confirm names any
-      generated Bracket that isn't finalized, any open `games`
-      Competition with at least one Game and any open `participation`
+      generated Bracket that isn't finalized, any open Head-to-head or Best score
+      Competition with at least one Game and any open Participation
       Competition with anyone ticked (linked to its setup page), and on End it records the Winner
       from first place. Unstart on a live edition with nothing scored (an
       edition freshly started, e.g. XII) goes back to Upcoming behind a
-      confirm; on one with a Points Entry, Heat result or Game it is
+      confirm; on one with a Points Entry (a Finalized Placement's included), Heat result or Game it is
       refused. Reopen makes it live again. Reopen is refused while a later
       edition is upcoming ("War Week <Y> is next; reopen isn't
       available."), so before Reopen delete the edition this line created
@@ -410,23 +453,23 @@ on the matching War Week page.
       Participant email does" note matches where You and "Your Team" show:
       You on the roster, the individual leaderboards, Award recipients on
       the Awards page, Participation lists and Your Entrant in a Bracket
-      (the Team or Squad in a team Bracket); "Your Team" on a games
+      (the Team or Squad in a team Bracket); "Your Team" on a Games
       leaderboard; no highlight on Team Standings rows.
 - [ ] **No admin page carries more than it needs.** *(judgment)* Apply the
-      judgment rule to every admin page (Points through Guide), every list
+      judgment rule to every admin page (Competitions through Guide), every list
       page and every form.
 
 ## Admin, as a Host
 
-`/admin/**` as `e2e-host@jahnelgroup.com`, Host of one `points`
+`/admin/**` as `e2e-host@jahnelgroup.com`, Host of one Placement
 Competition (from the Organizer run).
 
-- [ ] **Six sections, trimmed to their Competitions.** The admin nav is
-      Points, Competitions, Schedule, Announcements, Finale, Guide at 1440;
-      at 390 the bar is Points, Competitions, Schedule, Announcements, More
-      (Finale and Guide in More). Points Entries (its Competition picker and
-      its Brackets and Games lists), Competitions and Schedule list only the
-      Host's Competition and its Schedule Items. Each row has Edit and
+- [ ] **Five sections, trimmed to their Competitions.** The admin nav is
+      Competitions, Schedule, Announcements, Finale, Guide at 1440 (no
+      Discretionary points); at 390 the bar is Competitions, Schedule,
+      Announcements, More (Finale and Guide in More). Competitions (with its
+      Brackets and Games lists) and Schedule list only the Host's Competition
+      and its Schedule Items. Each row has Edit and
       Delete where the Host may use them.
 - [ ] **Organizer-only pages refuse.** Settings, Roster, FAQ, Awards and
       Organizers (open their URLs directly) each show "Organizers and Hosts
@@ -435,20 +478,25 @@ Competition (from the Organizer run).
 - [ ] **Account menu as a Host.** The avatar menu offers "Back to War Week"
       in admin and Admin on participant pages (a Host is not a plain
       Participant), plus Display and Sign out.
-- [ ] **What a Host can do works.** Add, edit and delete a Points Entry on
-      their Competition; post an Announcement, edit it and delete it. They
+- [ ] **What a Host can do works.** Record placements on their Competition
+      (add rows, set Places, Finalize, Reopen) and see the Standings move;
+      post an Announcement, edit it and delete it. They
       can't create or delete a Competition or assign Hosts: no Add
       Competition, Delete or Hosts control (the server's refusal is
       unit-tested in `src/lib/access.test.ts`).
+- [ ] **A Host can't give Discretionary points.** `/admin/discretionary-points`
+      shows "Organizers and Hosts only." and no form (server-refused in
+      `src/lib/access.test.ts`); `/admin/points` redirects there and shows
+      the same. A Host can't open another Competition's
+      `/admin/placements/<id>` either.
 - [ ] **Finale is read-only for a Host.** `/admin/finale` shows the slide
       list and "Open Finale", but no Move, Hide/Show, Add Custom slide, edit
       or delete, and the Awards layout is shown disabled.
 - [ ] **Not a Host elsewhere.** Switch to another edition (if offered), or
       set the `admin_edition` cookie to a past edition, and open another
-      War Week's admin URL (e.g. `/admin/points/<an XI Points Entry id>`,
-      `/admin/brackets/<a Competition they don't host>`; the teams demo has
-      no Points Entries outside XI, so use `/admin/brackets/<an X
-      Competition id>`): nothing to manage there.
+      War Week's admin URL (e.g. `/admin/placements/<a Competition they don't host>`,
+      `/admin/brackets/<a Competition they don't host>`; use `<an X
+      Competition id>` when the demo has no other): nothing to manage there.
 
 ## User Pages
 
@@ -464,18 +512,17 @@ that nothing personal shows (no You highlight, no Log a Game).
       pinned Announcement, Recent results and the top of the Standings: *(free-for-all)*
       with the linked Participant highlighted as You; *(teams)* the Team
       Standings, which carry no You (it marks individual rows: Leaderboard,
-      Teams). With a `games` Competition open, the
+      Teams). With a Head-to-head or Best score Competition open, the
       "Log a Game" shortcut shows for the linked Participant only. There is no
       "Join the Slack channel" button on Home (it moved to the account
       menu). The XII
       demo has no timed Heat: as the Organizer, generate a Bracket with the
       linked Participant in it (e.g. Chess Heats) and time an unplayed Heat,
       then use a `?at=` just before it.
-- [ ] **Recent results.** After a Bracket is finalized or a `games`
-      Competition closed and Points Entries are added, Home's Recent
-      results lists up to 5 rows newest first (a champion, a winner, a
-      Competition's Points Entries grouped in one row, e.g. "Trivia: Red 10,
-      Blue 5"), each linking to its Competition (a closed Participation Competition is a
+- [ ] **Recent results.** After a Bracket or Placement is finalized or a
+      Games Competition closed and Discretionary points are given, Home's
+      Recent results lists up to 5 rows newest first (a champion, a winner, a
+      finalized Placement, a Discretionary points entry with its reason), each linking to its Competition (a closed Participation Competition is a
       row too: *(teams)* its top Team, else how many took part), with "All Competitions"
       opening `/<edition>/competitions`. With nothing scored the section is
       hidden. It follows a new result within about 10 s.
@@ -515,10 +562,10 @@ that nothing personal shows (no You highlight, no Log a Game).
       when there are Groups the Group tabs wrap onto more lines instead of
       scrolling sideways, and every tab (Other Competitions too) shows at
       390.
-      Open one of each Format: a `points` Competition shows its Points
-      Entries; a Bracket shows the tree (one Round at a time at 390, with a
-      List toggle) and its champion once finalized; a `games` Competition
-      shows its leaderboard with the Game Type's columns and the Game log
+      Open one of each Format: a Placement Competition shows its
+      Placements (place, name, Score, points; a Participant can't edit); a Bracket shows the tree (one Round at a time at 390, with a
+      List toggle) and its champion once finalized; a Head-to-head or Best score Competition
+      shows its leaderboard with that Format's columns and the Game log
       newest first, with the "Mine" filter.
 - [ ] **Teams show in team events.** *(teams)* Wherever a Participant
   appears in a Competition or scoring context (individual Standings, a
@@ -585,8 +632,8 @@ that nothing personal shows (no You highlight, no Log a Game).
       only non-zero figures ("Points handed out" among them); Awards lists
       each Award once, grouped by Category (or one slide per Category, per
       the Awards layout); Champions lists each finalized Bracket's champion
-      and each closed `games` or team-scoring Participation Competition's
-      winner, ties together; Winner is the first place of the Standings, a
+      and the winner of each Finalized Placement and each closed Games or
+      team-scoring Participation Competition, ties together; Winner is the first place of the Standings, a
       tie shown as "Tie: A & B". No slide scrolls at 1440 (1920x1080 is the
       projector) or at 390.
 - [ ] **Finale Standings countdown.** Arriving on Standings countdown with
@@ -603,7 +650,7 @@ that nothing personal shows (no You highlight, no Log a Game).
       390; no email text, no Sign out button beside it) opens a menu with
       the name and email, Profile, Display, "Join the Slack channel" (when the War
       Week has a Slack URL; it opens it) and Sign out; for the Organizer and
-      the Host it also has Admin, which opens `/admin/points`; for a plain
+      the Host it also has Admin, which opens `/admin/competitions`; for a plain
       Participant (the linked or the unlinked account, never a Host) there
       is no Admin item. Enter opens it, arrows move,
       Escape closes.
@@ -646,7 +693,7 @@ that nothing personal shows (no You highlight, no Log a Game).
 - [ ] **Access.** Signed out, `/<edition>` goes to
       `/sign-in?callbackURL=%2F<edition>` (finish it with Test sign-in at
       `/sign-in/test` and check it returns to `/<edition>`). As the linked Participant, `/admin` (which redirects to
-      `/admin/points`) shows "Organizers and Hosts only." in the current
+      `/admin/competitions`) shows "Organizers and Hosts only." in the current
       War Week's colors and font (theme check), with the footer.
 - [ ] **No page carries more than it needs.** *(judgment)* Apply the
       judgment rule to every page above, at 390 first.
