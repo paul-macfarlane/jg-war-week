@@ -328,7 +328,7 @@ async function checkTreeAxe(page: Page, testInfo: TestInfo, name: string) {
   }
 }
 
-test("a single-elimination Bracket is one tree: the Organizer records from it in admin, Participants see it without a List toggle", async ({
+test("a head-to-head Bracket is one tree: the Organizer records from it in admin, Participants see it without a List toggle", async ({
   browser,
   context,
   page,
@@ -351,12 +351,15 @@ test("a single-elimination Bracket is one tree: the Organizer records from it in
   await expect(page.getByText(/Run\s+results/i)).toHaveCount(0);
   const admin = adminTreeOf(page);
   await expect(admin).toBeVisible();
-  // The only Heat to play has a solid Record result; byes and Heats still
-  // waiting have none.
-  await expect(admin.getByRole("button")).toHaveCount(1);
-  await expect(
-    admin.getByRole("button", { name: "Record result for Round 1 Heat 2" }),
-  ).toHaveClass(/\bbg-primary\b/);
+  // The Heats ready to play have a solid Record result: Round 1 Heat 2, and
+  // Semifinal 2, whose two Entrants both came through byes. Byes and Heats
+  // still waiting have none.
+  await expect(admin.getByRole("button")).toHaveCount(2);
+  for (const heat of ["Round 1 Heat 2", "Semifinal 2"]) {
+    await expect(
+      admin.getByRole("button", { name: `Record result for ${heat}` }),
+    ).toHaveClass(/\bbg-primary\b/);
+  }
   await checkResultPopup(page, testInfo, "Round 1 Heat 2");
 
   // Mid-way: Round 1 and Semifinal 2 decided, Semifinal 1 and the Final not.

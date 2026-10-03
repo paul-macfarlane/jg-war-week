@@ -67,16 +67,17 @@ test("r15 87 the admin Bracket's unrecorded Heat has a solid Record result butto
 
     // A click on the Heat box's content, away from its button, opens the
     // Heat result: the button's ::after stretches over the whole box. The
-    // last group holding the button is the Heat's box (inside its Round's).
+    // box is the innermost group named for the Heat (inside its Round's).
+    const heat = (await record.getAttribute("aria-label"))!.replace(
+      /^Record result for /,
+      "",
+    );
     const card = page
       .locator("[data-bracket-tree]")
-      .getByRole("group")
-      .filter({ has: record })
+      .getByRole("group", { name: heat, exact: true })
       .last();
     await card.click({ position: { x: 12, y: 40 } });
-    await expect(
-      page.getByRole("dialog").getByRole("group", { name: "Finishing order" }),
-    ).toBeVisible();
+    await expect(page.getByRole("dialog", { name: heat })).toBeVisible();
   } finally {
     await restore();
   }
