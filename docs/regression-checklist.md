@@ -520,7 +520,7 @@ that nothing personal shows (no You highlight, no Log a Game).
       linked Participant in it (e.g. Chess Heats) and time an unplayed Heat,
       then use a `?at=` just before it.
 - [ ] **Recent results.** After a Bracket or Placement is finalized or a
-      Games Competition closed and Discretionary points are given, Home's
+      Head-to-head or Best score Competition closed and Discretionary points are given, Home's
       Recent results lists up to 5 rows newest first (a champion, a winner, a
       finalized Placement, a Discretionary points entry with its reason), each linking to its Competition (a closed Participation Competition is a
       row too: *(teams)* its top Team, else how many took part), with "All Competitions"

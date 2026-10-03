@@ -692,7 +692,7 @@ when its War Week ends keeps taking Games until the Host closes it.
 The **"Participants can enroll"** switch (off by default) is on a
 Bracket's builder and a fixed-list Head-to-head or Best score Competition's
 settings — never on a Placement or Participation Competition, an
-open-to-everyone Games Competition, or a
+open-to-everyone Head-to-head or Best score Competition, or a
 Best of (the Host sets those two Entrants by hand). Turn it on, and
 optionally set an Entrant limit and a close time; enrollment also closes
 the moment the Bracket is built, or (for Games) the first Game is
@@ -809,7 +809,7 @@ Notes:
   `FieldDescription` from `ui/field`, and show a form's server error in a
   `FieldError` under its buttons.
 - Admin forms post through React's `useActionState` (ADR 0004;
-  `src/components/points-entry-form.tsx` is the reference). The server
+  `src/components/discretionary-points-form.tsx` is the reference). The server
   action validates with the form's Zod schema and returns `fieldErrors`
   (built by `fieldErrorsFrom` in `src/lib/form-errors.ts`); the form shows
   each one in a `FieldError` under its field (`Field data-invalid`, the

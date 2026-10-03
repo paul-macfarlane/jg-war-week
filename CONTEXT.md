@@ -52,7 +52,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **FAQ Item**                  | A question and answer pair for a War Week.                                                                                        |
 | **Archive**                   | The past War Weeks shown at `/history`.                                                                                           |
 | **Recent results**            | Home's section of the latest results: finalized Brackets, finalized Placements, closed Head-to-head, Best score and Participation Competitions and Discretionary points, newest first, up to 5. |
-| **Format**                    | How a Competition is run, one of six: **Placement** (one result recorded on a sheet), **Head-to-head** and **Best score** (decided by Games players log, once or recurring; together a **Games Competition**), **Participation** (decided by who took part, ticked by the Host or checked in by the Participants themselves), or **Single-elimination** and **Heats** (a Bracket, for tournaments). Chosen when the Competition is created and kept. |
+| **Format**                    | How a Competition is run, one of six: **Placement** (one result recorded on a sheet), **Head-to-head** and **Best score** (decided by Games players log, once or recurring), **Participation** (decided by who took part, ticked by the Host or checked in by the Participants themselves), or **Single-elimination** and **Heats** (a Bracket, for tournaments). Chosen when the Competition is created and kept. |
 | **Placement** (Format)        | A Competition whose one result is recorded on one sheet, with no Games and no Bracket. A new Competition starts as one.            |
 | **Placement** (row)           | A Team's or Participant's row on a Placement sheet: a **Place** (1, 2, 3…, or none yet) and an optional **Score**. Ties share a Place.  |
 | **Record placements**         | The link on a Placement Competition in Admin → Competitions that opens its sheet (`/admin/placements/<id>`), where an Organizer or its Host adds rows (search, or Add everyone), sets Places and Scores, then **Finalizes**. |
@@ -60,16 +60,16 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Bracket**                   | The Rounds and Heats of a Single-elimination or Heats Competition.                                                                |
 | **Round**                     | One step of a Bracket, holding Heats that can be played at the same time. Round 1 is the first.                                   |
 | **Heat**                      | One game between Entrants in a Bracket. Covers 1v1 and multi-entrant games. May have a time and place: a Day and a start time (ET) together, and a location. |
-| **Entrant**                   | A Team, Participant or Squad entered in a Bracket or a fixed-list Games Competition.                                           |
+| **Entrant**                   | A Team, Participant or Squad entered in a Bracket or a fixed-list Head-to-head or Best score Competition.                                           |
 | **Squad**                     | A named group of Participants of one Team, entered as one Entrant in a team-scoring Bracket — "a pair or group from one Team, playing as one entrant". Belongs to one Competition; a Participant is in at most one Squad per Competition. |
 | **Self-report**               | A Participant in a Heat entering its Heat Result themselves, when the Competition allows it. It counts at once, like the Host's; the Host or an Organizer can overwrite it. |
 | **Seed Position**             | An Entrant's starting rank in a Bracket. Say "seed position" or "seeding", never bare "seed" (that means seed files).             |
 | **Heat Result**               | The finishing order of a Heat's Entrants, with an optional score for each.                                                        |
-| **Game**                      | One recorded play in a Games Competition, logged by a player in it or by the Host: a head-to-head result (a winner, or a draw when allowed) or a score. A Game is never part of a Bracket; that is a Heat. |
-| **Log a Game**                | A Participant's write, recording one Game they played in a Games Competition, in seconds, from their phone.                       |
+| **Game**                      | One recorded play in a Head-to-head or Best score Competition, logged by a player in it or by the Host: a head-to-head result (a winner, or a draw when allowed) or a score. A Game is never part of a Bracket; that is a Heat. |
+| **Log a Game**                | A Participant's write, recording one Game they played in a Head-to-head or Best score Competition, in seconds, from their phone.                       |
 | **Finalize** / **Reopen**     | A Placement Competition's turning its Places into generated Points Entries through its Placement Points (ties share a Place and its full points; unplaced rows earn nothing), and withdrawing them. A Bracket's pair is Finalize / Un-finalize. |
 | **Close** / **Reopen**        | A Games or Participation Competition's Finalize / Un-finalize: Close turns its leaderboard's places (or, for Participation, who took part) into Points Entries; Reopen withdraws them. |
-| **Entrants open** / **fixed Entrant list** | A Games Competition's Entrants are either open (anyone eligible may log a Game) or a fixed list the Host sets, like a Bracket's. |
+| **Entrants open** / **fixed Entrant list** | A Head-to-head or Best score Competition's Entrants are either open (anyone eligible may log a Game) or a fixed list the Host sets, like a Bracket's. |
 | **Enroll** / **Withdraw**     | A Participant's writes entering or leaving a fixed-list Competition themselves, when its "Participants can enroll" switch is on. |
 | **Participation**             | A Participation Competition: scored by who took part (Black Midnight, a daily workout, HQ attendance). The Host or an Organizer ticks Participants as having **taken part**, and Participants can **Check in** themselves; points land at **Close**. The Format, not a Participant's act. |
 | **Check in** / **Check out**  | A Participant's write saying they took part in a Participation Competition, when its **Self check-in** switch is on (ADR 0009). Check out removes only their own check-in, never a tick the Host made. |
@@ -155,7 +155,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   roster, the individual leaderboard (home, `/leaderboard`, the Finale),
   Award recipients on the Awards page and Participation lists; a Bracket
   marks Your Entrant (yourself, or your Team or Squad in a team Bracket)
-  "You", and a Games Competition's leaderboard marks your enrolled Team "Your Team".
+  "You", and a Head-to-head or Best score Competition's leaderboard marks your enrolled Team "Your Team".
   Team Standings rows are never highlighted. Account linking wins: when the session email matches a
   Participant, that Participant is You; otherwise nobody is. There is no
   self-pick. The roster admin shows "No email: won't be linked when they sign
@@ -273,7 +273,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
     writes are each found by account linking, checked in `can` and again in the mutation: reporting
     the result of a Heat they're in when self-report is on (ADR 0005);
     logging a Game they're a player in (or on a Team that is), and editing
-    or deleting a Game they logged, in a Games Competition until it
+    or deleting a Game they logged, in a Head-to-head or Best score Competition until it
     closes (ADR 0006); enrolling or withdrawing — themselves, their
     Team, or a Squad they join or leave — in a Competition whose
     "Participants can enroll" switch is on (ADR 0006); and, the fourth of
@@ -551,7 +551,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 
 ## Games rules
 
-- A **Games Competition** (Format Head-to-head or Best score) is decided by
+- A Head-to-head or Best score Competition is decided by
   Games its players log, never a Bracket. Its Format is **fixed at create**:
   add a new Competition to run it another way.
 - The leaderboard ranks per Format, ties sharing the higher rank (standard
@@ -582,15 +582,15 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   marked generated ("From head-to-head" or "From best score") and
   un-editable in the ledger; **Reopen** deletes them again. A Best of
   prompts Close once it's decided.
-- A **closed** Games Competition refuses every Game write, from
+- A **closed** Head-to-head or Best score Competition refuses every Game write, from
   everyone, Organizers included: Reopen it, make the correction, Close it
   again.
-- A War Week ending is not a rule here either: a Games Competition left
+- A War Week ending is not a rule here either: a Head-to-head or Best score Competition left
   open when its War Week ends still takes Games until the Host closes it,
   and its page keeps showing the leaderboard and log in the Archive.
 - Games aren't seeded (like Squads and reporters); every Game comes from
   logging, in the app or through the smoke and e2e flows.
-- A new Games Competition starts **open to everyone**: any linked
+- A new Head-to-head or Best score Competition starts **open to everyone**: any linked
   Participant (or their Team, in team scoring) may log without enrolling,
   until the Host switches it to a fixed list.
 - A Games setting that would change the meaning of Games already logged is
@@ -604,7 +604,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 ## Participation rules
 
 - A Participation Competition is decided by who took part. Its Format is
-  chosen at create and kept, like a Games Competition's (its scoring decides
+  chosen at create and kept, like a Head-to-head or Best score Competition's (its scoring decides
   how it pays). Its setup page is `/admin/competitions/<id>/participation`:
   for an individual Competition, Points per Participant (N, more than 0);
   for a team Competition, its Placement Points; the **Self check-in**
@@ -674,9 +674,9 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 ## Enrollment rules
 
 - **"Participants can enroll"** is a per-Competition switch, off by
-  default, offered only on a Bracket or a fixed-list Games Competition —
+  default, offered only on a Bracket or a fixed-list Head-to-head or Best score Competition —
   never on a Placement or Participation Competition, an open-to-everyone
-  Games Competition, or a Best of (the Host sets those two Entrants by hand).
+  Head-to-head or Best score Competition, or a Best of (the Host sets those two Entrants by hand).
 - Enrollment closes at the first of five conditions: the Bracket is built
   (has Heats); an optional Entrant limit is reached; an optional close
   time passes; the Competition is closed by the Host; or, for a Games
@@ -809,7 +809,7 @@ same rows with the same values (only `updated_at` moves).
   Organizer list when missing, ignoring case. A load only ever inserts
   them: it never removes an Organizer, even with `--reset`.
 - **Squads**, reporters, Games and who took part aren't in seeds, and neither is a
-  Competition's self-report setting, a Games Competition's Entrants or its
+  Competition's self-report setting, a Head-to-head or Best score Competition's Entrants or its
   logging close time, or the enrollment switch, Entrant limit and close
   time. A reload that removes or moves a Participant leaves their Squads to
   the Organizer.
@@ -831,7 +831,7 @@ same rows with the same values (only `updated_at` moves).
     seeded Finalize (`finalized`, `finalizedAt` and `finalizedByEmail`,
     given together): a reload never turns an Organizer's Bracket back into a
     Placement, changes its Format, undoes its Heats settings, or touches a
-    Games Competition's settings or open-to-everyone switch once it exists.
+    Head-to-head or Best score Competition's settings or open-to-everyone switch once it exists.
     Its `scoring` and `placementPoints` do follow the seed.
   - A Participation Competition's `participationPoints` (individual only),
     `selfCheckIn` and `checkInClosesAt` are insert-only too (defaults: 1
