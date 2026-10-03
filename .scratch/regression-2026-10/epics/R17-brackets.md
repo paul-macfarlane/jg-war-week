@@ -8,7 +8,7 @@
 
 **Blocked by:** R16 (`feat/regression-r16-competition-model`) merged into `staging`, so the branch starts from its schema (`drizzle/0028_*`); and this planning change (`docs/regression-r17-red-team`) merged into `staging` (one schema-changing epic at a time).
 
-**Status:** in-progress
+**Status:** ai-review
 
 **Red-team:** **required** (Drizzle schema change; recording from the shared tree). Pass 1 on 2026-10-03 BLOCKED; resolved below.
 

@@ -6,7 +6,7 @@
 
 **Blocked by:** `97`, `99`, `98` (order inside R17)
 
-**Status:** in-progress
+**Status:** ai-review
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: run results naming, bracket display in admin; Participant: drop list view); grilling Q10, Q21; red-team pass 1 W6, W7
 

@@ -11,7 +11,7 @@
 
 **Blocked by:** `97` (order inside R17)
 
-**Status:** in-progress
+**Status:** ai-review
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: by standings, forfeit, time and place); grilling Q18–Q20; red-team pass 1 W1, W4
 

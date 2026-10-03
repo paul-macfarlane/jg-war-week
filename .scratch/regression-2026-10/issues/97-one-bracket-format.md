@@ -6,7 +6,7 @@
 
 **Blocked by:** nothing inside R17 (first part)
 
-**Status:** in-progress
+**Status:** ai-review
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: heats vs single elimination unclear); grilling Q16
 

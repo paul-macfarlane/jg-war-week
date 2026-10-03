@@ -6,7 +6,7 @@
 
 **Blocked by:** `97`, `99` (order inside R17)
 
-**Status:** in-progress
+**Status:** ai-review
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: 3rd place games; cap at 4th); grilling Q4, Q17; red-team pass 1 W2, W3
 
