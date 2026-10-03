@@ -11,7 +11,7 @@
 ## Decisions
 
 - Keep the stored shape an open list (`numeric[]`), non-increasing, each ≥ 0; the limit is a per-Format rule in one place, so Brackets can grow later.
-- The field is a list editor (add / remove a place) rather than a fixed five inputs; it stays usable at 20+ places on a phone.
+- The field is a list editor (add / remove a place) rather than a fixed five inputs; it stays usable at 20+ places on a phone: a component test adds 20 places and saves; a screenshot at 390 wide with 20 places shows every input reachable without horizontal scroll.
 
 ## Acceptance criteria
 

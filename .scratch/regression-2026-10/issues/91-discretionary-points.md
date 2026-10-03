@@ -23,8 +23,8 @@
 
 - `points_entry.war_week_id` (FK to `war_week`, cascade, not null); the epic's migration backfills it.
 - `points_entry.competition_id` becomes nullable. CHECK `points_entry_reason_without_competition`: `competition_id is not null or note is not null` (the reason is the `note`, required and non-blank for a Discretionary entry in the action).
-- Seed uniqueness moves from `(competition_id, seed_key)` to `(war_week_id, seed_key)`, so a Competition-less seeded entry can't duplicate on a reload. Generated entries keep their current keys (`competition`-prefixed), which stay unique within the War Week.
-- **Every Points Entry read scopes by `points_entry.war_week_id`**, not by an inner join through `competition`; a Competition join, where a read needs the Competition's name, is a left join. That covers `src/queries/standings.ts` (L59, L108), `recent-results.ts` (L107), `finale-slides.ts` (L77), `scored-counts.ts` (L20), `targets.ts` (L124), `points-entries.ts` (L119, L144) and any other `points_entry` read the implementer finds (`grep -rn "pointsEntry" src/queries src/mcp`).
+- Seed uniqueness moves from `(competition_id, seed_key)` to `(war_week_id, seed_key)`, so a Competition-less seeded entry can't duplicate on a reload. Generated entries have no `seed_key` today; a seeded finalized Placement's generated entries get `seed_key` = `<competition seed key>:<placement key>` so a reload finds them.
+- **Every Points Entry read scopes by `points_entry.war_week_id`**, not by an inner join through `competition`; a Competition join, where a read needs the Competition's name, is a left join. That covers `src/queries/standings.ts` (L59, L108), `recent-results.ts` (L107), `finale-slides.ts` (L77), `scored-counts.ts` (L20), `targets.ts` (L124), `points-entries.ts` (L119, L144) and every other reader or writer: `grep -rn "pointsEntry\|points_entry" src scripts e2e` (including `src/mutations/setup.ts`, `src/queries/competitions.ts`, `src/queries/setup.ts`, and the raw-SQL writers `scripts/finale-stills.ts` L130–139 and `scripts/about-media.ts`, which typecheck can't see and must now set `war_week_id`). The closeout lists every hit and what changed.
 - The target Team or Participant must be in the request's War Week (ADR 0003): refused in the write, since the Competition no longer enforces it.
 
 ### Permissions (W3)
@@ -53,4 +53,3 @@
 - [ ] MCP test: the standings/points tool reports the entry and its reason, no emails.
 - [ ] Loader test (Postgres): a fixture seed with a Discretionary entry loaded twice leaves exactly one.
 - [ ] e2e: an Organizer gives 3 Discretionary points to a Team with a reason and the leaderboard moves, edits it to 4, deletes it and the leaderboard returns; a Host gets the refusal page at `/admin/discretionary-points`; `/admin/points` redirects there; `/admin` lands on Competitions.
-- [ ] 
