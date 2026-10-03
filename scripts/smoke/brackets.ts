@@ -106,7 +106,7 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
       "setCompetitionFormat",
       await callAction(
         ids.setCompetitionFormat,
-        [id, { format: "single-elimination" }],
+        [id, { format: "bracket" }],
         organizer,
       ),
     );
@@ -423,8 +423,12 @@ export async function assertHeatsLoop(sessions: { organizer: SmokeSession }) {
         [
           id,
           {
-            format: "heats",
-            config: { entrantsPerHeat: 4, advancePerHeat: 2 },
+            format: "bracket",
+            config: {
+              entrantsPerHeat: 4,
+              advancePerHeat: 2,
+              thirdPlaceGame: false,
+            },
           },
         ],
         organizer,
@@ -618,7 +622,7 @@ export async function assertSquadSelfReportLoop(sessions: {
       "setCompetitionFormat",
       await callAction(
         ids.setCompetitionFormat,
-        [id, { format: "single-elimination" }],
+        [id, { format: "bracket" }],
         organizer,
       ),
     );

@@ -260,10 +260,11 @@
     {
       "name": "Chess Heats",
       "scoring": "individual",
-      "format": "heats",
+      "format": "bracket",
       "bracketConfig": {
         "entrantsPerHeat": 4,
-        "advancePerHeat": 2
+        "advancePerHeat": 2,
+        "thirdPlaceGame": false
       },
       "placementPoints": [5, 3, 1],
       "description": "Four-player Heats; the top two advance to the Final."

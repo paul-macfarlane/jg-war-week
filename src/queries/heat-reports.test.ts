@@ -105,7 +105,7 @@ async function fixture(tx: DBTx) {
       warWeekId,
       name: "Cypher",
       scoring: "team",
-      format: "single-elimination",
+      format: "bracket",
       selfReport: true,
     })
     .returning({ id: schema.competition.id });
@@ -277,7 +277,7 @@ describe.skipIf(!isLocalDatabase)("getHeatReportFacts", () => {
           warWeekId: f.ctx.warWeekId,
           name: "Other",
           scoring: "team",
-          format: "single-elimination",
+          format: "bracket",
           selfReport: true,
         })
         .returning({ id: f.schema.competition.id });
@@ -314,14 +314,14 @@ describe.skipIf(!isLocalDatabase)("getHeatReportFacts", () => {
             warWeekId: f.ctx.warWeekId,
             name: "Relay",
             scoring: "team",
-            format: "single-elimination",
+            format: "bracket",
             selfReport: true,
           },
           {
             warWeekId: f.ctx.warWeekId,
             name: "Chess",
             scoring: "individual",
-            format: "single-elimination",
+            format: "bracket",
             selfReport: true,
           },
         ])

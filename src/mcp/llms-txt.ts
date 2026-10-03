@@ -49,7 +49,7 @@ export function llmsTxt(origin: string): string {
 
   return `# JG War Week
 
-> The JG War Week app is where Jahnel Group organizers run War Week, the company's annual week of team competitions, and where participants follow it: themes, schedule, teams, competitions (a Placement sheet, Head-to-head or Best score Games, Participation, or Brackets run single elimination or Heats), points, awards and announcements, the Finale, plus a history of past War Weeks.
+> The JG War Week app is where Jahnel Group organizers run War Week, the company's annual week of team competitions, and where participants follow it: themes, schedule, teams, competitions (a Placement sheet, Head-to-head or Best score Games, Participation, or Brackets, with a heat size and how many advance), points, awards and announcements, the Finale, plus a history of past War Weeks.
 
 Every page and API route except sign-in needs a signed-in Jahnel Group account.
 
@@ -59,7 +59,8 @@ editions stay in the Archive at \`/history\`. Standings are never hidden: they
 are always the current Standings, live or complete. The Finale
 (\`/<edition>/finale\`) is a closing-ceremony slideshow whose countdown plays those
 Standings, not a separate result — it changes nothing. Some Competitions run as a Bracket
-(single elimination or Heats) instead of a Placement sheet; \`get_bracket\` reads
+(a heat size and how many advance; two per Heat with one advancing is
+head-to-head) instead of a Placement sheet; \`get_bracket\` reads
 one by Competition name, with its Squads by name.
 
 ## Pages

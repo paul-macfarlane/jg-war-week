@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 import { applyResult, generate } from "@/lib/bracket/engine";
 import { champion as championOf } from "@/lib/bracket/formats";
 import type { Entrant } from "@/lib/bracket/types";
@@ -110,7 +111,7 @@ describe("toBracketResult", () => {
         enrollClosesAt: null,
       },
       entrants: [],
-      bracket: { format: "single-elimination", config: null, heats: [] },
+      bracket: { config: DEFAULT_BRACKET_CONFIG, heats: [] },
       champion: null,
       finalized: false,
     };
@@ -143,7 +144,7 @@ describe("toBracketResult", () => {
         warWeekId: "w1",
         name: "Beyblades",
         scoring: "team",
-        format: "single-elimination",
+        format: "bracket",
         placementPoints: [10, 6],
         finalizedAt: null,
         selfReport: false,
@@ -166,7 +167,10 @@ describe("toBracketResult", () => {
     expect(result.competition).toEqual({
       name: "Beyblades",
       scoring: "team",
-      format: "single-elimination",
+      format: "bracket",
+      heatSize: 2,
+      advancing: 1,
+      thirdPlaceGame: false,
       finalized: false,
     });
     expect(result.entrants).toEqual([
@@ -230,7 +234,7 @@ describe("toBracketResult", () => {
         warWeekId: "w1",
         name: "Beyblades",
         scoring: "team",
-        format: "single-elimination",
+        format: "bracket",
         placementPoints: [10, 6],
         finalizedAt: null,
         selfReport: false,
@@ -271,7 +275,7 @@ describe("toBracketResult", () => {
         warWeekId: "w1",
         name: "Beyblades",
         scoring: "team",
-        format: "single-elimination",
+        format: "bracket",
         placementPoints: [10, 6],
         finalizedAt: new Date(),
         selfReport: false,
@@ -302,7 +306,7 @@ describe("toBracketResult", () => {
         warWeekId: "w1",
         name: "Cypher",
         scoring: "team",
-        format: "single-elimination",
+        format: "bracket",
         placementPoints: [3, 2, 1],
         finalizedAt: null,
         selfReport: true,
@@ -388,7 +392,7 @@ describe("toBracketResult", () => {
         warWeekId: "w1",
         name: "Beyblades",
         scoring: "team",
-        format: "single-elimination",
+        format: "bracket",
         placementPoints: [10, 6],
         finalizedAt: null,
         selfReport: false,

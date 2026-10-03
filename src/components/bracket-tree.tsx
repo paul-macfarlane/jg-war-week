@@ -168,8 +168,8 @@ export function BracketTree({
   const heatsById = new Map(bracket.heats.map((h) => [h.id, h]));
   const tree = bracketTree(bracket);
   const [active, setActive] = useState(() => openRound(tree.rounds));
-  const knockout = tree.format === "single-elimination";
-  const heatsFormat = tree.format === "heats";
+  const knockout = tree.headToHead;
+  const heatsFormat = !tree.headToHead;
   const finalRound = tree.rounds.at(-1)?.round ?? 0;
   const outOf = new Map(tree.connectors.map((c) => [c.fromHeatId, c]));
 

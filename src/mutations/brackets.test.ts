@@ -83,14 +83,14 @@ async function fixture(tx: DBTx) {
         warWeekId,
         name: "Captain Clash",
         scoring: "team",
-        format: "single-elimination",
+        format: "bracket",
         placementPoints: [10, 6, 3],
       },
       {
         warWeekId,
         name: "Speed Chess",
         scoring: "individual",
-        format: "single-elimination",
+        format: "bracket",
       },
     ])
     .returning({ id: schema.competition.id });
@@ -155,14 +155,18 @@ async function heatsFixture(tx: DBTx) {
       warWeekId: f.ctx.warWeekId,
       name: "Relay Heats",
       scoring: "individual",
-      format: "single-elimination",
+      format: "bracket",
       placementPoints: [5, 3, 1],
     })
     .returning({ id: schema.competition.id });
   return { ...f, relayId: relay.id, runners: runners.map((r) => r.id) };
 }
 
-const fourTwo = { entrantsPerHeat: 4, advancePerHeat: 2 };
+const fourTwo = {
+  entrantsPerHeat: 4,
+  advancePerHeat: 2,
+  thirdPlaceGame: false,
+};
 
 /** Relay Heats set to 4 per Heat, 2 advancing, entered and generated. */
 async function generatedHeats(tx: DBTx) {
@@ -171,7 +175,7 @@ async function generatedHeats(tx: DBTx) {
   expect(
     await mutations.setCompetitionFormat(
       f.relayId,
-      { format: "heats", config: fourTwo },
+      { format: "bracket", config: fourTwo },
       f.ctx,
       tx,
     ),
@@ -767,7 +771,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
 
       await mutations.setCompetitionFormat(
         f.competitionId,
-        { format: "single-elimination" },
+        { format: "bracket" },
         f.ctx,
         tx,
       );
@@ -909,8 +913,12 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         await mutations.setCompetitionFormat(
           f.relayId,
           {
-            format: "heats",
-            config: { entrantsPerHeat: 4, advancePerHeat: 1 },
+            format: "bracket",
+            config: {
+              entrantsPerHeat: 4,
+              advancePerHeat: 1,
+              thirdPlaceGame: false,
+            },
           },
           f.ctx,
           tx,
@@ -982,7 +990,14 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       const f = await fixture(tx);
       await mutations.setCompetitionFormat(
         f.competitionId,
-        { format: "heats", config: { entrantsPerHeat: 3, advancePerHeat: 2 } },
+        {
+          format: "bracket",
+          config: {
+            entrantsPerHeat: 3,
+            advancePerHeat: 2,
+            thirdPlaceGame: false,
+          },
+        },
         f.ctx,
         tx,
       );
@@ -1019,7 +1034,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(
         await mutations.setCompetitionFormat(
           f.relayId,
-          { format: "heats" },
+          { format: "bracket" },
           f.ctx,
           tx,
         ),
@@ -1036,11 +1051,15 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         tx,
       );
 
-      const fourOne = { entrantsPerHeat: 4, advancePerHeat: 1 };
+      const fourOne = {
+        entrantsPerHeat: 4,
+        advancePerHeat: 1,
+        thirdPlaceGame: false,
+      };
       expect(
         await mutations.setCompetitionFormat(
           f.relayId,
-          { format: "heats", config: fourOne },
+          { format: "bracket", config: fourOne },
           f.ctx,
           tx,
         ),
@@ -1057,7 +1076,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(
         await mutations.setCompetitionFormat(
           f.relayId,
-          { format: "heats", config: fourOne, force: true },
+          { format: "bracket", config: fourOne, force: true },
           f.ctx,
           tx,
         ),
@@ -1073,7 +1092,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(
         await mutations.setCompetitionFormat(
           f.relayId,
-          { format: "single-elimination" },
+          { format: "bracket" },
           f.ctx,
           tx,
         ),
@@ -1100,8 +1119,12 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         await mutations.setCompetitionFormat(
           f.relayId,
           {
-            format: "heats",
-            config: { entrantsPerHeat: 3, advancePerHeat: 2 },
+            format: "bracket",
+            config: {
+              entrantsPerHeat: 3,
+              advancePerHeat: 2,
+              thirdPlaceGame: false,
+            },
             force: true,
           },
           f.ctx,
@@ -1791,7 +1814,7 @@ describe.skipIf(!isLocalDatabase)("Squads", () => {
           warWeekId: f.ctx.warWeekId,
           name: "Tug",
           scoring: "team",
-          format: "single-elimination",
+          format: "bracket",
         },
         {
           warWeekId: f.ctx.warWeekId,
@@ -2351,7 +2374,7 @@ describe.skipIf(!isLocalDatabase)("Squads", () => {
       expect(
         await mutations.setCompetitionFormat(
           f.competitionId,
-          { format: "heats" },
+          { format: "bracket" },
           f.ctx,
           tx,
         ),
@@ -2480,7 +2503,7 @@ describe.skipIf(!isLocalDatabase)(
         expect(
           await mutations.setCompetitionFormat(
             f.pongId,
-            { format: "single-elimination" },
+            { format: "bracket" },
             f.ctx,
             tx,
           ),

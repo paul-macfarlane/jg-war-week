@@ -4,9 +4,9 @@
  * connector from each Heat to the slot its winner fills. Pure, like the
  * engine; `src/components/bracket-tree.tsx` draws it.
  */
-import { heatsConfig } from "@/lib/bracket/config";
+import { isHeadToHead } from "@/lib/bracket/config";
 import { isBye } from "@/lib/bracket/formats";
-import type { Bracket, BracketFormat, Heat } from "@/lib/bracket/types";
+import type { Bracket, Heat } from "@/lib/bracket/types";
 import {
   finalRoundOf,
   groupRounds,
@@ -64,7 +64,8 @@ export type TreeConnector = {
 };
 
 export type BracketTree = {
-  format: BracketFormat;
+  /** Head-to-head Brackets draw winner lines; others advance by place. */
+  headToHead: boolean;
   rounds: TreeRound[];
   /** Single elimination only; Heats Brackets advance by place, not a line. */
   connectors: TreeConnector[];
@@ -72,9 +73,9 @@ export type BracketTree = {
 
 /** How many of a decided Heat's places go through (the Final: 1, the winner). */
 export function advancingPlaces(bracket: Bracket, heat: Heat): number {
-  if (bracket.format === "single-elimination") return 1;
+  if (isHeadToHead(bracket.config)) return 1;
   if (heat.round >= finalRoundOf(bracket)) return 1;
-  return heatsConfig(bracket.config).advancePerHeat;
+  return bracket.config.advancePerHeat;
 }
 
 /** Whether `place` is among the places that go through from `heat`. */
@@ -99,7 +100,7 @@ export function advancesFromPlace(
 
 function treeSlots(bracket: Bracket, heat: Heat, bye: boolean): TreeSlot[] {
   if (
-    bracket.format === "heats" &&
+    !isHeadToHead(bracket.config) &&
     heat.slots.every((s) => s.entrantId === null)
   ) {
     return [
@@ -127,7 +128,7 @@ function treeSlots(bracket: Bracket, heat: Heat, bye: boolean): TreeSlot[] {
       advances: advancesFromPlace(bracket, heat, slot.place),
     };
   });
-  if (bracket.format === "heats" && decided) {
+  if (!isHeadToHead(bracket.config) && decided) {
     const placeOf = (s: TreeSlot) =>
       s.kind === "entrant" ? (s.place ?? Infinity) : Infinity;
     slots.sort((a, b) => placeOf(a) - placeOf(b));
@@ -153,21 +154,20 @@ export function bracketTree(bracket: Bracket): BracketTree {
       };
     }),
   }));
-  const connectors =
-    bracket.format === "single-elimination"
-      ? groupRounds(bracket).flatMap((round) =>
-          round.heats.flatMap((heat) =>
-            heat.winnerTo
-              ? [
-                  {
-                    fromHeatId: heat.id,
-                    toHeatId: heat.winnerTo.heatId,
-                    toSlot: heat.winnerTo.slot,
-                  },
-                ]
-              : [],
-          ),
-        )
-      : [];
-  return { format: bracket.format, rounds, connectors };
+  const connectors = isHeadToHead(bracket.config)
+    ? groupRounds(bracket).flatMap((round) =>
+        round.heats.flatMap((heat) =>
+          heat.winnerTo
+            ? [
+                {
+                  fromHeatId: heat.id,
+                  toHeatId: heat.winnerTo.heatId,
+                  toSlot: heat.winnerTo.slot,
+                },
+              ]
+            : [],
+        ),
+      )
+    : [];
+  return { headToHead: isHeadToHead(bracket.config), rounds, connectors };
 }

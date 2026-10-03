@@ -18,6 +18,11 @@ export type BracketResult =
         name: string;
         scoring: Competition["scoring"];
         format: BracketFormat;
+        /** Entrants per Heat. */
+        heatSize: number;
+        /** How many of each Heat advance. */
+        advancing: number;
+        thirdPlaceGame: boolean;
         finalized: boolean;
       };
       entrants: {
@@ -158,6 +163,9 @@ export function toBracketResult(
       name: view.competition.name,
       scoring: view.competition.scoring,
       format: view.competition.format,
+      heatSize: view.bracket.config.entrantsPerHeat,
+      advancing: view.bracket.config.advancePerHeat,
+      thirdPlaceGame: view.bracket.config.thirdPlaceGame,
       finalized: view.finalized,
     },
     entrants: view.entrants.map((entrant) => ({

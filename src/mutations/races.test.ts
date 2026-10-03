@@ -212,7 +212,7 @@ async function committedReportable(edition: string, n: number) {
       warWeekId: f.ctx.warWeekId,
       name: "Captain Clash",
       scoring: "team",
-      format: "single-elimination",
+      format: "bracket",
     })
     .returning({ id: competition.id });
   await brackets.replaceEntrants(
@@ -381,7 +381,7 @@ describe.skipIf(!isLocalDatabase)(
             warWeekId: f.ctx.warWeekId,
             name: "Captain Clash",
             scoring: "team",
-            format: "single-elimination",
+            format: "bracket",
           })
           .returning({ id: competition.id });
         const [neo] = await f.db

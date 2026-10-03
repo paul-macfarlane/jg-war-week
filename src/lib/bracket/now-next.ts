@@ -3,13 +3,14 @@
  * and a start time reads like a Schedule Item with no end time, so every
  * Schedule display rule applies to it unchanged. Pure.
  */
-import type { Format, Heat } from "@/lib/bracket/types";
+import { type BracketConfig, isHeadToHead } from "@/lib/bracket/config";
+import type { Heat } from "@/lib/bracket/types";
 import { heatEntrantLabels, heatNameAt, isTimed } from "@/lib/bracket/view";
 import type { ScheduleEntry } from "@/lib/schedule";
 
 /** One Heat as `getTimedHeats` returns it, with what names it. */
 export type TimedHeatRow = {
-  competition: { id: string; name: string; format: Format };
+  competition: { id: string; name: string; config: BracketConfig };
   /** The Competition's final Round, for the Heat's name. */
   finalRound: number;
   heat: Pick<
@@ -37,7 +38,7 @@ export function heatEntries(
   return rows.flatMap(({ competition, finalRound, heat, labels }) => {
     if (heat.status !== "ready" || !isTimed(heat)) return [];
     const name = heatNameAt({
-      format: competition.format,
+      headToHead: isHeadToHead(competition.config),
       finalRound,
       round: heat.round,
       position: heat.position,

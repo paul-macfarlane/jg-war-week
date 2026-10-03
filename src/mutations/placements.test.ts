@@ -632,7 +632,7 @@ describe.skipIf(!isLocalDatabase)("a Placement Competition's setup", () => {
       expect(
         await setCompetitionFormat(
           f.ids.darts,
-          { format: "single-elimination" },
+          { format: "bracket" },
           f.ctx,
           tx,
         ),
@@ -682,7 +682,7 @@ describe.skipIf(!isLocalDatabase)("a Placement Competition's setup", () => {
       expect(
         await setCompetitionFormat(
           f.ids.darts,
-          { format: "single-elimination" },
+          { format: "bracket" },
           f.ctx,
           tx,
         ),
@@ -717,13 +717,13 @@ describe.skipIf(!isLocalDatabase)("a Placement Competition's setup", () => {
       expect(
         await setCompetitionFormat(
           f.ids.darts,
-          { format: "single-elimination" },
+          { format: "bracket" },
           f.ctx,
           tx,
         ),
       ).toEqual({ ok: true });
       expect(await f.competitionRow(f.ids.darts)).toMatchObject({
-        format: "single-elimination",
+        format: "bracket",
         scoreDirection: "none",
       });
     });

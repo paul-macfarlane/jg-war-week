@@ -329,7 +329,7 @@ describe("enrollmentUnavailable: where enrollment is offered", () => {
     [
       "a Bracket offers it",
       {
-        format: "single-elimination" as const,
+        format: "bracket" as const,
         entrantsOpen: false,
         gameConfig: null,
       },

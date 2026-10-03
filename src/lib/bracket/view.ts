@@ -2,11 +2,10 @@
  * Display helpers for a Bracket: Round and Heat names, Rounds in order, and
  * the Heat an Entrant plays next. Pure, like the engine.
  */
-import { heatsConfig } from "@/lib/bracket/config";
+import { isHeadToHead } from "@/lib/bracket/config";
 import { isBye } from "@/lib/bracket/formats";
 import { isDecided } from "@/lib/bracket/heat-status";
 import type { Bracket, BracketFormat, Format, Heat } from "@/lib/bracket/types";
-import { COMPETITION_FORMATS } from "@/lib/enums";
 import { formatDayHeading, formatEtTime } from "@/lib/schedule";
 
 export type { Format } from "@/lib/bracket/types";
@@ -14,8 +13,7 @@ export { isDecided };
 
 const FORMAT_LABELS: Record<Format, string> = {
   placement: "Placement",
-  "single-elimination": "Single elimination",
-  heats: "Heats",
+  bracket: "Bracket",
   "head-to-head": "Head-to-head",
   "best-score": "Best score",
   participation: "Participation",
@@ -26,25 +24,15 @@ export function formatLabel(format: Format): string {
   return FORMAT_LABELS[format];
 }
 
-/**
- * Whether a Format runs as a Bracket (anything but "placement", a Games
- * Format or "participation").
- */
+/** Whether a Format is the Bracket Format. */
 export function isBracketFormat(
   format: string | null | undefined,
 ): format is BracketFormat {
-  return (
-    format != null &&
-    format !== "placement" &&
-    format !== "head-to-head" &&
-    format !== "best-score" &&
-    format !== "participation"
-  );
+  return format === "bracket";
 }
 
 /** Every Format that runs as a Bracket. */
-export const BRACKET_FORMATS: BracketFormat[] =
-  COMPETITION_FORMATS.filter(isBracketFormat);
+export const BRACKET_FORMATS: BracketFormat[] = ["bracket"];
 
 /** The final's Round number; 0 before Generate. */
 export function finalRoundOf(bracket: Bracket): number {
@@ -52,24 +40,23 @@ export function finalRoundOf(bracket: Bracket): number {
 }
 
 /**
- * "Final", "Round N", or (single elimination only) "Semifinal", by distance
+ * "Final", "Round N", or (head-to-head only) "Semifinal", by distance
  * from the final Round; with a `position`, "Round N Heat P" or
  * "Semifinal P" instead of the bare Round name.
  */
 export function heatNameAt({
-  format,
+  headToHead,
   finalRound,
   round,
   position,
 }: {
-  format: Format;
+  headToHead: boolean;
   finalRound: number;
   round: number;
   position?: number;
 }): string {
   if (round === finalRound) return "Final";
-  const isSemifinal =
-    format === "single-elimination" && round === finalRound - 1;
+  const isSemifinal = headToHead && round === finalRound - 1;
   if (isSemifinal) {
     return position === undefined ? "Semifinal" : `Semifinal ${position}`;
   }
@@ -79,24 +66,24 @@ export function heatNameAt({
 }
 
 /**
- * "Final", "Round N", or (single elimination only) "Semifinal", by distance
+ * "Final", "Round N", or (head-to-head only) "Semifinal", by distance
  * from the final Round.
  */
 export function roundName(bracket: Bracket, round: number): string {
   return heatNameAt({
-    format: bracket.format,
+    headToHead: isHeadToHead(bracket.config),
     finalRound: finalRoundOf(bracket),
     round,
   });
 }
 
-/** "Final", "Round 1 Heat 4", or (single elimination only) "Semifinal 2". */
+/** "Final", "Round 1 Heat 4", or (head-to-head only) "Semifinal 2". */
 export function heatName(
   bracket: Bracket,
   heat: Pick<Heat, "round" | "position">,
 ): string {
   return heatNameAt({
-    format: bracket.format,
+    headToHead: isHeadToHead(bracket.config),
     finalRound: finalRoundOf(bracket),
     round: heat.round,
     position: heat.position,
@@ -210,13 +197,13 @@ export function nextHeatFor(
             ) ?? null),
     };
   }
-  if (bracket.format !== "heats") return null;
+  if (isHeadToHead(bracket.config)) return null;
   // Their latest Heat is decided: did they finish in an advancing place?
   const last = bracket.heats
     .filter(inHeat)
     .reduce<Heat | null>((a, h) => (a && a.round > h.round ? a : h), null);
   if (!last || last.round >= finalRoundOf(bracket)) return null;
-  const { advancePerHeat } = heatsConfig(bracket.config);
+  const { advancePerHeat } = bracket.config;
   const place = last.slots.find((s) => s.entrantId === entrantId)?.place;
   if (place == null || place > advancePerHeat) return null;
   return { kind: "advanced", round: last.round + 1 };

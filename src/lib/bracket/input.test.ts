@@ -13,9 +13,9 @@ const b = "0f5d6c3e-1b2a-4e8f-9c7d-6a5b4c3d2e1f";
 
 describe("Bracket action input", () => {
   it("accepts a Format and refuses an unknown one", () => {
-    expect(parseFormatInput({ format: "single-elimination" })).toEqual({
+    expect(parseFormatInput({ format: "bracket" })).toEqual({
       ok: true,
-      value: { format: "single-elimination" },
+      value: { format: "bracket" },
     });
     expect(parseFormatInput({ format: "swiss" })).toEqual({
       ok: false,
@@ -30,46 +30,72 @@ describe("Bracket action input", () => {
     });
   });
 
-  it("accepts a heats Format with a valid config and force", () => {
+  it("accepts a Bracket Format with a valid config and force", () => {
     expect(
       parseFormatInput({
-        format: "heats",
-        config: { entrantsPerHeat: 4, advancePerHeat: 2 },
+        format: "bracket",
+        config: {
+          entrantsPerHeat: 4,
+          advancePerHeat: 2,
+          thirdPlaceGame: false,
+        },
         force: true,
       }),
     ).toEqual({
       ok: true,
       value: {
-        format: "heats",
-        config: { entrantsPerHeat: 4, advancePerHeat: 2 },
+        format: "bracket",
+        config: {
+          entrantsPerHeat: 4,
+          advancePerHeat: 2,
+          thirdPlaceGame: false,
+        },
         force: true,
       },
     });
-    expect(parseFormatInput({ format: "heats" })).toEqual({
+    expect(parseFormatInput({ format: "bracket" })).toEqual({
       ok: true,
-      value: { format: "heats" },
+      value: { format: "bracket" },
     });
   });
 
-  it("refuses a heats config where as many advance as play", () => {
+  it("refuses a Bracket config where as many advance as play", () => {
     expect(
       parseFormatInput({
-        format: "heats",
-        config: { entrantsPerHeat: 4, advancePerHeat: 4 },
+        format: "bracket",
+        config: {
+          entrantsPerHeat: 4,
+          advancePerHeat: 4,
+          thirdPlaceGame: false,
+        },
       }),
     ).toEqual({ ok: false, error: "Fewer must advance than play in a Heat." });
     expect(
       parseFormatInput({
-        format: "heats",
-        config: { entrantsPerHeat: 9, advancePerHeat: 2 },
+        format: "bracket",
+        config: {
+          entrantsPerHeat: 9,
+          advancePerHeat: 2,
+          thirdPlaceGame: false,
+        },
       }),
     ).toEqual({ ok: false, error: "A Heat holds at most 8 Entrants." });
   });
 
-  it("refuses a config for single elimination", () => {
+  it("refuses a config for Placement, and a config without its 3rd place game", () => {
     expect(
       parseFormatInput({
-        format: "single-elimination",
+        format: "placement",
+        config: {
+          entrantsPerHeat: 4,
+          advancePerHeat: 2,
+          thirdPlaceGame: false,
+        },
+      }),
+    ).toEqual({ ok: false, error: "Only a Bracket takes Heat settings." });
+    expect(
+      parseFormatInput({
+        format: "bracket",
         config: { entrantsPerHeat: 4, advancePerHeat: 2 },
       }),
     ).toMatchObject({ ok: false });

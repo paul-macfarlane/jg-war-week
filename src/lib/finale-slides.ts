@@ -366,11 +366,7 @@ export function championsList(
       competitionId: competition.id,
       competition: competition.name,
       format: competition.format,
-      label:
-        competition.format === "single-elimination" ||
-        competition.format === "heats"
-          ? "Champion"
-          : "Winner",
+      label: competition.format === "bracket" ? "Champion" : "Winner",
       title: tieTitle(winners.map((winner) => winner.name)),
       winners,
     }));

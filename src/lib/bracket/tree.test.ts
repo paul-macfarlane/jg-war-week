@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 import { applyResult, generate } from "@/lib/bracket/formats";
 import { type TreeSlot, bracketTree } from "@/lib/bracket/tree";
 import type { Bracket, Entrant } from "@/lib/bracket/types";
@@ -11,7 +12,7 @@ const newId = (round: number, position: number) => `r${round}h${position}`;
 
 /** A single-elimination Bracket of these Entrants, by the real engine. */
 const knockout = (labels: string[]): Bracket =>
-  generate("single-elimination", null, entrants(labels), newId);
+  generate(DEFAULT_BRACKET_CONFIG, entrants(labels), newId);
 
 /** A slot as a short string: "A", "A>" (advances), "bye", "…Semifinal 1". */
 function show(slot: TreeSlot): string {
@@ -152,8 +153,7 @@ describe("bracketTree, Heats", () => {
   /** 8 Entrants, 4 per Heat, top 2 advance: two Heats, then the Final. */
   const heats = () =>
     generate(
-      "heats",
-      { entrantsPerHeat: 4, advancePerHeat: 2 },
+      { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
       entrants(["A", "B", "C", "D", "E", "F", "G", "H"]),
       newId,
     );

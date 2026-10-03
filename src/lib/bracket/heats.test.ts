@@ -21,7 +21,11 @@ const newId = (round: number, position: number) => `r${round}h${position}`;
 
 function build(count: number, perHeat: number, advance: number): Bracket {
   return heats.generate(
-    { entrantsPerHeat: perHeat, advancePerHeat: advance },
+    {
+      entrantsPerHeat: perHeat,
+      advancePerHeat: advance,
+      thirdPlaceGame: false,
+    },
     entrants(count),
     newId,
   );
@@ -69,7 +73,11 @@ const ranges = Array.from({ length: 16 }, (_, i) => i + 2).flatMap((n) =>
   [2, 3, 4, 5, 6, 7, 8].flatMap((s) =>
     Array.from({ length: s - 1 }, (_, a) => ({
       n,
-      config: { entrantsPerHeat: s, advancePerHeat: a + 1 },
+      config: {
+        entrantsPerHeat: s,
+        advancePerHeat: a + 1,
+        thirdPlaceGame: false,
+      },
     })),
   ),
 );
@@ -92,13 +100,19 @@ describe("validateConfig", () => {
 
   it("names the Round that would never end", () => {
     expect(
-      heats.validateConfig({ entrantsPerHeat: 3, advancePerHeat: 2 }, 4),
+      heats.validateConfig(
+        { entrantsPerHeat: 3, advancePerHeat: 2, thirdPlaceGame: false },
+        4,
+      ),
     ).toBe(
       "With 4 Entrants, 3 per Heat and 2 advancing, Round 1 would never end. Lower how many advance.",
     );
     // 7 → Heats of 3, 2, 2 send 6 on → 3, 3 send 4 on → 2, 2 send 4 on.
     expect(
-      heats.validateConfig({ entrantsPerHeat: 3, advancePerHeat: 2 }, 7),
+      heats.validateConfig(
+        { entrantsPerHeat: 3, advancePerHeat: 2, thirdPlaceGame: false },
+        7,
+      ),
     ).toBe(
       "With 7 Entrants, 3 per Heat and 2 advancing, Round 3 would never end. Lower how many advance.",
     );
@@ -106,26 +120,45 @@ describe("validateConfig", () => {
 
   it("accepts a count that fits in one Heat, however many advance", () => {
     expect(
-      heats.validateConfig({ entrantsPerHeat: 3, advancePerHeat: 2 }, 3),
+      heats.validateConfig(
+        { entrantsPerHeat: 3, advancePerHeat: 2, thirdPlaceGame: false },
+        3,
+      ),
     ).toBeNull();
     expect(
-      heats.validateConfig({ entrantsPerHeat: 8, advancePerHeat: 7 }, 2),
+      heats.validateConfig(
+        { entrantsPerHeat: 8, advancePerHeat: 7, thirdPlaceGame: false },
+        2,
+      ),
     ).toBeNull();
   });
 
-  it("needs 2 Entrants and a valid config, defaulting to 4 per Heat, 2 advancing", () => {
+  it("needs 2 Entrants and a valid config", () => {
     expect(
-      heats.validateConfig({ entrantsPerHeat: 4, advancePerHeat: 2 }, 1),
+      heats.validateConfig(
+        { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
+        1,
+      ),
     ).toBe("A Bracket needs at least 2 Entrants.");
     expect(
-      heats.validateConfig({ entrantsPerHeat: 4, advancePerHeat: 4 }, 8),
+      heats.validateConfig(
+        { entrantsPerHeat: 4, advancePerHeat: 4, thirdPlaceGame: false },
+        8,
+      ),
     ).toBe("Fewer must advance than play in a Heat.");
     expect(
-      heats.validateConfig({ entrantsPerHeat: 9, advancePerHeat: 2 }, 8),
+      heats.validateConfig(
+        { entrantsPerHeat: 9, advancePerHeat: 2, thirdPlaceGame: false },
+        8,
+      ),
     ).toBe("A Heat holds at most 8 Entrants.");
-    expect(heats.validateConfig(null, 8)).toBeNull();
     // 4 per Heat, 2 advancing: 5 → Heats of 3 and 2 send 4 on (the final).
-    expect(heats.validateConfig(null, 5)).toBeNull();
+    expect(
+      heats.validateConfig(
+        { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
+        5,
+      ),
+    ).toBeNull();
   });
 });
 
@@ -141,7 +174,6 @@ describe("generate", () => {
     "builds every Round for $n Entrants, $config.entrantsPerHeat per Heat, $config.advancePerHeat advancing",
     ({ n, config }) => {
       const bracket = heats.generate(config, entrants(n), newId);
-      expect(bracket.format).toBe("heats");
       expect(bracket.config).toEqual(config);
 
       const all = rounds(bracket);
@@ -263,9 +295,8 @@ describe("generate", () => {
     expect(heats.isRecordable(bracket, "r1h1")).toBe(true);
   });
 
-  it("uses 4 per Heat, 2 advancing when there's no config", () => {
-    const bracket = heats.generate(null, entrants(8), newId);
-    expect(bracket.config).toBeNull();
+  it("deals 8 Entrants into Heats of 4 at 4 per Heat, 2 advancing", () => {
+    const bracket = build(8, 4, 2);
     expect(bracket.heats.map((h) => h.slots.length)).toEqual([4, 4, 4]);
   });
 });

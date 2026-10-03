@@ -84,20 +84,20 @@ async function fixture(tx: DBTx) {
         warWeekId,
         name: "Cypher",
         scoring: "team",
-        format: "single-elimination",
+        format: "bracket",
         selfReport: true,
       },
       {
         warWeekId,
         name: "Relay",
         scoring: "team",
-        format: "single-elimination",
+        format: "bracket",
       },
       {
         warWeekId,
         name: "Chess",
         scoring: "individual",
-        format: "single-elimination",
+        format: "bracket",
       },
     ])
     .returning({ id: schema.competition.id });

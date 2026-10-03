@@ -26,6 +26,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
+import type { BracketConfig } from "@/lib/bracket/config";
 import {
   COMPETITION_FORMATS,
   COMPETITION_SCORINGS,
@@ -225,11 +226,7 @@ export const competition = pgTable(
     // A Bracket's settings (`src/lib/bracket/config.ts`): heat size,
     // advancing per Heat and the 3rd place game. Set for every Bracket (app
     // logic, not a CHECK); null for every other Format.
-    bracketConfig: jsonb("bracket_config").$type<{
-      entrantsPerHeat: number;
-      advancePerHeat: number;
-      thirdPlaceGame: boolean;
-    } | null>(),
+    bracketConfig: jsonb("bracket_config").$type<BracketConfig | null>(),
     // Participants in a Heat may enter its result themselves (ADR 0005).
     selfReport: boolean("self_report").notNull().default(false),
     // Set while the Competition's generated Points Entries exist: a

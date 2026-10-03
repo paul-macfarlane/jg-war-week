@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 import { generate } from "@/lib/bracket/formats";
 import {
   type StandingsSeedEntrant,
@@ -217,12 +218,7 @@ describe("standingsSeedPositions", () => {
         label: entrantId,
       }),
     );
-    const bracket = generate(
-      "single-elimination",
-      null,
-      bracketEntrants,
-      newId,
-    );
+    const bracket = generate(DEFAULT_BRACKET_CONFIG, bracketEntrants, newId);
 
     // 3 Entrants: the top Seed Position (the top-ranked Entrant, e2) gets
     // the bye straight into the final.
@@ -259,7 +255,7 @@ describe("standingsSeedPositions", () => {
         label: entrantId,
       }),
     );
-    const bracket = generate("heats", null, bracketEntrants, newId);
+    const bracket = generate(DEFAULT_BRACKET_CONFIG, bracketEntrants, newId);
 
     // The top-ranked Entrant (e5, Seed Position 1) is in the first Round's
     // first Heat.

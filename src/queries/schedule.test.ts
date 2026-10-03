@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { DBTx } from "@/db";
 import { isLocalDatabaseUrl } from "@/db/local-url";
 import { inRolledBackTransaction } from "@/db/test-transaction";
+import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 
 // Runs only against a local Postgres (CI's service or docker compose; see
 // vitest.config.ts), never a hosted database.
@@ -125,7 +126,7 @@ async function bracket(
       warWeekId: ctx.warWeekId,
       name,
       scoring,
-      format: "single-elimination",
+      format: "bracket",
     })
     .returning({ id: f.schema.competition.id });
   expect(
@@ -246,7 +247,7 @@ describe.skipIf(!isLocalDatabase)("getTimedHeats", () => {
       const shown = rows
         .map((row) => ({
           competition: row.competition.name,
-          format: row.competition.format,
+          config: row.competition.config,
           finalRound: row.finalRound,
           heatId: row.heat.id,
           status: row.heat.status,
@@ -262,7 +263,7 @@ describe.skipIf(!isLocalDatabase)("getTimedHeats", () => {
       expect(shown).toEqual([
         {
           competition: "Beyblades",
-          format: "single-elimination",
+          config: DEFAULT_BRACKET_CONFIG,
           finalRound: 2,
           heatId: semi1,
           status: "ready",
@@ -273,7 +274,7 @@ describe.skipIf(!isLocalDatabase)("getTimedHeats", () => {
         },
         {
           competition: "Chess",
-          format: "single-elimination",
+          config: DEFAULT_BRACKET_CONFIG,
           finalRound: 1,
           heatId: chessFinal,
           status: "ready",
@@ -296,7 +297,7 @@ describe.skipIf(!isLocalDatabase)("getTimedHeats", () => {
           warWeekId: f.ctx.warWeekId,
           name: "Cypher",
           scoring: "team",
-          format: "single-elimination",
+          format: "bracket",
         })
         .returning({ id: f.schema.competition.id });
       const squads = await tx

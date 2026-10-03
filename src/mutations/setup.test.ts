@@ -983,7 +983,7 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
     });
   });
 
-  it("creates a single-elimination Competition with the Format and no config", async () => {
+  it("creates a Bracket with the default config: 2 per Heat, 1 advancing, no 3rd place game", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { createCompetition } = await import("@/mutations/setup");
       const { schema, ctx } = await rosterFixture(tx);
@@ -992,7 +992,7 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
         {
           ...competitionValues,
           name: "Chess Bracket",
-          format: "single-elimination",
+          format: "bracket",
         },
         ctx,
         tx,
@@ -1003,23 +1003,23 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
         .from(schema.competition)
         .where(eq(schema.competition.name, "Chess Bracket"));
       expect(row).toMatchObject({
-        format: "single-elimination",
-        bracketConfig: null,
+        format: "bracket",
+        bracketConfig: {
+          entrantsPerHeat: 2,
+          advancePerHeat: 1,
+          thirdPlaceGame: false,
+        },
       });
     });
   });
 
-  it("creates a heats Competition with the Bracket builder's default config", async () => {
+  it("gives a Placement Competition no Bracket config", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { createCompetition } = await import("@/mutations/setup");
       const { schema, ctx } = await rosterFixture(tx);
 
       const created = await createCompetition(
-        {
-          ...competitionValues,
-          name: "Chess Heats",
-          format: "heats",
-        },
+        { ...competitionValues, name: "Chess Sheet", format: "placement" },
         ctx,
         tx,
       );
@@ -1027,11 +1027,8 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
       const [row] = await tx
         .select()
         .from(schema.competition)
-        .where(eq(schema.competition.name, "Chess Heats"));
-      expect(row).toMatchObject({
-        format: "heats",
-        bracketConfig: { entrantsPerHeat: 4, advancePerHeat: 2 },
-      });
+        .where(eq(schema.competition.name, "Chess Sheet"));
+      expect(row).toMatchObject({ format: "placement", bracketConfig: null });
     });
   });
 
@@ -1102,7 +1099,7 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
           warWeekId: home,
           name: "Knockout",
           scoring: "individual" as const,
-          format: "single-elimination" as const,
+          format: "bracket" as const,
           placementPoints: [5, 3, 1],
         })
         .returning({ id: schema.competition.id });
@@ -1348,7 +1345,7 @@ describe.skipIf(!isLocalDatabase)(
           warWeekId: f.home,
           name: "Tug",
           scoring: "team",
-          format: "single-elimination",
+          format: "bracket",
         })
         .returning({ id: schema.competition.id });
       const squads = await tx

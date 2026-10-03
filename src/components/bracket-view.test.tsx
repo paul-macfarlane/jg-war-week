@@ -189,7 +189,7 @@ describe("HeatRows advancers", () => {
 
   it("highlights places 1 and 2 of a Heat of 4 with 2 advancing", () => {
     let bracket = heats.generate(
-      { entrantsPerHeat: 4, advancePerHeat: 2 },
+      { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
       eight,
       newId,
     );

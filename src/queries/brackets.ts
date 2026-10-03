@@ -14,7 +14,7 @@ import {
   squadParticipant,
   team,
 } from "@/db/schema";
-import { configOf } from "@/lib/bracket/config";
+import { DEFAULT_BRACKET_CONFIG, configOf } from "@/lib/bracket/config";
 import { champion } from "@/lib/bracket/formats";
 import type { Bracket, Entrant, Heat } from "@/lib/bracket/types";
 import { BRACKET_FORMATS, isBracketFormat } from "@/lib/bracket/view";
@@ -196,10 +196,10 @@ export async function loadBracket(
     )[0];
   if (!found || !isBracketFormat(found.format)) {
     // A Placement, Head-to-head, Best score or Participation Competition (or a missing one) has no Bracket and
-    // so no Heats: the Format returned here is arbitrary, since nothing
+    // so no Heats: the config returned here is arbitrary, since nothing
     // reads its rules for an empty Bracket, and getBracket shows no
     // champion for a points Competition.
-    return { format: "single-elimination", config: null, heats: [] };
+    return { config: DEFAULT_BRACKET_CONFIG, heats: [] };
   }
   // An explicit list: the reporter columns (an email among them) are never
   // read into a Bracket, which feeds pages and MCP.
@@ -231,7 +231,6 @@ export async function loadBracket(
         )
     : [];
   return {
-    format: found.format,
     config: configOf(found),
     heats: heats.map((row): Heat => ({
       id: row.id,

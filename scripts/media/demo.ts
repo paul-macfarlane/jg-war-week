@@ -149,7 +149,7 @@ export async function setupBracketDemo(
 }> {
   const [seeded] = await query<{ id: string }>(
     `select c.id from competition c
-     where c.war_week_id = $1 and c.format = 'heats' and c.scoring = 'individual'
+     where c.war_week_id = $1 and c.format = 'bracket' and c.scoring = 'individual'
        and not exists (select 1 from entrant e where e.competition_id = c.id)
      order by c.name limit 1`,
     [warWeek.id],
@@ -159,11 +159,11 @@ export async function setupBracketDemo(
     (
       await query<{ id: string }>(
         `insert into competition (war_week_id, name, scoring, format, bracket_config)
-         values ($1, $2, 'individual', 'heats', $3) returning id`,
+         values ($1, $2, 'individual', 'bracket', $3) returning id`,
         [
           warWeek.id,
           BRACKET_COMP_NAME,
-          { entrantsPerHeat: 4, advancePerHeat: 2 },
+          { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
         ],
       )
     )[0].id;

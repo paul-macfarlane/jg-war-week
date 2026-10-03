@@ -2,6 +2,10 @@
  * The single-elimination Bracket engine. Every function is pure: it takes a
  * Bracket and returns a new one, never changing its input.
  */
+import {
+  type BracketConfig,
+  DEFAULT_BRACKET_CONFIG,
+} from "@/lib/bracket/config";
 import { isDecided } from "@/lib/bracket/heat-status";
 import {
   type Bracket,
@@ -69,6 +73,7 @@ export function generate(
   entrants: Entrant[],
   newId: (round: number, position: number) => string = (round, position) =>
     `r${round}h${position}`,
+  config: BracketConfig = DEFAULT_BRACKET_CONFIG,
 ): Bracket {
   if (entrants.length < 2) {
     throw new BracketError("A Bracket needs at least 2 Entrants.");
@@ -84,11 +89,7 @@ export function generate(
     }
   }
 
-  const bracket: Bracket = {
-    format: "single-elimination",
-    config: null,
-    heats: [],
-  };
+  const bracket: Bracket = { config, heats: [] };
   for (let round = 1; round <= rounds; round++) {
     for (let position = 1; position <= size / 2 ** round; position++) {
       bracket.heats.push({
@@ -301,7 +302,7 @@ export function finalPlacings(
  */
 export const singleElimination: FormatEngine = {
   validateConfig: () => null,
-  generate: (_config, entrants, newId) => generate(entrants, newId),
+  generate: (config, entrants, newId) => generate(entrants, newId, config),
   applyResult,
   resetByResult(bracket, heatId, result) {
     // A forfeiting Entrant loses, so the winner is the first who didn't.

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 import { applyResult, generate } from "@/lib/bracket/engine";
 import { type TimedHeatRow, heatEntries } from "@/lib/bracket/now-next";
 import type { Bracket, Entrant } from "@/lib/bracket/types";
@@ -14,7 +15,7 @@ import {
 const beyblades = {
   id: "c-beyblades",
   name: "Beyblades",
-  format: "single-elimination" as const,
+  config: DEFAULT_BRACKET_CONFIG,
 };
 
 /** Entrants s1…sN at Seed Positions 1…N. */

@@ -17,6 +17,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useYou } from "@/components/you";
+import { isHeadToHead } from "@/lib/bracket/config";
 import { isBye } from "@/lib/bracket/formats";
 import { advancesFromPlace } from "@/lib/bracket/tree";
 import type { Bracket, Heat } from "@/lib/bracket/types";
@@ -85,7 +86,7 @@ export function HeatRows({
   const decided = isDecided(heat) && !bye;
   const ranked = decided && heat.slots.length > 2;
   if (
-    bracket.format === "heats" &&
+    !isHeadToHead(bracket.config) &&
     heat.slots.every((s) => s.entrantId === null)
   ) {
     return (
@@ -172,7 +173,7 @@ export function HeatRows({
           </li>
         );
       })}
-      {bye && bracket.format === "heats" && (
+      {bye && !isHeadToHead(bracket.config) && (
         <li className="text-foreground/60 flex min-h-8 items-center px-1 italic">
           Bye — advances
         </li>
@@ -439,7 +440,7 @@ export function BracketView({
               <ul className="flex flex-col gap-2">
                 {round.heats.map((heat) => {
                   const to =
-                    bracket.format === "single-elimination" && heat.winnerTo
+                    isHeadToHead(bracket.config) && heat.winnerTo
                       ? heatsById.get(heat.winnerTo.heatId)
                       : undefined;
                   const when = formatHeatWhen(heat, days);

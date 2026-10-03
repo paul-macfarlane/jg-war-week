@@ -41,8 +41,8 @@ describe("pointsEntryTarget", () => {
 
 describe("generated Points Entries", () => {
   it("keep the Bracket wording for a Bracket", () => {
-    expect(generatedNote("single-elimination")).toBe("From bracket");
-    expect(generatedRefusal("heats")).toBe(
+    expect(generatedNote("bracket")).toBe("From bracket");
+    expect(generatedRefusal("bracket")).toBe(
       "This Points Entry comes from a bracket. Change it there.",
     );
   });

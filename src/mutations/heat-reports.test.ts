@@ -50,7 +50,7 @@ async function fixture(tx: DBTx) {
         warWeekId,
         name: "Cypher",
         scoring: "team",
-        format: "single-elimination",
+        format: "bracket",
       },
       { warWeekId, name: "Trivia", scoring: "team", format: "placement" },
     ])
@@ -210,20 +210,27 @@ async function reportFixture(tx: DBTx) {
         warWeekId,
         name: "Tug of War",
         scoring: "team",
-        format: "single-elimination",
+        format: "bracket",
       },
       {
         warWeekId,
         name: "Relay Heats",
         scoring: "individual",
-        format: "single-elimination",
+        format: "bracket",
       },
     ])
     .returning({ id: schema.competition.id });
   expect(
     await brackets.setCompetitionFormat(
       relay.id,
-      { format: "heats", config: { entrantsPerHeat: 4, advancePerHeat: 2 } },
+      {
+        format: "bracket",
+        config: {
+          entrantsPerHeat: 4,
+          advancePerHeat: 2,
+          thirdPlaceGame: false,
+        },
+      },
       f.ctx,
       tx,
     ),

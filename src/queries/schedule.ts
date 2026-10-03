@@ -13,6 +13,7 @@ import {
   squad,
   team,
 } from "@/db/schema";
+import { configOf } from "@/lib/bracket/config";
 import type { TimedHeatRow } from "@/lib/bracket/now-next";
 import { BRACKET_FORMATS } from "@/lib/bracket/view";
 import { type ScheduleDay, groupSchedule } from "@/lib/schedule";
@@ -97,7 +98,7 @@ export async function getTimedHeats(
       location: heat.location,
       competitionId: competition.id,
       competitionName: competition.name,
-      format: competition.format,
+      bracketConfig: competition.bracketConfig,
     })
     .from(heat)
     .innerJoin(competition, eq(competition.id, heat.competitionId))
@@ -153,7 +154,7 @@ export async function getTimedHeats(
       competition: {
         id: row.competitionId,
         name: row.competitionName,
-        format: row.format,
+        config: configOf(row),
       },
       finalRound:
         finalRounds.find((r) => r.competitionId === row.competitionId)

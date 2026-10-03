@@ -35,11 +35,11 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
   ADVANCE_PER_HEAT_OPTIONS,
+  type BracketConfig,
   ENTRANTS_PER_HEAT_OPTIONS,
-  type HeatsConfig,
   advancePerHeatLabel,
   entrantsPerHeatLabel,
-  heatsConfig as heatsConfigOf,
+  isHeadToHead,
 } from "@/lib/bracket/config";
 import { hasResults, isBye, validateConfig } from "@/lib/bracket/formats";
 import { type EntrantKind, squadLabel } from "@/lib/bracket/squads";
@@ -118,8 +118,9 @@ export function forceableConfirmCopy(
 }
 
 /**
- * The Heats Format's settings: how many Entrants play in each Heat and how
- * many of them advance. With a saved Entrant count, a "how many advance"
+ * The Bracket's settings: how many Entrants play in each Heat and how
+ * many of them advance; 2 with 1 advancing is "Head-to-head (single
+ * elimination)", offered as a preset. With a saved Entrant count, a "how many advance"
  * that Generate would refuse is disabled, and the refusal is shown when the
  * current choice is one.
  */
@@ -133,7 +134,7 @@ function HeatSettingsForm({
   onRefused,
 }: {
   competitionId: string;
-  config: HeatsConfig;
+  config: BracketConfig;
   entrantCount: number;
   disabled: boolean;
   /** How many of the Bracket's Heats are timed; a re-draw would clear them. */
@@ -154,10 +155,12 @@ function HeatSettingsForm({
       const next = {
         entrantsPerHeat: Number(formData.get("entrantsPerHeat")),
         advancePerHeat: Number(formData.get("advancePerHeat")),
+        // Part 98 adds the switch; until then the saved value passes through.
+        thirdPlaceGame: config.thirdPlaceGame,
       };
       const run = (force: boolean) =>
         setCompetitionFormat(competitionId, {
-          format: "heats",
+          format: "bracket",
           config: next,
           force,
         });
@@ -192,8 +195,7 @@ function HeatSettingsForm({
   const refusalAt = (entrantsPerHeat: number, advancePerHeat: number) =>
     entrantCount >= 2
       ? validateConfig(
-          "heats",
-          { entrantsPerHeat, advancePerHeat },
+          { entrantsPerHeat, advancePerHeat, thirdPlaceGame: false },
           entrantCount,
         )
       : null;
@@ -225,6 +227,26 @@ function HeatSettingsForm({
           Each Round deals the Entrants into Heats; the top few of each go on to
           the next Round until one Heat, the Final, is left.
         </FieldDescription>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="min-h-11"
+            aria-pressed={isHeadToHead({
+              ...config,
+              entrantsPerHeat: perHeat,
+              advancePerHeat: advance,
+            })}
+            disabled={off}
+            onClick={() => {
+              setPerHeat(2);
+              setAdvance(1);
+            }}
+          >
+            Head-to-head (single elimination)
+          </Button>
+        </div>
         <FieldGroup className="gap-4 sm:flex-row">
           <Field className="sm:max-w-48">
             <FieldLabel htmlFor="heat-entrants">Entrants per Heat</FieldLabel>
@@ -559,8 +581,8 @@ export function BracketBuilder({
   const firstRound = groupRounds(bracket)[0];
   const labelOf = (entrantId: string | null) =>
     entrants.find((e) => e.id === entrantId)?.label ?? "Unknown";
-  const heatsConfig =
-    competition.format === "heats" ? heatsConfigOf(bracket.config) : null;
+  const bracketConfig =
+    competition.format === "bracket" ? bracket.config : null;
 
   return (
     <div className="flex flex-col gap-8">
@@ -586,12 +608,12 @@ export function BracketBuilder({
         </FieldDescription>
       </Field>
 
-      {heatsConfig && (
+      {bracketConfig && (
         <HeatSettingsForm
           // A saved change (after the refresh) starts the form from it.
-          key={`${heatsConfig.entrantsPerHeat}-${heatsConfig.advancePerHeat}`}
+          key={`${bracketConfig.entrantsPerHeat}-${bracketConfig.advancePerHeat}`}
           competitionId={competition.id}
-          config={heatsConfig}
+          config={bracketConfig}
           entrantCount={entrants.length}
           disabled={pending || locked}
           timedHeatsCount={timedHeatsCount}

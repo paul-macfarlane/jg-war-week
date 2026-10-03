@@ -54,8 +54,7 @@ export type Heat = {
 };
 
 export type Bracket = {
-  format: BracketFormat;
-  /** The Format's settings; null for single elimination. */
+  /** The Bracket's settings; never null. */
   config: BracketConfig;
   heats: Heat[];
 };

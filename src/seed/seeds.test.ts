@@ -359,8 +359,8 @@ describe("War Week XII demo", () => {
     expect(xiiDemo.days.length).toBeGreaterThanOrEqual(3);
     expect(xiiDemo.days.every((d) => d.scheduleItems.length > 0)).toBe(true);
     expect(xiiDemo.competitions.map((c) => c.format).sort()).toEqual([
+      "bracket",
       "head-to-head",
-      "heats",
       "placement",
       "placement",
     ]);

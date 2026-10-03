@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 import type { Bracket } from "@/lib/bracket/types";
 
 import { BracketBuilder, forceableConfirmCopy } from "./bracket-builder";
@@ -12,8 +13,7 @@ vi.mock("next/navigation", () => ({
 const TITLE = "Clear every Heat Result and draw again?";
 
 const emptyBracket: Bracket = {
-  format: "single-elimination",
-  config: null,
+  config: DEFAULT_BRACKET_CONFIG,
   heats: [],
 };
 
@@ -22,7 +22,7 @@ const baseProps = {
     id: "c1",
     name: "Tug of War",
     scoring: "team" as const,
-    format: "single-elimination" as const,
+    format: "bracket" as const,
     finalized: false,
     selfReport: false,
     selfEnroll: false,
@@ -51,6 +51,25 @@ describe("BracketBuilder", () => {
       "A Format can&#x27;t change while the Competition has Entrants.",
     );
     expect(html).not.toContain("Points is Points Entries only");
+  });
+
+  it("offers one Bracket Format option, with the head-to-head preset", () => {
+    const html = renderToStaticMarkup(<BracketBuilder {...baseProps} />);
+    expect(html).toContain("Head-to-head (single elimination)");
+    expect(html).toContain("Entrants per Heat");
+    expect(html).toContain("How many advance");
+    expect(html).not.toContain("Single elimination</");
+    expect(html).not.toMatch(/>Heats</);
+  });
+
+  it("shows the Format as Bracket, and no heat settings for a Placement", () => {
+    const placement = renderToStaticMarkup(
+      <BracketBuilder
+        {...baseProps}
+        competition={{ ...baseProps.competition, format: "placement" }}
+      />,
+    );
+    expect(placement).not.toContain("Head-to-head (single elimination)");
   });
 
   it("shows the Participants can enroll switch", () => {

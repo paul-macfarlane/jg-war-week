@@ -46,7 +46,7 @@ describe("pointsFor", () => {
       label: `E${i + 1}`,
     }));
     let bracket = heats.generate(
-      { entrantsPerHeat: 4, advancePerHeat: 2 },
+      { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
       entrants,
       (r, p) => `r${r}h${p}`,
     );

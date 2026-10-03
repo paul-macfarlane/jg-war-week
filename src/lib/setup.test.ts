@@ -449,17 +449,17 @@ describe("parseCreateCompetitionInput", () => {
     expect(
       parseCreateCompetitionInput({
         ...competition,
-        format: "single-elimination",
+        format: "bracket",
       }),
     ).toMatchObject({
       ok: true,
-      value: { format: "single-elimination" },
+      value: { format: "bracket" },
     });
     expect(
-      parseCreateCompetitionInput({ ...competition, format: "heats" }),
+      parseCreateCompetitionInput({ ...competition, format: "bracket" }),
     ).toMatchObject({
       ok: true,
-      value: { format: "heats" },
+      value: { format: "bracket" },
     });
   });
 
@@ -471,7 +471,7 @@ describe("parseCreateCompetitionInput", () => {
     expect(
       parseCreateCompetitionInput({
         ...competition,
-        format: "heats",
+        format: "bracket",
         placementPoints: "6, 5, 4, 3, 2, 1",
       }),
     ).toEqual({
@@ -487,7 +487,7 @@ describe("parseCreateCompetitionInput", () => {
   it("refuses an unknown Format", () => {
     expectRefused(
       parseCreateCompetitionInput({ ...competition, format: "swiss" }),
-      "Format must be one of placement, single-elimination, heats, head-to-head, best-score, participation.",
+      "Format must be one of placement, bracket, head-to-head, best-score, participation.",
     );
   });
 
@@ -514,7 +514,7 @@ describe("parseCreateCompetitionInput", () => {
         ...competition,
         format: 123 as unknown as string,
       }),
-      "Format must be one of placement, single-elimination, heats, head-to-head, best-score, participation.",
+      "Format must be one of placement, bracket, head-to-head, best-score, participation.",
     );
   });
 });
@@ -539,12 +539,39 @@ describe("competitionSeedSchema, games", () => {
   });
 
   it("takes gameConfig and entrantsOpen only on a Head-to-head or Best score Competition", () => {
-    expect(issues({ ...base, format: "heats", entrantsOpen: true })).toEqual([
+    expect(issues({ ...base, entrantsOpen: true })).toEqual([
       "entrantsOpen is only for a head-to-head or best-score Competition",
     ]);
     expect(issues({ ...base, gameConfig: { drawsAllowed: true } })).toEqual([
       "gameConfig is only for a head-to-head or best-score Competition",
     ]);
+  });
+
+  it("needs a Bracket's full bracketConfig, and gives no other Format one", () => {
+    expect(issues({ ...base, format: "bracket" })).toEqual([
+      "a Bracket needs its bracketConfig (entrantsPerHeat, advancePerHeat, thirdPlaceGame)",
+    ]);
+    expect(
+      issues({
+        ...base,
+        format: "bracket",
+        bracketConfig: {
+          entrantsPerHeat: 2,
+          advancePerHeat: 1,
+          thirdPlaceGame: false,
+        },
+      }),
+    ).toEqual([]);
+    expect(
+      issues({
+        ...base,
+        bracketConfig: {
+          entrantsPerHeat: 2,
+          advancePerHeat: 1,
+          thirdPlaceGame: false,
+        },
+      }),
+    ).toEqual(["bracketConfig is only for a Bracket"]);
   });
 
   it("refuses the removed gameType and finishPoints keys", () => {
@@ -692,13 +719,13 @@ describe("competitionGuardError", () => {
   it("refuses more than 5 places for a Bracket, on create and on edit, but not for Placement", () => {
     const six = { ...values, placementPoints: [6, 5, 4, 3, 2, 1] };
     const refusal = "Placement Points cover at most 5 places for this Format.";
-    expect(competitionGuardError({ ...six, format: "heats" }, ctx)).toBe(
+    expect(competitionGuardError({ ...six, format: "bracket" }, ctx)).toBe(
       refusal,
     );
     expect(
       competitionGuardError(six, {
         ...ctx,
-        existing: { ...existingBase, format: "single-elimination" },
+        existing: { ...existingBase, format: "bracket" },
       }),
     ).toBe(refusal);
     expect(

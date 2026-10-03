@@ -19,7 +19,11 @@ import {
   team,
   warWeek,
 } from "@/db/schema";
-import { type HeatsConfig, configOf } from "@/lib/bracket/config";
+import {
+  type BracketConfig,
+  DEFAULT_BRACKET_CONFIG,
+  configOf,
+} from "@/lib/bracket/config";
 import {
   applyResult,
   finalPlacings,
@@ -166,10 +170,11 @@ export function isBracketRun(
   return found !== undefined && isBracketFormat(found.format);
 }
 
-function sameConfig(a: HeatsConfig | null, b: HeatsConfig | null): boolean {
+function sameConfig(a: BracketConfig, b: BracketConfig): boolean {
   return (
-    a?.entrantsPerHeat === b?.entrantsPerHeat &&
-    a?.advancePerHeat === b?.advancePerHeat
+    a.entrantsPerHeat === b.entrantsPerHeat &&
+    a.advancePerHeat === b.advancePerHeat &&
+    a.thirdPlaceGame === b.thirdPlaceGame
   );
 }
 
@@ -280,15 +285,15 @@ async function saveBracket(
  * can't change while it has Entrants or Games, nor either while it's
  * finalized; a Head-to-head, Best score or Participation Competition is that Format from
  * creation, and stays so.
- * Saving a different heats config clears the Heats (keeping the Entrants);
+ * Saving a different Bracket config clears the Heats (keeping the Entrants);
  * once a Heat has a Heat Result, only with `force`. Omitting the config
- * keeps the saved one, unless the Format changes; the default then applies.
+ * keeps the saved one, unless the Format changes; the default (2 per Heat, 1 advancing) then applies.
  */
 export async function setCompetitionFormat(
   competitionId: string,
   values: {
     format: Competition["format"];
-    config?: HeatsConfig | null;
+    config?: BracketConfig;
     force?: boolean;
   },
   ctx: MutationContext,
@@ -367,17 +372,18 @@ export async function setCompetitionFormat(
       if (refusal) return refuse(refusal);
     }
 
-    let bracketConfig: HeatsConfig | null = null;
-    if (values.format === "heats") {
+    let bracketConfig: BracketConfig | null = null;
+    if (values.format === "bracket") {
       bracketConfig =
-        values.config ?? (formatChanges ? null : found.bracketConfig);
+        values.config ??
+        (formatChanges ? DEFAULT_BRACKET_CONFIG : configOf(found));
       // Never save a config Generate would refuse for these Entrants.
       const [entrants] = await tx
         .select({ count: count() })
         .from(entrant)
         .where(eq(entrant.competitionId, competitionId));
       if (entrants.count >= 2) {
-        const refusal = validateConfig("heats", bracketConfig, entrants.count);
+        const refusal = validateConfig(bracketConfig, entrants.count);
         if (refusal) return refuse(refusal);
       }
     }
@@ -607,7 +613,7 @@ export async function generateBracket(
       return refuse(SQUADS_SEEDED_AT_RANDOM);
     }
     const config = configOf(found);
-    const configRefusal = validateConfig(found.format, config, entrants.length);
+    const configRefusal = validateConfig(config, entrants.length);
     if (configRefusal) return refuse(configRefusal);
     if (!options.force && hasResults(await bracketOf(tx, found))) {
       return refuse(HAS_RESULTS_ERROR);
@@ -645,7 +651,6 @@ export async function generateBracket(
     }
 
     const bracket = generate(
-      found.format,
       config,
       seeded.map(({ entrantId, seedPosition }) => ({
         id: entrantId,

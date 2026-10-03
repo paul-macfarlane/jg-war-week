@@ -3,12 +3,7 @@
  * advancing, Round after Round until one Heat is left. Every function is
  * pure: it takes a Bracket and returns a new one, never changing its input.
  */
-import {
-  type BracketConfig,
-  type HeatsConfig,
-  heatsConfig,
-  heatsConfigSchema,
-} from "@/lib/bracket/config";
+import { type BracketConfig, bracketConfigSchema } from "@/lib/bracket/config";
 import { isDecided } from "@/lib/bracket/heat-status";
 import {
   type Bracket,
@@ -48,7 +43,7 @@ function snakeHeat(rank: number, heatCount: number): number {
  */
 function roundShape(
   count: number,
-  { entrantsPerHeat, advancePerHeat }: HeatsConfig,
+  { entrantsPerHeat, advancePerHeat }: BracketConfig,
 ): { rounds: number[][] } | { neverEnds: number } {
   const rounds: number[][] = [];
   let remaining = count;
@@ -71,7 +66,7 @@ export function validateConfig(
   config: BracketConfig,
   entrantCount: number,
 ): string | null {
-  const parsed = heatsConfigSchema.safeParse(heatsConfig(config));
+  const parsed = bracketConfigSchema.safeParse(config);
   if (!parsed.success) return parsed.error.issues[0].message;
   if (entrantCount < 2) return "A Bracket needs at least 2 Entrants.";
   const shape = roundShape(entrantCount, parsed.data);
@@ -103,7 +98,7 @@ function roundHeats(bracket: Bracket, round: number): Heat[] {
 export function isBye(bracket: Bracket, heat: Heat): boolean {
   return (
     heat.round < finalRound(bracket) &&
-    heat.slots.length <= heatsConfig(bracket.config).advancePerHeat
+    heat.slots.length <= bracket.config.advancePerHeat
   );
 }
 
@@ -149,7 +144,7 @@ function fillNextIfComplete(bracket: Bracket, round: number) {
 function advancersOf(bracket: Bracket, round: number): string[] | null {
   const heats = roundHeats(bracket, round);
   if (!heats.every(isDecided)) return null;
-  const { advancePerHeat } = heatsConfig(bracket.config);
+  const { advancePerHeat } = bracket.config;
   const ranked: string[] = [];
   for (let place = 1; place <= advancePerHeat; place++) {
     for (const heat of heats) {
@@ -172,10 +167,10 @@ export function generate(
 ): Bracket {
   const refusal = validateConfig(config, entrants.length);
   if (refusal) throw new BracketError(refusal);
-  const shape = roundShape(entrants.length, heatsConfig(config));
+  const shape = roundShape(entrants.length, config);
   if (!("rounds" in shape)) throw new Error("validated shape never ends");
 
-  const bracket: Bracket = { format: "heats", config, heats: [] };
+  const bracket: Bracket = { config, heats: [] };
   shape.rounds.forEach((sizes, r) => {
     sizes.forEach((size, p) => {
       bracket.heats.push({
@@ -381,7 +376,7 @@ export function finalPlacings(
     throw new BracketError("The Bracket isn't finished yet.");
   }
   const final = finalHeat(bracket)!;
-  const { advancePerHeat } = heatsConfig(bracket.config);
+  const { advancePerHeat } = bracket.config;
   const finalPlace = new Map(
     final.slots.map((s) => [s.entrantId!, s.place!] as const),
   );
