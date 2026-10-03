@@ -19,7 +19,6 @@ import {
 } from "@/db/schema";
 import {
   type BracketConfig,
-  DEFAULT_BRACKET_CONFIG,
   configOf,
   thirdPlaceRefusal,
 } from "@/lib/bracket/config";
@@ -50,9 +49,9 @@ import {
   LOCKED_BY_HEAT_RESULT,
   settingLockReason,
 } from "@/lib/competition-locks";
-import { BRACKET_PLACEMENTS } from "@/lib/competitions";
 import { isGameFormat } from "@/lib/enums";
-import { defaultGamesConfig, gamesConfigOf } from "@/lib/games/config";
+import { formatDefaults } from "@/lib/format-defaults";
+import { gamesConfigOf } from "@/lib/games/config";
 import { NOT_GAMES } from "@/lib/games/log-rule";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 import { getBracketEntrants, loadBracket } from "@/queries/brackets";
@@ -63,6 +62,7 @@ export const HEAT_NOT_FOUND = "That Heat no longer exists.";
 export const NOT_A_BRACKET = "This Competition isn't run as a Bracket.";
 export const FINALIZED = "Un-finalize the Bracket before changing it.";
 export const SQUAD_NOT_FOUND = "That Squad no longer exists.";
+export const ONLY_A_BRACKET_TAKES_HEATS = "Only a Bracket takes Heat settings.";
 const NOT_A_TEAM_COMPETITION = "Squads are only for team Competitions.";
 /** A closed Head-to-head or Best score Competition's Entrants can't change. */
 export const GAMES_CLOSED = "Reopen the Competition first.";
@@ -351,8 +351,6 @@ export async function setCompetitionFormat(
   });
 }
 
-export const ONLY_A_BRACKET_TAKES_HEATS = "Only a Bracket takes Heat settings.";
-
 /**
  * Moves a Competition with no result to `format`, with that Format's create
  * defaults (`setCompetitionFormat`). The caller holds the row lock and has
@@ -364,26 +362,12 @@ async function changeFormat(
   format: Competition["format"],
   config: BracketConfig | undefined,
 ): Promise<MutationResult> {
-  const bracketConfig =
-    format === "bracket" ? (config ?? DEFAULT_BRACKET_CONFIG) : null;
-  if (bracketConfig) {
+  const defaults = formatDefaults(format, found, config);
+  if (defaults.bracketConfig) {
     // No Entrants yet (they're a result).
-    const thirdPlace = thirdPlaceRefusal(bracketConfig, 0);
+    const thirdPlace = thirdPlaceRefusal(defaults.bracketConfig, 0);
     if (thirdPlace) return refuse(thirdPlace);
   }
-  const kept =
-    format === "bracket"
-      ? (found.placementPoints?.slice(0, BRACKET_PLACEMENTS) ?? null)
-      : found.placementPoints;
-  const points =
-    format !== "participation"
-      ? { participationPoints: null, placementPoints: kept }
-      : found.scoring === "team"
-        ? {
-            participationPoints: null,
-            placementPoints: kept?.length ? kept : [3, 2, 1],
-          }
-        : { participationPoints: 1, placementPoints: null };
   if (found.format === "bracket") {
     // Squads are entered only in a Bracket; none is an Entrant yet.
     await tx.delete(squad).where(eq(squad.competitionId, found.id));
@@ -392,11 +376,7 @@ async function changeFormat(
     .update(competition)
     .set({
       format,
-      bracketConfig,
-      gameConfig: isGameFormat(format) ? defaultGamesConfig(format) : null,
-      // A new Head-to-head or Best score Competition is open to everyone.
-      entrantsOpen: isGameFormat(format),
-      ...points,
+      ...defaults,
       scoreDirection: "none",
       selfReport: false,
       selfEnroll: false,

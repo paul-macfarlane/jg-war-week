@@ -40,7 +40,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Competition**               | Anything that awards points. Scored as team or individual. Skill divisions are separate Competitions ("MTG Advanced", "MTG Beginner"). |
 | **Competition Group**         | An optional grouping of competitions ("Team Night Events").                                                                       |
 | **Competition page** (admin)  | A Competition's one admin page, `/admin/competitions/<id>`: its **Settings** on top, each field autosaving, and the Format's **run area** below it (Entrants and the Bracket tree, Entrants and Games with Log a Game, Record placements, or who took part, and Finalize, Close or Reopen). The Competitions list's Edit opens it; Add Competition creates one in a sheet and then opens it. Organizers and that Competition's Hosts use it; a Participant is refused. |
-| **Settings lock**             | A Competition's settings lock as it progresses, and the page and the server refuse a locked change with the same one-line reason. Name, description, Group, Hosts and Placement Points (and points per Participant) **never lock**. Format, scoring, counts toward team, Score direction, Games settings and an open or fixed Entrant list lock **once any result exists**; heat size, how many advance, the 3rd place game, the Bracket's Entrants and building the Bracket lock **once a Heat Result exists**; self-enroll, Entrant limit, close times, self-report and check-in lock **only while Finalized or Closed**. While Finalized or Closed everything but the never-locking settings is locked until Reopen. A points setting changed while Finalized or Closed applies at the next Finalize or Close. |
+| **Settings lock**             | A Competition's settings lock as it progresses, and the page and the server refuse a locked change with the same one-line reason. Name, description, Group, Hosts and Placement Points (and points per Participant) **never lock**. Format, scoring, counts toward team, Score direction and a Best score Competition's count and direction lock **once any result exists** (an Entrant is one); a Head-to-head Competition's draws and Best of, and a Head-to-head or Best score Competition's open or fixed Entrant list, lock **once it has a Game** ("Locked once the Competition has a Game.": a Best of needs its two fixed Entrants first); heat size, how many advance, the 3rd place game, the Bracket's Entrants and building the Bracket lock **once a Heat Result exists**; self-enroll, Entrant limit, close times, self-report and check-in lock **only while Finalized or Closed**. While Finalized or Closed everything but the never-locking settings is locked until Reopen (Un-finalize for a Bracket). A points setting changed while Finalized or Closed applies at the next Finalize or Close. |
 | **Competition description**   | Rich text (the Announcement editor: headings, lists, links, images by URL), edited in the Competition page's Settings and shown in full on the Participant Competition page. |
 | **Points Entry**              | One ledger row: points awarded to a Team or Participant. Every Points Entry is either **generated** by a Competition's result (Finalize or Close) or **Discretionary**. Nobody types one against a Competition. |
 | **Discretionary points**      | Points with no Competition behind them: a Team or Participant, a number of points and a required reason ("Subjective Points"). Organizers only, in Admin → Discretionary points; edited and deleted there. The admin page's name; the ledger row is still a Points Entry. |
@@ -448,8 +448,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   the Competition's Hosts record it; a Participant sees it, read-only, on
   the Competition page (place, name, Score, points).
 - Add a row by search, or **Add everyone**; adding, removing and Add everyone
-  save at once, and Place and Score edits and the Score direction save with
-  one Save button.
+  save at once, and Place and Score edits save with one Save button.
 - **Score direction** (none, higher wins, lower wins) is set in the
   Competition page's Settings, and locks once any row exists. With a direction, Places fill from Scores as they're typed and stay
   editable, for ties and judgement.
@@ -480,8 +479,8 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   random only. Changing a Participant's Team, or deleting
   them or their Team, is refused while they're in a Squad; deleting a Squad
   that is an Entrant is refused, and no Squad changes while the Bracket is
-  finalized. Changing a Competition's scoring, or its Format to Placement,
-  is refused while it has Squads.
+  finalized. Changing a Competition's scoring is refused while it has
+  Squads; a Format change deletes them.
 - **Self-report** is off by default; an Organizer or the Competition's Host
   turns it on per Competition in its Settings. A Participant linked by email
   then sees **Report result** on "Your next Heat" and enters the result of
@@ -552,7 +551,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   count, and so is changing a Competition's scoring or Format once it has
   Entrants (any result locks them).
 - While a Bracket is finalized, its Settings lock ("Locked while the
-  Competition is Finalized or Closed. Reopen it first.") except the
+  Competition is Finalized or Closed. Reopen or Un-finalize it first.") except the
   never-locking ones; a Placement Points change applies at the next
   Finalize.
 - Ending a War Week never refuses on an unfinalized Bracket; it only warns,
@@ -576,7 +575,11 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   exactly two Entrants; it's decided the instant one side has a majority
   of the wins, which stops a Participant's logging (a Host or Organizer
   can still correct a Game). **Draws** are allowed or not, set per
-  Competition; when off, every head-to-head Game needs a winner.
+  Competition; when off, every head-to-head Game needs a winner. Draws,
+  the Best of and whether the Entrants are open or a fixed list can change
+  until the Competition has a Game ("Locked once the Competition has a
+  Game."); a Best score Competition's count and direction lock once it has
+  any result.
 - An optional **logging close time**: after it, a Participant can no
   longer log, edit or delete a Game. A **Host or Organizer** may log, edit
   or delete any Game at any time the Competition is open, even after the
@@ -825,7 +828,7 @@ same rows with the same values (only `updated_at` moves).
   logging close time, or the enrollment switch, Entrant limit and close
   time. A reload that removes or moves a Participant leaves their Squads to
   the Organizer.
-- A Competition's seed **description** is plain text; the loader stores it as rich text, one paragraph per line, so a seed restores descriptions after migration 0030 reset them.
+- A Competition's seed **description** is plain text or rich-text content; the loader stores plain text as rich text, one paragraph per line, so a seed restores descriptions after migration 0030 reset them.
 - **Hosts** aren't in seeds. A plain reload never touches the Hosts of a
   Competition the seed keeps; `--reset` deletes the War Week's
   Competitions, and their Hosts go with them.

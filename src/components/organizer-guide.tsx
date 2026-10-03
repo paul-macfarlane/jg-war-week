@@ -206,19 +206,21 @@ export function OrganizerGuide({
           as you change it) and the Bracket below. The Format can change between
           any Formats until the Competition has a result. Settings that decide
           how it runs lock as it goes, each showing why: the Format and scoring
-          once any result exists, and the heat size, how many advance, the 3rd
-          place game, the Entrants and building the Bracket once a Heat has a
-          result. Nothing resets a Bracket; add a new Competition to start over.
-          A Bracket has one Format: choose how many Entrants are in each Heat (2
-          to 8) and how many advance. Two per Heat with one advancing is one
-          against one, the winner going on; bigger Heats send their top few on,
-          Round after Round, until one Heat is left. With one against one and at
-          least 4 Entrants, turn on the 3rd place game to have the semifinal
-          losers play for 3rd and 4th beside the final. Placings come only from
-          the final and the 3rd place game: the final gives 1st and 2nd, the 3rd
-          place game 3rd and 4th; without one, both semifinal losers tie 3rd.
-          With more per Heat, the final&apos;s finishing order gives places 1 to
-          4. Nothing goes past 4th, and nobody else is placed. On the same page,
+          once any result exists; a Head-to-head Competition&apos;s draws and
+          Best of, and whether Entrants are open or a fixed list, once it has a
+          Game; and the heat size, how many advance, the 3rd place game, the
+          Entrants and building the Bracket once a Heat has a result. Nothing
+          resets a Bracket; add a new Competition to start over. A Bracket has
+          one Format: choose how many Entrants are in each Heat (2 to 8) and how
+          many advance. Two per Heat with one advancing is one against one, the
+          winner going on; bigger Heats send their top few on, Round after
+          Round, until one Heat is left. With one against one and at least 4
+          Entrants, turn on the 3rd place game to have the semifinal losers play
+          for 3rd and 4th beside the final. Placings come only from the final
+          and the 3rd place game: the final gives 1st and 2nd, the 3rd place
+          game 3rd and 4th; without one, both semifinal losers tie 3rd. With
+          more per Heat, the final&apos;s finishing order gives places 1 to 4.
+          Nothing goes past 4th, and nobody else is placed. On the same page,
           pick Entrants — all {teamLower}s, or specific Participants — and
           Generate the Bracket (Seed Positions are random; Re-roll before any
           Heat is played to try again). Below it is the Bracket&apos;s tree, the

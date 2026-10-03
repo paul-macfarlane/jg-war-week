@@ -1,10 +1,14 @@
 /**
- * The enroll switch's input (ADR 0006): `{ on, entrantLimit,
- * enrollClosesAt }`, with a blank limit or close time meaning none. Pure.
+ * Self-enroll's settings as typed (ADR 0006): the switch, the Entrant
+ * limit and the close time, a blank limit or close time meaning none, and
+ * the refusals the Competition page's per-field save
+ * (`parseCompetitionSetting`) shows for each. Pure.
  */
+/** A self-enroll switch value that isn't on or off. */
 export const ENROLL_SWITCH_INVALID = "Turn enrollment on or off.";
 /** An Entrant limit of 1 or less (the column's CHECK, as a refusal). */
 export const ENTRANT_LIMIT_TOO_LOW = "An Entrant limit is at least 2.";
+/** An enrollment close time that isn't a real date and time. */
 export const ENROLL_CLOSES_AT_INVALID =
   "Enter the close time as a date and time.";
 

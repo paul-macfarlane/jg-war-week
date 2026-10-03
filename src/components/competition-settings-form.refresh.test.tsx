@@ -73,7 +73,13 @@ function show(over: Partial<CompetitionSettingsSource>) {
       <CompetitionSettingsForm
         competitionId="c1"
         initial={settingsValuesOf({ ...SOURCE, ...over })}
-        facts={{ hasResult: false, hasHeatResult: false, finalized: false }}
+        facts={{
+          format: "placement",
+          hasResult: false,
+          hasGame: false,
+          hasHeatResult: false,
+          finalized: false,
+        }}
         mode="teams"
         teamLabel="Team"
         groupSuggestions={[]}

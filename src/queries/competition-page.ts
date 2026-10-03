@@ -1,9 +1,14 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
-import { type Competition, competition, competitionHost } from "@/db/schema";
+import {
+  type Competition,
+  competition,
+  competitionHost,
+  participant,
+} from "@/db/schema";
 import type { CompetitionLockFacts } from "@/lib/competition-locks";
-import { hostNameWithoutEmail } from "@/lib/competition-page";
+import { hostNameOnPage } from "@/lib/competition-page";
 import { isUuid } from "@/lib/uuid";
 import { getCompetitionLockFacts } from "@/queries/competition-locks";
 import { getProfilesByEmail } from "@/queries/profile-join";
@@ -47,11 +52,40 @@ export async function getCompetitionPage(
     .where(eq(competitionHost.competitionId, competitionId))
     .orderBy(competitionHost.email);
   const emails = hosts.map((h) => h.email);
-  const profiles = await getProfilesByEmail(emails, dbOrTx);
+  const [profiles, rosterNames] = await Promise.all([
+    getProfilesByEmail(emails, dbOrTx),
+    getRosterNames(warWeekId, emails, dbOrTx),
+  ]);
   return {
     competition: found,
     facts: await getCompetitionLockFacts(found, dbOrTx),
     hostEmails: withHostEmails ? emails : [],
-    hostNames: emails.map((email) => hostNameWithoutEmail(email, profiles)),
+    hostNames: emails.map((email) =>
+      hostNameOnPage(email, profiles, rosterNames),
+    ),
   };
+}
+
+/** The War Week's roster names of these emails, by lowercase email. */
+async function getRosterNames(
+  warWeekId: string,
+  emails: string[],
+  dbOrTx: DBOrTx,
+): Promise<Map<string, string>> {
+  const keys = [...new Set(emails.map((e) => e.trim().toLowerCase()))];
+  if (keys.length === 0) return new Map();
+  const rows = await dbOrTx
+    .select({ email: participant.email, name: participant.displayName })
+    .from(participant)
+    .where(
+      and(
+        eq(participant.warWeekId, warWeekId),
+        inArray(sql<string>`lower(${participant.email})`, keys),
+      ),
+    );
+  return new Map(
+    rows.flatMap(({ email, name }) =>
+      email ? [[email.trim().toLowerCase(), name] as const] : [],
+    ),
+  );
 }

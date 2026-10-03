@@ -21,7 +21,8 @@ import {
 import { teamTotal } from "./standings";
 
 // Epic R12, ticket 69 (69-AC2 as red-team C1 reads it): an Organizer
-// creates a team Participation Competition and assigns its Host; the Host
+// creates a team Participation Competition, its Host is added by SQL (the
+// e2e Host isn't on the roster, so the Hosts picker can't choose them); the Host
 // sets its Placement Points (a team Competition is always ranked by
 // headcount) to 5 / 3 / 1 and Self check-in on; two Participants check in; the Host ticks a third; Close
 // moves the Standings and Reopen withdraws them. Fixture: the live XI demo
@@ -102,7 +103,9 @@ test("r12 69 a Host runs a team Participation Competition: check-ins, a tick, Cl
     await page.waitForURL(/\/admin\/competitions\/[0-9a-f-]{36}$/);
     const id = page.url().split("/").at(-1) ?? "";
 
-    // …and assigns the e2e Host on the Competition's page; it autosaves.
+    // …and makes the e2e Host its Host. They aren't on the roster, so the
+    // Hosts picker can't choose them: the row is inserted directly, and the
+    // reloaded page shows them among the Hosts.
     const settings = page.getByRole("form", { name: "Competition settings" });
     await runQuery(
       `insert into competition_host (competition_id, email) values ($1, $2)`,

@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   CLOCK_HALF_SET,
   type CompetitionSettingsSource,
-  hostNameWithoutEmail,
+  HOST_NOT_ON_ROSTER,
+  hostNameOnPage,
   settingChangeOf,
   settingsValuesOf,
   shownSettings,
@@ -177,15 +178,31 @@ describe("shownSettings", () => {
   });
 });
 
-describe("hostNameWithoutEmail", () => {
-  it("names a Host by Profile name, else by the part before the @", () => {
-    const profiles = new Map([
-      [
-        "ana@jahnelgroup.com",
-        { profileName: "Ana P", profileImage: null, googleImage: null },
-      ],
-    ]);
-    expect(hostNameWithoutEmail("Ana@jahnelgroup.com", profiles)).toBe("Ana P");
-    expect(hostNameWithoutEmail("bo.k@jahnelgroup.com", profiles)).toBe("bo.k");
+describe("hostNameOnPage", () => {
+  const profiles = new Map([
+    [
+      "ana@jahnelgroup.com",
+      { profileName: "Ana P", profileImage: null, googleImage: null },
+    ],
+  ]);
+  const rosterNames = new Map([
+    ["ana@jahnelgroup.com", "Ana Pereira"],
+    ["bo.k@jahnelgroup.com", "Bo Kim"],
+  ]);
+
+  it("names a Host by Profile name, else roster name, whatever the email's case", () => {
+    expect(hostNameOnPage("Ana@jahnelgroup.com", profiles, rosterNames)).toBe(
+      "Ana P",
+    );
+    expect(hostNameOnPage("BO.K@jahnelgroup.com", profiles, rosterNames)).toBe(
+      "Bo Kim",
+    );
+  });
+
+  it("calls a Host with neither name a Host not on the roster, never by their email", () => {
+    const name = hostNameOnPage("cy.l@jahnelgroup.com", profiles, rosterNames);
+    expect(name).toBe("A Host not on the roster");
+    expect(name).toBe(HOST_NOT_ON_ROSTER);
+    expect(name).not.toContain("cy");
   });
 });

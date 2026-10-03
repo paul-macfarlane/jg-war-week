@@ -420,7 +420,8 @@ Competition in a sheet, then opens it. Organizers use it for any Competition
 and a Host for their own; anyone else sees "Organizers and Hosts only."
 
 - **Settings** are on top and **autosave per field**: change a field and it
-  saves (a toast confirms, a refusal shows under the field). Name, a rich-text
+  saves ("Saved" by the Settings heading, no toast; a refusal shows under
+  the field). Name, a rich-text
   **description** (the Announcement editor: headings, lists, links, images by
   URL, no upload), Group, **Hosts**, Format, scoring, Placement Points and the
   Format's own settings are all here.
@@ -438,15 +439,19 @@ and a Host for their own; anyone else sees "Organizers and Hosts only."
   - Never lock: name, description, Group, Hosts, Placement Points (and points
     per Participant). A points change while the Competition is Finalized or
     Closed applies at the next Finalize or Close.
-  - Lock once any result exists: Format, scoring, counts toward team, Score
-    direction, Games settings, Entrants open or fixed. Until then the Format
-    changes between any Formats.
+  - Lock once any result exists (an Entrant is one): Format, scoring, counts
+    toward team, Score direction, a Best score Competition's count and
+    direction. Until then the Format changes between any Formats.
+  - Lock once the Competition has a Game: a Head-to-head Competition's draws
+    and Best of, and a Head-to-head or Best score Competition's Entrants
+    open or fixed ("Locked once the Competition has a Game."). A Best of
+    needs its two fixed Entrants first, so Entrants alone don't lock it.
   - Lock once a Heat Result exists: heat size, how many advance, the 3rd
     place game, the Entrants, building the Bracket.
   - Lock only while Finalized or Closed: self-enroll, Entrant limit, close
     times, self-report, check-in.
   - While Finalized or Closed everything but the never-locking row is locked
-    until you Reopen. There is no Reset bracket: to start a played Competition
+    until you Reopen (Un-finalize a Bracket). There is no Reset bracket: to start a played Competition
     over, add a new one.
 - **Description is rich text.** It shows in full on the Participant
   Competition page. Migration `0030` reset every existing description (see
@@ -471,7 +476,7 @@ result and Finalize to write its placings as Points Entries (Placement
 Points up to 4 places for a Bracket). No code needed for any of that. While
 a Bracket is finalized, its settings lock except the name, description,
 Group, Hosts and Placement Points ("Locked while the Competition is
-Finalized or Closed. Reopen it first."). The Format can change, on the same
+Finalized or Closed. Reopen or Un-finalize it first."). The Format can change, on the same
 page, until the Competition has a result. There is no Reset bracket: once a
 Heat has a result the heat size, advancing, 3rd place game, Entrants and
 building the Bracket are locked, and a mistake means a new Competition.
@@ -712,8 +717,10 @@ or an Organizer sets, in the Settings:
   Head-to-head; count best or total, direction and a unit label for
   Best score). Points for the places come from the Competition's
   Placement Points, set in the same Settings. Each field saves as you change
-  it and shows the saved value when you return; once a Game exists the
-  Games settings are locked, with the reason shown.
+  it and shows the saved value when you return. Once a Game exists the
+  Head-to-head settings and the Entrants' open or fixed list are locked;
+  Best score's count and direction lock once any result (an Entrant
+  included) exists; the reason shows under them.
 - **Entrants**: open to everyone eligible, or a fixed list (pick Teams or
   Participants, as for a Bracket). A Best of needs a fixed list of exactly
   two Entrants.
@@ -809,9 +816,10 @@ Notes:
 - **Forms seeded from server data follow it after a save.** A client form
   that copies its props into `useState` keeps what it first loaded after
   `router.refresh()`, so a saved value looks lost. Re-derive the fields
-  when the saved values change, as `GamesBuilder` does (`games-builder.tsx`,
-  tested in `games-builder.test.tsx`; the Competition page's settings form does the same); edits in progress survive a
-  refresh that changes nothing saved.
+  when the saved values change, as the Competition page's Settings do
+  (`competition-settings-form.tsx`, tested in
+  `competition-settings-form.refresh.test.tsx`); edits in progress survive
+  a refresh that changes nothing saved.
 - A single choice among a few options (who won, which Entrant) is a
   `ToggleGroup` from `ui/toggle-group`: single-select, and kept
   non-deselectable by ignoring an empty `onValueChange` — never `Button`s
@@ -833,11 +841,13 @@ Notes:
   open toast as they open (`DismissToasts` in `ui/sonner.tsx`), so a toast
   never covers their fields.
 - Admin forms save with their own Save button inside the sheet or dialog;
-  the War Week settings form is the exception: it autosaves (debounced per
-  field, "Saving…" / "Saved" by the heading) and has no Save button.
-  Each save sends only its own fields (`updateWarWeekSettingsFields`),
-  merged over the stored row, so it never writes back over a newer value;
-  leaving with a refused field asks first.
+  the War Week settings form and the Competition page's Settings are the
+  exceptions: they autosave (debounced per field, "Saving…" / "Saved" by
+  the heading) and have no Save button. Each save sends only its own
+  fields (`updateWarWeekSettingsFields`, `saveCompetitionSetting` one field
+  at a time), so it never writes back over a newer value; leaving with a
+  refused field asks first. Both share `useAutosaveLifecycle` and
+  `AutosaveStatusLine` (`src/components/autosave-status.tsx`).
 - Every admin list is a column of `SetupListRow`s
   (`src/components/setup-row.tsx`): one visible Edit and one Delete per
   row, Edit in a `ResponsiveSheetDialog`, Delete in a `ConfirmDialog` with

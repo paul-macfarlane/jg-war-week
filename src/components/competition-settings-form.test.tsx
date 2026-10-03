@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   APPLIES_AT_NEXT_FINALIZE,
   type CompetitionLockFacts,
+  LOCKED_BY_GAME,
   LOCKED_BY_HEAT_RESULT,
   LOCKED_BY_RESULT,
   LOCKED_WHILE_FINALIZED,
@@ -44,7 +45,9 @@ const SOURCE: CompetitionSettingsSource = {
 };
 
 const OPEN: CompetitionLockFacts = {
+  format: "placement",
   hasResult: false,
+  hasGame: false,
   hasHeatResult: false,
   finalized: false,
 };
@@ -102,7 +105,7 @@ describe("CompetitionSettingsForm", () => {
   it("says a Placement Points change while Finalized applies at the next Finalize, and locks the rest", () => {
     const html = render(
       {},
-      { facts: { hasResult: true, hasHeatResult: false, finalized: true } },
+      { facts: { ...OPEN, hasResult: true, finalized: true } },
     );
     expect(html).toContain(APPLIES_AT_NEXT_FINALIZE);
     expect(html).toContain(LOCKED_BY_RESULT);
@@ -113,10 +116,28 @@ describe("CompetitionSettingsForm", () => {
     const open = render(bracket, { facts: { ...OPEN, hasResult: true } });
     expect(control(open, "competition-selfEnroll")).not.toMatch(DISABLED);
     const finalized = render(bracket, {
-      facts: { hasResult: true, hasHeatResult: true, finalized: true },
+      facts: { ...OPEN, hasResult: true, hasHeatResult: true, finalized: true },
     });
     expect(control(finalized, "competition-selfEnroll")).toMatch(DISABLED);
     expect(finalized).toContain(LOCKED_WHILE_FINALIZED);
+  });
+
+  it("leaves a Head-to-head Competition's Best of open with Entrants, and locks it with the Game reason once it has a Game", () => {
+    const headToHead = {
+      format: "head-to-head" as const,
+      gameConfig: { drawsAllowed: false, bestOf: null },
+      entrantsOpen: false,
+    };
+    const facts = { ...OPEN, format: "head-to-head" as const, hasResult: true };
+    const withEntrants = render(headToHead, { facts });
+    expect(control(withEntrants, "competition-best-of")).not.toMatch(DISABLED);
+    expect(control(withEntrants, "competition-format")).toMatch(DISABLED);
+    expect(withEntrants).not.toContain(LOCKED_BY_GAME);
+
+    const played = render(headToHead, { facts: { ...facts, hasGame: true } });
+    expect(control(played, "competition-best-of")).toMatch(DISABLED);
+    expect(control(played, "competition-draws-allowed")).toMatch(DISABLED);
+    expect(played).toContain("Locked once the Competition has a Game.");
   });
 
   it("shows a Host the Hosts as names only, never an email", () => {
@@ -200,7 +221,12 @@ describe("CompetitionSettingsForm", () => {
         },
         {
           entrantCount: 4,
-          facts: { hasResult: true, hasHeatResult: true, finalized: false },
+          facts: {
+            ...OPEN,
+            format: "bracket",
+            hasResult: true,
+            hasHeatResult: true,
+          },
         },
       );
       expect(control(html, "bracket-third-place")).toMatch(DISABLED);

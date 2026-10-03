@@ -1,7 +1,8 @@
-import { expect, test } from "@playwright/test";
+import { type Page, expect, test } from "@playwright/test";
 
 import { addCompetition, expectSaved } from "./competition-page";
 import { deleteXiCompetition } from "./db";
+import { E2E_BASE_URL } from "./env";
 import { asOrganizer } from "./session";
 
 // Epic R18, ticket 103 (.scratch/regression-2026-10/issues/103-rich-text-competition-description.md):
@@ -10,8 +11,15 @@ import { asOrganizer } from "./session";
 // test's own `E2E R18 …` one in demo XI, deleted in `finally`.
 
 const LINK_URL = "https://example.com/darts-rules";
+/** An image by URL (no upload), one the app itself serves. */
+const IMAGE_URL = `${E2E_BASE_URL}/about/competitions.png`;
 
-test("r18 103 an Organizer writes a heading, a list and a link in a Competition's description; the Participant page renders them", async ({
+/** Presses `key` `times` times. */
+async function pressTimes(page: Page, key: string, times: number) {
+  for (let i = 0; i < times; i++) await page.keyboard.press(key);
+}
+
+test("r18 103 an Organizer writes a heading, a list, a link and an image by URL in a Competition's description; the Participant page renders them", async ({
   context,
   page,
 }) => {
@@ -38,12 +46,27 @@ test("r18 103 an Organizer writes a heading, a list and a link in a Competition'
     await page.keyboard.press("Enter");
     await page.keyboard.press("Enter");
     await page.keyboard.type("Full rules");
-    await page.keyboard.press("Shift+Home");
+    // Select just those words: Home is the document's start on macOS.
+    await pressTimes(page, "Shift+ArrowLeft", "Full rules".length);
     await toolbar.getByRole("button", { name: "Link" }).click();
     const dialog = page.getByRole("dialog", { name: "Add link" });
     await dialog.getByLabel("Link URL").fill(LINK_URL);
     await dialog.getByRole("button", { name: "Apply link" }).click();
     await expect(dialog).toBeHidden();
+
+    // An image by URL, on a line of its own after the link: the caret goes
+    // to the end of the last line (arrows, not End, which differs by OS).
+    await editor.getByText("Full rules").click();
+    // More presses than the line has characters (a link's edge takes one
+    // too); at the end of the document the rest do nothing.
+    await pressTimes(page, "ArrowRight", 20);
+    await page.keyboard.press("Enter");
+    await toolbar.getByRole("button", { name: "Image", exact: true }).click();
+    const imageDialog = page.getByRole("dialog", { name: "Add image" });
+    await imageDialog.getByLabel("Image URL").fill(IMAGE_URL);
+    await imageDialog.getByLabel("Alt text").fill("The darts board");
+    await imageDialog.getByRole("button", { name: "Insert image" }).click();
+    await expect(imageDialog).toBeHidden();
     await expectSaved(page);
 
     // The Participant page shows the heading, a list item and the link.
@@ -57,8 +80,11 @@ test("r18 103 an Organizer writes a heading, a list and a link in a Competition'
         .filter({ hasText: "Closest to the bull wins" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("link", { name: "Full rules" }),
+      page.getByRole("link", { name: "Full rules", exact: true }),
     ).toHaveAttribute("href", LINK_URL);
+    await expect(
+      page.getByRole("img", { name: "The darts board" }),
+    ).toHaveAttribute("src", IMAGE_URL);
   } finally {
     await deleteXiCompetition(name);
   }

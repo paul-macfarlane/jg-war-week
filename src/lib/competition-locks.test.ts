@@ -5,10 +5,12 @@ import {
   COMPETITION_SETTING_FIELDS,
   type CompetitionLockFacts,
   type CompetitionSettingField,
+  LOCKED_BY_GAME,
   LOCKED_BY_HEAT_RESULT,
   LOCKED_BY_RESULT,
   LOCKED_WHILE_FINALIZED,
   hasResult,
+  lockFactsOf,
   settingLockReason,
   settingNote,
 } from "@/lib/competition-locks";
@@ -24,17 +26,22 @@ const NONE = {
 };
 
 const fresh: CompetitionLockFacts = {
+  format: "placement",
   hasResult: false,
+  hasGame: false,
   hasHeatResult: false,
   finalized: false,
 };
 const started: CompetitionLockFacts = { ...fresh, hasResult: true };
 const heatPlayed: CompetitionLockFacts = {
   ...started,
+  format: "bracket",
   hasHeatResult: true,
 };
 const finalized: CompetitionLockFacts = {
+  ...fresh,
   hasResult: true,
+  hasGame: true,
   hasHeatResult: true,
   finalized: true,
 };
@@ -80,8 +87,6 @@ describe("settingLockReason", () => {
     "scoring",
     "countsTowardTeam",
     "scoreDirection",
-    "gameConfig",
-    "entrantsOpen",
   ])("locks %s once any result exists", (field) => {
     expect(settingLockReason(field, fresh)).toBeNull();
     expect(settingLockReason(field, started)).toBe(
@@ -89,6 +94,37 @@ describe("settingLockReason", () => {
     );
     expect(settingLockReason(field, started)).toBe(LOCKED_BY_RESULT);
   });
+
+  it("locks a Best score Competition's direction and attempts once any result exists, an Entrant included", () => {
+    const bestScore = { ...fresh, format: "best-score" } as const;
+    expect(settingLockReason("gameConfig", bestScore)).toBeNull();
+    expect(
+      settingLockReason("gameConfig", { ...bestScore, hasResult: true }),
+    ).toBe(LOCKED_BY_RESULT);
+  });
+
+  it("locks a Head-to-head Competition's draws and Best of once it has a Game, not before", () => {
+    const headToHead = { ...fresh, format: "head-to-head" } as const;
+    // Its Entrants are a result, but a Best of needs them first.
+    const withEntrants = { ...headToHead, hasResult: true };
+    expect(settingLockReason("gameConfig", withEntrants)).toBeNull();
+    const played = { ...withEntrants, hasGame: true };
+    expect(settingLockReason("gameConfig", played)).toBe(
+      "Locked once the Competition has a Game.",
+    );
+    expect(settingLockReason("gameConfig", played)).toBe(LOCKED_BY_GAME);
+  });
+
+  it.each(["head-to-head", "best-score"] as const)(
+    "locks a %s Competition's open or fixed Entrants once it has a Game, not before",
+    (format) => {
+      const withEntrants = { ...fresh, format, hasResult: true };
+      expect(settingLockReason("entrantsOpen", withEntrants)).toBeNull();
+      expect(
+        settingLockReason("entrantsOpen", { ...withEntrants, hasGame: true }),
+      ).toBe(LOCKED_BY_GAME);
+    },
+  );
 
   it.each<CompetitionSettingField>(["bracketConfig", "entrants", "bracket"])(
     "locks %s once a Heat Result exists, not before",
@@ -113,18 +149,50 @@ describe("settingLockReason", () => {
   ])("locks %s only while Finalized or Closed", (field) => {
     expect(settingLockReason(field, heatPlayed)).toBeNull();
     expect(settingLockReason(field, finalized)).toBe(
-      "Locked while the Competition is Finalized or Closed. Reopen it first.",
+      "Locked while the Competition is Finalized or Closed. Reopen or Un-finalize it first.",
     );
     expect(settingLockReason(field, finalized)).toBe(LOCKED_WHILE_FINALIZED);
   });
 
-  it("locks every field but the never-locked ones while Finalized, even with no result", () => {
-    const bare = { ...fresh, finalized: true };
-    for (const field of COMPETITION_SETTING_FIELDS) {
-      expect(settingLockReason(field, bare), field).toBe(
-        neverLocked.includes(field) ? null : LOCKED_WHILE_FINALIZED,
-      );
-    }
+  it.each(["placement", "bracket", "head-to-head", "best-score"] as const)(
+    "locks every field but the never-locked ones while a %s Competition is Finalized or Closed, even with no result",
+    (format) => {
+      const bare = { ...fresh, format, finalized: true };
+      for (const field of COMPETITION_SETTING_FIELDS) {
+        expect(settingLockReason(field, bare), field).toBe(
+          neverLocked.includes(field) ? null : LOCKED_WHILE_FINALIZED,
+        );
+      }
+    },
+  );
+});
+
+describe("lockFactsOf", () => {
+  it("reads a Game, any result, a Heat Result and Finalized from what was entered", () => {
+    expect(
+      lockFactsOf(
+        { ...NONE, entrants: 2 },
+        { format: "head-to-head", finalizedAt: null },
+      ),
+    ).toEqual({
+      format: "head-to-head",
+      hasResult: true,
+      hasGame: false,
+      hasHeatResult: false,
+      finalized: false,
+    });
+    expect(
+      lockFactsOf(
+        { ...NONE, games: 1 },
+        { format: "best-score", finalizedAt: new Date("2027-02-26T17:00:00Z") },
+      ),
+    ).toEqual({
+      format: "best-score",
+      hasResult: true,
+      hasGame: true,
+      hasHeatResult: false,
+      finalized: true,
+    });
   });
 });
 

@@ -5,6 +5,7 @@
  * (`saveCompetitionSetting`) refuses the same change with the same words,
  * so the two can't drift. Pure: the caller loads the facts.
  */
+import type { Format } from "@/lib/bracket/types";
 
 /** Every setting the admin Competition page saves on its own. */
 export const COMPETITION_SETTING_FIELDS = [
@@ -20,7 +21,10 @@ export const COMPETITION_SETTING_FIELDS = [
   "countsTowardTeam",
   /** A Placement Competition's Score direction. */
   "scoreDirection",
-  /** Head-to-head's draws and Best of; Best score's direction and count. */
+  /**
+   * Head-to-head's draws and Best of; Best score's direction and count.
+   * Its lock depends on the Format (`settingLock`).
+   */
   "gameConfig",
   /** Head-to-head or Best score: open to everyone, or a fixed Entrant list. */
   "entrantsOpen",
@@ -42,13 +46,22 @@ export type CompetitionSettingField =
   (typeof COMPETITION_SETTING_FIELDS)[number];
 
 /**
- * When a setting locks: `never`; once any `result` exists; once any
- * `heat-result` exists; or only while `finalized` (Finalized or Closed).
- * Every setting but the `never` ones also locks while Finalized or Closed.
+ * When a setting locks: `never`; once any `result` exists; once the
+ * Competition has a `game`; once any `heat-result` exists; or only while
+ * `finalized` (Finalized or Closed). Every setting but the `never` ones
+ * also locks while Finalized or Closed.
  */
-export type SettingLock = "never" | "result" | "heat-result" | "finalized";
+export type SettingLock =
+  "never" | "result" | "game" | "heat-result" | "finalized";
 
-export const SETTING_LOCKS: Record<CompetitionSettingField, SettingLock> = {
+/**
+ * Each setting's lock, but `gameConfig`'s, which depends on the Format
+ * (`settingLock`).
+ */
+export const SETTING_LOCKS: Record<
+  Exclude<CompetitionSettingField, "gameConfig">,
+  SettingLock
+> = {
   name: "never",
   description: "never",
   group: "never",
@@ -59,8 +72,9 @@ export const SETTING_LOCKS: Record<CompetitionSettingField, SettingLock> = {
   scoring: "result",
   countsTowardTeam: "result",
   scoreDirection: "result",
-  gameConfig: "result",
-  entrantsOpen: "result",
+  // A Best of needs a fixed list of two Entrants, which are a result, so
+  // the Entrant list and Head-to-head's settings wait for a Game.
+  entrantsOpen: "game",
   bracketConfig: "heat-result",
   entrants: "heat-result",
   bracket: "heat-result",
@@ -75,10 +89,27 @@ export const SETTING_LOCKS: Record<CompetitionSettingField, SettingLock> = {
   checkInClosesAt: "finalized",
 };
 
+/**
+ * When `field` locks for a Competition of `format`. A Head-to-head
+ * Competition's draws and Best of lock once it has a Game; a Best score
+ * Competition's direction and attempts once any result exists.
+ */
+export function settingLock(
+  field: CompetitionSettingField,
+  format: Format,
+): SettingLock {
+  if (field === "gameConfig") {
+    return format === "head-to-head" ? "game" : "result";
+  }
+  return SETTING_LOCKS[field];
+}
+
 export const LOCKED_BY_RESULT = "Locked once the Competition has a result.";
+export const LOCKED_BY_GAME = "Locked once the Competition has a Game.";
 export const LOCKED_BY_HEAT_RESULT = "Locked once a Heat has a result.";
+/** Reopen for a Placement, Games or Participation run; Un-finalize for a Bracket. */
 export const LOCKED_WHILE_FINALIZED =
-  "Locked while the Competition is Finalized or Closed. Reopen it first.";
+  "Locked while the Competition is Finalized or Closed. Reopen or Un-finalize it first.";
 /** A points setting changed while Finalized or Closed: when it takes effect. */
 export const APPLIES_AT_NEXT_FINALIZE =
   "Applies at the next Finalize or Close.";
@@ -115,7 +146,10 @@ export function hasResult(results: CompetitionResults): boolean {
 
 /** What the lock rules read about a Competition. */
 export type CompetitionLockFacts = {
+  /** The saved Format: `gameConfig`'s lock depends on it. */
+  format: Format;
   hasResult: boolean;
+  hasGame: boolean;
   hasHeatResult: boolean;
   /** Finalized (Placement, Bracket) or Closed (the others). */
   finalized: boolean;
@@ -123,26 +157,29 @@ export type CompetitionLockFacts = {
 
 export function lockFactsOf(
   results: CompetitionResults,
-  finalizedAt: Date | null,
+  { format, finalizedAt }: { format: Format; finalizedAt: Date | null },
 ): CompetitionLockFacts {
   return {
+    format,
     hasResult: hasResult(results),
+    hasGame: results.games > 0,
     hasHeatResult: results.heatResult,
     finalized: finalizedAt !== null,
   };
 }
 
 /**
- * Why `field` can't change now, or null. A result lock's reason comes
- * before Finalized's: Reopen alone won't unlock it.
+ * Why `field` can't change now, or null. A result, Game or Heat Result
+ * lock's reason comes before Finalized's: Reopen alone won't unlock it.
  */
 export function settingLockReason(
   field: CompetitionSettingField,
   facts: CompetitionLockFacts,
 ): string | null {
-  const lock = SETTING_LOCKS[field];
+  const lock = settingLock(field, facts.format);
   if (lock === "never") return null;
   if (lock === "result" && facts.hasResult) return LOCKED_BY_RESULT;
+  if (lock === "game" && facts.hasGame) return LOCKED_BY_GAME;
   if (lock === "heat-result" && facts.hasHeatResult) {
     return LOCKED_BY_HEAT_RESULT;
   }

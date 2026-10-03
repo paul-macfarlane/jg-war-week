@@ -366,7 +366,8 @@ on the matching War Week page.
       the Standings move. Reopen withdraws them. *(teams)* Add it with
       Scoring Individual and Counts toward the Team on, so the Team Standings
       move. Do the same with a Best score Competition ("From best score");
-      its Competitions-list link reads "Entrants and Games".
+      its Competitions-list Edit opens its page, whose run area reads
+      "Entrants and Games".
 - [ ] **Run a Competition as Participation.** Add a Participation
       Competition (Add Competition opens its Competition page, whose run area
       reads "Who took part"). Settings: *(individual)* Points per
@@ -381,18 +382,22 @@ on the matching War Week page.
 - [ ] **Competition page: settings autosave.** Open a Competition from
       the list's Edit: one page, Settings on top and the Format's run area
       below it. Change the name, Group and a Placement Points place: each
-      saves on its own (no Save button), shows its toast, and is still there
-      after a reload. Check at 1440 and 390: no sideways scroll.
+      saves on its own (no Save button), "Saved" shows by the Settings
+      heading (no toast), and it is still there after a reload. Check at 1440 and 390: no sideways scroll.
 - [ ] **Competition page: locks with reasons.** On a Competition with a
       result (a recorded Placement, a Game or an Entrant), Format, scoring,
-      Score direction and the Games settings are disabled with "Locked once
-      the Competition has a result."; name, description, Group, Hosts and
+      Score direction and Best score's count and direction are disabled
+      with "Locked once the Competition has a result."; on a Head-to-head
+      Competition with a fixed list of two Entrants and no Game, Draws and
+      Best of still save (choose Best of 3: "Saved", kept after a reload),
+      and once a Game is logged they and the Entrants' open or fixed list
+      are disabled with "Locked once the Competition has a Game."; name, description, Group, Hosts and
       Placement Points still save. In a Bracket with a recorded Heat, heat
       size, how many advance, the 3rd place game, the Entrants and Generate
       are disabled with "Locked once a Heat has a result." Finalize
       (Placement or Bracket) or Close: everything but name, description,
       Group, Hosts and Placement Points is disabled with "Locked while the
-      Competition is Finalized or Closed. Reopen it first."; a Placement
+      Competition is Finalized or Closed. Reopen or Un-finalize it first."; a Placement
       Points change then says "Applies at the next Finalize or Close."
       Reopen unlocks the fields that only the Finalized state locked. There
       is no Reset bracket and no "confirm to clear and start over".

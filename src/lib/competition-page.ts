@@ -16,7 +16,7 @@ import {
 import { type GamesConfig, gamesConfigOf } from "@/lib/games/config";
 import { enrollmentUnavailable } from "@/lib/games/enroll-rule";
 import { formatPoints } from "@/lib/points";
-import type { ProfilesByEmail } from "@/lib/profile";
+import { type ProfilesByEmail, resolveProfile } from "@/lib/profile";
 import { type Content } from "@/lib/rich-text/content";
 import { fromEasternClock, toEasternClock } from "@/lib/schedule";
 
@@ -203,17 +203,28 @@ export function shownSettings(
   return fields.filter((field): field is SettingsField => field !== false);
 }
 
+/** A Host with neither a Profile name nor a roster name, on a Host's page. */
+export const HOST_NOT_ON_ROSTER = "A Host not on the roster";
+
 /**
- * A Host as a Host's own Competition page names them: their Profile name,
- * else the part of their email before the @, so the page holds no other
- * Host's email.
+ * A Host as a Host's Competition page names them, by the one name rule
+ * (`resolveProfile`): their Profile name, else their roster name in this
+ * War Week (`rosterNames`, by lowercase email); with neither,
+ * `HOST_NOT_ON_ROSTER`. Never anything from the email, so the page holds
+ * no other Host's email or part of one.
  */
-export function hostNameWithoutEmail(
+export function hostNameOnPage(
   email: string,
   profiles: ProfilesByEmail,
+  rosterNames: Map<string, string>,
 ): string {
   const key = email.trim().toLowerCase();
-  return profiles.get(key)?.profileName || key.split("@")[0];
+  return (
+    resolveProfile({
+      rosterName: rosterNames.get(key) ?? "",
+      ...profiles.get(key),
+    }).name || HOST_NOT_ON_ROSTER
+  );
 }
 
 /** How each Format runs a Competition, shown under the Format field. */

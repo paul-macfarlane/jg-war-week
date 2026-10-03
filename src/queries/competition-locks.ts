@@ -3,7 +3,6 @@ import { and, eq } from "drizzle-orm";
 import { DBOrTx, db } from "@/db";
 import {
   type Competition,
-  competition,
   entrant,
   game,
   heat,
@@ -55,25 +54,5 @@ export async function getCompetitionLockFacts(
   found: Pick<Competition, "id" | "format" | "bracketConfig" | "finalizedAt">,
   dbOrTx: DBOrTx = db,
 ): Promise<CompetitionLockFacts> {
-  return lockFactsOf(
-    await getCompetitionResults(found, dbOrTx),
-    found.finalizedAt,
-  );
-}
-
-/** The lock facts of a Competition by id, or undefined when there's none. */
-export async function getCompetitionLockFactsById(
-  competitionId: string,
-  dbOrTx: DBOrTx = db,
-): Promise<CompetitionLockFacts | undefined> {
-  const [found] = await dbOrTx
-    .select({
-      id: competition.id,
-      format: competition.format,
-      bracketConfig: competition.bracketConfig,
-      finalizedAt: competition.finalizedAt,
-    })
-    .from(competition)
-    .where(eq(competition.id, competitionId));
-  return found && getCompetitionLockFacts(found, dbOrTx);
+  return lockFactsOf(await getCompetitionResults(found, dbOrTx), found);
 }

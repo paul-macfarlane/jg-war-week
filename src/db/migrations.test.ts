@@ -550,3 +550,68 @@ describe.skipIf(!isLocalDatabase)(
     }, 60_000);
   },
 );
+
+const DARTS = id(401);
+
+describe.skipIf(!isLocalDatabase)(
+  "migrating a pre-R18 Competition's plain-text description",
+  () => {
+    it("commits and leaves the description empty, as rich text the seeds restore", async () => {
+      const upTo0029 = migrationsUpTo(29);
+      try {
+        await withThrowawayDatabase(
+          async (url) => {
+            await migrateTo(url, upTo0029);
+
+            const client = new Client({ connectionString: url });
+            await client.connect();
+            try {
+              await client.query(`
+                insert into war_week (id, edition, edition_number, year,
+                  start_date, end_date, story_theme, status, mode, team_label,
+                  leader_title, slack_channel_url, primary_color,
+                  primary_foreground_color, accent_color, background_color,
+                  foreground_color, font_preset)
+                values ('${WW_XI}', 'xi', 9811, 9811, '2026-02-23',
+                  '2026-02-27', 'Eleven', 'live', 'teams', 'Team', 'Captain',
+                  'https://slack.example', '#000000', '#ffffff', '#ff0000',
+                  '#ffffff', '#000000', 'sans');
+
+                insert into competition (id, war_week_id, name, scoring,
+                  format, description)
+                values ('${DARTS}', '${WW_XI}', 'Darts', 'team', 'placement',
+                  'Bring your own darts.');
+              `);
+              const before = await client.query(
+                "select description from competition",
+              );
+              expect(before.rows).toEqual([
+                { description: "Bring your own darts." },
+              ]);
+
+              await migrateTo(url, DRIZZLE_DIR);
+
+              const applied = await client.query(
+                "select count(*)::int as n from drizzle.__drizzle_migrations",
+              );
+              expect(applied.rows[0].n).toBe(31);
+              const after = await client.query(
+                `select id, description is null as cleared,
+                  pg_typeof(description)::text as type
+                from competition`,
+              );
+              expect(after.rows).toEqual([
+                { id: DARTS, cleared: true, type: "jsonb" },
+              ]);
+            } finally {
+              await client.end();
+            }
+          },
+          { migrations: false },
+        );
+      } finally {
+        rmSync(upTo0029, { recursive: true, force: true });
+      }
+    }, 60_000);
+  },
+);

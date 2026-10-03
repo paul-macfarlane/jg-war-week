@@ -1,10 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import { saveCompetitionSetting } from "@/actions/setup";
-import { ConfirmDialog } from "@/components/confirm-dialog";
+import {
+  AUTOSAVE_DELAY_MS,
+  AutosaveStatusLine,
+  useAutosaveLifecycle,
+} from "@/components/autosave-status";
 import { DatePicker } from "@/components/date-picker";
 import { EntityCombobox } from "@/components/entity-combobox";
 import { OptionSelect } from "@/components/option-select";
@@ -28,7 +32,6 @@ import { Switch } from "@/components/ui/switch";
 import { Toggle } from "@/components/ui/toggle";
 import {
   type AutosaveSnapshot,
-  type AutosaveStatus,
   createAutosave,
   sameValue,
 } from "@/lib/autosave";
@@ -57,6 +60,10 @@ import {
   settingChangeOf,
   shownSettings,
 } from "@/lib/competition-page";
+import {
+  COMPETITION_GROUP_MAX,
+  COMPETITION_NAME_MAX,
+} from "@/lib/competition-settings";
 import { placementLimit } from "@/lib/competitions";
 import { COMPETITION_FORMATS } from "@/lib/enums";
 import {
@@ -68,17 +75,6 @@ import {
   gamesConfigOf,
 } from "@/lib/games/config";
 import { type HostCandidate, buildHostOptions } from "@/lib/host-options";
-import { leavingHref } from "@/lib/leave-guard";
-
-/** How long after the last edit a change saves (as War Week settings). */
-const AUTOSAVE_DELAY_MS = 800;
-
-const STATUS_TEXT: Record<AutosaveStatus, string> = {
-  idle: "Changes save automatically",
-  saving: "Saving…",
-  saved: "Saved",
-  failed: "Not saved: see the field marked below",
-};
 
 /** What the leave confirm calls a refused field. */
 const FIELD_LABELS: Record<SettingsField, string> = {
@@ -136,7 +132,8 @@ function sameSetting(field: string, a: unknown, b: unknown): boolean {
  * (a Format change's new defaults, say), and edits in progress stay.
  *
  * Leaving: an in-app navigation, the tab going hidden and `beforeunload`
- * send what's waiting; while a refusal shows, an in-app link asks first.
+ * send what's waiting; while a refusal shows, an in-app link asks first
+ * (`useAutosaveLifecycle`).
  */
 export function CompetitionSettingsForm({
   competitionId,
@@ -214,53 +211,7 @@ export function CompetitionSettingsForm({
     });
   }
 
-  useEffect(() => {
-    const onVisibilityChange = () => {
-      if (document.visibilityState === "hidden") void autosave.flush();
-    };
-    const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      void autosave.flush();
-      if (autosave.unsaved()) event.preventDefault();
-    };
-    document.addEventListener("visibilitychange", onVisibilityChange);
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-      window.removeEventListener("beforeunload", onBeforeUnload);
-      void autosave.flush();
-    };
-  }, [autosave]);
-
-  const [leaving, setLeaving] = useState<string | null>(null);
-  const refused = Object.entries(saveState.fieldErrors);
-  const hasRefusal = refused.length > 0;
-  useEffect(() => {
-    if (!hasRefusal) return;
-    const onClick = (event: MouseEvent) => {
-      const link =
-        event.target instanceof Element
-          ? event.target.closest("a[href]")
-          : null;
-      if (!(link instanceof HTMLAnchorElement)) return;
-      const href = leavingHref(
-        {
-          href: link.href,
-          target: link.target,
-          download: link.hasAttribute("download"),
-          button: event.button,
-          modified:
-            event.metaKey || event.ctrlKey || event.shiftKey || event.altKey,
-          defaultPrevented: event.defaultPrevented,
-        },
-        window.location.href,
-      );
-      if (href === null) return;
-      event.preventDefault();
-      setLeaving(href);
-    };
-    document.addEventListener("click", onClick, true);
-    return () => document.removeEventListener("click", onClick, true);
-  }, [hasRefusal]);
+  const guard = useAutosaveLifecycle(autosave, saveState.fieldErrors);
 
   /** Sets fields and queues them to save, in the order given. */
   function edit(next: Partial<CompetitionSettingsValues>) {
@@ -376,37 +327,12 @@ export function CompetitionSettingsForm({
         <h2 id="competition-settings-heading" className="text-lg font-semibold">
           Settings
         </h2>
-        <p
-          role="status"
-          aria-live="polite"
-          data-slot="autosave-status"
-          data-status={saveState.status}
-          className={
-            saveState.status === "failed"
-              ? "text-destructive text-sm"
-              : "text-foreground/70 text-sm"
-          }
-        >
-          {STATUS_TEXT[saveState.status]}
-        </p>
+        <AutosaveStatusLine
+          state={saveState}
+          guard={guard}
+          fieldLabel={(field) => FIELD_LABELS[field as SettingsField] ?? field}
+        />
       </div>
-      <ConfirmDialog
-        open={leaving !== null}
-        onOpenChange={(open) => {
-          if (!open) setLeaving(null);
-        }}
-        title="Leave without saving?"
-        description={
-          hasRefusal
-            ? `${FIELD_LABELS[refused[0][0] as SettingsField] ?? refused[0][0]} wasn't saved: ${refused[0][1]}`
-            : undefined
-        }
-        confirmLabel="Leave"
-        onConfirm={() => {
-          if (leaving) router.push(leaving);
-          setLeaving(null);
-        }}
-      />
       <form
         // Enter in a field saves it now instead of submitting the page.
         onSubmit={(event) => {
@@ -423,7 +349,7 @@ export function CompetitionSettingsForm({
               id={id("name")}
               name="name"
               required
-              maxLength={120}
+              maxLength={COMPETITION_NAME_MAX}
               className="h-11 sm:h-9"
               aria-invalid={!!errors.name}
               value={values.name}
@@ -436,7 +362,7 @@ export function CompetitionSettingsForm({
             <SuggestionCombobox
               id={id("group")}
               name="group"
-              maxLength={120}
+              maxLength={COMPETITION_GROUP_MAX}
               placeholder="Optional"
               suggestions={groupSuggestions}
               value={values.group}
@@ -564,8 +490,8 @@ export function CompetitionSettingsForm({
                     A Host can change this Competition&apos;s settings, run it,
                     and its Points Entries and linked Schedule Items.
                   </FieldDescription>
+                  <FieldError>{errors.hosts}</FieldError>
                 </Field>
-                <FieldError>{errors.hosts}</FieldError>
               </>
             ) : (
               <Field>

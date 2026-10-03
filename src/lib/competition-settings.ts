@@ -18,7 +18,13 @@ import {
   SCORE_DIRECTIONS,
   type ScoreDirection,
 } from "@/lib/enums";
-import { closesAtOf, limitOf } from "@/lib/games/enroll-input";
+import {
+  ENROLL_CLOSES_AT_INVALID,
+  ENROLL_SWITCH_INVALID,
+  ENTRANT_LIMIT_TOO_LOW,
+  closesAtOf,
+  limitOf,
+} from "@/lib/games/enroll-input";
 import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
 import { participationPointsSchema } from "@/lib/participation/input";
 import { parsePlacementPointsText } from "@/lib/placement-points";
@@ -82,13 +88,13 @@ export function refusedAt(field: string, error: string): Parsed<never> {
 const BOOLEAN_FIELDS = {
   countsTowardTeam: "Choose whether it counts toward the Team.",
   entrantsOpen: "Choose whether Entrants are open.",
-  selfEnroll: "Turn enrollment on or off.",
+  selfEnroll: ENROLL_SWITCH_INVALID,
   selfReport: "Turn self-report on or off.",
   selfCheckIn: "Choose whether Participants can check in.",
 } as const;
 
 const CLOSES_AT_FIELDS = {
-  enrollClosesAt: "Enter the close time as a date and time.",
+  enrollClosesAt: ENROLL_CLOSES_AT_INVALID,
   loggingClosesAt: "Enter a valid logging close time.",
   checkInClosesAt: "Enter a valid check-in close time.",
 } as const;
@@ -231,7 +237,7 @@ export function parseCompetitionSetting(
       const limit = limitOf(value);
       return limit.ok
         ? ok({ field, value: limit.value })
-        : refusedAt(field, "An Entrant limit is at least 2.");
+        : refusedAt(field, ENTRANT_LIMIT_TOO_LOW);
     }
     case "enrollClosesAt":
     case "loggingClosesAt":

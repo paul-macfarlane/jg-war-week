@@ -26,6 +26,10 @@ const LOCKED_BY_RESULT = {
   ok: false,
   error: "Locked once the Competition has a result.",
 };
+const LOCKED_BY_GAME = {
+  ok: false,
+  error: "Locked once the Competition has a Game.",
+};
 const LOCKED_BY_HEAT_RESULT = {
   ok: false,
   error: "Locked once a Heat has a result.",
@@ -33,7 +37,7 @@ const LOCKED_BY_HEAT_RESULT = {
 const LOCKED_WHILE_FINALIZED = {
   ok: false,
   error:
-    "Locked while the Competition is Finalized or Closed. Reopen it first.",
+    "Locked while the Competition is Finalized or Closed. Reopen or Un-finalize it first.",
 };
 const OK = { ok: true };
 
@@ -495,6 +499,70 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
         }),
       ).toMatchObject(LOCKED_BY_RESULT);
       expect((await f.row(f.ids.stairs)).gameConfig).toEqual(lowerTotal);
+    });
+  });
+
+  it("refuses Best score direction and attempts once an Entrant exists", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const f = await fixture(tx);
+      const brackets = await import("@/mutations/brackets");
+      expect(
+        await f.save(f.ids.stairs, { field: "entrantsOpen", value: false }),
+      ).toEqual(OK);
+      expect(
+        await brackets.replaceEntrants(
+          f.ids.stairs,
+          { targetIds: [f.neo] },
+          f.ctx(ORGANIZER),
+          tx,
+        ),
+      ).toMatchObject(OK);
+      const before = (await f.row(f.ids.stairs)).gameConfig;
+      expect(
+        await f.save(f.ids.stairs, {
+          field: "gameConfig",
+          value: { count: "total", betterIs: "lower", unit: "s" },
+        }),
+      ).toMatchObject(LOCKED_BY_RESULT);
+      expect((await f.row(f.ids.stairs)).gameConfig).toEqual(before);
+    });
+  });
+
+  it("accepts a Head-to-head Best of 3 between two fixed Entrants, and refuses its settings and Entrant list once a Game is logged", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const f = await fixture(tx);
+      const brackets = await import("@/mutations/brackets");
+      expect(
+        await f.save(f.ids.pong, { field: "entrantsOpen", value: false }),
+      ).toEqual(OK);
+      expect(
+        await brackets.replaceEntrants(
+          f.ids.pong,
+          { targetIds: [f.neo, f.trinity] },
+          f.ctx(ORGANIZER),
+          tx,
+        ),
+      ).toMatchObject(OK);
+      const bestOf3 = { drawsAllowed: false, bestOf: 3 };
+      expect(
+        await f.save(f.ids.pong, { field: "gameConfig", value: bestOf3 }),
+      ).toEqual(OK);
+      expect((await f.row(f.ids.pong)).gameConfig).toEqual(bestOf3);
+
+      await f.logGame(f.ids.pong, f.neo);
+      expect(
+        await f.save(f.ids.pong, {
+          field: "gameConfig",
+          value: { drawsAllowed: true, bestOf: 3 },
+        }),
+      ).toMatchObject(LOCKED_BY_GAME);
+      expect(
+        await f.save(f.ids.pong, { field: "entrantsOpen", value: true }),
+      ).toMatchObject(LOCKED_BY_GAME);
+      expect(await f.row(f.ids.pong)).toMatchObject({
+        gameConfig: bestOf3,
+        entrantsOpen: false,
+      });
     });
   });
 

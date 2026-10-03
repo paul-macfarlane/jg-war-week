@@ -105,9 +105,17 @@ const CASES: FormatCase[] = [
       expect(page.getByRole("switch", { name: "Draws allowed" })).toBeChecked(),
     addResult: async (page) => {
       await addGamesEntrants(page);
+      // Entrants are a result, but Head-to-head's settings wait for a Game:
+      // a Best of needs its two fixed Entrants first.
       await expect(
         page.getByRole("switch", { name: "Draws allowed" }),
-      ).toBeDisabled();
+      ).toBeEnabled();
+      await chooseOption(page, "Best of", "Best of 3");
+      await expectSaved(page);
+      await page.reload();
+      await expect(
+        page.getByRole("combobox", { name: "Best of", exact: true }),
+      ).toContainText("Best of 3");
     },
   },
   {
@@ -290,9 +298,11 @@ test("r18 101 a Host edits their Competition's settings, sees Hosts as names onl
 }, testInfo) => {
   test.setTimeout(120_000);
   const name = `E2E R18 Hosted ${Date.now()}`;
-  // A co-Host whose email must never reach the Host's page; no Profile, so
-  // the page names them by the part before the @.
+  // A co-Host whose email must never reach the Host's page: on the roster,
+  // so the page names them by their roster name. The Host themself has
+  // neither a Profile name nor a roster name.
   const coHost = "e2e-r18-cohost@jahnelgroup.com";
+  const coHostName = `E2E R18 Co-Host ${Date.now()}`;
   const [{ id }] = await runQuery<{ id: string }>(
     `insert into competition (war_week_id, name, scoring, format)
      select id, $1, 'team', 'placement' from war_week where edition = 'xi'
@@ -300,6 +310,11 @@ test("r18 101 a Host edits their Competition's settings, sees Hosts as names onl
     [name],
   );
   try {
+    await runQuery(
+      `insert into participant (war_week_id, display_name, email)
+       select id, $1, $2 from war_week where edition = 'xi'`,
+      [coHostName, coHost],
+    );
     await runQuery(
       `insert into competition_host (competition_id, email)
        values ($1, $2), ($1, $3)`,
@@ -318,13 +333,14 @@ test("r18 101 a Host edits their Competition's settings, sees Hosts as names onl
       settings.getByText("Only an Organizer assigns Hosts."),
     ).toBeVisible();
     const names = settings.locator('[data-slot="host-names"]');
-    await expect(names).toContainText("e2e-host");
-    await expect(names).toContainText("e2e-r18-cohost");
+    await expect(names).toContainText(coHostName);
+    await expect(names).toContainText("A Host not on the roster");
 
     // No email in the page (its HTML and the props it carries) but the
-    // Host's own: the co-Host's never loads for a Host.
+    // Host's own: the co-Host's never loads for a Host, nor any part of it.
     const html = await page.content();
     expect(html).not.toContain(coHost);
+    expect(html).not.toContain("e2e-r18-cohost");
     const others = [
       ...new Set(html.match(/[\w.%+-]+@[\w-]+(?:\.[\w-]+)*\.[a-z]{2,}/gi)),
     ].filter((email) => email.toLowerCase() !== E2E_HOST_EMAIL);
@@ -354,5 +370,6 @@ test("r18 101 a Host edits their Competition's settings, sees Hosts as names onl
     );
   } finally {
     await deleteXiCompetition(name);
+    await runQuery(`delete from participant where email = $1`, [coHost]);
   }
 });
