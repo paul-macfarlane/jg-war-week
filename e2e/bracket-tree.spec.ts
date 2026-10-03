@@ -345,10 +345,10 @@ test("a single-elimination Bracket is one tree: the Organizer records from it in
   // Five Entrants: three first-Round byes.
   await enterAndGenerate(page, KNOCKOUT_ENTRANTS);
 
-  // The builder names the way in "Results"; no "Run results" anywhere.
+  // The builder names the way in "Results"; the old "Run …" wording is gone.
   await page.getByRole("link", { name: "Results", exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/admin/brackets/${id}$`));
-  await expect(page.getByText(/Run results/)).toHaveCount(0);
+  await expect(page.getByText(/Run\s+results/i)).toHaveCount(0);
   const admin = adminTreeOf(page);
   await expect(admin).toBeVisible();
   // The only Heat to play has a solid Record result; byes and Heats still
