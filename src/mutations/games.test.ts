@@ -774,11 +774,7 @@ describe.skipIf(!isLocalDatabase)("closeGames and reopenGames", () => {
       ).toEqual(await generated());
       expect(
         (await entries()).filter((e) => e.generated).map((e) => e.note),
-      ).toEqual([
-        "From head-to-head",
-        "From head-to-head",
-        "From head-to-head",
-      ]);
+      ).toEqual(["From best score", "From best score", "From best score"]);
 
       const after = await totals();
       expect(after.individual).toEqual({

@@ -14,7 +14,7 @@ export type CompetitionListItem = Pick<
   | "format"
 >;
 
-/** The most places a Bracket can preset Placement Points for (R17's `98` lowers it to 4). */
+/** The most places a Bracket can preset Placement Points for. */
 const BRACKET_PLACEMENTS = 5;
 
 /**
@@ -35,6 +35,11 @@ export function placementLimitRefusal(
 ): string | null {
   const limit = placementLimit(format);
   if (limit === null || (placementPoints?.length ?? 0) <= limit) return null;
+  return placementLimitMessage(limit);
+}
+
+/** The one wording for Placement Points over a Format's `placementLimit`. */
+export function placementLimitMessage(limit: number): string {
   return `Placement Points cover at most ${limit} places for this Format.`;
 }
 

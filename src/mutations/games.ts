@@ -359,7 +359,7 @@ export async function closeGames(
           competitionId,
           ...sideOf(found.scoring, entrantId),
           points,
-          note: generatedNote("head-to-head"),
+          note: generatedNote(found.format),
           enteredByEmail: ctx.actorEmail,
           generatedByBracket: true,
         })),

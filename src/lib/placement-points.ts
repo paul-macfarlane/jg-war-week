@@ -13,9 +13,10 @@ function refuse(error: string): Parsed<never> {
   return { ok: false, error, fieldErrors: { [FIELD]: error } };
 }
 
-/** "5, 3, 1" as Placement Points, highest first; blank is none. Any number
- * of places: a Format's limit (`placementLimit`) is checked by the caller that
- * knows the Format. */
+/**
+ * "5, 3, 1" as Placement Points, highest first; blank is none. Any number
+ * of places: the caller that knows the Format checks its `placementLimit`.
+ */
 export function parsePlacementPointsText(
   value: unknown,
 ): Parsed<number[] | null> {

@@ -22,7 +22,11 @@ import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { placementLabel } from "@/lib/competitions";
 import type { ScoreDirection } from "@/lib/enums";
-import { placementPointsByRow, placesFromScores } from "@/lib/placement/score";
+import {
+  placementPointsByRow,
+  placesFromScores,
+  refilledPlaces,
+} from "@/lib/placement/score";
 import { formatPoints } from "@/lib/points";
 import type { MutationResult } from "@/mutations/types";
 
@@ -94,7 +98,9 @@ export function PlacementSheet({
 }) {
   const id = useId();
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const [running, startTransition] = useTransition();
+  const [saving, startSaving] = useTransition();
+  const pending = running || saving;
   const locked = competition.finalized;
   const isTeam = competition.scoring === "team";
 
@@ -111,21 +117,17 @@ export function PlacementSheet({
   });
   const dirty = changed.length > 0 || direction !== competition.scoreDirection;
 
-  /** Applies `next` typed values, refilling Places from Scores when a direction is set. */
-  function apply(next: Record<string, Typed>, by: ScoreDirection) {
-    const all = Object.fromEntries(
-      rows.map((row) => [row.id, next[row.id] ?? typedOf(row)]),
-    );
-    if (by !== "none") {
-      const places = placesFromScores(
-        rows.map((row) => ({ id: row.id, score: numberOf(all[row.id].score) })),
-        by,
-      );
-      for (const [rowId, place] of places) {
-        all[rowId] = { ...all[rowId], place: String(place) };
-      }
+  /** Every row's typed values, edited or saved. */
+  const allTyped = (): Record<string, Typed> =>
+    Object.fromEntries(rows.map((row) => [row.id, typed(row)]));
+  const scoresOf = (all: Record<string, Typed>) =>
+    rows.map((row) => ({ id: row.id, score: numberOf(all[row.id].score) }));
+  /** Writes `places` into `all` as typed Places. */
+  function withPlaces(all: Record<string, Typed>, places: Map<string, number>) {
+    for (const [rowId, place] of places) {
+      all[rowId] = { ...all[rowId], place: String(place) };
     }
-    setEdits(all);
+    return all;
   }
 
   function setPlace(row: PlacementSheetRow, place: string) {
@@ -135,14 +137,32 @@ export function PlacementSheet({
     }));
   }
 
+  /**
+   * Sets a row's Score. With a direction, Places refill only where the
+   * Scores moved them (`refilledPlaces`), so a Place typed to break a tie
+   * survives another row's Score edit.
+   */
   function setScore(row: PlacementSheetRow, score: string) {
-    apply({ ...edits, [row.id]: { ...typed(row), score } }, direction);
+    const all = allTyped();
+    const before = scoresOf(all);
+    all[row.id] = { ...all[row.id], score };
+    setEdits(
+      direction === "none"
+        ? all
+        : withPlaces(all, refilledPlaces(before, scoresOf(all), direction)),
+    );
   }
 
+  /** Choosing a direction refills every scored row's Place from the Scores. */
   function changeDirection(value: string) {
     const next = value as ScoreDirection;
     setDirection(next);
-    apply(edits, next);
+    const all = allTyped();
+    setEdits(
+      next === "none"
+        ? all
+        : withPlaces(all, placesFromScores(scoresOf(all), next)),
+    );
   }
 
   const points = new Map(
@@ -156,8 +176,9 @@ export function PlacementSheet({
     action: () => Promise<MutationResult>,
     success: string,
     after?: () => void,
+    start = startTransition,
   ) {
-    startTransition(async () => {
+    start(async () => {
       const result = await action();
       if (result.ok) {
         toast.success(success);
@@ -194,6 +215,7 @@ export function PlacementSheet({
         }),
       "Placements saved",
       () => setEdits({}),
+      startSaving,
     );
   }
 
@@ -370,7 +392,7 @@ export function PlacementSheet({
                     <Button
                       type="button"
                       variant="ghost"
-                      size="icon-lg"
+                      size="icon"
                       className="size-11 sm:size-9"
                       aria-label={`Remove ${row.name}`}
                       disabled={pending}
@@ -424,7 +446,7 @@ export function PlacementSheet({
               disabled={!dirty || pending}
               onClick={save}
             >
-              {pending ? "Saving…" : "Save"}
+              {saving ? "Saving…" : "Save"}
             </Button>
             {dirty ? (
               <Button

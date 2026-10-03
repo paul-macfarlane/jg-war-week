@@ -239,13 +239,15 @@ export type BracketSnapshot = {
   bracket_config: unknown;
   self_enroll: boolean;
   finalized_at: Date | null;
+  score_direction: string;
 };
 
 export async function snapshotBracket(
   competitionId: string,
 ): Promise<BracketSnapshot> {
   const [row] = await runQuery<BracketSnapshot>(
-    `select format::text as format, bracket_config, self_enroll, finalized_at
+    `select format::text as format, bracket_config, self_enroll, finalized_at,
+       score_direction::text as score_direction
      from competition where id = $1`,
     [competitionId],
   );
@@ -263,7 +265,8 @@ export async function restoreBracket(
   ]);
   await runQuery(
     `update competition set format = $2::competition_format,
-       bracket_config = $3, self_enroll = $4, finalized_at = $5
+       bracket_config = $3, self_enroll = $4, finalized_at = $5,
+       score_direction = $6::score_direction
      where id = $1`,
     [
       competitionId,
@@ -273,6 +276,7 @@ export async function restoreBracket(
         : JSON.stringify(snapshot.bracket_config),
       snapshot.self_enroll,
       snapshot.finalized_at,
+      snapshot.score_direction,
     ],
   );
 }

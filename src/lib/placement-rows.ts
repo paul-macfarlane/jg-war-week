@@ -4,6 +4,7 @@
  * validates; these live errors mirror the server's rules, reusing its
  * wording where it already has one.
  */
+import { placementLimitMessage } from "@/lib/competitions";
 import { POINTS_NUMBER } from "@/lib/points-entry";
 
 /** The "5 · 3 · 1" quick fill. */
@@ -40,7 +41,7 @@ export function placementRowErrors(
     errors.push("Fill in every place above the last one, or remove it.");
   }
   if (limit !== null && values.length > limit) {
-    errors.push(`Placement Points cover at most ${limit} places.`);
+    errors.push(placementLimitMessage(limit));
   }
   if (!values.every((value) => POINTS_NUMBER.test(value))) {
     errors.push("Each place's Placement Points must be a number.");

@@ -868,10 +868,14 @@ function placementPointsChanged(
   return a.length !== b.length || a.some((value, index) => value !== b[index]);
 }
 
+/** A Finalized Placement Competition's refusal of a setup or Format change. */
+export const PLACEMENT_IS_FINALIZED =
+  "This Competition is finalized. Reopen it first.";
+
 /**
  * Refuses a Competition whose name is taken, a team Competition in a
  * free-for-all, a scoring change that would strand its Points Entries, or a
- * scoring or Placement Points change while its Bracket is finalized.
+ * scoring or Placement Points change while it's Finalized or closed.
  */
 export function competitionGuardError(
   values: Pick<CompetitionValues, "name" | "scoring" | "placementPoints"> & {
@@ -910,7 +914,8 @@ export function competitionGuardError(
       placementPointsChanged(existing.placementPoints, values.placementPoints))
   ) {
     // A closed Head-to-head, Best score or `participation` Competition
-    // reuses `finalized_at` (R3 decision 1).
+    // reuses `finalized_at` (R3 decision 1); so does a Finalized Placement.
+    if (existing.format === "placement") return PLACEMENT_IS_FINALIZED;
     return (existing.format !== undefined && isGameFormat(existing.format)) ||
       existing.format === "participation"
       ? "This Competition is closed. Reopen the Competition first."

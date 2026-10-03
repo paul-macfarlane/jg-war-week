@@ -884,8 +884,9 @@ export async function updateCompetition(
     `There's already a Competition named "${values.name}".`,
     () =>
       dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-        // Adding a Points Entry or Entrant, or finalizing the Bracket, takes
-        // the same lock, so the counts below hold until this commits.
+        // Adding a Placement or Entrant, and Finalizing or closing (which
+        // write its Points Entries), take the same lock, so the counts below
+        // hold until this commits.
         if (!(await locked(competition, id, ctx, tx))) {
           return { ok: false, error: COMPETITION_NOT_FOUND };
         }

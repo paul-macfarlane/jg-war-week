@@ -36,7 +36,7 @@ import {
   warWeek,
 } from "@/db/schema";
 import type { GamesConfig } from "@/lib/games/config";
-import { placementEntryValues } from "@/mutations/placements";
+import { placementEntryValues } from "@/lib/placement/score";
 import { getPlacementRows } from "@/queries/placements";
 import { WarWeekSeed } from "@/seed/schema";
 

@@ -787,6 +787,26 @@ describe("competitionGuardError", () => {
       ),
     ).toBe("This Competition is closed. Reopen the Competition first.");
   });
+
+  it("asks to reopen a Finalized Placement, not to un-finalize a Bracket, before a scoring or Placement Points change", () => {
+    const finalized = {
+      ...existingBase,
+      format: "placement" as const,
+      finalizedAt: new Date(),
+    };
+    expect(
+      competitionGuardError(
+        { ...values, placementPoints: [10, 5] },
+        { ...ctx, existing: finalized },
+      ),
+    ).toBe("This Competition is finalized. Reopen it first.");
+    expect(
+      competitionGuardError(values, {
+        ...ctx,
+        existing: { ...finalized, scoring: "individual" },
+      }),
+    ).toBe("This Competition is finalized. Reopen it first.");
+  });
 });
 
 describe("inUseError", () => {

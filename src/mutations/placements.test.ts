@@ -600,6 +600,78 @@ describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
 });
 
 describe.skipIf(!isLocalDatabase)("a Placement Competition's setup", () => {
+  it("refuses a Format, scoring or Placement Points change while Finalized, asking to Reopen it", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { addPlacement, finalizePlacements, savePlacements } = await load();
+      const { setCompetitionFormat } = await import("@/mutations/brackets");
+      const { updateCompetition } = await import("@/mutations/setup");
+      const f = await fixture(tx);
+      await addPlacement(f.ids.darts, participantOf(f.ids.neo), f.ctx, tx);
+      await savePlacements(
+        f.ids.darts,
+        {
+          scoreDirection: "higher",
+          rows: [
+            {
+              id: await f.rowOf(f.ids.darts, f.ids.neo),
+              place: 1,
+              score: null,
+            },
+          ],
+        },
+        f.ctx,
+        tx,
+      );
+      expect(await finalizePlacements(f.ids.darts, f.ctx, tx)).toEqual({
+        ok: true,
+      });
+      const refused = {
+        ok: false,
+        error: "This Competition is finalized. Reopen it first.",
+      };
+      expect(
+        await setCompetitionFormat(
+          f.ids.darts,
+          { format: "single-elimination" },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual(refused);
+      const darts = {
+        name: "Darts",
+        description: null,
+        scoring: "individual" as const,
+        placementPoints: [10, 5],
+        countsTowardTeam: true,
+        competitionGroup: null,
+      };
+      expect(await updateCompetition(f.ids.darts, darts, f.ctx, tx)).toEqual(
+        refused,
+      );
+      expect(
+        await updateCompetition(
+          f.ids.darts,
+          { ...darts, scoring: "team", placementPoints: [10, 6, 3] },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual(refused);
+      const [after] = await tx
+        .select({
+          format: f.schema.competition.format,
+          scoring: f.schema.competition.scoring,
+          placementPoints: f.schema.competition.placementPoints,
+        })
+        .from(f.schema.competition)
+        .where(eq(f.schema.competition.id, f.ids.darts));
+      expect(after).toEqual({
+        format: "placement",
+        scoring: "individual",
+        placementPoints: [10, 6, 3],
+      });
+    });
+  });
+
   it("refuses changing the Format or the scoring while it has Placements; without them the Format changes and the Score direction resets", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { addPlacement, removePlacement } = await load();

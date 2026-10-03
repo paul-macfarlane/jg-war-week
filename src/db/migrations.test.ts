@@ -134,6 +134,7 @@ const RANKED = id(105);
 const PER_PERSON = id(106);
 const RANKED_TEAM = id(107);
 const BRACKET = id(108);
+const PER_PARTICIPANT = id(109);
 
 /** One row of each competition shape the R16 migration must carry. */
 const PRE_R16_ROWS = `
@@ -180,7 +181,9 @@ const PRE_R16_ROWS = `
     ('${RANKED_TEAM}', '${WW_XI}', 'Lunch and Learn', 'team', 'participation',
       null, '{4,2}', null, null, null, false, null, 1, 'ranked'),
     ('${BRACKET}', '${WW_XI}', 'Ping Pong', 'individual', 'single-elimination',
-      25, '{5,3}', null, null, null, false, null, null, null);
+      25, '{5,3}', null, null, null, false, null, null, null),
+    ('${PER_PARTICIPANT}', '${WW_XI}', 'Morning Stretch', 'individual',
+      'participation', null, '{6,4}', null, null, null, false, null, 3, null);
 
   insert into points_entry (competition_id, team_id, participant_id, points,
     entered_by_email, seed_key, generated_by_bracket)
@@ -247,6 +250,7 @@ describe.skipIf(!isLocalDatabase)(
                 [PER_PERSON]: "participation",
                 [RANKED_TEAM]: "participation",
                 [BRACKET]: "single-elimination",
+                [PER_PARTICIPANT]: "participation",
               });
 
               const ranked = await client.query(
@@ -285,9 +289,11 @@ describe.skipIf(!isLocalDatabase)(
                 placement_points: number[] | null;
                 participation_points: number | null;
               }>(
-                `select id, placement_points, participation_points from competition
-              where id in ($1, $2) order by name`,
-                [PER_PERSON, RANKED_TEAM],
+                `select id, placement_points,
+                participation_points::float8 as participation_points
+              from competition
+              where id in ($1, $2, $3) order by name`,
+                [PER_PERSON, RANKED_TEAM, PER_PARTICIPANT],
               );
               expect(teamParticipation.rows).toEqual([
                 {
@@ -299,6 +305,12 @@ describe.skipIf(!isLocalDatabase)(
                   id: RANKED_TEAM,
                   placement_points: [4, 2],
                   participation_points: null,
+                },
+                // Individual: N kept, the Placement Points it held dropped.
+                {
+                  id: PER_PARTICIPANT,
+                  placement_points: null,
+                  participation_points: 3,
                 },
               ]);
 

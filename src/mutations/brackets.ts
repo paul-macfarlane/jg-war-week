@@ -53,7 +53,7 @@ import { placementLimitRefusal } from "@/lib/competitions";
 import { isGameFormat } from "@/lib/enums";
 import { gamesConfigOf } from "@/lib/games/config";
 import { NOT_GAMES } from "@/lib/games/log-rule";
-import { inUseError } from "@/lib/setup";
+import { PLACEMENT_IS_FINALIZED, inUseError } from "@/lib/setup";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 import { getBracketEntrants, loadBracket } from "@/queries/brackets";
 import { getStandings } from "@/queries/standings";
@@ -300,7 +300,11 @@ export async function setCompetitionFormat(
     if (found.format === "participation" || values.format === "participation") {
       return refuse(PARTICIPATION_KEEPS_FORMAT);
     }
-    if (found.finalizedAt) return refuse(FINALIZED);
+    if (found.finalizedAt) {
+      return refuse(
+        found.format === "placement" ? PLACEMENT_IS_FINALIZED : FINALIZED,
+      );
+    }
     const formatChanges = found.format !== values.format;
     if (formatChanges && found.format === "placement") {
       // A Placement's rows are its result; they don't carry to a Bracket.

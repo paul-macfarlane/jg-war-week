@@ -9,7 +9,10 @@ import {
   placement,
   team,
 } from "@/db/schema";
-import { placementPointsByRow } from "@/lib/placement/score";
+import {
+  orderPlacementRows,
+  placementPointsByRow,
+} from "@/lib/placement/score";
 import { isUuid } from "@/lib/uuid";
 import {
   participantImageSql,
@@ -91,8 +94,8 @@ export async function getPlacementRows(
   const points = new Map(
     placementPointsByRow(rows, competitionRow).map((r) => [r.id, r.points]),
   );
-  return rows
-    .map((r): PlacementRowView => ({
+  return orderPlacementRows(
+    rows.map((r): PlacementRowView => ({
       id: r.id,
       teamId: r.teamId,
       participantId: r.participantId,
@@ -104,13 +107,8 @@ export async function getPlacementRows(
       score: r.score,
       points: points.get(r.id) ?? null,
       seedKey: r.seedKey,
-    }))
-    .sort(
-      (a, b) =>
-        (a.place ?? Infinity) - (b.place ?? Infinity) ||
-        a.name.localeCompare(b.name) ||
-        a.id.localeCompare(b.id),
-    );
+    })),
+  );
 }
 
 /**

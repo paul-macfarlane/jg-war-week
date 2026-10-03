@@ -63,7 +63,7 @@ describe("placementRowErrors", () => {
   it("caps the rows at the Format's limit, and at none without one", () => {
     const six = ["6", "5", "4", "3", "2", "1"];
     expect(placementRowErrors(six, 5)).toEqual([
-      "Placement Points cover at most 5 places.",
+      "Placement Points cover at most 5 places for this Format.",
     ]);
     expect(placementRowErrors(six)).toEqual([]);
     expect(placementRowErrors(six, null)).toEqual([]);

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { DBTx } from "@/db";
@@ -44,10 +44,41 @@ const OTHER_HOST = "placement-action-other-host@jahnelgroup.com";
 const PARTICIPANT = "placement-action-participant@jahnelgroup.com";
 const NOT_HOST = "You're not a Host of that Competition.";
 
-/** A War Week with Red (Neo), Darts (individual Placement, hosted by HOST), Quiz (hosted by OTHER_HOST) and Neo placed 1st on Darts. */
+/**
+ * A War Week with Red (Neo, Trinity); Darts (individual Placement), Relay
+ * (team Placement) and Pong (single-elimination), hosted by HOST; Quiz
+ * (hosted by OTHER_HOST); Neo placed 1st on Darts. A second War Week has
+ * Smith.
+ */
 async function fixture(tx: DBTx) {
   current.tx = tx;
   const schema = await import("@/db/schema");
+  const [other] = await tx
+    .insert(schema.warWeek)
+    .values({
+      edition: "plact2",
+      editionNumber: 9790,
+      year: 9790,
+      startDate: "2099-01-01",
+      endDate: "2099-01-05",
+      storyTheme: "Placement action test, the other War Week",
+      status: "upcoming",
+      mode: "teams",
+      teamLabel: "House",
+      leaderTitle: "Captain",
+      slackChannelUrl: "https://example.slack.com/archives/x",
+      primaryColor: "#000",
+      primaryForegroundColor: "#fff",
+      accentColor: "#000",
+      backgroundColor: "#fff",
+      foregroundColor: "#000",
+      fontPreset: "sans",
+    })
+    .returning({ id: schema.warWeek.id });
+  const [smith] = await tx
+    .insert(schema.participant)
+    .values({ warWeekId: other.id, displayName: "Smith" })
+    .returning({ id: schema.participant.id });
   const [w] = await tx
     .insert(schema.warWeek)
     .values({
@@ -86,7 +117,7 @@ async function fixture(tx: DBTx) {
       { warWeekId: w.id, displayName: "Trinity", teamId: red.id },
     ])
     .returning({ id: schema.participant.id });
-  const [darts, quiz] = await tx
+  const [darts, quiz, relay, pong] = await tx
     .insert(schema.competition)
     .values([
       {
@@ -102,42 +133,72 @@ async function fixture(tx: DBTx) {
         scoring: "individual" as const,
         format: "placement" as const,
       },
+      {
+        warWeekId: w.id,
+        name: "Relay",
+        scoring: "team" as const,
+        format: "placement" as const,
+        placementPoints: [5, 3],
+      },
+      {
+        warWeekId: w.id,
+        name: "Pong",
+        scoring: "individual" as const,
+        format: "single-elimination" as const,
+      },
     ])
     .returning({ id: schema.competition.id });
   await tx.insert(schema.competitionHost).values([
     { competitionId: darts.id, email: HOST },
     { competitionId: quiz.id, email: OTHER_HOST },
+    { competitionId: relay.id, email: HOST },
+    { competitionId: pong.id, email: HOST },
   ]);
   const [row] = await tx
     .insert(schema.placement)
     .values({ competitionId: darts.id, participantId: neo.id, place: 1 })
     .returning({ id: schema.placement.id });
 
-  /** Everything a placement write could change, to compare before and after. */
+  /**
+   * Everything a placement or Format write could change on Darts, Relay or
+   * Pong, to compare before and after.
+   */
+  const ids = [darts.id, relay.id, pong.id];
   const snapshot = async () => ({
     rows: await tx
       .select()
       .from(schema.placement)
-      .where(eq(schema.placement.competitionId, darts.id)),
+      .where(inArray(schema.placement.competitionId, ids))
+      .orderBy(schema.placement.id),
     entries: await tx
       .select()
       .from(schema.pointsEntry)
-      .where(eq(schema.pointsEntry.competitionId, darts.id)),
+      .where(inArray(schema.pointsEntry.competitionId, ids))
+      .orderBy(schema.pointsEntry.id),
     competition: await tx
       .select({
+        id: schema.competition.id,
+        format: schema.competition.format,
+        scoring: schema.competition.scoring,
+        placementPoints: schema.competition.placementPoints,
         scoreDirection: schema.competition.scoreDirection,
         finalizedAt: schema.competition.finalizedAt,
       })
       .from(schema.competition)
-      .where(eq(schema.competition.id, darts.id)),
+      .where(inArray(schema.competition.id, ids))
+      .orderBy(schema.competition.id),
   });
   return {
     schema,
     ids: {
       neo: neo.id,
       trinity: trinity.id,
+      red: red.id,
+      smith: smith.id,
       darts: darts.id,
       quiz: quiz.id,
+      relay: relay.id,
+      pong: pong.id,
       row: row.id,
     },
     snapshot,
@@ -150,29 +211,37 @@ async function actions() {
 
 type Fixture = Awaited<ReturnType<typeof fixture>>;
 
-/** Every placement action, called on Darts. */
-async function everyAction(f: Fixture) {
+/** Every row change, called on a Competition (Darts by default). */
+async function rowChanges(f: Fixture, competitionId = f.ids.darts) {
   const a = await actions();
   return [
     [
       "addPlacement",
-      () => a.addPlacement(f.ids.darts, { participantId: f.ids.trinity }),
+      () => a.addPlacement(competitionId, { participantId: f.ids.trinity }),
     ],
-    ["addEveryone", () => a.addEveryone(f.ids.darts)],
+    ["addEveryone", () => a.addEveryone(competitionId)],
     [
       "removePlacement",
-      () => a.removePlacement(f.ids.darts, { placementId: f.ids.row }),
+      () => a.removePlacement(competitionId, { placementId: f.ids.row }),
     ],
     [
       "savePlacements",
       () =>
-        a.savePlacements(f.ids.darts, {
+        a.savePlacements(competitionId, {
           scoreDirection: "higher",
           rows: [{ id: f.ids.row, place: "2", score: "5" }],
         }),
     ],
-    ["finalizePlacements", () => a.finalizePlacements(f.ids.darts)],
-    ["reopenPlacements", () => a.reopenPlacements(f.ids.darts)],
+  ] as const;
+}
+
+/** Every placement action, called on a Competition (Darts by default). */
+async function everyAction(f: Fixture, competitionId = f.ids.darts) {
+  const a = await actions();
+  return [
+    ...(await rowChanges(f, competitionId)),
+    ["finalizePlacements", () => a.finalizePlacements(competitionId)],
+    ["reopenPlacements", () => a.reopenPlacements(competitionId)],
   ] as const;
 }
 
@@ -244,6 +313,98 @@ describe.skipIf(!isLocalDatabase)("the placement actions' refusals", () => {
       expect(await a.addPlacement(f.ids.darts, { teamId: "nope" })).toEqual({
         ok: false,
         error: "Choose someone to add.",
+      });
+      expect(await f.snapshot()).toEqual(before);
+    });
+  });
+
+  it("refuses, as the Host, a Participant from another War Week, writing nothing", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const f = await fixture(tx);
+      const before = await f.snapshot();
+      session.email = HOST;
+      const a = await actions();
+      expect(
+        await a.addPlacement(f.ids.darts, { participantId: f.ids.smith }),
+      ).toEqual({ ok: false, error: "That Participant no longer exists." });
+      expect(await f.snapshot()).toEqual(before);
+    });
+  });
+
+  it("refuses, as the Host, a Team in an individual Competition and a Participant in a team one, writing nothing", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const f = await fixture(tx);
+      const before = await f.snapshot();
+      session.email = HOST;
+      const a = await actions();
+      expect(await a.addPlacement(f.ids.darts, { teamId: f.ids.red })).toEqual({
+        ok: false,
+        error: "An individual Competition takes Participants, not Teams.",
+      });
+      expect(
+        await a.addPlacement(f.ids.relay, { participantId: f.ids.neo }),
+      ).toEqual({
+        ok: false,
+        error: "A team Competition takes Teams, not Participants.",
+      });
+      expect(await f.snapshot()).toEqual(before);
+    });
+  });
+
+  it("refuses, as the Host, every row change and a Format change while Finalized, writing nothing", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const f = await fixture(tx);
+      session.email = HOST;
+      const a = await actions();
+      expect(await a.finalizePlacements(f.ids.darts)).toEqual({ ok: true });
+      const before = await f.snapshot();
+      for (const [name, run] of await rowChanges(f)) {
+        expect(await run(), name).toEqual({
+          ok: false,
+          error: "Reopen the Competition first.",
+        });
+      }
+      const { setCompetitionFormat } = await import("@/actions/brackets");
+      expect(
+        await setCompetitionFormat(f.ids.darts, {
+          format: "single-elimination",
+        }),
+      ).toEqual({
+        ok: false,
+        error: "This Competition is finalized. Reopen it first.",
+      });
+      expect(await f.snapshot()).toEqual(before);
+    });
+  });
+
+  it("refuses, as the Host, every placement action on a Competition not run as Placement, writing nothing", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const f = await fixture(tx);
+      const before = await f.snapshot();
+      session.email = HOST;
+      for (const [name, run] of await everyAction(f, f.ids.pong)) {
+        expect(await run(), name).toEqual({
+          ok: false,
+          error: "This Competition isn't run as Placement.",
+        });
+      }
+      expect(await f.snapshot()).toEqual(before);
+    });
+  });
+
+  it("refuses, as the Host, changing the Format of a Placement with rows, writing nothing", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const f = await fixture(tx);
+      const before = await f.snapshot();
+      session.email = HOST;
+      const { setCompetitionFormat } = await import("@/actions/brackets");
+      expect(
+        await setCompetitionFormat(f.ids.darts, {
+          format: "single-elimination",
+        }),
+      ).toEqual({
+        ok: false,
+        error: "This Competition has 1 Placement. Remove its Placements first.",
       });
       expect(await f.snapshot()).toEqual(before);
     });

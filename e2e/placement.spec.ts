@@ -14,7 +14,8 @@ import { teamTotal } from "./standings";
 // counting toward the Team, higher Score wins, Placement Points 10 / 6 / 3,
 // inserted into the live XI demo with the e2e Host as its Host. The Host
 // records six Participants with Scores (Places fill from them, a tie at
-// 2nd), breaks the tie, and Finalizes: the Standings move by exactly the
+// 2nd), breaks the tie, edits another row's Score (the tie-break stays),
+// and Finalizes: the Standings move by exactly the
 // Teams' points, Recent results shows the Finalize, Reopen withdraws them,
 // and a Participant is refused the sheet. The Competition is deleted after
 // (its rows and Points Entries cascade), so XI is unchanged for other specs.
@@ -138,10 +139,23 @@ test("r16 90 a Host records placements with Scores, breaks a tie and Finalizes: 
     }
     await shoot(page, testInfo, "sheet-scores");
 
-    // The Host breaks the tie, then saves.
+    // The Host breaks the tie, then edits another row's Score: no computed
+    // place moves, so the tie-break stays; then saves.
     await page
       .getByRole("textbox", { name: `Place for ${TIE_BROKEN}` })
       .fill("3");
+    await page
+      .getByRole("textbox", { name: `Score for ${ROWS[5].name}` })
+      .fill("15");
+    await expect(
+      page.getByRole("textbox", { name: `Place for ${TIE_BROKEN}` }),
+    ).toHaveValue("3");
+    await expect(
+      page.getByRole("textbox", { name: `Place for ${ROWS[1].name}` }),
+    ).toHaveValue("2");
+    await expect(
+      page.getByRole("textbox", { name: `Place for ${ROWS[5].name}` }),
+    ).toHaveValue("6");
     await page.getByRole("button", { name: "Save", exact: true }).click();
     await expect(page.getByText("Placements saved")).toBeVisible();
     await expect(

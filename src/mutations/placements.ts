@@ -15,19 +15,18 @@ import {
 } from "@/lib/placement/input";
 import {
   finalizePlacementError,
-  placementPointsByRow,
+  placementEntryValues,
 } from "@/lib/placement/score";
-import { generatedNote } from "@/lib/points-entry";
 import {
   COMPETITION_NOT_FOUND,
   deleteGenerated,
   refuse,
 } from "@/mutations/brackets";
 import type { MutationContext, MutationResult } from "@/mutations/types";
-import { type PlacementRowView, getPlacementRows } from "@/queries/placements";
+import { getPlacementRows } from "@/queries/placements";
 
 export const NOT_PLACEMENT = "This Competition isn't run as Placement.";
-/** Any row change, or Finalize's twin, while the sheet is Finalized. */
+/** Any row change (add, Add everyone, remove, save) while the sheet is Finalized. */
 export const PLACEMENT_FINALIZED = "Reopen the Competition first.";
 export const PLACEMENT_MISSING = "That Placement no longer exists.";
 const PARTICIPANT_MISSING = "That Participant no longer exists.";
@@ -228,40 +227,11 @@ export async function savePlacements(
 }
 
 /**
- * The generated Points Entries a Finalize writes for these rows: each
- * placed row's Placement Points (`placementPointsByRow`), to its Team or
- * Participant, noted "From placement". The seed loader passes the seeded
- * Finalize's time and a seed key per row.
- */
-export function placementEntryValues(
-  rows: Pick<PlacementRowView, "id" | "teamId" | "participantId" | "place">[],
-  found: Pick<Competition, "id" | "warWeekId" | "placementPoints">,
-  by: {
-    actorEmail: string;
-    enteredAt?: Date;
-    seedKeyOf?: (rowId: string) => string | null;
-  },
-): (typeof pointsEntry.$inferInsert)[] {
-  const byId = new Map(rows.map((row) => [row.id, row]));
-  return placementPointsByRow(rows, found).map(({ id, points }) => ({
-    warWeekId: found.warWeekId,
-    competitionId: found.id,
-    teamId: byId.get(id)!.teamId,
-    participantId: byId.get(id)!.participantId,
-    points,
-    note: generatedNote("placement"),
-    enteredByEmail: by.actorEmail,
-    ...(by.enteredAt ? { enteredAt: by.enteredAt } : {}),
-    seedKey: by.seedKeyOf?.(id) ?? null,
-    generatedByBracket: true,
-  }));
-}
-
-/**
  * Finalizes the sheet: replaces its generated Points Entries with each
- * Place's Placement Points and marks it
- * Finalized, keeping the first Finalize's time when run again. Refused
- * while a row has a Score and no Place, or nobody is placed.
+ * Place's Placement Points and marks it Finalized. Finalizing again
+ * rewrites the generated Points Entries from the current rows and keeps
+ * the first Finalize's `finalized_at`. Refused while a row has a Score and
+ * no Place, or nobody is placed.
  */
 export async function finalizePlacements(
   competitionId: string,

@@ -505,3 +505,101 @@ describe.skipIf(!isLocalDatabase)(
     });
   },
 );
+
+describe.skipIf(!isLocalDatabase)(
+  "Placement add beside a scoring change on two connections",
+  () => {
+    const edition = "zz-r-pl";
+    beforeEach(() => clearWarWeek(edition));
+    afterEach(() => clearWarWeek(edition));
+
+    it.each([["add"], ["scoring change"]])(
+      "lets exactly one of a Participant's add and a switch to team scoring through, never a Participant row in a team Competition (%s first)",
+      async (first) => {
+        const { addPlacement } = await import("@/mutations/placements");
+        const { updateCompetition } = await import("@/mutations/setup");
+        const f = await committedWarWeek(edition, 10);
+        const { competition, participant, placement } = f.schema;
+        const [darts] = await f.db
+          .insert(competition)
+          .values({
+            warWeekId: f.ctx.warWeekId,
+            name: "Darts",
+            scoring: "individual",
+            format: "placement",
+          })
+          .returning({ id: competition.id });
+        const [neo] = await f.db
+          .insert(participant)
+          .values({
+            warWeekId: f.ctx.warWeekId,
+            displayName: "Neo",
+            teamId: f.teamId,
+          })
+          .returning({ id: participant.id });
+
+        const [added, switched] = await withConnections(2, async ([a, b]) => {
+          const add = () =>
+            addPlacement(darts.id, { participantId: neo.id }, f.ctx, a);
+          const toTeam = () =>
+            updateCompetition(
+              darts.id,
+              {
+                name: "Darts",
+                description: null,
+                scoring: "team",
+                placementPoints: null,
+                countsTowardTeam: false,
+                competitionGroup: null,
+              },
+              f.ctx,
+              b,
+            );
+          const lockRow = (tx: ConnectionTx) =>
+            tx
+              .select({ id: competition.id })
+              .from(competition)
+              .where(eq(competition.id, darts.id))
+              .for("update");
+          return first === "add"
+            ? staggered(lockRow, add, toTeam)
+            : (await staggered(lockRow, toTeam, add)).reverse();
+        });
+
+        // The one that queued first wins; the other is refused.
+        expect([added, switched]).toEqual(
+          first === "add"
+            ? [
+                { ok: true },
+                {
+                  ok: false,
+                  error:
+                    "This Competition has 1 Placement. Remove them before changing its scoring.",
+                },
+              ]
+            : [
+                {
+                  ok: false,
+                  error: "A team Competition takes Teams, not Participants.",
+                },
+                { ok: true },
+              ],
+        );
+        const [saved] = await f.db
+          .select({ scoring: competition.scoring })
+          .from(competition)
+          .where(eq(competition.id, darts.id));
+        const rows = await f.db
+          .select({ participantId: placement.participantId })
+          .from(placement)
+          .where(eq(placement.competitionId, darts.id));
+        // Individual with Neo's row, or team with no Participant row.
+        expect({ scoring: saved.scoring, rows }).toEqual(
+          first === "add"
+            ? { scoring: "individual", rows: [{ participantId: neo.id }] }
+            : { scoring: "team", rows: [] },
+        );
+      },
+    );
+  },
+);
