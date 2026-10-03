@@ -2,10 +2,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { generate } from "@/lib/bracket/engine";
+import { heats } from "@/lib/bracket/heats";
 import type { Entrant } from "@/lib/bracket/types";
 import { nextHeatFor } from "@/lib/bracket/view";
 
-import { BracketView, YourNextHeatCard } from "./bracket-view";
+import { BracketView, HeatRows, YourNextHeatCard } from "./bracket-view";
 
 vi.mock("@/components/auto-refresh", () => ({
   AutoRefresh: () => <span data-auto-refresh />,
@@ -142,5 +143,71 @@ describe("BracketView", () => {
     expect(
       renderToStaticMarkup(<BracketView {...props} bracket={bracket} />),
     ).not.toContain("a pair or group");
+  });
+});
+
+describe("HeatRows advancers", () => {
+  const eight: Entrant[] = Array.from({ length: 8 }, (_, i) => ({
+    id: `h${i + 1}`,
+    seedPosition: i + 1,
+    label: `Entrant ${i + 1}`,
+  }));
+  const heatEntrants = new Map(
+    eight.map((e) => [
+      e.id,
+      {
+        id: e.id,
+        label: e.label,
+        color: "#f00",
+        teamId: `t${e.id}`,
+        participantId: null,
+        squadId: null,
+        participantNames: [],
+      },
+    ]),
+  );
+  const newId = (round: number, position: number) => `r${round}h${position}`;
+
+  function rows(bracket: ReturnType<typeof heats.generate>, heatId: string) {
+    return renderToStaticMarkup(
+      <HeatRows
+        heat={bracket.heats.find((h) => h.id === heatId)!}
+        bracket={bracket}
+        entrantsById={heatEntrants}
+        scoring="individual"
+        primaryColor="#f00"
+      />,
+    );
+  }
+
+  /** The place numbers of the rows marked as advancing. */
+  function advancingPlacesIn(html: string): string[] {
+    return [
+      ...html.matchAll(/data-advances[^>]*>.*?aria-label="Place (\d)"/g),
+    ].map((m) => m[1]);
+  }
+
+  it("highlights places 1 and 2 of a Heat of 4 with 2 advancing", () => {
+    let bracket = heats.generate(
+      { entrantsPerHeat: 4, advancePerHeat: 2 },
+      eight,
+      newId,
+    );
+    const heat = bracket.heats.find((h) => h.id === "r1h1")!;
+    const order = heat.slots.map((s) => s.entrantId!);
+    bracket = heats.applyResult(bracket, "r1h1", { order, scores: {} });
+    expect(advancingPlacesIn(rows(bracket, "r1h1"))).toEqual(["1", "2"]);
+
+    const other = bracket.heats.find((h) => h.id === "r1h2")!;
+    bracket = heats.applyResult(bracket, "r1h2", {
+      order: other.slots.map((s) => s.entrantId!),
+      scores: {},
+    });
+    const final = bracket.heats.find((h) => h.round === 2)!;
+    bracket = heats.applyResult(bracket, final.id, {
+      order: final.slots.map((s) => s.entrantId!),
+      scores: {},
+    });
+    expect(advancingPlacesIn(rows(bracket, final.id))).toEqual(["1"]);
   });
 });

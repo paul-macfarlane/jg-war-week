@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { resetByResult } from "@/lib/bracket/formats";
+import { advancingPlaces } from "@/lib/bracket/tree";
 import type { Bracket, Heat, HeatResult } from "@/lib/bracket/types";
 import { heatName, isDecided } from "@/lib/bracket/view";
 
@@ -325,6 +326,7 @@ export function FinishingOrderForm(props: HeatResultFormProps) {
   const [scores, setScores] = useState<Record<string, string>>(() =>
     Object.fromEntries(heat.slots.map((s) => [s.entrantId!, s.score ?? ""])),
   );
+  const through = advancingPlaces(props.bracket, heat);
   const toPlace = ids.filter((e) => !forfeits.includes(e));
   const complete = order.length > 0 && order.length === toPlace.length;
   const result: HeatResult | null = complete
@@ -363,9 +365,11 @@ export function FinishingOrderForm(props: HeatResultFormProps) {
             const entrant = entrantsById.get(entrantId)!;
             const place = order.indexOf(entrantId) + 1;
             const forfeited = forfeits.includes(entrantId);
+            const advances = place > 0 && place <= through;
             return (
               <Button
                 key={entrantId}
+                data-advances={advances ? "" : undefined}
                 type="button"
                 variant={place > 0 ? "default" : "outline"}
                 aria-pressed={place > 0}
@@ -381,10 +385,15 @@ export function FinishingOrderForm(props: HeatResultFormProps) {
                   primaryColor={primaryColor}
                 />
                 <span className="min-w-0 truncate">{entrant.label}</span>
+                {advances && (
+                  <span className="ml-auto text-xs font-semibold">
+                    Advances
+                  </span>
+                )}
                 {place > 0 && (
                   <span
                     aria-label={`Place ${place}`}
-                    className="bg-primary-foreground text-primary ml-auto flex size-6 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums"
+                    className={`bg-primary-foreground text-primary ${advances ? "" : "ml-auto"} flex size-6 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums`}
                   >
                     {place}
                   </span>

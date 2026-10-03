@@ -18,6 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useYou } from "@/components/you";
 import { isBye } from "@/lib/bracket/formats";
+import { advancesFromPlace } from "@/lib/bracket/tree";
 import type { Bracket, Heat } from "@/lib/bracket/types";
 import {
   type NextHeat,
@@ -116,10 +117,11 @@ export function HeatRows({
             </li>
           );
         }
-        const won = decided && slot.place === 1;
+        const won = !bye && advancesFromPlace(bracket, heat, slot.place);
         return (
           <li
             key={i}
+            data-advances={won ? "" : undefined}
             className={`flex min-h-8 min-w-0 items-center gap-2 px-1 ${YOU_ROW_CLASS}`}
           >
             {ranked && (
