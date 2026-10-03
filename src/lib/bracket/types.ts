@@ -107,13 +107,6 @@ export type FormatEngine = {
   finalPlacings(bracket: Bracket, entrants: Entrant[]): Placing[];
 };
 
-/**
- * Why regenerating or replacing Entrants was refused: the Bracket has Heat
- * Results. The builder asks for confirmation and retries with `force`.
- */
-export const HAS_RESULTS_ERROR =
-  "This Bracket has Heat Results. Confirm to clear them and start over.";
-
 /** A refused engine operation; the message is shown to the Organizer. */
 export class BracketError extends Error {
   constructor(message: string) {

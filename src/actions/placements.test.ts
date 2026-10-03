@@ -371,7 +371,7 @@ describe.skipIf(!isLocalDatabase)("the placement actions' refusals", () => {
         }),
       ).toEqual({
         ok: false,
-        error: "This Competition is finalized. Reopen it first.",
+        error: "Locked once the Competition has a result.",
       });
       expect(await f.snapshot()).toEqual(before);
     });
@@ -404,7 +404,7 @@ describe.skipIf(!isLocalDatabase)("the placement actions' refusals", () => {
         }),
       ).toEqual({
         ok: false,
-        error: "This Competition has 1 Placement. Remove its Placements first.",
+        error: "Locked once the Competition has a result.",
       });
       expect(await f.snapshot()).toEqual(before);
     });

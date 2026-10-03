@@ -38,7 +38,6 @@ import {
   ADVANCE_PER_HEAT_OPTIONS,
   type BracketConfig,
   ENTRANTS_PER_HEAT_OPTIONS,
-  THIRD_PLACE_LOCKED,
   advancePerHeatLabel,
   entrantsPerHeatLabel,
   isHeadToHead,
@@ -46,13 +45,14 @@ import {
 } from "@/lib/bracket/config";
 import { hasResults, isBye, validateConfig } from "@/lib/bracket/formats";
 import { type EntrantKind, squadLabel } from "@/lib/bracket/squads";
-import { type Bracket, HAS_RESULTS_ERROR } from "@/lib/bracket/types";
+import type { Bracket } from "@/lib/bracket/types";
 import {
   type Format,
   formatLabel,
   groupRounds,
   heatName,
 } from "@/lib/bracket/view";
+import { LOCKED_BY_HEAT_RESULT } from "@/lib/competition-locks";
 import { COMPETITION_FORMATS, isGameFormat } from "@/lib/enums";
 import { fromEasternClock, toEasternClock } from "@/lib/schedule";
 import type { BracketEntrant, SquadRow } from "@/queries/brackets";
@@ -74,11 +74,10 @@ const FORMAT_OPTIONS = COMPETITION_FORMATS.filter(
   label: formatLabel(format),
 }));
 
-/** A write that may be refused for clearing Heat Results; retried with `force`. */
-type ForceableAction = {
-  run: (force: boolean) => Promise<BracketActionResult>;
+/** A Bracket write and what it says when it's done. */
+type BracketAction = {
+  run: () => Promise<BracketActionResult>;
   success: string;
-  title: string;
 };
 
 /**
@@ -89,8 +88,8 @@ type ForceableAction = {
  * current choice is one. Head-to-head adds the 3rd place game switch, off
  * by default. It shows the saved value; turning it on is disabled, with its
  * reason, where Generate would refuse it (under 4 Entrants), though a saved
- * one can still be turned off. Once the Bracket has a Heat Result it is
- * locked, and no save (forced or not) carries a change to it.
+ * one can still be turned off. Once the Bracket has a Heat Result the
+ * settings are locked (`LOCKED_BY_HEAT_RESULT`).
  */
 function HeatSettingsForm({
   competitionId,
@@ -98,7 +97,6 @@ function HeatSettingsForm({
   entrantCount,
   started,
   disabled,
-  onRefused,
 }: {
   competitionId: string;
   config: BracketConfig;
@@ -106,8 +104,6 @@ function HeatSettingsForm({
   /** The Bracket has a Heat Result: the 3rd place game is locked. */
   started: boolean;
   disabled: boolean;
-  /** A save refused for clearing Heat Results: confirm, then force it. */
-  onRefused: (action: ForceableAction) => void;
 }) {
   const router = useRouter();
   const [perHeat, setPerHeat] = useState(config.entrantsPerHeat);
@@ -125,7 +121,7 @@ function HeatSettingsForm({
     entrantCount,
   );
   const thirdPlaceReason = started
-    ? THIRD_PLACE_LOCKED
+    ? LOCKED_BY_HEAT_RESULT
     : turnOnRefusal && thirdPlace
       ? `${turnOnRefusal} Turn it off, or enter 4, to generate.`
       : turnOnRefusal;
@@ -140,24 +136,13 @@ function HeatSettingsForm({
         advancePerHeat: Number(formData.get("advancePerHeat")),
         thirdPlaceGame,
       };
-      // Locked once started: never sent, so no forced save can carry it.
-      if (started && next.thirdPlaceGame !== config.thirdPlaceGame) {
-        toast.error(THIRD_PLACE_LOCKED);
-        return { ok: false, error: THIRD_PLACE_LOCKED };
-      }
-      const run = (force: boolean) =>
-        setCompetitionFormat(competitionId, {
-          format: "bracket",
-          config: next,
-          force,
-        });
-      const title = "Clear every Heat Result and save the Heat settings?";
-      const result = await run(false);
+      const result = await setCompetitionFormat(competitionId, {
+        format: "bracket",
+        config: next,
+      });
       if (result.ok) {
         toast.success("Heat settings saved");
         router.refresh();
-      } else if (result.error === HAS_RESULTS_ERROR) {
-        onRefused({ run, success: "Heat settings saved", title });
       } else {
         toast.error(result.error);
       }
@@ -461,7 +446,6 @@ export function BracketBuilder({
       : "participant";
   const [kind, setKind] = useState<EntrantKind>(savedKind);
   const [selected, setSelected] = useState<string[]>(saved);
-  const [confirm, setConfirm] = useState<ForceableAction | null>(null);
   const [squadSheet, setSquadSheet] = useState<SquadRow | "new" | null>(null);
   const [deleting, setDeleting] = useState<SquadRow | null>(null);
   const [selfReport, setSelfReportOn] = useState(competition.selfReport);
@@ -473,20 +457,14 @@ export function BracketBuilder({
   const locked = competition.finalized;
   const generated = bracket.heats.length > 0;
 
-  function runAction(action: ForceableAction, force = false) {
+  function runAction(action: BracketAction) {
     startTransition(async () => {
-      const result = await action.run(force);
+      const result = await action.run();
       if (result.ok) {
         toast.success(action.success);
-        setConfirm(null);
         router.refresh();
         return;
       }
-      if (!force && result.error === HAS_RESULTS_ERROR) {
-        setConfirm(action);
-        return;
-      }
-      setConfirm(null);
       toast.error(result.error);
     });
   }
@@ -592,7 +570,6 @@ export function BracketBuilder({
           entrantCount={entrants.length}
           started={hasResults(bracket)}
           disabled={pending || locked}
-          onRefused={setConfirm}
         />
       )}
 
@@ -688,14 +665,12 @@ export function BracketBuilder({
             onChange={setSelected}
             onSave={() =>
               runAction({
-                run: (force) =>
+                run: () =>
                   replaceEntrants(competition.id, {
                     kind,
                     targetIds: selected,
-                    force,
                   }),
                 success: "Entrants saved",
-                title: "Clear every Heat Result and save the Entrants?",
               })
             }
             disabled={pending || locked}
@@ -781,11 +756,10 @@ export function BracketBuilder({
                 disabled={pending || locked || dirty || entrants.length < 2}
                 onClick={() =>
                   runAction({
-                    run: (force) => generateBracket(competition.id, { force }),
+                    run: () => generateBracket(competition.id),
                     success: generated
                       ? "Bracket re-rolled"
                       : "Bracket generated",
-                    title: "Clear every Heat Result and draw again?",
                   })
                 }
               >
@@ -895,18 +869,6 @@ export function BracketBuilder({
         description="Its Participants stay on the roster. A Squad that is an Entrant can't be deleted."
         pending={pending}
         onConfirm={() => deleting && removeSquad(deleting)}
-      />
-
-      <ConfirmDialog
-        open={confirm !== null}
-        onOpenChange={(open) => {
-          if (!open) setConfirm(null);
-        }}
-        title={confirm?.title ?? ""}
-        description={HAS_RESULTS_ERROR}
-        confirmLabel="Clear results"
-        pending={pending}
-        onConfirm={() => confirm && runAction(confirm, true)}
       />
     </div>
   );

@@ -55,7 +55,7 @@ export async function setCompetitionFormat(
   });
 }
 
-/** Sets the Entrants in Seed Position order; `force` clears Heat Results. */
+/** Sets the Entrants in Seed Position order; locked once a Heat has a result. */
 export async function replaceEntrants(
   competitionId: string,
   input: unknown,
@@ -71,7 +71,7 @@ export async function replaceEntrants(
   });
 }
 
-/** Sets random Seed Positions and (re)builds the Bracket; `force` clears Heat Results. */
+/** Sets random Seed Positions and (re)builds the Bracket; locked once a Heat has a result. */
 export async function generateBracket(
   competitionId: string,
   input: unknown = {},
@@ -79,7 +79,7 @@ export async function generateBracket(
   return bracketWrite("bracket.generate", competitionId, async (id, ctx) => {
     const parsed = parseGenerateInput(input);
     if (!parsed.ok) return parsed;
-    return mutations.generateBracket(id, { force: parsed.value.force }, ctx);
+    return mutations.generateBracket(id, {}, ctx);
   });
 }
 

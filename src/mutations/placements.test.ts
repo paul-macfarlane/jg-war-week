@@ -600,7 +600,7 @@ describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
 });
 
 describe.skipIf(!isLocalDatabase)("a Placement Competition's setup", () => {
-  it("refuses a Format, scoring or Placement Points change while Finalized, asking to Reopen it", async () => {
+  it("refuses a Format or scoring change while Finalized, but takes a Placement Points change", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { addPlacement, finalizePlacements, savePlacements } = await load();
       const { setCompetitionFormat } = await import("@/mutations/brackets");
@@ -636,7 +636,10 @@ describe.skipIf(!isLocalDatabase)("a Placement Competition's setup", () => {
           f.ctx,
           tx,
         ),
-      ).toEqual(refused);
+      ).toEqual({
+        ok: false,
+        error: "Locked once the Competition has a result.",
+      });
       const darts = {
         name: "Darts",
         description: null,
@@ -645,13 +648,13 @@ describe.skipIf(!isLocalDatabase)("a Placement Competition's setup", () => {
         countsTowardTeam: true,
         competitionGroup: null,
       };
-      expect(await updateCompetition(f.ids.darts, darts, f.ctx, tx)).toEqual(
-        refused,
-      );
+      expect(await updateCompetition(f.ids.darts, darts, f.ctx, tx)).toEqual({
+        ok: true,
+      });
       expect(
         await updateCompetition(
           f.ids.darts,
-          { ...darts, scoring: "team", placementPoints: [10, 6, 3] },
+          { ...darts, scoring: "team", countsTowardTeam: false },
           f.ctx,
           tx,
         ),
@@ -667,12 +670,12 @@ describe.skipIf(!isLocalDatabase)("a Placement Competition's setup", () => {
       expect(after).toEqual({
         format: "placement",
         scoring: "individual",
-        placementPoints: [10, 6, 3],
+        placementPoints: [10, 5],
       });
     });
   });
 
-  it("refuses changing the Format or the scoring while it has Placements; without them the Format changes and the Score direction resets", async () => {
+  it("locks the Format while it has Placements; without them the Format changes and the Score direction resets", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { addPlacement, removePlacement } = await load();
       const { setCompetitionFormat } = await import("@/mutations/brackets");
@@ -688,7 +691,7 @@ describe.skipIf(!isLocalDatabase)("a Placement Competition's setup", () => {
         ),
       ).toEqual({
         ok: false,
-        error: "This Competition has 1 Placement. Remove its Placements first.",
+        error: "Locked once the Competition has a result.",
       });
       const darts = {
         name: "Darts",

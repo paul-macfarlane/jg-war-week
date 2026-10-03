@@ -4,6 +4,7 @@ import { guarded } from "@/actions/result";
 import { revalidateSite, revalidateWarWeek } from "@/actions/revalidate";
 import { type TargetKind, authorize } from "@/auth/authorize";
 import type { WarWeekAction } from "@/lib/access";
+import { parseCompetitionSetting } from "@/lib/competition-settings";
 import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
 import type { Parsed } from "@/lib/result";
 import { rosterImportInputSchema } from "@/lib/roster-import";
@@ -20,6 +21,7 @@ import {
   parseTeamInput,
   parseWarWeekSettingsFields,
 } from "@/lib/setup";
+import { saveCompetitionSetting as saveSetting } from "@/mutations/competition-settings";
 import * as mutations from "@/mutations/setup";
 import type {
   CreateCompetitionResult,
@@ -251,6 +253,26 @@ export async function updateCompetition(
     id,
     () => parseCompetitionInput(input),
     (value, ctx) => mutations.updateCompetition(id, value, ctx),
+  );
+}
+
+/**
+ * Saves one setting of a Competition (the admin Competition page's
+ * autosave): `{ field, value }` (`parseCompetitionSetting`). An Organizer,
+ * or a Host of this Competition for any field but Hosts; the mutation
+ * checks the role again with the field, and refuses a locked field with
+ * its one-line reason (`src/lib/competition-locks.ts`).
+ */
+export async function saveCompetitionSetting(
+  competitionId: string,
+  input: unknown,
+): Promise<SetupActionResult> {
+  return setupWrite(
+    "competition.edit",
+    "competition",
+    competitionId,
+    () => parseCompetitionSetting(input),
+    (value, ctx) => saveSetting(competitionId, value, ctx),
   );
 }
 

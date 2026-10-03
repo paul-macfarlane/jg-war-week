@@ -7,11 +7,7 @@ import { z } from "zod";
 import { type BracketConfig, bracketConfigSchema } from "@/lib/bracket/config";
 import { SQUAD_PARTICIPANTS_MAX } from "@/lib/bracket/squads";
 import type { Format, HeatResult } from "@/lib/bracket/types";
-import {
-  COMPETITION_FORMATS,
-  type GameFormat,
-  isGameFormat,
-} from "@/lib/enums";
+import { COMPETITION_FORMATS } from "@/lib/enums";
 import type { Parsed } from "@/lib/result";
 
 function parse<T>(schema: z.ZodType<T, unknown>, input: unknown): Parsed<T> {
@@ -25,32 +21,17 @@ const id = (error: string) => z.uuid({ error });
 /** The most Entrants a Bracket takes. */
 export const MAX_ENTRANTS = 64;
 
-/** A Format chosen only at create: a Competition keeps it. */
-type FixedFormat = GameFormat | "participation";
-
 export type FormatInput = {
-  /**
-   * Never a Games Format or `participation`: a Competition is one of those from
-   * creation, and stays so.
-   */
-  format: Exclude<Format, FixedFormat>;
+  /** Any Format: a Competition changes Format while it has no result. */
+  format: Format;
   /** A Bracket's config; omitted keeps (or defaults) the saved one. */
   config?: BracketConfig;
-  /** Clears Heat Results when a different config clears the Heats. */
-  force?: boolean;
 };
 
 const formatSchema = z
   .object({
-    format: z.enum(
-      COMPETITION_FORMATS.filter(
-        (format): format is Exclude<Format, FixedFormat> =>
-          !isGameFormat(format) && format !== "participation",
-      ),
-      { error: "Choose a Format." },
-    ),
+    format: z.enum(COMPETITION_FORMATS, { error: "Choose a Format." }),
     config: z.unknown().optional(),
-    force: z.boolean().optional(),
   })
   .transform((value, ctx): FormatInput => {
     const out: FormatInput = { format: value.format };
@@ -71,7 +52,6 @@ const formatSchema = z
       }
       out.config = config.data;
     }
-    if (value.force !== undefined) out.force = value.force;
     return out;
   });
 
@@ -89,7 +69,6 @@ const entrantsSchema = z.object({
   targetIds: z.array(id("Choose Teams or Participants.")).max(MAX_ENTRANTS, {
     error: `A Bracket takes at most ${MAX_ENTRANTS} Entrants.`,
   }),
-  force: z.boolean().optional(),
 });
 
 export type EntrantsInput = z.infer<typeof entrantsSchema>;
@@ -132,9 +111,7 @@ export function parseSquadInput(input: unknown): Parsed<SquadInput> {
   };
 }
 
-const generateSchema = z.object({
-  force: z.boolean().optional(),
-});
+const generateSchema = z.object({});
 
 export type GenerateInput = z.infer<typeof generateSchema>;
 

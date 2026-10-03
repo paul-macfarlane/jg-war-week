@@ -151,9 +151,7 @@ describe("BracketBuilder", () => {
     const control = thirdPlaceSwitch(html);
     expect(control).toMatch(CHECKED);
     expect(control).toMatch(DISABLED);
-    expect(html).toContain(
-      "The 3rd place game can&#x27;t be changed once a Heat Result exists.",
-    );
+    expect(html).toContain("Locked once a Heat has a result.");
   });
 
   it("offers no 3rd place game at another Heat size", () => {

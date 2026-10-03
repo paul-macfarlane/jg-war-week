@@ -47,8 +47,9 @@ import {
 } from "@/queries/games";
 
 export const ALREADY_CLOSED = "This Competition is already closed.";
+/** Settings of another Format than the Competition's (change the Format first). */
 export const GAME_FORMAT_FIXED =
-  "A Head-to-head or Best score Competition keeps its Format; add a new Competition to play another.";
+  "Those settings are for another Format. Change the Format first.";
 export const BEST_OF_NEEDS_FIXED = "A Best of needs a fixed Entrant list.";
 
 type GamesRun = BracketCompetition & { format: GameFormat };

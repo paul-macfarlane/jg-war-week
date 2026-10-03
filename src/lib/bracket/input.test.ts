@@ -23,14 +23,22 @@ describe("Bracket action input", () => {
     });
   });
 
-  it("never offers games: a Competition is games from creation only", () => {
-    expect(parseFormatInput({ format: "head-to-head" })).toEqual({
-      ok: false,
-      error: "Choose a Format.",
-    });
+  it("accepts every Format: a Competition changes Format while it has no result", () => {
+    for (const format of [
+      "placement",
+      "bracket",
+      "head-to-head",
+      "best-score",
+      "participation",
+    ]) {
+      expect(parseFormatInput({ format })).toEqual({
+        ok: true,
+        value: { format },
+      });
+    }
   });
 
-  it("accepts a Bracket Format with a valid config and force", () => {
+  it("accepts a Bracket Format with a valid config", () => {
     expect(
       parseFormatInput({
         format: "bracket",
@@ -39,7 +47,6 @@ describe("Bracket action input", () => {
           advancePerHeat: 2,
           thirdPlaceGame: false,
         },
-        force: true,
       }),
     ).toEqual({
       ok: true,
@@ -50,7 +57,6 @@ describe("Bracket action input", () => {
           advancePerHeat: 2,
           thirdPlaceGame: false,
         },
-        force: true,
       },
     });
     expect(parseFormatInput({ format: "bracket" })).toEqual({
@@ -119,11 +125,7 @@ describe("Bracket action input", () => {
     ).toEqual({ ok: false, error: "Scores are at most 40 characters." });
   });
 
-  it("accepts a Generate with force, and defaults it to nothing; seeding is always random", () => {
-    expect(parseGenerateInput({ force: true })).toEqual({
-      ok: true,
-      value: { force: true },
-    });
+  it("accepts a Generate with no options; seeding is always random", () => {
     expect(parseGenerateInput({})).toEqual({ ok: true, value: {} });
   });
 
@@ -231,11 +233,6 @@ describe("Bracket parsers given a malformed call", () => {
   });
 
   it.each<[string, (input: unknown) => { ok: boolean }, unknown]>([
-    [
-      'parseGenerateInput with force: "yes"',
-      parseGenerateInput,
-      { force: "yes" },
-    ],
     ["parseGenerateInput with null", parseGenerateInput, null],
     [
       'parseEntrantsInput with targetIds: "x"',

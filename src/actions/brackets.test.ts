@@ -68,7 +68,7 @@ describe("Bracket actions", () => {
 });
 
 describe("generateBracket", () => {
-  it("passes force through to the mutation, and no seeding option", async () => {
+  it("passes no option to the mutation: no seeding, no clearing", async () => {
     authorized.current = { ...AUTHORIZED_OK };
     const mutations = await import("@/mutations/brackets");
 
@@ -78,7 +78,7 @@ describe("generateBracket", () => {
 
     expect(mutations.generateBracket).toHaveBeenCalledWith(
       ID,
-      { force: true },
+      {},
       (authorized.current as { ctx: unknown }).ctx,
     );
   });

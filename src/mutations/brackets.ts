@@ -1,4 +1,4 @@
-import { and, asc, count, eq, inArray, ne, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, ne, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
 import { DBOrTx, db } from "@/db";
@@ -11,7 +11,6 @@ import {
   heat,
   heatEntrant,
   participant,
-  placement,
   pointsEntry,
   squad,
   squadParticipant,
@@ -21,7 +20,6 @@ import {
 import {
   type BracketConfig,
   DEFAULT_BRACKET_CONFIG,
-  THIRD_PLACE_LOCKED,
   configOf,
   thirdPlaceRefusal,
 } from "@/lib/bracket/config";
@@ -45,17 +43,20 @@ import {
   type Bracket,
   BracketError,
   type BracketFormat,
-  HAS_RESULTS_ERROR,
   type HeatResult,
 } from "@/lib/bracket/types";
 import { isBracketFormat } from "@/lib/bracket/view";
-import { placementLimitRefusal } from "@/lib/competitions";
+import {
+  LOCKED_BY_HEAT_RESULT,
+  settingLockReason,
+} from "@/lib/competition-locks";
+import { BRACKET_PLACEMENTS } from "@/lib/competitions";
 import { isGameFormat } from "@/lib/enums";
-import { gamesConfigOf } from "@/lib/games/config";
+import { defaultGamesConfig, gamesConfigOf } from "@/lib/games/config";
 import { NOT_GAMES } from "@/lib/games/log-rule";
-import { PLACEMENT_IS_FINALIZED, inUseError } from "@/lib/setup";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 import { getBracketEntrants, loadBracket } from "@/queries/brackets";
+import { getCompetitionLockFacts } from "@/queries/competition-locks";
 
 export const COMPETITION_NOT_FOUND = "That Competition no longer exists.";
 export const HEAT_NOT_FOUND = "That Heat no longer exists.";
@@ -63,15 +64,6 @@ export const NOT_A_BRACKET = "This Competition isn't run as a Bracket.";
 export const FINALIZED = "Un-finalize the Bracket before changing it.";
 export const SQUAD_NOT_FOUND = "That Squad no longer exists.";
 const NOT_A_TEAM_COMPETITION = "Squads are only for team Competitions.";
-/**
- * Changing a Head-to-head or Best score Competition's Format, or making one
- * Head-to-head or Best score later.
- */
-export const GAMES_KEEP_FORMAT =
-  "A Head-to-head or Best score Competition keeps its Format; add a new Competition to run it another way.";
-/** Changing a `participation` Competition's Format, or making one later. */
-export const PARTICIPATION_KEEPS_FORMAT =
-  "A Participation Competition keeps its Format; add a new Competition to run it another way.";
 /** A closed Head-to-head or Best score Competition's Entrants can't change. */
 export const GAMES_CLOSED = "Reopen the Competition first.";
 const NO_SQUADS_IN_GAMES =
@@ -292,21 +284,29 @@ async function saveBracket(
 }
 
 /**
- * Sets how a Competition is run, and a Bracket's config. Its Format
- * can't change while it has Entrants or Games, nor either while it's
- * finalized; a Head-to-head, Best score or Participation Competition is that Format from
- * creation, and stays so.
- * Saving a different Bracket config clears the Heats (keeping the Entrants);
- * once a Heat has a Heat Result, only with `force`, and never a change to
- * the 3rd place game, which is locked from then on. Omitting the config
- * keeps the saved one, unless the Format changes; the default (2 per Heat, 1 advancing) then applies.
+ * Sets how a Competition is run (its Format), or a Bracket's config.
+ *
+ * A Format change goes from any Format to any other while the Competition
+ * has no result (`settingLockReason("format")`), and applies what
+ * `createCompetition` gives a new Competition of that Format: a Bracket's
+ * config (`config`, else the default), a Head-to-head or Best score
+ * Competition's default settings and open Entrants, a Participation
+ * Competition's points columns. The old Format's settings go: the Score
+ * direction back to none, Self-report, self-enroll, close times and Self
+ * check-in off, a Bracket's Squads deleted. Placement Points are kept
+ * (the first 4 for a Bracket; none for an individual Participation
+ * Competition, which takes points per Participant instead).
+ *
+ * A Bracket's config locks once a Heat has a result
+ * (`settingLockReason("bracketConfig")`); before that a different config
+ * clears the drawn Heats, keeping the Entrants. Omitting the config keeps
+ * the saved one.
  */
 export async function setCompetitionFormat(
   competitionId: string,
   values: {
     format: Competition["format"];
     config?: BracketConfig;
-    force?: boolean;
   },
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
@@ -314,137 +314,109 @@ export async function setCompetitionFormat(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedCompetition(tx, competitionId, ctx);
     if (!found) return refuse(COMPETITION_NOT_FOUND);
-    if (isGameFormat(found.format) || isGameFormat(values.format)) {
-      return refuse(GAMES_KEEP_FORMAT);
+    if (values.config != null && values.format !== "bracket") {
+      return refuse(ONLY_A_BRACKET_TAKES_HEATS);
     }
-    if (found.format === "participation" || values.format === "participation") {
-      return refuse(PARTICIPATION_KEEPS_FORMAT);
-    }
-    if (found.finalizedAt) {
-      return refuse(
-        found.format === "placement" ? PLACEMENT_IS_FINALIZED : FINALIZED,
-      );
-    }
-    const formatChanges = found.format !== values.format;
-    if (formatChanges && found.format === "placement") {
-      // A Placement's rows are its result; they don't carry to a Bracket.
-      const refusal = inUseError(
-        "Competition",
-        [
-          [
-            await tx.$count(
-              placement,
-              eq(placement.competitionId, competitionId),
-            ),
-            "Placement",
-            "Placements",
-          ],
-        ],
-        "Remove its Placements first.",
-      );
-      if (refusal) return refuse(refusal);
-    }
-    if (formatChanges) {
-      const tooMany = placementLimitRefusal(
-        values.format,
-        found.placementPoints,
-      );
-      if (tooMany) return refuse(tooMany);
-      const [entrants] = await tx
-        .select({ count: count() })
-        .from(entrant)
-        .where(eq(entrant.competitionId, competitionId));
-      const refusal = inUseError(
-        "Competition",
-        [
-          [entrants.count, "Entrant", "Entrants"],
-          [
-            await tx.$count(game, eq(game.competitionId, competitionId)),
-            "Game",
-            "Games",
-          ],
-        ],
-        "Remove them before changing its Format.",
-      );
-      if (refusal) return refuse(refusal);
-    }
-    if (values.format === "placement" && found.format !== "placement") {
-      // Squads are entered only in a Bracket.
-      const refusal = inUseError(
-        "Competition",
-        [
-          [
-            await tx.$count(squad, eq(squad.competitionId, competitionId)),
-            "Squad",
-            "Squads",
-          ],
-        ],
-        "Delete them before changing its Format.",
-      );
-      if (refusal) return refuse(refusal);
+    const facts = await getCompetitionLockFacts(found, tx);
+
+    if (found.format !== values.format) {
+      const locked = settingLockReason("format", facts);
+      if (locked) return refuse(locked);
+      return changeFormat(tx, found, values.format, values.config);
     }
 
-    // The 3rd place game is locked once the Bracket starts: not even a
-    // forced save (which clears the Heat Results) changes it.
-    if (
-      !formatChanges &&
-      isBracketRun(found) &&
-      values.config != null &&
-      values.config.thirdPlaceGame !== configOf(found).thirdPlaceGame &&
-      hasResults(await bracketOf(tx, found))
-    ) {
-      return refuse(THIRD_PLACE_LOCKED);
+    if (!isBracketRun(found) || values.config == null) return { ok: true };
+    if (sameConfig(configOf(found), values.config)) return { ok: true };
+    const locked = settingLockReason("bracketConfig", facts);
+    if (locked) return refuse(locked);
+    // Never save a config Generate would refuse for these Entrants.
+    const entrants = await tx.$count(
+      entrant,
+      eq(entrant.competitionId, competitionId),
+    );
+    // A 3rd place game needs 2 / 1 and 4 Entrants, entered or not yet.
+    const thirdPlace = thirdPlaceRefusal(values.config, entrants);
+    if (thirdPlace) return refuse(thirdPlace);
+    if (entrants >= 2) {
+      const refusal = validateConfig(values.config, entrants);
+      if (refusal) return refuse(refusal);
     }
-
-    let bracketConfig: BracketConfig | null = null;
-    if (values.format === "bracket") {
-      bracketConfig =
-        values.config ??
-        (formatChanges ? DEFAULT_BRACKET_CONFIG : configOf(found));
-      // Never save a config Generate would refuse for these Entrants.
-      const [entrants] = await tx
-        .select({ count: count() })
-        .from(entrant)
-        .where(eq(entrant.competitionId, competitionId));
-      // A 3rd place game needs 2 / 1 and 4 Entrants, entered or not yet.
-      const thirdPlace = thirdPlaceRefusal(bracketConfig, entrants.count);
-      if (thirdPlace) return refuse(thirdPlace);
-      if (entrants.count >= 2) {
-        const refusal = validateConfig(bracketConfig, entrants.count);
-        if (refusal) return refuse(refusal);
-      }
-    }
-    const configChanges =
-      !formatChanges &&
-      isBracketRun(found) &&
-      values.config != null &&
-      !sameConfig(configOf(found), values.config);
-    if (configChanges) {
-      if (!values.force && hasResults(await bracketOf(tx, found))) {
-        return refuse(HAS_RESULTS_ERROR);
-      }
-      await tx.delete(heat).where(eq(heat.competitionId, competitionId));
-    }
-
+    // No Heat has a result: the drawn Heats go, the Entrants stay.
+    await tx.delete(heat).where(eq(heat.competitionId, competitionId));
     await tx
       .update(competition)
-      .set({
-        format: values.format,
-        bracketConfig,
-        // Only a Placement has a Score direction (the CHECK).
-        ...(values.format === "placement" ? {} : { scoreDirection: "none" }),
-        updatedAt: sql`now()`,
-      })
+      .set({ bracketConfig: values.config, updatedAt: sql`now()` })
       .where(eq(competition.id, competitionId));
     return { ok: true };
   });
+}
+
+export const ONLY_A_BRACKET_TAKES_HEATS = "Only a Bracket takes Heat settings.";
+
+/**
+ * Moves a Competition with no result to `format`, with that Format's create
+ * defaults (`setCompetitionFormat`). The caller holds the row lock and has
+ * checked the lock.
+ */
+async function changeFormat(
+  tx: DBOrTx,
+  found: BracketCompetition,
+  format: Competition["format"],
+  config: BracketConfig | undefined,
+): Promise<MutationResult> {
+  const bracketConfig =
+    format === "bracket" ? (config ?? DEFAULT_BRACKET_CONFIG) : null;
+  if (bracketConfig) {
+    // No Entrants yet (they're a result).
+    const thirdPlace = thirdPlaceRefusal(bracketConfig, 0);
+    if (thirdPlace) return refuse(thirdPlace);
+  }
+  const kept =
+    format === "bracket"
+      ? (found.placementPoints?.slice(0, BRACKET_PLACEMENTS) ?? null)
+      : found.placementPoints;
+  const points =
+    format !== "participation"
+      ? { participationPoints: null, placementPoints: kept }
+      : found.scoring === "team"
+        ? {
+            participationPoints: null,
+            placementPoints: kept?.length ? kept : [3, 2, 1],
+          }
+        : { participationPoints: 1, placementPoints: null };
+  if (found.format === "bracket") {
+    // Squads are entered only in a Bracket; none is an Entrant yet.
+    await tx.delete(squad).where(eq(squad.competitionId, found.id));
+  }
+  await tx
+    .update(competition)
+    .set({
+      format,
+      bracketConfig,
+      gameConfig: isGameFormat(format) ? defaultGamesConfig(format) : null,
+      // A new Head-to-head or Best score Competition is open to everyone.
+      entrantsOpen: isGameFormat(format),
+      ...points,
+      scoreDirection: "none",
+      selfReport: false,
+      selfEnroll: false,
+      entrantLimit: null,
+      enrollClosesAt: null,
+      loggingClosesAt: null,
+      selfCheckIn: false,
+      checkInClosesAt: null,
+      updatedAt: sql`now()`,
+    })
+    .where(eq(competition.id, found.id));
+  return { ok: true };
 }
 
 /**
  * Replaces a Bracket's Entrants with these Teams, Participants or Squads of
  * one `kind` (omitted: whichever the Competition's scoring takes), at Seed
  * Positions in the given order. Squads must be this Competition's. It
- * clears the Bracket; once a Heat has a Heat Result, only with `force`.
+ * clears the drawn Bracket; once a Heat has a Heat Result the Entrants are
+ * locked (`LOCKED_BY_HEAT_RESULT`).
  *
  * A Head-to-head or Best score Competition's fixed Entrant list takes the same Teams or
  * Participants (never Squads), in the order added; it has no Heats to
@@ -458,12 +430,10 @@ export async function replaceEntrants(
   competitionId: string,
   {
     targetIds,
-    force,
     kind: givenKind,
     format,
   }: {
     targetIds: string[];
-    force?: boolean;
     kind?: EntrantKind;
     format?: "bracket" | "games";
   },
@@ -543,12 +513,8 @@ export async function replaceEntrants(
       if (played)
         return refuse(`${played} has logged Games. Delete them first.`);
     } else {
-      if (
-        !force &&
-        isBracketRun(found) &&
-        hasResults(await bracketOf(tx, found))
-      ) {
-        return refuse(HAS_RESULTS_ERROR);
+      if (isBracketRun(found) && hasResults(await bracketOf(tx, found))) {
+        return refuse(LOCKED_BY_HEAT_RESULT);
       }
       await tx.delete(heat).where(eq(heat.competitionId, competitionId));
     }
@@ -610,14 +576,14 @@ async function removedPlayerWithGames(
 }
 
 /**
- * Draws the Seed Positions at random (by `rng`) and builds the Bracket, byes included. Once a Heat has a Heat
- * Result, regenerating needs `force`, which clears every result.
+ * Draws the Seed Positions at random (by `rng`) and builds the Bracket,
+ * byes included. Once a Heat has a Heat Result the Bracket is locked
+ * (`LOCKED_BY_HEAT_RESULT`): no re-draw clears it.
  */
 export async function generateBracket(
   competitionId: string,
   options: {
     rng?: () => number;
-    force?: boolean;
   },
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
@@ -633,8 +599,8 @@ export async function generateBracket(
     const config = configOf(found);
     const configRefusal = validateConfig(config, entrants.length);
     if (configRefusal) return refuse(configRefusal);
-    if (!options.force && hasResults(await bracketOf(tx, found))) {
-      return refuse(HAS_RESULTS_ERROR);
+    if (hasResults(await bracketOf(tx, found))) {
+      return refuse(LOCKED_BY_HEAT_RESULT);
     }
 
     const rng = options.rng ?? Math.random;
