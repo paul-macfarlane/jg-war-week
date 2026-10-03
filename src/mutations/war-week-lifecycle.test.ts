@@ -501,7 +501,7 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
         .where(eq(schema.warWeek.id, live.id));
       await tx
         .update(schema.heat)
-        .set({ status: "forfeit" })
+        .set({ status: "played" })
         .where(eq(schema.heat.id, heat.id));
       expect(await unstartWarWeek(ctxOf(live.id), tx)).toEqual({
         ok: false,

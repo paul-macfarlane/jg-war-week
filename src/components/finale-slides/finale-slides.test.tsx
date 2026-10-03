@@ -121,7 +121,7 @@ describe("the built-in Finale slides", () => {
         {
           competitionId: "c1",
           competition: "Chess Heats",
-          format: "heats",
+          format: "bracket",
           label: "Champion",
           title: "Ada Anvil",
           winners: [

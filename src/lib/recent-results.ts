@@ -69,7 +69,7 @@ export type RecentResult =
  * Shapes a War Week's Recent results, newest first, at most
  * `RECENT_RESULTS_LIMIT` rows:
  *
- * - A finalized Bracket (`single-elimination` / `heats`) is one
+ * - A finalized Bracket is one
  *   "bracket-finalized" row, a Finalized Placement one
  *   "placement-finalized" row and a closed Head-to-head or Best score Competition one
  *   "games-closed" row, all at `finalizedAt`. The champion or winner is the

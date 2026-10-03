@@ -11,13 +11,12 @@ import { RecentResultsSection } from "@/components/recent-results";
 import { HomeStandings } from "@/components/standings";
 import { WarWeekHero } from "@/components/war-week-hero";
 import { isArchived } from "@/lib/archive";
-import { heatEntries } from "@/lib/bracket/now-next";
-import { computeNowNext, resolveClock, withHeats } from "@/lib/schedule";
+import { computeNowNext, resolveClock } from "@/lib/schedule";
 import { getPinnedAnnouncementCard } from "@/queries/announcements";
 import { getArchiveDetail } from "@/queries/archive";
 import { getLoggableCompetitions } from "@/queries/games";
 import { getRecentResults } from "@/queries/recent-results";
-import { getSchedule, getTimedHeats } from "@/queries/schedule";
+import { getSchedule } from "@/queries/schedule";
 import { getPointsBreakdown, getStandings } from "@/queries/standings";
 
 import { getWarWeekForEdition } from "../war-week";
@@ -42,7 +41,6 @@ export default async function EditionHomePage({
     breakdown,
     schedule,
     pinnedAnnouncement,
-    timedHeats,
     loggable,
     recentResults,
   ] = await Promise.all([
@@ -50,18 +48,13 @@ export default async function EditionHomePage({
     getPointsBreakdown(warWeek),
     getSchedule(warWeek.id),
     getPinnedAnnouncementCard(warWeek),
-    getTimedHeats(warWeek),
     // Only an email-linked Participant can log.
     getActor().then((actor) =>
       getLoggableCompetitions(warWeek.id, actor?.email),
     ),
     getRecentResults(warWeek),
   ]);
-  // Timed Heats join Now/Next only, not the full schedule.
-  const nowNext = computeNowNext(
-    withHeats(schedule, heatEntries(timedHeats)),
-    resolveClock(at, new Date()),
-  );
+  const nowNext = computeNowNext(schedule, resolveClock(at, new Date()));
 
   return (
     <main className="mx-auto flex max-w-md flex-col md:max-w-3xl md:py-8">

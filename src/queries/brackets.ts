@@ -14,7 +14,7 @@ import {
   squadParticipant,
   team,
 } from "@/db/schema";
-import { configOf } from "@/lib/bracket/config";
+import { DEFAULT_BRACKET_CONFIG, configOf } from "@/lib/bracket/config";
 import { champion } from "@/lib/bracket/formats";
 import type { Bracket, Entrant, Heat } from "@/lib/bracket/types";
 import { BRACKET_FORMATS, isBracketFormat } from "@/lib/bracket/view";
@@ -196,10 +196,10 @@ export async function loadBracket(
     )[0];
   if (!found || !isBracketFormat(found.format)) {
     // A Placement, Head-to-head, Best score or Participation Competition (or a missing one) has no Bracket and
-    // so no Heats: the Format returned here is arbitrary, since nothing
+    // so no Heats: the config returned here is arbitrary, since nothing
     // reads its rules for an empty Bracket, and getBracket shows no
     // champion for a points Competition.
-    return { format: "single-elimination", config: null, heats: [] };
+    return { config: DEFAULT_BRACKET_CONFIG, heats: [] };
   }
   // An explicit list: the reporter columns (an email among them) are never
   // read into a Bracket, which feeds pages and MCP.
@@ -212,9 +212,10 @@ export async function loadBracket(
       slotCount: heat.slotCount,
       winnerToHeatId: heat.winnerToHeatId,
       winnerToSlot: heat.winnerToSlot,
-      dayId: heat.dayId,
-      startTime: heat.startTime,
-      location: heat.location,
+      loserToHeatId: heat.loserToHeatId,
+      loserToSlot: heat.loserToSlot,
+      thirdPlace: heat.thirdPlace,
+      recordedAt: heat.recordedAt,
     })
     .from(heat)
     .where(eq(heat.competitionId, competitionId))
@@ -231,7 +232,6 @@ export async function loadBracket(
         )
     : [];
   return {
-    format: found.format,
     config: configOf(found),
     heats: heats.map((row): Heat => ({
       id: row.id,
@@ -242,16 +242,18 @@ export async function loadBracket(
         row.winnerToHeatId !== null && row.winnerToSlot !== null
           ? { heatId: row.winnerToHeatId, slot: row.winnerToSlot }
           : null,
-      dayId: row.dayId,
-      startTime: row.startTime,
-      location: row.location,
+      loserTo:
+        row.loserToHeatId !== null && row.loserToSlot !== null
+          ? { heatId: row.loserToHeatId, slot: row.loserToSlot }
+          : null,
+      thirdPlace: row.thirdPlace,
+      recordedAt: row.recordedAt,
       slots: Array.from({ length: row.slotCount }, (_, slot) => {
         const found = slots.find((s) => s.heatId === row.id && s.slot === slot);
         return {
           entrantId: found?.entrantId ?? null,
           place: found?.place ?? null,
           score: found?.score ?? null,
-          forfeited: found?.forfeited ?? false,
         };
       }),
     })),

@@ -288,19 +288,15 @@ test("r1 06 09 the Competitions form offers Format including Bracket formats and
 
   await expect(addForm.getByRole("combobox", { name: "Format" })).toBeVisible();
   await expect(addForm.getByText("Placement:")).toBeVisible();
-  await expect(addForm.getByText("Single elimination:")).toBeVisible();
-  await expect(addForm.getByText("Heats:")).toBeVisible();
+  await expect(addForm.getByText("Bracket:")).toBeVisible();
   await expect(
     addForm.getByText(
       "One result on one sheet: give each Team or Participant a Place, optionally a Score, then Finalize.",
     ),
   ).toBeVisible();
   await expect(
-    addForm.getByText("A knockout Bracket: one loss and an Entrant is out."),
-  ).toBeVisible();
-  await expect(
     addForm.getByText(
-      "A Bracket where Entrants play in Heats; a set number advance each round.",
+      "Entrants play in Heats and a set number advance each Round, down to a final. Two per Heat with one advancing is a head-to-head knockout.",
     ),
   ).toBeVisible();
   await page.screenshot({
@@ -313,7 +309,7 @@ test("r1 06 09 the Competitions form offers Format including Bracket formats and
       .getByRole("textbox", { name: "Name" })
       .fill("R1 E2E Knockout");
     await addForm.getByRole("combobox", { name: "Format" }).click();
-    await page.getByRole("option", { name: "Single elimination" }).click();
+    await page.getByRole("option", { name: "Bracket", exact: true }).click();
     await addForm.getByRole("button", { name: "Add Competition" }).click();
     await expect(page.getByText("Competition saved")).toBeVisible();
     await expect(page).toHaveURL(/\/admin\/competitions\/[0-9a-f-]+\/bracket$/);

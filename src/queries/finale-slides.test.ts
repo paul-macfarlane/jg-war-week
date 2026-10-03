@@ -116,7 +116,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
       const [a, b, c] = people.map((p) => p.id);
       const competition = async (
         name: string,
-        format: "head-to-head" | "single-elimination",
+        format: "head-to-head" | "bracket",
         finalizedAt: Date,
       ) => {
         const [row] = await tx
@@ -158,7 +158,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
       await generated(pong, c, 1);
       const foosball = await competition(
         "Finale Foosball",
-        "single-elimination",
+        "bracket",
         new Date("2026-02-26T17:00:00Z"),
       );
       await generated(foosball, c, 5);
@@ -176,7 +176,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
       ).toEqual([
         {
           competition: "Finale Foosball",
-          format: "single-elimination",
+          format: "bracket",
           winners: [c],
         },
         {

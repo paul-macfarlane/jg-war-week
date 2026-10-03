@@ -6,7 +6,7 @@
 
 **Blocked by:** `97`, `99` (order inside R17)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: 3rd place games; cap at 4th); grilling Q4, Q17; red-team pass 1 W2, W3
 
@@ -25,8 +25,15 @@
 
 ## Acceptance criteria
 
-- [ ] Unit tests: 8 Entrants with and without the 3rd place game (places and points with Placement Points [10, 7, 5, 3]: with it, the four placed Entrants get 10, 7, 5, 3; without, both semifinal losers get 5 and nobody gets 3); a Heats final of 4 placing 1–4; 4 Entrants with the game; refusal at 3 Entrants and at a non-2/1 config.
-- [ ] Unit tests with a 3rd place game present: `champion` is the final's winner even when the 3rd place game is recorded last; `isComplete` is false until both are recorded; the Finale's Bracket data shows the final as the final; MCP's champion is the final's winner.
-- [ ] Postgres test: toggling the 3rd place game is refused once a Heat Result exists.
-- [ ] Placement Points over 4 are refused for a Bracket, with the message from `placementLimitRefusal`.
-- [ ] e2e: a head-to-head Bracket of 8 with a 3rd place game run to Finalize; the generated Points Entries give the four placed Entrants 10, 7, 5, 3 and nobody else any; screenshot at 1440.
+- [x] Unit tests: 8 Entrants with and without the 3rd place game (places and points with Placement Points [10, 7, 5, 3]: with it, the four placed Entrants get 10, 7, 5, 3; without, both semifinal losers get 5 and nobody gets 3); a Heats final of 4 placing 1–4; 4 Entrants with the game; refusal at 3 Entrants and at a non-2/1 config.
+- [x] Unit tests with a 3rd place game present: `champion` is the final's winner even when the 3rd place game is recorded last; `isComplete` is false until both are recorded; the Finale's Bracket data shows the final as the final; MCP's champion is the final's winner.
+- [x] Postgres test: toggling the 3rd place game is refused once a Heat Result exists.
+- [x] Placement Points over 4 are refused for a Bracket, with the message from `placementLimitRefusal`.
+- [x] e2e: a head-to-head Bracket of 8 with a 3rd place game run to Finalize; the generated Points Entries give the four placed Entrants 10, 7, 5, 3 and nobody else any; screenshot at 1440.
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r17`): claimed; `ready-for-agent` → `in-progress`. Execution record: [`R17-execution.md`](../epics/R17-execution.md).
+
+- 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r17`): D98 `1281384` (Opus), hardened in `f9710cf` (a hard lock, even with force). The final is identified in `src/lib/bracket/final.ts`; 3rd place game at position 2 (positions are 1-based); new `third-place.test.ts`, `e2e/bracket-third-place.spec.ts` (10/7/5/3, 1440 shot); rewritten the 5th-place tests. Every AC PASS; evidence and the AI Code Review in [`R17-execution.md`](../epics/R17-execution.md). `ai-review` → `done`.
+- 2026-10-03 [PR] https://github.com/paul-macfarlane/jg-war-week/pull/128

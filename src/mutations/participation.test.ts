@@ -816,7 +816,7 @@ describe.skipIf(!isLocalDatabase)(
         expect(
           await setCompetitionFormat(
             f.ids.workout,
-            { format: "heats" },
+            { format: "bracket" },
             f.ctx(HOST),
             tx,
           ),

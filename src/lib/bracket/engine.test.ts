@@ -180,8 +180,8 @@ describe("applyResult", () => {
     expect(heat(bracket, "r1h1")).toMatchObject({
       status: "played",
       slots: [
-        { entrantId: "s1", place: 2, score: "17", forfeited: false },
-        { entrantId: "s4", place: 1, score: "21", forfeited: false },
+        { entrantId: "s1", place: 2, score: "17" },
+        { entrantId: "s4", place: 1, score: "21" },
       ],
     });
     expect(pairing(heat(bracket, "r2h1"))).toBe("s4 v -");
@@ -194,17 +194,16 @@ describe("applyResult", () => {
     expect(heat(both, "r2h1").status).toBe("ready");
   });
 
-  it("makes a forfeiting Entrant lose, even when listed first", () => {
+  it("makes the Entrant listed last lose: a no-show just loses", () => {
     const bracket = applyResult(generate(entrants(2)), "r1h1", {
-      order: ["s1", "s2"],
-      forfeits: ["s1"],
+      order: ["s2", "s1"],
     });
 
     expect(heat(bracket, "r1h1")).toMatchObject({
-      status: "forfeit",
+      status: "played",
       slots: [
-        { entrantId: "s1", place: 2, forfeited: true },
-        { entrantId: "s2", place: 1, forfeited: false },
+        { entrantId: "s1", place: 2 },
+        { entrantId: "s2", place: 1 },
       ],
     });
     expect(champion(bracket)).toBe("s2");
@@ -214,16 +213,6 @@ describe("applyResult", () => {
     ["an Entrant missing", { order: ["s1"] }, "Put every Entrant"],
     ["an Entrant twice", { order: ["s1", "s1"] }, "Put every Entrant"],
     ["an outsider", { order: ["s1", "s2"] }, "Put every Entrant"],
-    [
-      "everyone forfeiting",
-      { order: ["s1", "s4"], forfeits: ["s1", "s4"] },
-      "not every Entrant can forfeit",
-    ],
-    [
-      "an outsider forfeiting",
-      { order: ["s1", "s4"], forfeits: ["s2"] },
-      "Only an Entrant of this Heat",
-    ],
     [
       "an outsider's score",
       { order: ["s1", "s4"], scores: { s2: "3" } },
@@ -365,7 +354,7 @@ describe("resetByResult", () => {
 });
 
 describe("finalPlacings", () => {
-  it("places 8 Entrants 1st, 2nd, tied 3rd and tied 5th", () => {
+  it("places 8 Entrants 1st, 2nd and tied 3rd, nobody else", () => {
     const list = entrants(8);
     let bracket = generate(list);
     for (const [id, winner] of [
@@ -387,10 +376,6 @@ describe("finalPlacings", () => {
       { entrantId: "s5", place: 2 },
       { entrantId: "s1", place: 3 },
       { entrantId: "s3", place: 3 },
-      { entrantId: "s4", place: 5 },
-      { entrantId: "s6", place: 5 },
-      { entrantId: "s7", place: 5 },
-      { entrantId: "s8", place: 5 },
     ]);
   });
 
@@ -408,7 +393,7 @@ describe("finalPlacings", () => {
     ]);
   });
 
-  it("places 5 Entrants 1st, 2nd, 3rd, 3rd, 5th", () => {
+  it("places 5 Entrants 1st, 2nd, 3rd, 3rd: the first-Round loser isn't placed", () => {
     const list = entrants(5);
     let bracket = generate(list);
     bracket = win(bracket, "r1h2", "s4");
@@ -421,7 +406,6 @@ describe("finalPlacings", () => {
       { entrantId: "s3", place: 2 },
       { entrantId: "s2", place: 3 },
       { entrantId: "s4", place: 3 },
-      { entrantId: "s5", place: 5 },
     ]);
   });
 

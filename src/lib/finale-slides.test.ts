@@ -331,7 +331,7 @@ describe("championsList", () => {
         {
           id: "chess",
           name: "Chess Heats",
-          format: "heats",
+          format: "bracket",
           finalizedAt: at(30),
         },
         {
@@ -357,7 +357,7 @@ describe("championsList", () => {
         {
           id: "open",
           name: "Open Bracket",
-          format: "single-elimination",
+          format: "bracket",
           finalizedAt: null,
         },
         {
@@ -401,7 +401,7 @@ describe("championsList", () => {
       {
         competitionId: "chess",
         competition: "Chess Heats",
-        format: "heats",
+        format: "bracket",
         label: "Champion",
         title: "Ada Anvil",
         winners: [ada],

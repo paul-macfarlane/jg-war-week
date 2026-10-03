@@ -157,6 +157,7 @@ async function addFinalizedBracket(warWeek: StillsWarWeek) {
      join entrant e on e.id = he.entrant_id
      where h.competition_id = $1
        and h.round = (select max(round) from heat where competition_id = $1)
+       and not h.third_place
      order by he.place limit 3`,
     [bracket.competitionId],
   );

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 import { applyResult, generate as generateFormat } from "@/lib/bracket/formats";
 import type { Bracket, Entrant } from "@/lib/bracket/types";
 import {
@@ -19,13 +20,12 @@ const newId = (round: number, position: number) => `r${round}h${position}`;
 
 /** A single-elimination Bracket of these Entrants. */
 const generate = (list: Entrant[]): Bracket =>
-  generateFormat("single-elimination", null, list, newId);
+  generateFormat(DEFAULT_BRACKET_CONFIG, list, newId);
 
 /** A Heats Bracket of these Entrants, 4 per Heat, top 2 advancing. */
 const generateHeats = (list: Entrant[]): Bracket =>
   generateFormat(
-    "heats",
-    { entrantsPerHeat: 4, advancePerHeat: 2 },
+    { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
     list,
     newId,
   );
@@ -87,9 +87,9 @@ describe("groupRounds", () => {
   });
 
   it("has no Rounds before Generate", () => {
-    expect(
-      groupRounds({ format: "single-elimination", config: null, heats: [] }),
-    ).toEqual([]);
+    expect(groupRounds({ config: DEFAULT_BRACKET_CONFIG, heats: [] })).toEqual(
+      [],
+    );
   });
 });
 
@@ -285,8 +285,7 @@ describe("entrantForYou with Squads", () => {
 describe("formatLabel", () => {
   it("names each Format for Organizers", () => {
     expect(formatLabel("placement")).toBe("Placement");
-    expect(formatLabel("single-elimination")).toBe("Single elimination");
-    expect(formatLabel("heats")).toBe("Heats");
+    expect(formatLabel("bracket")).toBe("Bracket");
     expect(formatLabel("head-to-head")).toBe("Head-to-head");
     expect(formatLabel("best-score")).toBe("Best score");
   });
@@ -302,7 +301,6 @@ describe("isBracketFormat", () => {
   });
 
   it("is true for a Bracket Format", () => {
-    expect(isBracketFormat("single-elimination")).toBe(true);
-    expect(isBracketFormat("heats")).toBe(true);
+    expect(isBracketFormat("bracket")).toBe(true);
   });
 });

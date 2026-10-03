@@ -144,7 +144,7 @@ async function fixture(tx: DBTx) {
         warWeekId: w.id,
         name: "Pong",
         scoring: "individual" as const,
-        format: "single-elimination" as const,
+        format: "bracket" as const,
       },
     ])
     .returning({ id: schema.competition.id });
@@ -367,7 +367,7 @@ describe.skipIf(!isLocalDatabase)("the placement actions' refusals", () => {
       const { setCompetitionFormat } = await import("@/actions/brackets");
       expect(
         await setCompetitionFormat(f.ids.darts, {
-          format: "single-elimination",
+          format: "bracket",
         }),
       ).toEqual({
         ok: false,
@@ -400,7 +400,7 @@ describe.skipIf(!isLocalDatabase)("the placement actions' refusals", () => {
       const { setCompetitionFormat } = await import("@/actions/brackets");
       expect(
         await setCompetitionFormat(f.ids.darts, {
-          format: "single-elimination",
+          format: "bracket",
         }),
       ).toEqual({
         ok: false,

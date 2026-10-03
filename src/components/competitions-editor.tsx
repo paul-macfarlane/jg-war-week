@@ -45,9 +45,8 @@ import type { SetupCompetition } from "@/queries/setup";
 const FORMAT_DESCRIPTIONS: Record<Format, string> = {
   placement:
     "One result on one sheet: give each Team or Participant a Place, optionally a Score, then Finalize.",
-  "single-elimination": "A knockout Bracket: one loss and an Entrant is out.",
-  heats:
-    "A Bracket where Entrants play in Heats; a set number advance each Round.",
+  bracket:
+    "Entrants play in Heats and a set number advance each Round, down to a final. Two per Heat with one advancing is a head-to-head knockout.",
   "head-to-head":
     "Two players per Game; a winner, or a draw when allowed. Players log Games themselves and a leaderboard ranks them. Chosen only here: a Competition keeps its Format.",
   "best-score":

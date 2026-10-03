@@ -81,7 +81,7 @@ type LifecycleWarWeek = Pick<
  * Why Unstart can't move a War Week back to `upcoming`, or null. Only a
  * `live` edition that has never been ended (End sets its `winner`, and
  * Reopen keeps it) and has nothing scored: no Points Entry, no Heat result
- * (`played` or `forfeit`) and no Game. Refusals in that order.
+ * (`played`) and no Game. Refusals in that order.
  */
 export function unstartError({
   status,

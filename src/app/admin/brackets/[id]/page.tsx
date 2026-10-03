@@ -3,22 +3,21 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
-import { BracketResults } from "@/components/bracket-results";
+import { BracketAdmin } from "@/components/bracket-admin";
 import { setupHref } from "@/lib/competitions";
 import { isGameFormat } from "@/lib/enums";
 import { gameFormatLabel } from "@/lib/games/config";
 import { getBracket, getHeatReporters } from "@/queries/brackets";
 import { getGamesCompetitions } from "@/queries/games";
 import { getParticipationCompetitions } from "@/queries/participation";
-import { getSetupDays } from "@/queries/setup";
 
 import { loadAdminPage } from "../../gate";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = { title: "Bracket results · JG War Week" };
+export const metadata: Metadata = { title: "Bracket · Results · JG War Week" };
 
-export default async function BracketResultsPage({
+export default async function BracketAdminPage({
   params,
 }: PageProps<"/admin/brackets/[id]">) {
   const { id } = await params;
@@ -28,9 +27,8 @@ export default async function BracketResultsPage({
     return <AdminRefused warWeek={warWeek} email={email} />;
   }
 
-  const [view, days, games, participations] = await Promise.all([
+  const [view, games, participations] = await Promise.all([
     getBracket(id),
-    getSetupDays(warWeek),
     getGamesCompetitions(warWeek),
     getParticipationCompetitions(warWeek),
   ]);
@@ -88,7 +86,7 @@ export default async function BracketResultsPage({
       editions={editions}
       current="Competitions"
     >
-      <section className="flex max-w-xl min-w-0 flex-col gap-4">
+      <section className="flex max-w-5xl min-w-0 flex-col gap-4">
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
           <Link
             href="/admin/competitions"
@@ -116,7 +114,7 @@ export default async function BracketResultsPage({
             builder.
           </p>
         ) : (
-          <BracketResults
+          <BracketAdmin
             competitionId={competition.id}
             placementPoints={competition.placementPoints}
             scoring={competition.scoring}
@@ -125,7 +123,6 @@ export default async function BracketResultsPage({
             champion={view.champion}
             finalized={view.finalized}
             primaryColor={warWeek.primaryColor}
-            days={days}
             reporters={reporters}
             finaleHref={
               view.finalized

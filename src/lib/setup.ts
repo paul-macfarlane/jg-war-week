@@ -1,7 +1,7 @@
 import { type ZodType, z } from "zod";
 
 import type { Competition, Participant, Team, WarWeek } from "@/db/schema";
-import { heatsConfigSchema } from "@/lib/bracket/config";
+import { bracketConfigSchema, thirdPlaceRefusal } from "@/lib/bracket/config";
 import { HEX_COLOR } from "@/lib/color";
 import { placementLimitRefusal } from "@/lib/competitions";
 import { dayOutsideRangeError } from "@/lib/day-range";
@@ -115,8 +115,8 @@ export const competitionSeedSchema = z
     group: z.string().min(1).max(120).nullish(),
     /** How the Competition is run; a Bracket's Entrants aren't seeded yet. */
     format: z.enum(COMPETITION_FORMATS).default("placement"),
-    /** The Format's settings; a heats Competition without one gets the default. */
-    bracketConfig: heatsConfigSchema.nullish(),
+    /** A Bracket's settings; one without them gets the default. */
+    bracketConfig: bracketConfigSchema.nullish(),
     /** A Head-to-head or Best score Competition's settings (`src/lib/games/config.ts`); omitted for the default. */
     gameConfig: z.unknown().optional(),
     /** A Head-to-head or Best score Competition open to everyone eligible; omitted means a fixed list. */
@@ -178,11 +178,32 @@ export const competitionSeedSchema = z
         path: ["finalized"],
       });
     }
-    // A heats config is checked by its field; any other Format takes none.
-    if (c.bracketConfig != null && c.format !== "heats") {
+    // A Bracket config is checked by its field; a Bracket must have one in
+    // full, and any other Format takes none.
+    if (c.format === "bracket" && c.bracketConfig == null) {
       ctx.addIssue({
         code: "custom",
-        message: "bracketConfig is only for a heats Competition",
+        message:
+          "a Bracket needs its bracketConfig (entrantsPerHeat, advancePerHeat, thirdPlaceGame)",
+        path: ["bracketConfig"],
+      });
+    }
+    // A seed has no Entrants yet, so only the config half of the 3rd place
+    // game rule applies; Generate checks the Entrant count.
+    const thirdPlace =
+      c.bracketConfig &&
+      thirdPlaceRefusal(c.bracketConfig, Number.POSITIVE_INFINITY);
+    if (thirdPlace) {
+      ctx.addIssue({
+        code: "custom",
+        message: thirdPlace,
+        path: ["bracketConfig", "thirdPlaceGame"],
+      });
+    }
+    if (c.bracketConfig != null && c.format !== "bracket") {
+      ctx.addIssue({
+        code: "custom",
+        message: "bracketConfig is only for a Bracket",
         path: ["bracketConfig"],
       });
     }
@@ -521,7 +542,7 @@ export type CompetitionValues = Pick<
  * A new Competition's fields, with the Format an Organizer chose on create.
  * Defaults in `createCompetition` when omitted (a direct mutation call that
  * predates the create form's Format field), to "placement". `createCompetition`
- * alone owns the Format's `bracketConfig` default (`defaultConfig`).
+ * alone owns the Format's `bracketConfig` default (`DEFAULT_BRACKET_CONFIG`).
  */
 export type CompetitionCreateValues = CompetitionValues &
   Partial<Pick<Competition, "format">>;
@@ -781,8 +802,8 @@ const formatFieldSchema = z.object({
 /**
  * Validates a new Competition's form, adding the Format an Organizer chose
  * on create. Only validates and returns the Format; `createCompetition`
- * (`src/mutations/setup.ts`) alone owns defaulting a heats Format's
- * `bracketConfig` (`defaultConfig`, `src/lib/bracket/config.ts`). The edit
+ * (`src/mutations/setup.ts`) alone owns defaulting a Bracket's
+ * `bracketConfig` (`DEFAULT_BRACKET_CONFIG`, `src/lib/bracket/config.ts`). The edit
  * form never sends a Format: its Format changes only through the Bracket
  * actions (`setCompetitionFormat`).
  */

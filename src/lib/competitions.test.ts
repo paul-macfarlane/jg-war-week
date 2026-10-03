@@ -240,7 +240,7 @@ describe("setupHref and setupLinkLabel", () => {
     expect(setupHref("participation", "c1")).toBe(
       "/admin/competitions/c1/participation",
     );
-    expect(setupHref("heats", "c1")).toBe("/admin/competitions/c1/bracket");
+    expect(setupHref("bracket", "c1")).toBe("/admin/competitions/c1/bracket");
     expect(setupHref("placement", "c1")).toBe("/admin/placements/c1");
   });
 
@@ -249,16 +249,15 @@ describe("setupHref and setupLinkLabel", () => {
     expect(setupLinkLabel("head-to-head")).toBe("Entrants and Games");
     expect(setupLinkLabel("best-score")).toBe("Entrants and Games");
     expect(setupLinkLabel("placement")).toBe("Record placements");
-    expect(setupLinkLabel("heats")).toBe("Bracket");
+    expect(setupLinkLabel("bracket")).toBe("Bracket");
   });
 });
 
 describe("placementLimit and placementLimitRefusal", () => {
   const places = (n: number) => Array.from({ length: n }, (_, i) => n - i);
 
-  it("limits Brackets to 5 places and every other Format to none", () => {
-    expect(placementLimit("single-elimination")).toBe(5);
-    expect(placementLimit("heats")).toBe(5);
+  it("limits Brackets to 4 places and every other Format to none", () => {
+    expect(placementLimit("bracket")).toBe(4);
     for (const format of [
       "placement",
       "head-to-head",
@@ -269,15 +268,12 @@ describe("placementLimit and placementLimitRefusal", () => {
     }
   });
 
-  it("accepts 12 places for Placement and refuses 6 for a Bracket", () => {
+  it("accepts 12 places for Placement and refuses 5 for a Bracket", () => {
     expect(placementLimitRefusal("placement", places(12))).toBeNull();
-    expect(placementLimitRefusal("heats", places(5))).toBeNull();
-    expect(placementLimitRefusal("heats", places(6))).toBe(
-      "Placement Points cover at most 5 places for this Format.",
+    expect(placementLimitRefusal("bracket", places(4))).toBeNull();
+    expect(placementLimitRefusal("bracket", places(5))).toBe(
+      "Placement Points cover at most 4 places for this Format.",
     );
-    expect(placementLimitRefusal("single-elimination", places(6))).toMatch(
-      /at most 5 places/,
-    );
-    expect(placementLimitRefusal("heats", null)).toBeNull();
+    expect(placementLimitRefusal("bracket", null)).toBeNull();
   });
 });

@@ -3,16 +3,12 @@ import { describe, expect, it } from "vitest";
 import { heats } from "@/lib/bracket/heats";
 import { pointsFor } from "@/lib/bracket/points";
 
-// 8 Entrants: 1st, 2nd, tied 3rd, tied 5th.
+// A head-to-head final without a 3rd place game: 1st, 2nd, tied 3rd.
 const placings = [
   { entrantId: "a", place: 1 },
   { entrantId: "b", place: 2 },
   { entrantId: "c", place: 3 },
   { entrantId: "d", place: 3 },
-  { entrantId: "e", place: 5 },
-  { entrantId: "f", place: 5 },
-  { entrantId: "g", place: 5 },
-  { entrantId: "h", place: 5 },
 ];
 
 describe("pointsFor", () => {
@@ -25,12 +21,12 @@ describe("pointsFor", () => {
     ]);
   });
 
-  it("covers places up to 5th", () => {
+  it("gives no 4th place's points when both semifinal losers tie 3rd", () => {
     expect(
-      pointsFor(placings, { placementPoints: [5, 4, 3, 2, 1] }).map(
+      pointsFor(placings, { placementPoints: [10, 7, 5, 3] }).map(
         (p) => p.points,
       ),
-    ).toEqual([5, 4, 3, 3, 1, 1, 1, 1]);
+    ).toEqual([10, 7, 5, 5]);
   });
 
   it("awards nothing without Placement Points", () => {
@@ -46,7 +42,7 @@ describe("pointsFor", () => {
       label: `E${i + 1}`,
     }));
     let bracket = heats.generate(
-      { entrantsPerHeat: 4, advancePerHeat: 2 },
+      { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
       entrants,
       (r, p) => `r${r}h${p}`,
     );

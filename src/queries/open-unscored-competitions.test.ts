@@ -174,7 +174,7 @@ describe.skipIf(!isLocalDatabase)("getOpenUnscoredCompetitions", () => {
           warWeekId: f.ctx.warWeekId,
           name: "Pool",
           scoring: "team",
-          format: "single-elimination",
+          format: "bracket",
         })
         .returning({ id: f.schema.competition.id });
       // A Game row no mutation would write, so the Format is what excludes it.

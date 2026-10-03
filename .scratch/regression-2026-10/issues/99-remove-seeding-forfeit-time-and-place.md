@@ -11,7 +11,7 @@
 
 **Blocked by:** `97` (order inside R17)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: by standings, forfeit, time and place); grilling Q18–Q20; red-team pass 1 W1, W4
 
@@ -28,7 +28,14 @@
 
 ## Acceptance criteria
 
-- [ ] `grep -rn -E 'forfeit|standingsSeedPositions|By Standings|"standings"|HeatScheduleForm|heat-schedule|heat_day_id|startTime|start_time|location' src/lib/bracket src/components/bracket* src/components/heat* src/mutations/brackets.ts src/actions/brackets.ts src/queries/brackets.ts src/mcp/bracket.ts` finds nothing; and `grep -rn -E 'heat\.(dayId|startTime|location)|heatSchedule' src e2e scripts` finds nothing.
-- [ ] Unit/Postgres tests: `recorded_at` is set on an Organizer save, a self-report and an edit, and cleared by Reset and by a forced regenerate.
-- [ ] e2e flows that timed a Heat or used Forfeit (`e2e/bracket.spec.ts`, `bracket-heats.spec.ts`, `bracket-squads.spec.ts`) are rewritten without them; "Your next Heat" shows the next Heat with no time; a played Heat shows "Recorded <time>".
-- [ ] `src/queries/schedule.test.ts` asserts no Heat appears in the Schedule.
+- [x] `grep -rn -E 'forfeit|standingsSeedPositions|By Standings|"standings"|HeatScheduleForm|heat-schedule|heat_day_id|startTime|start_time|location' src/lib/bracket src/components/bracket* src/components/heat* src/mutations/brackets.ts src/actions/brackets.ts src/queries/brackets.ts src/mcp/bracket.ts` finds nothing; and `grep -rn -E 'heat\.(dayId|startTime|location)|heatSchedule' src e2e scripts` finds nothing.
+- [x] Unit/Postgres tests: `recorded_at` is set on an Organizer save, a self-report and an edit, and cleared by Reset and by a forced regenerate.
+- [x] e2e flows that timed a Heat or used Forfeit (`e2e/bracket.spec.ts`, `bracket-heats.spec.ts`, `bracket-squads.spec.ts`) are rewritten without them; "Your next Heat" shows the next Heat with no time; a played Heat shows "Recorded <time>".
+- [x] `src/queries/schedule.test.ts` asserts no Heat appears in the Schedule.
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r17`): claimed; `ready-for-agent` → `in-progress`. Execution record: [`R17-execution.md`](../epics/R17-execution.md).
+
+- 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r17`): D99 `9591ced` (Sonnet). Deleted: `heat-schedule-form.tsx`, `heat-schedule.ts`(+test), `now-next.ts`(+test), Forfeit and Standings seeding tests, `setHeatSchedule` tests; rewritten e2e `bracket`, `bracket-heats`, `bracket-squads`, `regression-r5`. Both greps empty. Every AC PASS; evidence and the AI Code Review in [`R17-execution.md`](../epics/R17-execution.md). `ai-review` → `done`.
+- 2026-10-03 [PR] https://github.com/paul-macfarlane/jg-war-week/pull/128

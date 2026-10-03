@@ -20,7 +20,7 @@ import {
   team,
   warWeek,
 } from "@/db/schema";
-import { defaultConfig } from "@/lib/bracket/config";
+import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 import { isGameFormat } from "@/lib/enums";
 import { defaultGamesConfig } from "@/lib/games/config";
 import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
@@ -827,8 +827,8 @@ export type CreateCompetitionResult =
 
 /**
  * Creates a Competition, with the Format an Organizer chose (default
- * "placement") and, for a heats Format with none given, the Bracket builder's
- * default config (`defaultConfig`). A Head-to-head or Best score Competition
+ * "placement") and, for a Bracket with none given, the Bracket builder's
+ * default config (`DEFAULT_BRACKET_CONFIG`). A Head-to-head or Best score Competition
  * stores that Format's default settings; any other Format has none.
  * A `participation` Competition starts at 1 point per Participant when
  * individual, or at the Placement Points 3, 2, 1 (ranked by headcount) when
@@ -852,7 +852,7 @@ export async function createCompetition(
             warWeekId: ctx.warWeekId,
             ...values,
             format,
-            bracketConfig: defaultConfig(format),
+            bracketConfig: format === "bracket" ? DEFAULT_BRACKET_CONFIG : null,
             gameConfig: isGameFormat(format)
               ? defaultGamesConfig(format)
               : null,

@@ -14,18 +14,19 @@ export type CompetitionListItem = Pick<
   | "format"
 >;
 
-/** The most places a Bracket can preset Placement Points for. */
-const BRACKET_PLACEMENTS = 5;
+/**
+ * The most places a Bracket can preset Placement Points for: its places
+ * come only from the final (and the 3rd place game), up to 4th.
+ */
+export const BRACKET_PLACEMENTS = 4;
 
 /**
  * The most places a Competition of this Format can preset Placement Points
- * for, or null for no limit. The one place the rule lives: Brackets
- * (single-elimination, heats) are limited; every other Format is not.
+ * for, or null for no limit. The one place the rule lives: the Bracket
+ * Format is limited; every other Format is not.
  */
 export function placementLimit(format: Format): number | null {
-  return format === "single-elimination" || format === "heats"
-    ? BRACKET_PLACEMENTS
-    : null;
+  return format === "bracket" ? BRACKET_PLACEMENTS : null;
 }
 
 /** Why Placement Points can't have this many places for the Format, or null. */

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 import { applyResult, generate } from "@/lib/bracket/formats";
 import { type TreeSlot, bracketTree } from "@/lib/bracket/tree";
 import type { Bracket, Entrant } from "@/lib/bracket/types";
@@ -11,7 +12,7 @@ const newId = (round: number, position: number) => `r${round}h${position}`;
 
 /** A single-elimination Bracket of these Entrants, by the real engine. */
 const knockout = (labels: string[]): Bracket =>
-  generate("single-elimination", null, entrants(labels), newId);
+  generate(DEFAULT_BRACKET_CONFIG, entrants(labels), newId);
 
 /** A slot as a short string: "A", "A>" (advances), "bye", "…Semifinal 1". */
 function show(slot: TreeSlot): string {
@@ -102,7 +103,6 @@ describe("bracketTree, single elimination", () => {
         entrantId: "A",
         place: 2,
         score: "1",
-        forfeited: false,
         advances: false,
       },
       {
@@ -110,7 +110,6 @@ describe("bracketTree, single elimination", () => {
         entrantId: "H",
         place: 1,
         score: "3",
-        forfeited: false,
         advances: true,
       },
     ]);
@@ -152,8 +151,7 @@ describe("bracketTree, Heats", () => {
   /** 8 Entrants, 4 per Heat, top 2 advance: two Heats, then the Final. */
   const heats = () =>
     generate(
-      "heats",
-      { entrantsPerHeat: 4, advancePerHeat: 2 },
+      { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
       entrants(["A", "B", "C", "D", "E", "F", "G", "H"]),
       newId,
     );
@@ -190,6 +188,40 @@ describe("bracketTree, Heats", () => {
       "E",
       "G",
       "A",
+    ]);
+  });
+});
+
+describe("bracketTree, 3rd place game", () => {
+  it("flags only the final as the final, never the 3rd place game beside it", () => {
+    let bracket = generate(
+      { ...DEFAULT_BRACKET_CONFIG, thirdPlaceGame: true },
+      entrants(["A", "B", "C", "D"]),
+      newId,
+    );
+    for (const [id, winner] of [
+      ["r1h1", "A"],
+      ["r1h2", "B"],
+      ["r2h1", "A"],
+      ["r2h2", "D"],
+    ]) {
+      const others = bracket.heats
+        .find((h) => h.id === id)!
+        .slots.map((s) => s.entrantId!)
+        .filter((e) => e !== winner);
+      bracket = applyResult(bracket, id, { order: [winner, ...others] });
+    }
+    const last = bracketTree(bracket).rounds.at(-1)!;
+    expect(
+      last.heats.map((heat) => [
+        heat.name,
+        heat.final,
+        heat.thirdPlace,
+        heat.slots.map(show),
+      ]),
+    ).toEqual([
+      ["Final", true, false, ["A>", "B"]],
+      ["3rd place game", false, true, ["D>", "C"]],
     ]);
   });
 });

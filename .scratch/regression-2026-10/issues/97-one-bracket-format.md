@@ -6,7 +6,7 @@
 
 **Blocked by:** nothing inside R17 (first part)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: heats vs single elimination unclear); grilling Q16
 
@@ -20,7 +20,14 @@
 
 ## Acceptance criteria
 
-- [ ] The existing single-elimination and Heats engine tests run through the Bracket Format at 2/1 and at other configs (e.g. 4/2), unchanged in their expectations.
-- [ ] Unit test: the engine dispatch picks the single-elimination path for 2/1 only.
-- [ ] Builder: one Format select option, **Bracket**, with heat size and advancing; the 2/1 preset is labelled "Head-to-head (single elimination)"; no separate Heats or Single elimination Format option remains (`grep -rn '"single-elimination"\|"heats"' src/lib/enums.ts src/seed/schema.ts seeds` finds nothing).
-- [ ] The epic's migration test covers this part's mapping.
+- [x] The existing single-elimination and Heats engine tests run through the Bracket Format at 2/1 and at other configs (e.g. 4/2), unchanged in their expectations.
+- [x] Unit test: the engine dispatch picks the single-elimination path for 2/1 only.
+- [x] Builder: one Format select option, **Bracket**, with heat size and advancing; the 2/1 preset is labelled "Head-to-head (single elimination)"; no separate Heats or Single elimination Format option remains (`grep -rn '"single-elimination"\|"heats"' src/lib/enums.ts src/seed/schema.ts seeds` finds nothing).
+- [x] The epic's migration test covers this part's mapping.
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r17`): claimed; `ready-for-agent` → `in-progress`. Execution record: [`R17-execution.md`](../epics/R17-execution.md).
+
+- 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r17`): D97 `11e0f33` (Sonnet). Dispatch `engineFor(config)`; engine tests through `bracket` at 2/1 and 4/2; builder one Format with the preset; migration test covers the mapping. Rewritten: `formats.test.ts`, `seed/schema.test.ts` ("only for a Bracket"); deleted: the two null-config Heats tests. Every AC PASS; evidence and the AI Code Review in [`R17-execution.md`](../epics/R17-execution.md). `ai-review` → `done`.
+- 2026-10-03 [PR] https://github.com/paul-macfarlane/jg-war-week/pull/128

@@ -6,11 +6,6 @@ import { type GameFormat, isGameFormat } from "@/lib/enums";
 import { notFoundMessage } from "@/mcp/not-found";
 import type { BracketView } from "@/queries/brackets";
 
-/** `HH:MM:SS` (or `HH:MM`) as `HH:MM`. */
-function toHourMinute(time: string): string {
-  return time.slice(0, 5);
-}
-
 export type BracketResult =
   | {
       found: true;
@@ -18,6 +13,11 @@ export type BracketResult =
         name: string;
         scoring: Competition["scoring"];
         format: BracketFormat;
+        /** Entrants per Heat. */
+        heatSize: number;
+        /** How many of each Heat advance. */
+        advancing: number;
+        thirdPlaceGame: boolean;
         finalized: boolean;
       };
       entrants: {
@@ -33,14 +33,17 @@ export type BracketResult =
         heats: {
           name: string;
           status: string;
-          date: string | null;
-          startTime: string | null;
-          location: string | null;
+          /** When a played Heat's Result was recorded (ISO instant); else null. */
+          recordedAt: string | null;
+          /**
+           * The 3rd place game, beside the final in the last Round; the
+           * final is the last Round's other Heat.
+           */
+          thirdPlace: boolean;
           entrants: {
             name: string;
             place: number | null;
             score: string | null;
-            forfeited: boolean;
           }[];
         }[];
       }[];
@@ -110,11 +113,10 @@ export function toParticipationBracketResult(
  * Serializes a Bracket (or its absence, or a Placement Competition) into the
  * `get_bracket` MCP tool payload. Names only: never an email, the Organizer
  * list, Hosts or who self-reported a Heat. Pure: the route resolves the
- * Competition by name and loads `view` and `days`.
+ * Competition by name and loads `view`.
  */
 export function toBracketResult(
   view: BracketView | undefined,
-  days: { id: string; date: string }[],
   name: string,
 ): BracketResult {
   if (!view) {
@@ -158,6 +160,9 @@ export function toBracketResult(
       name: view.competition.name,
       scoring: view.competition.scoring,
       format: view.competition.format,
+      heatSize: view.bracket.config.entrantsPerHeat,
+      advancing: view.bracket.config.advancePerHeat,
+      thirdPlaceGame: view.bracket.config.thirdPlaceGame,
       finalized: view.finalized,
     },
     entrants: view.entrants.map((entrant) => ({
@@ -169,29 +174,19 @@ export function toBracketResult(
     rounds: groupRounds(view.bracket).map((round) => ({
       round: round.round,
       name: round.name,
-      heats: round.heats.map((heat) => {
-        // A deleted Day nulls `dayId` but keeps `startTime`; without a Day,
-        // there's no date to hang the time on, so both read null together.
-        const date = heat.dayId
-          ? (days.find((day) => day.id === heat.dayId)?.date ?? null)
-          : null;
-        return {
-          name: heatName(view.bracket, heat),
-          status: isBye(view.bracket, heat) ? "bye" : heat.status,
-          date,
-          startTime:
-            date && heat.startTime ? toHourMinute(heat.startTime) : null,
-          location: heat.location,
-          entrants: heat.slots
-            .filter((slot) => slot.entrantId !== null)
-            .map((slot) => ({
-              name: entrantsById[slot.entrantId!] ?? "Unknown",
-              place: slot.place,
-              score: slot.score,
-              forfeited: slot.forfeited,
-            })),
-        };
-      }),
+      heats: round.heats.map((heat) => ({
+        name: heatName(view.bracket, heat),
+        status: isBye(view.bracket, heat) ? "bye" : heat.status,
+        recordedAt: heat.recordedAt ? heat.recordedAt.toISOString() : null,
+        thirdPlace: heat.thirdPlace,
+        entrants: heat.slots
+          .filter((slot) => slot.entrantId !== null)
+          .map((slot) => ({
+            name: entrantsById[slot.entrantId!] ?? "Unknown",
+            place: slot.place,
+            score: slot.score,
+          })),
+      })),
     })),
     champion:
       view.finalized && view.champion

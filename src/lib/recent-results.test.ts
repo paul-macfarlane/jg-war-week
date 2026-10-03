@@ -82,7 +82,7 @@ describe("shapeRecentResults", () => {
     const bracket: ResultCompetition = {
       id: "b",
       name: "Foosball",
-      format: "single-elimination",
+      format: "bracket",
       finalizedAt: at(20),
     };
     const rows = shapeRecentResults(

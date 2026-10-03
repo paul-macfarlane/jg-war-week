@@ -449,21 +449,21 @@ describe("parseCreateCompetitionInput", () => {
     expect(
       parseCreateCompetitionInput({
         ...competition,
-        format: "single-elimination",
+        format: "bracket",
       }),
     ).toMatchObject({
       ok: true,
-      value: { format: "single-elimination" },
+      value: { format: "bracket" },
     });
     expect(
-      parseCreateCompetitionInput({ ...competition, format: "heats" }),
+      parseCreateCompetitionInput({ ...competition, format: "bracket" }),
     ).toMatchObject({
       ok: true,
-      value: { format: "heats" },
+      value: { format: "bracket" },
     });
   });
 
-  it("takes 12 places for Placement and refuses 6 for a Bracket", () => {
+  it("takes 12 places for Placement and refuses 5 for a Bracket", () => {
     const twelve = Array.from({ length: 12 }, (_, i) => 12 - i).join(", ");
     expect(
       parseCreateCompetitionInput({ ...competition, placementPoints: twelve }),
@@ -471,15 +471,15 @@ describe("parseCreateCompetitionInput", () => {
     expect(
       parseCreateCompetitionInput({
         ...competition,
-        format: "heats",
-        placementPoints: "6, 5, 4, 3, 2, 1",
+        format: "bracket",
+        placementPoints: "5, 4, 3, 2, 1",
       }),
     ).toEqual({
       ok: false,
-      error: "Placement Points cover at most 5 places for this Format.",
+      error: "Placement Points cover at most 4 places for this Format.",
       fieldErrors: {
         placementPoints:
-          "Placement Points cover at most 5 places for this Format.",
+          "Placement Points cover at most 4 places for this Format.",
       },
     });
   });
@@ -487,7 +487,7 @@ describe("parseCreateCompetitionInput", () => {
   it("refuses an unknown Format", () => {
     expectRefused(
       parseCreateCompetitionInput({ ...competition, format: "swiss" }),
-      "Format must be one of placement, single-elimination, heats, head-to-head, best-score, participation.",
+      "Format must be one of placement, bracket, head-to-head, best-score, participation.",
     );
   });
 
@@ -514,7 +514,7 @@ describe("parseCreateCompetitionInput", () => {
         ...competition,
         format: 123 as unknown as string,
       }),
-      "Format must be one of placement, single-elimination, heats, head-to-head, best-score, participation.",
+      "Format must be one of placement, bracket, head-to-head, best-score, participation.",
     );
   });
 });
@@ -539,12 +539,52 @@ describe("competitionSeedSchema, games", () => {
   });
 
   it("takes gameConfig and entrantsOpen only on a Head-to-head or Best score Competition", () => {
-    expect(issues({ ...base, format: "heats", entrantsOpen: true })).toEqual([
+    expect(issues({ ...base, entrantsOpen: true })).toEqual([
       "entrantsOpen is only for a head-to-head or best-score Competition",
     ]);
     expect(issues({ ...base, gameConfig: { drawsAllowed: true } })).toEqual([
       "gameConfig is only for a head-to-head or best-score Competition",
     ]);
+  });
+
+  it("needs a Bracket's full bracketConfig, and gives no other Format one", () => {
+    expect(issues({ ...base, format: "bracket" })).toEqual([
+      "a Bracket needs its bracketConfig (entrantsPerHeat, advancePerHeat, thirdPlaceGame)",
+    ]);
+    expect(
+      issues({
+        ...base,
+        format: "bracket",
+        bracketConfig: {
+          entrantsPerHeat: 2,
+          advancePerHeat: 1,
+          thirdPlaceGame: false,
+        },
+      }),
+    ).toEqual([]);
+    expect(
+      issues({
+        ...base,
+        bracketConfig: {
+          entrantsPerHeat: 2,
+          advancePerHeat: 1,
+          thirdPlaceGame: false,
+        },
+      }),
+    ).toEqual(["bracketConfig is only for a Bracket"]);
+  });
+
+  it("refuses a 3rd place game on a Bracket config other than 2 per Heat with 1 advancing", () => {
+    const bracket = (config: object) =>
+      issues({
+        ...base,
+        format: "bracket",
+        bracketConfig: { thirdPlaceGame: true, ...config },
+      });
+    expect(bracket({ entrantsPerHeat: 4, advancePerHeat: 2 })).toEqual([
+      "A 3rd place game is only for 2 per Heat with 1 advancing.",
+    ]);
+    expect(bracket({ entrantsPerHeat: 2, advancePerHeat: 1 })).toEqual([]);
   });
 
   it("refuses the removed gameType and finishPoints keys", () => {
@@ -689,16 +729,16 @@ describe("competitionGuardError", () => {
     finalizedAt: null as Date | null,
   };
 
-  it("refuses more than 5 places for a Bracket, on create and on edit, but not for Placement", () => {
-    const six = { ...values, placementPoints: [6, 5, 4, 3, 2, 1] };
-    const refusal = "Placement Points cover at most 5 places for this Format.";
-    expect(competitionGuardError({ ...six, format: "heats" }, ctx)).toBe(
+  it("refuses more than 4 places for a Bracket, on create and on edit, but not for Placement", () => {
+    const six = { ...values, placementPoints: [5, 4, 3, 2, 1] };
+    const refusal = "Placement Points cover at most 4 places for this Format.";
+    expect(competitionGuardError({ ...six, format: "bracket" }, ctx)).toBe(
       refusal,
     );
     expect(
       competitionGuardError(six, {
         ...ctx,
-        existing: { ...existingBase, format: "single-elimination" },
+        existing: { ...existingBase, format: "bracket" },
       }),
     ).toBe(refusal);
     expect(

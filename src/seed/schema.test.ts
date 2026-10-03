@@ -147,15 +147,21 @@ describe("warWeekSeedSchema", () => {
     });
 
     it("rejects more than five places for a Bracket", () => {
-      for (const format of ["heats", "single-elimination"]) {
-        expect(
-          rejectionOf(
-            withCompetition({ format, placementPoints: [6, 5, 4, 3, 2, 1] }),
-          ),
-        ).toContain(
-          `${at}: Placement Points cover at most 5 places for this Format.`,
-        );
-      }
+      expect(
+        rejectionOf(
+          withCompetition({
+            format: "bracket",
+            bracketConfig: {
+              entrantsPerHeat: 4,
+              advancePerHeat: 2,
+              thirdPlaceGame: false,
+            },
+            placementPoints: [5, 4, 3, 2, 1],
+          }),
+        ),
+      ).toContain(
+        `${at}: Placement Points cover at most 4 places for this Format.`,
+      );
     });
 
     it("accepts twelve places for Placement, Head-to-head and Best score", () => {
@@ -187,25 +193,46 @@ describe("warWeekSeedSchema", () => {
       };
     }
     const at = `competitions.${loadFixture().competitions.length}.bracketConfig`;
+    const full = {
+      entrantsPerHeat: 5,
+      advancePerHeat: 2,
+      thirdPlaceGame: false,
+    };
 
-    it("accepts a heats Competition with or without its config", () => {
-      for (const extra of [
-        { bracketConfig: { entrantsPerHeat: 5, advancePerHeat: 2 } },
-        {},
-      ]) {
-        const result = warWeekSeedSchema.safeParse(
-          withCompetition({ format: "heats", ...extra }),
-        );
-        expect(result.success ? [] : result.error.issues).toEqual([]);
-      }
+    it("accepts a Bracket with its full config", () => {
+      const result = warWeekSeedSchema.safeParse(
+        withCompetition({ format: "bracket", bracketConfig: full }),
+      );
+      expect(result.success ? [] : result.error.issues).toEqual([]);
     });
 
-    it("rejects a heats config where as many advance as play", () => {
+    it("rejects a Bracket without its config", () => {
+      expect(rejectionOf(withCompetition({ format: "bracket" }))).toContain(
+        `${at}: a Bracket needs its bracketConfig (entrantsPerHeat, advancePerHeat, thirdPlaceGame)`,
+      );
+    });
+
+    it("rejects a Bracket config missing its 3rd place game", () => {
       expect(
         rejectionOf(
           withCompetition({
-            format: "heats",
-            bracketConfig: { entrantsPerHeat: 4, advancePerHeat: 4 },
+            format: "bracket",
+            bracketConfig: { entrantsPerHeat: 4, advancePerHeat: 2 },
+          }),
+        ),
+      ).not.toEqual([]);
+    });
+
+    it("rejects a config where as many advance as play", () => {
+      expect(
+        rejectionOf(
+          withCompetition({
+            format: "bracket",
+            bracketConfig: {
+              entrantsPerHeat: 4,
+              advancePerHeat: 4,
+              thirdPlaceGame: false,
+            },
           }),
         ),
       ).toContain(
@@ -213,15 +240,22 @@ describe("warWeekSeedSchema", () => {
       );
     });
 
-    it("rejects a config on a single-elimination Competition", () => {
+    it("rejects the retired Format names", () => {
+      for (const format of ["single-elimination", "heats"]) {
+        expect(
+          warWeekSeedSchema.safeParse(
+            withCompetition({ format, bracketConfig: full }),
+          ).success,
+        ).toBe(false);
+      }
+    });
+
+    it("rejects a config on a Competition that isn't a Bracket", () => {
       expect(
         rejectionOf(
-          withCompetition({
-            format: "single-elimination",
-            bracketConfig: { entrantsPerHeat: 4, advancePerHeat: 2 },
-          }),
+          withCompetition({ format: "placement", bracketConfig: full }),
         ),
-      ).toContain(`${at}: bracketConfig is only for a heats Competition`);
+      ).toContain(`${at}: bracketConfig is only for a Bracket`);
     });
   });
 

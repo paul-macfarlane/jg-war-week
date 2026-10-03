@@ -32,8 +32,8 @@ test("r15 84 a recorded Heat of 4 with 2 advancing highlights both advancers in 
   try {
     await page.goto(`/admin/competitions/${id}/bracket`);
     await page.getByRole("combobox", { name: "Format" }).click();
-    await page.getByRole("option", { name: "Heats" }).click();
-    await expect(page.getByText("Format set to Heats")).toBeVisible();
+    await page.getByRole("option", { name: "Bracket", exact: true }).click();
+    await expect(page.getByText("Format set to Bracket")).toBeVisible();
     await page.getByRole("combobox", { name: "Entrants per Heat" }).click();
     await page.getByRole("option", { name: "4 per Heat" }).click();
     await page.getByRole("combobox", { name: "How many advance" }).click();
@@ -59,7 +59,9 @@ test("r15 84 a recorded Heat of 4 with 2 advancing highlights both advancers in 
 
     await page.goto(`/admin/brackets/${id}`);
     const heat = "Round 1 Heat 1";
+    // From the admin Bracket's tree, the one Participants see (100).
     await page
+      .locator("[data-bracket-tree]")
       .getByRole("button", { name: `Record result for ${heat}` })
       .click();
     const sheet = page.getByRole("dialog", { name: heat });
@@ -79,8 +81,11 @@ test("r15 84 a recorded Heat of 4 with 2 advancing highlights both advancers in 
     await expect(page.getByText(`${winner} wins ${heat}`)).toBeVisible();
     await expect(sheet).toBeHidden();
 
-    // The decided Heat's results mark 1st and 2nd, not 3rd or 4th.
-    const advancers = page.locator("li[data-advances]");
+    // The decided Heat's box in the tree marks 1st and 2nd, not 3rd or 4th.
+    const advancers = page
+      .locator("[data-bracket-tree]")
+      .getByRole("group", { name: heat, exact: true })
+      .locator("[data-advances]");
     await expect(advancers).toHaveCount(2);
     await expect(
       advancers.filter({ has: page.getByLabel("Place 1", { exact: true }) }),

@@ -88,7 +88,11 @@ async function recordHeat(
   heat: string,
   onOpen?: (sheet: Locator) => Promise<void>,
 ): Promise<string[]> {
-  await page.getByRole("button", { name: `Record result for ${heat}` }).click();
+  // From the admin Bracket's tree, the one Participants see.
+  await page
+    .locator("[data-bracket-tree]")
+    .getByRole("button", { name: `Record result for ${heat}` })
+    .click();
   const sheet = page.getByRole("dialog", { name: heat });
   await expect(sheet).toBeVisible();
   if (onOpen) await onOpen(sheet);
@@ -112,7 +116,7 @@ async function recordHeat(
   return order;
 }
 
-test("a Heats Bracket is built, run and finalized into Points Entries", async ({
+test("a Bracket of 4 per Heat is built, run and finalized into Points Entries", async ({
   browser,
   context,
   page,
@@ -123,8 +127,8 @@ test("a Heats Bracket is built, run and finalized into Points Entries", async ({
 
   await page.goto(`/admin/competitions/${id}/bracket`);
   await page.getByRole("combobox", { name: "Format" }).click();
-  await page.getByRole("option", { name: "Heats" }).click();
-  await expect(page.getByText("Format set to Heats")).toBeVisible();
+  await page.getByRole("option", { name: "Bracket", exact: true }).click();
+  await expect(page.getByText("Format set to Bracket")).toBeVisible();
 
   await page.getByRole("combobox", { name: "Entrants per Heat" }).click();
   await page.getByRole("option", { name: "4 per Heat" }).click();
@@ -151,7 +155,7 @@ test("a Heats Bracket is built, run and finalized into Points Entries", async ({
 
   await checkViewports(page, testInfo, "builder");
 
-  await page.getByRole("link", { name: "Run results" }).click();
+  await page.getByRole("link", { name: "Results", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: `${COMPETITION} · Results` }),
   ).toBeVisible();
@@ -191,6 +195,8 @@ test("a Heats Bracket is built, run and finalized into Points Entries", async ({
   await expect(page.getByLabel("Champion", { exact: true })).toContainText(
     champion,
   );
+  // Every played Heat says when it was recorded.
+  await expect(page.getByText(/^Recorded .+ ET$/)).toHaveCount(3);
 
   await checkViewports(page, testInfo, "results-final");
 
@@ -219,8 +225,8 @@ test("a Heats Bracket is built, run and finalized into Points Entries", async ({
     .getByRole("listitem")
     .filter({ hasText: "From bracket" });
   // Placement Points 5 / 3 / 1: the champion, the runner-up and the Final's
-  // third place. The Final's fourth place and the four Round 1
-  // non-advancers (tied 5th) get nothing.
+  // third place. The Final's fourth place gets nothing, and nobody outside
+  // the Final is placed.
   await expect(entries).toHaveCount(3);
   await expect(entries.filter({ hasText: champion })).toHaveText(
     /From bracket\s*5$/,

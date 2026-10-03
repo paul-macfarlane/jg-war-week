@@ -1,5 +1,5 @@
 current War Week: xii (free-for-all, light base palette)
-bracket demo: seeded competition 46b62448-6026-470b-9760-81027cd60814, champion entrant c669a55b-338d-41ec-8e7b-a123601af59e
+bracket demo: seeded competition 17ad8338-0455-4341-b702-589573cd83dd, champion entrant 147d2316-b189-4770-ac0d-846bd20b214f
 still: standings-before.png from /xii/leaderboard
 still: standings-before-dark.png from /xii/leaderboard
 standings demo: moving "Lou Lantern" from last (0.5) past first (7.5) with +22
@@ -18,10 +18,10 @@ still: schedule.png from /xii?at=2027-02-23T12%3A15%3A00.000-05%3A00
 still: schedule-dark.png from /xii?at=2027-02-23T12%3A15%3A00.000-05%3A00
 still: announcements.png from /xii/announcements
 still: announcements-dark.png from /xii/announcements
-still: competitions.png from /xii/competitions/46b62448-6026-470b-9760-81027cd60814
-still: competitions-dark.png from /xii/competitions/46b62448-6026-470b-9760-81027cd60814
+still: competitions.png from /xii/competitions/17ad8338-0455-4341-b702-589573cd83dd
+still: competitions-dark.png from /xii/competitions/17ad8338-0455-4341-b702-589573cd83dd
 games: frame 1600x900@1.6 used (h1 top 121, header bottom 53, first Game row bottom 556, viewport height 900)
-evidence: games from /xii/competitions/290dc075-5f16-4733-a31e-93f2dc96ca6e, one Game logged
+evidence: games from /xii/competitions/bc171bea-9f9a-49aa-be61-223b5fce8c51, one Game logged
 still: archive.png from /history
 still: archive-dark.png from /history
 evidence: anonymous /about landed on /about
@@ -44,7 +44,7 @@ wrote public/about/points.png: 200 KB
 wrote public/about/points-dark.png: 193 KB
 wrote public/about/announcements.png: 127 KB
 wrote public/about/announcements-dark.png: 127 KB
-wrote public/about/competitions.png: 149 KB
-wrote public/about/competitions-dark.png: 149 KB
+wrote public/about/competitions.png: 157 KB
+wrote public/about/competitions-dark.png: 157 KB
 wrote public/about/archive.png: 321 KB
 wrote public/about/archive-dark.png: 319 KB

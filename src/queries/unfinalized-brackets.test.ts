@@ -96,7 +96,7 @@ describe.skipIf(!isLocalDatabase)("getUnfinalizedBrackets", () => {
           warWeekId: f.ctx.warWeekId,
           name: "Pool",
           scoring: "team",
-          format: "single-elimination",
+          format: "bracket",
         })
         .returning({ id: f.schema.competition.id });
       await mutations.replaceEntrants(
@@ -123,7 +123,7 @@ describe.skipIf(!isLocalDatabase)("getUnfinalizedBrackets", () => {
           warWeekId: f.ctx.warWeekId,
           name: "Pool",
           scoring: "team",
-          format: "single-elimination",
+          format: "bracket",
           placementPoints: [10, 6, 3],
         })
         .returning({ id: f.schema.competition.id });
@@ -172,7 +172,7 @@ describe.skipIf(!isLocalDatabase)("getUnfinalizedBrackets", () => {
           warWeekId: f.ctx.warWeekId,
           name: "Pool",
           scoring: "team",
-          format: "single-elimination",
+          format: "bracket",
         })
         .returning({ id: f.schema.competition.id });
       await mutations.replaceEntrants(
@@ -198,7 +198,7 @@ describe.skipIf(!isLocalDatabase)("getUnfinalizedBrackets", () => {
           warWeekId: f.otherCtx.warWeekId,
           name: "Pool",
           scoring: "team",
-          format: "single-elimination",
+          format: "bracket",
         })
         .returning({ id: f.schema.competition.id });
       await tx

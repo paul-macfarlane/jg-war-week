@@ -28,8 +28,8 @@ test("r15 87 the admin Bracket's unrecorded Heat has a solid Record result butto
   try {
     await page.goto(`/admin/competitions/${id}/bracket`);
     await page.getByRole("combobox", { name: "Format" }).click();
-    await page.getByRole("option", { name: "Heats" }).click();
-    await expect(page.getByText("Format set to Heats")).toBeVisible();
+    await page.getByRole("option", { name: "Bracket", exact: true }).click();
+    await expect(page.getByText("Format set to Bracket")).toBeVisible();
 
     const find = page.locator("#bracket-entrants");
     for (const entrant of ENTRANTS) {
@@ -47,7 +47,11 @@ test("r15 87 the admin Bracket's unrecorded Heat has a solid Record result butto
     await expect(page.getByText("Bracket generated")).toBeVisible();
 
     await page.goto(`/admin/brackets/${id}`);
-    const record = page.getByRole("button", { name: /^Record result/ }).first();
+    // In the admin Bracket's tree (100), the one Participants see.
+    const record = page
+      .locator("[data-bracket-tree]")
+      .getByRole("button", { name: /^Record result/ })
+      .first();
     await expect(record).toBeVisible();
     await expect(record).toHaveClass(/\bbg-primary\b/);
     const background = await record.evaluate(
@@ -61,13 +65,19 @@ test("r15 87 the admin Bracket's unrecorded Heat has a solid Record result butto
       fullPage: true,
     });
 
-    // A click on the card's content, away from its buttons, opens the
-    // Heat result: the button's ::after stretches over the whole card.
-    const card = page.locator('[data-slot="card"]').filter({ has: record });
+    // A click on the Heat box's content, away from its button, opens the
+    // Heat result: the button's ::after stretches over the whole box. The
+    // box is the innermost group named for the Heat (inside its Round's).
+    const heat = (await record.getAttribute("aria-label"))!.replace(
+      /^Record result for /,
+      "",
+    );
+    const card = page
+      .locator("[data-bracket-tree]")
+      .getByRole("group", { name: heat, exact: true })
+      .last();
     await card.click({ position: { x: 12, y: 40 } });
-    await expect(
-      page.getByRole("dialog").getByRole("group", { name: "Finishing order" }),
-    ).toBeVisible();
+    await expect(page.getByRole("dialog", { name: heat })).toBeVisible();
   } finally {
     await restore();
   }

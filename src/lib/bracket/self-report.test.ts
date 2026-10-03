@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 import { applyResult, generate } from "@/lib/bracket/formats";
 import {
   heatReportError,
@@ -24,7 +25,7 @@ describe("heatReportState", () => {
   it("single elimination: a bye, an open Heat, an unfilled one, then decided", () => {
     // 3 Entrants: Seed Position 1 has Round 1's bye; 2 v 3 play; the
     // Final waits for them.
-    let bracket = generate("single-elimination", null, entrants(3), newId);
+    let bracket = generate(DEFAULT_BRACKET_CONFIG, entrants(3), newId);
     const played = bracket.heats.find(
       (h) => h.round === 1 && h.slots.every((s) => s.entrantId !== null),
     )!;
@@ -44,8 +45,7 @@ describe("heatReportState", () => {
     // 5 Entrants, 4 per Heat, 2 advance: Heats of 3 and 2 (the 2 is a
     // bye), then a Final of 4 waiting for Round 1.
     let bracket = generate(
-      "heats",
-      { entrantsPerHeat: 4, advancePerHeat: 2 },
+      { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
       entrants(5),
       newId,
     );

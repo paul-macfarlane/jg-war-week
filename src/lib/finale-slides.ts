@@ -289,7 +289,7 @@ export type FinaleCounts = {
   competitionsRun: number;
   /** Games logged in Head-to-head or Best score Competitions. */
   gamesLogged: number;
-  /** Heats played (a forfeit is not played). */
+  /** Heats played (a bye is not played). */
   heatsPlayed: number;
   pointsEntries: number;
   pointsHandedOut: number;
@@ -366,11 +366,7 @@ export function championsList(
       competitionId: competition.id,
       competition: competition.name,
       format: competition.format,
-      label:
-        competition.format === "single-elimination" ||
-        competition.format === "heats"
-          ? "Champion"
-          : "Winner",
+      label: competition.format === "bracket" ? "Champion" : "Winner",
       title: tieTitle(winners.map((winner) => winner.name)),
       winners,
     }));
