@@ -8,7 +8,7 @@
 
 **Blocked by:** R16 (`feat/regression-r16-competition-model`) merged into `staging`, so the branch starts from its schema (`drizzle/0028_*`); and this planning change (`docs/regression-r17-red-team`) merged into `staging` (one schema-changing epic at a time).
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Red-team:** **required** (Drizzle schema change; recording from the shared tree). Pass 1 on 2026-10-03 BLOCKED; resolved below.
 
@@ -85,3 +85,5 @@ The parts' own, plus:
 - 2026-10-03 (Paul): grilled and approved; tickets `ready-for-agent`.
 - 2026-10-03 (red-team pass 1): BLOCKED, 2 blocking (four gated tickets on one branch with parallel migrations; migration unspecified and untested on old rows), 8 warnings, 7 minor.
 - 2026-10-03 (Paul, on pass 1): B1 one work package; B2 nothing uses Forfeit, recreating enums is fine, treat it as a full reset (all data is in seeds); W1 store the recorded time; W2 the 3rd place game decides 3rd and 4th, is optional when configuring, can't be toggled once the Bracket starts, single elimination only; W3 make clear which Heat is which; W4 Heat times aren't needed; the rest at the agent's discretion. Applied: one work package with part order and serial shared files (B1, W8); the migration resets every Bracket, with a test on old rows, and the human reset (B2); `heat.recorded_at` (W1); the 3rd place game stored as `thirdPlaceGame` plus `loser_to_*` links and a `third_place` Heat, locked once any Heat Result exists (W2); every final reader excludes the `third_place` Heat, with tests (W3); Heat times removed with no fallback, every reader listed (W4); MCP and seed DoD (W5); assertive scroll and points checks (W6); tree access checks (W7); exact greps, rewritten e2e, no manual reordering, evidence and closeout, one engine dispatch as the default, backlog 25 deferred, branch from merged R16 (M1–M7).
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r17`): claimed; `ready-for-agent` → `in-progress`. Execution record: [`R17-execution.md`](./R17-execution.md).

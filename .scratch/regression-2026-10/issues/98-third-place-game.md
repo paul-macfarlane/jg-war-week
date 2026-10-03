@@ -6,7 +6,7 @@
 
 **Blocked by:** `97`, `99` (order inside R17)
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: 3rd place games; cap at 4th); grilling Q4, Q17; red-team pass 1 W2, W3
 
@@ -30,3 +30,7 @@
 - [ ] Postgres test: toggling the 3rd place game is refused once a Heat Result exists.
 - [ ] Placement Points over 4 are refused for a Bracket, with the message from `placementLimitRefusal`.
 - [ ] e2e: a head-to-head Bracket of 8 with a 3rd place game run to Finalize; the generated Points Entries give the four placed Entrants 10, 7, 5, 3 and nobody else any; screenshot at 1440.
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r17`): claimed; `ready-for-agent` → `in-progress`. Execution record: [`R17-execution.md`](../epics/R17-execution.md).

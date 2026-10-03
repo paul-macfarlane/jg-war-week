@@ -6,7 +6,7 @@
 
 **Blocked by:** nothing inside R17 (first part)
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: heats vs single elimination unclear); grilling Q16
 
@@ -24,3 +24,7 @@
 - [ ] Unit test: the engine dispatch picks the single-elimination path for 2/1 only.
 - [ ] Builder: one Format select option, **Bracket**, with heat size and advancing; the 2/1 preset is labelled "Head-to-head (single elimination)"; no separate Heats or Single elimination Format option remains (`grep -rn '"single-elimination"\|"heats"' src/lib/enums.ts src/seed/schema.ts seeds` finds nothing).
 - [ ] The epic's migration test covers this part's mapping.
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r17`): claimed; `ready-for-agent` → `in-progress`. Execution record: [`R17-execution.md`](../epics/R17-execution.md).

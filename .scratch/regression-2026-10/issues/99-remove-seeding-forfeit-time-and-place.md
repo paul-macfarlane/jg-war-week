@@ -11,7 +11,7 @@
 
 **Blocked by:** `97` (order inside R17)
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: by standings, forfeit, time and place); grilling Q18–Q20; red-team pass 1 W1, W4
 
@@ -32,3 +32,7 @@
 - [ ] Unit/Postgres tests: `recorded_at` is set on an Organizer save, a self-report and an edit, and cleared by Reset and by a forced regenerate.
 - [ ] e2e flows that timed a Heat or used Forfeit (`e2e/bracket.spec.ts`, `bracket-heats.spec.ts`, `bracket-squads.spec.ts`) are rewritten without them; "Your next Heat" shows the next Heat with no time; a played Heat shows "Recorded <time>".
 - [ ] `src/queries/schedule.test.ts` asserts no Heat appears in the Schedule.
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r17`): claimed; `ready-for-agent` → `in-progress`. Execution record: [`R17-execution.md`](../epics/R17-execution.md).

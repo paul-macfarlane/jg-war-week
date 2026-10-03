@@ -6,7 +6,7 @@
 
 **Blocked by:** `97`, `99`, `98` (order inside R17)
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: run results naming, bracket display in admin; Participant: drop list view); grilling Q10, Q21; red-team pass 1 W6, W7
 
@@ -24,3 +24,7 @@
 - [ ] e2e at 390: the tree container's `scrollWidth` > its `clientWidth`, and `document.documentElement.scrollWidth` ≤ the viewport width; screenshots at 1440 and 390.
 - [ ] axe passes on the tree in both schemes.
 - [ ] `bracket-results.tsx` and its tests are deleted; `grep -rn 'Run results\|BracketResults' src e2e` finds nothing.
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r17`): claimed; `ready-for-agent` → `in-progress`. Execution record: [`R17-execution.md`](../epics/R17-execution.md).
