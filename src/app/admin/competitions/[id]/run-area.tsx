@@ -1,3 +1,4 @@
+import { AdminGames } from "@/components/admin-games";
 import { BracketAdmin } from "@/components/bracket-admin";
 import { BracketBuilder } from "@/components/bracket-builder";
 import { GamesBuilder } from "@/components/games-builder";
@@ -123,24 +124,36 @@ export async function CompetitionRunArea({
     ]);
     if (!view) return null;
     return (
-      <GamesBuilder
-        competition={{
-          id,
-          scoring: view.competition.scoring,
-          entrantsOpen: view.competition.entrantsOpen,
-          closed: view.competition.closed,
-          placementPoints: view.competition.placementPoints,
-          bestOfDecided: view.bestOfDecided,
-          bestOfWinner: view.bestOfWinner,
-        }}
-        entrants={entrants.map(({ teamId, participantId }) => ({
-          teamId,
-          participantId,
-        }))}
-        teams={options.teams}
-        participants={options.participants}
-        entrantsLock={entrantsLock}
-      />
+      <div className="flex flex-col gap-10">
+        <GamesBuilder
+          competition={{
+            id,
+            scoring: view.competition.scoring,
+            entrantsOpen: view.competition.entrantsOpen,
+            closed: view.competition.closed,
+            placementPoints: view.competition.placementPoints,
+            bestOfDecided: view.bestOfDecided,
+            bestOfWinner: view.bestOfWinner,
+          }}
+          entrants={entrants.map(({ teamId, participantId }) => ({
+            teamId,
+            participantId,
+          }))}
+          teams={options.teams}
+          participants={options.participants}
+          entrantsLock={entrantsLock}
+        />
+        <AdminGames
+          competitionId={id}
+          gameFormat={view.competition.gameFormat}
+          config={view.competition.config}
+          scoring={view.competition.scoring}
+          viewerCanLog={view.viewerCanLog}
+          games={view.games}
+          entrantOptions={view.entrantOptions}
+          now={new Date()}
+        />
+      </div>
     );
   }
 
