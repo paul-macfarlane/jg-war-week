@@ -5,7 +5,6 @@ import { revalidateSite, revalidateWarWeek } from "@/actions/revalidate";
 import { type TargetKind, authorize } from "@/auth/authorize";
 import type { WarWeekAction } from "@/lib/access";
 import { parseCompetitionSetting } from "@/lib/competition-settings";
-import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
 import type { Parsed } from "@/lib/result";
 import { rosterImportInputSchema } from "@/lib/roster-import";
 import {
@@ -14,7 +13,6 @@ import {
   type ParticipantInput,
   type TeamInput,
   type WarWeekSettingsInput,
-  parseCompetitionInput,
   parseCreateCompetitionInput,
   parseDayInput,
   parseParticipantInput,
@@ -242,20 +240,6 @@ export async function createCompetition(
   });
 }
 
-/** A Competition's setup: its Organizers, or a Host of that Competition. */
-export async function updateCompetition(
-  id: string,
-  input: CompetitionInput,
-): Promise<SetupActionResult> {
-  return setupWrite(
-    "competition.edit",
-    "competition",
-    id,
-    () => parseCompetitionInput(input),
-    (value, ctx) => mutations.updateCompetition(id, value, ctx),
-  );
-}
-
 /**
  * Saves one setting of a Competition (the admin Competition page's
  * autosave): `{ field, value }` (`parseCompetitionSetting`). An Organizer,
@@ -285,28 +269,5 @@ export async function deleteCompetition(
     id,
     nothing,
     (_, ctx) => mutations.deleteCompetition(id, ctx),
-  );
-}
-
-/**
- * Replaces a Competition's Hosts ("assign Hosts", Organizer only). Saved on
- * its own, never with the Competition's setup, so a Host's setup save can't
- * carry a Hosts list.
- */
-export async function setCompetitionHosts(
-  competitionId: string,
-  emails: string[],
-): Promise<SetupActionResult> {
-  return setupWrite(
-    "competition.assign-hosts",
-    "competition",
-    competitionId,
-    (): Parsed<string[]> => {
-      const parsed = jgEmailListSchema.safeParse(emails);
-      return parsed.success
-        ? { ok: true, value: parsed.data }
-        : { ok: false, error: JG_EMAIL_MESSAGE };
-    },
-    (value, ctx) => mutations.setCompetitionHosts(competitionId, value, ctx),
   );
 }

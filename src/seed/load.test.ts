@@ -885,7 +885,6 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Placements", () => {
       await savePlacements(
         loaded.darts.id,
         {
-          scoreDirection: "lower",
           rows: [{ id: tank.id, place: 2, score: 4 }],
         },
         ctx,
@@ -897,7 +896,6 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Placements", () => {
       const reloaded = await read(tx, first.id);
       expect(reloaded).toEqual(edited);
       expect(reloaded.darts.finalizedAt).toBeNull();
-      expect(reloaded.darts.scoreDirection).toBe("lower");
       expect(reloaded.entries).toEqual([]);
     });
   });

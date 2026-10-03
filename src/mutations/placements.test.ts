@@ -275,7 +275,7 @@ describe.skipIf(!isLocalDatabase)("Placement rows", () => {
     });
   });
 
-  it("saves Places, Scores and the Score direction; removes a row", async () => {
+  it("saves Places and Scores, never the Score direction; removes a row", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { addPlacement, savePlacements, removePlacement } = await load();
       const f = await fixture(tx);
@@ -287,7 +287,6 @@ describe.skipIf(!isLocalDatabase)("Placement rows", () => {
         await savePlacements(
           f.ids.darts,
           {
-            scoreDirection: "lower",
             rows: [
               { id: neo, place: 1, score: 12.5 },
               { id: tank, place: null, score: 40 },
@@ -316,7 +315,7 @@ describe.skipIf(!isLocalDatabase)("Placement rows", () => {
         ].sort((a, b) => a.participantId.localeCompare(b.participantId)),
       );
       expect((await f.competitionRow(f.ids.darts)).scoreDirection).toBe(
-        "lower",
+        "higher",
       );
 
       expect(await removePlacement(f.ids.darts, tank, f.ctx, tx)).toEqual({
@@ -340,7 +339,6 @@ describe.skipIf(!isLocalDatabase)("Placement rows", () => {
         await savePlacements(
           f.ids.darts,
           {
-            scoreDirection: "none",
             rows: [{ id: red.id, place: 1, score: 1 }],
           },
           f.ctx,
@@ -366,12 +364,7 @@ describe.skipIf(!isLocalDatabase)("Placement rows", () => {
       ).toEqual(refused);
       expect(await m.addEveryone(f.ids.pong, f.ctx, tx)).toEqual(refused);
       expect(
-        await m.savePlacements(
-          f.ids.pong,
-          { scoreDirection: "higher", rows: [] },
-          f.ctx,
-          tx,
-        ),
+        await m.savePlacements(f.ids.pong, { rows: [] }, f.ctx, tx),
       ).toEqual(refused);
       expect(await m.finalizePlacements(f.ids.pong, f.ctx, tx)).toEqual(
         refused,
@@ -406,7 +399,6 @@ describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
     await m.savePlacements(
       f.ids.darts,
       {
-        scoreDirection: "higher",
         rows: [
           { id: await id(f.ids.neo), place: 1, score: 30 },
           { id: await id(f.ids.morpheus), place: 1, score: 30 },
@@ -462,7 +454,6 @@ describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
       await m.savePlacements(
         f.ids.quiz,
         {
-          scoreDirection: "none",
           rows: [
             { id: rowFor(f.ids.blue), place: 1, score: null },
             { id: rowFor(f.ids.red), place: 2, score: null },
@@ -495,7 +486,6 @@ describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
       await m.savePlacements(
         f.ids.darts,
         {
-          scoreDirection: "higher",
           rows: [
             {
               id: await f.rowOf(f.ids.darts, f.ids.cypher),
@@ -534,7 +524,7 @@ describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
       expect(
         await m.savePlacements(
           f.ids.darts,
-          { scoreDirection: "lower", rows: [{ id: neo, place: 2, score: 1 }] },
+          { rows: [{ id: neo, place: 2, score: 1 }] },
           f.ctx,
           tx,
         ),
@@ -610,7 +600,6 @@ describe.skipIf(!isLocalDatabase)("a Placement Competition's setup", () => {
       await savePlacements(
         f.ids.darts,
         {
-          scoreDirection: "higher",
           rows: [
             {
               id: await f.rowOf(f.ids.darts, f.ids.neo),

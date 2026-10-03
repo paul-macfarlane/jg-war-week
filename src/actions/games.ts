@@ -4,9 +4,7 @@ import { guarded } from "@/actions/result";
 import { revalidateWarWeek } from "@/actions/revalidate";
 import { authorize, authorizeGameWrite } from "@/auth/authorize";
 import type { WarWeekAction } from "@/lib/access";
-import { parseEntrantsInput } from "@/lib/bracket/input";
-import { parseGameInput, parseGamesSettingsInput } from "@/lib/games/input";
-import { replaceEntrants } from "@/mutations/brackets";
+import { parseGameInput } from "@/lib/games/input";
 import * as mutations from "@/mutations/games";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 
@@ -106,35 +104,6 @@ async function hostWrite(
   });
 }
 
-/** Saves a Head-to-head or Best score Competition's Format settings, Entrant and logging rules. */
-export async function setGamesSettings(
-  competitionId: string,
-  input: unknown,
-): Promise<MutationResult> {
-  return hostWrite("games.settings", competitionId, async (ctx) => {
-    const parsed = parseGamesSettingsInput(asRecord(input));
-    if (!parsed.ok) return parsed;
-    return mutations.setGamesSettings(competitionId, parsed.value, ctx);
-  });
-}
-
-/** Sets a Head-to-head or Best score Competition's fixed Entrant list, in the order added. */
-export async function setGamesEntrants(
-  competitionId: string,
-  input: unknown,
-): Promise<MutationResult> {
-  return hostWrite("games.entrants", competitionId, async (ctx) => {
-    const parsed = parseEntrantsInput(input);
-    if (!parsed.ok) return parsed;
-    return replaceEntrants(
-      competitionId,
-      { ...parsed.value, format: "games" },
-      ctx,
-    );
-  });
-}
-
-/** Closes a Head-to-head or Best score Competition, awarding Placement Points from its leaderboard. */
 export async function closeGames(
   competitionId: string,
 ): Promise<MutationResult> {

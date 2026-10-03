@@ -198,7 +198,7 @@ async function finalizeDarts(f: Fixture) {
     .where(eq(f.schema.placement.competitionId, f.ids.darts));
   await placements.savePlacements(
     f.ids.darts,
-    { scoreDirection: "none", rows: [{ id: row.id, place: 1, score: null }] },
+    { rows: [{ id: row.id, place: 1, score: null }] },
     f.ctx(ORGANIZER),
     f.tx,
   );

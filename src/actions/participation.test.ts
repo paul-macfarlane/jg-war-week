@@ -6,7 +6,6 @@ import {
   closeParticipation,
   markParticipant,
   reopenParticipation,
-  setParticipationSettings,
   unmarkParticipant,
 } from "@/actions/participation";
 
@@ -35,7 +34,6 @@ const authorizeCheckIn = vi.hoisted(() =>
 );
 vi.mock("@/auth/authorize", () => ({ authorize, authorizeCheckIn }));
 vi.mock("@/mutations/participation", () => ({
-  setParticipationSettings: vi.fn(async () => ({ ok: true })),
   markParticipant: vi.fn(async () => ({ ok: true })),
   unmarkParticipant: vi.fn(async () => ({ ok: true })),
   closeParticipation: vi.fn(async () => ({ ok: true })),
@@ -48,22 +46,8 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-const settings = {
-  participationPoints: "2",
-  teamScoring: "",
-  placementPoints: "",
-  selfCheckIn: true,
-  checkInClosesAt: "",
-};
-
 describe("the Host actions", () => {
   const cases: [string, string, () => Promise<unknown>, string][] = [
-    [
-      "setParticipationSettings",
-      "participation.settings",
-      () => setParticipationSettings(ID, settings),
-      "setParticipationSettings",
-    ],
     [
       "markParticipant",
       "participation.mark",
@@ -126,7 +110,6 @@ describe("the Host actions", () => {
     await expect(
       markParticipant(ID, { participantId: "nope" }),
     ).resolves.toEqual(REFUSED);
-    await expect(setParticipationSettings(ID, null)).resolves.toEqual(REFUSED);
   });
 
   it("reads malformed input as a refusal once authorized, never reaching the mutation", async () => {
@@ -135,11 +118,7 @@ describe("the Host actions", () => {
     expect(await markParticipant(ID, { participantId: "nope" })).toMatchObject({
       ok: false,
     });
-    expect(await setParticipationSettings(ID, null)).toMatchObject({
-      ok: false,
-    });
     expect(mutations.markParticipant).not.toHaveBeenCalled();
-    expect(mutations.setParticipationSettings).not.toHaveBeenCalled();
   });
 });
 

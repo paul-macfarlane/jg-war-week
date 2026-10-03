@@ -30,6 +30,8 @@ type DatePickerProps = {
   /** Extra dates to grey out, on top of `min` and `max`. */
   disabledDates?: (date: Date) => boolean;
   required?: boolean;
+  /** The whole field can't change (a locked setting). */
+  disabled?: boolean;
   id?: string;
   "aria-label"?: string;
   /** Marks the control invalid when its field shows an error. */
@@ -48,6 +50,7 @@ export function DatePicker({
   max,
   disabledDates,
   required,
+  disabled: fieldDisabled = false,
   id,
   "aria-label": ariaLabel,
   "aria-invalid": ariaInvalid,
@@ -72,6 +75,7 @@ export function DatePicker({
               variant="outline"
               aria-label={ariaLabel}
               aria-invalid={ariaInvalid}
+              disabled={fieldDisabled}
               className="h-11 w-full justify-start font-normal sm:h-9 sm:w-auto sm:min-w-44"
             />
           }

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   type LedgerRow,
   buildCompetitionLedger,
+  competitionPageHref,
   describeScoring,
   groupCompetitions,
   hasPlacementPoints,
@@ -11,8 +12,6 @@ import {
   placementLimit,
   placementLimitRefusal,
   pointsForPlacement,
-  setupHref,
-  setupLinkLabel,
 } from "@/lib/competitions";
 
 function competition(
@@ -231,25 +230,9 @@ describe("hostName", () => {
   });
 });
 
-describe("setupHref and setupLinkLabel", () => {
-  it("point each Format at its own setup page", () => {
-    expect(setupHref("head-to-head", "c1")).toBe(
-      "/admin/competitions/c1/games",
-    );
-    expect(setupHref("best-score", "c1")).toBe("/admin/competitions/c1/games");
-    expect(setupHref("participation", "c1")).toBe(
-      "/admin/competitions/c1/participation",
-    );
-    expect(setupHref("bracket", "c1")).toBe("/admin/competitions/c1/bracket");
-    expect(setupHref("placement", "c1")).toBe("/admin/placements/c1");
-  });
-
-  it("label the link by Format", () => {
-    expect(setupLinkLabel("participation")).toBe("Who took part");
-    expect(setupLinkLabel("head-to-head")).toBe("Entrants and Games");
-    expect(setupLinkLabel("best-score")).toBe("Entrants and Games");
-    expect(setupLinkLabel("placement")).toBe("Record placements");
-    expect(setupLinkLabel("bracket")).toBe("Bracket");
+describe("competitionPageHref", () => {
+  it("opens the Competition's one admin page, whatever its Format", () => {
+    expect(competitionPageHref("c1")).toBe("/admin/competitions/c1");
   });
 });
 

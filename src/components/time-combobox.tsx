@@ -26,6 +26,8 @@ type TimeComboboxProps = {
   /** A start time: options after it show the duration ("8:30 PM · 1h"). */
   start?: string;
   required?: boolean;
+  /** The field can't change (a locked setting). */
+  disabled?: boolean;
   id?: string;
   "aria-label"?: string;
   /** Marks the control invalid when its field shows an error. */
@@ -48,6 +50,7 @@ export function TimeCombobox({
   onValueChange,
   start,
   required,
+  disabled = false,
   id,
   "aria-label": ariaLabel,
   "aria-invalid": ariaInvalid,
@@ -114,6 +117,7 @@ export function TimeCombobox({
           aria-label={ariaLabel}
           aria-invalid={ariaInvalid}
           placeholder={placeholder}
+          disabled={disabled}
           className="h-11 w-full sm:h-9"
           onBlur={commitTyped}
           onKeyDown={(event) => {

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { reportHeatResult, setSelfReport } from "@/actions/heat-reports";
+import { reportHeatResult } from "@/actions/heat-reports";
 
 // vi.mock factories are hoisted above the imports, so their values are too.
 const { ID, HEAT, WAR_WEEK, authorized } = vi.hoisted(() => {
@@ -29,7 +29,6 @@ const authorizeHeatReport = vi.hoisted(() =>
 );
 vi.mock("@/auth/authorize", () => ({ authorize, authorizeHeatReport }));
 vi.mock("@/mutations/heat-reports", () => ({
-  setSelfReport: vi.fn(async () => ({ ok: true })),
   submitHeatReport: vi.fn(async () => ({ ok: true, resetHeatIds: [] })),
 }));
 
@@ -39,52 +38,6 @@ beforeEach(() => {
 afterEach(() => {
   vi.clearAllMocks();
   vi.restoreAllMocks();
-});
-
-describe("setSelfReport", () => {
-  it('authorizes "competition.self-report" before parsing; the refusal wins over malformed input', async () => {
-    authorized.current = {
-      ok: false,
-      error: "You're not a Host of that Competition.",
-    };
-    const mutations = await import("@/mutations/heat-reports");
-
-    await expect(setSelfReport(ID, "junk")).resolves.toEqual({
-      ok: false,
-      error: "You're not a Host of that Competition.",
-    });
-    expect(authorize).toHaveBeenCalledWith(
-      "competition.self-report",
-      "competition",
-      ID,
-    );
-    expect(mutations.setSelfReport).not.toHaveBeenCalled();
-  });
-
-  it("refuses malformed input once authorized", async () => {
-    authorized.current = OK;
-    const mutations = await import("@/mutations/heat-reports");
-
-    await expect(setSelfReport(ID, { on: "yes" })).resolves.toEqual({
-      ok: false,
-      error: "Turn self-report on or off.",
-    });
-    expect(mutations.setSelfReport).not.toHaveBeenCalled();
-  });
-
-  it("passes the parsed toggle and the authorized context to the mutation", async () => {
-    authorized.current = OK;
-    const mutations = await import("@/mutations/heat-reports");
-
-    await expect(setSelfReport(ID, { on: true })).resolves.toEqual({
-      ok: true,
-    });
-    expect(mutations.setSelfReport).toHaveBeenCalledWith(
-      ID,
-      { on: true },
-      OK.ctx,
-    );
-  });
 });
 
 describe("reportHeatResult", () => {

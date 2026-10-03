@@ -128,14 +128,8 @@ export async function assertAdminRedirects(sessions: {
     [`/admin/setup/schedule/${id}`, "/admin/schedule"],
     ["/admin/setup/teams", "/admin/roster"],
     ["/admin/setup/competitions", "/admin/competitions"],
-    [
-      `/admin/setup/competitions/${id}/bracket`,
-      `/admin/competitions/${id}/bracket`,
-    ],
-    [
-      `/admin/setup/competitions/${id}/games`,
-      `/admin/competitions/${id}/games`,
-    ],
+    [`/admin/setup/competitions/${id}/bracket`, `/admin/competitions/${id}`],
+    [`/admin/setup/competitions/${id}/games`, `/admin/competitions/${id}`],
     ["/admin/setup/faq", "/admin/faq"],
     ["/admin/setup/faq/new", "/admin/faq"],
     [`/admin/setup/faq/${id}`, "/admin/faq"],

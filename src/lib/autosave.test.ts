@@ -209,3 +209,149 @@ describe("createAutosave", () => {
     expect(snapshots.at(-1)?.fieldErrors.title).toBe(SAVE_FAILED_ERROR);
   });
 });
+
+type Settings = {
+  name: string;
+  countsTowardTeam: boolean;
+  placementPoints: number[];
+  hosts: string[];
+  description: { type: string; content: { text: string }[] } | null;
+};
+
+const SAVED_SETTINGS: Settings = {
+  name: "Darts",
+  countsTowardTeam: false,
+  placementPoints: [10, 7, 5],
+  hosts: ["ana@jahnelgroup.com", "bo@jahnelgroup.com"],
+  description: { type: "doc", content: [{ text: "Throw" }] },
+};
+
+function settingsSetup() {
+  const posted: Partial<Settings>[] = [];
+  const snapshots: AutosaveSnapshot[] = [];
+  const autosave = createAutosave<Settings>({
+    saved: SAVED_SETTINGS,
+    save: async (input) => {
+      posted.push(input);
+      return { ok: true };
+    },
+    groupOf: (field) => [field],
+    delayMs: 800,
+    onChange: (snapshot) => snapshots.push(snapshot),
+  });
+  return { posted, autosave, last: () => snapshots.at(-1) };
+}
+
+describe("createAutosave with fields that aren't text", () => {
+  it("saves a boolean, a list and rich-text content, each on its own", async () => {
+    const { posted, autosave, last } = settingsSetup();
+    const next = {
+      ...SAVED_SETTINGS,
+      countsTowardTeam: true,
+      placementPoints: [12, 8],
+      description: { type: "doc", content: [{ text: "Throw twice" }] },
+    };
+    autosave.change(next, [
+      "countsTowardTeam",
+      "placementPoints",
+      "description",
+    ]);
+    await vi.runAllTimersAsync();
+    expect(posted).toEqual([
+      { countsTowardTeam: true },
+      { placementPoints: [12, 8] },
+      { description: { type: "doc", content: [{ text: "Throw twice" }] } },
+    ]);
+    expect(last()?.status).toBe("saved");
+  });
+
+  it("sends nothing for a list or content equal to the saved one in a new copy", async () => {
+    const { posted, autosave, last } = settingsSetup();
+    autosave.change(
+      {
+        ...SAVED_SETTINGS,
+        placementPoints: [10, 7, 5],
+        description: { type: "doc", content: [{ text: "Throw" }] },
+      },
+      ["placementPoints", "description"],
+    );
+    await vi.runAllTimersAsync();
+    expect(posted).toEqual([]);
+    expect(last()?.status).toBe("idle");
+  });
+
+  it("treats a set of emails in another order as unchanged, by the form's own equality", async () => {
+    const posted: Partial<Settings>[] = [];
+    const autosave = createAutosave<Settings>({
+      saved: SAVED_SETTINGS,
+      save: async (input) => {
+        posted.push(input);
+        return { ok: true };
+      },
+      groupOf: (field) => [field],
+      equals: (field, a, b) =>
+        field === "hosts"
+          ? [...(a as string[])].sort().join() ===
+            [...(b as string[])].sort().join()
+          : JSON.stringify(a) === JSON.stringify(b),
+      delayMs: 800,
+      onChange: () => {},
+    });
+    autosave.change(
+      {
+        ...SAVED_SETTINGS,
+        hosts: ["bo@jahnelgroup.com", "ana@jahnelgroup.com"],
+      },
+      ["hosts"],
+    );
+    await vi.runAllTimersAsync();
+    expect(posted).toEqual([]);
+    autosave.change({ ...SAVED_SETTINGS, hosts: ["bo@jahnelgroup.com"] }, [
+      "hosts",
+    ]);
+    await vi.runAllTimersAsync();
+    expect(posted).toEqual([{ hosts: ["bo@jahnelgroup.com"] }]);
+  });
+});
+
+describe("Autosave.reseed: the server's values after a save", () => {
+  it("takes the server's values as saved, so a field set back to the old value saves again", async () => {
+    const { posted, autosave } = settingsSetup();
+    // Another save (a Format change, say) made the server clear the points.
+    autosave.reseed({ ...SAVED_SETTINGS, placementPoints: [10, 7, 5, 3] });
+    autosave.change(SAVED_SETTINGS, ["placementPoints"]);
+    await vi.runAllTimersAsync();
+    expect(posted).toEqual([{ placementPoints: [10, 7, 5] }]);
+  });
+
+  it("names the fields still waiting, saving or refused, which the form keeps as typed", async () => {
+    const posted: Partial<Settings>[] = [];
+    const autosave = createAutosave<Settings>({
+      saved: SAVED_SETTINGS,
+      save: async (input) => {
+        posted.push(input);
+        return "name" in input
+          ? {
+              ok: false,
+              error: "Enter the name.",
+              fieldErrors: { name: "Enter the name." },
+            }
+          : { ok: true };
+      },
+      groupOf: (field) => [field],
+      delayMs: 800,
+      onChange: () => {},
+    });
+    expect(autosave.unsavedFields()).toEqual([]);
+    autosave.change({ ...SAVED_SETTINGS, name: "", countsTowardTeam: true }, [
+      "name",
+      "countsTowardTeam",
+    ]);
+    expect(autosave.unsavedFields().sort()).toEqual([
+      "countsTowardTeam",
+      "name",
+    ]);
+    await vi.runAllTimersAsync();
+    expect(autosave.unsavedFields()).toEqual(["name"]);
+  });
+});

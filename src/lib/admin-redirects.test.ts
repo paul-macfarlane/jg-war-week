@@ -45,14 +45,12 @@ describe("the admin redirects (next.config)", () => {
     ["/admin/setup/schedule/abc-123", "/admin/schedule"],
     ["/admin/setup/teams", "/admin/roster"],
     ["/admin/setup/competitions", "/admin/competitions"],
+    ["/admin/setup/competitions/abc-123", "/admin/competitions/abc-123"],
     [
       "/admin/setup/competitions/abc-123/bracket",
-      "/admin/competitions/abc-123/bracket",
+      "/admin/competitions/abc-123",
     ],
-    [
-      "/admin/setup/competitions/abc-123/games",
-      "/admin/competitions/abc-123/games",
-    ],
+    ["/admin/setup/competitions/abc-123/games", "/admin/competitions/abc-123"],
     ["/admin/setup/faq", "/admin/faq"],
     ["/admin/setup/faq/new", "/admin/faq"],
     ["/admin/setup/faq/abc-123", "/admin/faq"],

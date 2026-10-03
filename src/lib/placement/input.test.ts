@@ -14,7 +14,6 @@ describe("parseSavePlacementsInput", () => {
   it("reads typed text: blank is none, Places and Scores as numbers", () => {
     expect(
       parseSavePlacementsInput({
-        scoreDirection: "lower",
         rows: [
           { id: ROW, place: "2", score: " 12.125 " },
           { id: ROW, place: "", score: "" },
@@ -24,7 +23,6 @@ describe("parseSavePlacementsInput", () => {
     ).toEqual({
       ok: true,
       value: {
-        scoreDirection: "lower",
         rows: [
           { id: ROW, place: 2, score: 12.125 },
           { id: ROW, place: null, score: null },
@@ -37,7 +35,6 @@ describe("parseSavePlacementsInput", () => {
   it.each(["0", "1.5", "x", "-1"])("refuses the Place %j", (place) => {
     expect(
       parseSavePlacementsInput({
-        scoreDirection: "none",
         rows: [{ id: ROW, place, score: "" }],
       }),
     ).toEqual({ ok: false, error: PLACE_ERROR });
@@ -52,10 +49,13 @@ describe("parseSavePlacementsInput", () => {
     ).toEqual({ ok: false, error: SCORE_ERROR });
   });
 
-  it("refuses an unknown Score direction and a malformed row id", () => {
+  it("never carries a Score direction: it saves only as its own setting, under its lock", () => {
     expect(
-      parseSavePlacementsInput({ scoreDirection: "sideways", rows: [] }),
-    ).toEqual({ ok: false, error: "Choose how Scores decide Places." });
+      parseSavePlacementsInput({ scoreDirection: "lower", rows: [] }),
+    ).toEqual({ ok: true, value: { rows: [] } });
+  });
+
+  it("refuses a malformed row id", () => {
     expect(
       parseSavePlacementsInput({
         scoreDirection: "none",

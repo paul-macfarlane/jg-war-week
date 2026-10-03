@@ -1,6 +1,5 @@
 import type { Competition, PointsEntry, Team } from "@/db/schema";
 import type { Format } from "@/lib/bracket/view";
-import { isGameFormat } from "@/lib/enums";
 import type { ProfilesByEmail } from "@/lib/profile";
 
 export type CompetitionListItem = Pick<
@@ -177,20 +176,10 @@ export function hostName(email: string, profiles: ProfilesByEmail): string {
   return profiles.get(email.trim().toLowerCase())?.profileName || email;
 }
 
-/** Where a saved Competition of this Format is set up (admin). */
-export function setupHref(format: Format, id: string): string {
-  if (isGameFormat(format)) return `/admin/competitions/${id}/games`;
-  if (format === "placement") return `/admin/placements/${id}`;
-  if (format === "participation") {
-    return `/admin/competitions/${id}/participation`;
-  }
-  return `/admin/competitions/${id}/bracket`;
-}
-
-/** The Competitions list's link to a Competition's setup, by Format. */
-export function setupLinkLabel(format: Format): string {
-  if (format === "placement") return "Record placements";
-  if (isGameFormat(format)) return "Entrants and Games";
-  if (format === "participation") return "Who took part";
-  return "Bracket";
+/**
+ * A Competition's one admin page (ticket 101): its Settings and its
+ * Format's run area. Every old setup route redirects here.
+ */
+export function competitionPageHref(id: string): string {
+  return `/admin/competitions/${id}`;
 }

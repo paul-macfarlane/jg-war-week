@@ -228,7 +228,6 @@ async function rowChanges(f: Fixture, competitionId = f.ids.darts) {
       "savePlacements",
       () =>
         a.savePlacements(competitionId, {
-          scoreDirection: "higher",
           rows: [{ id: f.ids.row, place: "2", score: "5" }],
         }),
     ],
@@ -303,7 +302,6 @@ describe.skipIf(!isLocalDatabase)("the placement actions' refusals", () => {
       const a = await actions();
       expect(
         await a.savePlacements(f.ids.darts, {
-          scoreDirection: "none",
           rows: [{ id: f.ids.row, place: "0", score: "" }],
         }),
       ).toEqual({
@@ -364,12 +362,13 @@ describe.skipIf(!isLocalDatabase)("the placement actions' refusals", () => {
           error: "Reopen the Competition first.",
         });
       }
-      const { setCompetitionFormat } = await import("@/actions/brackets");
+      const { saveCompetitionSetting } = await import("@/actions/setup");
       expect(
-        await setCompetitionFormat(f.ids.darts, {
-          format: "bracket",
+        await saveCompetitionSetting(f.ids.darts, {
+          field: "format",
+          value: "bracket",
         }),
-      ).toEqual({
+      ).toMatchObject({
         ok: false,
         error: "Locked once the Competition has a result.",
       });
@@ -397,12 +396,13 @@ describe.skipIf(!isLocalDatabase)("the placement actions' refusals", () => {
       const f = await fixture(tx);
       const before = await f.snapshot();
       session.email = HOST;
-      const { setCompetitionFormat } = await import("@/actions/brackets");
+      const { saveCompetitionSetting } = await import("@/actions/setup");
       expect(
-        await setCompetitionFormat(f.ids.darts, {
-          format: "bracket",
+        await saveCompetitionSetting(f.ids.darts, {
+          field: "format",
+          value: "bracket",
         }),
-      ).toEqual({
+      ).toMatchObject({
         ok: false,
         error: "Locked once the Competition has a result.",
       });

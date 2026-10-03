@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { YouTag } from "@/components/you";
+import { competitionPageHref } from "@/lib/competitions";
 import type { GameFormat } from "@/lib/enums";
 import type {
   BestScoreConfig,
@@ -324,7 +325,7 @@ export function GamesView(props: GamesViewProps) {
             <>
               Best of decided: {bestOfWinner} —{" "}
               <Link
-                href={`/admin/competitions/${competitionId}/games`}
+                href={competitionPageHref(competitionId)}
                 className="text-primary font-medium underline underline-offset-4"
               >
                 Close it

@@ -3,10 +3,7 @@ import type { Metadata } from "next";
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { CompetitionsEditor } from "@/components/competitions-editor";
 import { getHostNames, getWarWeekCompetitionHosts } from "@/queries/organizers";
-import {
-  getCompetitionGroupSuggestions,
-  getSetupCompetitions,
-} from "@/queries/setup";
+import { getSetupCompetitions } from "@/queries/setup";
 
 import { loadAdminPage } from "../gate";
 
@@ -19,9 +16,8 @@ export default async function AdminCompetitionsPage() {
     await loadAdminPage("/admin/competitions");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
-  const [allCompetitions, groupSuggestions, hosts] = await Promise.all([
+  const [allCompetitions, hosts] = await Promise.all([
     getSetupCompetitions(warWeek),
-    getCompetitionGroupSuggestions(warWeek),
     // Host emails are shown only to Organizers.
     isOrganizer ? getWarWeekCompetitionHosts(warWeek.id) : undefined,
   ]);
@@ -50,7 +46,6 @@ export default async function AdminCompetitionsPage() {
           hosts={hosts}
           hostNames={hostNames}
           competitions={competitions}
-          groupSuggestions={groupSuggestions}
           mode={warWeek.mode}
           teamLabel={warWeek.teamLabel}
         />

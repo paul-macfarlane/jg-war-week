@@ -4,10 +4,7 @@ import { guarded } from "@/actions/result";
 import { revalidateWarWeek } from "@/actions/revalidate";
 import { authorize, authorizeCheckIn } from "@/auth/authorize";
 import type { WarWeekAction } from "@/lib/access";
-import {
-  parseMarkInput,
-  parseParticipationSettingsInput,
-} from "@/lib/participation/input";
+import { parseMarkInput } from "@/lib/participation/input";
 import * as mutations from "@/mutations/participation";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 
@@ -27,18 +24,6 @@ async function hostWrite(
     const result = await write(authorized.ctx);
     if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
     return result;
-  });
-}
-
-/** Saves N, the team scoring, Placement Points and Self check-in. */
-export async function setParticipationSettings(
-  competitionId: string,
-  input: unknown,
-): Promise<MutationResult> {
-  return hostWrite("participation.settings", competitionId, async (ctx) => {
-    const parsed = parseParticipationSettingsInput(input);
-    if (!parsed.ok) return parsed;
-    return mutations.setParticipationSettings(competitionId, parsed.value, ctx);
   });
 }
 

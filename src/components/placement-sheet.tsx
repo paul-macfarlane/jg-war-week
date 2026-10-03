@@ -1,7 +1,6 @@
 "use client";
 
 import { X } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useId, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -16,17 +15,12 @@ import {
 } from "@/actions/placements";
 import { ConfirmActionButton } from "@/components/confirm-dialog";
 import { EntityCombobox } from "@/components/entity-combobox";
-import { OptionSelect } from "@/components/option-select";
 import { Button } from "@/components/ui/button";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { placementLabel } from "@/lib/competitions";
 import type { ScoreDirection } from "@/lib/enums";
-import {
-  placementPointsByRow,
-  placesFromScores,
-  refilledPlaces,
-} from "@/lib/placement/score";
+import { placementPointsByRow, refilledPlaces } from "@/lib/placement/score";
 import { formatPoints } from "@/lib/points";
 import type { MutationResult } from "@/mutations/types";
 
@@ -41,12 +35,6 @@ export type PlacementSheetRow = {
 };
 
 type Typed = { place: string; score: string };
-
-const DIRECTION_OPTIONS = [
-  { value: "none", label: "None: type or choose Places" },
-  { value: "higher", label: "Higher Score wins" },
-  { value: "lower", label: "Lower Score wins" },
-] as const;
 
 const typedOf = (row: PlacementSheetRow): Typed => ({
   place: row.place === null ? "" : String(row.place),
@@ -68,24 +56,23 @@ function placeOf(text: string): number | null {
 }
 
 /**
- * A Placement Competition's sheet (CONTEXT.md, Placement): add people by
- * search or Add everyone, give each row a Place and an optional Score, Save,
- * then Finalize into Points Entries by the Placement Points; Reopen
- * withdraws them. With a Score direction, Places fill from Scores as
- * they're typed and stay editable for ties and judgement.
+ * A Placement Competition's sheet (CONTEXT.md, Placement), the run area of
+ * its Competition page: add people by search or Add everyone, give each
+ * row a Place and an optional Score, Save, then Finalize into Points
+ * Entries by the Placement Points; Reopen withdraws them. With a Score
+ * direction (a setting in the page's Settings, saved on its own), Places
+ * fill from Scores as they're typed and stay editable for ties and
+ * judgement. Save sends only the rows, never the direction.
  */
 export function PlacementSheet({
   competition,
   rows,
   candidates,
   teamLabel,
-  edition,
 }: {
   competition: {
     id: string;
-    name: string;
     scoring: "team" | "individual";
-    countsTowardTeam: boolean;
     placementPoints: number[] | null;
     scoreDirection: ScoreDirection;
     finalized: boolean;
@@ -94,7 +81,6 @@ export function PlacementSheet({
   /** Who the search can add: Teams, or Participants with their Team. */
   candidates: { id: string; name: string; team: string | null }[];
   teamLabel: string;
-  edition: string;
 }) {
   const id = useId();
   const router = useRouter();
@@ -106,16 +92,14 @@ export function PlacementSheet({
 
   // Unsaved edits by row id; anything not edited shows what's saved.
   const [edits, setEdits] = useState<Record<string, Typed>>({});
-  const [direction, setDirection] = useState<ScoreDirection>(
-    competition.scoreDirection,
-  );
+  const direction = competition.scoreDirection;
   const typed = (row: PlacementSheetRow) => edits[row.id] ?? typedOf(row);
   const changed = rows.filter((row) => {
     const now = typed(row);
     const saved = typedOf(row);
     return now.place !== saved.place || now.score !== saved.score;
   });
-  const dirty = changed.length > 0 || direction !== competition.scoreDirection;
+  const dirty = changed.length > 0;
 
   /** Every row's typed values, edited or saved. */
   const allTyped = (): Record<string, Typed> =>
@@ -150,18 +134,6 @@ export function PlacementSheet({
       direction === "none"
         ? all
         : withPlaces(all, refilledPlaces(before, scoresOf(all), direction)),
-    );
-  }
-
-  /** Choosing a direction refills every scored row's Place from the Scores. */
-  function changeDirection(value: string) {
-    const next = value as ScoreDirection;
-    setDirection(next);
-    const all = allTyped();
-    setEdits(
-      next === "none"
-        ? all
-        : withPlaces(all, placesFromScores(scoresOf(all), next)),
     );
   }
 
@@ -210,7 +182,6 @@ export function PlacementSheet({
     run(
       () =>
         savePlacements(competition.id, {
-          scoreDirection: direction,
           rows: rows.map((row) => ({ id: row.id, ...typed(row) })),
         }),
       "Placements saved",
@@ -219,11 +190,6 @@ export function PlacementSheet({
     );
   }
 
-  const scoringLine = isTeam
-    ? teamLabel
-    : competition.countsTowardTeam
-      ? `Individual · counts toward ${teamLabel}`
-      : "Individual";
   const pointsLine =
     competition.placementPoints && competition.placementPoints.length > 0
       ? competition.placementPoints
@@ -233,37 +199,11 @@ export function PlacementSheet({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-        <Link
-          href="/admin/competitions"
-          className="text-primary underline-offset-4 hover:underline"
-        >
-          ← Competitions
-        </Link>
-        <Link
-          href={`/${edition}/competitions/${competition.id}`}
-          className="text-primary underline-offset-4 hover:underline"
-        >
-          Participant view
-        </Link>
-        {rows.length === 0 && !locked ? (
-          <Link
-            href={`/admin/competitions/${competition.id}/bracket`}
-            className="text-primary underline-offset-4 hover:underline"
-          >
-            Run as a Bracket instead
-          </Link>
-        ) : null}
-      </div>
-      <div>
-        <h1 className="text-2xl font-bold">{competition.name}</h1>
-        <p className="text-foreground/70 text-sm">Placement · {scoringLine}</p>
-        <p className="text-foreground/70 text-sm">
-          {pointsLine
-            ? `Placement Points: ${pointsLine}`
-            : "No Placement Points: Finalize gives no points. Set them in the Competition."}
-        </p>
-      </div>
+      <p className="text-foreground/70 text-sm">
+        {pointsLine
+          ? `Placement Points: ${pointsLine}`
+          : "No Placement Points: Finalize gives no points. Set them in the Settings above."}
+      </p>
 
       {locked ? (
         <p className="border-border rounded-lg border px-3 py-2 text-sm">
@@ -308,20 +248,6 @@ export function PlacementSheet({
               Add everyone
             </Button>
           </div>
-          <Field className="sm:max-w-xs">
-            <FieldLabel htmlFor={`${id}-direction`}>Score direction</FieldLabel>
-            <OptionSelect
-              id={`${id}-direction`}
-              options={DIRECTION_OPTIONS}
-              value={direction}
-              onValueChange={changeDirection}
-              disabled={pending}
-            />
-            <FieldDescription>
-              With a direction, Places fill from Scores as you type; you can
-              still change any Place.
-            </FieldDescription>
-          </Field>
         </div>
       )}
 

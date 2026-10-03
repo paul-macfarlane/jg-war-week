@@ -15,6 +15,41 @@ import {
 } from "./harness";
 import { mcpTool } from "./mcp";
 
+/**
+ * Saves one setting of a Competition, as its admin page does (ticket 101):
+ * every setting, the Entrants and building the Bracket go through this one
+ * action, under the lock table.
+ */
+function saveSetting(
+  ids: Record<string, string>,
+  id: string,
+  field: string,
+  value: unknown,
+  session: SmokeSession,
+): Promise<WriteResult> {
+  return callAction(
+    ids.saveCompetitionSetting,
+    [id, { field, value }],
+    session,
+  );
+}
+
+/** Makes a new Competition a Bracket with `config`: its Format, then its heat settings. */
+async function runAsBracket(
+  ids: Record<string, string>,
+  id: string,
+  config: {
+    entrantsPerHeat: number;
+    advancePerHeat: number;
+    thirdPlaceGame: boolean;
+  },
+  session: SmokeSession,
+): Promise<WriteResult> {
+  const format = await saveSetting(ids, id, "format", "bracket", session);
+  if (!format.ok) return format;
+  return saveSetting(ids, id, "bracketConfig", config, session);
+}
+
 // The bracket loop check's own Competition and extra Teams (XI has two
 // Teams), deleted after the check and before it, so it's rerunnable.
 const SMOKE_BRACKET_COMPETITION = "SMOKE TEST bracket";
@@ -41,9 +76,7 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
   const ids = serverActionIds();
   const missing = [
     "createCompetition",
-    "setCompetitionFormat",
-    "replaceEntrants",
-    "generateBracket",
+    "saveCompetitionSetting",
     "recordHeatResult",
     "finalizeBracket",
     "unfinalizeBracket",
@@ -103,20 +136,15 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     const id = competition.id;
 
     expectOk(
-      "setCompetitionFormat",
-      await callAction(
-        ids.setCompetitionFormat,
-        [
-          id,
-          {
-            format: "bracket",
-            config: {
-              entrantsPerHeat: 2,
-              advancePerHeat: 1,
-              thirdPlaceGame: false,
-            },
-          },
-        ],
+      "run as a Bracket",
+      await runAsBracket(
+        ids,
+        id,
+        {
+          entrantsPerHeat: 2,
+          advancePerHeat: 1,
+          thirdPlaceGame: false,
+        },
         organizer,
       ),
     );
@@ -126,36 +154,34 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     );
     if (teams.length !== 4) problems.push(`XI has ${teams.length} Teams`);
     expectOk(
-      "replaceEntrants",
-      await callAction(
-        ids.replaceEntrants,
-        [id, { targetIds: teams.map((t) => t.id) }],
+      "entrants",
+      await saveSetting(
+        ids,
+        id,
+        "entrants",
+        { targetIds: teams.map((t) => t.id) },
         organizer,
       ),
     );
     // A 3rd place game needs at least 4 Entrants, so it's turned on once
     // they're entered.
     expectOk(
-      "setCompetitionFormat with a 3rd place game",
-      await callAction(
-        ids.setCompetitionFormat,
-        [
-          id,
-          {
-            format: "bracket",
-            config: {
-              entrantsPerHeat: 2,
-              advancePerHeat: 1,
-              thirdPlaceGame: true,
-            },
-          },
-        ],
+      "bracketConfig with a 3rd place game",
+      await saveSetting(
+        ids,
+        id,
+        "bracketConfig",
+        {
+          entrantsPerHeat: 2,
+          advancePerHeat: 1,
+          thirdPlaceGame: true,
+        },
         organizer,
       ),
     );
     expectOk(
-      "generateBracket",
-      await callAction(ids.generateBracket, [id, {}], organizer),
+      "build the Bracket",
+      await saveSetting(ids, id, "bracket", null, organizer),
     );
 
     const before = await leaderboardTeamTotal("Red");
@@ -193,10 +219,7 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     // Two semifinals, then the final and the 3rd place game.
     if (recorded !== 4) problems.push(`recorded ${recorded} Heat Results`);
 
-    for (const route of [
-      `/admin/competitions/${id}/bracket`,
-      `/admin/brackets/${id}`,
-    ]) {
+    for (const route of [`/admin/competitions/${id}`]) {
       const res = await get(route);
       const body = await res.text();
       if (res.status !== 200 || !body.includes(SMOKE_BRACKET_COMPETITION)) {
@@ -436,9 +459,7 @@ export async function assertHeatsLoop(sessions: { organizer: SmokeSession }) {
   const ids = serverActionIds();
   const missing = [
     "createCompetition",
-    "setCompetitionFormat",
-    "replaceEntrants",
-    "generateBracket",
+    "saveCompetitionSetting",
     "recordHeatResult",
     "finalizeBracket",
     "unfinalizeBracket",
@@ -496,20 +517,15 @@ export async function assertHeatsLoop(sessions: { organizer: SmokeSession }) {
     const id = competition.id;
 
     expectOk(
-      "setCompetitionFormat",
-      await callAction(
-        ids.setCompetitionFormat,
-        [
-          id,
-          {
-            format: "bracket",
-            config: {
-              entrantsPerHeat: 4,
-              advancePerHeat: 2,
-              thirdPlaceGame: false,
-            },
-          },
-        ],
+      "run as a Bracket",
+      await runAsBracket(
+        ids,
+        id,
+        {
+          entrantsPerHeat: 4,
+          advancePerHeat: 2,
+          thirdPlaceGame: false,
+        },
         organizer,
       ),
     );
@@ -519,16 +535,18 @@ export async function assertHeatsLoop(sessions: { organizer: SmokeSession }) {
     );
     if (teams.length !== 4) problems.push(`XI has ${teams.length} Teams`);
     expectOk(
-      "replaceEntrants",
-      await callAction(
-        ids.replaceEntrants,
-        [id, { targetIds: teams.map((t) => t.id) }],
+      "entrants",
+      await saveSetting(
+        ids,
+        id,
+        "entrants",
+        { targetIds: teams.map((t) => t.id) },
         organizer,
       ),
     );
     expectOk(
-      "generateBracket",
-      await callAction(ids.generateBracket, [id, {}], organizer),
+      "build the Bracket",
+      await saveSetting(ids, id, "bracket", null, organizer),
     );
 
     const slots = await runQuery<{
@@ -633,11 +651,8 @@ export async function assertSquadSelfReportLoop(sessions: {
   const ids = serverActionIds();
   const missing = [
     "createCompetition",
-    "setCompetitionFormat",
+    "saveCompetitionSetting",
     "createSquad",
-    "replaceEntrants",
-    "generateBracket",
-    "setSelfReport",
     "reportHeatResult",
     "recordHeatResult",
     "finalizeBracket",
@@ -697,12 +712,8 @@ export async function assertSquadSelfReportLoop(sessions: {
     const id = competition.id;
 
     expectOk(
-      "setCompetitionFormat",
-      await callAction(
-        ids.setCompetitionFormat,
-        [id, { format: "bracket" }],
-        organizer,
-      ),
+      "format bracket",
+      await saveSetting(ids, id, "format", "bracket", organizer),
     );
 
     // XI's two native Teams, and 5 email-less Participants of each (4 for
@@ -791,16 +802,18 @@ export async function assertSquadSelfReportLoop(sessions: {
     }
 
     expectOk(
-      "replaceEntrants kind squad",
-      await callAction(
-        ids.replaceEntrants,
-        [id, { kind: "squad", targetIds: squads.map((s) => s.id) }],
+      "entrants of kind squad",
+      await saveSetting(
+        ids,
+        id,
+        "entrants",
+        { kind: "squad", targetIds: squads.map((s) => s.id) },
         organizer,
       ),
     );
     expectOk(
-      "generateBracket",
-      await callAction(ids.generateBracket, [id, {}], organizer),
+      "build the Bracket",
+      await saveSetting(ids, id, "bracket", null, organizer),
     );
 
     const round1 = await runQuery<{
@@ -842,13 +855,13 @@ export async function assertSquadSelfReportLoop(sessions: {
       SELF_REPORT_OFF,
     );
     expectRefused(
-      "setSelfReport as the linked Participant",
-      await callAction(ids.setSelfReport, [id, { on: true }], notOrganizer),
+      "selfReport as the linked Participant",
+      await saveSetting(ids, id, "selfReport", true, notOrganizer),
       NOT_HOST_REFUSAL_SQUAD,
     );
     expectOk(
-      "setSelfReport on",
-      await callAction(ids.setSelfReport, [id, { on: true }], organizer),
+      "selfReport on",
+      await saveSetting(ids, id, "selfReport", true, organizer),
     );
     expectRefused(
       "recordHeatResult as the linked Participant",
@@ -936,9 +949,9 @@ export async function assertSquadSelfReportLoop(sessions: {
       HEAT_DECIDED,
     );
 
-    const resultsPage = await (await get(`/admin/brackets/${id}`)).text();
+    const resultsPage = await (await get(`/admin/competitions/${id}`)).text();
     if (!resultsPage.includes("Reported by")) {
-      problems.push("/admin/brackets/<id> shows no 'Reported by' line");
+      problems.push("/admin/competitions/<id> shows no 'Reported by' line");
     }
 
     expectOk(

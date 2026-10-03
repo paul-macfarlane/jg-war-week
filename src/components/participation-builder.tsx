@@ -1,62 +1,31 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useActionState, useId, useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import {
   closeParticipation,
   markParticipant,
   reopenParticipation,
-  setParticipationSettings,
   unmarkParticipant,
 } from "@/actions/participation";
 import { ConfirmActionButton } from "@/components/confirm-dialog";
-import { DatePicker } from "@/components/date-picker";
-import { fieldErrorsOf, formErrorOf } from "@/components/form-field-errors";
-import { PlacementPointsRows } from "@/components/placement-points-rows";
-import { TimeCombobox } from "@/components/time-combobox";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-  FieldLegend,
-  FieldSet,
-} from "@/components/ui/field";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { placementPointsList } from "@/lib/games/view";
 import { formatPoints } from "@/lib/points";
-import { fromEasternClock, toEasternClock } from "@/lib/schedule";
-import type { MutationResult } from "@/mutations/types";
 
 /** A Participant of the roster: id, shown name and Team (null for none). */
 type RosterRow = { id: string; name: string; team: string | null };
 
-type SettingsFields = {
-  participationPoints: string;
-  placementPoints: string;
-  selfCheckIn: boolean;
-  closesDate: string;
-  closesTime: string;
-};
-
-function clockOf(date: Date | null): { date: string; time: string } {
-  if (!date) return { date: "", time: "" };
-  const clock = toEasternClock(date);
-  return { date: clock.date, time: clock.time.slice(0, 5) };
-}
-
 /**
- * A `participation` Competition's setup (ADR 0009): its scoring settings
- * and Self check-in, the roster as a checklist to tick who took part (each
- * tick saves at once), the team counts in team scoring, and Close /
- * Reopen. Names, ids and booleans only: no email reaches it.
+ * A `participation` Competition's run area on its Competition page (ADR
+ * 0009): the roster as a checklist to tick who took part (each tick saves
+ * at once), the team counts in team scoring, and Close / Reopen. Its
+ * settings (points, Self check-in and its close time) are in the page's
+ * Settings. Names, ids and booleans only: no email reaches it.
  */
 export function ParticipationBuilder({
   competition,
@@ -67,14 +36,11 @@ export function ParticipationBuilder({
 }: {
   competition: {
     id: string;
-    name: string;
     scoring: "team" | "individual";
     /** N, for an individual Competition; null for a team one. */
     participationPoints: number | null;
     /** The Placement Points, for a team Competition; null for an individual one. */
     placementPoints: number[] | null;
-    selfCheckIn: boolean;
-    checkInClosesAt: Date | null;
     closed: boolean;
   };
   roster: RosterRow[];
@@ -88,47 +54,6 @@ export function ParticipationBuilder({
   const router = useRouter();
   const isTeam = competition.scoring === "team";
   const locked = competition.closed;
-
-  const closes = clockOf(competition.checkInClosesAt);
-  const [fields, setFields] = useState<SettingsFields>({
-    participationPoints:
-      competition.participationPoints === null
-        ? ""
-        : formatPoints(competition.participationPoints),
-    placementPoints: competition.placementPoints?.join(", ") ?? "",
-    selfCheckIn: competition.selfCheckIn,
-    closesDate: closes.date,
-    closesTime: closes.time,
-  });
-  function set<K extends keyof SettingsFields>(
-    key: K,
-    value: SettingsFields[K],
-  ) {
-    setFields((current) => ({ ...current, [key]: value }));
-  }
-  const [result, formAction, saving] = useActionState(
-    async (): Promise<MutationResult> => {
-      const closesAt = fromEasternClock(fields.closesDate, fields.closesTime);
-      const saved = await setParticipationSettings(competition.id, {
-        // An individual Competition gives N each; a team one ranks Teams
-        // by headcount for its Placement Points.
-        participationPoints: isTeam ? "" : fields.participationPoints,
-        placementPoints: isTeam ? fields.placementPoints : "",
-        selfCheckIn: fields.selfCheckIn,
-        checkInClosesAt: closesAt ? closesAt.toISOString() : null,
-      });
-      if (saved.ok) {
-        toast.success("Participation settings saved");
-        router.refresh();
-      } else {
-        toast.error(saved.error);
-      }
-      return saved;
-    },
-    null,
-  );
-  const fieldErrors = fieldErrorsOf(result);
-  const formError = formErrorOf(result);
 
   // Each tick saves at once; until the page refreshes, the box shows it.
   const saved = new Map(tookPart.map((t) => [t.participantId, t.checkedIn]));
@@ -165,9 +90,6 @@ export function ParticipationBuilder({
   );
   const markedCount = roster.filter((row) => isMarked(row.id)).length;
 
-  const scoringLine = isTeam
-    ? `${teamLabel} · Ranked by headcount`
-    : "Individual";
   const closeDescription = !isTeam
     ? `Each Participant who took part gets ${formatPoints(competition.participationPoints ?? 0)} points, and check-ins stop.`
     : `${teamLabel}s ranked by headcount get Placement Points (${placementPointsList(
@@ -176,119 +98,12 @@ export function ParticipationBuilder({
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-2xl font-bold">{competition.name}</h1>
-        <p className="text-foreground/70 text-sm">
-          Participation · {scoringLine}
-        </p>
-      </div>
-
       {locked && (
         <p className="border-border rounded-lg border px-3 py-2 text-sm">
           This Competition is closed. Reopen it to change who took part or its
           settings.
         </p>
       )}
-
-      <form action={formAction} className="flex flex-col gap-6">
-        <FieldSet>
-          <FieldLegend>Settings</FieldLegend>
-          <FieldGroup className="gap-4">
-            {!isTeam && (
-              <Field
-                className="sm:max-w-48"
-                data-invalid={!!fieldErrors.participationPoints}
-              >
-                <FieldLabel htmlFor={`${id}-points`}>
-                  Points per Participant
-                </FieldLabel>
-                <Input
-                  id={`${id}-points`}
-                  inputMode="decimal"
-                  className="h-11 sm:h-9"
-                  disabled={saving || locked}
-                  aria-invalid={!!fieldErrors.participationPoints}
-                  value={fields.participationPoints}
-                  onChange={(event) =>
-                    set("participationPoints", event.target.value)
-                  }
-                />
-                <FieldError>{fieldErrors.participationPoints}</FieldError>
-              </Field>
-            )}
-            {isTeam && (
-              <Field
-                className="sm:max-w-md"
-                data-invalid={!!fieldErrors.placementPoints}
-              >
-                <PlacementPointsRows
-                  value={fields.placementPoints}
-                  invalid={!!fieldErrors.placementPoints}
-                  onChange={(value) => set("placementPoints", value)}
-                />
-                <FieldDescription>
-                  {teamLabel}s are ranked by how many of their Participants took
-                  part; ties share the higher place.
-                </FieldDescription>
-                <FieldError>{fieldErrors.placementPoints}</FieldError>
-              </Field>
-            )}
-          </FieldGroup>
-        </FieldSet>
-
-        <Field orientation="horizontal" className="max-w-xl">
-          <Switch
-            id={`${id}-self-check-in`}
-            checked={fields.selfCheckIn}
-            disabled={saving || locked}
-            onCheckedChange={(on) => set("selfCheckIn", on)}
-          />
-          <FieldContent>
-            <FieldLabel htmlFor={`${id}-self-check-in`}>
-              Participants can check in
-            </FieldLabel>
-            <FieldDescription>
-              Participants check themselves in, or out again, from this
-              Competition&apos;s page until the close time or until you close
-              it. You can tick or untick anyone.
-            </FieldDescription>
-          </FieldContent>
-        </Field>
-        {fields.selfCheckIn && (
-          <FieldGroup className="gap-4 sm:flex-row">
-            <Field className="sm:max-w-48">
-              <FieldLabel htmlFor={`${id}-closes-date`}>
-                Check-in closes
-              </FieldLabel>
-              <DatePicker
-                id={`${id}-closes-date`}
-                name="checkInClosesDate"
-                value={fields.closesDate}
-                onValueChange={(value) => set("closesDate", value)}
-              />
-            </Field>
-            <Field className="sm:max-w-40">
-              <FieldLabel htmlFor={`${id}-closes-time`}>Time (ET)</FieldLabel>
-              <TimeCombobox
-                id={`${id}-closes-time`}
-                name="checkInClosesTime"
-                value={fields.closesTime}
-                onValueChange={(value) => set("closesTime", value)}
-              />
-            </Field>
-          </FieldGroup>
-        )}
-
-        {formError && <FieldError>{formError}</FieldError>}
-        <Button
-          type="submit"
-          size="lg"
-          className="min-h-11 w-fit"
-          disabled={saving || locked}
-        >
-          {saving ? "Saving…" : "Save settings"}
-        </Button>
-      </form>
 
       <section
         className="flex flex-col gap-3"
