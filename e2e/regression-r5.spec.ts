@@ -14,6 +14,7 @@ import {
 import {
   deleteXiCompetition,
   runQuery,
+  withParticipantEmail,
   xiCompetitionId,
   xiParticipantId,
   xiTeamId,
@@ -347,7 +348,9 @@ test("r5 34 admin controls are 44px on a phone", async ({
     // The Hosts field is on the Competition's page (ticket 101).
     await openCompetitionPage(page, competitionId);
     await expectAfterTouchTarget(
-      page.getByRole("button", { name: `Remove ${hostEmail}` }),
+      page.getByRole("button", {
+        name: `Remove ${hostEmail} (not on the roster)`,
+      }),
       "email chip remove",
     );
     await shoot(page, testInfo, "competition-hosts-375");
@@ -624,21 +627,33 @@ test("r5 31 setup rows open in a Sheet", async ({
     await expect(settings.getByText("Hosts", { exact: true })).toBeVisible();
     await shoot(page, testInfo, "competition-page-375");
 
-    // A Host added on the page autosaves, and is there after leaving.
-    await settings
-      .getByRole("textbox", { name: "Hosts", exact: true })
-      .fill(sheetHost);
-    await page.keyboard.press("Enter");
-    const removeHost = settings.getByRole("button", {
-      name: `Remove ${sheetHost}`,
-    });
-    await expect(removeHost).toBeVisible();
-    await expectSaved(page);
-    await page.goto("/admin/competitions");
-    await pool.click();
-    await page.waitForURL(`**/admin/competitions/${poolId}`);
-    await expect(removeHost).toBeVisible();
-    await shoot(page, testInfo, "competition-page-host-saved-375");
+    // A Host picked on the page autosaves, and is there after leaving. The
+    // Participant gets a roster email for the check, so the picker offers them.
+    await withParticipantEmail(
+      "xi",
+      "Ashley Schuliger",
+      sheetHost,
+      async () => {
+        const picker = settings.getByRole("combobox", {
+          name: "Hosts",
+          exact: true,
+        });
+        await picker.click();
+        await picker.fill("Ashley");
+        await page.getByRole("option", { name: /^Ashley Schuliger/ }).click();
+        await page.keyboard.press("Escape");
+        const removeHost = settings.getByRole("button", {
+          name: "Remove Ashley Schuliger",
+        });
+        await expect(removeHost).toBeVisible();
+        await expectSaved(page);
+        await page.goto("/admin/competitions");
+        await pool.click();
+        await page.waitForURL(`**/admin/competitions/${poolId}`);
+        await expect(removeHost).toBeVisible();
+        await shoot(page, testInfo, "competition-page-host-saved-375");
+      },
+    );
 
     // 31-8: the same pattern at 1280.
     await page.setViewportSize(DESKTOP);

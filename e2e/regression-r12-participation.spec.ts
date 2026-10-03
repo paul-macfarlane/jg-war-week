@@ -7,6 +7,7 @@ import {
 } from "./competition-page";
 import {
   deleteXiCompetition,
+  runQuery,
   xiCompetitionEntries,
   xiTeamPointsBreakdown,
 } from "./db";
@@ -103,14 +104,16 @@ test("r12 69 a Host runs a team Participation Competition: check-ins, a tick, Cl
 
     // …and assigns the e2e Host on the Competition's page; it autosaves.
     const settings = page.getByRole("form", { name: "Competition settings" });
-    await settings
-      .getByRole("textbox", { name: "Hosts", exact: true })
-      .fill(E2E_HOST_EMAIL);
-    await page.keyboard.press("Enter");
+    await runQuery(
+      `insert into competition_host (competition_id, email) values ($1, $2)`,
+      [id, E2E_HOST_EMAIL],
+    );
+    await page.reload();
     await expect(
-      settings.getByRole("button", { name: `Remove ${E2E_HOST_EMAIL}` }),
+      settings.getByRole("button", {
+        name: `Remove ${E2E_HOST_EMAIL} (not on the roster)`,
+      }),
     ).toBeVisible();
-    await expectSaved(page);
 
     const before = await breakdownTotals();
     expect(await leaderboardTotals(page)).toEqual(before);

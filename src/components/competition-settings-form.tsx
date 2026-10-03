@@ -6,7 +6,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { saveCompetitionSetting } from "@/actions/setup";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DatePicker } from "@/components/date-picker";
-import { JgEmailChips } from "@/components/jg-email-chips";
+import { EntityCombobox } from "@/components/entity-combobox";
 import { OptionSelect } from "@/components/option-select";
 import { PlacementPointsRows } from "@/components/placement-points-rows";
 import { RichTextEditor } from "@/components/rich-text-editor";
@@ -66,6 +66,7 @@ import {
   type HeadToHeadConfig,
   bestOfLabel,
 } from "@/lib/games/config";
+import { type HostCandidate, buildHostOptions } from "@/lib/host-options";
 import { leavingHref } from "@/lib/leave-guard";
 
 /** How long after the last edit a change saves (as War Week settings). */
@@ -145,6 +146,7 @@ export function CompetitionSettingsForm({
   groupSuggestions,
   canAssignHosts,
   hostNames,
+  hostCandidates = [],
   entrantCount,
 }: {
   competitionId: string;
@@ -157,6 +159,8 @@ export function CompetitionSettingsForm({
   canAssignHosts: boolean;
   /** The Hosts' names, never an email. */
   hostNames: string[];
+  /** The roster Participants an Organizer picks Hosts from; empty for a Host. */
+  hostCandidates?: HostCandidate[];
   /** A Bracket's saved Entrants, for the heat settings it would refuse. */
   entrantCount: number;
 }) {
@@ -265,6 +269,7 @@ export function CompetitionSettingsForm({
   }
 
   const errors = saveState.fieldErrors;
+  const hostOptions = buildHostOptions(hostCandidates, values.hosts);
   const shown = new Set(shownSettings(values, mode));
   const lock = (field: SettingsField) => settingLockReason(field, facts);
   const id = (field: SettingsField) => `competition-${field}`;
@@ -541,12 +546,24 @@ export function CompetitionSettingsForm({
           <div className="flex flex-col gap-2 sm:col-span-2">
             {canAssignHosts ? (
               <>
-                <JgEmailChips
-                  label="Hosts"
-                  description="A Host can change this Competition's settings, run it, and its Points Entries and linked Schedule Items."
-                  value={values.hosts}
-                  onChange={(hosts) => edit({ hosts })}
-                />
+                <Field data-invalid={!!errors.hosts}>
+                  <FieldLabel htmlFor={id("hosts")}>Hosts</FieldLabel>
+                  <EntityCombobox
+                    multiple
+                    id={id("hosts")}
+                    aria-label="Hosts"
+                    aria-invalid={!!errors.hosts}
+                    items={hostOptions}
+                    value={values.hosts}
+                    onValueChange={(hosts) => edit({ hosts })}
+                    placeholder="Search the roster by name"
+                    emptyText="No one on the roster matches."
+                  />
+                  <FieldDescription>
+                    A Host can change this Competition&apos;s settings, run it,
+                    and its Points Entries and linked Schedule Items.
+                  </FieldDescription>
+                </Field>
                 <FieldError>{errors.hosts}</FieldError>
               </>
             ) : (

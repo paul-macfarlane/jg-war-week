@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import { WarWeek, participant, team } from "@/db/schema";
+import type { HostCandidate } from "@/lib/host-options";
 import { type Roster, buildRoster } from "@/lib/roster";
 import type { YouCandidate } from "@/lib/you";
 import {
@@ -60,4 +61,27 @@ export async function getYouCandidates(
     })
     .from(participant)
     .where(eq(participant.warWeekId, warWeek.id));
+}
+
+/**
+ * A War Week's Participants for the Hosts picker: shown name (the Profile
+ * name, else the roster name) and roster email. Emails: call for an
+ * Organizer only.
+ */
+export async function getHostCandidates(
+  warWeek: Pick<WarWeek, "id">,
+  dbOrTx: DBOrTx = db,
+): Promise<HostCandidate[]> {
+  return withProfile(
+    dbOrTx
+      .select({
+        id: participant.id,
+        name: participantNameSql(),
+        email: participant.email,
+      })
+      .from(participant)
+      .$dynamic(),
+  )
+    .where(eq(participant.warWeekId, warWeek.id))
+    .orderBy(participantNameSql(), participant.email);
 }

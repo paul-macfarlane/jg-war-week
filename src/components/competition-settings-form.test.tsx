@@ -129,10 +129,23 @@ describe("CompetitionSettingsForm", () => {
     expect(html).not.toMatch(/[\w.+-]+@[\w-]+\.[a-z]+/i);
   });
 
-  it("lets an Organizer edit the Hosts' emails", () => {
+  it("lets an Organizer pick Hosts, a current Host off the roster shown warned", () => {
     const html = render();
-    expect(html).toContain("ana@jahnelgroup.com");
+    expect(html).toContain("ana@jahnelgroup.com (not on the roster)");
     expect(html).not.toContain("Only an Organizer assigns Hosts.");
+  });
+
+  it("shows an Organizer a current Host by their roster name", () => {
+    const html = render(
+      {},
+      {
+        hostCandidates: [
+          { id: "p1", name: "Ana P", email: "ana@jahnelgroup.com" },
+        ],
+      },
+    );
+    expect(html).toContain("Ana P");
+    expect(html).not.toContain("not on the roster");
   });
 
   describe("a Bracket's heat settings", () => {

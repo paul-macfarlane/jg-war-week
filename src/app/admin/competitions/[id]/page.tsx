@@ -8,6 +8,7 @@ import { formatLabel } from "@/lib/bracket/view";
 import { settingsValuesOf } from "@/lib/competition-page";
 import { getBracketEntrants } from "@/queries/brackets";
 import { getCompetitionPage } from "@/queries/competition-page";
+import { getHostCandidates } from "@/queries/roster";
 import { getCompetitionGroupSuggestions } from "@/queries/setup";
 
 import { loadAdminPage } from "../../gate";
@@ -35,9 +36,12 @@ export default async function CompetitionPage({
     return <AdminRefused warWeek={warWeek} email={email} />;
   }
 
-  const [page, groupSuggestions] = await Promise.all([
+  // The roster's emails load for an Organizer only: a Host's page never
+  // holds a Participant's or another Host's email.
+  const [page, groupSuggestions, hostCandidates] = await Promise.all([
     getCompetitionPage(warWeek.id, id, { withHostEmails: isOrganizer }),
     getCompetitionGroupSuggestions(warWeek),
+    isOrganizer ? getHostCandidates(warWeek) : Promise.resolve([]),
   ]);
   if (!page) notFound();
   const { competition, facts, hostEmails, hostNames } = page;
@@ -84,6 +88,7 @@ export default async function CompetitionPage({
           groupSuggestions={groupSuggestions}
           canAssignHosts={isOrganizer}
           hostNames={hostNames}
+          hostCandidates={hostCandidates}
           entrantCount={entrantCount}
         />
         <section
