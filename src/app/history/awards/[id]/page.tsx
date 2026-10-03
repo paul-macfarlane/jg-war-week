@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { SiteFooter } from "@/components/site-footer";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { awardNameUnderCategory } from "@/lib/award-categories";
@@ -118,7 +117,6 @@ export default async function CategoryHistoryPage({
           ))
         )}
       </main>
-      <SiteFooter className="mt-auto" />
     </>
   );
 }

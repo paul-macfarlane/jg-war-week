@@ -3,8 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { WarWeek } from "@/db/schema";
 
-vi.mock("./war-week", () => ({
-  getWarWeekForEdition: vi.fn(async () => fakeWarWeek),
+vi.mock("@/app/[edition]/war-week", () => ({
   getNavAccount: vi.fn(async () => ({
     email: "o@jahnelgroup.com",
     name: "o",
@@ -36,12 +35,12 @@ const fakeWarWeek = {
   fontPreset: "sans",
 } as unknown as WarWeek;
 
-describe("EditionLayout", () => {
+describe("WarWeekChrome", () => {
   it("stacks the themed root as a flex column so the footer sits at the bottom on short pages", async () => {
-    const { default: EditionLayout } = await import("./layout");
+    const { WarWeekChrome } = await import("./war-week-chrome");
 
-    const element = await EditionLayout({
-      params: Promise.resolve({ edition: "xi" }),
+    const element = await WarWeekChrome({
+      warWeek: fakeWarWeek,
       children: <main data-testid="content">short page</main>,
     });
     const html = renderToStaticMarkup(element);
@@ -51,10 +50,10 @@ describe("EditionLayout", () => {
   });
 
   it("wraps children in a plain block flex-1 div so page content can stretch to its own max-width instead of shrinking to content width", async () => {
-    const { default: EditionLayout } = await import("./layout");
+    const { WarWeekChrome } = await import("./war-week-chrome");
 
-    const element = await EditionLayout({
-      params: Promise.resolve({ edition: "xi" }),
+    const element = await WarWeekChrome({
+      warWeek: fakeWarWeek,
       children: <main data-testid="content">short page</main>,
     });
     const html = renderToStaticMarkup(element);

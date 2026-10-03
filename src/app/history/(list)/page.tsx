@@ -1,12 +1,9 @@
-import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 import { ArchiveCard } from "@/components/archive";
-import { SiteFooter } from "@/components/site-footer";
 import { listArchive } from "@/queries/archive";
 import { getCategoriesWithAwards } from "@/queries/award-category-history";
-import { getCurrentWarWeek } from "@/queries/war-weeks";
 
 export const dynamic = "force-dynamic";
 
@@ -14,24 +11,14 @@ export const metadata: Metadata = { title: "History · JG War Week" };
 
 /** The Archive: every past War Week, newest first, each in its own theme. */
 export default async function HistoryPage() {
-  const [warWeeks, current, categories] = await Promise.all([
+  const [warWeeks, categories] = await Promise.all([
     listArchive(),
-    getCurrentWarWeek(),
     getCategoriesWithAwards(),
   ]);
 
   return (
     <>
       <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 py-6 md:max-w-5xl md:py-10">
-        {current ? (
-          <Link
-            href={`/${current.edition}`}
-            className="text-foreground/70 flex items-center gap-1 text-sm font-medium"
-          >
-            <ArrowLeft aria-hidden className="size-4" />
-            Back to War Week {current.edition.toUpperCase()}
-          </Link>
-        ) : null}
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-bold">War Week history</h1>
           <p className="text-foreground/70">
@@ -78,7 +65,6 @@ export default async function HistoryPage() {
           </section>
         ) : null}
       </main>
-      <SiteFooter className="mt-auto" />
     </>
   );
 }
