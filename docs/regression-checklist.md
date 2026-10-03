@@ -171,7 +171,9 @@ on the matching War Week page.
 
 - [ ] **Lands on the current War Week, on Points.** Open `/admin`; it
       redirects to `/admin/points` (there is no Overview or Setup hub). The
-      header names the current War Week, and the edition switcher (in the
+      header names the current War Week, `/admin/points` opens with "Add a
+      Points Entry" first and the Brackets, Games and Participation quick
+      links below it (at 390 the form is the first thing on the page), and the edition switcher (in the
       header at 1440, in More at 390) lists every edition. Switch to a past
       edition: the banner reads "Editing the Archive: War Week <X>". Switch
       back.
@@ -384,7 +386,11 @@ on the matching War Week page.
       above used `ConfirmDialog`, and every save and delete showed a toast.
 - [ ] **The Guide is true.** Read `/admin/guide`: every step names a page
       and control that exists and works as described (it is written for the
-      flat nav: Settings, Schedule, Roster, no Setup hub).
+      flat nav: Settings, Schedule, Roster, no Setup hub). Its "What a
+      Participant email does" note matches where You and "Your Team" show:
+      You on the roster, the individual leaderboards, Award recipients,
+      Participation lists and a Bracket Entrant; "Your Team" on a games
+      leaderboard; no highlight on Team Standings rows.
 - [ ] **No admin page carries more than it needs.** *(judgment)* Apply the
       judgment rule to every admin page (Points through Guide), every list
       page and every form.
@@ -429,7 +435,9 @@ Every War Week page, signed in as the **linked Participant** unless a line
 says otherwise. Run each line again as the **unlinked** account and check
 that nothing personal shows (no You highlight, no Log a Game).
 
-- [ ] **Home.** `/<edition>` shows the hero, Now/Next for the time given by
+- [ ] **Home.** `/<edition>` shows the hero (with no Banner URL set, as in
+      the XII demo, no banner block and no "War Week" eyebrow: the title
+      "War Week XII" appears once), Now/Next for the time given by
       `?at=` (pick a time with a Schedule Item and a timed Heat), the
       pinned Announcement, Recent results and the top of the Standings: *(free-for-all)*
       with the linked Participant highlighted as You; *(teams)* the Team
@@ -481,7 +489,10 @@ that nothing personal shows (no You highlight, no Log a Game).
       "The Matrix Has You" reads "Opening Sunday: Black Midnight from 12:01
       AM, …") and Items in time order (ET), filterable by Day; each linked
       Competition opens.
-- [ ] **Competitions.** `/<edition>/competitions` lists every Competition.
+- [ ] **Competitions.** `/<edition>/competitions` lists every Competition;
+      when there are Groups the Group tabs wrap onto more lines instead of
+      scrolling sideways, and every tab (Other Competitions too) shows at
+      390.
       Open one of each Format: a `points` Competition shows its Points
       Entries; a Bracket shows the tree (one Round at a time at 390, with a
       List toggle) and its champion once finalized; a `games` Competition
@@ -512,7 +523,8 @@ that nothing personal shows (no You highlight, no Log a Game).
       Category anywhere there are no headings.
 - [ ] **History.** `/history` lists every past War Week with its Story
       Theme and Winner; open three past editions, including the oldest:
-      each shows its archive view. "Awards through the years" lists each
+      each shows its archive view (an edition with no Banner URL shows no
+      banner block and names the War Week once in the hero). "Awards through the years" lists each
       Award Category; open one: `/history/awards/<id>` shows its War Weeks
       newest first with recipients, and an unknown id is a 404 page.
 - [ ] **Finale slideshow.** `/<edition>/finale` opens full screen (over the
@@ -591,6 +603,7 @@ that nothing personal shows (no You highlight, no Log a Game).
 - [ ] **Access.** Signed out, `/<edition>` goes to
       `/sign-in?callbackURL=%2F<edition>` (finish it with Test sign-in at
       `/sign-in/test` and check it returns to `/<edition>`). As the linked Participant, `/admin` (which redirects to
-      `/admin/points`) shows "Organizers and Hosts only."
+      `/admin/points`) shows "Organizers and Hosts only." in the current
+      War Week's colors and font (theme check), with the footer.
 - [ ] **No page carries more than it needs.** *(judgment)* Apply the
       judgment rule to every page above, at 390 first.
