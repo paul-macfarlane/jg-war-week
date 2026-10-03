@@ -65,6 +65,7 @@ import {
   type BestScoreConfig,
   type HeadToHeadConfig,
   bestOfLabel,
+  gamesConfigOf,
 } from "@/lib/games/config";
 import { type HostCandidate, buildHostOptions } from "@/lib/host-options";
 import { leavingHref } from "@/lib/leave-guard";
@@ -735,7 +736,12 @@ function GamesConfigFields({
 }) {
   const off = reason !== null;
   if (values.format === "head-to-head") {
-    const config = values.gameConfig as HeadToHeadConfig;
+    // Right after a Format change the form still holds the old Format's
+    // config (or none); the server saved this Format's default.
+    const config: HeadToHeadConfig = gamesConfigOf({
+      format: "head-to-head",
+      gameConfig: values.gameConfig,
+    });
     return (
       <FieldSet data-invalid={!!error}>
         <FieldLegend>Head-to-head settings</FieldLegend>
@@ -787,7 +793,10 @@ function GamesConfigFields({
       </FieldSet>
     );
   }
-  const config = values.gameConfig as BestScoreConfig;
+  const config: BestScoreConfig = gamesConfigOf({
+    format: "best-score",
+    gameConfig: values.gameConfig,
+  });
   return (
     <FieldSet data-invalid={!!error}>
       <FieldLegend>Best score settings</FieldLegend>

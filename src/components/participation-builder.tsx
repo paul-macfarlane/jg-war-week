@@ -105,18 +105,11 @@ export function ParticipationBuilder({
         </p>
       )}
 
-      <section
-        className="flex flex-col gap-3"
-        aria-labelledby={`${id}-took-part`}
-      >
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id={`${id}-took-part`} className="text-lg font-semibold">
-            Who took part
-          </h2>
-          <span className="text-foreground/70 text-sm tabular-nums">
-            {markedCount} of {roster.length}
-          </span>
-        </div>
+      {/* The run area's own heading names this list ("Who took part"). */}
+      <div className="flex flex-col gap-3">
+        <p className="text-foreground/70 text-sm tabular-nums">
+          {markedCount} of {roster.length}
+        </p>
         <Input
           type="search"
           aria-label="Search the roster"
@@ -168,7 +161,7 @@ export function ParticipationBuilder({
             })}
           </ul>
         )}
-      </section>
+      </div>
 
       {isTeam && (
         <section
