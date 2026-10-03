@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { applyResult, generate } from "@/lib/bracket/engine";
 import type { Bracket, Entrant } from "@/lib/bracket/types";
 
-import { BracketResultsView, finalizeCopy } from "./bracket-results";
+import { BracketAdminView, finalizeCopy } from "./bracket-admin";
 
 vi.mock("@/components/auto-refresh", () => ({
   AutoRefresh: () => <span data-auto-refresh />,
@@ -49,43 +49,76 @@ const props = {
   finalized: false,
   finaleHref: null,
   primaryColor: "#000",
-  onOpenSheetChange: () => {},
+  onOpenHeatChange: () => {},
 };
 
-function render(
-  openSheet: Parameters<typeof BracketResultsView>[0]["openSheet"],
-) {
+function render(openHeatId: string | null) {
   return renderToStaticMarkup(
-    <BracketResultsView {...props} openSheet={openSheet} />,
+    <BracketAdminView {...props} openHeatId={openHeatId} />,
   );
 }
 
-describe("BracketResultsView", () => {
+/** Every Record result / Edit button's accessible name. */
+function recordButtons(html: string): string[] {
+  return [
+    ...html.matchAll(/aria-label="((?:Record result for|Edit) [^"]*)"/g),
+  ].map((m) => m[1]);
+}
+
+describe("BracketAdminView", () => {
+  it("shows the Bracket as the shared tree, with no round cards", () => {
+    const html = render(null);
+    expect(html).toContain("data-bracket-tree");
+    expect(html).not.toMatch(/<section[^>]*aria-label="Semifinal"/);
+  });
+
+  it("offers Record result or Edit on every Heat the Host can record, none on a bye or a Heat still waiting", () => {
+    // Semifinal 1 is a bye; Semifinal 2 is played; the Final waits for Blue
+    // or Green, so it's not recordable yet.
+    expect(recordButtons(render(null))).toEqual(["Edit Semifinal 2"]);
+    const both = applyResult(generate(seeds), "r1h2", { order: ["e2", "e3"] });
+    expect(
+      recordButtons(
+        renderToStaticMarkup(
+          <BracketAdminView {...props} bracket={both} openHeatId={null} />,
+        ),
+      ),
+    ).toEqual(["Edit Semifinal 2", "Record result for Final"]);
+  });
+
+  it("offers no Record result or Edit while the Bracket is finalized", () => {
+    expect(
+      recordButtons(
+        renderToStaticMarkup(
+          <BracketAdminView {...props} finalized openHeatId={null} />,
+        ),
+      ),
+    ).toEqual([]);
+  });
+
   it("refreshes live while no Sheet is open", () => {
     expect(render(null)).toContain("data-auto-refresh");
   });
 
   it("stops refreshing while a Heat Result Sheet is open, so an unsaved result is kept", () => {
-    expect(render({ kind: "result", heatId: "r1h2" })).not.toContain(
-      "data-auto-refresh",
-    );
+    expect(render("r1h2")).not.toContain("data-auto-refresh");
   });
 
   it("offers no time and place on any Heat", () => {
     expect(render(null)).not.toContain("Time &amp; place");
   });
 
-  it("shows when a played Heat was recorded, in ET, on its card", () => {
+  it("shows when a played Heat was recorded, in ET, in its box", () => {
     expect(render(null)).toContain("Recorded Sat 7:05 PM ET");
   });
 
   it("links a finalized Bracket's note to its Finale", () => {
     const html = renderToStaticMarkup(
-      <BracketResultsView
+      <BracketAdminView
         {...props}
         finalized
         finaleHref="/xi/finale/c1"
-        openSheet={null}
+        openHeatId={null}
       />,
     );
     expect(html).toMatch(/<a[^>]*href="\/xi\/finale\/c1"[^>]*>Play the Finale/);
@@ -93,18 +126,18 @@ describe("BracketResultsView", () => {
 
   it("says a finalized Bracket's Points Entries are in the ledger with Placement Points", () => {
     const html = renderToStaticMarkup(
-      <BracketResultsView {...props} finalized openSheet={null} />,
+      <BracketAdminView {...props} finalized openHeatId={null} />,
     );
     expect(html).toContain("Finalized: its Points Entries are in the ledger.");
   });
 
   it("claims no Points Entries for a finalized Bracket without Placement Points", () => {
     const html = renderToStaticMarkup(
-      <BracketResultsView
+      <BracketAdminView
         {...props}
         placementPoints={null}
         finalized
-        openSheet={null}
+        openHeatId={null}
       />,
     );
     expect(html).toContain("it made no Points Entries");
@@ -121,12 +154,12 @@ describe("BracketResultsView", () => {
     expect(finalizeCopy([]).confirmTitle).toBe(finalizeCopy(null).confirmTitle);
   });
 
-  it("names who self-reported a Heat's result on its card", () => {
+  it("names who self-reported a Heat's result in its box", () => {
     const html = renderToStaticMarkup(
-      <BracketResultsView
+      <BracketAdminView
         {...props}
         reporters={{ r1h2: "Ashley Schuliger" }}
-        openSheet={null}
+        openHeatId={null}
       />,
     );
     expect(html).toContain("Reported by Ashley Schuliger");
@@ -156,12 +189,12 @@ describe("BracketResultsView", () => {
     }));
     const view = (b: Bracket) =>
       renderToStaticMarkup(
-        <BracketResultsView
+        <BracketAdminView
           {...props}
           entrants={entrants}
           bracket={b}
           champion="e1"
-          openSheet={null}
+          openHeatId={null}
         />,
       );
 

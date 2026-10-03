@@ -951,6 +951,7 @@ test("r5 38 Escape keeps chosen Entrants; Tree shows a Heat's place; Format help
 
     await page.goto(`/admin/brackets/${id}`);
     await page
+      .locator("[data-bracket-tree]")
       .getByRole("button", { name: "Record result for Semifinal 1" })
       .click();
     const sheet = page.getByRole("dialog", { name: "Semifinal 1" });
@@ -962,7 +963,7 @@ test("r5 38 Escape keeps chosen Entrants; Tree shows a Heat's place; Format help
     await sheet.getByRole("button", { name: "Save Heat Result" }).click();
     await expect(sheet).toBeHidden();
 
-    // 38-1: the Tree (the default layout) shows when the Heat was recorded.
+    // 38-1: the tree (the only layout) shows when the Heat was recorded.
     for (const viewport of [PHONE, DESKTOP]) {
       await page.setViewportSize(viewport);
       await page.goto(`/xi/competitions/${id}`);

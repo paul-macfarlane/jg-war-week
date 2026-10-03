@@ -194,8 +194,7 @@ export function OrganizerGuide({
       <section className="flex flex-col gap-2">
         <h2 className="text-lg font-semibold">Running a Bracket</h2>
         <p className="text-foreground/70">
-          Choose a Competition&apos;s Format — Single elimination or Heats —
-          when you add it under{" "}
+          Choose Bracket as a Competition&apos;s Format when you add it under{" "}
           <Link
             href="/admin/competitions"
             className="text-primary underline underline-offset-4"
@@ -203,30 +202,27 @@ export function OrganizerGuide({
             Competitions
           </Link>{" "}
           and you land straight on its Bracket setup; changing the Format on an
-          existing Competition happens on that Bracket page instead. Single
-          elimination is one against one: the winner of each Heat advances.
-          Heats puts 2 to 8 Entrants in each Heat (you choose how many, and how
-          many advance); the top few of each Heat go on, Round after Round,
-          until one Heat is left. The final placings are the final Heat&apos;s
-          order, then everyone else tied by the Round they went out in; a
-          forfeiter finishes behind the rest of their Heat. Open the Bracket
-          builder to pick Entrants — all {teamLower}s, or specific Participants
-          — and Generate the Bracket (Seed Positions are random; Re-roll before
-          any Heat is played to try again). Press By Standings instead to draw
-          its Seed Positions from the current Standings, ties drawn at random.
-          On the results screen, a Heat&apos;s Time &amp; place sets its Day,
-          start time (ET) and location; the Competition&apos;s Hosts can set it
-          too. A timed Heat shows on its card, in each Entrant&apos;s next Heat
-          and, once its Entrants are known, in the home page&apos;s Now / Next.
-          A re-draw clears every Heat time, so the builder asks first. From the
-          results screen, press Record result on a Heat (Edit once it&apos;s
-          recorded) to enter it: its winner, or for a bigger Heat its Entrants
-          in finishing order, with scores or forfeits, in a dialog centered on a
-          screen or a bottom sheet on a phone. Changing who advances resets the
-          later Heats that followed from it, while a score-only edit keeps them.
-          Finalize turns the Bracket&apos;s placings into Points Entries marked
-          &quot;From bracket&quot;; un-finalize removes them so you can fix a
-          Heat and finalize again. While it&apos;s finalized, the
+          existing Competition happens on that Bracket page instead. A Bracket
+          has one Format: choose how many Entrants are in each Heat (2 to 8) and
+          how many advance. Two per Heat with one advancing is one against one,
+          the winner going on; bigger Heats send their top few on, Round after
+          Round, until one Heat is left. With one against one and at least 4
+          Entrants, turn on the 3rd place game to have the semifinal losers play
+          for 3rd beside the final. The final placings come from the final (and
+          the 3rd place game), then everyone else tied by the Round they went
+          out in. Open the Bracket builder to pick Entrants — all {teamLower}s,
+          or specific Participants — and Generate the Bracket (Seed Positions
+          are random; Re-roll before any Heat is played to try again). Then open
+          Results: the Bracket&apos;s tree, the same one Participants see. Press
+          Record result on a Heat in the tree (Edit once it&apos;s recorded) to
+          enter it: its winner, or for a bigger Heat its Entrants in finishing
+          order, with scores, in a dialog centered on a screen or a bottom sheet
+          on a phone; the tree shows when each Heat was recorded. Changing who
+          advances resets the later Heats that followed from it, while a
+          score-only edit keeps them. Finalize, once every Heat is played (the
+          3rd place game too), turns the Bracket&apos;s placings into Points
+          Entries marked &quot;From bracket&quot;; un-finalize removes them so
+          you can fix a Heat and finalize again. While it&apos;s finalized, the
           Competition&apos;s scoring and Placement Points can&apos;t change:
           un-finalize first.
         </p>
@@ -238,11 +234,11 @@ export function OrganizerGuide({
           Competition); then set Entrants are to Squads and press All Squads.
           Each Squad&apos;s Placement Points go to its {teamLower}, and Squads
           are seeded at random. Turn on Self-report and a Participant whose
-          roster email matches their sign-in can report their own Heat from Your
-          next Heat while it has no result; it counts at once. The results
-          screen shows &quot;Reported by&quot; on that Heat, and you can still
-          change any result there. Turn Self-report off to stop new reports;
-          results already reported stand.
+          roster email matches their sign-in can record their own Heat, from
+          Your next Heat or its Record result in the tree, while it has no
+          result; it counts at once. Results shows &quot;Reported by&quot; on
+          that Heat, and you can still change any result there. Turn Self-report
+          off to stop new reports; results already reported stand.
         </p>
       </section>
 

@@ -1,12 +1,10 @@
 "use client";
 
-import { useState } from "react";
-
 import {
   type BracketViewEntrant,
   EntrantMark,
 } from "@/components/entrant-mark";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import {
   type TreeConnector,
   type TreeHeat,
@@ -19,13 +17,12 @@ import { YOU_ROW_CLASS } from "@/lib/you";
 
 type Scoring = "team" | "individual";
 
-const LINE =
-  "pointer-events-none absolute hidden border-foreground/30 md:block";
+const LINE = "pointer-events-none absolute border-foreground/30";
 
 /**
- * A single-elimination Heat's connector lines (from `md` up): in from the
- * Heat that feeds it, and out to the Heat its winner goes to, half of the
- * bracket shape joining it to its pair.
+ * A single-elimination Heat's connector lines: in from the Heat that feeds
+ * it, and out to the Heat its winner goes to, half of the bracket shape
+ * joining it to its pair.
  */
 function Connectors({
   incoming,
@@ -58,7 +55,7 @@ function Connectors({
   );
 }
 
-/** One line of a Heat's box. */
+/** One line of a Heat's box; a Squad's Participants under its name. */
 function SlotRow({
   slot,
   heat,
@@ -86,17 +83,21 @@ function SlotRow({
           ? `Waiting for ${slot.waitingFor} to finish`
           : `Waiting for ${slot.waitingFor}`;
     return (
-      <div className="text-foreground/60 flex h-8 min-w-0 items-center px-1.5 text-sm italic">
+      <div className="text-foreground/60 flex min-h-8 min-w-0 items-center px-1.5 text-sm italic">
         <span className="truncate">{text}</span>
       </div>
     );
   }
   const entrant = entrantsById.get(slot.entrantId);
   const out = heat.decided && !heat.bye && !slot.advances;
+  const squadNames =
+    entrant?.squadId && entrant.participantNames.length > 0
+      ? entrant.participantNames.join(", ")
+      : null;
   return (
     <div
       data-advances={slot.advances || undefined}
-      className={`flex h-8 min-w-0 items-center gap-2 rounded-md px-1.5 text-sm ${slot.advances ? "bg-primary/15 font-semibold" : out ? "text-foreground/60" : ""} ${YOU_ROW_CLASS}`}
+      className={`flex min-h-8 min-w-0 items-center gap-2 rounded-md px-1.5 text-sm ${slot.advances ? "bg-primary/15 font-semibold" : out ? "text-foreground/60" : ""} ${YOU_ROW_CLASS}`}
     >
       {heatsFormat && heat.decided && slot.place !== null && (
         <span
@@ -113,7 +114,16 @@ function SlotRow({
           primaryColor={primaryColor}
         />
       )}
-      <span className="min-w-0 truncate">{entrant?.label ?? "Unknown"}</span>
+      {squadNames ? (
+        <span className="flex min-w-0 flex-col py-0.5">
+          <span className="min-w-0 truncate">{entrant?.label}</span>
+          <span className="text-foreground/70 min-w-0 text-xs font-normal break-words">
+            {squadNames}
+          </span>
+        </span>
+      ) : (
+        <span className="min-w-0 truncate">{entrant?.label ?? "Unknown"}</span>
+      )}
       {slot.advances && (
         <span className="sr-only">{isFinal ? " wins" : " advances"}</span>
       )}
@@ -129,22 +139,15 @@ function SlotRow({
   );
 }
 
-/** The Round to show first on a phone: the first with a Heat still to decide. */
-function openRound(rounds: { round: number; heats: TreeHeat[] }[]): number {
-  return (
-    rounds.find((r) => r.heats.some((h) => !h.decided))?.round ??
-    rounds.at(-1)?.round ??
-    1
-  );
-}
-
 /**
- * The tree view of a Bracket: Rounds as columns left to right, each Heat a
- * box of its Entrants with those going through highlighted, and (single
- * elimination) connector lines to the Heat each winner goes to. On a phone,
- * one Round at a time behind Round tabs; wider, every Round, scrolling
- * inside its own box when there are too many to fit. Results fill in as
- * Heats are decided.
+ * The one tree of a Bracket, for admin and Participants alike: Rounds as
+ * columns left to right, each Heat a box of its Entrants with those going
+ * through highlighted, and (single elimination) connector lines to the Heat
+ * each winner goes to. The Rounds scroll sideways inside their own region
+ * when they don't fit, so the page itself never does. Each Heat in
+ * `recordableHeatIds` carries a visible Record result (Edit once played)
+ * that calls `onRecord`; any other Heat has none. Hiding a button grants
+ * nothing: the action authorizes.
  */
 export function BracketTree({
   bracket,
@@ -152,120 +155,144 @@ export function BracketTree({
   scoring,
   primaryColor,
   youEntrantId = null,
+  recordableHeatIds = [],
+  onRecord,
+  reporters = {},
 }: {
   bracket: Bracket;
   entrantsById: Map<string, BracketViewEntrant>;
   scoring: Scoring;
   primaryColor: string;
   youEntrantId?: string | null;
+  /** The Heats the viewer may record now; each shows Record result or Edit. */
+  recordableHeatIds?: readonly string[];
+  onRecord?: (heatId: string) => void;
+  /** Who self-reported each Heat's current result, by Heat id: a name. */
+  reporters?: Record<string, string>;
 }) {
   const heatsById = new Map(bracket.heats.map((h) => [h.id, h]));
+  const recordable = new Set(onRecord ? recordableHeatIds : []);
   const tree = bracketTree(bracket);
-  const [active, setActive] = useState(() => openRound(tree.rounds));
   const knockout = tree.headToHead;
   const heatsFormat = !tree.headToHead;
   const finalRound = tree.rounds.at(-1)?.round ?? 0;
   const outOf = new Map(tree.connectors.map((c) => [c.fromHeatId, c]));
 
-  return (
-    <div data-bracket-tree className="flex min-w-0 flex-col gap-3">
-      <Tabs
-        value={active}
-        onValueChange={(value) => setActive(value as number)}
-        className="md:hidden"
+  /** One Heat's box in its slot of the Round's column (`place` sizes it). */
+  const renderHeat = (heat: TreeHeat, place: string) => {
+    const source = heatsById.get(heat.id);
+    const recorded = source?.recordedAt
+      ? formatRecordedAt(source.recordedAt)
+      : "";
+    const reporter = reporters[heat.id];
+    return (
+      <div
+        key={heat.id}
+        data-third-place={heat.thirdPlace ? "" : undefined}
+        className={`relative flex items-center ${place}`}
       >
-        <TabsList
-          aria-label="Rounds"
-          className="h-11 w-full justify-start overflow-x-auto"
+        {knockout && !heat.thirdPlace && (
+          <Connectors incoming={heat.round > 1} out={outOf.get(heat.id)} />
+        )}
+        <div
+          role="group"
+          aria-label={heat.name}
+          className={`text-card-foreground relative flex w-full min-w-0 flex-col gap-1 rounded-lg p-2 ring-1 ${
+            heat.thirdPlace
+              ? "bg-muted/40 ring-foreground/5 opacity-90"
+              : "bg-card ring-foreground/10"
+          }`}
         >
-          {tree.rounds.map((round) => (
-            <TabsTrigger key={round.round} value={round.round}>
-              {round.name}
-            </TabsTrigger>
+          <span className="text-foreground/60 px-1.5 text-xs font-medium">
+            {heat.name}
+          </span>
+          {recorded && (
+            <span className="text-foreground/70 px-1.5 text-xs">
+              {recorded}
+            </span>
+          )}
+          {heat.slots.map((slot, i) => (
+            <SlotRow
+              key={i}
+              slot={slot}
+              heat={heat}
+              heatsFormat={heatsFormat}
+              isFinal={heat.round === finalRound}
+              entrantsById={entrantsById}
+              scoring={scoring}
+              primaryColor={primaryColor}
+              youEntrantId={youEntrantId}
+            />
           ))}
-        </TabsList>
-      </Tabs>
-      <div className="min-w-0 overflow-x-auto md:pb-2">
-        <div className="flex min-w-0 md:w-max md:min-w-full md:gap-8">
+          {heat.bye && heatsFormat && (
+            <span className="text-foreground/60 px-1.5 text-sm italic">
+              Bye — advances
+            </span>
+          )}
+          {reporter && (
+            <span className="text-foreground/70 px-1.5 text-xs">
+              Reported by {reporter}
+            </span>
+          )}
+          {recordable.has(heat.id) && (
+            // Its ::after stretches over the Heat's box, so the whole Heat
+            // is one tap target; the box is the containing block.
+            <Button
+              type="button"
+              variant={heat.decided ? "outline" : "default"}
+              size="sm"
+              aria-label={`${heat.decided ? "Edit" : "Record result for"} ${heat.name}`}
+              className="mt-1 min-h-11 self-start after:absolute after:inset-0 after:rounded-lg active:not-aria-[haspopup]:translate-none sm:min-h-8"
+              onClick={() => onRecord?.(heat.id)}
+            >
+              {heat.decided ? "Edit" : "Record result"}
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div data-bracket-tree className="flex min-w-0 flex-col">
+      <div
+        role="region"
+        aria-label="Rounds"
+        tabIndex={0}
+        data-testid="bracket-tree-scroll"
+        className="focus-visible:ring-ring/50 min-w-0 overflow-x-auto rounded-lg pb-2 outline-none focus-visible:ring-3"
+      >
+        <div className="flex w-max min-w-full gap-8">
           {tree.rounds.map((round) => (
             <div
               key={round.round}
               role="group"
               aria-label={round.name}
-              data-active={round.round === active}
-              className="flex w-full min-w-0 shrink-0 flex-col data-[active=false]:hidden md:w-56 md:data-[active=false]:flex"
+              className="flex w-56 shrink-0 flex-col"
             >
-              <h3 className="mb-1 hidden text-sm font-semibold md:block">
-                {round.name}
-              </h3>
-              <div
-                className={`relative flex flex-1 flex-col ${knockout ? "" : "justify-center gap-3"}`}
-              >
-                {round.heats.map((heat) => {
-                  const source = heatsById.get(heat.id);
-                  const recorded = source?.recordedAt
-                    ? formatRecordedAt(source.recordedAt)
-                    : "";
-                  return (
-                    <div
-                      key={heat.id}
-                      data-third-place={heat.thirdPlace ? "" : undefined}
-                      className={`relative flex items-center ${
-                        heat.thirdPlace
-                          ? // Beside the final, under it, and no lines: it
-                            // keeps the final where its semifinals meet.
-                            "py-2 md:absolute md:inset-x-0 md:bottom-0"
-                          : knockout
-                            ? "flex-1 py-2"
-                            : ""
-                      }`}
-                    >
-                      {knockout && !heat.thirdPlace && (
-                        <Connectors
-                          incoming={heat.round > 1}
-                          out={outOf.get(heat.id)}
-                        />
-                      )}
-                      <div
-                        role="group"
-                        aria-label={heat.name}
-                        className={`text-card-foreground flex w-full min-w-0 flex-col gap-1 rounded-lg p-2 ring-1 ${
-                          heat.thirdPlace
-                            ? "bg-muted/40 ring-foreground/5 opacity-90"
-                            : "bg-card ring-foreground/10"
-                        }`}
-                      >
-                        <span className="text-foreground/60 px-1.5 text-xs font-medium">
-                          {heat.name}
-                        </span>
-                        {recorded && (
-                          <span className="text-foreground/70 px-1.5 text-xs">
-                            {recorded}
-                          </span>
-                        )}
-                        {heat.slots.map((slot, i) => (
-                          <SlotRow
-                            key={i}
-                            slot={slot}
-                            heat={heat}
-                            heatsFormat={heatsFormat}
-                            isFinal={heat.round === finalRound}
-                            entrantsById={entrantsById}
-                            scoring={scoring}
-                            primaryColor={primaryColor}
-                            youEntrantId={youEntrantId}
-                          />
-                        ))}
-                        {heat.bye && heatsFormat && (
-                          <span className="text-foreground/60 px-1.5 text-sm italic">
-                            Bye — advances
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <h3 className="mb-1 text-sm font-semibold">{round.name}</h3>
+              {knockout && round.heats.some((h) => h.thirdPlace) ? (
+                // The final stays in the middle row, where its semifinals'
+                // lines meet; the 3rd place game sits under it, unjoined.
+                // Equal outer rows leave room for it without overlap.
+                <div className="relative grid flex-1 grid-rows-[1fr_auto_1fr]">
+                  <div aria-hidden />
+                  {round.heats
+                    .filter((h) => !h.thirdPlace)
+                    .map((heat) => renderHeat(heat, "py-2"))}
+                  {round.heats
+                    .filter((h) => h.thirdPlace)
+                    .map((heat) => renderHeat(heat, "self-start py-2"))}
+                </div>
+              ) : (
+                <div
+                  className={`relative flex flex-1 flex-col ${knockout ? "" : "justify-center gap-3"}`}
+                >
+                  {round.heats.map((heat) =>
+                    renderHeat(heat, knockout ? "flex-1 py-2" : ""),
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>

@@ -12,22 +12,14 @@ import {
 } from "@/components/entrant-mark";
 import { HeatResultForm } from "@/components/heat-result-form";
 import { ResponsiveSheetDialog } from "@/components/responsive-sheet-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useYou } from "@/components/you";
-import { isHeadToHead } from "@/lib/bracket/config";
-import { isBye } from "@/lib/bracket/formats";
-import { advancesFromPlace } from "@/lib/bracket/tree";
-import type { Bracket, Heat } from "@/lib/bracket/types";
+import type { Bracket } from "@/lib/bracket/types";
 import {
   type NextHeat,
   entrantForYou,
-  formatRecordedAt,
-  groupRounds,
   heatName,
-  isDecided,
   nextHeatFor,
 } from "@/lib/bracket/view";
 import { YOU_ROW_CLASS } from "@/lib/you";
@@ -46,140 +38,10 @@ export function YouMark() {
   );
 }
 
-/** What fills `slot` of `heat`: a Heat's winner, or a semifinal's loser. */
-function feederLabel(bracket: Bracket, heat: Heat, slot: number) {
-  const winner = bracket.heats.find(
-    (h) => h.winnerTo?.heatId === heat.id && h.winnerTo.slot === slot,
-  );
-  if (winner) return heatName(bracket, winner);
-  const loser = bracket.heats.find(
-    (h) => h.loserTo?.heatId === heat.id && h.loserTo.slot === slot,
-  );
-  return loser ? `${heatName(bracket, loser)}'s loser` : null;
-}
-
 /** "A", "A and B", "A, B and C". */
 function listNames(names: string[]): string {
   if (names.length <= 1) return names.join("");
   return `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
-}
-
-/**
- * A Heat's places: each Entrant with its mark and score. A
- * decided two-slot Heat marks its winner bold with a ✓; a decided Heat of
- * more lists its Entrants by place with their place numbers. An empty
- * single-elimination place reads "Bye" or "Waiting for …"; a Heats Round
- * not yet filled reads "Waiting for Round N to finish", and a Heats bye
- * says its Entrants advance.
- */
-export function HeatRows({
-  heat,
-  bracket,
-  entrantsById,
-  scoring,
-  primaryColor,
-  youEntrantId = null,
-}: {
-  heat: Heat;
-  bracket: Bracket;
-  entrantsById: Map<string, BracketViewEntrant>;
-  scoring: Scoring;
-  primaryColor: string;
-  youEntrantId?: string | null;
-}) {
-  const bye = isBye(bracket, heat);
-  const decided = isDecided(heat) && !bye;
-  const ranked = decided && heat.slots.length > 2;
-  if (
-    !isHeadToHead(bracket.config) &&
-    heat.slots.every((s) => s.entrantId === null)
-  ) {
-    return (
-      <p className="text-foreground/60 flex min-h-8 items-center px-1 italic">
-        Waiting for Round {heat.round - 1} to finish
-      </p>
-    );
-  }
-  const slots = heat.slots.map((slot, i) => ({ slot, i }));
-  if (ranked) slots.sort((a, b) => (a.slot.place ?? 0) - (b.slot.place ?? 0));
-  return (
-    <ul className="flex flex-col gap-1">
-      {slots.map(({ slot, i }) => {
-        const entrant = slot.entrantId
-          ? entrantsById.get(slot.entrantId)
-          : undefined;
-        if (!entrant) {
-          const feeder = feederLabel(bracket, heat, i);
-          return (
-            <li
-              key={i}
-              className="text-foreground/60 flex min-h-8 items-center px-1 italic"
-            >
-              {bye ? "Bye" : feeder ? `Waiting for ${feeder}` : "Waiting"}
-            </li>
-          );
-        }
-        const advances = !bye && advancesFromPlace(bracket, heat, slot.place);
-        return (
-          <li
-            key={i}
-            data-advances={advances ? "" : undefined}
-            className={`flex min-h-8 min-w-0 items-center gap-2 px-1 ${YOU_ROW_CLASS}`}
-          >
-            {ranked && (
-              <span
-                aria-label={`Place ${slot.place}`}
-                className={`w-5 shrink-0 text-right text-sm tabular-nums ${advances ? "text-primary font-bold" : "text-foreground/60"}`}
-              >
-                {slot.place}
-              </span>
-            )}
-            <EntrantMark
-              entrant={entrant}
-              scoring={scoring}
-              primaryColor={primaryColor}
-            />
-            {entrant.squadId && entrant.participantNames.length > 0 ? (
-              <span className="flex min-w-0 flex-col">
-                <span
-                  className={`min-w-0 truncate ${advances ? "font-semibold" : decided ? "text-foreground/70" : ""}`}
-                >
-                  {entrant.label}
-                </span>
-                <span className="text-foreground/60 min-w-0 text-xs break-words">
-                  {entrant.participantNames.join(", ")}
-                </span>
-              </span>
-            ) : (
-              <span
-                className={`min-w-0 truncate ${advances ? "font-semibold" : decided ? "text-foreground/70" : ""}`}
-              >
-                {entrant.label}
-              </span>
-            )}
-            {advances && !ranked && (
-              <span aria-label="Winner" className="text-primary font-bold">
-                ✓
-              </span>
-            )}
-            {entrant.id === youEntrantId && <YouMark />}
-            {slot.score && (
-              <span
-                className={`ml-auto shrink-0 tabular-nums ${advances ? "font-semibold" : ""}`}
-              >
-                {slot.score}
-              </span>
-            )}
-          </li>
-        );
-      })}
-      {bye && !isHeadToHead(bracket.config) && (
-        <li className="text-foreground/60 flex min-h-8 items-center px-1 italic">
-          Bye — advances
-        </li>
-      )}
-    </ul>
-  );
 }
 
 /**
@@ -261,13 +123,11 @@ export type BracketViewSelfReport = {
   reportableHeatId: string | null;
 };
 
-type BracketLayout = "tree" | "list";
-
 /**
  * The Competition page's Bracket: the champion and Your next Heat pinned on
- * top, then the Bracket as a tree (the default) or, with the List toggle, a
- * vertical list of Heats grouped by Round with (single elimination)
- * "Winner → …" chips; Your Entrant highlighted under the You rules. Owns
+ * top, then the Bracket's tree (the same one admin records from), Your
+ * Entrant highlighted under the You rules. Your Heat, when you may
+ * self-report it, carries Record result in the tree as on the card. Owns
  * the report Sheet (a centered Dialog on large screens), and refreshes
  * live while it's closed (a Bracket not drawn yet too, so the draw
  * appears).
@@ -300,7 +160,6 @@ export function BracketView({
 }) {
   const you = useYou();
   const [reporting, setReporting] = useState<string | null>(null);
-  const [layout, setLayout] = useState<BracketLayout>("tree");
   const entrantsById = new Map(entrants.map((e) => [e.id, e]));
   const youEntrantId = entrantForYou(
     entrants,
@@ -345,22 +204,7 @@ export function BracketView({
 
   return (
     <section className="flex min-w-0 flex-col gap-4" aria-label="Bracket">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold">Bracket</h2>
-        <Tabs
-          value={layout}
-          onValueChange={(value) => setLayout(value as BracketLayout)}
-        >
-          <TabsList aria-label="Bracket view" className="h-11 sm:h-8">
-            <TabsTrigger value="tree" className="px-3">
-              Tree
-            </TabsTrigger>
-            <TabsTrigger value="list" className="px-3">
-              List
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
+      <h2 className="text-lg font-semibold">Bracket</h2>
       {squadHelp}
 
       {winner && (
@@ -409,72 +253,19 @@ export function BracketView({
         />
       )}
 
-      {layout === "tree" ? (
-        <BracketTree
-          bracket={bracket}
-          entrantsById={entrantsById}
-          scoring={scoring}
-          primaryColor={primaryColor}
-          youEntrantId={youEntrantId}
-        />
-      ) : (
-        <div className="flex flex-col gap-4">
-          {groupRounds(bracket).map((round) => (
-            <section
-              key={round.round}
-              className="flex flex-col gap-2"
-              aria-label={round.name}
-            >
-              <h3 className="font-semibold">{round.name}</h3>
-              <ul className="flex flex-col gap-2">
-                {round.heats.map((heat) => {
-                  const to =
-                    isHeadToHead(bracket.config) && heat.winnerTo
-                      ? heatsById.get(heat.winnerTo.heatId)
-                      : undefined;
-                  const loserTo = heat.loserTo
-                    ? heatsById.get(heat.loserTo.heatId)
-                    : undefined;
-                  return (
-                    <li key={heat.id}>
-                      <Card size="sm">
-                        <CardContent className="flex min-w-0 flex-col gap-2">
-                          <span className="text-foreground/60 text-xs font-medium">
-                            {heatName(bracket, heat)}
-                          </span>
-                          {heat.recordedAt && (
-                            <span className="text-foreground/70 text-xs">
-                              {formatRecordedAt(heat.recordedAt)}
-                            </span>
-                          )}
-                          <HeatRows
-                            heat={heat}
-                            bracket={bracket}
-                            entrantsById={entrantsById}
-                            scoring={scoring}
-                            primaryColor={primaryColor}
-                            youEntrantId={youEntrantId}
-                          />
-                          {to && (
-                            <Badge variant="secondary">
-                              Winner → {heatName(bracket, to)}
-                            </Badge>
-                          )}
-                          {loserTo && (
-                            <Badge variant="outline">
-                              Loser → {heatName(bracket, loserTo)}
-                            </Badge>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          ))}
-        </div>
-      )}
+      <BracketTree
+        bracket={bracket}
+        entrantsById={entrantsById}
+        scoring={scoring}
+        primaryColor={primaryColor}
+        youEntrantId={youEntrantId}
+        recordableHeatIds={
+          canReport && selfReport.reportableHeatId
+            ? [selfReport.reportableHeatId]
+            : []
+        }
+        onRecord={setReporting}
+      />
 
       <ResponsiveSheetDialog
         open={reportHeat !== undefined}

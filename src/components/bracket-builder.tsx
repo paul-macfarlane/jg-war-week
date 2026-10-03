@@ -826,7 +826,7 @@ export function BracketBuilder({
                   className: "min-h-11 w-fit",
                 })}
               >
-                Run results
+                Results
               </Link>
             </section>
           )}

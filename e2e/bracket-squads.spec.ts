@@ -120,22 +120,15 @@ async function checkViewports(
   await page.setViewportSize({ width: 1280, height: 900 });
 }
 
-/** The Card of the Heat named `heat` (exactly: not "Waiting for …"). */
+/**
+ * The box of the Heat named `heat` in the Bracket's tree, admin's or the
+ * Competition page's (the last match: the Final's Round is named Final too).
+ */
 function heatCard(page: Page, heat: string): Locator {
   return page
-    .getByRole("listitem")
-    .filter({ has: page.getByText(heat, { exact: true }) });
-}
-
-/**
- * Switches the Competition page's Bracket from its default tree to the
- * List, whose Heat Cards `heatCard` finds.
- */
-async function showList(page: Page) {
-  await page
-    .getByRole("region", { name: "Bracket" })
-    .getByRole("tab", { name: "List" })
-    .click();
+    .locator("[data-bracket-tree]")
+    .getByRole("group", { name: heat, exact: true })
+    .last();
 }
 
 /** The Squad named in a Winner button's text. */
@@ -147,7 +140,11 @@ function squadIn(text: string): string {
 
 /** Records the Heat named `heat` as the Host, its first-listed Squad winning. */
 async function recordHeat(page: Page, heat: string): Promise<string> {
-  await page.getByRole("button", { name: `Record result for ${heat}` }).click();
+  // From the admin Bracket's tree, the one Participants see.
+  await page
+    .locator("[data-bracket-tree]")
+    .getByRole("button", { name: `Record result for ${heat}` })
+    .click();
   const sheet = page.getByRole("dialog", { name: heat });
   const winner = sheet
     .getByRole("group", { name: "Winner" })
@@ -303,7 +300,19 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await shootHelp(first, testInfo, "competition-page");
     for (const you of [first, second]) {
       await you.goto(`/xi/competitions/${id}`);
-      await showList(you);
+      // Tree only: no List toggle.
+      await expect(
+        you.getByRole("region", { name: "Bracket" }).getByRole("tab"),
+      ).toHaveCount(0);
+      // Their own Heat carries Record result in the tree; the other doesn't.
+      await expect(
+        heatCard(you, semifinal).getByRole("button", {
+          name: `Record result for ${semifinal}`,
+        }),
+      ).toBeVisible();
+      await expect(
+        heatCard(you, otherSemifinal).getByRole("button"),
+      ).toHaveCount(0);
       const nextHeat = you
         .getByRole("region", { name: "Bracket" })
         .getByLabel("Your next Heat");
@@ -353,13 +362,13 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await second.keyboard.press("Escape");
     await expect(secondSheet).toBeHidden();
     await second.reload();
-    await showList(second);
     await expect(
-      heatCard(second, semifinal)
-        .getByRole("listitem")
-        .filter({ hasText: "Red Alpha" })
-        .getByLabel("Winner"),
-    ).toBeVisible();
+      heatCard(second, semifinal).locator("[data-advances]"),
+    ).toContainText("Red Alpha");
+    // Decided: no Record result for the second any more.
+    await expect(heatCard(second, semifinal).getByRole("button")).toHaveCount(
+      0,
+    );
     await secondContext.close();
 
     // The Host sees who reported it.
@@ -370,13 +379,15 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await checkViewports(page, testInfo, "results-reported");
     await recordHeat(page, otherSemifinal);
 
-    // The first reports the Final too.
+    // The first reports the Final too, from its Record result in the tree.
     await first.reload();
     const nextHeat = first
       .getByRole("region", { name: "Bracket" })
       .getByLabel("Your next Heat");
     await expect(nextHeat).toContainText("Your next Heat · Final");
-    await nextHeat.getByRole("button", { name: "Report result" }).click();
+    await heatCard(first, "Final")
+      .getByRole("button", { name: "Record result for Final" })
+      .click();
     const finalSheet = first.getByRole("dialog", { name: "Final" });
     await finalSheet
       .getByRole("group", { name: "Winner" })

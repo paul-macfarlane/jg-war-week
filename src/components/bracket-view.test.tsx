@@ -2,11 +2,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { generate } from "@/lib/bracket/engine";
-import { heats } from "@/lib/bracket/heats";
 import type { Entrant } from "@/lib/bracket/types";
 import { nextHeatFor } from "@/lib/bracket/view";
 
-import { BracketView, HeatRows, YourNextHeatCard } from "./bracket-view";
+import { BracketView, YourNextHeatCard } from "./bracket-view";
+import { YouProvider } from "./you";
 
 vi.mock("@/components/auto-refresh", () => ({
   AutoRefresh: () => <span data-auto-refresh />,
@@ -85,12 +85,13 @@ describe("BracketView", () => {
     ).toContain("data-auto-refresh");
   });
 
-  it("shows the Bracket as a tree by default, with a List toggle", () => {
+  it("shows the Bracket as the tree alone, with no List toggle", () => {
     const html = renderToStaticMarkup(
       <BracketView {...props} bracket={bracket} />,
     );
     expect(html).toContain("data-bracket-tree");
-    expect(html).toMatch(/<button[^>]*role="tab"[^>]*>List<\/button>/);
+    expect(html).not.toContain('role="tab"');
+    expect(html).not.toContain(">List<");
   });
 
   it("shows when a played Heat was recorded, in the default tree", () => {
@@ -151,68 +152,69 @@ describe("BracketView", () => {
   });
 });
 
-describe("HeatRows advancers", () => {
-  const eight: Entrant[] = Array.from({ length: 8 }, (_, i) => ({
-    id: `h${i + 1}`,
-    seedPosition: i + 1,
-    label: `Entrant ${i + 1}`,
+describe("BracketView's Record result in the tree", () => {
+  // An individual Bracket: Neo (p1) v Trinity (p2); Morpheus (p3) isn't in it.
+  const people = entrants.map((e, i) => ({
+    ...e,
+    teamId: null,
+    participantId: `p${i + 1}`,
+    label: ["Neo", "Trinity"][i],
   }));
-  const heatEntrants = new Map(
-    eight.map((e) => [
-      e.id,
-      {
-        id: e.id,
-        label: e.label,
-        color: "#f00",
-        teamId: `t${e.id}`,
-        participantId: null,
-        squadId: null,
-        participantNames: [],
-      },
-    ]),
-  );
-  const newId = (round: number, position: number) => `r${round}h${position}`;
-
-  function rows(bracket: ReturnType<typeof heats.generate>, heatId: string) {
-    return renderToStaticMarkup(
-      <HeatRows
-        heat={bracket.heats.find((h) => h.id === heatId)!}
-        bracket={bracket}
-        entrantsById={heatEntrants}
-        scoring="individual"
-        primaryColor="#f00"
-      />,
+  const heatId = bracket.heats[0].id;
+  const view = (
+    linkedId: string | null,
+    selfReport: {
+      on: boolean;
+      linkedParticipantId: string | null;
+      reportableHeatId: string | null;
+    },
+  ) =>
+    renderToStaticMarkup(
+      <YouProvider linkedId={linkedId}>
+        <BracketView
+          competitionId="c1"
+          entrants={people}
+          bracket={bracket}
+          champion={null}
+          scoring="individual"
+          primaryColor="#000"
+          participantTeams={{}}
+          participantSquads={{}}
+          finaleHref={null}
+          selfReport={selfReport}
+        />
+      </YouProvider>,
     );
-  }
-
-  /** The place numbers of the rows marked as advancing. */
-  function advancingPlacesIn(html: string): string[] {
-    return [
-      ...html.matchAll(/data-advances[^>]*>.*?aria-label="Place (\d)"/g),
-    ].map((m) => m[1]);
-  }
-
-  it("highlights places 1 and 2 of a Heat of 4 with 2 advancing", () => {
-    let bracket = heats.generate(
-      { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
-      eight,
-      newId,
+  const recordButtons = (html: string) =>
+    [...html.matchAll(/aria-label="(Record result for [^"]*)"/g)].map(
+      (m) => m[1],
     );
-    const heat = bracket.heats.find((h) => h.id === "r1h1")!;
-    const order = heat.slots.map((s) => s.entrantId!);
-    bracket = heats.applyResult(bracket, "r1h1", { order, scores: {} });
-    expect(advancingPlacesIn(rows(bracket, "r1h1"))).toEqual(["1", "2"]);
 
-    const other = bracket.heats.find((h) => h.id === "r1h2")!;
-    bracket = heats.applyResult(bracket, "r1h2", {
-      order: other.slots.map((s) => s.entrantId!),
-      scores: {},
+  it("a self-reporting Participant sees Record result on their own Heat", () => {
+    const html = view("p1", {
+      on: true,
+      linkedParticipantId: "p1",
+      reportableHeatId: heatId,
     });
-    const final = bracket.heats.find((h) => h.round === 2)!;
-    bracket = heats.applyResult(bracket, final.id, {
-      order: final.slots.map((s) => s.entrantId!),
-      scores: {},
+    expect(recordButtons(html)).toEqual(["Record result for Final"]);
+  });
+
+  it("a Participant not in the Heat sees no Record result", () => {
+    const html = view("p3", {
+      on: true,
+      linkedParticipantId: "p3",
+      reportableHeatId: null,
     });
-    expect(advancingPlacesIn(rows(bracket, final.id))).toEqual(["1"]);
+    expect(recordButtons(html)).toEqual([]);
+  });
+
+  it("with self-report off, a Participant in the Heat sees no Record result", () => {
+    const html = view("p1", {
+      on: false,
+      linkedParticipantId: "p1",
+      reportableHeatId: heatId,
+    });
+    expect(recordButtons(html)).toEqual([]);
+    expect(html).not.toContain("Report result");
   });
 });

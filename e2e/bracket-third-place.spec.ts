@@ -48,7 +48,11 @@ test.afterEach(async () => {
 
 /** Records the Heat named `heat`, with its first-listed Entrant winning. */
 async function recordHeat(page: Page, heat: string) {
-  await page.getByRole("button", { name: `Record result for ${heat}` }).click();
+  // From the admin Bracket's tree, the one Participants see.
+  await page
+    .locator("[data-bracket-tree]")
+    .getByRole("button", { name: `Record result for ${heat}` })
+    .click();
   const sheet = page.getByRole("dialog", { name: heat });
   const winner = sheet
     .getByRole("group", { name: "Winner" })
@@ -108,7 +112,7 @@ test("a head-to-head Bracket of 8 with a 3rd place game is run to Finalize, plac
   await page.getByRole("button", { name: "Generate" }).click();
   await expect(page.getByText("Bracket generated")).toBeVisible();
 
-  await page.getByRole("link", { name: "Run results" }).click();
+  await page.getByRole("link", { name: "Results", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: `${COMPETITION} · Results` }),
   ).toBeVisible();

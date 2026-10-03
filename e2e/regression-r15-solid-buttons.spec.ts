@@ -47,7 +47,11 @@ test("r15 87 the admin Bracket's unrecorded Heat has a solid Record result butto
     await expect(page.getByText("Bracket generated")).toBeVisible();
 
     await page.goto(`/admin/brackets/${id}`);
-    const record = page.getByRole("button", { name: /^Record result/ }).first();
+    // In the admin Bracket's tree (100), the one Participants see.
+    const record = page
+      .locator("[data-bracket-tree]")
+      .getByRole("button", { name: /^Record result/ })
+      .first();
     await expect(record).toBeVisible();
     await expect(record).toHaveClass(/\bbg-primary\b/);
     const background = await record.evaluate(
@@ -61,9 +65,14 @@ test("r15 87 the admin Bracket's unrecorded Heat has a solid Record result butto
       fullPage: true,
     });
 
-    // A click on the card's content, away from its buttons, opens the
-    // Heat result: the button's ::after stretches over the whole card.
-    const card = page.locator('[data-slot="card"]').filter({ has: record });
+    // A click on the Heat box's content, away from its button, opens the
+    // Heat result: the button's ::after stretches over the whole box. The
+    // last group holding the button is the Heat's box (inside its Round's).
+    const card = page
+      .locator("[data-bracket-tree]")
+      .getByRole("group")
+      .filter({ has: record })
+      .last();
     await card.click({ position: { x: 12, y: 40 } });
     await expect(
       page.getByRole("dialog").getByRole("group", { name: "Finishing order" }),

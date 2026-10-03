@@ -88,7 +88,11 @@ async function recordHeat(
   heat: string,
   onOpen?: (sheet: Locator) => Promise<void>,
 ): Promise<string[]> {
-  await page.getByRole("button", { name: `Record result for ${heat}` }).click();
+  // From the admin Bracket's tree, the one Participants see.
+  await page
+    .locator("[data-bracket-tree]")
+    .getByRole("button", { name: `Record result for ${heat}` })
+    .click();
   const sheet = page.getByRole("dialog", { name: heat });
   await expect(sheet).toBeVisible();
   if (onOpen) await onOpen(sheet);
@@ -151,7 +155,7 @@ test("a Heats Bracket is built, run and finalized into Points Entries", async ({
 
   await checkViewports(page, testInfo, "builder");
 
-  await page.getByRole("link", { name: "Run results" }).click();
+  await page.getByRole("link", { name: "Results", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: `${COMPETITION} · Results` }),
   ).toBeVisible();

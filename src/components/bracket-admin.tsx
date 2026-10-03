@@ -9,7 +9,7 @@ import {
   unfinalizeBracket,
 } from "@/actions/brackets";
 import { AutoRefresh } from "@/components/auto-refresh";
-import { HeatRows } from "@/components/bracket-view";
+import { BracketTree } from "@/components/bracket-tree";
 import { ConfirmActionButton } from "@/components/confirm-dialog";
 import {
   type BracketViewEntrant,
@@ -24,18 +24,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { isComplete, isRecordable } from "@/lib/bracket/formats";
 import type { Bracket } from "@/lib/bracket/types";
-import {
-  formatRecordedAt,
-  groupRounds,
-  heatName,
-  isDecided,
-} from "@/lib/bracket/view";
 import { hasPlacementPoints } from "@/lib/competitions";
 
 type Scoring = "team" | "individual";
 
 /**
- * The results screen's Heat Result form: the Host's record, which asks
+ * The admin Bracket's Heat Result form: the Host's record, which asks
  * before resetting later Heats and toasts "<1st place> wins <Heat name>".
  */
 function HeatResultSheet({
@@ -73,10 +67,7 @@ export function finalizeCopy(placementPoints: number[] | null) {
       };
 }
 
-/** Which Sheet is open: the Heat Result of a Heat. */
-export type OpenSheet = { kind: "result"; heatId: string } | null;
-
-type BracketResultsProps = {
+type BracketAdminProps = {
   competitionId: string;
   /** The Competition's Placement Points; none means Finalize creates no Points Entries. */
   placementPoints: number[] | null;
@@ -93,28 +84,30 @@ type BracketResultsProps = {
 };
 
 /**
- * Runs a Bracket on a phone: Heats by Round as Cards, a tap opens the Heat
+ * Runs a Bracket for an Organizer or the Competition's Host: the champion
+ * and Finalize / Un-finalize on top, then the Bracket's tree (the same one
+ * Participants see) with Record result (Edit once played) on every Heat
+ * that can be recorded while it isn't finalized. A tap opens the Heat
  * Result popup, a bottom Sheet on a phone and a centered Dialog on large
- * screens (`ResponsiveSheetDialog`); the champion and Finalize / Un-finalize sit on
- * top. Refreshes live while no popup is open.
+ * screens (`ResponsiveSheetDialog`). Refreshes live while no popup is open.
  */
-export function BracketResults(props: BracketResultsProps) {
-  const [openSheet, setOpenSheet] = useState<OpenSheet>(null);
+export function BracketAdmin(props: BracketAdminProps) {
+  const [openHeatId, setOpenHeatId] = useState<string | null>(null);
   return (
-    <BracketResultsView
+    <BracketAdminView
       {...props}
-      openSheet={openSheet}
-      onOpenSheetChange={setOpenSheet}
+      openHeatId={openHeatId}
+      onOpenHeatChange={setOpenHeatId}
     />
   );
 }
 
 /**
- * The results screen for a given open Sheet (props only). Live refresh runs
- * only while no Sheet is open, so it never interrupts an unsaved Heat
- * Result.
+ * The admin Bracket for a given open Heat Result (props only). Live
+ * refresh runs only while no popup is open, so it never interrupts an
+ * unsaved Heat Result.
  */
-export function BracketResultsView({
+export function BracketAdminView({
   competitionId,
   placementPoints,
   scoring,
@@ -125,19 +118,18 @@ export function BracketResultsView({
   primaryColor,
   finaleHref,
   reporters = {},
-  openSheet,
-  onOpenSheetChange,
-}: BracketResultsProps & {
-  openSheet: OpenSheet;
-  onOpenSheetChange: (openSheet: OpenSheet) => void;
+  openHeatId,
+  onOpenHeatChange,
+}: BracketAdminProps & {
+  openHeatId: string | null;
+  onOpenHeatChange: (heatId: string | null) => void;
 }) {
   const entrantsById = new Map(entrants.map((e) => [e.id, e]));
-  const sheetHeat = openSheet
-    ? bracket.heats.find((h) => h.id === openSheet.heatId)
+  const resultHeat = openHeatId
+    ? bracket.heats.find((h) => h.id === openHeatId)
     : undefined;
-  const resultHeat = sheetHeat;
   const winner = champion ? entrantsById.get(champion) : undefined;
-  const close = () => onOpenSheetChange(null);
+  const close = () => onOpenHeatChange(null);
   const copy = finalizeCopy(placementPoints);
 
   return (
@@ -225,75 +217,21 @@ export function BracketResultsView({
         </p>
       )}
 
-      {groupRounds(bracket).map((round) => (
-        <section
-          key={round.round}
-          className="flex flex-col gap-2"
-          aria-label={round.name}
-        >
-          <h2 className="font-semibold">{round.name}</h2>
-          <ul className="flex flex-col gap-2">
-            {round.heats.map((heat) => {
-              const name = heatName(bracket, heat);
-              const tappable = !finalized && isRecordable(bracket, heat.id);
-              const reporter = reporters[heat.id];
-              const rows = (
-                <HeatRows
-                  heat={heat}
-                  bracket={bracket}
-                  entrantsById={entrantsById}
-                  scoring={scoring}
-                  primaryColor={primaryColor}
-                />
-              );
-              return (
-                <li key={heat.id}>
-                  <Card size="sm" className="relative">
-                    <CardContent className="flex min-w-0 flex-col gap-2">
-                      <div className="text-foreground/60 flex min-h-8 items-center justify-between gap-2 text-xs font-medium">
-                        <span>{name}</span>
-                      </div>
-                      {heat.recordedAt && (
-                        <span className="text-foreground/70 text-xs">
-                          {formatRecordedAt(heat.recordedAt)}
-                        </span>
-                      )}
-                      {rows}
-                      {reporter && (
-                        <span className="text-foreground/60 text-xs">
-                          Reported by {reporter}
-                        </span>
-                      )}
-                    </CardContent>
-                    {tappable && (
-                      // One control: its ::after stretches over the Card, so
-                      // the whole Heat is still one tap target. Not
-                      // `relative`, so the Card is the containing block.
-                      <div className="px-(--card-spacing)">
-                        <Button
-                          type="button"
-                          variant={isDecided(heat) ? "outline" : "default"}
-                          size="sm"
-                          aria-label={`${isDecided(heat) ? "Edit" : "Record result for"} ${name}`}
-                          className="min-h-11 after:absolute after:inset-0 after:rounded-xl active:not-aria-[haspopup]:translate-none sm:min-h-8"
-                          onClick={() =>
-                            onOpenSheetChange({
-                              kind: "result",
-                              heatId: heat.id,
-                            })
-                          }
-                        >
-                          {isDecided(heat) ? "Edit" : "Record result"}
-                        </Button>
-                      </div>
-                    )}
-                  </Card>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ))}
+      <BracketTree
+        bracket={bracket}
+        entrantsById={entrantsById}
+        scoring={scoring}
+        primaryColor={primaryColor}
+        recordableHeatIds={
+          finalized
+            ? []
+            : bracket.heats
+                .filter((h) => isRecordable(bracket, h.id))
+                .map((h) => h.id)
+        }
+        onRecord={onOpenHeatChange}
+        reporters={reporters}
+      />
 
       <ResponsiveSheetDialog
         open={resultHeat !== undefined}
@@ -315,7 +253,7 @@ export function BracketResultsView({
         )}
       </ResponsiveSheetDialog>
 
-      {openSheet === null && <AutoRefresh />}
+      {openHeatId === null && <AutoRefresh />}
     </div>
   );
 }
