@@ -8,7 +8,7 @@
 
 **Blocked by:** the R16 planning PR (`docs/regression-r16-red-team`) merged into `staging`, so the branch starts from this contract. R15 merged 2026-10-03 (PR #124).
 
-**Status:** in-progress
+**Status:** ai-review
 
 **Red-team:** **required** (Drizzle schema change; Hosts record Placements; Discretionary points are Organizer-only). Passes 1–3 on 2026-10-03, each BLOCKED; resolved below. After pass 3 Paul accepted the contract with its fixes applied, without a fourth pass.
 

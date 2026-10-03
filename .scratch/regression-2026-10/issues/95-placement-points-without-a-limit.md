@@ -4,7 +4,7 @@
 
 **Part of:** Epic R16's one work package (`../epics/R16-competition-model.md`): no gate, order or migration of its own. Schema changes go into `src/db/schema.ts`; the epic generates and hand-edits the one migration and converts the seeds.
 
-**Status:** in-progress
+**Status:** ai-review
 
 **Source:** grilling Q4 (Paul: "no limits unless there's a clear reason"; Brackets at 4 to limit complexity, without closing the door); red-team 2026-10-03 (M2)
 

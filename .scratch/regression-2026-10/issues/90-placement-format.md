@@ -4,7 +4,7 @@
 
 **Part of:** Epic R16's one work package (`../epics/R16-competition-model.md`): no gate, order or migration of its own. Schema changes go into `src/db/schema.ts`; the epic generates and hand-edits the one migration and converts the seeds.
 
-**Status:** in-progress
+**Status:** ai-review
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: placement scoring, one-at-a-time entry, free-form points, re-grill points); grilling Q1, Q24, Q25, Q34, Q35; red-team 2026-10-03 pass 1 (W2, W3, W4, W8, M1, M5, M6, M7) and pass 2 (W6, M5, M8)
 
