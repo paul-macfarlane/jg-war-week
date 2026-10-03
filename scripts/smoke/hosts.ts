@@ -40,7 +40,7 @@ const NOT_A_BRACKET = "This Competition isn't run as a Bracket.";
 const SELF_REPORT_OFF = "Self-report is off for this Competition.";
 // A setting that locks while its Competition is Finalized (ticket 101).
 const LOCKED_WHILE_FINALIZED =
-  "Locked while the Competition is Finalized or Closed. Reopen it first.";
+  "Locked while the Competition is Finalized or Closed. Reopen or Un-finalize it first.";
 
 /** Removes every `competition_host` row the smoke Host has. */
 export async function deleteSmokeHosts() {
