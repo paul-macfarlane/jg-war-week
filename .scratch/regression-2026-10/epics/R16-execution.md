@@ -178,3 +178,4 @@ The first gate run (`test-results/r16/gate-run1-failed.log`, at `d3fbc3b`) faile
   - The migration has run only on local data and the throwaway-database test, never on staging's real rows. If `migrate.yml` fails, don't reseed; fix it on a `fix/…` branch.
   - The Placement sheet is deliberately simple; Paul expects feedback.
   - `src/mutations/account.test.ts` flaked once during DS and passed on every later run.
+- **PR:** https://github.com/paul-macfarlane/jg-war-week/pull/126 into `staging`.
