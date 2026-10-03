@@ -199,7 +199,7 @@ on the matching War Week page.
       Awards, FAQ and Organizers, each row shows a visible **Edit** and a
       **Delete** button (touch targets at least 44px at 390). Edit opens the
       form in a dialog at 1440 and a bottom sheet at 390 (Announcements'
-      Edit goes to its own page); Delete opens a confirm and ends in a
+      Edit and Competitions' Edit go to their own page); Delete opens a confirm and ends in a
       toast. There is no whole-row hidden button. Schedule, FAQ and Awards
       have no `/new` or `/[id]` page: `/admin/schedule/new`,
       `/admin/faq/new` and `/admin/awards/new` redirect to their list.
@@ -262,23 +262,25 @@ on the matching War Week page.
       server refuses it. Delete what you added.
 - [ ] **Competitions, one of each Format.** Create a Placement Competition
       with Placement Points 5/3/1, a Bracket Competition, and a
-      Head-to-head Competition (Add Competition lands on its Games page: set
-      Entrants to "A fixed list", turn on "Participants can enroll", Save
-      settings); assign `e2e-host@jahnelgroup.com` as Host of the Placement
-      one (the Hosts field is on its Edit form, not Add). The Format select
+      Head-to-head Competition (Add Competition creates it in a sheet and
+      opens its Competition page: set Entrants to "A fixed list" and turn on
+      "Participants can enroll"; each saves as you change it); assign
+      `e2e-host@jahnelgroup.com` as Host of the Placement one (the Hosts
+      field is in its page's Settings, not in Add; see the Competition page
+      lines below). The Format select
       offers Placement, Bracket, Head-to-head, Best score
       and Participation (no Single-elimination or Heats, no "Games" Format or Game Type). Each
       shows on `/<edition>/competitions` (when the War Week has Groups, as
       the XI demo does, one without a Group is under the Other
       Competitions tab).
 - [ ] **Placement Points: 20 places at 390.** At 390, in a new
-      Competition's Edit sheet, add Placement Points places up to 20 with
+      Competition's page Settings, add Placement Points places up to 20 with
       "add a place": every place is reachable with no sideways scroll, a
       place can be removed from anywhere in the list, and the 5·3·1 quick
       fill works; a list that rises (1, 3) is refused. On a Bracket the list
       stops at 4 places with the message naming the limit.
 - [ ] **Record placements: add rows.** On the Placement Competition's
-      "Record placements" sheet, add a row by search and press Add everyone
+      page, under "Record placements", add a row by search and press Add everyone
       (Teams for a team Competition, Participants for an individual one):
       each saves at once. Remove one. Edit a Place and press Save.
 - [ ] **Record placements: Score direction.** Set Score direction to Higher
@@ -298,10 +300,10 @@ on the matching War Week page.
       page lists the Placements (place, name, Score, points) for a
       Participant. Rows can't change while Finalized. Reopen withdraws the
       points from the Standings. Changing the Format while rows exist is
-      refused ("Remove its Placements first.").
+      locked ("Locked once the Competition has a result.").
 - [ ] **Record placements: a Participant is refused.** As the linked
-      Participant, open `/admin/placements/<id>`: "Organizers and Hosts
-      only." and no sheet; their Competition page shows the result read-only.
+      Participant, open `/admin/competitions/<id>`: "Organizers and Hosts
+      only." and no page; their Competition page shows the result read-only.
 - [ ] **Discretionary points: give, edit, delete.** On
       `/admin/discretionary-points` (the page opens with the Standings beside
       the ledger), give points to a Team or Participant with a reason (an
@@ -317,20 +319,19 @@ on the matching War Week page.
       points; `get_discretionary_points` returns the current War Week's
       entries by name and reason. Neither output contains an `@`. For a
       Placement Competition `get_bracket` points to `get_placements`.
-- [ ] **Run a Bracket end to end.** In the Bracket Competition's setup
+- [ ] **Run a Bracket end to end.** On the Bracket Competition's page
       (Format "Bracket"), tap the "Head-to-head (single elimination)" preset
       (2 per Heat, 1 advancing), pick Entrants and Save Entrants, then
       Generate to build it. There is no By Standings button and no Time &
       place. *(teams)* A new Competition scores by Team: Add Squad two
       Squads per Team, set Entrants are to Squads and press All Squads; the
-      finalized Placement Points go to each Squad's Team. Follow the
-      "Results" link to the admin tree and record every Heat from it (a
+      finalized Placement Points go to each Squad's Team. Record every Heat from the tree on the same page (a
       dialog at 1440, a bottom sheet at 390); no Heat has a Forfeit option,
       and each played Heat shows "Recorded <time>". Finalize. The finalized
       Bracket's Placement Points appear in Points Entries and the
       Standings, and "Play the Finale" opens its Bracket Finale.
 - [ ] **Bracket: 3rd place game.** In a head-to-head Bracket of at least 4
-      Entrants (a new Bracket of 4 or 8), turn on the builder's 3rd place
+      Entrants (a new Bracket of 4 or 8), turn on the Bracket's 3rd place
       game switch: the tree shows it beside the Final, labelled "3rd place
       game"; with 3 Entrants, or a heat size other than 2 with 1 advancing,
       the switch is off or absent with a reason. Record the semifinals, the
@@ -340,7 +341,7 @@ on the matching War Week page.
       refused: Placement Points stop at 4). Once any Heat has a result the
       switch can't change. Without the game, both semifinal losers tie 3rd.
 - [ ] **Bracket tree: one tree, admin and Participant.** Open the same
-      Bracket at `/admin/brackets/<id>` and on its Competition page: both
+      Bracket on its admin Competition page and on its public Competition page: both
       show the one tree (Rounds left to right at 1440), with no List toggle
       anywhere. An unplayed Heat has a solid "Record result" in the admin
       tree and a recorded one an outline "Edit"; the Participant tree shows
@@ -352,30 +353,70 @@ on the matching War Week page.
       inside its own "Rounds" region and the page itself never scrolls
       sideways.
 - [ ] **Games settings show what was saved.** On a Head-to-head or Best
-      score Competition's Games page, change a setting (Draws or Best of; for
-      Best score, count best or total, direction, unit label) and press Save
-      settings: the fields keep the saved values with no reload; reload and
+      score Competition's page, change a setting (Draws or Best of; for
+      Best score, count best or total, direction, unit label): it saves as
+      you change it, and the fields keep the saved values with no reload; reload and
       come back later, and they are still there. There is no Finish Points
-      table. The Competition's Edit sheet shows Placement Points as what
+      table. The page's Settings show Placement Points as what
       each place earns in the Standings.
 - [ ] **Close a Head-to-head Competition.** Log two Games as the Organizer
       in a Head-to-head Competition with Placement Points (Log a Game on its
-      public Competition page), then Close on its Games page: its top
+      public Competition page), then Close in its Entrants and Games section: its top
       finishers get Placement Points ("From head-to-head" in the ledger) and
       the Standings move. Reopen withdraws them. *(teams)* Add it with
       Scoring Individual and Counts toward the Team on, so the Team Standings
       move. Do the same with a Best score Competition ("From best score");
       its Competitions-list link reads "Entrants and Games".
 - [ ] **Run a Competition as Participation.** Add a Participation
-      Competition (Add Competition lands on its setup page; the list's link
+      Competition (Add Competition opens its Competition page, whose run area
       reads "Who took part"). Settings: *(individual)* Points per
       Participant; *(teams)* Placement Points 3/2/1 by headcount (there is no
       per-Participant N and no per-person mode); turn on
       Self check-in. Tick two Participants, untick one, then Close: the
       generated Points Entries ("From participation") appear in the ledger
-      and the Standings move. Closed, the ticks and "Save settings" are disabled (the server's
-      refusals are covered by unit tests and smoke). Reopen withdraws them. Changing the scoring, or deleting the
-      Competition, while anyone is ticked is refused with the count.
+      and the Standings move. Closed, the ticks and the Settings are disabled with their reason (the server's
+      refusals are covered by unit tests and smoke). Reopen withdraws them. Changing the scoring while anyone is ticked is locked ("Locked once the
+      Competition has a result."), and deleting the Competition is refused
+      with the count.
+- [ ] **Competition page: settings autosave.** Open a Competition from
+      the list's Edit: one page, Settings on top and the Format's run area
+      below it. Change the name, Group and a Placement Points place: each
+      saves on its own (no Save button), shows its toast, and is still there
+      after a reload. Check at 1440 and 390: no sideways scroll.
+- [ ] **Competition page: locks with reasons.** On a Competition with a
+      result (a recorded Placement, a Game or an Entrant), Format, scoring,
+      Score direction and the Games settings are disabled with "Locked once
+      the Competition has a result."; name, description, Group, Hosts and
+      Placement Points still save. In a Bracket with a recorded Heat, heat
+      size, how many advance, the 3rd place game, the Entrants and Generate
+      are disabled with "Locked once a Heat has a result." Finalize
+      (Placement or Bracket) or Close: everything but name, description,
+      Group, Hosts and Placement Points is disabled with "Locked while the
+      Competition is Finalized or Closed. Reopen it first."; a Placement
+      Points change then says "Applies at the next Finalize or Close."
+      Reopen unlocks the fields that only the Finalized state locked. There
+      is no Reset bracket and no "confirm to clear and start over".
+- [ ] **Competition page: change the Format.** On a new Competition with no
+      result, change the Format between Placement, Bracket, Head-to-head,
+      Best score and Participation: each applies the new Format's
+      defaults and shows its run area. Add a result and the Format locks.
+- [ ] **Competition page: Hosts picker.** In the Hosts field, search the
+      roster by name: each option shows its email beneath; a Participant
+      with no email, or a non-@jahnelgroup.com one, is disabled with the
+      reason. Pick one (it saves at once), remove it, and open the Competition
+      as that Host.
+- [ ] **Competition page: rich-text description.** Write a description with
+      a heading, a list, a link and an image by URL; it saves on its own.
+      On `/<edition>/competitions/<id>` the Participant sees it in full,
+      formatted. There is no image upload.
+- [ ] **Competition page: Log a Game from admin.** On a Head-to-head or
+      Best score Competition, Entrants and Games: Log a Game, edit it and
+      delete it, from the admin page; the Competition's page and
+      leaderboard follow.
+- [ ] **Competition page: retired routes redirect.** Open
+      `/admin/competitions/<id>/bracket`, `/games`, `/participation`,
+      `/admin/brackets/<id>` and `/admin/placements/<id>`: each lands on
+      `/admin/competitions/<id>` (a 308).
 - [ ] **Schedule Items.** On `/admin/schedule`, add a Schedule Item on a
       Day, linked to a Competition; it shows on `/<edition>/schedule` under
       that Day with its time in ET and links to the Competition. Edit it
@@ -418,7 +459,7 @@ on the matching War Week page.
       ("End <X> first."). End the current War Week: its confirm names any
       generated Bracket that isn't finalized, any open Head-to-head or Best score
       Competition with at least one Game and any open Participation
-      Competition with anyone ticked (linked to its setup page), and on End it records the Winner
+      Competition with anyone ticked (linked to its Competition page), and on End it records the Winner
       from first place. Unstart on a live edition with nothing scored (an
       edition freshly started, e.g. XII) goes back to Upcoming behind a
       confirm; on one with a Points Entry (a Finalized Placement's included), Heat result or Game it is
@@ -459,7 +500,7 @@ on the matching War Week page.
 - [ ] **Forms behave the same everywhere.** On a long form (Competition),
       resize from 1440 to 390 (crossing 768) with typed input: the input
       survives the dialog-to-sheet switch. At 820 the add-Participant and
-      *(teams)* Squad (Bracket setup → Add Squad) forms are dialogs; at
+      *(teams)* Squad (Competition page → Add Squad) forms are dialogs; at
       390, bottom sheets. Every delete
       above used `ConfirmDialog`, and every save and delete showed a toast.
 - [ ] **The Guide is true.** Read `/admin/guide`: every step names a page
@@ -482,8 +523,7 @@ Competition (from the Organizer run).
 - [ ] **Five sections, trimmed to their Competitions.** The admin nav is
       Competitions, Schedule, Announcements, Finale, Guide at 1440 (no
       Discretionary points); at 390 the bar is Competitions, Schedule,
-      Announcements, More (Finale and Guide in More). Competitions (with its
-      Brackets and Games lists) and Schedule list only the Host's Competition
+      Announcements, More (Finale and Guide in More). Competitions and Schedule list only the Host's Competition
       and its Schedule Items. Each row has Edit and
       Delete where the Host may use them.
 - [ ] **Organizer-only pages refuse.** Settings, Roster, FAQ, Awards and
@@ -497,20 +537,22 @@ Competition (from the Organizer run).
       (add rows, set Places, Finalize, Reopen) and see the Standings move;
       post an Announcement, edit it and delete it. They
       can't create or delete a Competition or assign Hosts: no Add
-      Competition, Delete or Hosts control (the server's refusal is
-      unit-tested in `src/lib/access.test.ts`).
+      Competition or Delete, and the Competition page's Hosts are shown
+      read-only by name with no emails (the server's refusal is
+      unit-tested in `src/lib/access.test.ts` and the mutation tests). Their
+      Competition page's settings autosave and show the same lock reasons as
+      an Organizer's; a Host logs a Game from it.
 - [ ] **A Host can't give Discretionary points.** `/admin/discretionary-points`
       shows "Organizers and Hosts only." and no form (server-refused in
       `src/lib/access.test.ts`); `/admin/points` redirects there and shows
       the same. A Host can't open another Competition's
-      `/admin/placements/<id>` either.
+      `/admin/competitions/<id>` either.
 - [ ] **Finale is read-only for a Host.** `/admin/finale` shows the slide
       list and "Open Finale", but no Move, Hide/Show, Add Custom slide, edit
       or delete, and the Awards layout is shown disabled.
 - [ ] **Not a Host elsewhere.** Switch to another edition (if offered), or
       set the `admin_edition` cookie to a past edition, and open another
-      War Week's admin URL (e.g. `/admin/placements/<a Competition they don't host>`,
-      `/admin/brackets/<a Competition they don't host>`; use `<an X
+      War Week's admin URL (e.g. `/admin/competitions/<a Competition they don't host>`; use `<an X
       Competition id>` when the demo has no other): nothing to manage there.
 
 ## User Pages
@@ -618,7 +660,7 @@ that nothing personal shows (no You highlight, no Log a Game).
 - [ ] **Buttons follow the rule.** On the admin Competitions, Roster and
       Schedule lists, the primary action ("Add Competition", "Add Team",
       "Add Participant", etc.) is a solid button, secondary ones are
-      outline (on Bracket setup, Add Squad sits outline beside the solid
+      outline (on the Competition page's Bracket section, Add Squad sits outline beside the solid
       Generate), and only icon or tertiary actions are ghost.
 - [ ] **History wears the War Week chrome.** `/history` and a Category page
       (`/history/awards/<id>`) show the current War Week's top nav (at
