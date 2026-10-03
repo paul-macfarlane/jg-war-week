@@ -117,85 +117,80 @@ export default async function AdminPointsPage() {
       editions={editions}
       current="Points"
     >
-      {brackets.length > 0 && (
-        <section
-          className="mb-8 flex max-w-6xl flex-col gap-2"
-          aria-label="Brackets"
-        >
-          <h2 className="text-lg font-semibold">Brackets</h2>
-          <ul className="flex flex-wrap gap-2">
-            {brackets.map((b) => (
-              <li key={b.id}>
-                <Link
-                  href={`/admin/brackets/${b.id}`}
-                  className="border-border hover:bg-muted inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium"
-                >
-                  {b.name}
-                  <span className="text-foreground/60 text-xs font-normal">
-                    {formatLabel(b.format)}
-                    {b.finalizedAt ? " · finalized" : ""}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      {games.length > 0 && (
-        <section
-          className="mb-8 flex max-w-6xl flex-col gap-2"
-          aria-label="Games"
-        >
-          <h2 className="text-lg font-semibold">Games</h2>
-          <ul className="flex flex-wrap gap-2">
-            {games.map((g) => (
-              <li key={g.id}>
-                <Link
-                  href={`/admin/competitions/${g.id}/games`}
-                  className="border-border hover:bg-muted inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium"
-                >
-                  {g.name}
-                  <span className="text-foreground/60 text-xs font-normal">
-                    {g.finalizedAt ? "closed" : "open"}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      {participations.length > 0 && (
-        <section
-          className="mb-8 flex max-w-6xl flex-col gap-2"
-          aria-label="Participation"
-        >
-          <h2 className="text-lg font-semibold">Participation</h2>
-          <ul className="flex flex-wrap gap-2">
-            {participations.map((p) => (
-              <li key={p.id}>
-                <Link
-                  href={`/admin/competitions/${p.id}/participation`}
-                  className="border-border hover:bg-muted inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium"
-                >
-                  {p.name}
-                  <span className="text-foreground/60 text-xs font-normal">
-                    {p.finalizedAt ? "closed" : "open"}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
       <div className="grid max-w-6xl gap-8 lg:grid-cols-[minmax(0,24rem)_1fr]">
-        <section className="flex flex-col gap-4">
-          <h1 className="text-2xl font-bold">Add a Points Entry</h1>
-          <PointsEntryForm
-            options={options}
-            teamLabel={warWeek.teamLabel}
-            mode={warWeek.mode}
-          />
-        </section>
+        {/* The quick links share the form's column: after the form, so it
+            opens the page on a phone, and before the Standings. */}
+        <div className="flex min-w-0 flex-col gap-8">
+          <section className="flex flex-col gap-4">
+            <h1 className="text-2xl font-bold">Add a Points Entry</h1>
+            <PointsEntryForm
+              options={options}
+              teamLabel={warWeek.teamLabel}
+              mode={warWeek.mode}
+            />
+          </section>
+          {brackets.length > 0 && (
+            <section className="flex flex-col gap-2" aria-label="Brackets">
+              <h2 className="text-lg font-semibold">Brackets</h2>
+              <ul className="flex flex-wrap gap-2">
+                {brackets.map((b) => (
+                  <li key={b.id}>
+                    <Link
+                      href={`/admin/brackets/${b.id}`}
+                      className="border-border hover:bg-muted inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium"
+                    >
+                      {b.name}
+                      <span className="text-foreground/60 text-xs font-normal">
+                        {formatLabel(b.format)}
+                        {b.finalizedAt ? " · finalized" : ""}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {games.length > 0 && (
+            <section className="flex flex-col gap-2" aria-label="Games">
+              <h2 className="text-lg font-semibold">Games</h2>
+              <ul className="flex flex-wrap gap-2">
+                {games.map((g) => (
+                  <li key={g.id}>
+                    <Link
+                      href={`/admin/competitions/${g.id}/games`}
+                      className="border-border hover:bg-muted inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium"
+                    >
+                      {g.name}
+                      <span className="text-foreground/60 text-xs font-normal">
+                        {g.finalizedAt ? "closed" : "open"}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {participations.length > 0 && (
+            <section className="flex flex-col gap-2" aria-label="Participation">
+              <h2 className="text-lg font-semibold">Participation</h2>
+              <ul className="flex flex-wrap gap-2">
+                {participations.map((p) => (
+                  <li key={p.id}>
+                    <Link
+                      href={`/admin/competitions/${p.id}/participation`}
+                      className="border-border hover:bg-muted inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium"
+                    >
+                      {p.name}
+                      <span className="text-foreground/60 text-xs font-normal">
+                        {p.finalizedAt ? "closed" : "open"}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
 
         <section
           className="flex min-w-0 flex-col gap-4"

@@ -1,0 +1,106 @@
+{
+  "innerHeight": 844,
+  "brackets": null,
+  "games": {
+    "text": "Games",
+    "tag": "H2",
+    "top": 554,
+    "bottom": 582,
+    "left": 16,
+    "right": 374
+  },
+  "participation": {
+    "text": "Participation",
+    "tag": "H2",
+    "top": 770,
+    "bottom": 798,
+    "left": 16,
+    "right": 374
+  },
+  "currentStandings": {
+    "text": "Current standings",
+    "tag": "H2",
+    "top": 882,
+    "bottom": 910,
+    "left": 16,
+    "right": 374
+  },
+  "h1": {
+    "top": 69,
+    "bottom": 101,
+    "left": 16,
+    "right": 374
+  },
+  "h1Tag": "H1",
+  "Competition": {
+    "found": true,
+    "label": {
+      "top": 117,
+      "bottom": 136.25,
+      "left": 16,
+      "right": 374
+    },
+    "control": {
+      "top": 150.25,
+      "bottom": 182.25,
+      "left": 17,
+      "right": 345.796875
+    },
+    "controlTag": "INPUT"
+  },
+  "Participant": {
+    "found": true,
+    "label": {
+      "top": 208.25,
+      "bottom": 227.5,
+      "left": 16,
+      "right": 374
+    },
+    "control": {
+      "top": 241.5,
+      "bottom": 273.5,
+      "left": 17,
+      "right": 345.796875
+    },
+    "controlTag": "INPUT"
+  },
+  "Points": {
+    "found": true,
+    "label": {
+      "top": 299.5,
+      "bottom": 318.75,
+      "left": 16,
+      "right": 374
+    },
+    "control": {
+      "top": 326.75,
+      "bottom": 370.75,
+      "left": 16,
+      "right": 374
+    },
+    "controlTag": "INPUT"
+  },
+  "bars": [
+    {
+      "tag": "NAV",
+      "text": "Points\nCompetitions\nSchedule\nAnnouncements\nMore",
+      "top": 771,
+      "bottom": 844,
+      "left": 0,
+      "right": 390
+    }
+  ],
+  "barTop": 771,
+  "bottoms": [
+    101,
+    182.25,
+    273.5,
+    370.75,
+    136.25,
+    227.5,
+    318.75
+  ],
+  "formPass": true,
+  "bracketsBeforeStandings": true,
+  "pass": true
+}

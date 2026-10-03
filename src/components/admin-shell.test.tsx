@@ -218,6 +218,20 @@ describe("AdminRefused", () => {
 
     expect(html).toMatch(/<footer class="[^"]*\bmt-auto\b[^"]*"/);
   });
+
+  it("wears the War Week's Appearance Theme", () => {
+    const html = renderToStaticMarkup(
+      <AdminRefused warWeek={fakeWarWeek} email="host@jahnelgroup.com" />,
+    );
+
+    expect(html).toContain("data-theme-root");
+    expect(html).toContain("--font-sans:var(--font-preset-sans)");
+    expect(html).toContain("--light-primary:");
+    expect(html).toMatch(/class="[^"]*\bflex-col\b[^"]*\bfont-sans\b[^"]*"/);
+    expect(html.indexOf("data-theme-root")).toBeLessThan(
+      html.indexOf("<footer"),
+    );
+  });
 });
 
 describe("editingBanner", () => {

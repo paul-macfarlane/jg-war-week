@@ -177,7 +177,10 @@ export function AdminRefused({
   email: string;
 }) {
   return (
-    <>
+    <ThemeRoot
+      style={warWeekThemeStyle(warWeek)}
+      className="bg-background text-foreground flex min-h-dvh flex-col font-sans"
+    >
       <main className="mx-auto flex max-w-md flex-1 flex-col items-center justify-center gap-4 px-4 text-center">
         <h1 className="text-2xl font-bold">{ADMIN_REFUSAL}</h1>
         <p className="text-foreground/70">
@@ -196,6 +199,6 @@ export function AdminRefused({
         </div>
       </main>
       <SiteFooter className="mt-auto" />
-    </>
+    </ThemeRoot>
   );
 }

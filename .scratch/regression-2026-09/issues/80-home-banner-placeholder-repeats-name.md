@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** needs-triage
+**Status:** done
 
 **Source:** regression checklist run, ticket 53 (free-for-all pass, `pnpm seed:demo:xii`, 2026-10-02)
 
@@ -24,4 +24,11 @@
 
 ## Acceptance criteria
 
-- [ ] With no Banner URL, Home names the War Week once in its hero; at 390×844 the Log a Game heading is on the first screen for the linked Participant with the XII demo.
+- [x] With no Banner URL, Home names the War Week once in its hero; at 390×844 the Log a Game heading is on the first screen for the linked Participant with the XII demo.
+
+## Comments
+
+- **2026-10-02, triage (Paul):** Decided: drop the placeholder; with no Banner URL there is no banner block. Batched into epic R14 (`../epics/R14-quick-wins.md`).
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r14`): claimed; `ready-for-agent` → `in-progress`. Execution record: `../epics/R14-execution.md`.
+- 2026-10-03 [CLOSEOUT] (atlas-implement): delivered in epic R14 on `fix/regression-r14-quick-wins`; the acceptance criterion is PASS with evidence under `test-results/r14/ac80-*/`. Review, verification and closeout are in `../epics/R14-execution.md`. `ai-review` → `done`.
+- 2026-10-03: PR https://github.com/paul-macfarlane/jg-war-week/pull/122 into `staging`.

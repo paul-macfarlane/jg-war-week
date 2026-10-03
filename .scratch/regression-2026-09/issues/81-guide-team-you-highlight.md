@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** needs-triage
+**Status:** done
 
 **Source:** regression checklist run, ticket 53 (teams pass, `pnpm seed:demo`, 2026-10-02)
 
@@ -23,4 +23,11 @@
 
 ## Acceptance criteria
 
-- [ ] The guide's "What a Participant email does" describes exactly where You (and "Your Team") show, and the teams pass of the checklist finds that true.
+- [x] The guide's "What a Participant email does" describes exactly where You (and "Your Team") show, and the teams pass of the checklist finds that true.
+
+## Comments
+
+- **2026-10-02, triage (Paul):** Decided: fix the guide to say exactly where You and "Your Team" show; no Team highlight is built. Batched into epic R14 (`../epics/R14-quick-wins.md`).
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r14`): claimed; `ready-for-agent` → `in-progress`. Execution record: `../epics/R14-execution.md`.
+- 2026-10-03 [CLOSEOUT] (atlas-implement): delivered in epic R14 on `fix/regression-r14-quick-wins`; the acceptance criterion is PASS with evidence under `test-results/r14/ac81-*/`. Review, verification and closeout are in `../epics/R14-execution.md`. `ai-review` → `done`.
+- 2026-10-03: PR https://github.com/paul-macfarlane/jg-war-week/pull/122 into `staging`.

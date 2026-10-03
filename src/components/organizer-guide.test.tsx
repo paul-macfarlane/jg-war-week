@@ -40,6 +40,12 @@ describe("OrganizerGuide", () => {
     expect(html).toContain('href="/admin/competitions"');
   });
 
+  it("says where You and Your Team show, and that Team standings aren't highlighted", () => {
+    expect(text).toContain("Your Team");
+    expect(text).toContain("Squad standings rows are not highlighted");
+    expect(text).not.toMatch(/and their squad are highlighted/i);
+  });
+
   it("never uses banned vocabulary", () => {
     expect(text).not.toMatch(/\b(event|tournament|member|match|league)s?\b/i);
   });

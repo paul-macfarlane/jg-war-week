@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** needs-triage
+**Status:** done
 
 **Source:** regression checklist run, ticket 53 (free-for-all pass, `pnpm seed:demo:xii`, 2026-10-02)
 
@@ -23,8 +23,12 @@
 
 ## Acceptance criteria
 
-- [ ] The refusal page passes the checklist's theme check for the current War Week at both viewports.
+- [x] The refusal page passes the checklist's theme check for the current War Week at both viewports.
 
 ## Comments
 
 - **2026-10-02, teams pass (`pnpm seed:demo`, XI live):** same defect. The refusal page has no `[data-theme-root]` at 1440 and 390 for the Host on every Organizer-only page and on `/admin/brackets/<a Competition they don't host>`, and for the linked Participant and the unlinked account on `/admin`; it shows neutral black and white instead of XI's green on black. Screenshots: `test-results/r8-quick-fixes/checklist/admin-setup-next-host-teams-1440/refused.png`, `.../admin-setup-next-host-teams-390/refused.png`, `.../admin-teams-390/refused.png`, `.../admin-teams-unlinked-390/refused.png`, `.../admin-brackets-host-teams-390/not-hosted.png`.
+- **2026-10-02, triage (Paul):** Ready as written: wrap the refusal page in the War Week theme. Batched into epic R14 (`../epics/R14-quick-wins.md`).
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r14`): claimed; `ready-for-agent` → `in-progress`. Execution record: `../epics/R14-execution.md`.
+- 2026-10-03 [CLOSEOUT] (atlas-implement): delivered in epic R14 on `fix/regression-r14-quick-wins`; the acceptance criterion is PASS with evidence under `test-results/r14/ac78-*/`. Review, verification and closeout are in `../epics/R14-execution.md`. `ai-review` → `done`.
+- 2026-10-03: PR https://github.com/paul-macfarlane/jg-war-week/pull/122 into `staging`.
