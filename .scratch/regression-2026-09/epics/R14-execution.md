@@ -63,3 +63,13 @@ Branch: `fix/regression-r14-quick-wins`.
 | DoD3 | `pnpm format:check && pnpm gate` on the final integrated commit; PR CI | local + CI | exit 0; CI green | captured output in `test-results/r14/gate/` | after EV | any change |
 
 Human gates: none. No deploy in this work package. CI on the PR runs automatically.
+
+## [PROGRESS]
+
+- 2026-10-03, wave 1 integrated into `fix/regression-r14-quick-wins`, in order D82, D81, D78, D79, D80.
+  - D82 (Sonnet): `813e7da`.
+  - D81 (Sonnet): `e6b5da6`. Orchestrator fix: the worker's paragraph left out the Bracket "You" mark and Participation lists, so it was reworded and amended.
+  - D78 (Sonnet): `f26c08e`.
+  - D79 (Haiku): `cf3cd34`.
+  - D80 (Haiku): `2d8bbda`. Orchestrator fix: JSDoc wording, amended.
+- Acceptance screens passed. Every worker ran format, typecheck, lint and unit green. The integrated typecheck and the focused tests pass. Visual criteria await EV.
