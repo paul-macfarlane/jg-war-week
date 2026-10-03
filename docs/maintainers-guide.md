@@ -78,7 +78,7 @@ before it says it's done.
 | Organizer screens                          | `src/app/admin/` (competitions, discretionary-points, schedule, roster, settings…)  |
 | Placement sheet, Score direction, Finalize / Reopen | `src/lib/placement/` (`score.ts`, `input.ts`), `src/lib/placement-rows.ts`, `src/mutations/placements.ts`, `src/queries/placements.ts`, `src/app/admin/placements/[competitionId]/`, `src/components/placement-sheet.tsx`, `placement-view.tsx` |
 | Discretionary points                       | `src/mutations/discretionary-points.ts`, `src/queries/discretionary-points.ts`, `src/app/admin/discretionary-points/`, `src/components/discretionary-points-editor.tsx` |
-| Placement Points limit and list editor     | `placementLimit` in `src/lib/competitions.ts` (the one place; Brackets 5, every other Format no limit), `src/components/placement-points-rows.tsx` |
+| Placement Points limit and list editor     | `placementLimit` in `src/lib/competitions.ts` (the one place; Brackets 4, every other Format no limit), `src/components/placement-points-rows.tsx` |
 | Server actions behind admin forms          | `src/actions/`                                                         |
 | Database reads / writes                    | `src/queries/`, `src/mutations/`                                       |
 | Rules with unit tests (standings, schedule, Finale, access…) | `src/lib/` (`*.test.ts` next to each file)           |
@@ -404,52 +404,54 @@ So R11 doesn't follow the usual expand-then-contract wait:
 3. **A Vercel rollback past R11 isn't safe**: the old build reads
    `announcement.video_urls`, which no longer exists. Fix forward instead.
 
-### Run a knockout Competition as a Bracket
+### Run a tournament as a Bracket
 
 Organizer screens cover setting one up and running it. Under
-**Competitions**, tap **Add Competition** (it opens a Sheet) and
-choose its **Format**: "Single elimination" ("A knockout Bracket: one loss
-and an Entrant is out.") or "Heats" ("A Bracket where Entrants play in
-Heats; a set number advance each Round."). **Add Competition**, and you land
-straight on that Competition's Bracket setup page. There, pick Entrants
-(all Teams, or specific Participants) and
-Generate; then record each Heat's result — from the results screen
-(`/admin/brackets/<id>`) or straight from the Competition page, either one
-opening a dialog centered on a screen and a bottom sheet on a phone — and
-Finalize to write its placings as Points Entries (Placement Points up to 5 places for a Bracket). No code needed for any of
-that. While a Bracket is finalized, its Competition's scoring and Placement
-Points can't change ("Un-finalize the Bracket first."); its name and
-description still can. Changing an existing Competition's Format happens on
-its Bracket page, not the Competition's Edit form.
+**Competitions**, tap **Add Competition** (it opens a Sheet) and choose its
+**Format**: "Bracket" ("A tournament: Entrants play Heats, Round after
+Round, to a final."). **Add Competition**, and you land straight on that
+Competition's Bracket setup page. There, set the Bracket's **heat size**
+(Entrants per Heat) and **how many advance** from each Heat, or tap the
+"Head-to-head (single elimination)" preset (2 per Heat, 1 advancing, a
+straight 1v1 knockout, and what a new Bracket starts as); pick Entrants
+(all Teams, or specific Participants) and Generate; then record each Heat's
+result and Finalize to write its placings as Points Entries (Placement
+Points up to 4 places for a Bracket). No code needed for any of that. While
+a Bracket is finalized, its Competition's scoring and Placement Points
+can't change ("Un-finalize the Bracket first."); its name and description
+still can. Changing an existing Competition's Format happens on its Bracket
+page, not the Competition's Edit form.
 
-A Bracket reads as a tree by default on its Competition page: single
-elimination shows its Rounds left to right joined by lines; Heats shows one
-box per Heat with the advancers highlighted (the same on the admin results
-screen, where the Heat result form also marks "Advances" on the advancing
-places, and "Wins" on 1st in the final). On a phone it's one Round at a
-time, with Round tabs. Results fill in live as they're recorded, and a
-**List** toggle switches back to the plain list. `/admin/brackets/<id>` (the
-results screen) still shows the list.
+A head-to-head Bracket with at least 4 Entrants can have an optional **3rd
+place game**, a switch in the builder (off by default): the two semifinal
+losers play it beside the final, and it decides 3rd and 4th. It is locked
+once any Heat has a result, like the heat size. Without it, both semifinal
+losers tie 3rd and there is no 4th. Places come only from the final (and the
+3rd place game), so a Bracket's Placement Points stop at 4 places; the
+champion is always the final's winner.
 
-On the day: the builder's **By Standings** button draws Seed Positions from
-the current Standings (ties at random) instead of Generate's random draw. On
-the results screen, each Heat card has a solid **Record result** button (an
-outline **Edit** once it's recorded) and a **Time & place** button that sets
-its Day, start time (ET) and location; Hosts can do it for their own
-Competitions. A timed Heat shows its when-line ("Sunday, Feb 22 · 7:00 PM ET
-· Main room") on its card and in the Participant's "Your next Heat", and
-joins the home page's Now/Next once its Entrants are known. A re-draw clears
-every time, so the builder asks first. Once finalized, the Bracket has its
-own **Bracket Finale** at `/<edition>/finale/<competitionId>` for the
-projector, linked from its champion card, the results screen and
-`/admin/finale` ("Finale: <Competition>"). The rules are under "Bracket
-rules", "Schedule display rules" and "Finale rules" in `CONTEXT.md`.
+One **Bracket tree** serves everyone. It's what a Participant sees on the
+Competition page and what an Organizer or Host sees at
+`/admin/brackets/<id>` (the builder's **Results** link): a head-to-head
+Bracket shows its Rounds left to right joined by lines, a larger heat size
+one box per Heat with the advancers highlighted. There is no list view. On a
+phone the tree scrolls sideways inside its own region, one Round after
+another, while the page itself stays put. Results fill in live as they're
+recorded. To record a Heat, tap **Record result** on it in the tree (an
+outline **Edit** once it's recorded) from the admin tree or, where the
+Competition allows self-report, from your own Heat on the public tree: a
+dialog centered on a screen, a bottom sheet on a phone. Hosts can do it for
+their own Competitions. A Heat has no time or place and isn't on the
+schedule; a played Heat shows "Recorded <time>", when its result was
+saved. Once finalized, the Bracket has its own **Bracket Finale** at
+`/<edition>/finale/<competitionId>` for the projector, linked from its
+champion card, the results screen and `/admin/finale` ("Finale:
+<Competition>"). The rules are under "Bracket rules" and "Finale rules" in
+`CONTEXT.md`.
 
-Single elimination is a straight 1v1 knockout. Heats plays several Entrants
-at once: its builder shows a "Heat settings" form for Entrants per Heat and
-how many advance from each, and its results screen has Organizers tap the
-whole finishing order instead of just a winner once a Heat holds more than
-two.
+A head-to-head Bracket is a straight 1v1 knockout. A larger heat size plays
+several Entrants at once, and Organizers tap the whole finishing order
+instead of just a winner once a Heat holds more than two.
 
 A team Competition can enter **Squads** instead of whole Teams: in the
 builder's Squads section, **Add Squad** names a group of one Team's
@@ -466,26 +468,16 @@ Organizer can still change any result there (which clears the line). ADR
 
 (Placement, Head-to-head, Best score and Participation have their own engines under `src/lib/placement/`, `src/lib/games/` and `src/lib/participation/`.)
 
-Bracket Format behavior goes through `src/lib/bracket/formats.ts`: it dispatches
-every Bracket operation (generate, record a result, finalize…) to that
-Format's `FormatEngine`, defined in `engine.ts` (single elimination) or
-`heats.ts`. The display helpers in `src/lib/bracket/view.ts` (Round and
-Heat names, `nextHeatFor`) also branch on Format. To add a new Format:
-
-```text
-/implement Add a <name> Format to Competitions, alongside single
-elimination and Heats. Add its value to COMPETITION_FORMATS in
-src/lib/enums.ts and run `pnpm db:generate` for the migration (a value
-added with ALTER TYPE … ADD VALUE can't be used in the same transaction,
-so keep it in its own migration). Add its config schema and default in
-src/lib/bracket/config.ts and its label (plus any Round/Heat naming) in
-src/lib/bracket/view.ts. Write a FormatEngine (see engine.ts and heats.ts
-for the shape: building the Heats from Entrants, applying a Heat Result,
-and producing final placings, which points.ts and finalizeBracket turn
-into Points Entries) and add its case in formats.ts. Add it to the
-builder/results screens, and describe its rules under "Bracket rules" in
-CONTEXT.md.
-```
+Bracket behavior goes through `src/lib/bracket/formats.ts`, the one place
+that picks an engine from the Bracket's config (heat size and how many
+advance): 2 per Heat with 1 advancing runs the head-to-head engine in
+`engine.ts`, anything else the multi-Entrant engine in `heats.ts`. Both are
+a `FormatEngine` (building the Heats from Entrants, applying a Heat Result,
+and producing final placings, which points.ts and finalizeBracket turn into
+Points Entries). The display helpers in `src/lib/bracket/view.ts` (Round and
+Heat names, `nextHeatFor`) also branch on config. Bracket is one Format; to
+change how a Bracket plays, change its config or an engine, and describe the
+rules under "Bracket rules" in `CONTEXT.md`.
 
 The engine is deliberately separate from the UI: `src/lib/bracket/` has no
 React imports and never reads or writes the database itself, so a new
@@ -906,6 +898,38 @@ apply. Use this as the procedure for any later reset:
 
 If a migrate run fails, **don't reseed**: the migration test missed an
 old-row shape. Fix it on a `fix/…` branch.
+
+### How R17 reached staging and production (the reset)
+
+Epic R17 (Brackets: one Bracket Format with a heat size and how many
+advance, a "Head-to-head (single elimination)" preset, an optional 3rd place
+game, no seeding by Standings, Forfeit or Heat time & place, and one Bracket
+tree for admin and Participants) changed the schema with one migration
+(`drizzle/0029_*`) and, as R16 did, **reset** the deployed data rather than
+converting it. The migration recreates `competition_format` with `bracket`
+in place of `single-elimination` and `heats`, gives every Bracket a full
+`bracket_config`, caps a Bracket's Placement Points at 4, and **deletes
+every Bracket's Heats and generated Points Entries**, so every Bracket
+returns to not generated. The seed JSON is where the old shapes were
+converted (demo XII's Chess Heats is a Bracket of 4 per Heat with 2
+advancing). The procedure is R16's:
+
+1. **Staging.** After the PR merges into `staging` and `migrate.yml`'s run
+   on that push is green, run the **Seed** workflow on `staging`, file
+   blank (all seeds), **reset** ticked, `staging` typed in
+   **confirm_reset**. Expected: green. Check: demo XII's Chess Heats opens
+   as a Bracket of 4 per Heat with the top 2 advancing; its builder offers
+   no 3rd place game; no Heat shows a time.
+2. **Production pre-check, before the `staging` → `main` PR merges.** In
+   production Admin, check no Bracket an Organizer built should be kept (the
+   migration deletes every Heat and can't be undone). If one should, don't
+   merge; ask Paul.
+3. **Production.** After the `main` merge's migrate run is green, run the
+   Seed workflow **from `main`**, as for staging, on `production`. Check as
+   for staging, on the production URL.
+
+If a migrate run fails, **don't reseed**: fix the migration on a `fix/…`
+branch.
 
 ## Guardrails
 

@@ -41,7 +41,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Competition Group**         | An optional grouping of competitions ("Team Night Events").                                                                       |
 | **Points Entry**              | One ledger row: points awarded to a Team or Participant. Every Points Entry is either **generated** by a Competition's result (Finalize or Close) or **Discretionary**. Nobody types one against a Competition. |
 | **Discretionary points**      | Points with no Competition behind them: a Team or Participant, a number of points and a required reason ("Subjective Points"). Organizers only, in Admin → Discretionary points; edited and deleted there. The admin page's name; the ledger row is still a Points Entry. |
-| **Placement Points**          | A Competition's points for 1st, 2nd, 3rd… : an open list, highest first, never increasing, each 0 or more, with any number of places (a Bracket's has at most 5). Finalize or Close turns a result into Points Entries through it; a place beyond the list earns nothing. A Competition's top prize is its 1st place. |
+| **Placement Points**          | A Competition's points for 1st, 2nd, 3rd… : an open list, highest first, never increasing, each 0 or more, with any number of places (a Bracket's has at most 4). Finalize or Close turns a result into Points Entries through it; a place beyond the list earns nothing. A Competition's top prize is its 1st place. |
 | **Counts Toward Team**        | Whether an individual competition's points also go to the participant's team.                                                     |
 | **Standings**                 | The main leaderboard, computed from Points Entries.                                                                               |
 | **Finale**                    | The closing-ceremony slideshow at `/<edition>/finale`: the War Week's **Finale slides**, one full screen at a time, stepped through by the presenter. A finalized Bracket has its own **Bracket Finale** at `/<edition>/finale/<competitionId>`. |
@@ -52,14 +52,16 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **FAQ Item**                  | A question and answer pair for a War Week.                                                                                        |
 | **Archive**                   | The past War Weeks shown at `/history`.                                                                                           |
 | **Recent results**            | Home's section of the latest results: finalized Brackets, finalized Placements, closed Head-to-head, Best score and Participation Competitions and Discretionary points, newest first, up to 5. |
-| **Format**                    | How a Competition is run, one of six: **Placement** (one result recorded on a sheet), **Head-to-head** and **Best score** (decided by Games players log, once or recurring), **Participation** (decided by who took part, ticked by the Host or checked in by the Participants themselves), or **Single-elimination** and **Heats** (a Bracket, for tournaments). Chosen when the Competition is created and kept. |
+| **Format**                    | How a Competition is run, one of six: **Placement** (one result recorded on a sheet), **Head-to-head** and **Best score** (decided by Games players log, once or recurring), **Participation** (decided by who took part, ticked by the Host or checked in by the Participants themselves), or **Bracket** (a tournament: Entrants play Heats, Round after Round, to a final). "Single elimination" and "Heats" are retired as Format names: a Bracket is one Format, and a head-to-head knockout is just a Bracket of 2 per Heat with 1 advancing. Chosen when the Competition is created and kept. |
 | **Placement** (Format)        | A Competition whose one result is recorded on one sheet, with no Games and no Bracket. A new Competition starts as one.            |
 | **Placement** (row)           | A Team's or Participant's row on a Placement sheet: a **Place** (1, 2, 3…, or none yet) and an optional **Score**. Ties share a Place.  |
 | **Record placements**         | The link on a Placement Competition in Admin → Competitions that opens its sheet (`/admin/placements/<id>`), where an Organizer or its Host adds rows (search, or Add everyone), sets Places and Scores, then **Finalizes**. |
 | **Score direction**           | A Placement Competition's setting for its Scores: none, **higher wins** or **lower wins**. With a direction, Places fill from Scores and stay editable. Set only on the sheet. |
-| **Bracket**                   | The Rounds and Heats of a Single-elimination or Heats Competition.                                                                |
+| **Bracket**                   | The one Format for tournaments, and the Rounds and Heats of such a Competition. Set by a **heat size** (Entrants per Heat) and **how many advance** from each Heat; 2 per Heat with 1 advancing is a head-to-head knockout (the builder's "Head-to-head (single elimination)" preset), and may have a **3rd place game**. |
 | **Round**                     | One step of a Bracket, holding Heats that can be played at the same time. Round 1 is the first.                                   |
-| **Heat**                      | One game between Entrants in a Bracket. Covers 1v1 and multi-entrant games. May have a time and place: a Day and a start time (ET) together, and a location. |
+| **Heat**                      | One game between Entrants in a Bracket. Covers 1v1 and multi-entrant games. Has no Day, time or location of its own: it isn't scheduled. Once played it shows its **recorded time**, when its Heat Result was recorded ("Recorded <time>"). |
+| **3rd place game**            | An optional extra Heat of a head-to-head (2 per Heat, 1 advancing) Bracket of at least 4 Entrants, beside the final in the last Round: the two semifinal losers play it for 3rd and 4th. Off by default; set in the builder before any Heat Result exists, and locked once one does. |
+| **Recorded time**             | When a played Heat's Heat Result was recorded (shown as "Recorded <time>", and `recordedAt` in `get_bracket`). It is the time the result was saved, never a scheduled time. |
 | **Entrant**                   | A Team, Participant or Squad entered in a Bracket or a fixed-list Head-to-head or Best score Competition.                                           |
 | **Squad**                     | A named group of Participants of one Team, entered as one Entrant in a team-scoring Bracket — "a pair or group from one Team, playing as one entrant". Belongs to one Competition; a Participant is in at most one Squad per Competition. |
 | **Self-report**               | A Participant in a Heat entering its Heat Result themselves, when the Competition allows it. It counts at once, like the Host's; the Host or an Organizer can overwrite it. |
@@ -120,14 +122,9 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   time at or before the start time runs past midnight into the next day.
 - **Up next** is every item sharing the earliest start time after now, on
   today's Day or a later one.
-- Timed Heats (a Day and a start time, every slot filled, no Heat Result
-  yet) join now/next under the same rules, 60 minutes long, alongside any
-  Schedule Item on the same Competition; a decided Heat, and a Heat still
-  waiting for its Entrants, drops out. A Heat whose earlier Heat was
-  re-recorded shows again once it's refilled with its new Entrants. Now/next
-  shows a Heat as "<Competition> · <Heat name>" with a "Heat" badge and its
-  Entrants, linked to the Competition. The schedule page and `get_schedule`
-  list Schedule Items only.
+- A Heat has no time of its own, so no Heat joins now/next, the schedule
+  page or `get_schedule`: they list Schedule Items only. A Competition's own
+  Schedule Items are unchanged.
 - Home and schedule pages accept `?at=<ISO instant>` to show the schedule as
   of that moment, for demos of a War Week that isn't on right now.
 - A Schedule Item has one of six categories, each with its own fixed color
@@ -332,7 +329,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   Participant sees: never an email, the Organizer list or Hosts.
   `get_leaderboard` always returns the Standings. `get_bracket` returns one
   Competition's Bracket of the current War Week by name: Entrants and Heats
-  by name, with places, scores, time and place, and the champion; a
+  by name, with places, scores, when a played Heat was recorded, which Heat is the 3rd place game, the Bracket's heat size, how many advance and whether it has a 3rd place game, and the champion (the final's winner); a
   Squad's Participants by name, and never who reported a result.
   `get_placements` returns one Placement Competition's rows by place, with
   names, Teams, Scores and points, and whether it's finalized;
@@ -354,8 +351,6 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   and a finalized Bracket's `/<edition>/finale/<competitionId>` are readable
   by any signed-in JG user; Organizers and Hosts see the links to them in
   `/admin/finale`.
-- A Heat's time and place is set by an Organizer or that Competition's Host
-  (`bracket.heat-schedule`, through `authorize` like every Bracket write).
 - **Self-report** (`bracket.heat-report`, ADR 0005) is the one Participant
   write. The report action runs `authorizeHeatReport`: sign-in, the
   Competition and Heat ids, the Competition row, then the Heat's facts, then
@@ -469,9 +464,8 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 
 ## Bracket rules
 
-- A Competition's **Format** is Placement, Single-elimination, Heats,
-  Head-to-head, Best score or Participation. Only a Single-elimination or
-  Heats Competition has a Bracket (and its Entrants are the Bracket's). A team Competition's Entrants are Teams or Squads, an
+- A Competition's **Format** is Placement, Bracket,
+  Head-to-head, Best score or Participation. Only a Bracket Competition has a Bracket (and its Entrants are the Bracket's). A team Competition's Entrants are Teams or Squads, an
   individual one's Participants of the same War Week. All of a Bracket's
   Entrants are one kind.
 - **Squads.** A Host or Organizer names Squads in the builder: 1–16
@@ -479,7 +473,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   Participant in at most one Squad per Competition. Squads are only for
   team-scoring Brackets. A Squad's Placement Points go to its Team, so two
   Squads of one Team each earn their own Points Entry. Squads are seeded at
-  random only (no By Standings). Changing a Participant's Team, or deleting
+  random only. Changing a Participant's Team, or deleting
   them or their Team, is refused while they're in a Squad; deleting a Squad
   that is an Entrant is refused, and no Squad changes while the Bracket is
   finalized. Changing a Competition's scoring, or its Format to Placement,
@@ -493,37 +487,44 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   reported result clears its reporter (the result is now the Host's), as
   does a later Heat being reset or refilled; re-saving the identical result
   keeps it. A re-draw takes the reports with the Heats.
+- A Bracket's **heat size** (Entrants per Heat, 2–8) and **how many
+  advance** from each Heat are set in the builder, and a new Bracket is 2 and
+  1: the builder's "Head-to-head (single elimination)" preset, a straight
+  1v1 knockout. Anything else (4 per Heat, 2 advancing…) plays several
+  Entrants at once. One Format: there is no separate single-elimination or
+  Heats Format, and nothing but heat size and advancing tells them apart.
 - **Generate** gives the Entrants random Seed Positions and builds the
-  Bracket; **By Standings** builds it with Seed Positions in the order of
-  the current Standings (Team Standings for a team Competition, individual
-  Standings for an individual one), Entrants on equal points, including
-  every Entrant with none, in random order among themselves. In single
-  elimination, when the count isn't a power of two, the top Seed Positions
-  get byes and advance straight away; a bye is never a played Heat.
+  Bracket. There is no seeding by Standings. At 2 per Heat with 1 advancing,
+  when the count isn't a power of two, the top Seed Positions get byes and
+  advance straight away; a bye is never a played Heat.
+- The **3rd place game** is offered only at 2 per Heat with 1 advancing and
+  at least 4 Entrants (the server refuses it otherwise). It is a Heat beside
+  the final, between the two semifinal losers, and the final is always the
+  last Round's other Heat: the champion, Finalize and the Finale all read the
+  final, never the 3rd place game. Turning it on or off rebuilds the Heats,
+  so it is refused once any Heat Result exists, like a heat size change.
+  Finalize needs it recorded when it is on.
 - Regenerating, or replacing the Entrants, before any Heat Result is free.
   After one, it needs a confirmation and clears every Heat Result.
-- **Time and place.** An Organizer or that Competition's Host sets a Heat's
-  time and place from the results screen ("Time & place"): a Day of the
-  War Week and a start time (ET) together, and an optional location, which
-  can also stand alone ("Table 3"). Any Heat but a bye can have one while
-  the Bracket isn't finalized, a decided Heat included. Heat cards and
-  "Your next Heat" show it as "Sunday, Feb 22 · 7:00 PM ET · Main room".
-  Deleting a Day leaves its Heats untimed.
-- A re-draw (Generate, Re-roll, By Standings, saving Entrants or Heat
-  settings) rebuilds every Heat, so it clears every Heat time too; while
-  any Heat is timed, the builder asks first ("This clears N Heat times.").
-- A Heat Result needs a clear finishing order (a knockout Heat's is just its
-  winner). A forfeiting Entrant loses in a knockout Heat, and in a Heat of
-  more than two finishes behind everyone who didn't forfeit. A forfeiter
-  advances only when fewer than the advancing number didn't forfeit, and
-  not every Entrant of a Heat may forfeit. Changing the
+- **No Heat time or place.** A Heat has no Day, start time or location, no
+  Time & place form, and no Heat is on the schedule or in Now/Next. When a
+  Heat Result is saved the Heat stores its **recorded time**; a played Heat
+  shows "Recorded <time>", and a re-record sets it again.
+- **Recording.** One **Bracket tree** serves everyone: the Organizer or the
+  Competition's Host at `/admin/brackets/<id>` (the builder's "Results"
+  link), and Participants on the Competition page. Whoever may record a Heat
+  sees **Record result** on an unplayed Heat in the tree (an outline **Edit**
+  on a recorded one, for those who may change it); a self-reporting
+  Participant sees it only on their own Heat. There is no List view. On a
+  phone the tree scrolls sideways in its own region, never the page.
+- A Heat Result needs a clear finishing order (a head-to-head Heat's is just its
+  winner). There is no Forfeit: a Heat that isn't played isn't recorded. Changing the
   winner of a decided knockout Heat, or a Heats Heat's result so different
   Entrants advance or in a different order, sends the later Heats that
   followed from it back to unplayed; an edit that changes nothing about who
   advances (scores only, or a knockout winner unchanged) changes nothing
   downstream.
-- **Heats** settings (the Format's "Heat settings" form) are Entrants per
-  Heat (2–8) and how many advance from each. Each Round deals the Entrants
+- Anything but 2 per Heat with 1 advancing: each Round deals the Entrants
   into Heats snake-style by Seed Position, so Heat sizes in a Round differ
   by at most one; the top few of each Heat advance, ranked by place then by
   Heat, into the next Round, Round after Round until one Heat, the Final, is
@@ -532,10 +533,13 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   Entrants than advance is a bye, decided without being played.
 - **Finalize** turns final placings into Points Entries through the
   Competition's Placement Points, tied places each getting that place's
-  points. In single elimination that's 1st, 2nd, tied 3rd for both
-  semifinal losers, later places tied by the Round lost in; in Heats it's
-  the Final Heat's order, then everyone else tied by the Round they went
-  out in. They're marked "From bracket", can't be edited or deleted in the
+  points. Places come only from the final and the 3rd place game, never
+  beyond 4th (a Bracket's Placement Points are capped at 4): at 2 per Heat
+  with 1 advancing, the final gives 1st and 2nd, and the 3rd place game
+  3rd and 4th; without one, both semifinal losers tie 3rd and there is no
+  4th. A Bracket with more per Heat places the final Heat's order, up to
+  4th. Nobody else is placed and earns no points.
+  They're marked "From bracket", can't be edited or deleted in the
   ledger, and are replaced wholesale when the Bracket is finalized again.
   Un-finalizing deletes them. A finalized Bracket can't change until
   it's un-finalized.
@@ -724,7 +728,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   - **Title:** War Week, the edition and year and the Story Theme, with the
     War Week's logo and banner when set.
   - **By the numbers:** Competitions run (with at least one Points Entry),
-    Games logged, Heats played (a forfeit isn't played), Points Entries,
+    Games logged, Heats played (a bye isn't played), Points Entries,
     **Points handed out** (the sum of every Points Entry, generated ones
     included: not a Standings total) and Participants (the roster). Only
     non-zero figures show; with every figure zero the slide is skipped.

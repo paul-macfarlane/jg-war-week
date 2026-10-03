@@ -261,13 +261,13 @@ on the matching War Week page.
       updates only the valid rows. As a Host there is no Import and the
       server refuses it. Delete what you added.
 - [ ] **Competitions, one of each Format.** Create a Placement Competition
-      with Placement Points 5/3/1, a Single-elimination Competition, and a
+      with Placement Points 5/3/1, a Bracket Competition, and a
       Head-to-head Competition (Add Competition lands on its Games page: set
       Entrants to "A fixed list", turn on "Participants can enroll", Save
       settings); assign `e2e-host@jahnelgroup.com` as Host of the Placement
       one (the Hosts field is on its Edit form, not Add). The Format select
-      offers Placement, Single-elimination, Heats, Head-to-head, Best score
-      and Participation, and there is no "Games" Format or Game Type. Each
+      offers Placement, Bracket, Head-to-head, Best score
+      and Participation (no Single-elimination or Heats, no "Games" Format or Game Type). Each
       shows on `/<edition>/competitions` (when the War Week has Groups, as
       the XI demo does, one without a Group is under the Other
       Competitions tab).
@@ -276,7 +276,7 @@ on the matching War Week page.
       "add a place": every place is reachable with no sideways scroll, a
       place can be removed from anywhere in the list, and the 5·3·1 quick
       fill works; a list that rises (1, 3) is refused. On a Bracket the list
-      stops at 5 places with the message naming the limit.
+      stops at 4 places with the message naming the limit.
 - [ ] **Record placements: add rows.** On the Placement Competition's
       "Record placements" sheet, add a row by search and press Add everyone
       (Teams for a team Competition, Participants for an individual one):
@@ -317,25 +317,40 @@ on the matching War Week page.
       points; `get_discretionary_points` returns the current War Week's
       entries by name and reason. Neither output contains an `@`. For a
       Placement Competition `get_bracket` points to `get_placements`.
-- [ ] **Run a Bracket end to end.** In the `single-elimination`
-      Competition's Bracket setup, pick Entrants and Save Entrants, then
-      Generate (or By Standings) to seed and build it. *(teams)* A new
-      Competition scores by Team: Add Squad two Squads per Team, set
-      Entrants are to Squads and press All Squads; the finalized Placement
-      Points go to each Squad's Team. On its results
-      screen, give a Heat a Day, time and location with Time & place (it
-      shows in Home's Up next with `?at=` set just before that time), record
-      every Heat (a dialog at 1440, a bottom sheet at 390), and finalize.
-      The finalized Bracket's Placement Points appear in Points Entries and
-      the Standings, and "Play the Finale" opens its Bracket Finale.
-- [ ] **Bracket results: advancers and buttons.** On
-      `/admin/brackets/<id>` for a Heats Bracket, record a Heat: every
-      Entrant that advances (place up to the Heat's advancing count) is
-      highlighted on its card, as on the Participant tree, and the Heat
-      result form marks "Advances" beside those places. In the final, only
-      1st is highlighted and the form says "Wins" beside it. An unplayed
-      Heat has a solid "Record result" button; a recorded one has an outline
-      "Edit".
+- [ ] **Run a Bracket end to end.** In the Bracket Competition's setup
+      (Format "Bracket"), tap the "Head-to-head (single elimination)" preset
+      (2 per Heat, 1 advancing), pick Entrants and Save Entrants, then
+      Generate to build it. There is no By Standings button and no Time &
+      place. *(teams)* A new Competition scores by Team: Add Squad two
+      Squads per Team, set Entrants are to Squads and press All Squads; the
+      finalized Placement Points go to each Squad's Team. Follow the
+      "Results" link to the admin tree and record every Heat from it (a
+      dialog at 1440, a bottom sheet at 390); no Heat has a Forfeit option,
+      and each played Heat shows "Recorded <time>". Finalize. The finalized
+      Bracket's Placement Points appear in Points Entries and the
+      Standings, and "Play the Finale" opens its Bracket Finale.
+- [ ] **Bracket: 3rd place game.** In a head-to-head Bracket of at least 4
+      Entrants (a new Bracket of 4 or 8), turn on the builder's 3rd place
+      game switch: the tree shows it beside the Final, labelled "3rd place
+      game"; with 3 Entrants, or a heat size other than 2 with 1 advancing,
+      the switch is off or absent with a reason. Record the semifinals, the
+      final and the 3rd place game and Finalize: the champion is the
+      final's winner whichever Heat was recorded last, and Points Entries
+      give 1st, 2nd, 3rd and 4th their Placement Points (a fifth place is
+      refused: Placement Points stop at 4). Once any Heat has a result the
+      switch can't change. Without the game, both semifinal losers tie 3rd.
+- [ ] **Bracket tree: one tree, admin and Participant.** Open the same
+      Bracket at `/admin/brackets/<id>` and on its Competition page: both
+      show the one tree (Rounds left to right at 1440), with no List toggle
+      anywhere. An unplayed Heat has a solid "Record result" in the admin
+      tree and a recorded one an outline "Edit"; the Participant tree shows
+      neither unless self-report is on and the Heat is their own. A Bracket
+      of more per Heat (4 with 2 advancing, e.g. Chess Heats) is the same
+      tree of Heat boxes, with every Entrant that advances highlighted and
+      the Heat result form marking "Advances" beside those places (only 1st
+      highlighted, "Wins", in the final). At 390 the tree scrolls sideways
+      inside its own "Rounds" region and the page itself never scrolls
+      sideways.
 - [ ] **Games settings show what was saved.** On a Head-to-head or Best
       score Competition's Games page, change a setting (Draws or Best of; for
       Best score, count best or total, direction, unit label) and press Save
@@ -508,17 +523,17 @@ that nothing personal shows (no You highlight, no Log a Game).
       the XII demo, no banner block and no "War Week" eyebrow: the hero
       names "War Week XII" once, and at 390 the Log a Game heading is on the
       first screen), Now/Next for the time given by
-      `?at=` (pick a time with a Schedule Item and a timed Heat), the
+      `?at=` (pick a time with a Schedule Item; a Heat has no time and never shows here), the
       pinned Announcement, Recent results and the top of the Standings: *(free-for-all)*
       with the linked Participant highlighted as You; *(teams)* the Team
       Standings, which carry no You (it marks individual rows: Leaderboard,
       Teams). With a Head-to-head or Best score Competition open, the
       "Log a Game" shortcut shows for the linked Participant only. There is no
       "Join the Slack channel" button on Home (it moved to the account
-      menu). The XII
-      demo has no timed Heat: as the Organizer, generate a Bracket with the
-      linked Participant in it (e.g. Chess Heats) and time an unplayed Heat,
-      then use a `?at=` just before it.
+      menu). Home's
+      "Your next Heat", for a linked Participant in a generated Bracket
+      (generate Chess Heats as the Organizer), names the Round and opponent
+      with no time or place.
 - [ ] **Recent results.** After a Bracket or Placement is finalized or a
       Head-to-head or Best score Competition closed and Discretionary points are given, Home's
       Recent results lists up to 5 rows newest first (a champion, a winner, a
@@ -563,8 +578,8 @@ that nothing personal shows (no You highlight, no Log a Game).
       scrolling sideways, and every tab (Other Competitions too) shows at
       390.
       Open one of each Format: a Placement Competition shows its
-      Placements (place, name, Score, points; a Participant can't edit); a Bracket shows the tree (one Round at a time at 390, with a
-      List toggle) and its champion once finalized; a Head-to-head or Best score Competition
+      Placements (place, name, Score, points; a Participant can't edit); a Bracket shows the one tree (no List toggle; at 390 it
+      scrolls sideways in its own region) and its champion once finalized; a Head-to-head or Best score Competition
       shows its leaderboard with that Format's columns and the Game log
       newest first, with the "Mine" filter.
 - [ ] **Teams show in team events.** *(teams)* Wherever a Participant
