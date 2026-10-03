@@ -6,7 +6,7 @@
 
 **Blocked by:** `101` (order inside R18)
 
-**Status:** in-progress
+**Status:** ai-review
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: hosts by email is weird); grilling Q7; red-team pass 1 W3, W4, M3
 

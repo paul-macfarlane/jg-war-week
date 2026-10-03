@@ -8,7 +8,7 @@
 
 **Blocked by:** this planning change (`docs/regression-r18-red-team`) merged into `staging`. R17 merged 2026-10-03 (PR #128), so the branch starts from its schema (`drizzle/0029_*`).
 
-**Status:** in-progress
+**Status:** ai-review
 
 **Red-team:** **required** (Drizzle schema change for the description; Host access on the new page). Pass 1 on 2026-10-03 BLOCKED; resolved below.
 

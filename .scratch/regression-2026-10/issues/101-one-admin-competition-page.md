@@ -6,7 +6,7 @@
 
 **Blocked by:** none inside R18 (first part)
 
-**Status:** in-progress
+**Status:** ai-review
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: autosave, "Run as a bracket"); grilling Q6, Q14, Q30, Q31; red-team pass 1 W1, W2, W3, W5, W8, M1, M4
 
