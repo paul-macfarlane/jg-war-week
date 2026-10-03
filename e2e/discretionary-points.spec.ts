@@ -49,6 +49,13 @@ test("an Organizer gives 3 Discretionary points to a Team, edits it to 4 and del
     expect(await teamTotal(page, "Blue")).toBeCloseTo(before + 3, 2);
 
     // Edit 3 to 4: the row keeps its entered-by and shows it was edited.
+    // The ledger marks an entry edited only when the edit is over a second
+    // after it was given; the flow is faster than that, so backdate it.
+    await runQuery(
+      `update points_entry set created_at = created_at - interval '1 minute'
+       where note = $1`,
+      [reason],
+    );
     await page.goto("/admin/discretionary-points");
     await page.getByRole("button", { name: "Edit 3 points to Blue" }).click();
     const editForm = page.getByRole("form", { name: "Discretionary points" });

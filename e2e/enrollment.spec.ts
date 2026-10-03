@@ -10,6 +10,7 @@ import path from "node:path";
 import { DISPLAY_STORAGE_KEY } from "@/lib/display";
 
 import {
+  openForBracket,
   runQuery,
   setParticipantEmail,
   xiCompetitionId,
@@ -27,6 +28,17 @@ import {
 // no other flow touches: the flow runs it as a single-elimination Bracket
 // with "Participants can enroll" on, then puts it back.
 const COMPETITION = "Pool";
+
+// The seeded Competitions are Finalized Placement sheets; open each for a
+// Bracket and put the sheet back afterwards.
+let restoreCompetition: (() => Promise<void>) | null = null;
+test.beforeEach(async () => {
+  restoreCompetition = await openForBracket(await xiCompetitionId(COMPETITION));
+});
+test.afterEach(async () => {
+  await restoreCompetition?.();
+  restoreCompetition = null;
+});
 /** Enrolls, withdraws and enrolls again; linked by email. */
 const ENROLLEE = "Alex Nikolis";
 /** The second Entrant, added by SQL (Generate needs two). */

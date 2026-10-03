@@ -7,7 +7,7 @@ import {
   test,
 } from "@playwright/test";
 
-import { xiCompetitionId } from "./db";
+import { openForBracket, xiCompetitionId } from "./db";
 import { E2E_BASE_URL } from "./env";
 import { E2E_PARTICIPANT_EMAIL, asOrganizer, signIn } from "./session";
 
@@ -23,6 +23,19 @@ const KNOCKOUT_ENTRANTS = [
   "Bich Dudla",
 ];
 const HEATS = "Super Smash Bros";
+
+// The seeded Competitions are Finalized Placement sheets; open each for a
+// Bracket and put the sheet back afterwards.
+let restoreCompetition: (() => Promise<void>) | null = null;
+test.beforeEach(async ({}, testInfo) => {
+  restoreCompetition = await openForBracket(
+    await xiCompetitionId(testInfo.title.includes("Heats") ? HEATS : KNOCKOUT),
+  );
+});
+test.afterEach(async () => {
+  await restoreCompetition?.();
+  restoreCompetition = null;
+});
 const HEATS_ENTRANTS = [
   "Bob Strubel",
   "Brandon Thivierge",

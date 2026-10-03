@@ -276,3 +276,51 @@ export async function restoreBracket(
     ],
   );
 }
+
+/**
+ * The seeded individual Competitions are Finalized Placement sheets (R16),
+ * and a Finalized Competition's Format is locked. A Bracket flow calls this
+ * first: it snapshots the Competition (Format, Bracket settings, its
+ * Placements and Points Entries), then clears them and un-finalizes it so a
+ * Bracket can be built. The returned function puts everything back; call it
+ * in `finally` or `afterEach`.
+ */
+export async function openForBracket(
+  competitionId: string,
+): Promise<() => Promise<void>> {
+  const bracket = await snapshotBracket(competitionId);
+  const [saved] = await runQuery<{ placements: string; entries: string }>(
+    `select
+       (select coalesce(json_agg(row_to_json(p)), '[]'::json)
+        from placement p where p.competition_id = $1)::text as placements,
+       (select coalesce(json_agg(row_to_json(e)), '[]'::json)
+        from points_entry e where e.competition_id = $1)::text as entries`,
+    [competitionId],
+  );
+  await runQuery(`delete from points_entry where competition_id = $1`, [
+    competitionId,
+  ]);
+  await runQuery(`delete from placement where competition_id = $1`, [
+    competitionId,
+  ]);
+  await runQuery(`update competition set finalized_at = null where id = $1`, [
+    competitionId,
+  ]);
+  return async () => {
+    await restoreBracket(competitionId, bracket);
+    await runQuery(`delete from points_entry where competition_id = $1`, [
+      competitionId,
+    ]);
+    await runQuery(`delete from placement where competition_id = $1`, [
+      competitionId,
+    ]);
+    await runQuery(
+      `insert into placement select * from json_populate_recordset(null::placement, $1::json)`,
+      [saved.placements],
+    );
+    await runQuery(
+      `insert into points_entry select * from json_populate_recordset(null::points_entry, $1::json)`,
+      [saved.entries],
+    );
+  };
+}

@@ -80,7 +80,9 @@ import {
   assertLeaderboard,
   assertLlmsTxt,
   assertMoreLinks,
+  assertParticipationColumnsConstraint,
   assertPlacementPointsSeeded,
+  assertPlacementTargetConstraint,
   assertPointsEntryTargetConstraint,
   assertPrivacyAndTermsPages,
   assertRootRedirect,
@@ -155,6 +157,8 @@ async function main() {
   await assertFinaleSlidesKeptIds(finaleSlideIds);
   await assertPointsEntryTargetConstraint();
   await assertDiscretionaryReasonConstraint();
+  await assertPlacementTargetConstraint();
+  await assertParticipationColumnsConstraint();
   await assertPlacementPointsSeeded();
   await assertAwardCategoriesSeeded();
 

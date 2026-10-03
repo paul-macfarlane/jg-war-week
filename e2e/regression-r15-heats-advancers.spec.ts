@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { restoreBracket, snapshotBracket, xiCompetitionId } from "./db";
+import { openForBracket, xiCompetitionId } from "./db";
 import { asOrganizer } from "./session";
 
 // Epic R15, ticket 84 (.scratch/regression-2026-10/issues/84-heats-advancers-highlighted.md):
@@ -27,7 +27,7 @@ test("r15 84 a recorded Heat of 4 with 2 advancing highlights both advancers in 
   test.setTimeout(120_000);
   await asOrganizer(context);
   const id = await xiCompetitionId(COMPETITION);
-  const original = await snapshotBracket(id);
+  const restore = await openForBracket(id);
 
   try {
     await page.goto(`/admin/competitions/${id}/bracket`);
@@ -108,6 +108,6 @@ test("r15 84 a recorded Heat of 4 with 2 advancing highlights both advancers in 
       animations: "disabled",
     });
   } finally {
-    await restoreBracket(id, original);
+    await restore();
   }
 });

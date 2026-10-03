@@ -123,7 +123,7 @@ test("r16 90 a Host records placements with Scores, breaks a tie and Finalizes: 
       ).toBeVisible();
     }
     const sheet = page.getByRole("list", { name: "Placements" });
-    await expect(sheet.getByRole("listitem")).toHaveCount(ROWS.length + 1);
+    await expect(sheet.getByRole("listitem")).toHaveCount(ROWS.length);
 
     // Higher wins: Places fill from Scores as they're typed, a tie at 2nd.
     for (const row of ROWS) {

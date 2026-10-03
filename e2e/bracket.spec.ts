@@ -2,7 +2,7 @@ import { type Page, type TestInfo, expect, test } from "@playwright/test";
 
 import { formatDayHeading } from "@/lib/schedule";
 
-import { runQuery, xiCompetitionId } from "./db";
+import { openForBracket, runQuery, xiCompetitionId } from "./db";
 import { E2E_BASE_URL } from "./env";
 import {
   E2E_HOST_EMAIL,
@@ -16,6 +16,17 @@ import {
 // Beyblades is an individual War Week XI Competition with Placement Points
 // 5 / 3 / 1. None of these four has a hand-entered Beyblades Points Entry.
 const COMPETITION = "Beyblades";
+
+// The seeded Competitions are Finalized Placement sheets; open each for a
+// Bracket and put the sheet back afterwards.
+let restoreCompetition: (() => Promise<void>) | null = null;
+test.beforeEach(async () => {
+  restoreCompetition = await openForBracket(await xiCompetitionId(COMPETITION));
+});
+test.afterEach(async () => {
+  await restoreCompetition?.();
+  restoreCompetition = null;
+});
 const ENTRANTS = [
   "Ashley Schuliger",
   "Sam Schantz",

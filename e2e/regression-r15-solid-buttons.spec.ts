@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { restoreBracket, snapshotBracket, xiCompetitionId } from "./db";
+import { openForBracket, xiCompetitionId } from "./db";
 import { asOrganizer } from "./session";
 
 // Epic R15, ticket 87 (.scratch/regression-2026-10/issues/87-solid-primary-buttons.md):
@@ -23,7 +23,7 @@ test("r15 87 the admin Bracket's unrecorded Heat has a solid Record result butto
   test.setTimeout(90_000);
   await asOrganizer(context);
   const id = await xiCompetitionId(COMPETITION);
-  const original = await snapshotBracket(id);
+  const restore = await openForBracket(id);
 
   try {
     await page.goto(`/admin/competitions/${id}/bracket`);
@@ -69,6 +69,6 @@ test("r15 87 the admin Bracket's unrecorded Heat has a solid Record result butto
       page.getByRole("dialog").getByRole("group", { name: "Finishing order" }),
     ).toBeVisible();
   } finally {
-    await restoreBracket(id, original);
+    await restore();
   }
 });

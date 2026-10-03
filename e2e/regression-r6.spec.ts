@@ -59,8 +59,10 @@ test("r6 39 a refusal toast clears the section bar, and keeps Sonner's offset fr
   await page.goto("/admin/discretionary-points");
   const toast = await refuseDiscretionaryPoints(page);
   const toastBox = await toast.boundingBox();
+  // By CSS, not role: the open Give form is a modal, which hides the bar
+  // from the accessibility tree, and the hidden side column shares its name.
   const barBox = await page
-    .getByRole("navigation", { name: "Admin sections" })
+    .locator('nav[aria-label="Admin sections"]:visible')
     .boundingBox();
   if (!toastBox || !barBox) throw new Error("Toast or section bar missing");
   expect(toastBox.y + toastBox.height).toBeLessThanOrEqual(barBox.y);
