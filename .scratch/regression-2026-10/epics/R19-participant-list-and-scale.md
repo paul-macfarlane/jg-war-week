@@ -6,7 +6,7 @@
 
 **Branch:** `feat/regression-r19-list-and-scale`
 
-**Blocked by:** R17 merged into `staging` (R18 preferred, for rich-text previews).
+**Blocked by:** R18 merged into `staging` (ticket 105's preview reads the rich-text description; R18 red-team pass 1, W7).
 
 **Status:** ready-for-agent
 

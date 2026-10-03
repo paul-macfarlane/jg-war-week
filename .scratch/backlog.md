@@ -10,13 +10,13 @@ ticket opens or closes. Last reviewed 2026-10-03.
 
 ## Ready for an agent
 
-October Competition feedback, grilled 2026-10-03 ([`regression-2026-10/spec.md`](./regression-2026-10/spec.md), [grilling record](./regression-2026-10/grilling-2026-10-03.md)). R15 first; R16 → R17 → R18 change the schema one at a time and are red-teamed; R19 after R17.
+October Competition feedback, grilled 2026-10-03 ([`regression-2026-10/spec.md`](./regression-2026-10/spec.md), [grilling record](./regression-2026-10/grilling-2026-10-03.md)). R15 first; R16 → R17 → R18 change the schema one at a time and are red-teamed; R19 after R18.
 
 - [ ] **Epic R15, quick fixes**: Heats advancers highlighted (84), pointer cursor (85), centred top nav (86), solid primary buttons (87), History in the War Week chrome (88), Games settings show what was saved (89). [`regression-2026-10/epics/R15`](./regression-2026-10/epics/R15-quick-fixes.md) (`ready-for-agent`)
 - [ ] **Epic R16, the Competition model**: Placement replaces `points` (90), Discretionary points (91), no Max Points (92), Head-to-head and Best score as Formats (93), Participation follows scoring (94), Placement Points without a limit (95); one work package with one migration, seed conversion, full gate and a staging/prod reset (96 folded in). [`regression-2026-10/epics/R16`](./regression-2026-10/epics/R16-competition-model.md) (`ready-for-agent`)
 - [ ] **Epic R17, Brackets**: one Bracket Format (97), 3rd place game up to 4th (98), no seeding by Standings, Forfeit or Time & place (99), one tree for admin and Participants (100). After R16. [`regression-2026-10/epics/R17`](./regression-2026-10/epics/R17-brackets.md) (`done`; PR into `staging` awaiting review)
-- [ ] **Epic R18, the admin Competition page**: one autosaving page (101), Hosts from the roster (102), rich-text description (103), Log a Game from admin (104). After R17. [`regression-2026-10/epics/R18`](./regression-2026-10/epics/R18-admin-competition-page.md) (`ready-for-agent`)
-- [ ] **Epic R19, Participant list and scale**: list status, Winner and description (105), 100 Participants (106). After R17. [`regression-2026-10/epics/R19`](./regression-2026-10/epics/R19-participant-list-and-scale.md) (`ready-for-agent`)
+- [ ] **Epic R18, the admin Competition page**: one autosaving page (101), Hosts from the roster (102), rich-text description (103), Log a Game from admin (104). After R17; red-team pass 1 resolved. [`regression-2026-10/epics/R18`](./regression-2026-10/epics/R18-admin-competition-page.md) (`ready-for-agent`)
+- [ ] **Epic R19, Participant list and scale**: list status, Winner and description (105), 100 Participants (106). After R18. [`regression-2026-10/epics/R19`](./regression-2026-10/epics/R19-participant-list-and-scale.md) (`ready-for-agent`)
 
 Done: Epics R9–R14 (`regression-2026-09`, PRs through #122).
 
