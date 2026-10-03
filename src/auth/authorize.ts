@@ -265,11 +265,11 @@ export async function authorizeCheckIn(
  * in ADR 0003's order: authenticate; the ids shaped like row ids; load the
  * Competition and its War Week; load the Game facts for the actor's email
  * (whether they run this Competition, account linking) with
- * the player ids `input` posts for the Competition's Game Type
+ * the player ids `input` posts for the Competition's Format
  * (`postedGamePlayerIds`, so another type's keys never reach `can`; none
  * for a delete); run
  * `can`, which binds Organizers and Hosts too when closed. Returns the
- * Competition's Game Type and config, which the caller parses its input
+ * Competition's Format and config, which the caller parses its input
  * with only after this. Never throws on a refusal.
  */
 export async function authorizeGameWrite(

@@ -18,7 +18,7 @@ describe("parsePlacementPointsText", () => {
     });
   });
 
-  it("refuses non-numbers, a rise, negatives and too many places", () => {
+  it("refuses non-numbers, a rise and negatives", () => {
     const error = (text: string) => {
       const parsed = parsePlacementPointsText(text);
       return parsed.ok ? null : parsed.error;
@@ -33,6 +33,18 @@ describe("parsePlacementPointsText", () => {
     expect(error("1.234")).toBe(
       "Placement Points must have at most two decimal places.",
     );
-    expect(error("6, 5, 4, 3, 2, 1, 0")).toMatch(/cover at most/);
+  });
+
+  it("takes any number of places, as long as each is no more than the one above", () => {
+    const twelve = [24, 22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2];
+    expect(parsePlacementPointsText(twelve.join(", "))).toEqual({
+      ok: true,
+      value: twelve,
+    });
+    const twenty = Array.from({ length: 20 }, (_, i) => 20 - i);
+    expect(parsePlacementPointsText(twenty.join(" "))).toEqual({
+      ok: true,
+      value: twenty,
+    });
   });
 });

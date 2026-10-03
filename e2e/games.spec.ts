@@ -128,7 +128,9 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     await shoot(you, testInfo, "home-shortcut");
     await shortcut.getByRole("link", { name: new RegExp(COMPETITION) }).click();
     await expect(you).toHaveURL(`${E2E_BASE_URL}/xi/competitions/${id}?log=1`);
-    await expect(you.getByText("Games · Head-to-head")).toBeVisible();
+    await expect(
+      you.getByText("Head-to-head", { exact: true }).first(),
+    ).toBeVisible();
 
     const form = you.getByRole("dialog", { name: "Log a Game" });
     await expect(form).toBeVisible();

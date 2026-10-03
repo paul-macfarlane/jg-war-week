@@ -15,7 +15,8 @@ export type GamesResult =
       competition: {
         name: string;
         scoring: Competition["scoring"];
-        gameFormat: GamesView["competition"]["gameFormat"];
+        /** Head-to-head or Best score. */
+        format: GamesView["competition"]["gameFormat"];
         /** A short human summary of the Games settings, per Format. */
         settings: string;
         /** "open to everyone", or the fixed list of Entrants by name. */
@@ -41,7 +42,7 @@ export type GamesResult =
     }
   | { found: false; message: string };
 
-/** The Games settings as a short human summary, per Format. */
+/** The Format's settings as a short human summary, per Format. */
 function settingsSummary(competition: GamesView["competition"]): string {
   const label = gameFormatLabel(competition.gameFormat);
   if (competition.gameFormat === "head-to-head") {
@@ -106,8 +107,8 @@ export function toGamesResult(
       games: null,
       message:
         found.format === "participation"
-          ? `${found.name} isn't run as Games; it's run as Participation. Call get_participation instead.`
-          : `${found.name} isn't run as Games; call get_bracket or get_leaderboard.`,
+          ? `${found.name} isn't run as Head-to-head or Best score; it's run as Participation. Call get_participation instead.`
+          : `${found.name} isn't run as Head-to-head or Best score; call get_bracket or get_leaderboard.`,
     };
   }
 
@@ -118,7 +119,7 @@ export function toGamesResult(
     competition: {
       name: competition.name,
       scoring: competition.scoring,
-      gameFormat: competition.gameFormat,
+      format: competition.gameFormat,
       settings: settingsSummary(competition),
       entrants: competition.entrantsOpen
         ? "open to everyone"

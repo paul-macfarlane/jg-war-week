@@ -89,7 +89,7 @@ export const LAST_IN_SQUAD =
   "You're the last Participant in this Squad. Ask the Host to remove the Squad.";
 /** The enroll switch on a points Competition: it has no Entrant list. */
 export const POINTS_NO_ENROLL =
-  "Participants enroll only in a Bracket or a Games Competition.";
+  "Participants enroll only in a Bracket, Head-to-head or Best score Competition.";
 /** The enroll switch on a `participation` Competition: no Entrant list. */
 export const PARTICIPATION_NO_ENROLL =
   "A Participation Competition takes check-ins, not Entrants.";

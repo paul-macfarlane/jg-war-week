@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { Competition, PointsEntry } from "@/db/schema";
 import { isGameFormat } from "@/lib/enums";
 import { fieldErrorsFrom } from "@/lib/form-errors";
+import { gameFormatLabel } from "@/lib/games/config";
 import type { Parsed } from "@/lib/result";
 import { WAR_WEEK_TIME_ZONE } from "@/lib/schedule";
 
@@ -109,10 +110,11 @@ export function parsePointsEntryInput(
 /**
  * The ledger's mark on a generated Points Entry: its Competition's Format
  * says whether a Bracket, a Head-to-head or Best score or a `participation` Competition wrote
- * it.
+ * it; a Games Format's note names the Format.
  */
 export function generatedNote(format: Competition["format"]): string {
-  if (isGameFormat(format)) return "From games";
+  if (isGameFormat(format))
+    return `From ${gameFormatLabel(format).toLowerCase()}`;
   if (format === "participation") return "From participation";
   return "From bracket";
 }
@@ -120,7 +122,7 @@ export function generatedNote(format: Competition["format"]): string {
 /** Why a generated Points Entry can't be edited or deleted in the ledger. */
 export function generatedRefusal(format: Competition["format"]): string {
   if (isGameFormat(format)) {
-    return "This Points Entry comes from a Games Competition. Change it there.";
+    return `This Points Entry comes from a ${gameFormatLabel(format)} Competition. Change it there.`;
   }
   if (format === "participation") {
     return "This Points Entry comes from a Participation Competition. Change it there.";

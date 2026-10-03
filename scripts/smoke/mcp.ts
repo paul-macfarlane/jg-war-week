@@ -399,7 +399,7 @@ export async function assertMcp() {
     if (sameAwards) ok(awardsCheck);
     else fail(awardsCheck, `result=${JSON.stringify(awards.raw)}`);
 
-    // 17-M: a `games` Competition by name, never an email; get_bracket
+    // 17-M: a Head-to-head Competition by name, never an email; get_bracket
     // points to get_games.
     const games = await callTool(16, "get_games", {
       competition: "Bouncy Pong",
@@ -409,7 +409,7 @@ export async function assertMcp() {
     if (
       games.parsed?.found === true &&
       games.parsed.competition?.name === "Bouncy Pong" &&
-      games.parsed.competition?.gameFormat === "head-to-head" &&
+      games.parsed.competition?.format === "head-to-head" &&
       Array.isArray(games.parsed.leaderboard) &&
       Array.isArray(games.parsed.games) &&
       !JSON.stringify(games.parsed).includes("@")
@@ -422,11 +422,13 @@ export async function assertMcp() {
       competition: "Bouncy Pong",
     });
     const gamesBracketCheck =
-      "MCP get_bracket(Bouncy Pong) answers bracket: null, run as Games, pointing to get_games";
+      "MCP get_bracket(Bouncy Pong) answers bracket: null, run as Head-to-head, pointing to get_games";
     if (
       gamesBracket.parsed?.found === true &&
       gamesBracket.parsed.bracket === null &&
-      String(gamesBracket.parsed.message).includes("run as Games") &&
+      String(gamesBracket.parsed.message).includes(
+        "run as Head-to-head or Best score",
+      ) &&
       String(gamesBracket.parsed.message).includes("get_games")
     ) {
       ok(gamesBracketCheck);

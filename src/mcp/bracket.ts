@@ -83,7 +83,7 @@ export function toGamesBracketResult(
       format: competition.format,
     },
     bracket: null,
-    message: `${competition.name} isn't run as a Bracket; it's run as Games. Call get_games instead.`,
+    message: `${competition.name} isn't run as a Bracket; it's run as Head-to-head or Best score. Call get_games instead.`,
   };
 }
 

@@ -5,6 +5,8 @@ import { notFound } from "next/navigation";
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { BracketResults } from "@/components/bracket-results";
 import { setupHref } from "@/lib/competitions";
+import { isGameFormat } from "@/lib/enums";
+import { gameFormatLabel } from "@/lib/games/config";
 import { getBracket, getHeatReporters } from "@/queries/brackets";
 import { getGamesCompetitions } from "@/queries/games";
 import { getParticipationCompetitions } from "@/queries/participation";
@@ -40,7 +42,9 @@ export default async function BracketResultsPage({
   );
   if (runAsGames || runAsParticipation) {
     const other = (runAsGames ?? runAsParticipation)!;
-    const label = runAsGames ? "Games" : "Participation";
+    const label = isGameFormat(other.format)
+      ? gameFormatLabel(other.format)
+      : "Participation";
     return (
       <AdminShell
         warWeek={warWeek}

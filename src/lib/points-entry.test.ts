@@ -172,10 +172,14 @@ describe("generated Points Entries", () => {
     );
   });
 
-  it("say games for a Head-to-head or Best score Competition", () => {
-    expect(generatedNote("head-to-head")).toBe("From games");
+  it("name the Format for a Head-to-head or Best score Competition", () => {
+    expect(generatedNote("head-to-head")).toBe("From head-to-head");
+    expect(generatedNote("best-score")).toBe("From best score");
     expect(generatedRefusal("best-score")).toBe(
-      "This Points Entry comes from a Games Competition. Change it there.",
+      "This Points Entry comes from a Best score Competition. Change it there.",
+    );
+    expect(generatedRefusal("head-to-head")).toBe(
+      "This Points Entry comes from a Head-to-head Competition. Change it there.",
     );
   });
   it("say participation for a participation Competition", () => {

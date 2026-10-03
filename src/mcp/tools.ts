@@ -50,9 +50,9 @@ export const MCP_TOOLS = {
       "Returns a Competition's Bracket by name: Entrants by Seed Position, each Round's Heats with status, time and place, and the champion once finalized. A Competition run by points instead returns bracket: null; an unknown Competition returns found: false.",
   },
   get_games: {
-    title: "Get Games",
+    title: "Get Head-to-head and Best score",
     description:
-      "Returns a Competition run as Games by name: its settings, leaderboard ranked by Game Type, and its logged Games newest first. A Competition run another way instead returns games: null; an unknown Competition returns found: false.",
+      "Returns a Head-to-head or Best score Competition by name: its Format, settings, leaderboard ranked by that Format, and its logged Games newest first. A Competition run another way instead returns games: null; an unknown Competition returns found: false.",
   },
   get_participation: {
     title: "Get Participation",

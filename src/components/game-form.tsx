@@ -60,7 +60,7 @@ export type GameFormProps = {
 
 /**
  * Logging or editing a Game, in a bottom Sheet (a centered Dialog on large
- * screens), per Game Type: head-to-head takes two players and who won;
+ * screens), per Format: head-to-head takes two players and who won;
  * best-score one player and a score; ranked every player with a place.
  * The result toasts; a refusal toasts the server's message and keeps the
  * form open with its input.

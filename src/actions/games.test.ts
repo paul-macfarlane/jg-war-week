@@ -85,7 +85,7 @@ describe("logGame", () => {
       logGame(ID, { playerA: A, playerB: B, outcome: "sideways" }),
     ).resolves.toEqual(REFUSED);
     // The raw input goes to authorize, which reads its players by the
-    // Competition's Game Type.
+    // Competition's Format.
     expect(authorizeGameWrite).toHaveBeenCalledWith("games.log", ID, null, {
       playerA: A,
       playerB: B,
@@ -95,7 +95,7 @@ describe("logGame", () => {
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 
-  it("parses by the Competition's Game Type once authorized", async () => {
+  it("parses by the Competition's Format once authorized", async () => {
     authorized.current = PLAYER_OK;
     const mutations = await import("@/mutations/games");
 

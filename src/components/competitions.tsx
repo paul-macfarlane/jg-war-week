@@ -28,7 +28,7 @@ export function CompetitionFacts({
       </Badge>
       {isGameFormat(competition.format) ? (
         <Badge variant="outline" className="text-foreground/70">
-          Games · {gameFormatLabel(competition.format)}
+          {gameFormatLabel(competition.format)}
         </Badge>
       ) : null}
       {competition.format === "participation" ? (

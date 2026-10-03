@@ -4,7 +4,6 @@
  * Competition's settings), with one set of messages (ADR 0001: rules
  * shared, not copied). Zero-dependency on zod so it stays cheap to import.
  */
-import { MAX_PLACEMENTS } from "@/lib/competitions";
 import { POINTS_NUMBER, pointsSchema } from "@/lib/points-entry";
 import type { Parsed } from "@/lib/result";
 
@@ -14,7 +13,9 @@ function refuse(error: string): Parsed<never> {
   return { ok: false, error, fieldErrors: { [FIELD]: error } };
 }
 
-/** "5, 3, 1" as Placement Points, highest first; blank is none. */
+/** "5, 3, 1" as Placement Points, highest first; blank is none. Any number
+ * of places: a Format's limit (`placementLimit`) is checked by the caller that
+ * knows the Format. */
 export function parsePlacementPointsText(
   value: unknown,
 ): Parsed<number[] | null> {
@@ -30,9 +31,6 @@ export function parsePlacementPointsText(
     );
   }
   const points = places.map(Number);
-  if (points.length > MAX_PLACEMENTS) {
-    return refuse(`Placement Points cover at most ${MAX_PLACEMENTS} places.`);
-  }
   if (points.some((p) => p < 0)) {
     return refuse("Placement Points must be at least 0.");
   }

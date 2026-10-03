@@ -295,7 +295,7 @@ const REFUSING_FACET: GameLogFacet = {
  * whether logging is open for a Participant, the linked Participant of the
  * Competition's War Week, its Entrants, the posted players (`playerIds`,
  * as Teams or Participants by scoring; none for a delete; a function picks
- * them by the Competition's Game Type) and, for an edit or delete, the
+ * them by the Competition's Format) and, for an edit or delete, the
  * Game loaded by its id within this Competition.
  */
 export async function getGameLogFacts(

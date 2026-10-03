@@ -20,9 +20,9 @@ export function OrganizerGuide({
   /** What each admin section is for, in the tour of the nav. */
   const help: Record<AdminSection, string> = {
     Points:
-      "Add Points Entries and see the current Standings; the Brackets, Games and Participation Competitions waiting on results are linked under the form.",
+      "Add Points Entries and see the current Standings; the Bracket, Head-to-head, Best score and Participation Competitions waiting on results are linked under the form.",
     Competitions:
-      "Competitions, their scoring, Placement Points and Hosts, and each one's Bracket or Games setup.",
+      "Competitions, their scoring, Placement Points and Hosts, and each one's Bracket, Head-to-head, Best score or Participation setup.",
     Schedule:
       "The War Week's Days with their Day Themes and short descriptions, and each Day's Schedule Items.",
     Roster: `${teamLabel}s, Participants and ${leaderTitle}s, with Import from a sheet or CSV.`,

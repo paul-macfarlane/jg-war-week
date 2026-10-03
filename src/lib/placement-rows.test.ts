@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { MAX_PLACEMENTS } from "@/lib/competitions";
 import {
   QUICK_FILL,
   placementPointsFromRows,
@@ -61,11 +60,13 @@ describe("placementRowErrors", () => {
     ]);
   });
 
-  it("caps the rows at five places", () => {
-    expect(MAX_PLACEMENTS).toBe(5);
-    expect(placementRowErrors(["6", "5", "4", "3", "2", "1"])).toEqual([
+  it("caps the rows at the Format's limit, and at none without one", () => {
+    const six = ["6", "5", "4", "3", "2", "1"];
+    expect(placementRowErrors(six, 5)).toEqual([
       "Placement Points cover at most 5 places.",
     ]);
+    expect(placementRowErrors(six)).toEqual([]);
+    expect(placementRowErrors(six, null)).toEqual([]);
   });
 
   it("flags a blank row sitting above a filled one", () => {

@@ -3,7 +3,7 @@ import { type ZodType, z } from "zod";
 import type { Competition, Participant, Team, WarWeek } from "@/db/schema";
 import { heatsConfigSchema } from "@/lib/bracket/config";
 import { HEX_COLOR } from "@/lib/color";
-import { MAX_PLACEMENTS } from "@/lib/competitions";
+import { placementLimitRefusal } from "@/lib/competitions";
 import { dayOutsideRangeError } from "@/lib/day-range";
 import {
   COMPETITION_FORMATS,
@@ -105,7 +105,6 @@ export const competitionSeedSchema = z
     placementPoints: z
       .array(points.min(0, { error: "must be at least 0" }))
       .min(1, { error: "at least 1 place" })
-      .max(MAX_PLACEMENTS, { error: `at most ${MAX_PLACEMENTS} places` })
       .refine((list) => list.every((p, i) => i === 0 || p <= list[i - 1]), {
         error: "each place must be worth no more than the one above it",
       })
@@ -133,6 +132,18 @@ export const competitionSeedSchema = z
     path: ["countsTowardTeam"],
   })
   .superRefine((c, ctx) => {
+    // The Format's limit on places (a Bracket's), one rule for every caller.
+    const placeRefusal = placementLimitRefusal(
+      c.format,
+      c.placementPoints ?? null,
+    );
+    if (placeRefusal) {
+      ctx.addIssue({
+        code: "custom",
+        message: placeRefusal,
+        path: ["placementPoints"],
+      });
+    }
     // A heats config is checked by its field; any other Format takes none.
     if (c.bracketConfig != null && c.format !== "heats") {
       ctx.addIssue({
@@ -708,9 +719,6 @@ export function parseCompetitionInput(
       if (issue.path[0] !== "placementPoints" || issue.path.length > 1) {
         return null;
       }
-      if (issue.code === "too_big") {
-        return `Placement Points cover at most ${issue.maximum} places.`;
-      }
       if (issue.code !== "custom") return null;
       return "Each place's Placement Points must be no more than the place above it.";
     },
@@ -757,6 +765,14 @@ export function parseCreateCompetitionInput(
   });
   if (!formatParsed.ok) return formatParsed;
   const { format } = formatParsed.value;
+  const tooMany = placementLimitRefusal(format, base.value.placementPoints);
+  if (tooMany) {
+    return {
+      ok: false,
+      error: tooMany,
+      fieldErrors: { placementPoints: tooMany },
+    };
+  }
   return { ok: true, value: { ...base.value, format } };
 }
 
@@ -824,7 +840,10 @@ function placementPointsChanged(
  * scoring or Placement Points change while its Bracket is finalized.
  */
 export function competitionGuardError(
-  values: Pick<CompetitionValues, "name" | "scoring" | "placementPoints">,
+  values: Pick<CompetitionValues, "name" | "scoring" | "placementPoints"> & {
+    /** The chosen Format on create; an edit keeps `existing.format`. */
+    format?: Competition["format"];
+  },
   ctx: {
     mode: WarWeek["mode"];
     nameTaken: boolean;
@@ -846,6 +865,10 @@ export function competitionGuardError(
     return "A free-for-all War Week has no Teams, so its Competitions are individual.";
   }
   const existing = ctx.existing;
+  const format = values.format ?? existing?.format;
+  const tooMany =
+    format && placementLimitRefusal(format, values.placementPoints);
+  if (tooMany) return tooMany;
   if (
     existing &&
     existing.finalizedAt &&

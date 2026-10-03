@@ -14,8 +14,29 @@ export type CompetitionListItem = Pick<
   | "format"
 >;
 
-/** The most places a Competition can preset Placement Points for. */
-export const MAX_PLACEMENTS = 5;
+/** The most places a Bracket can preset Placement Points for (R17's `98` lowers it to 4). */
+const BRACKET_PLACEMENTS = 5;
+
+/**
+ * The most places a Competition of this Format can preset Placement Points
+ * for, or null for no limit. The one place the rule lives: Brackets
+ * (single-elimination, heats) are limited; every other Format is not.
+ */
+export function placementLimit(format: Format): number | null {
+  return format === "single-elimination" || format === "heats"
+    ? BRACKET_PLACEMENTS
+    : null;
+}
+
+/** Why Placement Points can't have this many places for the Format, or null. */
+export function placementLimitRefusal(
+  format: Format,
+  placementPoints: readonly number[] | null,
+): string | null {
+  const limit = placementLimit(format);
+  if (limit === null || (placementPoints?.length ?? 0) <= limit) return null;
+  return `Placement Points cover at most ${limit} places for this Format.`;
+}
 
 /**
  * The Placement Points preset for a place (1 = 1st), or null when the
@@ -162,7 +183,7 @@ export function setupHref(format: Format, id: string): string {
 /** The Competitions list's link to a Competition's setup, by Format. */
 export function setupLinkLabel(format: Format): string {
   if (format === "placement") return "Run as a Bracket";
-  if (isGameFormat(format)) return "Games";
+  if (isGameFormat(format)) return "Entrants and Games";
   if (format === "participation") return "Who took part";
   return "Bracket";
 }

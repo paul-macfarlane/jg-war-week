@@ -36,7 +36,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { WarWeek } from "@/db/schema";
 import { type Format, formatLabel, isBracketFormat } from "@/lib/bracket/view";
-import { setupHref, setupLinkLabel } from "@/lib/competitions";
+import { placementLimit, setupHref, setupLinkLabel } from "@/lib/competitions";
 import { COMPETITION_FORMATS, isGameFormat } from "@/lib/enums";
 import type { CompetitionInput } from "@/lib/setup";
 import type { SetupCompetition } from "@/queries/setup";
@@ -305,6 +305,9 @@ function CompetitionForm({
             <PlacementPointsRows
               value={values.placementPoints}
               invalid={!!fieldErrors.placementPoints}
+              limit={placementLimit(
+                (competition?.format ?? values.format ?? "placement") as Format,
+              )}
               onChange={(placementPoints) =>
                 setValues((v) => ({ ...v, placementPoints }))
               }

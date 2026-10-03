@@ -2493,7 +2493,7 @@ describe.skipIf(!isLocalDatabase)("games Competitions", () => {
       const keeps = {
         ok: false,
         error:
-          "A Games Competition keeps its Format; add a new Competition to run it another way.",
+          "A Head-to-head or Best score Competition keeps its Format; add a new Competition to run it another way.",
       };
       expect(
         await mutations.setCompetitionFormat(
@@ -2598,7 +2598,8 @@ describe.skipIf(!isLocalDatabase)("games Competitions", () => {
         ),
       ).toEqual({
         ok: false,
-        error: "Squads aren't entered in a Games Competition.",
+        error:
+          "Squads aren't entered in a Head-to-head or Best score Competition.",
       });
       expect(
         await mutations.replaceEntrants(

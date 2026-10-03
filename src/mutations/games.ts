@@ -48,7 +48,7 @@ import {
 
 export const ALREADY_CLOSED = "This Competition is already closed.";
 export const GAME_FORMAT_FIXED =
-  "A Games Competition keeps its Format; add a new Competition to play another.";
+  "A Head-to-head or Best score Competition keeps its Format; add a new Competition to play another.";
 export const BEST_OF_NEEDS_FIXED = "A Best of needs a fixed Entrant list.";
 
 type GamesRun = BracketCompetition & { format: GameFormat };
@@ -263,7 +263,7 @@ export async function deleteGame(
 }
 
 /**
- * Saves a `games` Competition's settings (R3 decision 11). Its Game Type
+ * Saves a `games` Competition's settings (R3 decision 11). Its Format
  * is fixed: only that type's settings change. A Best of needs a fixed list
  * of exactly two Entrants and takes no enrollment; enrollment is for a
  * fixed list only (`enrollmentUnavailable`). The logged Games must still
@@ -336,7 +336,7 @@ export async function setGamesSettings(
 /**
  * Closes a `games` Competition: its leaderboard's places become Placement
  * Points Entries (`pointsFor`, ties sharing a place's points, as when
- * finalizing a Bracket), marked generated and noted "From games", to the
+ * finalizing a Bracket), marked generated and noted "From head-to-head" or "From best score", to the
  * Team or the Participant by scoring; then no Game changes until Reopen.
  */
 export async function closeGames(

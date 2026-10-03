@@ -47,7 +47,9 @@ describe("toGamesResult", () => {
       found: true,
       competition: { name: "Trivia", scoring: "team", format: "placement" },
       games: null,
-      message: expect.stringContaining("isn't run as Games"),
+      message: expect.stringContaining(
+        "isn't run as Head-to-head or Best score",
+      ),
     });
   });
 
@@ -62,7 +64,7 @@ describe("toGamesResult", () => {
       found: true,
       games: null,
       message:
-        "Workout isn't run as Games; it's run as Participation. Call get_participation instead.",
+        "Workout isn't run as Head-to-head or Best score; it's run as Participation. Call get_participation instead.",
     });
   });
 
@@ -139,7 +141,7 @@ describe("toGamesResult", () => {
       competition: {
         name: "Bouncy Pong",
         scoring: "individual",
-        gameFormat: "head-to-head",
+        format: "head-to-head",
         settings: "Head-to-head · draws off · Best of 5",
         entrants: "open to everyone",
         closed: false,
@@ -224,6 +226,8 @@ describe("toGamesResult", () => {
 
     expect(result.found).toBe(true);
     if (!result.found || result.games === null) throw new Error("unreachable");
+    expect(result.competition).toMatchObject({ format: "best-score" });
+    expect(result.competition).not.toHaveProperty("gameFormat");
     expect(result.competition.settings).toBe(
       "Best score · total · higher is better · trips",
     );

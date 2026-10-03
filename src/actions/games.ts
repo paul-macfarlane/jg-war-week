@@ -21,8 +21,8 @@ function asRecord(input: unknown): Record<string, unknown> {
 
 /**
  * Runs a Game write (ADR 0006): authorizes the actor with the Game facts
- * and the posted input (its players read by the Game Type) first, so a refusal wins over malformed input,
- * then parses the input by the Competition's Game Type. The mutation
+ * and the posted input (its players read by the Format) first, so a refusal wins over malformed input,
+ * then parses the input by the Competition's Format. The mutation
  * checks the facts again under the Competition's lock.
  */
 async function gameWrite<R extends { ok: boolean }>(
@@ -106,7 +106,7 @@ async function hostWrite(
   });
 }
 
-/** Saves a `games` Competition's Game Type settings, Entrant and logging rules. */
+/** Saves a `games` Competition's Format settings, Entrant and logging rules. */
 export async function setGamesSettings(
   competitionId: string,
   input: unknown,

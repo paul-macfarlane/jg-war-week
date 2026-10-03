@@ -79,7 +79,7 @@ describe("toGamesBracketResult", () => {
       },
       bracket: null,
       message:
-        "Bouncy Pong isn't run as a Bracket; it's run as Games. Call get_games instead.",
+        "Bouncy Pong isn't run as a Bracket; it's run as Head-to-head or Best score. Call get_games instead.",
     });
   });
 });

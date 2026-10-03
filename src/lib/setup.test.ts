@@ -417,10 +417,6 @@ describe("parseCompetitionInput", () => {
       "Each place's Placement Points must be no more than the place above it.",
     ],
     [
-      { placementPoints: "6, 5, 4, 3, 2, 1" },
-      "Placement Points cover at most 5 places.",
-    ],
-    [
       { scoring: "team" },
       "Only an individual Competition can count toward the Team.",
     ],
@@ -467,6 +463,27 @@ describe("parseCreateCompetitionInput", () => {
     });
   });
 
+  it("takes 12 places for Placement and refuses 6 for a Bracket", () => {
+    const twelve = Array.from({ length: 12 }, (_, i) => 12 - i).join(", ");
+    expect(
+      parseCreateCompetitionInput({ ...competition, placementPoints: twelve }),
+    ).toMatchObject({ ok: true });
+    expect(
+      parseCreateCompetitionInput({
+        ...competition,
+        format: "heats",
+        placementPoints: "6, 5, 4, 3, 2, 1",
+      }),
+    ).toEqual({
+      ok: false,
+      error: "Placement Points cover at most 5 places for this Format.",
+      fieldErrors: {
+        placementPoints:
+          "Placement Points cover at most 5 places for this Format.",
+      },
+    });
+  });
+
   it("refuses an unknown Format", () => {
     expectRefused(
       parseCreateCompetitionInput({ ...competition, format: "swiss" }),
@@ -475,7 +492,7 @@ describe("parseCreateCompetitionInput", () => {
   });
 
   it.each(["head-to-head", "best-score"])(
-    "takes the %s Format on its own, with no Game Type to choose",
+    "takes the %s Format on its own, with no Format to choose",
     (format) => {
       expect(
         parseCreateCompetitionInput({ ...competition, format }),
@@ -671,6 +688,29 @@ describe("competitionGuardError", () => {
     pointsEntryCount: 0,
     finalizedAt: null as Date | null,
   };
+
+  it("refuses more than 5 places for a Bracket, on create and on edit, but not for Placement", () => {
+    const six = { ...values, placementPoints: [6, 5, 4, 3, 2, 1] };
+    const refusal = "Placement Points cover at most 5 places for this Format.";
+    expect(competitionGuardError({ ...six, format: "heats" }, ctx)).toBe(
+      refusal,
+    );
+    expect(
+      competitionGuardError(six, {
+        ...ctx,
+        existing: { ...existingBase, format: "single-elimination" },
+      }),
+    ).toBe(refusal);
+    expect(
+      competitionGuardError(
+        {
+          ...six,
+          placementPoints: Array.from({ length: 12 }, (_, i) => 12 - i),
+        },
+        { ...ctx, existing: { ...existingBase, format: "placement" } },
+      ),
+    ).toBeNull();
+  });
 
   it("allows a new Competition and a scoring change with no Points Entries", () => {
     expect(competitionGuardError(values, ctx)).toBeNull();

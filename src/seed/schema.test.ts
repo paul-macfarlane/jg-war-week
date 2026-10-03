@@ -146,10 +146,26 @@ describe("warWeekSeedSchema", () => {
       );
     });
 
-    it("rejects more than five places", () => {
-      expect(
-        rejectionOf(withCompetition({ placementPoints: [6, 5, 4, 3, 2, 1] })),
-      ).toContain(`${at}: at most 5 places`);
+    it("rejects more than five places for a Bracket", () => {
+      for (const format of ["heats", "single-elimination"]) {
+        expect(
+          rejectionOf(
+            withCompetition({ format, placementPoints: [6, 5, 4, 3, 2, 1] }),
+          ),
+        ).toContain(
+          `${at}: Placement Points cover at most 5 places for this Format.`,
+        );
+      }
+    });
+
+    it("accepts twelve places for Placement, Head-to-head and Best score", () => {
+      const twelve = Array.from({ length: 12 }, (_, i) => 12 - i);
+      for (const format of ["placement", "head-to-head", "best-score"]) {
+        const result = warWeekSeedSchema.safeParse(
+          withCompetition({ format, placementPoints: twelve }),
+        );
+        expect(result.success ? [] : result.error.issues).toEqual([]);
+      }
     });
 
     it("rejects an empty list", () => {

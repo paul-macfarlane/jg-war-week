@@ -324,7 +324,7 @@ describe("enrollmentUnavailable: where enrollment is offered", () => {
         entrantsOpen: false,
         gameConfig: null,
       },
-      "Participants enroll only in a Bracket or a Games Competition.",
+      "Participants enroll only in a Bracket, Head-to-head or Best score Competition.",
     ],
     [
       "a Bracket offers it",

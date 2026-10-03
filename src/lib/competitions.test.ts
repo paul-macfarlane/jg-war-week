@@ -8,6 +8,8 @@ import {
   hasPlacementPoints,
   hostName,
   placementLabel,
+  placementLimit,
+  placementLimitRefusal,
   pointsForPlacement,
   setupHref,
   setupLinkLabel,
@@ -244,9 +246,38 @@ describe("setupHref and setupLinkLabel", () => {
 
   it("label the link by Format", () => {
     expect(setupLinkLabel("participation")).toBe("Who took part");
-    expect(setupLinkLabel("head-to-head")).toBe("Games");
-    expect(setupLinkLabel("best-score")).toBe("Games");
+    expect(setupLinkLabel("head-to-head")).toBe("Entrants and Games");
+    expect(setupLinkLabel("best-score")).toBe("Entrants and Games");
     expect(setupLinkLabel("placement")).toBe("Run as a Bracket");
     expect(setupLinkLabel("heats")).toBe("Bracket");
+  });
+});
+
+describe("placementLimit and placementLimitRefusal", () => {
+  const places = (n: number) => Array.from({ length: n }, (_, i) => n - i);
+
+  it("limits Brackets to 5 places and every other Format to none", () => {
+    expect(placementLimit("single-elimination")).toBe(5);
+    expect(placementLimit("heats")).toBe(5);
+    for (const format of [
+      "placement",
+      "head-to-head",
+      "best-score",
+      "participation",
+    ] as const) {
+      expect(placementLimit(format)).toBeNull();
+    }
+  });
+
+  it("accepts 12 places for Placement and refuses 6 for a Bracket", () => {
+    expect(placementLimitRefusal("placement", places(12))).toBeNull();
+    expect(placementLimitRefusal("heats", places(5))).toBeNull();
+    expect(placementLimitRefusal("heats", places(6))).toBe(
+      "Placement Points cover at most 5 places for this Format.",
+    );
+    expect(placementLimitRefusal("single-elimination", places(6))).toMatch(
+      /at most 5 places/,
+    );
+    expect(placementLimitRefusal("heats", null)).toBeNull();
   });
 });

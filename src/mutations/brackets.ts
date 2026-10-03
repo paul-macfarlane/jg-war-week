@@ -48,6 +48,7 @@ import {
   type HeatResult,
 } from "@/lib/bracket/types";
 import { isBracketFormat } from "@/lib/bracket/view";
+import { placementLimitRefusal } from "@/lib/competitions";
 import { isGameFormat } from "@/lib/enums";
 import { gamesConfigOf } from "@/lib/games/config";
 import { NOT_GAMES } from "@/lib/games/log-rule";
@@ -67,13 +68,14 @@ const NOT_A_TEAM_COMPETITION = "Squads are only for team Competitions.";
 const SQUADS_SEEDED_AT_RANDOM = "Squads are seeded at random.";
 /** Changing a `games` Competition's Format, or making one `games` later. */
 export const GAMES_KEEP_FORMAT =
-  "A Games Competition keeps its Format; add a new Competition to run it another way.";
+  "A Head-to-head or Best score Competition keeps its Format; add a new Competition to run it another way.";
 /** Changing a `participation` Competition's Format, or making one later. */
 export const PARTICIPATION_KEEPS_FORMAT =
   "A Participation Competition keeps its Format; add a new Competition to run it another way.";
 /** A closed `games` Competition's Entrants can't change. */
 export const GAMES_CLOSED = "Reopen the Competition first.";
-const NO_SQUADS_IN_GAMES = "Squads aren't entered in a Games Competition.";
+const NO_SQUADS_IN_GAMES =
+  "Squads aren't entered in a Head-to-head or Best score Competition.";
 export const BEST_OF_NEEDS_TWO = "A Best of needs exactly 2 Entrants.";
 /** The note on every Points Entry a finalized Bracket generates. */
 export const FROM_BRACKET_NOTE = "From bracket";
@@ -300,6 +302,11 @@ export async function setCompetitionFormat(
     if (found.finalizedAt) return refuse(FINALIZED);
     const formatChanges = found.format !== values.format;
     if (formatChanges) {
+      const tooMany = placementLimitRefusal(
+        values.format,
+        found.placementPoints,
+      );
+      if (tooMany) return refuse(tooMany);
       const [entrants] = await tx
         .select({ count: count() })
         .from(entrant)

@@ -85,7 +85,7 @@ function statValue(row: GamesViewRow, key: string): string {
   return value === null || value === undefined ? "—" : String(value);
 }
 
-/** The leaderboard: rank, player, and the Game Type's stats (Games rules). */
+/** The leaderboard: rank, player, and the Format's stats (Games rules). */
 export function GamesLeaderboard({
   gameFormat,
   config,

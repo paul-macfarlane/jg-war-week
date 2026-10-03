@@ -137,7 +137,7 @@ function rawSettingsOf(gameFormat: GameFormat, fields: SettingsFields) {
 }
 
 /**
- * The `games` Competition's setup: its Game Type (fixed) and settings, its
+ * The `games` Competition's setup: its Format (fixed) and settings, its
  * Entrants (open or a fixed list, R3 decision 11), the logging close time,
  * self-enrollment (decision 12) and Close / Reopen (decision 1).
  */
@@ -204,7 +204,7 @@ export function GamesBuilder({
       const raw = rawSettingsOf(gameFormat, fields);
       const saved = await setGamesSettings(competition.id, raw);
       if (saved.ok) {
-        toast.success("Games settings saved");
+        toast.success("Settings saved");
         router.refresh();
       } else {
         toast.error(saved.error);
@@ -264,7 +264,7 @@ export function GamesBuilder({
       <div>
         <h1 className="text-2xl font-bold">{competition.name}</h1>
         <p className="text-foreground/70 text-sm">
-          Games · {gameFormatLabel(gameFormat)}
+          {gameFormatLabel(gameFormat)}
         </p>
       </div>
 
@@ -276,7 +276,8 @@ export function GamesBuilder({
 
       {locked && (
         <p className="border-border rounded-lg border px-3 py-2 text-sm">
-          This Competition is closed. Reopen it to change its Games or settings.
+          This Competition is closed. Reopen it to change its Entrants, Games or
+          settings.
         </p>
       )}
 
