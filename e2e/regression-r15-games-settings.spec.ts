@@ -2,7 +2,8 @@ import { expect, test } from "@playwright/test";
 
 import { asOrganizer } from "./session";
 
-// R15 ticket 89: a Games Competition's settings show what was saved after
+// Epic R15, ticket 89 (.scratch/regression-2026-10/issues/89-games-settings-show-what-was-saved.md):
+// a Games Competition's settings show what was saved after
 // leaving and coming back. A new ranked Games Competition is created, so
 // the seeded Competitions stay as they were.
 test("r15 89 Games settings and Placement Points show what was saved after leaving and returning", async ({

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
+import type { NavAccount } from "@/auth/nav-account";
 import { AccountMenu } from "@/components/account-menu";
 import { MoreMenu } from "@/components/more-menu";
 import {
@@ -16,19 +17,6 @@ import {
 } from "@/components/ui/sheet";
 import type { WarWeek } from "@/db/schema";
 import { type NavKey, destinationsFor, isActive } from "@/lib/primary-nav";
-
-/** The signed-in user, as shown in the navigation. */
-export type NavAccount = {
-  email: string;
-  /**
-   * The Profile name, else the roster name when linked to a Participant,
-   * else the email's local part.
-   */
-  name: string;
-  /** The Profile picture URL, else the Google photo; null for initials. */
-  image?: string | null;
-  canOpenAdmin: boolean;
-};
 
 const ICONS: Record<NavKey, typeof Home> = {
   home: Home,
@@ -148,7 +136,7 @@ export function TopNav({
 
   return (
     <header className="border-border bg-background sticky top-0 z-50 border-b">
-      <div className="mx-auto grid max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-6 px-4 py-2 lg:px-6 lg:py-3">
+      <div className="mx-auto grid max-w-6xl grid-cols-[1fr_auto] items-center gap-6 px-4 py-2 lg:grid-cols-[1fr_auto_1fr] lg:px-6 lg:py-3">
         <Link
           href={`/${edition}`}
           className="flex min-w-0 items-baseline gap-2"
@@ -183,7 +171,7 @@ export function TopNav({
             })}
           </ul>
         </nav>
-        <div className="col-start-3 justify-self-end">
+        <div className="justify-self-end lg:col-start-3">
           <AccountMenu
             name={account.name}
             image={account.image}

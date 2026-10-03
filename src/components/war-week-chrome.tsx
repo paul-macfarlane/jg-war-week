@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { getNavAccount } from "@/app/[edition]/war-week";
+import { getNavAccount } from "@/auth/nav-account";
 import { BottomTabBar, TopNav } from "@/components/primary-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { ThemeRoot } from "@/components/theme-root";

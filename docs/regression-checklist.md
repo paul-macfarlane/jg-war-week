@@ -288,16 +288,18 @@ on the matching War Week page.
       Entrant that advances (place up to the Heat's advancing count) is
       highlighted on its card, as on the Participant tree, and the Heat
       result form marks "Advances" beside those places. In the final, only
-      1st is highlighted. An unplayed Heat has a solid "Record result"
-      button; a recorded one has an outline "Edit".
+      1st is highlighted and the form says "Wins" beside it. An unplayed
+      Heat has a solid "Record result" button; a recorded one has an outline
+      "Edit".
 - [ ] **Games settings show what was saved.** On a `games` Competition's
       Games page, change a setting (for Ranked, the Finish Points) and
       press Save settings: the fields keep the saved values with no reload;
       reload and come back later, and they are still there. A trailing or
       doubled comma in Finish Points ("5, 3, 1,") saves 5, 3, 1, with no
-      extra 0. Finish Points says it is per finishing place in one Game;
-      Placement Points says it is set in the Competition's Edit sheet and
-      is what the leaderboard's top places earn in the Standings.
+      extra 0. Finish Points says it is per finishing place in one Game and
+      points to Placement Points in the Competition's Edit sheet; Placement
+      Points (in the Edit sheet) says it is what each place earns in the
+      Standings and points to Finish Points.
 - [ ] **Close a `games` Competition.** Log two Games as the Organizer in
       a `head-to-head` Competition with Placement Points (Log a Game on its
       public Competition page), then Close on its Games page: its top
@@ -549,11 +551,13 @@ that nothing personal shows (no You highlight, no Log a Game).
 - [ ] **Cursors.** At 1440, hover a link, a button, a tab and a menu item
       on a participant page and in admin: each shows the pointer cursor; a
       disabled button (e.g. Save settings on a closed Participation
-      Competition) shows not-allowed.
+      Competition), a disabled toggle and a disabled tab show not-allowed
+      (menu and list items stay inert but keep the plain cursor).
 - [ ] **Buttons follow the rule.** On the admin Competitions, Roster and
-      Schedule lists, the primary action ("Add Competition", "Add Squad",
-      etc.) is a solid button, secondary ones are outline, and only icon or
-      tertiary actions are ghost.
+      Schedule lists, the primary action ("Add Competition", "Add Team",
+      "Add Participant", etc.) is a solid button, secondary ones are
+      outline (on Bracket setup, Add Squad sits outline beside the solid
+      Generate), and only icon or tertiary actions are ghost.
 - [ ] **History wears the War Week chrome.** `/history` and a Category page
       (`/history/awards/<id>`) show the current War Week's top nav (at
       1440), phone tab bar (at 390) and footer, in the current War Week's

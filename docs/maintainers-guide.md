@@ -91,6 +91,7 @@ before it says it's done.
 | Seed format and loader                     | `src/seed/schema.ts`, `src/seed/load.ts`                               |
 | Appearance Theme → CSS                     | `src/lib/theme.ts`                                                     |
 | Shared UI pieces                           | `src/components/` (shadcn primitives in `src/components/ui/`)          |
+| Participant nav, tab bar, footer and theme | `src/components/war-week-chrome.tsx` (the `[edition]` layout and `/history`), `src/components/primary-nav.tsx`; the signed-in nav account is `src/auth/nav-account.ts` |
 | MCP server (Claude connector)              | `src/app/api/mcp/route.ts`, tools in `src/mcp/`, list in `src/mcp/tools.ts` |
 | Profiles (name, picture) and Delete my account | `src/lib/profile.ts`, `src/queries/profile-join.ts`, `src/app/[edition]/profile/`, `src/mutations/account.ts` |
 | Test sign-in (staging only)                | `src/lib/test-sign-in.ts`, `src/app/sign-in/test/`, `src/actions/test-sign-in.ts` |
@@ -419,22 +420,22 @@ A Bracket reads as a tree by default on its Competition page: single
 elimination shows its Rounds left to right joined by lines; Heats shows one
 box per Heat with the advancers highlighted (the same on the admin results
 screen, where the Heat result form also marks "Advances" on the advancing
-places). On a phone it's one Round at a
+places, and "Wins" on 1st in the final). On a phone it's one Round at a
 time, with Round tabs. Results fill in live as they're recorded, and a
 **List** toggle switches back to the plain list. `/admin/brackets/<id>` (the
 results screen) still shows the list.
 
-On the day: the builder's **By Standings** button draws Seed Positions
-from the current Standings (ties at random) instead of Generate's random
-draw. On the results screen, each Heat card has a solid **Record result**
-button (an outline **Edit** once it's recorded) and a **Time & place** button that sets its
-Day, start time (ET) and location; Hosts can do it for their own
-Competitions. A timed Heat shows its when-line ("Sunday, Feb 22 · 7:00 PM
-ET · Main room") on its card and in the Participant's "Your next Heat", and
-joins the home page's Now/Next once its Entrants are known. A re-draw
-clears every time, so the builder asks first. Once finalized, the Bracket
-has its own **Bracket Finale** at `/<edition>/finale/<competitionId>` for
-the projector, linked from its champion card, the results screen and
+On the day: the builder's **By Standings** button draws Seed Positions from
+the current Standings (ties at random) instead of Generate's random draw. On
+the results screen, each Heat card has a solid **Record result** button (an
+outline **Edit** once it's recorded) and a **Time & place** button that sets
+its Day, start time (ET) and location; Hosts can do it for their own
+Competitions. A timed Heat shows its when-line ("Sunday, Feb 22 · 7:00 PM ET
+· Main room") on its card and in the Participant's "Your next Heat", and
+joins the home page's Now/Next once its Entrants are known. A re-draw clears
+every time, so the builder asks first. Once finalized, the Bracket has its
+own **Bracket Finale** at `/<edition>/finale/<competitionId>` for the
+projector, linked from its champion card, the results screen and
 `/admin/finale` ("Finale: <Competition>"). The rules are under "Bracket
 rules", "Schedule display rules" and "Finale rules" in `CONTEXT.md`.
 
@@ -693,8 +694,10 @@ Notes:
 - **Button variants.** A page's primary action is a solid `default`
   Button (Add …, Record result, Save); secondary actions are `outline`
   (Edit, Cancel); `ghost` is only for icon buttons and tertiary actions.
-  Every clickable control shows the pointer cursor and a disabled one
-  not-allowed (a rule in `globals.css`), so don't restyle that per button.
+  Every clickable control shows the pointer cursor, and a disabled
+  button, toggle or tab shows not-allowed (a rule in `globals.css`; menu and
+  list items stay inert but keep the plain cursor), so don't restyle that per
+  button.
 - A single choice among a few options (who won, which Entrant) is a
   `ToggleGroup` from `ui/toggle-group`: single-select, and kept
   non-deselectable by ignoring an empty `onValueChange` — never `Button`s

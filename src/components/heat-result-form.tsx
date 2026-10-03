@@ -22,9 +22,9 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { resetByResult } from "@/lib/bracket/formats";
-import { advancingPlaces } from "@/lib/bracket/tree";
+import { advancesAtPlace } from "@/lib/bracket/tree";
 import type { Bracket, Heat, HeatResult } from "@/lib/bracket/types";
-import { heatName, isDecided } from "@/lib/bracket/view";
+import { finalRoundOf, heatName, isDecided } from "@/lib/bracket/view";
 
 type Scoring = "team" | "individual";
 
@@ -326,7 +326,7 @@ export function FinishingOrderForm(props: HeatResultFormProps) {
   const [scores, setScores] = useState<Record<string, string>>(() =>
     Object.fromEntries(heat.slots.map((s) => [s.entrantId!, s.score ?? ""])),
   );
-  const through = advancingPlaces(props.bracket, heat);
+  const isFinal = heat.round >= finalRoundOf(props.bracket);
   const toPlace = ids.filter((e) => !forfeits.includes(e));
   const complete = order.length > 0 && order.length === toPlace.length;
   const result: HeatResult | null = complete
@@ -365,7 +365,8 @@ export function FinishingOrderForm(props: HeatResultFormProps) {
             const entrant = entrantsById.get(entrantId)!;
             const place = order.indexOf(entrantId) + 1;
             const forfeited = forfeits.includes(entrantId);
-            const advances = place > 0 && place <= through;
+            const advances =
+              place > 0 && advancesAtPlace(props.bracket, heat, place);
             return (
               <Button
                 key={entrantId}
@@ -387,7 +388,7 @@ export function FinishingOrderForm(props: HeatResultFormProps) {
                 <span className="min-w-0 truncate">{entrant.label}</span>
                 {advances && (
                   <span className="ml-auto text-xs font-semibold">
-                    Advances
+                    {isFinal && place === 1 ? "Wins" : "Advances"}
                   </span>
                 )}
                 {place > 0 && (

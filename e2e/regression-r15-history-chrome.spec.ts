@@ -2,7 +2,7 @@ import { type Page, type TestInfo, expect, test } from "@playwright/test";
 
 import { asOrganizer } from "./session";
 
-const DESKTOP = { width: 1280, height: 900 };
+const LG_DESKTOP = { width: 1280, height: 900 }; // above the top nav's lg breakpoint
 const PHONE = { width: 390, height: 844 };
 
 const lightPrimary = (page: Page) =>
@@ -21,6 +21,8 @@ async function shoot(page: Page, testInfo: TestInfo, name: string) {
   });
 }
 
+// Epic R15, ticket 88 (.scratch/regression-2026-10/issues/88-history-in-war-week-chrome.md):
+// /history and a Category page wear the current War Week's chrome.
 test("r15 88 History and a Category page wear the current War Week's nav, tab bar and theme", async ({
   context,
   page,
@@ -46,7 +48,7 @@ test("r15 88 History and a Category page wear the current War Week's nav, tab ba
     ["/history", "history"],
     [categoryHref as string, "category"],
   ] as const) {
-    await page.setViewportSize(DESKTOP);
+    await page.setViewportSize(LG_DESKTOP);
     await page.goto(path);
     await expect(
       page.locator('nav[aria-label="Primary"]:visible'),

@@ -77,6 +77,15 @@ export function advancingPlaces(bracket: Bracket, heat: Heat): number {
   return heatsConfig(bracket.config).advancePerHeat;
 }
 
+/** Whether `place` is among the places that go through from `heat`. */
+export function advancesAtPlace(
+  bracket: Bracket,
+  heat: Heat,
+  place: number,
+): boolean {
+  return place <= advancingPlaces(bracket, heat);
+}
+
 /** Whether a slot at `place` in a decided Heat goes through: the one rule. */
 export function advancesFromPlace(
   bracket: Bracket,
@@ -84,7 +93,7 @@ export function advancesFromPlace(
   place: number | null,
 ): boolean {
   return (
-    isDecided(heat) && place !== null && place <= advancingPlaces(bracket, heat)
+    isDecided(heat) && place !== null && advancesAtPlace(bracket, heat, place)
   );
 }
 

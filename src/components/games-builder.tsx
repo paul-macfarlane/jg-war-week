@@ -395,8 +395,8 @@ export function GamesBuilder({
               <FieldDescription>
                 What a player earns for each finishing place in one Game, 1st
                 first. Blank: one point per player beaten. Placement Points, set
-                in the Competition&rsquo;s Edit sheet on the Competitions page,
-                are what the leaderboard&rsquo;s top places earn in the
+                in the Competition&apos;s Edit sheet on the Competitions page,
+                are what the leaderboard&apos;s top places earn in the
                 Standings.
               </FieldDescription>
               <FieldError>{fieldErrors.finishPoints}</FieldError>

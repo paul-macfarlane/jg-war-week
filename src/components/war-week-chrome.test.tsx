@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { WarWeek } from "@/db/schema";
 
-vi.mock("@/app/[edition]/war-week", () => ({
+vi.mock("@/auth/nav-account", () => ({
   getNavAccount: vi.fn(async () => ({
     email: "o@jahnelgroup.com",
     name: "o",

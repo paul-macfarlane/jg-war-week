@@ -259,27 +259,25 @@ export function BracketResultsView({
                     <CardContent className="flex min-w-0 flex-col gap-2">
                       <div className="text-foreground/60 flex min-h-8 items-center justify-between gap-2 text-xs font-medium">
                         <span>{name}</span>
-                        <span className="flex items-center gap-2">
-                          {schedulable && (
-                            // Above the full-card overlay, so it opens its
-                            // own Sheet rather than the Heat Result.
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              aria-label={`Time & place for ${name}`}
-                              className="relative z-10 min-h-11 sm:min-h-8"
-                              onClick={() =>
-                                onOpenSheetChange({
-                                  kind: "schedule",
-                                  heatId: heat.id,
-                                })
-                              }
-                            >
-                              Time &amp; place
-                            </Button>
-                          )}
-                        </span>
+                        {schedulable && (
+                          // Above the full-card overlay, so it opens its
+                          // own Sheet rather than the Heat Result.
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            aria-label={`Time & place for ${name}`}
+                            className="relative z-10 min-h-11 sm:min-h-8"
+                            onClick={() =>
+                              onOpenSheetChange({
+                                kind: "schedule",
+                                heatId: heat.id,
+                              })
+                            }
+                          >
+                            Time &amp; place
+                          </Button>
+                        )}
                       </div>
                       {when && (
                         <span className="text-foreground/70 text-xs">
@@ -303,7 +301,7 @@ export function BracketResultsView({
                           variant={isDecided(heat) ? "outline" : "default"}
                           size="sm"
                           aria-label={`${isDecided(heat) ? "Edit" : "Record result for"} ${name}`}
-                          className="min-h-11 after:absolute after:inset-0 after:rounded-xl sm:min-h-8"
+                          className="min-h-11 after:absolute after:inset-0 after:rounded-xl active:not-aria-[haspopup]:translate-none sm:min-h-8"
                           onClick={() =>
                             onOpenSheetChange({
                               kind: "result",
