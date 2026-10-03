@@ -1,0 +1,19 @@
+# 95: Placement Points without a limit
+
+**What to build:** Placement Points can cover any number of places for Placement, Head-to-head, Best score and Participation (team). Brackets stop at 4th (R17, `98`). Today `MAX_PLACEMENTS = 5` (`src/lib/competitions.ts:20`).
+
+**Blocked by:** none
+
+**Status:** ready-for-agent
+
+**Source:** grilling Q4 (Paul: "no limits unless there's a clear reason"; Brackets at 4 to limit complexity, without closing the door)
+
+## Decisions
+
+- Keep the stored shape an open list (`numeric[]`), non-increasing, each ≥ 0; the limit is a per-Format rule in one place, so Brackets can grow later.
+- The field is a list editor (add / remove a place) rather than a fixed five inputs; it stays usable at 20+ places on a phone.
+
+## Acceptance criteria
+
+- [ ] Unit tests: 12 places accepted for Placement; 5 refused for a Bracket; non-increasing enforced.
+- [ ] `pnpm gate` passes.

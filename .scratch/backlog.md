@@ -2,24 +2,23 @@
 
 Every open item across `.scratch/`, in one place. Each ticket file stays the
 source of truth for its own status and details; update this list when a
-ticket opens or closes. Last reviewed 2026-10-01 (Paul plans to work through
-it the week of 2026-10-05).
+ticket opens or closes. Last reviewed 2026-10-03.
 
 ## Paul's manual steps
 
-- [ ] **Regression pass**: walk the app end to end, especially creating and running Competitions; record findings as new tickets. [`regression-2026-09/issues/18`](./regression-2026-09/issues/18-regression-pass.md) (`needs-triage`)
+- [ ] **Regression pass**: Competition setup done 2026-10-03 (→ R15–R19 below); the **Host role** is still untested. [`regression-2026-09/issues/18`](./regression-2026-09/issues/18-regression-pass.md) (`needs-triage`)
 
 ## Ready for an agent
 
-October regression feedback, grilled 2026-10-01 ([`regression-2026-09/grilling-2026-10-01.md`](./regression-2026-09/grilling-2026-10-01.md)). Run in order; R10 onward change the schema and are red-teamed.
+October Competition feedback, grilled 2026-10-03 ([`regression-2026-10/spec.md`](./regression-2026-10/spec.md), [grilling record](./regression-2026-10/grilling-2026-10-03.md)). R15 is independent; R16 → R17 → R18 change the schema one at a time and are red-teamed; R19 after R17.
 
-- [ ] **Epic R9, navigation**: Competitions in the main nav (54), avatar account menu (55), Home's Recent results (56), flat admin nav (57), one Edit/Delete pattern (58), Settings autosave (59). [`regression-2026-09/epics/R9`](./regression-2026-09/epics/R9-navigation.md) (`done`)
-- [ ] **Epic R10, accounts and testing**: Profile name and picture URL (60), delete my account (61), staging Test sign-in (62). Delivered on `feat/regression-r10-accounts` (PR into `staging`); needs `TEST_SIGN_IN_SECRET` on staging and the staging checks. [`regression-2026-09/epics/R10`](./regression-2026-09/epics/R10-accounts-and-testing.md) (`done`)
-- [ ] **Epic R11, content**: journeys editor parity, images by URL (64), videos only in the post (65), Day description (66), roster import (67), Unstart (68). After R10. [`regression-2026-09/epics/R11`](./regression-2026-09/epics/R11-content.md) (`done`)
-- [ ] **Epic R12, Participation and Award Categories**: Participation Format (69), Award Categories (70), a Category through the years (71). After R11. [`regression-2026-09/epics/R12`](./regression-2026-09/epics/R12-competitions-and-awards.md) (`done`)
-- [ ] **Epic R13, Finale slides**: slideshow framework (72), built-in slides (73), custom slides (74). After R12. [`regression-2026-09/epics/R13`](./regression-2026-09/epics/R13-finale-slides.md) (`done`)
+- [ ] **Epic R15, quick fixes**: Heats advancers highlighted (84), pointer cursor (85), centred top nav (86), solid primary buttons (87), History in the War Week chrome (88), Games settings show what was saved (89). [`regression-2026-10/epics/R15`](./regression-2026-10/epics/R15-quick-fixes.md) (`ready-for-agent`)
+- [ ] **Epic R16, the Competition model**: Placement replaces `points` (90), Discretionary points (91), no Max Points (92), Head-to-head and Best score as Formats (93), Participation follows scoring (94), Placement Points without a limit (95), migration and seeds (96). [`regression-2026-10/epics/R16`](./regression-2026-10/epics/R16-competition-model.md) (`ready-for-agent`)
+- [ ] **Epic R17, Brackets**: one Bracket Format (97), 3rd place game up to 4th (98), no seeding by Standings, Forfeit or Time & place (99), one tree for admin and Participants (100). After R16. [`regression-2026-10/epics/R17`](./regression-2026-10/epics/R17-brackets.md) (`ready-for-agent`)
+- [ ] **Epic R18, the admin Competition page**: one autosaving page (101), Hosts from the roster (102), rich-text description (103), Log a Game from admin (104). After R17. [`regression-2026-10/epics/R18`](./regression-2026-10/epics/R18-admin-competition-page.md) (`ready-for-agent`)
+- [ ] **Epic R19, Participant list and scale**: list status, Winner and description (105), 100 Participants (106). After R17. [`regression-2026-10/epics/R19`](./regression-2026-10/epics/R19-participant-list-and-scale.md) (`ready-for-agent`)
 
-- [x] **Epic R14, quick wins** from the R8 checklist run: admin refusal themed (78), Points form first (79), no banner placeholder (80), the guide says where You shows (81), Group tabs wrap (82). [`regression-2026-09/epics/R14`](./regression-2026-09/epics/R14-quick-wins.md) (`done`)
+Done: Epics R9–R14 (`regression-2026-09`, PRs through #122).
 
 ## Ready, waiting on someone else
 
@@ -42,6 +41,8 @@ October regression feedback, grilled 2026-10-01 ([`regression-2026-09/grilling-2
 - [ ] **Billable hours from Tense**: owner, API access, visibility of hours. [`regression-2026-09/issues/76`](./regression-2026-09/issues/76-tense-billable-hours.md) (`needs-info`)
 - [ ] **Your War Week, on your phone**: personal recap after R13. [`regression-2026-09/issues/77`](./regression-2026-09/issues/77-personal-war-week-wrapped.md) (`needs-triage`)
 
+- [ ] **About page Finale sizzle video**: low priority; needs where Paul's journeys-app version lives. [`regression-2026-10/issues/107`](./regression-2026-10/issues/107-about-finale-video.md) (`needs-info`)
+
 ## Deferred on purpose
 
-- [ ] **Rename `finalized_at` / `generated_by_bracket`**: internal naming; do it alongside the next red-teamed schema change. [`regression-2026-09/issues/25`](./regression-2026-09/issues/25-rename-finalized-generated-columns.md) (`needs-triage`)
+- [ ] **Rename `finalized_at` / `generated_by_bracket`**: internal naming; do it alongside the next red-teamed schema change (R16 or R17). [`regression-2026-09/issues/25`](./regression-2026-09/issues/25-rename-finalized-generated-columns.md) (`needs-triage`)

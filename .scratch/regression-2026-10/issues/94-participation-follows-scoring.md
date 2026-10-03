@@ -1,0 +1,20 @@
+# 94: Participation scoring follows the Competition's scoring
+
+**What to build:** Participation's points follow the Competition's scoring, with no separate team mode: an **individual** Competition gives N points to each person who took part (counting toward their Team when "counts toward team" is on); a **team** Competition ranks Teams by headcount and awards Placement Points. The team **per-person** mode goes, and the settings show only the fields that apply (N for individual, Placement Points for team).
+
+**Blocked by:** none
+
+**Status:** ready-for-agent
+
+**Source:** Paul's regression feedback 2026-10-03 (Admin: participation max and placement points); grilling Q5, Q27. Amends ticket 69's team modes.
+
+## Decisions
+
+- Drop `participation_team_scoring` (and `per-person`); any existing per-person Competition becomes ranked (no data in use).
+- Max Points goes in `92`.
+
+## Acceptance criteria
+
+- [ ] Unit tests: individual N each (and toward Team); team ranked by headcount with ties.
+- [ ] The existing team Participation e2e passes; an individual one gives N each.
+- [ ] `pnpm gate` passes.
