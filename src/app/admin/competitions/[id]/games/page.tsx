@@ -52,7 +52,7 @@ export default async function GamesBuilderPage({
             id: competition.id,
             name: competition.name,
             scoring: competition.scoring,
-            gameType: competition.gameType,
+            gameFormat: competition.gameFormat,
             config: competition.config,
             entrantsOpen: competition.entrantsOpen,
             loggingClosesAt: competition.loggingClosesAt,

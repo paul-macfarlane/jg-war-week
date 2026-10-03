@@ -63,7 +63,10 @@ export function buildPointsBreakdown(
   };
 
   for (const entry of input.pointsEntries) {
-    const competition = competitions.get(entry.competitionId);
+    const competition =
+      entry.competitionId === null
+        ? undefined
+        : competitions.get(entry.competitionId);
     if (!competition) continue;
     const row: PointsBreakdownRow = {
       id: entry.id,

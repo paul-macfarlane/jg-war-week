@@ -15,9 +15,6 @@ function scoringLine(
   if (competition.scoring === "individual") {
     return `${n} ${n === "1" ? "point" : "points"} for each Participant who took part.`;
   }
-  if (competition.participationTeamScoring === "per-person") {
-    return `${n} ${n === "1" ? "point" : "points"} to the ${teamLabel} for each Participant who took part.`;
-  }
   return `${teamLabel}s ranked by how many took part get Placement Points.`;
 }
 

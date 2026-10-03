@@ -24,10 +24,7 @@ export function placementPointsFromRows(rows: string[]): string {
 }
 
 /** Live errors for the rows, in the server's wording; empty when valid. */
-export function placementRowErrors(
-  rows: string[],
-  maxPoints: string,
-): string[] {
+export function placementRowErrors(rows: string[]): string[] {
   const values = rows.map((row) => row.trim()).filter(Boolean);
   const errors: string[] = [];
   const lastFilled = rows.reduce(
@@ -52,10 +49,6 @@ export function placementRowErrors(
     errors.push(
       "Each place's Placement Points must be no more than the place above it.",
     );
-  }
-  const max = maxPoints.trim();
-  if (points.length > 0 && POINTS_NUMBER.test(max) && points[0] > Number(max)) {
-    errors.push("1st place's Placement Points can't be more than Max points.");
   }
   return errors;
 }

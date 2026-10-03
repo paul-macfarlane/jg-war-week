@@ -45,8 +45,8 @@ async function gameWrite<R extends { ok: boolean }>(
     if (!authorized.ok) return authorized;
     let players: Parameters<typeof mutations.logGame>[1] = { players: [] };
     if (action !== "games.delete") {
-      const { gameType, config } = authorized.competition;
-      const parsed = parseGameInput(gameType, config, asRecord(input));
+      const { gameFormat, config } = authorized.competition;
+      const parsed = parseGameInput(gameFormat, config, asRecord(input));
       if (!parsed.ok) return parsed;
       players = parsed.value;
     }

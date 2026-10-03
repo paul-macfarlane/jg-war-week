@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 import type { Competition, PointsEntry } from "@/db/schema";
+import { isGameFormat } from "@/lib/enums";
 import { fieldErrorsFrom } from "@/lib/form-errors";
-import { formatPoints } from "@/lib/points";
 import type { Parsed } from "@/lib/result";
 import { WAR_WEEK_TIME_ZONE } from "@/lib/schedule";
 
@@ -107,33 +107,19 @@ export function parsePointsEntryInput(
 }
 
 /**
- * The warning shown when an entry goes over the Competition's max points.
- * Going over is allowed (it may be a bonus); the warning only catches typos.
- */
-export function overMaxWarning(
-  points: number,
-  maxPoints: number | null,
-): string | null {
-  if (maxPoints === null || !Number.isFinite(points) || points <= maxPoints) {
-    return null;
-  }
-  return `${formatPoints(points)} is over this Competition's max of ${formatPoints(maxPoints)} points. It will still save.`;
-}
-
-/**
  * The ledger's mark on a generated Points Entry: its Competition's Format
- * says whether a Bracket, a `games` or a `participation` Competition wrote
+ * says whether a Bracket, a Head-to-head or Best score or a `participation` Competition wrote
  * it.
  */
 export function generatedNote(format: Competition["format"]): string {
-  if (format === "games") return "From games";
+  if (isGameFormat(format)) return "From games";
   if (format === "participation") return "From participation";
   return "From bracket";
 }
 
 /** Why a generated Points Entry can't be edited or deleted in the ledger. */
 export function generatedRefusal(format: Competition["format"]): string {
-  if (format === "games") {
+  if (isGameFormat(format)) {
     return "This Points Entry comes from a Games Competition. Change it there.";
   }
   if (format === "participation") {

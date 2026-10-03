@@ -18,10 +18,7 @@ export type ParticipationPoints = {
 
 export type ParticipationScoring = Pick<
   Competition,
-  | "scoring"
-  | "placementPoints"
-  | "participationPoints"
-  | "participationTeamScoring"
+  "scoring" | "placementPoints" | "participationPoints"
 >;
 
 /** A Team's headcount and its place: ties share the higher place. */
@@ -47,16 +44,12 @@ export function teamHeadcounts(tookPart: TookPart[]): TeamHeadcount[] {
   }));
 }
 
-/** Points to the cent, as `points_entry.points` stores them. */
-const cents = (points: number) => Math.round(points * 100) / 100;
-
 /**
  * The Points Entries a Close writes:
  * - individual: N to each Participant who took part;
- * - team, ranked by headcount: each Team's place's Placement Points (ties
- *   each get that place's points; places without Placement Points get
- *   nothing; `pointsFor`, the Bracket and Games rule);
- * - team, per person: N × headcount to each Team.
+ * - team: Teams ranked by headcount, each Team's place's Placement Points
+ *   (ties each get that place's points; places without Placement Points get
+ *   nothing; `pointsFor`, the Bracket and Games rule).
  */
 export function scoreParticipation(
   tookPart: TookPart[],
@@ -71,13 +64,6 @@ export function scoreParticipation(
     }));
   }
   const headcounts = teamHeadcounts(tookPart);
-  if (competition.participationTeamScoring === "per-person") {
-    return headcounts.map(({ teamId, count }) => ({
-      teamId,
-      participantId: null,
-      points: cents(n * count),
-    }));
-  }
   return pointsFor(
     headcounts.map(({ teamId, place }) => ({ entrantId: teamId, place })),
     competition,

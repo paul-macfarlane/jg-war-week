@@ -48,6 +48,7 @@ import {
   type HeatResult,
 } from "@/lib/bracket/types";
 import { isBracketFormat } from "@/lib/bracket/view";
+import { isGameFormat } from "@/lib/enums";
 import { gamesConfigOf } from "@/lib/games/config";
 import { NOT_GAMES } from "@/lib/games/log-rule";
 import { inUseError } from "@/lib/setup";
@@ -86,7 +87,6 @@ export type BracketCompetition = Pick<
   | "bracketConfig"
   | "placementPoints"
   | "finalizedAt"
-  | "gameType"
   | "gameConfig"
   | "entrantsOpen"
   | "loggingClosesAt"
@@ -95,7 +95,7 @@ export type BracketCompetition = Pick<
   | "enrollClosesAt"
 >;
 
-/** A Competition run as a Bracket (its Format isn't points or games). */
+/** A Competition run as a Bracket (its Format isn't placement, Head-to-head, Best score or participation). */
 export type BracketRun = BracketCompetition & { format: BracketFormat };
 
 /**
@@ -117,7 +117,6 @@ export async function lockedCompetition(
       bracketConfig: competition.bracketConfig,
       placementPoints: competition.placementPoints,
       finalizedAt: competition.finalizedAt,
-      gameType: competition.gameType,
       gameConfig: competition.gameConfig,
       entrantsOpen: competition.entrantsOpen,
       loggingClosesAt: competition.loggingClosesAt,
@@ -292,7 +291,7 @@ export async function setCompetitionFormat(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedCompetition(tx, competitionId, ctx);
     if (!found) return refuse(COMPETITION_NOT_FOUND);
-    if (found.format === "games" || values.format === "games") {
+    if (isGameFormat(found.format) || isGameFormat(values.format)) {
       return refuse(GAMES_KEEP_FORMAT);
     }
     if (found.format === "participation" || values.format === "participation") {
@@ -319,7 +318,7 @@ export async function setCompetitionFormat(
       );
       if (refusal) return refuse(refusal);
     }
-    if (values.format === "points" && found.format !== "points") {
+    if (values.format === "placement" && found.format !== "placement") {
       // Squads are entered only in a Bracket.
       const refusal = inUseError(
         "Competition",
@@ -405,7 +404,7 @@ export async function replaceEntrants(
 ): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedCompetition(tx, competitionId, ctx);
-    const isGames = found?.format === "games";
+    const isGames = found !== undefined && isGameFormat(found.format);
     if (found && format === "games" && !isGames) return refuse(NOT_GAMES);
     if (found && format === "bracket" && isGames) return refuse(NOT_A_BRACKET);
     if (isGames) {
@@ -463,9 +462,9 @@ export async function replaceEntrants(
       }
     }
     if (isGames) {
-      const config = found.gameType
+      const config = isGameFormat(found.format)
         ? gamesConfigOf({
-            gameType: found.gameType,
+            format: found.format,
             gameConfig: found.gameConfig,
           })
         : null;
@@ -760,6 +759,7 @@ export async function finalizeBracket(
     if (awarded.length) {
       await tx.insert(pointsEntry).values(
         awarded.map(({ entrantId, points }) => ({
+          warWeekId: ctx.warWeekId,
           competitionId,
           // A Team's, or a Squad's Team's; null for a Participant.
           teamId: byId.get(entrantId)!.pointsTeamId,

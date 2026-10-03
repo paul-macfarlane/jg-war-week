@@ -1,13 +1,14 @@
-import { and, eq, exists, isNull, or } from "drizzle-orm";
+import { and, eq, exists, inArray, isNull, or } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import { type WarWeek, competition, game, participation } from "@/db/schema";
+import { GAME_FORMATS, type GameFormat } from "@/lib/enums";
 
 /** An open `games` or `participation` Competition, named in the End War Week warning. */
 export type OpenUnscoredCompetition = {
   id: string;
   name: string;
-  format: "games" | "participation";
+  format: GameFormat | "participation";
 };
 
 /**
@@ -34,7 +35,7 @@ export async function getOpenUnscoredCompetitions(
         isNull(competition.finalizedAt),
         or(
           and(
-            eq(competition.format, "games"),
+            inArray(competition.format, [...GAME_FORMATS]),
             exists(
               dbOrTx
                 .select()

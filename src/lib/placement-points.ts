@@ -10,10 +10,6 @@ import type { Parsed } from "@/lib/result";
 
 const FIELD = "placementPoints";
 
-/** The refusal when 1st place is worth more than Max points. */
-export const FIRST_OVER_MAX =
-  "1st place's Placement Points can't be more than Max points.";
-
 function refuse(error: string): Parsed<never> {
   return { ok: false, error, fieldErrors: { [FIELD]: error } };
 }
@@ -49,17 +45,4 @@ export function parsePlacementPointsText(
     );
   }
   return { ok: true, value: points };
-}
-
-/** Whether 1st place is worth more than Max points (neither set: no). */
-export function firstPlaceOverMax(
-  placementPoints: number[] | null,
-  maxPoints: number | null,
-): boolean {
-  return (
-    maxPoints !== null &&
-    placementPoints !== null &&
-    placementPoints.length > 0 &&
-    placementPoints[0] > maxPoints
-  );
 }

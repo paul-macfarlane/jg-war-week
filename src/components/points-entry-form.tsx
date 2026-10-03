@@ -18,20 +18,14 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import type { WarWeek } from "@/db/schema";
-import {
-  formatMaxPoints,
-  placementLabel,
-  pointsForPlacement,
-} from "@/lib/competitions";
+import { placementLabel, pointsForPlacement } from "@/lib/competitions";
 import { formatPoints } from "@/lib/points";
-import { overMaxWarning } from "@/lib/points-entry";
 import type { PointsEntryFormOptions } from "@/queries/points-entries";
 
 type Initial = {
@@ -129,12 +123,6 @@ export function PointsEntryForm({
       ? "Participant"
       : teamLabel;
   const places = (competition?.placementPoints ?? []).map((_, i) => i + 1);
-  const warning = competition
-    ? overMaxWarning(
-        points.trim() === "" ? NaN : Number(points),
-        competition.maxPoints,
-      )
-    : null;
 
   return (
     <form
@@ -158,7 +146,7 @@ export function PointsEntryForm({
             items={options.competitions.map((c) => ({
               id: c.id,
               label: c.name,
-              detail: `${c.scoring === "team" ? teamLabel : "Individual"} · ${formatMaxPoints(c.maxPoints)}`,
+              detail: c.scoring === "team" ? teamLabel : "Individual",
             }))}
             value={competitionId}
             onValueChange={(id) => {
@@ -211,14 +199,6 @@ export function PointsEntryForm({
             value={points}
             onChange={(event) => setPoints(event.target.value)}
           />
-          {warning && (
-            <FieldDescription
-              role="status"
-              className="text-warning font-medium"
-            >
-              ⚠️ {warning}
-            </FieldDescription>
-          )}
           <FieldError>{fieldErrors.points}</FieldError>
         </Field>
         {competition && places.length > 0 && (

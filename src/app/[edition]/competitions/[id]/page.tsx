@@ -15,6 +15,7 @@ import { ParticipationView } from "@/components/participation-view";
 import { Toaster } from "@/components/ui/sonner";
 import { can } from "@/lib/access";
 import { entrantForYou, nextHeatFor } from "@/lib/bracket/view";
+import { isGameFormat } from "@/lib/enums";
 import { resolveYou } from "@/lib/you";
 import {
   type BracketView as BracketData,
@@ -104,7 +105,7 @@ export default async function CompetitionPage({
   if (!found) notFound();
   const { warWeek, competition, ledger } = found;
   const bracket = await getBracket(competition.id);
-  const isBracket = bracket && bracket.competition.format !== "points";
+  const isBracket = bracket && bracket.competition.format !== "placement";
   const [participantTeams, participantSquads, days] = isBracket
     ? await Promise.all([
         competition.scoring === "team"
@@ -117,7 +118,7 @@ export default async function CompetitionPage({
   const selfReport = isBracket
     ? await selfReportFor(warWeek, bracket, participantTeams, participantSquads)
     : SELF_REPORT_OFF;
-  const isGames = competition.format === "games";
+  const isGames = isGameFormat(competition.format);
   const isParticipation = competition.format === "participation";
   // The viewer's email stays on the server: the page gets names, ids and
   // booleans computed from it (R3 decision 17).
@@ -160,7 +161,7 @@ export default async function CompetitionPage({
       {games ? (
         <GamesView
           competitionId={competition.id}
-          gameType={games.competition.gameType}
+          gameFormat={games.competition.gameFormat}
           config={games.competition.config}
           scoring={games.competition.scoring}
           closed={games.competition.closed}

@@ -747,8 +747,7 @@ Notes:
   (`text-warning`), not a hardcoded amber — it's tuned to pass AA against
   each color scheme's background, unlike a raw Tailwind amber class. Its
   users today: Settings' contrast warnings and its flip notice (an Organizer
-  override about to be cleared), the Points Entry form's Max points
-  warning, and the Announcement form's hint.
+  override about to be cleared) and the Announcement form's hint.
 - Lay out every field with `Field` / `FieldLabel htmlFor` /
   `FieldDescription` from `ui/field`, and show a form's server error in a
   `FieldError` under its buttons.

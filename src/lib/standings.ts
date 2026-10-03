@@ -93,7 +93,10 @@ export function computeStandings(input: StandingsInput): Standings {
       continue;
     }
 
-    const competition = competitions.get(entry.competitionId);
+    const competition =
+      entry.competitionId === null
+        ? undefined
+        : competitions.get(entry.competitionId);
     const participant = entry.participantId
       ? participants.get(entry.participantId)
       : undefined;

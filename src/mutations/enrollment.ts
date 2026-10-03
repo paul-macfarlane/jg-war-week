@@ -10,6 +10,7 @@ import {
   warWeek,
 } from "@/db/schema";
 import { squadError } from "@/lib/bracket/squads";
+import { isGameFormat } from "@/lib/enums";
 import { gamesConfigOf } from "@/lib/games/config";
 import type { SelfEnrollInput } from "@/lib/games/enroll-input";
 import {
@@ -51,23 +52,22 @@ export async function setSelfEnroll(
     const unavailable = enrollmentUnavailable({
       format: found.format,
       entrantsOpen: found.entrantsOpen,
-      gameType: found.gameType,
-      gameConfig: found.gameType
+      gameConfig: isGameFormat(found.format)
         ? gamesConfigOf({
-            gameType: found.gameType,
+            format: found.format,
             gameConfig: found.gameConfig,
           })
         : null,
     });
-    // A points or `participation` Competition refuses the switch either way.
+    // A placement or `participation` Competition refuses the switch either way.
     if (
       unavailable &&
-      (found.format === "points" || found.format === "participation")
+      (found.format === "placement" || found.format === "participation")
     ) {
       return refuse(unavailable);
     }
     if (found.finalizedAt) {
-      return refuse(found.format === "games" ? GAMES_CLOSED : FINALIZED);
+      return refuse(isGameFormat(found.format) ? GAMES_CLOSED : FINALIZED);
     }
     if (on && unavailable) return refuse(unavailable);
     await tx

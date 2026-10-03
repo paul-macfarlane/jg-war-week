@@ -23,12 +23,10 @@ const competitionColumns = {
   id: competition.id,
   name: competition.name,
   description: competition.description,
-  maxPoints: competition.maxPoints,
   scoring: competition.scoring,
   countsTowardTeam: competition.countsTowardTeam,
   competitionGroup: competition.competitionGroup,
   format: competition.format,
-  gameType: competition.gameType,
 } satisfies Record<keyof CompetitionListItem, unknown>;
 
 /**

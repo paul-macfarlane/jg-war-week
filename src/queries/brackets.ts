@@ -18,6 +18,7 @@ import { configOf } from "@/lib/bracket/config";
 import { champion } from "@/lib/bracket/formats";
 import type { Bracket, Entrant, Heat } from "@/lib/bracket/types";
 import { BRACKET_FORMATS, isBracketFormat } from "@/lib/bracket/view";
+import { isGameFormat } from "@/lib/enums";
 import { isUuid } from "@/lib/uuid";
 import {
   participantImageSql,
@@ -286,7 +287,11 @@ export async function getBracket(
     .from(competition)
     .where(eq(competition.id, competitionId))
     .limit(1);
-  if (!found || found.format === "games" || found.format === "participation") {
+  if (
+    !found ||
+    isGameFormat(found.format) ||
+    found.format === "participation"
+  ) {
     return undefined;
   }
   // The config reaches the view through the Bracket, not the Competition.

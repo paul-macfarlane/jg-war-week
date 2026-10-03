@@ -26,12 +26,10 @@ import {
  */
 export function PlacementPointsRows({
   value,
-  maxPoints,
   invalid = false,
   onChange,
 }: {
   value: string;
-  maxPoints: string;
   invalid?: boolean;
   onChange: (value: string) => void;
 }) {
@@ -56,7 +54,7 @@ export function PlacementPointsRows({
     onChange(placementPointsFromRows(next));
   }
 
-  const errors = placementRowErrors(rows, maxPoints);
+  const errors = placementRowErrors(rows);
 
   return (
     <FieldSet className="min-w-0 gap-2">

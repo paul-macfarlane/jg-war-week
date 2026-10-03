@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { formatLabel } from "@/lib/bracket/view";
+import { isGameFormat } from "@/lib/enums";
 import { formatPoints, formatPointsLabel } from "@/lib/points";
 import { formatLedgerTime, generatedNote } from "@/lib/points-entry";
 import { getBracketCompetitions } from "@/queries/brackets";
@@ -67,7 +68,7 @@ export default async function AdminPointsPage() {
   // it is made.
   const entryActions = (entry: (typeof ledger)[number]) =>
     entry.generatedByBracket ? (
-      entry.competitionFormat === "games" ? (
+      isGameFormat(entry.competitionFormat) ? (
         <Link
           href={`/admin/competitions/${entry.competitionId}/games`}
           className={changeLink}

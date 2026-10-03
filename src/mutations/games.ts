@@ -11,7 +11,7 @@ import {
   team,
 } from "@/db/schema";
 import { pointsFor } from "@/lib/bracket/points";
-import type { GameType } from "@/lib/enums";
+import { type GameFormat, isGameFormat } from "@/lib/enums";
 import { gamesConfigSchema } from "@/lib/games/config";
 import { enrollmentUnavailable } from "@/lib/games/enroll-rule";
 import type { GameInput, GamesSettingsInput } from "@/lib/games/input";
@@ -47,16 +47,16 @@ import {
 } from "@/queries/games";
 
 export const ALREADY_CLOSED = "This Competition is already closed.";
-export const GAME_TYPE_FIXED =
-  "A Games Competition keeps its Game Type; add a new Competition to play another.";
+export const GAME_FORMAT_FIXED =
+  "A Games Competition keeps its Format; add a new Competition to play another.";
 export const BEST_OF_NEEDS_FIXED = "A Best of needs a fixed Entrant list.";
 
-type GamesRun = BracketCompetition & { gameType: GameType };
+type GamesRun = BracketCompetition & { format: GameFormat };
 
 /** Why this Competition can't take a Games write, or null. */
 function gamesRefusal(found: BracketCompetition | undefined): string | null {
   if (!found) return COMPETITION_NOT_FOUND;
-  if (found.format !== "games" || !found.gameType) return NOT_GAMES;
+  if (!isGameFormat(found.format)) return NOT_GAMES;
   return null;
 }
 
@@ -93,7 +93,7 @@ async function playersError(
     : 0;
   const config = facts.competition?.config;
   return playersRuleError({
-    gameType: found.gameType,
+    gameFormat: found.format,
     scoring: found.scoring,
     ids,
     allInWarWeek: valid === ids.length,
@@ -279,10 +279,8 @@ export async function setGamesSettings(
     const found = await lockedGames(tx, competitionId, ctx);
     if (typeof found === "string") return refuse(found);
     if (found.finalizedAt) return refuse(GAMES_CLOSED);
-    const config = gamesConfigSchema(found.gameType).safeParse(
-      input.gameConfig,
-    );
-    if (!config.success) return refuse(GAME_TYPE_FIXED);
+    const config = gamesConfigSchema(found.format).safeParse(input.gameConfig);
+    if (!config.success) return refuse(GAME_FORMAT_FIXED);
 
     const h2h = "bestOf" in config.data ? config.data : null;
     const bestOf = h2h?.bestOf ?? null;
@@ -291,9 +289,8 @@ export async function setGamesSettings(
     }
     if (input.selfEnroll) {
       const unavailable = enrollmentUnavailable({
-        format: "games",
+        format: found.format,
         entrantsOpen: input.entrantsOpen,
-        gameType: found.gameType,
         gameConfig: config.data,
       });
       if (unavailable) return refuse(unavailable);
@@ -358,10 +355,11 @@ export async function closeGames(
     if (awarded.length) {
       await tx.insert(pointsEntry).values(
         awarded.map(({ entrantId, points }) => ({
+          warWeekId: ctx.warWeekId,
           competitionId,
           ...sideOf(found.scoring, entrantId),
           points,
-          note: generatedNote("games"),
+          note: generatedNote("head-to-head"),
           enteredByEmail: ctx.actorEmail,
           generatedByBracket: true,
         })),

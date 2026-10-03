@@ -1,6 +1,7 @@
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
 
+import { isGameFormat } from "@/lib/enums";
 import { toAnnouncementsResult } from "@/mcp/announcements";
 import { toAwardsResult } from "@/mcp/awards";
 import {
@@ -231,13 +232,20 @@ const handler = createMcpHandler(
           };
         }
         const found = await getCompetitionByName(warWeek, competition);
-        // A `games` Competition is never a Bracket: point to `get_games`.
-        if (found?.format === "games") {
+        // A Head-to-head or Best score Competition is never a Bracket: point
+        // to `get_games`.
+        if (found && isGameFormat(found.format)) {
           return {
             content: [
               {
                 type: "text",
-                text: JSON.stringify(toGamesBracketResult(found)),
+                text: JSON.stringify(
+                  toGamesBracketResult({
+                    name: found.name,
+                    scoring: found.scoring,
+                    format: found.format,
+                  }),
+                ),
               },
             ],
           };
@@ -288,7 +296,7 @@ const handler = createMcpHandler(
         }
         const found = await getCompetitionByName(warWeek, competition);
         const view =
-          found?.format === "games"
+          found && isGameFormat(found.format)
             ? await getGamesView(found.id, null)
             : undefined;
         const result = toGamesResult(found, view ?? undefined, competition);

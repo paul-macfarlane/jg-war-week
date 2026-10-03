@@ -7,7 +7,7 @@
  * Entrants through the picker.
  */
 import { NOT_LINKED } from "@/lib/bracket/heat-report-rule";
-import type { COMPETITION_FORMATS, GameType } from "@/lib/enums";
+import { type COMPETITION_FORMATS, isGameFormat } from "@/lib/enums";
 import type { GamesConfig } from "@/lib/games/config";
 import { onEntrantList } from "@/lib/games/log-rule";
 
@@ -111,20 +111,18 @@ export const OPEN_NO_ENROLL =
 export function enrollmentUnavailable({
   format,
   entrantsOpen,
-  gameType,
   gameConfig,
 }: {
   format: (typeof COMPETITION_FORMATS)[number];
   entrantsOpen: boolean;
-  gameType: GameType | null;
   gameConfig: GamesConfig | null;
 }): string | null {
-  if (format === "points") return POINTS_NO_ENROLL;
+  if (format === "placement") return POINTS_NO_ENROLL;
   if (format === "participation") return PARTICIPATION_NO_ENROLL;
-  if (format !== "games") return null;
+  if (!isGameFormat(format)) return null;
   if (entrantsOpen) return OPEN_NO_ENROLL;
   if (
-    gameType === "head-to-head" &&
+    format === "head-to-head" &&
     gameConfig !== null &&
     "bestOf" in gameConfig &&
     gameConfig.bestOf !== null

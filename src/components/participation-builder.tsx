@@ -30,8 +30,6 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import type { ParticipationTeamScoring } from "@/lib/enums";
 import { placementPointsList } from "@/lib/games/view";
 import { formatPoints } from "@/lib/points";
 import { fromEasternClock, toEasternClock } from "@/lib/schedule";
@@ -42,16 +40,10 @@ type RosterRow = { id: string; name: string; team: string | null };
 
 type SettingsFields = {
   participationPoints: string;
-  teamScoring: ParticipationTeamScoring;
   placementPoints: string;
   selfCheckIn: boolean;
   closesDate: string;
   closesTime: string;
-};
-
-const TEAM_SCORING_LABELS: Record<ParticipationTeamScoring, string> = {
-  ranked: "Ranked by headcount",
-  "per-person": "Per person",
 };
 
 function clockOf(date: Date | null): { date: string; time: string } {
@@ -77,10 +69,10 @@ export function ParticipationBuilder({
     id: string;
     name: string;
     scoring: "team" | "individual";
-    participationPoints: number;
-    participationTeamScoring: ParticipationTeamScoring | null;
+    /** N, for an individual Competition; null for a team one. */
+    participationPoints: number | null;
+    /** The Placement Points, for a team Competition; null for an individual one. */
     placementPoints: number[] | null;
-    maxPoints: number | null;
     selfCheckIn: boolean;
     checkInClosesAt: Date | null;
     closed: boolean;
@@ -99,8 +91,10 @@ export function ParticipationBuilder({
 
   const closes = clockOf(competition.checkInClosesAt);
   const [fields, setFields] = useState<SettingsFields>({
-    participationPoints: formatPoints(competition.participationPoints),
-    teamScoring: competition.participationTeamScoring ?? "ranked",
+    participationPoints:
+      competition.participationPoints === null
+        ? ""
+        : formatPoints(competition.participationPoints),
     placementPoints: competition.placementPoints?.join(", ") ?? "",
     selfCheckIn: competition.selfCheckIn,
     closesDate: closes.date,
@@ -112,15 +106,14 @@ export function ParticipationBuilder({
   ) {
     setFields((current) => ({ ...current, [key]: value }));
   }
-  const ranked = isTeam && fields.teamScoring === "ranked";
-
   const [result, formAction, saving] = useActionState(
     async (): Promise<MutationResult> => {
       const closesAt = fromEasternClock(fields.closesDate, fields.closesTime);
       const saved = await setParticipationSettings(competition.id, {
-        participationPoints: fields.participationPoints,
-        teamScoring: isTeam ? fields.teamScoring : "",
-        placementPoints: fields.placementPoints,
+        // An individual Competition gives N each; a team one ranks Teams
+        // by headcount for its Placement Points.
+        participationPoints: isTeam ? "" : fields.participationPoints,
+        placementPoints: isTeam ? fields.placementPoints : "",
         selfCheckIn: fields.selfCheckIn,
         checkInClosesAt: closesAt ? closesAt.toISOString() : null,
       });
@@ -173,15 +166,13 @@ export function ParticipationBuilder({
   const markedCount = roster.filter((row) => isMarked(row.id)).length;
 
   const scoringLine = isTeam
-    ? `${teamLabel} · ${TEAM_SCORING_LABELS[competition.participationTeamScoring ?? "ranked"]}`
+    ? `${teamLabel} · Ranked by headcount`
     : "Individual";
   const closeDescription = !isTeam
-    ? `Each Participant who took part gets ${formatPoints(competition.participationPoints)} points, and check-ins stop.`
-    : competition.participationTeamScoring === "per-person"
-      ? `Each ${teamLabel} gets ${formatPoints(competition.participationPoints)} points per Participant who took part, and check-ins stop.`
-      : `${teamLabel}s ranked by headcount get Placement Points (${placementPointsList(
-          competition.placementPoints,
-        )}), and check-ins stop.`;
+    ? `Each Participant who took part gets ${formatPoints(competition.participationPoints ?? 0)} points, and check-ins stop.`
+    : `${teamLabel}s ranked by headcount get Placement Points (${placementPointsList(
+        competition.placementPoints,
+      )}), and check-ins stop.`;
 
   return (
     <div className="flex flex-col gap-8">
@@ -203,41 +194,7 @@ export function ParticipationBuilder({
         <FieldSet>
           <FieldLegend>Settings</FieldLegend>
           <FieldGroup className="gap-4">
-            {isTeam && (
-              <Field>
-                <FieldLabel id={`${id}-team-scoring`}>
-                  How {teamLabel}s score
-                </FieldLabel>
-                <ToggleGroup
-                  aria-labelledby={`${id}-team-scoring`}
-                  value={[fields.teamScoring]}
-                  onValueChange={(value) => {
-                    // A choice can't be deselected.
-                    const [next] = value as ParticipationTeamScoring[];
-                    if (next) set("teamScoring", next);
-                  }}
-                  disabled={saving || locked}
-                  variant="outline"
-                  className="grid w-full grid-cols-1 gap-2 sm:max-w-md sm:grid-cols-2"
-                >
-                  {(["ranked", "per-person"] as const).map((value) => (
-                    <ToggleGroupItem
-                      key={value}
-                      value={value}
-                      className="aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary/80 h-auto min-h-11 py-2 whitespace-normal sm:min-h-9"
-                    >
-                      {TEAM_SCORING_LABELS[value]}
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
-                <FieldDescription>
-                  {ranked
-                    ? `${teamLabel}s are ranked by how many of their Participants took part; ties share the higher place.`
-                    : `Each ${teamLabel} gets the points below for every Participant who took part.`}
-                </FieldDescription>
-              </Field>
-            )}
-            {!ranked && (
+            {!isTeam && (
               <Field
                 className="sm:max-w-48"
                 data-invalid={!!fieldErrors.participationPoints}
@@ -259,22 +216,20 @@ export function ParticipationBuilder({
                 <FieldError>{fieldErrors.participationPoints}</FieldError>
               </Field>
             )}
-            {ranked && (
+            {isTeam && (
               <Field
                 className="sm:max-w-md"
                 data-invalid={!!fieldErrors.placementPoints}
               >
                 <PlacementPointsRows
                   value={fields.placementPoints}
-                  maxPoints={competition.maxPoints?.toString() ?? ""}
                   invalid={!!fieldErrors.placementPoints}
                   onChange={(value) => set("placementPoints", value)}
                 />
-                {fields.placementPoints.trim() === "" && (
-                  <FieldDescription>
-                    No Placement Points: Close will make no Points Entries.
-                  </FieldDescription>
-                )}
+                <FieldDescription>
+                  {teamLabel}s are ranked by how many of their Participants took
+                  part; ties share the higher place.
+                </FieldDescription>
                 <FieldError>{fieldErrors.placementPoints}</FieldError>
               </Field>
             )}

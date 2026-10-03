@@ -180,9 +180,7 @@ export function OrganizerGuide({
           >
             Points Entries
           </Link>{" "}
-          against it with a note explaining why. Going over the
-          Competition&apos;s max points only shows a warning — it still saves,
-          in case the entry is a bonus.
+          against it with a note explaining why.
         </p>
       </section>
 
@@ -266,14 +264,14 @@ export function OrganizerGuide({
             Competitions
           </Link>{" "}
           and you land on its setup page; the Format can&apos;t change later.
-          Set the points per Participant and, for a {teamLower} Competition,
-          whether {teamLower}s are ranked by headcount (Placement Points pay
-          each place) or earn the points per person. Tick who took part, or turn
-          on Self check-in so Participants can Check in themselves (they can
-          only remove their own check-in, never your tick). Nothing scores until
-          you Close it, which turns who took part into Points Entries; Reopen
-          withdraws them. Close it before you end the War Week: End warns about
-          one left open.
+          Set the points per Participant for an individual Competition; a{" "}
+          {teamLower} Competition ranks {teamLower}s by headcount and pays its
+          Placement Points for each place. Tick who took part, or turn on Self
+          check-in so Participants can Check in themselves (they can only remove
+          their own check-in, never your tick). Nothing scores until you Close
+          it, which turns who took part into Points Entries; Reopen withdraws
+          them. Close it before you end the War Week: End warns about one left
+          open.
         </p>
       </section>
 

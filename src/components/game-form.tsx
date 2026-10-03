@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import type { GameType } from "@/lib/enums";
+import type { GameFormat } from "@/lib/enums";
 import type {
   BestScoreConfig,
   GamesConfig,
@@ -47,7 +47,7 @@ export type GameFormProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   competitionId: string;
-  gameType: GameType;
+  gameFormat: GameFormat;
   config: GamesConfig;
   scoring: Scoring;
   /** Who may play: names and ids only. */
@@ -97,7 +97,7 @@ type Row = { key: number; id: string; place: string };
 function GameFormBody({
   onOpenChange,
   competitionId,
-  gameType,
+  gameFormat,
   config,
   scoring,
   entrantOptions,
@@ -146,8 +146,8 @@ function GameFormBody({
   const [nextKey, setNextKey] = useState(rows.length);
 
   function raw(): Record<string, unknown> {
-    if (gameType === "head-to-head") return { playerA, playerB, outcome };
-    if (gameType === "best-score") return { player, score };
+    if (gameFormat === "head-to-head") return { playerA, playerB, outcome };
+    if (gameFormat === "best-score") return { player, score };
     return {
       order: rows
         .filter((r) => r.id)
@@ -174,9 +174,9 @@ function GameFormBody({
   }
 
   const drawsAllowed =
-    gameType === "head-to-head" && (config as HeadToHeadConfig).drawsAllowed;
+    gameFormat === "head-to-head" && (config as HeadToHeadConfig).drawsAllowed;
   const unit =
-    gameType === "best-score" ? (config as BestScoreConfig).unit : "";
+    gameFormat === "best-score" ? (config as BestScoreConfig).unit : "";
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
@@ -185,15 +185,15 @@ function GameFormBody({
           {game ? "Edit Game" : "Log a Game"}
         </ResponsiveSheetDialogTitle>
         <ResponsiveSheetDialogDescription>
-          {gameType === "head-to-head"
+          {gameFormat === "head-to-head"
             ? "Choose both players and who won."
-            : gameType === "best-score"
+            : gameFormat === "best-score"
               ? "Choose the player and their score."
               : "List everyone who played, with their place. Players who tie share a place."}
         </ResponsiveSheetDialogDescription>
       </ResponsiveSheetDialogHeader>
       <FieldGroup className="gap-4 px-4">
-        {gameType === "head-to-head" ? (
+        {gameFormat === "head-to-head" ? (
           <>
             <Field data-invalid={Boolean(errors.playerA)}>
               <FieldLabel htmlFor={`${id}-a`}>Player A</FieldLabel>
@@ -254,7 +254,7 @@ function GameFormBody({
               <FieldError>{errors.outcome}</FieldError>
             </Field>
           </>
-        ) : gameType === "best-score" ? (
+        ) : gameFormat === "best-score" ? (
           <>
             <Field data-invalid={Boolean(errors.player)}>
               <FieldLabel htmlFor={`${id}-player`}>Player</FieldLabel>

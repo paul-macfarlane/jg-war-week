@@ -28,9 +28,7 @@ export type ParticipationCompetition = Pick<
   | "name"
   | "scoring"
   | "placementPoints"
-  | "maxPoints"
   | "participationPoints"
-  | "participationTeamScoring"
   | "selfCheckIn"
   | "checkInClosesAt"
 > & { closed: boolean };
@@ -76,9 +74,7 @@ export async function getParticipationView(
       scoring: competition.scoring,
       format: competition.format,
       placementPoints: competition.placementPoints,
-      maxPoints: competition.maxPoints,
       participationPoints: competition.participationPoints,
-      participationTeamScoring: competition.participationTeamScoring,
       selfCheckIn: competition.selfCheckIn,
       checkInClosesAt: competition.checkInClosesAt,
       finalizedAt: competition.finalizedAt,
@@ -119,9 +115,7 @@ export async function getParticipationView(
       name: found.name,
       scoring: found.scoring,
       placementPoints: found.placementPoints,
-      maxPoints: found.maxPoints,
       participationPoints: found.participationPoints,
-      participationTeamScoring: found.participationTeamScoring,
       selfCheckIn: found.selfCheckIn,
       checkInClosesAt: found.checkInClosesAt,
       closed: found.finalizedAt !== null,

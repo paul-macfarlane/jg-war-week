@@ -5,10 +5,6 @@
  */
 import { z } from "zod";
 
-import {
-  PARTICIPATION_TEAM_SCORINGS,
-  type ParticipationTeamScoring,
-} from "@/lib/enums";
 import { closesAtOf } from "@/lib/games/enroll-input";
 import { parsePlacementPointsText } from "@/lib/placement-points";
 import { POINTS_NUMBER, pointsSchema } from "@/lib/points-entry";
@@ -22,10 +18,13 @@ export const participationPointsSchema = pointsSchema.refine((n) => n > 0, {
   error: "must be more than 0",
 });
 
-/** The setup page's settings, parsed. The team scoring is checked against the Competition's scoring by the mutation. */
+/**
+ * The setup page's settings, parsed. N applies to an individual Competition
+ * and Placement Points to a team one; the mutation checks which is given
+ * against the Competition's scoring.
+ */
 export type ParticipationSettings = {
-  participationPoints: number;
-  participationTeamScoring: ParticipationTeamScoring | null;
+  participationPoints: number | null;
   placementPoints: number[] | null;
   selfCheckIn: boolean;
   checkInClosesAt: Date | null;
@@ -63,9 +62,9 @@ function parsePoints(value: unknown): Parsed<number> {
 
 /**
  * A `participation` Competition's settings from its setup page: N
- * (`participationPoints`), the team scoring (`teamScoring`, blank for
- * individual), Placement Points as text, the Self check-in switch and the
- * optional check-in close time (an ISO string, blank for none).
+ * (`participationPoints`, individual scoring; blank for none), Placement
+ * Points as text (team scoring; blank for none), the Self check-in switch
+ * and the optional check-in close time (an ISO string, blank for none).
  */
 export function parseParticipationSettingsInput(
   raw: unknown,
@@ -73,18 +72,14 @@ export function parseParticipationSettingsInput(
   const input = record(raw);
   if (!input) return refuse("The form's fields are missing.");
 
-  const points = parsePoints(input.participationPoints);
+  const blankPoints =
+    input.participationPoints === null ||
+    input.participationPoints === undefined ||
+    input.participationPoints === "";
+  const points: Parsed<number | null> = blankPoints
+    ? { ok: true, value: null }
+    : parsePoints(input.participationPoints);
   if (!points.ok) return points;
-
-  const scoringRaw = input.teamScoring;
-  let teamScoring: ParticipationTeamScoring | null = null;
-  if (scoringRaw !== null && scoringRaw !== undefined && scoringRaw !== "") {
-    const scoring = z.enum(PARTICIPATION_TEAM_SCORINGS).safeParse(scoringRaw);
-    if (!scoring.success) {
-      return refuse("Choose how Teams score.", "teamScoring");
-    }
-    teamScoring = scoring.data;
-  }
 
   const placementPoints = parsePlacementPointsText(input.placementPoints);
   if (!placementPoints.ok) return placementPoints;
@@ -102,7 +97,6 @@ export function parseParticipationSettingsInput(
     ok: true,
     value: {
       participationPoints: points.value,
-      participationTeamScoring: teamScoring,
       placementPoints: placementPoints.value,
       selfCheckIn: input.selfCheckIn,
       checkInClosesAt: closesAt.value,

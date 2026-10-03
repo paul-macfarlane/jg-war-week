@@ -48,7 +48,7 @@ export async function getRecentResults(
     .where(eq(competition.warWeekId, warWeek.id));
   const newestFinalized = competitions
     .flatMap((c) =>
-      c.finalizedAt && c.format !== "points"
+      c.finalizedAt && c.format !== "placement"
         ? [{ id: c.id, at: c.finalizedAt.getTime() }]
         : [],
     )
@@ -118,7 +118,8 @@ export function toResultEntry(
 ): ResultEntry {
   return {
     id: r.id,
-    competitionId: r.competitionId,
+    // The inner join to the Competition leaves no Discretionary entry here.
+    competitionId: r.competitionId!,
     points: r.points,
     enteredAt: r.enteredAt,
     generatedByBracket: r.generatedByBracket,

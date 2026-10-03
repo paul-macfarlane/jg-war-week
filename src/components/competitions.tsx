@@ -6,9 +6,9 @@ import {
   type CompetitionListItem,
   type LedgerEntry,
   describeScoring,
-  formatMaxPoints,
 } from "@/lib/competitions";
-import { gameTypeLabel } from "@/lib/games/config";
+import { isGameFormat } from "@/lib/enums";
+import { gameFormatLabel } from "@/lib/games/config";
 import { formatPoints } from "@/lib/points";
 
 export function CompetitionFacts({
@@ -20,18 +20,15 @@ export function CompetitionFacts({
 }) {
   return (
     <div className="flex flex-wrap gap-1.5">
-      <Badge variant="secondary" className="tabular-nums">
-        {formatMaxPoints(competition.maxPoints)}
-      </Badge>
       <Badge
         variant="outline"
         className="text-foreground/70 h-auto text-left whitespace-normal"
       >
         {describeScoring(competition, teamLabel)}
       </Badge>
-      {competition.format === "games" && competition.gameType ? (
+      {isGameFormat(competition.format) ? (
         <Badge variant="outline" className="text-foreground/70">
-          Games · {gameTypeLabel(competition.gameType)}
+          Games · {gameFormatLabel(competition.format)}
         </Badge>
       ) : null}
       {competition.format === "participation" ? (

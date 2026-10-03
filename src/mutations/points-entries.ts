@@ -49,6 +49,7 @@ async function resolveColumns(
   return {
     ok: true as const,
     columns: {
+      warWeekId,
       competitionId: input.competitionId,
       ...pointsEntryTarget(kind, input.targetId),
       points: input.points,
@@ -157,7 +158,11 @@ export async function updatePointsEntry(
       .where(inWarWeek(id, ctx.warWeekId, tx));
     if (!current) return { ok: false, error: NOT_FOUND };
     const competitionIds = [
-      ...new Set([current.competitionId, input.competitionId]),
+      ...new Set(
+        [current.competitionId, input.competitionId].filter(
+          (id): id is string => id !== null,
+        ),
+      ),
     ].sort();
     for (const competitionId of competitionIds) {
       await locked(competition, competitionId, ctx, tx);

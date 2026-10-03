@@ -21,7 +21,6 @@ export type PointsEntryFormCompetition = {
   id: string;
   name: string;
   scoring: "team" | "individual";
-  maxPoints: number | null;
   placementPoints: number[] | null;
 };
 
@@ -59,7 +58,6 @@ export async function getPointsEntryFormOptions(
         id: competition.id,
         name: competition.name,
         scoring: competition.scoring,
-        maxPoints: competition.maxPoints,
         placementPoints: competition.placementPoints,
       })
       .from(competition)

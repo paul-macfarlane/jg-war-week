@@ -122,7 +122,7 @@ export async function getChampions(
       and(
         eq(competition.warWeekId, warWeek.id),
         isNotNull(competition.finalizedAt),
-        ne(competition.format, "points"),
+        ne(competition.format, "placement"),
       ),
     );
   if (competitions.length === 0) return [];

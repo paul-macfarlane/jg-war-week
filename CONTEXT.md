@@ -126,8 +126,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 
 ## Competition and roster display rules
 
-- A Competition page shows its description, max points, scoring and every
-  Points Entry.
+- A Competition page shows its description, scoring and every Points Entry.
 - The Competitions list orders Competition Groups, and Competitions within
   each, by name. Competitions with no group come last, under "Other
   Competitions" (no heading when nothing is grouped).
@@ -394,8 +393,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   Entries in `/admin/points`. A team
   Competition takes only Teams, an individual one only Participants of the
   same War Week; the server actions refuse anything else.
-- Going over a Competition's max points shows a warning and still saves.
-  Ties are just equal entries for each target.
+- Ties are just equal entries for each target.
 - When a Competition has Placement Points, the form offers one button per
   place ("1st · 5"). A tap fills the Points field, which stays editable; it
   doesn't touch the note.

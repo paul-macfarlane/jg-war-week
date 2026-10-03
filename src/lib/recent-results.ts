@@ -1,4 +1,5 @@
 import type { Competition } from "@/db/schema";
+import { isGameFormat } from "@/lib/enums";
 
 /** Home shows at most this many Recent results rows. */
 export const RECENT_RESULTS_LIMIT = 5;
@@ -86,7 +87,7 @@ export type RecentResult =
  *   `RECENT_RESULTS_GROUP_GAP_MS` of it; a longer gap starts a new group.
  *   The row's time is its newest entry. Entries for one target add up.
  * - Competitions without a finalize time and entries of unknown Competitions
- *   contribute nothing; a `points`-Format Competition never has a finalize
+ *   contribute nothing; a `placement`-Format Competition never has a finalize
  *   row.
  */
 export function shapeRecentResults(
@@ -114,7 +115,7 @@ export function shapeRecentResults(
       continue;
     }
     results.push({
-      kind: c.format === "games" ? "games-closed" : "bracket-finalized",
+      kind: isGameFormat(c.format) ? "games-closed" : "bracket-finalized",
       ...base,
       winners: final.winners,
     });
@@ -189,7 +190,7 @@ export type FinalWinners = {
  * The winner of each finalized Bracket, closed `games` Competition and
  * closed `participation` Competition, in `competitions` order: the one
  * rule Recent results and the Finale's Champions slide share. A
- * Competition with no finalize time, a `points`-Format one, or one with no
+ * Competition with no finalize time, a `placement`-Format one, or one with no
  * generated Points Entries has none and is left out.
  */
 export function finalWinners(
@@ -199,7 +200,7 @@ export function finalWinners(
   const results: FinalWinners[] = [];
   for (const c of competitions) {
     const finalizedAt = c.finalizedAt;
-    if (!finalizedAt || c.format === "points") continue;
+    if (!finalizedAt || c.format === "placement") continue;
     const generated = entries.filter(
       (e) => e.competitionId === c.id && e.generatedByBracket,
     );
