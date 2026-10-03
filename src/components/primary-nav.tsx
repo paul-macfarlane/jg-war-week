@@ -148,15 +148,15 @@ export function TopNav({
 
   return (
     <header className="border-border bg-background sticky top-0 z-50 border-b">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-4 py-2 lg:px-6 lg:py-3">
+      <div className="mx-auto grid max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-6 px-4 py-2 lg:px-6 lg:py-3">
         <Link
           href={`/${edition}`}
-          className="flex shrink-0 items-baseline gap-2 whitespace-nowrap"
+          className="flex min-w-0 items-baseline gap-2"
         >
-          <span className="text-lg font-bold">
+          <span className="text-lg font-bold whitespace-nowrap">
             War Week {edition.toUpperCase()}
           </span>
-          <span className="text-primary-text hidden text-sm sm:inline">
+          <span className="text-primary-text hidden min-w-0 truncate text-sm sm:inline">
             {storyTheme}
           </span>
         </Link>
@@ -183,15 +183,17 @@ export function TopNav({
             })}
           </ul>
         </nav>
-        <AccountMenu
-          name={account.name}
-          image={account.image}
-          email={account.email}
-          edition={edition}
-          primaryColor={primaryColor}
-          canOpenAdmin={account.canOpenAdmin}
-          slackUrl={slackUrl}
-        />
+        <div className="col-start-3 justify-self-end">
+          <AccountMenu
+            name={account.name}
+            image={account.image}
+            email={account.email}
+            edition={edition}
+            primaryColor={primaryColor}
+            canOpenAdmin={account.canOpenAdmin}
+            slackUrl={slackUrl}
+          />
+        </div>
       </div>
     </header>
   );
