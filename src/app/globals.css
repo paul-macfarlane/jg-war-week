@@ -297,4 +297,32 @@ html[data-display="dark"] {
   html {
     @apply font-sans;
   }
+  button,
+  a[href],
+  [role="button"],
+  [role="option"],
+  [role="menuitem"],
+  [role="tab"],
+  [role="switch"],
+  [role="checkbox"],
+  select,
+  summary,
+  label[for] {
+    cursor: pointer;
+  }
+  :is(
+    button,
+    a[href],
+    [role="button"],
+    [role="option"],
+    [role="menuitem"],
+    [role="tab"],
+    [role="switch"],
+    [role="checkbox"],
+    select,
+    summary,
+    label[for]
+  ):is(:disabled, [aria-disabled="true"], [data-disabled]) {
+    cursor: not-allowed;
+  }
 }
