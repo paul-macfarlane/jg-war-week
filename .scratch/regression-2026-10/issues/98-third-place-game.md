@@ -1,23 +1,32 @@
 # 98: 3rd place game; places from the final, up to 4th
 
-**What to build:** An optional **3rd place game** between the two semifinal losers, offered when the final is head-to-head. Bracket places come only from the final (and the 3rd place game); Placement Points stop at **4th**. Today both semifinal losers tie for 3rd and places reach 5th.
+**What to build:** An optional **3rd place game** between the two semifinal losers of a head-to-head (2 / 1) Bracket. Bracket places come only from the final (and the 3rd place game); Placement Points for a Bracket stop at **4th**. Today both semifinal losers tie for 3rd and places reach 5th.
 
-**Blocked by:** `97`
+**Part of:** epic R17 (`../epics/R17-brackets.md`), one work package.
+
+**Blocked by:** `97`, `99` (order inside R17)
 
 **Status:** ready-for-agent
 
-**Source:** Paul's regression feedback 2026-10-03 (Admin: 3rd place games; cap at 4th); grilling Q4, Q17
+**Source:** Paul's regression feedback 2026-10-03 (Admin: 3rd place games; cap at 4th); grilling Q4, Q17; red-team pass 1 W2, W3
 
 ## Decisions
 
-- **With** a 3rd place game: final → 1st, 2nd; 3rd place game → 3rd, 4th.
-- **Without:** final → 1st, 2nd; both semifinal losers tie 3rd (each gets 3rd's points); no 4th.
-- **Heats final** (more than 2): its finishing order gives places 1–4; nobody outside the final is placed.
-- The 3rd place game is a Heat in the tree beside the final; self-report applies as to any Heat; Finalize needs it recorded when it's on.
-- The cap of 4 is a per-Format rule (`95`), not a storage limit.
+- **Only for a 2 / 1 Bracket** with at least 4 Entrants (two real semifinals). The builder's **3rd place game** switch is off by default, shown only at 2 / 1, and disabled with a reason under 4 Entrants; the server refuses `thirdPlaceGame: true` otherwise.
+- **Stored as** `bracket_config.thirdPlaceGame`, plus at Generate one extra Heat with `third_place = true`, in the final's round at position 1 (the final is position 0), fed by `loser_to_heat_id` / `loser_to_slot` on each semifinal (mirroring `winner_to_*`).
+- **Locked once the Bracket starts:** it is saved with the other Bracket settings and follows their rule; once any Heat Result exists, the server refuses a change. A change before then rebuilds the Heats as a heat-size change does today.
+- **Places:**
+  - **With** a 3rd place game: final → 1st, 2nd; 3rd place game → 3rd, 4th.
+  - **Without:** final → 1st, 2nd; both semifinal losers tie 3rd (each gets 3rd's points); no 4th.
+  - **Heats final** (more than 2 per Heat): its finishing order gives places 1–4; nobody outside the final is placed.
+- **Which Heat is which (W3):** the final is the Heat in the last round with `third_place = false`. Every reader of "the final" or "the last round" uses that, never `max(round)` alone or "the only Heat in the last round": `champion` / `finalHeat` (`engine.ts`, `heats.ts`), `isComplete`, `src/queries/schedule.ts`, `src/lib/bracket/finale.ts`, `src/lib/bracket/points.ts` and MCP's champion. The tree labels them **Final** and **3rd place game**; the 3rd place game sits beside the final, visually secondary.
+- Self-report applies to the 3rd place game as to any Heat; Finalize needs it recorded when it's on.
+- The cap of 4 is a per-Format rule (`BRACKET_PLACEMENTS = 4` in `src/lib/competitions.ts`), not a storage limit.
 
 ## Acceptance criteria
 
-- [ ] Unit tests: 8 entrants with and without the 3rd place game; a Heats final of 4; points per place with the [10, 7, 5, 3] example.
-- [ ] e2e: a head-to-head Bracket with a 3rd place game run to Finalize; Standings show 4 places.
-- [ ] `pnpm gate` passes.
+- [ ] Unit tests: 8 Entrants with and without the 3rd place game (places and points with Placement Points [10, 7, 5, 3]: with it, the four placed Entrants get 10, 7, 5, 3; without, both semifinal losers get 5 and nobody gets 3); a Heats final of 4 placing 1–4; 4 Entrants with the game; refusal at 3 Entrants and at a non-2/1 config.
+- [ ] Unit tests with a 3rd place game present: `champion` is the final's winner even when the 3rd place game is recorded last; `isComplete` is false until both are recorded; the Finale's Bracket data shows the final as the final; MCP's champion is the final's winner.
+- [ ] Postgres test: toggling the 3rd place game is refused once a Heat Result exists.
+- [ ] Placement Points over 4 are refused for a Bracket, with the message from `placementLimitRefusal`.
+- [ ] e2e: a head-to-head Bracket of 8 with a 3rd place game run to Finalize; the generated Points Entries give the four placed Entrants 10, 7, 5, 3 and nobody else any; screenshot at 1440.
