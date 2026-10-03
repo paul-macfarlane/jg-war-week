@@ -1,3 +1,6 @@
+// @vitest-environment happy-dom
+import { act } from "react";
+import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
@@ -181,5 +184,47 @@ describe("GamesBuilder", () => {
     });
     expect(html).toContain(">Close<");
     expect(html).not.toContain("Reopen");
+  });
+});
+
+describe("GamesBuilder after a save", () => {
+  it("shows the saved Finish Points when the page's props change (router.refresh), and labels both point fields", () => {
+    (
+      globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true;
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    const props = {
+      entrants: noEntrants,
+      teams: [],
+      participants: [],
+      enroll: { selfEnroll: false, entrantLimit: null, enrollClosesAt: null },
+    };
+    act(() =>
+      root.render(
+        <GamesBuilder
+          {...props}
+          competition={competition("ranked", { finishPoints: [] })}
+        />,
+      ),
+    );
+    const field = () =>
+      host.querySelector<HTMLInputElement>("#games-finish-points")!;
+    expect(field().value).toBe("");
+    act(() =>
+      root.render(
+        <GamesBuilder
+          {...props}
+          competition={competition("ranked", { finishPoints: [5, 3, 1] })}
+        />,
+      ),
+    );
+    expect(field().value).toBe("5, 3, 1");
+    // The two point fields say which is which.
+    expect(host.textContent).toContain("Finish Points");
+    expect(host.textContent).toContain("Placement Points");
+    act(() => root.unmount());
+    host.remove();
   });
 });

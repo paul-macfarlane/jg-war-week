@@ -365,6 +365,10 @@ function CompetitionForm({
               setValues((v) => ({ ...v, placementPoints }))
             }
           />
+          <FieldDescription>
+            What each place earns in the Standings. A Games Competition also has
+            Finish Points, per Game, on its Games setup page.
+          </FieldDescription>
           <FieldError>{fieldErrors.placementPoints}</FieldError>
         </Field>
         {competition && hosts && (

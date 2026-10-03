@@ -241,7 +241,10 @@ function parseGameConfig(
   const finishPoints =
     finishPointsText === ""
       ? []
-      : finishPointsText.split(/[\s,]+/).map((s) => Number(s));
+      : finishPointsText
+          .split(/[\s,]+/)
+          .filter((entry) => entry !== "")
+          .map((entry) => Number(entry));
   if (finishPoints.some((n) => Number.isNaN(n))) {
     const message = "Finish Points are numbers.";
     return {
