@@ -4,7 +4,7 @@
 
 **Part of:** Epic R16's one work package (`../epics/R16-competition-model.md`): no gate, order or migration of its own. Schema changes go into `src/db/schema.ts`; the epic generates and hand-edits the one migration and converts the seeds.
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: max points useless; Participant: "No max" unhelpful; Participation max); grilling Q3. Supersedes `../../regression-2026-09/issues/06` (keep and explain); red-team 2026-10-03 (M3)
 
@@ -17,3 +17,7 @@
 ## Acceptance criteria
 
 - [ ] `grep -rni "max.\?points\|No max" src e2e scripts` finds nothing (the epic's seed grep covers `seeds`) (migrations live in `drizzle/`, outside the search).
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r16`): claimed with Epic R16; `ready-for-agent` → `in-progress`. Execution record: [`R16-execution.md`](../epics/R16-execution.md).

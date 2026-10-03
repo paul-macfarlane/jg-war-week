@@ -4,7 +4,7 @@
 
 **Part of:** Epic R16's one work package (`../epics/R16-competition-model.md`): no gate, order or migration of its own. Schema changes go into `src/db/schema.ts`; the epic generates and hand-edits the one migration and converts the seeds.
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: participation max and placement points); grilling Q5, Q27. Amends ticket 69's team modes; red-team 2026-10-03 (W7).
 
@@ -20,3 +20,7 @@
 
 - [ ] Unit tests: individual N each (and toward Team); team ranked by headcount with ties.
 - [ ] The team Participation e2e is rewritten and an individual one gives N each.
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r16`): claimed with Epic R16; `ready-for-agent` → `in-progress`. Execution record: [`R16-execution.md`](../epics/R16-execution.md).

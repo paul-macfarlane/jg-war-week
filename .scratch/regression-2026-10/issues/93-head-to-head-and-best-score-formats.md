@@ -4,7 +4,7 @@
 
 **Part of:** Epic R16's one work package (`../epics/R16-competition-model.md`): no gate, order or migration of its own. Schema changes go into `src/db/schema.ts`; the epic generates and hand-edits the one migration and converts the seeds.
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: ranked game type; where to enter scores); grilling Q23, Q32–Q34, Q36; red-team 2026-10-03 (W7, W10, M4)
 
@@ -24,3 +24,7 @@
 - [ ] `grep -rn "finishPoints\|finish_points\|gameType\|game_type\|GAME_TYPES" src e2e scripts` finds nothing outside `drizzle/`. (Participation's `"ranked"` goes with part 94's column; prose uses of "ranked" stay.)
 - [ ] The existing e2e (a Participant logs a head-to-head Game from Home, the Host closes it, Standings move) is rewritten for the new Format.
 - [ ] MCP `get_games` (or its successor) reports the new Formats.
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r16`): claimed with Epic R16; `ready-for-agent` → `in-progress`. Execution record: [`R16-execution.md`](../epics/R16-execution.md).

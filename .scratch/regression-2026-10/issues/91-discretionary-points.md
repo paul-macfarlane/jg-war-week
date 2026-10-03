@@ -4,7 +4,7 @@
 
 **Part of:** Epic R16's one work package (`../epics/R16-competition-model.md`): no gate, order or migration of its own. Schema changes go into `src/db/schema.ts`; the epic generates and hand-edits the one migration and converts the seeds.
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: the Points page is weird; ad hoc points); grilling Q2, Q28, Q29; red-team 2026-10-03 pass 1 (B2, W3, W5, W9, M8) and pass 2 (W1, M6)
 
@@ -53,3 +53,7 @@
 - [ ] MCP test: the standings/points tool reports the entry and its reason, no emails.
 - [ ] Loader test (Postgres): a fixture seed with a Discretionary entry loaded twice leaves exactly one.
 - [ ] e2e: an Organizer gives 3 Discretionary points to a Team with a reason and the leaderboard moves, edits it to 4, deletes it and the leaderboard returns; a Host gets the refusal page at `/admin/discretionary-points`; `/admin/points` redirects there; `/admin` lands on Competitions.
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r16`): claimed with Epic R16; `ready-for-agent` → `in-progress`. Execution record: [`R16-execution.md`](../epics/R16-execution.md).
