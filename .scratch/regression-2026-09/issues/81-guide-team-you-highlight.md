@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** needs-triage
+**Status:** in-progress
 
 **Source:** regression checklist run, ticket 53 (teams pass, `pnpm seed:demo`, 2026-10-02)
 
@@ -24,3 +24,8 @@
 ## Acceptance criteria
 
 - [ ] The guide's "What a Participant email does" describes exactly where You (and "Your Team") show, and the teams pass of the checklist finds that true.
+
+## Comments
+
+- **2026-10-02, triage (Paul):** Decided: fix the guide to say exactly where You and "Your Team" show; no Team highlight is built. Batched into epic R14 (`../epics/R14-quick-wins.md`).
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r14`): claimed; `ready-for-agent` → `in-progress`. Execution record: `../epics/R14-execution.md`.

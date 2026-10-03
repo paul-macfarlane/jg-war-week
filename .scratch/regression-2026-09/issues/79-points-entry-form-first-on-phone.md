@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** needs-triage
+**Status:** in-progress
 
 **Source:** regression checklist run, ticket 53 (free-for-all pass, `pnpm seed:demo:xii`, 2026-10-02)
 
@@ -29,3 +29,5 @@
 ## Comments
 
 - **2026-10-02, teams pass (`pnpm seed:demo`, XI live):** same defect. With 2 Brackets and 7 `games` Competitions (XI's 3 plus those the Organizer run adds), the "Add a Points Entry" heading sits about 660 px down the 844 px screen and only the Competition field label shows above the bottom nav. Screenshot: `test-results/r8-quick-fixes/checklist/admin-points-teams-390/page.png`.
+- **2026-10-02, triage (Paul):** Decided: the "Add a Points Entry" heading and form open the page; the Bracket and Games quick links move below it. Batched into epic R14 (`../epics/R14-quick-wins.md`).
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r14`): claimed; `ready-for-agent` → `in-progress`. Execution record: `../epics/R14-execution.md`.
