@@ -142,8 +142,11 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   the individual leaderboard and Award winners. A **Profile** picture
   replaces the initials (shown through an image that falls back to them).
 - **You** is highlighted with a "You" tag and an accent ring on the Teams
-  roster, the individual leaderboard (home, `/leaderboard`, the Finale) and
-  Award recipients. Account linking wins: when the session email matches a
+  roster, the individual leaderboard (home, `/leaderboard`, the Finale),
+  Award recipients on the Awards page and Participation lists; a Bracket
+  marks Your Entrant (yourself, or your Team or Squad in a team Bracket)
+  "You", and a `games` leaderboard marks your enrolled Team "Your Team".
+  Team Standings rows are never highlighted. Account linking wins: when the session email matches a
   Participant, that Participant is You; otherwise nobody is. There is no
   self-pick. The roster admin shows "No email: won't be linked when they sign
   in" on a Participant row without an email. Participant emails never reach

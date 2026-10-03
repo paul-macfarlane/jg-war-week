@@ -228,6 +228,9 @@ describe("AdminRefused", () => {
     expect(html).toContain("--font-sans:var(--font-preset-sans)");
     expect(html).toContain("--light-primary:");
     expect(html).toMatch(/class="[^"]*\bflex-col\b[^"]*\bfont-sans\b[^"]*"/);
+    expect(html.indexOf("data-theme-root")).toBeLessThan(
+      html.indexOf("<footer"),
+    );
   });
 });
 

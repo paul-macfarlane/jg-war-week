@@ -34,7 +34,7 @@ export default async function CompetitionsPage({
               <TabsTrigger
                 key={section.name}
                 value={String(index)}
-                className="h-auto min-h-11 flex-none px-3"
+                className="h-auto min-h-11 max-w-full flex-none px-3 text-left whitespace-normal"
               >
                 {section.name}
               </TabsTrigger>

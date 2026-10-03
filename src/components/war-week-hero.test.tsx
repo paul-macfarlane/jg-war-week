@@ -7,6 +7,8 @@ import { WarWeekHero } from "./war-week-hero";
 
 const fakeWarWeek = {
   edition: "xii",
+  status: "live",
+  logoUrl: null,
   storyTheme: "Test theme",
   primaryColor: "#000",
   primaryForegroundColor: "#fff",
@@ -20,17 +22,17 @@ const fakeWarWeek = {
 } as unknown as WarWeek;
 
 describe("WarWeekHero", () => {
-  it("with no bannerUrl, 'War Week XII' appears exactly once and there is no banner img", () => {
+  it("names the War Week once and draws no banner when there is no Banner URL", () => {
     const html = renderToStaticMarkup(
-      <WarWeekHero warWeek={{ ...fakeWarWeek, bannerUrl: "" }} />,
+      <WarWeekHero warWeek={{ ...fakeWarWeek, bannerUrl: null }} />,
     );
 
-    const warWeekMatches = html.match(/War Week XII/g) || [];
+    const warWeekMatches = html.match(/War Week XII/g) ?? [];
     expect(warWeekMatches).toHaveLength(1);
     expect(html).not.toContain("<img");
   });
 
-  it("with a bannerUrl, the img renders", () => {
+  it("draws the banner when the War Week has a Banner URL", () => {
     const html = renderToStaticMarkup(
       <WarWeekHero
         warWeek={{

@@ -20,7 +20,7 @@ export function OrganizerGuide({
   /** What each admin section is for, in the tour of the nav. */
   const help: Record<AdminSection, string> = {
     Points:
-      "Add Points Entries and see the current Standings; Brackets and Games waiting on results are linked at the top.",
+      "Add Points Entries and see the current Standings; the Brackets, Games and Participation Competitions waiting on results are linked under the form.",
     Competitions:
       "Competitions, their scoring, Placement Points and Hosts, and each one's Bracket or Games setup.",
     Schedule:
@@ -150,13 +150,15 @@ export function OrganizerGuide({
           A Participant&apos;s email is optional. When a signed-in
           @jahnelgroup.com email matches a roster Participant&apos;s email, that
           Participant&apos;s own rows are tagged &quot;You&quot; on the roster,
-          the individual leaderboards, Award recipients and Participation lists;
-          their Entrant in a Bracket is marked &quot;You&quot;; and a games
-          Competition&apos;s leaderboard marks their enrolled {teamLower}{" "}
-          &quot;Your Team&quot;. {teamLabel} standings rows are not highlighted.
-          They can log Games, report Heats and check in. A Participant without
-          an email is never linked. It isn&apos;t used for sign-in and grants
-          nothing beyond those Participant writes.
+          the individual leaderboards, Award recipients on the Awards page and
+          Participation lists; their Entrant in a Bracket (themselves, their
+          Squad, or their {teamLower} in a team Bracket) is marked
+          &quot;You&quot;; and a games Competition&apos;s leaderboard marks
+          their enrolled {teamLower} &quot;Your Team&quot;. {teamLabel}{" "}
+          standings rows are not highlighted. They can log Games, report Heats
+          and check in. A Participant without an email is never linked. It
+          isn&apos;t used for sign-in and grants nothing beyond those
+          Participant writes.
         </p>
       </section>
 
