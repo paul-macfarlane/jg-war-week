@@ -124,3 +124,4 @@ The first gate run failed one smoke check: `/history`'s "excludes the live War W
 - **Deviations (approved during the run):** Setup "Add …" buttons made solid (87); help text on Finish Points and Placement Points (89); `pointer-events-none` removed from disabled Button, Toggle and TabsTrigger so `not-allowed` is visible (85, review F2); `getNavAccount` moved to `src/auth/` (88, ADR 0001).
 - **Verified run command:** `pnpm format:check && pnpm gate`, with `DATABASE_URL=postgres://postgres:postgres@localhost:2345/war_weeker?sslmode=disable DATABASE_DRIVER=pg` (the local values from `.env.example`). No deploy in this work package.
 - **Remaining risks:** XII's tagline truncates in the desktop header (ticket 86's trade-off); the forfeit edge in F6a; Paul's exact "empty after reopen" path was explained from code, not watched in the app (ticket 89).
+- **PR:** https://github.com/paul-macfarlane/jg-war-week/pull/124 into `staging`.
