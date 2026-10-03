@@ -9,6 +9,7 @@ import { DatePicker } from "@/components/date-picker";
 import { JgEmailChips } from "@/components/jg-email-chips";
 import { OptionSelect } from "@/components/option-select";
 import { PlacementPointsRows } from "@/components/placement-points-rows";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import { SuggestionCombobox } from "@/components/suggestion-combobox";
 import { TimeCombobox } from "@/components/time-combobox";
 import {
@@ -20,10 +21,10 @@ import {
   FieldLabel,
   FieldLegend,
   FieldSet,
+  FieldTitle,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { Toggle } from "@/components/ui/toggle";
 import {
   type AutosaveSnapshot,
@@ -438,16 +439,15 @@ export function CompetitionSettingsForm({
             {below("group")}
           </Field>
           <Field className="sm:col-span-2" data-invalid={!!errors.description}>
-            <FieldLabel htmlFor={id("description")}>Description</FieldLabel>
-            <Textarea
-              id={id("description")}
-              name="description"
-              maxLength={2000}
-              rows={3}
-              placeholder="Optional"
-              aria-invalid={!!errors.description}
-              value={values.description}
-              onChange={(event) => edit({ description: event.target.value })}
+            <FieldTitle id={`${id("description")}-label`}>
+              Description
+            </FieldTitle>
+            <RichTextEditor
+              content={values.description}
+              onChange={(description) => edit({ description })}
+              label="Description"
+              labelId={`${id("description")}-label`}
+              placeholder="Rules, links and anything players should know (optional)"
             />
             {below("description")}
           </Field>

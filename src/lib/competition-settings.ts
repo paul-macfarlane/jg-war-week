@@ -23,16 +23,20 @@ import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
 import { participationPointsSchema } from "@/lib/participation/input";
 import { parsePlacementPointsText } from "@/lib/placement-points";
 import type { Parsed } from "@/lib/result";
+import {
+  type Content,
+  contentInputSchema,
+  isBlankContent,
+} from "@/lib/rich-text/content";
 
-/** The longest Competition name and Group, and description (the columns). */
+/** The longest Competition name and Group (the columns). */
 export const COMPETITION_NAME_MAX = 120;
 export const COMPETITION_GROUP_MAX = 120;
-export const COMPETITION_DESCRIPTION_MAX = 2000;
 
 export type CompetitionSettingChange =
   | { field: "name"; value: string }
-  /** Plain text for now; blank is none. */
-  | { field: "description"; value: string | null }
+  /** Rich text, as an Announcement body; blank is none. */
+  | { field: "description"; value: Content | null }
   | { field: "group"; value: string | null }
   /** Host emails, each `@jahnelgroup.com`. */
   | { field: "hosts"; value: string[] }
@@ -130,13 +134,14 @@ export function parseCompetitionSetting(
       return ok({ field, value: name.value });
     }
     case "description": {
-      const text = optionalText(
-        field,
-        value,
-        COMPETITION_DESCRIPTION_MAX,
-        "description",
-      );
-      return text.ok ? ok({ field, value: text.value }) : text;
+      if (value === null || value === undefined || isBlankContent(value)) {
+        return ok({ field, value: null });
+      }
+      const content = contentInputSchema.safeParse(value);
+      if (!content.success) {
+        return refusedAt(field, "The description must be valid rich text.");
+      }
+      return ok({ field, value: content.data });
     }
     case "group": {
       const text = optionalText(field, value, COMPETITION_GROUP_MAX, "Group");

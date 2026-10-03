@@ -4,7 +4,15 @@ import { describe, expect, it } from "vitest";
 import type { DBTx } from "@/db";
 import { isLocalDatabaseUrl } from "@/db/local-url";
 import { inRolledBackTransaction } from "@/db/test-transaction";
+import type { Content } from "@/lib/rich-text/content";
 import type { NextWarWeekValues } from "@/lib/war-week-lifecycle";
+
+const paragraphs = (text: string): Content => ({
+  type: "doc",
+  content: [{ type: "paragraph", content: [{ type: "text", text }] }],
+});
+const ONE_V_ONE = paragraphs("1v1");
+const CUP = paragraphs("Cup");
 
 // Runs only against a local Postgres (CI's service or docker compose; see
 // vitest.config.ts), never a hosted database.
@@ -91,7 +99,7 @@ async function fixture(tx: DBTx) {
     .values({
       warWeekId: live.id,
       name: "Chess",
-      description: "1v1",
+      description: ONE_V_ONE,
       placementPoints: [10, 5],
       scoring: "team",
       competitionGroup: "Board games",
@@ -438,7 +446,7 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
         .values({
           warWeekId: empty.id,
           name: "Cup",
-          description: "Cup",
+          description: CUP,
           placementPoints: [10, 5],
           scoring: "team",
         })
@@ -484,7 +492,7 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
         .values({
           warWeekId: live.id,
           name: "Cup",
-          description: "Cup",
+          description: CUP,
           placementPoints: [10, 5],
           scoring: "team",
         })
@@ -699,7 +707,7 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
       expect(competitions).toHaveLength(1);
       expect(competitions[0]).toMatchObject({
         name: "Chess",
-        description: "1v1",
+        description: ONE_V_ONE,
         placementPoints: [10, 5],
         scoring: "team",
         countsTowardTeam: false,

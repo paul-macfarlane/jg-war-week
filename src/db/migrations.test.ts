@@ -442,7 +442,7 @@ describe.skipIf(!isLocalDatabase)(
               const applied = await client.query(
                 "select count(*)::int as n from drizzle.__drizzle_migrations",
               );
-              expect(applied.rows[0].n).toBe(30);
+              expect(applied.rows[0].n).toBe(31);
 
               const brackets = await client.query(
                 `select id, format::text as format, bracket_config,

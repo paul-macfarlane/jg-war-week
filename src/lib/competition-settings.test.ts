@@ -16,11 +16,36 @@ describe("parseCompetitionSetting", () => {
 
   it("stores a blank description or Group as none", () => {
     expect(
-      parseCompetitionSetting({ field: "description", value: " " }),
+      parseCompetitionSetting({
+        field: "description",
+        value: { type: "doc", content: [] },
+      }),
     ).toEqual({ ok: true, value: { field: "description", value: null } });
     expect(parseCompetitionSetting({ field: "group", value: "" })).toEqual({
       ok: true,
       value: { field: "group", value: null },
+    });
+  });
+
+  it("keeps rich text beyond the old 2000-character cap and refuses a non-document", () => {
+    const long = {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [{ type: "text", text: "x".repeat(5000) }],
+        },
+      ],
+    };
+    expect(
+      parseCompetitionSetting({ field: "description", value: long }),
+    ).toEqual({ ok: true, value: { field: "description", value: long } });
+    expect(
+      parseCompetitionSetting({ field: "description", value: "plain" }),
+    ).toEqual({
+      ok: false,
+      error: "The description must be valid rich text.",
+      fieldErrors: { description: "The description must be valid rich text." },
     });
   });
 

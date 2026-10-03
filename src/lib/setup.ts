@@ -19,6 +19,8 @@ import { participationPointsSchema } from "@/lib/participation/input";
 import { parsePlacementPointsText } from "@/lib/placement-points";
 import { pointsSchema as points } from "@/lib/points-entry";
 import type { Parsed } from "@/lib/result";
+import { contentInputSchema } from "@/lib/rich-text/content";
+import { descriptionContent } from "@/lib/rich-text/from-plain-text";
 
 export { dayOutsideRangeError } from "@/lib/day-range";
 
@@ -101,7 +103,8 @@ export const competitionSeedSchema = z
   // error, never silently ignored.
   .strictObject({
     name: z.string().min(1).max(120),
-    description: z.string().max(2000).nullish(),
+    /** Rich text, or plain text the loader turns into paragraphs. */
+    description: z.union([z.string(), contentInputSchema]).nullish(),
     /** Placement Points for 1st, 2nd, 3rd…, highest first. */
     placementPoints: z
       .array(points.min(0, { error: "must be at least 0" }))
@@ -786,7 +789,7 @@ export function parseCompetitionInput(
     ok: true,
     value: {
       name: value.name,
-      description: value.description ?? null,
+      description: descriptionContent(value.description),
       scoring: value.scoring,
       placementPoints: value.placementPoints ?? null,
       countsTowardTeam: value.countsTowardTeam,

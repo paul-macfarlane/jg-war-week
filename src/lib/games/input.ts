@@ -4,20 +4,13 @@
  */
 import { z } from "zod";
 
-import { GAME_FORMATS, type GameFormat } from "@/lib/enums";
+import type { GameFormat } from "@/lib/enums";
 import {
   type BestScoreConfig,
   type GamesConfig,
   type GamesConfigFor,
   type HeadToHeadConfig,
-  bestScoreConfigSchema,
-  headToHeadConfigSchema,
 } from "@/lib/games/config";
-import {
-  ENTRANT_LIMIT_TOO_LOW,
-  closesAtOf,
-  limitOf,
-} from "@/lib/games/enroll-input";
 import type { Parsed } from "@/lib/result";
 
 function firstError<T>(result: z.ZodSafeParseResult<T>): Parsed<never> & {
@@ -140,113 +133,6 @@ export type GamesSettingsInput = {
   entrantLimit: number | null;
   enrollClosesAt: Date | null;
 };
-
-const BEST_OF_RAW = ["off", "3", "5", "7"] as const;
-
-function parseGameConfig(
-  gameFormat: GameFormat,
-  raw: Record<string, unknown>,
-): Parsed<GamesConfig> {
-  if (gameFormat === "head-to-head") {
-    const bestOfRaw = raw.bestOf ?? "off";
-    const bestOfResult = z
-      .enum(BEST_OF_RAW, { error: "Best of is off, 3, 5 or 7." })
-      .safeParse(bestOfRaw);
-    if (!bestOfResult.success) return firstError(bestOfResult);
-    const bestOf =
-      bestOfResult.data === "off"
-        ? null
-        : (Number(bestOfResult.data) as 3 | 5 | 7);
-    const drawsAllowed =
-      raw.drawsAllowed === true || raw.drawsAllowed === "true";
-    const parsed = headToHeadConfigSchema.safeParse({ drawsAllowed, bestOf });
-    if (!parsed.success) return firstError(parsed);
-    return { ok: true, value: parsed.data };
-  }
-  const parsed = bestScoreConfigSchema.safeParse({
-    count: raw.count,
-    betterIs: raw.betterIs,
-    unit: raw.unit ?? "",
-  });
-  if (!parsed.success) return firstError(parsed);
-  return { ok: true, value: parsed.data };
-}
-
-/** An optional close time (`closesAtOf`), refused with `error`. */
-function parseOptionalDateTime(
-  value: unknown,
-  error: string,
-): Parsed<Date | null> {
-  const parsed = closesAtOf(value);
-  return parsed.ok ? { ok: true, value: parsed.value } : { ok: false, error };
-}
-
-/** An optional Entrant limit (`limitOf`), as the enroll switch reads it. */
-function parseOptionalEntrantLimit(value: unknown): Parsed<number | null> {
-  const parsed = limitOf(value);
-  return parsed.ok
-    ? { ok: true, value: parsed.value }
-    : {
-        ok: false,
-        error: ENTRANT_LIMIT_TOO_LOW,
-        fieldErrors: { entrantLimit: ENTRANT_LIMIT_TOO_LOW },
-      };
-}
-
-/**
- * A Head-to-head or Best score Competition's settings: its Format's config
- * (per the posted `gameFormat`), Entrants open or fixed, the logging close time, and
- * self-enrollment.
- */
-export function parseGamesSettingsInput(
-  raw: Record<string, unknown>,
-): Parsed<GamesSettingsInput> {
-  const gameFormatResult = z
-    .enum(GAME_FORMATS, { error: "Choose Head-to-head or Best score." })
-    .safeParse(raw.gameFormat);
-  if (!gameFormatResult.success) return firstError(gameFormatResult);
-  const gameFormat = gameFormatResult.data;
-
-  const gameConfig = parseGameConfig(gameFormat, raw);
-  if (!gameConfig.ok) return gameConfig;
-
-  const entrantsOpenResult = z
-    .boolean({ error: "Choose whether Entrants are open." })
-    .safeParse(raw.entrantsOpen);
-  if (!entrantsOpenResult.success) return firstError(entrantsOpenResult);
-
-  const loggingClosesAt = parseOptionalDateTime(
-    raw.loggingClosesAt,
-    "Enter a valid logging close time.",
-  );
-  if (!loggingClosesAt.ok) return loggingClosesAt;
-
-  const selfEnrollResult = z
-    .boolean({ error: "Choose whether Participants can enroll." })
-    .safeParse(raw.selfEnroll);
-  if (!selfEnrollResult.success) return firstError(selfEnrollResult);
-
-  const entrantLimit = parseOptionalEntrantLimit(raw.entrantLimit);
-  if (!entrantLimit.ok) return entrantLimit;
-
-  const enrollClosesAt = parseOptionalDateTime(
-    raw.enrollClosesAt,
-    "Enter a valid enrollment close time.",
-  );
-  if (!enrollClosesAt.ok) return enrollClosesAt;
-
-  return {
-    ok: true,
-    value: {
-      gameConfig: gameConfig.value,
-      entrantsOpen: entrantsOpenResult.data,
-      loggingClosesAt: loggingClosesAt.value,
-      selfEnroll: selfEnrollResult.data,
-      entrantLimit: entrantLimit.value,
-      enrollClosesAt: enrollClosesAt.value,
-    },
-  };
-}
 
 /**
  * The player ids a Game request posts for this Games Format, read before the

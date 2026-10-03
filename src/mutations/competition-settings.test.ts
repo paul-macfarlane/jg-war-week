@@ -4,7 +4,11 @@ import { describe, expect, it } from "vitest";
 import type { DBTx } from "@/db";
 import { isLocalDatabaseUrl } from "@/db/local-url";
 import { inRolledBackTransaction } from "@/db/test-transaction";
-import type { CompetitionSettingChange } from "@/lib/competition-settings";
+import {
+  type CompetitionSettingChange,
+  parseCompetitionSetting,
+} from "@/lib/competition-settings";
+import type { Content } from "@/lib/rich-text/content";
 
 // Runs only against a local Postgres (CI's service or docker compose; see
 // vitest.config.ts), never a hosted database.
@@ -32,6 +36,11 @@ const LOCKED_WHILE_FINALIZED = {
     "Locked while the Competition is Finalized or Closed. Reopen it first.",
 };
 const OK = { ok: true };
+
+const words = (text: string): Content => ({
+  type: "doc",
+  content: [{ type: "paragraph", content: [{ type: "text", text }] }],
+});
 
 /**
  * A teams War Week with Teams Red and Blue, Participants Neo (Red) and
@@ -279,7 +288,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: who", () => {
 
   const everyField: CompetitionSettingChange[] = [
     { field: "name", value: "Renamed" },
-    { field: "description", value: "New words" },
+    { field: "description", value: words("New words") },
     { field: "group", value: "Games" },
     { field: "hosts", value: [OTHER_HOST] },
     { field: "placementPoints", value: [3, 2, 1] },
@@ -311,6 +320,77 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: who", () => {
   });
 });
 
+describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: description", () => {
+  it("stores rich text, and strips an unsafe link and a script node as an Announcement body does", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const f = await fixture(tx);
+      const unsafe = {
+        type: "doc",
+        content: [
+          {
+            type: "heading",
+            attrs: { level: 2 },
+            content: [{ type: "text", text: "Rules" }],
+          },
+          {
+            type: "paragraph",
+            content: [
+              {
+                type: "text",
+                text: "Click me",
+                marks: [
+                  {
+                    type: "link",
+                    attrs: {
+                      href: "javascript:alert(1)",
+                      rel: "noopener noreferrer",
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            type: "script",
+            content: [{ type: "text", text: "alert(1)" }],
+          },
+        ],
+      };
+      // The action parses the posted value before the mutation writes it.
+      const parsed = parseCompetitionSetting({
+        field: "description",
+        value: unsafe,
+      });
+      if (!parsed.ok) throw new Error(parsed.error);
+      expect(await f.save(f.ids.darts, parsed.value)).toEqual(OK);
+      const stored = JSON.stringify((await f.row(f.ids.darts)).description);
+      expect(stored).not.toContain("javascript:");
+      expect(stored).not.toContain("script");
+      expect(stored).toContain("Rules");
+      expect(stored).toContain("Click me");
+    });
+  });
+
+  it("clears a blank description", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const f = await fixture(tx);
+      expect(
+        await f.save(f.ids.darts, {
+          field: "description",
+          value: words("Words"),
+        }),
+      ).toEqual(OK);
+      const blank = parseCompetitionSetting({
+        field: "description",
+        value: { type: "doc", content: [] },
+      });
+      if (!blank.ok) throw new Error(blank.error);
+      expect(await f.save(f.ids.darts, blank.value)).toEqual(OK);
+      expect((await f.row(f.ids.darts)).description).toBeNull();
+    });
+  });
+});
+
 describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
   it("accepts name, description, Group, Hosts and Placement Points while Finalized", async () => {
     await inRolledBackTransaction(async (tx) => {
@@ -318,7 +398,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
       await finalizeDarts(f);
       for (const change of [
         { field: "name", value: "Darts Final" },
-        { field: "description", value: "Three darts each." },
+        { field: "description", value: words("Three darts each.") },
         { field: "group", value: "Pub games" },
         { field: "hosts", value: [OTHER_HOST] },
         { field: "placementPoints", value: [12, 9] },
@@ -328,7 +408,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
       const after = await f.row(f.ids.darts);
       expect(after).toMatchObject({
         name: "Darts Final",
-        description: "Three darts each.",
+        description: words("Three darts each."),
         competitionGroup: "Pub games",
         placementPoints: [12, 9],
       });

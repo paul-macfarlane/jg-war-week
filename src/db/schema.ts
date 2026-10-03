@@ -209,7 +209,7 @@ export const competition = pgTable(
       .notNull()
       .references(() => warWeek.id, { onDelete: "cascade" }),
     name: varchar("name", { length: 120 }).notNull(),
-    description: varchar("description", { length: 2000 }),
+    description: jsonb("description").$type<Content>(),
     // Placement Points: points for 1st, 2nd, 3rd…, highest first.
     placementPoints: numeric("placement_points", {
       precision: 8,

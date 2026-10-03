@@ -36,7 +36,7 @@ describe("settingsValuesOf", () => {
   it("seeds the form from the stored Competition, blanks for none", () => {
     const values = settingsValuesOf(PLACEMENT);
     expect(values.name).toBe("Darts");
-    expect(values.description).toBe("");
+    expect(values.description).toEqual({ type: "doc", content: [] });
     expect(values.group).toBe("Bar games");
     expect(values.placementPoints).toBe("10, 7, 5");
     expect(values.participationPoints).toBe("");

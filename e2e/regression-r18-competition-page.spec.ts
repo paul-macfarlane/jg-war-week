@@ -330,21 +330,23 @@ test("r18 101 a Host edits their Competition's settings, sees Hosts as names onl
     });
 
     // The Host edits a setting; it autosaves and is kept after a reload.
-    await settings
-      .getByRole("textbox", { name: "Description" })
-      .fill("Bring your own darts.");
+    const descriptionEditor = settings.locator(".ProseMirror");
+    await descriptionEditor.click();
+    await page.keyboard.type("Bring your own darts.");
     await expectSaved(page);
     await page.reload();
     await expect(
       page
         .getByRole("form", { name: "Competition settings" })
-        .getByRole("textbox", { name: "Description" }),
-    ).toHaveValue("Bring your own darts.");
-    const [stored] = await runQuery<{ description: string | null }>(
+        .locator(".ProseMirror"),
+    ).toContainText("Bring your own darts.");
+    const [stored] = await runQuery<{ description: unknown }>(
       `select description from competition where id = $1`,
       [id],
     );
-    expect(stored.description).toBe("Bring your own darts.");
+    expect(JSON.stringify(stored.description)).toContain(
+      "Bring your own darts.",
+    );
   } finally {
     await deleteXiCompetition(name);
   }

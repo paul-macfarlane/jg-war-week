@@ -1150,7 +1150,15 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
           {
             ...competitionValues,
             name: "Renamed Knockout",
-            description: "Single elimination",
+            description: {
+              type: "doc",
+              content: [
+                {
+                  type: "paragraph",
+                  content: [{ type: "text", text: "Single elimination" }],
+                },
+              ],
+            },
           },
           ctx,
           tx,

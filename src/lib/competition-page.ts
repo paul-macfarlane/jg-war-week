@@ -17,16 +17,20 @@ import { type GamesConfig, gamesConfigOf } from "@/lib/games/config";
 import { enrollmentUnavailable } from "@/lib/games/enroll-rule";
 import { formatPoints } from "@/lib/points";
 import type { ProfilesByEmail } from "@/lib/profile";
+import { type Content } from "@/lib/rich-text/content";
 import { fromEasternClock, toEasternClock } from "@/lib/schedule";
 
 /** A close time as its two pickers hold it: ET date and `HH:MM`, blank for none. */
 export type Clock = { date: string; time: string };
 
+/** A description with nothing in it, as the editor starts. */
+export const EMPTY_CONTENT: Content = { type: "doc", content: [] };
+
 /** Every setting the Settings form holds, keyed by its lock-table field. */
 export type CompetitionSettingsValues = {
   name: string;
-  /** Plain text for now. */
-  description: string;
+  /** Rich text, as an Announcement body; empty document for none. */
+  description: Content;
   group: string;
   /** Host emails (Organizers only; a Host sees names, never this). */
   hosts: string[];
@@ -57,7 +61,7 @@ export type SettingsField = keyof CompetitionSettingsValues &
 /** The stored Competition the form is seeded from, with its Host emails. */
 export type CompetitionSettingsSource = {
   name: string;
-  description: string | null;
+  description: Content | null;
   competitionGroup: string | null;
   hosts: string[];
   placementPoints: number[] | null;
@@ -94,7 +98,7 @@ export function settingsValuesOf(
   const { format } = source;
   return {
     name: source.name,
-    description: source.description ?? "",
+    description: source.description ?? EMPTY_CONTENT,
     group: source.competitionGroup ?? "",
     hosts: source.hosts,
     placementPoints: source.placementPoints?.join(", ") ?? "",
