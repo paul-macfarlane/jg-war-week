@@ -7,6 +7,11 @@ import {
 } from "@playwright/test";
 
 import {
+  addCompetition,
+  expectSaved,
+  openCompetitionPage,
+} from "./competition-page";
+import {
   deleteXiCompetition,
   runQuery,
   xiCompetitionId,
@@ -339,9 +344,8 @@ test("r5 34 admin controls are 44px on a phone", async ({
        on conflict do nothing`,
       [competitionId, hostEmail],
     );
-    await page.goto("/admin/competitions");
-    // The Hosts field is in the Competition's Sheet.
-    await page.getByRole("button", { name: "Edit Pool", exact: true }).click();
+    // The Hosts field is on the Competition's page (ticket 101).
+    await openCompetitionPage(page, competitionId);
     await expectAfterTouchTarget(
       page.getByRole("button", { name: `Remove ${hostEmail}` }),
       "email chip remove",
@@ -601,47 +605,40 @@ test("r5 31 setup rows open in a Sheet", async ({
       teams.getByRole("button", { name: "Edit Team Red", exact: true }),
     ).toBeFocused();
 
-    // 31-1, 31-5: Competitions too; the Bracket/Games link stays on the row.
+    // 31-1, 31-5: Competitions too. Edit opens the Competition's own page
+    // (ticket 101), not a Sheet.
     await page.goto("/admin/competitions");
     const competitions = page.getByRole("list", { name: "Competitions" });
     await expect(competitions).toBeVisible();
     expect(await pageHeight(page, "Competitions")).toBeLessThan(6_500);
-    const pool = competitions.getByRole("button", {
+    const pool = competitions.getByRole("link", {
       name: "Edit Pool",
       exact: true,
     });
     await expectTouchTarget(pool, "Competition row");
-    await expect(
-      competitions
-        .getByRole("listitem")
-        .filter({
-          has: page.getByRole("button", { name: "Edit Pool", exact: true }),
-        })
-        .getByRole("link"),
-    ).toBeVisible();
+    await expect(pool).toHaveAttribute("href", `/admin/competitions/${poolId}`);
     await shoot(page, testInfo, "competitions-list-375");
     await pool.click();
-    const poolSheet = page.getByRole("dialog", { name: "Edit Pool" });
-    await expect(poolSheet.getByText("Hosts", { exact: true })).toBeVisible();
-    await shoot(page, testInfo, "competition-sheet-375");
+    await page.waitForURL(`**/admin/competitions/${poolId}`);
+    const settings = page.getByRole("form", { name: "Competition settings" });
+    await expect(settings.getByText("Hosts", { exact: true })).toBeVisible();
+    await shoot(page, testInfo, "competition-page-375");
 
-    // The Sheet's one Save assigns a Host added there, too.
-    await poolSheet
+    // A Host added on the page autosaves, and is there after leaving.
+    await settings
       .getByRole("textbox", { name: "Hosts", exact: true })
       .fill(sheetHost);
     await page.keyboard.press("Enter");
-    const removeHost = poolSheet.getByRole("button", {
+    const removeHost = settings.getByRole("button", {
       name: `Remove ${sheetHost}`,
     });
     await expect(removeHost).toBeVisible();
-    await poolSheet.getByRole("button", { name: "Save", exact: true }).click();
-    await expect(page.getByText("Competition saved")).toBeVisible();
-    await expect(poolSheet).toBeHidden();
+    await expectSaved(page);
+    await page.goto("/admin/competitions");
     await pool.click();
+    await page.waitForURL(`**/admin/competitions/${poolId}`);
     await expect(removeHost).toBeVisible();
-    await shoot(page, testInfo, "competition-sheet-host-saved-375");
-    await page.keyboard.press("Escape");
-    await expect(poolSheet).toBeHidden();
+    await shoot(page, testInfo, "competition-page-host-saved-375");
 
     // 31-8: the same pattern at 1280.
     await page.setViewportSize(DESKTOP);
@@ -888,27 +885,18 @@ test("r5 38 Escape keeps chosen Entrants; Tree shows Recorded <time>; Format hel
   try {
     await asOrganizer(context);
     await page.setViewportSize(DESKTOP);
-    await page.goto("/admin/competitions");
-    await page.getByRole("button", { name: "Add Competition" }).click();
-    const addForm = page
-      .getByRole("dialog", { name: "Add Competition" })
-      .getByRole("form", { name: "New Competition" });
-    await addForm.getByRole("textbox", { name: "Name" }).fill(name);
-    await addForm.getByRole("combobox", { name: "Format" }).click();
-    await page.getByRole("option", { name: "Bracket", exact: true }).click();
-    await addForm.getByRole("button", { name: "Add Competition" }).click();
-    await expect(page).toHaveURL(/\/admin\/competitions\/[0-9a-f-]+\/bracket$/);
-    const id = page.url().split("/").at(-2) ?? "";
+    const id = await addCompetition(page, { name, format: "Bracket" });
     await runQuery(
       `update competition set scoring = 'individual' where id = $1`,
       [id],
     );
     await page.reload();
 
-    // 38-3: the Format help text doesn't read as if Points were chosen.
+    // 38-3: the Format help text describes the chosen Format, never as if
+    // Points were chosen.
     await expect(
       page.getByText(
-        "A Format can't change while the Competition has Entrants.",
+        "Entrants play in Heats and a set number advance each Round, down to a final. Two per Heat with one advancing is a head-to-head knockout.",
       ),
     ).toBeVisible();
     await expect(page.getByText("Points is Points Entries only")).toHaveCount(
@@ -949,7 +937,7 @@ test("r5 38 Escape keeps chosen Entrants; Tree shows Recorded <time>; Format hel
     await page.getByRole("button", { name: "Generate" }).click();
     await expect(page.getByText("Bracket generated")).toBeVisible();
 
-    await page.goto(`/admin/brackets/${id}`);
+    // The tree is below, on the same page.
     await page
       .locator("[data-bracket-tree]")
       .getByRole("button", { name: "Record result for Semifinal 1" })

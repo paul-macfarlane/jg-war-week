@@ -12,6 +12,11 @@ import { writeFile } from "node:fs/promises";
 import { DISPLAY_STORAGE_KEY } from "@/lib/display";
 import type { ColorScheme } from "@/lib/theme";
 
+import {
+  expectSaved,
+  openCompetitionPage,
+  setFormat,
+} from "./competition-page";
 import { openForBracket, runQuery, xiCompetitionId } from "./db";
 import { E2E_BASE_URL } from "./env";
 import {
@@ -339,16 +344,14 @@ test("a head-to-head Bracket is one tree: the Organizer records from it in admin
   const id = await xiCompetitionId(KNOCKOUT);
   const rounds = ["Round 1", "Semifinal", "Final"];
 
-  await page.goto(`/admin/competitions/${id}/bracket`);
-  await page.getByRole("combobox", { name: "Format" }).click();
-  await page.getByRole("option", { name: "Bracket", exact: true }).click();
-  await expect(page.getByText("Format set to Bracket")).toBeVisible();
+  await openCompetitionPage(page, id);
+  await setFormat(page, "Bracket");
   // Five Entrants: three first-Round byes.
   await enterAndGenerate(page, KNOCKOUT_ENTRANTS);
 
-  // The builder names the way in "Results"; the old "Run …" wording is gone.
-  await page.getByRole("link", { name: "Results", exact: true }).click();
-  await expect(page).toHaveURL(new RegExp(`/admin/brackets/${id}$`));
+  // The tree is on the Competition's own page, below the Entrants: no
+  // separate results page, and the old "Run …" wording is gone.
+  await expect(page).toHaveURL(new RegExp(`/admin/competitions/${id}$`));
   await expect(page.getByText(/Run\s+results/i)).toHaveCount(0);
   const admin = adminTreeOf(page);
   await expect(admin).toBeVisible();
@@ -419,19 +422,15 @@ test("a Bracket of 4 per Heat is the same tree of Heat boxes, advancers highligh
   const id = await xiCompetitionId(HEATS);
   const rounds = ["Round 1", "Final"];
 
-  await page.goto(`/admin/competitions/${id}/bracket`);
-  await page.getByRole("combobox", { name: "Format" }).click();
-  await page.getByRole("option", { name: "Bracket", exact: true }).click();
-  await expect(page.getByText("Format set to Bracket")).toBeVisible();
+  await openCompetitionPage(page, id);
+  await setFormat(page, "Bracket");
   await page.getByRole("combobox", { name: "Entrants per Heat" }).click();
   await page.getByRole("option", { name: "4 per Heat" }).click();
   await page.getByRole("combobox", { name: "How many advance" }).click();
   await page.getByRole("option", { name: "Top 2 advance" }).click();
-  await page.getByRole("button", { name: "Save Heat settings" }).click();
-  await expect(page.getByText("Heat settings saved")).toBeVisible();
+  await expectSaved(page);
   await enterAndGenerate(page, HEATS_ENTRANTS);
 
-  await page.goto(`/admin/brackets/${id}`);
   await checkResultPopup(page, testInfo, "Round 1 Heat 1");
 
   // Mid-way: Heat 1 decided, its top two highlighted in both trees.
@@ -509,10 +508,8 @@ test("a self-reporting Participant records their own Heat from the public tree; 
   // Four Entrants: two Semifinals, then the Final.
   const entrants = KNOCKOUT_ENTRANTS.slice(0, 4);
 
-  await page.goto(`/admin/competitions/${id}/bracket`);
-  await page.getByRole("combobox", { name: "Format" }).click();
-  await page.getByRole("option", { name: "Bracket", exact: true }).click();
-  await expect(page.getByText("Format set to Bracket")).toBeVisible();
+  await openCompetitionPage(page, id);
+  await setFormat(page, "Bracket");
   await enterAndGenerate(page, entrants);
 
   const reporter = entrants[0];
@@ -587,7 +584,7 @@ test("a self-reporting Participant records their own Heat from the public tree; 
     ]);
 
     // The Organizer sees who reported it, in the admin tree.
-    await page.goto(`/admin/brackets/${id}`);
+    await openCompetitionPage(page, id);
     await expect(heatBox(adminTreeOf(page), ownHeat)).toContainText(
       `Reported by ${reporter}`,
     );

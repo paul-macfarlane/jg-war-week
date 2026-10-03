@@ -1,5 +1,6 @@
 import { type Page, type TestInfo, expect, test } from "@playwright/test";
 
+import { openCompetitionPage } from "./competition-page";
 import { runQuery, xiTeamPointsBreakdown } from "./db";
 import { E2E_BASE_URL } from "./env";
 import {
@@ -17,7 +18,8 @@ import { teamTotal } from "./standings";
 // 2nd), breaks the tie, edits another row's Score (the tie-break stays),
 // and Finalizes: the Standings move by exactly the
 // Teams' points, Recent results shows the Finalize, Reopen withdraws them,
-// and a Participant is refused the sheet. The Competition is deleted after
+// and a Participant is refused the sheet. The sheet is the run area of the
+// Competition's page (ticket 101). The Competition is deleted after
 // (its rows and Points Entries cascade), so XI is unchanged for other specs.
 
 /** The six, with their Teams, Scores and the Place the Scores give. */
@@ -110,7 +112,7 @@ test("r16 90 a Host records placements with Scores, breaks a tie and Finalizes: 
     expect(await leaderboardTotals(page)).toEqual(before);
 
     // The Host adds the six by search.
-    await page.goto(`/admin/placements/${id}`);
+    await openCompetitionPage(page, id);
     await expect(page.getByRole("heading", { name, level: 1 })).toBeVisible();
     await expect(page.getByText("No one yet.")).toBeVisible();
     const search = page.getByRole("combobox", { name: "Add a Participant" });
@@ -203,7 +205,7 @@ test("r16 90 a Host records placements with Scores, breaks a tie and Finalizes: 
     await shoot(page, testInfo, "participant-page");
 
     // Reopen withdraws the points.
-    await page.goto(`/admin/placements/${id}`);
+    await openCompetitionPage(page, id);
     await page.getByRole("button", { name: "Reopen", exact: true }).click();
     await page
       .getByRole("alertdialog", { name: "Reopen this Competition?" })
@@ -216,7 +218,7 @@ test("r16 90 a Host records placements with Scores, breaks a tie and Finalizes: 
     // A signed-in Participant is refused the sheet.
     await signIn(participantContext, E2E_PARTICIPANT_EMAIL);
     const participant = await participantContext.newPage();
-    await participant.goto(`/admin/placements/${id}`);
+    await participant.goto(`/admin/competitions/${id}`);
     await expect(
       participant.getByRole("heading", { name: "Organizers and Hosts only." }),
     ).toBeVisible();

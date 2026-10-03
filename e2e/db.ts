@@ -241,6 +241,8 @@ export type BracketSnapshot = {
   self_report: boolean;
   finalized_at: Date | null;
   score_direction: string;
+  /** A move to a Bracket keeps only the first 4 places (ticket 101). */
+  placement_points: string | null;
 };
 
 export async function snapshotBracket(
@@ -249,7 +251,8 @@ export async function snapshotBracket(
   const [row] = await runQuery<BracketSnapshot>(
     `select format::text as format, bracket_config, self_enroll, self_report,
        finalized_at,
-       score_direction::text as score_direction
+       score_direction::text as score_direction,
+       placement_points::text as placement_points
      from competition where id = $1`,
     [competitionId],
   );
@@ -268,7 +271,8 @@ export async function restoreBracket(
   await runQuery(
     `update competition set format = $2::competition_format,
        bracket_config = $3, self_enroll = $4, finalized_at = $5,
-       score_direction = $6::score_direction, self_report = $7
+       score_direction = $6::score_direction, self_report = $7,
+       placement_points = $8::numeric[]
      where id = $1`,
     [
       competitionId,
@@ -280,6 +284,7 @@ export async function restoreBracket(
       snapshot.finalized_at,
       snapshot.score_direction,
       snapshot.self_report,
+      snapshot.placement_points,
     ],
   );
 }

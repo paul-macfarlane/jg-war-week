@@ -66,7 +66,8 @@ test.describe("58 one Edit and Delete pattern for every admin list", () => {
       string,
       Parameters<typeof expectEditAndDeletePerRow>[2]?,
     ][] = [
-      ["/admin/competitions", "Competitions"],
+      // A Competition's Edit opens its own page (ticket 101).
+      ["/admin/competitions", "Competitions", { editIsLink: true }],
       ["/admin/schedule", "Days"],
       ["/admin/schedule", "Schedule Items"],
       ["/admin/roster", "Teams"],

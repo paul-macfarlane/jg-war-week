@@ -8,6 +8,11 @@ import {
 import path from "node:path";
 
 import {
+  expectSaved,
+  openCompetitionPage,
+  setFormat,
+} from "./competition-page";
+import {
   runQuery,
   setParticipantEmail,
   xiCompetitionId,
@@ -226,10 +231,8 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     // The Host builds: Format, four Squads, Squads as the Entrants,
     // self-report on (and off and on again), Generate.
     await asHost(context);
-    await page.goto(`/admin/competitions/${id}/bracket`);
-    await page.getByRole("combobox", { name: "Format" }).click();
-    await page.getByRole("option", { name: "Bracket", exact: true }).click();
-    await expect(page.getByText("Format set to Bracket")).toBeVisible();
+    await openCompetitionPage(page, id);
+    await setFormat(page, "Bracket");
 
     for (const squad of SQUADS) await addSquad(page, squad);
     // 15-3: the Squad help line in the builder's Squads section.
@@ -247,15 +250,22 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
       page.getByText("Entrants saved", { exact: true }),
     ).toBeVisible();
 
+    // Self-report is a setting: it autosaves.
     const selfReport = page.getByRole("switch", { name: "Self-report" });
     await selfReport.click();
-    await expect(page.getByText("Self-report on")).toBeVisible();
     await expect(selfReport).toBeChecked();
+    await expectSaved(page);
     await selfReport.click();
-    await expect(page.getByText("Self-report off")).toBeVisible();
     await expect(selfReport).not.toBeChecked();
+    await expectSaved(page);
     await selfReport.click();
     await expect(selfReport).toBeChecked();
+    await expectSaved(page);
+    const [stored] = await runQuery<{ self_report: boolean }>(
+      `select self_report from competition where id = $1`,
+      [id],
+    );
+    expect(stored.self_report).toBe(true);
 
     await page.getByRole("button", { name: "Generate" }).click();
     await expect(page.getByText("Bracket generated")).toBeVisible();
@@ -372,7 +382,7 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await secondContext.close();
 
     // The Host sees who reported it.
-    await page.goto(`/admin/brackets/${id}`);
+    await openCompetitionPage(page, id);
     await expect(heatCard(page, semifinal)).toContainText(
       `Reported by ${REPORTER}`,
     );
@@ -466,7 +476,7 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     });
 
     // Un-finalize, so the Team Standings later flows read are unchanged.
-    await page.goto(`/admin/brackets/${id}`);
+    await openCompetitionPage(page, id);
     await page.getByRole("button", { name: "Un-finalize" }).click();
     await page
       .getByRole("alertdialog")

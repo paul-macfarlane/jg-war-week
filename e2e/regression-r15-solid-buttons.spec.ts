@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { openCompetitionPage, setFormat } from "./competition-page";
 import { openForBracket, xiCompetitionId } from "./db";
 import { asOrganizer } from "./session";
 
@@ -26,10 +27,8 @@ test("r15 87 the admin Bracket's unrecorded Heat has a solid Record result butto
   const restore = await openForBracket(id);
 
   try {
-    await page.goto(`/admin/competitions/${id}/bracket`);
-    await page.getByRole("combobox", { name: "Format" }).click();
-    await page.getByRole("option", { name: "Bracket", exact: true }).click();
-    await expect(page.getByText("Format set to Bracket")).toBeVisible();
+    await openCompetitionPage(page, id);
+    await setFormat(page, "Bracket");
 
     const find = page.locator("#bracket-entrants");
     for (const entrant of ENTRANTS) {
@@ -46,7 +45,7 @@ test("r15 87 the admin Bracket's unrecorded Heat has a solid Record result butto
     await page.getByRole("button", { name: "Generate" }).click();
     await expect(page.getByText("Bracket generated")).toBeVisible();
 
-    await page.goto(`/admin/brackets/${id}`);
+    await openCompetitionPage(page, id);
     // In the admin Bracket's tree (100), the one Participants see.
     const record = page
       .locator("[data-bracket-tree]")

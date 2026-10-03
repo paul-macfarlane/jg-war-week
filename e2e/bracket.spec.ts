@@ -1,5 +1,6 @@
 import { type Page, type TestInfo, expect, test } from "@playwright/test";
 
+import { openCompetitionPage, setFormat } from "./competition-page";
 import { openForBracket, runQuery, xiCompetitionId } from "./db";
 import { E2E_BASE_URL } from "./env";
 import {
@@ -111,10 +112,8 @@ test("a Bracket is built, run and finalized into Points Entries", async ({
   test.setTimeout(180_000);
   await asOrganizer(context);
   const id = await xiCompetitionId(COMPETITION);
-  await page.goto(`/admin/competitions/${id}/bracket`);
-  await page.getByRole("combobox", { name: "Format" }).click();
-  await page.getByRole("option", { name: "Bracket", exact: true }).click();
-  await expect(page.getByText("Format set to Bracket")).toBeVisible();
+  await openCompetitionPage(page, id);
+  await setFormat(page, "Bracket");
 
   // Not by accessible name: its FieldLabel is "Pick Participants (N chosen)"
   // and changes as Entrants are added, so a fixed-name role locator would
@@ -159,10 +158,8 @@ test("a Bracket is built, run and finalized into Points Entries", async ({
   );
   await you.close();
 
-  await page.getByRole("link", { name: "Results", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: `${COMPETITION} · Results` }),
-  ).toBeVisible();
+  // The Bracket tree is on the same page, below the Entrants.
+  await expect(page.locator("[data-bracket-tree]")).toBeVisible();
   await recordHeat(page, "Semifinal 1");
   // A played Heat says when it was recorded.
   await expect(page.getByText(/^Recorded .+ ET$/).first()).toBeVisible();
