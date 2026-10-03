@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   RECENT_RESULTS_GROUP_GAP_MS,
   RECENT_RESULTS_LIMIT,
+  type RecentResult,
   type ResultCompetition,
   type ResultEntry,
   type ResultTarget,
@@ -29,6 +30,10 @@ const trivia: ResultCompetition = {
   format: "placement",
   finalizedAt: null,
 };
+
+/** A row's Competition name; a Discretionary row has none. */
+const competitionOf = (row: RecentResult) =>
+  "competition" in row ? row.competition : null;
 
 let n = 0;
 function entry(
@@ -129,7 +134,7 @@ describe("shapeRecentResults", () => {
       [trivia, quiz],
       [entry("trivia", red, 1, at(0)), entry("quiz", red, 2, at(1))],
     );
-    expect(rows.map((r) => r.competition)).toEqual(["Quiz", "Trivia"]);
+    expect(rows.map(competitionOf)).toEqual(["Quiz", "Trivia"]);
   });
 
   it("adds up entries for one target within a row", () => {
@@ -237,7 +242,46 @@ describe("shapeRecentResults", () => {
       comps.map((c, i) => entry(c.id, red, 1, at(i * 30))),
     );
     expect(rows).toHaveLength(RECENT_RESULTS_LIMIT);
-    expect(rows[0].competition).toBe(`C${RECENT_RESULTS_LIMIT + 1}`);
-    expect(rows.at(-1)?.competition).toBe("C2");
+    expect(competitionOf(rows[0])).toBe(`C${RECENT_RESULTS_LIMIT + 1}`);
+    expect(competitionOf(rows.at(-1)!)).toBe("C2");
+  });
+});
+
+describe("shapeRecentResults with Discretionary points", () => {
+  const discretionary = (
+    target: ResultTarget,
+    points: number,
+    reason: string,
+    enteredAt: Date,
+  ): ResultEntry => ({
+    id: `d${n++}`,
+    competitionId: null,
+    points,
+    note: reason,
+    enteredAt,
+    generatedByBracket: false,
+    target,
+  });
+
+  it("makes each entry a row of its own, with its reason, among the Competition rows", () => {
+    const rows = shapeRecentResults(
+      [trivia],
+      [
+        entry("trivia", red, 3, at(0)),
+        discretionary(blue, 4, "Spirit", at(30)),
+        discretionary(blue, 1, "Cleanup", at(31)),
+      ],
+    );
+    expect(rows.map((r) => r.kind)).toEqual([
+      "discretionary",
+      "discretionary",
+      "points",
+    ]);
+    expect(rows[0]).toMatchObject({
+      target: blue,
+      points: 1,
+      reason: "Cleanup",
+    });
+    expect(rows[1]).toMatchObject({ points: 4, reason: "Spirit" });
   });
 });

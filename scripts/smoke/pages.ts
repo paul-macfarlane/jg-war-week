@@ -37,7 +37,7 @@ function expectedXiCounts(): Record<string, number> {
     team: count(seed.teams),
     participant: count(seed.participants),
     competition: count(seed.competitions),
-    points_entry: count(seed.pointsEntries),
+    points_entry: count(seed.pointsEntries) + count(seed.discretionaryPoints),
     award: count(seed.awards),
     announcement: count(seed.announcements),
     faq_item: count(seed.faqItems),
@@ -56,7 +56,7 @@ const XI_COUNT_QUERIES: Record<string, string> = {
   competition:
     "select count(*) from competition c join war_week w on w.id = c.war_week_id where w.edition = 'xi'",
   points_entry:
-    "select count(*) from points_entry e join competition c on c.id = e.competition_id join war_week w on w.id = c.war_week_id where w.edition = 'xi'",
+    "select count(*) from points_entry e join war_week w on w.id = e.war_week_id where w.edition = 'xi'",
   award:
     "select count(*) from award a join war_week w on w.id = a.war_week_id where w.edition = 'xi'",
   announcement:
@@ -110,6 +110,39 @@ export async function assertSeedLoadedOnce() {
     }
   } catch (error) {
     fail("seed row counts", String(error));
+  } finally {
+    await client.end().catch(() => {});
+  }
+}
+
+export async function assertDiscretionaryReasonConstraint() {
+  const check =
+    "the database rejects a Points Entry with no Competition and no reason";
+  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  try {
+    await client.connect();
+    await client.query("begin");
+    try {
+      await client.query(
+        `insert into points_entry (war_week_id, competition_id, team_id, points, entered_by_email)
+         select w.id, null, t.id, 1, 'smoke@jahnelgroup.com'
+         from war_week w join team t on t.war_week_id = w.id
+         where w.edition = 'xi'
+         limit 1`,
+      );
+      fail(check, "insert succeeded");
+    } catch (error) {
+      const message = String(error);
+      if (message.includes("points_entry_reason_without_competition")) {
+        ok(check);
+      } else {
+        fail(check, message);
+      }
+    } finally {
+      await client.query("rollback");
+    }
+  } catch (error) {
+    fail(check, String(error));
   } finally {
     await client.end().catch(() => {});
   }

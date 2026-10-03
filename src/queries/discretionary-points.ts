@@ -1,0 +1,72 @@
+import { and, eq, isNull } from "drizzle-orm";
+
+import { DBOrTx, db } from "@/db";
+import { WarWeek, participant, pointsEntry, team } from "@/db/schema";
+import {
+  type DiscretionaryLedgerEntry,
+  buildDiscretionaryLedger,
+} from "@/lib/discretionary-points";
+import type { PointsEntryTargetKind } from "@/lib/points-entry";
+import { participantNameSql, withProfile } from "@/queries/profile-join";
+
+/**
+ * Every Discretionary points entry of a War Week (a Points Entry with no
+ * Competition), newest first, with its target's name.
+ */
+export async function getDiscretionaryLedger(
+  warWeek: Pick<WarWeek, "id">,
+  dbOrTx: DBOrTx = db,
+): Promise<DiscretionaryLedgerEntry[]> {
+  const rows = await withProfile(
+    dbOrTx
+      .select({
+        id: pointsEntry.id,
+        teamId: pointsEntry.teamId,
+        participantId: pointsEntry.participantId,
+        teamName: team.name,
+        participantName: participantNameSql(),
+        points: pointsEntry.points,
+        note: pointsEntry.note,
+        enteredByEmail: pointsEntry.enteredByEmail,
+        enteredAt: pointsEntry.enteredAt,
+        createdAt: pointsEntry.createdAt,
+        updatedAt: pointsEntry.updatedAt,
+      })
+      .from(pointsEntry)
+      .leftJoin(team, eq(team.id, pointsEntry.teamId))
+      .leftJoin(participant, eq(participant.id, pointsEntry.participantId))
+      .$dynamic(),
+  ).where(
+    and(
+      eq(pointsEntry.warWeekId, warWeek.id),
+      isNull(pointsEntry.competitionId),
+    ),
+  );
+  return buildDiscretionaryLedger(rows);
+}
+
+/**
+ * Whether `targetId` is a Team or a Participant of this War Week, or
+ * neither (including one from another War Week).
+ */
+export async function getTargetKind(
+  warWeekId: string,
+  targetId: string,
+  dbOrTx: DBOrTx = db,
+): Promise<PointsEntryTargetKind | null> {
+  const [teams, participants] = await Promise.all([
+    dbOrTx
+      .select({ id: team.id })
+      .from(team)
+      .where(and(eq(team.id, targetId), eq(team.warWeekId, warWeekId))),
+    dbOrTx
+      .select({ id: participant.id })
+      .from(participant)
+      .where(
+        and(eq(participant.id, targetId), eq(participant.warWeekId, warWeekId)),
+      ),
+  ]);
+  if (teams.length > 0) return "team";
+  if (participants.length > 0) return "participant";
+  return null;
+}

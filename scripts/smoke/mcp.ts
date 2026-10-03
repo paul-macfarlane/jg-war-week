@@ -186,6 +186,7 @@ export async function assertMcp() {
       "get_schedule",
       "get_announcements",
       "get_awards",
+      "get_discretionary_points",
       "get_faq",
       "list_history",
       "get_history",

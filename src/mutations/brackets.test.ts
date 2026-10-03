@@ -560,8 +560,6 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
   it("finalizes into generated Points Entries, and un-finalizing removes only those", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
-      const pointsEntries = await import("@/mutations/points-entries");
-      const { getAdminLedger } = await import("@/queries/points-entries");
       const f = await fixture(tx);
       const { schema } = f;
       await tx.insert(schema.pointsEntry).values({
@@ -664,31 +662,13 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       await mutations.finalizeBracket(f.competitionId, f.ctx, tx);
       expect(await generated()).toEqual(expected);
 
-      // The ledger flags them, and they can't be edited or deleted there.
-      const ledger = await getAdminLedger({ id: f.ctx.warWeekId }, tx);
-      const fromBracket = ledger.filter((e) => e.generatedByBracket);
-      expect(fromBracket).toHaveLength(4);
-      expect(ledger.filter((e) => !e.generatedByBracket)).toHaveLength(1);
-      const refusal = {
-        ok: false,
-        error: "This Points Entry comes from a bracket. Change it there.",
-      };
-      expect(
-        await pointsEntries.deletePointsEntry(fromBracket[0].id, f.ctx, tx),
-      ).toEqual(refusal);
-      expect(
-        await pointsEntries.updatePointsEntry(
-          fromBracket[0].id,
-          {
-            competitionId: f.competitionId,
-            targetId: f.red,
-            points: 99,
-            note: null,
-          },
-          f.ctx,
-          tx,
-        ),
-      ).toEqual(refusal);
+      // The hand-entered entry sits beside the four generated ones.
+      const all = await tx
+        .select({ generated: schema.pointsEntry.generatedByBracket })
+        .from(schema.pointsEntry)
+        .where(eq(schema.pointsEntry.competitionId, f.competitionId));
+      expect(all.filter((e) => e.generated)).toHaveLength(4);
+      expect(all.filter((e) => !e.generated)).toHaveLength(1);
 
       expect(
         await mutations.unfinalizeBracket(f.competitionId, f.ctx, tx),

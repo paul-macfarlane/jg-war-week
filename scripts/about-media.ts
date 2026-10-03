@@ -4,7 +4,7 @@
  * (its Finale's Title slide on a phone, which gives nothing away; a still
  * only — no Finale video is written or shown), the hero's
  * `standings-before.png` / `standings-entry.png` / `standings-after.png`
- * (an Organizer's real Points Entry moving the home Standings), and one
+ * (an Organizer's real Discretionary points moving the home Standings), and one
  * still per feature card at `public/about/<slug>.png`. Every one of them is
  * written twice (the About dark stills fix): `<name>.png` under the light
  * Display and `<name>-dark.png` under the dark one, so `/about` can show
@@ -166,7 +166,7 @@ async function lendAuthorship(): Promise<() => Promise<void>> {
   const entries = await query<{ id: string; email: string }>(
     `update points_entry p set entered_by_email = $1
      from points_entry old
-     where p.id = old.id and p.competition_id in (select id from competition where war_week_id = $2)
+     where p.id = old.id and p.war_week_id = $2
      returning p.id, old.entered_by_email as email`,
     [DEMO_EMAIL, current.id],
   );
@@ -533,7 +533,7 @@ async function still(
 }
 
 /**
- * Picks an option in one of the Points Entry form's `EntityCombobox`
+ * Picks an option in one of the Discretionary points form's `EntityCombobox`
  * fields the way a person does: focus it by its `aria-label`, type the
  * name, and choose the matching option.
  */
@@ -556,9 +556,14 @@ async function selectComboboxOption(
   return picked;
 }
 
-/** Picks a Competition in the Points Entry form's combobox. */
-async function selectCompetition(page: Page, name: string): Promise<string> {
-  return selectComboboxOption(page, "Competition", name);
+/** Clicks the first button whose text is `text`, as a person would. */
+async function clickButton(page: Page, text: string): Promise<void> {
+  const clicked = await page.evaluate<boolean>(`(() => {
+    const button = Array.from(document.querySelectorAll('button')).find((b) => b.innerText.trim() === ${JSON.stringify(text)});
+    button?.click();
+    return Boolean(button);
+  })()`);
+  if (!clicked) throw new Error(`no "${text}" button on the page`);
 }
 
 const scrollToText = (text: string) => `(() => {
@@ -831,35 +836,14 @@ async function teardownGamesDemo() {
 // The About hero: Standings moving after a Points Entry (ticket 04)
 
 /**
- * The Competition the hero uses to move the home Standings: placement-only,
- * scored like the Standings (team in Teams mode, individual in free-for-all),
- * so any margin needed to move last place into first can be typed in.
- */
-async function standingsDemoCompetition(): Promise<string> {
-  const [comp] = await query<{ name: string }>(
-    `select name from competition
-     where war_week_id = $1 and format = 'placement' and scoring = $2
-     order by name limit 1`,
-    [current.id, current.mode === "teams" ? "team" : "individual"],
-  );
-  if (!comp) {
-    throw new Error(
-      `${current.edition} needs a placement-only Competition for the Standings demo`,
-    );
-  }
-  return comp.name;
-}
-
-/**
  * Three stills for the About page's hero (ticket 04): the home Standings
- * before, the Points Entry form about to save a big win for whoever is
- * currently in last place (a Team, or in free-for-all a Participant), and
- * the same home Standings right after, reordered. Uses the real Points Entry
- * form and the real `get_leaderboard` MCP tool to read the Standings, not a
- * hand-crafted fixture.
+ * before, the Discretionary points form about to save a big win for
+ * whoever is currently in last place (a Team, or in free-for-all a
+ * Participant), and the same home Standings right after, reordered. Uses the
+ * real Discretionary points form and the real `get_leaderboard` MCP tool to
+ * read the Standings, not a hand-crafted fixture.
  */
 async function captureStandingsDemo(cookie: string): Promise<void> {
-  const competition = await standingsDemoCompetition();
   await still(
     "standings-before",
     cookie,
@@ -883,16 +867,20 @@ async function captureStandingsDemo(cookie: string): Promise<void> {
   const page = await Page.open(SCHEMES[0]);
   await page.viewport(PHONE, true);
   await page.cookie(cookie);
-  await page.goto("/admin/points");
-  await selectCompetition(page, competition);
-  await sleep(300);
+  await page.goto("/admin/discretionary-points");
+  await clickButton(page, "Give Discretionary points");
+  await sleep(500);
   await selectComboboxOption(
     page,
-    standingsKind() === "team" ? before.teamLabel : "Participant",
+    standingsKind() === "team"
+      ? `${before.teamLabel} or Participant`
+      : "Participant",
     last.name,
   );
-  await page.evaluate(`document.querySelector('#points-entry-points').focus()`);
+  await page.evaluate(`document.querySelector('input[name="points"]').focus()`);
   await page.send("Input.insertText", { text: String(margin) });
+  await page.evaluate(`document.querySelector('input[name="reason"]').focus()`);
+  await page.send("Input.insertText", { text: "Spirit award" });
   await sleep(400);
   await assertNoRealEmail(page, "standings-entry");
   // One filled-in form, shot in each scheme: the Display switches in place,
@@ -904,7 +892,7 @@ async function captureStandingsDemo(cookie: string): Promise<void> {
       path.join(MEDIA, stillFile("standings-entry", scheme)),
     );
     note(
-      `still: ${stillFile("standings-entry", scheme)} from /admin/points, filled in`,
+      `still: ${stillFile("standings-entry", scheme)} from /admin/discretionary-points, filled in`,
     );
   }
 
@@ -912,20 +900,23 @@ async function captureStandingsDemo(cookie: string): Promise<void> {
   // entries the demo Organizer holds now, so the teardown can tell.
   standingsEntryBaseline = await demoEntryCount();
   await page.evaluate(
-    `document.querySelector('form[aria-label="Points Entry"] button[type="submit"]').click()`,
+    `document.querySelector('form[aria-label="New Discretionary points"] button[type="submit"]').click()`,
   );
+  // The Sheet closes once the entry saves.
   let saved = false;
   for (let i = 0; i < 40; i++) {
     await sleep(200);
-    const text = await page.evaluate<string>(
-      `document.querySelector('form[aria-label="Points Entry"] button[type="submit"]')?.innerText ?? ""`,
+    const open = await page.evaluate<boolean>(
+      `Boolean(document.querySelector('form[aria-label="New Discretionary points"]'))`,
     );
-    if (text === "Add Points Entry") {
+    if (!open) {
       saved = true;
       break;
     }
   }
-  if (!saved) throw new Error("the demo Points Entry never finished saving");
+  if (!saved) {
+    throw new Error("the demo Discretionary points never finished saving");
+  }
   await page.close();
 
   await still(
@@ -944,7 +935,9 @@ async function captureStandingsDemo(cookie: string): Promise<void> {
     } of ${after.standings.length} (${lastAfter?.total} pts)`,
   );
   if (after.standings[0]?.name !== last.name) {
-    throw new Error("the demo Points Entry did not move last place to first");
+    throw new Error(
+      "the demo Discretionary points did not move last place to first",
+    );
   }
 }
 
@@ -1077,22 +1070,6 @@ async function scheduleTime(): Promise<string> {
   return new TZDate(y, m - 1, d, 12, 15, 0, "America/New_York").toISOString();
 }
 
-/** A points-only Competition with Placement Points, for the "points" still. */
-async function placementPointsCompetition(): Promise<string> {
-  const [comp] = await query<{ name: string }>(
-    `select name from competition
-     where war_week_id = $1 and format = 'placement' and placement_points is not null
-     order by name limit 1`,
-    [current.id],
-  );
-  if (!comp) {
-    throw new Error(
-      `${current.edition} needs a Competition with Placement Points for the points still`,
-    );
-  }
-  return comp.name;
-}
-
 /** Only the feature-card and Standings-hero stills; the Finale poster stays as it is. */
 const STILLS_ONLY = process.argv.includes("--stills");
 
@@ -1134,20 +1111,20 @@ async function main() {
 
     const slugs = ABOUT_FEATURES.map((f) => f.slug);
     await still("organizer-admin", cookie, "/admin/schedule");
-    await still("points", cookie, "/admin/points", async (page) => {
-      const picked = await selectCompetition(
-        page,
-        await placementPointsCompetition(),
-      );
-      await sleep(500);
-      const presets = await page.evaluate<number>(
-        `document.querySelectorAll('button').length && Array.from(document.querySelectorAll('button')).filter((b) => /^1st/.test(b.innerText)).length`,
-      );
-      note(
-        `points: picked ${picked}, "1st" preset buttons on screen: ${presets}`,
-      );
-      if (!presets) throw new Error("no Placement Points buttons on screen");
-    });
+    await still(
+      "points",
+      cookie,
+      "/admin/discretionary-points",
+      async (page) => {
+        await clickButton(page, "Give Discretionary points");
+        await sleep(500);
+        const form = await page.evaluate<boolean>(
+          `Boolean(document.querySelector('form[aria-label="New Discretionary points"]'))`,
+        );
+        note(`points: the Discretionary points form is open: ${form}`);
+        if (!form) throw new Error("no Discretionary points form on screen");
+      },
+    );
     await still(
       "schedule",
       cookie,

@@ -14,6 +14,11 @@ export const MCP_TOOLS = {
     description:
       "Returns the current War Week's team or individual Standings, ranked by total points.",
   },
+  get_discretionary_points: {
+    title: "Get Discretionary points",
+    description:
+      "Returns the current War Week's Discretionary points, which an Organizer gives to a Team or Participant with a reason and no Competition behind them, newest first: who got them, how many, why and when. They already count in the leaderboard.",
+  },
   get_schedule: {
     title: "Get schedule",
     description:

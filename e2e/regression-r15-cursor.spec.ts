@@ -25,12 +25,15 @@ test.describe("cursors", () => {
     expect(await cursorOf(link)).toBe("pointer");
 
     // Button and combobox option on an admin form.
-    await page.goto("/admin/points");
-    const button = page.getByRole("button", { name: /^Delete/ }).first();
+    await page.goto("/admin/discretionary-points");
+    const button = page.getByRole("button", {
+      name: "Give Discretionary points",
+    });
     await expect(button).toBeVisible();
     expect(await cursorOf(button)).toBe("pointer");
 
-    await page.getByRole("combobox", { name: "Competition" }).click();
+    await button.click();
+    await page.getByRole("combobox", { name: /Participant$/ }).click();
     const option = page.getByRole("option").first();
     await expect(option).toBeVisible();
     expect(await cursorOf(option)).toBe("pointer");
@@ -41,8 +44,8 @@ test.describe("cursors", () => {
     page,
   }) => {
     await asOrganizer(context);
-    // The target combobox's trigger is disabled until a Competition is chosen.
-    await page.goto("/admin/points");
+    // The first FAQ Item's Move up button is disabled.
+    await page.goto("/admin/faq");
     const disabled = page.locator("button:disabled").first();
     await expect(disabled).toBeVisible();
     expect(await cursorOf(disabled)).toBe("not-allowed");

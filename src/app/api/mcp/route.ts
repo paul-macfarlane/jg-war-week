@@ -9,6 +9,7 @@ import {
   toGamesBracketResult,
   toParticipationBracketResult,
 } from "@/mcp/bracket";
+import { toDiscretionaryPointsResult } from "@/mcp/discretionary-points";
 import { toFaqResult } from "@/mcp/faq";
 import { toGamesResult } from "@/mcp/games";
 import { toHistoryListResult, toHistoryResult } from "@/mcp/history";
@@ -22,6 +23,7 @@ import { getArchiveDetailByYear, listArchive } from "@/queries/archive";
 import { getAwards } from "@/queries/awards";
 import { getBracket } from "@/queries/brackets";
 import { getCompetitionByName } from "@/queries/competitions";
+import { getDiscretionaryLedger } from "@/queries/discretionary-points";
 import { getFaqItems } from "@/queries/faq";
 import { getGamesView } from "@/queries/games";
 import { getParticipationView } from "@/queries/participation";
@@ -149,6 +151,27 @@ const handler = createMcpHandler(
         const warWeek = await getCurrentWarWeek();
         const result = warWeek
           ? toAwardsResult(warWeek.edition, await getAwards(warWeek))
+          : { warWeek: null };
+
+        return {
+          content: [{ type: "text", text: JSON.stringify(result) }],
+        };
+      },
+    );
+
+    server.registerTool(
+      "get_discretionary_points",
+      {
+        ...MCP_TOOLS.get_discretionary_points,
+        inputSchema: z.object({}),
+      },
+      async () => {
+        const warWeek = await getCurrentWarWeek();
+        const result = warWeek
+          ? toDiscretionaryPointsResult(
+              warWeek.edition,
+              await getDiscretionaryLedger(warWeek),
+            )
           : { warWeek: null };
 
         return {

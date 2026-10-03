@@ -1,20 +1,8 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import { DBOrTx, db } from "@/db";
-import {
-  WarWeek,
-  competition,
-  participant,
-  pointsEntry,
-  team,
-} from "@/db/schema";
-import {
-  type AdminLedgerEntry,
-  type PointsEntryTargetKind,
-  buildAdminLedger,
-} from "@/lib/points-entry";
-import { isUuid } from "@/lib/uuid";
+import { WarWeek, competition, participant, team } from "@/db/schema";
 import { participantNameSql, withProfile } from "@/queries/profile-join";
 
 export type PointsEntryFormCompetition = {
@@ -45,8 +33,8 @@ export type PointsEntryFormOptions = {
 const participantTeam = alias(team, "participant_team");
 
 /**
- * Everything the Points Entry form offers: every Competition of the War Week
- * (scheduled or not) and its Teams and Participants, each by name.
+ * Every Competition, Team and Participant of the War Week, each by name, for
+ * the pickers on the Competition pages.
  */
 export async function getPointsEntryFormOptions(
   warWeek: Pick<WarWeek, "id">,
@@ -89,103 +77,4 @@ export async function getPointsEntryFormOptions(
     teams: teams.map((t) => ({ ...t, team: null })),
     participants,
   };
-}
-
-/** Every Points Entry of a War Week for the admin ledger, newest first. */
-export async function getAdminLedger(
-  warWeek: Pick<WarWeek, "id">,
-  dbOrTx: DBOrTx = db,
-): Promise<AdminLedgerEntry[]> {
-  const rows = await withProfile(
-    dbOrTx
-      .select({
-        id: pointsEntry.id,
-        competition: competition.name,
-        competitionId: competition.id,
-        competitionFormat: competition.format,
-        teamName: team.name,
-        participantName: participantNameSql(),
-        points: pointsEntry.points,
-        note: pointsEntry.note,
-        enteredByEmail: pointsEntry.enteredByEmail,
-        enteredAt: pointsEntry.enteredAt,
-        createdAt: pointsEntry.createdAt,
-        updatedAt: pointsEntry.updatedAt,
-        generatedByBracket: pointsEntry.generatedByBracket,
-      })
-      .from(pointsEntry)
-      .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
-      .leftJoin(team, eq(team.id, pointsEntry.teamId))
-      .leftJoin(participant, eq(participant.id, pointsEntry.participantId))
-      .$dynamic(),
-  ).where(eq(competition.warWeekId, warWeek.id));
-  return buildAdminLedger(rows);
-}
-
-/** One Points Entry of a War Week, for the edit form. */
-export async function getPointsEntryForEdit(
-  warWeek: Pick<WarWeek, "id">,
-  id: string,
-  dbOrTx: DBOrTx = db,
-) {
-  if (!isUuid(id)) return undefined;
-  const [found] = await dbOrTx
-    .select({
-      id: pointsEntry.id,
-      competitionId: pointsEntry.competitionId,
-      targetId: sql<string>`coalesce(${pointsEntry.teamId}, ${pointsEntry.participantId})`,
-      points: pointsEntry.points,
-      note: pointsEntry.note,
-      enteredByEmail: pointsEntry.enteredByEmail,
-    })
-    .from(pointsEntry)
-    .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
-    .where(and(eq(pointsEntry.id, id), eq(competition.warWeekId, warWeek.id)))
-    .limit(1);
-  return found;
-}
-
-/** One Competition of a War Week, with what the target rule needs. */
-export async function getCompetitionInWarWeek(
-  warWeekId: string,
-  competitionId: string,
-  dbOrTx: DBOrTx = db,
-) {
-  const [found] = await dbOrTx
-    .select({ name: competition.name, scoring: competition.scoring })
-    .from(competition)
-    .where(
-      and(
-        eq(competition.id, competitionId),
-        eq(competition.warWeekId, warWeekId),
-      ),
-    )
-    .limit(1);
-  return found;
-}
-
-/**
- * Whether `targetId` is a Team or a Participant of this War Week, or
- * neither (including one from another War Week).
- */
-export async function getTargetKind(
-  warWeekId: string,
-  targetId: string,
-  dbOrTx: DBOrTx = db,
-): Promise<PointsEntryTargetKind | null> {
-  const [teams, participants] = await Promise.all([
-    dbOrTx
-      .select({ id: team.id })
-      .from(team)
-      .where(and(eq(team.id, targetId), eq(team.warWeekId, warWeekId))),
-    dbOrTx
-      .select({ id: participant.id })
-      .from(participant)
-      .where(
-        and(eq(participant.id, targetId), eq(participant.warWeekId, warWeekId)),
-      ),
-  ]);
-  if (teams.length > 0) return "team";
-  if (participants.length > 0) return "participant";
-  return null;
 }

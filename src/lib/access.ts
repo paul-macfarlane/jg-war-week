@@ -121,7 +121,8 @@ export type WarWeekAction =
   /** Self-enrollment (ADR 0006). */
   | "competition.enroll"
   | "competition.withdraw"
-  | `points-entry.${Crud}`
+  /** Discretionary points: points with no Competition behind them. */
+  | `discretionary.${Crud}`
   | `schedule-item.${Crud}`
   | `announcement.${Crud | "pin" | "unpin"}`;
 
@@ -186,6 +187,9 @@ const ORGANIZER_ONLY: Partial<
   "finale-slide.update": "change Custom Finale slides",
   "finale-slide.delete": "delete Custom Finale slides",
   "finale.awards-layout": "change how the Finale shows Awards",
+  "discretionary.create": "give Discretionary points",
+  "discretionary.edit": "change Discretionary points",
+  "discretionary.delete": "delete Discretionary points",
   "award.create": "give Awards",
   "award.edit": "change Awards",
   "award.delete": "delete Awards",
@@ -309,10 +313,6 @@ export function can(
   switch (action) {
     case "admin.view":
       return hostsIn(actor, warWeekId) ? null : ADMIN_REFUSAL;
-    case "points-entry.create":
-      return hostsPosted ? null : NOT_HOST;
-    case "points-entry.edit":
-      return hostsCurrent && hostsPosted ? null : NOT_HOST;
     case "schedule-item.create":
       if (!postedCompetitionId) {
         return "Link the Schedule Item to a Competition you host.";

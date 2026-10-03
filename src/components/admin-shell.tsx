@@ -66,7 +66,7 @@ export function AdminShell({
     >
       <header className="border-border flex items-center gap-x-4 gap-y-1 border-b px-4 py-3 md:flex-wrap md:px-6">
         <Link
-          href="/admin/points"
+          href="/admin/competitions"
           className="min-w-0 truncate font-bold whitespace-nowrap"
         >
           War Week {warWeek.edition.toUpperCase()} admin

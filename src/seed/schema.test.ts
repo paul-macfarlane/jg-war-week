@@ -328,6 +328,85 @@ describe("warWeekSeedSchema", () => {
     });
   });
 
+  describe("Discretionary points", () => {
+    function withDiscretionary(entry: Record<string, unknown>, rest = {}) {
+      return {
+        ...loadFixture(),
+        ...rest,
+        discretionaryPoints: [
+          {
+            key: "fixture-discretionary",
+            enteredByEmail: "organizer@jahnelgroup.com",
+            enteredAt: "2026-02-23T20:00:00-05:00",
+            points: 6,
+            reason: "Subjective Points",
+            ...entry,
+          },
+        ],
+      };
+    }
+
+    it("accepts an entry to a Team or a Participant with a reason", () => {
+      for (const target of [
+        { team: "Red" },
+        { participant: "Paul Macfarlane" },
+      ]) {
+        expect(
+          warWeekSeedSchema.safeParse(withDiscretionary(target)).success,
+          JSON.stringify(target),
+        ).toBe(true);
+      }
+    });
+
+    it("rejects an entry without a reason", () => {
+      expect(
+        rejectionOf(withDiscretionary({ team: "Red", reason: "  " })).join("|"),
+      ).toContain("discretionaryPoints.0.reason");
+    });
+
+    it("rejects both targets, neither, and an unknown Team or Participant", () => {
+      expect(
+        rejectionOf(
+          withDiscretionary({ team: "Red", participant: "Paul Macfarlane" }),
+        ),
+      ).toContain(
+        "discretionaryPoints.0.team: Discretionary points must target exactly one of team or participant",
+      );
+      expect(rejectionOf(withDiscretionary({}))).toContain(
+        "discretionaryPoints.0.team: Discretionary points must target exactly one of team or participant",
+      );
+      expect(rejectionOf(withDiscretionary({ team: "Nope" }))).toContain(
+        'discretionaryPoints.0.team: unknown Team "Nope"',
+      );
+      expect(
+        rejectionOf(withDiscretionary({ participant: "Nobody" })),
+      ).toContain(
+        'discretionaryPoints.0.participant: unknown Participant "Nobody"',
+      );
+    });
+
+    it("rejects a key that is also a Points Entry key", () => {
+      const seed = withDiscretionary(
+        { team: "Red", key: "clash" },
+        {
+          pointsEntries: [
+            {
+              key: "clash",
+              competition: "Black Midnight",
+              team: "Red",
+              points: 1,
+              enteredByEmail: "organizer@jahnelgroup.com",
+              enteredAt: "2026-02-23T20:00:00-05:00",
+            },
+          ],
+        },
+      );
+      expect(rejectionOf(seed)).toContain(
+        'discretionaryPoints.0.key: Discretionary points key "clash" is already a Points Entry key',
+      );
+    });
+  });
+
   describe("Points Entries", () => {
     function withEntry(entry: Record<string, unknown>) {
       const fixture = loadFixture();

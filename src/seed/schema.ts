@@ -66,6 +66,32 @@ export const pointsEntrySeedSchema = z
 
 export type PointsEntrySeed = z.infer<typeof pointsEntrySeedSchema>;
 
+/**
+ * Discretionary points: a Points Entry with no Competition, to one Team or
+ * one Participant, with a required reason (stored as the entry's note).
+ */
+export const discretionaryPointsSeedSchema = z
+  .object({
+    key: seedKey,
+    /** A Team name from this seed; exactly one of team or participant. */
+    team: z.string().min(1).max(80).nullish(),
+    /** A Participant display name from this seed. */
+    participant: z.string().min(1).max(120).nullish(),
+    points,
+    reason: z.string().trim().min(1).max(500),
+    enteredByEmail: emailSchema,
+    enteredAt: z.iso.datetime({ offset: true }),
+  })
+  .refine((entry) => (entry.team == null) !== (entry.participant == null), {
+    message:
+      "Discretionary points must target exactly one of team or participant",
+    path: ["team"],
+  });
+
+export type DiscretionaryPointsSeed = z.infer<
+  typeof discretionaryPointsSeedSchema
+>;
+
 export const awardSeedSchema = z
   .object({
     key: seedKey,
@@ -126,6 +152,7 @@ export const warWeekSeedSchema = z
     participants: z.array(participantSeedSchema).default([]),
     competitions: z.array(competitionSeedSchema).default([]),
     pointsEntries: z.array(pointsEntrySeedSchema).default([]),
+    discretionaryPoints: z.array(discretionaryPointsSeedSchema).default([]),
     awards: z.array(awardSeedSchema).default([]),
     announcements: z.array(announcementSeedSchema).default([]),
     faqItems: z.array(faqItemSeedSchema).default([]),
@@ -212,6 +239,23 @@ export const warWeekSeedSchema = z
       "key",
       "Points Entry key",
     );
+    unique(
+      "discretionaryPoints",
+      seed.discretionaryPoints,
+      (e) => e.key,
+      "key",
+      "Discretionary points key",
+    );
+    // Both lists seed `points_entry`, whose seed key is unique per War Week.
+    const pointsEntryKeys = new Set(seed.pointsEntries.map((e) => e.key));
+    seed.discretionaryPoints.forEach((e, index) => {
+      if (pointsEntryKeys.has(e.key)) {
+        issue(
+          ["discretionaryPoints", index, "key"],
+          `Discretionary points key "${e.key}" is already a Points Entry key`,
+        );
+      }
+    });
     unique("awards", seed.awards, (a) => a.key, "key", "Award key");
     unique(
       "announcements",
@@ -294,6 +338,19 @@ export const warWeekSeedSchema = z
         }
         const refusal = comp && pointsEntryTargetError(comp, "participant");
         if (refusal) issue([...path, "participant"], refusal);
+      }
+    });
+
+    seed.discretionaryPoints.forEach((entry, index) => {
+      const path = ["discretionaryPoints", index];
+      if (entry.team != null && !teams.has(entry.team)) {
+        issue([...path, "team"], `unknown Team "${entry.team}"`);
+      }
+      if (entry.participant != null && !participants.has(entry.participant)) {
+        issue(
+          [...path, "participant"],
+          `unknown Participant "${entry.participant}"`,
+        );
       }
     });
 

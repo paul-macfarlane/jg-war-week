@@ -37,6 +37,7 @@ import {
   assertHeatsLoop,
   assertSquadSelfReportLoop,
 } from "./brackets";
+import { assertDiscretionaryPoints } from "./discretionary-points";
 import { assertFinale } from "./finale";
 import { assertGamesLoop } from "./games";
 import {
@@ -69,6 +70,7 @@ import {
   assertAboutPage,
   assertCompetitionDetail,
   assertCompetitions,
+  assertDiscretionaryReasonConstraint,
   assertDisplayScriptInHead,
   assertEditionErrorBoundary,
   assertFinaleSlidesKeptIds,
@@ -94,10 +96,6 @@ import {
   xiFinaleSlideIds,
 } from "./pages";
 import { assertParticipationLoop } from "./participation";
-import {
-  assertAdminPointsPage,
-  assertPointsEntryActions,
-} from "./points-entries";
 import {
   assertSetup,
   assertSetupScheduleFaq,
@@ -156,6 +154,7 @@ async function main() {
   await assertSeedLoadedOnce();
   await assertFinaleSlidesKeptIds(finaleSlideIds);
   await assertPointsEntryTargetConstraint();
+  await assertDiscretionaryReasonConstraint();
   await assertPlacementPointsSeeded();
   await assertAwardCategoriesSeeded();
 
@@ -218,8 +217,7 @@ async function main() {
       await assertSignInRequired();
       await assertAdminLink(sessions);
       await assertAdminGuidePage(sessions);
-      await assertAdminPointsPage(sessions);
-      await assertPointsEntryActions(sessions);
+      await assertDiscretionaryPoints(sessions);
       await assertFinale(sessions);
       await assertAnnouncementFeed();
       await assertAnnouncementHomePinned();

@@ -469,22 +469,35 @@ async function insertPointsEntries(
   teamIds: Map<string, string>,
   participantIds: Map<string, string>,
 ) {
-  if (!seed.pointsEntries.length) return;
+  const rows = [
+    ...seed.pointsEntries.map((e) => ({
+      warWeekId,
+      competitionId: resolve(competitionIds, e.competition) as string | null,
+      teamId: resolveOptional(teamIds, e.team),
+      participantId: resolveOptional(participantIds, e.participant),
+      points: e.points,
+      note: e.note ?? null,
+      enteredByEmail: e.enteredByEmail,
+      enteredAt: new Date(e.enteredAt),
+      seedKey: e.key,
+    })),
+    // Discretionary points: no Competition; the reason is the note.
+    ...seed.discretionaryPoints.map((e) => ({
+      warWeekId,
+      competitionId: null,
+      teamId: resolveOptional(teamIds, e.team),
+      participantId: resolveOptional(participantIds, e.participant),
+      points: e.points,
+      note: e.reason,
+      enteredByEmail: e.enteredByEmail,
+      enteredAt: new Date(e.enteredAt),
+      seedKey: e.key,
+    })),
+  ];
+  if (!rows.length) return;
   await tx
     .insert(pointsEntry)
-    .values(
-      seed.pointsEntries.map((e) => ({
-        warWeekId,
-        competitionId: resolve(competitionIds, e.competition),
-        teamId: resolveOptional(teamIds, e.team),
-        participantId: resolveOptional(participantIds, e.participant),
-        points: e.points,
-        note: e.note ?? null,
-        enteredByEmail: e.enteredByEmail,
-        enteredAt: new Date(e.enteredAt),
-        seedKey: e.key,
-      })),
-    )
+    .values(rows)
     .onConflictDoNothing({
       target: [pointsEntry.warWeekId, pointsEntry.seedKey],
     });

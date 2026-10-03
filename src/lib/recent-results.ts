@@ -29,8 +29,11 @@ export type ResultCompetition = Pick<
 
 export type ResultEntry = {
   id: string;
-  competitionId: string;
+  /** Null for Discretionary points, which belong to no Competition. */
+  competitionId: string | null;
   points: number;
+  /** A Discretionary entry's reason; a Competition entry's note. */
+  note?: string | null;
   enteredAt: Date;
   /** Written by finalizing a Bracket or closing a `games` Competition. */
   generatedByBracket: boolean;
@@ -59,6 +62,15 @@ export type RecentResult =
       tookPart: number | null;
     }
   | {
+      /** Discretionary points: one row per entry, with its reason. */
+      kind: "discretionary";
+      key: string;
+      when: Date;
+      target: ResultTarget;
+      points: number;
+      reason: string;
+    }
+  | {
       kind: "points";
       key: string;
       competitionId: string;
@@ -81,6 +93,8 @@ export type RecentResult =
  *   at `finalizedAt`: in team scoring its top Team (as above), in
  *   individual scoring how many took part (one generated entry each).
  * - The generated entries themselves are not rows of their own.
+ * - Each Discretionary entry (no Competition) is a "discretionary" row of
+ *   its own at `enteredAt`, with its reason.
  * - Manual Points Entries of one Competition added "together" collapse into
  *   one "points" row. Together means chained by time: sorted by `enteredAt`,
  *   an entry joins the previous entry's group when it was added within
@@ -121,13 +135,30 @@ export function shapeRecentResults(
     });
   }
 
+  for (const e of entries) {
+    if (e.competitionId !== null || e.generatedByBracket) continue;
+    results.push({
+      kind: "discretionary",
+      key: `discretionary-${e.id}`,
+      when: e.enteredAt,
+      target: e.target,
+      points: e.points,
+      reason: e.note ?? "",
+    });
+  }
+
   const manual = entries
-    .filter((e) => !e.generatedByBracket && byId.has(e.competitionId))
+    .filter(
+      (e) =>
+        !e.generatedByBracket &&
+        e.competitionId !== null &&
+        byId.has(e.competitionId),
+    )
     .sort((a, b) => a.enteredAt.getTime() - b.enteredAt.getTime());
   const groups: ResultEntry[][] = [];
   const open = new Map<string, ResultEntry[]>();
   for (const e of manual) {
-    const group = open.get(e.competitionId);
+    const group = open.get(e.competitionId!);
     const last = group?.[group.length - 1];
     if (
       group &&
@@ -138,12 +169,12 @@ export function shapeRecentResults(
       group.push(e);
     } else {
       const fresh = [e];
-      open.set(e.competitionId, fresh);
+      open.set(e.competitionId!, fresh);
       groups.push(fresh);
     }
   }
   for (const group of groups) {
-    const competition = byId.get(group[0].competitionId);
+    const competition = byId.get(group[0].competitionId!);
     if (!competition) continue;
     const scores: { target: ResultTarget; points: number }[] = [];
     for (const e of group) {

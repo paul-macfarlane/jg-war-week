@@ -63,9 +63,11 @@ export type Standings = {
  * The one place Standings are computed; every page and MCP tool calls this.
  *
  * - Team total: Points Entries targeting the Team, plus entries targeting its
- *   Participants in individual Competitions with Counts Toward Team on.
+ *   Participants in individual Competitions with Counts Toward Team on, plus
+ *   Discretionary points (no Competition) targeting its Participants.
  * - Individual total: Points Entries targeting the Participant in individual
- *   Competitions. Only Participants with at least one such entry are listed.
+ *   Competitions, plus Discretionary points targeting them. Only
+ *   Participants with at least one such entry are listed.
  * - Main leaderboard: team in `teams` mode, individual in `free-for-all`.
  * - Ordered by total descending (then name, then id); tied totals share a
  *   rank.
@@ -93,18 +95,21 @@ export function computeStandings(input: StandingsInput): Standings {
       continue;
     }
 
-    const competition =
-      entry.competitionId === null
-        ? undefined
-        : competitions.get(entry.competitionId);
+    // No Competition: Discretionary points, which count for the
+    // Participant and toward their Team.
+    const discretionary = entry.competitionId === null;
+    const competition = discretionary
+      ? undefined
+      : competitions.get(entry.competitionId!);
     const participant = entry.participantId
       ? participants.get(entry.participantId)
       : undefined;
-    if (!participant || competition?.scoring !== "individual") continue;
+    if (!participant) continue;
+    if (!discretionary && competition?.scoring !== "individual") continue;
 
     add(individualHundredths, participant.id, hundredths);
     if (
-      competition.countsTowardTeam &&
+      (discretionary || competition?.countsTowardTeam) &&
       participant.teamId &&
       teamHundredths.has(participant.teamId)
     ) {

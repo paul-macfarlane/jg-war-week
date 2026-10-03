@@ -51,14 +51,14 @@ export default async function BracketResultsPage({
         email={email}
         isOrganizer={isOrganizer}
         editions={editions}
-        current="Points"
+        current="Competitions"
       >
         <section className="flex max-w-xl min-w-0 flex-col gap-4">
           <Link
-            href="/admin/points"
+            href="/admin/competitions"
             className="text-primary text-sm underline-offset-4 hover:underline"
           >
-            ← Points Entries
+            ← Competitions
           </Link>
           <h1 className="text-2xl font-bold">{other.name}</h1>
           <p className="text-foreground/70 text-sm">
@@ -86,15 +86,15 @@ export default async function BracketResultsPage({
       email={email}
       isOrganizer={isOrganizer}
       editions={editions}
-      current="Points"
+      current="Competitions"
     >
       <section className="flex max-w-xl min-w-0 flex-col gap-4">
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
           <Link
-            href="/admin/points"
+            href="/admin/competitions"
             className="text-primary underline-offset-4 hover:underline"
           >
-            ← Points Entries
+            ← Competitions
           </Link>
           <Link
             href={`/admin/competitions/${competition.id}/bracket`}

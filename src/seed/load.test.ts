@@ -647,4 +647,61 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Finale slides", () => {
       expect(await layout(other.id)).toBe("one-slide");
     });
   });
+
+  it("loads Discretionary points once, however many times the seed loads, and never overwrites an edit", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { loadWarWeekSeed } = await import("@/seed/load");
+      const schema = await import("@/db/schema");
+      const { eq } = await import("drizzle-orm");
+      await clearLive(tx);
+      const seeded = await seed("sh", 26, "upcoming", {
+        teams: [{ name: "Red", color: "#ff0000" }],
+        discretionaryPoints: [
+          {
+            key: "sh-subjective-red",
+            team: "Red",
+            points: 6,
+            reason: "Subjective Points",
+            enteredByEmail: "organizer@jahnelgroup.com",
+            enteredAt: "2099-01-02T00:00:00Z",
+          },
+        ],
+      });
+      const first = await loadWarWeekSeed(seeded, tx);
+      await loadWarWeekSeed(seeded, tx);
+
+      const rows = () =>
+        tx
+          .select({
+            competitionId: schema.pointsEntry.competitionId,
+            teamId: schema.pointsEntry.teamId,
+            points: schema.pointsEntry.points,
+            note: schema.pointsEntry.note,
+            seedKey: schema.pointsEntry.seedKey,
+            enteredBy: schema.pointsEntry.enteredByEmail,
+          })
+          .from(schema.pointsEntry)
+          .where(eq(schema.pointsEntry.warWeekId, first.id));
+      expect(await rows()).toEqual([
+        {
+          competitionId: null,
+          teamId: expect.any(String),
+          points: 6,
+          note: "Subjective Points",
+          seedKey: "sh-subjective-red",
+          enteredBy: "organizer@jahnelgroup.com",
+        },
+      ]);
+
+      // An Organizer's edit survives a reload.
+      await tx
+        .update(schema.pointsEntry)
+        .set({ points: 7, note: "Edited reason" })
+        .where(eq(schema.pointsEntry.warWeekId, first.id));
+      await loadWarWeekSeed(seeded, tx);
+      expect(await rows()).toMatchObject([
+        { points: 7, note: "Edited reason" },
+      ]);
+    });
+  });
 });

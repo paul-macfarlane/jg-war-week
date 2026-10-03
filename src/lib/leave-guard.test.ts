@@ -20,8 +20,8 @@ function click(href: string, overrides: Partial<LinkClick> = {}): LinkClick {
 describe("leavingHref", () => {
   it("returns the in-app path a plain click on a same-origin link opens", () => {
     expect(
-      leavingHref(click("https://warweek.example/admin/points?x=1#a"), HERE),
-    ).toBe("/admin/points?x=1#a");
+      leavingHref(click("https://warweek.example/admin/schedule?x=1#a"), HERE),
+    ).toBe("/admin/schedule?x=1#a");
   });
 
   it("ignores a link to another site", () => {
@@ -29,7 +29,7 @@ describe("leavingHref", () => {
   });
 
   it("ignores clicks that open somewhere else or aren't navigation", () => {
-    const away = "https://warweek.example/admin/points";
+    const away = "https://warweek.example/admin/schedule";
     expect(leavingHref(click(away, { modified: true }), HERE)).toBeNull();
     expect(leavingHref(click(away, { button: 1 }), HERE)).toBeNull();
     expect(leavingHref(click(away, { target: "_blank" }), HERE)).toBeNull();

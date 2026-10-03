@@ -55,20 +55,21 @@ test("r5 30 admin header and section bar on a phone", async ({
     await asOrganizer(context);
     await page.setViewportSize(PHONE);
 
-    // 30-1: a one-row header, at most 56px. /admin opens Points (r9 57).
-    await page.goto("/admin/points");
-    await expect(page).toHaveURL(/\/admin\/points$/);
+    // 30-1: a one-row header, at most 56px. /admin opens Competitions (r16 91).
+    await page.goto("/admin/competitions");
+    await expect(page).toHaveURL(/\/admin\/competitions$/);
     expect((await box(page, "header")).height).toBeLessThanOrEqual(56);
     await expect(adminBar(page)).toHaveCount(1);
-    await shoot(page, testInfo, "organizer-points-375");
+    await shoot(page, testInfo, "organizer-competitions-375");
 
     // 30-2: the bar is fixed to the viewport's bottom, Schedule current on
-    // Schedule; its tabs are Points, Competitions, Schedule, Announcements.
+    // Schedule; its tabs are Competitions, Discretionary points, Schedule,
+    // Announcements.
     await page.goto("/admin/schedule");
     const bar = adminBar(page);
     await expect(bar.getByRole("link")).toHaveText([
-      "Points",
       "Competitions",
+      "Discretionary points",
       "Schedule",
       "Announcements",
     ]);
@@ -144,7 +145,7 @@ test("r5 30 admin header and section bar on a phone", async ({
     await context.addCookies([
       { name: "admin_edition", value: "xii", url: E2E_BASE_URL },
     ]);
-    await page.goto("/admin/points");
+    await page.goto("/admin/competitions");
     const banner = page.getByRole("status").filter({ hasText: "Editing" });
     await expect(banner).toBeVisible();
     const bannerBox = (await banner.boundingBox())!;
@@ -156,13 +157,13 @@ test("r5 30 admin header and section bar on a phone", async ({
     // 30-7: from `md` the header and side column are as before.
     await page.setViewportSize(DESKTOP);
     for (const [url, name] of [
-      ["/admin/points", "points"],
+      ["/admin/competitions", "competitions"],
       ["/admin/schedule", "schedule"],
     ] as const) {
       await page.goto(url);
       await expect(adminBar(page)).toHaveCount(1);
       await expect(
-        adminBar(page).getByRole("link", { name: "Points", exact: true }),
+        adminBar(page).getByRole("link", { name: "Competitions", exact: true }),
       ).toBeVisible();
       await shoot(page, testInfo, `after-1280-${name}`, true);
     }
@@ -176,9 +177,9 @@ test("r5 30 admin header and section bar on a phone", async ({
     await context.clearCookies();
     await asHost(context);
     await page.setViewportSize(PHONE);
-    await page.goto("/admin/points");
+    await page.goto("/admin/competitions");
+    // A Host has no Discretionary points (Organizers only).
     await expect(bar.getByRole("link")).toHaveText([
-      "Points",
       "Competitions",
       "Schedule",
       "Announcements",
@@ -256,16 +257,18 @@ test("r5 34 admin controls are 44px on a phone", async ({
     // 34-1, 34-3: at 375 one of each control measures at least 44x44.
     await page.setViewportSize(PHONE);
 
-    await page.goto("/admin/points");
-    await expectTouchTarget(
-      page.getByRole("button", { name: /^Delete/ }),
-      "points Delete",
-    );
+    await page.goto("/admin/discretionary-points");
+    const give = page.getByRole("button", {
+      name: "Give Discretionary points",
+    });
+    await expectTouchTarget(give, "Give Discretionary points");
+    await give.click();
     await expectAfterTouchTarget(
       page.locator("[data-slot=input-group-button]"),
       "combobox trigger",
     );
-    await shoot(page, testInfo, "points-375");
+    await shoot(page, testInfo, "discretionary-points-375");
+    await page.keyboard.press("Escape");
 
     await page.goto("/admin/announcements");
     await expectTouchTarget(
@@ -399,14 +402,14 @@ test("r5 35 selects and the color picker on a phone", async ({
       ),
     )
     .toBe(36);
-  await page.goto("/admin/points");
+  await page.goto("/admin/competitions");
   const switcher = page.getByRole("combobox", {
     name: "War Week to administer",
   });
   expect((await rect(switcher, "switcher")).height).toBeCloseTo(36, 0);
 
   await page.setViewportSize(PHONE);
-  await page.goto("/admin/points");
+  await page.goto("/admin/competitions");
   // On a phone the switcher lives in the More sheet.
   await adminBar(page).getByRole("button", { name: "More" }).click();
   const sheetSwitcher = page
@@ -667,7 +670,7 @@ test("r5 31 setup rows open in a Sheet", async ({
 
 /** Switches the admin header's War Week (at 1280, where it shows). */
 async function administer(page: Page, edition: "XI" | "XII") {
-  await page.goto("/admin/points");
+  await page.goto("/admin/competitions");
   await page.getByRole("combobox", { name: "War Week to administer" }).click();
   await page
     .getByRole("option", { name: new RegExp(`War Week ${edition} `) })
@@ -688,12 +691,9 @@ test("r5 32 admin lists fit a phone; free-for-all drops Team", async ({
   );
   const teamId = await xiTeamId("Red");
   const participantId = await xiParticipantId("Abby Rivera");
-  const poolId = await xiCompetitionId("Pool");
   const awardIds: string[] = [];
-  const entryIds: string[] = [];
-  // Points keeps its cards and table; Announcements and Awards are list
-  // rows with Edit and Delete (r9 58).
-  const pages = ["points", "announcements", "awards"];
+  // Announcements and Awards are list rows with Edit and Delete (r9 58).
+  const pages = ["announcements", "awards"];
   const rowLists: Record<string, string> = {
     announcements: "Announcements",
     awards: "Awards",
@@ -718,22 +718,9 @@ test("r5 32 admin lists fit a phone; free-for-all drops Team", async ({
       [ffaAwardName],
     );
     awardIds.push(ffaAward.id);
-    // A Bracket-generated entry, so the ledger shows "Change in the Bracket"
-    // (the seed finalizes no Bracket).
-    const [entry] = await runQuery<{ id: string }>(
-      `insert into points_entry
-         (war_week_id, competition_id, team_id, points, note, entered_by_email,
-          generated_by_bracket)
-       select war_week_id, id, $2, 1, 'R5 32 generated',
-         'e2e-r5@jahnelgroup.com', true
-       from competition where id = $1
-       returning id`,
-      [poolId, teamId],
-    );
-    entryIds.push(entry.id);
     await asOrganizer(context);
 
-    // 32-2, 32-6: at 1280 Points' table renders as today; the others' rows.
+    // 32-2, 32-6: at 1280 the lists' rows render as today.
     await page.setViewportSize(DESKTOP);
     for (const name of pages) {
       await page.goto(`/admin/${name}`);
@@ -794,13 +781,6 @@ test("r5 32 admin lists fit a phone; free-for-all drops Team", async ({
       for (let i = 0; i < (await edits.count()); i++) {
         await expectTouchTarget(edits.nth(i), `${name} Edit`);
       }
-      if (name === "points") {
-        // 34: the generated entry's text link is a 44px target too.
-        await expectTouchTarget(
-          list.getByRole("link", { name: "Change in the Bracket" }),
-          "Change in the Bracket",
-        );
-      }
       await shoot(page, testInfo, `${name}-375`, true);
     }
     const award = page
@@ -816,11 +796,18 @@ test("r5 32 admin lists fit a phone; free-for-all drops Team", async ({
     await shoot(page, testInfo, "award-form-xi-375");
     await page.keyboard.press("Escape");
 
-    // 32-5: the Points Entry target reads the Team Label on XI.
-    await page.goto("/admin/points");
+    // 32-5: the Discretionary points target reads the Team Label on XI.
+    await page.goto("/admin/discretionary-points");
+    await page
+      .getByRole("button", { name: "Give Discretionary points" })
+      .click();
     await expect(
-      page.getByRole("combobox", { name: teamLabel, exact: true }),
+      page.getByRole("combobox", {
+        name: `${teamLabel} or Participant`,
+        exact: true,
+      }),
     ).toBeVisible();
+    await page.keyboard.press("Escape");
 
     // 32-4, 32-5: XII is free-for-all with no Team on any Award.
     await page.setViewportSize(DESKTOP);
@@ -848,19 +835,21 @@ test("r5 32 admin lists fit a phone; free-for-all drops Team", async ({
     await expect(ffaSheet.getByText(teamLabel, { exact: true })).toHaveCount(0);
     await shoot(page, testInfo, "award-form-xii-375");
     await page.keyboard.press("Escape");
-    await page.goto("/admin/points");
+    await page.goto("/admin/discretionary-points");
+    await page
+      .getByRole("button", { name: "Give Discretionary points" })
+      .click();
     await expect(
       page.getByRole("combobox", { name: "Participant", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("combobox", { name: teamLabel, exact: true }),
+      page.getByRole("combobox", { name: new RegExp(teamLabel) }),
     ).toHaveCount(0);
-    await shoot(page, testInfo, "points-xii-375", true);
+    await shoot(page, testInfo, "discretionary-points-xii-375", true);
   } finally {
     await page.setViewportSize(DESKTOP);
     await administer(page, "XI").catch(() => {});
     await runQuery(`delete from award where id = any($1)`, [awardIds]);
-    await runQuery(`delete from points_entry where id = any($1)`, [entryIds]);
   }
 });
 
@@ -990,7 +979,11 @@ test("r5 38 Escape keeps chosen Entrants; Tree shows a Heat's place; Format help
 });
 
 const EPIC_PAGES = [
-  { path: "/admin/points", slug: "points", hostSees: true },
+  {
+    path: "/admin/discretionary-points",
+    slug: "discretionary-points",
+    hostSees: false,
+  },
   { path: "/admin/schedule", slug: "schedule", hostSees: true },
   { path: "/admin/roster", slug: "teams", hostSees: false },
   { path: "/admin/competitions", slug: "competitions", hostSees: true },

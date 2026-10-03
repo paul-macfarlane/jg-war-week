@@ -93,8 +93,8 @@ export async function xiCompetitionEntries(
     `select coalesce(p.display_name, t.name) as target,
        pe.points::float as points, pe.generated_by_bracket as generated
      from points_entry pe
-     join competition c on c.id = pe.competition_id
      join war_week w on w.id = pe.war_week_id and w.edition = 'xi'
+     left join competition c on c.id = pe.competition_id
      left join participant p on p.id = pe.participant_id
      left join team t on t.id = pe.team_id
      where c.name = $1
@@ -181,7 +181,10 @@ export async function withParticipantEmail<T>(
  * (`src/lib/points-breakdown.ts`), reimplemented directly in SQL so it's an
  * independent check of what the UI shows: entries targeting the Team
  * directly, plus entries targeting its Participants in individual
- * Competitions with Counts Toward Team on. Newest first.
+ * Competitions with Counts Toward Team on, plus Discretionary points (no
+ * Competition, labelled "Discretionary: <reason>") targeting its
+ * Participants. Scoped by `war_week_id`, so a Discretionary entry counts.
+ * Newest first.
  */
 export async function xiTeamPointsBreakdown(
   teamName: string,
@@ -189,17 +192,20 @@ export async function xiTeamPointsBreakdown(
   const teamId = await xiTeamId(teamName);
   return runQuery<{ competition: string; points: number; when: Date }>(
     `select competition, points, "when" from (
-       select c.name as competition, pe.points::float as points,
+       select coalesce(c.name, 'Discretionary: ' || pe.note) as competition,
+         pe.points::float as points,
          pe.entered_at as "when", pe.id::text collate "C" as id
-       from points_entry pe join competition c on c.id = pe.competition_id
+       from points_entry pe left join competition c on c.id = pe.competition_id
        where pe.team_id = $1
        union all
-       select c.name as competition, pe.points::float as points,
+       select coalesce(c.name, 'Discretionary: ' || pe.note) as competition,
+         pe.points::float as points,
          pe.entered_at as "when", pe.id::text collate "C" as id
        from points_entry pe
-       join competition c on c.id = pe.competition_id
+       left join competition c on c.id = pe.competition_id
        join participant p on p.id = pe.participant_id
-       where c.counts_toward_team and p.team_id = $1
+       where (pe.competition_id is null or c.counts_toward_team)
+         and p.team_id = $1
      ) rows
      order by "when" desc, id asc`,
     [teamId],
@@ -209,16 +215,19 @@ export async function xiTeamPointsBreakdown(
 /**
  * A Participant's Points Entries as the Points breakdown rule computes
  * them: entries targeting the Participant directly in individual
- * Competitions. Newest first. Independent SQL, not the app's function.
+ * Competitions, plus Discretionary points. Newest first. Independent SQL,
+ * not the app's function.
  */
 export async function xiParticipantPointsBreakdown(
   displayName: string,
 ): Promise<{ competition: string; points: number; when: Date }[]> {
   const participantId = await xiParticipantId(displayName);
   return runQuery<{ competition: string; points: number; when: Date }>(
-    `select c.name as competition, pe.points::float as points, pe.entered_at as "when"
-     from points_entry pe join competition c on c.id = pe.competition_id
-     where pe.participant_id = $1 and c.scoring = 'individual'
+    `select coalesce(c.name, 'Discretionary: ' || pe.note) as competition,
+       pe.points::float as points, pe.entered_at as "when"
+     from points_entry pe left join competition c on c.id = pe.competition_id
+     where pe.participant_id = $1
+       and (pe.competition_id is null or c.scoring = 'individual')
      order by pe.entered_at desc, pe.id::text collate "C" asc`,
     [participantId],
   );

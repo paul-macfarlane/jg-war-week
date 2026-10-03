@@ -61,7 +61,7 @@ export async function getRecentResults(
     entries()
       .where(
         and(
-          eq(competition.warWeekId, warWeek.id),
+          eq(pointsEntry.warWeekId, warWeek.id),
           eq(pointsEntry.generatedByBracket, false),
         ),
       )
@@ -82,8 +82,8 @@ export async function getRecentResults(
 }
 
 /**
- * Points Entries with who each is for, as Recent results and the Finale's
- * Champions read them: a query to add `where`, `orderBy` and `limit` to.
+ * Points Entries (Discretionary ones included: no Competition) with who each
+ * is for, as Recent results and the Finale's Champions read them: a query to add `where`, `orderBy` and `limit` to.
  */
 export function resultEntryQuery(dbOrTx: DBOrTx) {
   const participantTeam = aliasedTable(team, "participant_team");
@@ -93,6 +93,7 @@ export function resultEntryQuery(dbOrTx: DBOrTx) {
         id: pointsEntry.id,
         competitionId: pointsEntry.competitionId,
         points: pointsEntry.points,
+        note: pointsEntry.note,
         enteredAt: pointsEntry.enteredAt,
         generatedByBracket: pointsEntry.generatedByBracket,
         teamId: pointsEntry.teamId,
@@ -104,7 +105,6 @@ export function resultEntryQuery(dbOrTx: DBOrTx) {
         participantTeamColor: participantTeam.color,
       })
       .from(pointsEntry)
-      .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
       .leftJoin(team, eq(team.id, pointsEntry.teamId))
       .leftJoin(participant, eq(participant.id, pointsEntry.participantId))
       .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))
@@ -118,9 +118,9 @@ export function toResultEntry(
 ): ResultEntry {
   return {
     id: r.id,
-    // The inner join to the Competition leaves no Discretionary entry here.
-    competitionId: r.competitionId!,
+    competitionId: r.competitionId,
     points: r.points,
+    note: r.note,
     enteredAt: r.enteredAt,
     generatedByBracket: r.generatedByBracket,
     target: r.teamId
