@@ -12,6 +12,7 @@ import { CompetitionFacts, PointsEntryList } from "@/components/competitions";
 import { EnrollButton } from "@/components/enroll-button";
 import { GamesView } from "@/components/games-view";
 import { ParticipationView } from "@/components/participation-view";
+import { PlacementView } from "@/components/placement-view";
 import { Toaster } from "@/components/ui/sonner";
 import { can } from "@/lib/access";
 import { entrantForYou, nextHeatFor } from "@/lib/bracket/view";
@@ -26,6 +27,7 @@ import {
 import { getGamesView } from "@/queries/games";
 import { getHeatReportFacts } from "@/queries/heat-reports";
 import { getParticipationView } from "@/queries/participation";
+import { getPlacementsView } from "@/queries/placements";
 import { getYouCandidates } from "@/queries/roster";
 import { getSetupDays } from "@/queries/setup";
 
@@ -120,21 +122,26 @@ export default async function CompetitionPage({
     : SELF_REPORT_OFF;
   const isGames = isGameFormat(competition.format);
   const isParticipation = competition.format === "participation";
+  const isPlacement = competition.format === "placement";
   // The viewer's email stays on the server: the page gets names, ids and
   // booleans computed from it (R3 decision 17).
   const email = (await getActor())?.email ?? null;
-  const [games, enrollOffer, participation, checkInOffer] = await Promise.all([
-    isGames ? getGamesView(competition.id, email) : Promise.resolve(null),
-    isBracket || isGames
-      ? enrollOfferFor(competition, email)
-      : Promise.resolve(null),
-    isParticipation
-      ? getParticipationView(competition.id)
-      : Promise.resolve(undefined),
-    isParticipation
-      ? checkInOfferFor(competition.id, email)
-      : Promise.resolve(null),
-  ]);
+  const [games, enrollOffer, participation, checkInOffer, placements] =
+    await Promise.all([
+      isGames ? getGamesView(competition.id, email) : Promise.resolve(null),
+      isBracket || isGames
+        ? enrollOfferFor(competition, email)
+        : Promise.resolve(null),
+      isParticipation
+        ? getParticipationView(competition.id)
+        : Promise.resolve(undefined),
+      isParticipation
+        ? checkInOfferFor(competition.id, email)
+        : Promise.resolve(null),
+      isPlacement
+        ? getPlacementsView(competition.id)
+        : Promise.resolve(undefined),
+    ]);
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-6 px-4 py-6 md:max-w-3xl">
@@ -187,6 +194,9 @@ export default async function CompetitionPage({
           primaryColor={warWeek.primaryColor}
           now={new Date()}
         />
+      ) : null}
+      {placements ? (
+        <PlacementView view={placements} primaryColor={warWeek.primaryColor} />
       ) : null}
       {isBracket ? (
         <BracketView

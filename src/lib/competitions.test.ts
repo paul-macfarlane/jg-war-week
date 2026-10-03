@@ -241,14 +241,14 @@ describe("setupHref and setupLinkLabel", () => {
       "/admin/competitions/c1/participation",
     );
     expect(setupHref("heats", "c1")).toBe("/admin/competitions/c1/bracket");
-    expect(setupHref("placement", "c1")).toBe("/admin/competitions/c1/bracket");
+    expect(setupHref("placement", "c1")).toBe("/admin/placements/c1");
   });
 
   it("label the link by Format", () => {
     expect(setupLinkLabel("participation")).toBe("Who took part");
     expect(setupLinkLabel("head-to-head")).toBe("Entrants and Games");
     expect(setupLinkLabel("best-score")).toBe("Entrants and Games");
-    expect(setupLinkLabel("placement")).toBe("Run as a Bracket");
+    expect(setupLinkLabel("placement")).toBe("Record placements");
     expect(setupLinkLabel("heats")).toBe("Bracket");
   });
 });
