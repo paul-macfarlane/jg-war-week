@@ -140,4 +140,4 @@ The fixes are in `a1b7ba3`, and the stills were regenerated again in `26181c3`.
 - **Remaining risks:**
   - `/admin` error and root 404 pages are unthemed (outside 78).
   - `src/mutations/account.test.ts` fails if stray `e2e-*` users remain in the local database. Ad-hoc browser runs that skip the e2e teardown leave them.
-- **PR:** see below.
+- **PR:** https://github.com/paul-macfarlane/jg-war-week/pull/122 into `staging`.
