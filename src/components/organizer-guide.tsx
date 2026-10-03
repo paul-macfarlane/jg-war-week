@@ -149,10 +149,14 @@ export function OrganizerGuide({
         <p className="text-foreground/70">
           A Participant&apos;s email is optional. When a signed-in
           @jahnelgroup.com email matches a roster Participant&apos;s email, that
-          Participant and their {teamLower} are highlighted as &quot;You&quot;
-          wherever they appear, and they can log Games, report Heats and check
-          in. A Participant without an email is never linked. It isn&apos;t used
-          for sign-in and grants nothing beyond those Participant writes.
+          Participant&apos;s own rows are tagged &quot;You&quot; on the roster,
+          the individual leaderboards, Award recipients and Participation lists;
+          their Entrant in a Bracket is marked &quot;You&quot;; and a games
+          Competition&apos;s leaderboard marks their enrolled {teamLower}{" "}
+          &quot;Your Team&quot;. {teamLabel} standings rows are not highlighted.
+          They can log Games, report Heats and check in. A Participant without
+          an email is never linked. It isn&apos;t used for sign-in and grants
+          nothing beyond those Participant writes.
         </p>
       </section>
 
