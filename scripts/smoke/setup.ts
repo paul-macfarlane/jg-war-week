@@ -455,7 +455,6 @@ export async function assertSetupTeamsAndCompetitions(sessions: {
               name: smokeCompetition,
               description: "",
               scoring: "team",
-              maxPoints: "10",
               placementPoints: "9, 4",
               countsTowardTeam: false,
               group: "",

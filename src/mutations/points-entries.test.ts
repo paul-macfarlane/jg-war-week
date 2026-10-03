@@ -53,7 +53,6 @@ async function fixture(tx: DBTx) {
           warWeekId: row.id,
           name: "Tug of War",
           scoring: "team",
-          maxPoints: 3,
         },
         { warWeekId: row.id, name: "Speed Chess", scoring: "individual" },
       ])

@@ -89,8 +89,7 @@ async function fixture(tx: DBTx) {
         name: "Pong",
         scoring: "individual" as const,
         countsTowardTeam: true,
-        format: "games" as const,
-        gameType: "head-to-head" as const,
+        format: "head-to-head" as const,
         gameConfig: { drawsAllowed: false, bestOf: null },
         entrantsOpen: true,
         placementPoints: [10, 6, 3],
@@ -99,8 +98,7 @@ async function fixture(tx: DBTx) {
         warWeekId,
         name: "Duel",
         scoring: "individual" as const,
-        format: "games" as const,
-        gameType: "head-to-head" as const,
+        format: "head-to-head" as const,
         gameConfig: { drawsAllowed: false, bestOf: 3 as const },
         entrantsOpen: false,
         placementPoints: [10, 6],
@@ -110,8 +108,7 @@ async function fixture(tx: DBTx) {
         name: "Bowl",
         scoring: "individual" as const,
         countsTowardTeam: true,
-        format: "games" as const,
-        gameType: "best-score" as const,
+        format: "best-score" as const,
         gameConfig: { count: "best", betterIs: "higher", unit: "pins" },
         entrantsOpen: true,
         placementPoints: [10, 6, 3],
@@ -120,7 +117,7 @@ async function fixture(tx: DBTx) {
         warWeekId,
         name: "Trivia",
         scoring: "team" as const,
-        format: "points" as const,
+        format: "placement" as const,
       },
     ])
     .returning({ id: schema.competition.id });
@@ -714,6 +711,7 @@ describe.skipIf(!isLocalDatabase)("closeGames and reopenGames", () => {
       }
       // A hand-entered Points Entry on the same Competition.
       await tx.insert(f.schema.pointsEntry).values({
+        warWeekId: f.warWeekId,
         competitionId: f.ids.bowl,
         participantId: f.ids.cypher,
         points: 5,
@@ -949,14 +947,17 @@ describe.skipIf(!isLocalDatabase)("setGamesSettings", () => {
       expect(
         await setGamesSettings(
           f.ids.pong,
-          { ...settings, gameConfig: { finishPoints: [] } },
+          {
+            ...settings,
+            gameConfig: { count: "best", betterIs: "higher", unit: "" },
+          },
           f.ctx(HOST),
           tx,
         ),
       ).toEqual({
         ok: false,
         error:
-          "A Games Competition keeps its Game Type; add a new Competition to play another.",
+          "A Games Competition keeps its Format; add a new Competition to play another.",
       });
       await f.setCompetition(f.ids.pong, { finalizedAt: new Date() });
       expect(
@@ -1128,7 +1129,7 @@ describe.skipIf(!isLocalDatabase)("getGameLogFacts", () => {
         f.ids.pong,
         null,
         MORPHEUS,
-        { playerIds: (gameType) => postedGamePlayerIds(gameType, posted) },
+        { playerIds: (gameFormat) => postedGamePlayerIds(gameFormat, posted) },
         tx,
       );
       expect(facts.gameLog.players).toEqual([

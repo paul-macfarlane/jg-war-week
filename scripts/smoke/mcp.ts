@@ -409,7 +409,7 @@ export async function assertMcp() {
     if (
       games.parsed?.found === true &&
       games.parsed.competition?.name === "Bouncy Pong" &&
-      games.parsed.competition?.gameType === "head-to-head" &&
+      games.parsed.competition?.gameFormat === "head-to-head" &&
       Array.isArray(games.parsed.leaderboard) &&
       Array.isArray(games.parsed.games) &&
       !JSON.stringify(games.parsed).includes("@")

@@ -4,7 +4,6 @@ import {
   type LedgerRow,
   buildCompetitionLedger,
   describeScoring,
-  formatMaxPoints,
   groupCompetitions,
   hasPlacementPoints,
   hostName,
@@ -78,17 +77,6 @@ describe("describeScoring", () => {
     ],
   ] as const)("describes %o as %s", (c, expected) => {
     expect(describeScoring(c, "House")).toBe(expected);
-  });
-});
-
-describe("formatMaxPoints", () => {
-  it.each([
-    [3, "Max 3 pts"],
-    [1, "Max 1 pt"],
-    [1.5, "Max 1.5 pts"],
-    [null, "No max"],
-  ])("formats %s as %s", (maxPoints, expected) => {
-    expect(formatMaxPoints(maxPoints)).toBe(expected);
   });
 });
 
@@ -243,18 +231,22 @@ describe("hostName", () => {
 
 describe("setupHref and setupLinkLabel", () => {
   it("point each Format at its own setup page", () => {
-    expect(setupHref("games", "c1")).toBe("/admin/competitions/c1/games");
+    expect(setupHref("head-to-head", "c1")).toBe(
+      "/admin/competitions/c1/games",
+    );
+    expect(setupHref("best-score", "c1")).toBe("/admin/competitions/c1/games");
     expect(setupHref("participation", "c1")).toBe(
       "/admin/competitions/c1/participation",
     );
     expect(setupHref("heats", "c1")).toBe("/admin/competitions/c1/bracket");
-    expect(setupHref("points", "c1")).toBe("/admin/competitions/c1/bracket");
+    expect(setupHref("placement", "c1")).toBe("/admin/competitions/c1/bracket");
   });
 
   it("label the link by Format", () => {
     expect(setupLinkLabel("participation")).toBe("Who took part");
-    expect(setupLinkLabel("games")).toBe("Games");
-    expect(setupLinkLabel("points")).toBe("Run as a Bracket");
+    expect(setupLinkLabel("head-to-head")).toBe("Games");
+    expect(setupLinkLabel("best-score")).toBe("Games");
+    expect(setupLinkLabel("placement")).toBe("Run as a Bracket");
     expect(setupLinkLabel("heats")).toBe("Bracket");
   });
 });

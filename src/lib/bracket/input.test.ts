@@ -24,7 +24,7 @@ describe("Bracket action input", () => {
   });
 
   it("never offers games: a Competition is games from creation only", () => {
-    expect(parseFormatInput({ format: "games" })).toEqual({
+    expect(parseFormatInput({ format: "head-to-head" })).toEqual({
       ok: false,
       error: "Choose a Format.",
     });

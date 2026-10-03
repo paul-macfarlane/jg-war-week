@@ -36,9 +36,11 @@ test("r9 56 Home shows Recent results newest first, one row per Competition's en
   const add = (name: string, teamId: string, points: number, minutes: number) =>
     runQuery(
       `insert into points_entry
-         (competition_id, team_id, points, entered_by_email, entered_at)
-       values ($1, $2, $3, 'e2e-organizer@jahnelgroup.com',
-         now() + make_interval(mins => $4))`,
+         (war_week_id, competition_id, team_id, points, entered_by_email,
+          entered_at)
+       select war_week_id, id, $2, $3, 'e2e-organizer@jahnelgroup.com',
+         now() + make_interval(mins => $4)
+       from competition where id = $1`,
       [ids[name], teamId, points, minutes],
     );
   // Trivia: two entries added together; Darts: one, later.

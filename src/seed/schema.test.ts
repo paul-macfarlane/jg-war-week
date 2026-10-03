@@ -115,9 +115,9 @@ describe("warWeekSeedSchema", () => {
     }
     const at = `competitions.${loadFixture().competitions.length}.placementPoints`;
 
-    it("accepts a non-increasing list within maxPoints", () => {
+    it("accepts a non-increasing list", () => {
       const result = warWeekSeedSchema.safeParse(
-        withCompetition({ maxPoints: 5, placementPoints: [5, 3, 3, 0.5] }),
+        withCompetition({ placementPoints: [5, 3, 3, 0.5] }),
       );
       expect(result.success ? [] : result.error.issues).toEqual([]);
     });
@@ -136,12 +136,14 @@ describe("warWeekSeedSchema", () => {
       ).toContain(`${at}.2: must be at least 0`);
     });
 
-    it("rejects a first place over maxPoints", () => {
+    it("rejects a key that is no longer a setting, so an old seed fails loudly", () => {
       expect(
         rejectionOf(
-          withCompetition({ maxPoints: 3, placementPoints: [5, 3, 1] }),
+          withCompetition({ retiredSetting: 3, placementPoints: [5, 3, 1] }),
         ),
-      ).toContain(`${at}: 1st place can't be worth more than maxPoints`);
+      ).toContain(
+        `competitions.${loadFixture().competitions.length}: Unrecognized key: "retiredSetting"`,
+      );
     });
 
     it("rejects more than five places", () => {
@@ -220,15 +222,16 @@ describe("warWeekSeedSchema", () => {
     }
     const at = `competitions.${loadFixture().competitions.length}`;
 
-    it("accepts a participation Competition with or without its settings", () => {
+    it("accepts a team one with Placement Points, or an individual one with N", () => {
       for (const extra of [
         {
-          participationPoints: 2,
-          participationTeamScoring: "per-person",
+          scoring: "team",
+          placementPoints: [5, 3, 1],
           selfCheckIn: true,
           checkInClosesAt: "2026-02-27T22:00:00Z",
         },
-        {},
+        { scoring: "individual", participationPoints: 2 },
+        { scoring: "individual" },
       ]) {
         const result = warWeekSeedSchema.safeParse(
           withCompetition({ format: "participation", ...extra }),
@@ -240,16 +243,14 @@ describe("warWeekSeedSchema", () => {
     it("rejects the settings on another Format", () => {
       const issues = rejectionOf(
         withCompetition({
-          format: "points",
+          format: "placement",
           participationPoints: 1,
-          participationTeamScoring: "ranked",
           selfCheckIn: true,
           checkInClosesAt: "2026-02-27T22:00:00Z",
         }),
       );
       for (const key of [
         "participationPoints",
-        "participationTeamScoring",
         "selfCheckIn",
         "checkInClosesAt",
       ]) {
@@ -259,21 +260,53 @@ describe("warWeekSeedSchema", () => {
       }
     });
 
-    it("rejects a team scoring on an individual Competition, and N of 0", () => {
+    it("follows the scoring: a team one needs Placement Points and takes no N, an individual one takes no Placement Points", () => {
+      expect(
+        rejectionOf(withCompetition({ format: "participation" })),
+      ).toContain(
+        `${at}.placementPoints: placementPoints is required for a team participation Competition`,
+      );
+      expect(
+        rejectionOf(
+          withCompetition({
+            format: "participation",
+            placementPoints: [3],
+            participationPoints: 1,
+          }),
+        ),
+      ).toContain(
+        `${at}.participationPoints: participationPoints is only for an individual Competition`,
+      );
       expect(
         rejectionOf(
           withCompetition({
             format: "participation",
             scoring: "individual",
-            participationTeamScoring: "ranked",
+            placementPoints: [3],
           }),
         ),
       ).toContain(
-        `${at}.participationTeamScoring: participationTeamScoring is only for a team Competition`,
+        `${at}.placementPoints: placementPoints is only for a team participation Competition`,
       );
+    });
+
+    it("rejects the removed participationTeamScoring key, and N of 0", () => {
       expect(
         rejectionOf(
-          withCompetition({ format: "participation", participationPoints: 0 }),
+          withCompetition({
+            format: "participation",
+            placementPoints: [3],
+            participationTeamScoring: "ranked",
+          }),
+        ),
+      ).toContain(`${at}: Unrecognized key: "participationTeamScoring"`);
+      expect(
+        rejectionOf(
+          withCompetition({
+            format: "participation",
+            scoring: "individual",
+            participationPoints: 0,
+          }),
         ),
       ).toContain(`${at}.participationPoints: must be more than 0`);
     });

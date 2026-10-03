@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type {
-  BestScoreConfig,
-  HeadToHeadConfig,
-  RankedConfig,
-} from "@/lib/games/config";
+import type { BestScoreConfig, HeadToHeadConfig } from "@/lib/games/config";
 import {
   parseGameInput,
   parseGamesSettingsInput,
@@ -13,7 +9,6 @@ import {
 
 const A = "11111111-1111-4111-8111-111111111111";
 const B = "22222222-2222-4222-8222-222222222222";
-const C = "33333333-3333-4333-8333-333333333333";
 
 describe("parseGameInput head-to-head", () => {
   const config: HeadToHeadConfig = { drawsAllowed: false, bestOf: null };
@@ -142,53 +137,10 @@ describe("parseGameInput best-score", () => {
   });
 });
 
-describe("parseGameInput ranked", () => {
-  const config: RankedConfig = { finishPoints: [] };
-
-  it("normalizes places to standard competition ranking", () => {
-    const result = parseGameInput("ranked", config, {
-      order: [
-        { id: A, place: 1 },
-        { id: B, place: 1 },
-        { id: C, place: 3 },
-      ],
-    });
-    expect(result).toEqual({
-      ok: true,
-      value: {
-        players: [
-          { id: A, place: 1, score: null },
-          { id: B, place: 1, score: null },
-          { id: C, place: 3, score: null },
-        ],
-      },
-    });
-  });
-
-  it("refuses fewer than two players", () => {
-    const result = parseGameInput("ranked", config, {
-      order: [{ id: A, place: 1 }],
-    });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toBe("List at least two players.");
-  });
-
-  it("refuses a repeated id", () => {
-    const result = parseGameInput("ranked", config, {
-      order: [
-        { id: A, place: 1 },
-        { id: A, place: 2 },
-      ],
-    });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toBe("List at least two players.");
-  });
-});
-
 describe("parseGamesSettingsInput", () => {
   it("parses head-to-head settings with Best of and finish times", () => {
     const result = parseGamesSettingsInput({
-      gameType: "head-to-head",
+      gameFormat: "head-to-head",
       drawsAllowed: true,
       bestOf: "5",
       entrantsOpen: true,
@@ -210,10 +162,12 @@ describe("parseGamesSettingsInput", () => {
     });
   });
 
-  it("defaults Best of off and reads an empty finishPoints string as the default table", () => {
+  it("parses best-score settings", () => {
     const result = parseGamesSettingsInput({
-      gameType: "ranked",
-      finishPoints: "",
+      gameFormat: "best-score",
+      count: "total",
+      betterIs: "lower",
+      unit: "trips",
       entrantsOpen: false,
       loggingClosesAt: "",
       selfEnroll: true,
@@ -223,7 +177,7 @@ describe("parseGamesSettingsInput", () => {
     expect(result).toEqual({
       ok: true,
       value: {
-        gameConfig: { finishPoints: [] },
+        gameConfig: { count: "total", betterIs: "lower", unit: "trips" },
         entrantsOpen: false,
         loggingClosesAt: null,
         selfEnroll: true,
@@ -233,55 +187,9 @@ describe("parseGamesSettingsInput", () => {
     });
   });
 
-  it("parses a comma/whitespace-separated Finish Points string", () => {
-    const result = parseGamesSettingsInput({
-      gameType: "ranked",
-      finishPoints: "5, 3 1",
-      entrantsOpen: true,
-      loggingClosesAt: "",
-      selfEnroll: false,
-      entrantLimit: "",
-      enrollClosesAt: "",
-    });
-    expect(result).toEqual({
-      ok: true,
-      value: {
-        gameConfig: { finishPoints: [5, 3, 1] },
-        entrantsOpen: true,
-        loggingClosesAt: null,
-        selfEnroll: false,
-        entrantLimit: null,
-        enrollClosesAt: null,
-      },
-    });
-  });
-
-  it("ignores empty entries in Finish Points: a trailing or doubled comma is not a 0", () => {
-    const parse = (finishPoints: string) =>
-      parseGamesSettingsInput({
-        gameType: "ranked",
-        finishPoints,
-        entrantsOpen: true,
-        loggingClosesAt: "",
-        selfEnroll: false,
-        entrantLimit: "",
-        enrollClosesAt: "",
-      });
-    for (const text of ["5, 3, 1,", "5,, 3, 1", ",5, 3, 1", "5 , 3 , 1 ,"]) {
-      expect(parse(text)).toMatchObject({
-        ok: true,
-        value: { gameConfig: { finishPoints: [5, 3, 1] } },
-      });
-    }
-    expect(parse(",")).toMatchObject({
-      ok: true,
-      value: { gameConfig: { finishPoints: [] } },
-    });
-  });
-
   it("refuses an Entrant limit of 1", () => {
     const result = parseGamesSettingsInput({
-      gameType: "best-score",
+      gameFormat: "best-score",
       count: "best",
       betterIs: "higher",
       unit: "",
@@ -296,15 +204,15 @@ describe("parseGamesSettingsInput", () => {
       expect(result.error).toBe("An Entrant limit is at least 2.");
   });
 
-  it("refuses an unknown Game Type", () => {
-    const result = parseGamesSettingsInput({ gameType: "not-a-type" });
+  it("refuses an unknown Game Format", () => {
+    const result = parseGamesSettingsInput({ gameFormat: "not-a-type" });
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toBe("Choose a Game Type.");
+    if (!result.ok) expect(result.error).toBe("Choose a Game Format.");
   });
 });
 
 describe("postedGamePlayerIds", () => {
-  it("reads only the player ids the Game Type's form posts", () => {
+  it("reads only the player ids the Format's form posts", () => {
     expect(
       postedGamePlayerIds("head-to-head", {
         playerA: "a",
@@ -315,14 +223,9 @@ describe("postedGamePlayerIds", () => {
     expect(
       postedGamePlayerIds("best-score", { player: "p", score: 4 }),
     ).toEqual(["p"]);
-    expect(
-      postedGamePlayerIds("ranked", {
-        order: [{ id: "x", place: 1 }, { id: "y" }, 3],
-      }),
-    ).toEqual(["x", "y"]);
   });
 
-  it("ignores another Game Type's keys", () => {
+  it("ignores another Format's keys", () => {
     expect(
       postedGamePlayerIds("head-to-head", {
         playerA: "a",
@@ -334,9 +237,6 @@ describe("postedGamePlayerIds", () => {
     expect(
       postedGamePlayerIds("best-score", { player: "p", playerA: "me" }),
     ).toEqual(["p"]);
-    expect(
-      postedGamePlayerIds("ranked", { order: [{ id: "x" }], player: "me" }),
-    ).toEqual(["x"]);
   });
 
   it("ignores junk", () => {
@@ -349,8 +249,10 @@ describe("postedGamePlayerIds", () => {
 
 describe("parseGamesSettingsInput close times", () => {
   const base = {
-    gameType: "ranked",
-    finishPoints: "",
+    gameFormat: "best-score",
+    count: "best",
+    betterIs: "higher",
+    unit: "",
     entrantsOpen: false,
     selfEnroll: true,
     entrantLimit: " 6 ",
@@ -366,7 +268,7 @@ describe("parseGamesSettingsInput close times", () => {
     ).toEqual({
       ok: true,
       value: {
-        gameConfig: { finishPoints: [] },
+        gameConfig: { count: "best", betterIs: "higher", unit: "" },
         entrantsOpen: false,
         loggingClosesAt: new Date("2027-02-26T17:00:00.000Z"),
         selfEnroll: true,

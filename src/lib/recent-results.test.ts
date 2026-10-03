@@ -26,7 +26,7 @@ const at = (minute: number) => new Date(Date.UTC(2027, 1, 22, 12, minute));
 const trivia: ResultCompetition = {
   id: "trivia",
   name: "Trivia",
-  format: "points",
+  format: "placement",
   finalizedAt: null,
 };
 
@@ -113,7 +113,7 @@ describe("shapeRecentResults", () => {
     const games: ResultCompetition = {
       id: "g",
       name: "Darts",
-      format: "games",
+      format: "head-to-head",
       finalizedAt: at(5),
     };
     const [row] = shapeRecentResults(
@@ -163,7 +163,7 @@ describe("shapeRecentResults", () => {
     const games: ResultCompetition = {
       id: "g",
       name: "Darts",
-      format: "games",
+      format: "head-to-head",
       finalizedAt: at(5),
     };
     const [row] = shapeRecentResults(

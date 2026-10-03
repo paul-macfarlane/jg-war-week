@@ -7,19 +7,17 @@ import {
 
 const valid = {
   participationPoints: "2",
-  teamScoring: "ranked",
   placementPoints: "5, 3, 1",
   selfCheckIn: true,
   checkInClosesAt: "2027-02-26T22:00:00.000Z",
 };
 
 describe("parseParticipationSettingsInput", () => {
-  it("reads N, the team scoring, Placement Points, the switch and the close time", () => {
+  it("reads N, Placement Points, the switch and the close time", () => {
     expect(parseParticipationSettingsInput(valid)).toEqual({
       ok: true,
       value: {
         participationPoints: 2,
-        participationTeamScoring: "ranked",
         placementPoints: [5, 3, 1],
         selfCheckIn: true,
         checkInClosesAt: new Date("2027-02-26T22:00:00.000Z"),
@@ -31,7 +29,7 @@ describe("parseParticipationSettingsInput", () => {
     expect(
       parseParticipationSettingsInput({
         ...valid,
-        teamScoring: "",
+        participationPoints: "",
         placementPoints: "",
         selfCheckIn: false,
         checkInClosesAt: "",
@@ -39,8 +37,7 @@ describe("parseParticipationSettingsInput", () => {
     ).toEqual({
       ok: true,
       value: {
-        participationPoints: 2,
-        participationTeamScoring: null,
+        participationPoints: null,
         placementPoints: null,
         selfCheckIn: false,
         checkInClosesAt: null,
@@ -64,10 +61,7 @@ describe("parseParticipationSettingsInput", () => {
     });
   });
 
-  it("refuses an unknown team scoring, rising Placement Points and a bad close time", () => {
-    expect(
-      parseParticipationSettingsInput({ ...valid, teamScoring: "most" }),
-    ).toMatchObject({ ok: false, error: "Choose how Teams score." });
+  it("refuses rising Placement Points and a bad close time", () => {
     expect(
       parseParticipationSettingsInput({ ...valid, placementPoints: "1, 3" }),
     ).toMatchObject({

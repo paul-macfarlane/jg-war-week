@@ -70,8 +70,7 @@ async function fixture(tx: DBTx) {
         warWeekId: inWarWeek,
         name,
         scoring: "team",
-        format: "games",
-        gameType: "head-to-head",
+        format: "head-to-head",
         gameConfig: { drawsAllowed: false, bestOf: null },
         entrantsOpen: true,
       })
@@ -114,7 +113,7 @@ describe.skipIf(!isLocalDatabase)("getOpenUnscoredCompetitions", () => {
 
       expect(
         await queries.getOpenUnscoredCompetitions({ id: f.ctx.warWeekId }, tx),
-      ).toEqual([{ id: pong, name: "Pong", format: "games" }]);
+      ).toEqual([{ id: pong, name: "Pong", format: "head-to-head" }]);
     });
   });
 
@@ -201,8 +200,8 @@ describe.skipIf(!isLocalDatabase)("getOpenUnscoredCompetitions", () => {
       expect(
         await queries.getOpenUnscoredCompetitions({ id: f.ctx.warWeekId }, tx),
       ).toEqual([
-        { id: alpha, name: "Alpha Games", format: "games" },
-        { id: zed, name: "Zed Games", format: "games" },
+        { id: alpha, name: "Alpha Games", format: "head-to-head" },
+        { id: zed, name: "Zed Games", format: "head-to-head" },
       ]);
     });
   });
@@ -228,8 +227,7 @@ describe.skipIf(!isLocalDatabase)("getOpenUnscoredCompetitions", () => {
             name,
             scoring: "team",
             format: "participation",
-            participationPoints: 1,
-            participationTeamScoring: "ranked",
+            placementPoints: [3, 2, 1],
           })
           .returning({ id: f.schema.competition.id });
         return row.id;

@@ -131,7 +131,7 @@ describe("the built-in Finale slides", () => {
         {
           competitionId: "c2",
           competition: "Ping Pong",
-          format: "games",
+          format: "head-to-head",
           label: "Winner",
           title: "Tie: Fay Falcon & Jax Jetpack",
           winners: [

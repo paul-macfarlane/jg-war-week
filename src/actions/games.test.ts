@@ -35,7 +35,7 @@ const PLAYER_OK = {
   warWeek: { id: WAR_WEEK, edition: "xi" },
   ctx: CTX,
   competition: {
-    gameType: "head-to-head",
+    gameFormat: "head-to-head",
     config: { drawsAllowed: false, bestOf: null },
   },
 };
@@ -156,7 +156,7 @@ describe("updateGame and deleteGame", () => {
 
 describe("Host and Organizer Games writes", () => {
   const settings = {
-    gameType: "head-to-head",
+    gameFormat: "head-to-head",
     drawsAllowed: true,
     bestOf: "off",
     entrantsOpen: true,

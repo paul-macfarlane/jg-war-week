@@ -182,13 +182,14 @@ describe("War Week XI demo", () => {
     expect(xi.competitions.length).toBeGreaterThan(15);
   });
 
-  it("runs one Competition of each Game Type as Games", () => {
+  it("runs a Head-to-head and a Best score Competition as Games, and the old ranked one as an empty Placement", () => {
+    const formats = ["head-to-head", "best-score"];
     const games = xi.competitions
-      .filter((c) => c.format === "games")
+      .filter((c) => formats.includes(c.format))
       .map((c) => ({
         name: c.name,
         scoring: c.scoring,
-        gameType: c.gameType,
+        format: c.format,
         gameConfig: c.gameConfig,
         entrantsOpen: c.entrantsOpen,
       }));
@@ -196,22 +197,15 @@ describe("War Week XI demo", () => {
       {
         name: "Bouncy Pong",
         scoring: "individual",
-        gameType: "head-to-head",
+        format: "head-to-head",
         gameConfig: { drawsAllowed: false, bestOf: null },
         entrantsOpen: true,
       },
       {
         name: "Tuesday Stairs",
         scoring: "team",
-        gameType: "best-score",
+        format: "best-score",
         gameConfig: { count: "total", betterIs: "higher", unit: "trips" },
-        entrantsOpen: true,
-      },
-      {
-        name: "Electric City Matrix",
-        scoring: "team",
-        gameType: "ranked",
-        gameConfig: undefined,
         entrantsOpen: true,
       },
     ]);
@@ -220,6 +214,19 @@ describe("War Week XI demo", () => {
       countsTowardTeam: true,
       placementPoints: [3, 2, 1],
     });
+    const matrix = xi.competitions.find(
+      (c) => c.name === "Electric City Matrix",
+    )!;
+    expect(matrix.format).toBe("placement");
+    expect(
+      xi.pointsEntries.filter((e) => e.competition === matrix.name),
+    ).toEqual([]);
+    // Games aren't seeded: no typed entries stand in for Pong or Stairs.
+    expect(
+      xi.pointsEntries.filter((e) =>
+        ["Bouncy Pong", "Tuesday Stairs"].includes(e.competition),
+      ),
+    ).toEqual([]);
   });
 
   it("runs one team Competition as Participation, ranked by headcount with self check-in", () => {
@@ -229,7 +236,7 @@ describe("War Week XI demo", () => {
         name: c.name,
         scoring: c.scoring,
         placementPoints: c.placementPoints,
-        participationTeamScoring: c.participationTeamScoring,
+        participationPoints: c.participationPoints,
         selfCheckIn: c.selfCheckIn,
         checkInClosesAt: c.checkInClosesAt,
       }));
@@ -238,7 +245,7 @@ describe("War Week XI demo", () => {
         name: "Daily Workout Check-in",
         scoring: "team",
         placementPoints: [5, 3, 1],
-        participationTeamScoring: "ranked",
+        participationPoints: undefined,
         selfCheckIn: true,
         checkInClosesAt: undefined,
       },
@@ -322,14 +329,14 @@ describe("War Week XII demo", () => {
     expect(xiiDemo.participants.every((p) => p.team == null)).toBe(true);
   });
 
-  it("has a few scheduled Days and one Bracket, one Games and two points-only Competitions", () => {
+  it("has a few scheduled Days and one Bracket, one Head-to-head and two placement-only Competitions", () => {
     expect(xiiDemo.days.length).toBeGreaterThanOrEqual(3);
     expect(xiiDemo.days.every((d) => d.scheduleItems.length > 0)).toBe(true);
     expect(xiiDemo.competitions.map((c) => c.format).sort()).toEqual([
-      "games",
+      "head-to-head",
       "heats",
-      "points",
-      "points",
+      "placement",
+      "placement",
     ]);
     expect(xiiDemo.competitions.every((c) => c.scoring === "individual")).toBe(
       true,

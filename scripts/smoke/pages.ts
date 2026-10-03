@@ -124,8 +124,8 @@ export async function assertPointsEntryTargetConstraint() {
     await client.query("begin");
     try {
       await client.query(
-        `insert into points_entry (competition_id, team_id, participant_id, points, entered_by_email)
-         select c.id, p.team_id, p.id, 1, 'smoke@jahnelgroup.com'
+        `insert into points_entry (war_week_id, competition_id, team_id, participant_id, points, entered_by_email)
+         select w.id, c.id, p.team_id, p.id, 1, 'smoke@jahnelgroup.com'
          from competition c
          join war_week w on w.id = c.war_week_id
          join participant p on p.war_week_id = w.id and p.team_id is not null
@@ -431,14 +431,14 @@ export async function assertLlmsTxt() {
 
 export async function assertCompetitions() {
   const check =
-    "GET /xi/competitions groups Competitions with max points and scoring";
+    "GET /xi/competitions groups Competitions with their scoring and no points cap";
   try {
     const res = await signedInFetch(`${BASE_URL}/xi/competitions`);
     const body = await res.text();
     const checks = {
       group: body.includes("Team Night Events"),
       ungrouped: body.includes("Other Competitions"),
-      maxPoints: body.includes("Max 1.5 pts"),
+      noCap: !/\bMax \d|\bpts\b/.test(body),
       scoring: body.includes("Individual · counts toward Team"),
       link: body.includes('href="/xi/competitions/'),
     };

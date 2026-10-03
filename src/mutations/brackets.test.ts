@@ -260,18 +260,21 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       // teams and comes last.
       await tx.insert(f.schema.pointsEntry).values([
         {
+          warWeekId: f.ctx.warWeekId,
           competitionId: f.competitionId,
           teamId: f.red,
           points: 30,
           enteredByEmail: actorEmail,
         },
         {
+          warWeekId: f.ctx.warWeekId,
           competitionId: f.competitionId,
           teamId: f.blue,
           points: 20,
           enteredByEmail: actorEmail,
         },
         {
+          warWeekId: f.ctx.warWeekId,
           competitionId: f.competitionId,
           teamId: f.green,
           points: 20,
@@ -562,6 +565,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       const f = await fixture(tx);
       const { schema } = f;
       await tx.insert(schema.pointsEntry).values({
+        warWeekId: f.ctx.warWeekId,
         competitionId: f.competitionId,
         teamId: f.red,
         points: 1,
@@ -734,7 +738,6 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         name: "Captain Clash",
         description: null,
         scoring: "team",
-        maxPoints: null,
         placementPoints: [10, 5, 1],
         countsTowardTeam: false,
         competitionGroup: null,
@@ -762,14 +765,14 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(
         await mutations.setCompetitionFormat(
           f.competitionId,
-          { format: "points" },
+          { format: "placement" },
           f.ctx,
           tx,
         ),
       ).toEqual({ ok: true });
       expect(
         (await queries.getBracket(f.competitionId, tx))!.competition.format,
-      ).toBe("points");
+      ).toBe("placement");
       expect(
         await mutations.replaceEntrants(
           f.competitionId,
@@ -797,7 +800,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(
         await mutations.setCompetitionFormat(
           f.competitionId,
-          { format: "points" },
+          { format: "placement" },
           f.ctx,
           tx,
         ),
@@ -1171,7 +1174,6 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
             name: "Speed Chess",
             description: null,
             scoring: "team",
-            maxPoints: null,
             placementPoints: null,
             countsTowardTeam: false,
             competitionGroup: null,
@@ -1815,7 +1817,7 @@ describe.skipIf(!isLocalDatabase)("Squads", () => {
           warWeekId: f.ctx.warWeekId,
           name: "Stairs",
           scoring: "team",
-          format: "points",
+          format: "placement",
         },
       ])
       .returning({ id: schema.competition.id });
@@ -2357,7 +2359,7 @@ describe.skipIf(!isLocalDatabase)("Squads", () => {
       expect(
         await mutations.setCompetitionFormat(
           f.competitionId,
-          { format: "points" },
+          { format: "placement" },
           f.ctx,
           tx,
         ),
@@ -2389,19 +2391,17 @@ async function gamesFixture(tx: DBTx) {
   const create = async (
     name: string,
     scoring: "team" | "individual",
-    gameType: "head-to-head" | "best-score" | "ranked",
+    format: "head-to-head" | "best-score",
   ) => {
     const created = await setup.createCompetition(
       {
         name,
         description: null,
         scoring,
-        maxPoints: null,
         placementPoints: null,
         countsTowardTeam: false,
         competitionGroup: null,
-        format: "games",
-        gameType,
+        format,
       },
       f.ctx,
       tx,
@@ -2432,13 +2432,12 @@ async function gamesFixture(tx: DBTx) {
 }
 
 describe.skipIf(!isLocalDatabase)("games Competitions", () => {
-  it("creates a games Competition with its Game Type and the type's default settings", async () => {
+  it("creates a Head-to-head Competition with its default settings", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await gamesFixture(tx);
       const [row] = await tx
         .select({
           format: f.schema.competition.format,
-          gameType: f.schema.competition.gameType,
           gameConfig: f.schema.competition.gameConfig,
           entrantsOpen: f.schema.competition.entrantsOpen,
           bracketConfig: f.schema.competition.bracketConfig,
@@ -2446,8 +2445,7 @@ describe.skipIf(!isLocalDatabase)("games Competitions", () => {
         .from(f.schema.competition)
         .where(eq(f.schema.competition.id, f.pongId));
       expect(row).toEqual({
-        format: "games",
-        gameType: "head-to-head",
+        format: "head-to-head",
         gameConfig: { drawsAllowed: false, bestOf: null },
         entrantsOpen: true,
         bracketConfig: null,
@@ -2508,7 +2506,7 @@ describe.skipIf(!isLocalDatabase)("games Competitions", () => {
       expect(
         await mutations.setCompetitionFormat(
           f.pongId,
-          { format: "points" },
+          { format: "placement" },
           f.ctx,
           tx,
         ),
@@ -2516,7 +2514,7 @@ describe.skipIf(!isLocalDatabase)("games Competitions", () => {
       expect(
         await mutations.setCompetitionFormat(
           f.competitionId,
-          { format: "games" },
+          { format: "head-to-head" },
           f.ctx,
           tx,
         ),
@@ -2717,7 +2715,6 @@ describe.skipIf(!isLocalDatabase)("games Competitions", () => {
             name: "Bouncy Pong",
             description: null,
             scoring: "team",
-            maxPoints: null,
             placementPoints: null,
             countsTowardTeam: false,
             competitionGroup: null,
@@ -2747,7 +2744,6 @@ describe.skipIf(!isLocalDatabase)("games Competitions", () => {
             name: "Bouncy Pong",
             description: null,
             scoring: "individual",
-            maxPoints: null,
             placementPoints: [3, 2, 1],
             countsTowardTeam: false,
             competitionGroup: null,
@@ -2762,14 +2758,14 @@ describe.skipIf(!isLocalDatabase)("games Competitions", () => {
     });
   });
 
-  it("refuses a gameType on a Competition that isn't games (the database CHECK)", async () => {
+  it("refuses a game config on a Competition that isn't Head-to-head or Best score (the database CHECK)", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await gamesFixture(tx);
       await expect(
         tx.transaction((inner) =>
           inner
             .update(f.schema.competition)
-            .set({ gameType: "ranked" })
+            .set({ gameConfig: { drawsAllowed: false, bestOf: null } })
             .where(eq(f.schema.competition.id, f.competitionId)),
         ),
       ).rejects.toThrow();

@@ -640,14 +640,14 @@ async function findGamesDemo(): Promise<{
 }> {
   const [comp] = await query<{ id: string }>(
     `select id from competition
-     where war_week_id = $1 and format = 'games' and game_type = 'head-to-head'
+     where war_week_id = $1 and format = 'head-to-head'
        and scoring = 'individual' and entrants_open
      order by name limit 1`,
     [current.id],
   );
   if (!comp) {
     throw new Error(
-      `no seeded head-to-head, open "games" Competition on ${current.edition}`,
+      `no seeded open Head-to-head Competition on ${current.edition}`,
     );
   }
   const participants = await query<{ display_name: string }>(
@@ -831,21 +831,20 @@ async function teardownGamesDemo() {
 // The About hero: Standings moving after a Points Entry (ticket 04)
 
 /**
- * The Competition the hero uses to move the home Standings: points-only,
- * scored like the Standings (team in Teams mode, individual in free-for-all)
- * and with no Max points cap, so any margin needed to move last place into
- * first saves without a warning.
+ * The Competition the hero uses to move the home Standings: placement-only,
+ * scored like the Standings (team in Teams mode, individual in free-for-all),
+ * so any margin needed to move last place into first can be typed in.
  */
 async function standingsDemoCompetition(): Promise<string> {
   const [comp] = await query<{ name: string }>(
     `select name from competition
-     where war_week_id = $1 and format = 'points' and max_points is null and scoring = $2
+     where war_week_id = $1 and format = 'placement' and scoring = $2
      order by name limit 1`,
     [current.id, current.mode === "teams" ? "team" : "individual"],
   );
   if (!comp) {
     throw new Error(
-      `${current.edition} needs a points-only Competition with no Max points for the Standings demo`,
+      `${current.edition} needs a placement-only Competition for the Standings demo`,
     );
   }
   return comp.name;
@@ -1082,7 +1081,7 @@ async function scheduleTime(): Promise<string> {
 async function placementPointsCompetition(): Promise<string> {
   const [comp] = await query<{ name: string }>(
     `select name from competition
-     where war_week_id = $1 and format = 'points' and placement_points is not null
+     where war_week_id = $1 and format = 'placement' and placement_points is not null
      order by name limit 1`,
     [current.id],
   );

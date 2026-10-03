@@ -15,7 +15,7 @@ test("r15 89 Games settings and Placement Points show what was saved after leavi
   await asOrganizer(context);
   await page.setViewportSize({ width: 1440, height: 900 });
 
-  // Add a ranked Games Competition; it opens its Games setup page.
+  // Add a Best score Competition; it opens its Games setup page.
   await page.goto("/admin/competitions");
   await page.getByRole("button", { name: "Add Competition" }).click();
   const addForm = page
@@ -23,19 +23,17 @@ test("r15 89 Games settings and Placement Points show what was saved after leavi
     .getByRole("form", { name: "New Competition" });
   await addForm.getByRole("textbox", { name: "Name" }).fill(name);
   await addForm.getByRole("combobox", { name: "Format" }).click();
-  await page.getByRole("option", { name: "Games" }).click();
-  await addForm.getByRole("combobox", { name: "Game Type" }).click();
-  await page.getByRole("option", { name: "Ranked" }).click();
+  await page.getByRole("option", { name: "Best score" }).click();
   await addForm.getByRole("button", { name: "Add Competition" }).click();
   await expect(page.getByText("Competition saved")).toBeVisible();
   await expect(page).toHaveURL(/\/admin\/competitions\/[0-9a-f-]+\/games$/);
   const gamesUrl = page.url();
 
-  // Finish Points, with a trailing comma that must not become a 0.
-  await page.getByLabel("Finish Points").fill("5, 3, 1,");
+  // The unit, saved with the settings.
+  await page.getByLabel("Unit").fill("trips");
   await page.getByRole("button", { name: "Save settings" }).click();
   await expect(page.getByText("Games settings saved")).toBeVisible();
-  await expect(page.getByLabel("Finish Points")).toHaveValue("5, 3, 1");
+  await expect(page.getByLabel("Unit")).toHaveValue("trips");
 
   // Placement Points, in the Competition's Edit sheet.
   await page.goto("/admin/competitions");
@@ -51,7 +49,7 @@ test("r15 89 Games settings and Placement Points show what was saved after leavi
 
   // Leave and come back: both show what was saved.
   await page.goto(gamesUrl);
-  await expect(page.getByLabel("Finish Points")).toHaveValue("5, 3, 1");
+  await expect(page.getByLabel("Unit")).toHaveValue("trips");
   await page.goto("/admin/competitions");
   await page.getByRole("button", { name: `Edit ${name}`, exact: true }).click();
   const reopened = page.getByRole("dialog", { name: `Edit ${name}` });

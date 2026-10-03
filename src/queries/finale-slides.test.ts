@@ -111,7 +111,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
       const [a, b, c] = people.map((p) => p.id);
       const competition = async (
         name: string,
-        format: "games" | "single-elimination",
+        format: "head-to-head" | "single-elimination",
         finalizedAt: Date,
       ) => {
         const [row] = await tx
@@ -122,11 +122,8 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
             scoring: "individual",
             format,
             finalizedAt,
-            ...(format === "games"
-              ? {
-                  gameType: "head-to-head" as const,
-                  gameConfig: { drawsAllowed: false, bestOf: null },
-                }
+            ...(format === "head-to-head"
+              ? { gameConfig: { drawsAllowed: false, bestOf: null } }
               : {}),
           })
           .returning({ id: schema.competition.id });
@@ -138,6 +135,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
         points: number,
       ) =>
         tx.insert(schema.pointsEntry).values({
+          warWeekId: xi.id,
           competitionId,
           participantId,
           points,
@@ -147,7 +145,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
 
       const pong = await competition(
         "Finale Pong",
-        "games",
+        "head-to-head",
         new Date("2026-02-26T18:00:00Z"),
       );
       await generated(pong, a, 3);
@@ -174,7 +172,11 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
           format: "single-elimination",
           winners: [c],
         },
-        { competition: "Finale Pong", format: "games", winners: [a, b].sort() },
+        {
+          competition: "Finale Pong",
+          format: "head-to-head",
+          winners: [a, b].sort(),
+        },
       ]);
     });
   });

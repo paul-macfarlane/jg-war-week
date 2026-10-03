@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  firstPlaceOverMax,
-  parsePlacementPointsText,
-} from "@/lib/placement-points";
+import { parsePlacementPointsText } from "@/lib/placement-points";
 
 describe("parsePlacementPointsText", () => {
   it("reads comma or space separated points, highest first", () => {
@@ -37,14 +34,5 @@ describe("parsePlacementPointsText", () => {
       "Placement Points must have at most two decimal places.",
     );
     expect(error("6, 5, 4, 3, 2, 1, 0")).toMatch(/cover at most/);
-  });
-});
-
-describe("firstPlaceOverMax", () => {
-  it("is true only when 1st place beats Max points", () => {
-    expect(firstPlaceOverMax([5, 3], 4)).toBe(true);
-    expect(firstPlaceOverMax([4, 3], 4)).toBe(false);
-    expect(firstPlaceOverMax([5], null)).toBe(false);
-    expect(firstPlaceOverMax(null, 4)).toBe(false);
   });
 });

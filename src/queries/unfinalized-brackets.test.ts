@@ -153,7 +153,7 @@ describe.skipIf(!isLocalDatabase)("getUnfinalizedBrackets", () => {
         warWeekId: f.ctx.warWeekId,
         name: "Trivia",
         scoring: "team",
-        format: "points",
+        format: "placement",
       });
 
       expect(

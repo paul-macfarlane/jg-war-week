@@ -124,9 +124,10 @@ export async function assertPointsEntryActions(sessions: {
     fail("server action ids in the build manifest", missing.join(", "));
     return;
   }
-  const [teamCompetition] = await runQuery<{ id: string; max: string }>(
-    `select c.id, c.max_points as max from competition c join war_week w on w.id = c.war_week_id
-     where w.edition = 'xi' and c.scoring = 'team' and c.max_points is not null order by c.name limit 1`,
+  const [teamCompetition] = await runQuery<{ id: string }>(
+    `select c.id from competition c join war_week w on w.id = c.war_week_id
+     where w.edition = 'xi' and c.scoring = 'team' and c.format = 'placement'
+     order by c.name limit 1`,
   );
   const [individualCompetition] = await runQuery<{ id: string }>(
     `select c.id from competition c join war_week w on w.id = c.war_week_id
@@ -141,11 +142,11 @@ export async function assertPointsEntryActions(sessions: {
      from team t join war_week w on w.id = t.war_week_id
      join participant p on p.team_id = t.id where w.edition = 'xi' order by t.name limit 1`,
   );
-  const overMax = Number(teamCompetition.max) + 7;
+  const amount = 12;
   const teamInput = {
     competitionId: teamCompetition.id,
     targetId: target.team_id,
-    points: String(overMax),
+    points: String(amount),
     note: `${SMOKE_NOTE_PREFIX}create`,
   };
 
@@ -207,17 +208,17 @@ export async function assertPointsEntryActions(sessions: {
     );
 
     await run(
-      "createPointsEntry as an Organizer saves an over-max decimal entry with entered-by",
+      "createPointsEntry as an Organizer saves a decimal entry with entered-by",
       async () => {
         const result = await callAction(
           ids.createPointsEntry,
-          [{ ...teamInput, points: `${overMax}.25` }],
+          [{ ...teamInput, points: `${amount}.25` }],
           sessions.organizer,
         );
         const rows = await smokeEntries();
         return result.ok &&
           rows.length === 1 &&
-          Number(rows[0].points) === overMax + 0.25 &&
+          Number(rows[0].points) === amount + 0.25 &&
           rows[0].team_id === target.team_id &&
           rows[0].entered_by_email === SMOKE_ORGANIZER_EMAIL
           ? null
@@ -231,7 +232,7 @@ export async function assertPointsEntryActions(sessions: {
         const after = await leaderboardTeamTotal(target.team_name);
         return before !== null &&
           after !== null &&
-          Math.abs(after - before - (overMax + 0.25)) < 0.001
+          Math.abs(after - before - (amount + 0.25)) < 0.001
           ? null
           : `before=${before} after=${after}`;
       },
@@ -255,7 +256,7 @@ export async function assertPointsEntryActions(sessions: {
         return !update.ok &&
           !remove.ok &&
           row &&
-          Number(row.points) === overMax + 0.25
+          Number(row.points) === amount + 0.25
           ? null
           : `update=${JSON.stringify(update)} delete=${JSON.stringify(remove)} row=${JSON.stringify(row)}`;
       },

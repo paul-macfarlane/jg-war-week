@@ -722,9 +722,11 @@ test("r5 32 admin lists fit a phone; free-for-all drops Team", async ({
     // (the seed finalizes no Bracket).
     const [entry] = await runQuery<{ id: string }>(
       `insert into points_entry
-         (competition_id, team_id, points, note, entered_by_email,
+         (war_week_id, competition_id, team_id, points, note, entered_by_email,
           generated_by_bracket)
-       values ($1, $2, 1, 'R5 32 generated', 'e2e-r5@jahnelgroup.com', true)
+       select war_week_id, id, $2, 1, 'R5 32 generated',
+         'e2e-r5@jahnelgroup.com', true
+       from competition where id = $1
        returning id`,
       [poolId, teamId],
     );

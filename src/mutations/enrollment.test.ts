@@ -106,13 +106,12 @@ async function fixture(tx: DBTx) {
         warWeekId,
         name: "Pong",
         scoring: "individual",
-        format: "games",
-        gameType: "head-to-head",
+        format: "head-to-head",
         gameConfig: { drawsAllowed: false, bestOf: null },
         entrantsOpen: false,
         selfEnroll: true,
       },
-      { warWeekId, name: "Trivia", scoring: "team", format: "points" },
+      { warWeekId, name: "Trivia", scoring: "team", format: "placement" },
     ])
     .returning({ id: schema.competition.id });
   const [redOne, blueOne] = await tx

@@ -270,7 +270,7 @@ test("r1 05 the End War Week dialog shows the computed Winner read-only", async 
   expect(row.status).toBe("live");
 });
 
-test("r1 06 09 the Competitions form explains Max points and offers Format including Bracket formats, linking a Bracket Competition to its Bracket setup", async ({
+test("r1 06 09 the Competitions form offers Format including Bracket formats and no points cap, linking a Bracket Competition to its Bracket setup", async ({
   context,
   page,
 }, testInfo) => {
@@ -282,15 +282,12 @@ test("r1 06 09 the Competitions form explains Max points and offers Format inclu
   const addForm = page
     .getByRole("dialog", { name: "Add Competition" })
     .getByRole("form", { name: "New Competition" });
-  await expect(
-    addForm.getByText(
-      "Optional. The most points 1st place’s Placement Points can be worth.",
-      { exact: false },
-    ),
-  ).toBeVisible();
+  // Placement Points are the only points a Competition sets; no cap on them.
+  await expect(addForm.getByText("Placement Points")).toBeVisible();
+  await expect(addForm.getByLabel(/^Max\b/i)).toHaveCount(0);
 
   await expect(addForm.getByRole("combobox", { name: "Format" })).toBeVisible();
-  await expect(addForm.getByText("Points:")).toBeVisible();
+  await expect(addForm.getByText("Placement:")).toBeVisible();
   await expect(addForm.getByText("Single elimination:")).toBeVisible();
   await expect(addForm.getByText("Heats:")).toBeVisible();
   await expect(

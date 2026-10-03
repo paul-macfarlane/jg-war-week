@@ -90,8 +90,6 @@ async function fixture(tx: DBTx) {
         name: "Workout",
         scoring: "team" as const,
         format: "participation" as const,
-        participationPoints: 1,
-        participationTeamScoring: "ranked" as const,
         selfCheckIn: true,
         placementPoints: [5, 3, 1],
       },
@@ -100,8 +98,7 @@ async function fixture(tx: DBTx) {
         name: "Stairs",
         scoring: "team" as const,
         format: "participation" as const,
-        participationPoints: 2,
-        participationTeamScoring: "per-person" as const,
+        placementPoints: [3, 2, 1],
       },
       {
         warWeekId,
@@ -117,8 +114,7 @@ async function fixture(tx: DBTx) {
         warWeekId,
         name: "Pong",
         scoring: "individual" as const,
-        format: "games" as const,
-        gameType: "head-to-head" as const,
+        format: "head-to-head" as const,
         entrantsOpen: true,
       },
     ])
@@ -176,6 +172,7 @@ async function fixture(tx: DBTx) {
 
   return {
     schema,
+    tx,
     warWeekId,
     ctx: (actorEmail: string) => ({ warWeekId, actorEmail }),
     ids: {
@@ -439,7 +436,7 @@ describe.skipIf(!isLocalDatabase)(
       });
     });
 
-    it("team per person: N times the headcount; uses each Participant's House at Close", async () => {
+    it("team: ranked by headcount, using each Participant's House at Close", async () => {
       await inRolledBackTransaction(async (tx) => {
         const { markParticipant, closeParticipation } = await load();
         const f = await fixture(tx);
@@ -452,10 +449,11 @@ describe.skipIf(!isLocalDatabase)(
           .set({ teamId: f.ids.blue })
           .where(eq(f.schema.participant.id, f.ids.morpheus));
         await closeParticipation(f.ids.stairs, f.ctx(HOST), tx);
+        // Blue now has two who took part, Red one: Blue 1st, Red 2nd.
         expect(
           (await f.generated(f.ids.stairs)).map((e) => [e.teamId, e.points]),
         ).toEqual([
-          [f.ids.blue, 4],
+          [f.ids.blue, 3],
           [f.ids.red, 2],
         ]);
       });
@@ -473,6 +471,7 @@ describe.skipIf(!isLocalDatabase)(
         await checkIn(f.ids.spirit, f.ctx(NEO), tx);
         await markParticipant(f.ids.spirit, f.ids.cypher, f.ctx(HOST), tx);
         await tx.insert(f.schema.pointsEntry).values({
+          warWeekId: f.ctx(HOST).warWeekId,
           competitionId: f.ids.spirit,
           participantId: f.ids.tank,
           points: 4,
@@ -546,95 +545,117 @@ describe.skipIf(!isLocalDatabase)(
 );
 
 describe.skipIf(!isLocalDatabase)("setParticipationSettings", () => {
-  const settings = {
-    participationPoints: 2,
-    participationTeamScoring: "per-person" as const,
+  const checkInClosesAt = new Date("2099-01-05T22:00:00Z");
+  const team = {
+    participationPoints: null,
     placementPoints: [9, 6, 3],
     selfCheckIn: false,
-    checkInClosesAt: new Date("2099-01-05T22:00:00Z"),
+    checkInClosesAt,
+  };
+  const individual = {
+    participationPoints: 2,
+    placementPoints: null,
+    selfCheckIn: false,
+    checkInClosesAt,
   };
 
-  it("saves N, the team scoring, the switch and the close time; Placement Points only when ranked", async () => {
+  const read = async (f: Awaited<ReturnType<typeof fixture>>, id: string) =>
+    (
+      await f.tx
+        .select({
+          participationPoints: f.schema.competition.participationPoints,
+          placementPoints: f.schema.competition.placementPoints,
+          selfCheckIn: f.schema.competition.selfCheckIn,
+          checkInClosesAt: f.schema.competition.checkInClosesAt,
+        })
+        .from(f.schema.competition)
+        .where(eq(f.schema.competition.id, id))
+    )[0];
+
+  it("a team Competition saves its Placement Points, the switch and the close time, and keeps no N", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { setParticipationSettings } = await load();
+      const f = await fixture(tx);
+      expect(
+        await setParticipationSettings(f.ids.workout, team, f.ctx(HOST), tx),
+      ).toEqual({ ok: true });
+      expect(await read(f, f.ids.workout)).toEqual({
+        participationPoints: null,
+        placementPoints: [9, 6, 3],
+        selfCheckIn: false,
+        checkInClosesAt,
+      });
+    });
+  });
+
+  it("an individual Competition saves N, the switch and the close time, and keeps no Placement Points", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { setParticipationSettings } = await load();
       const f = await fixture(tx);
       expect(
         await setParticipationSettings(
-          f.ids.workout,
-          settings,
+          f.ids.spirit,
+          individual,
           f.ctx(HOST),
           tx,
         ),
       ).toEqual({ ok: true });
-      const read = async () =>
-        (
-          await tx
-            .select({
-              participationPoints: f.schema.competition.participationPoints,
-              participationTeamScoring:
-                f.schema.competition.participationTeamScoring,
-              placementPoints: f.schema.competition.placementPoints,
-              selfCheckIn: f.schema.competition.selfCheckIn,
-              checkInClosesAt: f.schema.competition.checkInClosesAt,
-            })
-            .from(f.schema.competition)
-            .where(eq(f.schema.competition.id, f.ids.workout))
-        )[0];
-      expect(await read()).toEqual({
+      expect(await read(f, f.ids.spirit)).toEqual({
         participationPoints: 2,
-        participationTeamScoring: "per-person",
-        placementPoints: [5, 3, 1],
+        placementPoints: null,
         selfCheckIn: false,
-        checkInClosesAt: new Date("2099-01-05T22:00:00Z"),
+        checkInClosesAt,
       });
-      await setParticipationSettings(
-        f.ids.workout,
-        { ...settings, participationTeamScoring: "ranked" },
-        f.ctx(HOST),
-        tx,
-      );
-      expect((await read()).placementPoints).toEqual([9, 6, 3]);
     });
   });
 
-  it("refuses a team scoring that doesn't fit the Competition's scoring, 1st over Max points, and while closed", async () => {
+  it("refuses the field that doesn't fit the Competition's scoring, a missing one, and a save while closed", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { setParticipationSettings, closeParticipation } = await load();
       const f = await fixture(tx);
       expect(
-        await setParticipationSettings(f.ids.spirit, settings, f.ctx(HOST), tx),
-      ).toEqual({
-        ok: false,
-        error: "An individual Competition doesn't score Teams.",
-      });
-      expect(
         await setParticipationSettings(
-          f.ids.workout,
-          { ...settings, participationTeamScoring: null },
-          f.ctx(HOST),
-          tx,
-        ),
-      ).toEqual({ ok: false, error: "Choose how Teams score." });
-      await f.setCompetition(f.ids.workout, { maxPoints: 5 });
-      expect(
-        await setParticipationSettings(
-          f.ids.workout,
-          { ...settings, participationTeamScoring: "ranked" },
+          f.ids.spirit,
+          { ...individual, placementPoints: [3, 2] },
           f.ctx(HOST),
           tx,
         ),
       ).toEqual({
         ok: false,
-        error: "1st place's Placement Points can't be more than Max points.",
+        error:
+          "An individual Competition gives points to each Participant, not Placement Points.",
       });
+      expect(
+        await setParticipationSettings(
+          f.ids.spirit,
+          { ...individual, participationPoints: null },
+          f.ctx(HOST),
+          tx,
+        ),
+      ).toEqual({ ok: false, error: "Enter the points per Participant." });
+      expect(
+        await setParticipationSettings(
+          f.ids.workout,
+          { ...team, participationPoints: 2 },
+          f.ctx(HOST),
+          tx,
+        ),
+      ).toEqual({
+        ok: false,
+        error:
+          "A team Competition awards Placement Points, not points per Participant.",
+      });
+      expect(
+        await setParticipationSettings(
+          f.ids.workout,
+          { ...team, placementPoints: null },
+          f.ctx(HOST),
+          tx,
+        ),
+      ).toEqual({ ok: false, error: "Enter the Placement Points." });
       await closeParticipation(f.ids.workout, f.ctx(HOST), tx);
       expect(
-        await setParticipationSettings(
-          f.ids.workout,
-          settings,
-          f.ctx(HOST),
-          tx,
-        ),
+        await setParticipationSettings(f.ids.workout, team, f.ctx(HOST), tx),
       ).toEqual({ ok: false, error: REOPEN_FIRST });
     });
   });
@@ -647,13 +668,12 @@ describe.skipIf(!isLocalDatabase)(
       name: "Black Midnight",
       description: null,
       scoring: "team" as const,
-      maxPoints: null,
       placementPoints: [5, 3, 1],
       countsTowardTeam: false,
       competitionGroup: null,
     };
 
-    it("is created with N of 1, ranked by headcount in team scoring, self check-in off", async () => {
+    it("is created with N of 1 when individual, ranked by headcount for its Placement Points when team, self check-in off", async () => {
       await inRolledBackTransaction(async (tx) => {
         const { createCompetition } = await import("@/mutations/setup");
         const f = await fixture(tx);
@@ -679,8 +699,7 @@ describe.skipIf(!isLocalDatabase)(
               .select({
                 format: f.schema.competition.format,
                 participationPoints: f.schema.competition.participationPoints,
-                participationTeamScoring:
-                  f.schema.competition.participationTeamScoring,
+                placementPoints: f.schema.competition.placementPoints,
                 selfCheckIn: f.schema.competition.selfCheckIn,
               })
               .from(f.schema.competition)
@@ -688,20 +707,20 @@ describe.skipIf(!isLocalDatabase)(
           )[0];
         expect(await read((created as { id: string }).id)).toEqual({
           format: "participation",
-          participationPoints: 1,
-          participationTeamScoring: "ranked",
+          participationPoints: null,
+          placementPoints: [5, 3, 1],
           selfCheckIn: false,
         });
         expect(await read((individual as { id: string }).id)).toEqual({
           format: "participation",
           participationPoints: 1,
-          participationTeamScoring: null,
+          placementPoints: null,
           selfCheckIn: false,
         });
       });
     });
 
-    it("changes scoring only with nobody marked, setting the team scoring to match", async () => {
+    it("changes scoring only with nobody marked, swapping N and Placement Points to match", async () => {
       await inRolledBackTransaction(async (tx) => {
         const { updateCompetition } = await import("@/mutations/setup");
         const { markParticipant, unmarkParticipant } = await load();
@@ -734,30 +753,24 @@ describe.skipIf(!isLocalDatabase)(
             await tx
               .select({
                 scoring: f.schema.competition.scoring,
-                teamScoring: f.schema.competition.participationTeamScoring,
+                participationPoints: f.schema.competition.participationPoints,
+                placementPoints: f.schema.competition.placementPoints,
               })
               .from(f.schema.competition)
               .where(eq(f.schema.competition.id, f.ids.workout))
           )[0];
         expect(await scoringOf()).toEqual({
           scoring: "individual",
-          teamScoring: null,
+          participationPoints: 1,
+          placementPoints: null,
         });
         expect(
           await updateCompetition(f.ids.workout, workout, f.ctx(HOST), tx),
         ).toEqual({ ok: true });
         expect(await scoringOf()).toEqual({
           scoring: "team",
-          teamScoring: "ranked",
-        });
-        // A save that keeps team scoring keeps the Host's choice.
-        await f.setCompetition(f.ids.workout, {
-          participationTeamScoring: "per-person",
-        });
-        await updateCompetition(f.ids.workout, workout, f.ctx(HOST), tx);
-        expect(await scoringOf()).toEqual({
-          scoring: "team",
-          teamScoring: "per-person",
+          participationPoints: null,
+          placementPoints: [5, 3, 1],
         });
       });
     });
@@ -822,15 +835,16 @@ describe.skipIf(!isLocalDatabase)(
 );
 
 describe.skipIf(!isLocalDatabase)("the database CHECK", () => {
-  it("refuses Participation settings on another Format, and a team one without its team scoring", async () => {
+  it("takes N only on an individual participation Competition and Placement Points only on a team one", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await fixture(tx);
       const attempt = async (
+        id: string,
         values: Partial<typeof f.schema.competition.$inferInsert>,
       ) => {
         try {
           await tx.execute("savepoint attempt");
-          await f.setCompetition(f.ids.trivia, values);
+          await f.setCompetition(id, values);
           await tx.execute("rollback to savepoint attempt");
           return "saved";
         } catch (error) {
@@ -841,22 +855,32 @@ describe.skipIf(!isLocalDatabase)("the database CHECK", () => {
           );
         }
       };
-      expect(await attempt({ selfCheckIn: true })).toBe(
-        "competition_participation_columns",
+      const refused = "competition_participation_columns";
+      // Participation settings on another Format.
+      expect(await attempt(f.ids.trivia, { selfCheckIn: true })).toBe(refused);
+      expect(await attempt(f.ids.trivia, { participationPoints: 1 })).toBe(
+        refused,
       );
-      expect(await attempt({ participationPoints: 1 })).toBe(
-        "competition_participation_columns",
+      // An individual one: N, no Placement Points.
+      expect(await attempt(f.ids.spirit, { placementPoints: [3] })).toBe(
+        refused,
       );
-      expect(
-        await attempt({ format: "participation", participationPoints: 1 }),
-      ).toBe("competition_participation_columns");
-      expect(
-        await attempt({
-          format: "participation",
-          participationPoints: 1,
-          participationTeamScoring: "ranked",
-        }),
-      ).toBe("saved");
+      expect(await attempt(f.ids.spirit, { participationPoints: null })).toBe(
+        refused,
+      );
+      expect(await attempt(f.ids.spirit, { participationPoints: 3 })).toBe(
+        "saved",
+      );
+      // A team one: Placement Points, no N.
+      expect(await attempt(f.ids.workout, { participationPoints: 1 })).toBe(
+        refused,
+      );
+      expect(await attempt(f.ids.workout, { placementPoints: null })).toBe(
+        refused,
+      );
+      expect(await attempt(f.ids.workout, { placementPoints: [7, 4] })).toBe(
+        "saved",
+      );
     });
   });
 });

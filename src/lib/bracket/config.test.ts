@@ -54,8 +54,8 @@ describe("bracketConfigSchema", () => {
     expect(bracketConfigSchema("heats").safeParse(null).success).toBe(false);
   });
 
-  it("takes no config for single elimination or points", () => {
-    for (const format of ["single-elimination", "points"] as const) {
+  it("takes no config for single elimination or placement", () => {
+    for (const format of ["single-elimination", "placement"] as const) {
       expect(bracketConfigSchema(format).safeParse(null).success).toBe(true);
       expect(bracketConfigSchema(format).safeParse(undefined).success).toBe(
         true,
@@ -80,7 +80,7 @@ describe("defaultConfig", () => {
 
   it("is null otherwise", () => {
     expect(defaultConfig("single-elimination")).toBeNull();
-    expect(defaultConfig("points")).toBeNull();
+    expect(defaultConfig("placement")).toBeNull();
   });
 });
 

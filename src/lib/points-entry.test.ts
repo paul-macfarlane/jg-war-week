@@ -5,7 +5,6 @@ import {
   buildAdminLedger,
   generatedNote,
   generatedRefusal,
-  overMaxWarning,
   parsePointsEntryInput,
   pointsEntryTarget,
   pointsEntryTargetError,
@@ -122,7 +121,7 @@ describe("buildAdminLedger", () => {
     id: "a",
     competition: "Tug of War",
     competitionId: "c",
-    competitionFormat: "points",
+    competitionFormat: "placement",
     teamName: "Red",
     participantName: null,
     points: 3,
@@ -159,9 +158,9 @@ describe("buildAdminLedger", () => {
 
   it("carries the Competition's Format into the ledger", () => {
     const [entry] = buildAdminLedger([
-      row({ competitionFormat: "games", generatedByBracket: true }),
+      row({ competitionFormat: "head-to-head", generatedByBracket: true }),
     ]);
-    expect(entry.competitionFormat).toBe("games");
+    expect(entry.competitionFormat).toBe("head-to-head");
   });
 });
 
@@ -173,9 +172,9 @@ describe("generated Points Entries", () => {
     );
   });
 
-  it("say games for a games Competition", () => {
-    expect(generatedNote("games")).toBe("From games");
-    expect(generatedRefusal("games")).toBe(
+  it("say games for a Head-to-head or Best score Competition", () => {
+    expect(generatedNote("head-to-head")).toBe("From games");
+    expect(generatedRefusal("best-score")).toBe(
       "This Points Entry comes from a Games Competition. Change it there.",
     );
   });
@@ -184,20 +183,6 @@ describe("generated Points Entries", () => {
     expect(generatedRefusal("participation")).toBe(
       "This Points Entry comes from a Participation Competition. Change it there.",
     );
-  });
-});
-
-describe("overMaxWarning", () => {
-  it("warns only when points exceed a set max", () => {
-    expect(overMaxWarning(10, null)).toBeNull();
-    expect(overMaxWarning(10, 10)).toBeNull();
-    expect(overMaxWarning(10.5, 10)).toBe(
-      "10.5 is over this Competition's max of 10 points. It will still save.",
-    );
-  });
-
-  it("treats a missing or unparseable amount as no warning", () => {
-    expect(overMaxWarning(Number.NaN, 5)).toBeNull();
   });
 });
 

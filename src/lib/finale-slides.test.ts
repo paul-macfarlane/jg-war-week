@@ -332,7 +332,12 @@ describe("championsList", () => {
           format: "heats",
           finalizedAt: at(30),
         },
-        { id: "pong", name: "Ping Pong", format: "games", finalizedAt: at(10) },
+        {
+          id: "pong",
+          name: "Ping Pong",
+          format: "head-to-head",
+          finalizedAt: at(10),
+        },
         {
           id: "workout",
           name: "Daily Workout Check-in",
@@ -353,7 +358,12 @@ describe("championsList", () => {
           format: "single-elimination",
           finalizedAt: null,
         },
-        { id: "mile", name: "Mile Run", format: "points", finalizedAt: at(1) },
+        {
+          id: "mile",
+          name: "Mile Run",
+          format: "placement",
+          finalizedAt: at(1),
+        },
       ],
       [
         generated("chess", ada, 5),
@@ -373,7 +383,7 @@ describe("championsList", () => {
       {
         competitionId: "pong",
         competition: "Ping Pong",
-        format: "games",
+        format: "head-to-head",
         label: "Winner",
         title: "Tie: Fay Falcon & Jax Jetpack",
         winners: [fay, jax],
@@ -400,7 +410,14 @@ describe("championsList", () => {
   it("is empty with nothing finalized", () => {
     expect(
       championsList(
-        [{ id: "mile", name: "Mile Run", format: "points", finalizedAt: null }],
+        [
+          {
+            id: "mile",
+            name: "Mile Run",
+            format: "placement",
+            finalizedAt: null,
+          },
+        ],
         [],
       ),
     ).toEqual([]);
@@ -468,7 +485,7 @@ describe("finaleSlideData", () => {
       {
         competitionId: "pong",
         competition: "Ping Pong",
-        format: "games",
+        format: "head-to-head",
         label: "Winner",
         title: "Ada Anvil",
         winners: [

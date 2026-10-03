@@ -375,7 +375,6 @@ describe("parseCompetitionInput", () => {
     name: " Catan ",
     description: " ",
     scoring: "individual",
-    maxPoints: " 10 ",
     placementPoints: "5, 3 1",
     countsTowardTeam: true,
     group: " Board games ",
@@ -388,7 +387,6 @@ describe("parseCompetitionInput", () => {
         name: "Catan",
         description: null,
         scoring: "individual",
-        maxPoints: 10,
         placementPoints: [5, 3, 1],
         countsTowardTeam: true,
         competitionGroup: "Board games",
@@ -397,21 +395,18 @@ describe("parseCompetitionInput", () => {
     expect(
       parseCompetitionInput({
         ...competition,
-        maxPoints: "",
         placementPoints: " ",
         group: "",
       }),
     ).toMatchObject({
       ok: true,
-      value: { maxPoints: null, placementPoints: null, competitionGroup: null },
+      value: { placementPoints: null, competitionGroup: null },
     });
   });
 
   it.each([
     [{ name: "" }, "Name must not be empty."],
     [{ scoring: "both" }, "Scoring must be one of team, individual."],
-    [{ maxPoints: "ten" }, "Max points must be a number."],
-    [{ maxPoints: "0" }, "Max points must be more than 0."],
     [
       { placementPoints: "5, three" },
       "Placement Points must be numbers separated by commas, 1st place first.",
@@ -424,10 +419,6 @@ describe("parseCompetitionInput", () => {
     [
       { placementPoints: "6, 5, 4, 3, 2, 1" },
       "Placement Points cover at most 5 places.",
-    ],
-    [
-      { placementPoints: "12, 3" },
-      "1st place's Placement Points can't be more than Max points.",
     ],
     [
       { scoring: "team" },
@@ -446,16 +437,15 @@ describe("parseCreateCompetitionInput", () => {
     name: " Catan ",
     description: "",
     scoring: "individual",
-    maxPoints: "",
     placementPoints: "",
     countsTowardTeam: false,
     group: "",
   };
 
-  it("defaults to the points Format", () => {
+  it("defaults to the placement Format", () => {
     expect(parseCreateCompetitionInput(competition)).toMatchObject({
       ok: true,
-      value: { format: "points" },
+      value: { format: "placement" },
     });
   });
 
@@ -480,46 +470,25 @@ describe("parseCreateCompetitionInput", () => {
   it("refuses an unknown Format", () => {
     expectRefused(
       parseCreateCompetitionInput({ ...competition, format: "swiss" }),
-      "Format must be one of points, single-elimination, heats, games, participation.",
+      "Format must be one of placement, single-elimination, heats, head-to-head, best-score, participation.",
     );
   });
 
-  it("takes the games Format with its Game Type", () => {
-    expect(
-      parseCreateCompetitionInput({
-        ...competition,
-        format: "games",
-        gameType: "best-score",
-      }),
-    ).toMatchObject({
-      ok: true,
-      value: { format: "games", gameType: "best-score" },
-    });
-  });
+  it.each(["head-to-head", "best-score"])(
+    "takes the %s Format on its own, with no Game Type to choose",
+    (format) => {
+      expect(
+        parseCreateCompetitionInput({ ...competition, format }),
+      ).toMatchObject({ ok: true, value: { format } });
+    },
+  );
 
-  it("refuses the games Format without a Game Type", () => {
-    expectRefused(
-      parseCreateCompetitionInput({ ...competition, format: "games" }),
-      "Choose a Game Type.",
-    );
-    expectRefused(
-      parseCreateCompetitionInput({
-        ...competition,
-        format: "games",
-        gameType: "darts",
-      }),
-      "Choose a Game Type.",
-    );
-  });
-
-  it("ignores a Game Type sent with another Format", () => {
-    const parsed = parseCreateCompetitionInput({
-      ...competition,
-      format: "heats",
-      gameType: "ranked",
-    });
-    expect(parsed).toMatchObject({ ok: true, value: { format: "heats" } });
-    expect(parsed.ok && parsed.value.gameType).toBeFalsy();
+  it("refuses the retired games and points Formats", () => {
+    for (const format of ["games", "points"]) {
+      expect(
+        parseCreateCompetitionInput({ ...competition, format }),
+      ).toMatchObject({ ok: false });
+    }
   });
 
   it("refuses a non-string format as a field error instead of throwing", () => {
@@ -528,7 +497,7 @@ describe("parseCreateCompetitionInput", () => {
         ...competition,
         format: 123 as unknown as string,
       }),
-      "Format must be one of points, single-elimination, heats, games, participation.",
+      "Format must be one of placement, single-elimination, heats, head-to-head, best-score, participation.",
     );
   });
 });
@@ -540,46 +509,89 @@ describe("competitionSeedSchema, games", () => {
     return result.success ? [] : result.error.issues.map((i) => i.message);
   };
 
-  it("takes a games Competition with its Game Type, settings and Entrants open", () => {
+  it("takes a Head-to-head Competition with its settings and Entrants open", () => {
     expect(
       issues({
         ...base,
-        format: "games",
-        gameType: "head-to-head",
+        format: "head-to-head",
         gameConfig: { drawsAllowed: false, bestOf: null },
         entrantsOpen: true,
       }),
     ).toEqual([]);
-    expect(issues({ ...base, format: "games", gameType: "ranked" })).toEqual(
-      [],
-    );
+    expect(issues({ ...base, format: "best-score" })).toEqual([]);
   });
 
-  it("needs a gameType exactly when the Format is games", () => {
-    expect(issues({ ...base, format: "games" })).toEqual([
-      "gameType is required for a games Competition",
-    ]);
-    expect(issues({ ...base, gameType: "ranked" })).toEqual([
-      "gameType is only for a games Competition",
-    ]);
-  });
-
-  it("takes gameConfig and entrantsOpen only on a games Competition", () => {
+  it("takes gameConfig and entrantsOpen only on a Head-to-head or Best score Competition", () => {
     expect(issues({ ...base, format: "heats", entrantsOpen: true })).toEqual([
-      "entrantsOpen is only for a games Competition",
+      "entrantsOpen is only for a head-to-head or best-score Competition",
     ]);
-    expect(issues({ ...base, gameConfig: { finishPoints: [] } })).toEqual([
-      "gameConfig is only for a games Competition",
+    expect(issues({ ...base, gameConfig: { drawsAllowed: true } })).toEqual([
+      "gameConfig is only for a head-to-head or best-score Competition",
     ]);
   });
 
-  it("checks gameConfig against the Game Type", () => {
+  it("refuses the removed gameType and finishPoints keys", () => {
+    for (const extra of [
+      { gameType: "head-to-head" },
+      { gameConfig: { finishPoints: [] }, format: "best-score" },
+    ]) {
+      expect(issues({ ...base, format: "head-to-head", ...extra })).not.toEqual(
+        [],
+      );
+    }
+  });
+
+  it("checks gameConfig against the Format", () => {
     expect(
       issues({
         ...base,
-        format: "games",
-        gameType: "best-score",
+        format: "best-score",
         gameConfig: { drawsAllowed: true, bestOf: null },
+      }),
+    ).not.toEqual([]);
+  });
+});
+
+describe("competitionSeedSchema, participation", () => {
+  const base = { name: "Check-in", format: "participation" as const };
+  const issues = (input: unknown) => {
+    const result = competitionSeedSchema.safeParse(input);
+    return result.success ? [] : result.error.issues.map((i) => i.message);
+  };
+
+  it("an individual one takes N and no Placement Points", () => {
+    expect(
+      issues({ ...base, scoring: "individual", participationPoints: 2 }),
+    ).toEqual([]);
+    expect(
+      issues({ ...base, scoring: "individual", placementPoints: [3] }),
+    ).toEqual(["placementPoints is only for a team participation Competition"]);
+  });
+
+  it("a team one takes Placement Points and no N", () => {
+    expect(
+      issues({ ...base, scoring: "team", placementPoints: [3, 2, 1] }),
+    ).toEqual([]);
+    expect(issues({ ...base, scoring: "team" })).toEqual([
+      "placementPoints is required for a team participation Competition",
+    ]);
+    expect(
+      issues({
+        ...base,
+        scoring: "team",
+        placementPoints: [3],
+        participationPoints: 1,
+      }),
+    ).toEqual(["participationPoints is only for an individual Competition"]);
+  });
+
+  it("refuses the removed participationTeamScoring key", () => {
+    expect(
+      issues({
+        ...base,
+        scoring: "team",
+        placementPoints: [3],
+        participationTeamScoring: "ranked",
       }),
     ).not.toEqual([]);
   });
@@ -725,7 +737,7 @@ describe("competitionGuardError", () => {
   it("asks to reopen a closed games Competition before a scoring or Placement Points change", () => {
     const closed = {
       ...existingBase,
-      format: "games" as const,
+      format: "head-to-head" as const,
       finalizedAt: new Date(),
     };
     expect(
@@ -806,7 +818,6 @@ describe("setup parsers given a malformed call", () => {
     name: "Catan",
     description: "",
     scoring: "individual",
-    maxPoints: "10",
     placementPoints: "5, 3, 1",
     countsTowardTeam: false,
     group: "",
@@ -815,7 +826,6 @@ describe("setup parsers given a malformed call", () => {
   it.each<[string, Record<string, unknown>]>([
     ["placementPoints: 5", { placementPoints: 5 }],
     ["placementPoints: [5]", { placementPoints: [5] }],
-    ["maxPoints: 10", { maxPoints: 10 }],
     ["name: null", { name: null }],
     ["description: {}", { description: {} }],
     ["group: []", { group: [] }],

@@ -81,6 +81,28 @@ export async function deleteXiCompetition(name: string) {
   );
 }
 
+/**
+ * The Points Entries of a War Week XI Competition, by Participant name (or
+ * Team name), as an independent check of what Close wrote: `war_week_id` is
+ * the War Week's, whoever it targets.
+ */
+export async function xiCompetitionEntries(
+  name: string,
+): Promise<{ target: string; points: number; generated: boolean }[]> {
+  return runQuery<{ target: string; points: number; generated: boolean }>(
+    `select coalesce(p.display_name, t.name) as target,
+       pe.points::float as points, pe.generated_by_bracket as generated
+     from points_entry pe
+     join competition c on c.id = pe.competition_id
+     join war_week w on w.id = pe.war_week_id and w.edition = 'xi'
+     left join participant p on p.id = pe.participant_id
+     left join team t on t.id = pe.team_id
+     where c.name = $1
+     order by target`,
+    [name],
+  );
+}
+
 /** A War Week XI Competition's id, by name. */
 export async function xiCompetitionId(name: string): Promise<string> {
   const [row] = await runQuery<{ id: string }>(

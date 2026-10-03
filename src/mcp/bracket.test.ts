@@ -65,13 +65,17 @@ describe("toParticipationBracketResult", () => {
 describe("toGamesBracketResult", () => {
   it("answers bracket: null and points to get_games for a games Competition", () => {
     expect(
-      toGamesBracketResult({ name: "Bouncy Pong", scoring: "individual" }),
+      toGamesBracketResult({
+        name: "Bouncy Pong",
+        scoring: "individual",
+        format: "head-to-head",
+      }),
     ).toEqual({
       found: true,
       competition: {
         name: "Bouncy Pong",
         scoring: "individual",
-        format: "games",
+        format: "head-to-head",
       },
       bracket: null,
       message:
@@ -97,7 +101,7 @@ describe("toBracketResult", () => {
         warWeekId: "w1",
         name: "Trivia",
         scoring: "team",
-        format: "points",
+        format: "placement",
         placementPoints: null,
         finalizedAt: null,
         selfReport: false,
@@ -113,7 +117,7 @@ describe("toBracketResult", () => {
 
     expect(toBracketResult(view, days, "Trivia")).toEqual({
       found: true,
-      competition: { name: "Trivia", scoring: "team", format: "points" },
+      competition: { name: "Trivia", scoring: "team", format: "placement" },
       bracket: null,
       message: expect.stringContaining("isn't run as a Bracket"),
     });

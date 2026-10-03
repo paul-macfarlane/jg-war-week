@@ -92,13 +92,13 @@ async function fixture(tx: DBTx) {
       warWeekId: live.id,
       name: "Chess",
       description: "1v1",
-      maxPoints: 10,
       placementPoints: [10, 5],
       scoring: "team",
       competitionGroup: "Board games",
     })
     .returning();
   await tx.insert(schema.pointsEntry).values({
+    warWeekId: live.id,
     competitionId: chess.id,
     teamId: red.id,
     points: 10,
@@ -257,6 +257,7 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
         .values({ warWeekId: live.id, name: "Blue", color: "#00f" })
         .returning();
       await tx.insert(schema.pointsEntry).values({
+        warWeekId: live.id,
         competitionId: chess.id,
         teamId: blue.id,
         points: 10,
@@ -438,7 +439,6 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
           warWeekId: empty.id,
           name: "Cup",
           description: "Cup",
-          maxPoints: 10,
           placementPoints: [10, 5],
           scoring: "team",
         })
@@ -455,6 +455,7 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
       });
       // ...then a Points Entry lands before the mutation locks the row.
       await tx.insert(schema.pointsEntry).values({
+        warWeekId: empty.id,
         competitionId: cup.id,
         teamId: blue.id,
         points: 5,
@@ -484,7 +485,6 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
           warWeekId: live.id,
           name: "Cup",
           description: "Cup",
-          maxPoints: 10,
           placementPoints: [10, 5],
           scoring: "team",
         })
@@ -700,7 +700,6 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
       expect(competitions[0]).toMatchObject({
         name: "Chess",
         description: "1v1",
-        maxPoints: 10,
         placementPoints: [10, 5],
         scoring: "team",
         countsTowardTeam: false,

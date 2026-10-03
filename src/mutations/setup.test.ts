@@ -534,6 +534,7 @@ async function rosterFixture(tx: DBTx) {
     ])
     .returning({ id: schema.competition.id });
   await tx.insert(schema.pointsEntry).values({
+    warWeekId: home,
     competitionId: catan.id,
     participantId: neo.id,
     points: 5,
@@ -576,7 +577,6 @@ const competitionValues = {
   name: "Chess",
   description: null,
   scoring: "individual" as const,
-  maxPoints: 10,
   placementPoints: [5, 3, 1],
   countsTowardTeam: true,
   competitionGroup: "Board games",
@@ -628,6 +628,7 @@ describe.skipIf(!isLocalDatabase)("Team mutations", () => {
       ).toEqual({ ok: false, error: 'There\'s already a Team named "Red".' });
 
       await tx.insert(schema.pointsEntry).values({
+        warWeekId: home,
         competitionId: (
           await tx
             .select({ id: schema.competition.id })
@@ -963,10 +964,9 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
         .where(eq(schema.competition.name, "Chess"));
       expect(chess).toMatchObject({
         placementPoints: [5, 3, 1],
-        maxPoints: 10,
         countsTowardTeam: true,
         competitionGroup: "Board games",
-        format: "points",
+        format: "placement",
         bracketConfig: null,
       });
 
@@ -1302,7 +1302,6 @@ describe.skipIf(!isLocalDatabase)("setCompetitionHosts", () => {
         name: "Catan",
         description: "",
         scoring: "individual",
-        maxPoints: "",
         placementPoints: "",
         countsTowardTeam: false,
         group: "",

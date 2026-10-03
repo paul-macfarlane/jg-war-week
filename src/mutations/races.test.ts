@@ -113,6 +113,7 @@ describe.skipIf(!isLocalDatabase)(
         .insert(pointsEntry)
         .values(
           ["edited", "deleted"].map((note) => ({
+            warWeekId: f.ctx.warWeekId,
             competitionId: f.competitionId,
             teamId: f.teamId,
             points: 3,
@@ -222,7 +223,6 @@ describe.skipIf(!isLocalDatabase)(
                 name: "Tug of War",
                 description: null,
                 scoring: "individual",
-                maxPoints: null,
                 placementPoints: null,
                 countsTowardTeam: false,
                 competitionGroup: null,
@@ -298,6 +298,7 @@ describe.skipIf(!isLocalDatabase)(
         const [entry] = await f.db
           .insert(pointsEntry)
           .values({
+            warWeekId: f.ctx.warWeekId,
             competitionId: relay.id,
             teamId: f.teamId,
             points: 3,
@@ -314,7 +315,6 @@ describe.skipIf(!isLocalDatabase)(
                 name: "Tug of War",
                 description: null,
                 scoring: "individual",
-                maxPoints: null,
                 placementPoints: null,
                 countsTowardTeam: false,
                 competitionGroup: null,

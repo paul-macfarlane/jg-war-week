@@ -29,12 +29,12 @@ import {
 // seeded XI Competition. Both Competitions are picked by name from
 // seeds/xi.json; the smoke Organizer, the Participant and everyone else
 // never host anything.
-// AI Survey Completion stays `points` (team scoring); Tuesday Stairs is
+// AI Survey Completion stays `placement` (team scoring); Tuesday Stairs is
 // run as Games now.
 const HOST_COMPETITION = "AI Survey Completion";
 const OTHER_COMPETITION = "Cypher";
 const NOT_HOST_REFUSAL = "You're not a Host of that Competition.";
-// Both fixture Competitions default to `format: "points"` (the seed sets no
+// Both fixture Competitions default to `format: "placement"` (the seed sets no
 // Format), so a Bracket-only action refuses them with this before it ever
 // reaches a Host check.
 const NOT_A_BRACKET = "This Competition isn't run as a Bracket.";

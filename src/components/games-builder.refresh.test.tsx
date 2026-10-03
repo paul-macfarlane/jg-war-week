@@ -26,7 +26,7 @@ function competition(config: GamesConfig): Props["competition"] {
     id: "c1",
     name: "Bouncy Pong",
     scoring: "individual",
-    gameType: "ranked",
+    gameFormat: "best-score",
     config,
     entrantsOpen: true,
     loggingClosesAt: null,
@@ -76,8 +76,7 @@ function show(config: GamesConfig) {
   );
 }
 
-const field = () =>
-  host.querySelector<HTMLInputElement>("#games-finish-points")!;
+const field = () => host.querySelector<HTMLInputElement>("#games-unit")!;
 
 function type(input: HTMLInputElement, value: string) {
   // React tracks the value; set it through the native setter, then fire input.
@@ -91,19 +90,25 @@ function type(input: HTMLInputElement, value: string) {
   });
 }
 
+const bestScore = (unit: string): GamesConfig => ({
+  count: "best",
+  betterIs: "higher",
+  unit,
+});
+
 describe("GamesBuilder after a save", () => {
-  it("shows the saved Finish Points when the page's props change (router.refresh)", () => {
-    mount({ finishPoints: [] });
+  it("shows the saved unit when the page's props change (router.refresh)", () => {
+    mount(bestScore(""));
     expect(field().value).toBe("");
-    show({ finishPoints: [5, 3, 1] });
-    expect(field().value).toBe("5, 3, 1");
+    show(bestScore("trips"));
+    expect(field().value).toBe("trips");
   });
 
   it("keeps an edit when the page re-renders with the same saved props", () => {
-    mount({ finishPoints: [5, 3, 1] });
-    type(field(), "9, 4");
-    expect(field().value).toBe("9, 4");
-    show({ finishPoints: [5, 3, 1] });
-    expect(field().value).toBe("9, 4");
+    mount(bestScore("trips"));
+    type(field(), "laps");
+    expect(field().value).toBe("laps");
+    show(bestScore("trips"));
+    expect(field().value).toBe("laps");
   });
 });
