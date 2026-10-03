@@ -9,6 +9,7 @@ import {
   assertAdminGate,
   assertAdminGuidePage,
   assertAdminLink,
+  assertAdminRedirects,
   assertAdminWording,
   assertSignInRequired,
 } from "./admin";
@@ -21,6 +22,11 @@ import {
 } from "./announcements";
 import { assertArchiveDetail, assertHistory } from "./archive";
 import {
+  assertAwardCategoriesSeeded,
+  assertAwardsPageGrouped,
+} from "./award-categories";
+import { assertAwardHistoryRoute } from "./award-history";
+import {
   assertAwardActions,
   assertAwardAdminPages,
   assertAwardsPage,
@@ -31,6 +37,7 @@ import {
   assertHeatsLoop,
   assertSquadSelfReportLoop,
 } from "./brackets";
+import { assertDiscretionaryPoints } from "./discretionary-points";
 import { assertFinale } from "./finale";
 import { assertGamesLoop } from "./games";
 import {
@@ -63,15 +70,19 @@ import {
   assertAboutPage,
   assertCompetitionDetail,
   assertCompetitions,
+  assertDiscretionaryReasonConstraint,
   assertDisplayScriptInHead,
   assertEditionErrorBoundary,
+  assertFinaleSlidesKeptIds,
   assertFreeForAllRoster,
   assertHomeNowNext,
   assertInstallable,
   assertLeaderboard,
   assertLlmsTxt,
   assertMoreLinks,
+  assertParticipationColumnsConstraint,
   assertPlacementPointsSeeded,
+  assertPlacementTargetConstraint,
   assertPointsEntryTargetConstraint,
   assertPrivacyAndTermsPages,
   assertRootRedirect,
@@ -79,15 +90,14 @@ import {
   assertSeedLoadedOnce,
   assertSignInPage,
   assertTeams,
+  assertTestSignInOffAndUpdateUserDisabled,
   assertUnknownEdition404,
   assertXiHome,
   assertYouHighlight,
   restoreFaqTable,
+  xiFinaleSlideIds,
 } from "./pages";
-import {
-  assertAdminPointsPage,
-  assertPointsEntryActions,
-} from "./points-entries";
+import { assertParticipationLoop } from "./participation";
 import {
   assertSetup,
   assertSetupScheduleFaq,
@@ -127,6 +137,7 @@ async function main() {
   // Load every seed (the XI demo in place of the real XI) twice: the first load resets each War Week so the counts
   // below match the seeds exactly; the second proves loading is idempotent.
   const seedFiles = localSeedFiles();
+  let finaleSlideIds: string[] = [];
   for (const [attempt, flags] of [
     [1, ["--reset"]],
     [2, []],
@@ -140,10 +151,16 @@ async function main() {
     ) {
       process.exit(1);
     }
+    if (attempt === 1) finaleSlideIds = await xiFinaleSlideIds();
   }
   await assertSeedLoadedOnce();
+  await assertFinaleSlidesKeptIds(finaleSlideIds);
   await assertPointsEntryTargetConstraint();
+  await assertDiscretionaryReasonConstraint();
+  await assertPlacementTargetConstraint();
+  await assertParticipationColumnsConstraint();
   await assertPlacementPointsSeeded();
+  await assertAwardCategoriesSeeded();
 
   // Clear leftovers from an interrupted run, then add the smoke Organizer
   // to XI's allowlist until the run ends.
@@ -187,6 +204,7 @@ async function main() {
       await assertLlmsTxt();
       await assertHistory();
       await assertArchiveDetail();
+      await assertAwardHistoryRoute();
       await assertCompetitions();
       await assertCompetitionDetail();
       await assertTeams();
@@ -196,13 +214,14 @@ async function main() {
       await assertAboutPage();
       await assertPrivacyAndTermsPages();
       await assertSignInPage();
+      await assertTestSignInOffAndUpdateUserDisabled();
       await assertAdminGate(sessions);
       await assertAdminWording(sessions);
+      await assertAdminRedirects(sessions);
       await assertSignInRequired();
       await assertAdminLink(sessions);
       await assertAdminGuidePage(sessions);
-      await assertAdminPointsPage(sessions);
-      await assertPointsEntryActions(sessions);
+      await assertDiscretionaryPoints(sessions);
       await assertFinale(sessions);
       await assertAnnouncementFeed();
       await assertAnnouncementHomePinned();
@@ -210,6 +229,7 @@ async function main() {
       await assertAnnouncementUnsafeContentStripped(sessions);
       await assertAnnouncementAdminPages(sessions);
       await assertAwardsPage();
+      await assertAwardsPageGrouped();
       await assertFaqPage();
       await assertAwardActions(sessions);
       await assertAwardAdminPages(sessions);
@@ -221,6 +241,7 @@ async function main() {
       await assertSquadSelfReportLoop(sessions);
       await assertHostChecks(sessions);
       await assertParticipantRefused(sessions);
+      await assertParticipationLoop(sessions);
       // Ends XI by SQL in its own step, then restores it.
       await assertGamesLoop(sessions);
       await assertPostedWarWeekWins(sessions);

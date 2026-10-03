@@ -1,51 +1,65 @@
 /**
- * Writes the About page's media (tickets 28, 03, 04) from the seeded demo,
- * never by hand: `public/about/finale-poster.png` (War Week XI's Finale on
- * a phone, mid-countdown; a still only — no Finale video is written or
- * shown), the hero's `standings-before.png` / `standings-entry.png` /
- * `standings-after.png` (an Organizer's real Points Entry moving the home
- * Standings), and one still per feature card at `public/about/<slug>.png`.
- * Afterwards it screenshots `/about` as an anonymous visitor at 390px,
- * desktop and with reduced motion into `test-results/28-splash/`, with a
- * log.
+ * Writes the About page's media (tickets 28, 03, 04, 43) from the current
+ * War Week's seeded demo, never by hand: `public/about/finale-poster.png`
+ * (its Finale's Title slide on a phone, which gives nothing away; a still
+ * only — no Finale video is written or shown), the hero's
+ * `standings-before.png` / `standings-entry.png` / `standings-after.png`
+ * (an Organizer's real Discretionary points moving the home Standings), and one
+ * still per feature card at `public/about/<slug>.png`. Every one of them is
+ * written twice (the About dark stills fix): `<name>.png` under the light
+ * Display and `<name>-dark.png` under the dark one, so `/about` can show
+ * the still matching its viewer's Display. Afterwards it screenshots
+ * `/about` as an anonymous visitor at 390px, desktop (light and dark) and
+ * with reduced motion into `test-results/about-media/`, with a log (and a
+ * logged-Game still there as evidence).
  *
- * Needs a production build and a freshly seeded local Postgres, the same
- * prerequisite as `docs/maintainers-guide.md` (`pnpm build`, then
- * `pnpm seed:load --reset seeds/*.json && pnpm seed:demo`), and Google
- * Chrome. Starts its own server on port 3202, signs in as a made-up Organizer
- * (`about-demo@jahnelgroup.com`) that it adds to the Organizer list and
- * lends XI's seeded Points Entries for the run, so no real email is in any
- * file, and restores everything after, including the one Points Entry the
- * Standings hero saves:
+ * Every page is the current War Week's (live, else next upcoming, else most
+ * recent completed: the same resolution as `/` and `/about`), in its
+ * Appearance Theme and Teams or free-for-all mode. Needs a production build,
+ * a local Postgres seeded with that edition's demo, and Google Chrome:
+ *   pnpm build && pnpm seed:demo:xii
+ * (next year, write `seeds/demo/<edition>.json` and use
+ * `pnpm seed:demo:<edition>`). Starts its own server on port 3202, signs in
+ * as a made-up Organizer (`about-demo@jahnelgroup.com`) that it adds to the
+ * Organizer list and lends the War Week's seeded Points Entries and
+ * Announcements for the run, so no real email is in any file, and restores
+ * everything after, including the one Points Entry the Standings hero saves:
  *   pnpm tsx scripts/about-media.ts
  *
- * `--stills` rewrites the feature-card and Standings-hero stills and
- * leaves the Finale poster alone:
+ * `--stills` rewrites the feature-card and Standings-hero stills (both
+ * schemes) and leaves the Finale poster alone (both schemes):
  *   pnpm tsx scripts/about-media.ts --stills
  */
+import { TZDate } from "@date-fns/tz";
 import { loadEnvConfig } from "@next/env";
-import { makeSignature } from "better-auth/crypto";
 import { type ChildProcess, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
   mkdtempSync,
-  readFileSync,
   rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { Client } from "pg";
 
-import { ABOUT_FEATURES, STATIC_PAGE_THEME } from "@/lib/about";
-import { DISPLAY_STORAGE_KEY } from "@/lib/display";
+import { ABOUT_FEATURES } from "@/lib/about";
+import { DISPLAY_CHANGE_EVENT, DISPLAY_STORAGE_KEY } from "@/lib/display";
 import { FINALE_MAX_MS } from "@/lib/finale";
 import { backgroundColorScheme } from "@/lib/theme";
 import type { LeaderboardResult } from "@/mcp/leaderboard";
-import { DEMO_SEED } from "@/seed/local-files";
+
+import {
+  type DemoServer,
+  SESSION_COOKIE,
+  createDemoSession,
+  displayInitScript,
+  query,
+  setupBracketDemo as setupBracketDemoOn,
+  startDemoServer,
+} from "./media/demo";
 
 loadEnvConfig(process.cwd());
 
@@ -56,25 +70,15 @@ const CHROME =
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const DEBUG_PORT = 9304;
 const MEDIA = path.resolve(process.cwd(), "public/about");
-const EVIDENCE = path.resolve(process.cwd(), "test-results/28-splash");
+const EVIDENCE = path.resolve(process.cwd(), "test-results/about-media");
 const AUTH_SECRET = `about-media-secret-${randomUUID()}`;
 const DEMO_EMAIL = "about-demo@jahnelgroup.com";
 const STILL = { width: 1280, height: 720 };
 const PHONE = { width: 390, height: 844 };
-/**
- * Every still and the Finale poster wear XI's base palette, the scheme its
- * Organizer designed, not whatever this Chrome's OS happens to be set to
- * (it has no stored `ww:display`, so under System it would follow the Mac).
- * Pinned per page via `Page.addScriptToEvaluateOnNewDocument`, never
- * `Emulation.setEmulatedMedia` (the reduced-motion capture below replaces
- * its feature list wholesale, which would drop an earlier media pin).
- */
-const PINNED_DISPLAY = backgroundColorScheme(STATIC_PAGE_THEME.backgroundColor);
-/** Around the Finale: this much of the Start screen before, and after. */
-const LEAD_IN_MS = 2_500;
+/** After the Standings countdown: this long on its final state. */
 const HOLD_MS = 3_500;
-/** A time inside XI's week for the Now / Next still (ET). */
-const SCHEDULE_AT = "2026-02-24T12:15:00-05:00";
+/** Between the presenter's → presses on the way to the countdown. */
+const STEP_MS = 700;
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const log: string[] = [];
@@ -86,42 +90,107 @@ const note = (line: string) => {
 // ---------------------------------------------------------------------------
 // Database
 
-async function query<T = Record<string, unknown>>(
-  sql: string,
-  params: unknown[] = [],
-): Promise<T[]> {
-  const client = new Client({ connectionString: process.env.DATABASE_URL });
-  await client.connect();
-  try {
-    return (await client.query(sql, params)).rows as T[];
-  } finally {
-    await client.end();
+/** The War Week every capture is taken from, resolved once in `main`. */
+type CurrentWarWeek = {
+  id: string;
+  edition: string;
+  mode: "teams" | "free-for-all";
+  background_color: string;
+};
+
+let current: CurrentWarWeek;
+/** The current War Week's home: `/` and its edition. */
+const home = () => `/${current.edition}`;
+/**
+ * The About stills and the Finale poster are captured once per scheme in
+ * `SCHEMES` (the About dark stills fix); anything else (the Games and
+ * `/about` evidence) wears the current War Week's base palette, the scheme
+ * its Organizer designed. Either way the Display is pinned, never whatever
+ * this Chrome's OS happens to be set to (it has no stored `ww:display`, so
+ * under System it would follow the Mac). Pinned per page via
+ * `Page.addScriptToEvaluateOnNewDocument`, never `Emulation.setEmulatedMedia`
+ * (the reduced-motion capture below replaces its feature list wholesale,
+ * which would drop an earlier media pin).
+ */
+const pinnedDisplay = () => backgroundColorScheme(current.background_color);
+/** Every About still is written once per Display scheme. */
+const SCHEMES = ["light", "dark"] as const;
+type Scheme = (typeof SCHEMES)[number];
+/** `<name>.png` for the light Display, `<name>-dark.png` for the dark. */
+const stillFile = (name: string, scheme: Scheme) =>
+  scheme === "light" ? `${name}.png` : `${name}-dark.png`;
+/**
+ * Switches an open page's Display the way `DisplayMenu` does (stored,
+ * applied to `html[data-display]`, change event), without a reload.
+ */
+const switchDisplay = (scheme: Scheme) =>
+  `(() => { try { localStorage.setItem(${JSON.stringify(DISPLAY_STORAGE_KEY)}, ${JSON.stringify("__S__")}); } catch (e) {} document.documentElement.dataset.display = ${JSON.stringify("__S__")}; window.dispatchEvent(new Event(${JSON.stringify(DISPLAY_CHANGE_EVENT)})); })()`.replaceAll(
+    "__S__",
+    scheme,
+  );
+/** Teams-mode Standings rank Teams; free-for-all, Participants. */
+const standingsKind = () =>
+  current.mode === "teams" ? ("team" as const) : ("individual" as const);
+
+const createSession = (email: string) =>
+  createDemoSession(email, AUTH_SECRET, "About demo");
+
+/**
+ * The current War Week, resolved as `getCurrentWarWeek` does
+ * (`selectCurrentWarWeek`): live, else the earliest upcoming, else the
+ * latest completed, with the same `editionNumber` tie-breaks (the SQL
+ * mirrors it, as importing the selector would load the app's database).
+ */
+async function resolveCurrentWarWeek(): Promise<CurrentWarWeek> {
+  const [row] = await query<CurrentWarWeek>(
+    `select id, edition, mode, background_color from war_week
+     where status in ('live', 'upcoming', 'complete')
+     order by case status when 'live' then 0 when 'upcoming' then 1 else 2 end,
+       case when status = 'upcoming' then start_date end asc,
+       case when status = 'upcoming' then edition_number end asc,
+       start_date desc, edition_number desc
+     limit 1`,
+  );
+  if (!row) {
+    throw new Error("no War Week: run `pnpm seed:demo:<edition>` first");
   }
+  return row;
 }
 
-async function createSession(email: string): Promise<string> {
-  const userId = `smoke-${randomUUID()}`;
-  const token = `smoke-${randomUUID()}`;
-  await query(`delete from "user" where email = $1`, [email]);
-  await query(
-    `insert into "user" (id, name, email, email_verified) values ($1, 'About demo', $2, true)`,
-    [userId, email],
+/**
+ * Lends the current War Week's seeded Points Entries and Announcements to
+ * the demo Organizer, so whoever entered them (an email) never appears in a
+ * capture; returns the undo, which puts each row's own author back.
+ */
+async function lendAuthorship(): Promise<() => Promise<void>> {
+  const entries = await query<{ id: string; email: string }>(
+    `update points_entry p set entered_by_email = $1
+     from points_entry old
+     where p.id = old.id and p.war_week_id = $2
+     returning p.id, old.entered_by_email as email`,
+    [DEMO_EMAIL, current.id],
   );
-  await query(
-    `insert into session (id, token, user_id, expires_at) values ($1, $2, $3, now() + interval '1 hour')`,
-    [`smoke-${randomUUID()}`, token, userId],
+  const announcements = await query<{ id: string; email: string }>(
+    `update announcement a set author_email = $1
+     from announcement old
+     where a.id = old.id and a.war_week_id = $2
+     returning a.id, old.author_email as email`,
+    [DEMO_EMAIL, current.id],
   );
-  return encodeURIComponent(
-    `${token}.${await makeSignature(token, AUTH_SECRET)}`,
-  );
-}
-
-/** The seeded Organizer, whose email must not appear in any file written. */
-function seededOrganizerEmail(): string {
-  const seed = JSON.parse(
-    readFileSync(path.resolve(process.cwd(), DEMO_SEED), "utf8"),
-  ) as { organizers: string[] };
-  return seed.organizers[0];
+  return async () => {
+    for (const { id, email } of entries) {
+      await query(
+        `update points_entry set entered_by_email = $2 where id = $1`,
+        [id, email],
+      );
+    }
+    for (const { id, email } of announcements) {
+      await query(`update announcement set author_email = $2 where id = $1`, [
+        id,
+        email,
+      ]);
+    }
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -159,7 +228,7 @@ class Page {
     });
   }
 
-  static async open(display: "light" | "dark" = PINNED_DISPLAY): Promise<Page> {
+  static async open(display = pinnedDisplay()): Promise<Page> {
     const target = (await (
       await fetch(`http://127.0.0.1:${DEBUG_PORT}/json/new?about:blank`, {
         method: "PUT",
@@ -175,7 +244,7 @@ class Page {
     await page.send("Network.enable");
     await page.send("Runtime.enable");
     await page.send("Page.addScriptToEvaluateOnNewDocument", {
-      source: `try{localStorage.setItem(${JSON.stringify(DISPLAY_STORAGE_KEY)},${JSON.stringify(display)})}catch(e){}`,
+      source: displayInitScript(display),
     });
     return page;
   }
@@ -221,7 +290,7 @@ class Page {
 
   async cookie(value: string) {
     await this.send("Network.setCookie", {
-      name: "better-auth.session_token",
+      name: SESSION_COOKIE,
       value,
       url: BASE_URL,
       httpOnly: true,
@@ -230,7 +299,7 @@ class Page {
 
   async goto(target: string, settleMs = 2_500) {
     await this.send("Page.navigate", {
-      url: target.startsWith("data:") ? target : `${BASE_URL}${target}`,
+      url: `${BASE_URL}${target}`,
     });
     await sleep(settleMs);
   }
@@ -243,7 +312,8 @@ class Page {
         await new Promise((r) => setTimeout(r, 120));
       }
       window.scrollTo(0, 0);
-      await Promise.all(Array.from(document.images).map((img) => img.complete ? null : new Promise((r) => { img.onload = img.onerror = r; })));
+      // A still for the other Display is display: none and, lazy, never loads.
+      await Promise.all(Array.from(document.images).filter((img) => img.checkVisibility()).map((img) => img.complete ? null : new Promise((r) => { img.onload = img.onerror = r; })));
       return document.images.length;
     })()`);
     await sleep(500);
@@ -326,8 +396,8 @@ async function assertNoRealEmail(page: Page, what: string) {
 
 type Frame = { at: number; data: string };
 
-async function recordFinale(cookie: string) {
-  const page = await Page.open();
+async function recordFinale(cookie: string, scheme: Scheme) {
+  const page = await Page.open(scheme);
   // The screencast sends CSS-pixel frames whatever the device scale, so
   // the page is laid out at 390px inside a doubled viewport, zoomed 2x.
   await page.viewport(
@@ -336,7 +406,7 @@ async function recordFinale(cookie: string) {
     1,
   );
   await page.cookie(cookie);
-  await page.goto("/xi/finale", 3_000);
+  await page.goto(`${home()}/finale`, 3_000);
   await page.evaluate(`(document.documentElement.style.zoom = "2")`);
   await sleep(500);
   await assertNoRealEmail(page, "finale");
@@ -354,12 +424,51 @@ async function recordFinale(cookie: string) {
     maxWidth: PHONE.width * 2,
     maxHeight: PHONE.height * 2,
   });
-  await sleep(LEAD_IN_MS);
 
-  const pressedAt = Date.now();
-  await page.evaluate(
-    `Array.from(document.querySelectorAll("button")).find((b) => b.innerText.trim() === "Start")?.click()`,
-  );
+  // The slideshow's keys work once it has hydrated.
+  for (let i = 0; i < 100; i++) {
+    const hydrated = await page.evaluate<boolean>(
+      `document.querySelector("[data-finale-hydrated]") !== null`,
+    );
+    if (hydrated) break;
+    await sleep(100);
+  }
+  await sleep(1_000);
+  const slideKind = () =>
+    page.evaluate<string | null>(
+      `document.querySelector("[data-finale-slide]")?.dataset.finaleSlide ?? null`,
+    );
+  // The poster is the Title slide: it opens the slideshow and shows no
+  // Standings.
+  const titleKind = await slideKind();
+  if (titleKind !== "title") {
+    throw new Error(`the Finale opened on "${titleKind}", not its Title slide`);
+  }
+  const poster = frames.at(-1);
+  if (!poster) throw new Error("no frame recorded of the Title slide");
+
+  // The presenter's →, one press at a time, until the next press lands on
+  // the Standings countdown: that press is the "pressed" moment.
+  const press = async () => {
+    for (const type of ["rawKeyDown", "keyUp"]) {
+      await page.send("Input.dispatchKeyEvent", {
+        type,
+        key: "ArrowRight",
+        code: "ArrowRight",
+        windowsVirtualKeyCode: 39,
+      });
+    }
+  };
+  let pressedAt = Date.now();
+  let presses = 0;
+  while ((await slideKind()) !== "standings") {
+    if (++presses > 60) throw new Error("→ never reached the Standings slide");
+    pressedAt = Date.now();
+    await press();
+    await sleep(STEP_MS);
+  }
+  note(`finale (${scheme}): reached Standings after ${presses} presses`);
+
   let startedAt: number | null = null;
   while (Date.now() - pressedAt < 20_000 && startedAt === null) {
     const value = await page.evaluate<string | null>(
@@ -368,139 +477,63 @@ async function recordFinale(cookie: string) {
     if (value) startedAt = Number(value);
     else await sleep(100);
   }
-  if (startedAt === null) throw new Error("the Finale never started");
-  note(`finale: countdown started ${startedAt - pressedAt} ms after Start`);
+  if (startedAt === null) throw new Error("the countdown never started");
+  note(
+    `finale (${scheme}): countdown started ${startedAt - pressedAt} ms after the → onto Standings`,
+  );
   await sleep(FINALE_MAX_MS + HOLD_MS);
   await page.send("Page.stopScreencast");
   await page.close();
 
-  // Keep the lead-in before the Finale and the hold after it; a frame only
-  // arrives when something changes, so each one lasts until the next.
-  const from = startedAt - LEAD_IN_MS;
+  // A sanity check only (no video is written): the countdown really
+  // played. A frame only arrives when something changes.
   const to = startedAt + FINALE_MAX_MS + HOLD_MS;
-  const before = frames.filter((f) => f.at <= from).at(-1);
-  const kept = [
-    ...(before ? [{ ...before, at: from }] : []),
-    ...frames.filter((f) => f.at > from && f.at <= to),
-  ];
+  const kept = frames.filter((f) => f.at >= startedAt && f.at <= to);
   if (kept.length < 10) {
-    throw new Error(`only ${kept.length} frames recorded around the Finale`);
+    throw new Error(`only ${kept.length} frames recorded of the countdown`);
   }
-  note(`finale: ${frames.length} frames captured, ${kept.length} kept`);
+  note(
+    `finale (${scheme}): ${frames.length} frames captured, ${kept.length} kept`,
+  );
 
   // Only the poster still is kept; no Finale video is written or shown.
   writeFileSync(
-    path.join(MEDIA, "finale-poster.png"),
-    Buffer.from(kept[0].data, "base64"),
+    path.join(MEDIA, stillFile("finale-poster", scheme)),
+    Buffer.from(poster.data, "base64"),
   );
 }
 
 // ---------------------------------------------------------------------------
-// A finished Heats Bracket for the "brackets" still
+// A finished Heats Bracket for the "competitions" still (`setupBracketDemo`
+// in `scripts/media/demo.ts`, shared with the Finale stills)
 
-const BRACKET_COMP_NAME = "Capture the Flag";
-
-/**
- * Builds a small, already-finished Heats Bracket on XI (8 Participant
- * Entrants, 4 per Heat with the top 2 advancing, two Round 1 Heats and a
- * decided Final) directly in SQL: the Competition, its Entrants at Seed
- * Positions 1–8, and each Heat with its slots and places. The caller deletes
- * the Competition (which cascades its Entrants and Heats) when done.
- */
-async function setupBracketDemo(): Promise<string> {
-  const [xiWarWeek] = await query<{ id: string }>(
-    `select id from war_week where edition = 'xi'`,
-  );
-  const [comp] = await query<{ id: string }>(
-    `insert into competition (war_week_id, name, scoring, format, bracket_config)
-     values ($1, $2, 'individual', 'heats', $3) returning id`,
-    [
-      xiWarWeek.id,
-      BRACKET_COMP_NAME,
-      { entrantsPerHeat: 4, advancePerHeat: 2 },
-    ],
-  );
-  const competitionId = comp.id;
-  const participants = await query<{ id: string }>(
-    `select id from participant where war_week_id = $1 order by display_name limit 8`,
-    [xiWarWeek.id],
-  );
-  if (participants.length < 8) {
-    throw new Error("XI needs at least 8 Participants for the Bracket demo");
-  }
-  const entrantIds: string[] = [];
-  for (const [i, p] of participants.entries()) {
-    const [entrant] = await query<{ id: string }>(
-      `insert into entrant (competition_id, participant_id, seed_position)
-       values ($1, $2, $3) returning id`,
-      [competitionId, p.id, i + 1],
-    );
-    entrantIds.push(entrant.id);
-  }
-  const [e1, e2, e3, e4, e5, e6, e7, e8] = entrantIds;
-  const [finalHeat] = await query<{ id: string }>(
-    `insert into heat (competition_id, round, position, status, slot_count)
-     values ($1, 2, 1, 'played', 4) returning id`,
-    [competitionId],
-  );
-  const [heatA] = await query<{ id: string }>(
-    `insert into heat (competition_id, round, position, status, slot_count)
-     values ($1, 1, 1, 'played', 4) returning id`,
-    [competitionId],
-  );
-  const [heatB] = await query<{ id: string }>(
-    `insert into heat (competition_id, round, position, status, slot_count)
-     values ($1, 1, 2, 'played', 4) returning id`,
-    [competitionId],
-  );
-  await query(
-    `insert into heat_entrant (heat_id, entrant_id, slot, place) values
-       ($1, $2, 0, 1), ($1, $3, 1, 2), ($1, $4, 2, 3), ($1, $5, 3, 4),
-       ($6, $7, 0, 1), ($6, $8, 1, 2), ($6, $9, 2, 3), ($6, $10, 3, 4),
-       ($11, $2, 0, 1), ($11, $7, 1, 2), ($11, $3, 2, 3), ($11, $8, 3, 4)`,
-    [heatA.id, e1, e2, e3, e4, heatB.id, e5, e6, e7, e8, finalHeat.id],
-  );
-  // One Heat's time and place, so the still shows a when-line
-  // ("Sunday, Feb 22 · 7:00 PM ET · Main room") on its card.
-  await query(
-    `update heat set day_id = (select id from day where war_week_id = $2 order by date limit 1),
-       start_time = '19:00', location = 'Main room'
-     where id = $1`,
-    [heatA.id, xiWarWeek.id],
-  );
-  note(`bracket demo: competition ${competitionId}, champion entrant ${e1}`);
-  return competitionId;
-}
-
-async function teardownBracketDemo(competitionId: string) {
-  await query(`delete from competition where id = $1`, [competitionId]);
-}
+const setupBracketDemo = () => setupBracketDemoOn(current, note);
 
 // ---------------------------------------------------------------------------
 // The stills
 
 async function still(
   slug: string,
-  cookie: string | null,
+  cookie: string,
   target: string,
   prepare?: (page: Page) => Promise<void>,
   viewport: { width: number; height: number } = STILL,
 ) {
-  const page = await Page.open();
-  await page.viewport(viewport, viewport === PHONE);
-  if (cookie) await page.cookie(cookie);
-  await page.goto(target);
-  if (prepare) await prepare(page);
-  await assertNoRealEmail(page, slug);
-  await page.screenshot(path.join(MEDIA, `${slug}.png`));
-  await page.close();
-  note(
-    `still: ${slug} from ${target.startsWith("data:") ? "a rendered card" : target}`,
-  );
+  for (const scheme of SCHEMES) {
+    const page = await Page.open(scheme);
+    await page.viewport(viewport, viewport === PHONE);
+    await page.cookie(cookie);
+    await page.goto(target);
+    if (prepare) await prepare(page);
+    await assertNoRealEmail(page, slug);
+    await page.screenshot(path.join(MEDIA, stillFile(slug, scheme)));
+    await page.close();
+    note(`still: ${stillFile(slug, scheme)} from ${target}`);
+  }
 }
 
 /**
- * Picks an option in one of the Points Entry form's `EntityCombobox`
+ * Picks an option in one of the Discretionary points form's `EntityCombobox`
  * fields the way a person does: focus it by its `aria-label`, type the
  * name, and choose the matching option.
  */
@@ -523,9 +556,14 @@ async function selectComboboxOption(
   return picked;
 }
 
-/** Picks a Competition in the Points Entry form's combobox. */
-async function selectCompetition(page: Page, name: string): Promise<string> {
-  return selectComboboxOption(page, "Competition", name);
+/** Clicks the first button whose text is `text`, as a person would. */
+async function clickButton(page: Page, text: string): Promise<void> {
+  const clicked = await page.evaluate<boolean>(`(() => {
+    const button = Array.from(document.querySelectorAll('button')).find((b) => b.innerText.trim() === ${JSON.stringify(text)});
+    button?.click();
+    return Boolean(button);
+  })()`);
+  if (!clicked) throw new Error(`no "${text}" button on the page`);
 }
 
 const scrollToText = (text: string) => `(() => {
@@ -579,7 +617,10 @@ async function askMcp(cookie: string): Promise<LeaderboardResult> {
       jsonrpc: "2.0",
       id: 2,
       method: "tools/call",
-      params: { name: "get_leaderboard", arguments: { kind: "team" } },
+      params: {
+        name: "get_leaderboard",
+        arguments: { kind: standingsKind() },
+      },
     },
     init.sessionId,
   );
@@ -590,76 +631,39 @@ async function askMcp(cookie: string): Promise<LeaderboardResult> {
   return JSON.parse(text) as LeaderboardResult;
 }
 
-const escapeHtml = (s: string) =>
-  s.replace(
-    /[&<>"]/g,
-    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!,
-  );
+// ---------------------------------------------------------------------------
+// A logged Game, as evidence beside the "competitions" still (R3)
 
 /**
- * A chat card in XI's theme: the question, then Claude's answer written
- * from the real tool result, with the tool call shown underneath.
+ * The current War Week's seeded head-to-head, individual, open-to-everyone
+ * Head-to-head or Best score Competition, and two Participant names to log a Game between.
  */
-function chatCardUrl(result: LeaderboardResult): string {
-  const answer = `<p>${escapeHtml(result.teamLabel)} Standings for War Week XI right now:</p><ol>${result.standings
-    .slice(0, 5)
-    .map(
-      (row) =>
-        `<li><span class="dot" style="background:${"color" in row ? escapeHtml(row.color) : "#888"}"></span><b>${escapeHtml(row.name)}</b><span class="pts">${row.total} pts</span></li>`,
-    )
-    .join(
-      "",
-    )}</ol><p>${escapeHtml(result.standings[0]?.name ?? "")} lead${result.standings.length > 1 ? `, ${result.standings[0].total - result.standings[1].total} points ahead of ${escapeHtml(result.standings[1].name)}` : ""}.</p>`;
-  const t = STATIC_PAGE_THEME;
-  return `data:text/html;charset=utf-8,${encodeURIComponent(`<!doctype html><html><head><meta charset="utf-8"><style>
-  html,body{margin:0;height:100%;background:${t.backgroundColor};color:${t.foregroundColor};font:16px/1.5 ui-monospace,"JetBrains Mono",Menlo,monospace}
-  body{display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at top,color-mix(in oklch,${t.primaryColor} 18%,transparent),transparent 60%),${t.backgroundColor}}
-  .chat{width:760px;display:flex;flex-direction:column;gap:24px;zoom:1.5}
-  .msg{max-width:80%;padding:16px 20px;border-radius:18px;border:1px solid ${t.accentColor}}
-  .you{align-self:flex-end;background:${t.primaryColor};color:${t.primaryForegroundColor};border-color:${t.primaryColor}}
-  .claude{align-self:flex-start;background:color-mix(in oklch,${t.backgroundColor} 85%,${t.accentColor})}
-  .claude p{margin:0 0 8px}.claude ol{margin:0 0 12px;padding-left:24px}.claude li{margin:4px 0;display:flex;align-items:center;gap:10px}
-  .dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:1px solid rgba(255,255,255,.3)}
-  .pts{margin-left:auto;opacity:.7}
-  .tool{font-size:12px;opacity:.6;margin-top:12px;border-top:1px dashed ${t.accentColor};padding-top:8px}
-  .who{font-size:12px;letter-spacing:.2em;text-transform:uppercase;opacity:.6;margin-bottom:6px}
-  </style></head><body><div class="chat">
-  <div class="msg you"><div class="who">You</div>Who's winning War Week XI?</div>
-  <div class="msg claude"><div class="who">Claude</div>${answer}<div class="tool">jg-war-week · get_leaderboard(kind: "team")</div></div>
-  </div></body></html>`)}`;
-}
-
-// ---------------------------------------------------------------------------
-// A logged Game for the "games" still (R3)
-
-/** The seeded head-to-head, open-to-everyone `games` Competition on XI. */
-const GAMES_COMP_NAME = "Bouncy Pong";
-
-/** Bouncy Pong's id and two Participant names to log a Game between. */
 async function findGamesDemo(): Promise<{
   competitionId: string;
   playerA: string;
   playerB: string;
 }> {
   const [comp] = await query<{ id: string }>(
-    `select c.id from competition c
-     join war_week w on w.id = c.war_week_id
-     where w.edition = 'xi' and c.name = $1`,
-    [GAMES_COMP_NAME],
+    `select id from competition
+     where war_week_id = $1 and format = 'head-to-head'
+       and scoring = 'individual' and entrants_open
+     order by name limit 1`,
+    [current.id],
   );
   if (!comp) {
-    throw new Error(`no seeded "${GAMES_COMP_NAME}" Competition on XI`);
+    throw new Error(
+      `no seeded open Head-to-head Competition on ${current.edition}`,
+    );
   }
-  const [xiWarWeek] = await query<{ id: string }>(
-    `select id from war_week where edition = 'xi'`,
-  );
   const participants = await query<{ display_name: string }>(
     `select display_name from participant where war_week_id = $1
      order by display_name limit 2`,
-    [xiWarWeek.id],
+    [current.id],
   );
   if (participants.length < 2) {
-    throw new Error("XI needs at least 2 Participants for the Games demo");
+    throw new Error(
+      `${current.edition} needs at least 2 Participants for the Games demo`,
+    );
   }
   return {
     competitionId: comp.id,
@@ -697,25 +701,22 @@ async function selectLabeledCombobox(
 }
 
 /**
- * Logs one head-to-head Game on Bouncy Pong through the real Game form (the
+ * Logs one head-to-head Game through the real Game form (the
  * `logGame` action, as the demo Organizer): opens "Log a Game" from the
- * Competition page, picks both players and who won, and saves. Returns the
- * logged Game's id so the caller can undo it in `finally`.
+ * Competition page, picks both players and who won, and saves. The
+ * `finally` undoes the Game by the demo email (`teardownGamesDemo`).
  */
-async function captureGamesDemo(cookie: string): Promise<{
-  gameId: string;
-  competitionId: string;
-}> {
+async function captureGamesDemo(cookie: string): Promise<void> {
   const { competitionId, playerA, playerB } = await findGamesDemo();
   const page = await Page.open();
   await page.viewport(STILL, false);
   await page.cookie(cookie);
-  await page.goto(`/xi/competitions/${competitionId}`);
+  await page.goto(`${home()}/competitions/${competitionId}`);
 
   const opened = await page.evaluate<boolean>(
     `(() => { const b = Array.from(document.querySelectorAll("button")).find((b) => b.innerText.trim() === "Log a Game"); b?.click(); return Boolean(b); })()`,
   );
-  if (!opened) throw new Error('no "Log a Game" button on Bouncy Pong');
+  if (!opened) throw new Error('no "Log a Game" button on the Competition');
   await sleep(500);
 
   await selectLabeledCombobox(page, "Player A", playerA);
@@ -816,46 +817,37 @@ async function captureGamesDemo(cookie: string): Promise<{
   }
   if (!toastGone) throw new Error('the "Game logged" toast never went away');
   await assertNoRealEmail(page, "games");
-  await page.screenshot(path.join(MEDIA, "games.png"));
-  note(`still: games from /xi/competitions/${competitionId}, one Game logged`);
-  await page.close();
-
-  const [row] = await query<{ id: string }>(
-    `select id from game where competition_id = $1 and logged_by_email = $2
-     order by created_at desc limit 1`,
-    [competitionId, DEMO_EMAIL],
+  await page.screenshot(path.join(EVIDENCE, "games.png"));
+  note(
+    `evidence: games from ${home()}/competitions/${competitionId}, one Game logged`,
   );
-  if (!row) throw new Error("could not find the demo Game to undo");
-  return { gameId: row.id, competitionId };
+  await page.close();
 }
 
-/** Undoes the one Game `captureGamesDemo` logged. */
-async function teardownGamesDemo(gameId: string) {
-  await query(`delete from game where id = $1`, [gameId]);
+/**
+ * Undoes every Game the demo Organizer logged (the one `captureGamesDemo`
+ * saves), by the demo email, so a throw after the save still cleans up.
+ */
+async function teardownGamesDemo() {
+  await query(`delete from game where logged_by_email = $1`, [DEMO_EMAIL]);
 }
 
 // ---------------------------------------------------------------------------
 // The About hero: Standings moving after a Points Entry (ticket 04)
 
 /**
- * The competition the hero uses to move the home Standings: team-scored,
- * with no Max points cap, so any margin needed to move the last-place Team
- * into first saves without a warning.
- */
-const STANDINGS_DEMO_COMPETITION = "Beast Mode Workout";
-
-/**
  * Three stills for the About page's hero (ticket 04): the home Standings
- * before, the Points Entry form about to save a big win for the Team
- * currently in last place, and the same home Standings right after,
- * reordered. Uses the real Points Entry form and the real `get_leaderboard`
- * MCP tool to read the Team Standings, not a hand-crafted fixture.
+ * before, the Discretionary points form about to save a big win for
+ * whoever is currently in last place (a Team, or in free-for-all a
+ * Participant), and the same home Standings right after, reordered. Uses the
+ * real Discretionary points form and the real `get_leaderboard` MCP tool to
+ * read the Standings, not a hand-crafted fixture.
  */
-async function captureStandingsDemo(cookie: string): Promise<string> {
+async function captureStandingsDemo(cookie: string): Promise<void> {
   await still(
     "standings-before",
     cookie,
-    "/xi/leaderboard",
+    `${home()}/leaderboard`,
     () => sleep(500),
     PHONE,
   );
@@ -864,7 +856,7 @@ async function captureStandingsDemo(cookie: string): Promise<string> {
   const last = before.standings.at(-1);
   const first = before.standings[0];
   if (!last || !first || before.standings.length < 2) {
-    throw new Error("need at least two Teams for the Standings demo");
+    throw new Error("need at least two in the Standings for the demo");
   }
   // Enough to overtake first place outright, so the reorder is unmistakable.
   const margin = Math.max(first.total - last.total + 15, 15);
@@ -872,41 +864,65 @@ async function captureStandingsDemo(cookie: string): Promise<string> {
     `standings demo: moving ${JSON.stringify(last.name)} from last (${last.total}) past first (${first.total}) with +${margin}`,
   );
 
-  const page = await Page.open();
+  const page = await Page.open(SCHEMES[0]);
   await page.viewport(PHONE, true);
   await page.cookie(cookie);
-  await page.goto("/admin/points");
-  await selectCompetition(page, STANDINGS_DEMO_COMPETITION);
-  await sleep(300);
-  await selectComboboxOption(page, before.teamLabel, last.name);
-  await page.evaluate(`document.querySelector('#points-entry-points').focus()`);
+  await page.goto("/admin/discretionary-points");
+  await clickButton(page, "Give Discretionary points");
+  await sleep(500);
+  await selectComboboxOption(
+    page,
+    standingsKind() === "team"
+      ? `${before.teamLabel} or Participant`
+      : "Participant",
+    last.name,
+  );
+  await page.evaluate(`document.querySelector('input[name="points"]').focus()`);
   await page.send("Input.insertText", { text: String(margin) });
+  await page.evaluate(`document.querySelector('input[name="reason"]').focus()`);
+  await page.send("Input.insertText", { text: "Spirit award" });
   await sleep(400);
   await assertNoRealEmail(page, "standings-entry");
-  await page.screenshot(path.join(MEDIA, "standings-entry.png"));
-  note("still: standings-entry from /admin/points, filled in");
+  // One filled-in form, shot in each scheme: the Display switches in place,
+  // so only one Points Entry is ever saved.
+  for (const scheme of SCHEMES) {
+    await page.evaluate(switchDisplay(scheme));
+    await sleep(400);
+    await page.screenshot(
+      path.join(MEDIA, stillFile("standings-entry", scheme)),
+    );
+    note(
+      `still: ${stillFile("standings-entry", scheme)} from /admin/discretionary-points, filled in`,
+    );
+  }
 
+  // The save may land even if a later check throws: remember how many
+  // entries the demo Organizer holds now, so the teardown can tell.
+  standingsEntryBaseline = await demoEntryCount();
   await page.evaluate(
-    `document.querySelector('form[aria-label="Points Entry"] button[type="submit"]').click()`,
+    `document.querySelector('form[aria-label="New Discretionary points"] button[type="submit"]').click()`,
   );
+  // The Sheet closes once the entry saves.
   let saved = false;
   for (let i = 0; i < 40; i++) {
     await sleep(200);
-    const text = await page.evaluate<string>(
-      `document.querySelector('form[aria-label="Points Entry"] button[type="submit"]')?.innerText ?? ""`,
+    const open = await page.evaluate<boolean>(
+      `Boolean(document.querySelector('form[aria-label="New Discretionary points"]'))`,
     );
-    if (text === "Add Points Entry") {
+    if (!open) {
       saved = true;
       break;
     }
   }
-  if (!saved) throw new Error("the demo Points Entry never finished saving");
+  if (!saved) {
+    throw new Error("the demo Discretionary points never finished saving");
+  }
   await page.close();
 
   await still(
     "standings-after",
     cookie,
-    "/xi/leaderboard",
+    `${home()}/leaderboard`,
     () => sleep(500),
     PHONE,
   );
@@ -919,20 +935,41 @@ async function captureStandingsDemo(cookie: string): Promise<string> {
     } of ${after.standings.length} (${lastAfter?.total} pts)`,
   );
   if (after.standings[0]?.name !== last.name) {
-    throw new Error("the demo Points Entry did not move the Team to first");
+    throw new Error(
+      "the demo Discretionary points did not move last place to first",
+    );
   }
-
-  const [entry] = await query<{ id: string }>(
-    `select id from points_entry where entered_by_email = $1 order by created_at desc limit 1`,
-    [DEMO_EMAIL],
-  );
-  if (!entry) throw new Error("could not find the demo Points Entry to undo");
-  return entry.id;
 }
 
-/** Undoes the one Points Entry `captureStandingsDemo` created. */
-async function teardownStandingsDemo(entryId: string) {
-  await query(`delete from points_entry where id = $1`, [entryId]);
+/** Points Entries credited to the demo Organizer (the lent seeded ones too). */
+async function demoEntryCount(): Promise<number> {
+  const [row] = await query<{ n: string }>(
+    `select count(*)::text as n from points_entry where entered_by_email = $1`,
+    [DEMO_EMAIL],
+  );
+  return Number(row.n);
+}
+
+/** The demo Organizer's entry count just before the Standings save; null before. */
+let standingsEntryBaseline: number | null = null;
+
+/**
+ * Undoes the Points Entry `captureStandingsDemo` saved, if one landed: the
+ * seeded entries are lent to the demo Organizer (`lendAuthorship`), so this
+ * runs before the authorship is restored and removes only the newest one,
+ * and only when the count grew past the baseline.
+ */
+async function teardownStandingsDemo() {
+  if (standingsEntryBaseline === null) return;
+  if ((await demoEntryCount()) > standingsEntryBaseline) {
+    await query(
+      `delete from points_entry where id = (
+         select id from points_entry where entered_by_email = $1
+         order by created_at desc limit 1)`,
+      [DEMO_EMAIL],
+    );
+  }
+  standingsEntryBaseline = null;
 }
 
 // ---------------------------------------------------------------------------
@@ -948,7 +985,7 @@ async function evidence() {
   await assertNoRealEmail(phone, "about");
   await phone.screenshot(path.join(EVIDENCE, "about-390.png"), true);
   const broken = await phone.evaluate<number>(
-    `Array.from(document.images).filter((img) => img.complete && img.naturalWidth === 0).length`,
+    `Array.from(document.images).filter((img) => img.checkVisibility() && img.complete && img.naturalWidth === 0).length`,
   );
   note(`evidence: images that failed to load on /about: ${broken}`);
   if (broken > 0) throw new Error("an About page image failed to load");
@@ -958,23 +995,40 @@ async function evidence() {
   await desktop.viewport({ width: 1440, height: 900 }, false, 1);
   await desktop.goto("/about", 3_000);
   const hero = await desktop.evaluate<Record<string, unknown>>(
-    `(() => { const imgs = Array.from(document.querySelectorAll('[data-standings-step]')); return { steps: imgs.map((i) => i.dataset.standingsStep), loaded: imgs.every((i) => i.complete && i.naturalWidth > 0), finalePoster: document.querySelector('img[src="/about/finale-poster.png"]') !== null, noVideo: document.querySelector("video") === null }; })()`,
+    `(() => { const imgs = Array.from(document.querySelectorAll('[data-standings-step]')).filter((i) => i.checkVisibility()); return { steps: imgs.map((i) => i.dataset.standingsStep), loaded: imgs.every((i) => i.complete && i.naturalWidth > 0), finalePoster: document.querySelector('img[src="/about/finale-poster.png"]') !== null, noVideo: document.querySelector("video") === null }; })()`,
   );
   note(`evidence: desktop hero ${JSON.stringify(hero)}`);
   if (!hero.noVideo)
     throw new Error("the About page hero must be stills, not a video");
   await desktop.screenshot(path.join(EVIDENCE, "about-desktop.png"), true);
 
-  const desktopLight = await Page.open("light");
-  await desktopLight.viewport({ width: 1440, height: 900 }, false, 1);
-  await desktopLight.goto("/about", 3_000);
-  await assertNoRealEmail(desktopLight, "about-light");
-  await desktopLight.screenshot(
-    path.join(EVIDENCE, "about-desktop-light.png"),
-    true,
-  );
-  await desktopLight.close();
-  note("evidence: /about desktop captured under the light Display");
+  // Each Display shows only its own stills (the About dark stills fix).
+  for (const scheme of SCHEMES) {
+    const desktopScheme = await Page.open(scheme);
+    await desktopScheme.viewport({ width: 1440, height: 900 }, false, 1);
+    await desktopScheme.goto("/about", 3_000);
+    await assertNoRealEmail(desktopScheme, `about-${scheme}`);
+    await desktopScheme.screenshot(
+      path.join(EVIDENCE, `about-desktop-${scheme}.png`),
+      true,
+    );
+    const shown = await desktopScheme.evaluate<
+      { src: string; loaded: boolean }[]
+    >(
+      `Array.from(document.querySelectorAll("img[data-still-scheme]")).filter((i) => i.checkVisibility()).map((i) => ({ src: new URL(i.currentSrc).pathname, loaded: i.complete && i.naturalWidth > 0 }))`,
+    );
+    const wrong = shown.filter(
+      (s) => s.src.endsWith("-dark.png") !== (scheme === "dark") || !s.loaded,
+    );
+    note(
+      `evidence: /about desktop under the ${scheme} Display shows ${shown.length} stills, ${wrong.length} wrong or unloaded`,
+    );
+    if (shown.length !== 10 || wrong.length > 0)
+      throw new Error(
+        `/about under the ${scheme} Display: ${JSON.stringify(shown)}`,
+      );
+    await desktopScheme.close();
+  }
 
   await desktop.send("Emulation.setEmulatedMedia", {
     features: [{ name: "prefers-reduced-motion", value: "reduce" }],
@@ -1001,160 +1055,148 @@ async function evidence() {
 
 // ---------------------------------------------------------------------------
 
+/**
+ * A moment inside the current War Week for the Now / Next still: 12:15 PM
+ * ET on its middle Day.
+ */
+async function scheduleTime(): Promise<string> {
+  const days = await query<{ date: string }>(
+    `select date::text as date from day where war_week_id = $1 order by date`,
+    [current.id],
+  );
+  const day = days[Math.floor(days.length / 2)];
+  if (!day) throw new Error(`${current.edition} has no Days to schedule`);
+  const [y, m, d] = day.date.split("-").map(Number);
+  return new TZDate(y, m - 1, d, 12, 15, 0, "America/New_York").toISOString();
+}
+
 /** Only the feature-card and Standings-hero stills; the Finale poster stays as it is. */
 const STILLS_ONLY = process.argv.includes("--stills");
 
 async function main() {
-  if (!existsSync(path.resolve(process.cwd(), ".next/BUILD_ID"))) {
-    console.error("No production build in .next: run `pnpm build` first.");
-    process.exit(1);
-  }
-  if (
-    await fetch(BASE_URL).then(
-      () => true,
-      () => false,
-    )
-  ) {
-    throw new Error(`something is already listening on ${BASE_URL}`);
-  }
   mkdirSync(MEDIA, { recursive: true });
   rmSync(EVIDENCE, { recursive: true, force: true });
   mkdirSync(EVIDENCE, { recursive: true });
 
-  const realOrganizer = seededOrganizerEmail();
-  await query(
-    `insert into organizer (email) values ($1) on conflict (email) do nothing`,
-    [DEMO_EMAIL],
+  current = await resolveCurrentWarWeek();
+  note(
+    `current War Week: ${current.edition} (${current.mode}, ${pinnedDisplay()} base palette)`,
   );
-  await query(
-    `update points_entry set entered_by_email = $1 where entered_by_email = $2 and competition_id in (select id from competition where war_week_id = (select id from war_week where edition = 'xi'))`,
-    [DEMO_EMAIL, realOrganizer],
-  );
-  await query(
-    `update announcement set author_email = $1 where author_email = $2 and war_week_id = (select id from war_week where edition = 'xi')`,
-    [DEMO_EMAIL, realOrganizer],
-  );
-  const cookie = await createSession(DEMO_EMAIL);
-  const bracketCompetitionId = await setupBracketDemo();
-
-  const server = spawn("pnpm", ["start", "-p", String(PORT)], {
-    env: {
-      ...process.env,
-      BETTER_AUTH_SECRET: AUTH_SECRET,
-      BETTER_AUTH_URL: BASE_URL,
-      GOOGLE_CLIENT_ID: "",
-      GOOGLE_CLIENT_SECRET: "",
-      MCP_TOKEN: "",
-    },
-    stdio: "ignore",
-    detached: true,
-  });
+  const scheduleAt = await scheduleTime();
+  const server: DemoServer = await startDemoServer(PORT, AUTH_SECRET);
   const chrome = launchChrome();
-  let standingsEntryId: string | undefined;
-  let gamesDemoGameId: string | undefined;
+  let restoreAuthorship: (() => Promise<void>) | undefined;
+  let bracketDemo: Awaited<ReturnType<typeof setupBracketDemo>> | undefined;
 
   try {
-    for (let i = 0; i < 60; i++) {
-      await sleep(500);
-      if (
-        await fetch(`${BASE_URL}/sign-in`).then(
-          (r) => r.ok,
-          () => false,
-        )
-      )
-        break;
-    }
+    // Setup is inside the `try`, so the `finally` undoes whatever got done.
+    await query(
+      `insert into organizer (email) values ($1) on conflict (email) do nothing`,
+      [DEMO_EMAIL],
+    );
+    restoreAuthorship = await lendAuthorship();
+    const cookie = await createSession(DEMO_EMAIL);
+    bracketDemo = await setupBracketDemo();
+    const bracketCompetitionId = bracketDemo.competitionId;
+
+    await server.ready();
     await waitForChrome();
 
-    standingsEntryId = await captureStandingsDemo(cookie);
+    // Undone straight away, so the later stills show the seeded Standings.
+    await captureStandingsDemo(cookie);
+    await teardownStandingsDemo();
 
-    if (!STILLS_ONLY) await recordFinale(cookie);
+    if (!STILLS_ONLY)
+      for (const scheme of SCHEMES) await recordFinale(cookie, scheme);
 
     const slugs = ABOUT_FEATURES.map((f) => f.slug);
-    await still("organizer-setup", cookie, "/admin/setup");
-    await still("points", cookie, "/admin/points", async (page) => {
-      const picked = await selectCompetition(page, "Settlers of Catan");
-      await sleep(500);
-      const presets = await page.evaluate<number>(
-        `document.querySelectorAll('button').length && Array.from(document.querySelectorAll('button')).filter((b) => /^1st/.test(b.innerText)).length`,
-      );
-      note(
-        `points: picked ${picked}, "1st" preset buttons on screen: ${presets}`,
-      );
-      if (!presets) throw new Error("no Placement Points buttons on screen");
-    });
+    await still("organizer-admin", cookie, "/admin/schedule");
+    await still(
+      "points",
+      cookie,
+      "/admin/discretionary-points",
+      async (page) => {
+        await clickButton(page, "Give Discretionary points");
+        await sleep(500);
+        const form = await page.evaluate<boolean>(
+          `Boolean(document.querySelector('form[aria-label="New Discretionary points"]'))`,
+        );
+        note(`points: the Discretionary points form is open: ${form}`);
+        if (!form) throw new Error("no Discretionary points form on screen");
+      },
+    );
     await still(
       "schedule",
       cookie,
-      `/xi?at=${encodeURIComponent(SCHEDULE_AT)}`,
+      `${home()}?at=${encodeURIComponent(scheduleAt)}`,
       async (page) => {
         const found = await page.evaluate<boolean>(scrollToText("Today"));
         await sleep(300);
-        if (!found) throw new Error("no Now / Next section on the XI home");
+        if (!found) throw new Error(`no Now / Next section on ${home()}`);
       },
     );
-    await still("announcements", cookie, "/xi/news", () => sleep(2_000));
+    await still("announcements", cookie, `${home()}/announcements`, () =>
+      sleep(2_000),
+    );
     await still(
-      "brackets",
+      "competitions",
       cookie,
-      `/xi/competitions/${bracketCompetitionId}`,
+      `${home()}/competitions/${bracketCompetitionId}`,
       async (page) => {
         const found = await page.evaluate<boolean>(scrollToText("champion"));
         await sleep(300);
         if (!found) throw new Error("no champion card on the Bracket view");
       },
     );
-    const gamesDemo = await captureGamesDemo(cookie);
-    gamesDemoGameId = gamesDemo.gameId;
-    await still("lifecycle", cookie, "/admin/setup", async (page) => {
-      const found = await page.evaluate<boolean>(scrollToText("Lifecycle"));
-      await sleep(300);
-      if (!found) throw new Error("no Lifecycle box on /admin/setup");
-    });
+    await captureGamesDemo(cookie);
     await still("archive", cookie, "/history");
-    const result = await askMcp(cookie);
-    note(`ask-claude: get_leaderboard rows=${result.standings.length}`);
-    await still("ask-claude", null, chatCardUrl(result));
-
     await evidence();
 
     for (const name of [
-      ...(STILLS_ONLY ? [] : ["finale-poster.png"]),
-      "standings-before.png",
-      "standings-entry.png",
-      "standings-after.png",
-      ...slugs.map((s) => `${s}.png`),
-    ]) {
+      ...(STILLS_ONLY ? [] : ["finale-poster"]),
+      "standings-before",
+      "standings-entry",
+      "standings-after",
+      ...slugs,
+    ].flatMap((still) => SCHEMES.map((scheme) => stillFile(still, scheme)))) {
       note(
         `wrote public/about/${name}: ${(statSync(path.join(MEDIA, name)).size / 1024).toFixed(0)} KB`,
       );
     }
   } finally {
-    chrome.process.kill();
-    try {
-      if (server.pid) process.kill(-server.pid, "SIGTERM");
-    } catch {
-      // server already gone
-    }
+    // Every undo runs on its own: one throwing must not skip the rest.
+    const errors: unknown[] = [];
+    const attempt = async (step: () => Promise<unknown> | unknown) => {
+      try {
+        await step();
+      } catch (error) {
+        errors.push(error);
+      }
+    };
+    await attempt(() => chrome.process.kill());
+    await attempt(() => server.stop());
     await sleep(1_000);
-    rmSync(chrome.dir, { recursive: true, force: true, maxRetries: 3 });
-    if (standingsEntryId) await teardownStandingsDemo(standingsEntryId);
-    if (gamesDemoGameId) await teardownGamesDemo(gamesDemoGameId);
-    await query(`delete from organizer where email = $1`, [DEMO_EMAIL]);
-    await query(
-      `update points_entry set entered_by_email = $1 where entered_by_email = $2`,
-      [realOrganizer, DEMO_EMAIL],
+    await attempt(() =>
+      rmSync(chrome.dir, { recursive: true, force: true, maxRetries: 3 }),
     );
-    await query(
-      `update announcement set author_email = $1 where author_email = $2`,
-      [realOrganizer, DEMO_EMAIL],
+    await attempt(() => teardownStandingsDemo());
+    await attempt(() => teardownGamesDemo());
+    await attempt(() =>
+      query(`delete from organizer where email = $1`, [DEMO_EMAIL]),
     );
-    await query(`delete from "user" where email = $1`, [DEMO_EMAIL]);
-    await teardownBracketDemo(bracketCompetitionId);
-    writeFileSync(
-      path.join(EVIDENCE, "about-media.txt"),
-      log.join("\n") + "\n",
+    if (restoreAuthorship) await attempt(restoreAuthorship);
+    await attempt(() =>
+      query(`delete from "user" where email = $1`, [DEMO_EMAIL]),
     );
+    if (bracketDemo) await attempt(bracketDemo.teardown);
+    await attempt(() =>
+      writeFileSync(
+        path.join(EVIDENCE, "about-media.txt"),
+        log.join("\n") + "\n",
+      ),
+    );
+    for (const error of errors) console.error("cleanup failed:", error);
+    if (errors.length > 0) process.exitCode = 1;
   }
 }
 

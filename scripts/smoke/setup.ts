@@ -62,24 +62,52 @@ export async function assertSetup(sessions: {
   };
 
   await run(
-    "GET /admin/setup, /admin/setup/war-week and /admin/setup/days show the setup pages to an Organizer and the refusal to a non-Organizer",
+    "GET /admin/settings and /admin/schedule show the pages to an Organizer and the refusal to a non-Organizer; Settings has the setup warning, the Lifecycle box and Create next War Week; Schedule has the Days and their Schedule Items",
     async () => {
       const problems: string[] = [];
-      for (const [page, marker] of [
-        ["/admin/setup", 'href="/admin/setup/days"'],
-        ["/admin/setup/war-week", 'aria-label="War Week settings"'],
-        ["/admin/setup/days", 'aria-label="Days"'],
-      ] as const) {
+      const settingsPage = "/admin/settings";
+      const subPages = [
+        ["/admin/schedule", 'aria-label="Days"'],
+        ["/admin/schedule", 'aria-label="Schedule Items"'],
+      ] as const;
+
+      // Settings carries the form, the Lifecycle box, Create next War Week
+      // and the "overwrites the setup" warning.
+      const settingsOrganizer = await fetch(`${BASE_URL}${settingsPage}`, {
+        headers: { cookie: sessions.organizer.cookie },
+      });
+      const settingsBody = await settingsOrganizer.text();
+      const settingsChecks = {
+        form: settingsBody.includes('aria-label="War Week settings"'),
+        lifecycle: settingsBody.includes('id="lifecycle-heading"'),
+        next: settingsBody.includes('aria-label="Create next War Week"'),
+        warning: settingsBody.includes("overwrites the setup"),
+      };
+      if (
+        settingsOrganizer.status !== 200 ||
+        !Object.values(settingsChecks).every(Boolean)
+      ) {
+        problems.push(
+          `${settingsPage} organizer status=${settingsOrganizer.status} ${JSON.stringify(settingsChecks)}`,
+        );
+      }
+      const settingsRefused = await fetch(`${BASE_URL}${settingsPage}`, {
+        headers: { cookie: sessions.notOrganizer.cookie },
+      });
+      if (!(await settingsRefused.text()).includes(ADMIN_REFUSAL_TEXT)) {
+        problems.push(`${settingsPage} not refused`);
+      }
+
+      // Schedule shows without the warning.
+      for (const [page, marker] of subPages) {
         const organizer = await fetch(`${BASE_URL}${page}`, {
           headers: { cookie: sessions.organizer.cookie },
         });
         const body = await organizer.text();
-        if (
-          organizer.status !== 200 ||
-          !body.includes(marker) ||
-          !body.includes("overwrites the setup")
-        ) {
+        if (organizer.status !== 200 || !body.includes(marker)) {
           problems.push(`${page} organizer status=${organizer.status}`);
+        } else if (body.includes("overwrites the setup")) {
+          problems.push(`${page} organizer has the warning`);
         }
         const refused = await fetch(`${BASE_URL}${page}`, {
           headers: { cookie: sessions.notOrganizer.cookie },
@@ -94,7 +122,7 @@ export async function assertSetup(sessions: {
 
   const ids = serverActionIds();
   const missing = [
-    "updateWarWeekSettings",
+    "updateWarWeekSettingsFields",
     "createDay",
     "updateDay",
     "deleteDay",
@@ -152,10 +180,10 @@ export async function assertSetup(sessions: {
 
   try {
     await run(
-      "updateWarWeekSettings rejects a signed-in JG user off the allowlist",
+      "updateWarWeekSettingsFields rejects a signed-in JG user off the allowlist",
       async () => {
         const result = await callAction(
-          ids.updateWarWeekSettings,
+          ids.updateWarWeekSettingsFields,
           [await xiWarWeekId(), { ...input, primaryColor: smokePrimary }],
           sessions.notOrganizer,
         );
@@ -171,10 +199,10 @@ export async function assertSetup(sessions: {
     );
 
     await run(
-      "updateWarWeekSettings refuses free-for-all while XI has Teams",
+      "updateWarWeekSettingsFields refuses free-for-all while XI has Teams",
       async () => {
         const result = await callAction(
-          ids.updateWarWeekSettings,
+          ids.updateWarWeekSettingsFields,
           [await xiWarWeekId(), { ...input, mode: "free-for-all" }],
           sessions.organizer,
         );
@@ -188,7 +216,7 @@ export async function assertSetup(sessions: {
       "an Organizer saves a new primary color and GET /xi is themed with it",
       async () => {
         const result = await callAction(
-          ids.updateWarWeekSettings,
+          ids.updateWarWeekSettingsFields,
           [await xiWarWeekId(), { ...input, primaryColor: smokePrimary }],
           sessions.organizer,
         );
@@ -203,7 +231,7 @@ export async function assertSetup(sessions: {
       "an Organizer overrides the other scheme's primary color: the row stores it and GET /xi carries it under that scheme's prefix",
       async () => {
         const result = await callAction(
-          ids.updateWarWeekSettings,
+          ids.updateWarWeekSettingsFields,
           [
             await xiWarWeekId(),
             { ...input, overridePrimaryColor: smokeOverride },
@@ -277,7 +305,7 @@ export async function assertSetup(sessions: {
 }
 
 /**
- * /admin/setup/teams and /admin/setup/competitions: the pages, one
+ * /admin/roster and /admin/competitions: the pages, one
  * Participant added through the roster that GET /xi/teams shows (and a
  * duplicate email refused), and one Competition with Placement Points that
  * points entry offers as presets. Deletes what it adds.
@@ -297,13 +325,14 @@ export async function assertSetupTeamsAndCompetitions(sessions: {
   };
 
   await run(
-    "GET /admin/setup/teams and /admin/setup/competitions show the editors to an Organizer and the refusal to a non-Organizer; the landing links them",
+    "GET /admin/roster and /admin/competitions show the editors to an Organizer and the refusal to a non-Organizer; the admin nav links them",
     async () => {
       const problems: string[] = [];
       for (const [page, marker] of [
-        ["/admin/setup", 'href="/admin/setup/competitions"'],
-        ["/admin/setup/teams", 'aria-label="Roster"'],
-        ["/admin/setup/competitions", 'aria-label="Competitions"'],
+        ["/admin/settings", 'href="/admin/competitions"'],
+        ["/admin/settings", 'href="/admin/roster"'],
+        ["/admin/roster", 'aria-label="Roster"'],
+        ["/admin/competitions", 'aria-label="Competitions"'],
       ] as const) {
         const organizer = await fetch(`${BASE_URL}${page}`, {
           headers: { cookie: sessions.organizer.cookie },
@@ -416,7 +445,7 @@ export async function assertSetupTeamsAndCompetitions(sessions: {
     );
 
     await run(
-      "an Organizer adds a Competition with Placement Points and GET /admin/points offers them as presets",
+      "an Organizer adds a Competition with Placement Points and GET /admin/competitions lists it",
       async () => {
         const created = await callAction(
           ids.createCompetition,
@@ -426,7 +455,6 @@ export async function assertSetupTeamsAndCompetitions(sessions: {
               name: smokeCompetition,
               description: "",
               scoring: "team",
-              maxPoints: "10",
               placementPoints: "9, 4",
               countsTowardTeam: false,
               group: "",
@@ -435,16 +463,14 @@ export async function assertSetupTeamsAndCompetitions(sessions: {
           sessions.organizer,
         );
         const body = await (
-          await fetch(`${BASE_URL}/admin/points`, {
+          await fetch(`${BASE_URL}/admin/competitions`, {
             headers: { cookie: sessions.organizer.cookie },
           })
         ).text();
-        const offered =
-          body.includes(smokeCompetition) &&
-          /placementPoints\\?":\[9,4\]/.test(body);
-        return created.ok && offered
+        const listed = body.includes(smokeCompetition);
+        return created.ok && listed
           ? null
-          : `created=${JSON.stringify(created)} offered=${offered}`;
+          : `created=${JSON.stringify(created)} listed=${listed}`;
       },
     );
   } finally {
@@ -459,7 +485,7 @@ export async function assertSetupTeamsAndCompetitions(sessions: {
 }
 
 /**
- * /admin/setup/schedule and /admin/setup/faq: the pages, the Schedule Item
+ * /admin/schedule and /admin/faq: the pages, the Schedule Item
  * validation refusals, and one new Schedule Item and one new FAQ Item that
  * the War Week's own pages show. Deletes both after.
  */
@@ -478,15 +504,16 @@ export async function assertSetupScheduleFaq(sessions: {
   };
 
   await run(
-    "GET /admin/setup/schedule and /admin/setup/faq show the setup pages to an Organizer and the refusal to a non-Organizer",
+    "GET /admin/schedule and /admin/faq show the setup pages to an Organizer and the refusal to a non-Organizer",
     async () => {
       const problems: string[] = [];
       for (const [page, marker] of [
-        ["/admin/setup", 'href="/admin/setup/faq"'],
-        ["/admin/setup/schedule", 'aria-label="Schedule Items"'],
-        ["/admin/setup/schedule/new", 'aria-label="Schedule Item"'],
-        ["/admin/setup/faq", 'aria-label="FAQ Items"'],
-        ["/admin/setup/faq/new", 'aria-label="FAQ Item"'],
+        ["/admin/settings", 'href="/admin/faq"'],
+        ["/admin/schedule", 'aria-label="Schedule Items"'],
+        // Add and edit open in a Sheet on the list (ticket 58).
+        ["/admin/schedule", "Add Schedule Item"],
+        ["/admin/faq", 'aria-label="FAQ Items"'],
+        ["/admin/faq", "Add FAQ Item"],
       ] as const) {
         const organizer = await fetch(`${BASE_URL}${page}`, {
           headers: { cookie: sessions.organizer.cookie },

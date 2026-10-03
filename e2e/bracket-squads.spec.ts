@@ -24,7 +24,7 @@ import {
 
 // Cypher is a team-scoring War Week XI Competition with no Points Entries
 // and no Placement Points; the flow gives it 3 / 2 / 1 (inside its max of
-// 3) and runs it as a single-elimination Bracket of four Squads.
+// 3) and runs it as a head-to-head Bracket of four Squads.
 const COMPETITION = "Cypher";
 
 const SQUADS = [
@@ -51,7 +51,7 @@ const SQUADS = [
 ] as const;
 const SQUAD_NAMES: readonly string[] = SQUADS.map((squad) => squad.name);
 
-/** Reports for Red Alpha: linked to the roster by email, never the pick. */
+/** Reports for Red Alpha: linked to the roster by email. */
 const REPORTER = "Ashley Schuliger";
 /** A second stub JG address, cleared with every e2e user (`e2e-%`). */
 const E2E_PARTICIPANT_2_EMAIL = "e2e-participant-2@jahnelgroup.com";
@@ -120,22 +120,15 @@ async function checkViewports(
   await page.setViewportSize({ width: 1280, height: 900 });
 }
 
-/** The Card of the Heat named `heat` (exactly: not "Waiting for …"). */
+/**
+ * The box of the Heat named `heat` in the Bracket's tree, admin's or the
+ * Competition page's (the last match: the Final's Round is named Final too).
+ */
 function heatCard(page: Page, heat: string): Locator {
   return page
-    .getByRole("listitem")
-    .filter({ has: page.getByText(heat, { exact: true }) });
-}
-
-/**
- * Switches the Competition page's Bracket from its default tree to the
- * List, whose Heat Cards `heatCard` finds.
- */
-async function showList(page: Page) {
-  await page
-    .getByRole("region", { name: "Bracket" })
-    .getByRole("tab", { name: "List" })
-    .click();
+    .locator("[data-bracket-tree]")
+    .getByRole("group", { name: heat, exact: true })
+    .last();
 }
 
 /** The Squad named in a Winner button's text. */
@@ -147,7 +140,11 @@ function squadIn(text: string): string {
 
 /** Records the Heat named `heat` as the Host, its first-listed Squad winning. */
 async function recordHeat(page: Page, heat: string): Promise<string> {
-  await page.getByRole("button", { name: `Record ${heat}` }).click();
+  // From the admin Bracket's tree, the one Participants see.
+  await page
+    .locator("[data-bracket-tree]")
+    .getByRole("button", { name: `Record result for ${heat}` })
+    .click();
   const sheet = page.getByRole("dialog", { name: heat });
   const winner = sheet
     .getByRole("group", { name: "Winner" })
@@ -165,6 +162,12 @@ async function recordHeat(page: Page, heat: string): Promise<string> {
 async function addSquad(page: Page, squad: (typeof SQUADS)[number]) {
   await page.getByRole("button", { name: "Add Squad" }).click();
   const sheet = page.getByRole("dialog", { name: "Add Squad" });
+  // The last save's toast goes as the Sheet opens: left at the bottom, it
+  // covers the Sheet's fields, and a pointer over it keeps it there.
+  // Under Sonner's 4s, so the toast was dismissed rather than expired.
+  await expect(
+    page.getByRole("region", { name: /^Notifications/ }).getByRole("listitem"),
+  ).toHaveCount(0, { timeout: 2_000 });
   await sheet.getByLabel("Name", { exact: true }).fill(squad.name);
   await sheet.getByRole("combobox", { name: "Team", exact: true }).click();
   await page.getByRole("option", { name: squad.team, exact: true }).click();
@@ -194,6 +197,22 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
   const id = await xiCompetitionId(COMPETITION);
   const reporterId = await xiParticipantId(REPORTER);
   let opponentParticipantId: string | null = null;
+  // What the flow changes on Cypher, restored in `finally` so the test can
+  // run again without a fresh seed; and its Points Entries before it, so
+  // only the ones the Bracket generates are removed.
+  const [before] = await runQuery<{ settings: string }>(
+    `select row_to_json(c)::text as settings from (
+       select format, bracket_config, self_report, finalized_at,
+              placement_points, self_enroll, entrant_limit, enroll_closes_at
+       from competition where id = $1) c`,
+    [id],
+  );
+  const seededEntryIds = (
+    await runQuery<{ id: string }>(
+      `select id from points_entry where competition_id = $1`,
+      [id],
+    )
+  ).map((row) => row.id);
   await runQuery(
     `insert into competition_host (competition_id, email) values ($1, $2)
      on conflict do nothing`,
@@ -207,12 +226,10 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     // The Host builds: Format, four Squads, Squads as the Entrants,
     // self-report on (and off and on again), Generate.
     await asHost(context);
-    await page.goto(`/admin/setup/competitions/${id}/bracket`);
+    await page.goto(`/admin/competitions/${id}/bracket`);
     await page.getByRole("combobox", { name: "Format" }).click();
-    await page.getByRole("option", { name: "Single elimination" }).click();
-    await expect(
-      page.getByText("Format set to Single elimination"),
-    ).toBeVisible();
+    await page.getByRole("option", { name: "Bracket", exact: true }).click();
+    await expect(page.getByText("Format set to Bracket")).toBeVisible();
 
     for (const squad of SQUADS) await addSquad(page, squad);
     // 15-3: the Squad help line in the builder's Squads section.
@@ -283,7 +300,19 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await shootHelp(first, testInfo, "competition-page");
     for (const you of [first, second]) {
       await you.goto(`/xi/competitions/${id}`);
-      await showList(you);
+      // Tree only: no List toggle.
+      await expect(
+        you.getByRole("region", { name: "Bracket" }).getByRole("tab"),
+      ).toHaveCount(0);
+      // Their own Heat carries Record result in the tree; the other doesn't.
+      await expect(
+        heatCard(you, semifinal).getByRole("button", {
+          name: `Record result for ${semifinal}`,
+        }),
+      ).toBeVisible();
+      await expect(
+        heatCard(you, otherSemifinal).getByRole("button"),
+      ).toHaveCount(0);
       const nextHeat = you
         .getByRole("region", { name: "Bracket" })
         .getByLabel("Your next Heat");
@@ -333,13 +362,13 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await second.keyboard.press("Escape");
     await expect(secondSheet).toBeHidden();
     await second.reload();
-    await showList(second);
     await expect(
-      heatCard(second, semifinal)
-        .getByRole("listitem")
-        .filter({ hasText: "Red Alpha" })
-        .getByLabel("Winner"),
-    ).toBeVisible();
+      heatCard(second, semifinal).locator("[data-advances]"),
+    ).toContainText("Red Alpha");
+    // Decided: no Record result for the second any more.
+    await expect(heatCard(second, semifinal).getByRole("button")).toHaveCount(
+      0,
+    );
     await secondContext.close();
 
     // The Host sees who reported it.
@@ -350,13 +379,15 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await checkViewports(page, testInfo, "results-reported");
     await recordHeat(page, otherSemifinal);
 
-    // The first reports the Final too.
+    // The first reports the Final too, from its Record result in the tree.
     await first.reload();
     const nextHeat = first
       .getByRole("region", { name: "Bracket" })
       .getByLabel("Your next Heat");
     await expect(nextHeat).toContainText("Your next Heat · Final");
-    await nextHeat.getByRole("button", { name: "Report result" }).click();
+    await heatCard(first, "Final")
+      .getByRole("button", { name: "Record result for Final" })
+      .click();
     const finalSheet = first.getByRole("dialog", { name: "Final" });
     await finalSheet
       .getByRole("group", { name: "Winner" })
@@ -391,7 +422,7 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await expect(heatCard(page, "Final")).toContainText(opponent);
     await expect(heatCard(page, "Final")).not.toContainText("Red Alpha");
     await expect(
-      page.getByRole("button", { name: "Record Final" }),
+      page.getByRole("button", { name: "Record result for Final" }),
     ).toBeVisible();
 
     // Put Red Alpha back, play the Final, finalize.
@@ -452,6 +483,27 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await runQuery(
       `delete from competition_host where competition_id = $1 and email = $2`,
       [id, E2E_HOST_EMAIL],
+    );
+    // The Bracket, its Entrants and Squads (their Heat Entrants and Squad
+    // members cascade), the Points Entries it generated, then Cypher as it
+    // was.
+    await runQuery(`delete from heat where competition_id = $1`, [id]);
+    await runQuery(`delete from entrant where competition_id = $1`, [id]);
+    await runQuery(`delete from squad where competition_id = $1`, [id]);
+    await runQuery(
+      `delete from points_entry
+       where competition_id = $1 and not (id = any($2::uuid[]))`,
+      [id, seededEntryIds],
+    );
+    await runQuery(
+      `update competition c set
+         format = b.format, bracket_config = b.bracket_config,
+         self_report = b.self_report, finalized_at = b.finalized_at,
+         placement_points = b.placement_points, self_enroll = b.self_enroll,
+         entrant_limit = b.entrant_limit, enroll_closes_at = b.enroll_closes_at
+       from json_populate_record(null::competition, $2::json) b
+       where c.id = $1`,
+      [id, before.settings],
     );
   }
 });

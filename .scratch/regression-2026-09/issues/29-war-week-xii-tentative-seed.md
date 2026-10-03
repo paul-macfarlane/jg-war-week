@@ -26,6 +26,7 @@
 - [x] `seeds/xii.json` validates and passes the Archive contrast checks in both color schemes.
 - [x] `src/seed/seeds.test.ts` keeps its history checks on the complete seeds and asserts XII is the only non-history seed, upcoming.
 - [x] `pnpm gate` passes.
-- [ ] **Human, after merge:** run the Seed workflow with `xii.json` (no `confirm_reset`) on staging, then production; `/` opens XII.
+- [x] **Human, after merge:** run the Seed workflow with `xii.json` (no `confirm_reset`) on staging, then production; `/` opens XII.
 
 ## Comments
+- 2026-09-30 [CLOSEOUT]: PR https://github.com/paul-macfarlane/jg-war-week/pull/100 merged. Seed workflow with `xii.json`, no reset, passed on staging (run 36728531380, from `staging`) and production (run 36730075666, from `main`).

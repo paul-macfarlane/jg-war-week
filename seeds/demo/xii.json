@@ -1,0 +1,502 @@
+{
+  "edition": "xii",
+  "editionNumber": 12,
+  "year": 2027,
+  "startDate": "2027-02-21",
+  "endDate": "2027-02-26",
+  "storyTheme": "No Teams. Just You.",
+  "status": "live",
+  "mode": "free-for-all",
+  "teamLabel": "Team",
+  "leaderTitle": "Captain",
+  "slackChannelUrl": "https://jahnelgroup.slack.com/archives/war-week-xii",
+  "primary": "#c2185b",
+  "primaryForeground": "#ffffff",
+  "accent": "#2f4fd8",
+  "background": "#ffffff",
+  "foreground": "#111111",
+  "fontPreset": "sans",
+  "organizers": [],
+  "highlights": [],
+  "days": [
+    {
+      "date": "2027-02-21",
+      "dayTheme": "Kickoff (placeholder)",
+      "scheduleItems": [
+        {
+          "startTime": "09:00",
+          "title": "Opening breakfast",
+          "category": "meal",
+          "location": "Main room"
+        },
+        {
+          "startTime": "10:00",
+          "title": "Mile Run",
+          "category": "competition",
+          "competition": "Mile Run",
+          "endTime": "11:00",
+          "location": "Out front",
+          "description": {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Meet out front. One mile, timed, top three score."
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "startTime": "12:00",
+          "title": "Lunch: tacos",
+          "category": "meal",
+          "endTime": "13:00"
+        },
+        {
+          "startTime": "19:00",
+          "title": "Chess Heats, Round 1",
+          "category": "competition",
+          "competition": "Chess Heats",
+          "location": "Main room"
+        }
+      ]
+    },
+    {
+      "date": "2027-02-22",
+      "dayTheme": "Head Start (placeholder)",
+      "scheduleItems": [
+        {
+          "startTime": "08:30",
+          "title": "Breakfast: bagels",
+          "category": "meal"
+        },
+        {
+          "startTime": "12:00",
+          "title": "Lunch: subs",
+          "category": "meal",
+          "endTime": "13:00"
+        },
+        {
+          "startTime": "13:00",
+          "title": "Ping Pong open play",
+          "category": "competition",
+          "competition": "Ping Pong",
+          "endTime": "17:00",
+          "location": "Game room"
+        },
+        {
+          "startTime": "18:00",
+          "title": "Board game night",
+          "category": "social",
+          "location": "Main room"
+        }
+      ]
+    },
+    {
+      "date": "2027-02-23",
+      "dayTheme": "Midweek Rally (placeholder)",
+      "scheduleItems": [
+        {
+          "startTime": "08:30",
+          "title": "Breakfast: muffins",
+          "category": "meal"
+        },
+        {
+          "startTime": "10:00",
+          "title": "Lightning talks",
+          "category": "education",
+          "endTime": "11:30",
+          "location": "Main room",
+          "description": {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Ten-minute talks on anything you like."
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "startTime": "12:00",
+          "title": "Lunch: pizza",
+          "category": "meal",
+          "endTime": "13:00"
+        },
+        {
+          "startTime": "13:00",
+          "title": "Step Challenge check-in",
+          "category": "competition",
+          "competition": "Step Challenge",
+          "endTime": "13:30"
+        },
+        {
+          "startTime": "17:00",
+          "title": "Chess Heats, Final",
+          "category": "competition",
+          "competition": "Chess Heats",
+          "location": "Main room"
+        }
+      ]
+    },
+    {
+      "date": "2027-02-24",
+      "dayTheme": "Final Push (placeholder)",
+      "scheduleItems": [
+        {
+          "startTime": "08:30",
+          "title": "Breakfast: waffles",
+          "category": "meal"
+        },
+        {
+          "startTime": "12:00",
+          "title": "Lunch: salads",
+          "category": "meal",
+          "endTime": "13:00"
+        },
+        {
+          "startTime": "16:00",
+          "title": "Closing ceremonies",
+          "category": "social",
+          "location": "Main room",
+          "description": {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "The Finale, then dinner."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "participants": [
+    {
+      "displayName": "Ada Anvil"
+    },
+    {
+      "displayName": "Bo Banner"
+    },
+    {
+      "displayName": "Cass Comet"
+    },
+    {
+      "displayName": "Dot Dynamo"
+    },
+    {
+      "displayName": "Eli Ember"
+    },
+    {
+      "displayName": "Fay Falcon"
+    },
+    {
+      "displayName": "Gus Gadget"
+    },
+    {
+      "displayName": "Hal Harbor"
+    },
+    {
+      "displayName": "Ivy Ion"
+    },
+    {
+      "displayName": "Jax Jetpack"
+    },
+    {
+      "displayName": "Kit Kestrel"
+    },
+    {
+      "displayName": "Lou Lantern"
+    }
+  ],
+  "competitions": [
+    {
+      "name": "Mile Run",
+      "scoring": "individual",
+      "placementPoints": [3, 2, 1],
+      "description": "One mile around the block, timed. Top three take Placement Points.",
+      "finalized": true,
+      "finalizedAt": "2027-02-21T11:17:00-05:00",
+      "finalizedByEmail": "demo-organizer@jahnelgroup.com"
+    },
+    {
+      "name": "Step Challenge",
+      "scoring": "individual",
+      "description": "Points for steps logged each day of the week; no cap.",
+      "scoreDirection": "higher",
+      "placementPoints": [7, 6.5, 5.5, 4.5, 3.5, 3, 2.5, 2, 1.5, 1, 1, 0.5],
+      "finalized": true,
+      "finalizedAt": "2027-02-23T09:02:00-05:00",
+      "finalizedByEmail": "demo-organizer@jahnelgroup.com"
+    },
+    {
+      "name": "Ping Pong",
+      "scoring": "individual",
+      "format": "head-to-head",
+      "gameConfig": {
+        "drawsAllowed": false,
+        "bestOf": null
+      },
+      "entrantsOpen": true,
+      "placementPoints": [3, 2, 1],
+      "description": "Log a Game from your phone whenever a table frees up."
+    },
+    {
+      "name": "Chess Heats",
+      "scoring": "individual",
+      "format": "bracket",
+      "bracketConfig": {
+        "entrantsPerHeat": 4,
+        "advancePerHeat": 2,
+        "thirdPlaceGame": false
+      },
+      "placementPoints": [5, 3, 1],
+      "description": "Four-player Heats; the top two advance to the Final."
+    }
+  ],
+  "announcements": [
+    {
+      "key": "welcome",
+      "title": "Welcome to War Week XII",
+      "pinned": true,
+      "authorEmail": "demo-organizer@jahnelgroup.com",
+      "publishedAt": "2027-02-21T08:00:00-05:00",
+      "body": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "heading",
+            "attrs": {
+              "level": 2
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "No Teams. Just You."
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Every point this week is yours alone. Check the "
+              },
+              {
+                "type": "text",
+                "text": "Standings",
+                "marks": [
+                  {
+                    "type": "bold"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " and the schedule, and log your Ping Pong Games from your phone."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "key": "chess-heats-tonight",
+      "title": "Chess Heats start tonight",
+      "authorEmail": "demo-organizer@jahnelgroup.com",
+      "publishedAt": "2027-02-21T13:00:00-05:00",
+      "body": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Round 1 is at 7:00 in the Main room. The Final is Tuesday at 5:00."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "faqItems": [
+    {
+      "question": "How do I get points?",
+      "answer": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Compete in any Competition on the schedule; every point goes to you."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "finaleSlides": [
+    {
+      "kind": "title"
+    },
+    {
+      "kind": "numbers"
+    },
+    {
+      "kind": "awards"
+    },
+    {
+      "kind": "champions"
+    },
+    {
+      "kind": "standings"
+    },
+    {
+      "kind": "winner"
+    },
+    {
+      "kind": "custom",
+      "heading": "Thank you",
+      "body": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Thanks for playing War Week XII. See you next year!"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "placements": [
+    {
+      "key": "mile-run-fay-falcon",
+      "competition": "Mile Run",
+      "participant": "Fay Falcon",
+      "place": 1
+    },
+    {
+      "key": "mile-run-ada-anvil",
+      "competition": "Mile Run",
+      "participant": "Ada Anvil",
+      "place": 2
+    },
+    {
+      "key": "mile-run-jax-jetpack",
+      "competition": "Mile Run",
+      "participant": "Jax Jetpack",
+      "place": 3
+    },
+    {
+      "key": "step-challenge-cass-comet",
+      "competition": "Step Challenge",
+      "participant": "Cass Comet",
+      "place": 1,
+      "score": 7
+    },
+    {
+      "key": "step-challenge-kit-kestrel",
+      "competition": "Step Challenge",
+      "participant": "Kit Kestrel",
+      "place": 2,
+      "score": 6.5
+    },
+    {
+      "key": "step-challenge-ada-anvil",
+      "competition": "Step Challenge",
+      "participant": "Ada Anvil",
+      "place": 3,
+      "score": 5.5
+    },
+    {
+      "key": "step-challenge-gus-gadget",
+      "competition": "Step Challenge",
+      "participant": "Gus Gadget",
+      "place": 4,
+      "score": 4.5
+    },
+    {
+      "key": "step-challenge-ivy-ion",
+      "competition": "Step Challenge",
+      "participant": "Ivy Ion",
+      "place": 5,
+      "score": 3.5
+    },
+    {
+      "key": "step-challenge-dot-dynamo",
+      "competition": "Step Challenge",
+      "participant": "Dot Dynamo",
+      "place": 6,
+      "score": 3
+    },
+    {
+      "key": "step-challenge-bo-banner",
+      "competition": "Step Challenge",
+      "participant": "Bo Banner",
+      "place": 7,
+      "score": 2.5
+    },
+    {
+      "key": "step-challenge-fay-falcon",
+      "competition": "Step Challenge",
+      "participant": "Fay Falcon",
+      "place": 8,
+      "score": 2
+    },
+    {
+      "key": "step-challenge-eli-ember",
+      "competition": "Step Challenge",
+      "participant": "Eli Ember",
+      "place": 9,
+      "score": 1.5
+    },
+    {
+      "key": "step-challenge-hal-harbor",
+      "competition": "Step Challenge",
+      "participant": "Hal Harbor",
+      "place": 10,
+      "score": 1
+    },
+    {
+      "key": "step-challenge-jax-jetpack",
+      "competition": "Step Challenge",
+      "participant": "Jax Jetpack",
+      "place": 10,
+      "score": 1
+    },
+    {
+      "key": "step-challenge-lou-lantern",
+      "competition": "Step Challenge",
+      "participant": "Lou Lantern",
+      "place": 12,
+      "score": 0.5
+    }
+  ]
+}

@@ -245,8 +245,8 @@ test("r1 05 the End War Week dialog shows the computed Winner read-only", async 
   page,
 }, testInfo) => {
   await asOrganizer(context);
-  // War Week XI is the live one, so /admin/setup shows End War Week.
-  await page.goto("/admin/setup");
+  // War Week XI is the live one, so /admin/settings shows End War Week.
+  await page.goto("/admin/settings");
   await page.getByRole("button", { name: "End War Week" }).click();
   const dialog = page.getByRole("alertdialog", { name: "End War Week XI?" });
   await expect(dialog).toBeVisible();
@@ -270,34 +270,33 @@ test("r1 05 the End War Week dialog shows the computed Winner read-only", async 
   expect(row.status).toBe("live");
 });
 
-test("r1 06 09 the Competitions form explains Max points and offers Format including Bracket formats, linking a Bracket Competition to its Bracket setup", async ({
+test("r1 06 09 the Competitions form offers Format including Bracket formats and no points cap, linking a Bracket Competition to its Bracket setup", async ({
   context,
   page,
 }, testInfo) => {
   await asOrganizer(context);
-  await page.goto("/admin/setup/competitions");
+  await page.goto("/admin/competitions");
 
-  const addForm = page.getByRole("form", { name: "New Competition" });
-  await expect(
-    addForm.getByText(
-      "Optional. The most points 1st place’s Placement Points can be worth.",
-      { exact: false },
-    ),
-  ).toBeVisible();
+  // The empty form opens in a Sheet from the list's Add button.
+  await page.getByRole("button", { name: "Add Competition" }).click();
+  const addForm = page
+    .getByRole("dialog", { name: "Add Competition" })
+    .getByRole("form", { name: "New Competition" });
+  // Placement Points are the only points a Competition sets; no cap on them.
+  await expect(addForm.getByText("Placement Points")).toBeVisible();
+  await expect(addForm.getByLabel(/^Max\b/i)).toHaveCount(0);
 
   await expect(addForm.getByRole("combobox", { name: "Format" })).toBeVisible();
-  await expect(addForm.getByText("Points:")).toBeVisible();
-  await expect(addForm.getByText("Single elimination:")).toBeVisible();
-  await expect(addForm.getByText("Heats:")).toBeVisible();
+  await expect(addForm.getByText("Placement:")).toBeVisible();
+  await expect(addForm.getByText("Bracket:")).toBeVisible();
   await expect(
-    addForm.getByText("Only Points Entries; no Bracket."),
-  ).toBeVisible();
-  await expect(
-    addForm.getByText("A knockout Bracket: one loss and an Entrant is out."),
+    addForm.getByText(
+      "One result on one sheet: give each Team or Participant a Place, optionally a Score, then Finalize.",
+    ),
   ).toBeVisible();
   await expect(
     addForm.getByText(
-      "A Bracket where Entrants play in Heats; a set number advance each round.",
+      "Entrants play in Heats and a set number advance each Round, down to a final. Two per Heat with one advancing is a head-to-head knockout.",
     ),
   ).toBeVisible();
   await page.screenshot({
@@ -310,12 +309,10 @@ test("r1 06 09 the Competitions form explains Max points and offers Format inclu
       .getByRole("textbox", { name: "Name" })
       .fill("R1 E2E Knockout");
     await addForm.getByRole("combobox", { name: "Format" }).click();
-    await page.getByRole("option", { name: "Single elimination" }).click();
+    await page.getByRole("option", { name: "Bracket", exact: true }).click();
     await addForm.getByRole("button", { name: "Add Competition" }).click();
     await expect(page.getByText("Competition saved")).toBeVisible();
-    await expect(page).toHaveURL(
-      /\/admin\/setup\/competitions\/[0-9a-f-]+\/bracket$/,
-    );
+    await expect(page).toHaveURL(/\/admin\/competitions\/[0-9a-f-]+\/bracket$/);
     await page.screenshot({
       path: testInfo.outputPath("created-links-to-bracket.png"),
     });

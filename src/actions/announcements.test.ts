@@ -55,7 +55,6 @@ function authorizeAs(
 const EDIT = {
   title: "Kickoff moved",
   body: { type: "doc", content: [] },
-  videoUrls: [],
 };
 
 beforeEach(() => {

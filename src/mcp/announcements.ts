@@ -1,5 +1,4 @@
 import type { Announcement } from "@/db/schema";
-import { authorHandle } from "@/lib/announcements";
 import { toPlainText } from "@/lib/rich-text/plain-text";
 
 export type AnnouncementsResult = {
@@ -10,20 +9,23 @@ export type AnnouncementsResult = {
     author: string;
     publishedAt: string;
     body: string | null;
-    videoUrls: string[];
   }[];
 };
 
 type AnnouncementRow = Pick<
   Announcement,
-  "title" | "pinned" | "authorEmail" | "publishedAt" | "body" | "videoUrls"
->;
+  "title" | "pinned" | "publishedAt" | "body"
+> & {
+  /** The resolved author name (`announcementAuthorName`); never an email. */
+  authorName: string;
+};
 
 /**
  * Serializes a War Week's Announcements (already sorted and limited by the
  * query) into the `get_announcements` MCP tool payload. The body renders as
  * plain text; images are dropped, like the schedule serializer. The author
- * is the handle before the `@`, never the email: no MCP tool returns one.
+ * is the resolved name (Profile name, else roster name, else the handle
+ * before the `@`), never the email: no MCP tool returns one.
  */
 export function toAnnouncementsResult(
   edition: string,
@@ -34,10 +36,9 @@ export function toAnnouncementsResult(
     announcements: rows.map((row) => ({
       title: row.title,
       pinned: row.pinned,
-      author: authorHandle(row.authorEmail),
+      author: row.authorName,
       publishedAt: row.publishedAt.toISOString(),
       body: toPlainText(row.body),
-      videoUrls: row.videoUrls,
     })),
   };
 }

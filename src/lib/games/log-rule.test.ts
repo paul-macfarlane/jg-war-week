@@ -68,7 +68,7 @@ describe("gameLogError: logging a Game", () => {
     expect(gameLogError(facet())).toBeNull();
   });
 
-  it("refuses the pick-only You: no account-linked Participant", () => {
+  it("refuses a sign-in that links no Participant", () => {
     expect(gameLogError(facet({ linked: null }))).toBe(NOT_LINKED);
   });
 
@@ -178,7 +178,7 @@ describe("gameChangeError: editing or deleting a Game", () => {
     ).toBe(NOT_THE_LOGGER);
   });
 
-  it("refuses the pick-only You", () => {
+  it("refuses a sign-in that links no Participant", () => {
     expect(gameChangeError(change({ linked: null }))).toBe(NOT_LINKED);
   });
 
@@ -370,7 +370,7 @@ describe("canLogSomething: whether a Log button shows", () => {
 
 describe("playersRuleError: the posted players' shape", () => {
   const ok = {
-    gameType: "head-to-head" as const,
+    gameFormat: "head-to-head" as const,
     scoring: "individual" as const,
     ids: [ME, RIVAL],
     allInWarWeek: true,
@@ -393,18 +393,8 @@ describe("playersRuleError: the posted players' shape", () => {
     ],
     [
       "refuses a best-score Game without exactly 1 player",
-      { ...ok, gameType: "best-score" as const },
+      { ...ok, gameFormat: "best-score" as const },
       "A best-score Game has exactly 1 player.",
-    ],
-    [
-      "refuses a ranked Game with fewer than 2 players",
-      { ...ok, gameType: "ranked" as const, ids: [ME] },
-      "A ranked Game has at least 2 players.",
-    ],
-    [
-      "accepts a ranked Game of 3",
-      { ...ok, gameType: "ranked" as const, ids: [ME, RIVAL, THIRD] },
-      null,
     ],
     [
       "refuses a Participant of another War Week",

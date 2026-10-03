@@ -16,7 +16,12 @@ import {
   useFocusFirstInvalid,
 } from "@/components/form-field-errors";
 import { FormValueInput } from "@/components/form-value-input";
-import { Button } from "@/components/ui/button";
+import { OptionSelect } from "@/components/option-select";
+import {
+  SetupRowError,
+  SetupSaveButton,
+  SetupSheetFooter,
+} from "@/components/setup-row";
 import {
   Field,
   FieldDescription,
@@ -35,6 +40,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import type { WarWeek } from "@/db/schema";
 import {
   AWARD_DESCRIPTION_MAX,
   AWARD_NAME_MAX,
@@ -46,39 +52,66 @@ import type { AwardFormOptions } from "@/queries/awards";
 const NO_TEAM = "none";
 
 /**
- * Give or edit one Award: name, description, and its recipients — one Team,
- * any number of Participants, or both. The server action checks the
- * recipients belong to this War Week; its error is what's shown.
+ * Give or edit one Award, in its Sheet on the Awards page: name,
+ * description, and its recipients — one Team, any number of Participants,
+ * or both. The server action checks the recipients belong to this War
+ * Week; its error is what's shown. `onSaved` closes the Sheet.
  */
 export function AwardForm({
   warWeekId,
   awardId,
   initial,
+  currentCategory,
   options,
   teamLabel,
+  mode,
+  onSaved,
 }: {
   /** The War Week this page was rendered for; creates post it. */
   warWeekId: string;
   /** Set when editing an existing Award. */
   awardId?: string;
   initial?: AwardInput;
+  /** The Award's Category when editing; an archived one stays selectable. */
+  currentCategory?: { id: string; name: string; archived: boolean } | null;
   options: AwardFormOptions;
   /** The War Week's Team Label, e.g. "House". */
   teamLabel: string;
+  /** The War Week's Mode: a free-for-all has no Team field. */
+  mode: WarWeek["mode"];
+  onSaved?: () => void;
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [teamId, setTeamId] = useState(initial?.teamId ?? "");
+  const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
   const [participantIds, setParticipantIds] = useState<string[]>(
     initial?.participantIds ?? [],
   );
+
+  // A free-for-all War Week hides Team, unless the Award being edited has
+  // one, so it can be cleared.
+  const showTeam =
+    options.teams.length > 0 && (mode !== "free-for-all" || !!initial?.teamId);
 
   // Also lets SelectValue show the Team's name rather than its id.
   const teamItems = [
     { value: NO_TEAM, label: `No ${teamLabel}` },
     ...options.teams.map((team) => ({ value: team.id, label: team.name })),
+  ];
+  const categoryItems = [
+    { value: "", label: "None" },
+    ...options.categories.map((c) => ({ value: c.id, label: c.name })),
+    ...(currentCategory?.archived
+      ? [
+          {
+            value: currentCategory.id,
+            label: `${currentCategory.name} (archived)`,
+          },
+        ]
+      : []),
   ];
   const participantItems = options.participants.map((p) => ({
     id: p.id,
@@ -94,6 +127,7 @@ export function AwardForm({
         name,
         description,
         teamId: teamId || null,
+        categoryId: categoryId || null,
         participantIds,
       };
       const saved = awardId
@@ -104,7 +138,7 @@ export function AwardForm({
         return saved;
       }
       toast.success("Award saved");
-      router.push("/admin/awards");
+      onSaved?.();
       router.refresh();
       return saved;
     },
@@ -121,7 +155,7 @@ export function AwardForm({
       className="flex flex-col gap-5"
       aria-label="Award"
     >
-      <FieldGroup>
+      <FieldGroup className="px-4">
         <Field data-invalid={!!fieldErrors.name}>
           <FieldLabel htmlFor="award-name">Name</FieldLabel>
           <Input
@@ -151,15 +185,33 @@ export function AwardForm({
           <FieldError>{fieldErrors.description}</FieldError>
         </Field>
 
+        <Field data-invalid={!!fieldErrors.categoryId}>
+          <FieldLabel htmlFor="award-category">Category</FieldLabel>
+          <OptionSelect
+            id="award-category"
+            name="categoryId"
+            value={categoryId}
+            onValueChange={setCategoryId}
+            options={categoryItems}
+            aria-invalid={!!fieldErrors.categoryId}
+          />
+          <FieldDescription>
+            Groups this Award with the same Category in other War Weeks.
+          </FieldDescription>
+          <FieldError>{fieldErrors.categoryId}</FieldError>
+        </Field>
+
         <FieldSet>
           <FieldLegend variant="label">Recipients</FieldLegend>
           <FieldDescription>
-            A {teamLabel}, Participants, or both. Awards don&apos;t affect the
-            Standings.
+            {showTeam
+              ? `A ${teamLabel}, Participants, or both.`
+              : "Participants only."}{" "}
+            Awards don&apos;t affect the Standings.
           </FieldDescription>
 
           <FieldGroup>
-            {options.teams.length > 0 && (
+            {showTeam && (
               <Field data-invalid={!!fieldErrors.teamId}>
                 <FieldLabel htmlFor="award-team">{teamLabel}</FieldLabel>
                 <Select
@@ -172,7 +224,7 @@ export function AwardForm({
                   <SelectTrigger
                     id="award-team"
                     aria-invalid={!!fieldErrors.teamId}
-                    className="h-11 w-full sm:h-9"
+                    className="w-full"
                   >
                     <SelectValue />
                   </SelectTrigger>
@@ -206,7 +258,9 @@ export function AwardForm({
                 items={participantItems}
                 value={participantIds}
                 onValueChange={setParticipantIds}
-                placeholder={`Find by name or ${teamLabel}`}
+                placeholder={
+                  showTeam ? `Find by name or ${teamLabel}` : "Find by name"
+                }
               />
               <FieldError>{fieldErrors.participantIds}</FieldError>
             </Field>
@@ -214,26 +268,13 @@ export function AwardForm({
         </FieldSet>
       </FieldGroup>
 
-      <div className="flex items-center gap-3">
-        <Button
-          type="submit"
-          size="lg"
-          className="min-h-11 sm:min-h-9"
-          disabled={pending}
-        >
-          {pending ? "Saving…" : awardId ? "Save changes" : "Give Award"}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          className="min-h-11 sm:min-h-9"
-          onClick={() => router.push("/admin/awards")}
-        >
-          Cancel
-        </Button>
-      </div>
-      {formError && !pending && <FieldError>{formError}</FieldError>}
+      <SetupSheetFooter>
+        <SetupSaveButton
+          pending={pending}
+          label={awardId ? "Save" : "Add Award"}
+        />
+        <SetupRowError error={pending ? null : formError} />
+      </SetupSheetFooter>
     </form>
   );
 }

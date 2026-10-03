@@ -1,0 +1,108 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+import { AdminRefused, AdminShell } from "@/components/admin-shell";
+import { BracketBuilder } from "@/components/bracket-builder";
+import { getBracket, getSquads } from "@/queries/brackets";
+import { getParticipationView } from "@/queries/participation";
+import { getTargetOptions } from "@/queries/target-options";
+
+import { loadAdminPage } from "../../../gate";
+
+export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Bracket · JG War Week" };
+
+export default async function BracketBuilderPage({
+  params,
+}: PageProps<"/admin/competitions/[id]/bracket">) {
+  const { id } = await params;
+  const { warWeek, email, allowed, isOrganizer, editions, runs } =
+    await loadAdminPage(`/admin/competitions/${id}/bracket`);
+  if (!allowed || !runs(id)) {
+    return <AdminRefused warWeek={warWeek} email={email} />;
+  }
+
+  const [view, options, participation] = await Promise.all([
+    getBracket(id),
+    getTargetOptions(warWeek),
+    getParticipationView(id),
+  ]);
+  // A `participation` Competition is never a Bracket: point to its setup.
+  if (participation && participation.competition.warWeekId === warWeek.id) {
+    return (
+      <AdminShell
+        warWeek={warWeek}
+        email={email}
+        isOrganizer={isOrganizer}
+        editions={editions}
+        current="Competitions"
+      >
+        <section className="flex max-w-xl min-w-0 flex-col gap-4">
+          <Link
+            href="/admin/competitions"
+            className="text-primary text-sm underline-offset-4 hover:underline"
+          >
+            ← Competitions
+          </Link>
+          <h1 className="text-2xl font-bold">
+            {participation.competition.name}
+          </h1>
+          <p className="text-foreground/70 text-sm">
+            This Competition is run as Participation, not a Bracket.{" "}
+            <Link
+              href={`/admin/competitions/${id}/participation`}
+              className="text-primary underline-offset-4 hover:underline"
+            >
+              Open who took part
+            </Link>
+            .
+          </p>
+        </section>
+      </AdminShell>
+    );
+  }
+  if (!view || view.competition.warWeekId !== warWeek.id) notFound();
+  const { competition } = view;
+  const squads = await getSquads(competition.id);
+
+  return (
+    <AdminShell
+      warWeek={warWeek}
+      email={email}
+      isOrganizer={isOrganizer}
+      editions={editions}
+      current="Competitions"
+    >
+      <section className="flex max-w-3xl min-w-0 flex-col gap-4">
+        <Link
+          href="/admin/competitions"
+          className="text-primary text-sm underline-offset-4 hover:underline"
+        >
+          ← Competitions
+        </Link>
+        <h1 className="text-2xl font-bold">{competition.name} · Bracket</h1>
+        <BracketBuilder
+          competition={{
+            id: competition.id,
+            name: competition.name,
+            scoring: competition.scoring,
+            format: competition.format,
+            finalized: view.finalized,
+            selfReport: competition.selfReport,
+            selfEnroll: competition.selfEnroll,
+            entrantLimit: competition.entrantLimit,
+            enrollClosesAt: competition.enrollClosesAt,
+          }}
+          entrants={view.entrants}
+          bracket={view.bracket}
+          teams={options.teams}
+          participants={options.participants}
+          squads={squads}
+          teamLabel={warWeek.teamLabel}
+        />
+      </section>
+    </AdminShell>
+  );
+}

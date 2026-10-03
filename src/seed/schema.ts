@@ -1,14 +1,12 @@
 import { z } from "zod";
 
-import { announcementTitleSchema, videoUrlSchema } from "@/lib/announcements";
+import { announcementTitleSchema } from "@/lib/announcements";
 import { AWARD_DESCRIPTION_MAX, AWARD_NAME_MAX } from "@/lib/awards";
-import { WAR_WEEK_STATUSES } from "@/lib/enums";
+import { FINALE_AWARDS_LAYOUTS, WAR_WEEK_STATUSES } from "@/lib/enums";
+import { finaleSlideSeedSchema } from "@/lib/finale-slides";
 import { jgEmailSchema } from "@/lib/jg-email";
-import {
-  pointsSchema as points,
-  pointsEntryNoteSchema,
-  pointsEntryTargetError,
-} from "@/lib/points-entry";
+import { MAX_SCORE } from "@/lib/placement/input";
+import { pointsSchema as points } from "@/lib/points-entry";
 import { contentInputSchema } from "@/lib/rich-text/content";
 import {
   competitionSeedSchema,
@@ -27,7 +25,8 @@ import {
 // (ADR 0001); the seed composes them into the file format.
 
 /**
- * A stable id for a seeded organizer-owned record (Points Entry, Award,
+ * A stable id for a seeded organizer-owned record (Placement, Discretionary
+ * points, Award,
  * Announcement), unique within its list. The loader inserts a keyed record
  * only if it is absent and never updates or deletes it; see CONTEXT.md.
  */
@@ -44,26 +43,54 @@ export const daySeedSchema = z.object({
 
 export type DaySeed = z.infer<typeof daySeedSchema>;
 
-export const pointsEntrySeedSchema = z
+/**
+ * Discretionary points: a Points Entry with no Competition, to one Team or
+ * one Participant, with a required reason (stored as the entry's note).
+ */
+export const discretionaryPointsSeedSchema = z
   .object({
     key: seedKey,
-    /** A Competition name from this seed. */
-    competition: z.string().min(1).max(120),
     /** A Team name from this seed; exactly one of team or participant. */
     team: z.string().min(1).max(80).nullish(),
     /** A Participant display name from this seed. */
     participant: z.string().min(1).max(120).nullish(),
     points,
-    note: pointsEntryNoteSchema.nullish(),
+    reason: z.string().trim().min(1).max(500),
     enteredByEmail: emailSchema,
     enteredAt: z.iso.datetime({ offset: true }),
   })
   .refine((entry) => (entry.team == null) !== (entry.participant == null), {
-    message: "a Points Entry must target exactly one of team or participant",
+    message:
+      "Discretionary points must target exactly one of team or participant",
     path: ["team"],
   });
 
-export type PointsEntrySeed = z.infer<typeof pointsEntrySeedSchema>;
+export type DiscretionaryPointsSeed = z.infer<
+  typeof discretionaryPointsSeedSchema
+>;
+
+/**
+ * One row of a Placement Competition's sheet (CONTEXT.md, Placement). The
+ * loader inserts a keyed row only if it is absent and never updates it.
+ */
+export const placementSeedSchema = z
+  .object({
+    key: seedKey,
+    /** A Placement Competition's name from this seed. */
+    competition: z.string().min(1).max(120),
+    /** A Team name from this seed; exactly one of team or participant. */
+    team: z.string().min(1).max(80).nullish(),
+    /** A Participant display name from this seed. */
+    participant: z.string().min(1).max(120).nullish(),
+    place: z.number().int().min(1),
+    score: z.number().min(-MAX_SCORE).max(MAX_SCORE).nullish(),
+  })
+  .refine((row) => (row.team == null) !== (row.participant == null), {
+    message: "a Placement must be for exactly one of team or participant",
+    path: ["team"],
+  });
+
+export type PlacementSeed = z.infer<typeof placementSeedSchema>;
 
 export const awardSeedSchema = z
   .object({
@@ -74,6 +101,8 @@ export const awardSeedSchema = z
     team: z.string().min(1).max(80).nullish(),
     /** Participant display names from this seed. */
     participants: z.array(z.string().min(1).max(120)).default([]),
+    /** An Award Category's key (not its name, which an Organizer may rename). */
+    category: seedKey.nullish(),
   })
   .refine((a) => a.team != null || a.participants.length > 0, {
     message: "an Award needs at least one recipient (a team or participants)",
@@ -86,7 +115,12 @@ export const announcementSeedSchema = z.object({
   key: seedKey,
   title: announcementTitleSchema,
   body: contentInputSchema,
-  videoUrls: z.array(videoUrlSchema).default([]),
+  // zod would strip an unknown key and lose the video silently, so refuse it.
+  videoUrls: z
+    .never({
+      error: "videoUrls is gone; put each video in body as a video block",
+    })
+    .optional(),
   pinned: z.boolean().default(false),
   authorEmail: emailSchema,
   publishedAt: z.iso.datetime({ offset: true }),
@@ -117,10 +151,25 @@ export const warWeekSeedSchema = z
     teams: z.array(teamSeedSchema).default([]),
     participants: z.array(participantSeedSchema).default([]),
     competitions: z.array(competitionSeedSchema).default([]),
-    pointsEntries: z.array(pointsEntrySeedSchema).default([]),
+    // zod would strip an unknown key and lose the entries silently, so refuse it.
+    pointsEntries: z
+      .never({
+        error:
+          "pointsEntries is gone; use placements (with finalized) or discretionaryPoints",
+      })
+      .optional(),
+    discretionaryPoints: z.array(discretionaryPointsSeedSchema).default([]),
+    placements: z.array(placementSeedSchema).default([]),
     awards: z.array(awardSeedSchema).default([]),
     announcements: z.array(announcementSeedSchema).default([]),
     faqItems: z.array(faqItemSeedSchema).default([]),
+    /** Set when the War Week is first inserted, never on a reload. */
+    finaleAwardsLayout: z.enum(FINALE_AWARDS_LAYOUTS).optional(),
+    /**
+     * The Finale's slides in order. Absent: a load leaves the saved list
+     * alone (CONTEXT.md, "Seed idempotence rules").
+     */
+    finaleSlides: z.array(finaleSlideSeedSchema).optional(),
   })
   .refine((seed) => seed.startDate <= seed.endDate, {
     message: "startDate must not be after endDate",
@@ -191,12 +240,13 @@ export const warWeekSeedSchema = z
       "Competition name",
     );
     unique(
-      "pointsEntries",
-      seed.pointsEntries,
+      "discretionaryPoints",
+      seed.discretionaryPoints,
       (e) => e.key,
       "key",
-      "Points Entry key",
+      "Discretionary points key",
     );
+    unique("placements", seed.placements, (p) => p.key, "key", "Placement key");
     unique("awards", seed.awards, (a) => a.key, "key", "Award key");
     unique(
       "announcements",
@@ -211,6 +261,13 @@ export const warWeekSeedSchema = z
       (f) => f.question,
       "question",
       "FAQ question",
+    );
+    unique(
+      "finaleSlides",
+      seed.finaleSlides ?? [],
+      (s) => (s.kind === "custom" ? `custom: ${s.heading}` : s.kind),
+      "kind",
+      "Finale slide",
     );
     seed.days.forEach((d, dayIndex) =>
       unique(
@@ -247,31 +304,55 @@ export const warWeekSeedSchema = z
       }),
     );
 
-    seed.pointsEntries.forEach((entry, index) => {
-      const path = ["pointsEntries", index];
-      const comp = competitions.get(entry.competition);
+    seed.discretionaryPoints.forEach((entry, index) => {
+      const path = ["discretionaryPoints", index];
+      if (entry.team != null && !teams.has(entry.team)) {
+        issue([...path, "team"], `unknown Team "${entry.team}"`);
+      }
+      if (entry.participant != null && !participants.has(entry.participant)) {
+        issue(
+          [...path, "participant"],
+          `unknown Participant "${entry.participant}"`,
+        );
+      }
+    });
+
+    seed.placements.forEach((row, index) => {
+      const path = ["placements", index];
+      const comp = competitions.get(row.competition);
       if (!comp) {
         issue(
           [...path, "competition"],
-          `unknown Competition "${entry.competition}"`,
+          `unknown Competition "${row.competition}"`,
+        );
+      } else if (comp.format !== "placement") {
+        issue(
+          [...path, "competition"],
+          `${comp.name} isn't a placement Competition`,
         );
       }
-      if (entry.team != null) {
-        if (!teams.has(entry.team)) {
-          issue([...path, "team"], `unknown Team "${entry.team}"`);
+      if (row.team != null) {
+        if (comp?.scoring === "individual") {
+          issue(
+            [...path, "team"],
+            "an individual Competition takes participants, not teams",
+          );
+        } else if (!teams.has(row.team)) {
+          issue([...path, "team"], `unknown Team "${row.team}"`);
         }
-        const refusal = comp && pointsEntryTargetError(comp, "team");
-        if (refusal) issue([...path, "team"], refusal);
       }
-      if (entry.participant != null) {
-        if (!participants.has(entry.participant)) {
+      if (row.participant != null) {
+        if (comp?.scoring === "team") {
           issue(
             [...path, "participant"],
-            `unknown Participant "${entry.participant}"`,
+            "a team Competition takes teams, not participants",
+          );
+        } else if (!participants.has(row.participant)) {
+          issue(
+            [...path, "participant"],
+            `unknown Participant "${row.participant}"`,
           );
         }
-        const refusal = comp && pointsEntryTargetError(comp, "participant");
-        if (refusal) issue([...path, "participant"], refusal);
       }
     });
 

@@ -1,21 +1,48 @@
 import type { Competition, PointsEntry, Team } from "@/db/schema";
-import { formatPoints } from "@/lib/points";
+import type { Format } from "@/lib/bracket/view";
+import { isGameFormat } from "@/lib/enums";
+import type { ProfilesByEmail } from "@/lib/profile";
 
 export type CompetitionListItem = Pick<
   Competition,
   | "id"
   | "name"
   | "description"
-  | "maxPoints"
   | "scoring"
   | "countsTowardTeam"
   | "competitionGroup"
   | "format"
-  | "gameType"
 >;
 
-/** The most places a Competition can preset Placement Points for. */
-export const MAX_PLACEMENTS = 5;
+/**
+ * The most places a Bracket can preset Placement Points for: its places
+ * come only from the final (and the 3rd place game), up to 4th.
+ */
+export const BRACKET_PLACEMENTS = 4;
+
+/**
+ * The most places a Competition of this Format can preset Placement Points
+ * for, or null for no limit. The one place the rule lives: the Bracket
+ * Format is limited; every other Format is not.
+ */
+export function placementLimit(format: Format): number | null {
+  return format === "bracket" ? BRACKET_PLACEMENTS : null;
+}
+
+/** Why Placement Points can't have this many places for the Format, or null. */
+export function placementLimitRefusal(
+  format: Format,
+  placementPoints: readonly number[] | null,
+): string | null {
+  const limit = placementLimit(format);
+  if (limit === null || (placementPoints?.length ?? 0) <= limit) return null;
+  return placementLimitMessage(limit);
+}
+
+/** The one wording for Placement Points over a Format's `placementLimit`. */
+export function placementLimitMessage(limit: number): string {
+  return `Placement Points cover at most ${limit} places for this Format.`;
+}
 
 /**
  * The Placement Points preset for a place (1 = 1st), or null when the
@@ -27,6 +54,14 @@ export function pointsForPlacement(
 ): number | null {
   if (!Number.isInteger(place) || place < 1) return null;
   return competition.placementPoints?.[place - 1] ?? null;
+}
+
+/**
+ * Whether a Competition has Placement Points, so finalizing its Bracket or
+ * closing its Games creates Points Entries.
+ */
+export function hasPlacementPoints(placementPoints: number[] | null): boolean {
+  return placementPoints !== null && placementPoints.length > 0;
 }
 
 const ORDINAL_SUFFIXES = ["st", "nd", "rd"];
@@ -82,11 +117,6 @@ export function describeScoring(
     : "Individual";
 }
 
-export function formatMaxPoints(maxPoints: number | null): string {
-  if (maxPoints === null) return "No max";
-  return `Max ${formatPoints(maxPoints)} ${maxPoints === 1 ? "pt" : "pts"}`;
-}
-
 type LedgerTeam = Pick<Team, "name" | "color">;
 
 export type LedgerRow = Pick<
@@ -137,4 +167,30 @@ export function buildCompetitionLedger({
     }));
 
   return { entries };
+}
+
+/**
+ * A Host as the admin Competitions row shows them: their Profile name, else
+ * their email (Hosts are email-keyed and need not be Participants).
+ */
+export function hostName(email: string, profiles: ProfilesByEmail): string {
+  return profiles.get(email.trim().toLowerCase())?.profileName || email;
+}
+
+/** Where a saved Competition of this Format is set up (admin). */
+export function setupHref(format: Format, id: string): string {
+  if (isGameFormat(format)) return `/admin/competitions/${id}/games`;
+  if (format === "placement") return `/admin/placements/${id}`;
+  if (format === "participation") {
+    return `/admin/competitions/${id}/participation`;
+  }
+  return `/admin/competitions/${id}/bracket`;
+}
+
+/** The Competitions list's link to a Competition's setup, by Format. */
+export function setupLinkLabel(format: Format): string {
+  if (format === "placement") return "Record placements";
+  if (isGameFormat(format)) return "Entrants and Games";
+  if (format === "participation") return "Who took part";
+  return "Bracket";
 }

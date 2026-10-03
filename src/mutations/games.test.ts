@@ -89,8 +89,7 @@ async function fixture(tx: DBTx) {
         name: "Pong",
         scoring: "individual" as const,
         countsTowardTeam: true,
-        format: "games" as const,
-        gameType: "head-to-head" as const,
+        format: "head-to-head" as const,
         gameConfig: { drawsAllowed: false, bestOf: null },
         entrantsOpen: true,
         placementPoints: [10, 6, 3],
@@ -99,8 +98,7 @@ async function fixture(tx: DBTx) {
         warWeekId,
         name: "Duel",
         scoring: "individual" as const,
-        format: "games" as const,
-        gameType: "head-to-head" as const,
+        format: "head-to-head" as const,
         gameConfig: { drawsAllowed: false, bestOf: 3 as const },
         entrantsOpen: false,
         placementPoints: [10, 6],
@@ -110,8 +108,7 @@ async function fixture(tx: DBTx) {
         name: "Bowl",
         scoring: "individual" as const,
         countsTowardTeam: true,
-        format: "games" as const,
-        gameType: "best-score" as const,
+        format: "best-score" as const,
         gameConfig: { count: "best", betterIs: "higher", unit: "pins" },
         entrantsOpen: true,
         placementPoints: [10, 6, 3],
@@ -120,7 +117,7 @@ async function fixture(tx: DBTx) {
         warWeekId,
         name: "Trivia",
         scoring: "team" as const,
-        format: "points" as const,
+        format: "placement" as const,
       },
     ])
     .returning({ id: schema.competition.id });
@@ -237,7 +234,7 @@ describe.skipIf(!isLocalDatabase)("logGame", () => {
     });
   });
 
-  it("refuses a pick-only You: a sign-in no Participant's email matches", async () => {
+  it("refuses a sign-in that links no Participant", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { logGame } = await load();
       const f = await fixture(tx);
@@ -463,7 +460,7 @@ describe.skipIf(!isLocalDatabase)("logGame", () => {
     });
   });
 
-  it("refuses the wrong number of players for the Game Type", async () => {
+  it("refuses the wrong number of players for the Format", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { logGame } = await load();
       const f = await fixture(tx);
@@ -712,8 +709,9 @@ describe.skipIf(!isLocalDatabase)("closeGames and reopenGames", () => {
         const r = await logGame(f.ids.bowl, scored(id, score), f.ctx(HOST), tx);
         expect(r).toMatchObject({ ok: true });
       }
-      // A hand-entered Points Entry on the same Competition.
+      // A non-generated Points Entry (inserted directly) on the same Competition.
       await tx.insert(f.schema.pointsEntry).values({
+        warWeekId: f.warWeekId,
         competitionId: f.ids.bowl,
         participantId: f.ids.cypher,
         points: 5,
@@ -776,7 +774,7 @@ describe.skipIf(!isLocalDatabase)("closeGames and reopenGames", () => {
       ).toEqual(await generated());
       expect(
         (await entries()).filter((e) => e.generated).map((e) => e.note),
-      ).toEqual(["From games", "From games", "From games"]);
+      ).toEqual(["From best score", "From best score", "From best score"]);
 
       const after = await totals();
       expect(after.individual).toEqual({
@@ -840,7 +838,7 @@ describe.skipIf(!isLocalDatabase)("setGamesSettings", () => {
     enrollClosesAt: null,
   };
 
-  it("saves the Game Type's settings and the Entrant and logging rules", async () => {
+  it("saves the Format's settings and the Entrant and logging rules", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { setGamesSettings } = await load();
       const f = await fixture(tx);
@@ -924,7 +922,7 @@ describe.skipIf(!isLocalDatabase)("setGamesSettings", () => {
     });
   });
 
-  it("refuses enrollment when everyone can play, a change of Game Type, and any change while closed", async () => {
+  it("refuses enrollment when everyone can play, a change of Format, and any change while closed", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { setGamesSettings } = await load();
       const f = await fixture(tx);
@@ -949,14 +947,17 @@ describe.skipIf(!isLocalDatabase)("setGamesSettings", () => {
       expect(
         await setGamesSettings(
           f.ids.pong,
-          { ...settings, gameConfig: { finishPoints: [] } },
+          {
+            ...settings,
+            gameConfig: { count: "best", betterIs: "higher", unit: "" },
+          },
           f.ctx(HOST),
           tx,
         ),
       ).toEqual({
         ok: false,
         error:
-          "A Games Competition keeps its Game Type; add a new Competition to play another.",
+          "A Head-to-head or Best score Competition keeps its Format; add a new Competition to play another.",
       });
       await f.setCompetition(f.ids.pong, { finalizedAt: new Date() });
       expect(
@@ -1111,7 +1112,7 @@ describe.skipIf(!isLocalDatabase)("setGamesSettings under logged Games", () => {
 });
 
 describe.skipIf(!isLocalDatabase)("getGameLogFacts", () => {
-  it("reads only the Game Type's player keys, so an extra player id can't make a non-player a player", async () => {
+  it("reads only the Format's player keys, so an extra player id can't make a non-player a player", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { getGameLogFacts } = await import("@/queries/games");
       const { postedGamePlayerIds } = await import("@/lib/games/input");
@@ -1128,7 +1129,7 @@ describe.skipIf(!isLocalDatabase)("getGameLogFacts", () => {
         f.ids.pong,
         null,
         MORPHEUS,
-        { playerIds: (gameType) => postedGamePlayerIds(gameType, posted) },
+        { playerIds: (gameFormat) => postedGamePlayerIds(gameFormat, posted) },
         tx,
       );
       expect(facts.gameLog.players).toEqual([

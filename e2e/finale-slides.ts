@@ -1,0 +1,113 @@
+import { type Page, expect } from "@playwright/test";
+
+/**
+ * The slideshow's stage: the slide on screen. Only the hydrated stage, so
+ * the copy React streams into a hidden `<div hidden id="S:0">` before
+ * swapping it in never makes this match two elements.
+ */
+export const finaleStage = (page: Page) =>
+  page.locator("[data-finale-hydrated]");
+
+/** Opens `/xi/finale` and waits until the slideshow takes keys. */
+export async function openFinale(page: Page, path = "/xi/finale") {
+  await page.goto(path);
+  await expect(page.locator("[data-finale-hydrated]")).toBeAttached();
+}
+
+/** Where the presenter is: "<slide index>:<step>". */
+async function position(page: Page): Promise<string> {
+  const stage = finaleStage(page);
+  return `${await stage.getAttribute("data-finale-slide-index")}:${await stage.getAttribute("data-finale-step")}`;
+}
+
+/**
+ * Presses → until the next slide is on screen, finishing the current
+ * slide's steps (an Award at a time, the countdown) on the way. Fails on
+ * the last slide, where Next does nothing.
+ */
+export async function nextSlide(page: Page) {
+  const stage = finaleStage(page);
+  const index = await stage.getAttribute("data-finale-slide-index");
+  for (let i = 0; i < 50; i++) {
+    const at = await position(page);
+    await page.keyboard.press("ArrowRight");
+    await expect.poll(() => position(page)).not.toBe(at);
+    if ((await stage.getAttribute("data-finale-slide-index")) !== index) {
+      return;
+    }
+  }
+  throw new Error(`Slide ${index} never moved on`);
+}
+
+/**
+ * Presses → until the slide of `kind` is on screen, and returns the kinds
+ * of the slides passed on the way (the first slide included).
+ */
+export async function nextUntil(page: Page, kind: string): Promise<string[]> {
+  const stage = finaleStage(page);
+  const seen: string[] = [];
+  for (let i = 0; i < 20; i++) {
+    const current = await stage.getAttribute("data-finale-slide");
+    if (current === kind) return seen;
+    seen.push(current ?? "");
+    await nextSlide(page);
+  }
+  throw new Error(`No ${kind} slide after ${seen.join(", ")}`);
+}
+
+/**
+ * Presses → through the Finale to its Winner, noting each slide kind's
+ * place (the last of a kind wins).
+ */
+export async function slideIndexes(
+  page: Page,
+): Promise<Record<string, number>> {
+  const stage = finaleStage(page);
+  const indexes: Record<string, number> = {};
+  for (let i = 0; i < 12; i++) {
+    const kind = (await stage.getAttribute("data-finale-slide")) ?? "";
+    indexes[kind] = Number(await stage.getAttribute("data-finale-slide-index"));
+    if (kind === "winner") break;
+    // Finishes the slide's steps (an Award at a time, the countdown) first.
+    await nextSlide(page);
+  }
+  return indexes;
+}
+
+/** The slide on screen: its `<section aria-label>`. */
+export const currentSlide = (page: Page) =>
+  finaleStage(page).locator(":scope > section");
+
+/**
+ * Every slide's name the Finale plays, in order: → until the end, where
+ * Next does nothing.
+ */
+export async function playedSlides(page: Page): Promise<string[]> {
+  const names: string[] = [];
+  for (let i = 0; i < 20; i++) {
+    names.push((await currentSlide(page).getAttribute("aria-label")) ?? "");
+    const moved = await nextSlide(page).then(
+      () => true,
+      () => false,
+    );
+    if (!moved) return names;
+  }
+  return names;
+}
+
+/** admin → Finale's slide list. */
+export const slideList = (page: Page) =>
+  page.getByRole("list", { name: "Finale slides" });
+
+/** The admin list's slide names, in order, " (hidden)" after a hidden one. */
+export async function listed(page: Page): Promise<string[]> {
+  const rows = await slideList(page).locator("[data-finale-slide-name]").all();
+  return Promise.all(
+    rows.map(async (row) => {
+      const name = (await row.getAttribute("data-finale-slide-name")) ?? "";
+      const hidden =
+        (await row.getAttribute("data-finale-slide-hidden")) !== null;
+      return hidden ? `${name} (hidden)` : name;
+    }),
+  );
+}

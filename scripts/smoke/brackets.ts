@@ -37,7 +37,7 @@ export async function deleteSmokeBracket() {
 
 export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
   const check =
-    "bracket loop: an Organizer sets single elimination on a Competition, enters 4 Teams, generates, records 3 Heat Results, finalizes; GET /xi/competitions/<id> shows the champion and /xi/leaderboard includes the generated points and /xi/finale/<id> answers 200; un-finalize removes them and /xi/finale/<id> answers 404; then cleans up";
+    "bracket loop: an Organizer sets a head-to-head Bracket (2 per Heat, 1 advances) with a 3rd place game on a Competition, enters 4 Teams, generates, records 4 Heat Results, finalizes; GET /xi/competitions/<id> shows the champion and /xi/leaderboard includes the generated points and /xi/finale/<id> answers 200; get_bracket names the Bracket with its heat size, advancing and 3rd place game, a recorded time per played Heat, no Heat time, place or Forfeit, the final's winner as champion and no @; un-finalize removes them and /xi/finale/<id> answers 404; then cleans up";
   const ids = serverActionIds();
   const missing = [
     "createCompetition",
@@ -56,6 +56,7 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
   const get = (route: string) =>
     fetch(`${BASE_URL}${route}`, { headers: { cookie: organizer.cookie } });
 
+  const problems: string[] = [];
   try {
     await deleteSmokeBracket();
     for (const [name, color] of [
@@ -68,7 +69,6 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
         [name, color],
       );
     }
-    const problems: string[] = [];
     const expectOk = (
       step: string,
       result: { ok: boolean; error?: string },
@@ -86,7 +86,6 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
             name: SMOKE_BRACKET_COMPETITION,
             description: "",
             scoring: "team",
-            maxPoints: "",
             placementPoints: "10, 6, 3",
             countsTowardTeam: false,
             group: "",
@@ -107,7 +106,17 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
       "setCompetitionFormat",
       await callAction(
         ids.setCompetitionFormat,
-        [id, { format: "single-elimination" }],
+        [
+          id,
+          {
+            format: "bracket",
+            config: {
+              entrantsPerHeat: 2,
+              advancePerHeat: 1,
+              thirdPlaceGame: false,
+            },
+          },
+        ],
         organizer,
       ),
     );
@@ -121,6 +130,26 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
       await callAction(
         ids.replaceEntrants,
         [id, { targetIds: teams.map((t) => t.id) }],
+        organizer,
+      ),
+    );
+    // A 3rd place game needs at least 4 Entrants, so it's turned on once
+    // they're entered.
+    expectOk(
+      "setCompetitionFormat with a 3rd place game",
+      await callAction(
+        ids.setCompetitionFormat,
+        [
+          id,
+          {
+            format: "bracket",
+            config: {
+              entrantsPerHeat: 2,
+              advancePerHeat: 1,
+              thirdPlaceGame: true,
+            },
+          },
+        ],
         organizer,
       ),
     );
@@ -161,10 +190,11 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
         if (result.ok) recorded += 1;
       }
     }
-    if (recorded !== 3) problems.push(`recorded ${recorded} Heat Results`);
+    // Two semifinals, then the final and the 3rd place game.
+    if (recorded !== 4) problems.push(`recorded ${recorded} Heat Results`);
 
     for (const route of [
-      `/admin/setup/competitions/${id}/bracket`,
+      `/admin/competitions/${id}/bracket`,
       `/admin/brackets/${id}`,
     ]) {
       const res = await get(route);
@@ -207,16 +237,64 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
       "",
       bearer,
     );
+    type McpHeat = Record<string, unknown> & {
+      status: string;
+      recordedAt: string | null;
+      thirdPlace: boolean;
+      entrants: { name: string; place: number | null }[];
+    };
     const bracketPayload = bracket.parsed as
-      | { found: boolean; champion?: string | null; entrants?: unknown[] }
+      | {
+          found: boolean;
+          competition?: Record<string, unknown>;
+          champion?: string | null;
+          entrants?: unknown[];
+          rounds?: { round: number; heats: McpHeat[] }[];
+        }
       | undefined;
-    if (
-      bracketPayload?.found !== true ||
-      bracketPayload.champion !== "Red" ||
-      bracketPayload.entrants?.length !== 4 ||
-      bracket.text.includes("@")
-    ) {
-      problems.push(`get_bracket result=${JSON.stringify(bracket.parsed)}`);
+    const rounds = bracketPayload?.rounds ?? [];
+    const heats = rounds.flatMap((round) => round.heats);
+    const lastRound = rounds[rounds.length - 1]?.heats ?? [];
+    const finalHeat = lastRound.filter((heat) => !heat.thirdPlace);
+    const thirdPlaceHeats = heats.filter((heat) => heat.thirdPlace);
+    const finalWinner = finalHeat[0]?.entrants.find(
+      (entrant) => entrant.place === 1,
+    )?.name;
+    const heatKeys = ["entrants", "name", "recordedAt", "status", "thirdPlace"];
+    const bracketProblems = [
+      bracketPayload?.found !== true && "not found",
+      bracketPayload?.competition?.format !== "bracket" && "format",
+      bracketPayload?.competition?.heatSize !== 2 && "heatSize",
+      bracketPayload?.competition?.advancing !== 1 && "advancing",
+      bracketPayload?.competition?.thirdPlaceGame !== true && "thirdPlaceGame",
+      bracketPayload?.entrants?.length !== 4 && "entrants",
+      heats.length !== 4 && `${heats.length} Heats`,
+      heats.some(
+        (heat) =>
+          JSON.stringify(Object.keys(heat).sort()) !== JSON.stringify(heatKeys),
+      ) && "Heat keys (no time, place or Forfeit)",
+      heats.some(
+        (heat) =>
+          heat.status === "played" &&
+          (heat.recordedAt === null ||
+            Number.isNaN(Date.parse(heat.recordedAt))),
+      ) && "a played Heat without recordedAt",
+      heats.some(
+        (heat) => heat.status !== "played" && heat.recordedAt !== null,
+      ) && "an unplayed Heat with recordedAt",
+      (thirdPlaceHeats.length !== 1 ||
+        !lastRound.includes(thirdPlaceHeats[0])) &&
+        "one 3rd place game in the last Round",
+      finalHeat.length !== 1 && "one final",
+      (finalWinner !== "Red" || bracketPayload?.champion !== finalWinner) &&
+        "champion is the final's winner (Red)",
+      /forfeit/i.test(bracket.text) && "mentions Forfeit",
+      bracket.text.includes("@") && "has an @",
+    ].filter(Boolean);
+    if (bracketProblems.length > 0) {
+      problems.push(
+        `get_bracket (${bracketProblems.join(", ")}) result=${bracket.text}`,
+      );
     }
     const missingBracket = await mcpTool(
       "get_bracket",
@@ -231,9 +309,9 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
       );
     }
 
-    const ledger = await (await get("/admin/points")).text();
-    if (!ledger.includes("From bracket")) {
-      problems.push("/admin/points shows no From bracket row");
+    const competitionPage = await (await get(`/xi/competitions/${id}`)).text();
+    if (!competitionPage.includes("From bracket")) {
+      problems.push("/xi/competitions/<id> shows no From bracket row");
     }
 
     expectOk(
@@ -273,7 +351,7 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     );
     const [decidedLater] = await runQuery<{ count: string }>(
       `select count(*) from heat
-       where competition_id = $1 and round > 1 and status in ('played', 'forfeit')`,
+       where competition_id = $1 and round > 1 and status = 'played'`,
       [id],
     );
     const redHeat = semis.find((s) => s.team_name === "Red")?.heat_id;
@@ -326,7 +404,7 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     if (problems.length === 0) ok(check);
     else fail(check, problems.join("; "));
   } catch (error) {
-    fail(check, String(error));
+    fail(check, [String(error), ...problems].join("; "));
   } finally {
     await deleteSmokeBracket().catch((error) =>
       fail("delete the smoke bracket", String(error)),
@@ -354,7 +432,7 @@ export async function deleteSmokeHeats() {
 
 export async function assertHeatsLoop(sessions: { organizer: SmokeSession }) {
   const check =
-    "heats loop: an Organizer sets heats (4 per Heat, 2 advance) on a Competition, enters 4 Teams, generates one Heat of four, records its four-Entrant Heat Result, finalizes; GET /xi/competitions/<id> shows the champion and /xi/leaderboard includes the generated points; un-finalize removes them; then cleans up";
+    "heats loop: an Organizer sets a Bracket of 4 per Heat, 2 advance, on a Competition, enters 4 Teams, generates one Heat of four, records its four-Entrant Heat Result, finalizes; GET /xi/competitions/<id> shows the champion and /xi/leaderboard includes the generated points; un-finalize removes them; then cleans up";
   const ids = serverActionIds();
   const missing = [
     "createCompetition",
@@ -401,7 +479,6 @@ export async function assertHeatsLoop(sessions: { organizer: SmokeSession }) {
             name: SMOKE_HEATS_COMPETITION,
             description: "",
             scoring: "team",
-            maxPoints: "",
             placementPoints: "10, 6, 3",
             countsTowardTeam: false,
             group: "",
@@ -425,8 +502,12 @@ export async function assertHeatsLoop(sessions: { organizer: SmokeSession }) {
         [
           id,
           {
-            format: "heats",
-            config: { entrantsPerHeat: 4, advancePerHeat: 2 },
+            format: "bracket",
+            config: {
+              entrantsPerHeat: 4,
+              advancePerHeat: 2,
+              thirdPlaceGame: false,
+            },
           },
         ],
         organizer,
@@ -530,7 +611,6 @@ const SELF_REPORT_OFF = "Self-report is off for this Competition.";
 const NOT_IN_HEAT = "You're not in this Heat.";
 const HEAT_DECIDED = "This Heat already has a result.";
 const NOT_HOST_REFUSAL_SQUAD = "You're not a Host of that Competition.";
-const SQUADS_SEEDED_AT_RANDOM = "Squads are seeded at random.";
 
 async function deleteSmokeSquadCompetition() {
   await runQuery(
@@ -549,7 +629,7 @@ export async function assertSquadSelfReportLoop(sessions: {
   outsider: SmokeSession;
 }) {
   const check =
-    "squad loop: an Organizer builds a single-elimination Bracket of four Squads from XI's two Teams, turns on self-report; a linked Participant reports their Heat and their Squad advances, a second report and an outsider's POST are refused, the Organizer overwrites and re-records, the Participant reports the Final, finalize splits Points Entries two per Team; then cleans up";
+    "squad loop: an Organizer builds a head-to-head Bracket of four Squads from XI's two Teams, turns on self-report; a linked Participant reports their Heat and their Squad advances, a second report and an outsider's POST are refused, the Organizer overwrites and re-records, the Participant reports the Final, finalize splits Points Entries two per Team; then cleans up";
   const ids = serverActionIds();
   const missing = [
     "createCompetition",
@@ -600,7 +680,6 @@ export async function assertSquadSelfReportLoop(sessions: {
             name: SMOKE_SQUAD_COMPETITION,
             description: "",
             scoring: "team",
-            maxPoints: "",
             placementPoints: "10, 6, 3",
             countsTowardTeam: false,
             group: "",
@@ -621,7 +700,7 @@ export async function assertSquadSelfReportLoop(sessions: {
       "setCompetitionFormat",
       await callAction(
         ids.setCompetitionFormat,
-        [id, { format: "single-elimination" }],
+        [id, { format: "bracket" }],
         organizer,
       ),
     );
@@ -719,15 +798,6 @@ export async function assertSquadSelfReportLoop(sessions: {
         organizer,
       ),
     );
-    expectRefused(
-      "generateBracket seeding standings",
-      await callAction(
-        ids.generateBracket,
-        [id, { seeding: "standings" }],
-        organizer,
-      ),
-      SQUADS_SEEDED_AT_RANDOM,
-    );
     expectOk(
       "generateBracket",
       await callAction(ids.generateBracket, [id, {}], organizer),
@@ -798,7 +868,7 @@ export async function assertSquadSelfReportLoop(sessions: {
     // The outsider's session has a non-JG email, so `src/proxy.ts` answers
     // with a 307 to /sign-in before any action runs; `callAction` can't be
     // used (it expects a 200 RSC reply), so this POSTs directly.
-    const outsiderRes = await fetch(`${BASE_URL}/admin/points`, {
+    const outsiderRes = await fetch(`${BASE_URL}/admin/competitions`, {
       method: "POST",
       headers: {
         "next-action": ids.reportHeatResult,
@@ -921,7 +991,7 @@ export async function assertSquadSelfReportLoop(sessions: {
     );
 
     const [finalHeat] = await runQuery<{ id: string }>(
-      `select id from heat where competition_id = $1 and round = 2 limit 1`,
+      `select id from heat where competition_id = $1 and round = 2 and not third_place limit 1`,
       [id],
     );
     expectOk(

@@ -127,6 +127,90 @@
       "when": 1790732841577,
       "tag": "0017_conscious_proudstar",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790959016832,
+      "tag": "0018_groovy_agent_zero",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790959761175,
+      "tag": "0019_true_joystick",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1790970561077,
+      "tag": "0020_wild_speed",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790970763759,
+      "tag": "0021_announcement-videos-into-body",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1790970769295,
+      "tag": "0022_drop-announcement-video-urls",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790975067721,
+      "tag": "0023_spotty_fantastic_four",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790975086830,
+      "tag": "0024_broken_thunderbolt",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790976310449,
+      "tag": "0025_large_exodus",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1790976311201,
+      "tag": "0026_seed-award-categories",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1790980114265,
+      "tag": "0027_minor_wonder_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1791038307512,
+      "tag": "0028_flimsy_vertigo",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1791047372253,
+      "tag": "0029_colossal_robin_chapel",
+      "breakpoints": true
     }
   ]
 }

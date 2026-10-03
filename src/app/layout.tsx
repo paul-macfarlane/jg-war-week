@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono, Lora } from "next/font/google";
 
 import { PwaSetup } from "@/components/pwa-setup";
+import { SessionBanner } from "@/components/session-banner";
 import { DISPLAY_SCRIPT } from "@/lib/display";
 import { APP_DESCRIPTION, APP_NAME, APP_THEME_COLOR } from "@/lib/pwa";
 
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: DISPLAY_SCRIPT }} />
       </head>
       <body className="flex min-h-dvh flex-col">
+        <SessionBanner />
         {children}
         <PwaSetup />
       </body>

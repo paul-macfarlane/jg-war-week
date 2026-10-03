@@ -1,7 +1,7 @@
 # jg-war-week
 
-War Week: themes, schedule, teams, competitions (including single-elimination
-or Heats Brackets), points, awards, announcements, and a closing-ceremony Finale, for
+War Week: themes, schedule, teams, competitions (including Brackets of any
+heat size, with an optional 3rd place game), points, awards, announcements, and a closing-ceremony Finale, for
 Jahnel Group's annual War Week — one live edition at a time, with a curated
 Archive of every past one. See `CONTEXT.md` for the domain glossary.
 
@@ -20,7 +20,8 @@ docker compose up -d          # starts local Postgres on localhost:2345
 pnpm install
 pnpm db:migrate
 pnpm seed:all                 # loads every War Week, 2016 (I) to 2026 (XI)
-pnpm seed:demo                # optional: replaces XI with the live demo
+pnpm seed:demo                # optional: the XI demo, live (smoke/e2e use it)
+pnpm seed:demo:xii            # optional: the XII demo, live (About's stills)
 pnpm dev                      # http://localhost:3000
 ```
 
@@ -31,13 +32,16 @@ pnpm dev                      # http://localhost:3000
 Drive documents it links to; XI holds its real final scoreboard.
 `seeds/demo/xi.json` is a live War Week XI with fictional mid-week demo
 data (a close race, Announcements, Awards and Games). Smoke, e2e and
-`pnpm seed:demo` load it in place of the real XI; the Seed workflow only
+`pnpm seed:demo` load it in place of the real XI. `seeds/demo/xii.json` is a
+live, free-for-all War Week XII with fictional Participants, loaded by
+`pnpm seed:demo:xii` (in place of the upcoming XII) for About's stills
+(`scripts/about-media.ts`); smoke and e2e never load it. The Seed workflow only
 loads `seeds/*.json`, so it never reaches a deployed database. Edit a file and reload it; setup data follows the seed, while keyed
-Points Entries, Awards and Announcements are only inserted once (see
+Discretionary points, Placements, Awards and Announcements are only inserted once (see
 `CONTEXT.md`, "Seed idempotence rules"). Organizers can also edit War Week
 settings, the Appearance Theme, Days, Teams, the roster, Competitions,
 Schedule Items and FAQ Items in
-`/admin/setup`; reloading a seed
+`/admin`; reloading a seed
 overwrites those edits with the seed's values, so update the seed to match
 or stop reloading it once organizers are editing in the app.
 
@@ -82,10 +86,11 @@ production build (`pnpm build`) before running `pnpm smoke`.
 build and local database: it refuses a non-local `DATABASE_URL` and a missing
 `.next`, applies migrations, reloads every seed with `--reset`, starts the app
 with `pnpm start -p 3200`, and signs its own JG sessions (no Google). The flows:
-anonymous and non-JG visitors are sent to `/sign-in`; an Organizer's Points
-Entry shows on `/xi/leaderboard`; a Bracket is built, timed by its Host
-(shown in "Your next Heat" and Now/Next), recorded, advanced, finalized into
-Points Entries and played as a Bracket Finale (also under reduced motion); a Heats Bracket is run to Points Entries,
+anonymous and non-JG visitors are sent to `/sign-in`; an Organizer's Discretionary
+points show on `/xi/leaderboard`; a head-to-head Bracket is built, recorded in its tree
+(each played Heat showing when it was recorded), advanced, finalized into
+Points Entries and played as a Bracket Finale (also under reduced motion); a
+Bracket with a 3rd place game places 1st to 4th; a Bracket of 4 per Heat is run to Points Entries,
 with the End War Week warning; a Host builds a Squad Bracket with self-report on,
 a Participant reports their Heat and their Squad advances, a second report on it is
 refused, and the Host sees "Reported by" and overwrites it; the Finale plays to first place; `/history`
@@ -105,7 +110,8 @@ The app exposes a read-only Model Context Protocol server over Streamable
 HTTP at `/api/mcp` (production: `https://jg-war-week.vercel.app/api/mcp`).
 Its tools are `get_current_war_week`, `get_leaderboard`, `get_schedule`,
 `get_announcements`, `get_awards`, `get_faq`, `list_history`,
-`get_history`, `get_bracket` and `get_games`. Every tool is read-only and returns only what a signed-in
+`get_history`, `get_bracket`, `get_games`, `get_participation`, `get_placements` and
+`get_discretionary_points`. Every tool is read-only and returns only what a signed-in
 Participant sees, and no tool returns an email
 or the Organizer list (Announcement authors come back as the handle
 before the `@`).

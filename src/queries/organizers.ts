@@ -2,6 +2,8 @@ import { eq } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import { competition, competitionHost, organizer } from "@/db/schema";
+import { hostName } from "@/lib/competitions";
+import { getProfilesByEmail } from "@/queries/profile-join";
 
 /** Emails compare trimmed and lowercased; both tables store them lowercased. */
 const normalized = (email: string) => email.trim().toLowerCase();
@@ -46,6 +48,19 @@ export function getHostedCompetitions(
     .from(competitionHost)
     .innerJoin(competition, eq(competition.id, competitionHost.competitionId))
     .where(eq(competitionHost.email, normalized(email)));
+}
+
+/**
+ * Each Host email's shown name (`hostName`: Profile name, else the email),
+ * for the Organizers' Competitions rows.
+ */
+export async function getHostNames(
+  hosts: Record<string, string[]>,
+  dbOrTx: DBOrTx = db,
+): Promise<Record<string, string>> {
+  const emails = [...new Set(Object.values(hosts).flat())];
+  const profiles = await getProfilesByEmail(emails, dbOrTx);
+  return Object.fromEntries(emails.map((e) => [e, hostName(e, profiles)]));
 }
 
 /** Every Competition's Host emails in a War Week, by Competition id. */

@@ -1,4 +1,13 @@
-import { type SQL, and, eq, ne, notInArray, sql } from "drizzle-orm";
+import {
+  type SQL,
+  and,
+  eq,
+  inArray,
+  isNull,
+  ne,
+  notInArray,
+  sql,
+} from "drizzle-orm";
 import type {
   IndexColumn,
   PgColumn,
@@ -12,18 +21,23 @@ import {
   WarWeek,
   announcement,
   award,
+  awardCategory,
   awardParticipant,
   competition,
   day,
   faqItem,
+  finaleSlide,
   organizer,
   participant,
+  placement,
   pointsEntry,
   scheduleItem,
   team,
   warWeek,
 } from "@/db/schema";
 import type { GamesConfig } from "@/lib/games/config";
+import { placementEntryValues } from "@/lib/placement/score";
+import { getPlacementRows } from "@/queries/placements";
 import { WarWeekSeed } from "@/seed/schema";
 
 /**
@@ -37,7 +51,9 @@ import { WarWeekSeed } from "@/seed/schema";
  *   Items) is upserted by natural key and anything absent from the seed is
  *   deleted, so setup always matches the seed after a load.
  * - Organizer-owned data (Points Entries, Awards, Announcements) is inserted
- *   by seed key only when absent, and never updated or deleted.
+ *   by seed key only when absent, and never updated or deleted. One
+ *   exception: a seeded Award with no Category that was never edited in the
+ *   app (`updated_at = created_at`) gets the seed's Category.
  * - The seed's `organizers` are added to the global Organizer list when
  *   missing; a load never removes an Organizer, even with `reset`.
  *
@@ -64,9 +80,18 @@ export async function loadWarWeekSeed(
     const competitionIds = await syncCompetitions(tx, warWeekId, seed);
     await syncDays(tx, warWeekId, seed, competitionIds);
     await syncFaqItems(tx, warWeekId, seed);
+    await syncFinaleSlides(tx, warWeekId, seed);
 
-    await insertPointsEntries(
+    await insertDiscretionaryPoints(
       tx,
+      warWeekId,
+      seed,
+      teamIds,
+      participantIds,
+    );
+    await insertPlacements(
+      tx,
+      warWeekId,
       seed,
       competitionIds,
       teamIds,
@@ -134,6 +159,7 @@ async function upsertWarWeek(tx: DBTx, seed: WarWeekSeed): Promise<WarWeek> {
       status: seed.status,
       winner: seed.winner ?? null,
       highlights: seed.highlights,
+      finaleAwardsLayout: seed.finaleAwardsLayout ?? "one-slide",
     })
     .onConflictDoUpdate({ target: warWeek.edition, set: values })
     .returning();
@@ -277,30 +303,53 @@ async function syncCompetitions(
       warWeekId,
       name: c.name,
       description: c.description ?? null,
-      maxPoints: c.maxPoints ?? null,
-      placementPoints: c.placementPoints ?? null,
+      // An individual `participation` Competition has none; a team one has
+      // them, not N (the CHECK `competition_participation_columns`).
+      placementPoints:
+        c.format === "participation" && c.scoring === "individual"
+          ? null
+          : (c.placementPoints ?? null),
       scoring: c.scoring,
       countsTowardTeam: c.countsTowardTeam,
       competitionGroup: c.group ?? null,
       format: c.format,
       bracketConfig: c.bracketConfig ?? null,
-      gameType: c.gameType ?? null,
-      // Checked against the Game Type by `competitionSeedSchema`.
+      // Checked against the Format by `competitionSeedSchema`.
       gameConfig: (c.gameConfig ?? null) as GamesConfig | null,
       entrantsOpen: c.entrantsOpen ?? false,
+      // Placement only (the seed schema); like `format`, set on insert only.
+      scoreDirection: c.scoreDirection ?? "none",
+      finalizedAt: c.finalizedAt ? new Date(c.finalizedAt) : null,
+      ...(c.format === "participation"
+        ? {
+            participationPoints:
+              c.scoring === "individual" ? (c.participationPoints ?? 1) : null,
+            selfCheckIn: c.selfCheckIn ?? false,
+            checkInClosesAt: c.checkInClosesAt
+              ? new Date(c.checkInClosesAt)
+              : null,
+          }
+        : {}),
     })),
     target: [competition.warWeekId, competition.name],
     set: {
       description: sql`excluded.description`,
-      maxPoints: sql`excluded.max_points`,
       placementPoints: sql`excluded.placement_points`,
       scoring: sql`excluded.scoring`,
       countsTowardTeam: sql`excluded.counts_toward_team`,
       competitionGroup: sql`excluded.competition_group`,
-      // `format`, `bracketConfig`, `gameType`, `gameConfig` and
-      // `entrantsOpen` are set on insert only: a reload must never turn an
-      // Organizer's Bracket back into `points` or undo its Heats or Games
-      // settings.
+      // A `participation` Competition's N follows its scoring (the CHECK
+      // `competition_participation_columns`, with the Placement Points
+      // above): none for a team one, the Host's N kept (else the seed's) for
+      // an individual one.
+      participationPoints: sql`case when excluded.participation_points is null
+        then null
+        else coalesce(${competition.participationPoints}, excluded.participation_points) end`,
+      // `format`, `bracketConfig`, `gameConfig`, `entrantsOpen`, the Score
+      // direction, a seeded Finalize and the other Participation settings
+      // are set on insert only: a reload must
+      // never turn an Organizer's Bracket back into `placement` or undo its
+      // Heats, Games or Participation settings.
       updatedAt: new Date(),
     },
     scope: eq(competition.warWeekId, warWeekId),
@@ -321,9 +370,14 @@ async function syncDays(
       warWeekId,
       date: d.date,
       dayTheme: d.dayTheme,
+      description: d.description?.trim() || null,
     })),
     target: [day.warWeekId, day.date],
-    set: { dayTheme: sql`excluded.day_theme`, updatedAt: new Date() },
+    set: {
+      dayTheme: sql`excluded.day_theme`,
+      description: sql`excluded.description`,
+      updatedAt: new Date(),
+    },
     scope: eq(day.warWeekId, warWeekId),
     key: day.date,
     keep: () => seed.days.map((d) => d.date),
@@ -385,31 +439,164 @@ async function syncFaqItems(tx: DBTx, warWeekId: string, seed: WarWeekSeed) {
   });
 }
 
-async function insertPointsEntries(
+/**
+ * Keeps the War Week's Finale slide list equal to the seed's `finaleSlides`
+ * (order, hidden, a Custom slide's fields), upserted by kind and heading so
+ * ids stay the same across loads; a seed without `finaleSlides` leaves the
+ * saved list alone.
+ */
+async function syncFinaleSlides(
   tx: DBTx,
+  warWeekId: string,
+  seed: WarWeekSeed,
+) {
+  if (!seed.finaleSlides) return;
+  await upsertDeletingAbsent(tx, finaleSlide, {
+    rows: seed.finaleSlides.map((slide, index) => ({
+      warWeekId,
+      kind: slide.kind,
+      sortOrder: index,
+      hidden: slide.hidden,
+      heading: slide.heading ?? null,
+      body: slide.body ?? null,
+      backgroundColor: slide.backgroundColor ?? null,
+    })),
+    target: [finaleSlide.warWeekId, finaleSlide.kind, finaleSlide.heading],
+    set: {
+      sortOrder: sql`excluded.sort_order`,
+      hidden: sql`excluded.hidden`,
+      body: sql`excluded.body`,
+      backgroundColor: sql`excluded.background_color`,
+      updatedAt: new Date(),
+    },
+    scope: eq(finaleSlide.warWeekId, warWeekId),
+    key: finaleSlide.id,
+    keep: (kept) => kept.map((k) => k.id),
+  });
+}
+
+/** Discretionary points: no Competition; the reason is the note. */
+async function insertDiscretionaryPoints(
+  tx: DBTx,
+  warWeekId: string,
+  seed: WarWeekSeed,
+  teamIds: Map<string, string>,
+  participantIds: Map<string, string>,
+) {
+  const rows = seed.discretionaryPoints.map((e) => ({
+    warWeekId,
+    competitionId: null,
+    teamId: resolveOptional(teamIds, e.team),
+    participantId: resolveOptional(participantIds, e.participant),
+    points: e.points,
+    note: e.reason,
+    enteredByEmail: e.enteredByEmail,
+    enteredAt: new Date(e.enteredAt),
+    seedKey: e.key,
+  }));
+  if (!rows.length) return;
+  await tx
+    .insert(pointsEntry)
+    .values(rows)
+    .onConflictDoNothing({
+      target: [pointsEntry.warWeekId, pointsEntry.seedKey],
+    });
+}
+
+/**
+ * Inserts the seed's Placements, each only if absent (by any of the
+ * sheet's unique keys, `seed_key` among them), never updating one. Then,
+ * for a Competition seeded Finalized that is still Finalized and has no
+ * generated Points Entries yet, writes them as Finalize does, at the seed's
+ * time and author, keyed `placement:<placement key>`: so a reload, or a
+ * Host's Reopen or re-Finalize, is never doubled or undone.
+ */
+async function insertPlacements(
+  tx: DBTx,
+  warWeekId: string,
   seed: WarWeekSeed,
   competitionIds: Map<string, string>,
   teamIds: Map<string, string>,
   participantIds: Map<string, string>,
 ) {
-  if (!seed.pointsEntries.length) return;
-  await tx
-    .insert(pointsEntry)
-    .values(
-      seed.pointsEntries.map((e) => ({
-        competitionId: resolve(competitionIds, e.competition),
-        teamId: resolveOptional(teamIds, e.team),
-        participantId: resolveOptional(participantIds, e.participant),
-        points: e.points,
-        note: e.note ?? null,
-        enteredByEmail: e.enteredByEmail,
-        enteredAt: new Date(e.enteredAt),
-        seedKey: e.key,
-      })),
-    )
-    .onConflictDoNothing({
-      target: [pointsEntry.competitionId, pointsEntry.seedKey],
+  if (seed.placements.length) {
+    await tx
+      .insert(placement)
+      .values(
+        seed.placements.map((p) => ({
+          competitionId: resolve(competitionIds, p.competition),
+          teamId: resolveOptional(teamIds, p.team),
+          participantId: resolveOptional(participantIds, p.participant),
+          place: p.place,
+          score: p.score ?? null,
+          seedKey: p.key,
+        })),
+      )
+      .onConflictDoNothing();
+  }
+  for (const c of seed.competitions) {
+    if (!c.finalized || !c.finalizedAt || !c.finalizedByEmail) continue;
+    const competitionId = resolve(competitionIds, c.name);
+    const [found] = await tx
+      .select({
+        id: competition.id,
+        warWeekId: competition.warWeekId,
+        placementPoints: competition.placementPoints,
+        finalizedAt: competition.finalizedAt,
+      })
+      .from(competition)
+      .where(eq(competition.id, competitionId));
+    if (!found.finalizedAt) continue;
+    const generated = await tx.$count(
+      pointsEntry,
+      and(
+        eq(pointsEntry.competitionId, competitionId),
+        eq(pointsEntry.generatedByBracket, true),
+      ),
+    );
+    if (generated > 0) continue;
+    const rows = await getPlacementRows(found, tx);
+    const seedKeys = new Map(rows.map((r) => [r.id, r.seedKey]));
+    const values = placementEntryValues(rows, found, {
+      actorEmail: c.finalizedByEmail,
+      enteredAt: new Date(c.finalizedAt),
+      seedKeyOf: (rowId) => {
+        const key = seedKeys.get(rowId);
+        return key ? `placement:${key}` : null;
+      },
     });
+    if (values.length) {
+      await tx
+        .insert(pointsEntry)
+        .values(values.map((v) => ({ ...v, warWeekId })))
+        .onConflictDoNothing({
+          target: [pointsEntry.warWeekId, pointsEntry.seedKey],
+        });
+    }
+  }
+}
+
+/** The seed's Award Category keys as ids; an unknown key fails naming it. */
+async function resolveAwardCategories(
+  tx: DBTx,
+  seed: WarWeekSeed,
+): Promise<Map<string, string>> {
+  const keys = [
+    ...new Set(seed.awards.flatMap((a) => (a.category ? [a.category] : []))),
+  ];
+  if (keys.length === 0) return new Map();
+  const rows = await tx
+    .select({ id: awardCategory.id, key: awardCategory.key })
+    .from(awardCategory)
+    .where(inArray(awardCategory.key, keys));
+  const ids = new Map(rows.map((r) => [r.key ?? "", r.id]));
+  const unknown = keys.filter((key) => !ids.has(key));
+  if (unknown.length > 0) {
+    throw new Error(
+      `Unknown Award Category key ${unknown.map((k) => `"${k}"`).join(", ")}`,
+    );
+  }
+  return ids;
 }
 
 async function insertAwards(
@@ -420,6 +607,7 @@ async function insertAwards(
   participantIds: Map<string, string>,
 ) {
   if (!seed.awards.length) return;
+  const categoryIds = await resolveAwardCategories(tx, seed);
   // Only the Awards actually inserted get recipients; an Award that already
   // exists keeps whatever recipients organizers have given it.
   const inserted = await tx
@@ -430,6 +618,7 @@ async function insertAwards(
         name: a.name,
         description: a.description ?? null,
         teamId: resolveOptional(teamIds, a.team),
+        categoryId: resolveOptional(categoryIds, a.category),
         seedKey: a.key,
       })),
     )
@@ -437,6 +626,22 @@ async function insertAwards(
     .returning({ id: award.id, seedKey: award.seedKey });
 
   const insertedKeys = new Map(inserted.map((a) => [a.seedKey, a.id]));
+  // Fill if empty: an Award loaded before it had a Category, and never edited
+  // since, gets the seed's. An Organizer's choice, even "None", is kept.
+  for (const a of seed.awards) {
+    if (!a.category || insertedKeys.has(a.key)) continue;
+    await tx
+      .update(award)
+      .set({ categoryId: resolve(categoryIds, a.category) })
+      .where(
+        and(
+          eq(award.warWeekId, warWeekId),
+          eq(award.seedKey, a.key),
+          isNull(award.categoryId),
+          eq(award.updatedAt, award.createdAt),
+        ),
+      );
+  }
   const recipients = seed.awards.flatMap((a) => {
     const awardId = insertedKeys.get(a.key);
     return awardId
@@ -464,7 +669,6 @@ async function insertAnnouncements(
         warWeekId,
         title: a.title,
         body: a.body,
-        videoUrls: a.videoUrls,
         pinned: a.pinned,
         authorEmail: a.authorEmail,
         publishedAt: new Date(a.publishedAt),

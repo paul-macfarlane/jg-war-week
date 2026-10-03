@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseStoredYou, resolveYou, youStorageKey } from "@/lib/you";
+import { resolveYou } from "@/lib/you";
 
 const participants = [
   { id: "p-ada", email: "Ada@JahnelGroup.com" },
@@ -11,70 +11,24 @@ const participants = [
 describe("resolveYou", () => {
   it("links the session email to a Participant, ignoring case", () => {
     expect(
-      resolveYou({
-        sessionEmail: " ada@jahnelgroup.COM ",
-        participants,
-        storedId: null,
-      }),
-    ).toEqual({ participantId: "p-ada", via: "email" });
+      resolveYou({ sessionEmail: " ada@jahnelgroup.COM ", participants }),
+    ).toEqual({ participantId: "p-ada" });
   });
 
-  it("prefers the email match over a stored pick", () => {
-    expect(
-      resolveYou({
-        sessionEmail: "cy@jahnelgroup.com",
-        participants,
-        storedId: "p-bob",
-      }),
-    ).toEqual({ participantId: "p-cy", via: "email" });
-  });
-
-  it("uses a valid stored pick when the email matches nobody", () => {
+  it("is nobody when the email matches no Participant", () => {
     expect(
       resolveYou({
         sessionEmail: "someone-else@jahnelgroup.com",
         participants,
-        storedId: "p-bob",
-      }),
-    ).toEqual({ participantId: "p-bob", via: "pick" });
-  });
-
-  it("drops a stored id that isn't in this War Week", () => {
-    expect(
-      resolveYou({
-        sessionEmail: "someone-else@jahnelgroup.com",
-        participants,
-        storedId: "p-gone",
       }),
     ).toBeNull();
   });
 
-  it("is nobody with no email match and no pick", () => {
-    expect(
-      resolveYou({ sessionEmail: null, participants, storedId: null }),
-    ).toBeNull();
+  it("is nobody with no session email", () => {
+    expect(resolveYou({ sessionEmail: null, participants })).toBeNull();
   });
 
   it("never matches a blank session email to a Participant with no email", () => {
-    expect(
-      resolveYou({ sessionEmail: "", participants, storedId: null }),
-    ).toBeNull();
-  });
-});
-
-describe("youStorageKey", () => {
-  it("is per War Week edition", () => {
-    expect(youStorageKey("xi")).toBe("ww:you:xi");
-  });
-});
-
-describe("parseStoredYou", () => {
-  it("keeps a non-blank id", () => {
-    expect(parseStoredYou(" p-ada ")).toBe("p-ada");
-  });
-
-  it("is null for missing or blank values", () => {
-    expect(parseStoredYou(null)).toBeNull();
-    expect(parseStoredYou("   ")).toBeNull();
+    expect(resolveYou({ sessionEmail: "", participants })).toBeNull();
   });
 });

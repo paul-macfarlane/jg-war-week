@@ -1,10 +1,7 @@
 import type { Competition } from "@/db/schema";
-import { bestOfLabel, gameTypeLabel } from "@/lib/games/config";
-import type {
-  BestScoreConfig,
-  HeadToHeadConfig,
-  RankedConfig,
-} from "@/lib/games/config";
+import { type GameFormat, isGameFormat } from "@/lib/enums";
+import { bestOfLabel, gameFormatLabel } from "@/lib/games/config";
+import type { BestScoreConfig, HeadToHeadConfig } from "@/lib/games/config";
 import { gameSummary } from "@/lib/games/view";
 import { notFoundMessage } from "@/mcp/not-found";
 import type { GamesView, GamesViewRow } from "@/queries/games";
@@ -18,8 +15,9 @@ export type GamesResult =
       competition: {
         name: string;
         scoring: Competition["scoring"];
-        gameType: GamesView["competition"]["gameType"];
-        /** A short human summary of the Games settings, per Game Type. */
+        /** Head-to-head or Best score. */
+        format: GamesView["competition"]["gameFormat"];
+        /** A short human summary of the Games settings, per Format. */
         settings: string;
         /** "open to everyone", or the fixed list of Entrants by name. */
         entrants: "open to everyone" | string[];
@@ -37,55 +35,46 @@ export type GamesResult =
       competition: {
         name: string;
         scoring: Competition["scoring"];
-        format: Exclude<Competition["format"], "games">;
+        format: Exclude<Competition["format"], GameFormat>;
       };
       games: null;
       message: string;
     }
   | { found: false; message: string };
 
-/** The Games settings as a short human summary, per Game Type. */
+/** The Format's settings as a short human summary, per Format. */
 function settingsSummary(competition: GamesView["competition"]): string {
-  const label = gameTypeLabel(competition.gameType);
-  if (competition.gameType === "head-to-head") {
+  const label = gameFormatLabel(competition.gameFormat);
+  if (competition.gameFormat === "head-to-head") {
     const config = competition.config as HeadToHeadConfig;
     return `${label} · draws ${config.drawsAllowed ? "on" : "off"} · ${bestOfLabel(config.bestOf)}`;
   }
-  if (competition.gameType === "best-score") {
-    const config = competition.config as BestScoreConfig;
-    const better = config.betterIs === "higher" ? "higher" : "lower";
-    const unit = config.unit ? ` · ${config.unit}` : "";
-    return `${label} · ${config.count} · ${better} is better${unit}`;
-  }
-  const config = competition.config as RankedConfig;
-  return config.finishPoints.length === 0
-    ? `${label} · one per player beaten`
-    : `${label} · Finish Points ${config.finishPoints.join(", ")}`;
+  const config = competition.config as BestScoreConfig;
+  const better = config.betterIs === "higher" ? "higher" : "lower";
+  const unit = config.unit ? ` · ${config.unit}` : "";
+  return `${label} · ${config.count} · ${better} is better${unit}`;
 }
 
-/** A leaderboard row's fields for the tool payload, only the Game Type's. */
+/** A leaderboard row's fields for the tool payload, only the Format's. */
 function leaderboardRow(
   competition: GamesView["competition"],
   row: GamesViewRow,
 ): Record<string, unknown> {
   const base = { rank: row.rank, name: row.name, played: row.played };
-  if (competition.gameType === "head-to-head") {
+  if (competition.gameFormat === "head-to-head") {
     return { ...base, wins: row.wins, losses: row.losses, draws: row.draws };
   }
-  if (competition.gameType === "best-score") {
-    const config = competition.config as BestScoreConfig;
-    return config.count === "best"
-      ? { ...base, best: row.best }
-      : { ...base, total: row.total };
-  }
-  return { ...base, wins: row.wins, finishPoints: row.finishPoints };
+  const config = competition.config as BestScoreConfig;
+  return config.count === "best"
+    ? { ...base, best: row.best }
+    : { ...base, total: row.total };
 }
 
 /**
- * Serializes a `games` Competition's `get_games` answer: the leaderboard
- * ranked by its Game Type and Games newest first. Pure: the route resolves
+ * Serializes a Head-to-head or Best score Competition's `get_games` answer:
+ * the leaderboard ranked by its Format and Games newest first. Pure: the route resolves
  * the Competition by name, loads `getGamesView` (viewer `null`) only when
- * its Format is `games`, and passes the result here. Names only: never an
+ * its Format is one of those, and passes the result here. Names only: never an
  * email, who logged a Game, `canEdit`, Hosts or Organizers.
  */
 export function toGamesResult(
@@ -100,8 +89,8 @@ export function toGamesResult(
     };
   }
 
-  if (found.format !== "games" || !view) {
-    if (found.format === "games") {
+  if (!isGameFormat(found.format) || !view) {
+    if (isGameFormat(found.format)) {
       // Format says games but the Competition is gone by the time it loaded.
       return {
         found: false,
@@ -113,10 +102,13 @@ export function toGamesResult(
       competition: {
         name: found.name,
         scoring: found.scoring,
-        format: found.format as Exclude<Competition["format"], "games">,
+        format: found.format as Exclude<Competition["format"], GameFormat>,
       },
       games: null,
-      message: `${found.name} isn't run as Games; call get_bracket or get_leaderboard.`,
+      message:
+        found.format === "participation"
+          ? `${found.name} isn't run as Head-to-head or Best score; it's run as Participation. Call get_participation instead.`
+          : `${found.name} isn't run as Head-to-head or Best score; call get_bracket or get_leaderboard.`,
     };
   }
 
@@ -127,7 +119,7 @@ export function toGamesResult(
     competition: {
       name: competition.name,
       scoring: competition.scoring,
-      gameType: competition.gameType,
+      format: competition.gameFormat,
       settings: settingsSummary(competition),
       entrants: competition.entrantsOpen
         ? "open to everyone"
@@ -138,9 +130,9 @@ export function toGamesResult(
     games: games.map((g) => ({
       loggedAt: g.loggedAt.toISOString(),
       summary: gameSummary(
-        competition.gameType,
+        competition.gameFormat,
         g.players,
-        competition.gameType === "best-score"
+        competition.gameFormat === "best-score"
           ? (competition.config as BestScoreConfig).unit
           : "",
       ),

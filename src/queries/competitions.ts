@@ -17,22 +17,21 @@ import {
   groupCompetitions,
 } from "@/lib/competitions";
 import { isUuid } from "@/lib/uuid";
+import { participantNameSql, withProfile } from "@/queries/profile-join";
 
 const competitionColumns = {
   id: competition.id,
   name: competition.name,
   description: competition.description,
-  maxPoints: competition.maxPoints,
   scoring: competition.scoring,
   countsTowardTeam: competition.countsTowardTeam,
   competitionGroup: competition.competitionGroup,
   format: competition.format,
-  gameType: competition.gameType,
 } satisfies Record<keyof CompetitionListItem, unknown>;
 
 /**
  * Finds a War Week's Competition by name for `get_bracket`, with its Format
- * and scoring so the tool can answer a `games` Competition: an exact name
+ * and scoring so the tool can answer a Head-to-head or Best score Competition: an exact name
  * wins; else a case-insensitive (trimmed) name when exactly one Competition
  * has it; else `undefined` (names are unique per War Week only
  * case-sensitively).
@@ -101,23 +100,25 @@ export async function getCompetitionWithLedger(
     .limit(1);
   if (!found) return undefined;
 
-  const rows = await dbOrTx
-    .select({
-      id: pointsEntry.id,
-      points: pointsEntry.points,
-      note: pointsEntry.note,
-      enteredAt: pointsEntry.enteredAt,
-      teamName: team.name,
-      teamColor: team.color,
-      participantName: participant.displayName,
-      participantTeamName: participantTeam.name,
-      participantTeamColor: participantTeam.color,
-    })
-    .from(pointsEntry)
-    .leftJoin(team, eq(team.id, pointsEntry.teamId))
-    .leftJoin(participant, eq(participant.id, pointsEntry.participantId))
-    .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))
-    .where(eq(pointsEntry.competitionId, found.id));
+  const rows = await withProfile(
+    dbOrTx
+      .select({
+        id: pointsEntry.id,
+        points: pointsEntry.points,
+        note: pointsEntry.note,
+        enteredAt: pointsEntry.enteredAt,
+        teamName: team.name,
+        teamColor: team.color,
+        participantName: participantNameSql(),
+        participantTeamName: participantTeam.name,
+        participantTeamColor: participantTeam.color,
+      })
+      .from(pointsEntry)
+      .leftJoin(team, eq(team.id, pointsEntry.teamId))
+      .leftJoin(participant, eq(participant.id, pointsEntry.participantId))
+      .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))
+      .$dynamic(),
+  ).where(eq(pointsEntry.competitionId, found.id));
 
   return {
     competition: found,

@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import type { GameType } from "@/lib/enums";
+import type { GameFormat } from "@/lib/enums";
 import type { GamesConfig } from "@/lib/games/config";
 
 import { GamesBuilder } from "./games-builder";
@@ -11,7 +11,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 function competition(
-  gameType: GameType,
+  gameFormat: GameFormat,
   config: GamesConfig,
   over: Partial<Parameters<typeof GamesBuilder>[0]["competition"]> = {},
 ): Parameters<typeof GamesBuilder>[0]["competition"] {
@@ -19,7 +19,7 @@ function competition(
     id: "c1",
     name: "Bouncy Pong",
     scoring: "individual",
-    gameType,
+    gameFormat,
     config,
     entrantsOpen: true,
     loggingClosesAt: null,
@@ -75,13 +75,24 @@ describe("GamesBuilder", () => {
     expect(html).not.toContain("Draws allowed");
   });
 
-  it("shows the Finish Points field, with its blank-default help, for ranked", () => {
-    const html = render({
-      competition: competition("ranked", { finishPoints: [] }),
-    });
-    expect(html).toContain("Finish Points");
-    expect(html).toContain("Blank: one point per player beaten.");
-    expect(html).not.toContain("Best of");
+  it("has no Finish Points field for either Games Format", () => {
+    for (const html of [
+      render({
+        competition: competition("head-to-head", {
+          drawsAllowed: false,
+          bestOf: null,
+        }),
+      }),
+      render({
+        competition: competition("best-score", {
+          count: "best",
+          betterIs: "higher",
+          unit: "",
+        }),
+      }),
+    ]) {
+      expect(html).not.toContain("Finish Points");
+    }
   });
 
   it("hides the enroll switch once a fixed list has a Best of set", () => {
@@ -147,6 +158,29 @@ describe("GamesBuilder", () => {
     });
     expect(html).toContain("Reopen");
     expect(html).not.toContain(">Close<");
+  });
+
+  it("says a closed Competition's Points Entries are in the ledger, with Placement Points", () => {
+    const html = render({
+      competition: competition(
+        "head-to-head",
+        { drawsAllowed: false, bestOf: null },
+        { closed: true },
+      ),
+    });
+    expect(html).toContain("Closed: its Points Entries are in the ledger.");
+  });
+
+  it("claims no Points Entries for a closed Competition without Placement Points", () => {
+    const html = render({
+      competition: competition(
+        "head-to-head",
+        { drawsAllowed: false, bestOf: null },
+        { closed: true, placementPoints: null },
+      ),
+    });
+    expect(html).toContain("it made no Points Entries");
+    expect(html).not.toContain("Points Entries are in the ledger");
   });
 
   it("offers a Close button, not yet confirmed, when open", () => {

@@ -1,9 +1,14 @@
 import { expect, test } from "@playwright/test";
 
+import { resetXiFinaleSlides } from "./db";
+import { nextUntil, openFinale } from "./finale-slides";
 import { E2E_PARTICIPANT_EMAIL, signIn } from "./session";
 import { visibleRowText } from "./standings";
 
-test("the Finale plays from Start and ends on first place", async ({
+test.beforeAll(resetXiFinaleSlides);
+test.afterAll(resetXiFinaleSlides);
+
+test("the Finale's Standings countdown ends on first place", async ({
   context,
   page,
 }, testInfo) => {
@@ -18,8 +23,10 @@ test("the Finale plays from Start and ends on first place", async ({
     .first();
   const leaderText = visibleRowText(await leader.innerText());
 
-  await page.goto("/xi/finale");
-  await page.getByRole("button", { name: "Start" }).click();
+  // The slideshow: → through the slides before it; arriving on the
+  // Standings countdown starts it.
+  await openFinale(page);
+  await nextUntil(page, "standings");
 
   // The countdown runs for at most 8 seconds, then offers Replay.
   await expect(page.getByRole("button", { name: "Replay" })).toBeVisible({

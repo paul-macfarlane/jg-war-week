@@ -8,6 +8,7 @@ const days: ScheduleDay[] = [
     id: "d1",
     date: "2026-02-23",
     dayTheme: "Competition Day",
+    description: null,
     items: [
       {
         id: "i1",
@@ -42,7 +43,10 @@ const days: ScheduleDay[] = [
                 },
               ],
             },
-            { type: "image", attrs: { src: "https://x.test/a.png", alt: "" } },
+            {
+              type: "image",
+              attrs: { src: "https://x.test/a.png", alt: "", caption: "" },
+            },
           ],
         },
         category: "competition",
@@ -54,6 +58,7 @@ const days: ScheduleDay[] = [
     id: "d2",
     date: "2026-02-24",
     dayTheme: "Red vs. Blue",
+    description: null,
     items: [
       {
         id: "i2",

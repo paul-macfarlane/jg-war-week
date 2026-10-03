@@ -92,7 +92,7 @@
 }
 
 /* The viewer's Display (Light / Dark / System; `html[data-display]`, set by
-   the inline script in the root layout and by `DisplayMenu`) picks the
+   the inline script in the root layout and by `AccountMenu`) picks the
    color scheme. Unthemed chrome (/history's page, not-found, admin error)
    takes these defaults; System is pure CSS. */
 html[data-display="dark"] {
@@ -171,10 +171,26 @@ html[data-display="dark"] {
   }
 }
 
+/* About stills come in both schemes (`AboutStill`, the About dark stills
+   fix): show the one matching the viewer's Display, light by default. */
+@media not (prefers-color-scheme: dark) {
+  html:not([data-display="dark"]) [data-still-scheme="dark"],
+  html[data-display="dark"] [data-still-scheme="light"] {
+    display: none;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-display="light"] [data-still-scheme="dark"],
+  html:not([data-display="light"]) [data-still-scheme="light"] {
+    display: none;
+  }
+}
+
 /* Themed roots (`ThemeRoot`, `data-theme-root`) carry both palettes inline
    as `--light-*` and `--dark-*` (`warWeekThemeStyle`); map the shadcn
    tokens to the set for the viewer's scheme. A root pinned with
-   `data-scheme` (the Setup previews) skips the `:not([data-scheme])`
+   `data-scheme` (the Settings previews) skips the `:not([data-scheme])`
    rules; `data-scheme="light"` needs no rule of its own. */
 [data-theme-root] {
   color-scheme: light;
@@ -280,5 +296,29 @@ html[data-display="dark"] {
   }
   html {
     @apply font-sans;
+  }
+  /* Tailwind v4 dropped the pointer cursor from buttons (ticket 85): every
+     clickable control shows one, and a disabled one not-allowed. */
+  :where(
+    button,
+    a[href],
+    [role="button"],
+    [role="option"],
+    [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"],
+    [role="tab"],
+    [role="switch"],
+    [role="checkbox"],
+    [role="radio"],
+    select,
+    summary,
+    label[for]
+  ) {
+    cursor: pointer;
+
+    &:is(:disabled, [aria-disabled="true"], [data-disabled]) {
+      cursor: not-allowed;
+    }
   }
 }

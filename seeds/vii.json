@@ -548,28 +548,24 @@
     {
       "name": "War Week Crossword",
       "description": "Karate Kid themed crossword; individual scores tallied as a team.",
-      "maxPoints": 3,
       "scoring": "team",
       "group": "Kicking Off Before War Week"
     },
     {
       "name": "Website Easter Egg Hunt",
       "description": "3 points for the team with the most finalists (best of 11).",
-      "maxPoints": 3,
       "scoring": "team",
       "group": "Kicking Off Before War Week"
     },
     {
       "name": "Stairs Challenge",
       "description": "12 points to the team with the most total trips.",
-      "maxPoints": 12,
       "scoring": "team",
       "group": "Ongoing During the Week"
     },
     {
       "name": "Daily Workouts",
       "description": "1 point for each team member who completes all 5 workouts.",
-      "maxPoints": 1,
       "scoring": "individual",
       "countsTowardTeam": true,
       "group": "Ongoing During the Week"
@@ -577,7 +573,6 @@
     {
       "name": "Daily Trivia",
       "description": "3 / 2 / 1 points for 1st, 2nd and 3rd.",
-      "maxPoints": 3,
       "scoring": "individual",
       "countsTowardTeam": true,
       "group": "Ongoing During the Week"
@@ -585,7 +580,6 @@
     {
       "name": "Wordle",
       "description": "3 / 2 / 1 points for 1st, 2nd and 3rd.",
-      "maxPoints": 3,
       "scoring": "individual",
       "countsTowardTeam": true,
       "group": "Ongoing During the Week"
@@ -593,7 +587,6 @@
     {
       "name": "Chess Tournament",
       "description": "5 / 3 / 1 points for 1st, 2nd and 3rd.",
-      "maxPoints": 5,
       "scoring": "individual",
       "countsTowardTeam": true,
       "group": "Ongoing During the Week"
@@ -607,7 +600,6 @@
     {
       "name": "Midnight Club",
       "description": "1 point for each team member who goes from midnight to noon on Sunday.",
-      "maxPoints": 1,
       "scoring": "individual",
       "countsTowardTeam": true,
       "group": "Hours"
@@ -615,7 +607,6 @@
     {
       "name": "Billable Hours Champs",
       "description": "5 / 3 / 1 points for 1st, 2nd and 3rd in billable hours; cutoff Thursday at midnight.",
-      "maxPoints": 5,
       "scoring": "individual",
       "countsTowardTeam": true,
       "group": "Hours"
@@ -623,7 +614,6 @@
     {
       "name": "Settlers of Catan",
       "description": "5 points to the team of the winner.",
-      "maxPoints": 5,
       "scoring": "individual",
       "countsTowardTeam": true,
       "group": "Competitions & Events"
@@ -631,7 +621,6 @@
     {
       "name": "Magic the Gathering",
       "description": "3 points for the advanced champ, 1 point for the beginner champ.",
-      "maxPoints": 3,
       "scoring": "individual",
       "countsTowardTeam": true,
       "group": "Competitions & Events"
@@ -639,7 +628,6 @@
     {
       "name": "War Week Beer & Cards",
       "description": "3 points for the advanced champ, 1 point for the beginner champ.",
-      "maxPoints": 3,
       "scoring": "individual",
       "countsTowardTeam": true,
       "group": "Competitions & Events"
@@ -647,13 +635,11 @@
     {
       "name": "Rookie and Remote Squid Game",
       "description": "3 points to the team of the winner.",
-      "maxPoints": 3,
       "scoring": "individual",
       "countsTowardTeam": true,
       "group": "Competitions & Events"
     }
   ],
-  "pointsEntries": [],
   "awards": [
     {
       "key": "team-champions",

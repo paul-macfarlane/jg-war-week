@@ -1,25 +1,24 @@
 /**
- * Display helpers for a `games` Competition: leaderboard columns, a Game's
+ * Display helpers for a Head-to-head or Best score Competition: leaderboard columns, a Game's
  * one-line copy for the log, and the "Mine" filter. Pure, like `bracket/view.ts`.
  */
-import type { GameType } from "@/lib/enums";
+import type { GameFormat } from "@/lib/enums";
 import type { BestScoreConfig, GamesConfigFor } from "@/lib/games/config";
 import type { LeaderboardRow } from "@/lib/games/leaderboard";
 
 export type LeaderboardColumn = { key: string; label: string };
 
 /**
- * The leaderboard's columns per Game Type: head-to-head shows Played and
- * W/L/D; best-score its counted value then Played; ranked Finish Points,
- * Played and Wins. Takes `config` (not just `gameType`) because
+ * The leaderboard's columns per Games Format: head-to-head shows Played and
+ * W/L/D; best-score its counted value then Played. Takes `config` (not just `gameFormat`) because
  * best-score's column label names its counted value ("Best" or "Total")
  * and unit.
  */
-export function leaderboardColumns<T extends GameType>(
-  gameType: T,
+export function leaderboardColumns<T extends GameFormat>(
+  gameFormat: T,
   config: GamesConfigFor<T>,
 ): LeaderboardColumn[] {
-  if (gameType === "head-to-head") {
+  if (gameFormat === "head-to-head") {
     return [
       { key: "played", label: "Played" },
       { key: "wins", label: "W" },
@@ -27,21 +26,14 @@ export function leaderboardColumns<T extends GameType>(
       { key: "draws", label: "D" },
     ];
   }
-  if (gameType === "best-score") {
-    const cfg = config as BestScoreConfig;
-    const base = cfg.count === "best" ? "Best" : "Total";
-    return [
-      {
-        key: cfg.count,
-        label: cfg.unit ? `${base} (${cfg.unit})` : base,
-      },
-      { key: "played", label: "Played" },
-    ];
-  }
+  const cfg = config as BestScoreConfig;
+  const base = cfg.count === "best" ? "Best" : "Total";
   return [
-    { key: "finishPoints", label: "Finish Points" },
+    {
+      key: cfg.count,
+      label: cfg.unit ? `${base} (${cfg.unit})` : base,
+    },
     { key: "played", label: "Played" },
-    { key: "wins", label: "Wins" },
   ];
 }
 
@@ -65,15 +57,15 @@ export type GameSummaryPlayer = {
 };
 
 /**
- * One line of Game log copy, per Game Type: "Ashley beat Sam" (a draw:
- * "Ashley and Sam drew"), "Ashley · 42 trips", or "1. Red 2. Blue 3. Green".
+ * One line of Game log copy, per Games Format: "Ashley beat Sam" (a draw:
+ * "Ashley and Sam drew") or "Ashley · 42 trips".
  */
 export function gameSummary(
-  gameType: GameType,
+  gameFormat: GameFormat,
   players: GameSummaryPlayer[],
   unit = "",
 ): string {
-  if (gameType === "head-to-head") {
+  if (gameFormat === "head-to-head") {
     const winner = players.find((p) => p.place === 1);
     const loser = players.find((p) => p.place === 2);
     if (winner && loser) return `${winner.name} beat ${loser.name}`;
@@ -82,13 +74,9 @@ export function gameSummary(
     }
     return players.map((p) => p.name).join(" vs ");
   }
-  if (gameType === "best-score") {
-    const player = players[0];
-    if (!player) return "";
-    return `${player.name} · ${formatScore(player.score, unit)}`;
-  }
-  const sorted = [...players].sort((a, b) => (a.place ?? 0) - (b.place ?? 0));
-  return sorted.map((p) => `${p.place}. ${p.name}`).join(" ");
+  const player = players[0];
+  if (!player) return "";
+  return `${player.name} · ${formatScore(player.score, unit)}`;
 }
 
 /**

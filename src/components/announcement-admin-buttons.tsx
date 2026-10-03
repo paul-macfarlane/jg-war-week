@@ -4,12 +4,7 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
 
-import {
-  deleteAnnouncement,
-  pinAnnouncement,
-  unpinAnnouncement,
-} from "@/actions/announcements";
-import { ConfirmActionButton } from "@/components/confirm-dialog";
+import { pinAnnouncement, unpinAnnouncement } from "@/actions/announcements";
 import { Button } from "@/components/ui/button";
 
 export function PinAnnouncementButton({
@@ -25,7 +20,9 @@ export function PinAnnouncementButton({
   return (
     <Button
       variant="outline"
-      size="xs"
+      size="sm"
+      // At least 44px on phones, level with the row's Edit and Delete.
+      className="min-h-11 min-w-11 sm:min-h-8"
       disabled={pending}
       onClick={() => {
         startTransition(async () => {
@@ -45,23 +42,5 @@ export function PinAnnouncementButton({
     >
       {pending ? "Saving…" : pinned ? "Unpin" : "Pin"}
     </Button>
-  );
-}
-
-export function DeleteAnnouncementButton({
-  id,
-  title,
-}: {
-  id: string;
-  title: string;
-}) {
-  return (
-    <ConfirmActionButton
-      title={`Delete "${title}"?`}
-      action={() => deleteAnnouncement(id)}
-      successMessage="Announcement deleted"
-    >
-      Delete
-    </ConfirmActionButton>
   );
 }

@@ -13,9 +13,9 @@ const b = "0f5d6c3e-1b2a-4e8f-9c7d-6a5b4c3d2e1f";
 
 describe("Bracket action input", () => {
   it("accepts a Format and refuses an unknown one", () => {
-    expect(parseFormatInput({ format: "single-elimination" })).toEqual({
+    expect(parseFormatInput({ format: "bracket" })).toEqual({
       ok: true,
-      value: { format: "single-elimination" },
+      value: { format: "bracket" },
     });
     expect(parseFormatInput({ format: "swiss" })).toEqual({
       ok: false,
@@ -24,52 +24,78 @@ describe("Bracket action input", () => {
   });
 
   it("never offers games: a Competition is games from creation only", () => {
-    expect(parseFormatInput({ format: "games" })).toEqual({
+    expect(parseFormatInput({ format: "head-to-head" })).toEqual({
       ok: false,
       error: "Choose a Format.",
     });
   });
 
-  it("accepts a heats Format with a valid config and force", () => {
+  it("accepts a Bracket Format with a valid config and force", () => {
     expect(
       parseFormatInput({
-        format: "heats",
-        config: { entrantsPerHeat: 4, advancePerHeat: 2 },
+        format: "bracket",
+        config: {
+          entrantsPerHeat: 4,
+          advancePerHeat: 2,
+          thirdPlaceGame: false,
+        },
         force: true,
       }),
     ).toEqual({
       ok: true,
       value: {
-        format: "heats",
-        config: { entrantsPerHeat: 4, advancePerHeat: 2 },
+        format: "bracket",
+        config: {
+          entrantsPerHeat: 4,
+          advancePerHeat: 2,
+          thirdPlaceGame: false,
+        },
         force: true,
       },
     });
-    expect(parseFormatInput({ format: "heats" })).toEqual({
+    expect(parseFormatInput({ format: "bracket" })).toEqual({
       ok: true,
-      value: { format: "heats" },
+      value: { format: "bracket" },
     });
   });
 
-  it("refuses a heats config where as many advance as play", () => {
+  it("refuses a Bracket config where as many advance as play", () => {
     expect(
       parseFormatInput({
-        format: "heats",
-        config: { entrantsPerHeat: 4, advancePerHeat: 4 },
+        format: "bracket",
+        config: {
+          entrantsPerHeat: 4,
+          advancePerHeat: 4,
+          thirdPlaceGame: false,
+        },
       }),
     ).toEqual({ ok: false, error: "Fewer must advance than play in a Heat." });
     expect(
       parseFormatInput({
-        format: "heats",
-        config: { entrantsPerHeat: 9, advancePerHeat: 2 },
+        format: "bracket",
+        config: {
+          entrantsPerHeat: 9,
+          advancePerHeat: 2,
+          thirdPlaceGame: false,
+        },
       }),
     ).toEqual({ ok: false, error: "A Heat holds at most 8 Entrants." });
   });
 
-  it("refuses a config for single elimination", () => {
+  it("refuses a config for Placement, and a config without its 3rd place game", () => {
     expect(
       parseFormatInput({
-        format: "single-elimination",
+        format: "placement",
+        config: {
+          entrantsPerHeat: 4,
+          advancePerHeat: 2,
+          thirdPlaceGame: false,
+        },
+      }),
+    ).toEqual({ ok: false, error: "Only a Bracket takes Heat settings." });
+    expect(
+      parseFormatInput({
+        format: "bracket",
         config: { entrantsPerHeat: 4, advancePerHeat: 2 },
       }),
     ).toMatchObject({ ok: false });
@@ -78,9 +104,10 @@ describe("Bracket action input", () => {
   it("accepts a four-Entrant finishing order", () => {
     const c = "3c2b1a0f-9e8d-4c7b-8a69-5f4e3d2c1b0a";
     const d = "7d6c5b4a-3f2e-4d1c-9b0a-8f7e6d5c4b3a";
-    expect(
-      parseHeatResultInput({ order: [a, b, c, d], forfeits: [d] }),
-    ).toEqual({ ok: true, value: { order: [a, b, c, d], forfeits: [d] } });
+    expect(parseHeatResultInput({ order: [a, b, c, d] })).toEqual({
+      ok: true,
+      value: { order: [a, b, c, d] },
+    });
   });
 
   it("trims scores and refuses long ones", () => {
@@ -92,18 +119,12 @@ describe("Bracket action input", () => {
     ).toEqual({ ok: false, error: "Scores are at most 40 characters." });
   });
 
-  it("accepts a Generate with seeding, and defaults it to nothing", () => {
-    expect(parseGenerateInput({ seeding: "standings" })).toEqual({
+  it("accepts a Generate with force, and defaults it to nothing; seeding is always random", () => {
+    expect(parseGenerateInput({ force: true })).toEqual({
       ok: true,
-      value: { seeding: "standings" },
+      value: { force: true },
     });
     expect(parseGenerateInput({})).toEqual({ ok: true, value: {} });
-  });
-
-  it("refuses an unknown seeding", () => {
-    expect(parseGenerateInput({ seeding: "drag" })).toMatchObject({
-      ok: false,
-    });
   });
 
   it("refuses Entrants that aren't row ids", () => {

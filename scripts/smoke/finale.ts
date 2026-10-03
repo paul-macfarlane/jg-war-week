@@ -9,9 +9,10 @@ import {
 import { mcpLeaderboard } from "./mcp";
 
 /**
- * The Finale (brackets ticket 1): `/xi/finale` opens on Start for any
- * signed-in user, `/admin/standings` is the Organizer's way in, and MCP
- * `get_leaderboard` always returns Standings.
+ * The Finale (brackets ticket 1, ticket 72): `/xi/finale` opens on the
+ * slideshow's first slide for any signed-in user, `/admin/finale` is the
+ * Organizer's way in, lists the slides and sets the Awards layout (ticket
+ * 73), and MCP `get_leaderboard` always returns Standings.
  */
 export async function assertFinale(sessions: {
   organizer: SmokeSession;
@@ -34,14 +35,15 @@ export async function assertFinale(sessions: {
   };
 
   await run(
-    "GET /xi/finale as a signed-in user shows the Start button",
+    "GET /xi/finale as a signed-in user opens the slideshow on its Title slide, with nothing waiting on Start",
     async () => {
       const { status, body } = await page("/xi/finale", sessions.notOrganizer);
       const checks = {
         status: status === 200,
-        start: /<button[^>]*>Start<\/button>/.test(body),
-        ready: body.includes('data-finale="ready"'),
-        heading: body.includes("Finale"),
+        title: body.includes('data-finale-slide="title"'),
+        first: body.includes('data-finale-slide-index="0"'),
+        noReady: !body.includes('data-finale="ready"'),
+        noStart: !/<button[^>]*>Start<\/button>/.test(body),
       };
       return Object.values(checks).every(Boolean)
         ? null
@@ -50,21 +52,41 @@ export async function assertFinale(sessions: {
   );
 
   await run(
-    "GET /admin/standings shows the Finale page with Open Finale to an Organizer and the refusal to a non-Organizer",
+    "GET /admin/finale shows the Finale page with Open Finale, the slide list and the Awards layout control to an Organizer and the refusal to a non-Organizer",
     async () => {
-      const organizer = await page("/admin/standings", sessions.organizer);
-      const notOrganizer = await page(
-        "/admin/standings",
-        sessions.notOrganizer,
-      );
+      const organizer = await page("/admin/finale", sessions.organizer);
+      const notOrganizer = await page("/admin/finale", sessions.notOrganizer);
       const checks = {
         heading: /<h1[^>]*>Finale<\/h1>/.test(organizer.body),
         open:
           organizer.body.includes("Open Finale") &&
           organizer.body.includes('href="/xi/finale"'),
+        slides:
+          organizer.body.includes('aria-label="Finale slides"') &&
+          organizer.body.includes("Standings countdown"),
+        awardsLayout:
+          organizer.body.includes("Awards layout") &&
+          organizer.body.includes("All on one slide") &&
+          organizer.body.includes("One slide per Category"),
         refused:
           notOrganizer.body.includes(ADMIN_REFUSAL_TEXT) &&
           !notOrganizer.body.includes("Open Finale"),
+      };
+      return Object.values(checks).every(Boolean)
+        ? null
+        : JSON.stringify(checks);
+    },
+  );
+
+  await run(
+    'GET /admin/finale lists the seeded Custom "Thank you" slide on XI with its Edit and Delete, and offers Add Custom slide, to an Organizer',
+    async () => {
+      const { body } = await page("/admin/finale", sessions.organizer);
+      const checks = {
+        heading: body.includes("Thank you"),
+        edit: body.includes('aria-label="Edit Thank you"'),
+        delete: body.includes('aria-label="Delete Thank you"'),
+        add: body.includes("Add Custom slide"),
       };
       return Object.values(checks).every(Boolean)
         ? null

@@ -14,6 +14,7 @@ import {
   createSmokeSession,
   fail,
   ok,
+  runCheck,
   runQuery,
   signedInFetch,
   teamTotalIn,
@@ -25,6 +26,21 @@ function expectedXiCounts(): Record<string, number> {
     readFileSync(path.resolve(process.cwd(), DEMO_SEED), "utf-8"),
   );
   const count = (list: unknown[] | undefined) => list?.length ?? 0;
+  // A Finalize writes one generated Points Entry per Placement row whose
+  // place is within the Competition's Placement Points list (zero-point
+  // entries included), on top of the Discretionary points.
+  const pointsListLength = new Map<string, number>(
+    seed.competitions
+      .filter((c: { finalized?: boolean }) => c.finalized)
+      .map((c: { name: string; placementPoints?: number[] }) => [
+        c.name,
+        c.placementPoints?.length ?? 0,
+      ]),
+  );
+  const generated = (seed.placements ?? []).filter(
+    (p: { competition: string; place: number }) =>
+      p.place <= (pointsListLength.get(p.competition) ?? 0),
+  ).length;
   return {
     war_week: 1,
     day: count(seed.days),
@@ -36,10 +52,12 @@ function expectedXiCounts(): Record<string, number> {
     team: count(seed.teams),
     participant: count(seed.participants),
     competition: count(seed.competitions),
-    points_entry: count(seed.pointsEntries),
+    placement: count(seed.placements),
+    points_entry: generated + count(seed.discretionaryPoints),
     award: count(seed.awards),
     announcement: count(seed.announcements),
     faq_item: count(seed.faqItems),
+    finale_slide: count(seed.finaleSlides),
   };
 }
 
@@ -53,15 +71,46 @@ const XI_COUNT_QUERIES: Record<string, string> = {
     "select count(*) from participant p join war_week w on w.id = p.war_week_id where w.edition = 'xi'",
   competition:
     "select count(*) from competition c join war_week w on w.id = c.war_week_id where w.edition = 'xi'",
+  placement:
+    "select count(*) from placement p join competition c on c.id = p.competition_id join war_week w on w.id = c.war_week_id where w.edition = 'xi'",
   points_entry:
-    "select count(*) from points_entry e join competition c on c.id = e.competition_id join war_week w on w.id = c.war_week_id where w.edition = 'xi'",
+    "select count(*) from points_entry e join war_week w on w.id = e.war_week_id where w.edition = 'xi'",
   award:
     "select count(*) from award a join war_week w on w.id = a.war_week_id where w.edition = 'xi'",
   announcement:
     "select count(*) from announcement a join war_week w on w.id = a.war_week_id where w.edition = 'xi'",
   faq_item:
     "select count(*) from faq_item f join war_week w on w.id = f.war_week_id where w.edition = 'xi'",
+  finale_slide:
+    "select count(*) from finale_slide s join war_week w on w.id = s.war_week_id where w.edition = 'xi'",
 };
+
+/** War Week XI's Finale slide ids in their order, after a seed load. */
+export async function xiFinaleSlideIds(): Promise<string[]> {
+  const rows = await runQuery<{ id: string }>(
+    `select s.id from finale_slide s join war_week w on w.id = s.war_week_id
+     where w.edition = 'xi' order by s.sort_order, s.id`,
+  );
+  return rows.map((row) => row.id);
+}
+
+/**
+ * The demo's Finale slides keep their ids across a reload (the loader
+ * upserts them by kind and heading): the ids after the second load equal
+ * those after the first.
+ */
+export async function assertFinaleSlidesKeptIds(afterFirstLoad: string[]) {
+  await runCheck(
+    "after loading the seed twice, War Week XI's Finale slides keep the ids the first load gave them",
+    async () => {
+      const afterSecondLoad = await xiFinaleSlideIds();
+      return afterFirstLoad.length > 0 &&
+        JSON.stringify(afterSecondLoad) === JSON.stringify(afterFirstLoad)
+        ? null
+        : `first=${JSON.stringify(afterFirstLoad)} second=${JSON.stringify(afterSecondLoad)}`;
+    },
+  );
+}
 
 export async function assertSeedLoadedOnce() {
   const client = new Client({ connectionString: process.env.DATABASE_URL });
@@ -84,6 +133,39 @@ export async function assertSeedLoadedOnce() {
   }
 }
 
+export async function assertDiscretionaryReasonConstraint() {
+  const check =
+    "the database rejects a Points Entry with no Competition and no reason";
+  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  try {
+    await client.connect();
+    await client.query("begin");
+    try {
+      await client.query(
+        `insert into points_entry (war_week_id, competition_id, team_id, points, entered_by_email)
+         select w.id, null, t.id, 1, 'smoke@jahnelgroup.com'
+         from war_week w join team t on t.war_week_id = w.id
+         where w.edition = 'xi'
+         limit 1`,
+      );
+      fail(check, "insert succeeded");
+    } catch (error) {
+      const message = String(error);
+      if (message.includes("points_entry_reason_without_competition")) {
+        ok(check);
+      } else {
+        fail(check, message);
+      }
+    } finally {
+      await client.query("rollback");
+    }
+  } catch (error) {
+    fail(check, String(error));
+  } finally {
+    await client.end().catch(() => {});
+  }
+}
+
 export async function assertPointsEntryTargetConstraint() {
   const check =
     "the database rejects a Points Entry with both a Team and a Participant";
@@ -93,8 +175,8 @@ export async function assertPointsEntryTargetConstraint() {
     await client.query("begin");
     try {
       await client.query(
-        `insert into points_entry (competition_id, team_id, participant_id, points, entered_by_email)
-         select c.id, p.team_id, p.id, 1, 'smoke@jahnelgroup.com'
+        `insert into points_entry (war_week_id, competition_id, team_id, participant_id, points, entered_by_email)
+         select w.id, c.id, p.team_id, p.id, 1, 'smoke@jahnelgroup.com'
          from competition c
          join war_week w on w.id = c.war_week_id
          join participant p on p.war_week_id = w.id and p.team_id is not null
@@ -270,9 +352,84 @@ export async function assertHomeNowNext() {
   }
 }
 
+/** Runs an insert that must be refused by the named CHECK, then rolls back. */
+async function assertCheckRefuses(
+  check: string,
+  constraint: string,
+  insertSql: string,
+) {
+  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  try {
+    await client.connect();
+    await client.query("begin");
+    try {
+      await client.query(insertSql);
+      fail(check, "insert succeeded");
+    } catch (error) {
+      const message = String(error);
+      if (message.includes(constraint)) ok(check);
+      else fail(check, message);
+    } finally {
+      await client.query("rollback");
+    }
+  } catch (error) {
+    fail(check, String(error));
+  } finally {
+    await client.end().catch(() => {});
+  }
+}
+
+export async function assertPlacementTargetConstraint() {
+  await assertCheckRefuses(
+    "the database rejects a Placement with both a Team and a Participant",
+    "placement_exactly_one_target",
+    `insert into placement (competition_id, team_id, participant_id, place)
+     select c.id, p.team_id, p.id, 1
+     from competition c
+     join war_week w on w.id = c.war_week_id
+     join participant p on p.war_week_id = w.id and p.team_id is not null
+     where w.edition = 'xi'
+     limit 1`,
+  );
+  await assertCheckRefuses(
+    "the database rejects a Placement with neither a Team nor a Participant",
+    "placement_exactly_one_target",
+    `insert into placement (competition_id, place)
+     select c.id, 1 from competition c join war_week w on w.id = c.war_week_id
+     where w.edition = 'xi' limit 1`,
+  );
+}
+
+export async function assertParticipationColumnsConstraint() {
+  // An individual Participation Competition takes N and no Placement Points.
+  await assertCheckRefuses(
+    "the database rejects an individual Participation Competition with Placement Points and no N",
+    "competition_participation_columns",
+    `insert into competition (war_week_id, name, format, scoring, placement_points)
+     select w.id, 'Smoke bad participation', 'participation', 'individual', '{3.00}'
+     from war_week w where w.edition = 'xi'`,
+  );
+  // A team Participation Competition takes Placement Points and no N.
+  await assertCheckRefuses(
+    "the database rejects a team Participation Competition with N and no Placement Points",
+    "competition_participation_columns",
+    `insert into competition (war_week_id, name, format, scoring, participation_points)
+     select w.id, 'Smoke bad participation', 'participation', 'team', 2
+     from war_week w where w.edition = 'xi'`,
+  );
+  // Any other Format has no participation settings.
+  await assertCheckRefuses(
+    "the database rejects a Placement Competition with participation points",
+    "competition_participation_columns",
+    `insert into competition (war_week_id, name, format, scoring, participation_points)
+     select w.id, 'Smoke bad placement', 'placement', 'team', 2
+     from war_week w where w.edition = 'xi'`,
+  );
+}
+
 export async function assertPlacementPointsSeeded() {
   const check =
-    "the XI seed loads 5/3/1 Placement Points for Catan and none for Beast Mode";
+    "the XI seed loads 5/3/1 Placement Points for Catan and the lone-winner 3 for Beast Mode";
   try {
     const rows = await runQuery<{ name: string; placement_points: string }>(
       `select c.name, c.placement_points::text
@@ -284,7 +441,7 @@ export async function assertPlacementPointsSeeded() {
     );
     if (
       byName["Settlers of Catan"] === "{5.00,3.00,1.00}" &&
-      byName["Beast Mode Workout"] === null
+      byName["Beast Mode Workout"] === "{3.00}"
     ) {
       ok(check);
     } else {
@@ -297,12 +454,11 @@ export async function assertPlacementPointsSeeded() {
 
 export async function assertMoreLinks() {
   const check =
-    "GET /xi/more links to Competitions, Teams, Awards, FAQ, history, Install app and About";
+    "GET /xi/more links to Teams, Awards, FAQ, history, Install app and About";
   try {
     const res = await signedInFetch(`${BASE_URL}/xi/more`);
     const body = await res.text();
     const checks = {
-      competitions: body.includes('href="/xi/competitions"'),
       teams: body.includes('href="/xi/teams"'),
       awards: body.includes('href="/xi/awards"'),
       faq: body.includes('href="/xi/faq"'),
@@ -401,14 +557,14 @@ export async function assertLlmsTxt() {
 
 export async function assertCompetitions() {
   const check =
-    "GET /xi/competitions groups Competitions with max points and scoring";
+    "GET /xi/competitions groups Competitions with their scoring and no points cap";
   try {
     const res = await signedInFetch(`${BASE_URL}/xi/competitions`);
     const body = await res.text();
     const checks = {
       group: body.includes("Team Night Events"),
       ungrouped: body.includes("Other Competitions"),
-      maxPoints: body.includes("Max 1.5 pts"),
+      noCap: !/\bMax \d|\bpts\b/.test(body),
       scoring: body.includes("Individual · counts toward Team"),
       link: body.includes('href="/xi/competitions/'),
     };
@@ -440,17 +596,16 @@ export async function assertCompetitionDetail() {
   }
 
   const url = `${BASE_URL}/xi/competitions/${id}`;
-  const note = "First to finish all 10 wellness tasks";
 
   const shownCheck =
-    "GET /xi/competitions/[id] shows the Competition and lists its Points Entries (target, points, note)";
+    "GET /xi/competitions/[id] shows the Competition and shows its Placement and the Points Entries it generated";
   try {
     const res = await signedInFetch(url);
     const body = await res.text();
     const checks = {
       name: body.includes("Winning the Day Challenge"),
       target: body.includes("Dani Milliken"),
-      note: body.includes(note),
+      entries: body.includes("Points Entries"),
     };
     if (res.status === 200 && Object.values(checks).every(Boolean)) {
       ok(shownCheck);
@@ -596,10 +751,10 @@ export async function assertYouHighlight(sessions: {
 
     const unlinked = await get("/xi/teams", sessions.notOrganizer);
     report(
-      "a signed-in user with no email match gets the 'Which one is you?' picker and no 'You'",
+      "a signed-in user with no email match gets no 'You' and no picker",
       unlinked.status,
       {
-        picker: unlinked.body.includes("Which one is you?"),
+        noPicker: !unlinked.body.includes("Which one is you?"),
         noTag: !unlinked.body.includes(YOU_TAG),
         noEmails: !unlinked.body.includes(SMOKE_YOU_EMAIL),
       },
@@ -732,6 +887,39 @@ export async function assertSignInPage() {
   } catch (error) {
     fail(sessionCheck, String(error));
   }
+}
+
+/**
+ * The smoke server runs with no TEST_SIGN_IN_SECRET (and VERCEL_ENV
+ * blank), as Production would: Test sign-in is off, so its page is not
+ * found. better-auth's self-service `/update-user` is disabled everywhere.
+ */
+export async function assertTestSignInOffAndUpdateUserDisabled() {
+  await runCheck(
+    "GET /sign-in/test is 404 with no TEST_SIGN_IN_SECRET",
+    async () => {
+      const res = await fetch(`${BASE_URL}/sign-in/test`, {
+        redirect: "manual",
+      });
+      return res.status === 404 ? null : `status=${res.status}`;
+    },
+  );
+  await runCheck(
+    "POST /api/auth/update-user is 404 for a signed-in user",
+    async () => {
+      const res = await signedInFetch(`${BASE_URL}/api/auth/update-user`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: BASE_URL,
+        },
+        body: JSON.stringify({ image: "https://example.com/x.png" }),
+      });
+      return res.status === 404
+        ? null
+        : `status=${res.status} body=${(await res.text()).slice(0, 200)}`;
+    },
+  );
 }
 
 const FAQ_TABLE_OFF = "faq_item_smoke_off";

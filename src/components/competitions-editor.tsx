@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useId, useState, useTransition } from "react";
-import { toast } from "sonner";
+import { useId, useState } from "react";
 
 import {
   createCompetition,
@@ -16,14 +15,15 @@ import { OptionSelect } from "@/components/option-select";
 import { PlacementPointsRows } from "@/components/placement-points-rows";
 import {
   SETUP_EDITOR,
-  SetupRowButtons,
+  SetupAddButton,
+  SetupListRow,
   SetupRowError,
-  setupRowProps,
+  SetupSaveButton,
+  SetupSheetFooter,
   usageSummary,
   useSetupRow,
 } from "@/components/setup-row";
 import { SuggestionCombobox } from "@/components/suggestion-combobox";
-import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldDescription,
@@ -36,46 +36,34 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { WarWeek } from "@/db/schema";
 import { type Format, formatLabel, isBracketFormat } from "@/lib/bracket/view";
-import { COMPETITION_FORMATS, GAME_TYPES, type GameType } from "@/lib/enums";
-import { gameTypeLabel } from "@/lib/games/config";
+import { placementLimit, setupHref, setupLinkLabel } from "@/lib/competitions";
+import { COMPETITION_FORMATS, isGameFormat } from "@/lib/enums";
 import type { CompetitionInput } from "@/lib/setup";
 import type { SetupCompetition } from "@/queries/setup";
 
 /** How each Format runs a Competition, shown on the create form. */
 const FORMAT_DESCRIPTIONS: Record<Format, string> = {
-  points: "Only Points Entries; no Bracket.",
-  "single-elimination": "A knockout Bracket: one loss and an Entrant is out.",
-  heats:
-    "A Bracket where Entrants play in Heats; a set number advance each Round.",
-  games:
-    "Players log Games themselves and a leaderboard ranks them. Chosen only here: a Games Competition keeps its Format.",
+  placement:
+    "One result on one sheet: give each Team or Participant a Place, optionally a Score, then Finalize.",
+  bracket:
+    "Entrants play in Heats and a set number advance each Round, down to a final. Two per Heat with one advancing is a head-to-head knockout.",
+  "head-to-head":
+    "Two players per Game; a winner, or a draw when allowed. Players log Games themselves and a leaderboard ranks them. Chosen only here: a Competition keeps its Format.",
+  "best-score":
+    "Each Game records a score; the best or the total counts. Players log Games themselves and a leaderboard ranks them. Chosen only here: a Competition keeps its Format.",
+  participation:
+    "Points for taking part: the Host ticks who took part, or Participants check in. Chosen only here: a Participation Competition keeps its Format.",
 };
-
-/** How each Game Type decides a Game, shown when Games is chosen. */
-const GAME_TYPE_DESCRIPTIONS: Record<GameType, string> = {
-  "head-to-head": "Two players; a winner, or a draw when allowed.",
-  "best-score": "Each Game records a score; the best or the total counts.",
-  ranked: "Each Game records a finishing order, worth Finish Points.",
-};
-
-/** Where a saved Competition of this Format is set up, or null for points. */
-function setupHref(competition: Pick<SetupCompetition, "id" | "format">) {
-  return competition.format === "games"
-    ? `/admin/setup/competitions/${competition.id}/games`
-    : `/admin/setup/competitions/${competition.id}/bracket`;
-}
 
 function emptyCompetition(mode: WarWeek["mode"]): CompetitionInput {
   return {
     name: "",
     description: "",
     scoring: mode === "free-for-all" ? "individual" : "team",
-    maxPoints: "",
     placementPoints: "",
     countsTowardTeam: false,
     group: "",
-    format: "points",
-    gameType: "head-to-head",
+    format: "placement",
   };
 }
 
@@ -84,7 +72,6 @@ function inputFrom(competition: SetupCompetition): CompetitionInput {
     name: competition.name,
     description: competition.description ?? "",
     scoring: competition.scoring,
-    maxPoints: competition.maxPoints?.toString() ?? "",
     placementPoints: competition.placementPoints?.join(", ") ?? "",
     countsTowardTeam: competition.countsTowardTeam,
     group: competition.competitionGroup ?? "",
@@ -92,106 +79,100 @@ function inputFrom(competition: SetupCompetition): CompetitionInput {
 }
 
 /**
- * A Competition's Hosts, for Organizers: saved by their own "assign Hosts"
- * action, never with the Competition's setup.
+ * A Competition's Hosts, for Organizers. The Sheet's Save assigns them,
+ * through their own "assign Hosts" action, when they changed.
  */
 function HostsField({
-  competitionId,
-  initial,
+  value,
+  onChange,
+  disabled,
 }: {
-  competitionId: string;
-  initial: string[];
+  value: string[];
+  onChange: (emails: string[]) => void;
+  disabled: boolean;
 }) {
-  const router = useRouter();
-  const [emails, setEmails] = useState(initial);
-  const [pending, startTransition] = useTransition();
-  const changed = emails.join("\n") !== initial.join("\n");
-
   return (
-    <div className="mt-3 flex flex-col gap-2">
+    <div className="flex flex-col gap-2 sm:col-span-2">
       <JgEmailChips
         label="Hosts"
         description="A Host can change this Competition's setup, Bracket, Points Entries and linked Schedule Items."
-        value={emails}
-        onChange={setEmails}
-        disabled={pending}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
       />
-      <div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="min-h-11 sm:min-h-7"
-          disabled={pending || !changed}
-          onClick={() =>
-            startTransition(async () => {
-              const result = await setCompetitionHosts(competitionId, emails);
-              if (!result.ok) {
-                toast.error(result.error);
-                return;
-              }
-              toast.success("Hosts saved");
-              router.refresh();
-            })
-          }
-        >
-          {pending ? "Saving…" : "Save Hosts"}
-        </Button>
-      </div>
     </div>
   );
 }
 
-/** One Competition's fields, saved on its own. With no `competition` it adds. */
-function CompetitionRow({
+/** "3 Points Entries · 1 Schedule Item": what goes with the Competition. */
+function competitionUsage(competition: SetupCompetition): string {
+  return usageSummary([
+    [competition.pointsEntryCount, "Points Entry", "Points Entries"],
+    [competition.scheduleItemCount, "Schedule Item", "Schedule Items"],
+  ]);
+}
+
+/**
+ * One Competition's fields, saved on its own, in its Sheet. With no
+ * `competition` it adds one. Save also assigns the Hosts (Organizers only)
+ * when they changed. `onSaved` closes the Sheet.
+ */
+function CompetitionForm({
   warWeekId,
   competition,
-  canDelete,
   hosts,
   mode,
   teamLabel,
   groupSuggestions,
+  onSaved,
 }: {
   warWeekId: string;
   competition?: SetupCompetition;
-  /** Deleting a Competition is Organizer-only. */
-  canDelete: boolean;
   /** The Competition's Hosts, shown only to Organizers. */
   hosts?: string[];
   mode: WarWeek["mode"];
   teamLabel: string;
   groupSuggestions: string[];
+  onSaved: () => void;
 }) {
   const id = useId();
   const router = useRouter();
   const [values, setValues] = useState(
     competition ? inputFrom(competition) : emptyCompetition(mode),
   );
-  const { pending, formRef, formAction, fieldErrors, error, remove } =
-    useSetupRow(
-      async () => {
-        // Only an individual Competition can count toward the Team.
-        const input = {
-          ...values,
-          countsTowardTeam:
-            values.scoring === "individual" && values.countsTowardTeam,
-        };
-        if (competition) return updateCompetition(competition.id, input);
-        const result = await createCompetition(warWeekId, input);
-        // A Bracket or Games Format links straight to its setup.
-        if (
-          result.ok &&
-          (isBracketFormat(input.format) || input.format === "games")
-        ) {
-          router.push(
-            setupHref({ id: result.id, format: input.format as Format }),
-          );
-        }
-        return result;
-      },
-      "Competition saved",
-      competition ? undefined : () => setValues(emptyCompetition(mode)),
-    );
+  const [hostEmails, setHostEmails] = useState(hosts ?? []);
+  const hostsChanged =
+    hosts !== undefined && hostEmails.join("\n") !== hosts.join("\n");
+  const { pending, formRef, formAction, fieldErrors, error } = useSetupRow(
+    async () => {
+      // Only an individual Competition can count toward the Team.
+      const input = {
+        ...values,
+        countsTowardTeam:
+          values.scoring === "individual" && values.countsTowardTeam,
+      };
+      if (competition) {
+        const saved = await updateCompetition(competition.id, input);
+        // Hosts go only once the setup saved, so a refusal can't half-save.
+        if (!saved.ok || !hostsChanged) return saved;
+        return setCompetitionHosts(competition.id, hostEmails);
+      }
+      const result = await createCompetition(warWeekId, input);
+      // A Bracket, Games or Participation Format links straight to its setup.
+      if (
+        result.ok &&
+        (isBracketFormat(input.format) ||
+          (input.format !== undefined &&
+            isGameFormat(input.format as Format)) ||
+          input.format === "participation")
+      ) {
+        router.push(setupHref(input.format as Format, result.id));
+      }
+      return result;
+    },
+    "Competition saved",
+    onSaved,
+  );
   const set =
     (field: Exclude<keyof CompetitionInput, "countsTowardTeam">) =>
     (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -205,247 +186,163 @@ function CompetitionRow({
     { value: "individual", label: "Individual" },
   ];
 
-  const usage = competition
-    ? usageSummary([
-        [competition.pointsEntryCount, "Points Entry", "Points Entries"],
-        [competition.scheduleItemCount, "Schedule Item", "Schedule Items"],
-      ])
-    : "";
-
   return (
-    <li
-      {...setupRowProps(competition?.id)}
-      className="border-border border-b py-4 last:border-b-0"
+    <form
+      ref={formRef}
+      action={formAction}
+      aria-label={competition ? competition.name : "New Competition"}
+      className="flex flex-col gap-4"
     >
-      <form
-        ref={formRef}
-        action={formAction}
-        aria-label={competition ? competition.name : "New Competition"}
-      >
-        <FieldGroup className="grid gap-3 sm:grid-cols-2">
-          <Field data-invalid={!!fieldErrors.name}>
-            <FieldLabel htmlFor={`${id}-name`}>Name</FieldLabel>
-            <Input
-              id={`${id}-name`}
-              name="name"
-              required
-              maxLength={120}
-              className="h-11 sm:h-9"
-              aria-invalid={!!fieldErrors.name}
-              value={values.name}
-              onChange={set("name")}
-            />
-            <FieldError>{fieldErrors.name}</FieldError>
-          </Field>
-          <Field data-invalid={!!fieldErrors.group}>
-            <FieldLabel htmlFor={`${id}-group`}>Group</FieldLabel>
-            <SuggestionCombobox
-              id={`${id}-group`}
-              name="group"
-              maxLength={120}
-              placeholder="Optional"
-              suggestions={groupSuggestions}
-              value={values.group}
-              onValueChange={(group) => setValues((v) => ({ ...v, group }))}
-            />
-            <FieldError>{fieldErrors.group}</FieldError>
-          </Field>
+      <FieldGroup className="grid gap-3 px-4 sm:grid-cols-2">
+        <Field data-invalid={!!fieldErrors.name}>
+          <FieldLabel htmlFor={`${id}-name`}>Name</FieldLabel>
+          <Input
+            id={`${id}-name`}
+            name="name"
+            required
+            maxLength={120}
+            className="h-11 sm:h-9"
+            aria-invalid={!!fieldErrors.name}
+            value={values.name}
+            onChange={set("name")}
+          />
+          <FieldError>{fieldErrors.name}</FieldError>
+        </Field>
+        <Field data-invalid={!!fieldErrors.group}>
+          <FieldLabel htmlFor={`${id}-group`}>Group</FieldLabel>
+          <SuggestionCombobox
+            id={`${id}-group`}
+            name="group"
+            maxLength={120}
+            placeholder="Optional"
+            suggestions={groupSuggestions}
+            value={values.group}
+            onValueChange={(group) => setValues((v) => ({ ...v, group }))}
+          />
+          <FieldError>{fieldErrors.group}</FieldError>
+        </Field>
+        <Field
+          className="sm:col-span-2"
+          data-invalid={!!fieldErrors.description}
+        >
+          <FieldLabel htmlFor={`${id}-description`}>Description</FieldLabel>
+          <Textarea
+            id={`${id}-description`}
+            name="description"
+            maxLength={2000}
+            rows={2}
+            placeholder="Optional"
+            aria-invalid={!!fieldErrors.description}
+            value={values.description}
+            onChange={set("description")}
+          />
+          <FieldError>{fieldErrors.description}</FieldError>
+        </Field>
+        <Field data-invalid={!!fieldErrors.scoring}>
+          <FieldLabel htmlFor={`${id}-scoring`}>Scoring</FieldLabel>
+          <OptionSelect
+            id={`${id}-scoring`}
+            name="scoring"
+            aria-invalid={!!fieldErrors.scoring}
+            options={scoringOptions}
+            value={values.scoring}
+            onValueChange={(scoring) => setValues((v) => ({ ...v, scoring }))}
+          />
+          <FieldError>{fieldErrors.scoring}</FieldError>
+        </Field>
+        {mode === "teams" && (
           <Field
-            className="sm:col-span-2"
-            data-invalid={!!fieldErrors.description}
+            orientation="horizontal"
+            // Dims the label along with the disabled Switch.
+            data-disabled={values.scoring !== "individual"}
+            className="min-h-11 sm:min-h-9 sm:self-end"
           >
-            <FieldLabel htmlFor={`${id}-description`}>Description</FieldLabel>
-            <Textarea
-              id={`${id}-description`}
-              name="description"
-              maxLength={2000}
-              rows={2}
-              placeholder="Optional"
-              aria-invalid={!!fieldErrors.description}
-              value={values.description}
-              onChange={set("description")}
+            <Switch
+              id={`${id}-counts`}
+              name="countsTowardTeam"
+              disabled={values.scoring !== "individual"}
+              checked={
+                values.scoring === "individual" && values.countsTowardTeam
+              }
+              onCheckedChange={(countsTowardTeam) =>
+                setValues((v) => ({ ...v, countsTowardTeam }))
+              }
             />
-            <FieldError>{fieldErrors.description}</FieldError>
+            <FieldLabel htmlFor={`${id}-counts`}>
+              Counts toward the {teamLabel}
+            </FieldLabel>
           </Field>
-          <Field data-invalid={!!fieldErrors.scoring}>
-            <FieldLabel htmlFor={`${id}-scoring`}>Scoring</FieldLabel>
+        )}
+        {!competition && (
+          <Field className="sm:col-span-2" data-invalid={!!fieldErrors.format}>
+            <FieldLabel htmlFor={`${id}-format`}>Format</FieldLabel>
             <OptionSelect
-              id={`${id}-scoring`}
-              name="scoring"
-              aria-invalid={!!fieldErrors.scoring}
-              options={scoringOptions}
-              value={values.scoring}
-              onValueChange={(scoring) => setValues((v) => ({ ...v, scoring }))}
-            />
-            <FieldError>{fieldErrors.scoring}</FieldError>
-          </Field>
-          {mode === "teams" && (
-            <Field
-              orientation="horizontal"
-              // Dims the label along with the disabled Switch.
-              data-disabled={values.scoring !== "individual"}
-              className="min-h-11 sm:min-h-9 sm:self-end"
-            >
-              <Switch
-                id={`${id}-counts`}
-                name="countsTowardTeam"
-                disabled={values.scoring !== "individual"}
-                checked={
-                  values.scoring === "individual" && values.countsTowardTeam
-                }
-                onCheckedChange={(countsTowardTeam) =>
-                  setValues((v) => ({ ...v, countsTowardTeam }))
-                }
-              />
-              <FieldLabel htmlFor={`${id}-counts`}>
-                Counts toward the {teamLabel}
-              </FieldLabel>
-            </Field>
-          )}
-          {!competition && (
-            <Field
-              className="sm:col-span-2"
-              data-invalid={!!fieldErrors.format}
-            >
-              <FieldLabel htmlFor={`${id}-format`}>Format</FieldLabel>
-              <OptionSelect
-                id={`${id}-format`}
-                name="format"
-                options={COMPETITION_FORMATS.map((format) => ({
-                  value: format,
-                  label: formatLabel(format),
-                }))}
-                value={values.format ?? "points"}
-                onValueChange={(format) => setValues((v) => ({ ...v, format }))}
-              />
-              <FieldDescription>
-                {COMPETITION_FORMATS.map((format) => (
-                  <span key={format} className="block">
-                    <strong>{formatLabel(format)}:</strong>{" "}
-                    {FORMAT_DESCRIPTIONS[format]}
-                  </span>
-                ))}
-              </FieldDescription>
-              <FieldError>{fieldErrors.format}</FieldError>
-            </Field>
-          )}
-          {!competition && values.format === "games" && (
-            <Field
-              className="sm:col-span-2"
-              data-invalid={!!fieldErrors.gameType}
-            >
-              <FieldLabel htmlFor={`${id}-game-type`}>Game Type</FieldLabel>
-              <OptionSelect
-                id={`${id}-game-type`}
-                name="gameType"
-                aria-invalid={!!fieldErrors.gameType}
-                options={GAME_TYPES.map((gameType) => ({
-                  value: gameType,
-                  label: gameTypeLabel(gameType),
-                }))}
-                value={values.gameType ?? "head-to-head"}
-                onValueChange={(gameType) =>
-                  setValues((v) => ({ ...v, gameType }))
-                }
-              />
-              <FieldDescription>
-                {GAME_TYPES.map((gameType) => (
-                  <span key={gameType} className="block">
-                    <strong>{gameTypeLabel(gameType)}:</strong>{" "}
-                    {GAME_TYPE_DESCRIPTIONS[gameType]}
-                  </span>
-                ))}
-              </FieldDescription>
-              <FieldError>{fieldErrors.gameType}</FieldError>
-            </Field>
-          )}
-          <Field
-            className="sm:col-start-1"
-            data-invalid={!!fieldErrors.maxPoints}
-          >
-            <FieldLabel htmlFor={`${id}-max`}>Max points</FieldLabel>
-            <Input
-              id={`${id}-max`}
-              name="maxPoints"
-              inputMode="decimal"
-              placeholder="Optional"
-              className="h-11 sm:h-9"
-              aria-invalid={!!fieldErrors.maxPoints}
-              value={values.maxPoints}
-              onChange={set("maxPoints")}
+              id={`${id}-format`}
+              name="format"
+              options={COMPETITION_FORMATS.map((format) => ({
+                value: format,
+                label: formatLabel(format),
+              }))}
+              value={values.format ?? "placement"}
+              onValueChange={(format) => setValues((v) => ({ ...v, format }))}
             />
             <FieldDescription>
-              Optional. The most points 1st place&rsquo;s Placement Points can
-              be worth. A single Points Entry over it still saves, with a
-              warning.
+              {COMPETITION_FORMATS.map((format) => (
+                <span key={format} className="block">
+                  <strong>{formatLabel(format)}:</strong>{" "}
+                  {FORMAT_DESCRIPTIONS[format]}
+                </span>
+              ))}
             </FieldDescription>
-            <FieldError>{fieldErrors.maxPoints}</FieldError>
+            <FieldError>{fieldErrors.format}</FieldError>
           </Field>
+        )}
+        {/* An individual Participation Competition gives N to each person who
+            took part, set on its own page, and has no Placement Points. */}
+        {(competition?.format ?? values.format) === "participation" &&
+        values.scoring === "individual" ? null : (
           <Field data-invalid={!!fieldErrors.placementPoints}>
             <PlacementPointsRows
               value={values.placementPoints}
-              maxPoints={values.maxPoints}
               invalid={!!fieldErrors.placementPoints}
+              limit={placementLimit(
+                (competition?.format ?? values.format ?? "placement") as Format,
+              )}
               onChange={(placementPoints) =>
                 setValues((v) => ({ ...v, placementPoints }))
               }
             />
+            <FieldDescription>
+              What each place earns in the Standings.
+            </FieldDescription>
             <FieldError>{fieldErrors.placementPoints}</FieldError>
           </Field>
-          <div className="flex flex-wrap items-center justify-between gap-2 sm:col-span-2">
-            <div className="flex flex-col gap-1">
-              {competition && (
-                <p className="text-sm">
-                  Format: {formatLabel(competition.format)} ·{" "}
-                  <Link
-                    href={setupHref(competition)}
-                    className="text-primary inline-flex min-h-11 items-center underline-offset-4 hover:underline sm:min-h-0"
-                  >
-                    {competition.format === "points"
-                      ? "Run as a Bracket"
-                      : competition.format === "games"
-                        ? "Games"
-                        : "Bracket"}
-                  </Link>
-                </p>
-              )}
-              <p className="text-foreground/60 text-xs">{usage}</p>
-            </div>
-            <SetupRowButtons
-              pending={pending}
-              addLabel="Add Competition"
-              onDelete={
-                competition && canDelete
-                  ? () =>
-                      remove(
-                        () => deleteCompetition(competition.id),
-                        "Competition deleted",
-                      )
-                  : undefined
-              }
-              deleteTitle={competition && `Delete ${competition.name}?`}
-              deleteDescription={usage}
-            />
-          </div>
-        </FieldGroup>
-      </form>
-      <SetupRowError error={error} />
-      {competition && hosts && (
-        <HostsField
-          key={hosts.join(",")}
-          competitionId={competition.id}
-          initial={hosts}
+        )}
+        {competition && hosts && (
+          <HostsField
+            value={hostEmails}
+            onChange={setHostEmails}
+            disabled={pending}
+          />
+        )}
+      </FieldGroup>
+      <SetupSheetFooter>
+        <SetupSaveButton
+          pending={pending}
+          label={competition ? "Save" : "Add Competition"}
         />
-      )}
-    </li>
+        <SetupRowError error={error} />
+      </SetupSheetFooter>
+    </form>
   );
 }
 
-/** The War Week's Competitions by name, each editable, plus an add form. */
+/** The War Week's Competitions by name, each with Edit (a Sheet) and Delete, plus an Add button. */
 export function CompetitionsEditor({
   warWeekId,
   isOrganizer,
   hosts,
+  hostNames,
   competitions,
   mode,
   teamLabel,
@@ -457,46 +354,73 @@ export function CompetitionsEditor({
   isOrganizer: boolean;
   /** Each Competition's Hosts by Competition id (Organizers only). */
   hosts?: Record<string, string[]>;
+  /** Each Host email's shown name (Profile name, else the email). */
+  hostNames?: Record<string, string>;
   competitions: SetupCompetition[];
   mode: WarWeek["mode"];
   teamLabel: string;
   /** Competition Groups already used in this War Week. */
   groupSuggestions: string[];
 }) {
+  const formProps = { warWeekId, mode, teamLabel, groupSuggestions };
   return (
-    <div {...SETUP_EDITOR} className="flex flex-col gap-6">
+    <div {...SETUP_EDITOR} className="flex flex-col gap-3">
       {competitions.length === 0 ? (
         <p className="text-foreground/70 text-sm">No Competitions yet.</p>
       ) : (
         <ul aria-label="Competitions">
-          {competitions.map((c) => (
-            // Keyed on the saved values so a refresh resets the row's fields.
-            <CompetitionRow
-              key={`${c.id}-${JSON.stringify(inputFrom(c))}`}
-              warWeekId={warWeekId}
-              competition={c}
-              canDelete={isOrganizer}
-              hosts={isOrganizer ? (hosts?.[c.id] ?? []) : undefined}
-              mode={mode}
-              teamLabel={teamLabel}
-              groupSuggestions={groupSuggestions}
-            />
-          ))}
+          {competitions.map((c) => {
+            const competitionHosts = isOrganizer
+              ? (hosts?.[c.id] ?? [])
+              : undefined;
+            return (
+              <SetupListRow
+                key={c.id}
+                id={c.id}
+                name={c.name}
+                details={[
+                  c.competitionGroup,
+                  c.scoring === "team" ? teamLabel : "Individual",
+                  formatLabel(c.format),
+                  competitionHosts?.length &&
+                    `Hosts: ${competitionHosts.map((h) => hostNames?.[h] ?? h).join(", ")}`,
+                  competitionUsage(c),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+                aside={
+                  <Link
+                    href={setupHref(c.format, c.id)}
+                    className="text-primary inline-flex min-h-11 shrink-0 items-center px-2 text-sm underline-offset-4 hover:underline sm:min-h-0"
+                  >
+                    {setupLinkLabel(c.format)}
+                  </Link>
+                }
+                form={(close) => (
+                  <CompetitionForm
+                    {...formProps}
+                    competition={c}
+                    hosts={competitionHosts}
+                    onSaved={close}
+                  />
+                )}
+                // Deleting a Competition is Organizer-only.
+                onDelete={
+                  isOrganizer ? () => deleteCompetition(c.id) : undefined
+                }
+                deleteTitle={`Delete ${c.name}?`}
+                deleteDescription={competitionUsage(c)}
+                deleteSuccess="Competition deleted"
+              />
+            );
+          })}
         </ul>
       )}
       {isOrganizer && (
-        <section className="flex flex-col gap-1">
-          <h2 className="text-lg font-semibold">Add a Competition</h2>
-          <ul>
-            <CompetitionRow
-              warWeekId={warWeekId}
-              canDelete
-              mode={mode}
-              teamLabel={teamLabel}
-              groupSuggestions={groupSuggestions}
-            />
-          </ul>
-        </section>
+        <SetupAddButton
+          label="Add Competition"
+          form={(close) => <CompetitionForm {...formProps} onSaved={close} />}
+        />
       )}
     </div>
   );

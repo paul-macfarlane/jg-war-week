@@ -12,7 +12,6 @@ import {
   groupSchedule,
   resolveClock,
   toEasternClock,
-  withHeats,
 } from "@/lib/schedule";
 
 function entry(
@@ -39,6 +38,7 @@ const week: ScheduleDay[] = [
     id: "d1",
     date: "2026-02-23",
     dayTheme: "Competition Day",
+    description: null,
     items: [
       entry("07:00:00", "Workout", "08:00:00"),
       entry("08:30:00", "Breakfast"),
@@ -51,6 +51,7 @@ const week: ScheduleDay[] = [
     id: "d2",
     date: "2026-02-24",
     dayTheme: "Red vs. Blue",
+    description: null,
     items: [entry("09:00:00", "Kickoff")],
   },
 ];
@@ -143,7 +144,15 @@ describe("groupSchedule", () => {
   it("keeps a Day with no items", () => {
     expect(
       groupSchedule([{ id: "d1", date: "2026-02-23", dayTheme: "One" }], []),
-    ).toEqual([{ id: "d1", date: "2026-02-23", dayTheme: "One", items: [] }]);
+    ).toEqual([
+      {
+        id: "d1",
+        date: "2026-02-23",
+        dayTheme: "One",
+        description: null,
+        items: [],
+      },
+    ]);
   });
 });
 
@@ -262,12 +271,14 @@ describe("computeNowNext edge cases", () => {
       id: "fri",
       date: "2026-02-20",
       dayTheme: "Friday",
+      description: null,
       items: [entry("22:00:00", "Late Show", "01:00:00")],
     },
     {
       id: "mon",
       date: "2026-02-23",
       dayTheme: "Monday",
+      description: null,
       items: [entry("09:00:00", "Kickoff")],
     },
   ];
@@ -373,46 +384,4 @@ describe("resolveClock", () => {
       );
     },
   );
-});
-
-describe("withHeats", () => {
-  const heat = (startTime: string, title: string): ScheduleEntry => ({
-    ...entry(startTime, title),
-    kind: "heat",
-    category: "competition",
-  });
-
-  it("adds each entry under its Day, in start time then title order", () => {
-    const merged = withHeats(week, [
-      { dayId: "d1", entry: heat("12:00:00", "Beyblades · Final") },
-      { dayId: "d2", entry: heat("08:00:00", "Chess · Semifinal 1") },
-    ]);
-
-    expect(merged.map((d) => d.items.map((i) => i.title))).toEqual([
-      [
-        "Workout",
-        "Breakfast",
-        "Beyblades · Final",
-        "Chess",
-        "Lunch",
-        "Game Night",
-      ],
-      ["Chess · Semifinal 1", "Kickoff"],
-    ]);
-  });
-
-  it("drops an entry whose Day isn't in the schedule", () => {
-    const merged = withHeats(week, [
-      { dayId: "gone", entry: heat("12:00:00", "Beyblades · Final") },
-    ]);
-
-    expect(merged).toEqual(week);
-  });
-
-  it("leaves the schedule it was given unchanged", () => {
-    const before = structuredClone(week);
-    withHeats(week, [{ dayId: "d1", entry: heat("09:00:00", "Darts") }]);
-
-    expect(week).toEqual(before);
-  });
 });

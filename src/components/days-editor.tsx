@@ -6,112 +6,139 @@ import { createDay, deleteDay, updateDay } from "@/actions/setup";
 import { DatePicker } from "@/components/date-picker";
 import {
   SETUP_EDITOR,
-  SetupRowButtons,
+  SetupAddButton,
+  SetupListRow,
   SetupRowError,
-  setupRowProps,
+  SetupSaveButton,
+  SetupSheetFooter,
   usageSummary,
   useSetupRow,
 } from "@/components/setup-row";
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { dayDateDisabled } from "@/lib/day-range";
+import { formatDayHeading } from "@/lib/schedule";
+import { DAY_DESCRIPTION_MAX } from "@/lib/setup";
 import type { SetupDay } from "@/queries/setup";
 
+/** "2 Schedule Items": what keeps the Day from being deleted. */
+function dayUsage(day: SetupDay): string {
+  return usageSummary([
+    [day.scheduleItemCount, "Schedule Item", "Schedule Items"],
+  ]);
+}
+
 /**
- * One Day's date and Day Theme, saved on its own. With no `day` it's the
- * "Add a Day" row. The server action checks the date and the Schedule Item
- * guard; its error is what's shown.
+ * One Day's date and Day Theme, in its Sheet. With no `day` it adds one.
+ * The server action checks the date; its error is what's shown. `onSaved`
+ * closes the Sheet.
  */
-function DayRow({
+function DayForm({
   warWeekId,
   day,
+  dayDates,
   startDate,
   endDate,
+  onSaved,
 }: {
   warWeekId: string;
   day?: SetupDay;
+  /** Every Day's date in this War Week; taken dates are greyed out. */
+  dayDates: string[];
   startDate: string;
   endDate: string;
+  onSaved: () => void;
 }) {
   const id = useId();
   const [date, setDate] = useState(day?.date ?? "");
   const [dayTheme, setDayTheme] = useState(day?.dayTheme ?? "");
-  const { pending, formRef, formAction, fieldErrors, error, remove } =
-    useSetupRow(
-      () => {
-        const input = { date, dayTheme };
-        return day ? updateDay(day.id, input) : createDay(warWeekId, input);
-      },
-      "Day saved",
-      day
-        ? undefined
-        : () => {
-            setDate("");
-            setDayTheme("");
-          },
-    );
-  const label = day ? `Day ${day.date}` : "New Day";
-  const usage = day
-    ? usageSummary([[day.scheduleItemCount, "Schedule Item", "Schedule Items"]])
-    : "";
+  const [description, setDescription] = useState(day?.description ?? "");
+  const { pending, formRef, formAction, fieldErrors, error } = useSetupRow(
+    () => {
+      const input = { date, dayTheme, description };
+      return day ? updateDay(day.id, input) : createDay(warWeekId, input);
+    },
+    "Day saved",
+    onSaved,
+  );
 
   return (
-    <li
-      {...setupRowProps(day?.id)}
-      className="border-border border-b py-3 last:border-b-0"
+    <form
+      ref={formRef}
+      action={formAction}
+      aria-label={day ? `Day ${day.date}` : "New Day"}
+      className="flex flex-col gap-4"
     >
-      <form ref={formRef} action={formAction} aria-label={label}>
-        <FieldGroup className="gap-2 sm:flex-row sm:items-end">
-          <Field className="sm:w-auto" data-invalid={!!fieldErrors.date}>
-            <FieldLabel htmlFor={`${id}-date`}>Date</FieldLabel>
-            <DatePicker
-              id={`${id}-date`}
-              name="date"
-              required
-              min={startDate}
-              max={endDate}
-              aria-invalid={!!fieldErrors.date}
-              value={date}
-              onValueChange={setDate}
-            />
-            <FieldError>{fieldErrors.date}</FieldError>
-          </Field>
-          <Field className="sm:flex-1" data-invalid={!!fieldErrors.dayTheme}>
-            <FieldLabel htmlFor={`${id}-theme`}>Day Theme</FieldLabel>
-            <Input
-              id={`${id}-theme`}
-              name="dayTheme"
-              required
-              maxLength={120}
-              className="h-11 sm:h-9"
-              aria-invalid={!!fieldErrors.dayTheme}
-              value={dayTheme}
-              onChange={(event) => setDayTheme(event.target.value)}
-            />
-            <FieldError>{fieldErrors.dayTheme}</FieldError>
-          </Field>
-          <SetupRowButtons
-            pending={pending}
-            addLabel="Add Day"
-            onDelete={
-              day && (() => remove(() => deleteDay(day.id), "Day deleted"))
-            }
-            deleteTitle={day && `Delete the Day on ${day.date}?`}
-            deleteDescription={usage}
+      <FieldGroup className="gap-4 px-4">
+        <Field data-invalid={!!fieldErrors.date}>
+          <FieldLabel htmlFor={`${id}-date`}>Date</FieldLabel>
+          <DatePicker
+            id={`${id}-date`}
+            name="date"
+            required
+            min={startDate}
+            max={endDate}
+            disabledDates={dayDateDisabled(
+              startDate,
+              endDate,
+              dayDates,
+              day?.date,
+            )}
+            aria-invalid={!!fieldErrors.date}
+            value={date}
+            onValueChange={setDate}
           />
-        </FieldGroup>
-      </form>
-      {day && <p className="text-foreground/60 mt-1 text-xs">{usage}</p>}
-      <SetupRowError error={error} />
-    </li>
+          <FieldError>{fieldErrors.date}</FieldError>
+        </Field>
+        <Field data-invalid={!!fieldErrors.dayTheme}>
+          <FieldLabel htmlFor={`${id}-theme`}>Day Theme</FieldLabel>
+          <Input
+            id={`${id}-theme`}
+            name="dayTheme"
+            required
+            maxLength={120}
+            className="h-11 sm:h-9"
+            aria-invalid={!!fieldErrors.dayTheme}
+            value={dayTheme}
+            onChange={(event) => setDayTheme(event.target.value)}
+          />
+          <FieldError>{fieldErrors.dayTheme}</FieldError>
+        </Field>
+        <Field data-invalid={!!fieldErrors.description}>
+          <FieldLabel htmlFor={`${id}-description`}>
+            Description (optional)
+          </FieldLabel>
+          <Textarea
+            id={`${id}-description`}
+            name="description"
+            rows={3}
+            maxLength={DAY_DESCRIPTION_MAX}
+            aria-invalid={!!fieldErrors.description}
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+          />
+          <FieldDescription>
+            {description.length}/{DAY_DESCRIPTION_MAX}
+          </FieldDescription>
+          <FieldError>{fieldErrors.description}</FieldError>
+        </Field>
+      </FieldGroup>
+      <SetupSheetFooter>
+        <SetupSaveButton pending={pending} label={day ? "Save" : "Add Day"} />
+        <SetupRowError error={error} />
+      </SetupSheetFooter>
+    </form>
   );
 }
 
-/** The War Week's Days in date order, each editable, plus an add row. */
+/** The War Week's Days in date order, each with Edit and Delete, plus an Add button. */
 export function DaysEditor({
   warWeekId,
   days,
@@ -124,34 +151,40 @@ export function DaysEditor({
   startDate: string;
   endDate: string;
 }) {
+  const formProps = {
+    warWeekId,
+    dayDates: days.map((day) => day.date),
+    startDate,
+    endDate,
+  };
   return (
-    <div {...SETUP_EDITOR} className="flex flex-col gap-6">
+    <div {...SETUP_EDITOR} className="flex flex-col gap-3">
       {days.length === 0 ? (
         <p className="text-foreground/70 text-sm">No Days yet.</p>
       ) : (
         <ul aria-label="Days">
           {days.map((day) => (
-            // Keyed on the saved values so a refresh resets the row's fields.
-            <DayRow
-              key={`${day.id}-${day.date}-${day.dayTheme}`}
-              warWeekId={warWeekId}
-              day={day}
-              startDate={startDate}
-              endDate={endDate}
+            <SetupListRow
+              key={day.id}
+              id={day.id}
+              name={formatDayHeading(day.date)}
+              label={`Day ${day.date}`}
+              details={[day.dayTheme, dayUsage(day)].join(" · ")}
+              form={(close) => (
+                <DayForm {...formProps} day={day} onSaved={close} />
+              )}
+              onDelete={() => deleteDay(day.id)}
+              deleteTitle={`Delete the Day on ${day.date}?`}
+              deleteDescription={dayUsage(day)}
+              deleteSuccess="Day deleted"
             />
           ))}
         </ul>
       )}
-      <section className="flex flex-col gap-1">
-        <h2 className="text-lg font-semibold">Add a Day</h2>
-        <ul>
-          <DayRow
-            warWeekId={warWeekId}
-            startDate={startDate}
-            endDate={endDate}
-          />
-        </ul>
-      </section>
+      <SetupAddButton
+        label="Add Day"
+        form={(close) => <DayForm {...formProps} onSaved={close} />}
+      />
     </div>
   );
 }

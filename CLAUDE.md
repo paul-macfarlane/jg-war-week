@@ -4,6 +4,10 @@
 
 When Jason (or any maintainer) asks how to change JG War Week, read and follow `docs/maintainers-guide.md`.
 
+## Regression checklist
+
+`docs/regression-checklist.md` is the agent-run regression suite. Before War Week each year, or when asked for a regression pass, run it line by line at both viewports it names. It is never part of CI. Keep its lines current (`docs/agents/testing.md`, Team rules).
+
 ## Agent skills
 
 ### Issue tracker
@@ -48,7 +52,7 @@ repository keeps its own base SHA, branch, verification result, and pull request
 - Never read .env.local or other .env files; use .env.example for variable names
 - No new feature without a named Organizer, Host or Participant need; prefer removing to adding. Correctness, then design, then fun (`.scratch/hardening/spec.md`)
 - All work goes on a feature branch (`feat/NN-<slug>`, `fix/…`, `chore/…`, `docs/…`) with a PR into `staging`. Never commit directly to `staging` or `main`; `staging` → `main` is its own PR. This overrides any skill that says to commit to the current branch.
-- UI uses shadcn components (base-nova / Base UI, `components.json`). Add one with `pnpm dlx shadcn@latest add <name>`; don't hand-roll a control shadcn already has. App-specific wrappers (`EntityCombobox`, `DatePicker`, `DateRangePicker`, `TimeCombobox`, `ColorField`, `ConfirmDialog`, `ResponsiveSheetDialog`) live in `src/components/`; confirms use `ConfirmDialog`, results use sonner toasts; their popups portal into the themed root via `ThemeRoot`.
+- UI uses shadcn components (base-nova / Base UI, `components.json`). Add one with `pnpm dlx shadcn@latest add <name>`; don't hand-roll a control shadcn already has. App-specific wrappers (`EntityCombobox`, `DatePicker`, `DateRangePicker`, `TimeCombobox`, `ColorField`, `ConfirmDialog`, `ResponsiveSheetDialog`) live in `src/components/`; confirms use `ConfirmDialog`, results use sonner toasts; their popups portal into the themed root via `ThemeRoot`. Buttons: a page's primary action is `default` (solid), secondary actions `outline`, and `ghost` only for icon or tertiary actions. The pointer and disabled `not-allowed` cursors come from one rule in `globals.css`: add no `cursor-*` classes, and strip `disabled:pointer-events-none` and `cursor-default` from anything `shadcn add` brings in.
 
 ## Atlas repository workflow
 

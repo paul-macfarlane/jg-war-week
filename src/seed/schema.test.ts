@@ -42,7 +42,7 @@ describe("warWeekSeedSchema", () => {
     expect(seed.participants.length).toBeGreaterThan(0);
     expect(seed.competitions.length).toBeGreaterThan(0);
     expect(seed.days.some((d) => d.scheduleItems.length > 0)).toBe(true);
-    expect(seed.pointsEntries.length).toBeGreaterThan(0);
+    expect(seed.placements.length).toBeGreaterThan(0);
     expect(seed.awards.length).toBeGreaterThan(0);
     expect(seed.announcements.length).toBeGreaterThan(0);
     expect(seed.faqItems.length).toBeGreaterThan(0);
@@ -62,6 +62,23 @@ describe("warWeekSeedSchema", () => {
       ...fixture,
       days: [...fixture.days, { date: "2026-03-01", dayTheme: "Out of range" }],
     });
+  });
+
+  it("accepts a day with or without a description and rejects 281 characters", () => {
+    const fixture = loadFixture();
+    const withDay = (day: object) => ({
+      ...fixture,
+      days: [{ ...fixture.days[0], ...day }, ...fixture.days.slice(1)],
+    });
+    expect(
+      warWeekSeedSchema.safeParse(withDay({ description: "Hello" })).success,
+    ).toBe(true);
+    expect(
+      warWeekSeedSchema.safeParse(withDay({ description: "" })).success,
+    ).toBe(true);
+    expect(rejectionOf(withDay({ description: "x".repeat(281) }))).toEqual([
+      expect.stringMatching(/^days\.0\.description: /),
+    ]);
   });
 
   it("rejects a non-hex appearance color", () => {
@@ -98,9 +115,9 @@ describe("warWeekSeedSchema", () => {
     }
     const at = `competitions.${loadFixture().competitions.length}.placementPoints`;
 
-    it("accepts a non-increasing list within maxPoints", () => {
+    it("accepts a non-increasing list", () => {
       const result = warWeekSeedSchema.safeParse(
-        withCompetition({ maxPoints: 5, placementPoints: [5, 3, 3, 0.5] }),
+        withCompetition({ placementPoints: [5, 3, 3, 0.5] }),
       );
       expect(result.success ? [] : result.error.issues).toEqual([]);
     });
@@ -119,18 +136,42 @@ describe("warWeekSeedSchema", () => {
       ).toContain(`${at}.2: must be at least 0`);
     });
 
-    it("rejects a first place over maxPoints", () => {
+    it("rejects a key that is no longer a setting, so an old seed fails loudly", () => {
       expect(
         rejectionOf(
-          withCompetition({ maxPoints: 3, placementPoints: [5, 3, 1] }),
+          withCompetition({ retiredSetting: 3, placementPoints: [5, 3, 1] }),
         ),
-      ).toContain(`${at}: 1st place can't be worth more than maxPoints`);
+      ).toContain(
+        `competitions.${loadFixture().competitions.length}: Unrecognized key: "retiredSetting"`,
+      );
     });
 
-    it("rejects more than five places", () => {
+    it("rejects more than five places for a Bracket", () => {
       expect(
-        rejectionOf(withCompetition({ placementPoints: [6, 5, 4, 3, 2, 1] })),
-      ).toContain(`${at}: at most 5 places`);
+        rejectionOf(
+          withCompetition({
+            format: "bracket",
+            bracketConfig: {
+              entrantsPerHeat: 4,
+              advancePerHeat: 2,
+              thirdPlaceGame: false,
+            },
+            placementPoints: [5, 4, 3, 2, 1],
+          }),
+        ),
+      ).toContain(
+        `${at}: Placement Points cover at most 4 places for this Format.`,
+      );
+    });
+
+    it("accepts twelve places for Placement, Head-to-head and Best score", () => {
+      const twelve = Array.from({ length: 12 }, (_, i) => 12 - i);
+      for (const format of ["placement", "head-to-head", "best-score"]) {
+        const result = warWeekSeedSchema.safeParse(
+          withCompetition({ format, placementPoints: twelve }),
+        );
+        expect(result.success ? [] : result.error.issues).toEqual([]);
+      }
     });
 
     it("rejects an empty list", () => {
@@ -152,25 +193,46 @@ describe("warWeekSeedSchema", () => {
       };
     }
     const at = `competitions.${loadFixture().competitions.length}.bracketConfig`;
+    const full = {
+      entrantsPerHeat: 5,
+      advancePerHeat: 2,
+      thirdPlaceGame: false,
+    };
 
-    it("accepts a heats Competition with or without its config", () => {
-      for (const extra of [
-        { bracketConfig: { entrantsPerHeat: 5, advancePerHeat: 2 } },
-        {},
-      ]) {
-        const result = warWeekSeedSchema.safeParse(
-          withCompetition({ format: "heats", ...extra }),
-        );
-        expect(result.success ? [] : result.error.issues).toEqual([]);
-      }
+    it("accepts a Bracket with its full config", () => {
+      const result = warWeekSeedSchema.safeParse(
+        withCompetition({ format: "bracket", bracketConfig: full }),
+      );
+      expect(result.success ? [] : result.error.issues).toEqual([]);
     });
 
-    it("rejects a heats config where as many advance as play", () => {
+    it("rejects a Bracket without its config", () => {
+      expect(rejectionOf(withCompetition({ format: "bracket" }))).toContain(
+        `${at}: a Bracket needs its bracketConfig (entrantsPerHeat, advancePerHeat, thirdPlaceGame)`,
+      );
+    });
+
+    it("rejects a Bracket config missing its 3rd place game", () => {
       expect(
         rejectionOf(
           withCompetition({
-            format: "heats",
-            bracketConfig: { entrantsPerHeat: 4, advancePerHeat: 4 },
+            format: "bracket",
+            bracketConfig: { entrantsPerHeat: 4, advancePerHeat: 2 },
+          }),
+        ),
+      ).not.toEqual([]);
+    });
+
+    it("rejects a config where as many advance as play", () => {
+      expect(
+        rejectionOf(
+          withCompetition({
+            format: "bracket",
+            bracketConfig: {
+              entrantsPerHeat: 4,
+              advancePerHeat: 4,
+              thirdPlaceGame: false,
+            },
           }),
         ),
       ).toContain(
@@ -178,97 +240,189 @@ describe("warWeekSeedSchema", () => {
       );
     });
 
-    it("rejects a config on a single-elimination Competition", () => {
+    it("rejects the retired Format names", () => {
+      for (const format of ["single-elimination", "heats"]) {
+        expect(
+          warWeekSeedSchema.safeParse(
+            withCompetition({ format, bracketConfig: full }),
+          ).success,
+        ).toBe(false);
+      }
+    });
+
+    it("rejects a config on a Competition that isn't a Bracket", () => {
       expect(
         rejectionOf(
-          withCompetition({
-            format: "single-elimination",
-            bracketConfig: { entrantsPerHeat: 4, advancePerHeat: 2 },
-          }),
+          withCompetition({ format: "placement", bracketConfig: full }),
         ),
-      ).toContain(`${at}: bracketConfig is only for a heats Competition`);
+      ).toContain(`${at}: bracketConfig is only for a Bracket`);
     });
   });
 
-  describe("Points Entries", () => {
-    function withEntry(entry: Record<string, unknown>) {
+  describe("Participation", () => {
+    function withCompetition(competition: Record<string, unknown>) {
       const fixture = loadFixture();
       return {
         ...fixture,
-        pointsEntries: [
+        competitions: [
+          ...fixture.competitions,
+          { name: "Fixture Check-in", scoring: "team", ...competition },
+        ],
+      };
+    }
+    const at = `competitions.${loadFixture().competitions.length}`;
+
+    it("accepts a team one with Placement Points, or an individual one with N", () => {
+      for (const extra of [
+        {
+          scoring: "team",
+          placementPoints: [5, 3, 1],
+          selfCheckIn: true,
+          checkInClosesAt: "2026-02-27T22:00:00Z",
+        },
+        { scoring: "individual", participationPoints: 2 },
+        { scoring: "individual" },
+      ]) {
+        const result = warWeekSeedSchema.safeParse(
+          withCompetition({ format: "participation", ...extra }),
+        );
+        expect(result.success ? [] : result.error.issues).toEqual([]);
+      }
+    });
+
+    it("rejects the settings on another Format", () => {
+      const issues = rejectionOf(
+        withCompetition({
+          format: "placement",
+          participationPoints: 1,
+          selfCheckIn: true,
+          checkInClosesAt: "2026-02-27T22:00:00Z",
+        }),
+      );
+      for (const key of [
+        "participationPoints",
+        "selfCheckIn",
+        "checkInClosesAt",
+      ]) {
+        expect(issues).toContain(
+          `${at}.${key}: ${key} is only for a participation Competition`,
+        );
+      }
+    });
+
+    it("follows the scoring: a team one needs Placement Points and takes no N, an individual one takes no Placement Points", () => {
+      expect(
+        rejectionOf(withCompetition({ format: "participation" })),
+      ).toContain(
+        `${at}.placementPoints: placementPoints is required for a team participation Competition`,
+      );
+      expect(
+        rejectionOf(
+          withCompetition({
+            format: "participation",
+            placementPoints: [3],
+            participationPoints: 1,
+          }),
+        ),
+      ).toContain(
+        `${at}.participationPoints: participationPoints is only for an individual Competition`,
+      );
+      expect(
+        rejectionOf(
+          withCompetition({
+            format: "participation",
+            scoring: "individual",
+            placementPoints: [3],
+          }),
+        ),
+      ).toContain(
+        `${at}.placementPoints: placementPoints is only for a team participation Competition`,
+      );
+    });
+
+    it("rejects the removed participationTeamScoring key, and N of 0", () => {
+      expect(
+        rejectionOf(
+          withCompetition({
+            format: "participation",
+            placementPoints: [3],
+            participationTeamScoring: "ranked",
+          }),
+        ),
+      ).toContain(`${at}: Unrecognized key: "participationTeamScoring"`);
+      expect(
+        rejectionOf(
+          withCompetition({
+            format: "participation",
+            scoring: "individual",
+            participationPoints: 0,
+          }),
+        ),
+      ).toContain(`${at}.participationPoints: must be more than 0`);
+    });
+  });
+
+  it("refuses the retired pointsEntries list rather than dropping it", () => {
+    expect(
+      rejectionOf({ ...loadFixture(), pointsEntries: [] }).join("|"),
+    ).toContain("pointsEntries is gone");
+  });
+
+  describe("Discretionary points", () => {
+    function withDiscretionary(entry: Record<string, unknown>, rest = {}) {
+      return {
+        ...loadFixture(),
+        ...rest,
+        discretionaryPoints: [
           {
-            key: "fixture-entry",
+            key: "fixture-discretionary",
             enteredByEmail: "organizer@jahnelgroup.com",
             enteredAt: "2026-02-23T20:00:00-05:00",
-            points: 5,
+            points: 6,
+            reason: "Subjective Points",
             ...entry,
           },
         ],
       };
     }
 
-    it("rejects an entry with both a team and a participant", () => {
+    it("accepts an entry to a Team or a Participant with a reason", () => {
+      for (const target of [
+        { team: "Red" },
+        { participant: "Paul Macfarlane" },
+      ]) {
+        expect(
+          warWeekSeedSchema.safeParse(withDiscretionary(target)).success,
+          JSON.stringify(target),
+        ).toBe(true);
+      }
+    });
+
+    it("rejects an entry without a reason", () => {
+      expect(
+        rejectionOf(withDiscretionary({ team: "Red", reason: "  " })).join("|"),
+      ).toContain("discretionaryPoints.0.reason");
+    });
+
+    it("rejects both targets, neither, and an unknown Team or Participant", () => {
       expect(
         rejectionOf(
-          withEntry({
-            competition: "Black Midnight",
-            team: "Red",
-            participant: "Paul Macfarlane",
-          }),
+          withDiscretionary({ team: "Red", participant: "Paul Macfarlane" }),
         ),
       ).toContain(
-        "pointsEntries.0.team: a Points Entry must target exactly one of team or participant",
+        "discretionaryPoints.0.team: Discretionary points must target exactly one of team or participant",
       );
-    });
-
-    it("rejects an entry with neither a team nor a participant", () => {
+      expect(rejectionOf(withDiscretionary({}))).toContain(
+        "discretionaryPoints.0.team: Discretionary points must target exactly one of team or participant",
+      );
+      expect(rejectionOf(withDiscretionary({ team: "Nope" }))).toContain(
+        'discretionaryPoints.0.team: unknown Team "Nope"',
+      );
       expect(
-        rejectionOf(withEntry({ competition: "Black Midnight" })),
+        rejectionOf(withDiscretionary({ participant: "Nobody" })),
       ).toContain(
-        "pointsEntries.0.team: a Points Entry must target exactly one of team or participant",
+        'discretionaryPoints.0.participant: unknown Participant "Nobody"',
       );
-    });
-
-    it("rejects a participant target on a team Competition", () => {
-      expect(
-        rejectionOf(
-          withEntry({
-            competition: "Black Midnight",
-            participant: "Paul Macfarlane",
-          }),
-        ),
-      ).toContain(
-        'pointsEntries.0.participant: "Black Midnight" is a team Competition, so its Points Entries must target a team',
-      );
-    });
-
-    it("rejects a team target on an individual Competition", () => {
-      expect(
-        rejectionOf(withEntry({ competition: "Speed Chess", team: "Red" })),
-      ).toContain(
-        'pointsEntries.0.team: "Speed Chess" is an individual Competition, so its Points Entries must target a participant',
-      );
-    });
-
-    it("rejects an unknown Competition or target", () => {
-      const issues = rejectionOf(
-        withEntry({ competition: "Pod Racing", team: "Green" }),
-      );
-      expect(issues).toContain(
-        'pointsEntries.0.competition: unknown Competition "Pod Racing"',
-      );
-      expect(issues).toContain('pointsEntries.0.team: unknown Team "Green"');
-    });
-
-    it("accepts fractional points", () => {
-      const result = warWeekSeedSchema.safeParse(
-        withEntry({
-          competition: "Black Midnight",
-          team: "Red",
-          points: 1.5,
-        }),
-      );
-      expect(result.success).toBe(true);
     });
   });
 
@@ -301,24 +455,14 @@ describe("warWeekSeedSchema", () => {
     );
   });
 
-  it("rejects an Announcement video URL outside the allow-list", () => {
-    const fixture = loadFixture();
-    fixture.announcements[0].videoUrls = ["https://evil.example.com/watch?v=1"];
-    expect(rejectionOf(fixture)).toContain(
-      "announcements.0.videoUrls.0: must be a YouTube, Loom, Vimeo or Google Drive video link",
-    );
-  });
-
-  it("accepts each allow-listed video host", () => {
+  it("refuses a seed that still carries videoUrls, naming where videos go", () => {
     const fixture = loadFixture();
     fixture.announcements[0].videoUrls = [
       "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-      "https://youtu.be/dQw4w9WgXcQ",
-      "https://www.loom.com/share/abc",
-      "https://vimeo.com/123",
-      "https://drive.google.com/file/d/abc/view",
     ];
-    expect(warWeekSeedSchema.safeParse(fixture).success).toBe(true);
+    expect(rejectionOf(fixture)).toContain(
+      "announcements.0.videoUrls: videoUrls is gone; put each video in body as a video block",
+    );
   });
 
   it("rejects duplicate Participant emails, ignoring case", () => {
@@ -344,6 +488,16 @@ describe("warWeekSeedSchema", () => {
     expect(rejectionOf(fixture)).toContain(
       "awards.0.participants: an Award needs at least one recipient (a team or participants)",
     );
+  });
+
+  it("accepts an Award's Category key and refuses a name-like value", () => {
+    const fixture = loadFixture();
+    fixture.awards[0].category = "war-week-mvp";
+    expect(warWeekSeedSchema.parse(fixture).awards[0].category).toBe(
+      "war-week-mvp",
+    );
+    fixture.awards[0].category = "War Week MVP";
+    expect(rejectionOf(fixture).join("\n")).toContain("awards.0.category");
   });
 
   it("rejects Teams in a free-for-all War Week", () => {
@@ -376,5 +530,218 @@ describe("warWeekSeedSchema", () => {
         { type: "paragraph", content: [{ type: "text", text: "click" }] },
       ],
     });
+  });
+});
+
+describe("warWeekSeedSchema Finale slides", () => {
+  const withSlides = (finaleSlides: unknown[]) => ({
+    ...loadFixture(),
+    finaleSlides,
+  });
+
+  it("parses an ordered list with a Custom slide, lower-casing its background", () => {
+    const seed = warWeekSeedSchema.parse(
+      withSlides([
+        { kind: "title" },
+        { kind: "standings", hidden: true },
+        {
+          kind: "custom",
+          heading: "  Thank you  ",
+          backgroundColor: "#AABBCC",
+          body: {
+            type: "doc",
+            content: [
+              { type: "paragraph", content: [{ type: "text", text: "Hi" }] },
+            ],
+          },
+        },
+      ]),
+    );
+    expect(seed.finaleSlides).toEqual([
+      { kind: "title", hidden: false },
+      { kind: "standings", hidden: true },
+      {
+        kind: "custom",
+        hidden: false,
+        heading: "Thank you",
+        backgroundColor: "#aabbcc",
+        body: {
+          type: "doc",
+          content: [
+            { type: "paragraph", content: [{ type: "text", text: "Hi" }] },
+          ],
+        },
+      },
+    ]);
+  });
+
+  it("leaves finaleSlides and finaleAwardsLayout out when a seed has none", () => {
+    const fixture = loadFixture();
+    delete fixture.finaleSlides;
+    const seed = warWeekSeedSchema.parse(fixture);
+    expect(seed.finaleSlides).toBeUndefined();
+    expect(seed.finaleAwardsLayout).toBeUndefined();
+    expect(
+      warWeekSeedSchema.parse({
+        ...fixture,
+        finaleAwardsLayout: "per-category",
+      }).finaleAwardsLayout,
+    ).toBe("per-category");
+  });
+
+  it("requires a heading on a Custom slide and refuses Custom fields on a built-in", () => {
+    expect(rejectionOf(withSlides([{ kind: "custom" }]))).toEqual([
+      "finaleSlides.0.heading: a Custom slide needs a heading",
+    ]);
+    expect(
+      rejectionOf(
+        withSlides([
+          { kind: "title", heading: "Hello", backgroundColor: "#000000" },
+        ]),
+      ),
+    ).toEqual([
+      "finaleSlides.0.heading: only a Custom slide has a heading",
+      "finaleSlides.0.backgroundColor: only a Custom slide has a backgroundColor",
+    ]);
+  });
+
+  it("refuses a built-in twice and two Custom slides with one heading", () => {
+    expect(
+      rejectionOf(
+        withSlides([
+          { kind: "title" },
+          { kind: "custom", heading: "Thanks" },
+          { kind: "title" },
+          { kind: "custom", heading: "Thanks" },
+        ]),
+      ),
+    ).toEqual([
+      'finaleSlides.2.kind: duplicate Finale slide "title"',
+      'finaleSlides.3.kind: duplicate Finale slide "custom: Thanks"',
+    ]);
+  });
+
+  it("refuses a background that isn't #rrggbb and an unknown kind", () => {
+    expect(
+      rejectionOf(
+        withSlides([
+          { kind: "custom", heading: "Hi", backgroundColor: "red" },
+          { kind: "intro" },
+        ]),
+      ).map((issue) => issue.split(":")[0]),
+    ).toEqual(["finaleSlides.0.backgroundColor", "finaleSlides.1.kind"]);
+  });
+});
+
+describe("warWeekSeedSchema Placements", () => {
+  const base = () => ({
+    ...loadFixture(),
+    competitions: [
+      {
+        name: "Darts",
+        scoring: "individual",
+        placementPoints: [10, 6, 3],
+        scoreDirection: "higher",
+        finalized: true,
+        finalizedAt: "2099-01-03T18:00:00.000Z",
+        finalizedByEmail: "host@jahnelgroup.com",
+      },
+      { name: "Quiz", scoring: "team" },
+      { name: "Pong", scoring: "individual", format: "head-to-head" },
+    ],
+    placements: [],
+    days: [],
+  });
+  const participant = () => loadFixture().participants[0].displayName;
+  const team = () => loadFixture().teams[0].name;
+
+  it("parses Placements and a Finalized Placement Competition", () => {
+    const seed = warWeekSeedSchema.parse({
+      ...base(),
+      placements: [
+        {
+          key: "darts-1",
+          competition: "Darts",
+          participant: participant(),
+          place: 1,
+          score: 12.5,
+        },
+        { key: "quiz-1", competition: "Quiz", team: team(), place: 2 },
+      ],
+    });
+    expect(seed.placements).toHaveLength(2);
+    expect(seed.competitions[0]).toMatchObject({
+      scoreDirection: "higher",
+      finalized: true,
+    });
+  });
+
+  it("requires finalizedAt and finalizedByEmail with finalized, and only on a Placement Competition", () => {
+    const [darts, quiz, pong] = base().competitions;
+    const withoutEmail = { ...darts, finalizedByEmail: undefined };
+    expect(
+      rejectionOf({ ...base(), competitions: [withoutEmail, quiz, pong] }),
+    ).toEqual([
+      "competitions.0.finalized: finalized needs finalizedAt and finalizedByEmail together",
+    ]);
+    expect(
+      rejectionOf({
+        ...base(),
+        competitions: [
+          darts,
+          quiz,
+          {
+            ...pong,
+            scoreDirection: "lower",
+            finalized: true,
+            finalizedAt: darts.finalizedAt,
+            finalizedByEmail: darts.finalizedByEmail,
+          },
+        ],
+      }),
+    ).toEqual([
+      "competitions.2.scoreDirection: scoreDirection is only for a placement Competition",
+      "competitions.2.finalized: finalized is only for a placement Competition",
+    ]);
+  });
+
+  it("refuses a Placement on an unknown or non-Placement Competition, the wrong kind of row, an unknown name and a duplicate key", () => {
+    expect(
+      rejectionOf({
+        ...base(),
+        placements: [
+          {
+            key: "a",
+            competition: "Nope",
+            participant: participant(),
+            place: 1,
+          },
+          {
+            key: "b",
+            competition: "Pong",
+            participant: participant(),
+            place: 1,
+          },
+          { key: "c", competition: "Darts", team: team(), place: 1 },
+          {
+            key: "d",
+            competition: "Quiz",
+            participant: participant(),
+            place: 1,
+          },
+          { key: "e", competition: "Darts", participant: "Nobody", place: 1 },
+          { key: "e", competition: "Quiz", team: "Nobody", place: 0 },
+        ],
+      }),
+    ).toEqual([
+      "placements.5.place: Too small: expected number to be >=1",
+      'placements.5.key: duplicate Placement key "e"',
+      'placements.0.competition: unknown Competition "Nope"',
+      "placements.1.competition: Pong isn't a placement Competition",
+      "placements.2.team: an individual Competition takes participants, not teams",
+      "placements.3.participant: a team Competition takes teams, not participants",
+      'placements.4.participant: unknown Participant "Nobody"',
+      'placements.5.team: unknown Team "Nobody"',
+    ]);
   });
 });

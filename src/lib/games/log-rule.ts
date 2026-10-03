@@ -1,11 +1,11 @@
 /**
  * The Game facts that bound logging, editing and deleting a Game in a
- * `games` Competition (ADR 0006). Pure, and deliberately free of zod and
+ * Head-to-head or Best score Competition (ADR 0006). Pure, and deliberately free of zod and
  * the Bracket engine: `src/lib/access.ts` imports it, and that module
  * reaches the client bundle.
  */
 import { NOT_LINKED } from "@/lib/bracket/heat-report-rule";
-import type { GameType } from "@/lib/enums";
+import type { GameFormat } from "@/lib/enums";
 
 export { NOT_LINKED };
 
@@ -22,8 +22,7 @@ export type GameSide = { teamId: string | null; participantId: string | null };
  * - `closed`: the Competition is closed (`finalized_at` set).
  * - `loggingOpen`: before `logging_closes_at` (or none) and no Best of
  *   decided; `bestOfDecided` says which of the two closed it.
- * - `linked`: the Participant the actor's email links to, with their Team
- *   (never the "Which one is you?" pick).
+ * - `linked`: the Participant the actor's email links to, with their Team.
  * - `scoring`, `entrantsOpen` and `entrants`: who may play (the fixed
  *   list; empty when open to everyone).
  * - `players`: the posted player set for a log or an edit; empty for a
@@ -139,13 +138,12 @@ export function canLogSomething(facet: GameLogFacet): boolean {
   );
 }
 
-const PLAYER_COUNT: Record<GameType, [(n: number) => boolean, string]> = {
+const PLAYER_COUNT: Record<GameFormat, [(n: number) => boolean, string]> = {
   "head-to-head": [
     (n) => n === 2,
     "A head-to-head Game has exactly 2 players.",
   ],
   "best-score": [(n) => n === 1, "A best-score Game has exactly 1 player."],
-  ranked: [(n) => n >= 2, "A ranked Game has at least 2 players."],
 };
 
 /**
@@ -155,7 +153,7 @@ const PLAYER_COUNT: Record<GameType, [(n: number) => boolean, string]> = {
  * on, and the Entrant list.
  */
 export type PlayersFacts = {
-  gameType: GameType;
+  gameFormat: GameFormat;
   scoring: GameLogFacet["scoring"];
   ids: string[];
   allInWarWeek: boolean;
@@ -166,14 +164,14 @@ export type PlayersFacts = {
 
 /**
  * Why the posted players can't be a Game here, or null. In order: a
- * repeated player; not as many as the Game Type takes; a Team or
+ * repeated player; not as many as the Format takes; a Team or
  * Participant of another War Week; a Best of not between its 2 Entrants; a
  * player off the fixed Entrant list.
  */
 export function playersRuleError(facts: PlayersFacts): string | null {
   const { ids } = facts;
   if (new Set(ids).size !== ids.length) return REPEATED_PLAYER;
-  const [countOk, countError] = PLAYER_COUNT[facts.gameType];
+  const [countOk, countError] = PLAYER_COUNT[facts.gameFormat];
   if (!countOk(ids.length)) return countError;
   const isTeam = facts.scoring === "team";
   if (!facts.allInWarWeek) {

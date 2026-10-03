@@ -6,12 +6,9 @@ import { toast } from "sonner";
 
 import {
   type SetupScheduleFaqActionResult,
-  deleteFaqItem,
-  deleteScheduleItem,
   moveFaqItem,
 } from "@/actions/setup-schedule-faq";
-import { ConfirmActionButton } from "@/components/confirm-dialog";
-import { Button } from "@/components/ui/button";
+import { MoveUpDownButtons } from "@/components/setup-row";
 
 /** Runs an action, toasting its refusal, then refreshes the page. */
 function useRefreshingAction() {
@@ -25,31 +22,6 @@ function useRefreshingAction() {
     });
   }
   return { pending, run };
-}
-
-/** Deletes a Schedule Item or FAQ Item named `name`, after a confirm. */
-export function DeleteSetupItemButton({
-  id,
-  name,
-  kind,
-}: {
-  id: string;
-  name: string;
-  kind: "schedule-item" | "faq-item";
-}) {
-  return (
-    <ConfirmActionButton
-      title={`Delete "${name}"?`}
-      action={() =>
-        kind === "schedule-item" ? deleteScheduleItem(id) : deleteFaqItem(id)
-      }
-      successMessage={
-        kind === "schedule-item" ? "Schedule Item deleted" : "FAQ Item deleted"
-      }
-    >
-      Delete
-    </ConfirmActionButton>
-  );
 }
 
 /** Up and down buttons for one FAQ Item; an end's button is disabled. */
@@ -66,25 +38,12 @@ export function MoveFaqItemButtons({
 }) {
   const { pending, run } = useRefreshingAction();
   return (
-    <>
-      <Button
-        variant="outline"
-        size="xs"
-        disabled={pending || first}
-        aria-label={`Move "${question}" up`}
-        onClick={() => run(() => moveFaqItem(id, "up"))}
-      >
-        ↑
-      </Button>
-      <Button
-        variant="outline"
-        size="xs"
-        disabled={pending || last}
-        aria-label={`Move "${question}" down`}
-        onClick={() => run(() => moveFaqItem(id, "down"))}
-      >
-        ↓
-      </Button>
-    </>
+    <MoveUpDownButtons
+      label={question}
+      first={first}
+      last={last}
+      disabled={pending}
+      onMove={(direction) => run(() => moveFaqItem(id, direction))}
+    />
   );
 }

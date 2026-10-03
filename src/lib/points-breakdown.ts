@@ -1,4 +1,5 @@
 import type { Competition, Participant, PointsEntry, Team } from "@/db/schema";
+import { discretionaryLabel } from "@/lib/discretionary-points";
 
 export type BreakdownTeam = Pick<Team, "id">;
 export type BreakdownParticipant = Pick<Participant, "id" | "teamId">;
@@ -9,7 +10,9 @@ export type BreakdownCompetition = Pick<
 export type BreakdownPointsEntry = Pick<
   PointsEntry,
   "id" | "competitionId" | "teamId" | "participantId" | "points" | "enteredAt"
->;
+> &
+  // A Discretionary entry's reason; absent where the caller has none.
+  Partial<Pick<PointsEntry, "note">>;
 
 export type PointsBreakdownInput = {
   teams: BreakdownTeam[];
@@ -38,9 +41,9 @@ export type PointsBreakdown = {
  *
  * - A Team's breakdown: entries targeting the Team directly, plus entries
  *   targeting its Participants in individual Competitions with Counts
- *   Toward Team on.
+ *   Toward Team on, plus Discretionary points targeting its Participants.
  * - A Participant's breakdown: entries targeting the Participant directly
- *   in individual Competitions.
+ *   in individual Competitions, plus Discretionary points.
  */
 export function buildPointsBreakdown(
   input: PointsBreakdownInput,
@@ -63,11 +66,17 @@ export function buildPointsBreakdown(
   };
 
   for (const entry of input.pointsEntries) {
-    const competition = competitions.get(entry.competitionId);
-    if (!competition) continue;
+    // No Competition: Discretionary points, labelled by their reason.
+    const discretionary = entry.competitionId === null;
+    const competition = discretionary
+      ? undefined
+      : competitions.get(entry.competitionId!);
+    if (!discretionary && !competition) continue;
     const row: PointsBreakdownRow = {
       id: entry.id,
-      competition: competition.name,
+      competition: discretionary
+        ? discretionaryLabel(entry.note ?? null)
+        : competition!.name,
       points: entry.points,
       when: entry.enteredAt,
     };
@@ -80,11 +89,12 @@ export function buildPointsBreakdown(
     const participant = entry.participantId
       ? participants.get(entry.participantId)
       : undefined;
-    if (!participant || competition.scoring !== "individual") continue;
+    if (!participant) continue;
+    if (!discretionary && competition!.scoring !== "individual") continue;
 
     push(byParticipant, participant.id, row);
     if (
-      competition.countsTowardTeam &&
+      (discretionary || competition!.countsTowardTeam) &&
       participant.teamId &&
       teams.has(participant.teamId)
     ) {

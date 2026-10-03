@@ -21,7 +21,11 @@ const newId = (round: number, position: number) => `r${round}h${position}`;
 
 function build(count: number, perHeat: number, advance: number): Bracket {
   return heats.generate(
-    { entrantsPerHeat: perHeat, advancePerHeat: advance },
+    {
+      entrantsPerHeat: perHeat,
+      advancePerHeat: advance,
+      thirdPlaceGame: false,
+    },
     entrants(count),
     newId,
   );
@@ -69,7 +73,11 @@ const ranges = Array.from({ length: 16 }, (_, i) => i + 2).flatMap((n) =>
   [2, 3, 4, 5, 6, 7, 8].flatMap((s) =>
     Array.from({ length: s - 1 }, (_, a) => ({
       n,
-      config: { entrantsPerHeat: s, advancePerHeat: a + 1 },
+      config: {
+        entrantsPerHeat: s,
+        advancePerHeat: a + 1,
+        thirdPlaceGame: false,
+      },
     })),
   ),
 );
@@ -92,13 +100,19 @@ describe("validateConfig", () => {
 
   it("names the Round that would never end", () => {
     expect(
-      heats.validateConfig({ entrantsPerHeat: 3, advancePerHeat: 2 }, 4),
+      heats.validateConfig(
+        { entrantsPerHeat: 3, advancePerHeat: 2, thirdPlaceGame: false },
+        4,
+      ),
     ).toBe(
       "With 4 Entrants, 3 per Heat and 2 advancing, Round 1 would never end. Lower how many advance.",
     );
     // 7 → Heats of 3, 2, 2 send 6 on → 3, 3 send 4 on → 2, 2 send 4 on.
     expect(
-      heats.validateConfig({ entrantsPerHeat: 3, advancePerHeat: 2 }, 7),
+      heats.validateConfig(
+        { entrantsPerHeat: 3, advancePerHeat: 2, thirdPlaceGame: false },
+        7,
+      ),
     ).toBe(
       "With 7 Entrants, 3 per Heat and 2 advancing, Round 3 would never end. Lower how many advance.",
     );
@@ -106,26 +120,45 @@ describe("validateConfig", () => {
 
   it("accepts a count that fits in one Heat, however many advance", () => {
     expect(
-      heats.validateConfig({ entrantsPerHeat: 3, advancePerHeat: 2 }, 3),
+      heats.validateConfig(
+        { entrantsPerHeat: 3, advancePerHeat: 2, thirdPlaceGame: false },
+        3,
+      ),
     ).toBeNull();
     expect(
-      heats.validateConfig({ entrantsPerHeat: 8, advancePerHeat: 7 }, 2),
+      heats.validateConfig(
+        { entrantsPerHeat: 8, advancePerHeat: 7, thirdPlaceGame: false },
+        2,
+      ),
     ).toBeNull();
   });
 
-  it("needs 2 Entrants and a valid config, defaulting to 4 per Heat, 2 advancing", () => {
+  it("needs 2 Entrants and a valid config", () => {
     expect(
-      heats.validateConfig({ entrantsPerHeat: 4, advancePerHeat: 2 }, 1),
+      heats.validateConfig(
+        { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
+        1,
+      ),
     ).toBe("A Bracket needs at least 2 Entrants.");
     expect(
-      heats.validateConfig({ entrantsPerHeat: 4, advancePerHeat: 4 }, 8),
+      heats.validateConfig(
+        { entrantsPerHeat: 4, advancePerHeat: 4, thirdPlaceGame: false },
+        8,
+      ),
     ).toBe("Fewer must advance than play in a Heat.");
     expect(
-      heats.validateConfig({ entrantsPerHeat: 9, advancePerHeat: 2 }, 8),
+      heats.validateConfig(
+        { entrantsPerHeat: 9, advancePerHeat: 2, thirdPlaceGame: false },
+        8,
+      ),
     ).toBe("A Heat holds at most 8 Entrants.");
-    expect(heats.validateConfig(null, 8)).toBeNull();
     // 4 per Heat, 2 advancing: 5 → Heats of 3 and 2 send 4 on (the final).
-    expect(heats.validateConfig(null, 5)).toBeNull();
+    expect(
+      heats.validateConfig(
+        { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
+        5,
+      ),
+    ).toBeNull();
   });
 });
 
@@ -141,7 +174,6 @@ describe("generate", () => {
     "builds every Round for $n Entrants, $config.entrantsPerHeat per Heat, $config.advancePerHeat advancing",
     ({ n, config }) => {
       const bracket = heats.generate(config, entrants(n), newId);
-      expect(bracket.format).toBe("heats");
       expect(bracket.config).toEqual(config);
 
       const all = rounds(bracket);
@@ -263,9 +295,8 @@ describe("generate", () => {
     expect(heats.isRecordable(bracket, "r1h1")).toBe(true);
   });
 
-  it("uses 4 per Heat, 2 advancing when there's no config", () => {
-    const bracket = heats.generate(null, entrants(8), newId);
-    expect(bracket.config).toBeNull();
+  it("deals 8 Entrants into Heats of 4 at 4 per Heat, 2 advancing", () => {
+    const bracket = build(8, 4, 2);
     expect(bracket.heats.map((h) => h.slots.length)).toEqual([4, 4, 4]);
   });
 });
@@ -280,10 +311,10 @@ describe("applyResult", () => {
     expect(heat(after, "r1h1")).toMatchObject({
       status: "played",
       slots: [
-        { entrantId: "s1", place: 2, score: null, forfeited: false },
-        { entrantId: "s4", place: 4, score: null, forfeited: false },
-        { entrantId: "s5", place: 1, score: "12", forfeited: false },
-        { entrantId: "s8", place: 3, score: null, forfeited: false },
+        { entrantId: "s1", place: 2, score: null },
+        { entrantId: "s4", place: 4, score: null },
+        { entrantId: "s5", place: 1, score: "12" },
+        { entrantId: "s8", place: 3, score: null },
       ],
     });
     expect(heats.hasResults(after)).toBe(true);
@@ -326,15 +357,6 @@ describe("applyResult", () => {
         "Put every Entrant of this Heat in finishing order, once each.",
       ],
       [
-        "a forfeit from outside the Heat",
-        [
-          bracket,
-          "r1h1",
-          { order: ["s1", "s4", "s5", "s8"], forfeits: ["s2"] },
-        ],
-        "Only an Entrant of this Heat can forfeit it.",
-      ],
-      [
         "a score from outside the Heat",
         [
           bracket,
@@ -343,53 +365,12 @@ describe("applyResult", () => {
         ],
         "Scores can only be given for this Heat's Entrants.",
       ],
-      [
-        "every Entrant forfeiting",
-        [
-          bracket,
-          "r1h1",
-          {
-            order: ["s1", "s4", "s5", "s8"],
-            forfeits: ["s1", "s4", "s5", "s8"],
-          },
-        ],
-        "Someone has to advance, so not every Entrant can forfeit.",
-      ],
     ];
     for (const [, args, message] of refusals) {
       expect(() => heats.applyResult(...args)).toThrow(
         new BracketError(message),
       );
     }
-  });
-
-  it("puts a forfeiter listed first behind everyone who didn't forfeit", () => {
-    const bracket = heats.applyResult(build(8, 4, 2), "r1h1", {
-      order: ["s1", "s4", "s5", "s8"],
-      forfeits: ["s1"],
-    });
-    const h = heat(bracket, "r1h1");
-    expect(h.status).toBe("forfeit");
-    expect(places(h)).toEqual([4, 1, 2, 3]);
-    expect(h.slots.map((s) => s.forfeited)).toEqual([
-      true,
-      false,
-      false,
-      false,
-    ]);
-  });
-
-  it("advances a forfeiter only when fewer than the advancing number didn't forfeit", () => {
-    // Top 2 advance; only s8 didn't forfeit, so s1 (first of the forfeiters)
-    // is 2nd and goes on with s8.
-    let bracket = heats.applyResult(build(8, 4, 2), "r1h1", {
-      order: ["s1", "s4", "s5", "s8"],
-      forfeits: ["s1", "s4", "s5"],
-    });
-    expect(places(heat(bracket, "r1h1"))).toEqual([2, 3, 4, 1]);
-    bracket = recordInSlotOrder(bracket, "r1h2");
-    // 1sts: s8, s2; 2nds: s1, s3.
-    expect(lineup(heat(bracket, "r2h1"))).toBe("s8 s2 s1 s3");
   });
 
   it("fills the next Round by place, then Heat position, once the Round is complete", () => {
@@ -625,7 +606,7 @@ describe("resetByResult", () => {
 });
 
 describe("finalPlacings", () => {
-  it("places the final in order and ties each Round's losers", () => {
+  it("places the final in order, and nobody outside it", () => {
     // 8 Entrants, 4 per Heat, 2 advancing; the final finishes s2 s1 s4 s3.
     let bracket = recordInSlotOrder(build(8, 4, 2), "r1h1");
     bracket = recordInSlotOrder(bracket, "r1h2");
@@ -640,14 +621,10 @@ describe("finalPlacings", () => {
       { entrantId: "s1", place: 2 },
       { entrantId: "s4", place: 3 },
       { entrantId: "s3", place: 4 },
-      { entrantId: "s5", place: 5 },
-      { entrantId: "s6", place: 5 },
-      { entrantId: "s7", place: 5 },
-      { entrantId: "s8", place: 5 },
     ]);
   });
 
-  it("ranks those who went out later above those who went out earlier", () => {
+  it("places only the final of a three-Round Bracket", () => {
     // 10 Entrants, 4 per Heat, 2 advancing, every Heat in slot order:
     // Round 1 loses s7, s8, s9, s10; Round 2 loses s5, s4; final s1 s2 s6 s3.
     let bracket = build(10, 4, 2);
@@ -659,16 +636,10 @@ describe("finalPlacings", () => {
       { entrantId: "s2", place: 2 },
       { entrantId: "s6", place: 3 },
       { entrantId: "s3", place: 4 },
-      { entrantId: "s4", place: 5 },
-      { entrantId: "s5", place: 5 },
-      { entrantId: "s7", place: 7 },
-      { entrantId: "s8", place: 7 },
-      { entrantId: "s9", place: 7 },
-      { entrantId: "s10", place: 7 },
     ]);
   });
 
-  it("counts a bye as going through, not going out", () => {
+  it("places a final of 2 1st and 2nd, after a bye", () => {
     // 6 Entrants, 2 per Heat, 1 advancing: s6 beats s1, takes Round 2's bye
     // and loses the final to s3, who beat s2 in Round 2.
     let bracket = heats.applyResult(build(6, 2, 1), "r1h1", {
@@ -680,10 +651,6 @@ describe("finalPlacings", () => {
     expect(heats.finalPlacings(bracket, entrants(6))).toEqual([
       { entrantId: "s3", place: 1 },
       { entrantId: "s6", place: 2 },
-      { entrantId: "s2", place: 3 },
-      { entrantId: "s1", place: 4 },
-      { entrantId: "s4", place: 4 },
-      { entrantId: "s5", place: 4 },
     ]);
   });
 });

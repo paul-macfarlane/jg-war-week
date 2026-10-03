@@ -10,6 +10,11 @@ import {
 } from "@/db/schema";
 import { PointsBreakdown, buildPointsBreakdown } from "@/lib/points-breakdown";
 import { Standings, computeStandings } from "@/lib/standings";
+import {
+  participantImageSql,
+  participantNameSql,
+  withProfile,
+} from "@/queries/profile-join";
 
 /**
  * Loads a War Week's Standings, the same rows for Participants, Organizers,
@@ -24,14 +29,17 @@ export async function getStandings(
       .select({ id: team.id, name: team.name, color: team.color })
       .from(team)
       .where(eq(team.warWeekId, warWeek.id)),
-    dbOrTx
-      .select({
-        id: participant.id,
-        displayName: participant.displayName,
-        teamId: participant.teamId,
-      })
-      .from(participant)
-      .where(eq(participant.warWeekId, warWeek.id)),
+    withProfile(
+      dbOrTx
+        .select({
+          id: participant.id,
+          displayName: participantNameSql(),
+          image: participantImageSql(),
+          teamId: participant.teamId,
+        })
+        .from(participant)
+        .$dynamic(),
+    ).where(eq(participant.warWeekId, warWeek.id)),
     dbOrTx
       .select({
         id: competition.id,
@@ -48,8 +56,7 @@ export async function getStandings(
         points: pointsEntry.points,
       })
       .from(pointsEntry)
-      .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
-      .where(eq(competition.warWeekId, warWeek.id)),
+      .where(eq(pointsEntry.warWeekId, warWeek.id)),
   ]);
 
   return computeStandings({
@@ -63,7 +70,8 @@ export async function getStandings(
 
 /**
  * The Points Entries behind every Standings total, for the row disclosures
- * on the leaderboard and home page. Mirrors `getStandings`'s joins.
+ * on the leaderboard and home page. Mirrors `getStandings`'s scope: every
+ * entry of the War Week, Discretionary points included.
  */
 export async function getPointsBreakdown(
   warWeek: Pick<WarWeek, "id">,
@@ -94,11 +102,11 @@ export async function getPointsBreakdown(
         teamId: pointsEntry.teamId,
         participantId: pointsEntry.participantId,
         points: pointsEntry.points,
+        note: pointsEntry.note,
         enteredAt: pointsEntry.enteredAt,
       })
       .from(pointsEntry)
-      .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
-      .where(eq(competition.warWeekId, warWeek.id)),
+      .where(eq(pointsEntry.warWeekId, warWeek.id)),
   ]);
 
   return buildPointsBreakdown({

@@ -1,5 +1,5 @@
 /**
- * What a `games` Competition's settings change must leave consistent with
+ * What a Head-to-head or Best score Competition's settings change must leave consistent with
  * the Games already logged (R3 decision 11): a Best of fits its Games, a
  * fixed list keeps everyone who has played, draws stay on while a Game is
  * a draw. Pure; the mutation loads the rows under the Competition's lock.
@@ -26,7 +26,7 @@ export const loggedOffList = (name: string) =>
  * Best of (`bestOf`, null when off) with more Games than its length or a
  * Game not between its Entrants; open to everyone turned into a fixed list
  * that leaves out a player; draws turned off (`drawsAllowed` false; null
- * for a Game Type without draws) while a head-to-head Game is a draw.
+ * for a Format without draws) while a head-to-head Game is a draw.
  */
 export function loggedGamesSettingsError({
   wasOpen,

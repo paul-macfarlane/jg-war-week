@@ -1,0 +1,207 @@
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
+
+import { applyResult, generate } from "@/lib/bracket/engine";
+import type { Bracket, Entrant } from "@/lib/bracket/types";
+
+import { BracketAdminView, finalizeCopy } from "./bracket-admin";
+
+vi.mock("@/components/auto-refresh", () => ({
+  AutoRefresh: () => <span data-auto-refresh />,
+}));
+// A Sheet's result form reads the router, which needs a mounted app router.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: () => {}, push: () => {} }),
+}));
+
+const seeds: Entrant[] = ["Red", "Blue", "Green"].map((label, i) => ({
+  id: `e${i + 1}`,
+  seedPosition: i + 1,
+  label,
+}));
+
+// 3 Entrants: Semifinal 1 is Red's bye, Semifinal 2 is Blue v Green.
+const generated = generate(seeds);
+const bracket: Bracket = {
+  ...generated,
+  heats: generated.heats.map((h) =>
+    h.id === "r1h2"
+      ? { ...h, status: "played", recordedAt: new Date("2026-02-22T00:05:00Z") }
+      : h,
+  ),
+};
+
+const props = {
+  competitionId: "c1",
+  placementPoints: [5, 3, 1] as number[] | null,
+  scoring: "team" as const,
+  entrants: seeds.map((e) => ({
+    id: e.id,
+    label: e.label,
+    color: "#f00",
+    teamId: `t${e.id}`,
+    participantId: null,
+    squadId: null,
+    participantNames: [],
+  })),
+  bracket,
+  champion: null,
+  finalized: false,
+  finaleHref: null,
+  primaryColor: "#000",
+  onOpenHeatChange: () => {},
+};
+
+function render(openHeatId: string | null) {
+  return renderToStaticMarkup(
+    <BracketAdminView {...props} openHeatId={openHeatId} />,
+  );
+}
+
+/** Every Record result / Edit button's accessible name. */
+function recordButtons(html: string): string[] {
+  return [
+    ...html.matchAll(/aria-label="((?:Record result for|Edit) [^"]*)"/g),
+  ].map((m) => m[1]);
+}
+
+describe("BracketAdminView", () => {
+  it("shows the Bracket as the shared tree, with no round cards", () => {
+    const html = render(null);
+    expect(html).toContain("data-bracket-tree");
+    expect(html).not.toMatch(/<section[^>]*aria-label="Semifinal"/);
+  });
+
+  it("offers Record result or Edit on every Heat the Host can record, none on a bye or a Heat still waiting", () => {
+    // Semifinal 1 is a bye; Semifinal 2 is played; the Final waits for Blue
+    // or Green, so it's not recordable yet.
+    expect(recordButtons(render(null))).toEqual(["Edit Semifinal 2"]);
+    const both = applyResult(generate(seeds), "r1h2", { order: ["e2", "e3"] });
+    expect(
+      recordButtons(
+        renderToStaticMarkup(
+          <BracketAdminView {...props} bracket={both} openHeatId={null} />,
+        ),
+      ),
+    ).toEqual(["Edit Semifinal 2", "Record result for Final"]);
+  });
+
+  it("offers no Record result or Edit while the Bracket is finalized", () => {
+    expect(
+      recordButtons(
+        renderToStaticMarkup(
+          <BracketAdminView {...props} finalized openHeatId={null} />,
+        ),
+      ),
+    ).toEqual([]);
+  });
+
+  it("refreshes live while no Sheet is open", () => {
+    expect(render(null)).toContain("data-auto-refresh");
+  });
+
+  it("stops refreshing while a Heat Result Sheet is open, so an unsaved result is kept", () => {
+    expect(render("r1h2")).not.toContain("data-auto-refresh");
+  });
+
+  it("offers no time and place on any Heat", () => {
+    expect(render(null)).not.toContain("Time &amp; place");
+  });
+
+  it("shows when a played Heat was recorded, in ET, in its box", () => {
+    expect(render(null)).toContain("Recorded Sat 7:05 PM ET");
+  });
+
+  it("links a finalized Bracket's note to its Finale", () => {
+    const html = renderToStaticMarkup(
+      <BracketAdminView
+        {...props}
+        finalized
+        finaleHref="/xi/finale/c1"
+        openHeatId={null}
+      />,
+    );
+    expect(html).toMatch(/<a[^>]*href="\/xi\/finale\/c1"[^>]*>Play the Finale/);
+  });
+
+  it("says a finalized Bracket's Points Entries are in the ledger with Placement Points", () => {
+    const html = renderToStaticMarkup(
+      <BracketAdminView {...props} finalized openHeatId={null} />,
+    );
+    expect(html).toContain("Finalized: its Points Entries are in the ledger.");
+  });
+
+  it("claims no Points Entries for a finalized Bracket without Placement Points", () => {
+    const html = renderToStaticMarkup(
+      <BracketAdminView
+        {...props}
+        placementPoints={null}
+        finalized
+        openHeatId={null}
+      />,
+    );
+    expect(html).toContain("it made no Points Entries");
+    expect(html).not.toContain("Points Entries are in the ledger");
+  });
+
+  it("words the Finalize confirm by whether Placement Points exist", () => {
+    expect(finalizeCopy([5, 3, 1]).confirmTitle).toBe(
+      "Create Points Entries from the final placings?",
+    );
+    expect(finalizeCopy(null).confirmTitle).toBe(
+      "Finalize the Bracket? It has no Placement Points, so no Points Entries are created.",
+    );
+    expect(finalizeCopy([]).confirmTitle).toBe(finalizeCopy(null).confirmTitle);
+  });
+
+  it("names who self-reported a Heat's result in its box", () => {
+    const html = renderToStaticMarkup(
+      <BracketAdminView
+        {...props}
+        reporters={{ r1h2: "Ashley Schuliger" }}
+        openHeatId={null}
+      />,
+    );
+    expect(html).toContain("Reported by Ashley Schuliger");
+  });
+
+  it("shows no reporter on a Heat the Host entered", () => {
+    expect(render(null)).not.toContain("Reported by");
+  });
+
+  it("keeps Finalize off until the 3rd place game is recorded, though the champion is known", () => {
+    const four: Entrant[] = ["Red", "Blue", "Green", "Gold"].map(
+      (label, i) => ({ id: `e${i + 1}`, seedPosition: i + 1, label }),
+    );
+    const config = {
+      entrantsPerHeat: 2,
+      advancePerHeat: 1,
+      thirdPlaceGame: true,
+    };
+    let played = generate(four, undefined, config);
+    played = applyResult(played, "r1h1", { order: ["e1", "e4"] });
+    played = applyResult(played, "r1h2", { order: ["e2", "e3"] });
+    played = applyResult(played, "r2h1", { order: ["e1", "e2"] });
+    const entrants = four.map((e) => ({
+      ...props.entrants[0],
+      id: e.id,
+      label: e.label,
+    }));
+    const view = (b: Bracket) =>
+      renderToStaticMarkup(
+        <BracketAdminView
+          {...props}
+          entrants={entrants}
+          bracket={b}
+          champion="e1"
+          openHeatId={null}
+        />,
+      );
+
+    const before = view(played);
+    expect(before).toContain("Finish every Heat to finalize.");
+    expect(before).toContain("3rd place game");
+    const after = view(applyResult(played, "r2h2", { order: ["e3", "e4"] }));
+    expect(after).not.toContain("Finish every Heat to finalize.");
+  });
+});

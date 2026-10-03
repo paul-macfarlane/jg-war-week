@@ -11,9 +11,12 @@ import {
 import { CompetitionFacts, PointsEntryList } from "@/components/competitions";
 import { EnrollButton } from "@/components/enroll-button";
 import { GamesView } from "@/components/games-view";
+import { ParticipationView } from "@/components/participation-view";
+import { PlacementView } from "@/components/placement-view";
 import { Toaster } from "@/components/ui/sonner";
 import { can } from "@/lib/access";
 import { entrantForYou, nextHeatFor } from "@/lib/bracket/view";
+import { isGameFormat } from "@/lib/enums";
 import { resolveYou } from "@/lib/you";
 import {
   type BracketView as BracketData,
@@ -23,9 +26,11 @@ import {
 } from "@/queries/brackets";
 import { getGamesView } from "@/queries/games";
 import { getHeatReportFacts } from "@/queries/heat-reports";
+import { getParticipationView } from "@/queries/participation";
+import { getPlacementsView } from "@/queries/placements";
 import { getYouCandidates } from "@/queries/roster";
-import { getSetupDays } from "@/queries/setup";
 
+import { checkInOfferFor } from "./check-in";
 import { getCompetitionPage } from "./competition";
 import { enrollOfferFor } from "./enrollment";
 
@@ -37,8 +42,7 @@ const SELF_REPORT_OFF: BracketViewSelfReport = {
 
 /**
  * Whether the signed-in person may report their next Heat (ADR 0005): the
- * Participant their session email links to (as the layout finds them;
- * never the "Which one is you?" pick), and Your next Heat when the same
+ * Participant their session email links to (as the layout finds them), and Your next Heat when the same
  * `can` rule the report action runs lets them report it now.
  */
 async function selfReportFor(
@@ -56,7 +60,6 @@ async function selfReportFor(
   const linked = resolveYou({
     sessionEmail: actor?.email,
     participants: candidates,
-    storedId: null,
   });
   if (!actor || !linked) {
     return { on: true, linkedParticipantId: null, reportableHeatId: null };
@@ -103,29 +106,40 @@ export default async function CompetitionPage({
   if (!found) notFound();
   const { warWeek, competition, ledger } = found;
   const bracket = await getBracket(competition.id);
-  const isBracket = bracket && bracket.competition.format !== "points";
-  const [participantTeams, participantSquads, days] = isBracket
+  const isBracket = bracket && bracket.competition.format !== "placement";
+  const [participantTeams, participantSquads] = isBracket
     ? await Promise.all([
         competition.scoring === "team"
           ? getParticipantTeamIds(warWeek)
           : Promise.resolve({}),
         getParticipantSquadIds(competition.id),
-        getSetupDays(warWeek),
       ])
-    : [{}, {}, []];
+    : [{}, {}];
   const selfReport = isBracket
     ? await selfReportFor(warWeek, bracket, participantTeams, participantSquads)
     : SELF_REPORT_OFF;
-  const isGames = competition.format === "games";
+  const isGames = isGameFormat(competition.format);
+  const isParticipation = competition.format === "participation";
+  const isPlacement = competition.format === "placement";
   // The viewer's email stays on the server: the page gets names, ids and
   // booleans computed from it (R3 decision 17).
   const email = (await getActor())?.email ?? null;
-  const [games, enrollOffer] = await Promise.all([
-    isGames ? getGamesView(competition.id, email) : Promise.resolve(null),
-    isBracket || isGames
-      ? enrollOfferFor(competition, email)
-      : Promise.resolve(null),
-  ]);
+  const [games, enrollOffer, participation, checkInOffer, placements] =
+    await Promise.all([
+      isGames ? getGamesView(competition.id, email) : Promise.resolve(null),
+      isBracket || isGames
+        ? enrollOfferFor(competition, email)
+        : Promise.resolve(null),
+      isParticipation
+        ? getParticipationView(competition.id)
+        : Promise.resolve(undefined),
+      isParticipation
+        ? checkInOfferFor(competition.id, email)
+        : Promise.resolve(null),
+      isPlacement
+        ? getPlacementsView(competition.id)
+        : Promise.resolve(undefined),
+    ]);
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-6 px-4 py-6 md:max-w-3xl">
@@ -152,7 +166,7 @@ export default async function CompetitionPage({
       {games ? (
         <GamesView
           competitionId={competition.id}
-          gameType={games.competition.gameType}
+          gameFormat={games.competition.gameFormat}
           config={games.competition.config}
           scoring={games.competition.scoring}
           closed={games.competition.closed}
@@ -170,6 +184,18 @@ export default async function CompetitionPage({
           openLog={log === "1"}
         />
       ) : null}
+      {participation ? (
+        <ParticipationView
+          view={participation}
+          offer={checkInOffer}
+          teamLabel={warWeek.teamLabel}
+          primaryColor={warWeek.primaryColor}
+          now={new Date()}
+        />
+      ) : null}
+      {placements ? (
+        <PlacementView view={placements} primaryColor={warWeek.primaryColor} />
+      ) : null}
       {isBracket ? (
         <BracketView
           competitionId={competition.id}
@@ -180,7 +206,6 @@ export default async function CompetitionPage({
           primaryColor={warWeek.primaryColor}
           participantTeams={participantTeams}
           participantSquads={participantSquads}
-          days={days}
           finaleHref={
             bracket.finalized
               ? `/${warWeek.edition}/finale/${competition.id}`
@@ -199,7 +224,7 @@ export default async function CompetitionPage({
       {/* A Bracket's view refreshes itself, pausing while a report is open. */}
       {isBracket ? null : <AutoRefresh />}
       {/* Results and refusals toast here, as on the admin screens. */}
-      {isBracket || isGames || enrollOffer ? (
+      {isBracket || isGames || enrollOffer || checkInOffer ? (
         <Toaster position="bottom-center" closeButton />
       ) : null}
     </main>

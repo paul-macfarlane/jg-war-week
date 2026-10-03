@@ -50,9 +50,9 @@ async function fixture(tx: DBTx) {
         warWeekId,
         name: "Cypher",
         scoring: "team",
-        format: "single-elimination",
+        format: "bracket",
       },
-      { warWeekId, name: "Trivia", scoring: "team", format: "points" },
+      { warWeekId, name: "Trivia", scoring: "team", format: "placement" },
     ])
     .returning({ id: schema.competition.id });
   const selfReportOf = async (id: string) =>
@@ -210,20 +210,27 @@ async function reportFixture(tx: DBTx) {
         warWeekId,
         name: "Tug of War",
         scoring: "team",
-        format: "single-elimination",
+        format: "bracket",
       },
       {
         warWeekId,
         name: "Relay Heats",
         scoring: "individual",
-        format: "single-elimination",
+        format: "bracket",
       },
     ])
     .returning({ id: schema.competition.id });
   expect(
     await brackets.setCompetitionFormat(
       relay.id,
-      { format: "heats", config: { entrantsPerHeat: 4, advancePerHeat: 2 } },
+      {
+        format: "bracket",
+        config: {
+          entrantsPerHeat: 4,
+          advancePerHeat: 2,
+          thirdPlaceGame: false,
+        },
+      },
       f.ctx,
       tx,
     ),
@@ -398,6 +405,36 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
           .find((h) => h.id === first.id)!
           .slots.map((s) => s.place),
       ).toEqual([1, 2, 3, 4]);
+    });
+  });
+
+  it("sets the Heat's recorded_at when a Participant self-reports, and not on any other Heat", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const f = await reportFixture(tx);
+      const { submitHeatReport } = await import("@/mutations/heat-reports");
+      const { heat } = await import("@/db/schema");
+      const recordedAtOf = async (heatId: string) =>
+        (
+          await tx
+            .select({ recordedAt: heat.recordedAt })
+            .from(heat)
+            .where(eq(heat.id, heatId))
+        )[0].recordedAt;
+      expect(await recordedAtOf(f.semi1)).toBeNull();
+
+      expect(
+        await submitHeatReport(
+          f.competitionId,
+          f.semi1,
+          { order: [f.entrantOf("Red"), f.entrantOf("Blue")] },
+          { warWeekId: f.ctx.warWeekId, actorEmail: NEO },
+          tx,
+        ),
+      ).toEqual({ ok: true, resetHeatIds: [] });
+
+      expect(await recordedAtOf(f.semi1)).toBeInstanceOf(Date);
+      expect(await recordedAtOf(f.semi2)).toBeNull();
+      expect(await recordedAtOf(f.final)).toBeNull();
     });
   });
 

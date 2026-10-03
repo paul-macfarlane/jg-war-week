@@ -3,23 +3,31 @@ import Link from "next/link";
 
 import { SiteFooter } from "@/components/site-footer";
 import { ThemeRoot } from "@/components/theme-root";
-import { STATIC_PAGE_THEME } from "@/lib/about";
+import { ABOUT_FALLBACK_THEME } from "@/lib/about";
 import { warWeekThemeStyle } from "@/lib/theme";
+import { getCurrentWarWeek } from "@/queries/war-weeks";
 
 export const metadata: Metadata = {
   title: "Privacy · JG War Week",
   description: "What JG War Week collects, why, and who can see it.",
 };
 
+/** Never statically prerendered: it reads the current War Week. */
+export const dynamic = "force-dynamic";
+
 /**
  * The public Privacy page: what JG War Week collects and why, in plain
- * language. Static on purpose, like `/about`: copy only, no database or
- * session reads (`PUBLIC_PATHS` in `src/lib/access.ts`).
+ * language. Copy only, but like `/about` it wears the current War Week's
+ * Appearance Theme (`getCurrentWarWeek`), else `ABOUT_FALLBACK_THEME`. No
+ * session reads; still one of the `PUBLIC_PATHS` in `src/lib/access.ts`.
  */
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  const current = await getCurrentWarWeek();
+  const theme = current ?? ABOUT_FALLBACK_THEME;
+
   return (
     <ThemeRoot
-      style={warWeekThemeStyle(STATIC_PAGE_THEME)}
+      style={warWeekThemeStyle(theme)}
       className="bg-background text-foreground flex min-h-dvh flex-col font-sans"
     >
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-5 sm:px-6">
@@ -40,7 +48,7 @@ export default function PrivacyPage() {
             Privacy
           </h1>
           <p className="text-foreground/60 text-sm">
-            Last updated: September 24, 2026
+            Last updated: October 2, 2026
           </p>
         </div>
 
@@ -72,19 +80,37 @@ export default function PrivacyPage() {
           </h2>
           <p className="text-foreground/80 leading-relaxed">
             Organizers enter each Participant&apos;s display name, Company Tag,
-            Team and whether that Participant leads it, and an optional email.
-            That email is used only to highlight &quot;You&quot; for the
-            matching signed-in visitor.
+            their Team and whether they lead it (when the War Week has Teams),
+            and an optional email. That email links a signed-in visitor to their
+            Participant: it highlights &quot;You&quot;, and lets them enroll in
+            a Bracket, log Games and report Heats.
+          </p>
+        </section>
+
+        <section className="flex flex-col gap-3">
+          <h2 className="text-xl font-semibold tracking-tight">Your Profile</h2>
+          <p className="text-foreground/80 leading-relaxed">
+            On your Profile page you can set a name and a picture URL. We store
+            them against your email address. They replace your roster name and
+            picture wherever that email is on a roster, in every War Week,
+            including past ones. With no picture URL set, we show your Google
+            photo, kept as the profile picture URL Google gave us, or your
+            initials. A picture URL is loaded from the host it points to, which
+            sees the IP address of anyone viewing it.
           </p>
         </section>
 
         <section className="flex flex-col gap-3">
           <h2 className="text-xl font-semibold tracking-tight">Who did what</h2>
           <p className="text-foreground/80 leading-relaxed">
-            A War Week keeps its Organizer email list; the email of the
-            Organizer who entered each Points Entry, shown only to Organizers;
-            and each Announcement author&apos;s email, which is shown on the
-            Announcement to everyone signed in.
+            The Organizer email list is kept once, for every War Week, and each
+            Competition keeps its Host emails. The email of whoever entered a
+            Points Entry is shown in Admin to Organizers and to that
+            Competition&apos;s Hosts. An Announcement author&apos;s email is
+            shown in Admin to Organizers and Hosts; everyone else sees only the
+            author&apos;s roster name, or the part of their email before the @.
+            The email of whoever logs a Game or reports a Bracket result is kept
+            for audit and never shown.
           </p>
         </section>
 
@@ -110,9 +136,9 @@ export default function PrivacyPage() {
         <section className="flex flex-col gap-3">
           <h2 className="text-xl font-semibold tracking-tight">Retention</h2>
           <p className="text-foreground/80 leading-relaxed">
-            Sessions expire. Accounts and War Week history (rosters, points,
-            Announcements, Awards) are kept indefinitely as part of the War Week
-            archive.
+            Sessions expire. War Week history (rosters, points, Announcements,
+            Awards) is kept indefinitely as part of the War Week archive.
+            Accounts are kept until you delete yours.
           </p>
         </section>
 
@@ -121,8 +147,16 @@ export default function PrivacyPage() {
             Corrections or removal
           </h2>
           <p className="text-foreground/80 leading-relaxed">
-            To correct or remove your data, contact the War Week Organizers or
-            Jahnel Group.
+            You can delete your own account from your Profile page, after typing
+            your email to confirm. That removes your login (your account,
+            sessions and Google link), your Profile name and picture URL, your
+            Google photo URL and your place on the Organizer list. It is refused
+            for the last Organizer. It keeps roster records, results, Awards,
+            Announcements and history, which then show your roster name again;
+            Host assignments; and the emails kept for audit. If you sign in
+            again, you get a fresh account that links back to your roster
+            records by email. For anything else, contact the Jahnel Group
+            admins.
           </p>
         </section>
       </main>

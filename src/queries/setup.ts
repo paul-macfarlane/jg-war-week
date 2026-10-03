@@ -13,17 +13,20 @@ import {
   entrant,
   participant,
   pointsEntry,
+  profile,
   scheduleItem,
   squad,
   squadParticipant,
   team,
 } from "@/db/schema";
+import { profileOn } from "@/queries/profile-join";
 
 /** A Day as the setup page lists it. */
 export type SetupDay = {
   id: string;
   date: string;
   dayTheme: string;
+  description: string | null;
   scheduleItemCount: number;
 };
 
@@ -37,6 +40,7 @@ export async function getSetupDays(
       id: day.id,
       date: day.date,
       dayTheme: day.dayTheme,
+      description: day.description,
       scheduleItemCount: count(scheduleItem.id),
     })
     .from(day)
@@ -88,6 +92,11 @@ export type SetupParticipant = Pick<
   Participant,
   "id" | "displayName" | "companyTag" | "email" | "teamId" | "isLeader"
 > & {
+  /**
+   * The Profile name the person set for their linked account, or null. The
+   * roster form shows it read-only; `displayName` stays the typed fallback.
+   */
+  profileName: string | null;
   pointsEntryCount: number;
   awardCount: number;
   entrantCount: number;
@@ -103,6 +112,7 @@ export async function getSetupParticipants(
     .select({
       id: participant.id,
       displayName: participant.displayName,
+      profileName: profile.name,
       companyTag: participant.companyTag,
       email: participant.email,
       teamId: participant.teamId,
@@ -125,6 +135,7 @@ export async function getSetupParticipants(
       ),
     })
     .from(participant)
+    .leftJoin(profile, profileOn())
     .where(eq(participant.warWeekId, warWeek.id))
     .orderBy(asc(participant.displayName));
 }
@@ -136,7 +147,6 @@ export type SetupCompetition = Pick<
   | "name"
   | "description"
   | "scoring"
-  | "maxPoints"
   | "placementPoints"
   | "countsTowardTeam"
   | "competitionGroup"
@@ -154,7 +164,6 @@ export async function getSetupCompetitions(
       name: competition.name,
       description: competition.description,
       scoring: competition.scoring,
-      maxPoints: competition.maxPoints,
       placementPoints: competition.placementPoints,
       countsTowardTeam: competition.countsTowardTeam,
       competitionGroup: competition.competitionGroup,

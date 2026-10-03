@@ -7,7 +7,7 @@
  * Entrants through the picker.
  */
 import { NOT_LINKED } from "@/lib/bracket/heat-report-rule";
-import type { COMPETITION_FORMATS, GameType } from "@/lib/enums";
+import { type COMPETITION_FORMATS, isGameFormat } from "@/lib/enums";
 import type { GamesConfig } from "@/lib/games/config";
 import { onEntrantList } from "@/lib/games/log-rule";
 
@@ -27,10 +27,9 @@ export type EnrollEntrant = {
  * - `selfEnroll`: the "Participants can enroll" switch.
  * - The close conditions: `built` (the Bracket has Heats), `entrantLimit`
  *   against `entrantCount`, `enrollClosesAt` against `now`, `closed`
- *   (finalized), `hasGames` (a `games` Competition's first Game).
+ *   (finalized), `hasGames` (a Head-to-head or Best score Competition's first Game).
  * - `linked`: the Participant the actor's email links to, with their Team
- *   and their Squad in this Competition (never the "Which one is you?"
- *   pick).
+ *   and their Squad in this Competition.
  * - `scoring` and `entrants`: who is entered.
  * - `hasSquads` and `squad`: for a Squads Bracket, whether any Squad
  *   exists and the Squad being joined or left (`missing` when gone, null
@@ -90,37 +89,40 @@ export const LAST_IN_SQUAD =
   "You're the last Participant in this Squad. Ask the Host to remove the Squad.";
 /** The enroll switch on a points Competition: it has no Entrant list. */
 export const POINTS_NO_ENROLL =
-  "Participants enroll only in a Bracket or a Games Competition.";
+  "Participants enroll only in a Bracket, Head-to-head or Best score Competition.";
+/** The enroll switch on a `participation` Competition: no Entrant list. */
+export const PARTICIPATION_NO_ENROLL =
+  "A Participation Competition takes check-ins, not Entrants.";
 /** The enroll switch on a Best of: the Host sets its two Entrants. */
 export const BEST_OF_NO_ENROLL =
   "A Best of is set by the Host; enrollment is off.";
-/** The enroll switch on an open-to-everyone `games` Competition. */
+/** The enroll switch on an open-to-everyone Head-to-head or Best score Competition. */
 export const OPEN_NO_ENROLL =
   "Everyone can play already; there's no list to enroll in.";
 
 /**
  * Why this Competition offers no enrollment whatever its switch says, or
- * null when it does: a points Competition has no Entrant list; a `games`
+ * null when it does: a points or `participation` Competition has no Entrant
+ * list; a Head-to-head or Best score
  * Competition open to everyone needs none; a Best of's two Entrants are
- * set by the Host. A Bracket and a fixed-list `games` Competition offer it.
+ * set by the Host. A Bracket and a fixed-list Head-to-head or Best score Competition offer it.
  * `gameConfig` is the parsed config (null for any other Format).
  */
 export function enrollmentUnavailable({
   format,
   entrantsOpen,
-  gameType,
   gameConfig,
 }: {
   format: (typeof COMPETITION_FORMATS)[number];
   entrantsOpen: boolean;
-  gameType: GameType | null;
   gameConfig: GamesConfig | null;
 }): string | null {
-  if (format === "points") return POINTS_NO_ENROLL;
-  if (format !== "games") return null;
+  if (format === "placement") return POINTS_NO_ENROLL;
+  if (format === "participation") return PARTICIPATION_NO_ENROLL;
+  if (!isGameFormat(format)) return null;
   if (entrantsOpen) return OPEN_NO_ENROLL;
   if (
-    gameType === "head-to-head" &&
+    format === "head-to-head" &&
     gameConfig !== null &&
     "bestOf" in gameConfig &&
     gameConfig.bestOf !== null

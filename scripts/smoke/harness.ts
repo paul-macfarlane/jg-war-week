@@ -32,6 +32,9 @@ export const childEnv = {
   GOOGLE_CLIENT_ID: "",
   GOOGLE_CLIENT_SECRET: "",
   MCP_TOKEN,
+  // Test sign-in off, as on Production. Explicit blanks win over .env.local.
+  TEST_SIGN_IN_SECRET: "",
+  VERCEL_ENV: "",
 };
 
 /**
@@ -221,7 +224,8 @@ export async function callAction(
   args: unknown[],
   session: SmokeSession,
 ): Promise<WriteResult> {
-  const res = await fetch(`${BASE_URL}/admin/points`, {
+  // A route that exists (not a redirect), since a redirect would break the POST.
+  const res = await fetch(`${BASE_URL}/admin/competitions`, {
     method: "POST",
     headers: {
       "next-action": actionId,

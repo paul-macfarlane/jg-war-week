@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   type Actor,
   type OrganizerListAction,
+  type SelfAction,
   type WarWeekAction,
   adminEditions,
   can,
@@ -24,6 +25,17 @@ import {
   NOT_LINKED,
   NOT_THE_LOGGER,
 } from "@/lib/games/log-rule";
+import {
+  ALREADY_CHECKED_IN,
+  CHECK_IN_CLOSED,
+  CHECK_IN_OFF,
+  type CheckInFacet,
+  MARKED_BY_HOST,
+  NOT_CHECKED_IN,
+  NOT_PARTICIPATION,
+  PARTICIPATION_CLOSED,
+  notOnATeam,
+} from "@/lib/participation/check-in-rule";
 
 describe("isJahnelGroupEmail", () => {
   it.each([
@@ -151,12 +163,57 @@ describe("can: the Organizer list", () => {
     ["organizers.view", "Only an Organizer can see the Organizer list."],
     ["organizers.add", "Only an Organizer can add an Organizer."],
     ["organizers.remove", "Only an Organizer can remove an Organizer."],
+    ["award-category.create", "Only an Organizer can add Award Categories."],
+    ["award-category.rename", "Only an Organizer can rename Award Categories."],
+    [
+      "award-category.archive",
+      "Only an Organizer can archive Award Categories.",
+    ],
+    [
+      "award-category.restore",
+      "Only an Organizer can restore Award Categories.",
+    ],
   ])("%s is Organizer-only", (action, message) => {
     const expected = organizerOnly(message);
     for (const name of Object.keys(ACTORS) as ActorName[]) {
       expect(can(ACTORS[name], action), name).toBe(expected[name]);
     }
   });
+});
+
+describe("can: self actions (your own Profile and account)", () => {
+  it.each<SelfAction>(["profile.save", "account.delete"])(
+    "%s is allowed for anyone signed in, Organizer or not",
+    (action) => {
+      for (const name of Object.keys(ACTORS) as ActorName[]) {
+        expect(can(ACTORS[name], action), name).toBe(
+          name === "anonymous" ? SIGN_IN : null,
+        );
+      }
+    },
+  );
+
+  it.each<SelfAction>(["profile.save", "account.delete"])(
+    "%s is refused to a non-JG session",
+    (action) => {
+      expect(
+        can(
+          { email: "someone@example.com", isOrganizer: false, hosts: [] },
+          action,
+        ),
+      ).toBe(SIGN_IN);
+      expect(
+        can(
+          {
+            email: "jason@jahnelgroup.com.evil.example",
+            isOrganizer: true,
+            hosts: [],
+          },
+          action,
+        ),
+      ).toBe(SIGN_IN);
+    },
+  );
 });
 
 describe("can: Organizer-only War Week families", () => {
@@ -169,6 +226,7 @@ describe("can: Organizer-only War Week families", () => {
           ["lifecycle.start", "start a War Week"],
           ["lifecycle.end", "end a War Week"],
           ["lifecycle.reopen", "reopen a War Week"],
+          ["lifecycle.unstart", "unstart a War Week"],
           ["lifecycle.create-next", "create the next War Week"],
           ["day.create", "add Days"],
           ["day.edit", "change Days"],
@@ -179,10 +237,17 @@ describe("can: Organizer-only War Week families", () => {
           ["participant.create", "add Participants"],
           ["participant.edit", "change Participants"],
           ["participant.delete", "delete Participants"],
+          ["participant.import", "import Participants"],
           ["faq-item.create", "add FAQ Items"],
           ["faq-item.edit", "change FAQ Items"],
           ["faq-item.delete", "delete FAQ Items"],
           ["faq-item.move", "move FAQ Items"],
+          ["finale-slide.move", "reorder Finale slides"],
+          ["finale-slide.hide", "hide Finale slides"],
+          ["finale-slide.create", "add Custom Finale slides"],
+          ["finale-slide.update", "change Custom Finale slides"],
+          ["finale-slide.delete", "delete Custom Finale slides"],
+          ["finale.awards-layout", "change how the Finale shows Awards"],
           ["award.create", "give Awards"],
           ["award.edit", "change Awards"],
           ["award.delete", "delete Awards"],
@@ -212,7 +277,6 @@ describe("can: a Competition's setup and Bracket", () => {
           "bracket.entrants",
           "bracket.generate",
           "bracket.heat-result",
-          "bracket.heat-schedule",
           "bracket.finalize",
           "bracket.unfinalize",
         ] as WarWeekAction[]
@@ -412,7 +476,7 @@ describe("can: reporting a Heat's result (self-report)", () => {
   });
 });
 
-describe("can: running a games Competition and the enroll switch", () => {
+describe("can: running a Head-to-head or Best score Competition and the enroll switch", () => {
   it.each(
     cases(
       (
@@ -467,7 +531,7 @@ describe("can: logging, editing and deleting a Game (ADR 0006)", () => {
     expect(can(ACTORS.participant, "games.log", target())).toBeNull();
   });
 
-  it('the "Which one is you?" pick grants nothing: no linked Participant', () => {
+  it("no linked Participant grants nothing", () => {
     for (const action of writes) {
       expect(
         can(ACTORS.participant, action, target({ linked: null })),
@@ -640,7 +704,7 @@ describe("can: enrolling and withdrawing (ADR 0006)", () => {
     ).toBe(ENROLL_CLOSED_BUILT);
   });
 
-  it("the pick grants nothing: no linked Participant", () => {
+  it("no linked Participant grants nothing", () => {
     for (const action of [
       "competition.enroll",
       "competition.withdraw",
@@ -685,38 +749,260 @@ describe("can: enrolling and withdrawing (ADR 0006)", () => {
   });
 });
 
-describe("can: Points Entries", () => {
+describe("can: running a participation Competition", () => {
+  it.each(
+    cases(
+      (
+        [
+          "participation.settings",
+          "participation.mark",
+          "participation.close",
+          "participation.reopen",
+        ] as WarWeekAction[]
+      ).map((action) => [
+        action,
+        { warWeekId: XI, competitionId: CATAN },
+        catanHostOr(),
+      ]),
+    ),
+  )("%s", (_, action, target, actor, expected) => {
+    expect(can(ACTORS[actor], action, target)).toBe(expected);
+  });
+});
+
+describe("can: recording a Placement Competition's placements", () => {
+  // An Organizer and Catan's Host may; a Host of another Competition (in
+  // this War Week or a namesake in another), a Participant and anonymous
+  // are refused.
+  it.each(
+    cases(
+      (
+        [
+          "placement.edit",
+          "placement.finalize",
+          "placement.reopen",
+        ] as WarWeekAction[]
+      ).map((action) => [
+        action,
+        { warWeekId: XI, competitionId: CATAN },
+        catanHostOr(),
+      ]),
+    ),
+  )("%s", (_, action, target, actor, expected) => {
+    expect(can(ACTORS[actor], action, target)).toBe(expected);
+  });
+});
+
+describe("can: checking in and out (ADR 0009)", () => {
+  const ME = "participant-me";
+  const RED = "team-red";
+  const ADMIN = "Organizers and Hosts only.";
+  const NOW = new Date("2027-02-22T15:00:00Z");
+
+  /** Individual scoring, check-in on and open; I'm linked and not in. */
+  const facet = (over: Partial<CheckInFacet> = {}): CheckInFacet => ({
+    isParticipation: true,
+    closed: false,
+    selfCheckIn: true,
+    checkInClosesAt: null,
+    now: NOW,
+    scoring: "individual",
+    teamLabel: "House",
+    linked: { participantId: ME, teamId: RED },
+    mark: null,
+    ...over,
+  });
+  const checkedIn = { mark: { checkedIn: true } };
+  const target = (over: Partial<CheckInFacet> = {}) => ({
+    warWeekId: XI,
+    competitionId: CATAN,
+    checkIn: facet(over),
+  });
+
+  it("lets a linked Participant check in, then check out", () => {
+    expect(
+      can(ACTORS.participant, "participation.check-in", target()),
+    ).toBeNull();
+    expect(
+      can(ACTORS.participant, "participation.check-out", target(checkedIn)),
+    ).toBeNull();
+  });
+
+  it("refuses checking in twice, and checking out when not in", () => {
+    expect(
+      can(ACTORS.participant, "participation.check-in", target(checkedIn)),
+    ).toBe(ALREADY_CHECKED_IN);
+    expect(can(ACTORS.participant, "participation.check-out", target())).toBe(
+      NOT_CHECKED_IN,
+    );
+  });
+
+  it("refuses checking out of a mark the Host made", () => {
+    expect(
+      can(
+        ACTORS.participant,
+        "participation.check-out",
+        target({ mark: { checkedIn: false } }),
+      ),
+    ).toBe(MARKED_BY_HOST);
+  });
+
+  it("refuses with check-in off, after the close time, and once closed", () => {
+    for (const action of [
+      "participation.check-in",
+      "participation.check-out",
+    ] as const) {
+      const over = action === "participation.check-out" ? checkedIn : {};
+      expect(
+        can(
+          ACTORS.participant,
+          action,
+          target({ ...over, selfCheckIn: false }),
+        ),
+        action,
+      ).toBe(CHECK_IN_OFF);
+      expect(
+        can(
+          ACTORS.participant,
+          action,
+          target({ ...over, checkInClosesAt: NOW }),
+        ),
+        action,
+      ).toBe(CHECK_IN_CLOSED);
+      expect(
+        can(ACTORS.participant, action, target({ ...over, closed: true })),
+        action,
+      ).toBe(PARTICIPATION_CLOSED);
+    }
+  });
+
+  it("allows check-in before the close time", () => {
+    expect(
+      can(
+        ACTORS.participant,
+        "participation.check-in",
+        target({ checkInClosesAt: new Date(NOW.getTime() + 60_000) }),
+      ),
+    ).toBeNull();
+  });
+
+  it("refuses a Competition that isn't run as Participation", () => {
+    expect(
+      can(
+        ACTORS.participant,
+        "participation.check-in",
+        target({ isParticipation: false }),
+      ),
+    ).toBe(NOT_PARTICIPATION);
+  });
+
+  it("in team scoring, refuses a Participant on no Team", () => {
+    expect(
+      can(
+        ACTORS.participant,
+        "participation.check-in",
+        target({
+          scoring: "team",
+          linked: { participantId: ME, teamId: null },
+        }),
+      ),
+    ).toBe(notOnATeam("House"));
+    expect(notOnATeam("House")).toBe(
+      "Only Participants on a House can take part in a team Competition.",
+    );
+    expect(
+      can(
+        ACTORS.participant,
+        "participation.check-in",
+        target({ scoring: "team" }),
+      ),
+    ).toBeNull();
+  });
+
+  it("no linked Participant grants nothing", () => {
+    for (const action of [
+      "participation.check-in",
+      "participation.check-out",
+    ] as const) {
+      expect(
+        can(ACTORS.participant, action, target({ linked: null })),
+        action,
+      ).toBe(NOT_LINKED);
+    }
+  });
+
+  it("binds an Organizer and the Host too", () => {
+    for (const actor of [ACTORS.organizer, ACTORS.host]) {
+      expect(
+        can(actor, "participation.check-in", target({ selfCheckIn: false })),
+      ).toBe(CHECK_IN_OFF);
+      expect(can(actor, "participation.check-in", target())).toBeNull();
+    }
+  });
+
+  it("refuses when the check-in facts weren't loaded, whoever asks", () => {
+    for (const actor of [ACTORS.participant, ACTORS.organizer]) {
+      for (const action of [
+        "participation.check-in",
+        "participation.check-out",
+      ] as const) {
+        expect(
+          can(actor, action, { warWeekId: XI, competitionId: CATAN }),
+          action,
+        ).toBe(ADMIN);
+      }
+    }
+  });
+
+  it("refuses an anonymous visitor", () => {
+    expect(can(null, "participation.check-in", target())).toBe(SIGN_IN);
+  });
+
+  it("never lets a Participant mark someone", () => {
+    expect(can(ACTORS.participant, "participation.mark", target())).toBe(
+      NOT_HOST,
+    );
+  });
+});
+
+describe("can: Discretionary points", () => {
   it.each(
     cases([
       [
-        "points-entry.create",
-        { warWeekId: XI, postedCompetitionId: CATAN },
-        catanHostOr(),
+        "discretionary.create",
+        { warWeekId: XI },
+        organizerOnly("Only an Organizer can give Discretionary points."),
       ],
       [
-        "points-entry.edit",
-        { warWeekId: XI, competitionId: CATAN, postedCompetitionId: CATAN },
-        catanHostOr(),
+        "discretionary.edit",
+        { warWeekId: XI, competitionId: null },
+        organizerOnly("Only an Organizer can change Discretionary points."),
       ],
       [
-        "points-entry.delete",
-        { warWeekId: XI, competitionId: CATAN },
-        catanHostOr(),
-      ],
-      // Moving an entry off their Competition, or onto it: both must be theirs.
-      [
-        "points-entry.edit",
-        { warWeekId: XI, competitionId: CATAN, postedCompetitionId: MTG },
-        { ...catanHostOr(), host: NOT_HOST },
-      ],
-      [
-        "points-entry.edit",
-        { warWeekId: XI, competitionId: MTG, postedCompetitionId: CATAN },
-        { ...catanHostOr(), host: NOT_HOST },
+        "discretionary.delete",
+        { warWeekId: XI, competitionId: null },
+        organizerOnly("Only an Organizer can delete Discretionary points."),
       ],
     ]),
   )("%s", (_, action, target, actor, expected) => {
     expect(can(ACTORS[actor], action, target)).toBe(expected);
+  });
+
+  it("refuses a Host of every Competition, whatever the target names", () => {
+    for (const action of [
+      "discretionary.create",
+      "discretionary.edit",
+      "discretionary.delete",
+    ] as const) {
+      expect(
+        can(ACTORS.host, action, {
+          warWeekId: XI,
+          competitionId: CATAN,
+          postedCompetitionId: CATAN,
+        }),
+        action,
+      ).toMatch(/^Only an Organizer can /);
+    }
   });
 });
 

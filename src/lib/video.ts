@@ -1,4 +1,4 @@
-/** Hosts an Announcement video URL may point at (YouTube, Loom, Vimeo, Drive). */
+/** Hosts a rich-text video block may point at (YouTube, Loom, Vimeo, Drive). */
 const ALLOWED_VIDEO_HOSTS = new Set([
   "youtube.com",
   "www.youtube.com",
@@ -36,8 +36,7 @@ const VIDEO_ID = /^[A-Za-z0-9_-]+$/;
 const VIMEO_ID = /^\d+$/;
 
 /**
- * The iframe `src` for a video link (an Announcement video link or a video
- * block in rich text), or null when the URL
+ * The iframe `src` for a rich-text video block's URL, or null when the URL
  * isn't on the allow-list (`isAllowedVideoUrl`) or doesn't point at a
  * recognized video on its host (including a host on the allow-list with an
  * unrecognized path). YouTube embeds use the `-nocookie` domain.
@@ -98,7 +97,8 @@ export function videoEmbedUrl(url: string): string | null {
 
 /**
  * The rich-text video iframe's fixed attributes, shared by the read-only
- * view and the editor so both draw the same player.
+ * view and the editor so both draw the same player. `title` is the default;
+ * the view may give each player its own (`RichText`'s `videoTitle`).
  */
 export const VIDEO_IFRAME = {
   title: "Embedded video",

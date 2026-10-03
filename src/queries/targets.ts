@@ -7,6 +7,7 @@ import {
   competition,
   day,
   faqItem,
+  finaleSlide,
   participant,
   pointsEntry,
   scheduleItem,
@@ -25,6 +26,8 @@ export type TargetWarWeek = {
   /** What the lifecycle status rules (`lifecycleActionError`) compare. */
   editionNumber: number;
   startDate: string;
+  /** Set once the War Week has been ended (Unstart refuses it). */
+  winner: string | null;
 };
 
 /** A row an action changes: its War Week and what `can` checks on it. */
@@ -44,6 +47,7 @@ const warWeekColumns = {
   status: warWeek.status,
   editionNumber: warWeek.editionNumber,
   startDate: warWeek.startDate,
+  winner: warWeek.winner,
 };
 
 /*
@@ -70,6 +74,7 @@ async function warWeekRow(
     | typeof team
     | typeof participant
     | typeof faqItem
+    | typeof finaleSlide
     | typeof award,
   id: string,
   dbOrTx: DBOrTx,
@@ -91,6 +96,8 @@ export const loadParticipantTarget = (id: string, dbOrTx: DBOrTx = db) =>
   warWeekRow(participant, id, dbOrTx);
 export const loadFaqItemTarget = (id: string, dbOrTx: DBOrTx = db) =>
   warWeekRow(faqItem, id, dbOrTx);
+export const loadFinaleSlideTarget = (id: string, dbOrTx: DBOrTx = db) =>
+  warWeekRow(finaleSlide, id, dbOrTx);
 export const loadAwardTarget = (id: string, dbOrTx: DBOrTx = db) =>
   warWeekRow(award, id, dbOrTx);
 
@@ -112,10 +119,12 @@ export async function loadPointsEntryTarget(
   dbOrTx: DBOrTx = db,
 ): Promise<LoadedTarget | undefined> {
   const [found] = await dbOrTx
-    .select({ warWeek: warWeekColumns, competitionId: competition.id })
+    .select({
+      warWeek: warWeekColumns,
+      competitionId: pointsEntry.competitionId,
+    })
     .from(pointsEntry)
-    .innerJoin(competition, eq(competition.id, pointsEntry.competitionId))
-    .innerJoin(warWeek, eq(warWeek.id, competition.warWeekId))
+    .innerJoin(warWeek, eq(warWeek.id, pointsEntry.warWeekId))
     .where(eq(pointsEntry.id, id))
     .limit(1);
   return found;

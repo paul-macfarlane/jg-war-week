@@ -19,7 +19,7 @@ import {
 } from "./session";
 import { teamTotal } from "./standings";
 
-// Bouncy Pong is seeded as an open head-to-head individual `games`
+// Bouncy Pong is seeded as an open individual Head-to-head
 // Competition (counts toward Team) with Placement Points 3 / 2 / 1.
 const COMPETITION = "Bouncy Pong";
 /** Logs the Game; linked to the e2e Participant session by email. */
@@ -128,14 +128,16 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     await shoot(you, testInfo, "home-shortcut");
     await shortcut.getByRole("link", { name: new RegExp(COMPETITION) }).click();
     await expect(you).toHaveURL(`${E2E_BASE_URL}/xi/competitions/${id}?log=1`);
-    await expect(you.getByText("Games · Head-to-head")).toBeVisible();
+    await expect(
+      you.getByText("Head-to-head", { exact: true }).first(),
+    ).toBeVisible();
 
     const form = you.getByRole("dialog", { name: "Log a Game" });
     await expect(form).toBeVisible();
     await expect(form.getByRole("combobox", { name: "Player A" })).toHaveValue(
       PLAYER.name,
     );
-    // Filled in on a phone, then widened past `lg`: the form keeps its input.
+    // Filled in on a phone, then widened past `md` (768px): the form keeps its input.
     await you.setViewportSize({ width: 375, height: 900 });
     await form.getByRole("combobox", { name: "Player B" }).click();
     await you.getByRole("option", { name: OPPONENT.name, exact: true }).click();
@@ -144,7 +146,7 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
       .getByRole("group", { name: "Who won?" })
       .getByRole("button", { name: `${PLAYER.name} won` });
     await won.click();
-    await you.setViewportSize({ width: 1280, height: 900 });
+    await you.setViewportSize({ width: 820, height: 900 });
     await expect(form.getByRole("combobox", { name: "Player B" })).toHaveValue(
       OPPONENT.name,
     );
@@ -226,14 +228,14 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     try {
       await asOrganizer(organizerContext);
       const organizerPage = await organizerContext.newPage();
-      await organizerPage.goto("/admin/setup");
+      await organizerPage.goto("/admin/settings");
       await organizerPage.getByRole("button", { name: "End War Week" }).click();
       const endDialog = organizerPage.getByRole("alertdialog");
       await expect(endDialog).toContainText("Still open:");
       await expect(endDialog).toContainText(COMPETITION);
       await expect(
         endDialog.getByRole("link", { name: COMPETITION }),
-      ).toHaveAttribute("href", `/admin/setup/competitions/${id}/games`);
+      ).toHaveAttribute("href", `/admin/competitions/${id}/games`);
       await shoot(organizerPage, testInfo, "end-warning");
       await endDialog.getByRole("button", { name: "Cancel" }).click();
       await expect(endDialog).toBeHidden();
@@ -242,7 +244,7 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     }
 
     // The Host closes it from the Games setup page.
-    await page.goto(`/admin/setup/competitions/${id}/games`);
+    await page.goto(`/admin/competitions/${id}/games`);
     await page.getByRole("button", { name: "Close", exact: true }).click();
     const closeConfirm = page.getByRole("alertdialog", {
       name: "Close this Competition?",
@@ -255,10 +257,14 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     await expect(page.getByRole("button", { name: "Reopen" })).toBeVisible();
 
     await page.goto(`/xi/competitions/${id}`);
+    // By role: until React reveals the streamed page, a hidden copy of it
+    // (Next's `<div hidden id="S:0">`) can still be in the document.
     await expect(
-      page.getByText(
-        "Closed — the leaderboard's Placement Points are in the Standings.",
-      ),
+      page
+        .getByRole("region", { name: "Games" })
+        .getByText(
+          "Closed — the leaderboard's Placement Points are in the Standings.",
+        ),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Log a Game" })).toHaveCount(
       0,
@@ -278,7 +284,7 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     await shoot(page, testInfo, "standings");
 
     // Reopen and delete the Game: the Standings go back.
-    await page.goto(`/admin/setup/competitions/${id}/games`);
+    await page.goto(`/admin/competitions/${id}/games`);
     await page.getByRole("button", { name: "Reopen" }).click();
     await page
       .getByRole("alertdialog", { name: "Reopen this Competition?" })

@@ -33,15 +33,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import type { EntrantKind } from "@/lib/bracket/squads";
-import type { GameType } from "@/lib/enums";
+import { hasPlacementPoints } from "@/lib/competitions";
+import type { GameFormat } from "@/lib/enums";
 import {
   BEST_OF_OPTIONS,
   type BestScoreConfig,
   type GamesConfig,
   type HeadToHeadConfig,
-  type RankedConfig,
   bestOfLabel,
-  gameTypeLabel,
+  gameFormatLabel,
 } from "@/lib/games/config";
 import { enrollmentUnavailable } from "@/lib/games/enroll-rule";
 import { placementPointsList } from "@/lib/games/view";
@@ -61,7 +61,6 @@ type SettingsFields = {
   count: "best" | "total";
   betterIs: "higher" | "lower";
   unit: string;
-  finishPoints: string;
   entrantsOpen: boolean;
   loggingClosesAtDate: string;
   loggingClosesAtTime: string;
@@ -79,7 +78,7 @@ function clockOf(date: Date | null): { date: string; time: string } {
 
 /** The settings form's starting values, from the saved Competition. */
 function initialFields(
-  gameType: GameType,
+  gameFormat: GameFormat,
   config: GamesConfig,
   entrantsOpen: boolean,
   loggingClosesAt: Date | null,
@@ -89,10 +88,10 @@ function initialFields(
     enrollClosesAt: Date | null;
   },
 ): SettingsFields {
-  const h2h = gameType === "head-to-head" ? (config as HeadToHeadConfig) : null;
+  const h2h =
+    gameFormat === "head-to-head" ? (config as HeadToHeadConfig) : null;
   const bestScore =
-    gameType === "best-score" ? (config as BestScoreConfig) : null;
-  const ranked = gameType === "ranked" ? (config as RankedConfig) : null;
+    gameFormat === "best-score" ? (config as BestScoreConfig) : null;
   const logging = clockOf(loggingClosesAt);
   const closes = clockOf(enroll.enrollClosesAt);
   return {
@@ -101,7 +100,6 @@ function initialFields(
     count: bestScore?.count ?? "best",
     betterIs: bestScore?.betterIs ?? "higher",
     unit: bestScore?.unit ?? "",
-    finishPoints: ranked ? ranked.finishPoints.join(", ") : "",
     entrantsOpen,
     loggingClosesAtDate: logging.date,
     loggingClosesAtTime: logging.time,
@@ -114,7 +112,7 @@ function initialFields(
 }
 
 /** The raw shape `parseGamesSettingsInput` (`src/lib/games/input.ts`) expects. */
-function rawSettingsOf(gameType: GameType, fields: SettingsFields) {
+function rawSettingsOf(gameFormat: GameFormat, fields: SettingsFields) {
   const loggingClosesAt = fromEasternClock(
     fields.loggingClosesAtDate,
     fields.loggingClosesAtTime,
@@ -124,13 +122,12 @@ function rawSettingsOf(gameType: GameType, fields: SettingsFields) {
     fields.enrollClosesAtTime,
   );
   return {
-    gameType,
+    gameFormat,
     drawsAllowed: fields.drawsAllowed,
     bestOf: fields.bestOf,
     count: fields.count,
     betterIs: fields.betterIs,
     unit: fields.unit,
-    finishPoints: fields.finishPoints,
     entrantsOpen: fields.entrantsOpen,
     loggingClosesAt: loggingClosesAt ? loggingClosesAt.toISOString() : null,
     selfEnroll: fields.selfEnroll,
@@ -140,7 +137,7 @@ function rawSettingsOf(gameType: GameType, fields: SettingsFields) {
 }
 
 /**
- * The `games` Competition's setup: its Game Type (fixed) and settings, its
+ * The Head-to-head or Best score Competition's setup: its Format (fixed) and settings, its
  * Entrants (open or a fixed list, R3 decision 11), the logging close time,
  * self-enrollment (decision 12) and Close / Reopen (decision 1).
  */
@@ -155,7 +152,7 @@ export function GamesBuilder({
     id: string;
     name: string;
     scoring: "team" | "individual";
-    gameType: GameType;
+    gameFormat: GameFormat;
     config: GamesConfig;
     entrantsOpen: boolean;
     loggingClosesAt: Date | null;
@@ -175,19 +172,26 @@ export function GamesBuilder({
   };
 }) {
   const router = useRouter();
-  const { gameType } = competition;
+  const { gameFormat } = competition;
   const isTeam = competition.scoring === "team";
   const kind: EntrantKind = isTeam ? "team" : "participant";
 
-  const [fields, setFields] = useState<SettingsFields>(() =>
-    initialFields(
-      gameType,
-      competition.config,
-      competition.entrantsOpen,
-      competition.loggingClosesAt,
-      enroll,
-    ),
+  const savedFields = initialFields(
+    gameFormat,
+    competition.config,
+    competition.entrantsOpen,
+    competition.loggingClosesAt,
+    enroll,
   );
+  const [fields, setFields] = useState<SettingsFields>(savedFields);
+  // After a save, `router.refresh()` hands this form the saved values as new
+  // props; the fields follow them instead of keeping what was first loaded.
+  const savedKey = JSON.stringify(savedFields);
+  const [lastSavedKey, setLastSavedKey] = useState(savedKey);
+  if (savedKey !== lastSavedKey) {
+    setLastSavedKey(savedKey);
+    setFields(savedFields);
+  }
   function set<K extends keyof SettingsFields>(
     key: K,
     value: SettingsFields[K],
@@ -197,10 +201,10 @@ export function GamesBuilder({
 
   const [result, formAction, saving] = useActionState(
     async (): Promise<MutationResult> => {
-      const raw = rawSettingsOf(gameType, fields);
+      const raw = rawSettingsOf(gameFormat, fields);
       const saved = await setGamesSettings(competition.id, raw);
       if (saved.ok) {
-        toast.success("Games settings saved");
+        toast.success("Settings saved");
         router.refresh();
       } else {
         toast.error(saved.error);
@@ -228,11 +232,10 @@ export function GamesBuilder({
   const entrantsFixed = !fields.entrantsOpen;
   const showsEnroll =
     enrollmentUnavailable({
-      format: "games",
+      format: gameFormat,
       entrantsOpen: fields.entrantsOpen,
-      gameType,
       gameConfig:
-        gameType === "head-to-head"
+        gameFormat === "head-to-head"
           ? {
               drawsAllowed: fields.drawsAllowed,
               bestOf: fixedForced ? (Number(fields.bestOf) as 3 | 5 | 7) : null,
@@ -261,7 +264,7 @@ export function GamesBuilder({
       <div>
         <h1 className="text-2xl font-bold">{competition.name}</h1>
         <p className="text-foreground/70 text-sm">
-          Games · {gameTypeLabel(gameType)}
+          {gameFormatLabel(gameFormat)}
         </p>
       </div>
 
@@ -273,12 +276,13 @@ export function GamesBuilder({
 
       {locked && (
         <p className="border-border rounded-lg border px-3 py-2 text-sm">
-          This Competition is closed. Reopen it to change its Games or settings.
+          This Competition is closed. Reopen it to change its Entrants, Games or
+          settings.
         </p>
       )}
 
       <form action={formAction} className="flex flex-col gap-6">
-        {gameType === "head-to-head" && (
+        {gameFormat === "head-to-head" && (
           <FieldSet>
             <FieldLegend>Settings</FieldLegend>
             <FieldGroup className="gap-4 sm:flex-row">
@@ -317,7 +321,7 @@ export function GamesBuilder({
           </FieldSet>
         )}
 
-        {gameType === "best-score" && (
+        {gameFormat === "best-score" && (
           <FieldSet>
             <FieldLegend>Settings</FieldLegend>
             <FieldGroup className="gap-4 sm:flex-row">
@@ -365,30 +369,6 @@ export function GamesBuilder({
                 <FieldError>{fieldErrors.unit}</FieldError>
               </Field>
             </FieldGroup>
-          </FieldSet>
-        )}
-
-        {gameType === "ranked" && (
-          <FieldSet>
-            <FieldLegend>Settings</FieldLegend>
-            <Field data-invalid={!!fieldErrors.finishPoints}>
-              <FieldLabel htmlFor="games-finish-points">
-                Finish Points
-              </FieldLabel>
-              <Input
-                id="games-finish-points"
-                className="h-11 sm:h-9"
-                disabled={saving || locked}
-                aria-invalid={!!fieldErrors.finishPoints}
-                placeholder="5, 3, 1"
-                value={fields.finishPoints}
-                onChange={(event) => set("finishPoints", event.target.value)}
-              />
-              <FieldDescription>
-                Blank: one point per player beaten.
-              </FieldDescription>
-              <FieldError>{fieldErrors.finishPoints}</FieldError>
-            </Field>
           </FieldSet>
         )}
 
@@ -536,12 +516,18 @@ export function GamesBuilder({
         {competition.closed ? (
           <>
             <p className="text-foreground/70 text-sm">
-              Closed: its Points Entries are in the ledger. Reopen to log more
-              Games.
+              {hasPlacementPoints(competition.placementPoints)
+                ? "Closed: its Points Entries are in the ledger."
+                : "Closed: it has no Placement Points, so it made no Points Entries."}{" "}
+              Reopen to log more Games.
             </p>
             <ConfirmActionButton
               title="Reopen this Competition?"
-              description="The generated Points Entries are withdrawn; hand-entered ones stay."
+              description={
+                hasPlacementPoints(competition.placementPoints)
+                  ? "The generated Points Entries are withdrawn."
+                  : "Players can log Games again."
+              }
               confirmLabel="Reopen"
               action={() => reopenGames(competition.id)}
               successMessage="Competition reopened"

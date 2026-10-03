@@ -4,10 +4,14 @@
  */
 import { z } from "zod";
 
-import { type HeatsConfig, bracketConfigSchema } from "@/lib/bracket/config";
+import { type BracketConfig, bracketConfigSchema } from "@/lib/bracket/config";
 import { SQUAD_PARTICIPANTS_MAX } from "@/lib/bracket/squads";
 import type { Format, HeatResult } from "@/lib/bracket/types";
-import { COMPETITION_FORMATS } from "@/lib/enums";
+import {
+  COMPETITION_FORMATS,
+  type GameFormat,
+  isGameFormat,
+} from "@/lib/enums";
 import type { Parsed } from "@/lib/result";
 
 function parse<T>(schema: z.ZodType<T, unknown>, input: unknown): Parsed<T> {
@@ -21,11 +25,17 @@ const id = (error: string) => z.uuid({ error });
 /** The most Entrants a Bracket takes. */
 export const MAX_ENTRANTS = 64;
 
+/** A Format chosen only at create: a Competition keeps it. */
+type FixedFormat = GameFormat | "participation";
+
 export type FormatInput = {
-  /** Never `games`: a Competition is `games` from creation, and stays so. */
-  format: Exclude<Format, "games">;
-  /** The heats Format's config; omitted keeps (or defaults) the saved one. */
-  config?: HeatsConfig | null;
+  /**
+   * Never a Games Format or `participation`: a Competition is one of those from
+   * creation, and stays so.
+   */
+  format: Exclude<Format, FixedFormat>;
+  /** A Bracket's config; omitted keeps (or defaults) the saved one. */
+  config?: BracketConfig;
   /** Clears Heat Results when a different config clears the Heats. */
   force?: boolean;
 };
@@ -34,7 +44,8 @@ const formatSchema = z
   .object({
     format: z.enum(
       COMPETITION_FORMATS.filter(
-        (format): format is Exclude<Format, "games"> => format !== "games",
+        (format): format is Exclude<Format, FixedFormat> =>
+          !isGameFormat(format) && format !== "participation",
       ),
       { error: "Choose a Format." },
     ),
@@ -44,19 +55,21 @@ const formatSchema = z
   .transform((value, ctx): FormatInput => {
     const out: FormatInput = { format: value.format };
     if (value.config !== undefined) {
-      const config = bracketConfigSchema(value.format).safeParse(value.config);
-      if (!config.success) {
+      const config =
+        value.format === "bracket"
+          ? bracketConfigSchema.safeParse(value.config)
+          : null;
+      if (!config?.success) {
         ctx.addIssue({
           code: "custom",
-          message:
-            value.format === "heats"
-              ? config.error.issues[0].message
-              : "Only the heats Format takes Heat settings.",
+          message: config
+            ? config.error.issues[0].message
+            : "Only a Bracket takes Heat settings.",
           path: ["config"],
         });
         return z.NEVER;
       }
-      if (config.data !== undefined) out.config = config.data;
+      out.config = config.data;
     }
     if (value.force !== undefined) out.force = value.force;
     return out;
@@ -120,8 +133,6 @@ export function parseSquadInput(input: unknown): Parsed<SquadInput> {
 }
 
 const generateSchema = z.object({
-  /** Random Seed Positions, or by the current Standings; default random. */
-  seeding: z.enum(["random", "standings"]).optional(),
   force: z.boolean().optional(),
 });
 
@@ -143,7 +154,6 @@ const heatResultSchema = z.object({
       z.string().trim().max(40, { error: "Scores are at most 40 characters." }),
     )
     .optional(),
-  forfeits: z.array(entrantId).optional(),
 });
 
 export function parseHeatResultInput(input: unknown): Parsed<HeatResult> {

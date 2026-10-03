@@ -116,7 +116,7 @@ describe("enrollError: a Participant enrolls", () => {
     expect(enrollError(facet({ selfEnroll: false }))).toBe(ENROLL_OFF);
   });
 
-  it("refuses the pick-only You: account linking is required", () => {
+  it("refuses a sign-in that links no Participant", () => {
     expect(enrollError(facet({ linked: null }))).toBe(NOT_LINKED);
   });
 
@@ -318,31 +318,28 @@ describe("enrollmentUnavailable: where enrollment is offered", () => {
 
   it.each([
     [
-      "a points Competition has no Entrant list",
+      "a placement Competition has no Entrant list",
       {
-        format: "points" as const,
+        format: "placement" as const,
         entrantsOpen: false,
-        gameType: null,
         gameConfig: null,
       },
-      "Participants enroll only in a Bracket or a Games Competition.",
+      "Participants enroll only in a Bracket, Head-to-head or Best score Competition.",
     ],
     [
       "a Bracket offers it",
       {
-        format: "single-elimination" as const,
+        format: "bracket" as const,
         entrantsOpen: false,
-        gameType: null,
         gameConfig: null,
       },
       null,
     ],
     [
-      "a Games Competition open to everyone has no list",
+      "a Head-to-head Competition open to everyone has no list",
       {
-        format: "games" as const,
+        format: "head-to-head" as const,
         entrantsOpen: true,
-        gameType: "head-to-head" as const,
         gameConfig: h2h,
       },
       "Everyone can play already; there's no list to enroll in.",
@@ -350,20 +347,31 @@ describe("enrollmentUnavailable: where enrollment is offered", () => {
     [
       "a Best of is set by the Host",
       {
-        format: "games" as const,
+        format: "head-to-head" as const,
         entrantsOpen: false,
-        gameType: "head-to-head" as const,
         gameConfig: { drawsAllowed: false, bestOf: 5 as const },
       },
       "A Best of is set by the Host; enrollment is off.",
     ],
     [
-      "a fixed-list Games Competition offers it",
+      "a Participation Competition takes check-ins instead",
       {
-        format: "games" as const,
+        format: "participation" as const,
         entrantsOpen: false,
-        gameType: "ranked" as const,
-        gameConfig: { finishPoints: [] },
+        gameConfig: null,
+      },
+      "A Participation Competition takes check-ins, not Entrants.",
+    ],
+    [
+      "a fixed-list Best score Competition offers it",
+      {
+        format: "best-score" as const,
+        entrantsOpen: false,
+        gameConfig: {
+          count: "best" as const,
+          betterIs: "higher" as const,
+          unit: "",
+        },
       },
       null,
     ],

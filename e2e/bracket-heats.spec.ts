@@ -6,13 +6,24 @@ import {
   test,
 } from "@playwright/test";
 
-import { xiCompetitionId } from "./db";
+import { openForBracket, xiCompetitionId } from "./db";
 import { asOrganizer, participantPageAs } from "./session";
 
 // Settlers of Catan is an individual War Week XI Competition with Placement
-// Points 5 / 3 / 1. None of these eight has a hand-entered Catan Points
-// Entry (Anthony Conway does; he's excluded).
+// Points 5 / 3 / 1. None of these eight is on the seeded Catan sheet (it
+// places only a Team).
 const COMPETITION = "Settlers of Catan";
+
+// The seeded Competitions are Finalized Placement sheets; open each for a
+// Bracket and put the sheet back afterwards.
+let restoreCompetition: (() => Promise<void>) | null = null;
+test.beforeEach(async () => {
+  restoreCompetition = await openForBracket(await xiCompetitionId(COMPETITION));
+});
+test.afterEach(async () => {
+  await restoreCompetition?.();
+  restoreCompetition = null;
+});
 const ENTRANTS = [
   "Albert Hernandez",
   "Alex Nikolis",
@@ -77,7 +88,11 @@ async function recordHeat(
   heat: string,
   onOpen?: (sheet: Locator) => Promise<void>,
 ): Promise<string[]> {
-  await page.getByRole("button", { name: `Record ${heat}` }).click();
+  // From the admin Bracket's tree, the one Participants see.
+  await page
+    .locator("[data-bracket-tree]")
+    .getByRole("button", { name: `Record result for ${heat}` })
+    .click();
   const sheet = page.getByRole("dialog", { name: heat });
   await expect(sheet).toBeVisible();
   if (onOpen) await onOpen(sheet);
@@ -101,7 +116,7 @@ async function recordHeat(
   return order;
 }
 
-test("a Heats Bracket is built, run and finalized into Points Entries", async ({
+test("a Bracket of 4 per Heat is built, run and finalized into Points Entries", async ({
   browser,
   context,
   page,
@@ -110,10 +125,10 @@ test("a Heats Bracket is built, run and finalized into Points Entries", async ({
   await asOrganizer(context);
   const id = await xiCompetitionId(COMPETITION);
 
-  await page.goto(`/admin/setup/competitions/${id}/bracket`);
+  await page.goto(`/admin/competitions/${id}/bracket`);
   await page.getByRole("combobox", { name: "Format" }).click();
-  await page.getByRole("option", { name: "Heats" }).click();
-  await expect(page.getByText("Format set to Heats")).toBeVisible();
+  await page.getByRole("option", { name: "Bracket", exact: true }).click();
+  await expect(page.getByText("Format set to Bracket")).toBeVisible();
 
   await page.getByRole("combobox", { name: "Entrants per Heat" }).click();
   await page.getByRole("option", { name: "4 per Heat" }).click();
@@ -140,7 +155,7 @@ test("a Heats Bracket is built, run and finalized into Points Entries", async ({
 
   await checkViewports(page, testInfo, "builder");
 
-  await page.getByRole("link", { name: "Run results" }).click();
+  await page.getByRole("link", { name: "Results", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: `${COMPETITION} · Results` }),
   ).toBeVisible();
@@ -155,7 +170,11 @@ test("a Heats Bracket is built, run and finalized into Points Entries", async ({
   const advancer = heat1[0];
   const you = await participantPageAs(browser, advancer);
   await you.page.goto(`/xi/competitions/${id}`);
-  const nextHeat = you.page.getByLabel("Your next Heat");
+  // Visible only: while a reload streams, React holds the new page in a
+  // hidden container before swapping it in, and getByLabel counts it.
+  const nextHeat = you.page
+    .getByLabel("Your next Heat")
+    .filter({ visible: true });
   await expect(nextHeat).toContainText(
     "Advanced to Round 2 · waiting for Round 1 to finish",
   );
@@ -169,19 +188,21 @@ test("a Heats Bracket is built, run and finalized into Points Entries", async ({
   for (const opponent of [heat1[1], heat2[0], heat2[1]]) {
     await expect(nextHeat).toContainText(opponent);
   }
-  await you.context.close();
+  await you.close();
 
   const finalOrder = await recordHeat(page, "Final");
   const champion = finalOrder[0];
   await expect(page.getByLabel("Champion", { exact: true })).toContainText(
     champion,
   );
+  // Every played Heat says when it was recorded.
+  await expect(page.getByText(/^Recorded .+ ET$/)).toHaveCount(3);
 
   await checkViewports(page, testInfo, "results-final");
 
   // Before finalizing: End War Week must warn (never refuse), naming this
   // Bracket, then Cancel without ever confirming it (XI stays live).
-  await page.goto("/admin/setup");
+  await page.goto("/admin/settings");
   await page.getByRole("button", { name: "End War Week" }).click();
   const endDialog = page.getByRole("alertdialog");
   await expect(endDialog).toContainText("Not finalized:");
@@ -204,8 +225,8 @@ test("a Heats Bracket is built, run and finalized into Points Entries", async ({
     .getByRole("listitem")
     .filter({ hasText: "From bracket" });
   // Placement Points 5 / 3 / 1: the champion, the runner-up and the Final's
-  // third place. The Final's fourth place and the four Round 1
-  // non-advancers (tied 5th) get nothing.
+  // third place. The Final's fourth place gets nothing, and nobody outside
+  // the Final is placed.
   await expect(entries).toHaveCount(3);
   await expect(entries.filter({ hasText: champion })).toHaveText(
     /From bracket\s*5$/,

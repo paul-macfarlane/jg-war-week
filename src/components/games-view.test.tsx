@@ -35,7 +35,6 @@ function row(
     draws: 0,
     best: null,
     total: null,
-    finishPoints: 0,
     ...stats,
   };
 }
@@ -60,7 +59,7 @@ const kim = { id: "p-kim", name: "Kim", color: null };
 
 const base: GamesViewProps = {
   competitionId: "c1",
-  gameType: "head-to-head",
+  gameFormat: "head-to-head",
   config: { drawsAllowed: true, bestOf: null },
   scoring: "individual",
   closed: false,
@@ -120,28 +119,13 @@ describe("GamesView leaderboard", () => {
 
   it("shows the counted score with its unit, then Played, for best-score", () => {
     const html = render({
-      gameType: "best-score",
+      gameFormat: "best-score",
       config: { count: "best", betterIs: "higher", unit: "trips" },
       leaderboard: [row(ashley.id, "Ashley", 1, { played: 3, best: 42 })],
       games: [],
     });
     expect(headers(html)).toEqual(["Rank", "Player", "Best (trips)", "Played"]);
     expect(html).toMatch(/<td[^>]*>42<\/td>/);
-  });
-
-  it("shows Finish Points, Played and Wins for ranked", () => {
-    const html = render({
-      gameType: "ranked",
-      config: { finishPoints: [] },
-      games: [],
-    });
-    expect(headers(html)).toEqual([
-      "Rank",
-      "Player",
-      "Finish Points",
-      "Played",
-      "Wins",
-    ]);
   });
 
   it("names the column Team in a team Competition", () => {
@@ -195,7 +179,7 @@ describe("GamesView Log a Game", () => {
     });
     expect(text(html)).toContain("Best of decided: Ashley —");
     expect(html).toMatch(
-      /<a[^>]*href="\/admin\/setup\/competitions\/c1\/games"[^>]*>Close it<\/a>/,
+      /<a[^>]*href="\/admin\/competitions\/c1\/games"[^>]*>Close it<\/a>/,
     );
   });
 
@@ -225,7 +209,7 @@ describe("GameLog", () => {
     renderToStaticMarkup(
       <GameLog
         competitionId="c1"
-        gameType="head-to-head"
+        gameFormat="head-to-head"
         unit=""
         games={base.games}
         filter="all"

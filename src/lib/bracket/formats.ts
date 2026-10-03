@@ -1,14 +1,14 @@
 /**
- * The one place Format-dependent Bracket behavior is chosen: each function
- * hands the Bracket (or, for `generate` and `validateConfig`, the Format) to
- * that Format's engine.
+ * The one place the Bracket's engine is chosen: each function hands the
+ * Bracket (or, for `generate` and `validateConfig`, its config) to that
+ * engine. Heat size 2 with 1 advancing runs the single-elimination engine;
+ * any other config runs the Heats engine. Nothing else picks one.
  */
-import type { BracketConfig } from "@/lib/bracket/config";
+import { type BracketConfig, isHeadToHead } from "@/lib/bracket/config";
 import { singleElimination } from "@/lib/bracket/engine";
 import { heats } from "@/lib/bracket/heats";
 import {
   type Bracket,
-  type BracketFormat,
   type Entrant,
   type FormatEngine,
   type Heat,
@@ -16,30 +16,23 @@ import {
   type Placing,
 } from "@/lib/bracket/types";
 
-export function engineFor(format: BracketFormat): FormatEngine {
-  switch (format) {
-    case "single-elimination":
-      return singleElimination;
-    case "heats":
-      return heats;
-  }
+export function engineFor(config: BracketConfig): FormatEngine {
+  return isHeadToHead(config) ? singleElimination : heats;
 }
 
 export function validateConfig(
-  format: BracketFormat,
   config: BracketConfig,
   entrantCount: number,
 ): string | null {
-  return engineFor(format).validateConfig(config, entrantCount);
+  return engineFor(config).validateConfig(config, entrantCount);
 }
 
 export function generate(
-  format: BracketFormat,
   config: BracketConfig,
   entrants: Entrant[],
   newId: (round: number, position: number) => string,
 ): Bracket {
-  return engineFor(format).generate(config, entrants, newId);
+  return engineFor(config).generate(config, entrants, newId);
 }
 
 export function applyResult(
@@ -47,7 +40,7 @@ export function applyResult(
   heatId: string,
   result: HeatResult,
 ): Bracket {
-  return engineFor(bracket.format).applyResult(bracket, heatId, result);
+  return engineFor(bracket.config).applyResult(bracket, heatId, result);
 }
 
 export function resetByResult(
@@ -55,32 +48,32 @@ export function resetByResult(
   heatId: string,
   result: HeatResult,
 ): string[] {
-  return engineFor(bracket.format).resetByResult(bracket, heatId, result);
+  return engineFor(bracket.config).resetByResult(bracket, heatId, result);
 }
 
 export function isRecordable(bracket: Bracket, heatId: string): boolean {
-  return engineFor(bracket.format).isRecordable(bracket, heatId);
+  return engineFor(bracket.config).isRecordable(bracket, heatId);
 }
 
 export function isBye(bracket: Bracket, heat: Heat): boolean {
-  return engineFor(bracket.format).isBye(bracket, heat);
+  return engineFor(bracket.config).isBye(bracket, heat);
 }
 
 export function hasResults(bracket: Bracket): boolean {
-  return engineFor(bracket.format).hasResults(bracket);
+  return engineFor(bracket.config).hasResults(bracket);
 }
 
 export function isComplete(bracket: Bracket): boolean {
-  return engineFor(bracket.format).isComplete(bracket);
+  return engineFor(bracket.config).isComplete(bracket);
 }
 
 export function champion(bracket: Bracket): string | null {
-  return engineFor(bracket.format).champion(bracket);
+  return engineFor(bracket.config).champion(bracket);
 }
 
 export function finalPlacings(
   bracket: Bracket,
   entrants: Entrant[],
 ): Placing[] {
-  return engineFor(bracket.format).finalPlacings(bracket, entrants);
+  return engineFor(bracket.config).finalPlacings(bracket, entrants);
 }
