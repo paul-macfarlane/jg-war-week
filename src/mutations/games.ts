@@ -375,7 +375,7 @@ export async function closeGames(
 
 /**
  * Reopens a closed `games` Competition: deletes its generated Points
- * Entries (hand-entered ones are untouched) and clears `finalized_at`.
+ * Entries and clears `finalized_at`.
  */
 export async function reopenGames(
   competitionId: string,

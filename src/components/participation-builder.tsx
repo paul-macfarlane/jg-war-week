@@ -386,7 +386,7 @@ export function ParticipationBuilder({
             </p>
             <ConfirmActionButton
               title="Reopen this Competition?"
-              description="The generated Points Entries are withdrawn; hand-entered ones stay."
+              description="The generated Points Entries are withdrawn."
               confirmLabel="Reopen"
               action={() => reopenParticipation(competition.id)}
               successMessage="Competition reopened"

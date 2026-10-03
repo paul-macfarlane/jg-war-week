@@ -525,7 +525,7 @@ export function GamesBuilder({
               title="Reopen this Competition?"
               description={
                 hasPlacementPoints(competition.placementPoints)
-                  ? "The generated Points Entries are withdrawn; hand-entered ones stay."
+                  ? "The generated Points Entries are withdrawn."
                   : "Players can log Games again."
               }
               confirmLabel="Reopen"

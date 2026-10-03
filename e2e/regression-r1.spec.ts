@@ -291,7 +291,9 @@ test("r1 06 09 the Competitions form offers Format including Bracket formats and
   await expect(addForm.getByText("Single elimination:")).toBeVisible();
   await expect(addForm.getByText("Heats:")).toBeVisible();
   await expect(
-    addForm.getByText("Only Points Entries; no Bracket."),
+    addForm.getByText(
+      "One result on one sheet: give each Team or Participant a Place, optionally a Score, then Finalize.",
+    ),
   ).toBeVisible();
   await expect(
     addForm.getByText("A knockout Bracket: one loss and an Entrant is out."),

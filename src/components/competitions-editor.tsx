@@ -43,7 +43,8 @@ import type { SetupCompetition } from "@/queries/setup";
 
 /** How each Format runs a Competition, shown on the create form. */
 const FORMAT_DESCRIPTIONS: Record<Format, string> = {
-  placement: "Only Points Entries; no Bracket.",
+  placement:
+    "One result on one sheet: give each Team or Participant a Place, optionally a Score, then Finalize.",
   "single-elimination": "A knockout Bracket: one loss and an Entrant is out.",
   heats:
     "A Bracket where Entrants play in Heats; a set number advance each Round.",

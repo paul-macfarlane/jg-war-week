@@ -289,7 +289,7 @@ export async function closeParticipation(
 
 /**
  * Reopens a `participation` Competition: deletes its generated Points
- * Entries (hand-entered ones are untouched) and clears `finalized_at`.
+ * Entries and clears `finalized_at`.
  */
 export async function reopenParticipation(
   competitionId: string,

@@ -259,7 +259,7 @@ export function placementEntryValues(
 
 /**
  * Finalizes the sheet: replaces its generated Points Entries with each
- * Place's Placement Points (hand-entered ones are untouched) and marks it
+ * Place's Placement Points and marks it
  * Finalized, keeping the first Finalize's time when run again. Refused
  * while a row has a Score and no Place, or nobody is placed.
  */

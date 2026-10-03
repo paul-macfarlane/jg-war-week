@@ -404,7 +404,7 @@ export function PlacementSheet({
         {locked ? (
           <ConfirmActionButton
             title="Reopen this Competition?"
-            description="Its generated Points Entries are withdrawn so the sheet can change; hand-entered ones stay."
+            description="Its generated Points Entries are withdrawn so the sheet can change."
             confirmLabel="Reopen"
             action={() => reopenPlacements(competition.id)}
             successMessage="Competition reopened"
