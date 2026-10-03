@@ -225,18 +225,16 @@ export function OrganizerGuide({
           too. A timed Heat shows on its card, in each Entrant&apos;s next Heat
           and, once its Entrants are known, in the home page&apos;s Now / Next.
           A re-draw clears every Heat time, so the builder asks first. From the
-          results screen, or straight from the Competition page&apos;s Bracket
-          (which reads as a tree by default — Rounds left to right for Single
-          elimination, one box per Heat for Heats, with a List toggle back to
-          the plain list), tap a Heat to record it: its winner, or for a bigger
-          Heat its Entrants in finishing order, with scores or forfeits, in a
-          dialog centered on a screen or a bottom sheet on a phone. Changing who
-          advances resets the later Heats that followed from it, while a
-          score-only edit keeps them. Finalize turns the Bracket&apos;s placings
-          into Points Entries marked &quot;From bracket&quot;; un-finalize
-          removes them so you can fix a Heat and finalize again. While it&apos;s
-          finalized, the Competition&apos;s scoring and Placement Points
-          can&apos;t change: un-finalize first.
+          results screen, press Record result on a Heat (Edit once it&apos;s
+          recorded) to enter it: its winner, or for a bigger Heat its Entrants
+          in finishing order, with scores or forfeits, in a dialog centered on a
+          screen or a bottom sheet on a phone. Changing who advances resets the
+          later Heats that followed from it, while a score-only edit keeps them.
+          Finalize turns the Bracket&apos;s placings into Points Entries marked
+          &quot;From bracket&quot;; un-finalize removes them so you can fix a
+          Heat and finalize again. While it&apos;s finalized, the
+          Competition&apos;s scoring and Placement Points can&apos;t change:
+          un-finalize first.
         </p>
         <h3 className="font-semibold">Squads and self-report</h3>
         <p className="text-foreground/70">

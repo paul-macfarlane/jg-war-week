@@ -201,3 +201,47 @@ export async function xiParticipantPointsBreakdown(
     [participantId],
   );
 }
+
+/** A Competition's Bracket-related columns, to put back after a spec built one. */
+export type BracketSnapshot = {
+  format: string | null;
+  bracket_config: unknown;
+  self_enroll: boolean;
+  finalized_at: Date | null;
+};
+
+export async function snapshotBracket(
+  competitionId: string,
+): Promise<BracketSnapshot> {
+  const [row] = await runQuery<BracketSnapshot>(
+    `select format::text as format, bracket_config, self_enroll, finalized_at
+     from competition where id = $1`,
+    [competitionId],
+  );
+  return row;
+}
+
+/** Drops the Competition's Heats and Entrants and restores its snapshot. */
+export async function restoreBracket(
+  competitionId: string,
+  snapshot: BracketSnapshot,
+) {
+  await runQuery(`delete from heat where competition_id = $1`, [competitionId]);
+  await runQuery(`delete from entrant where competition_id = $1`, [
+    competitionId,
+  ]);
+  await runQuery(
+    `update competition set format = $2::competition_format,
+       bracket_config = $3, self_enroll = $4, finalized_at = $5
+     where id = $1`,
+    [
+      competitionId,
+      snapshot.format,
+      snapshot.bracket_config === null
+        ? null
+        : JSON.stringify(snapshot.bracket_config),
+      snapshot.self_enroll,
+      snapshot.finalized_at,
+    ],
+  );
+}

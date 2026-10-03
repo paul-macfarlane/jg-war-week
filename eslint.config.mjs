@@ -120,6 +120,36 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    // ADR 0001: pages and routes sit at the top, so nothing below them
+    // imports from src/app. A shared piece of a route moves down a layer
+    // (as getNavAccount moved to src/auth). src/lib has its own,
+    // wider ban.
+    files: [
+      "src/{components,hooks,queries,mutations,actions,auth,mcp,seed,db}/**/*.{ts,tsx}",
+    ],
+    // A test may import the page it exercises.
+    ignores: ["**/*.test.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/app", "@/app/*"],
+              message:
+                "ADR 0001: only src/app imports from src/app. Move the shared piece down a layer (src/auth, src/queries, src/lib) and import it from there.",
+            },
+            {
+              regex: "^(\\.\\./)+app(/|$)",
+              message:
+                "ADR 0001: only src/app imports from src/app. Move the shared piece down a layer and import it by its @/ alias.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // The shadcn primitives are where native controls may still live.
     files: ["src/components/ui/**"],
     rules: { "no-restricted-syntax": "off" },

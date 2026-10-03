@@ -61,7 +61,7 @@ function entrantIn(text: string, entrants: string[]): string {
 
 /** Records a two-Entrant Heat on the results screen, its first-listed winning. */
 async function recordWinner(page: Page, heat: string, entrants: string[]) {
-  await page.getByRole("button", { name: `Record ${heat}` }).click();
+  await page.getByRole("button", { name: `Record result for ${heat}` }).click();
   const form = page.getByRole("dialog", { name: heat });
   const winner = form
     .getByRole("group", { name: "Winner" })
@@ -76,7 +76,7 @@ async function recordWinner(page: Page, heat: string, entrants: string[]) {
 
 /** Records a Heat of more than two by tapping its Entrants in listed order. */
 async function recordOrder(page: Page, heat: string, entrants: string[]) {
-  await page.getByRole("button", { name: `Record ${heat}` }).click();
+  await page.getByRole("button", { name: `Record result for ${heat}` }).click();
   const form = page.getByRole("dialog", { name: heat });
   const buttons = form
     .getByRole("group", { name: "Finishing order" })
@@ -108,7 +108,7 @@ async function finalize(page: Page, action: "Finalize" | "Un-finalize") {
  */
 async function checkResultPopup(page: Page, testInfo: TestInfo, heat: string) {
   await page.setViewportSize(DESKTOP);
-  await page.getByRole("button", { name: `Record ${heat}` }).click();
+  await page.getByRole("button", { name: `Record result for ${heat}` }).click();
   const dialog = page.getByRole("dialog", { name: heat });
   await expect(dialog).toBeVisible();
   await expect
@@ -129,7 +129,7 @@ async function checkResultPopup(page: Page, testInfo: TestInfo, heat: string) {
   await expect(dialog).toBeHidden();
 
   await page.setViewportSize(PHONE);
-  await page.getByRole("button", { name: `Record ${heat}` }).click();
+  await page.getByRole("button", { name: `Record result for ${heat}` }).click();
   const sheet = page.getByRole("dialog", { name: heat });
   await expect(sheet).toBeVisible();
   await expect

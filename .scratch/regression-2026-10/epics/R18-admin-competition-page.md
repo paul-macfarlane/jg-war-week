@@ -30,3 +30,4 @@ Each ticket's own, plus:
 ## Comments
 
 - 2026-10-03 (Paul): grilled and approved; tickets `ready-for-agent`.
+- 2026-10-03 (atlas-implement, R15): when these forms are rebuilt, keep the "forms seeded from server data follow it after a save" rule (`docs/maintainers-guide.md`, UI) and the ticket 89 case: save, leave, return, and the saved values show (`e2e/regression-r15-games-settings.spec.ts`).

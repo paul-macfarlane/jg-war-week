@@ -147,7 +147,7 @@ function squadIn(text: string): string {
 
 /** Records the Heat named `heat` as the Host, its first-listed Squad winning. */
 async function recordHeat(page: Page, heat: string): Promise<string> {
-  await page.getByRole("button", { name: `Record ${heat}` }).click();
+  await page.getByRole("button", { name: `Record result for ${heat}` }).click();
   const sheet = page.getByRole("dialog", { name: heat });
   const winner = sheet
     .getByRole("group", { name: "Winner" })
@@ -413,7 +413,7 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await expect(heatCard(page, "Final")).toContainText(opponent);
     await expect(heatCard(page, "Final")).not.toContainText("Red Alpha");
     await expect(
-      page.getByRole("button", { name: "Record Final" }),
+      page.getByRole("button", { name: "Record result for Final" }),
     ).toBeVisible();
 
     // Put Red Alpha back, play the Final, finalize.

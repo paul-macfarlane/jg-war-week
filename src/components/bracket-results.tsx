@@ -259,32 +259,25 @@ export function BracketResultsView({
                     <CardContent className="flex min-w-0 flex-col gap-2">
                       <div className="text-foreground/60 flex min-h-8 items-center justify-between gap-2 text-xs font-medium">
                         <span>{name}</span>
-                        <span className="flex items-center gap-2">
-                          {tappable && (
-                            <span className="text-primary">
-                              {isDecided(heat) ? "Edit" : "Record result"}
-                            </span>
-                          )}
-                          {schedulable && (
-                            // Above the full-card overlay, so it opens its
-                            // own Sheet rather than the Heat Result.
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              aria-label={`Time & place for ${name}`}
-                              className="relative z-10 min-h-11 sm:min-h-8"
-                              onClick={() =>
-                                onOpenSheetChange({
-                                  kind: "schedule",
-                                  heatId: heat.id,
-                                })
-                              }
-                            >
-                              Time &amp; place
-                            </Button>
-                          )}
-                        </span>
+                        {schedulable && (
+                          // Above the full-card overlay, so it opens its
+                          // own Sheet rather than the Heat Result.
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            aria-label={`Time & place for ${name}`}
+                            className="relative z-10 min-h-11 sm:min-h-8"
+                            onClick={() =>
+                              onOpenSheetChange({
+                                kind: "schedule",
+                                heatId: heat.id,
+                              })
+                            }
+                          >
+                            Time &amp; place
+                          </Button>
+                        )}
                       </div>
                       {when && (
                         <span className="text-foreground/70 text-xs">
@@ -299,16 +292,26 @@ export function BracketResultsView({
                       )}
                     </CardContent>
                     {tappable && (
-                      // Covers the Card, so the whole Heat is one tap target.
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        aria-label={`${isDecided(heat) ? "Edit" : "Record"} ${name}`}
-                        className="focus-visible:ring-ring/50 absolute inset-0 size-auto rounded-xl border-0 bg-transparent p-0 outline-none hover:bg-transparent focus-visible:ring-3 active:translate-y-0"
-                        onClick={() =>
-                          onOpenSheetChange({ kind: "result", heatId: heat.id })
-                        }
-                      />
+                      // One control: its ::after stretches over the Card, so
+                      // the whole Heat is still one tap target. Not
+                      // `relative`, so the Card is the containing block.
+                      <div className="px-(--card-spacing)">
+                        <Button
+                          type="button"
+                          variant={isDecided(heat) ? "outline" : "default"}
+                          size="sm"
+                          aria-label={`${isDecided(heat) ? "Edit" : "Record result for"} ${name}`}
+                          className="min-h-11 after:absolute after:inset-0 after:rounded-xl active:not-aria-[haspopup]:translate-none sm:min-h-8"
+                          onClick={() =>
+                            onOpenSheetChange({
+                              kind: "result",
+                              heatId: heat.id,
+                            })
+                          }
+                        >
+                          {isDecided(heat) ? "Edit" : "Record result"}
+                        </Button>
+                      </div>
                     )}
                   </Card>
                 </li>

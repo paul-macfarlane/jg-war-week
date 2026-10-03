@@ -71,10 +71,30 @@ export type BracketTree = {
 };
 
 /** How many of a decided Heat's places go through (the Final: 1, the winner). */
-function advancingPlaces(bracket: Bracket, heat: Heat): number {
+export function advancingPlaces(bracket: Bracket, heat: Heat): number {
   if (bracket.format === "single-elimination") return 1;
   if (heat.round >= finalRoundOf(bracket)) return 1;
   return heatsConfig(bracket.config).advancePerHeat;
+}
+
+/** Whether `place` is among the places that go through from `heat`. */
+export function advancesAtPlace(
+  bracket: Bracket,
+  heat: Heat,
+  place: number,
+): boolean {
+  return place <= advancingPlaces(bracket, heat);
+}
+
+/** Whether a slot at `place` in a decided Heat goes through: the one rule. */
+export function advancesFromPlace(
+  bracket: Bracket,
+  heat: Heat,
+  place: number | null,
+): boolean {
+  return (
+    isDecided(heat) && place !== null && advancesAtPlace(bracket, heat, place)
+  );
 }
 
 function treeSlots(bracket: Bracket, heat: Heat, bye: boolean): TreeSlot[] {
@@ -87,7 +107,6 @@ function treeSlots(bracket: Bracket, heat: Heat, bye: boolean): TreeSlot[] {
     ];
   }
   const decided = isDecided(heat);
-  const through = advancingPlaces(bracket, heat);
   const slots: TreeSlot[] = heat.slots.map((slot, i) => {
     if (slot.entrantId === null) {
       if (bye) return { kind: "bye" };
@@ -105,7 +124,7 @@ function treeSlots(bracket: Bracket, heat: Heat, bye: boolean): TreeSlot[] {
       place: slot.place,
       score: slot.score,
       forfeited: slot.forfeited,
-      advances: decided && slot.place !== null && slot.place <= through,
+      advances: advancesFromPlace(bracket, heat, slot.place),
     };
   });
   if (bracket.format === "heats" && decided) {

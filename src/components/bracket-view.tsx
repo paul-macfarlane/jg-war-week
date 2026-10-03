@@ -18,6 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useYou } from "@/components/you";
 import { isBye } from "@/lib/bracket/formats";
+import { advancesFromPlace } from "@/lib/bracket/tree";
 import type { Bracket, Heat } from "@/lib/bracket/types";
 import {
   type NextHeat,
@@ -116,16 +117,17 @@ export function HeatRows({
             </li>
           );
         }
-        const won = decided && slot.place === 1;
+        const advances = !bye && advancesFromPlace(bracket, heat, slot.place);
         return (
           <li
             key={i}
+            data-advances={advances ? "" : undefined}
             className={`flex min-h-8 min-w-0 items-center gap-2 px-1 ${YOU_ROW_CLASS}`}
           >
             {ranked && (
               <span
                 aria-label={`Place ${slot.place}`}
-                className={`w-5 shrink-0 text-right text-sm tabular-nums ${won ? "text-primary font-bold" : "text-foreground/60"}`}
+                className={`w-5 shrink-0 text-right text-sm tabular-nums ${advances ? "text-primary font-bold" : "text-foreground/60"}`}
               >
                 {slot.place}
               </span>
@@ -138,7 +140,7 @@ export function HeatRows({
             {entrant.squadId && entrant.participantNames.length > 0 ? (
               <span className="flex min-w-0 flex-col">
                 <span
-                  className={`min-w-0 truncate ${won ? "font-semibold" : decided ? "text-foreground/70" : ""}`}
+                  className={`min-w-0 truncate ${advances ? "font-semibold" : decided ? "text-foreground/70" : ""}`}
                 >
                   {entrant.label}
                 </span>
@@ -148,12 +150,12 @@ export function HeatRows({
               </span>
             ) : (
               <span
-                className={`min-w-0 truncate ${won ? "font-semibold" : decided ? "text-foreground/70" : ""}`}
+                className={`min-w-0 truncate ${advances ? "font-semibold" : decided ? "text-foreground/70" : ""}`}
               >
                 {entrant.label}
               </span>
             )}
-            {won && !ranked && (
+            {advances && !ranked && (
               <span aria-label="Winner" className="text-primary font-bold">
                 ✓
               </span>
@@ -162,7 +164,7 @@ export function HeatRows({
             {entrant.id === youEntrantId && <YouMark />}
             {slot.score && (
               <span
-                className={`ml-auto shrink-0 tabular-nums ${won ? "font-semibold" : ""}`}
+                className={`ml-auto shrink-0 tabular-nums ${advances ? "font-semibold" : ""}`}
               >
                 {slot.score}
               </span>

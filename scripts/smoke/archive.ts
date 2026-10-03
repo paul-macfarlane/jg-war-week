@@ -7,7 +7,12 @@ export async function assertHistory() {
     "GET /history lists every complete War Week, newest first, each in its own theme";
   try {
     const res = await signedInFetch(`${BASE_URL}/history`);
-    const body = await res.text();
+    const html = await res.text();
+    // The page's own content: /history wears the current War Week's chrome,
+    // whose nav and tagline name the live War Week. The last <main> is the
+    // streamed page; an earlier one is the loading skeleton.
+    const start = html.lastIndexOf("<main");
+    const body = html.slice(start, html.indexOf("</main>", start));
     const complete = await runQuery<{
       edition: string;
       primary: string;

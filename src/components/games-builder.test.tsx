@@ -183,3 +183,17 @@ describe("GamesBuilder", () => {
     expect(html).not.toContain("Reopen");
   });
 });
+
+describe("GamesBuilder field help", () => {
+  it("says what Finish Points and Placement Points are, each in its own words", () => {
+    const html = render({
+      competition: competition("ranked", { finishPoints: [] }),
+    });
+    expect(html).toContain(
+      "What a player earns for each finishing place in one Game, 1st first. Blank: one point per player beaten.",
+    );
+    expect(html).toContain(
+      "Placement Points, set in the Competition&#x27;s Edit sheet on the Competitions page, are what the leaderboard&#x27;s top places earn in the Standings.",
+    );
+  });
+});

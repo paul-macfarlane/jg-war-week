@@ -415,7 +415,6 @@ export function SetupAddButton({
     <div {...setupRowProps()}>
       <Button
         type="button"
-        variant="outline"
         size="lg"
         className="min-h-11 sm:min-h-9"
         onClick={() => setOpen(true)}

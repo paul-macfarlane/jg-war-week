@@ -26,7 +26,7 @@ export default async function FaqPage({ params }: PageProps<"/[edition]/faq">) {
               className="border-border border-b last:border-b-0"
             >
               <details className="group">
-                <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 font-medium [&::-webkit-details-marker]:hidden">
+                <summary className="flex list-none items-center gap-3 px-4 py-3 font-medium [&::-webkit-details-marker]:hidden">
                   <h2 className="flex-1 text-base">{item.question}</h2>
                   <ChevronDown
                     aria-hidden

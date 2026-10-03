@@ -256,6 +256,29 @@ describe("parseGamesSettingsInput", () => {
     });
   });
 
+  it("ignores empty entries in Finish Points: a trailing or doubled comma is not a 0", () => {
+    const parse = (finishPoints: string) =>
+      parseGamesSettingsInput({
+        gameType: "ranked",
+        finishPoints,
+        entrantsOpen: true,
+        loggingClosesAt: "",
+        selfEnroll: false,
+        entrantLimit: "",
+        enrollClosesAt: "",
+      });
+    for (const text of ["5, 3, 1,", "5,, 3, 1", ",5, 3, 1", "5 , 3 , 1 ,"]) {
+      expect(parse(text)).toMatchObject({
+        ok: true,
+        value: { gameConfig: { finishPoints: [5, 3, 1] } },
+      });
+    }
+    expect(parse(",")).toMatchObject({
+      ok: true,
+      value: { gameConfig: { finishPoints: [] } },
+    });
+  });
+
   it("refuses an Entrant limit of 1", () => {
     const result = parseGamesSettingsInput({
       gameType: "best-score",

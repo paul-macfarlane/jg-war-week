@@ -180,15 +180,22 @@ export function GamesBuilder({
   const isTeam = competition.scoring === "team";
   const kind: EntrantKind = isTeam ? "team" : "participant";
 
-  const [fields, setFields] = useState<SettingsFields>(() =>
-    initialFields(
-      gameType,
-      competition.config,
-      competition.entrantsOpen,
-      competition.loggingClosesAt,
-      enroll,
-    ),
+  const savedFields = initialFields(
+    gameType,
+    competition.config,
+    competition.entrantsOpen,
+    competition.loggingClosesAt,
+    enroll,
   );
+  const [fields, setFields] = useState<SettingsFields>(savedFields);
+  // After a save, `router.refresh()` hands this form the saved values as new
+  // props; the fields follow them instead of keeping what was first loaded.
+  const savedKey = JSON.stringify(savedFields);
+  const [lastSavedKey, setLastSavedKey] = useState(savedKey);
+  if (savedKey !== lastSavedKey) {
+    setLastSavedKey(savedKey);
+    setFields(savedFields);
+  }
   function set<K extends keyof SettingsFields>(
     key: K,
     value: SettingsFields[K],
@@ -386,7 +393,11 @@ export function GamesBuilder({
                 onChange={(event) => set("finishPoints", event.target.value)}
               />
               <FieldDescription>
-                Blank: one point per player beaten.
+                What a player earns for each finishing place in one Game, 1st
+                first. Blank: one point per player beaten. Placement Points, set
+                in the Competition&apos;s Edit sheet on the Competitions page,
+                are what the leaderboard&apos;s top places earn in the
+                Standings.
               </FieldDescription>
               <FieldError>{fieldErrors.finishPoints}</FieldError>
             </Field>
