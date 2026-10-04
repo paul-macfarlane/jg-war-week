@@ -1,13 +1,7 @@
-import { and, eq, inArray, ne, or, sql } from "drizzle-orm";
+import { and, eq, ne, or, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
-import {
-  type WarWeek,
-  competition,
-  competitionHost,
-  faqItem,
-  warWeek,
-} from "@/db/schema";
+import { type WarWeek, competition, faqItem, warWeek } from "@/db/schema";
 import {
   type ClosingValues,
   DEFAULT_SETTINGS,
@@ -191,8 +185,8 @@ async function takenError(
 /**
  * Create next War Week: inserts an `upcoming` War Week and the chosen
  * copies from the War Week `ctx` names in one transaction. Copies settings
- * with the Appearance Theme, Competitions (new ids, with their Hosts, no
- * Points Entries) and the FAQ as chosen; never Teams, roster, Days,
+ * with the Appearance Theme, Competitions (new ids, no Hosts: the
+ * new roster is empty, and no Points Entries) and the FAQ as chosen; never Teams, roster, Days,
  * Schedule, Points Entries, Awards or Announcements. Organizers are global,
  * so there are none to copy.
  */
@@ -255,48 +249,17 @@ export async function createNextWarWeek(
           .from(competition)
           .where(eq(competition.warWeekId, source.id));
         if (competitions.length > 0) {
-          const copies = await tx
-            .insert(competition)
-            .values(
-              competitions.map((c) => ({
-                warWeekId: created.id,
-                name: c.name,
-                description: c.description,
-                placementPoints: c.placementPoints,
-                scoring: c.scoring,
-                countsTowardTeam: c.countsTowardTeam,
-                competitionGroup: c.competitionGroup,
-              })),
-            )
-            .returning({ id: competition.id, name: competition.name });
-          // Names are unique per War Week, so they pair each copy with its
-          // source.
-          const copyIdByName = new Map(copies.map((c) => [c.name, c.id]));
-          const hosts = await tx
-            .select({
-              competitionId: competitionHost.competitionId,
-              email: competitionHost.email,
-            })
-            .from(competitionHost)
-            .where(
-              inArray(
-                competitionHost.competitionId,
-                competitions.map((c) => c.id),
-              ),
-            );
-          const sourceNameById = new Map(
-            competitions.map((c) => [c.id, c.name]),
+          await tx.insert(competition).values(
+            competitions.map((c) => ({
+              warWeekId: created.id,
+              name: c.name,
+              description: c.description,
+              placementPoints: c.placementPoints,
+              scoring: c.scoring,
+              countsTowardTeam: c.countsTowardTeam,
+              competitionGroup: c.competitionGroup,
+            })),
           );
-          if (hosts.length > 0) {
-            await tx.insert(competitionHost).values(
-              hosts.map((h) => ({
-                competitionId: copyIdByName.get(
-                  sourceNameById.get(h.competitionId)!,
-                )!,
-                email: h.email,
-              })),
-            );
-          }
         }
       }
 

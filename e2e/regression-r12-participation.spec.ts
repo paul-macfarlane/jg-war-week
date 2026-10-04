@@ -6,8 +6,8 @@ import {
   openCompetitionPage,
 } from "./competition-page";
 import {
+  addE2eHost,
   deleteXiCompetition,
-  runQuery,
   xiCompetitionEntries,
   xiTeamPointsBreakdown,
 } from "./db";
@@ -103,18 +103,15 @@ test("r12 69 a Host runs a team Participation Competition: check-ins, a tick, Cl
     await page.waitForURL(/\/admin\/competitions\/[0-9a-f-]{36}$/);
     const id = page.url().split("/").at(-1) ?? "";
 
-    // …and makes the e2e Host its Host. They aren't on the roster, so the
-    // Hosts picker can't choose them: the row is inserted directly, and the
-    // reloaded page shows them among the Hosts.
+    // …and makes the e2e Host its Host: a roster Participant with the e2e
+    // Host's email is added and made Host directly, and the reloaded page
+    // shows them among the Hosts.
     const settings = page.getByRole("form", { name: "Competition settings" });
-    await runQuery(
-      `insert into competition_host (competition_id, email) values ($1, $2)`,
-      [id, E2E_HOST_EMAIL],
-    );
+    await addE2eHost(id, E2E_HOST_EMAIL);
     await page.reload();
     await expect(
       settings.getByRole("button", {
-        name: `Remove ${E2E_HOST_EMAIL} (not on the roster)`,
+        name: "Remove E2E Host",
       }),
     ).toBeVisible();
 

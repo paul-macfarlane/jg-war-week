@@ -9,7 +9,7 @@ import {
   openCompetitionPage,
   setFormat,
 } from "./competition-page";
-import { deleteXiCompetition, runQuery } from "./db";
+import { addE2eHost, deleteXiCompetition, runQuery } from "./db";
 import { E2E_HOST_EMAIL, asHost, asOrganizer } from "./session";
 
 // Epic R18, ticket 101 (.scratch/regression-2026-10/issues/101-one-admin-competition-page.md):
@@ -342,10 +342,11 @@ test("r18 101 a Host edits their Competition's settings, sees Hosts as names onl
        select id, $1, $2 from war_week where edition = 'xi'`,
       [coHostName, coHost],
     );
+    await addE2eHost(id, E2E_HOST_EMAIL);
     await runQuery(
-      `insert into competition_host (competition_id, email)
-       values ($1, $2), ($1, $3)`,
-      [id, E2E_HOST_EMAIL, coHost],
+      `insert into competition_host (competition_id, participant_id)
+       select $1, id from participant where email = $2`,
+      [id, coHost],
     );
     await asHost(context);
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -361,7 +362,7 @@ test("r18 101 a Host edits their Competition's settings, sees Hosts as names onl
     ).toBeVisible();
     const names = settings.locator('[data-slot="host-names"]');
     await expect(names).toContainText(coHostName);
-    await expect(names).toContainText("A Host not on the roster");
+    await expect(names).toContainText("E2E Host");
 
     // No email in the page (its HTML and the props it carries) but the
     // Host's own: the co-Host's never loads for a Host, nor any part of it.

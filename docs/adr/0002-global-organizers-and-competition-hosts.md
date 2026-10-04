@@ -3,6 +3,7 @@
 - Status: accepted (built in `.scratch/hardening/issues/03`)
 - Date: 2026-09-26
 - Extended by: ADR 0009 (Check in), ADR 0010 (Placement and Discretionary points)
+- Superseded in part by ADR 0012 (Hosts are roster Participants): its Host storage as an email, "A Host doesn't have to be a Participant", "Create next War Week copies Hosts" and the Host's Schedule Item and Announcement rights. The three roles stand.
 - Context: post-hackathon grilling session
 
 ## Context

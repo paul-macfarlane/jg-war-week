@@ -155,7 +155,6 @@ export function CompetitionsEditor({
   warWeekId,
   isOrganizer,
   hosts,
-  hostNames,
   competitions,
   mode,
   teamLabel,
@@ -164,10 +163,8 @@ export function CompetitionsEditor({
   warWeekId: string;
   /** Organizers add and delete; a Host only opens their Competitions. */
   isOrganizer: boolean;
-  /** Each Competition's Hosts by Competition id (Organizers only). */
+  /** Each Competition's Host names by Competition id (Organizers only). */
   hosts?: Record<string, string[]>;
-  /** Each Host email's shown name (Profile name, else the email). */
-  hostNames?: Record<string, string>;
   competitions: SetupCompetition[];
   mode: WarWeek["mode"];
   teamLabel: string;
@@ -196,7 +193,7 @@ export function CompetitionsEditor({
                     : mode === "teams" && "Individual",
                   formatLabel(c.format),
                   competitionHosts?.length &&
-                    `Hosts: ${competitionHosts.map((h) => hostNames?.[h] ?? h).join(", ")}`,
+                    `Hosts: ${competitionHosts.join(", ")}`,
                   competitionUsage(c),
                 ]
                   .filter(Boolean)

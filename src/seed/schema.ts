@@ -318,6 +318,14 @@ export const warWeekSeedSchema = z
     });
 
     seed.competitions.forEach((c, index) => {
+      (c.hosts ?? []).forEach((name, hostIndex) => {
+        if (!participants.has(name)) {
+          issue(
+            ["competitions", index, "hosts", hostIndex],
+            `Host "${name}" is not on this War Week's roster`,
+          );
+        }
+      });
       (c.entrants ?? []).forEach((name, entrantIndex) => {
         const known = c.scoring === "team" ? teams : participants;
         if (!known.has(name)) {

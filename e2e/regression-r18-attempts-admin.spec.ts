@@ -1,7 +1,7 @@
 import { type Page, expect, test } from "@playwright/test";
 
 import { addCompetition, openCompetitionPage } from "./competition-page";
-import { deleteXiCompetition, runQuery } from "./db";
+import { addE2eHost, deleteXiCompetition } from "./db";
 import { E2E_HOST_EMAIL, asHost, asOrganizer } from "./session";
 
 // Epic R18, ticket 104 (.scratch/regression-2026-10/issues/104-*.md): a
@@ -42,10 +42,7 @@ test("r18 104 a Host logs, edits and deletes a Best score Attempt from admin (in
     await expect(
       page.getByRole("button", { name: "Save Entrants" }),
     ).toHaveCount(0);
-    await runQuery(
-      `insert into competition_host (competition_id, email) values ($1, $2)`,
-      [id, E2E_HOST_EMAIL],
-    );
+    await addE2eHost(id, E2E_HOST_EMAIL);
 
     const hostContext = await browser.newContext();
     try {

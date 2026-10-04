@@ -20,8 +20,3 @@ export const jgEmailSchema = z
       .max(254, { error: JG_EMAIL_MESSAGE, abort: true })
       .refine(isJahnelGroupEmail, { error: JG_EMAIL_MESSAGE }),
   );
-
-/** A list of Jahnel Group emails (a Competition's Hosts). */
-export const jgEmailListSchema = z.array(jgEmailSchema, {
-  error: JG_EMAIL_MESSAGE,
-});

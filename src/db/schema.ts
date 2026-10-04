@@ -938,7 +938,12 @@ export const profile = pgTable(
   ],
 );
 
-/** A Host: a JG email that runs one Competition. */
+/**
+ * A Host: a roster Participant who runs one Competition (ADR 0012). Access
+ * follows the Participant's roster email at request time. The Participant
+ * must be on the Competition's War Week roster, a write-time rule in
+ * `setCompetitionHosts`, not a constraint.
+ */
 export const competitionHost = pgTable(
   "competition_host",
   {
@@ -946,17 +951,15 @@ export const competitionHost = pgTable(
     competitionId: uuid("competition_id")
       .notNull()
       .references(() => competition.id, { onDelete: "cascade" }),
-    email: varchar("email", { length: 254 }).notNull(),
+    participantId: uuid("participant_id")
+      .notNull()
+      .references(() => participant.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => [
-    // Email first, so it also serves the lookup of what an email hosts.
-    unique().on(table.email, table.competitionId),
+    // Participant first, so it also serves what a Participant hosts.
+    unique().on(table.participantId, table.competitionId),
     index("competition_host_competition_id_idx").on(table.competitionId),
-    check(
-      "competition_host_email_lowercase",
-      sql`${table.email} = lower(${table.email})`,
-    ),
   ],
 );
 

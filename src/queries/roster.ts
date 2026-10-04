@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import { WarWeek, participant, team } from "@/db/schema";
+import { isJahnelGroupEmail } from "@/lib/access";
 import type { HostCandidate } from "@/lib/host-options";
 import { type Roster, buildRoster } from "@/lib/roster";
 import type { YouCandidate } from "@/lib/you";
@@ -65,14 +66,14 @@ export async function getYouCandidates(
 
 /**
  * A War Week's Participants for the Hosts picker: shown name (the Profile
- * name, else the roster name) and roster email. Emails: call for an
- * Organizer only.
+ * name, else the roster name) and whether their roster email can never sign
+ * in. The email is read here and dropped: it never reaches a page.
  */
 export async function getHostCandidates(
   warWeek: Pick<WarWeek, "id">,
   dbOrTx: DBOrTx = db,
 ): Promise<HostCandidate[]> {
-  return withProfile(
+  const rows = await withProfile(
     dbOrTx
       .select({
         id: participant.id,
@@ -83,5 +84,10 @@ export async function getHostCandidates(
       .$dynamic(),
   )
     .where(eq(participant.warWeekId, warWeek.id))
-    .orderBy(participantNameSql(), participant.email);
+    .orderBy(participantNameSql(), participant.id);
+  return rows.map(({ id, name, email }) => ({
+    id,
+    name,
+    cantSignIn: !!email?.trim() && !isJahnelGroupEmail(email),
+  }));
 }

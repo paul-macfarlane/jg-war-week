@@ -22,9 +22,8 @@ export const metadata: Metadata = { title: "Competition · JG War Week" };
  * A Competition's one admin page (ticket 101), for Organizers and that
  * Competition's Hosts; everyone else sees the refusal. **Settings** on top,
  * each autosaving through the per-field save and locked by the lock table;
- * the Format's **run area** below. A Host sees the Hosts as names only:
- * Host emails load only for an Organizer, so the page holds no email but
- * the viewer's own.
+ * the Format's **run area** below. The Hosts show as names (a Host) or in
+ * a name-only picker (an Organizer): the page holds no roster email.
  */
 export default async function CompetitionPage({
   params,
@@ -36,15 +35,15 @@ export default async function CompetitionPage({
     return <AdminRefused warWeek={warWeek} email={email} />;
   }
 
-  // The roster's emails load for an Organizer only: a Host's page never
-  // holds a Participant's or another Host's email.
+  // The roster's candidates load for an Organizer only; they carry names
+  // and a "Can't sign in" flag, never an email.
   const [page, groupSuggestions, hostCandidates] = await Promise.all([
-    getCompetitionPage(warWeek.id, id, { withHostEmails: isOrganizer }),
+    getCompetitionPage(warWeek.id, id),
     getCompetitionGroupSuggestions(warWeek),
     isOrganizer ? getHostCandidates(warWeek) : Promise.resolve([]),
   ]);
   if (!page) notFound();
-  const { competition, facts, hostEmails, hostNames } = page;
+  const { competition, facts, hostIds, hostNames } = page;
   const entrantCount =
     competition.format === "bracket"
       ? (await getBracketEntrants(competition.id)).length
@@ -81,7 +80,7 @@ export default async function CompetitionPage({
         </div>
         <CompetitionSettingsForm
           competitionId={competition.id}
-          initial={settingsValuesOf({ ...competition, hosts: hostEmails })}
+          initial={settingsValuesOf({ ...competition, hosts: hostIds })}
           facts={facts}
           mode={warWeek.mode}
           teamLabel={warWeek.teamLabel}

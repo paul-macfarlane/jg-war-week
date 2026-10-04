@@ -1,6 +1,6 @@
 import type { Page, TestInfo } from "@playwright/test";
 
-import { runQuery, xiParticipantId } from "./db";
+import { addE2eHost, runQuery, xiParticipantId } from "./db";
 import { E2E_HOST_EMAIL } from "./session";
 
 /**
@@ -71,10 +71,7 @@ export async function addXiCompetition(
       columns.placementPoints ?? [5, 2, 1],
     ],
   );
-  await runQuery(
-    `insert into competition_host (competition_id, email) values ($1, $2)`,
-    [id, E2E_HOST_EMAIL],
-  );
+  await addE2eHost(id, E2E_HOST_EMAIL);
   return id;
 }
 

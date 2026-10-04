@@ -253,7 +253,7 @@ export function CompetitionSettingsForm({
   }
 
   const errors = saveState.fieldErrors;
-  const hostOptions = buildHostOptions(hostCandidates, values.hosts);
+  const hostOptions = buildHostOptions(hostCandidates);
   const shown = new Set(shownSettings(values, mode));
   const lock = (field: SettingsField) => settingLockReason(field, facts);
   const id = (field: SettingsField) => `competition-${field}`;
@@ -485,8 +485,9 @@ export function CompetitionSettingsForm({
                     emptyText="No one on the roster matches."
                   />
                   <FieldDescription>
-                    A Host can change this Competition&apos;s settings, run it,
-                    and its Points Entries and linked Schedule Items.
+                    A Host can change this Competition&apos;s settings and run
+                    it. They get access once they sign in with the email on
+                    their roster entry.
                   </FieldDescription>
                   <FieldError>{errors.hosts}</FieldError>
                 </Field>

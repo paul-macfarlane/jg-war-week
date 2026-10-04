@@ -128,7 +128,8 @@ export function OrganizerGuide({
           yourself included, as long as one Organizer is left.
         </p>
         <p className="text-foreground/70">
-          A Host runs one Competition for you. Assign Hosts on{" "}
+          A Host runs one Competition for you, and is a Participant on the
+          roster. Assign Hosts on{" "}
           <Link
             href="/admin/competitions"
             className="text-primary underline underline-offset-4"
@@ -136,12 +137,15 @@ export function OrganizerGuide({
             Competitions
           </Link>{" "}
           (the Hosts field in each Competition&apos;s Settings, picked from the
-          roster by name). A Host sees only their Competitions in Admin: they
-          record its results, run its Bracket, Matches and Attempts, change its
-          settings and see its Hosts by name, and manage its linked Schedule
-          Items, and can post Announcements. Everything else stays with
-          Organizers. A Schedule Item&apos;s host text is just what the schedule
-          shows; it doesn&apos;t make anyone a Host.
+          roster by name; no email is shown). A Host gets access when they sign
+          in with the email on their roster entry, so add it in Roster if they
+          have none (changing a Participant&apos;s email moves their Host access
+          to whoever owns the new one). A Host sees only the Competitions they
+          host and this Guide in Admin: they record a Competition&apos;s
+          results, run its Bracket, Matches and Attempts, and change its
+          settings. Schedule, Announcements, the Finale and everything else stay
+          with Organizers. A Schedule Item&apos;s host text is just what the
+          schedule shows; it doesn&apos;t make anyone a Host.
         </p>
       </section>
 
@@ -325,9 +329,8 @@ export function OrganizerGuide({
           place to first) and Winner; the countdown plays when you arrive on it,
           and Replay runs it again. On the Finale page you can reorder or hide
           the slides, add your own Custom slides, and choose whether the Awards
-          are on one slide or one per Category (Hosts see the list but
-          can&apos;t change it). The Finale never changes the Standings, it only
-          plays them.
+          are on one slide or one per Category (only Organizers open this page).
+          The Finale never changes the Standings, it only plays them.
         </p>
         <p className="text-foreground/70">
           A Closed Bracket has its own Finale: open it from the same page
@@ -356,7 +359,7 @@ export function OrganizerGuide({
           tie, blank when nobody scored, with no way to type a different one —
           and any highlights) before the next can Start. Create next War Week,
           further down Settings, copies what you choose (settings by default;
-          Competitions, with their Hosts, and the FAQ are off) and opens the new
+          Competitions, without Hosts, and the FAQ are off) and opens the new
           edition as upcoming, so you can set it up while this one stays live.
           The End confirm names any Bracket that isn&apos;t closed: close it
           first so its placings count (it warns, it doesn&apos;t stop you). The

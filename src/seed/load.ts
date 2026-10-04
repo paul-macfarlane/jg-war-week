@@ -24,6 +24,7 @@ import {
   awardCategory,
   awardParticipant,
   competition,
+  competitionHost,
   day,
   entrant,
   faqItem,
@@ -81,6 +82,7 @@ export async function loadWarWeekSeed(
     const participantIds = await syncParticipants(tx, warWeekId, seed, teamIds);
     const competitionIds = await syncCompetitions(tx, warWeekId, seed);
     await insertEntrants(tx, seed, competitionIds, teamIds, participantIds);
+    await insertHosts(tx, seed, competitionIds, participantIds);
     await syncDays(tx, warWeekId, seed, competitionIds);
     await syncFaqItems(tx, warWeekId, seed);
     await syncFinaleSlides(tx, warWeekId, seed);
@@ -135,6 +137,27 @@ async function insertEntrants(
 }
 
 /** Resolves a seed reference that the seed schema has already checked. */
+/**
+ * Each seeded Host, a roster Participant of this War Week named by display
+ * name, added when absent. The loader refuses a name that isn't on the
+ * roster; it never removes a Host an Organizer added.
+ */
+async function insertHosts(
+  tx: DBTx,
+  seed: WarWeekSeed,
+  competitionIds: Map<string, string>,
+  participantIds: Map<string, string>,
+) {
+  const rows = seed.competitions.flatMap((c) =>
+    (c.hosts ?? []).map((name) => ({
+      competitionId: resolve(competitionIds, c.name),
+      participantId: resolve(participantIds, name),
+    })),
+  );
+  if (rows.length === 0) return;
+  await tx.insert(competitionHost).values(rows).onConflictDoNothing();
+}
+
 function resolve(ids: Map<string, string>, name: string): string {
   const id = ids.get(name);
   if (!id) {

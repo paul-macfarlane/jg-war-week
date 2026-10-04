@@ -13,6 +13,8 @@ import {
   setFormat,
 } from "./competition-page";
 import {
+  addE2eHost,
+  removeE2eHost,
   runQuery,
   setParticipantEmail,
   xiCompetitionEntries,
@@ -219,11 +221,7 @@ test("a Squad Bracket with self-report: a Participant reports, the other player 
       [id],
     )
   ).map((row) => row.id);
-  await runQuery(
-    `insert into competition_host (competition_id, email) values ($1, $2)
-     on conflict do nothing`,
-    [id, E2E_HOST_EMAIL],
-  );
+  await addE2eHost(id, E2E_HOST_EMAIL);
   await runQuery(
     `update competition set placement_points = '{3,2,1}' where id = $1`,
     [id],
@@ -535,10 +533,7 @@ test("a Squad Bracket with self-report: a Participant reports, the other player 
     if (opponentParticipantId) {
       await setParticipantEmail(opponentParticipantId, null);
     }
-    await runQuery(
-      `delete from competition_host where competition_id = $1 and email = $2`,
-      [id, E2E_HOST_EMAIL],
-    );
+    await removeE2eHost(id, E2E_HOST_EMAIL);
     // The Bracket, its Entrants and Squads (their Match Entrants and Squad
     // members cascade), the Points Entries it generated, then Cypher as it
     // was.

@@ -212,6 +212,12 @@ const ORGANIZER_ONLY: Partial<
   "competition.create": "add Competitions",
   "competition.delete": "delete Competitions",
   "competition.assign-hosts": "assign Hosts",
+  "schedule-item.create": "add Schedule Items",
+  "schedule-item.edit": "change Schedule Items",
+  "schedule-item.delete": "delete Schedule Items",
+  "announcement.create": "post Announcements",
+  "announcement.edit": "change Announcements",
+  "announcement.delete": "delete Announcements",
   "announcement.pin": "pin Announcements",
   "announcement.unpin": "unpin Announcements",
 };
@@ -245,8 +251,8 @@ export const sameEmail = (a: string | null | undefined, b: string) =>
  * The one access rule (ADR 0002): why `actor` can't take `action` on
  * `target`, or null when it can. An Organizer can do everything in every
  * War Week. A Host runs their own Competitions (setup, Bracket, Points
- * Entries, linked Schedule Items) and posts Announcements in a War Week
- * where they host, editing or deleting their own. Everyone else signed in
+ * Entries) and nothing else in admin: Schedule, Announcements and the
+ * Finale are Organizer-only (ADR 0012). Everyone else signed in
  * is a Participant, whose writes, with "Participants can log their own
  * results" on (ADR 0011), are recording a Bracket Match they're in and
  * logging Head-to-head Matches and Best score Attempts, and changing any
@@ -337,36 +343,12 @@ export function can(
   if (organizerOnly) return `Only an Organizer can ${organizerOnly}.`;
   if (!target) return ADMIN_REFUSAL;
 
-  const { warWeekId, competitionId, postedCompetitionId } = target;
+  const { warWeekId, competitionId } = target;
   const hostsCurrent = hosts(actor, warWeekId, competitionId);
-  const hostsPosted = hosts(actor, warWeekId, postedCompetitionId);
 
   switch (action) {
     case "admin.view":
       return hostsIn(actor, warWeekId) ? null : ADMIN_REFUSAL;
-    case "schedule-item.create":
-      if (!postedCompetitionId) {
-        return "Link the Schedule Item to a Competition you host.";
-      }
-      return hostsPosted ? null : NOT_HOST;
-    case "schedule-item.edit":
-      if (!hostsCurrent) return NOT_HOST;
-      if (!postedCompetitionId) {
-        return "Only an Organizer can unlink a Schedule Item from its Competition.";
-      }
-      return hostsPosted ? null : NOT_HOST;
-    case "announcement.create":
-      return hostsIn(actor, warWeekId)
-        ? null
-        : "Only an Organizer or a Host of this War Week can post Announcements.";
-    case "announcement.edit":
-    case "announcement.delete":
-      if (!sameEmail(target.authorEmail, actor.email)) {
-        return "Only an Organizer can change someone else's Announcement.";
-      }
-      return hostsIn(actor, warWeekId)
-        ? null
-        : "Only an Organizer or a Host of this War Week can change Announcements.";
     case "results.close":
     case "results.reopen":
     case "competition.self-enroll":

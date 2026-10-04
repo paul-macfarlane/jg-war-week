@@ -442,7 +442,7 @@ describe.skipIf(!isLocalDatabase)(
               const applied = await client.query(
                 "select count(*)::int as n from drizzle.__drizzle_migrations",
               );
-              expect(applied.rows[0].n).toBe(33);
+              expect(applied.rows[0].n).toBe(34);
 
               const brackets = await client.query(
                 `select id, format::text as format, bracket_config,
@@ -598,7 +598,7 @@ describe.skipIf(!isLocalDatabase)(
               const applied = await client.query(
                 "select count(*)::int as n from drizzle.__drizzle_migrations",
               );
-              expect(applied.rows[0].n).toBe(33);
+              expect(applied.rows[0].n).toBe(34);
               const after = await client.query(
                 `select id, description is null as cleared,
                   pg_typeof(description)::text as type
@@ -836,7 +836,7 @@ describe.skipIf(!isLocalDatabase)(
                     "select count(*)::int as n from drizzle.__drizzle_migrations",
                   )
                 )[0].n,
-              ).toBe(33);
+              ).toBe(34);
 
               // Bracket configs under their new keys; null is the default.
               const configs = Object.fromEntries(
@@ -1172,6 +1172,85 @@ describe.skipIf(!isLocalDatabase)(
         );
       } finally {
         rmSync(upTo0031, { recursive: true, force: true });
+      }
+    }, 60_000);
+  },
+);
+
+describe.skipIf(!isLocalDatabase)(
+  "migrating email Hosts to roster-Participant Hosts (0033)",
+  () => {
+    it("deletes the email Hosts, then holds Participant Hosts the roster owns", async () => {
+      const upTo0032 = migrationsUpTo(32);
+      try {
+        await withThrowawayDatabase(
+          async (url) => {
+            await migrateTo(url, upTo0032);
+            const client = new Client({ connectionString: url });
+            await client.connect();
+            try {
+              await client.query(`
+                insert into war_week (id, edition, edition_number, year,
+                  start_date, end_date, story_theme, status, mode, team_label,
+                  leader_title, slack_channel_url, primary_color,
+                  primary_foreground_color, accent_color, background_color,
+                  foreground_color, font_preset)
+                values ('${id(1)}', 'xi', 9811, 9811, '2026-02-23',
+                  '2026-02-27', 'Eleven', 'live', 'teams', 'Team', 'Captain',
+                  'https://slack.example', '#000000', '#ffffff', '#ff0000',
+                  '#ffffff', '#000000', 'sans');
+                insert into competition (id, war_week_id, name, scoring)
+                  values ('${id(2)}', '${id(1)}', 'Chess', 'individual');
+                insert into competition_host (competition_id, email)
+                  values ('${id(2)}', 'tony@jahnelgroup.com');`);
+              await migrateTo(url, DRIZZLE_DIR);
+              const q = async (text: string) => (await client.query(text)).rows;
+
+              expect(
+                (await q("select count(*)::int as n from competition_host"))[0]
+                  .n,
+              ).toBe(0);
+              expect(
+                await q(
+                  `select column_name from information_schema.columns
+                   where table_name = 'competition_host'
+                   order by column_name`,
+                ),
+              ).toEqual([
+                { column_name: "competition_id" },
+                { column_name: "created_at" },
+                { column_name: "id" },
+                { column_name: "participant_id" },
+              ]);
+
+              // A Host is a roster Participant; the same one can't host twice,
+              // and deleting the Participant deletes the Host row.
+              await client.query(`
+                insert into participant (id, war_week_id, display_name)
+                  values ('${id(3)}', '${id(1)}', 'Tony');
+                insert into competition_host (competition_id, participant_id)
+                  values ('${id(2)}', '${id(3)}');`);
+              await expect(
+                client.query(
+                  `insert into competition_host (competition_id, participant_id)
+                   values ('${id(2)}', '${id(3)}')`,
+                ),
+              ).rejects.toMatchObject({ code: "23505" });
+              await client.query(
+                `delete from participant where id = '${id(3)}'`,
+              );
+              expect(
+                (await q("select count(*)::int as n from competition_host"))[0]
+                  .n,
+              ).toBe(0);
+            } finally {
+              await client.end();
+            }
+          },
+          { migrations: false },
+        );
+      } finally {
+        rmSync(upTo0032, { recursive: true, force: true });
       }
     }, 60_000);
   },

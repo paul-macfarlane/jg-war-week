@@ -1,4 +1,4 @@
-import { type SQL, and, count, eq, ne, sql } from "drizzle-orm";
+import { type SQL, and, count, eq, inArray, ne, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import {
@@ -21,7 +21,6 @@ import {
   warWeek,
 } from "@/db/schema";
 import { formatDefaults } from "@/lib/format-defaults";
-import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
 import type { FieldErrors } from "@/lib/result";
 import {
   type RosterImportSignature,
@@ -56,6 +55,7 @@ const DAY_NOT_FOUND = "That Day no longer exists.";
 const TEAM_NOT_FOUND = "That Team no longer exists.";
 const PARTICIPANT_NOT_FOUND = "That Participant no longer exists.";
 const COMPETITION_NOT_FOUND = "That Competition no longer exists.";
+const HOST_NOT_ON_ROSTER = "A Host must be on this War Week's roster.";
 
 /** Postgres unique_violation: another save took the natural key meanwhile. */
 export function isUniqueViolation(error: unknown): boolean {
@@ -985,23 +985,36 @@ export async function deleteCompetition(
 }
 
 /**
- * Replaces a Competition's Hosts with `emails`, lowercased and deduplicated,
- * in one transaction. Refuses any non-JG email and a Competition outside
- * `ctx.warWeekId`. The only writer of `competition_host`: the Competition
- * setup save never carries Hosts.
+ * Replaces a Competition's Hosts with the Participants `participantIds`
+ * (deduplicated), in one transaction. Refuses a Participant who isn't on the
+ * roster of the Competition's War Week (`ctx.warWeekId`; a write-time rule,
+ * not a constraint) and a Competition outside it. The only writer of
+ * `competition_host`: the Competition setup save never carries Hosts.
  */
 export async function setCompetitionHosts(
   competitionId: string,
-  emails: string[],
+  participantIds: string[],
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
-  const parsed = jgEmailListSchema.safeParse(emails);
-  if (!parsed.success) return { ok: false, error: JG_EMAIL_MESSAGE };
-  const hosts = [...new Set(parsed.data)];
+  const hosts = [...new Set(participantIds)];
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     if (!(await locked(competition, competitionId, ctx, tx))) {
       return { ok: false, error: COMPETITION_NOT_FOUND };
+    }
+    if (hosts.length > 0) {
+      const onRoster = await tx
+        .select({ id: participant.id })
+        .from(participant)
+        .where(
+          and(
+            eq(participant.warWeekId, ctx.warWeekId),
+            inArray(participant.id, hosts),
+          ),
+        );
+      if (onRoster.length !== hosts.length) {
+        return { ok: false, error: HOST_NOT_ON_ROSTER };
+      }
     }
     await tx
       .delete(competitionHost)
@@ -1009,7 +1022,9 @@ export async function setCompetitionHosts(
     if (hosts.length > 0) {
       await tx
         .insert(competitionHost)
-        .values(hosts.map((email) => ({ competitionId, email })));
+        .values(
+          hosts.map((participantId) => ({ competitionId, participantId })),
+        );
     }
     return { ok: true };
   });

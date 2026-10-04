@@ -1,19 +1,13 @@
 import { expect, test } from "@playwright/test";
 
-import { resetXiFinaleSlides, runQuery, xiCompetitionId } from "./db";
+import { resetXiFinaleSlides } from "./db";
 import {
   finaleStage,
   nextUntil,
   openFinale,
   playedSlides,
 } from "./finale-slides";
-import {
-  E2E_HOST_EMAIL,
-  E2E_PARTICIPANT_EMAIL,
-  asHost,
-  asOrganizer,
-  signIn,
-} from "./session";
+import { E2E_PARTICIPANT_EMAIL, asOrganizer, signIn } from "./session";
 
 /**
  * Ticket 73: the built-in Finale slides on the XI demo. The Awards slide
@@ -150,30 +144,4 @@ test("73: the per-Category Awards layout, set in admin → Finale, plays one Awa
   await page.screenshot({
     path: testInfo.outputPath("awards-per-category-1920x1080.png"),
   });
-
-  // A Host sees the choice but can't change it.
-  const pool = await xiCompetitionId("Pool");
-  await runQuery(
-    `insert into competition_host (competition_id, email) values ($1, $2)
-     on conflict do nothing`,
-    [pool, E2E_HOST_EMAIL],
-  );
-  try {
-    await context.clearCookies();
-    await asHost(context);
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/admin/finale");
-    const hostLayout = page.getByRole("group", { name: "Awards layout" });
-    await expect(
-      hostLayout.getByRole("button", { name: "One slide per Category" }),
-    ).toBeDisabled();
-    await expect(
-      hostLayout.getByRole("button", { name: "All on one slide" }),
-    ).toBeDisabled();
-  } finally {
-    await runQuery(
-      `delete from competition_host where competition_id = $1 and email = $2`,
-      [pool, E2E_HOST_EMAIL],
-    );
-  }
 });

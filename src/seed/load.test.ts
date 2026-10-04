@@ -389,44 +389,69 @@ describe.skipIf(!isLocalDatabase)(
       ).rejects.toThrow("Use an @jahnelgroup.com email.");
     });
 
-    it("keeps a Competition's Hosts on a plain reload", async () => {
+    it("seeds a Competition's Hosts by Participant name, keeps an Organizer's added Host on a reload, and refuses a name off the roster", async () => {
       await inRolledBackTransaction(async (tx) => {
         const { loadWarWeekSeed } = await import("@/seed/load");
-        const getCompetitionHosts = async (
-          competitionId: string,
-          dbTx: typeof tx,
-        ) => {
-          const { competitionHost } = await import("@/db/schema");
-          const { eq: eqHost } = await import("drizzle-orm");
-          const rows = await dbTx
-            .select({ email: competitionHost.email })
-            .from(competitionHost)
-            .where(eqHost(competitionHost.competitionId, competitionId))
-            .orderBy(competitionHost.email);
-          return rows.map((row) => row.email);
-        };
         const { setCompetitionHosts } = await import("@/mutations/setup");
-        const withCatan = await seed("sa", 1, "upcoming", {
-          competitions: [{ name: "Catan", scoring: "individual" }],
-        });
-        const warWeek = await loadWarWeekSeed(withCatan, tx);
         const schema = await import("@/db/schema");
         const { eq } = await import("drizzle-orm");
+        const hostNames = async (competitionId: string) =>
+          (
+            await tx
+              .select({ name: schema.participant.displayName })
+              .from(schema.competitionHost)
+              .innerJoin(
+                schema.participant,
+                eq(schema.participant.id, schema.competitionHost.participantId),
+              )
+              .where(eq(schema.competitionHost.competitionId, competitionId))
+          )
+            .map((row) => row.name)
+            .sort();
+        const withCatan = await seed("sa", 1, "upcoming", {
+          participants: [
+            { displayName: "Tony" },
+            { displayName: "Tom" },
+            { displayName: "Ana" },
+          ],
+          competitions: [
+            { name: "Catan", scoring: "individual", hosts: ["Tony"] },
+          ],
+        });
+        const warWeek = await loadWarWeekSeed(withCatan, tx);
         const [catan] = await tx
           .select({ id: schema.competition.id })
           .from(schema.competition)
           .where(eq(schema.competition.warWeekId, warWeek.id));
+        expect(await hostNames(catan.id)).toEqual(["Tony"]);
+
+        // An Organizer adds Tom in the app; a plain reload keeps both.
+        const [tom] = await tx
+          .select({ id: schema.participant.id })
+          .from(schema.participant)
+          .where(eq(schema.participant.displayName, "Tom"));
+        const [tony] = await tx
+          .select({ id: schema.participant.id })
+          .from(schema.participant)
+          .where(eq(schema.participant.displayName, "Tony"));
         await setCompetitionHosts(
           catan.id,
-          ["tony@jahnelgroup.com"],
+          [tony.id, tom.id],
           { warWeekId: warWeek.id, actorEmail: "jason@jahnelgroup.com" },
           tx,
         );
-
         await loadWarWeekSeed(withCatan, tx);
-        expect(await getCompetitionHosts(catan.id, tx)).toEqual([
-          "tony@jahnelgroup.com",
-        ]);
+        expect(await hostNames(catan.id)).toEqual(["Tom", "Tony"]);
+
+        const { warWeekSeedSchema } = await import("@/seed/schema");
+        expect(() =>
+          warWeekSeedSchema.parse({
+            ...withCatan,
+            competitions: [
+              { name: "Catan", scoring: "individual", hosts: ["Nobody"] },
+            ],
+          }),
+        ).toThrow(/not on this War Week's roster/);
       });
     });
   },

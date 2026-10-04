@@ -26,7 +26,7 @@ export const metadata: Metadata = { title: "Schedule · JG War Week" };
  */
 export default async function AdminSchedulePage() {
   const { warWeek, email, allowed, isOrganizer, editions, runs } =
-    await loadAdminPage("/admin/schedule");
+    await loadAdminPage("/admin/schedule", "organizers");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const [schedule, setupDays, allCompetitions] = await Promise.all([

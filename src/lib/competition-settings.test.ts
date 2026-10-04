@@ -70,22 +70,22 @@ describe("parseCompetitionSetting", () => {
     });
   });
 
-  it("lowercases and deduplicates Hosts, refusing a non-JG email", () => {
+  it("takes Participant ids and deduplicates them, refusing anything else", () => {
+    const ana = "11111111-1111-4111-8111-111111111111";
+    const bo = "22222222-2222-4222-8222-222222222222";
     expect(
-      parseCompetitionSetting({
-        field: "hosts",
-        value: ["Sam@JahnelGroup.com", "sam@jahnelgroup.com"],
-      }),
-    ).toEqual({
+      parseCompetitionSetting({ field: "hosts", value: [ana, bo, ana] }),
+    ).toEqual({ ok: true, value: { field: "hosts", value: [ana, bo] } });
+    expect(parseCompetitionSetting({ field: "hosts", value: [] })).toEqual({
       ok: true,
-      value: { field: "hosts", value: ["sam@jahnelgroup.com"] },
+      value: { field: "hosts", value: [] },
     });
     expect(
       parseCompetitionSetting({ field: "hosts", value: ["sam@example.com"] }),
-    ).toMatchObject({
-      ok: false,
-      error: "Use an @jahnelgroup.com email.",
-    });
+    ).toMatchObject({ ok: false, error: "Pick Hosts from the roster." });
+    expect(
+      parseCompetitionSetting({ field: "hosts", value: "not-a-list" }),
+    ).toMatchObject({ ok: false, error: "Pick Hosts from the roster." });
   });
 
   it("takes any Format, and refuses an unknown one", () => {

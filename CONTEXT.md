@@ -35,8 +35,8 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Test sign-in**              | A maintainer tool at `/sign-in/test` for testing as any `@jahnelgroup.com` address (`+` aliases included) on staging, by typing a secret. Never on production (ADR 0008). |
 | **Company Tag**               | An optional affiliation label on a participant (LTI, IL, …).                                                                      |
 | **Organizer**                 | A signed-in `@jahnelgroup.com` user on the global Organizer list. Can change anything in any War Week (ADR 0002).                 |
-| **Host**                      | A signed-in JG user an Organizer assigns to a Competition ("hosted by Tony M"), **picked from the roster by name** (email beneath), not typed. Runs that Competition; needn't be a Participant. A Schedule Item's free-text `host` field is display copy, not the Host role. |
-| **Admin**                     | The management area at `/admin` that Organizers and Hosts use. A place, never a role: say Organizer or Host for people.           |
+| **Host**                      | A **roster Participant** an Organizer assigns to a Competition of their War Week ("hosted by Tony M"), **picked by name** (no email shown), with or without an email on the roster (ADR 0012). Runs that Competition. Their access is worked out at sign-in time: the session email matches their roster email. A Participant with no email, or a non-@jahnelgroup.com one, can be picked but can't sign in until an Organizer fixes the email. A Schedule Item's free-text `host` field is display copy, not the Host role. |
+| **Admin**                     | The management area at `/admin`. Organizers use all of it; a Host sees only their Competitions and the Guide. A place, never a role: say Organizer or Host for people. |
 | **Competition**               | Anything that awards points. Scored as team or individual. Skill divisions are separate Competitions ("MTG Advanced", "MTG Beginner"). |
 | **Competition Group**         | An optional grouping of competitions ("Team Night Events").                                                                       |
 | **Competition page** (admin)  | A Competition's one admin page, `/admin/competitions/<id>`: its **Settings** on top, each field autosaving, and the Format's **run area** below it (Entrants and the Bracket tree, Entrants and Matches or Attempts with Log a Match / Log an Attempt, Record placements, or who took part, and Close or Reopen). The Competitions list's Edit opens it; Add Competition creates one in a sheet and then opens it. Organizers and that Competition's Hosts use it; a Participant is refused. |
@@ -243,7 +243,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   removes the login (`user`, `session`, `account`), the Profile and the
   person's Organizer-list entry; it is refused for the last Organizer. It
   keeps roster records, results, Awards, Announcements, history, Host
-  assignments (`competition_host`) and the email audit columns, which show
+  assignments (`competition_host`, by roster Participant) and the email audit columns, which show
   the roster name again. Signing in again creates a fresh account that
   re-links by email.
 
@@ -294,17 +294,24 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
     every War Week. Organizers manage the list at `/admin/organizers`: any
     Organizer can add a JG email or remove one, themselves included while
     another remains; the last Organizer can't be removed.
-  - A **Host** is a signed-in JG email an Organizer assigns to a
-    Competition (a `competition_host` row, picked from the roster by name in the Competition page's Settings by an Organizer). A
-    Host runs their own Competitions: their Competition page (not creating, deleting or
-    assigning Hosts; a Host sees the Hosts read-only by name and no emails), their Bracket, their Placements (`placement.edit`,
-    `.finalize`, `.reopen`) and the Schedule Items linked to them, and for a
-    Participation Competition its
-    settings, who took part, Close and Reopen (`participation.settings`,
-    `.mark`, `.close`, `.reopen`). A Host can also post Announcements in a War Week
-    where they host, and edit or delete their own. Hosting is per
-    Competition, so a Host of one War Week's Competition has no say in
-    another War Week's.
+  - A **Host** is a **roster Participant** an Organizer assigns to a
+    Competition (a `competition_host` row holding the Participant's id,
+    picked by name in the Competition page's Settings by an Organizer, ADR
+    0012). The Participant must be on the Competition's War Week roster (a
+    write-time rule in `setCompetitionHosts`). A Host's access is worked out
+    per request: the session email matches, ignoring case, a roster
+    Participant's email, and that Participant hosts the Competition. So
+    changing a Participant's roster email moves their Host access to whoever
+    owns the new email, and a Host chosen with no email gets access once an
+    Organizer adds one. A Host runs their own Competitions: their Competition
+    page (not creating, deleting or assigning Hosts; a Host sees the Hosts
+    read-only by name and no emails), their Bracket, their Placements
+    (`placement.edit`, `.finalize`, `.reopen`), and for a Participation
+    Competition its settings, who took part, Close and Reopen
+    (`participation.settings`, `.mark`, `.close`, `.reopen`). A Host has no
+    Schedule, Announcements or Finale in admin (Organizer-only, on the server
+    too). Hosting is per Competition, so a Host of one War Week's
+    Competition has no say in another War Week's.
   - Everyone else signed in is a **Participant** for access purposes. Their
     writes are each found by account linking, checked in `can` and again in the mutation: with a
     Competition's one self-report setting on (ADR 0011), recording the result
@@ -319,10 +326,9 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
     never records a Placement (ADR 0010).
 - `can(actor, action, target)` in `src/lib/access.ts` is the one access
   rule: it returns why the actor can't take the action, or null. It's pure;
-  the caller loads the actor and the target. A Schedule Item edit needs the
-  Host of both the row's current Competition and the one the request posts,
-  and a Host can't unlink a Schedule Item from its Competition. Changing another person's Announcement, pinning and
-  unpinning are Organizer-only.
+  the caller loads the actor and the target. Schedule Items, Announcements
+  (post, change, delete, pin and unpin) and the Finale are Organizer-only: a
+  Host is refused them (ADR 0012).
 - Every War Week action runs `authorize` (`src/auth/authorize.ts`) before
   it touches its input (ADR 0003), in this order:
   1. authenticate ("Sign in to continue.");
@@ -347,15 +353,17 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   edition for an Organizer, the editions they host in for a Host. A banner
   marks the Archive ("Editing the Archive: War Week X"). Anonymous visitors
   go to sign-in; anyone else sees "Organizers and Hosts only."
-- `/admin` is trimmed for a Host (`loadAdminPage` in
-  `src/app/admin/gate.ts`): the Placements, the Brackets, Admin →
-  Competitions and Admin → Schedule list only their Competitions and the
-  Schedule Items linked to them. Discretionary points, War Week settings,
-  Days, Teams and roster, FAQ, Awards, the Organizer list and Create next
-  War Week are
-  Organizer-only pages and show a Host "Organizers and Hosts only." The
-  Account menu's Admin item shows for Organizers and for anyone who hosts a
-  Competition.
+- **Access rules for Hosts.** `/admin` is trimmed for a Host
+  (`loadAdminPage` in `src/app/admin/gate.ts`, `src/lib/admin-sections.ts`):
+  they see only **Competitions** (the list filtered to the Competitions they
+  host, plus each one's admin page) and the **Guide**. Schedule,
+  Announcements, Finale, Discretionary points, War Week settings, Days,
+  Teams and roster, FAQ, Awards, the Organizer list and Create next War Week
+  are Organizer-only pages and show a Host "Organizers and Hosts only.", as
+  does another Competition's admin page; their actions refuse a Host on the
+  server. The War Week Finale at `/<edition>/finale` stays readable by any
+  signed-in JG user. The Account menu's Admin item shows for Organizers and
+  for anyone who hosts a Competition.
 - Every page and API route needs a JG sign-in. Anonymous visitors to a
   page go to `/sign-in` and come back afterwards; API routes answer 401.
   Only `/sign-in`, `/api/auth/*`, `/about`, `/privacy` and `/terms` are
@@ -450,8 +458,10 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 - **Create next War Week** (on `/admin/settings`, Organizers only) makes an
   `upcoming` edition from any edition, prefilled with the next Roman
   numeral, edition number and year. It can copy settings with the
-  Appearance Theme (on), Competitions with new ids and their Hosts (off) and
-  the FAQ (off). It never copies Organizers: the Organizer list is global.
+  Appearance Theme (on), Competitions with new ids and no Hosts (off) and
+  the FAQ (off). It never copies Hosts: the new roster is empty, so there is
+  no Participant to point at, and Organizers add Hosts once it exists
+  (ADR 0012). It never copies Organizers: the Organizer list is global.
   Teams, roster, Days, Schedule, Points Entries, Awards and Announcements
   are never copied. It doesn't change what's current until it starts.
 

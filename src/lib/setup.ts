@@ -129,6 +129,11 @@ export const competitionSeedSchema = z
      * changes nothing.
      */
     entrants: z.array(z.string().min(1).max(120)).length(2).optional(),
+    /**
+     * The Competition's Hosts: Participant display names from this seed's
+     * roster (ADR 0012). Added when absent; a reload never removes one.
+     */
+    hosts: z.array(z.string().min(1).max(120)).optional(),
     /** A Best score Competition's Team score; omitted for Best member. */
     bestScoreConfig: bestScoreConfigSchema.optional(),
     /** An individual `participation` Competition's points per Participant; omitted is 1. A team one takes `placementPoints` instead. */

@@ -21,7 +21,7 @@ export default async function EditAnnouncementPage({
 }: PageProps<"/admin/announcements/[id]">) {
   const { id } = await params;
   const { warWeek, email, actor, allowed, isOrganizer, editions } =
-    await loadAdminPage(`/admin/announcements/${id}`);
+    await loadAdminPage(`/admin/announcements/${id}`, "organizers");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const announcement = await getAnnouncementForEdit(warWeek, id);

@@ -23,7 +23,7 @@ you set them in your own `.env.local` or in the service's settings.
 | Vercel project                             | Preview deploys, production deploys, env vars, rollbacks                                      | Paul                           |
 | Neon project                               | The staging and production databases (you rarely touch them directly)                         | Paul                           |
 | Google Cloud OAuth client                  | Local sign-in: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and adding redirect URIs           | Paul                           |
-| Organizer list                             | `/admin` only opens for Organizers (and Hosts, for their Competitions)                        | Any Organizer, in-app          |
+| Organizer list                             | `/admin` only opens for Organizers (and Hosts, for their Competitions and the Guide)          | Any Organizer, in-app          |
 | Claude Code with the Atlas plugin          | The recommended way to make changes ([section 2](#2-set-up-claude-code))                      | You (Paul if the install fails) |
 
 Your local `.env.local` needs the variables named in `.env.example`:
@@ -85,7 +85,7 @@ before it says it's done.
 | The Bracket engine (seeding, Rounds/Matches, advancing winners, Bracket → Points Entries) | `src/lib/bracket/` (`*.test.ts` next to each file) |
 | The admin Competition page (Settings on top, the Format's run area below) | `src/app/admin/competitions/[id]/page.tsx` and `run-area.tsx`, `src/components/competition-settings-form.tsx`, `src/lib/competition-page.ts`, `src/queries/competition-page.ts` |
 | Which settings lock, and the per-field save | `src/lib/competition-locks.ts` (the one lock table and its one-line reasons), `src/queries/competition-locks.ts`, `src/mutations/competition-settings.ts`, `src/lib/competition-settings.ts`, `src/lib/autosave.ts` |
-| The Hosts picker (roster by name, emails beneath) | `src/lib/host-options.ts`, `getHostCandidates` in `src/queries/roster.ts` |
+| The Hosts picker (roster by name, no emails) | `src/lib/host-options.ts`, `getHostCandidates` in `src/queries/roster.ts` |
 | The description's plain-text to rich-text conversion for seeds | `src/lib/rich-text/from-plain-text.ts` |
 | Bracket builder and results screens                | the Bracket section of `src/components/competition-settings-form.tsx` and of the run area; `src/components/bracket-builder.tsx` |
 | The retired setup routes (308 to the Competition page) | `src/app/admin/competitions/[id]/{bracket,games,participation}/`, `src/app/admin/brackets/[id]/`, `src/app/admin/placements/[competitionId]/`: each a redirect page, proven by `retired-routes.test.ts` |
@@ -243,7 +243,8 @@ redirect to their new homes.
   optional short Day description) and each Day's Schedule Items on one
   page. **`/admin/roster`**: Teams and Participants, with an Organizer-only
   Import (paste from Google Sheets or upload a CSV, preview, then Import).
-  **`/admin/competitions`**: Competitions, with their Hosts. A row's **Edit**
+  **`/admin/competitions`**: Competitions, with their Hosts (a Host sees only
+  the ones they host). A row's **Edit**
   opens the Competition's own page (see [Run a Competition from its
   page](#run-a-competition-from-its-page)).
 - **On a phone**, the admin sections are a bar fixed to the bottom of the
@@ -277,7 +278,8 @@ To start next year's edition in the app:
 1. In `/admin/settings`, press **Create next War Week**. The edition, number
    and year are prefilled (XII, 12, next year); add the dates and Story
    Theme, and choose what to copy (settings are on; Competitions, with
-   their Hosts, and the FAQ are off). Organizers are global, so there's
+   no Hosts, and the FAQ are off: the new roster is empty, so add Hosts once it
+   exists). Organizers are global, so there's
    nothing to copy for them. It starts `upcoming`, and the admin
    switches to it so you can set it up while XI stays current.
 2. When XI is over, switch back to XI in the header's edition switcher and
@@ -314,19 +316,27 @@ signed in is a **Participant** (`CONTEXT.md`, "Access rules").
   one Organizer is left. The list is global: one list for every War Week.
 - **Assign Hosts**: the Hosts field in the Settings of each Competition's
   page (`/admin/competitions`, Edit), saved as you pick (Organizers only).
-  Search the roster by name: the email shows beneath, and a Participant with
-  no email, or one that isn't `@jahnelgroup.com`, is shown disabled with the
-  reason (fix it in Roster first). A Host needs
-  no Participant record. They get the Admin link and see only their Competitions in Admin: its Placements,
-  Bracket, Matches and Attempts, settings (the Hosts shown by name only, no emails) and linked Schedule Items, plus Announcements for
-  that War Week. Remove the email to take it away; it applies on their next
-  request. A Schedule Item's "host" text is only what the schedule shows;
-  it doesn't make anyone a Host.
+  A Host is a **Participant on that War Week's roster**: search the roster by
+  name (no email is shown). A Participant with no email can be picked; one
+  whose email isn't `@jahnelgroup.com` can be picked too and is marked "Can't
+  sign in". A Host gets access when they sign in with the email on their
+  roster entry, so add it in Roster if they have none; the email is matched
+  on each request, so changing a Participant's roster email moves their Host
+  access to whoever owns the new one. A Host gets the Admin link and sees
+  only the Competitions they host and the Guide: each Competition's page
+  (its Placements, Bracket, Matches and Attempts, settings; the Hosts shown
+  by name only, no emails). Schedule, Announcements and the Finale are
+  Organizer-only, and the server refuses a Host there. Remove the Participant
+  from the Hosts field to take access away; it applies on their next request.
+  A Schedule Item's "host" text is only what the schedule shows; it doesn't
+  make anyone a Host.
 - **A fresh database** gets its first Organizers from a seed's `organizers`
   list: a seed load adds any that are missing and never removes one, even
   with `--reset`. After that, manage them in the app. Hosts never come from
-  seeds; a plain reload leaves them alone, and `--reset` deletes them along
-  with the War Week's Competitions.
+  the seeds unless a seed Competition lists them (`hosts`: Participant display
+  names from that seed's roster, refused otherwise); a plain reload keeps any
+  Host an Organizer added, and `--reset` deletes them along with the War
+  Week's Competitions.
 - **Expand/contract.** `war_week.organizer_emails` and
   `competition.bracket_points` were dropped in migration 0013 once Epics B
   and E had run on `main` long enough that rolling back past them was no
@@ -357,7 +367,8 @@ staging. It is never on for production (ADR 0008).
     (`/admin/roster`), and it links as that Participant. With no roster row
     it is a signed-in person on no roster.
   - **Host:** give the alias to a roster Participant's email, then pick that
-    Participant in a Competition's Hosts field (`/admin/competitions`).
+    Participant in a Competition's Hosts field (`/admin/competitions`); no
+    other email is shown there.
   - **Organizer:** "inviting" is just adding the alias at
     `/admin/organizers`.
 - **Every page shows a "Test sign-in: <email>" banner** while you are in a
@@ -451,7 +462,8 @@ So R11 doesn't follow the usual expand-then-contract wait:
 Every Competition has one admin page, **`/admin/competitions/<id>`**: the
 Competitions list's **Edit** opens it, and **Add Competition** creates the
 Competition in a sheet, then opens it. Organizers use it for any Competition
-and a Host for their own; anyone else sees "Organizers and Hosts only."
+and a Host for their own; anyone else, and a Host opening another
+Competition's page, sees "Organizers and Hosts only."
 
 - **Settings** are on top and **autosave per field**: change a field and it
   saves ("Saved" by the Settings heading, no toast; a refusal shows under
@@ -459,10 +471,11 @@ and a Host for their own; anyone else sees "Organizers and Hosts only."
   **description** (the Announcement editor: headings, lists, links, images by
   URL, no upload), Group, **Hosts**, Format, scoring, Placement Points and the
   Format's own settings are all here.
-- **Hosts** are picked from the roster by name, with the email beneath. A
-  Participant with no email, or one that isn't `@jahnelgroup.com`, shows
-  disabled with the reason: fix it in Roster first. A Host sees the Hosts
-  read-only, by name, and no emails.
+- **Hosts** are picked from the roster by name, never showing an email. A
+  Participant with no email, or one that isn't `@jahnelgroup.com`, can be
+  picked (the latter is marked "Can't sign in"); a Host with no email gets
+  access once you add one in Roster. A Host sees the Hosts read-only, by
+  name, and no emails.
 - **The run area** is below: Record placements (Placement), Entrants and
   Bracket tree (Bracket), Entrants and Matches with **Log a Match** (Head-to-head), Entrants and Attempts with **Log an Attempt** (Best score, Edit and Delete in each person's expanded row), or Who took part
   (Participation), with Close and Reopen. Every Format uses the same two words: **Close** writes the points, **Reopen** withdraws them.

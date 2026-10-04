@@ -25,7 +25,7 @@ const SOURCE: CompetitionSettingsSource = {
   name: "Darts",
   description: null,
   competitionGroup: null,
-  hosts: ["ana@jahnelgroup.com"],
+  hosts: ["11111111-1111-4111-8111-111111111111"],
   placementPoints: [10, 7, 5],
   participationPoints: null,
   format: "placement",
@@ -156,23 +156,21 @@ describe("CompetitionSettingsForm", () => {
     expect(html).not.toMatch(/[\w.+-]+@[\w-]+\.[a-z]+/i);
   });
 
-  it("lets an Organizer pick Hosts, a current Host off the roster shown warned", () => {
-    const html = render();
-    expect(html).toContain("ana@jahnelgroup.com (not on the roster)");
-    expect(html).not.toContain("Only an Organizer assigns Hosts.");
-  });
-
-  it("shows an Organizer a current Host by their roster name", () => {
+  it("lets an Organizer pick Hosts by name, with a Participant who has no email and one who can't sign in, and no email in the markup", () => {
     const html = render(
-      {},
+      { hosts: ["p2"] },
       {
         hostCandidates: [
-          { id: "p1", name: "Ana P", email: "ana@jahnelgroup.com" },
+          { id: "p1", name: "Ana P", cantSignIn: false },
+          { id: "p2", name: "Bo K", cantSignIn: false },
+          { id: "p3", name: "Cy Q", cantSignIn: true },
         ],
       },
     );
-    expect(html).toContain("Ana P");
-    expect(html).not.toContain("not on the roster");
+    expect(html).toContain("Bo K");
+    expect(html).not.toContain("Only an Organizer assigns Hosts.");
+    expect(html).not.toContain("Add an email in Roster");
+    expect(html).not.toMatch(/[\w.+-]+@[\w-]+\.[a-z]+/i);
   });
 
   describe("a Bracket's match settings", () => {

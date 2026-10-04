@@ -177,13 +177,18 @@ async function runsCompetition(
   if (!email) return false;
   const [organizers, hosts] = await Promise.all([
     dbOrTx.$count(organizer, eq(organizer.email, email)),
-    dbOrTx.$count(
-      competitionHost,
-      and(
-        eq(competitionHost.competitionId, competitionId),
-        eq(competitionHost.email, email),
-      ),
-    ),
+    // A Host by roster email, case-insensitive (ADR 0012).
+    dbOrTx
+      .select({ id: competitionHost.id })
+      .from(competitionHost)
+      .innerJoin(participant, eq(participant.id, competitionHost.participantId))
+      .where(
+        and(
+          eq(competitionHost.competitionId, competitionId),
+          eq(sql`lower(${participant.email})`, email.trim().toLowerCase()),
+        ),
+      )
+      .then((rows) => rows.length),
   ]);
   return organizers + hosts > 0;
 }

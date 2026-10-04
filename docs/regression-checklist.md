@@ -76,7 +76,7 @@ line that no longer matches the app is a bug in this file.
   More's first item); the desktop top nav adds Announcements. Admin: one
   flat nav, Competitions, Discretionary points, Schedule, Roster,
   Announcements, Awards, FAQ, Finale, Settings, Organizers, Guide (a Host
-  sees Competitions, Schedule, Announcements, Finale, Guide); the phone bar
+  sees only Competitions and Guide); the phone bar
   is Competitions, Discretionary points, Schedule, Announcements, More. The avatar button
   (**Account menu**) at the top right of both headers holds the account.
 - **Run order:** Public Pages, then Admin as an Organizer (it links the
@@ -94,8 +94,9 @@ line that no longer matches the app is a bug in this file.
     the Admin run puts that email on a Participant.
   - **Unlinked:** `regression+unlinked@jahnelgroup.com`, a JG account on
     no roster.
-  - **Host:** `regression+host@jahnelgroup.com`, after the Admin run makes
-    it a Host of one Competition.
+  - **Host:** `regression+host@jahnelgroup.com`, after the Admin run puts
+    that email on a roster Participant and makes them a Host of one
+    Competition (a Host is a roster Participant).
   - **Driver:** `scripts/regression/driver.ts` signs in for you with
     `e2e/session.ts` (the e2e accounts `e2e-organizer@`, `e2e-host@`,
     `e2e-participant@` and `e2e-unlinked@jahnelgroup.com`, signed with the
@@ -266,9 +267,9 @@ on the matching War Week page.
       opens its Competition page: on the Bracket turn on "Participants can
       enroll", on the Head-to-head pick its two Entrants; each saves as you
       change it); assign
-      `e2e-host@jahnelgroup.com` as Host of the Placement one (the Hosts
-      field is in its page's Settings, not in Add; see the Competition page
-      lines below). The Format select
+      the roster Participant whose email is `e2e-host@jahnelgroup.com` as
+      Host of the Placement one (the Hosts field is in its page's Settings,
+      not in Add; see the Competition page lines below). The Format select
       offers Placement, Bracket, Head-to-head, Best score
       and Participation (no Single-elimination or Heats, no "Games" Format or Game Type). Only the
       Bracket offers "Participants can enroll"; no Format offers a "closes at" time. Each
@@ -476,10 +477,12 @@ on the matching War Week page.
       Best score and Participation: each applies the new Format's
       defaults and shows its run area. Add a result and the Format locks.
 - [ ] **Competition page: Hosts picker.** In the Hosts field, search the
-      roster by name: each option shows its email beneath; a Participant
-      with no email, or a non-@jahnelgroup.com one, is disabled with the
-      reason. Pick one (it saves at once), remove it, and open the Competition
-      as that Host.
+      roster by name: each option shows the name only, never an email. A
+      Participant with no email is pickable; a non-@jahnelgroup.com one is
+      pickable and marked "Can't sign in". Pick one (it saves at once),
+      remove it, and open the Competition as that Host once their roster email
+      is set (with no email nobody signs in as them: the admin page refuses).
+      Create next War Week copies no Hosts.
 - [ ] **Competition page: rich-text description.** Write a description with
       a heading, a list, a link and an image by URL; it saves on its own.
       On `/<edition>/competitions/<id>` the Participant sees it formatted,
@@ -598,13 +601,13 @@ on the matching War Week page.
 `/admin/**` as `e2e-host@jahnelgroup.com`, Host of one Placement
 Competition (from the Organizer run).
 
-- [ ] **Five sections, trimmed to their Competitions.** The admin nav is
-      Competitions, Schedule, Announcements, Finale, Guide at 1440 (no
-      Discretionary points); at 390 the bar is Competitions, Schedule,
-      Announcements, More (Finale and Guide in More). Competitions and Schedule list only the Host's Competition
-      and its Schedule Items. Each row has Edit and
-      Delete where the Host may use them.
-- [ ] **Organizer-only pages refuse.** Settings, Roster, FAQ, Awards and
+- [ ] **Two sections: Competitions and Guide.** The admin nav is
+      Competitions and Guide at 1440 (no Discretionary points, Schedule,
+      Announcements or Finale); at 390 the bar is Competitions and More
+      (Guide in More). Competitions lists only the Host's Competition, with
+      its Edit.
+- [ ] **Organizer-only pages refuse.** Schedule, Announcements (and New
+      Announcement), Finale, Settings, Roster, FAQ, Awards and
       Organizers (open their URLs directly) each show "Organizers and Hosts
       only."; there is no Lifecycle box, no Create next War Week and no
       Add Competition or Days editor.
@@ -612,9 +615,9 @@ Competition (from the Organizer run).
       in admin and Admin on participant pages (a Host is not a plain
       Participant), plus Display and Sign out.
 - [ ] **What a Host can do works.** Record placements on their Competition
-      (add rows, set Places, Close, Reopen) and see the Standings move;
-      post an Announcement, edit it and delete it. They
-      can't create or delete a Competition or assign Hosts: no Add
+      (add rows, set Places, Close, Reopen) and see the Standings move. They
+      can't post Announcements or change Schedule Items (the server refuses
+      them), and can't create or delete a Competition or assign Hosts: no Add
       Competition or Delete, and the Competition page's Hosts are shown
       read-only by name with no emails (the server's refusal is
       unit-tested in `src/lib/access.test.ts` and the mutation tests). Their
@@ -625,9 +628,10 @@ Competition (from the Organizer run).
       `src/lib/access.test.ts`); `/admin/points` redirects there and shows
       the same. A Host can't open another Competition's
       `/admin/competitions/<id>` either.
-- [ ] **Finale is read-only for a Host.** `/admin/finale` shows the slide
-      list and "Open Finale", but no Move, Hide/Show, Add Custom slide, edit
-      or delete, and the Awards layout is shown disabled.
+- [ ] **The Finale is not a Host's.** `/admin/finale` shows "Organizers
+      and Hosts only." and no slide list; the War Week Finale at
+      `/<edition>/finale` still plays for the Host, as for any signed-in JG
+      user.
 - [ ] **Not a Host elsewhere.** Switch to another edition (if offered), or
       set the `admin_edition` cookie to a past edition, and open another
       War Week's admin URL (e.g. `/admin/competitions/<a Competition they don't host>`; use `<an X

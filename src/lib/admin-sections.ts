@@ -19,7 +19,13 @@ const ADMIN_SECTIONS = [
     tab: true,
     organizerOnly: true,
   },
-  { label: "Schedule", icon: "schedule", href: "/admin/schedule", tab: true },
+  {
+    label: "Schedule",
+    icon: "schedule",
+    href: "/admin/schedule",
+    tab: true,
+    organizerOnly: true,
+  },
   {
     label: "Roster",
     icon: "roster",
@@ -31,6 +37,7 @@ const ADMIN_SECTIONS = [
     icon: "announcements",
     href: "/admin/announcements",
     tab: true,
+    organizerOnly: true,
   },
   {
     label: "Awards",
@@ -39,7 +46,12 @@ const ADMIN_SECTIONS = [
     organizerOnly: true,
   },
   { label: "FAQ", icon: "faq", href: "/admin/faq", organizerOnly: true },
-  { label: "Finale", icon: "finale", href: "/admin/finale" },
+  {
+    label: "Finale",
+    icon: "finale",
+    href: "/admin/finale",
+    organizerOnly: true,
+  },
   {
     label: "Settings",
     icon: "settings",

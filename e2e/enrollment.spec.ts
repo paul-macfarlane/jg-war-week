@@ -11,7 +11,9 @@ import { DISPLAY_STORAGE_KEY } from "@/lib/display";
 
 import { openCompetitionPage } from "./competition-page";
 import {
+  addE2eHost,
   openForBracket,
+  removeE2eHost,
   runQuery,
   setParticipantEmail,
   xiCompetitionId,
@@ -167,11 +169,7 @@ test("enrollment: a Participant enrolls, withdraws and enrolls again; once the H
      where id = $1`,
     [id],
   );
-  await runQuery(
-    `insert into competition_host (competition_id, email) values ($1, $2)
-     on conflict do nothing`,
-    [id, E2E_HOST_EMAIL],
-  );
+  await addE2eHost(id, E2E_HOST_EMAIL);
   await setParticipantEmail(enrolleeId, E2E_PARTICIPANT_EMAIL);
   await setParticipantEmail(latecomerId, E2E_PARTICIPANT_2_EMAIL);
   const youContext = await browser.newContext({ baseURL: E2E_BASE_URL });
@@ -294,9 +292,6 @@ test("enrollment: a Participant enrolls, withdraws and enrolls again; once the H
     );
     await setParticipantEmail(enrolleeId, null);
     await setParticipantEmail(latecomerId, null);
-    await runQuery(
-      `delete from competition_host where competition_id = $1 and email = $2`,
-      [id, E2E_HOST_EMAIL],
-    );
+    await removeE2eHost(id, E2E_HOST_EMAIL);
   }
 });

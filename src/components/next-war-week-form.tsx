@@ -39,7 +39,7 @@ const COPY_OPTIONS: { field: CopyOption; label: string; help: string }[] = [
   {
     field: "copyCompetitions",
     label: "Competitions",
-    help: "With their Placement Points, scoring and Hosts. No Points Entries.",
+    help: "With their Placement Points and scoring. No Hosts (add them once the roster exists), no Points Entries.",
   },
   { field: "copyFaq", label: "FAQ", help: "Every FAQ Item." },
 ];
