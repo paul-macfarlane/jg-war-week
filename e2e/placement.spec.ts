@@ -196,15 +196,19 @@ test("r16 90 a Host records placements with Scores, breaks a tie and Finalizes: 
     await expect(result.getByText(ROWS[0].name)).toBeVisible();
     await shoot(page, testInfo, "recent-results");
 
-    // The Participant page lists the Placements by place.
+    // The Participant page's results table lists the Placements by place:
+    // Rank, Score and the points Finalize wrote, the Winner first.
     await page.goto(`/xi/competitions/${id}`);
-    const placements = page.getByRole("region", { name: "Placements" });
-    const first = placements.getByRole("listitem").first();
-    await expect(first).toContainText("1st");
-    await expect(first).toContainText(ROWS[0].name);
-    await expect(first).toContainText("Score 50");
-    await expect(first).toContainText("10");
-    await expect(placements.getByRole("listitem")).toHaveCount(ROWS.length);
+    const results = page
+      .getByRole("region", { name: "Placements" })
+      .getByRole("table", { name: "Placement results" });
+    const first = results.locator('tr[data-slot="results-row"]').first();
+    await expect(first.getByRole("rowheader")).toContainText(ROWS[0].name);
+    await expect(first.getByRole("rowheader")).toContainText("Winner");
+    await expect(first.getByRole("cell")).toHaveText(["1", "50", "10"]);
+    await expect(results.locator('tr[data-slot="results-row"]')).toHaveCount(
+      ROWS.length,
+    );
     await shoot(page, testInfo, "participant-page");
 
     // Reopen withdraws the points.

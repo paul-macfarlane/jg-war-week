@@ -13,7 +13,9 @@ import {
   orderPlacementRows,
   placementPointsByRow,
 } from "@/lib/placement/score";
+import type { EntryPoints } from "@/lib/results-table";
 import { isUuid } from "@/lib/uuid";
+import { getCompetitionEntryPoints } from "@/queries/entry-points";
 import {
   participantImageSql,
   participantNameSql,
@@ -56,6 +58,8 @@ export type PlacementsView = {
   competition: PlacementCompetition;
   /** Placed rows by Place (ties by name), then unplaced rows by name. */
   rows: PlacementRowView[];
+  /** Once Finalized (Closed), its generated Points Entries; else empty. */
+  entryPoints: EntryPoints[];
 };
 
 /**
@@ -148,6 +152,9 @@ export async function getPlacementsView(
       finalizedAt: found.finalizedAt,
     },
     rows: await getPlacementRows(found, dbOrTx),
+    entryPoints: found.finalizedAt
+      ? await getCompetitionEntryPoints(found.id, dbOrTx)
+      : [],
   };
 }
 

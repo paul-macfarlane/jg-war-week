@@ -1,28 +1,28 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 /**
- * A Standings row's visible text: its breakdown trigger also carries
- * screen-reader text, which the Finale's rows don't.
+ * A results-table row on the page, by the table's accessible name (e.g.
+ * "Team standings", "Individual leaderboard") and the row's exact name, so
+ * "Blue" never matches "Blue Steel".
  */
-export function visibleRowText(innerText: string): string {
-  return innerText.replace(/\s*, show points breakdown\s*$/, "").trim();
+export function resultsRow(page: Page, table: string, name: string): Locator {
+  return page
+    .getByRole("table", { name: table, exact: true })
+    .locator('tr[data-slot="results-row"]')
+    .filter({
+      has: page
+        .locator('[data-slot="results-name"]')
+        .getByText(name, { exact: true }),
+    });
 }
 
-/** A Team's total in the "Team standings" list on the page. */
+/** A results-table row's War Week points, from its points cell (wide viewports). */
+export async function rowPoints(row: Locator): Promise<number> {
+  const text = await row.locator('[data-slot="results-points"]').innerText();
+  return Number(text.replace(/,/g, ""));
+}
+
+/** A Team's total in the "Team standings" table on the page. */
 export async function teamTotal(page: Page, team: string): Promise<number> {
-  const row = page
-    .locator("section")
-    .filter({
-      has: page.getByRole("heading", { name: "Team standings", exact: true }),
-    })
-    .getByRole("listitem")
-    // The Team's name exactly, so "Blue" never matches "Blue Steel".
-    .filter({ has: page.getByText(team, { exact: true }) });
-  // The row's last number: its trigger ends in screen-reader text
-  // (", show points breakdown") after the total.
-  const numbers = (await row.innerText())
-    .split(/\s+/)
-    .map((word) => word.replace(/,/g, ""))
-    .filter((word) => /^-?\d+(\.\d+)?$/.test(word));
-  return Number(numbers[numbers.length - 1]);
+  return rowPoints(resultsRow(page, "Team standings", team));
 }

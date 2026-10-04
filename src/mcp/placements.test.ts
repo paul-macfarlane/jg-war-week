@@ -15,6 +15,7 @@ function view(
     seedKey: null,
   };
   return {
+    entryPoints: [],
     competition: {
       id: "c1",
       warWeekId: "w1",

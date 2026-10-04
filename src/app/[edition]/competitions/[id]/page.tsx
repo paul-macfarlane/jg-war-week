@@ -221,7 +221,11 @@ export default async function CompetitionPage({
         />
       ) : null}
       {placements ? (
-        <PlacementView view={placements} primaryColor={warWeek.primaryColor} />
+        <PlacementView
+          view={placements}
+          primaryColor={warWeek.primaryColor}
+          teamLabel={warWeek.teamLabel}
+        />
       ) : null}
       {isBracket ? (
         <BracketView

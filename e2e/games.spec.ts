@@ -18,7 +18,7 @@ import {
   asOrganizer,
   signIn,
 } from "./session";
-import { teamTotal } from "./standings";
+import { resultsRow, rowPoints, teamTotal } from "./standings";
 
 // Bouncy Pong is seeded as an open individual Head-to-head
 // Competition (counts toward Team) with Placement Points 3 / 2 / 1.
@@ -63,13 +63,9 @@ function leaderboardRow(page: Page, name: string) {
 
 /** A Participant's total on `/xi/leaderboard`, 0 when they have no row. */
 async function participantTotal(page: Page, name: string): Promise<number> {
-  const trigger = page.getByRole("button", {
-    // "<rank> <name><Team> <total> , show points breakdown"
-    name: new RegExp(`^\\d+ ${name}.*points breakdown`),
-  });
-  if ((await trigger.count()) === 0) return 0;
-  const text = await trigger.locator("span.tabular-nums").last().innerText();
-  return Number(text.replace(/,/g, ""));
+  const row = resultsRow(page, "Individual leaderboard", name);
+  if ((await row.count()) === 0) return 0;
+  return rowPoints(row);
 }
 
 const sum = (rows: { points: number }[]) =>

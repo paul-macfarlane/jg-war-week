@@ -9,6 +9,7 @@ import {
   xiTeamPointsBreakdown,
 } from "./db";
 import { E2E_PARTICIPANT_EMAIL, asOrganizer, signIn } from "./session";
+import { resultsRow, rowPoints, teamTotal } from "./standings";
 
 test.beforeEach(async ({ context }) => {
   await signIn(context, E2E_PARTICIPANT_EMAIL);
@@ -162,17 +163,17 @@ test("r1 10 expanding a Team or Participant row on the leaderboard shows its Poi
 
   // Team row: Red.
   const teamTrigger = page.getByRole("button", {
-    name: /\bRed\b.*points breakdown/,
+    name: "Show points breakdown for Red",
+    exact: true,
   });
-  const teamTotalText = await teamTrigger
-    .locator("span.tabular-nums")
-    .last()
-    .innerText();
+  const teamTotalText = String(await teamTotal(page, "Red"));
+  await expect(teamTrigger).toHaveAttribute("aria-expanded", "false");
   await teamTrigger.click();
-  // Scope to the panel right after the Red trigger.
-  const teamPanel = teamTrigger
-    .locator("..")
-    .locator('[data-slot="collapsible-content"]');
+  await expect(teamTrigger).toHaveAttribute("aria-expanded", "true");
+  // Scope to the sub-row the Red toggle controls.
+  const teamPanel = page.locator(
+    `[id="${await teamTrigger.getAttribute("aria-controls")}"]`,
+  );
   await expect(teamPanel.locator("li").first()).toBeVisible();
   const teamRows = await breakdownRows(teamPanel);
   expect(teamRows.length).toBeGreaterThan(0);
@@ -206,19 +207,18 @@ test("r1 10 expanding a Team or Participant row on the leaderboard shows its Poi
   await expect(teamPanel.locator("li").first()).toBeVisible();
 
   // Individual row: Anthony Conway (untouched by any Bracket flow).
-  // The team name is concatenated straight after the Participant's name
-  // with no separator ("Anthony ConwayRed"), so the match can't require a
-  // word boundary right after "Conway".
   const participantTrigger = page.getByRole("button", {
-    name: /\bAnthony Conway.*points breakdown/,
+    name: "Show points breakdown for Anthony Conway",
+    exact: true,
   });
-  const participantTotalText = await participantTrigger
-    .locator("span.tabular-nums")
-    .last()
-    .innerText();
-  const participantPanel = participantTrigger
-    .locator("..")
-    .locator('[data-slot="collapsible-content"]');
+  const participantTotalText = String(
+    await rowPoints(
+      resultsRow(page, "Individual leaderboard", "Anthony Conway"),
+    ),
+  );
+  const participantPanel = page.locator(
+    `[id="${await participantTrigger.getAttribute("aria-controls")}"]`,
+  );
   await participantTrigger.click();
   await expect(participantPanel.locator("li").first()).toBeVisible();
   const participantRows = await breakdownRows(participantPanel);
