@@ -182,3 +182,22 @@ export function seriesOf(
     winner: bestOfWinner(config, games) ?? (closed ? leader : null),
   };
 }
+
+/**
+ * The line under a two-Entrant series' score while it has no Winner: the
+ * Best of's target while it's open, "decided at Close" with no Best of,
+ * and, once Closed level, that it ended with no series Winner. Null once
+ * the series has a Winner.
+ */
+export function seriesNote(
+  config: HeadToHeadConfig,
+  series: Series,
+  closed: boolean,
+): string | null {
+  if (series.winner !== null) return null;
+  if (closed) return "Closed level: no series Winner.";
+  if (config.bestOf !== null) {
+    return `Best of ${config.bestOf}: first to ${Math.floor(config.bestOf / 2) + 1} wins.`;
+  }
+  return "The series Winner is decided at Close.";
+}

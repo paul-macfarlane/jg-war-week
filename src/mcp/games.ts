@@ -124,7 +124,7 @@ export function toGamesResult(
 
   const { competition, leaderboard, games } = view;
 
-  const found_: FoundGames = {
+  const base: FoundGames = {
     found: true,
     competition: {
       name: competition.name,
@@ -154,6 +154,6 @@ export function toGamesResult(
     })),
   }));
   return competition.gameFormat === "best-score"
-    ? { ...found_, attempts: logged }
-    : { ...found_, matches: logged };
+    ? { ...base, attempts: logged }
+    : { ...base, matches: logged };
 }

@@ -1,8 +1,10 @@
 // The banned-term scan: no retired or banned word reaches UI copy or MCP
 // output. It reads every non-test `.ts`/`.tsx` file under `src/` and checks
 // the text a person or an MCP client can see — string literals, template
-// literal text and JSX text — never identifiers or comments (CONTEXT.md,
-// "Banned terms"; spec competition-results, decisions 10 and 11).
+// literal text and JSX text — and, under `src/mcp/`, the property names
+// that become an MCP tool's output fields. Never other identifiers or
+// comments (CONTEXT.md, "Banned terms"; spec competition-results,
+// decisions 10 and 11).
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import ts from "typescript";
@@ -36,22 +38,37 @@ const TERMS: Term[] = [
   },
 ];
 
+type Allowed = {
+  file: string;
+  term: string;
+  /** Part of the one literal allowed: only a literal containing it passes. */
+  text: string;
+  reason: string;
+};
+
 // Old words that stay until spec B renames the tables and columns. Spec B
-// deletes this list. Each entry is one file and one term; keep it short.
-const ALLOWLIST: { file: string; term: string; reason: string }[] = [
+// deletes this list. Each entry is one literal in one file, for one term;
+// keep it short.
+const ALLOWLIST: Allowed[] = [
   {
     file: "src/lib/setup.ts",
     term: "Finalize",
+    text: "finalized needs finalizedAt and finalizedByEmail together",
     reason:
       "spec B: names the seed file's `finalized` field, which mirrors the finalized_at column",
   },
   {
     file: "src/seed/schema.ts",
     term: "Finalize",
+    text: "use placements (with finalized)",
     reason:
       "spec B: names the seed file's `finalized` field, which mirrors the finalized_at column",
   },
 ];
+
+// Property names under here are MCP output fields (and its input
+// schemas), which an MCP client reads as words.
+const MCP_DIR = "src/mcp/";
 
 // Lowercase path segments ("/admin", "/xii/competitions/games-night") are
 // routes and URLs, not copy; no route is renamed (decision 10).
@@ -147,15 +164,72 @@ export function visibleText(
   return out;
 }
 
-function violations(): string[] {
+/**
+ * Every property name a file declares (object literal keys, shorthand
+ * properties and type members), with its line: in `src/mcp/` these are the
+ * fields of a tool's output.
+ */
+export function propertyNames(
+  fileName: string,
+  source: string,
+): { line: number; text: string }[] {
+  const file = ts.createSourceFile(
+    fileName,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    fileName.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  );
+  const out: { line: number; text: string }[] = [];
+  const visit = (node: ts.Node) => {
+    if (
+      ts.isPropertyAssignment(node) ||
+      ts.isShorthandPropertyAssignment(node) ||
+      ts.isPropertySignature(node) ||
+      ts.isPropertyDeclaration(node)
+    ) {
+      const name = node.name;
+      if (ts.isIdentifier(name) || ts.isStringLiteral(name)) {
+        const { line } = file.getLineAndCharacterOfPosition(
+          name.getStart(file),
+        );
+        out.push({ line: line + 1, text: name.text });
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return out;
+}
+
+/** Whether an allowlist entry lets this one literal keep `term`. */
+export function isAllowed(
+  allowlist: Allowed[],
+  file: string,
+  term: string,
+  text: string,
+): boolean {
+  return allowlist.some(
+    (a) => a.file === file && a.term === term && text.includes(a.text),
+  );
+}
+
+/**
+ * The banned words in some files' copy and, under `src/mcp/`, property
+ * names, one line per hit. `rel` is the path from the repository root.
+ */
+export function scan(
+  files: { rel: string; source: string }[],
+  allowlist: Allowed[],
+): string[] {
   const found: string[] = [];
-  for (const full of sourceFiles(SRC)) {
-    const rel = path.relative(path.resolve(SRC, ".."), full);
-    for (const { line, text } of visibleText(
-      full,
-      readFileSync(full, "utf8"),
-    )) {
-      if (KEY.test(text.trim())) continue;
+  for (const { rel, source } of files) {
+    const copyText = visibleText(rel, source).filter(
+      ({ text }) => !KEY.test(text.trim()),
+    );
+    // A key is a name, so the KEY shape doesn't excuse it.
+    const keys = rel.startsWith(MCP_DIR) ? propertyNames(rel, source) : [];
+    for (const { line, text } of [...copyText, ...keys]) {
       const copy = text
         .replace(STYLE, " ")
         .replace(PATH, " ")
@@ -163,7 +237,7 @@ function violations(): string[] {
       for (const { term, pattern, instead } of TERMS) {
         const hit = copy.match(pattern);
         if (!hit) continue;
-        if (ALLOWLIST.some((a) => a.file === rel && a.term === term)) continue;
+        if (isAllowed(allowlist, rel, term, text)) continue;
         found.push(
           `${rel}:${line} "${hit[0]}" (${term}; use ${instead}) in ${JSON.stringify(text.trim().slice(0, 80))}`,
         );
@@ -171,6 +245,17 @@ function violations(): string[] {
     }
   }
   return found;
+}
+
+function violations(): string[] {
+  const root = path.resolve(SRC, "..");
+  return scan(
+    sourceFiles(SRC).map((full) => ({
+      rel: path.relative(root, full).split(path.sep).join("/"),
+      source: readFileSync(full, "utf8"),
+    })),
+    ALLOWLIST,
+  );
 }
 
 describe("banned-term scan", () => {
@@ -194,8 +279,50 @@ describe("banned-term scan", () => {
     expect(text).toEqual(["Heat one", "Log a", "Game", "Champion"]);
   });
 
+  it("reads property names under src/mcp/ as MCP output, and nowhere else", () => {
+    const source = [
+      "export const out = { finalized: true, games: [], name: 'Cup' };",
+      "type Bracket = { heats: string[]; champion: string | null };",
+      "const winner = 1; export const short = { winner };",
+    ].join("\n");
+    expect(scan([{ rel: "src/mcp/x.ts", source }], [])).toEqual([
+      'src/mcp/x.ts:1 "finalized" (Finalize; use Close / Closed / Reopen) in "finalized"',
+      'src/mcp/x.ts:1 "games" (Game; use Match or Attempt) in "games"',
+      'src/mcp/x.ts:2 "heats" (Heat; use Match) in "heats"',
+      'src/mcp/x.ts:2 "champion" (Champion; use Winner) in "champion"',
+    ]);
+    expect(scan([{ rel: "src/lib/x.ts", source }], [])).toEqual([]);
+  });
+
+  it("lets an allowlist entry pass only the literal it names", () => {
+    const source = [
+      'const a = "finalized needs finalizedAt";',
+      'const b = "Finalize the sheet";',
+    ].join("\n");
+    const allowed: Allowed[] = [
+      {
+        file: "src/lib/x.ts",
+        term: "Finalize",
+        text: "finalized needs",
+        reason: "test",
+      },
+    ];
+    expect(scan([{ rel: "src/lib/x.ts", source }], allowed)).toEqual([
+      'src/lib/x.ts:2 "Finalize" (Finalize; use Close / Closed / Reopen) in "Finalize the sheet"',
+    ]);
+    expect(
+      scan(
+        [{ rel: "src/lib/y.ts", source: 'const a = "finalized needs";' }],
+        allowed,
+      ),
+    ).toHaveLength(1);
+  });
+
   it("keeps the allowlist short and explained", () => {
     expect(ALLOWLIST.length).toBeLessThanOrEqual(10);
-    for (const entry of ALLOWLIST) expect(entry.reason).not.toBe("");
+    for (const entry of ALLOWLIST) {
+      expect(entry.reason).not.toBe("");
+      expect(entry.text).not.toBe("");
+    }
   });
 });

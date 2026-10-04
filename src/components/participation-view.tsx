@@ -48,7 +48,7 @@ export function ParticipationView({
   const isTeam = competition.scoring === "team";
   const closed = competition.closed;
   const provisional = scoreParticipation(tookPart, competition);
-  const pointsFor = (target: {
+  const pointsOf = (target: {
     teamId?: string | null;
     participantId?: string | null;
   }) =>
@@ -94,7 +94,7 @@ export function ParticipationView({
                   />
                 ),
                 score: row.count,
-                points: pointsFor({ teamId: row.teamId }),
+                points: pointsOf({ teamId: row.teamId }),
               }))}
             />
           )}
@@ -119,7 +119,7 @@ export function ParticipationView({
             {tookPart.map((row) => {
               const points = isTeam
                 ? null
-                : pointsFor({ participantId: row.participantId });
+                : pointsOf({ participantId: row.participantId });
               return (
                 <li
                   key={row.participantId}

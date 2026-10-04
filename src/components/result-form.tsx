@@ -42,7 +42,7 @@ type Outcome = "a" | "b" | "draw";
 type Linked = { participantId: string; teamId: string | null } | null;
 
 /** A Game being edited: its id and its players with places and scores. */
-export type ResultFormGame = { id: string; players: GamesViewPlayer[] };
+export type ResultFormValue = { id: string; players: GamesViewPlayer[] };
 
 export type ResultFormProps = {
   open: boolean;
@@ -56,7 +56,7 @@ export type ResultFormProps = {
   /** The viewer's linked Participant, preselected as a player when listed. */
   linked: Linked;
   /** The Game to edit, or null to log a new one. */
-  game: ResultFormGame | null;
+  game: ResultFormValue | null;
 };
 
 /**

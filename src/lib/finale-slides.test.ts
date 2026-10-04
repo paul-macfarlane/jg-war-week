@@ -508,7 +508,7 @@ describe("finaleSlideData", () => {
       award("MVP", mvp),
       award("Most Steps", grind),
     ],
-    champions: [
+    winners: [
       {
         competitionId: "pong",
         competition: "Ping Pong",
@@ -640,7 +640,7 @@ describe("finaleSlideData", () => {
         participants: 0,
       },
       awards: [],
-      champions: [],
+      winners: [],
       standings: { main: "individual", team: [], individual: [] },
     });
     expect(kinds(finaleSlideData(defaults, empty))).toEqual(["title:Title"]);

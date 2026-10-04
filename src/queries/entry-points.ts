@@ -1,12 +1,13 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import { pointsEntry } from "@/db/schema";
 import type { EntryPoints } from "@/lib/results-table";
 
 /**
- * A Competition's Points Entries as target and points (no note, no email):
- * what a Closed Competition's results table shows as its points.
+ * A Competition's generated Points Entries (the ones its Close wrote,
+ * `generatedByBracket`) as target and points (no note, no email): what a
+ * Closed Competition's results table shows as its points.
  */
 export async function getCompetitionEntryPoints(
   competitionId: string,
@@ -19,5 +20,10 @@ export async function getCompetitionEntryPoints(
       points: pointsEntry.points,
     })
     .from(pointsEntry)
-    .where(eq(pointsEntry.competitionId, competitionId));
+    .where(
+      and(
+        eq(pointsEntry.competitionId, competitionId),
+        eq(pointsEntry.generatedByBracket, true),
+      ),
+    );
 }

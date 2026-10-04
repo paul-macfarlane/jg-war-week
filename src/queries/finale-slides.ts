@@ -100,9 +100,9 @@ export async function getFinaleCounts(
 }
 
 /**
- * The Winners slide's lines (`winnersList`): every Closed Bracket's
- * champion and closed Competition's winner, uncapped. Reads the finalized
- * Competitions and only their generated Points Entries.
+ * The Winners slide's lines (`winnersList`): every Closed Bracket's and
+ * Closed Competition's Winner, uncapped. Reads the Closed Competitions
+ * and only their generated Points Entries.
  */
 export async function getWinners(
   warWeek: Pick<WarWeek, "id">,

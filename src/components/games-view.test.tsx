@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { GamesViewGame, GamesViewRow } from "@/queries/games";
 
-import { GameLog, GamesView, type GamesViewProps } from "./games-view";
+import { GamesView, type GamesViewProps, MatchLog } from "./games-view";
 
 // The log's Delete confirm and the Game form read the router.
 vi.mock("next/navigation", () => ({
@@ -478,13 +478,11 @@ describe("GamesView Log a Match or Attempt and banners", () => {
   });
 });
 
-describe("GameLog (Head-to-head Matches)", () => {
-  const log = (props: Partial<Parameters<typeof GameLog>[0]> = {}) =>
+describe("MatchLog (Head-to-head Matches)", () => {
+  const log = (props: Partial<Parameters<typeof MatchLog>[0]> = {}) =>
     renderToStaticMarkup(
-      <GameLog
+      <MatchLog
         competitionId="c1"
-        gameFormat="head-to-head"
-        unit=""
         games={base.games}
         filter="all"
         linked={{ participantId: ashley.id, teamId: null }}

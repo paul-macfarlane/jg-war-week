@@ -37,22 +37,22 @@ export type MatchResultFormProps = {
   entrantsById: Map<string, BracketViewEntrant>;
   scoring: Scoring;
   primaryColor: string;
-  /** Saves the Heat Result: a Host's record, or a Participant's report. */
+  /** Saves the Match result: a Host's record, or a Participant's report. */
   submit: (result: HeatResult) => Promise<MatchResultActionResult>;
   /**
-   * Whether a result that resets later Heats asks first, naming them (the
-   * results screen). A report is of an open Heat, which has none to reset.
+   * Whether a result that resets later Matches asks first, naming them (the
+   * results screen). A report is of an open Match, which has none to reset.
    */
   confirmResets: boolean;
-  /** The success toast, given the 1st-place Entrant's label and the Heat's name. */
+  /** The success toast, given the 1st-place Entrant's label and the Match's name. */
   successToast: (winner: string, heat: string) => string;
   onSaved: () => void;
 };
 
 /**
- * Saving a Heat Result from either form: the later Heats it would reset
+ * Saving a Match result from either form: the later Matches it would reset
  * (named, for the confirm), and a `save` that submits it and toasts
- * `successToast` (plus how many later Heats were reset). A refusal toasts
+ * `successToast` (plus how many later Matches were reset). A refusal toasts
  * the server's message and leaves the form open with its input kept.
  */
 function useSaveMatchResult(
@@ -172,10 +172,10 @@ function ScoreField({
 }
 
 /**
- * The Heat Result form for a two-slot Heat: tap the winner, optional
- * scores. With `confirmResets`, changing the
- * winner of a Heat whose later Heats have results asks first, naming them;
- * a score-only edit doesn't ask.
+ * The Match result form for a two-slot Match: tap the Winner, optional
+ * scores. With `confirmResets`, changing the Winner of a Match whose later
+ * Matches have results asks first, naming them; a score-only edit doesn't
+ * ask.
  */
 export function WinnerForm(props: MatchResultFormProps) {
   const { heat, entrantsById, scoring, primaryColor } = props;
@@ -263,10 +263,10 @@ export function WinnerForm(props: MatchResultFormProps) {
 }
 
 /**
- * The Heat Result form for a Heat of more than two: tap the Entrants in
+ * The Match result form for a Match of more than two: tap the Entrants in
  * finishing order (each shows its place), Undo the last tap, optional
  * scores. With `confirmResets`, a result that changes who advances
- * from a complete Round asks first, naming the later Heats it resets.
+ * from a complete Round asks first, naming the later Matches it resets.
  */
 export function FinishingOrderForm(props: MatchResultFormProps) {
   const { heat, entrantsById, scoring, primaryColor } = props;
@@ -381,7 +381,7 @@ export function FinishingOrderForm(props: MatchResultFormProps) {
   );
 }
 
-/** A two-slot Heat takes its winner; a bigger one its finishing order. */
+/** A two-slot Match takes its Winner; a bigger one its finishing order. */
 export function MatchResultForm(props: MatchResultFormProps) {
   return props.heat.slots.length > 2 ? (
     <FinishingOrderForm {...props} />

@@ -19,7 +19,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import { can } from "@/lib/access";
 import { podiumOf } from "@/lib/bracket/podium";
-import { entrantForYou, nextHeatFor } from "@/lib/bracket/view";
+import { entrantForYou, nextMatchFor } from "@/lib/bracket/view";
 import { isGameFormat } from "@/lib/enums";
 import { resolveYou } from "@/lib/you";
 import {
@@ -77,7 +77,7 @@ async function selfReportFor(
     },
     competition.scoring,
   );
-  const next = youEntrantId ? nextHeatFor(view.bracket, youEntrantId) : null;
+  const next = youEntrantId ? nextMatchFor(view.bracket, youEntrantId) : null;
   let reportableHeatId: string | null = null;
   if (next?.kind === "heat") {
     const facts = await getHeatReportFacts(
@@ -171,12 +171,14 @@ export default async function CompetitionPage({
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <h1 className="text-2xl font-bold">{competition.name}</h1>
           {canManage ? (
-            <Link
-              href={`/admin/competitions/${competition.id}`}
+            // A plain link, never prefetched: the route switches the admin
+            // edition to this War Week, then opens the admin page.
+            <a
+              href={`/${warWeek.edition}/competitions/${competition.id}/manage`}
               className={buttonVariants({ variant: "outline", size: "sm" })}
             >
               Manage
-            </Link>
+            </a>
           ) : null}
         </div>
         <CompetitionFacts

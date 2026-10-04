@@ -117,7 +117,7 @@ describe("the built-in Finale slides", () => {
       kind: "champions",
       name: "Winners",
       primaryColor: "#123456",
-      champions: [
+      winners: [
         {
           competitionId: "c1",
           competition: "Chess Heats",

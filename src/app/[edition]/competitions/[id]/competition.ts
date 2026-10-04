@@ -1,6 +1,6 @@
 import { cache } from "react";
 
-import { getCompetitionWithLedger } from "@/queries/competitions";
+import { getCompetition } from "@/queries/competitions";
 
 import { getWarWeekForEdition } from "../../war-week";
 
@@ -12,6 +12,6 @@ import { getWarWeekForEdition } from "../../war-week";
 export const getCompetitionPage = cache(async (edition: string, id: string) => {
   const warWeek = await getWarWeekForEdition(edition);
   if (!warWeek) return undefined;
-  const found = await getCompetitionWithLedger(warWeek, id);
-  return found && { warWeek, ...found };
+  const competition = await getCompetition(warWeek, id);
+  return competition && { warWeek, competition };
 });

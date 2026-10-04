@@ -9,7 +9,7 @@ import {
   groupRounds,
   isBracketFormat,
   matchName,
-  nextHeatFor,
+  nextMatchFor,
   roundName,
 } from "@/lib/bracket/view";
 
@@ -97,12 +97,12 @@ describe("groupRounds", () => {
   });
 });
 
-describe("nextHeatFor", () => {
+describe("nextMatchFor", () => {
   // 3 Entrants: A has a bye into the Final; B plays C in Round 1 Heat 2.
   const three = generate(entrants(["A", "B", "C"]));
 
   it("waits on the Match feeding the empty slot after a bye", () => {
-    const next = nextHeatFor(three, "A");
+    const next = nextMatchFor(three, "A");
     expect(next).toMatchObject({
       kind: "heat",
       heat: { id: "r2h1" },
@@ -112,7 +112,7 @@ describe("nextHeatFor", () => {
   });
 
   it("names the opponent of a ready Match", () => {
-    const next = nextHeatFor(three, "C");
+    const next = nextMatchFor(three, "C");
     expect(next).toMatchObject({
       kind: "heat",
       heat: { id: "r1h2" },
@@ -123,30 +123,30 @@ describe("nextHeatFor", () => {
 
   it("finds the opponent once the feeding Match is decided", () => {
     const played = applyResult(three, "r1h2", { order: ["B", "C"] });
-    expect(nextHeatFor(played, "A")).toMatchObject({ opponentIds: ["B"] });
-    expect(nextHeatFor(played, "B")).toMatchObject({ heat: { id: "r2h1" } });
+    expect(nextMatchFor(played, "A")).toMatchObject({ opponentIds: ["B"] });
+    expect(nextMatchFor(played, "B")).toMatchObject({ heat: { id: "r2h1" } });
   });
 
   it("has nothing for an eliminated Entrant or after the Final", () => {
     const played = applyResult(three, "r1h2", { order: ["B", "C"] });
-    expect(nextHeatFor(played, "C")).toBeNull();
+    expect(nextMatchFor(played, "C")).toBeNull();
     const done = applyResult(played, "r2h1", { order: ["A", "B"] });
-    expect(nextHeatFor(done, "A")).toBeNull();
-    expect(nextHeatFor(done, "B")).toBeNull();
+    expect(nextMatchFor(done, "A")).toBeNull();
+    expect(nextMatchFor(done, "B")).toBeNull();
   });
 
   it("has nothing for someone who isn't an Entrant", () => {
-    expect(nextHeatFor(three, "Z")).toBeNull();
+    expect(nextMatchFor(three, "Z")).toBeNull();
   });
 });
 
-describe("nextHeatFor in a Matches Bracket", () => {
+describe("nextMatchFor in a Matches Bracket", () => {
   // 8 Entrants dealt snake-style into two Heats of 4:
   // Round 1 Heat 1 is A, D, E, H; Round 1 Heat 2 is B, C, F, G.
   const eight = generateHeats(entrants(letters(8)));
 
   it("names every other Entrant of the Match as an opponent", () => {
-    expect(nextHeatFor(eight, "A")).toEqual({
+    expect(nextMatchFor(eight, "A")).toEqual({
       kind: "heat",
       heat: expect.objectContaining({ id: "r1h1" }),
       opponentIds: ["D", "E", "H"],
@@ -156,14 +156,14 @@ describe("nextHeatFor in a Matches Bracket", () => {
 
   it("says an Entrant advanced while the rest of their Round is unfinished", () => {
     const played = applyResult(eight, "r1h1", { order: ["D", "A", "E", "H"] });
-    expect(nextHeatFor(played, "D")).toEqual({ kind: "advanced", round: 2 });
-    expect(nextHeatFor(played, "A")).toEqual({ kind: "advanced", round: 2 });
+    expect(nextMatchFor(played, "D")).toEqual({ kind: "advanced", round: 2 });
+    expect(nextMatchFor(played, "A")).toEqual({ kind: "advanced", round: 2 });
   });
 
   it("has nothing for an Entrant who finished below the advancing places", () => {
     const played = applyResult(eight, "r1h1", { order: ["D", "A", "E", "H"] });
-    expect(nextHeatFor(played, "E")).toBeNull();
-    expect(nextHeatFor(played, "H")).toBeNull();
+    expect(nextMatchFor(played, "E")).toBeNull();
+    expect(nextMatchFor(played, "H")).toBeNull();
   });
 
   it("finds the Final once Round 1 is complete", () => {
@@ -172,7 +172,7 @@ describe("nextHeatFor in a Matches Bracket", () => {
       "r1h2",
       { order: ["B", "C", "F", "G"] },
     );
-    const next = nextHeatFor(played, "A");
+    const next = nextMatchFor(played, "A");
     expect(next).toMatchObject({ kind: "heat", heat: { id: "r2h1" } });
     expect(next?.kind === "heat" && [...next.opponentIds].sort()).toEqual([
       "B",
@@ -191,8 +191,8 @@ describe("nextHeatFor in a Matches Bracket", () => {
       "r2h1",
       { order: ["A", "B", "C", "D"] },
     );
-    expect(nextHeatFor(done, "A")).toBeNull();
-    expect(nextHeatFor(done, "D")).toBeNull();
+    expect(nextMatchFor(done, "A")).toBeNull();
+    expect(nextMatchFor(done, "D")).toBeNull();
   });
 });
 

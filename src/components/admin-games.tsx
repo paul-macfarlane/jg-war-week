@@ -2,11 +2,15 @@
 
 import { useState } from "react";
 
-import { BestScoreResults, GameLog } from "@/components/games-view";
-import { ResultForm, type ResultFormGame } from "@/components/result-form";
+import { BestScoreResults, MatchLog } from "@/components/games-view";
+import { ResultForm, type ResultFormValue } from "@/components/result-form";
 import { Button } from "@/components/ui/button";
 import type { GameFormat } from "@/lib/enums";
-import type { BestScoreConfig, GamesConfig } from "@/lib/games/config";
+import {
+  type BestScoreConfig,
+  type GamesConfig,
+  resultNoun,
+} from "@/lib/games/config";
 import type {
   GamesViewGame,
   GamesViewName,
@@ -34,12 +38,12 @@ export type AdminGamesProps = {
 
 /**
  * The Competition's results on its admin page (ticket 104; spec R20,
- * decision 4), with Log a Game. Best score shows the same per-person
- * table Participants see, with Edit and Delete of each Attempt in its
- * expanded row; Head-to-head keeps its list of Matches with Edit and
- * Delete. The viewer runs the Competition, so no player is preselected
- * and any Entrant can be picked; the server's Game authorization decides
- * what is allowed.
+ * decision 4), with Log a Match or Log an Attempt. Best score shows the
+ * same per-person table Participants see, with Edit and Delete of each
+ * Attempt in its expanded row; Head-to-head keeps its list of Matches with
+ * Edit and Delete. The viewer runs the Competition, so no player is
+ * preselected and any Entrant can be picked; the server's rule for
+ * logging a Match or Attempt decides what is allowed.
  */
 export function AdminGames({
   competitionId,
@@ -56,26 +60,26 @@ export function AdminGames({
   now,
 }: AdminGamesProps) {
   const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<ResultFormGame | null>(null);
+  const [editing, setEditing] = useState<ResultFormValue | null>(null);
   const bestScore = gameFormat === "best-score";
-  const title = bestScore ? "Attempts" : "Matches";
+  const noun = resultNoun(gameFormat);
 
-  function openForm(game: ResultFormGame | null) {
-    setEditing(game);
+  function openForm(result: ResultFormValue | null) {
+    setEditing(result);
     setFormOpen(true);
   }
 
   return (
-    <section className="flex min-w-0 flex-col gap-3" aria-label={title}>
+    <section className="flex min-w-0 flex-col gap-3" aria-label={noun.many}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-lg font-semibold">{title}</h3>
+        <h3 className="text-lg font-semibold">{noun.many}</h3>
         {viewerCanLog ? (
           <Button
             type="button"
             className="min-h-11 sm:min-h-0"
             onClick={() => openForm(null)}
           >
-            {bestScore ? "Log an Attempt" : "Log a Match"}
+            {`Log ${noun.a}`}
           </Button>
         ) : null}
       </div>
@@ -94,10 +98,8 @@ export function AdminGames({
           onEdit={openForm}
         />
       ) : (
-        <GameLog
+        <MatchLog
           competitionId={competitionId}
-          gameFormat={gameFormat}
-          unit=""
           games={games}
           filter="all"
           linked={null}

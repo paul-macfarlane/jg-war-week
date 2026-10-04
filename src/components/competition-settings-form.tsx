@@ -65,7 +65,7 @@ import {
   COMPETITION_NAME_MAX,
 } from "@/lib/competition-settings";
 import { placementLimit } from "@/lib/competitions";
-import { COMPETITION_FORMATS } from "@/lib/enums";
+import { COMPETITION_FORMATS, type GameFormat } from "@/lib/enums";
 import {
   BEST_OF_OPTIONS,
   type BestOf,
@@ -73,6 +73,7 @@ import {
   type HeadToHeadConfig,
   bestOfLabel,
   gamesConfigOf,
+  resultNoun,
 } from "@/lib/games/config";
 import { type HostCandidate, buildHostOptions } from "@/lib/host-options";
 
@@ -603,7 +604,7 @@ export function CompetitionSettingsForm({
             "Participants can enroll",
             values.format === "bracket"
               ? "Participants enter themselves until the Bracket is built, the limit is reached or the close time passes."
-              : `Participants enter themselves until the Entrant limit is reached, the close time passes, the first ${values.format === "best-score" ? "Attempt" : "Match"} is logged, or you close this Competition.`,
+              : `Participants enter themselves until the Entrant limit is reached, the close time passes, the first ${resultNoun(values.format as GameFormat).one} is logged, or you close this Competition.`,
           )}
         {shown.has("entrantLimit") && (
           <Field className="sm:max-w-48" data-invalid={!!errors.entrantLimit}>

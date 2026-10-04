@@ -228,12 +228,18 @@ test("r20 Manage shows to an Organizer and that Competition's Host only", async 
       await expect(manage(page)).toBeVisible();
       await expect(manage(page)).toHaveAttribute(
         "href",
-        `/admin/competitions/${mine}`,
+        `/xi/competitions/${mine}/manage`,
       );
       await shoot(page, testInfo, `manage-organizer-${viewport}`);
     }
     await manage(page).click();
     await page.waitForURL(`**/admin/competitions/${mine}`);
+    await expect(
+      page.getByRole("heading", { level: 1, name: LONG, exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Settings", exact: true }),
+    ).toBeVisible();
 
     const hostContext = await browser.newContext({ baseURL: E2E_BASE_URL });
     const participantContext = await browser.newContext({
@@ -290,6 +296,43 @@ test("r20 Manage shows to an Organizer and that Competition's Host only", async 
   } finally {
     await deleteXiCompetition(LONG);
     await deleteXiCompetition(OTHER);
+  }
+});
+
+test("r20 Manage on a Competition of a War Week other than the admin default opens its admin page", async ({
+  context,
+  page,
+}, testInfo) => {
+  test.setTimeout(120_000);
+  try {
+    const other = await addCompetition("xii", FFA_INDIVIDUAL);
+    await asOrganizer(context);
+    // The admin default is not XII: without the switch its Competition
+    // would not be found in /admin.
+    await page.goto("/admin/competitions");
+    await expect(page.getByRole("main")).not.toContainText(FFA_INDIVIDUAL);
+
+    for (const [viewport, size] of VIEWPORTS) {
+      await page.setViewportSize(size);
+      await page.goto(`/xii/competitions/${other}`);
+      await page.getByRole("link", { name: "Manage", exact: true }).click();
+      await page.waitForURL(`**/admin/competitions/${other}`);
+      await expect(
+        page.getByRole("heading", {
+          level: 1,
+          name: FFA_INDIVIDUAL,
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "Settings", exact: true }),
+      ).toBeVisible();
+      await shoot(page, testInfo, `manage-other-war-week-${viewport}`);
+      // Back to the admin default for the next viewport's round trip.
+      await context.clearCookies({ name: "admin_edition" });
+    }
+  } finally {
+    await deleteCompetition("xii", FFA_INDIVIDUAL);
   }
 });
 

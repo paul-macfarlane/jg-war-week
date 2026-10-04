@@ -10,6 +10,28 @@ import { getHostedCompetitions, isOrganizerEmail } from "@/queries/organizers";
 export const ADMIN_EDITION_COOKIE = "admin_edition";
 
 /**
+ * Remembers which War Week `/admin` shows: the edition, or no cookie when
+ * it's the current War Week (the default). Callers check `admin.view` first.
+ */
+export async function setAdminEditionCookie(
+  edition: string,
+  isCurrent: boolean,
+) {
+  const jar = await cookies();
+  if (isCurrent) {
+    jar.delete(ADMIN_EDITION_COOKIE);
+    return;
+  }
+  jar.set(ADMIN_EDITION_COOKIE, edition, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+  });
+}
+
+/**
  * Who is asking, for `can`: null when anonymous, otherwise the session
  * email, whether it's an Organizer and the Competitions it hosts. Memoized
  * per request only, so access always follows the current assignment.

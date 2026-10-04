@@ -270,9 +270,9 @@ export function ResultsTable({
                     ) : null}
                   </span>
                 </TableCell>
-                <th
+                <TableHead
                   scope="row"
-                  className="p-2 text-left align-top font-normal whitespace-normal"
+                  className="h-auto p-2 align-top font-normal whitespace-normal"
                 >
                   <div className="flex min-w-0 items-start gap-2">
                     {row.lead}
@@ -331,7 +331,7 @@ export function ResultsTable({
                       </Button>
                     ) : null}
                   </div>
-                </th>
+                </TableHead>
                 {withScore ? (
                   <TableCell className="text-right align-top tabular-nums">
                     {row.score === null || row.score === undefined

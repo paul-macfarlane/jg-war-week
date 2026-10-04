@@ -428,7 +428,7 @@ export type FinaleSlideData =
     })
   | (SlideBase & {
       kind: "champions";
-      champions: FinaleWinner[];
+      winners: FinaleWinner[];
       primaryColor: string;
     })
   | (SlideBase & {
@@ -476,7 +476,7 @@ export type FinaleSlideContext = {
   standings: Standings;
   counts: FinaleCounts;
   awards: AwardView[];
-  champions: FinaleWinner[];
+  winners: FinaleWinner[];
 };
 
 function finaleAward(award: AwardView): FinaleAward {
@@ -622,12 +622,12 @@ export function finaleSlideData(
       case "awards":
         return awardSlides(base, context);
       case "champions":
-        return context.champions.length > 0
+        return context.winners.length > 0
           ? [
               {
                 ...base,
                 kind: "champions",
-                champions: context.champions,
+                winners: context.winners,
                 primaryColor: warWeek.primaryColor,
               },
             ]

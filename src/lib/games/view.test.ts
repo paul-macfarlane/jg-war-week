@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { GameFact } from "@/lib/games/leaderboard";
 import {
+  type Series,
   attemptsLabel,
   formatScore,
   gameSummary,
@@ -9,6 +10,7 @@ import {
   leaderboardColumns,
   placementPointsList,
   recordLabel,
+  seriesNote,
   seriesOf,
 } from "@/lib/games/view";
 
@@ -212,5 +214,46 @@ describe("seriesOf (spec R20, decision 7)", () => {
       score: "0–0",
       winner: null,
     });
+  });
+});
+
+describe("seriesNote (spec R20, decision 7)", () => {
+  const series: Series = {
+    matches: [],
+    wins: [1, 1],
+    draws: 0,
+    score: "1–1",
+    winner: null,
+  };
+
+  it("says nothing once the series has a Winner", () => {
+    expect(
+      seriesNote(
+        { drawsAllowed: false, bestOf: 3 },
+        { ...series, winner: "ashley" },
+        false,
+      ),
+    ).toBeNull();
+  });
+
+  it("names the Best of while it is open", () => {
+    expect(seriesNote({ drawsAllowed: false, bestOf: 3 }, series, false)).toBe(
+      "Best of 3: first to 2 wins.",
+    );
+  });
+
+  it("with no Best of, the Winner is decided at Close", () => {
+    expect(
+      seriesNote({ drawsAllowed: true, bestOf: null }, series, false),
+    ).toBe("The series Winner is decided at Close.");
+  });
+
+  it("Closed level, with or without a Best of, has no series Winner", () => {
+    expect(seriesNote({ drawsAllowed: true, bestOf: null }, series, true)).toBe(
+      "Closed level: no series Winner.",
+    );
+    expect(seriesNote({ drawsAllowed: false, bestOf: 5 }, series, true)).toBe(
+      "Closed level: no series Winner.",
+    );
   });
 });
