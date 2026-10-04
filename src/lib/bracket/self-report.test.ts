@@ -39,6 +39,35 @@ describe("matchReportState", () => {
       "decided",
     );
     expect(matchReportState(bracket, match(bracket, final.id))).toBe("open");
+
+    // Once the Final has a result, the semifinal it used is locked (D1c);
+    // the Final itself is the latest along the path and stays editable.
+    bracket = applyResult(bracket, final.id, { order: ["e1", "e2"] });
+    expect(matchReportState(bracket, match(bracket, played.id))).toBe(
+      "used-later",
+    );
+    expect(matchReportState(bracket, match(bracket, final.id))).toBe("decided");
+  });
+
+  it("with a 3rd place Match, a semifinal is locked by either Match its Entrants went to", () => {
+    let bracket = generate(
+      { ...DEFAULT_BRACKET_CONFIG, thirdPlaceMatch: true },
+      entrants(4),
+      newId,
+    );
+    const [semi1, semi2] = bracket.matches.filter((h) => h.round === 1);
+    const order = (id: string) =>
+      match(bracket, id).slots.map((s) => s.entrantId!);
+    bracket = applyResult(bracket, semi1.id, { order: order(semi1.id) });
+    bracket = applyResult(bracket, semi2.id, { order: order(semi2.id) });
+    const third = bracket.matches.find((h) => h.thirdPlace)!;
+    bracket = applyResult(bracket, third.id, { order: order(third.id) });
+    expect(matchReportState(bracket, match(bracket, semi1.id))).toBe(
+      "used-later",
+    );
+    expect(matchReportState(bracket, match(bracket, semi2.id))).toBe(
+      "used-later",
+    );
   });
 
   it("Matches: a bye, an open Match, an unfilled Round, then decided", () => {
@@ -63,6 +92,14 @@ describe("matchReportState", () => {
     bracket = applyResult(bracket, "r1h1", { order });
     expect(matchReportState(bracket, match(bracket, "r1h1"))).toBe("decided");
     expect(matchReportState(bracket, match(bracket, "r2h1"))).toBe("open");
+
+    // A Group Match is editable while no Match its advancers went to has a
+    // result (D1c).
+    const final = match(bracket, "r2h1").slots.map((s) => s.entrantId!);
+    bracket = applyResult(bracket, "r2h1", { order: final });
+    expect(matchReportState(bracket, match(bracket, "r1h1"))).toBe(
+      "used-later",
+    );
   });
 });
 
@@ -71,10 +108,10 @@ describe("matchReportError", () => {
     expect(
       matchReportError({
         selfReport: true,
-        match: "decided",
+        match: "used-later",
         linked: { participantId: "p", teamId: "t", squadId: null },
         entrants: [{ teamId: "t", participantId: null, squadId: null }],
       }),
-    ).toBe("This Match already has a result.");
+    ).toBe("A later Match already used this result. Change that Match first.");
   });
 });

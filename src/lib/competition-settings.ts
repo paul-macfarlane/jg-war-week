@@ -38,6 +38,9 @@ import {
 } from "@/lib/rich-text/content";
 import { type SeriesConfig, seriesConfigSchema } from "@/lib/series/config";
 
+/** The highest "Max attempts per person" the form takes. */
+export const MAX_ATTEMPTS_LIMIT = 999;
+
 /** The longest Competition name and Group (the columns). */
 export const COMPETITION_NAME_MAX = 120;
 export const COMPETITION_GROUP_MAX = 120;
@@ -71,7 +74,9 @@ export type CompetitionSettingChange =
   /** Null for no limit; else at least 2. */
   | { field: "entrantLimit"; value: number | null }
   | { field: "selfReport"; value: boolean }
-  | { field: "selfCheckIn"; value: boolean };
+  | { field: "selfCheckIn"; value: boolean }
+  /** Best score's limit per person; null for none. */
+  | { field: "maxAttempts"; value: number | null };
 
 // Every lock-table field has a change, and every change a lock-table field.
 type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
@@ -89,7 +94,7 @@ export function refusedAt(field: string, error: string): Parsed<never> {
 const BOOLEAN_FIELDS = {
   countsTowardTeam: "Choose whether it counts toward the Team.",
   selfEnroll: ENROLL_SWITCH_INVALID,
-  selfReport: "Turn self-report on or off.",
+  selfReport: "Choose whether Participants can log their own results.",
   selfCheckIn: "Choose whether Participants can check in.",
 } as const;
 
@@ -238,6 +243,22 @@ export function parseCompetitionSetting(
     }
     case "bracket":
       return ok({ field, value: null });
+    case "maxAttempts": {
+      const text = typeof value === "string" ? value.trim() : value;
+      if (text === "" || text === null || text === undefined) {
+        return ok({ field, value: null });
+      }
+      const n = typeof text === "string" ? Number(text) : text;
+      return typeof n === "number" &&
+        Number.isInteger(n) &&
+        n >= 1 &&
+        n <= MAX_ATTEMPTS_LIMIT
+        ? ok({ field, value: n })
+        : refusedAt(
+            field,
+            "Max attempts is a whole number of at least 1, or blank.",
+          );
+    }
     case "entrantLimit": {
       const limit = limitOf(value);
       return limit.ok

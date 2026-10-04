@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import {
+  clearMatchResult,
   closeBracket,
   recordMatchResult,
   reopenBracket,
@@ -22,19 +23,21 @@ import { Button } from "@/components/ui/button";
 import { isHeadToHead } from "@/lib/bracket/config";
 import { isComplete, isRecordable } from "@/lib/bracket/formats";
 import type { PodiumPlace } from "@/lib/bracket/podium";
+import { usedLater } from "@/lib/bracket/self-report";
 import type { Bracket } from "@/lib/bracket/types";
 import { hasPlacementPoints } from "@/lib/competitions";
+import type { ScoreDirection } from "@/lib/enums";
 
 type Scoring = "team" | "individual";
 
 /**
- * The admin Bracket's Match result form: the Host's record, which asks
- * before resetting later Matches and toasts "<1st place> wins <Match name>".
+ * The admin Bracket's Match result form: the Host's record, toasting
+ * "<1st place> wins <Match name>", with Clear result once decided.
  */
 function MatchResultSheet({
   competitionId,
   ...props
-}: Omit<MatchResultFormProps, "submit" | "confirmResets" | "successToast"> & {
+}: Omit<MatchResultFormProps, "submit" | "clear" | "successToast"> & {
   competitionId: string;
 }) {
   return (
@@ -43,7 +46,7 @@ function MatchResultSheet({
       submit={(result) =>
         recordMatchResult(competitionId, props.match.id, result)
       }
-      confirmResets
+      clear={() => clearMatchResult(competitionId, props.match.id)}
       successToast={(winner, match) => `${winner} wins ${match}`}
     />
   );
@@ -73,6 +76,8 @@ type BracketAdminProps = {
   scoring: Scoring;
   /** The Competition's Score unit, for Score labels. */
   scoreUnit?: string | null;
+  /** The Score direction: with one, Scores decide a Match's places. */
+  scoreDirection?: ScoreDirection;
   entrants: BracketViewEntrant[];
   bracket: Bracket;
   /** The Winner's Entrant id, once the final is decided. */
@@ -89,7 +94,8 @@ type BracketAdminProps = {
  * Runs a Bracket for an Organizer or the Competition's Host: Top finishers
  * and Close / Reopen on top, then the Bracket's tree (the same one
  * Participants see) with Record result (Edit once played) on every Match
- * that can be recorded while it isn't Closed. A tap opens the Match
+ * that can be recorded while it isn't Closed, and Edit disabled with the
+ * reason on a Match a later Match already used. A tap opens the Match
  * Result popup, a bottom Sheet on a phone and a centered Dialog on large
  * screens (`ResponsiveSheetDialog`). A Group Bracket's Round headings each
  * carry an Edit that opens that Round's editor (`BracketRoundEditor`) the
@@ -119,6 +125,7 @@ export function BracketAdminView({
   placementPoints,
   scoring,
   scoreUnit = null,
+  scoreDirection = "none",
   entrants,
   bracket,
   winner,
@@ -215,12 +222,24 @@ export function BracketAdminView({
         entrantsById={entrantsById}
         scoring={scoring}
         scoreUnit={scoreUnit}
+        scoreDirection={scoreDirection}
         primaryColor={primaryColor}
         recordableMatchIds={
           closed
             ? []
             : bracket.matches
-                .filter((h) => isRecordable(bracket, h.id))
+                .filter(
+                  (h) => isRecordable(bracket, h.id) && !usedLater(bracket, h),
+                )
+                .map((h) => h.id)
+        }
+        lockedMatchIds={
+          closed
+            ? []
+            : bracket.matches
+                .filter(
+                  (h) => isRecordable(bracket, h.id) && usedLater(bracket, h),
+                )
                 .map((h) => h.id)
         }
         onRecord={onOpenMatchChange}
@@ -262,6 +281,7 @@ export function BracketAdminView({
             entrantsById={entrantsById}
             scoring={scoring}
             scoreUnit={scoreUnit}
+            scoreDirection={scoreDirection}
             primaryColor={primaryColor}
             onSaved={close}
           />

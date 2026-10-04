@@ -19,7 +19,7 @@ import {
 import {
   type AttemptLogFacet,
   attemptChangeError,
-  canLogAttempt,
+  attemptLogOffer,
 } from "@/lib/best-score/log-rule";
 import {
   type AttemptFact,
@@ -34,12 +34,13 @@ import {
   placingsOf,
 } from "@/lib/logged-results";
 import { entryPointsFor } from "@/lib/results-table";
+import { type ScoringConfig, scoringOf } from "@/lib/scoring";
 import { type SeriesConfig, seriesConfigOf } from "@/lib/series/config";
 import {
   type MatchSide,
   type SeriesLogFacet,
-  canLogMatch,
   seriesChangeError,
+  seriesLogOffer,
 } from "@/lib/series/log-rule";
 import { bestOfWinner, rankSeries } from "@/lib/series/standings";
 import { isUuid } from "@/lib/uuid";
@@ -64,6 +65,12 @@ export type LoggedCompetition = {
   scoring: Scoring;
   format: LoggedFormat;
   config: LoggedConfig;
+  /** The Score direction and unit (Head-to-head Matches use them too). */
+  scoringConfig: ScoringConfig;
+  /** "Participants can log their own results". */
+  selfReport: boolean;
+  /** Best score's "Max attempts per person"; null for no limit. */
+  maxAttempts: number | null;
   closed: boolean;
   placementPoints: number[] | null;
 };
@@ -110,6 +117,8 @@ async function loadCompetitions(
       scoreDirection: competition.scoreDirection,
       scoreUnit: competition.scoreUnit,
       bestScoreConfig: competition.bestScoreConfig,
+      selfReport: competition.selfReport,
+      maxAttempts: competition.maxAttempts,
       closedAt: competition.closedAt,
       placementPoints: competition.placementPoints,
     })
@@ -129,6 +138,9 @@ async function loadCompetitions(
           found.format === "head-to-head"
             ? seriesConfigOf(found)
             : bestScoreSettingsOf(found),
+        scoringConfig: scoringOf(found),
+        selfReport: found.selfReport,
+        maxAttempts: found.maxAttempts,
         closed: found.closedAt !== null,
         placementPoints: found.placementPoints,
       },
@@ -319,6 +331,29 @@ function decidedOf(found: LoggedCompetition, matches: LoadedMatch[]) {
 const sidesOf = (entrants: MatchSide[]): MatchSide[] =>
   entrants.map(({ teamId, participantId }) => ({ teamId, participantId }));
 
+/** A series' facet with no posted players and no Match. */
+function seriesFacetOf(
+  found: LoggedCompetition,
+  runs: boolean,
+  linked: Linked,
+  entrants: MatchSide[],
+  matches: LoadedMatch[],
+): SeriesLogFacet {
+  return {
+    runs,
+    closed: found.closed,
+    selfReport: found.selfReport,
+    decided: decidedOf(found, matches).decided,
+    played: matches.length,
+    bestOf: (found.config as SeriesConfig).bestOf,
+    linked,
+    scoring: found.scoring,
+    entrants: sidesOf(entrants),
+    players: [],
+    match: null,
+  };
+}
+
 export type SeriesLogFacts = {
   /** What `can("series.log" | "series.edit" | "series.delete", …)` checks. */
   seriesLog: SeriesLogFacet;
@@ -355,21 +390,13 @@ export async function getSeriesLogFacts(
   const loaded = matchId ? matches.find((m) => m.id === matchId) : undefined;
   return {
     seriesLog: {
-      runs,
-      closed: found.closed,
-      decided: decidedOf(found, matches).decided,
-      linked,
-      scoring: found.scoring,
-      entrants: sidesOf(entrants),
+      ...seriesFacetOf(found, runs, linked, entrants, matches),
       players: playerIds.map((id) => sideOf(found.scoring, id)),
       match:
         matchId === null
           ? null
           : loaded
-            ? {
-                loggedByParticipantId: loaded.loggedByParticipantId,
-                players: sidesOf(loaded.players),
-              }
+            ? { players: sidesOf(loaded.players) }
             : "missing",
     },
     linked,
@@ -387,6 +414,8 @@ export type AttemptLogFacts = {
   attemptLog: AttemptLogFacet;
   linked: Linked;
   competition: LoggedCompetition;
+  /** The posted Participant's Attempts, newest first (a save at a limit of 1 edits the first). */
+  postedAttemptIds: string[];
 };
 
 /**
@@ -406,15 +435,12 @@ export async function getAttemptLogFacts(
   const found = await getLoggedCompetition(competitionId, dbOrTx);
   if (!found || found.format !== "best-score") return null;
   const normalized = normalizedEmail(email);
-  const [runs, linked, loaded] = await Promise.all([
+  const [runs, linked, loaded, posted] = await Promise.all([
     runsCompetition(competitionId, normalized, dbOrTx),
     linkedIn(found.warWeekId, normalized, dbOrTx),
     attemptId && isUuid(attemptId)
       ? dbOrTx
-          .select({
-            loggedByParticipantId: attempt.loggedByParticipantId,
-            participantId: attempt.participantId,
-          })
+          .select({ participantId: attempt.participantId })
           .from(attempt)
           .where(
             and(
@@ -424,18 +450,38 @@ export async function getAttemptLogFacts(
           )
           .limit(1)
       : Promise.resolve([]),
+    participantId && isUuid(participantId)
+      ? dbOrTx
+          .select({ id: attempt.id })
+          .from(attempt)
+          .where(
+            and(
+              eq(attempt.competitionId, competitionId),
+              eq(attempt.participantId, participantId),
+            ),
+          )
+          .orderBy(
+            desc(attempt.recordedAt),
+            desc(attempt.createdAt),
+            asc(attempt.id),
+          )
+      : Promise.resolve([]),
   ]);
   return {
     attemptLog: {
       runs,
       closed: found.closed,
+      selfReport: found.selfReport,
       linked,
       scoring: found.scoring,
       participantId,
       attempt: attemptId === null ? null : (loaded[0] ?? "missing"),
+      maxAttempts: found.maxAttempts,
+      attemptsSoFar: posted.length,
     },
     linked,
     competition: found,
+    postedAttemptIds: posted.map((row) => row.id),
   };
 }
 
@@ -526,6 +572,12 @@ export type LoggedResultView = {
  * one viewer. Names, ids and booleans only: no email is ever selected (R3
  * decision 17).
  */
+export type LogOffer = {
+  label: string;
+  disabledReason: string | null;
+  attemptsLeft: number | null;
+};
+
 export type LoggedResultsView = {
   competition: LoggedCompetition;
   /** Ranked best first; a row with no result is unranked, last. */
@@ -538,6 +590,15 @@ export type LoggedResultsView = {
   runs: boolean;
   /** Whether the viewer may log a Match or Attempt right now (a Log button). */
   viewerCanLog: boolean;
+  /**
+   * The viewer's Log button, or null for none: its label ("Log a Match",
+   * "Log an Attempt" or "Update your score"), the reason it's disabled
+   * (a decided or drawn series, no Attempts left), and the viewer's own
+   * Attempts left.
+   */
+  logOffer: LogOffer | null;
+  /** Best score: each Participant's Attempts so far, by id (the form's "N attempts left"). */
+  attemptCounts: Record<string, number>;
   /** A Head-to-head series won by a majority of its Best of. */
   decided: boolean;
   /** The decided series' Winner's name, or null. */
@@ -623,16 +684,8 @@ export async function getLoggedResultsView(
   const seriesWinner = winnerId ? nameOf(winnerId).name : null;
 
   if (found.format === "head-to-head") {
-    const facet: SeriesLogFacet = {
-      runs,
-      closed: found.closed,
-      decided,
-      linked,
-      scoring: found.scoring,
-      entrants: sidesOf(entrants),
-      players: [],
-      match: null,
-    };
+    const facet = seriesFacetOf(found, runs, linked, entrants, matches);
+    const offer = seriesLogOffer(facet);
     return {
       competition: found,
       leaderboard,
@@ -640,10 +693,7 @@ export async function getLoggedResultsView(
         const allowed =
           seriesChangeError({
             ...facet,
-            match: {
-              loggedByParticipantId: m.loggedByParticipantId,
-              players: sidesOf(m.players),
-            },
+            match: { players: sidesOf(m.players) },
           }) === null;
         return {
           id: m.id,
@@ -660,7 +710,13 @@ export async function getLoggedResultsView(
       }),
       linked,
       runs,
-      viewerCanLog: canLogMatch(facet),
+      viewerCanLog: offer !== null && offer.disabledReason === null,
+      logOffer: offer && {
+        label: "Log a Match",
+        disabledReason: offer.disabledReason,
+        attemptsLeft: null,
+      },
+      attemptCounts: {},
       decided,
       seriesWinner,
       playerOptions: entrants.map((e) => {
@@ -670,14 +726,22 @@ export async function getLoggedResultsView(
     };
   }
 
+  const attemptCounts: Record<string, number> = {};
+  for (const a of attempts) {
+    attemptCounts[a.participantId] = (attemptCounts[a.participantId] ?? 0) + 1;
+  }
   const facet: AttemptLogFacet = {
     runs,
     closed: found.closed,
+    selfReport: found.selfReport,
     linked,
     scoring: found.scoring,
     participantId: null,
     attempt: null,
+    maxAttempts: found.maxAttempts,
+    attemptsSoFar: linked ? (attemptCounts[linked.participantId] ?? 0) : 0,
   };
+  const offer = attemptLogOffer(facet);
   return {
     competition: found,
     leaderboard,
@@ -685,10 +749,7 @@ export async function getLoggedResultsView(
       const allowed =
         attemptChangeError({
           ...facet,
-          attempt: {
-            loggedByParticipantId: a.loggedByParticipantId,
-            participantId: a.participantId,
-          },
+          attempt: { participantId: a.participantId },
         }) === null;
       return {
         id: a.id,
@@ -701,7 +762,9 @@ export async function getLoggedResultsView(
     }),
     linked,
     runs,
-    viewerCanLog: canLogAttempt(facet),
+    viewerCanLog: offer !== null && offer.disabledReason === null,
+    logOffer: offer,
+    attemptCounts,
     decided: false,
     seriesWinner: null,
     playerOptions: participants.map((p) => {
@@ -720,8 +783,8 @@ export type LoggableCompetition = {
 /**
  * The open Head-to-head and Best score Competitions of a War Week where
  * the Participant linked to `email` may log a Match or Attempt right now:
- * not closed, and for a Head-to-head, an undecided series they (or their
- * Team) play in. Empty with no link. For the home page's "Log a result"
+ * not closed, self-report on, for a Head-to-head a series still open that
+ * they (or their Team) play in, for Best score with Attempts left. Empty with no link. For the home page's "Log a result"
  * card; ordered by name.
  */
 export async function getLoggableCompetitions(
@@ -743,35 +806,41 @@ export async function getLoggableCompetitions(
         ),
       )
   ).map((c) => c.id);
-  const [found, entrants, matches] = await Promise.all([
+  const [found, entrants, matches, attempts] = await Promise.all([
     loadCompetitions(ids, dbOrTx),
     entrantsOf(ids, dbOrTx),
     matchesOf(ids, dbOrTx),
+    attemptsOf(ids, dbOrTx),
   ]);
   return found.flatMap((c) => {
-    const can =
+    const offer =
       c.format === "head-to-head"
-        ? canLogMatch({
-            runs: false,
-            closed: c.closed,
-            decided: decidedOf(
+        ? seriesLogOffer(
+            seriesFacetOf(
               c,
+              false,
+              linked,
+              entrants.filter((e) => e.competitionId === c.id),
               matches.filter((m) => m.competitionId === c.id),
-            ).decided,
-            linked,
-            scoring: c.scoring,
-            entrants: sidesOf(entrants.filter((e) => e.competitionId === c.id)),
-            players: [],
-            match: null,
-          })
-        : canLogAttempt({
+            ),
+          )
+        : attemptLogOffer({
             runs: false,
             closed: c.closed,
+            selfReport: c.selfReport,
             linked,
             scoring: c.scoring,
             participantId: null,
             attempt: null,
+            maxAttempts: c.maxAttempts,
+            attemptsSoFar: attempts.filter(
+              (a) =>
+                a.competitionId === c.id &&
+                a.participantId === linked.participantId,
+            ).length,
           });
-    return can ? [{ id: c.id, name: c.name, format: c.format }] : [];
+    return offer && offer.disabledReason === null
+      ? [{ id: c.id, name: c.name, format: c.format }]
+      : [];
   });
 }

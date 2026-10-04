@@ -80,3 +80,23 @@ export function isSetByHand(
   const computed = orderByScore(entries, direction);
   return entries.some((entry) => entry.place !== computed.get(entry.id));
 }
+
+/**
+ * A Match's finishing order from its Scores (spec R21, decision 7): best
+ * first by the direction, once every Entrant has a Score. Equal Scores
+ * keep their given order and set `tied`, for the recorder to settle by
+ * hand. Null with direction none or a Score missing.
+ */
+export function finishingOrder(
+  entries: { id: string; score: number | null }[],
+  direction: ScoreDirection,
+): { order: string[]; tied: boolean } | null {
+  if (!ranksByScore(direction) || entries.length === 0) return null;
+  if (entries.some((entry) => entry.score === null)) return null;
+  const places = orderByScore(entries, direction);
+  const order = entries
+    .map((entry, i) => ({ id: entry.id, place: places.get(entry.id)!, i }))
+    .sort((x, y) => x.place - y.place || x.i - y.i)
+    .map((entry) => entry.id);
+  return { order, tied: new Set(places.values()).size < entries.length };
+}

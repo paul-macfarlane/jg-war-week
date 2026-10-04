@@ -1,7 +1,7 @@
 "use client";
 
 import { Trophy } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useId, useState } from "react";
 
 import { deleteResult } from "@/actions/logged-results";
 import { Avatar } from "@/components/avatar";
@@ -27,12 +27,14 @@ import {
 } from "@/lib/best-score/standings";
 import { placementLabel } from "@/lib/competitions";
 import type { LoggedFormat } from "@/lib/enums";
-import { formatScore, isMine, resultNoun } from "@/lib/logged-results";
+import { formatScore, isMine } from "@/lib/logged-results";
 import { formatPointsLabel } from "@/lib/points";
 import { winnerKeys } from "@/lib/results-table";
+import { type ScoringConfig, isSetByHand } from "@/lib/scoring";
 import type { SeriesConfig } from "@/lib/series/config";
 import { matchSummary, seriesNote, seriesOf } from "@/lib/series/standings";
 import type {
+  LogOffer,
   LoggedConfig,
   LoggedResultView,
   LoggedResultsName,
@@ -66,6 +68,14 @@ export type LoggedResultsProps = {
   /** The viewer is an Organizer or a Host of this Competition. */
   runs: boolean;
   viewerCanLog: boolean;
+  /** The Score direction and unit. */
+  scoringConfig: ScoringConfig;
+  /** The viewer's Log button (its label, disabled reason, Attempts left), or null. */
+  logOffer: LogOffer | null;
+  /** Best score's "Max attempts per person"; null for none. */
+  maxAttempts: number | null;
+  /** Best score: each Participant's Attempts so far, by id. */
+  attemptCounts: Record<string, number>;
   /** A Head-to-head series won by a majority of its Best of. */
   decided: boolean;
   seriesWinner: string | null;
@@ -484,6 +494,7 @@ function HeadToHeadTable({
 export function SeriesView({
   competitionId,
   config,
+  scoringConfig,
   scoring,
   closed,
   entrants,
@@ -495,6 +506,8 @@ export function SeriesView({
 }: {
   competitionId: string;
   config: SeriesConfig;
+  /** With a direction, a Match whose Winner differs from its Scores says "Set by hand". */
+  scoringConfig: ScoringConfig;
   scoring: Scoring;
   closed: boolean;
   /** The two Entrants, in Seed Position order, with their places and points. */
@@ -606,7 +619,7 @@ export function SeriesView({
                           className="font-semibold tabular-nums"
                         >
                           {scored
-                            ? `${formatScore(scores[0], "")}–${formatScore(scores[1], "")}`
+                            ? `${formatScore(scores[0], "")}–${formatScore(scores[1], "")}${scoringConfig.unit ? ` ${scoringConfig.unit}` : ""}`
                             : "vs"}
                         </span>
                         <span className="break-words">{b.name}</span>
@@ -620,6 +633,21 @@ export function SeriesView({
                         >
                           {result}
                         </Badge>
+                        {isSetByHand(
+                          logged.players.map((p) => ({
+                            id: p.id,
+                            score: p.score,
+                            place: p.place,
+                          })),
+                          scoringConfig.direction,
+                        ) ? (
+                          <span
+                            data-slot="set-by-hand"
+                            className="text-foreground/70 text-xs"
+                          >
+                            Set by hand
+                          </span>
+                        ) : null}
                         <When at={logged.recordedAt} now={now} />
                       </span>
                     </span>
@@ -677,6 +705,58 @@ export function SeriesView({
 }
 
 /**
+ * The Log button: enabled, or disabled with its reason as visible text
+ * beside it (a decided or drawn series, no Attempts left), never a hover
+ * tooltip; a Participant's Attempts left under "Max attempts per person".
+ */
+export function LogButton({
+  offer,
+  onLog,
+  className = "min-h-11 w-full md:w-auto",
+  size = "lg",
+}: {
+  offer: LogOffer;
+  onLog: () => void;
+  className?: string;
+  size?: "default" | "lg";
+}) {
+  const reasonId = useId();
+  const left =
+    offer.attemptsLeft === null || offer.disabledReason
+      ? null
+      : offer.attemptsLeft === 1
+        ? "1 attempt left"
+        : `${offer.attemptsLeft} attempts left`;
+  return (
+    <div className="flex flex-col gap-1 md:flex-row md:items-center md:gap-3">
+      <Button
+        type="button"
+        size={size}
+        className={className}
+        disabled={offer.disabledReason !== null}
+        aria-describedby={offer.disabledReason ? reasonId : undefined}
+        onClick={onLog}
+      >
+        {offer.label}
+      </Button>
+      {offer.disabledReason ? (
+        <p
+          id={reasonId}
+          data-slot="log-disabled-reason"
+          className="text-foreground/70 text-sm"
+        >
+          {offer.disabledReason}
+        </p>
+      ) : left ? (
+        <p data-slot="attempts-left" className="text-foreground/70 text-sm">
+          {left}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/**
  * A Head-to-head's two Entrants as a series (spec R20, decision 7), in
  * Seed Position order. Null until both are set, when the results table
  * shows instead.
@@ -711,7 +791,12 @@ export function LoggedResults(props: LoggedResultsProps) {
     leaderboard,
     results: logged,
     linked,
+    runs,
     viewerCanLog,
+    scoringConfig,
+    logOffer,
+    maxAttempts,
+    attemptCounts,
     decided,
     seriesWinner,
     playerOptions,
@@ -752,6 +837,7 @@ export function LoggedResults(props: LoggedResultsProps) {
       <SeriesView
         competitionId={competitionId}
         config={config as SeriesConfig}
+        scoringConfig={scoringConfig}
         scoring={scoring}
         closed={closed}
         entrants={series}
@@ -823,15 +909,8 @@ export function LoggedResults(props: LoggedResultsProps) {
         </p>
       ) : null}
 
-      {viewerCanLog ? (
-        <Button
-          type="button"
-          size="lg"
-          className="min-h-11 w-full md:w-auto md:self-start"
-          onClick={() => openForm(null)}
-        >
-          {`Log ${resultNoun(format).a}`}
-        </Button>
+      {logOffer ? (
+        <LogButton offer={logOffer} onLog={() => openForm(null)} />
       ) : null}
 
       {results}
@@ -843,9 +922,13 @@ export function LoggedResults(props: LoggedResultsProps) {
           competitionId={competitionId}
           format={format}
           config={config}
+          scoringConfig={scoringConfig}
           scoring={scoring}
           playerOptions={playerOptions}
           linked={linked}
+          runs={runs}
+          maxAttempts={maxAttempts}
+          attemptCounts={attemptCounts}
           result={editing}
         />
       ) : null}

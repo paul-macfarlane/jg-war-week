@@ -8,6 +8,7 @@ import {
   NOT_LINKED,
   attemptChangeError,
   attemptLogError,
+  updatesInPlace,
 } from "@/lib/best-score/log-rule";
 import { refuse } from "@/mutations/brackets";
 import { lockedLogged } from "@/mutations/logged-results";
@@ -73,10 +74,13 @@ async function creditOf(
 }
 
 /**
- * Logs a Best score Attempt (ADR 0006): a linked Participant as
- * themselves, or a Host or Organizer for any Participant. Under the
- * Competition's row lock the facts are checked again (so a log after Close
- * is refused); the Attempt counts for the Participant's Team at logging.
+ * Logs a Best score Attempt (spec R21, decisions 4 and 13): a Host or
+ * Organizer for any Participant, or with self-report on a linked
+ * Participant as themselves. Under the Competition's row lock the facts
+ * are checked again (so a log after Close, or past "Max attempts per
+ * person", is refused); the Attempt counts for the Participant's Team at
+ * logging. At a limit of 1, a person's second save edits their one
+ * Attempt instead, and answers with its id.
  */
 export async function logAttempt(
   competitionId: string,
@@ -98,6 +102,14 @@ export async function logAttempt(
     if (!facts.attemptLog.runs && !facts.linked) return refuse(NOT_LINKED);
     const credit = await creditOf(tx, facts, input.participantId, ctx);
     if (typeof credit === "string") return refuse(credit);
+    if (updatesInPlace(facts.attemptLog)) {
+      const [existing] = facts.postedAttemptIds;
+      await tx
+        .update(attempt)
+        .set({ score: input.score, updatedAt: sql`now()` })
+        .where(eq(attempt.id, existing));
+      return { ok: true, resultId: existing };
+    }
 
     const [row] = await tx
       .insert(attempt)
@@ -117,9 +129,11 @@ export async function logAttempt(
 }
 
 /**
- * Changes an Attempt (ADR 0006): its logger, or a Host or Organizer,
- * checked again under the lock. A new Participant's Team is credited as
- * at logging; its recorded time never changes.
+ * Changes an Attempt (spec R21, D1a): a Host or Organizer, or with
+ * self-report on the Participant it's for, whoever logged it, checked
+ * again under the lock. Never counts against "Max attempts per person". A
+ * new Participant's Team is credited as at logging; its recorded time
+ * never changes.
  */
 export async function updateAttempt(
   competitionId: string,
@@ -161,7 +175,7 @@ export async function updateAttempt(
   });
 }
 
-/** Deletes an Attempt: its logger, or a Host or Organizer. */
+/** Deletes an Attempt: a Host or Organizer, or with self-report on the Participant it's for. */
 export async function deleteAttempt(
   competitionId: string,
   attemptId: string,

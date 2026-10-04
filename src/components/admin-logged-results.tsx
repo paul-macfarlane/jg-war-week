@@ -2,13 +2,18 @@
 
 import { useState } from "react";
 
-import { BestScoreResults, MatchLog } from "@/components/logged-results-view";
+import {
+  BestScoreResults,
+  LogButton,
+  MatchLog,
+} from "@/components/logged-results-view";
 import { ResultForm, type ResultFormValue } from "@/components/result-form";
-import { Button } from "@/components/ui/button";
 import type { BestScoreSettings } from "@/lib/best-score/config";
 import type { LoggedFormat } from "@/lib/enums";
 import { resultNoun } from "@/lib/logged-results";
+import type { ScoringConfig } from "@/lib/scoring";
 import type {
+  LogOffer,
   LoggedConfig,
   LoggedResultView,
   LoggedResultsName,
@@ -23,6 +28,13 @@ export type AdminLoggedResultsProps = {
   closed: boolean;
   /** The server's answer: false once Closed (or logging is refused). */
   viewerCanLog: boolean;
+  /** The Log button: disabled with its reason once a series is decided or drawn. */
+  logOffer: LogOffer | null;
+  scoringConfig: ScoringConfig;
+  /** Best score's "Max attempts per person"; null for none. */
+  maxAttempts: number | null;
+  /** Best score: each Participant's Attempts so far, by id. */
+  attemptCounts: Record<string, number>;
   /** Ranked best first, each with its points (Best score's table). */
   leaderboard: LoggedResultsRow[];
   /** Newest first, each with whether the viewer may edit or delete it. */
@@ -50,6 +62,10 @@ export function AdminLoggedResults({
   scoring,
   closed,
   viewerCanLog,
+  logOffer,
+  scoringConfig,
+  maxAttempts,
+  attemptCounts,
   leaderboard,
   results,
   playerOptions,
@@ -71,14 +87,13 @@ export function AdminLoggedResults({
     <section className="flex min-w-0 flex-col gap-3" aria-label={noun.many}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-lg font-semibold">{noun.many}</h3>
-        {viewerCanLog ? (
-          <Button
-            type="button"
+        {logOffer ? (
+          <LogButton
+            offer={logOffer}
+            onLog={() => openForm(null)}
+            size="default"
             className="min-h-11 sm:min-h-0"
-            onClick={() => openForm(null)}
-          >
-            {`Log ${noun.a}`}
-          </Button>
+          />
         ) : null}
       </div>
       {bestScore ? (
@@ -112,9 +127,13 @@ export function AdminLoggedResults({
           competitionId={competitionId}
           format={format}
           config={config}
+          scoringConfig={scoringConfig}
           scoring={scoring}
           playerOptions={playerOptions}
           linked={null}
+          runs
+          maxAttempts={maxAttempts}
+          attemptCounts={attemptCounts}
           result={editing}
         />
       ) : null}

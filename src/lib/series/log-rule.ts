@@ -1,13 +1,18 @@
 /**
  * The facts that bound logging, editing and deleting a Head-to-head Match
- * (ADR 0006). Pure, and deliberately free of zod and the Bracket engine:
- * `src/lib/access.ts` imports it, and that module reaches the client
- * bundle.
+ * (spec R21, decisions 4 and 12; D1b). An Organizer or the Competition's
+ * Host logs any Match; with self-report on, either Entrant (or anyone on
+ * an Entrant Team) logs one and changes any Match of the series, whoever
+ * logged it. Once a side has the majority, or every Match of the Best of
+ * is played, no more are logged; a Match is still changed while the
+ * Competition is open, and the series recomputes. Pure, and deliberately
+ * free of zod and the Bracket engine: `src/lib/access.ts` imports it, and
+ * that module reaches the client bundle.
  */
-import { NOT_LINKED } from "@/lib/bracket/match-report-rule";
+import { NOT_LINKED, SELF_REPORT_OFF } from "@/lib/bracket/match-report-rule";
 import { COMPETITION_CLOSED } from "@/lib/logged-results";
 
-export { COMPETITION_CLOSED, NOT_LINKED };
+export { COMPETITION_CLOSED, NOT_LINKED, SELF_REPORT_OFF };
 
 /** A player in a Match, or an Entrant: a Team or a Participant by id. */
 export type MatchSide = { teamId: string | null; participantId: string | null };
@@ -17,35 +22,35 @@ export type MatchSide = { teamId: string | null; participantId: string | null };
  * - `runs`: the actor is an Organizer or a Host of this Competition
  *   (loaded by the caller, never `hostsIn`).
  * - `closed`: the Competition is closed (`closed_at` set).
- * - `decided`: an Entrant has won the Best of, so a Participant's logging
- *   is closed.
+ * - `selfReport`: "Participants can log their own results".
+ * - `decided`: an Entrant has the majority of the Best of.
+ * - `played` and `bestOf`: Matches logged so far, and the series' length.
  * - `linked`: the Participant the actor's email links to, with their Team.
  * - `scoring` and `entrants`: the series' two sides.
  * - `players`: the posted players for a log or an edit; empty for a delete.
- * - `match`: for an edit or a delete, the Match's logger and its players,
- *   or `missing`.
+ * - `match`: for an edit or a delete, the Match's players, or `missing`.
  */
 export type SeriesLogFacet = {
   runs: boolean;
   closed: boolean;
+  selfReport: boolean;
   decided: boolean;
+  played: number;
+  bestOf: number;
   linked: { participantId: string; teamId: string | null } | null;
   scoring: "team" | "individual";
   entrants: MatchSide[];
   players: MatchSide[];
-  match:
-    | { loggedByParticipantId: string | null; players: MatchSide[] }
-    | "missing"
-    | null;
+  match: { players: MatchSide[] } | "missing" | null;
 };
 
 export const SERIES_DECIDED = "This series is decided, so logging is closed.";
+export const SERIES_DRAWN =
+  "Every Match of this series is played with no majority: the series is drawn.";
 export const NOT_A_PLAYER = "You're not a player in this Match.";
 export const NOT_AN_ENTRANT =
   "A Match is played between this Competition's 2 Entrants.";
 export const MATCH_MISSING = "That Match no longer exists.";
-export const NOT_THE_LOGGER =
-  "Only the player who logged this Match can change it. Ask the Host.";
 export const REPEATED_PLAYER = "Choose each player only once.";
 export const TWO_PLAYERS = "A Head-to-head Match has exactly 2 players.";
 export const NEEDS_TWO_ENTRANTS =
@@ -83,32 +88,53 @@ function entrantError(
   return players.every(entered) ? null : NOT_AN_ENTRANT;
 }
 
-/**
- * Why the actor can't log this Match, or null when they can. In order:
- * closed (binds everyone); a Host or Organizer may; else no linked
- * Participant, the series decided, not a player in the posted set (as the
- * Participant or on a Team in it), a player who isn't an Entrant.
- */
-export function seriesLogError(facet: SeriesLogFacet): string | null {
-  if (facet.closed) return COMPETITION_CLOSED;
-  if (facet.runs) return null;
-  const { linked } = facet;
-  if (!linked) return NOT_LINKED;
+/** Why the series takes no more Matches (decided or drawn), or null. */
+function seriesOverError(facet: SeriesLogFacet): string | null {
   if (facet.decided) return SERIES_DECIDED;
-  if (!onSides(facet.scoring, linked, facet.players)) return NOT_A_PLAYER;
-  return entrantError(facet, facet.players);
+  if (facet.played >= facet.bestOf) return SERIES_DRAWN;
+  return null;
 }
 
 /**
- * Whether the actor could log a Match right now (a Log button):
- * `seriesLogError` without the posted players.
+ * Why a linked Participant may not write here as an Entrant, or null:
+ * self-report off, no link, not an Entrant (or on an Entrant Team).
  */
-export function canLogMatch(facet: SeriesLogFacet): boolean {
-  if (facet.closed) return false;
-  if (facet.runs) return facet.entrants.length === 2;
+function participantError(facet: SeriesLogFacet): string | null {
+  if (!facet.selfReport) return SELF_REPORT_OFF;
   const { linked } = facet;
-  if (!linked || facet.decided || facet.entrants.length !== 2) return false;
-  return onSides(facet.scoring, linked, facet.entrants);
+  if (!linked) return NOT_LINKED;
+  return onSides(facet.scoring, linked, facet.entrants) ? null : NOT_A_PLAYER;
+}
+
+/**
+ * Why the actor can't log this Match, or null when they can. In order:
+ * Closed, then the series decided or drawn (both bind everyone); a Host or
+ * Organizer may; else self-report off, no link, not an Entrant, a posted
+ * player who isn't an Entrant.
+ */
+export function seriesLogError(facet: SeriesLogFacet): string | null {
+  if (facet.closed) return COMPETITION_CLOSED;
+  const over = seriesOverError(facet);
+  if (over) return over;
+  if (facet.runs) return null;
+  return participantError(facet) ?? entrantError(facet, facet.players);
+}
+
+/** The Log a Match button a viewer sees, or null for none. */
+export type SeriesLogOffer = {
+  /** Shown beside the disabled button; null when it's enabled. */
+  disabledReason: string | null;
+};
+
+/**
+ * The Log a Match button: for a Host or Organizer, or an Entrant with
+ * self-report on, once the two Entrants are set and until Closed;
+ * disabled, with the reason, once the series is decided or drawn.
+ */
+export function seriesLogOffer(facet: SeriesLogFacet): SeriesLogOffer | null {
+  if (facet.closed || facet.entrants.length !== 2) return null;
+  if (!facet.runs && participantError(facet)) return null;
+  return { disabledReason: seriesOverError(facet) };
 }
 
 /**
@@ -135,24 +161,18 @@ export function playersRuleError({
 }
 
 /**
- * Why the actor can't edit or delete this Match, or null when they can.
- * An edit posts its new `players`; a delete posts none. In order: closed
- * (binds everyone); a Host or Organizer may; else no linked Participant,
- * no such Match, not its logger, the series decided, no longer a player in
- * it, and for an edit not a player of the edited set.
+ * Why the actor can't edit or delete this Match, or null when they can:
+ * anyone who could have logged it, while the Competition is open, even
+ * once the series is decided (D1b). An edit posts its new `players`; a
+ * delete posts none. In order: Closed (binds everyone); a Host or
+ * Organizer may; else self-report off, no link, not an Entrant, no such
+ * Match, and for an edit a posted player who isn't an Entrant.
  */
 export function seriesChangeError(facet: SeriesLogFacet): string | null {
   if (facet.closed) return COMPETITION_CLOSED;
   if (facet.runs) return null;
-  const { linked, match } = facet;
-  if (!linked) return NOT_LINKED;
-  if (!match || match === "missing") return MATCH_MISSING;
-  if (match.loggedByParticipantId !== linked.participantId) {
-    return NOT_THE_LOGGER;
-  }
-  if (facet.decided) return SERIES_DECIDED;
-  if (!onSides(facet.scoring, linked, match.players)) return NOT_A_PLAYER;
-  if (facet.players.length === 0) return null;
-  if (!onSides(facet.scoring, linked, facet.players)) return NOT_A_PLAYER;
+  const refusal = participantError(facet);
+  if (refusal) return refusal;
+  if (!facet.match || facet.match === "missing") return MATCH_MISSING;
   return entrantError(facet, facet.players);
 }

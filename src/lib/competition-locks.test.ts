@@ -177,6 +177,7 @@ describe("settingLockReason", () => {
     "entrantLimit",
     "selfReport",
     "selfCheckIn",
+    "maxAttempts",
   ])("locks %s only while Closed", (field) => {
     expect(settingLockReason(field, matchPlayed)).toBeNull();
     expect(settingLockReason(field, closed)).toBe(

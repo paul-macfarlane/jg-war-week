@@ -8,9 +8,9 @@ import {
   finalPlacings,
   generate,
   isComplete,
-  resetByResult,
   validateConfig,
 } from "@/lib/bracket/formats";
+import { LATER_MATCH_USED } from "@/lib/bracket/match-report-rule";
 import { pointsFor } from "@/lib/bracket/points";
 import { bracketTree } from "@/lib/bracket/tree";
 import type { Bracket, Entrant, Match } from "@/lib/bracket/types";
@@ -298,17 +298,11 @@ describe("the final, with a 3rd place Match present", () => {
     ]);
   });
 
-  it("a changed semifinal winner empties the 3rd place Match and sends the new loser", () => {
-    let bracket = win(throughSemifinals(withGame), "r3h2", "s3");
-    expect(resetByResult(bracket, "r2h1", { order: ["s4", "s1"] })).toEqual([
-      "r3h2",
-    ]);
+  it("a changed semifinal winner sends the new loser to the unplayed 3rd place Match", () => {
+    let bracket = throughSemifinals(withGame);
     bracket = applyResult(bracket, "r2h1", { order: ["s4", "s1"] });
     const third = match(bracket, "r3h2");
-    expect(third.slots).toEqual([
-      { entrantId: "s1", place: null, score: null },
-      { entrantId: "s3", place: null, score: null },
-    ]);
+    expect(third.slots.map((s) => s.entrantId)).toEqual(["s1", "s3"]);
     expect(third.status).toBe("ready");
     expect(match(bracket, "r3h1").slots.map((s) => s.entrantId)).toEqual([
       "s4",
@@ -316,22 +310,14 @@ describe("the final, with a 3rd place Match present", () => {
     ]);
   });
 
-  it("a changed quarterfinal winner empties a decided semifinal and the 3rd place Match its loser reached", () => {
+  it("refuses a changed semifinal winner once the 3rd place Match has a result (D1c)", () => {
     const bracket = win(throughSemifinals(withGame), "r3h2", "s3");
-    expect(resetByResult(bracket, "r1h2", { order: ["s5", "s4"] })).toEqual([
-      "r2h1",
-      "r3h2",
-    ]);
-    const next = applyResult(bracket, "r1h2", { order: ["s5", "s4"] });
-    expect(match(next, "r3h2").slots.map((s) => s.entrantId)).toEqual([
-      null,
-      "s3",
-    ]);
-    expect(match(next, "r3h2").status).toBe("pending");
-    expect(match(next, "r2h1").slots.map((s) => s.entrantId)).toEqual([
-      "s1",
-      "s5",
-    ]);
+    expect(() => applyResult(bracket, "r2h1", { order: ["s4", "s1"] })).toThrow(
+      LATER_MATCH_USED,
+    );
+    expect(() => applyResult(bracket, "r1h2", { order: ["s5", "s4"] })).toThrow(
+      LATER_MATCH_USED,
+    );
   });
 
   it("shows the final as the final in the Finale's rows", () => {

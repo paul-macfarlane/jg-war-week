@@ -29,7 +29,8 @@ const authorizeMatchReport = vi.hoisted(() =>
 );
 vi.mock("@/auth/authorize", () => ({ authorize, authorizeMatchReport }));
 vi.mock("@/mutations/match-reports", () => ({
-  submitMatchReport: vi.fn(async () => ({ ok: true, resetMatchIds: [] })),
+  submitMatchReport: vi.fn(async () => ({ ok: true })),
+  clearMatchReport: vi.fn(async () => ({ ok: true })),
 }));
 
 beforeEach(() => {
@@ -82,7 +83,6 @@ describe("reportMatchResult", () => {
 
     await expect(reportMatchResult(ID, MATCH, { order })).resolves.toEqual({
       ok: true,
-      resetMatchIds: [],
     });
     expect(mutations.submitMatchReport).toHaveBeenCalledWith(
       ID,

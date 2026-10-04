@@ -44,6 +44,7 @@ const SOURCE: CompetitionSettingsSource = {
   entrantLimit: null,
   selfReport: false,
   selfCheckIn: false,
+  maxAttempts: null,
 };
 
 const actGlobal = globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean };

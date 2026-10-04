@@ -74,12 +74,13 @@ export async function deleteSmokeBracket() {
 
 export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
   const check =
-    "bracket loop: an Organizer sets a head-to-head Bracket (2 per Match, 1 advances) with a 3rd place Match on a Competition, enters 4 Teams, generates, records 4 Match Results, closes; GET /xi/competitions/<id> shows Red as Winner in Top finishers (no Winner, no Play the finale) and /xi/leaderboard includes the generated points and /xi/finale/<id> answers 200; get_bracket names the Bracket with its match size, advancing and 3rd place Match, a recorded time per played Match, no Match time, place or Forfeit, the final's winner as winner (no winner field), matches (no matches) and closed (no closed) and no @; reopen removes them and /xi/finale/<id> answers 404; then cleans up";
+    "bracket loop: an Organizer sets a head-to-head Bracket (2 per Match, 1 advances) with a 3rd place Match on a Competition, enters 4 Teams, generates, records 4 Match Results, closes; GET /xi/competitions/<id> shows Red as Winner in Top finishers (no Winner, no Play the finale) and /xi/leaderboard includes the generated points and /xi/finale/<id> answers 200; get_bracket names the Bracket with its match size, advancing and 3rd place Match, a recorded time per played Match, no Match time, place or Forfeit, the final's winner as winner (no winner field), matches (no matches) and closed (no closed) and no @; reopen removes them and /xi/finale/<id> answers 404; a semifinal the final used can't be edited (D1c) until the later Matches are cleared; then cleans up";
   const ids = serverActionIds();
   const missing = [
     "createCompetition",
     "saveCompetitionSetting",
     "recordMatchResult",
+    "clearMatchResult",
     "closeBracket",
     "reopenBracket",
   ].filter((name) => !ids[name]);
@@ -109,6 +110,15 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
       result: { ok: boolean; error?: string },
     ) => {
       if (!result.ok) problems.push(`${step}: ${result.error}`);
+    };
+    const expectRefused = (
+      step: string,
+      result: { ok: boolean; error?: string },
+      expected: string,
+    ) => {
+      if (result.ok || result.error !== expected) {
+        problems.push(`${step}: ${JSON.stringify(result)}`);
+      }
     };
 
     expectOk(
@@ -393,9 +403,10 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     );
     if (Number(count) !== 0) problems.push(`${count} Points Entries remain`);
 
-    // Every Match is decided. A score-only edit of Red's semifinal resets
-    // nothing; changing the winner of the other semifinal resets the one
-    // decided later Match its winner reached, the final.
+    // Every Match is decided, and the final and the 3rd place Match used
+    // both semifinals (spec R21, D1c): a score-only edit and a winner change
+    // of a semifinal are refused and reset nothing. Clearing those two
+    // later Matches lets the winner change through.
     const semis = await runQuery<{
       bracket_match_id: string;
       entrant_id: string;
@@ -408,11 +419,13 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
        order by h.position, he.slot`,
       [id],
     );
-    const [decidedLater] = await runQuery<{ count: string }>(
-      `select count(*) from bracket_match
-       where competition_id = $1 and round > 1 and status = 'played'`,
-      [id],
-    );
+    const decidedLater = async () =>
+      runQuery<{ id: string }>(
+        `select id from bracket_match
+         where competition_id = $1 and round > 1 and status = 'played'`,
+        [id],
+      );
+    const laterBefore = await decidedLater();
     const redMatch = semis.find((s) => s.team_name === "Red")?.bracket_match_id;
     const otherMatch = semis.find(
       (s) => s.bracket_match_id !== redMatch,
@@ -423,19 +436,12 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
       `select entrant_id from bracket_match_entrant where bracket_match_id = $1 and place = 1`,
       [otherMatch],
     );
-    const resetCount = async (
-      step: string,
-      matchId: string,
-      order: string[],
-    ) => {
-      const result = (await callAction(
+    const record = (matchId: string, order: string[]) =>
+      callAction(
         ids.recordMatchResult,
         [id, matchId, { order, scores: { [order[0]]: "25" } }],
         organizer,
-      )) as WriteResult & { resetMatchIds?: string[] };
-      expectOk(step, result);
-      return result.resetMatchIds?.length;
-    };
+      );
     const redOrder = [
       ...semis.filter(
         (s) => s.bracket_match_id === redMatch && s.team_name === "Red",
@@ -444,27 +450,35 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
         (s) => s.bracket_match_id === redMatch && s.team_name !== "Red",
       ),
     ].map((s) => s.entrant_id);
-    const sameWinner = await resetCount(
-      "recordMatchResult same winner",
-      redMatch!,
-      redOrder,
-    );
-    if (sameWinner !== 0) {
-      problems.push(`a score-only edit reset ${sameWinner} later Matches`);
-    }
     const flipped = semis
       .filter((s) => s.bracket_match_id === otherMatch)
       .map((s) => s.entrant_id)
       .sort((a, b) => Number(a === otherWinner) - Number(b === otherWinner));
-    const changedWinner = await resetCount(
-      "recordMatchResult changed winner",
-      otherMatch!,
-      flipped,
+    expectRefused(
+      "recordMatchResult same winner on a semifinal the final used",
+      await record(redMatch!, redOrder),
+      LATER_MATCH_USED,
     );
-    if (changedWinner !== Number(decidedLater.count)) {
-      problems.push(
-        `a winner change reset ${changedWinner} later Matches, expected the ${decidedLater.count} decided`,
+    expectRefused(
+      "recordMatchResult changed winner on a semifinal the final used",
+      await record(otherMatch!, flipped),
+      LATER_MATCH_USED,
+    );
+    if ((await decidedLater()).length !== laterBefore.length) {
+      problems.push("a refused semifinal edit reset a later Match");
+    }
+    for (const later of laterBefore) {
+      expectOk(
+        "clearMatchResult on a later Match",
+        await callAction(ids.clearMatchResult, [id, later.id], organizer),
       );
+    }
+    expectOk(
+      "recordMatchResult changed winner once the later Matches are cleared",
+      await record(otherMatch!, flipped),
+    );
+    if ((await decidedLater()).length !== 0) {
+      problems.push("a later Match is still played after clearing");
     }
 
     if (problems.length === 0) ok(check);
@@ -684,7 +698,8 @@ const SMOKE_SQUAD_COMPETITION = "SMOKE TEST squads";
 const SMOKE_SQUAD_PARTICIPANT_EMAIL = "smoke-participant@jahnelgroup.com";
 const SELF_REPORT_OFF = "Self-report is off for this Competition.";
 const NOT_IN_MATCH = "You're not in this Match.";
-const MATCH_DECIDED = "This Match already has a result.";
+const LATER_MATCH_USED =
+  "A later Match already used this result. Change that Match first.";
 const NOT_HOST_REFUSAL_SQUAD = "You're not a Host of that Competition.";
 
 async function deleteSmokeSquadCompetition() {
@@ -704,7 +719,7 @@ export async function assertSquadSelfReportLoop(sessions: {
   outsider: SmokeSession;
 }) {
   const check =
-    "squad loop: an Organizer builds a head-to-head Bracket of four Squads from XI's two Teams, turns on self-report; a linked Participant reports their Match and their Squad advances, a second report and an outsider's POST are refused, the Organizer overwrites and re-records, the Participant reports the Final, close gives the two finalist Squads' Teams 10 and 6 (no 3rd place match: the semifinal losers get nothing); then cleans up";
+    "squad loop: an Organizer builds a head-to-head Bracket of four Squads from XI's two Teams; with self-report off a linked Participant's report is refused, then on it is recorded and their Squad advances, they change it again (D1d), an outsider's POST is refused, the Organizer overwrites and re-records, the Participant reports the Final, and then nobody (Organizer or Participant) can change a semifinal the Final used (D1c); close gives the two finalist Squads' Teams 10 and 6 (no 3rd place match: the semifinal losers get nothing); then cleans up";
   const ids = serverActionIds();
   const missing = [
     "createCompetition",
@@ -1006,14 +1021,13 @@ export async function assertSquadSelfReportLoop(sessions: {
       problems.push("the reported Squad didn't reach the Final's slot");
     }
 
-    expectRefused(
-      "reportMatchResult on an already-decided Match",
+    expectOk(
+      "reportMatchResult again on their decided Match (a player changes it, D1d)",
       await callAction(
         ids.reportMatchResult,
         [id, match1Id, { order: [entrantA.entrant_id, entrantB.entrant_id] }],
         notOrganizer,
       ),
-      MATCH_DECIDED,
     );
 
     const resultsPage = await (await get(`/admin/competitions/${id}`)).text();
@@ -1085,6 +1099,26 @@ export async function assertSquadSelfReportLoop(sessions: {
         ],
         notOrganizer,
       ),
+    );
+
+    // The Final used both semifinals: nobody changes them now (D1c).
+    expectRefused(
+      "recordMatchResult on a semifinal the Final used",
+      await callAction(
+        ids.recordMatchResult,
+        [id, match1Id, { order: [entrantB.entrant_id, entrantA.entrant_id] }],
+        organizer,
+      ),
+      LATER_MATCH_USED,
+    );
+    expectRefused(
+      "reportMatchResult on a semifinal the Final used",
+      await callAction(
+        ids.reportMatchResult,
+        [id, match1Id, { order: [entrantB.entrant_id, entrantA.entrant_id] }],
+        notOrganizer,
+      ),
+      LATER_MATCH_USED,
     );
 
     const beforeTotals: Record<string, number> = {};

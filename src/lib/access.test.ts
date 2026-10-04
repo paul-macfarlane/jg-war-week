@@ -13,11 +13,7 @@ import {
   isPublicPath,
   safeCallbackPath,
 } from "@/lib/access";
-import {
-  type AttemptLogFacet,
-  NOT_THE_LOGGER as NOT_THE_ATTEMPT_LOGGER,
-  NOT_YOURS,
-} from "@/lib/best-score/log-rule";
+import { type AttemptLogFacet, NOT_YOURS } from "@/lib/best-score/log-rule";
 import {
   ENROLL_CLOSED_BUILT,
   ENROLL_OFF,
@@ -35,9 +31,10 @@ import {
 } from "@/lib/participation/check-in-rule";
 import {
   COMPETITION_CLOSED,
+  NOT_AN_ENTRANT,
   NOT_A_PLAYER,
   NOT_LINKED,
-  NOT_THE_LOGGER,
+  SELF_REPORT_OFF,
   type SeriesLogFacet,
 } from "@/lib/series/log-rule";
 
@@ -406,10 +403,11 @@ describe("can: reporting a Match's result (self-report)", () => {
       },
       null,
     ],
+    ["a decided Match, to edit it (D1d)", { match: "decided" }, null],
     [
-      "a decided Match",
-      { match: "decided" },
-      "This Match already has a result.",
+      "a Match whose result a later Match used (D1c)",
+      { match: "used-later" },
+      "A later Match already used this result. Change that Match first.",
     ],
     [
       "an unfilled Match",
@@ -462,8 +460,10 @@ describe("can: reporting a Match's result (self-report)", () => {
         NOT_LINKED,
       );
       expect(
-        can(actor, "bracket.match-report", target({ match: "decided" })),
-      ).toBe("This Match already has a result.");
+        can(actor, "bracket.match-report", target({ match: "used-later" })),
+      ).toBe(
+        "A later Match already used this result. Change that Match first.",
+      );
       expect(
         can(actor, "bracket.match-report", target({ selfReport: false })),
       ).toBe(OFF);
@@ -518,12 +518,15 @@ describe("can: logging, editing and deleting a Head-to-head Match (ADR 0006)", (
   const facet = (over: Partial<Facet> = {}): Facet => ({
     runs: false,
     closed: false,
+    selfReport: true,
     decided: false,
+    played: 0,
+    bestOf: 3,
     linked: { participantId: ME, teamId: null },
     scoring: "individual",
     entrants: [player(ME), player(RIVAL)],
     players: [player(ME), player(RIVAL)],
-    match: { loggedByParticipantId: ME, players: [player(ME), player(RIVAL)] },
+    match: { players: [player(ME), player(RIVAL)] },
     ...over,
   });
   const target = (over: Partial<Facet> = {}) => ({
@@ -546,14 +549,21 @@ describe("can: logging, editing and deleting a Head-to-head Match (ADR 0006)", (
     }
   });
 
-  it("refuses a Participant who isn't a player in the Match", () => {
+  it("refuses a Participant who isn't an Entrant, and a non-Entrant posted", () => {
     expect(
       can(
         ACTORS.participant,
         "series.log",
-        target({ players: [player(RIVAL), player(THIRD)] }),
+        target({ linked: { participantId: THIRD, teamId: null } }),
       ),
     ).toBe(NOT_A_PLAYER);
+    expect(
+      can(
+        ACTORS.participant,
+        "series.log",
+        target({ players: [player(ME), player(THIRD)] }),
+      ),
+    ).toBe(NOT_AN_ENTRANT);
   });
 
   it("lets the logger edit or delete their own Match until close", () => {
@@ -569,30 +579,24 @@ describe("can: logging, editing and deleting a Head-to-head Match (ADR 0006)", (
     }
   });
 
-  it("refuses another player in the Match an edit or delete", () => {
-    const match = {
-      loggedByParticipantId: RIVAL,
-      players: [player(ME), player(RIVAL)],
-    };
-    for (const action of ["series.edit", "series.delete"] as const) {
-      expect(can(ACTORS.participant, action, target({ match })), action).toBe(
-        NOT_THE_LOGGER,
-      );
+  it("with self-report off, refuses a player every write", () => {
+    for (const action of writes) {
+      expect(
+        can(ACTORS.participant, action, target({ selfReport: false })),
+        action,
+      ).toBe(SELF_REPORT_OFF);
     }
   });
 
-  it("lets a Host or Organizer who runs it log, edit or delete any Match", () => {
-    const match = {
-      loggedByParticipantId: RIVAL,
-      players: [player(RIVAL), player(THIRD)],
-    };
+  it("lets a Host or Organizer who runs it log, edit or delete any Match, with self-report off", () => {
+    const match = { players: [player(RIVAL), player(THIRD)] };
     for (const actor of [ACTORS.organizer, ACTORS.host]) {
       for (const action of writes) {
         expect(
           can(
             actor,
             action,
-            target({ runs: true, linked: null, match, decided: true }),
+            target({ runs: true, linked: null, match, selfReport: false }),
           ),
           action,
         ).toBeNull();
@@ -663,10 +667,13 @@ describe("can: logging, editing and deleting a Best score Attempt (ADR 0006)", (
   const facet = (over: Partial<AttemptLogFacet> = {}): AttemptLogFacet => ({
     runs: false,
     closed: false,
+    selfReport: true,
     linked: { participantId: ME, teamId: null },
     scoring: "individual",
     participantId: ME,
-    attempt: { loggedByParticipantId: ME, participantId: ME },
+    attempt: { participantId: ME },
+    maxAttempts: null,
+    attemptsSoFar: 0,
     ...over,
   });
   const target = (over: Partial<AttemptLogFacet> = {}) => ({
@@ -690,11 +697,9 @@ describe("can: logging, editing and deleting a Best score Attempt (ADR 0006)", (
       can(
         ACTORS.participant,
         "attempts.edit",
-        target({
-          attempt: { loggedByParticipantId: RIVAL, participantId: RIVAL },
-        }),
+        target({ attempt: { participantId: RIVAL } }),
       ),
-    ).toBe(NOT_THE_ATTEMPT_LOGGER);
+    ).toBe(NOT_YOURS);
   });
 
   it("lets a Host or Organizer who runs it log for anyone, until Closed", () => {

@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  LATER_MATCH_USED,
   type MatchReportFacet,
   matchReportError,
+  matchResultError,
 } from "@/lib/bracket/match-report-rule";
 
 const RED = "team-red";
@@ -124,9 +126,16 @@ describe("matchReportError", () => {
     );
   });
 
-  it("refuses a Match that already has a result", () => {
-    expect(matchReportError(facet({ match: "decided" }))).toBe(
-      "This Match already has a result.",
+  it("lets a player edit their Match's recorded result (D1d)", () => {
+    expect(matchReportError(facet({ match: "decided" }))).toBeNull();
+  });
+
+  it("refuses a Match whose result a later Match already used (D1c)", () => {
+    expect(matchReportError(facet({ match: "used-later" }))).toBe(
+      LATER_MATCH_USED,
+    );
+    expect(LATER_MATCH_USED).toBe(
+      "A later Match already used this result. Change that Match first.",
     );
   });
 
@@ -136,8 +145,16 @@ describe("matchReportError", () => {
         facet({ selfReport: false, linked: null, match: "missing" }),
       ),
     ).toBe("Self-report is off for this Competition.");
-    expect(matchReportError(facet({ linked: null, match: "decided" }))).toBe(
+    expect(matchReportError(facet({ linked: null, match: "used-later" }))).toBe(
       "Your sign-in doesn't match a Participant of this War Week.",
     );
+  });
+});
+
+describe("matchResultError", () => {
+  it("binds a Host's record too: a result a later Match used can't change (D1c)", () => {
+    expect(matchResultError("used-later")).toBe(LATER_MATCH_USED);
+    expect(matchResultError("decided")).toBeNull();
+    expect(matchResultError("open")).toBeNull();
   });
 });

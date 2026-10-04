@@ -180,7 +180,7 @@ describe.skipIf(!isLocalDatabase)(
 
         expect(
           await reportMatchResult(f.competitionId, f.matchId, f.result),
-        ).toEqual({ ok: true, resetMatchIds: [] });
+        ).toEqual({ ok: true });
         const match = await f.matchNow();
         expect(match.status).toBe("played");
         expect(match.slots.find((s) => s.place === 1)?.entrantId).toBe(

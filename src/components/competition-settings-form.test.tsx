@@ -40,6 +40,7 @@ const SOURCE: CompetitionSettingsSource = {
   entrantLimit: null,
   selfReport: false,
   selfCheckIn: false,
+  maxAttempts: null,
 };
 
 const OPEN: CompetitionLockFacts = {
@@ -188,7 +189,7 @@ describe("CompetitionSettingsForm", () => {
       expect(html).not.toContain("Entrants per Match");
       expect(html).not.toContain("How many advance");
       expect(html).toContain("3rd place Match");
-      expect(html).toContain("Self-report");
+      expect(html).toContain("Participants can log their own results");
       expect(html).toContain("Score direction");
     });
 

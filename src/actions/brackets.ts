@@ -22,8 +22,7 @@ export type BracketActionResult = MutationResult;
 // Not imported from the mutations: a "use server" module's tests mock them.
 const SQUAD_NOT_FOUND = "That Squad no longer exists.";
 
-export type MatchResultActionResult =
-  { ok: true; resetMatchIds: string[] } | { ok: false; error: string };
+export type MatchResultActionResult = MutationResult;
 
 /**
  * Runs a Bracket write as an Organizer or a Host of the Competition, in the
@@ -60,6 +59,23 @@ export async function recordMatchResult(
       const parsed = parseMatchResultInput(input);
       if (!parsed.ok) return parsed;
       return mutations.recordMatchResult(id, matchId, parsed.value, ctx);
+    },
+  );
+}
+
+/** Clears a Match's result, as an Organizer or a Host of the Competition. */
+export async function clearMatchResult(
+  competitionId: string,
+  matchId: string,
+): Promise<MatchResultActionResult> {
+  return bracketWrite(
+    "bracket.match-result",
+    competitionId,
+    async (id, ctx) => {
+      if (!isUuid(matchId)) {
+        return { ok: false, error: "That Match no longer exists." };
+      }
+      return mutations.clearMatchResult(id, matchId, ctx);
     },
   );
 }

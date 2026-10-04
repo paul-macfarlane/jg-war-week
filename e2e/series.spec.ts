@@ -121,6 +121,10 @@ test("series: a Participant logs a Head-to-head Match from home, the Host edits 
     [id, E2E_HOST_EMAIL],
   );
   await setParticipantEmail(playerId, E2E_PARTICIPANT_EMAIL);
+  // Participants log their own results (spec R21, decision 4).
+  await runQuery(`update competition set self_report = true where id = $1`, [
+    id,
+  ]);
   const participantContext = await browser.newContext({
     baseURL: E2E_BASE_URL,
   });
@@ -146,27 +150,17 @@ test("series: a Participant logs a Head-to-head Match from home, the Host edits 
 
     const form = you.getByRole("dialog", { name: "Log a Match" });
     await expect(form).toBeVisible();
-    await expect(form.getByRole("combobox", { name: "Player A" })).toHaveValue(
-      PLAYER.name,
-    );
+    // The series' two Entrants are fixed rows: no player picker.
+    await expect(form.getByRole("combobox")).toHaveCount(0);
+    await expect(form.getByLabel(`${PLAYER.name}: Score`)).toBeVisible();
+    await expect(form.getByLabel(`${OPPONENT.name}: Score`)).toBeVisible();
     // Filled in on a phone, then widened past `md` (768px): the form keeps its input.
     await you.setViewportSize({ width: 375, height: 900 });
-    // Only the series' two Entrants are offered.
-    await form.getByRole("combobox", { name: "Player B" }).click();
-    await expect(you.getByRole("option")).toHaveText([
-      PLAYER.name,
-      OPPONENT.name,
-    ]);
-    await you.getByRole("option", { name: OPPONENT.name, exact: true }).click();
-    await expect(you.getByRole("listbox")).toHaveCount(0);
     const won = form
-      .getByRole("group", { name: "Who won?" })
+      .getByRole("group", { name: "Winner" })
       .getByRole("button", { name: `${PLAYER.name} won` });
     await won.click();
     await you.setViewportSize({ width: 820, height: 900 });
-    await expect(form.getByRole("combobox", { name: "Player B" })).toHaveValue(
-      OPPONENT.name,
-    );
     await expect(won).toHaveAttribute("aria-pressed", "true");
     await shoot(you, testInfo, "log-form");
     await form.getByRole("button", { name: "Log Match" }).click();
@@ -194,7 +188,7 @@ test("series: a Participant logs a Head-to-head Match from home, the Host edits 
     await shoot(page, testInfo, "host-edit");
     // Keyboard proof: arrow off the pressed item onto the other, Space to
     // choose it, all without a mouse.
-    const editOutcome = edit.getByRole("group", { name: "Who won?" });
+    const editOutcome = edit.getByRole("group", { name: "Winner" });
     const editPlayerWon = editOutcome.getByRole("button", {
       name: `${PLAYER.name} won`,
     });
@@ -327,6 +321,9 @@ test("series: a Participant logs a Head-to-head Match from home, the Host edits 
       id,
     ]);
     await runQuery(`delete from series_match where competition_id = $1`, [id]);
+    await runQuery(`update competition set self_report = false where id = $1`, [
+      id,
+    ]);
     await setParticipantEmail(playerId, null);
     await runQuery(
       `delete from competition_host where competition_id = $1 and email = $2`,

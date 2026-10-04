@@ -18,8 +18,9 @@ import { RichText } from "@/components/rich-text";
 import { buttonVariants } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import { can } from "@/lib/access";
+import { LATER_MATCH_USED } from "@/lib/bracket/match-report-rule";
 import { podiumOf } from "@/lib/bracket/podium";
-import { entrantForYou, nextMatchFor } from "@/lib/bracket/view";
+import { entrantForYou } from "@/lib/bracket/view";
 import { isLoggedFormat } from "@/lib/enums";
 import { resolveYou } from "@/lib/you";
 import {
@@ -41,13 +42,16 @@ import { enrollOfferFor } from "./enrollment";
 const SELF_REPORT_OFF: BracketViewSelfReport = {
   on: false,
   linkedParticipantId: null,
-  reportableMatchId: null,
+  reportableMatchIds: [],
+  lockedMatchIds: [],
 };
 
 /**
- * Whether the signed-in person may report their next Match (ADR 0005): the
- * Participant their session email links to (as the layout finds them), and Your next Match when the same
- * `can` rule the report action runs lets them report it now.
+ * Which Matches the signed-in person may record or change (spec R21,
+ * decision 4; D1c, D1d): with self-report on and the Bracket open, the
+ * Matches their Entrant plays that the same `can` rule the report action
+ * runs lets them record now, and those whose result a later Match already
+ * used (shown disabled, with the reason).
  */
 async function selfReportFor(
   warWeek: { id: string },
@@ -65,8 +69,12 @@ async function selfReportFor(
     sessionEmail: actor?.email,
     participants: candidates,
   });
-  if (!actor || !linked) {
-    return { on: true, linkedParticipantId: null, reportableMatchId: null };
+  if (!actor || !linked || view.closed) {
+    return {
+      ...SELF_REPORT_OFF,
+      on: true,
+      linkedParticipantId: linked?.participantId ?? null,
+    };
   }
   const youEntrantId = entrantForYou(
     view.entrants,
@@ -77,12 +85,17 @@ async function selfReportFor(
     },
     competition.scoring,
   );
-  const next = youEntrantId ? nextMatchFor(view.bracket, youEntrantId) : null;
-  let reportableMatchId: string | null = null;
-  if (next?.kind === "match") {
+  const played = youEntrantId
+    ? view.bracket.matches.filter((h) =>
+        h.slots.some((s) => s.entrantId === youEntrantId),
+      )
+    : [];
+  const reportableMatchIds: string[] = [];
+  const lockedMatchIds: string[] = [];
+  for (const match of played) {
     const facts = await getMatchReportFacts(
       competition.id,
-      next.match.id,
+      match.id,
       actor.email,
     );
     const refusal = can(actor, "bracket.match-report", {
@@ -90,12 +103,14 @@ async function selfReportFor(
       competitionId: competition.id,
       matchReport: facts.matchReport,
     });
-    if (!refusal) reportableMatchId = next.match.id;
+    if (!refusal) reportableMatchIds.push(match.id);
+    else if (refusal === LATER_MATCH_USED) lockedMatchIds.push(match.id);
   }
   return {
     on: true,
     linkedParticipantId: linked.participantId,
-    reportableMatchId,
+    reportableMatchIds,
+    lockedMatchIds,
   };
 }
 
@@ -205,6 +220,10 @@ export default async function CompetitionPage({
           linked={logged.linked}
           runs={logged.runs}
           viewerCanLog={logged.viewerCanLog}
+          logOffer={logged.logOffer}
+          scoringConfig={logged.competition.scoringConfig}
+          maxAttempts={logged.competition.maxAttempts}
+          attemptCounts={logged.attemptCounts}
           decided={logged.decided}
           seriesWinner={logged.seriesWinner}
           playerOptions={logged.playerOptions}
@@ -238,6 +257,7 @@ export default async function CompetitionPage({
           closed={bracket.closed}
           scoring={competition.scoring}
           scoreUnit={bracket.competition.scoreUnit}
+          scoreDirection={bracket.competition.scoreDirection}
           primaryColor={warWeek.primaryColor}
           participantTeams={participantTeams}
           participantSquads={participantSquads}

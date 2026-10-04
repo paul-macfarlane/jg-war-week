@@ -25,6 +25,8 @@ const OPPONENT = "Austin Gage";
 const SMOKE_PARTICIPANT_EMAIL = "smoke-participant@jahnelgroup.com";
 const SMOKE_ORGANIZER_EMAIL = "smoke-organizer@jahnelgroup.com";
 const NOT_LINKED = "Your sign-in doesn't match a Participant of this War Week.";
+const SELF_REPORT_OFF = "Self-report is off for this Competition.";
+const ATTEMPT_COMPETITION = "Tuesday Stairs";
 /** The series view's result for the smoke Match. */
 const LOGGED = `Winner: ${PLAYER}`;
 
@@ -76,11 +78,15 @@ const LOG_BUTTON = />Log a Match</;
  * The seeded Head-to-head and Best score Competitions (17-5, 17-A): each
  * page renders its Format and its empty results (no Matches, no Attempts)
  * with no email in it; `logResult` over HTTP is refused before the smoke
- * Participant's email links them, then a Match between Bouncy Pong's two
- * Entrants succeeds and shows in its series; closed and with XI ended, the
- * page still renders the series with no Log a Match. Then everything is
- * undone, so a rerun never meets a decided Best of 3: the Match deleted,
- * the Competition reopened, XI `live` with no Winner, the email cleared.
+ * Participant's email links them, and with "Participants can log their own
+ * results" off (spec R21, AC 3) both a Match and an Attempt as themselves
+ * are refused with the server's message; with it on, a Match between
+ * Bouncy Pong's two Entrants succeeds and shows in its series, and an
+ * Attempt as themselves on Tuesday Stairs succeeds and they delete it;
+ * closed and with XI ended, the page still renders the series with no Log
+ * a Match. Then everything is undone, so a rerun never meets a decided
+ * Best of 3: the Match deleted, the Competition reopened, self-report off
+ * again, XI `live` with no Winner, the email cleared.
  */
 export async function assertLoggedResultsLoop(sessions: {
   organizer: SmokeSession;
@@ -92,13 +98,21 @@ export async function assertLoggedResultsLoop(sessions: {
     "deleteResult",
     "closeLoggedResults",
     "reopenLoggedResults",
+    "saveCompetitionSetting",
   ].filter((name) => !ids[name]);
   if (missing.length > 0) {
     fail("logged results: action ids", `missing ${missing.join(", ")}`);
     return;
   }
   let competitionId: string | null = null;
+  let attemptCompetitionId: string | null = null;
   let playerId: string | null = null;
+  const selfReport = (id: string, value: boolean) =>
+    callAction(
+      ids.saveCompetitionSetting,
+      [id, { field: "selfReport", value }],
+      sessions.organizer,
+    );
   try {
     for (const { name, label, empty } of LOGGED_COMPETITIONS) {
       await runCheck(
@@ -125,18 +139,30 @@ export async function assertLoggedResultsLoop(sessions: {
     competitionId = await xiCompetitionIdByName(LOG_COMPETITION);
     playerId = await xiParticipantIdByName(PLAYER);
     const opponentId = await xiParticipantIdByName(OPPONENT);
-    const input = { playerA: playerId, playerB: opponentId, outcome: "a" };
+    attemptCompetitionId = await xiCompetitionIdByName(ATTEMPT_COMPETITION);
+    const input = {
+      sides: [
+        { id: playerId, score: "" },
+        { id: opponentId, score: "" },
+      ],
+      winner: playerId,
+    };
     const id = competitionId;
+    const attemptsId = attemptCompetitionId;
     const linkedId = playerId;
 
     await runCheck(
-      "logged results: logResult by a signed-in JG user linked to no Participant is refused",
+      "logged results: with self-report on, logResult by a signed-in JG user linked to no Participant is refused",
       async () => {
+        const on = await selfReport(id, true);
+        if (!on.ok) return `selfReport on: ${JSON.stringify(on)}`;
         const result = await callAction(
           ids.logResult,
           [id, input],
           sessions.notOrganizer,
         );
+        const off = await selfReport(id, false);
+        if (!off.ok) return `selfReport off: ${JSON.stringify(off)}`;
         return !result.ok && result.error === NOT_LINKED
           ? null
           : JSON.stringify(result);
@@ -144,12 +170,61 @@ export async function assertLoggedResultsLoop(sessions: {
     );
 
     await runCheck(
-      "logged results: logResult as the linked smoke Participant (an Entrant) succeeds and the series shows the Match",
+      "logged results: with self-report off, a Match and an Attempt as the linked smoke Participant are refused with the server's message (AC 3)",
       async () => {
         await runQuery(`update participant set email = $1 where id = $2`, [
           SMOKE_PARTICIPANT_EMAIL,
           linkedId,
         ]);
+        const match = await callAction(
+          ids.logResult,
+          [id, input],
+          sessions.notOrganizer,
+        );
+        const attempt = await callAction(
+          ids.logResult,
+          [attemptsId, { player: linkedId, score: "12" }],
+          sessions.notOrganizer,
+        );
+        return !match.ok &&
+          match.error === SELF_REPORT_OFF &&
+          !attempt.ok &&
+          attempt.error === SELF_REPORT_OFF
+          ? null
+          : JSON.stringify({ match, attempt });
+      },
+    );
+
+    await runCheck(
+      "logged results: with self-report on, an Attempt as the linked smoke Participant succeeds and they delete it",
+      async () => {
+        const on = await selfReport(attemptsId, true);
+        if (!on.ok) return `selfReport on: ${JSON.stringify(on)}`;
+        const logged = await callAction(
+          ids.logResult,
+          [attemptsId, { player: linkedId, score: "12" }],
+          sessions.notOrganizer,
+        );
+        if (!logged.ok) return `logResult: ${JSON.stringify(logged)}`;
+        const [row] = await runQuery<{ id: string }>(
+          `select id from attempt where competition_id = $1 and participant_id = $2`,
+          [attemptsId, linkedId],
+        );
+        if (!row) return "no Attempt stored";
+        const deleted = await callAction(
+          ids.deleteResult,
+          [attemptsId, row.id],
+          sessions.notOrganizer,
+        );
+        return deleted.ok ? null : `deleteResult: ${JSON.stringify(deleted)}`;
+      },
+    );
+
+    await runCheck(
+      "logged results: with self-report on, logResult as the linked smoke Participant (an Entrant) succeeds and the series shows the Match",
+      async () => {
+        const on = await selfReport(id, true);
+        if (!on.ok) return `selfReport on: ${JSON.stringify(on)}`;
         const result = await callAction(
           ids.logResult,
           [id, input],
@@ -251,6 +326,8 @@ export async function assertLoggedResultsLoop(sessions: {
           );
           if (!deleted.ok) throw new Error(JSON.stringify(deleted));
         }
+        const off = await selfReport(id, false);
+        if (!off.ok) throw new Error(JSON.stringify(off));
         const [left] = await runQuery<{ matches: number; entries: number }>(
           `select (select count(*)::int from series_match where competition_id = $1) as matches,
              (select count(*)::int from points_entry where competition_id = $1 and generated) as entries`,
@@ -267,6 +344,23 @@ export async function assertLoggedResultsLoop(sessions: {
         .catch((error) =>
           fail(
             "logged results: reopen Bouncy Pong and delete the smoke Match",
+            String(error),
+          ),
+        );
+    }
+    if (attemptCompetitionId) {
+      const id = attemptCompetitionId;
+      await runQuery(`delete from attempt where competition_id = $1`, [id])
+        .then(() => selfReport(id, false))
+        .then((off) => {
+          if (!off.ok) throw new Error(JSON.stringify(off));
+          ok(
+            "logged results: Tuesday Stairs back to no Attempts, self-report off",
+          );
+        })
+        .catch((error) =>
+          fail(
+            "logged results: Tuesday Stairs back to no Attempts, self-report off",
             String(error),
           ),
         );

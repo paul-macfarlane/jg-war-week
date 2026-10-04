@@ -16,7 +16,7 @@ export const ORGANIZER = "logged-test-organizer@jahnelgroup.com";
  * Relay (team Head-to-head, Red vs Blue, Best of 3, draws on), Bowl
  * (individual Best score, higher is better, "pins"), Stairs (team Best
  * score, Sum of members) and Trivia (Placement). Pong and Bowl give 10, 6,
- * 3 and count toward the Team.
+ * 3 and count toward the Team. Self-report is on for the four logged ones.
  */
 export async function loggedFixture(tx: DBTx) {
   const schema = await import("@/db/schema");
@@ -75,6 +75,7 @@ export async function loggedFixture(tx: DBTx) {
       {
         warWeekId,
         name: "Pong",
+        selfReport: true,
         scoring: "individual" as const,
         countsTowardTeam: true,
         format: "head-to-head" as const,
@@ -84,6 +85,7 @@ export async function loggedFixture(tx: DBTx) {
       {
         warWeekId,
         name: "Relay",
+        selfReport: true,
         scoring: "team" as const,
         format: "head-to-head" as const,
         seriesConfig: { drawsAllowed: true, bestOf: 3 as const },
@@ -92,6 +94,7 @@ export async function loggedFixture(tx: DBTx) {
       {
         warWeekId,
         name: "Bowl",
+        selfReport: true,
         scoring: "individual" as const,
         countsTowardTeam: true,
         format: "best-score" as const,
@@ -102,6 +105,7 @@ export async function loggedFixture(tx: DBTx) {
       {
         warWeekId,
         name: "Stairs",
+        selfReport: true,
         scoring: "team" as const,
         format: "best-score" as const,
         scoreDirection: "higher" as const,

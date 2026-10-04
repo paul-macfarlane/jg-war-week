@@ -74,7 +74,7 @@ async function addSeriesEntrants(page: Page) {
 async function logAttempt(page: Page) {
   await page.getByRole("button", { name: "Log an Attempt" }).click();
   const form = page.getByRole("dialog", { name: "Log an Attempt" });
-  await form.getByRole("combobox", { name: "Player" }).click();
+  await form.getByRole("combobox", { name: "Participant" }).click();
   await page
     .getByRole("option", { name: "Ashley Schuliger", exact: true })
     .click();
@@ -145,9 +145,16 @@ const CASES: FormatCase[] = [
   },
   {
     format: "Bracket",
-    change: (page) => page.getByRole("switch", { name: "Self-report" }).click(),
+    change: (page) =>
+      page
+        .getByRole("switch", { name: "Participants can log their own results" })
+        .click(),
     kept: (page) =>
-      expect(page.getByRole("switch", { name: "Self-report" })).toBeChecked(),
+      expect(
+        page.getByRole("switch", {
+          name: "Participants can log their own results",
+        }),
+      ).toBeChecked(),
     addResult: async (page) => {
       await page.getByRole("button", { name: "All Teams" }).click();
       await expect(page.getByText("(2 chosen)")).toBeVisible();
@@ -265,7 +272,9 @@ test("r18 101 a new Competition with no result changes Format, Placement → Bra
       page.getByRole("button", { name: "Head-to-head", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("switch", { name: "Self-report" }),
+      page.getByRole("switch", {
+        name: "Participants can log their own results",
+      }),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Generate" })).toBeVisible();
     // Every Format with Scores takes a direction and unit (R21, decision 6).

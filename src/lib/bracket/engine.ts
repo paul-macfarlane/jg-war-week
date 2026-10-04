@@ -8,6 +8,7 @@ import {
   thirdPlaceRefusal,
 } from "@/lib/bracket/config";
 import { finalMatchOf, thirdPlaceMatchOf } from "@/lib/bracket/final";
+import { LATER_MATCH_USED } from "@/lib/bracket/match-report-rule";
 import { isDecided } from "@/lib/bracket/match-status";
 import {
   type Bracket,
@@ -185,61 +186,30 @@ function winnerOf(match: Match): string | null {
 }
 
 /**
- * Empties the slot a link fills, sending its Match back to pending, then
- * follows that Match's own winner and loser on. Collects the ids of the
- * Matches that had a Match Result.
+ * Takes a changed winner (or a semifinal's changed loser) back out of the
+ * Match a link fills, sending it back to pending. A Match that already has
+ * a result used this one, so nothing changes there: only the latest
+ * result along a path can (spec R21, D1c), and the change is refused.
  */
-function clearLink(bracket: Bracket, link: WinnerTo, resetMatchIds: string[]) {
+function clearLink(bracket: Bracket, link: WinnerTo) {
   const next = findMatch(bracket, link.matchId);
   if (next.slots[link.slot].entrantId === null) return;
-  if (isDecided(next)) resetMatchIds.push(next.id);
+  if (isDecided(next)) throw new BracketError(LATER_MATCH_USED);
   next.slots = next.slots.map((slot, i) =>
     i === link.slot
       ? emptySlot()
       : { ...emptySlot(), entrantId: slot.entrantId },
   );
   next.status = "pending";
-  if (next.winnerTo) clearLink(bracket, next.winnerTo, resetMatchIds);
-  if (next.loserTo) clearLink(bracket, next.loserTo, resetMatchIds);
-}
-
-/**
- * Clears `match`'s winner (and a semifinal's loser) out of every later Match
- * they reached, sending those Matches back to pending. Returns the ids of the
- * ones that had a Match Result.
- */
-function clearDownstream(bracket: Bracket, match: Match): string[] {
-  const resetMatchIds: string[] = [];
-  if (match.winnerTo) clearLink(bracket, match.winnerTo, resetMatchIds);
-  if (match.loserTo) clearLink(bracket, match.loserTo, resetMatchIds);
-  return resetMatchIds;
-}
-
-/**
- * The later Matches that recording `winnerId` as the winner of `matchId` would
- * send back to unplayed: those with a Match Result that the current winner
- * reached. None when the Match is undecided, is a bye, or keeps its winner
- * (a score-only edit).
- */
-export function resetByResult(
-  bracket: Bracket,
-  matchId: string,
-  winnerId: string | null,
-): string[] {
-  const match = findMatch(bracket, matchId);
-  if (!isDecided(match) || isBye(match) || winnerId === null) return [];
-  if (winnerOf(match) === winnerId) return [];
-  const next = structuredClone(bracket);
-  return clearDownstream(next, findMatch(next, matchId));
 }
 
 /**
  * Records a Match Result and advances the winner (and a semifinal's loser,
- * to the 3rd place Match). A knockout Match needs a
- * clear order of every Entrant.
- * Re-recording a decided Match with a new winner first clears the old winner
- * from the later Matches it reached (see `resetByResult`); keeping the winner
- * changes only this Match.
+ * to the 3rd place Match). A knockout Match needs a clear order of every
+ * Entrant. Re-recording a decided Match with a new winner first takes the
+ * old winner (and loser) out of the Matches they went to, refusing when
+ * one of those already has a result (D1c); keeping the winner changes only
+ * this Match.
  */
 export function applyResult(
   bracket: Bracket,
@@ -272,7 +242,8 @@ export function applyResult(
 
   const finishing = order;
   if (isDecided(match) && winnerOf(match) !== finishing[0]) {
-    clearDownstream(next, match);
+    if (match.winnerTo) clearLink(next, match.winnerTo);
+    if (match.loserTo) clearLink(next, match.loserTo);
   }
 
   match.slots = match.slots.map((slot) => ({
@@ -324,9 +295,8 @@ export const singleElimination: FormatEngine = {
   validateConfig: thirdPlaceRefusal,
   generate: (config, entrants, newId) => generate(entrants, newId, config),
   applyResult,
-  resetByResult(bracket, matchId, result) {
-    return resetByResult(bracket, matchId, result.order[0] ?? null);
-  },
+  // A result a later Match used is refused, never reset (D1c).
+  resetByResult: () => [],
   isRecordable(bracket, matchId) {
     const match = bracket.matches.find((h) => h.id === matchId);
     return (

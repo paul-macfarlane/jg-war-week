@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  finishingOrder,
   isSetByHand,
   orderByScore,
   scoreLabel,
@@ -100,5 +101,36 @@ describe("isSetByHand", () => {
     expect(
       isSetByHand([...scored, { id: "c", score: null, place: 3 }], "higher"),
     ).toBe(false);
+  });
+});
+
+describe("finishingOrder", () => {
+  const entries = (a: number | null, b: number | null, c: number | null) => [
+    { id: "a", score: a },
+    { id: "b", score: b },
+    { id: "c", score: c },
+  ];
+
+  it("orders a Match's Entrants by their Scores once every Score is in (AC 5)", () => {
+    expect(finishingOrder(entries(3, 9, 5), "higher")).toEqual({
+      order: ["b", "c", "a"],
+      tied: false,
+    });
+    expect(finishingOrder(entries(3, 9, 5), "lower")).toEqual({
+      order: ["a", "c", "b"],
+      tied: false,
+    });
+  });
+
+  it("flags equal Scores as a tie to settle by hand, keeping their given order", () => {
+    expect(finishingOrder(entries(5, 9, 5), "higher")).toEqual({
+      order: ["b", "a", "c"],
+      tied: true,
+    });
+  });
+
+  it("works nothing out with direction none or a Score missing", () => {
+    expect(finishingOrder(entries(3, 9, 5), "none")).toBeNull();
+    expect(finishingOrder(entries(3, null, 5), "higher")).toBeNull();
   });
 });
