@@ -388,11 +388,14 @@ staging. It is never on for production (ADR 0008).
 pnpm seed:demo:scale
 ```
 
-It loads every seed plus the XII scale demo (100 Participants), then runs
-the fixture (Teams, a Placement sheet, a 64-Entrant Bracket) through the
-app's own mutations, so the data is what a real War Week makes. It refuses
-a database that is not local. Open `/xii`, its leaderboard, roster and
-Competitions, a Placement sheet and the Bracket tree. Afterwards
+It loads every seed plus the XII scale demo (`seeds/demo/xii-scale.json`:
+100 made-up Participants, free-for-all, with a Finalized 100-row Placement),
+then runs the fixture (`src/seed/scale.ts`) through the app's own
+mutations for what the seed format can't hold: Hosts, a 64-Entrant Bracket
+with 20 Round 1 results, Participation ticks, Head-to-head and Best score
+Games. For Teams at scale, the normal XI demo already has 101 Participants. It refuses
+a database that is not local. Open `/xii`, its leaderboard and Competitions,
+the roster, a Placement sheet and the Bracket tree. Afterwards
 `pnpm seed:demo` puts the normal demo back.
 
 ### Rolling out R10 (migrations 0018 and 0019)

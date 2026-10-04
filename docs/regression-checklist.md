@@ -634,13 +634,13 @@ that nothing personal shows (no You highlight, no Log a Game).
       shows its leaderboard with that Format's columns and the Game log
       newest first, with the "Mine" filter.
 - [ ] **Scale: 100 Participants.** Run `pnpm seed:demo:scale`, then
-      `pnpm seed:demo` when done. At both viewports: `/xii/teams` roster and
-      `/xii/leaderboard` list every Participant and wear the theme with no
-      sideways scroll; a Placement sheet lists its rows with names wrapping
-      (not truncating) at 390; the 64-Entrant Bracket tree scrolls sideways
-      only in its own "Rounds" region; as an Organizer, an Entrant or Host
-      picker finds a Participant by email with no cap on the list, and never
-      shows the email.
+      `pnpm seed:demo` when done. At both viewports: the admin roster and
+      `/xii/leaderboard` list every Participant with no sideways scroll; a
+      Placement sheet lists its rows with names wrapping (not truncating)
+      at 390; the 64-Entrant Bracket tree scrolls sideways only in its own
+      "Rounds" region; as an Organizer, the Discretionary points and Award
+      pickers find a Participant by email (never shown) with no cap on the
+      list.
 - [ ] **Teams show in team events.** *(teams)* Wherever a Participant
   appears in a Competition or scoring context (individual Standings, a
   Bracket's entrants and Heat results, the Games leaderboard and Game log,

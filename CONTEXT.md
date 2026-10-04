@@ -35,7 +35,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Test sign-in**              | A maintainer tool at `/sign-in/test` for testing as any `@jahnelgroup.com` address (`+` aliases included) on staging, by typing a secret. Never on production (ADR 0008). |
 | **Company Tag**               | An optional affiliation label on a participant (LTI, IL, …).                                                                      |
 | **Organizer**                 | A signed-in `@jahnelgroup.com` user on the global Organizer list. Can change anything in any War Week (ADR 0002).                 |
-| **Host**                      | A signed-in JG user an Organizer assigns to a Competition ("hosted by Tony M"), **picked from the roster by name** (email beneath), not typed. Organizer-only pickers match a Participant's email but never show it. Runs that Competition; needn't be a Participant. A Schedule Item's free-text `host` field is display copy, not the Host role. |
+| **Host**                      | A signed-in JG user an Organizer assigns to a Competition ("hosted by Tony M"), **picked from the roster by name** (email beneath), not typed. Runs that Competition; needn't be a Participant. A Schedule Item's free-text `host` field is display copy, not the Host role. |
 | **Admin**                     | The management area at `/admin` that Organizers and Hosts use. A place, never a role: say Organizer or Host for people.           |
 | **Competition**               | Anything that awards points. Scored as team or individual. Skill divisions are separate Competitions ("MTG Advanced", "MTG Beginner"). |
 | **Competition Group**         | An optional grouping of competitions ("Team Night Events").                                                                       |
@@ -161,7 +161,9 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   Participant, that Participant is You; otherwise nobody is. There is no
   self-pick. The roster admin shows "No email: won't be linked when they sign
   in" on a Participant row without an email. Participant emails never reach
-  the client, only the matched id. Past editions use their own roster.
+  a Participant's or Host's page, only the matched id; the Organizer-only
+  Discretionary points and Award pickers match a Participant's email in
+  their search without showing it. Past editions use their own roster.
 - **The Team shows in team events.** In a teams War Week, wherever a
   Participant appears in a Competition or scoring context (Standings,
   Brackets and Heats, Placements, Games, Recent results, Points Entry ledgers, Awards,
