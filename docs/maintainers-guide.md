@@ -803,8 +803,9 @@ Every ranked view on a Participant Competition page is one component
 - **Head-to-head:** always two Entrants, so no leaderboard; the series view shows
   the Matches in order with both Scores and the Winner (or Draw), the series
   score ("2–1") and its Winner once decided, and each Entrant's Placement
-  Points (Provisional until Closed). A series Closed level (no Best of
-  decided) says it ended level and names no series Winner.
+  Points (Provisional until Closed). A drawn series (every Match played
+  with no majority) says so and names no series Winner; so does one Closed
+  early with equal wins.
 - **Order and links:** the page reads back link, name and facts,
   **description** (long ones collapse behind "Show more"), enroll button,
   then the results. It has no Points Entries list; points are in the table.
@@ -840,8 +841,10 @@ or an Organizer sets, in the Settings:
   player picker. The series is decided when one Entrant has a majority of the
   wins; then **Log a Match** is disabled with the reason and the server
   refuses a further Match, for Organizers and Hosts too. Editing or deleting a
-  Match recomputes it. With draws allowed a series can end level; the drawn
-  series shares the higher place's full points at Close.
+  Match recomputes it. With draws allowed a series can end drawn: every Match
+  played with no majority (win, Draw, Draw is drawn though the wins are
+  1–0). A drawn series has no Winner and both Entrants share the higher
+  place's full points at Close.
 - **Best score:** **Score direction** (higher or lower), **Score unit**,
   **Max attempts per person** (blank for unlimited; the form shows "N attempts
   left", and at 1 the button reads "Update your score" and edits the one

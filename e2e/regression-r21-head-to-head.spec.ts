@@ -18,7 +18,7 @@ import { asHost, participantPageAs } from "./session";
 // follows the Scores. After 2–0, logging a third Match is refused by the
 // server (a form opened before the series was decided) and the Log button
 // is disabled with the reason beside it, for the Entrants and the Host. A
-// Best of 3 with draws that runs out level is drawn: no more Matches, and
+// Best of 3 with draws whose Matches all play out with no majority is drawn: no more Matches, and
 // on Close both Entrants get the higher place's full points. Each test's
 // Competition is its own, deleted in `finally`.
 
@@ -27,6 +27,8 @@ const SAM = "Sam Schantz";
 const DECIDED = "This series is decided, so logging is closed.";
 const DRAWN =
   "Every Match of this series is played with no majority: the series is drawn.";
+const DRAWN_NOTE =
+  "Drawn: every Match is played with no majority, so no series Winner.";
 
 test("r21 AC6 a Best of 3 at 2–0 refuses a third Match on the server and disables Log a Match with the reason; the form has two fixed rows and no picker", async ({
   browser,
@@ -146,11 +148,12 @@ test("r21 AC6 a drawn Best of 3 that runs out takes no more Matches, and both En
     await asHost(context);
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`/xi/competitions/${id}`);
-    // 1–0 Ashley, 1–1, then equal Scores: a Draw (draws are allowed).
+    // Ashley wins, then equal Scores twice: two Draws (draws are allowed).
+    // 1–0 in wins, but every Match is played with no majority: drawn.
     for (const [a, s] of [
       ["21", "15"],
-      ["12", "21"],
       ["7", "7"],
+      ["9", "9"],
     ]) {
       await page.getByRole("button", { name: "Log a Match" }).click();
       const form = page.getByRole("dialog", { name: "Log a Match" });
@@ -163,7 +166,12 @@ test("r21 AC6 a drawn Best of 3 that runs out takes no more Matches, and both En
       page
         .getByRole("region", { name: "Results" })
         .locator('[data-slot="series-match-result"]'),
-    ).toHaveText([`Winner: ${ASHLEY}`, `Winner: ${SAM}`, "Draw"]);
+    ).toHaveText([`Winner: ${ASHLEY}`, "Draw", "Draw"]);
+    await expect(
+      page
+        .getByRole("region", { name: "Results" })
+        .locator('[data-slot="series-note"]'),
+    ).toHaveText(DRAWN_NOTE);
 
     // All three played with no majority: drawn, no more Matches.
     await expect(
@@ -199,6 +207,11 @@ test("r21 AC6 a drawn Best of 3 that runs out takes no more Matches, and both En
         .getByRole("region", { name: "Results" })
         .locator('[data-slot="series-points-value"]'),
     ).toHaveText(["5 points", "5 points"]);
+    await expect(
+      page
+        .getByRole("region", { name: "Results" })
+        .locator('[data-slot="series-note"]'),
+    ).toHaveText(DRAWN_NOTE);
     await shoot(page, testInfo, "drawn-closed");
   } finally {
     await ashley.close();

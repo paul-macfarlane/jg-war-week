@@ -180,6 +180,57 @@ describe.skipIf(!isLocalDatabase)(
       });
     });
 
+    it("Head-to-head: a drawn Best of 3 (win, Draw, Draw) gives both Entrants 1st place's full points", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { closeCompetition } = await mutations();
+        const f = await loggedFixture(tx);
+        const { schema, ids } = f;
+        await f.setCompetition(ids.pong, {
+          seriesConfig: { drawsAllowed: true, bestOf: 3 },
+        });
+        const entrants = await tx
+          .select({
+            id: schema.entrant.id,
+            participantId: schema.entrant.participantId,
+          })
+          .from(schema.entrant)
+          .where(eq(schema.entrant.competitionId, ids.pong));
+        const entrantOf = (participantId: string) =>
+          entrants.find((e) => e.participantId === participantId)!.id;
+        // Neo wins, then two Draws: every Match played, nobody has 2 wins.
+        for (const trinityPlace of [2, 1, 1]) {
+          const [match] = await tx
+            .insert(schema.seriesMatch)
+            .values({ competitionId: ids.pong, loggedByEmail: HOST })
+            .returning({ id: schema.seriesMatch.id });
+          await tx.insert(schema.seriesMatchEntrant).values([
+            {
+              seriesMatchId: match.id,
+              entrantId: entrantOf(ids.neo),
+              place: 1,
+            },
+            {
+              seriesMatchId: match.id,
+              entrantId: entrantOf(ids.trinity),
+              place: trinityPlace,
+            },
+          ]);
+        }
+
+        expect(await closeCompetition(ids.pong, f.ctx(HOST), tx)).toEqual({
+          ok: true,
+        });
+        const points = await generated(f, tx, ids.pong);
+        expect(points.map(([, p, note]) => [p, note])).toEqual([
+          [10, "From head-to-head"],
+          [10, "From head-to-head"],
+        ]);
+        expect(points.map(([side]) => side).sort()).toEqual(
+          [ids.neo, ids.trinity].sort(),
+        );
+      });
+    });
+
     it("Best score: Close ranks the best Attempts, ties sharing a place's points; Reopen withdraws", async () => {
       await inRolledBackTransaction(async (tx) => {
         const { closeCompetition, reopenCompetition } = await mutations();

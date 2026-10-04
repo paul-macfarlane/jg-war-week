@@ -493,7 +493,11 @@ function standingsOf(
   attempts: LoadedAttempt[],
 ): StandingsRow[] {
   if (found.format === "head-to-head") {
-    return rankSeries(matchFactsOf(matches), entrants.map(idOf));
+    return rankSeries(
+      found.config as SeriesConfig,
+      matchFactsOf(matches),
+      entrants.map(idOf),
+    );
   }
   return rankAttempts(
     found.config as BestScoreSettings,

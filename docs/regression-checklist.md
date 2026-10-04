@@ -396,9 +396,10 @@ on the matching War Week page.
       Log a Match has two fixed rows and no player picker. In a Best of 3,
       log 2–0: the series is decided, Log a Match is disabled with a visible
       reason and the server refuses a third. Delete or edit a Match and
-      logging reopens. With draws allowed, a drawn series that runs out takes
-      no more Matches, and Close gives both Entrants the higher place's full
-      points.
+      logging reopens. With draws allowed, a series whose Matches all play
+      out with no majority (win, Draw, Draw) is drawn: it takes no more
+      Matches, names no series Winner, and Close gives both Entrants the
+      higher place's full points.
 - [ ] **Best score: Max attempts and Team score.** Set Max attempts per person
       to 3: the Attempt form says "N attempts left", a fourth is refused for
       a Participant and for an Organizer, and Max attempts cannot be lowered
@@ -708,8 +709,8 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       "N more attempts" row; a Head-to-head Competition with a fixed list of
       two Entrants (always two) shows the series view (Matches with both Scores and the
       Winner or Draw, the series score, the series Winner once decided, and
-      each Entrant's Placement Points; a series Closed level, with no Best
-      of decided, says it ended level and names no series Winner) and no
+      each Entrant's Placement Points; a drawn series, or one Closed early
+      with equal wins, says so and names no series Winner) and no
       leaderboard. On every one: no Points Entries
       section anywhere on the page.
 - [ ] **Scale: 100 Participants.** Run `pnpm seed:demo:scale`, then

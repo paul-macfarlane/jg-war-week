@@ -6,6 +6,7 @@ import {
   matchSummary,
   rankSeries,
   recordLabel,
+  seriesDrawn,
   seriesNote,
   seriesOf,
 } from "@/lib/series/standings";
@@ -38,6 +39,7 @@ const bestOf3 = { drawsAllowed: true, bestOf: 3 } as const;
 describe("rankSeries", () => {
   it("ranks the two Entrants by Matches won, with their records", () => {
     const rows = rankSeries(
+      { drawsAllowed: true, bestOf: 5 },
       [
         beat("ana", "ben"),
         beat("ben", "ana"),
@@ -53,7 +55,7 @@ describe("rankSeries", () => {
   });
 
   it("leaves an Entrant with no Match unranked", () => {
-    expect(rankSeries([], ["ana", "ben"]).map((r) => r.rank)).toEqual([
+    expect(rankSeries(bestOf3, [], ["ana", "ben"]).map((r) => r.rank)).toEqual([
       null,
       null,
     ]);
@@ -61,10 +63,37 @@ describe("rankSeries", () => {
 
   it("ties a level series at the higher rank", () => {
     const rows = rankSeries(
+      bestOf3,
       [beat("ana", "ben"), beat("ben", "ana")],
       ["ana", "ben"],
     );
     expect(rows.map((r) => r.rank)).toEqual([1, 1]);
+  });
+
+  it("ranks both Entrants 1st when the series is drawn, even with uneven wins", () => {
+    // Best of 3 with draws: Ana wins, Draw, Draw. Every Match is played
+    // and nobody has 2 wins: drawn.
+    const rows = rankSeries(
+      bestOf3,
+      [beat("ana", "ben"), drew("ana", "ben"), drew("ana", "ben")],
+      ["ana", "ben"],
+    );
+    expect(rows.map((r) => [r.id, r.rank, recordLabel(r)])).toEqual([
+      ["ana", 1, "1–0–2"],
+      ["ben", 1, "0–1–2"],
+    ]);
+  });
+
+  it("still ranks the leader alone while the series has Matches to play", () => {
+    const rows = rankSeries(
+      bestOf3,
+      [beat("ana", "ben"), drew("ana", "ben")],
+      ["ana", "ben"],
+    );
+    expect(rows.map((r) => [r.id, r.rank])).toEqual([
+      ["ana", 1],
+      ["ben", 2],
+    ]);
   });
 });
 
@@ -86,6 +115,28 @@ describe("bestOfWinner", () => {
     expect(
       bestOfWinner({ drawsAllowed: false, bestOf: 1 }, [beat("ben", "ana")]),
     ).toBe("ben");
+  });
+});
+
+describe("seriesDrawn", () => {
+  it("is drawn once every Match is played with no majority", () => {
+    expect(
+      seriesDrawn(bestOf3, [
+        beat("ana", "ben"),
+        drew("ana", "ben"),
+        drew("ana", "ben"),
+      ]),
+    ).toBe(true);
+    expect(seriesDrawn(bestOf3, [beat("ana", "ben"), drew("ana", "ben")])).toBe(
+      false,
+    );
+    expect(
+      seriesDrawn(bestOf3, [
+        beat("ana", "ben"),
+        drew("ana", "ben"),
+        beat("ana", "ben"),
+      ]),
+    ).toBe(false);
   });
 });
 
@@ -118,6 +169,19 @@ describe("seriesOf and seriesNote", () => {
     expect(seriesNote(bestOf3, level, true)).toBe(
       "Closed level: no series Winner.",
     );
+  });
+
+  it("names no Winner for a drawn series with uneven wins, open or Closed", () => {
+    const played = [beat("ana", "ben"), drew("ana", "ben"), drew("ana", "ben")];
+    for (const closed of [false, true]) {
+      const series = seriesOf(bestOf3, played, ["ana", "ben"], closed);
+      expect(series.score).toBe("1–0");
+      expect(series.drawn).toBe(true);
+      expect(series.winner).toBeNull();
+      expect(seriesNote(bestOf3, series, closed)).toBe(
+        "Drawn: every Match is played with no majority, so no series Winner.",
+      );
+    }
   });
 
   it("gives the leader the series once Closed short of a majority", () => {

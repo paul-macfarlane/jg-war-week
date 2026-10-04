@@ -1,8 +1,11 @@
 /**
  * A Head-to-head series' standings and its view (CONTEXT.md; spec R20,
- * decision 7): two Entrants, ranked by Matches won, and the series score
- * with its Winner once one Entrant has a majority of the Best of. Pure: no
- * database, no framework.
+ * decision 7; spec R21, decision 12): two Entrants, ranked by Matches won,
+ * and the series score with its Winner once one Entrant has a majority of
+ * the Best of. A series whose Matches are all played with no majority is
+ * drawn (the rule `src/lib/series/log-rule.ts` stops logging on): both
+ * Entrants rank 1st and there is no Winner. Pure: no database, no
+ * framework.
  */
 import {
   type ResultFact,
@@ -15,9 +18,11 @@ import { type SeriesConfig, majorityOf } from "@/lib/series/config";
 /**
  * The series' standings: a row for every Entrant (`entrantIds`, each a
  * Team or Participant id), even with no Match, ranked by Matches won;
- * ties share the higher rank; an Entrant with no Match is unranked.
+ * ties share the higher rank; a drawn series (`seriesDrawn`) ranks both
+ * 1st whatever their wins; an Entrant with no Match is unranked.
  */
 export function rankSeries(
+  config: SeriesConfig,
   matches: ResultFact[],
   entrantIds: string[],
 ): StandingsRow[] {
@@ -38,10 +43,24 @@ export function rankSeries(
       else if (player.place === 1 && opponent.place === 1) row.draws += 1;
     }
   }
+  const drawn = seriesDrawn(config, matches);
   return rankRows(
     [...rows.values()],
-    (row) => (row.played === 0 ? null : row.wins),
+    (row) => (row.played === 0 ? null : drawn ? 0 : row.wins),
     "desc",
+  );
+}
+
+/**
+ * Whether the series is drawn: every Match of the Best of is played and
+ * nobody has a majority (a Best of with Draws, say win, Draw, Draw).
+ */
+export function seriesDrawn(
+  config: SeriesConfig,
+  matches: ResultFact[],
+): boolean {
+  return (
+    matches.length >= config.bestOf && bestOfWinner(config, matches) === null
   );
 }
 
@@ -106,13 +125,17 @@ export type Series = {
   score: string;
   /** The series Winner once decided, else null. */
   winner: string | null;
+  /** Every Match played with no majority: no Winner, both share 1st. */
+  drawn: boolean;
 };
 
 /**
  * The two Entrants' series: the Matches in order with each one's Winner
  * (or a Draw), the series score, and the series Winner. A Best of is
  * decided the moment a side has a majority (`bestOfWinner`, the rule
- * logging stops on); Closed short of one, the side with more wins.
+ * logging stops on); drawn once every Match is played without one
+ * (`seriesDrawn`), with no Winner; Closed short of both, the side with
+ * more wins.
  */
 export function seriesOf(
   config: SeriesConfig,
@@ -143,19 +166,22 @@ export function seriesOf(
   });
   const leader =
     wins[0] === wins[1] ? null : wins[0] > wins[1] ? entrants[0] : entrants[1];
+  const drawn = seriesDrawn(config, matches);
   return {
     matches: listed,
     wins,
     draws,
     score: `${wins[0]}–${wins[1]}`,
-    winner: bestOfWinner(config, matches) ?? (closed ? leader : null),
+    winner: bestOfWinner(config, matches) ?? (closed && !drawn ? leader : null),
+    drawn,
   };
 }
 
 /**
- * The line under the series score while it has no Winner: the Best of's
- * target while it's open and, once Closed level, that it ended with no
- * series Winner. Null once the series has a Winner.
+ * The line under the series score while it has no Winner: that it is
+ * drawn once every Match is played with no majority; the Best of's target
+ * while it's open; once Closed early with equal wins, that it ended with
+ * no series Winner. Null once the series has a Winner.
  */
 export function seriesNote(
   config: SeriesConfig,
@@ -163,6 +189,9 @@ export function seriesNote(
   closed: boolean,
 ): string | null {
   if (series.winner !== null) return null;
+  if (series.drawn) {
+    return "Drawn: every Match is played with no majority, so no series Winner.";
+  }
   if (closed) return "Closed level: no series Winner.";
   if (config.bestOf === 1) return "Best of 1: one Match decides it.";
   return `Best of ${config.bestOf}: first to ${majorityOf(config.bestOf)} wins.`;
