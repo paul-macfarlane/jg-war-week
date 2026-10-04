@@ -357,7 +357,7 @@ describe.skipIf(!isLocalDatabase)("Group Bracket edits", () => {
           ctx,
           tx,
         ),
-      ).toEqual({ ok: true, resetMatchIds: [] });
+      ).toEqual({ ok: true });
       expect(await storedShape(tx, id)).toEqual([
         ["3/2 played", "4/2 played", "4/2 played"],
         ["3/2 ready", "3/2 ready"],
