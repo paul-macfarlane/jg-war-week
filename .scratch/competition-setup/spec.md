@@ -37,7 +37,7 @@ Attempt limits and no Entrant list.
 | **Placement** | Organizers, Hosts (no self-report) | One sheet; Places, or Scores plus a direction and unit, fill Places | Placement Points on **Close**; **Reopen** withdraws |
 | **Bracket** | Organizers, Hosts; players in a Match when self-report is on | Head-to-head (2 per Match, 1 advances, optional 3rd place match) or Group (per-round defaults, per-Match overrides); a direction and unit order each Match | Placement Points for decided places (max 4) on **Close** |
 | **Head-to-head** | Organizers, Hosts; either player when self-report is on | Exactly 2 Entrants, Best of 1/3/5/7; a direction and unit pick each Match's Winner | Placement Points by series result on **Close** |
-| **Best score** | Organizers, Hosts for anyone; any War Week Participant as themselves when self-report is on | Attempts, optional max per person; a person's best Attempt, a Team's sum of its members' bests | Placement Points by standing on **Close** |
+| **Best score** | Organizers, Hosts for anyone; any War Week Participant as themselves when self-report is on | Attempts, optional max per person; a person's best Attempt; a Team's best member or sum of members | Placement Points by standing on **Close** |
 | **Participation** | Organizers, Hosts; self check-in where on | Who took part | unchanged |
 
 ## Decisions
@@ -86,14 +86,20 @@ Attempt limits and no Entrant list.
    - **Bracket:** a linked Participant in a Match (or on its Team or Squad)
      may record it (ADR 0005's rule).
    - **Head-to-head:** either player (or someone on their Team) may log a
-     Match. Only the logger, a Host or an Organizer may edit or delete it
-     (ADR 0006's rule).
+     Match.
    - **Best score:** a linked Participant logs Attempts **as themselves**,
      with no participant picker. In team scoring, the Attempt counts for
      their Team.
    - Organizers and the Competition's Hosts always log for anyone.
+   - **Who may edit or delete a result:** anyone who could have logged it
+     (Paul, 2026-10-04). An Organizer or the Competition's Host always can;
+     with self-report on, so can the Participant (or Team member) it is for,
+     whoever logged it. For example, a Host logs a Participant's Attempt and
+     that Participant edits it. This replaces ADR 0006's "only the logger"
+     rule. When edits are allowed at all (an open Competition, nothing
+     downstream) is the open question below.
    - Write one ADR recording the single setting. It supersedes the
-     self-report parts of ADR 0005 and 0006, and those two are marked
+     self-report parts of ADR 0005 and 0006 (and 0006's "only the logger" edit rule), and those two are marked
      superseded in part.
 5. **"Open to everyone" goes.** `entrants_open` is dropped, and with it the
    Entrants select for Games.
@@ -181,24 +187,39 @@ Attempt limits and no Entrant list.
     - **No Best / Total setting** (Paul, 2026-10-04). The Score rule
       follows scoring instead:
       - **Individual:** a person's Score is their best Attempt.
-      - **Team:** a Team's Score is the **sum of its members' best
-        Attempts** (one per member), so every member's climb counts, as
-        in a stairs Competition.
+      - **Team:** a team-only setting, **Team score**: **Best member** (the
+        Team's single best Attempt by any member, today's best mode) or
+        **Sum of members** (each member's best Attempt, added up, so every
+        member's climb counts, as in a stairs Competition). Default: Best
+        member.
       - The "count" setting goes from the settings form, the config schema,
-        MCP and the seed format. A Competition stored with total takes the
-        rule above. The only one is the XI demo's Tuesday Stairs (team);
-        its Team totals change where a member logged more than once, and
-        the PR lists the before and after.
+        MCP and the seed format; Team score replaces it in the config. A
+        team Competition stored with total becomes Sum of members; an
+        individual one stored with total becomes best. The only one is the
+        XI demo's Tuesday Stairs (team): its Team totals change where a
+        member logged more than once, and the PR lists the before and
+        after.
     - **One entry, updated in place.** When "Max attempts per person" is 1
       and you already have your Attempt, the log button reads "Update your
       score" and edits that Attempt instead of being refused. Organizers
       and Hosts logging for someone at the limit edit that person's
       Attempt the same way. Above 1, reaching the limit refuses as before.
-    - **Participants edit their own Attempts.** When self-report is on, a
-      Participant can edit or delete each of their own Attempts (every one,
-      when more than one is allowed), whoever logged it, from their row's
-      expanded list. Organizers and Hosts edit or delete anyone's.
-      Editing never counts against "Max attempts per person".
+    - **Participants edit their own Attempts** (decision 4's edit rule).
+      When self-report is on, a Participant can edit or delete each of
+      their own Attempts (every one, when more than one is allowed),
+      whoever logged it, from their row's expanded list. Editing never
+      counts against "Max attempts per person".
+
+## Open question (grill at planning)
+
+- **When may a result be edited?** Paul's direction (2026-10-04): edits are
+  allowed "within reason": while the Competition is open and the edit has
+  no cascading effect, and never once it is Closed. To settle before
+  planning, per Format: a Bracket Match whose result already advanced
+  someone into a played later Match; a Head-to-head Match once the series
+  is decided; a Best score Attempt (no cascade); Placement rows (already
+  locked by Close). This decides the lock rules in decision 3 and the
+  edit rule in decision 4.
 
 ## Schema change (for the red-team)
 
@@ -252,8 +273,10 @@ Attempt limits and no Entrant list.
       there's no Entrant list or enroll button (vitest; e2e).
 - [ ] Best score has no Best / Total choice (settings form, config schema,
       MCP output, seed format). Individual: a person with three Attempts
-      scores their best. Team: a Team scores the sum of each member's best
-      Attempt, and Tuesday Stairs ranks that way (vitest; e2e).
+      scores their best. Team: the Team score setting shows only for team
+      scoring; Best member ranks by the Team's single best Attempt, Sum of
+      members by the sum of each member's best, and Tuesday Stairs is Sum
+      of members (vitest; e2e).
 - [ ] Best score with "Max attempts" 1: after your Attempt, the button reads
       "Update your score" and saving edits it (no second Attempt is
       stored); an Organizer logging for that person edits it too
@@ -261,7 +284,10 @@ Attempt limits and no Entrant list.
 - [ ] Best score with self-report on and "Max attempts" 3: a Participant
       with three Attempts (one logged by a Host) edits and deletes each from
       their expanded row; another Participant can't, and the server refuses
-      them (vitest; e2e).
+      them. With self-report off, the Participant can't edit their Attempts
+      either (vitest; e2e).
+- [ ] Head-to-head with self-report on: either player edits a Match a Host
+      logged for them (vitest).
 - [ ] Bracket settings show Head-to-head / Group. Only Group shows the size
       fields, and only Head-to-head shows the 3rd place match (e2e).
 - [ ] Group Bracket of 11 with defaults of 4 per Match, 2 advancing:
