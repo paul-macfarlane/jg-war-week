@@ -17,7 +17,7 @@ import {
 import { DEFAULT_BRACKET_CONFIG, configOf } from "@/lib/bracket/config";
 import { bracketWinner } from "@/lib/bracket/formats";
 import type { Bracket, Entrant } from "@/lib/bracket/types";
-import { BRACKET_FORMATS, isBracketFormat } from "@/lib/bracket/view";
+import { isBracketFormat } from "@/lib/bracket/view";
 import { isLoggedFormat } from "@/lib/enums";
 import type { EntryPoints } from "@/lib/results-table";
 import { isUuid } from "@/lib/uuid";
@@ -359,36 +359,6 @@ export type BracketCompetitionLink = Pick<
   Competition,
   "id" | "name" | "format" | "closedAt"
 >;
-
-/** A War Week's Competitions run as a Bracket (never Head-to-head or Best score), by name. */
-export async function getBracketCompetitions(
-  warWeek: Pick<WarWeek, "id">,
-  dbOrTx: DBOrTx = db,
-): Promise<BracketCompetitionLink[]> {
-  return competitionLinks(warWeek, BRACKET_FORMATS, dbOrTx);
-}
-
-function competitionLinks(
-  warWeek: Pick<WarWeek, "id">,
-  formats: Competition["format"][],
-  dbOrTx: DBOrTx,
-): Promise<BracketCompetitionLink[]> {
-  return dbOrTx
-    .select({
-      id: competition.id,
-      name: competition.name,
-      format: competition.format,
-      closedAt: competition.closedAt,
-    })
-    .from(competition)
-    .where(
-      and(
-        eq(competition.warWeekId, warWeek.id),
-        inArray(competition.format, formats),
-      ),
-    )
-    .orderBy(asc(competition.name));
-}
 
 /**
  * Each Participant's Team id in a War Week, so the Bracket view can find

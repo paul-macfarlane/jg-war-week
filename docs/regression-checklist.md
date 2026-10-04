@@ -347,7 +347,8 @@ on the matching War Week page.
       Standings, and its Competition page shows **Top finishers** (1st and 2nd,
       each with points, 1st marked Winner) in place of the old Champion card, with no
       Points Entries section and no "Play the finale" button on the page or in the admin
-      Bracket (its Bracket Finale is reached from `/admin/finale`).
+      Bracket. `/<edition>/finale/<competitionId>` for that Competition shows
+      the 404 page, and `/admin/finale` has no "Bracket Finales" section.
 - [ ] **Bracket: 3rd place match.** In a head-to-head Bracket of at least 4
       Entrants (a new Bracket of 4 or 8), turn on the Bracket's 3rd place
       match switch: the tree shows it beside the Final, labelled "3rd place
@@ -555,9 +556,8 @@ on the matching War Week page.
       reopened (ended before, so it has a Winner), Unstart is refused:
       "This War Week has been ended; Unstart isn't available." It stays
       live.
-- [ ] **Finale links.** `/admin/finale` links to the Finale and to each
-      closed Bracket's Finale; both open. (The Bracket's Finale keeps its
-      Start button.)
+- [ ] **Finale links.** `/admin/finale` links to the Finale and it opens;
+      there is no Bracket Finales section and no Finale link per Bracket.
 - [ ] **Finale slide list.** `/admin/finale` lists the Finale slides in
       order (Title, By the numbers, Awards, Winners, Standings countdown,
       Winner, plus the demo's Custom "Thank you" before Standings or after

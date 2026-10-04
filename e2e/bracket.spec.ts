@@ -7,14 +7,8 @@ import {
   xiCompetitionEntries,
   xiCompetitionId,
 } from "./db";
-import { E2E_BASE_URL } from "./env";
 import { axePodium, expectPodium, shootPodium } from "./podium";
-import {
-  E2E_PARTICIPANT_EMAIL,
-  asOrganizer,
-  participantPageAs,
-  signIn,
-} from "./session";
+import { asOrganizer, participantPageAs } from "./session";
 
 // Beyblades is an individual War Week XI Competition with Placement Points
 // 5 / 3 / 1. None of these four is on the seeded Beyblades sheet (it places only a Team).
@@ -245,34 +239,12 @@ test("a Bracket is built, run and Closed into Points Entries, its podium 1st and
     fullPage: true,
   });
 
-  // The Bracket Finale (reached from /admin/finale, unchanged) plays the
-  // placings and ends on the winner.
-  await page.goto(`/xi/finale/${id}`);
-  await page.getByRole("button", { name: "Start" }).click();
-  await expect(page.getByRole("button", { name: "Replay" })).toBeVisible({
-    timeout: 20_000,
-  });
-  const winnerCard = page.getByLabel("Winner", { exact: true });
-  await expect(winnerCard).toContainText(winner);
-  await expect(winnerCard).toContainText(`Winner of ${COMPETITION}`);
-  await checkViewports(page, testInfo, "bracket-finale");
-
-  // Reduced motion shows the final state as soon as Start is pressed:
-  // well inside the ~3.9 s a four-Entrant count-in takes with motion.
-  const still = await browser.newContext({
-    baseURL: E2E_BASE_URL,
-    reducedMotion: "reduce",
-  });
-  await signIn(still, E2E_PARTICIPANT_EMAIL);
-  const stillPage = await still.newPage();
-  await stillPage.goto(`/xi/finale/${id}`);
-  await stillPage.getByRole("button", { name: "Start" }).click();
-  await expect(stillPage.locator('[data-finale="done"]')).toBeVisible({
-    timeout: 2_000,
-  });
-  await expect(stillPage.getByLabel("Winner", { exact: true })).toContainText(
-    winner,
-    { timeout: 2_000 },
-  );
-  await still.close();
+  // There is no Bracket Finale: the closed Bracket's old Finale URL is a
+  // 404 and /admin/finale has no Bracket Finales section.
+  const gone = await page.goto(`/xi/finale/${id}`);
+  expect(gone?.status()).toBe(404);
+  await expect(page.getByText("Finale: " + COMPETITION)).toHaveCount(0);
+  await page.goto("/admin/finale");
+  await expect(page.getByRole("heading", { name: "Slides" })).toBeVisible();
+  await expect(page.getByText("Bracket Finales")).toHaveCount(0);
 });

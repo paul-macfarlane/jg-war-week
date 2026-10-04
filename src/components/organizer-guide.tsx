@@ -29,8 +29,7 @@ export function OrganizerGuide({
     Announcements: "Post, pin and edit Announcements.",
     Awards: `Give Awards to a ${teamLower} or to Participants, and add one from a preset name.`,
     FAQ: "FAQ Items and their order on the public FAQ.",
-    Finale:
-      "Open the Finale, and each closed Bracket's Finale, on the projector.",
+    Finale: "Open the Finale on the projector, and order or hide its slides.",
     Settings:
       "Story Theme, dates, mode, labels, links and the Appearance Theme; the Lifecycle box (Start, End, Unstart, Reopen) and Create next War Week.",
     Organizers: "Who the Organizers are.",
@@ -332,11 +331,6 @@ export function OrganizerGuide({
           the slides, add your own Custom slides (only Organizers open this
           page). The Awards slide reveals one Award per step. The Finale never
           changes the Standings, it only plays them.
-        </p>
-        <p className="text-foreground/70">
-          A Closed Bracket has its own Finale: open it from the same page
-          (&quot;Finale:&quot; and the Competition&apos;s name), and press Start
-          to count its placings in to the Winner.
         </p>
       </section>
 

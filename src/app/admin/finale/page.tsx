@@ -7,7 +7,6 @@ import { FinaleSlidesEditor } from "@/components/finale-slides-editor";
 import { buttonVariants } from "@/components/ui/button";
 import { sanitizeContent } from "@/lib/rich-text/content";
 import { themeSwatches } from "@/lib/theme";
-import { getBracketCompetitions } from "@/queries/brackets";
 import { getFinaleSlides } from "@/queries/finale-slides";
 
 import { loadAdminPage } from "../gate";
@@ -20,8 +19,7 @@ export const metadata: Metadata = {
 
 /**
  * The Organizer's way into the Finale, its slide list (order and hidden
- * slides; Organizers change it, Hosts see it), and each closed Bracket's
- * Bracket Finale ("Finale: <Competition>").
+ * slides; Organizers change it, Hosts see it).
  */
 export default async function AdminFinalePage() {
   const { warWeek, email, allowed, isOrganizer, editions } =
@@ -29,13 +27,7 @@ export default async function AdminFinalePage() {
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const edition = warWeek.edition;
-  const [competitions, slides] = await Promise.all([
-    getBracketCompetitions(warWeek),
-    getFinaleSlides(warWeek.id),
-  ]);
-  const closed = competitions.filter(
-    (competition) => competition.closedAt !== null,
-  );
+  const slides = await getFinaleSlides(warWeek.id);
 
   return (
     <AdminShell
@@ -99,29 +91,6 @@ export default async function AdminFinalePage() {
             canEdit={isOrganizer}
             themeSwatches={themeSwatches(warWeek)}
           />
-        </section>
-        <section className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold">Bracket Finales</h2>
-          {closed.length === 0 ? (
-            <p className="text-foreground/70 text-sm">
-              Each closed Bracket gets its own Finale, counting its placings in
-              to the Winner. None is closed yet.
-            </p>
-          ) : (
-            <ul className="flex flex-wrap gap-2">
-              {closed.map((competition) => (
-                <li key={competition.id}>
-                  <Link
-                    href={`/${edition}/finale/${competition.id}`}
-                    className={buttonVariants({ variant: "outline" })}
-                  >
-                    <Sparkles aria-hidden />
-                    Finale: {competition.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
         </section>
       </div>
     </AdminShell>

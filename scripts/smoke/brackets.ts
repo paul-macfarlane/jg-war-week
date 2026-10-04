@@ -74,7 +74,7 @@ export async function deleteSmokeBracket() {
 
 export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
   const check =
-    "bracket loop: an Organizer sets a head-to-head Bracket (2 per Match, 1 advances) with a 3rd place Match on a Competition, enters 4 Teams, generates, records 4 Match Results, closes; GET /xi/competitions/<id> shows Red as Winner in Top finishers (no Winner, no Play the finale) and /xi/leaderboard includes the generated points and /xi/finale/<id> answers 200; get_bracket names the Bracket with its match size, advancing and 3rd place Match, a recorded time per played Match, no Match time, place or Forfeit, the final's winner as winner (no winner field), matches (no matches) and closed (no closed) and no @; reopen removes them and /xi/finale/<id> answers 404; a semifinal the final used can't be edited (D1c) until the later Matches are cleared; then cleans up";
+    "bracket loop: an Organizer sets a head-to-head Bracket (2 per Match, 1 advances) with a 3rd place Match on a Competition, enters 4 Teams, generates, records 4 Match Results, closes; GET /xi/competitions/<id> shows Red as Winner in Top finishers (no Winner, no Play the finale) and /xi/leaderboard includes the generated points, /xi/finale/<id> answers 404 and /admin/finale has no Bracket Finales section; get_bracket names the Bracket with its match size, advancing and 3rd place Match, a recorded time per played Match, no Match time, place or Forfeit, the final's winner as winner (no winner field), matches (no matches) and closed (no closed) and no @; reopen removes them; a semifinal the final used can't be edited (D1c) until the later Matches are cleared; then cleans up";
   const ids = serverActionIds();
   const missing = [
     "createCompetition",
@@ -269,14 +269,22 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     if (before === null || closed !== before + 10) {
       problems.push(`Red total ${before} → ${closed}, expected +10`);
     }
+    // There is no Bracket Finale: /xi/finale/<competitionId> is a 404, and
+    // /admin/finale (as an Organizer) has no Bracket Finales section.
     const finale = await get(`/xi/finale/${id}`);
-    const finaleBody = await finale.text();
-    if (
-      finale.status !== 200 ||
-      !finaleBody.includes('data-finale="ready"') ||
-      !finaleBody.includes(SMOKE_BRACKET_COMPETITION)
-    ) {
+    if (finale.status !== 404) {
       problems.push(`/xi/finale/<id> after close status=${finale.status}`);
+    }
+    const adminFinale = await get("/admin/finale");
+    const adminFinaleBody = await adminFinale.text();
+    if (
+      adminFinale.status !== 200 ||
+      !adminFinaleBody.includes("Slides") ||
+      /Bracket Finales?/.test(adminFinaleBody)
+    ) {
+      problems.push(
+        `/admin/finale status=${adminFinale.status} or has a Bracket Finales section`,
+      );
     }
 
     // get_bracket over /api/mcp, with the bearer token and no session.
@@ -404,12 +412,6 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     const unclosed = await leaderboardTeamTotal("Red");
     if (unclosed !== before) {
       problems.push(`Red total after reopen ${unclosed} != ${before}`);
-    }
-    const unclosedFinale = await get(`/xi/finale/${id}`);
-    if (unclosedFinale.status !== 404) {
-      problems.push(
-        `/xi/finale/<id> after reopen status=${unclosedFinale.status}`,
-      );
     }
     const [{ count }] = await runQuery<{ count: string }>(
       `select count(*) from points_entry where competition_id = $1`,

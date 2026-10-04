@@ -47,7 +47,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Placement Points**          | A Competition's points for 1st, 2nd, 3rd… : an open list, highest first, never increasing, each 0 or more, with any number of places (a Bracket's has at most 4). Close turns a result into Points Entries through it; a place beyond the list earns nothing. A Competition's top prize is its 1st place. |
 | **Counts Toward Team**        | Whether an individual competition's points also go to the participant's team.                                                     |
 | **Standings**                 | The main leaderboard, computed from Points Entries.                                                                               |
-| **Finale**                    | The closing-ceremony slideshow at `/<edition>/finale`: the War Week's **Finale slides**, one full screen at a time, stepped through by the presenter. A closed Bracket has its own **Bracket Finale** at `/<edition>/finale/<competitionId>`. |
+| **Finale**                    | The closing-ceremony slideshow at `/<edition>/finale`: the War Week's **Finale slides**, one full screen at a time, stepped through by the presenter. There is no per-Competition Finale: a Bracket has no Finale of its own. |
 | **Finale slide**              | One full-screen step of the Finale: a built-in (Title, By the numbers, Awards, Winners, **Standings countdown**, Winner) or a **Custom slide**. Each War Week orders and hides its slides in admin → Finale. |
 | **Custom slide**              | An Organizer's own Finale slide: a heading (unique among the War Week's Custom slides), a rich-text body (the editor's images and video by URL) and an optional background color. It's added just before the Standings countdown, then moved, edited, hidden or deleted like any slide; a built-in is hidden, never deleted. Its text colors are overridden so they read on the background. |
 | **Award**                     | A named honor given to participants or a team. It doesn't affect points.                                                          |
@@ -394,9 +394,8 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 - **Awards** are Organizer-only (`award.create`, `.edit`, `.delete`); a Host
   or Participant is refused. There is no Award Category to manage.
 - Standings are always visible to every signed-in user. `/<edition>/finale`
-  and a closed Bracket's `/<edition>/finale/<competitionId>` are readable
-  by any signed-in JG user; Organizers and Hosts see the links to them in
-  `/admin/finale`.
+  is readable by any signed-in JG user; Organizers and Hosts see the link to
+  it in `/admin/finale`.
 - **Self-report** (ADR 0011, superseding in part ADR 0005 and 0006) is one
   setting, "Participants can log their own results", off by default on
   every Format and offered on Bracket, Head-to-head and Best score, never
@@ -861,17 +860,11 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   (reload for the latest).
 - The home and leaderboard pages keep refreshing about every 10 s while the
   tab is visible, and always show the plain Standings.
-- **Bracket Finale.** A closed Bracket has its own Finale at
-  `/<edition>/finale/<competitionId>`, readable by any signed-in JG user and
-  not found for any other Competition. It plays the Bracket's final placings
-  (places and names, no points) from last place to first, tied places
-  together, and ends on the winner card ("Winner of <Competition>").
-  It opens on a big Start button (Start, `Space` or a click on the stage
-  plays it), Replay plays it again, and with `prefers-reduced-motion` Start
-  still has to be pressed and shows the final state. It reads nothing
-  from the Standings and changes nothing. It is linked from the results
-  screen once closed and from `/admin/finale` ("Finale: <Competition>"); the
-  Participant Bracket page and Bracket admin have no "Play the finale" link.
+- **No Bracket Finale.** A Bracket has no Finale of its own:
+  `/<edition>/finale/<competitionId>` is not a page (a 404), `/admin/finale`
+  has no Bracket Finales section, and the Participant Bracket page and
+  Bracket admin have no "Play the finale" link. The War Week Finale at
+  `/<edition>/finale` is the only Finale.
 
 ## Seed idempotence rules
 

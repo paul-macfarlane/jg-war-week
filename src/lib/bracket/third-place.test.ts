@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import type { BracketConfig } from "@/lib/bracket/config";
-import { bracketFinaleRows } from "@/lib/bracket/finale";
 import {
   applyResult,
   bracketWinner,
@@ -321,21 +320,5 @@ describe("the final, with a 3rd place Match present", () => {
     expect(() => applyResult(bracket, "r1h2", { order: ["s5", "s4"] })).toThrow(
       LATER_MATCH_USED,
     );
-  });
-
-  it("shows the final as the final in the Finale's rows", () => {
-    let bracket = throughSemifinals(withThirdPlace);
-    bracket = win(bracket, "r3h1", "s2");
-    bracket = win(bracket, "r3h2", "s3");
-    const rows = bracketFinaleRows(
-      finalPlacings(bracket, entrants(8)),
-      entrants(8).map((e) => ({ ...e, color: null })),
-    );
-    expect(rows.map((r) => [r.label, r.place])).toEqual([
-      ["S2", 1],
-      ["S1", 2],
-      ["S3", 3],
-      ["S4", 4],
-    ]);
   });
 });

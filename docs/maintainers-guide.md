@@ -565,10 +565,8 @@ Competition allows self-report, from your own Match on the public tree: a
 dialog centered on a screen, a bottom sheet on a phone. Hosts can do it for
 their own Competitions. A Match has no time or place and isn't on the
 schedule; a played Match shows "Recorded <time>", when its result was
-saved. Once closed, the Bracket has its own **Bracket Finale** at
-`/<edition>/finale/<competitionId>` for the projector, linked from the
-results screen and `/admin/finale` ("Finale:
-<Competition>"). The rules are under "Bracket rules" and "Finale rules" in
+saved. A Bracket has no Finale of its own; the War Week Finale
+(`/<edition>/finale`) is the only one. The rules are under "Bracket rules" and "Finale rules" in
 `CONTEXT.md`.
 
 A Head-to-head Bracket is a straight 1v1 knockout. A Group Bracket plays
