@@ -221,3 +221,52 @@ describe("BracketTree's 3rd place Match", () => {
     expect(notes("3rd place Match")).toEqual(["takes 3rd"]);
   });
 });
+
+describe("BracketTree, a Group Bracket", () => {
+  const group = Array.from({ length: 11 }, (_, i) => ({
+    id: `g${i + 1}`,
+    seedPosition: i + 1,
+    label: `P${i + 1}`,
+  }));
+  const groupById = new Map(group.map((e) => [e.id, entrant(e.id, e.label)]));
+  const newId = (round: number, position: number) => `r${round}h${position}`;
+  const eleven = () =>
+    matches.generate(
+      {
+        kind: "group",
+        entrantsPerMatch: 4,
+        advancePerMatch: 2,
+        thirdPlaceMatch: false,
+        rounds: {},
+      },
+      group,
+      newId,
+    );
+
+  it("offers Edit on each Round heading only to an admin of a Group Bracket", () => {
+    const edit = () => {};
+    expect(
+      buttonNames(tree({ onEditRound: edit }, eleven(), groupById)).filter(
+        (name) => name.startsWith("Edit "),
+      ),
+    ).toEqual(["Edit Round 1", "Edit Round 2", "Edit Final"]);
+    expect(buttonNames(tree({}, eleven(), groupById))).toEqual([]);
+    expect(buttonNames(tree({ onEditRound: edit }))).toEqual([]);
+  });
+
+  it("says how many go on from each Match, Matches of one Round differing", () => {
+    const bracket = matches.setMatchAdvance(eleven(), "r1h2", 1, newId);
+    const html = tree({}, bracket, groupById);
+    const round1 = html.slice(
+      html.indexOf('aria-label="Round 1"'),
+      html.indexOf('aria-label="Round 2"'),
+    );
+    expect([...round1.matchAll(/Top \d advances?/g)].map((m) => m[0])).toEqual([
+      "Top 2 advance",
+      "Top 1 advances",
+      "Top 2 advance",
+    ]);
+    // The 2-Entrant Match of Round 2 is a bye; the Final sends nobody on.
+    expect(html).toContain("Bye — advances");
+  });
+});

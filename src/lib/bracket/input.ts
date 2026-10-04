@@ -76,3 +76,50 @@ const matchResultSchema = z.object({
 export function parseMatchResultInput(input: unknown): Parsed<MatchResult> {
   return parse(matchResultSchema, input);
 }
+
+const advanceSchema = z.object({
+  advanceCount: z
+    .number({ error: "Choose how many advance." })
+    .int({ error: "Choose how many advance." }),
+});
+
+/** A Group Match's advancing count; the engine checks it against the Match. */
+export function parseMatchAdvanceInput(
+  input: unknown,
+): Parsed<{ advanceCount: number }> {
+  return parse(advanceSchema, input);
+}
+
+const moveSchema = z.object({
+  entrantId: id("Choose the Entrant to move."),
+  toMatchId: id("Choose the Match to move them to."),
+});
+
+/** An Entrant and the Match of its Round it moves to. */
+export function parseMoveEntrantInput(
+  input: unknown,
+): Parsed<{ entrantId: string; toMatchId: string }> {
+  return parse(moveSchema, input);
+}
+
+const roundDefaultsInputSchema = z.object({
+  round: z
+    .number({ error: "That Round isn't in this Bracket." })
+    .int({ error: "That Round isn't in this Bracket." })
+    .min(1, { error: "That Round isn't in this Bracket." }),
+  entrantsPerMatch: z
+    .number({ error: "Choose the entrants per Match." })
+    .int({ error: "Choose the entrants per Match." }),
+  advancePerMatch: z
+    .number({ error: "Choose how many advance." })
+    .int({ error: "Choose how many advance." }),
+});
+
+/** A Round and its new defaults; the engine checks the sizes. */
+export function parseRoundDefaultsInput(input: unknown): Parsed<{
+  round: number;
+  entrantsPerMatch: number;
+  advancePerMatch: number;
+}> {
+  return parse(roundDefaultsInputSchema, input);
+}

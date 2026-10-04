@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 import { applyResult, generate as generateFormat } from "@/lib/bracket/formats";
+import { matches } from "@/lib/bracket/groups";
 import type { Bracket, Entrant } from "@/lib/bracket/types";
 import {
   entrantForYou,
@@ -170,6 +171,18 @@ describe("nextMatchFor in a Matches Bracket", () => {
     const played = applyResult(eight, "r1h1", { order: ["D", "A", "E", "H"] });
     expect(nextMatchFor(played, "E")).toBeNull();
     expect(nextMatchFor(played, "H")).toBeNull();
+  });
+
+  it("goes by the Match's own advancing count", () => {
+    const one = matches.setMatchAdvance(
+      eight,
+      "r1h1",
+      1,
+      (r, p) => `r${r}h${p}`,
+    );
+    const played = applyResult(one, "r1h1", { order: ["D", "A", "E", "H"] });
+    expect(nextMatchFor(played, "D")).toEqual({ kind: "advanced", round: 2 });
+    expect(nextMatchFor(played, "A")).toBeNull();
   });
 
   it("finds the Final once Round 1 is complete", () => {

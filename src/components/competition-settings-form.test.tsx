@@ -177,13 +177,35 @@ describe("CompetitionSettingsForm", () => {
   describe("a Bracket's match settings", () => {
     const bracket = { format: "bracket" as const };
 
-    it("offers the head-to-head preset, Match size and how many advance", () => {
+    it("toggles Head-to-head / Group: Head-to-head shows the 3rd place Match and no sizes", () => {
       const html = render(bracket);
-      expect(html).toContain("Head-to-head (single elimination)");
-      expect(html).toContain("Entrants per Match");
-      expect(html).toContain("How many advance");
+      const kind =
+        html.match(
+          /<div[^>]*aria-label="Bracket kind"[^>]*>[\s\S]*?<\/div>/,
+        )?.[0] ?? "";
+      expect(kind).toMatch(/aria-pressed="true"[^>]*>Head-to-head</);
+      expect(kind).toMatch(/aria-pressed="false"[^>]*>Group</);
+      expect(html).not.toContain("Entrants per Match");
+      expect(html).not.toContain("How many advance");
+      expect(html).toContain("3rd place Match");
       expect(html).toContain("Self-report");
       expect(html).toContain("Score direction");
+    });
+
+    it("shows a Group's entrants per Match (3 to 8) and how many advance", () => {
+      const html = render({
+        ...bracket,
+        bracketConfig: {
+          kind: "group" as const,
+          entrantsPerMatch: 4,
+          advancePerMatch: 2,
+          thirdPlaceMatch: false,
+          rounds: {},
+        },
+      });
+      expect(html).toMatch(/aria-pressed="true"[^>]*>Group</);
+      expect(html).toContain("Entrants per Match");
+      expect(html).toContain("How many advance");
     });
 
     it("shows the 3rd place Match off and disabled with its reason under 4 Entrants", () => {

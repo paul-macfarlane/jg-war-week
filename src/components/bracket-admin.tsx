@@ -9,6 +9,7 @@ import {
 } from "@/actions/brackets";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { BracketPodium } from "@/components/bracket-podium";
+import { BracketRoundEditor } from "@/components/bracket-round-editor";
 import { BracketTree } from "@/components/bracket-tree";
 import { ConfirmActionButton } from "@/components/confirm-dialog";
 import type { BracketViewEntrant } from "@/components/entrant-mark";
@@ -18,6 +19,7 @@ import {
 } from "@/components/match-result-form";
 import { ResponsiveSheetDialog } from "@/components/responsive-sheet-dialog";
 import { Button } from "@/components/ui/button";
+import { isHeadToHead } from "@/lib/bracket/config";
 import { isComplete, isRecordable } from "@/lib/bracket/formats";
 import type { PodiumPlace } from "@/lib/bracket/podium";
 import type { Bracket } from "@/lib/bracket/types";
@@ -89,15 +91,20 @@ type BracketAdminProps = {
  * Participants see) with Record result (Edit once played) on every Match
  * that can be recorded while it isn't Closed. A tap opens the Match
  * Result popup, a bottom Sheet on a phone and a centered Dialog on large
- * screens (`ResponsiveSheetDialog`). Refreshes live while no popup is open.
+ * screens (`ResponsiveSheetDialog`). A Group Bracket's Round headings each
+ * carry an Edit that opens that Round's editor (`BracketRoundEditor`) the
+ * same way. Refreshes live while no popup is open.
  */
 export function BracketAdmin(props: BracketAdminProps) {
   const [openMatchId, setOpenMatchId] = useState<string | null>(null);
+  const [editRound, setEditRound] = useState<number | null>(null);
   return (
     <BracketAdminView
       {...props}
       openMatchId={openMatchId}
       onOpenMatchChange={setOpenMatchId}
+      editRound={editRound}
+      onEditRoundChange={setEditRound}
     />
   );
 }
@@ -121,15 +128,27 @@ export function BracketAdminView({
   reporters = {},
   openMatchId,
   onOpenMatchChange,
+  editRound = null,
+  onEditRoundChange,
 }: BracketAdminProps & {
   openMatchId: string | null;
   onOpenMatchChange: (matchId: string | null) => void;
+  /** The Group Bracket Round being edited, if any. */
+  editRound?: number | null;
+  onEditRoundChange?: (round: number | null) => void;
 }) {
   const entrantsById = new Map(entrants.map((e) => [e.id, e]));
   const resultMatch = openMatchId
     ? bracket.matches.find((h) => h.id === openMatchId)
     : undefined;
   const close = () => onOpenMatchChange(null);
+  // A Round an edit took away (it became the final's) closes its editor.
+  const roundShown =
+    editRound !== null &&
+    !closed &&
+    bracket.matches.some((h) => h.round === editRound)
+      ? editRound
+      : null;
   const copy = closeCopy(placementPoints);
 
   return (
@@ -205,8 +224,28 @@ export function BracketAdminView({
                 .map((h) => h.id)
         }
         onRecord={onOpenMatchChange}
+        onEditRound={
+          closed || isHeadToHead(bracket.config) ? undefined : onEditRoundChange
+        }
         reporters={reporters}
       />
+
+      <ResponsiveSheetDialog
+        open={roundShown !== null}
+        onOpenChange={(open) => {
+          if (!open) onEditRoundChange?.(null);
+        }}
+      >
+        {roundShown !== null && (
+          <BracketRoundEditor
+            key={roundShown}
+            competitionId={competitionId}
+            bracket={bracket}
+            round={roundShown}
+            entrantsById={entrantsById}
+          />
+        )}
+      </ResponsiveSheetDialog>
 
       <ResponsiveSheetDialog
         open={resultMatch !== undefined}
@@ -229,7 +268,7 @@ export function BracketAdminView({
         )}
       </ResponsiveSheetDialog>
 
-      {openMatchId === null && <AutoRefresh />}
+      {openMatchId === null && editRound === null && <AutoRefresh />}
     </div>
   );
 }

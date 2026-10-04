@@ -134,6 +134,9 @@ test("a Bracket of 4 per Match is built, run and Closed into Points Entries, its
   await openCompetitionPage(page, id);
   await setFormat(page, "Bracket");
 
+  // A Group (spec R21, decision 10) shows its Match size fields.
+  await page.getByRole("button", { name: "Group", exact: true }).click();
+  await expectSaved(page);
   await page.getByRole("combobox", { name: "Entrants per Match" }).click();
   await page.getByRole("option", { name: "4 per Match" }).click();
   await page.getByRole("combobox", { name: "How many advance" }).click();

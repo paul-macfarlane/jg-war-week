@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 import { applyResult, generate } from "@/lib/bracket/formats";
+import { matches } from "@/lib/bracket/groups";
 import { type TreeSlot, bracketTree } from "@/lib/bracket/tree";
 import type { Bracket, Entrant } from "@/lib/bracket/types";
 
@@ -196,6 +197,37 @@ describe("bracketTree, Matches", () => {
       "E",
       "G",
       "A",
+    ]);
+  });
+});
+
+describe("bracketTree, flexible Group Matches", () => {
+  it("highlights each Match's own advancing count, and draws Matches of different sizes in one Round", () => {
+    // 11 Entrants, 4 per Match, 2 advancing: Matches of 3, 4 and 4.
+    let bracket = generate(
+      {
+        kind: "group" as const,
+        entrantsPerMatch: 4,
+        advancePerMatch: 2,
+        thirdPlaceMatch: false,
+        rounds: {},
+      },
+      entrants(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"]),
+      newId,
+    );
+    bracket = matches.setMatchAdvance(bracket, "r1h2", 1, newId);
+    bracket = applyResult(bracket, "r1h2", { order: ["H", "B", "E", "K"] });
+    const tree = bracketTree(bracket);
+    expect(tree.rounds[0].matches.map((m) => m.slots.map(show))).toEqual([
+      ["A", "F", "G"],
+      ["H>", "B", "E", "K"],
+      ["C", "D", "I", "J"],
+    ]);
+    expect(tree.rounds[0].matches.map((m) => m.advancing)).toEqual([2, 1, 2]);
+    // 2 + 1 + 2 = 5 go on: Matches of 3 and 2, the 2 a bye.
+    expect(tree.rounds[1].matches.map((m) => [m.slots.length, m.bye])).toEqual([
+      [1, false],
+      [1, true],
     ]);
   });
 });

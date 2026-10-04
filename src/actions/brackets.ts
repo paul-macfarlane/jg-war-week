@@ -4,8 +4,15 @@ import { guarded } from "@/actions/result";
 import { revalidateWarWeek } from "@/actions/revalidate";
 import { authorize } from "@/auth/authorize";
 import type { WarWeekAction } from "@/lib/access";
-import { parseMatchResultInput, parseSquadInput } from "@/lib/bracket/input";
+import {
+  parseMatchAdvanceInput,
+  parseMatchResultInput,
+  parseMoveEntrantInput,
+  parseRoundDefaultsInput,
+  parseSquadInput,
+} from "@/lib/bracket/input";
 import { isUuid } from "@/lib/uuid";
+import * as edits from "@/mutations/bracket-edits";
 import * as mutations from "@/mutations/brackets";
 import { closeCompetition, reopenCompetition } from "@/mutations/close";
 import type { MutationContext, MutationResult } from "@/mutations/types";
@@ -107,5 +114,49 @@ export async function deleteSquad(
   return bracketWrite("bracket.squads", competitionId, async (id, ctx) => {
     if (!isUuid(squadId)) return { ok: false, error: SQUAD_NOT_FOUND };
     return mutations.deleteSquad(id, squadId, ctx);
+  });
+}
+
+/**
+ * Group Bracket tree edits (spec R21, decision 11), by an Organizer or a Host
+ * of the Competition, as Generate is: how many of a Match advance, moving an
+ * Entrant within its Round, and a Round's defaults. The server refuses an
+ * edit to a Round with a result, with its reason.
+ */
+export async function setMatchAdvance(
+  competitionId: string,
+  matchId: string,
+  input: unknown,
+): Promise<BracketActionResult> {
+  return bracketWrite("bracket.generate", competitionId, async (id, ctx) => {
+    if (!isUuid(matchId)) {
+      return { ok: false, error: "That Match no longer exists." };
+    }
+    const parsed = parseMatchAdvanceInput(input);
+    if (!parsed.ok) return parsed;
+    return edits.setMatchAdvance(id, matchId, parsed.value, ctx);
+  });
+}
+
+export async function moveMatchEntrant(
+  competitionId: string,
+  input: unknown,
+): Promise<BracketActionResult> {
+  return bracketWrite("bracket.generate", competitionId, async (id, ctx) => {
+    const parsed = parseMoveEntrantInput(input);
+    if (!parsed.ok) return parsed;
+    return edits.moveMatchEntrant(id, parsed.value, ctx);
+  });
+}
+
+export async function setRoundDefaults(
+  competitionId: string,
+  input: unknown,
+): Promise<BracketActionResult> {
+  return bracketWrite("bracket.generate", competitionId, async (id, ctx) => {
+    const parsed = parseRoundDefaultsInput(input);
+    if (!parsed.ok) return parsed;
+    const { round, ...defaults } = parsed.value;
+    return edits.setRoundDefaults(id, round, defaults, ctx);
   });
 }
