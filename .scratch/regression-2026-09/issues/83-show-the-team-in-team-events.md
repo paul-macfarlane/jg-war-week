@@ -34,3 +34,7 @@
 - [ ] Every surface above shows the Participant's Team in a teams War Week, per the `CONTEXT.md` rule.
 - [ ] The regression checklist line "Teams show in team events" passes at both viewports.
 - [ ] `pnpm gate` passes.
+
+## Comments
+
+- 2026-10-04: absorbed into Epic R22 (`../../people-and-admin/spec.md`, Decision 4), with the Team name-or-color rule and a fixed surface list; closes when it ships.

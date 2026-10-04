@@ -12,7 +12,7 @@ ticket opens or closes. Last reviewed 2026-10-04.
 
 Regression feedback "10/3", grilled 2026-10-04 ([grilling record](./regression-2026-10/grilling-2026-10-04.md)). One work package per spec; both change the schema and are red-teamed.
 
-- [ ] **Epic R22, People and admin**: Hosts are roster Participants (no email needed), Hosts see only their Competitions and the guide, one `ParticipantPicker` with avatars and email search (absorbs 108), Award presets replace Categories, `/about` stills in XII. Next up. [`people-and-admin/spec.md`](./people-and-admin/spec.md) (`ready-for-agent`)
+- [ ] **Epic R22, People and admin**: Hosts are roster Participants (no email needed, not copied to the next War Week), Hosts see only their Competitions and the guide, one name-only `ParticipantPicker` with avatars (closes 108), the Team shows in team events (absorbs 83), Award presets replace Categories, no Bracket Finale, `/about` stills in XII. Red-team pass 1 resolved; next up. [`people-and-admin/spec.md`](./people-and-admin/spec.md) (`ready-for-agent`)
 - [ ] **Epic R23, League (round robin and Swiss)**: a new Format for chess-style tournaments, with draws, 1 / ½ / 0, tiebreaks and Swiss pairing. [`league/spec.md`](./league/spec.md) (`ready-for-agent`)
 
 Done: Epics R9–R14 (`regression-2026-09`, PRs through #122); Epics R15–R19 (`regression-2026-10`, PRs #124–#131); Epic R20 (`competition-results`, PR #133); Epic R21 (`competition-setup`, PR #135, absorbed backlog 25). All merged into `staging`.
@@ -37,7 +37,6 @@ Done: Epics R9–R14 (`regression-2026-09`, PRs through #122); Epics R15–R19 (
 - [ ] **A person across War Weeks**: identity rule (email from XII, names before), what the history page shows, who sees it. [`regression-2026-09/issues/20`](./regression-2026-09/issues/20-people-across-war-weeks.md) (`needs-triage`)
 
 - [ ] **View as another person**: an Organizer sees the app as a Participant or Host, read-only; dropped from R10 (Test sign-in covers testing). Revisit if Organizers need to debug a real person's view in production. [`regression-2026-09/issues/63`](./regression-2026-09/issues/63-view-as.md) (`needs-triage`)
-- [ ] **Show the Team in team events**: in a teams War Week, every Competition and scoring surface shows a Participant's Team (name where there's room, else the Team color, which a Profile picture hides); audit and fix. [`regression-2026-09/issues/83`](./regression-2026-09/issues/83-show-the-team-in-team-events.md) (`needs-triage`)
 - [ ] **Sign in with LTI and InfoLink emails**: waiting on the domains; auth change. [`regression-2026-09/issues/75`](./regression-2026-09/issues/75-sign-in-lti-and-infolink.md) (`needs-info`)
 - [ ] **Billable hours from Tense**: owner, API access, visibility of hours. [`regression-2026-09/issues/76`](./regression-2026-09/issues/76-tense-billable-hours.md) (`needs-info`)
 - [ ] **Your War Week, on your phone**: personal recap after R13. [`regression-2026-09/issues/77`](./regression-2026-09/issues/77-personal-war-week-wrapped.md) (`needs-triage`)
