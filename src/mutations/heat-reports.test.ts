@@ -91,7 +91,7 @@ describe.skipIf(!isLocalDatabase)("setSelfReport", () => {
     });
   });
 
-  it("is allowed while the Bracket is finalized", async () => {
+  it("is allowed while the Bracket is closed", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { setSelfReport } = await import("@/mutations/heat-reports");
       const f = await fixture(tx);
@@ -214,7 +214,7 @@ async function reportFixture(tx: DBTx) {
       },
       {
         warWeekId,
-        name: "Relay Heats",
+        name: "Relay Matches",
         scoring: "individual",
         format: "bracket",
       },
@@ -377,7 +377,7 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
     });
   });
 
-  it("Heats: a report saves exactly what the Host's result would, and records its reporter", async () => {
+  it("Matches: a report saves exactly what the Host's result would, and records its reporter", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await reportFixture(tx);
       const relay = await f.view(f.relayId);
@@ -408,7 +408,7 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
     });
   });
 
-  it("sets the Heat's recorded_at when a Participant self-reports, and not on any other Heat", async () => {
+  it("sets the Match's recorded_at when a Participant self-reports, and not on any other Match", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await reportFixture(tx);
       const { submitHeatReport } = await import("@/mutations/heat-reports");
@@ -438,7 +438,7 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
     });
   });
 
-  it("refuses a second report on the now-decided Heat, changing nothing", async () => {
+  it("refuses a second report on the now-decided Match, changing nothing", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { submitHeatReport } = await import("@/mutations/heat-reports");
       const f = await reportFixture(tx);
@@ -463,7 +463,7 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
           f.as(TRINITY),
           tx,
         ),
-      ).toEqual({ ok: false, error: "This Heat already has a result." });
+      ).toEqual({ ok: false, error: "This Match already has a result." });
       expect(await snapshot(tx, f.competitionId)).toEqual(before);
       expect(await reporterOf(tx, f.semi1)).toEqual({
         email: NEO,
@@ -472,7 +472,7 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
     });
   });
 
-  it("refuses self-report off, an unlinked sign-in, a Heat you're not in, an unfilled Heat and a bye, writing nothing", async () => {
+  it("refuses self-report off, an unlinked sign-in, a Match you're not in, an unfilled Match and a bye, writing nothing", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { submitHeatReport, setSelfReport } =
         await import("@/mutations/heat-reports");
@@ -525,7 +525,7 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
         f.semi2,
         [gold, green],
         NEO,
-        "You're not in this Heat.",
+        "You're not in this Match.",
       );
 
       // Red is through to the Final; Green v Gold isn't played yet.
@@ -541,7 +541,7 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
         f.final,
         [red],
         NEO,
-        "This Heat is still waiting for its Entrants.",
+        "This Match is still waiting for its Entrants.",
       );
 
       const tug = await f.view(f.tugId);
@@ -559,7 +559,7 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
     });
   });
 
-  it("refuses a Heat of another Competition as gone, writing nothing", async () => {
+  it("refuses a Match of another Competition as gone, writing nothing", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { submitHeatReport } = await import("@/mutations/heat-reports");
       const f = await reportFixture(tx);
@@ -580,7 +580,7 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
           f.as(NEO),
           tx,
         ),
-      ).toEqual({ ok: false, error: "That Heat no longer exists." });
+      ).toEqual({ ok: false, error: "That Match no longer exists." });
       expect([
         await snapshot(tx, f.competitionId),
         await snapshot(tx, f.tugId),
@@ -604,7 +604,7 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
         ),
       ).toEqual({
         ok: false,
-        error: "Put every Entrant of this Heat in finishing order, once each.",
+        error: "Put every Entrant of this Match in finishing order, once each.",
       });
       expect(await snapshot(tx, f.competitionId)).toEqual(before);
     });

@@ -114,8 +114,8 @@ export default async function AdminFinalePage() {
           <h2 className="text-lg font-semibold">Bracket Finales</h2>
           {finalized.length === 0 ? (
             <p className="text-foreground/70 text-sm">
-              Each finalized Bracket gets its own Finale, counting its placings
-              in to the champion. None is finalized yet.
+              Each closed Bracket gets its own Finale, counting its placings in
+              to the Winner. None is closed yet.
             </p>
           ) : (
             <ul className="flex flex-wrap gap-2">

@@ -18,7 +18,7 @@ const heat = (bracket: Bracket, id: string) =>
   bracket.heats.find((h) => h.id === id)!;
 
 describe("heatReportState", () => {
-  it("single elimination: a bye, an open Heat, an unfilled one, then decided", () => {
+  it("single elimination: a bye, an open Match, an unfilled one, then decided", () => {
     // 3 Entrants: Seed Position 1 has Round 1's bye; 2 v 3 play; the
     // Final waits for them.
     let bracket = generate(DEFAULT_BRACKET_CONFIG, entrants(3), newId);
@@ -37,7 +37,7 @@ describe("heatReportState", () => {
     expect(heatReportState(bracket, heat(bracket, final.id))).toBe("open");
   });
 
-  it("Heats: a bye, an open Heat, an unfilled Round, then decided", () => {
+  it("Matches: a bye, an open Match, an unfilled Round, then decided", () => {
     // 5 Entrants, 4 per Heat, 2 advance: Heats of 3 and 2 (the 2 is a
     // bye), then a Final of 4 waiting for Round 1.
     let bracket = generate(
@@ -65,6 +65,6 @@ describe("heatReportError", () => {
         linked: { participantId: "p", teamId: "t", squadId: null },
         entrants: [{ teamId: "t", participantId: null, squadId: null }],
       }),
-    ).toBe("This Heat already has a result.");
+    ).toBe("This Match already has a result.");
   });
 });

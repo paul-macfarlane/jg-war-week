@@ -157,7 +157,7 @@ describe.skipIf(!isLocalDatabase)("every seed loads twice", () => {
     });
   }, 120_000);
 
-  it("loads the seed:demo:xii set twice with no row count changing, and its Step Challenge is a finalized sheet of Scores", async () => {
+  it("loads the seed:demo:xii set twice with no row count changing, and its Step Challenge is a closed sheet of Scores", async () => {
     await loadTwice(demoXiiFiles(), async (client, { first, second }) => {
       expect(second).toEqual(first);
       expect(first.war_week).toBe(12);
@@ -216,7 +216,7 @@ describe.skipIf(!isLocalDatabase)("every seed loads twice", () => {
                  on c.id = x.competition_id where c.name = 'Morning Stretch') as ticks`,
           )
         ).rows;
-        // 32 + 16 + 8 + 4 + 2 Heats, the final and the 3rd place game.
+        // 32 + 16 + 8 + 4 + 2 Heats, the final and the 3rd place Match.
         expect(facts).toEqual({
           participants: 100,
           entrants: 64,

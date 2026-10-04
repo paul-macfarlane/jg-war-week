@@ -206,12 +206,12 @@ export function PlacementSheet({
       <p className="text-foreground/70 text-sm">
         {pointsLine
           ? `Placement Points: ${pointsLine}`
-          : "No Placement Points: Finalize gives no points. Set them in the Settings above."}
+          : "No Placement Points: Close gives no points. Set them in the Settings above."}
       </p>
 
       {locked ? (
         <p className="border-border rounded-lg border px-3 py-2 text-sm">
-          Finalized: its Points Entries are in the ledger. Reopen to change the
+          Closed: its Points Entries are in the Standings. Reopen to change the
           sheet.
         </p>
       ) : (
@@ -386,29 +386,29 @@ export function PlacementSheet({
                 className="min-h-11"
                 disabled
               >
-                Finalize
+                Close
               </Button>
             ) : (
               <ConfirmActionButton
-                title="Finalize this Competition?"
+                title="Close this Competition?"
                 description={
                   pointsLine
                     ? `Each Place gets its Placement Points (${pointsLine}); tied rows each get their place's points, unplaced rows nothing.`
                     : "It has no Placement Points, so no points are given."
                 }
-                confirmLabel="Finalize"
+                confirmLabel="Close"
                 action={() => finalizePlacements(competition.id)}
-                successMessage="Competition finalized"
+                successMessage="Competition closed"
                 variant="default"
                 size="lg"
                 className="min-h-11"
               >
-                Finalize
+                Close
               </ConfirmActionButton>
             )}
             {dirty ? (
               <p className="text-foreground/70 text-sm">
-                Save before you Finalize.
+                Save before you Close.
               </p>
             ) : null}
           </>

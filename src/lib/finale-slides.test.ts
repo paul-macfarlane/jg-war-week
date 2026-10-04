@@ -11,7 +11,6 @@ import {
   type FinaleSlideRow,
   backFinalePosition,
   byTheNumbers,
-  championsList,
   completeFinaleSlide,
   finaleSlideData,
   finaleSlideSteps,
@@ -19,6 +18,7 @@ import {
   nextFinalePosition,
   resolveFinaleSlides,
   visibleFinaleSlides,
+  winnersList,
 } from "./finale-slides";
 
 const row = (
@@ -45,7 +45,7 @@ describe("resolveFinaleSlides", () => {
       "Title",
       "By the numbers",
       "Awards",
-      "Champions",
+      "Winners",
       "Standings countdown",
       "Winner",
     ]);
@@ -74,7 +74,7 @@ describe("resolveFinaleSlides", () => {
       "Title",
       "By the numbers",
       "Awards",
-      "Champions",
+      "Winners",
       "Winner",
     ]);
     expect(slides[0].id).toBe("id-standings-");
@@ -92,7 +92,7 @@ describe("resolveFinaleSlides", () => {
     expect(slides).toHaveLength(6);
     expect(slides.filter((s) => s.hidden).map((s) => s.name)).toEqual([
       "By the numbers",
-      "Champions",
+      "Winners",
     ]);
     expect(names(visibleFinaleSlides(slides))).toEqual([
       "Title",
@@ -114,7 +114,7 @@ describe("resolveFinaleSlides", () => {
       "Winner",
       "By the numbers",
       "Awards",
-      "Champions",
+      "Winners",
     ]);
     expect(slides.slice(3).every((s) => s.id === null && !s.hidden)).toBe(true);
   });
@@ -135,7 +135,7 @@ describe("resolveFinaleSlides", () => {
       "Welcome",
       "By the numbers",
       "Awards",
-      "Champions",
+      "Winners",
       "Standings countdown",
       "Winner",
       "Thank you",
@@ -270,8 +270,8 @@ describe("byTheNumbers", () => {
       }),
     ).toEqual([
       { label: "Competition run", value: "1" },
-      { label: "Games logged", value: "1,204" },
-      { label: "Heats played", value: "31" },
+      { label: "Matches and Attempts logged", value: "1,204" },
+      { label: "Matches played", value: "31" },
       { label: "Points Entries", value: "2" },
       { label: "Points handed out", value: "1,234.57" },
       { label: "Participant", value: "1" },
@@ -292,7 +292,7 @@ describe("byTheNumbers", () => {
   });
 });
 
-describe("championsList", () => {
+describe("winnersList", () => {
   const at = (minute: number) => new Date(Date.UTC(2027, 1, 26, 17, minute));
   const person = (id: string, name: string): ResultTarget => ({
     id,
@@ -324,8 +324,8 @@ describe("championsList", () => {
     target,
   });
 
-  it("lists each finalized Bracket's champion and each closed Competition's winner, ties together, by close time", () => {
-    const champions = championsList(
+  it("lists each closed Bracket's Winner and each closed Competition's winner, ties together, by close time", () => {
+    const champions = winnersList(
       [
         // Closed last: listed last.
         {
@@ -402,16 +402,16 @@ describe("championsList", () => {
         competitionId: "chess",
         competition: "Chess Heats",
         format: "bracket",
-        label: "Champion",
+        label: "Winner",
         title: "Ada Anvil",
         winners: [ada],
       },
     ]);
   });
 
-  it("lists a Finalized Placement's winner", () => {
+  it("lists a Closed Placement's winner", () => {
     expect(
-      championsList(
+      winnersList(
         [
           {
             id: "mile",
@@ -434,9 +434,9 @@ describe("championsList", () => {
     ]);
   });
 
-  it("is empty with nothing finalized", () => {
+  it("is empty with nothing closed", () => {
     expect(
-      championsList(
+      winnersList(
         [
           {
             id: "mile",
@@ -508,7 +508,7 @@ describe("finaleSlideData", () => {
       award("MVP", mvp),
       award("Most Steps", grind),
     ],
-    champions: [
+    winners: [
       {
         competitionId: "pong",
         competition: "Ping Pong",
@@ -532,7 +532,7 @@ describe("finaleSlideData", () => {
       "title:Title",
       "numbers:By the numbers",
       "awards:Awards",
-      "champions:Champions",
+      "champions:Winners",
       "standings:Standings countdown",
       "winner:Winner",
     ]);
@@ -640,7 +640,7 @@ describe("finaleSlideData", () => {
         participants: 0,
       },
       awards: [],
-      champions: [],
+      winners: [],
       standings: { main: "individual", team: [], individual: [] },
     });
     expect(kinds(finaleSlideData(defaults, empty))).toEqual(["title:Title"]);

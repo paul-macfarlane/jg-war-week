@@ -412,8 +412,8 @@ export async function deleteTeam(
         [await tx.$count(squad, eq(squad.teamId, id)), "Squad", "Squads"],
         [
           await tx.$count(gamePlayer, eq(gamePlayer.teamId, id)),
-          "Game",
-          "Games",
+          "Match or Attempt",
+          "Matches or Attempts",
         ],
       ],
       "Move or delete them first.",
@@ -679,8 +679,8 @@ export async function deleteParticipant(
         ],
         [
           await tx.$count(gamePlayer, eq(gamePlayer.participantId, id)),
-          "Game",
-          "Games",
+          "Match or Attempt",
+          "Matches or Attempts",
         ],
       ],
       "Delete them or remove the Participant from them first.",
@@ -768,8 +768,8 @@ async function competitionRefusal(
     [
       [
         await tx.$count(game, eq(game.competitionId, exceptId)),
-        "Game",
-        "Games",
+        "Match or Attempt",
+        "Matches or Attempts",
       ],
     ],
     "Delete them before changing its scoring.",
@@ -946,7 +946,11 @@ export async function deleteCompetition(
           "Schedule Item",
           "Schedule Items",
         ],
-        [await tx.$count(game, eq(game.competitionId, id)), "Game", "Games"],
+        [
+          await tx.$count(game, eq(game.competitionId, id)),
+          "Match or Attempt",
+          "Matches or Attempts",
+        ],
       ],
       "Delete or move them first.",
     );

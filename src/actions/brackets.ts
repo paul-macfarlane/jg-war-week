@@ -14,7 +14,7 @@ export type BracketActionResult = MutationResult;
 // Not imported from the mutations: a "use server" module's tests mock them.
 const SQUAD_NOT_FOUND = "That Squad no longer exists.";
 
-export type HeatResultActionResult =
+export type MatchResultActionResult =
   { ok: true; resetHeatIds: string[] } | { ok: false; error: string };
 
 /**
@@ -41,10 +41,10 @@ export async function recordHeatResult(
   competitionId: string,
   heatId: string,
   input: unknown,
-): Promise<HeatResultActionResult> {
+): Promise<MatchResultActionResult> {
   return bracketWrite("bracket.heat-result", competitionId, async (id, ctx) => {
     if (!isUuid(heatId)) {
-      return { ok: false, error: "That Heat no longer exists." };
+      return { ok: false, error: "That Match no longer exists." };
     }
     const parsed = parseHeatResultInput(input);
     if (!parsed.ok) return parsed;

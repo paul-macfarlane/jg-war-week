@@ -320,7 +320,7 @@ describe("can: Squads and the self-report toggle", () => {
   });
 });
 
-describe("can: reporting a Heat's result (self-report)", () => {
+describe("can: reporting a Match's result (self-report)", () => {
   const RED = "team-red";
   const BLUE = "team-blue";
   const RED_ALPHA = "squad-red-alpha";
@@ -329,7 +329,7 @@ describe("can: reporting a Heat's result (self-report)", () => {
   const OFF = "Self-report is off for this Competition.";
   const NOT_LINKED =
     "Your sign-in doesn't match a Participant of this War Week.";
-  const NOT_IN_HEAT = "You're not in this Heat.";
+  const NOT_IN_HEAT = "You're not in this Match.";
   const ADMIN = "Organizers and Hosts only.";
 
   type Facet = NonNullable<
@@ -402,17 +402,21 @@ describe("can: reporting a Heat's result (self-report)", () => {
       },
       null,
     ],
-    ["a decided Heat", { heat: "decided" }, "This Heat already has a result."],
     [
-      "an unfilled Heat",
+      "a decided Match",
+      { heat: "decided" },
+      "This Match already has a result.",
+    ],
+    [
+      "an unfilled Match",
       { heat: "unfilled" },
-      "This Heat is still waiting for its Entrants.",
+      "This Match is still waiting for its Entrants.",
     ],
     ["a bye", { heat: "bye" }, "A bye isn't played."],
     [
-      "a missing Heat",
+      "a missing Match",
       { heat: "missing", entrants: [] },
-      "That Heat no longer exists.",
+      "That Match no longer exists.",
     ],
   ])("a Participant: %s", (_, over, expected) => {
     expect(can(ACTORS.participant, "bracket.heat-report", target(over))).toBe(
@@ -435,7 +439,7 @@ describe("can: reporting a Heat's result (self-report)", () => {
     expect(can(outsider, "bracket.heat-report", target())).toBe(SIGN_IN);
   });
 
-  it("refuses when the Heat facts weren't loaded, whoever asks", () => {
+  it("refuses when the Match facts weren't loaded, whoever asks", () => {
     for (const actor of [ACTORS.participant, ACTORS.organizer, ACTORS.host]) {
       expect(
         can(actor, "bracket.heat-report", {
@@ -446,14 +450,14 @@ describe("can: reporting a Heat's result (self-report)", () => {
     }
   });
 
-  it("binds an Organizer and the Host by the Heat facts too", () => {
+  it("binds an Organizer and the Host by the Match facts too", () => {
     for (const actor of [ACTORS.organizer, ACTORS.host]) {
       expect(can(actor, "bracket.heat-report", target({ linked: null }))).toBe(
         NOT_LINKED,
       );
       expect(
         can(actor, "bracket.heat-report", target({ heat: "decided" })),
-      ).toBe("This Heat already has a result.");
+      ).toBe("This Match already has a result.");
       expect(
         can(actor, "bracket.heat-report", target({ selfReport: false })),
       ).toBe(OFF);
@@ -461,7 +465,7 @@ describe("can: reporting a Heat's result (self-report)", () => {
     }
   });
 
-  it("never lets a Participant in the Heat change a result or the toggle", () => {
+  it("never lets a Participant in the Match change a result or the toggle", () => {
     // The facet says they're in this open Heat; the direct paths ignore it.
     for (const action of [
       "bracket.heat-result",

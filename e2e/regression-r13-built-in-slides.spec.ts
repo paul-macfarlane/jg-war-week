@@ -3,7 +3,6 @@ import { expect, test } from "@playwright/test";
 import { resetXiFinaleSlides, runQuery, xiCompetitionId } from "./db";
 import {
   finaleStage,
-  nextSlide,
   nextUntil,
   openFinale,
   playedSlides,
@@ -77,13 +76,10 @@ test("73: the Winner slide shows the leaderboard's first place", async ({
   await signIn(context, E2E_PARTICIPANT_EMAIL);
   await page.goto("/xi/leaderboard");
   const leader = await page
-    .locator("section")
-    .filter({
-      has: page.getByRole("heading", { name: "Team standings", exact: true }),
-    })
-    .getByRole("listitem")
+    .getByRole("table", { name: "Team standings", exact: true })
+    .locator('tr[data-slot="results-row"]')
     .first()
-    .locator("span.flex-1")
+    .locator('[data-slot="results-name"]')
     .innerText();
   expect(leader.trim()).not.toBe("");
 

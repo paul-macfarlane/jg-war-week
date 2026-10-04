@@ -187,7 +187,7 @@ async function buildBracket(
         ctx,
         dbOrTx,
       ),
-      `Round 1 Heat ${h.position}`,
+      `Round 1 Match ${h.position}`,
     );
   }
 }
@@ -233,7 +233,7 @@ async function logGames(
         : [{ id: pick(0), place: null, score: 20 + ((g * 13) % 160) }];
     check(
       await logGame(competitionId, { players }, ctx, dbOrTx),
-      `${format} Game ${g + 1}`,
+      `${format} result ${g + 1}`,
     );
   }
 }

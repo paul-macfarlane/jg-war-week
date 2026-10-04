@@ -126,7 +126,7 @@ describe("parseCompetitionSetting", () => {
       }),
     ).toMatchObject({
       ok: false,
-      error: "Fewer must advance than play in a Heat.",
+      error: "Fewer must advance than play in a Match.",
     });
   });
 

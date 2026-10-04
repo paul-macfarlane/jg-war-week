@@ -154,7 +154,7 @@ export type FinalWinners = {
 /**
  * The winner of each finalized Bracket or Placement, closed Head-to-head or Best score
  * Competition and closed `participation` Competition, in `competitions`
- * order: the one rule Recent results and the Finale's Champions slide
+ * order: the one rule Recent results and the Finale's Winners slide
  * share. A Competition with no finalize time, or one with no generated
  * Points Entries, has none and is left out.
  */

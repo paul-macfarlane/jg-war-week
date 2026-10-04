@@ -40,7 +40,7 @@ export type Heat = {
   id: string;
   /**
    * 1 is the first Round; the last Round holds the final (and, beside it,
-   * the 3rd place game).
+   * the 3rd place Match).
    */
   round: number;
   /** 1-based, top to bottom within the Round; the final is 1. */
@@ -48,10 +48,10 @@ export type Heat = {
   /** One per place in the Heat: its length is the Heat's slot count. */
   slots: HeatSlot[];
   winnerTo: WinnerTo | null;
-  /** A semifinal with a 3rd place game: where its loser goes. */
+  /** A semifinal with a 3rd place Match: where its loser goes. */
   loserTo: WinnerTo | null;
   /**
-   * The 3rd place game: in the final's Round, beside the final. The final
+   * The 3rd place Match: in the final's Round, beside the final. The final
    * is the Heat of the last Round that isn't this.
    */
   thirdPlace: boolean;
@@ -103,7 +103,8 @@ export type FormatEngine = {
   /** Whether any Heat has a Heat Result; byes and empty Heats don't count. */
   hasResults(bracket: Bracket): boolean;
   isComplete(bracket: Bracket): boolean;
-  champion(bracket: Bracket): string | null;
+  /** The Entrant 1st in the final, or null while it is undecided. */
+  winner(bracket: Bracket): string | null;
   finalPlacings(bracket: Bracket, entrants: Entrant[]): Placing[];
 };
 

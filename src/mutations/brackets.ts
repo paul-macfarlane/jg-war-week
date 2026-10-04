@@ -46,7 +46,7 @@ import {
 } from "@/lib/bracket/types";
 import { isBracketFormat } from "@/lib/bracket/view";
 import {
-  LOCKED_BY_HEAT_RESULT,
+  LOCKED_BY_MATCH_RESULT,
   settingLockReason,
 } from "@/lib/competition-locks";
 import { isGameFormat } from "@/lib/enums";
@@ -58,11 +58,12 @@ import { getBracketEntrants, loadBracket } from "@/queries/brackets";
 import { getCompetitionLockFacts } from "@/queries/competition-locks";
 
 export const COMPETITION_NOT_FOUND = "That Competition no longer exists.";
-export const HEAT_NOT_FOUND = "That Heat no longer exists.";
+export const HEAT_NOT_FOUND = "That Match no longer exists.";
 export const NOT_A_BRACKET = "This Competition isn't run as a Bracket.";
-export const FINALIZED = "Un-finalize the Bracket before changing it.";
+export const FINALIZED = "Reopen the Bracket before changing it.";
 export const SQUAD_NOT_FOUND = "That Squad no longer exists.";
-export const ONLY_A_BRACKET_TAKES_HEATS = "Only a Bracket takes Heat settings.";
+export const ONLY_A_BRACKET_TAKES_HEATS =
+  "Only a Bracket takes Match settings.";
 const NOT_A_TEAM_COMPETITION = "Squads are only for team Competitions.";
 /** A closed Head-to-head or Best score Competition's Entrants can't change. */
 export const GAMES_CLOSED = "Reopen the Competition first.";
@@ -244,7 +245,7 @@ async function saveBracket(
     new Set(after.heats.map((h) => h.id)).size !== after.heats.length ||
     after.heats.some((h) => !beforeById.has(h.id))
   ) {
-    throw new Error("saveBracket: the Bracket's Heat ids changed.");
+    throw new Error("saveBracket: the Bracket's Match ids changed.");
   }
   const changed = after.heats.filter(
     (h) => JSON.stringify(h) !== JSON.stringify(beforeById.get(h.id)),
@@ -334,7 +335,7 @@ export async function setCompetitionFormat(
       entrant,
       eq(entrant.competitionId, competitionId),
     );
-    // A 3rd place game needs 2 / 1 and 4 Entrants, entered or not yet.
+    // A 3rd place Match needs 2 / 1 and 4 Entrants, entered or not yet.
     const thirdPlace = thirdPlaceRefusal(values.config, entrants);
     if (thirdPlace) return refuse(thirdPlace);
     if (entrants >= 2) {
@@ -396,7 +397,7 @@ async function changeFormat(
  * one `kind` (omitted: whichever the Competition's scoring takes), at Seed
  * Positions in the given order. Squads must be this Competition's. It
  * clears the drawn Bracket; once a Heat has a Heat Result the Entrants are
- * locked (`LOCKED_BY_HEAT_RESULT`).
+ * locked (`LOCKED_BY_MATCH_RESULT`).
  *
  * A Head-to-head or Best score Competition's fixed Entrant list takes the same Teams or
  * Participants (never Squads), in the order added; it has no Heats to
@@ -491,10 +492,12 @@ export async function replaceEntrants(
       }
       const played = await removedPlayerWithGames(tx, competitionId, targetIds);
       if (played)
-        return refuse(`${played} has logged Games. Delete them first.`);
+        return refuse(
+          `${played} has logged Matches or Attempts. Delete them first.`,
+        );
     } else {
       if (isBracketRun(found) && hasResults(await bracketOf(tx, found))) {
-        return refuse(LOCKED_BY_HEAT_RESULT);
+        return refuse(LOCKED_BY_MATCH_RESULT);
       }
       await tx.delete(heat).where(eq(heat.competitionId, competitionId));
     }
@@ -558,7 +561,7 @@ async function removedPlayerWithGames(
 /**
  * Draws the Seed Positions at random (by `rng`) and builds the Bracket,
  * byes included. Once a Heat has a Heat Result the Bracket is locked
- * (`LOCKED_BY_HEAT_RESULT`): no re-draw clears it.
+ * (`LOCKED_BY_MATCH_RESULT`): no re-draw clears it.
  */
 export async function generateBracket(
   competitionId: string,
@@ -580,7 +583,7 @@ export async function generateBracket(
     const configRefusal = validateConfig(config, entrants.length);
     if (configRefusal) return refuse(configRefusal);
     if (hasResults(await bracketOf(tx, found))) {
-      return refuse(LOCKED_BY_HEAT_RESULT);
+      return refuse(LOCKED_BY_MATCH_RESULT);
     }
 
     const rng = options.rng ?? Math.random;
@@ -697,7 +700,7 @@ export async function finalizeBracket(
     }
     const bracket = await bracketOf(tx, found);
     if (!isComplete(bracket)) {
-      return refuse("Finish every Heat before finalizing.");
+      return refuse("Finish every Match before closing.");
     }
 
     const entrants = await getBracketEntrants(competitionId, tx);

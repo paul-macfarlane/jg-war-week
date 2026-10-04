@@ -407,13 +407,15 @@ export async function assertMcp() {
       competition: "Bouncy Pong",
     });
     const gamesCheck =
-      "MCP get_games(Bouncy Pong) returns its head-to-head settings, leaderboard and Games with no @";
+      "MCP get_games(Bouncy Pong) returns its head-to-head settings, leaderboard and matches (no games or attempts) with no @";
     if (
       games.parsed?.found === true &&
       games.parsed.competition?.name === "Bouncy Pong" &&
       games.parsed.competition?.format === "head-to-head" &&
       Array.isArray(games.parsed.leaderboard) &&
-      Array.isArray(games.parsed.games) &&
+      Array.isArray(games.parsed.matches) &&
+      !("games" in games.parsed) &&
+      !("attempts" in games.parsed) &&
       !JSON.stringify(games.parsed).includes("@")
     ) {
       ok(gamesCheck);
@@ -460,10 +462,12 @@ export async function assertMcp() {
       competition: "Speed Chess",
     });
     const placementsCheck =
-      "MCP get_placements(Speed Chess) returns its sheet by name with no @";
+      "MCP get_placements(Speed Chess) returns its Closed sheet by name (closed, no finalized field) with no @";
     if (
       placements.parsed?.found === true &&
       placements.parsed.competition?.name === "Speed Chess" &&
+      placements.parsed.competition?.closed === true &&
+      !("finalized" in placements.parsed.competition) &&
       Array.isArray(placements.parsed.placements) &&
       placements.parsed.placements.length === 1 &&
       !JSON.stringify(placements.parsed).includes("@")
@@ -480,11 +484,13 @@ export async function assertMcp() {
       competition: "Tuesday Stairs",
     });
     const bestScoreCheck =
-      "MCP get_games(Tuesday Stairs) returns the Best score Format with no @";
+      "MCP get_games(Tuesday Stairs) returns the Best score Format and its attempts (no games or matches) with no @";
     if (
       bestScore.parsed?.found === true &&
       bestScore.parsed.competition?.format === "best-score" &&
-      Array.isArray(bestScore.parsed.games) &&
+      Array.isArray(bestScore.parsed.attempts) &&
+      !("games" in bestScore.parsed) &&
+      !("matches" in bestScore.parsed) &&
       !JSON.stringify(bestScore.parsed).includes("@")
     ) {
       ok(bestScoreCheck);

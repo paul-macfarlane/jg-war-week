@@ -9,8 +9,7 @@ const entrants = [
   { id: "green", seedPosition: 4, label: "Green", color: "#0f0" },
 ];
 
-// A four-Entrant single elimination: Gold beat Red in the final; Blue and
-// Green lost their semifinals, so they share 3rd.
+// Placings with a tie at 3rd: Gold 1st, Red 2nd, Blue and Green share 3rd.
 const placings = [
   { entrantId: "green", place: 3 },
   { entrantId: "red", place: 2 },
@@ -34,7 +33,7 @@ describe("bracketFinaleRows", () => {
 });
 
 describe("bracketFinaleRanks", () => {
-  it("is each row's place, so tied 3rds share a step and the champion comes last", () => {
+  it("is each row's place, so tied 3rds share a step and the Winner comes last", () => {
     expect(bracketFinaleRanks(bracketFinaleRows(placings, entrants))).toEqual([
       1, 2, 3, 3,
     ]);

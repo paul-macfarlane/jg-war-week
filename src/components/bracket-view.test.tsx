@@ -2,10 +2,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { generate } from "@/lib/bracket/engine";
+import type { PodiumPlace } from "@/lib/bracket/podium";
 import type { Entrant } from "@/lib/bracket/types";
-import { nextHeatFor } from "@/lib/bracket/view";
+import { nextMatchFor } from "@/lib/bracket/view";
 
-import { BracketView, YourNextHeatCard } from "./bracket-view";
+import { BracketView, YourNextMatchCard } from "./bracket-view";
 import { YouProvider } from "./you";
 
 vi.mock("@/components/auto-refresh", () => ({
@@ -35,8 +36,8 @@ const entrantsById = new Map(entrants.map((e) => [e.id, e]));
 
 function card(options: { canReport: boolean }) {
   return renderToStaticMarkup(
-    <YourNextHeatCard
-      next={nextHeatFor(bracket, "e1")!}
+    <YourNextMatchCard
+      next={nextMatchFor(bracket, "e1")!}
       bracket={bracket}
       entrantsById={entrantsById}
       onReport={() => {}}
@@ -45,9 +46,11 @@ function card(options: { canReport: boolean }) {
   );
 }
 
-describe("YourNextHeatCard", () => {
-  it("offers Report result when Your next Heat is reportable", () => {
+describe("YourNextMatchCard", () => {
+  it("offers Report result when Your next Match is reportable", () => {
     const html = card({ canReport: true });
+    expect(html).toContain("Your next Match");
+    expect(html).not.toContain("Your next Heat");
     expect(html).toContain("vs Blue");
     expect(html).toMatch(/<button[^>]*>Report result<\/button>/);
   });
@@ -62,12 +65,12 @@ describe("BracketView", () => {
   const props = {
     competitionId: "c1",
     entrants,
-    champion: null,
+    podium: [] as PodiumPlace[],
+    closed: false,
     scoring: "team" as const,
     primaryColor: "#000",
     participantTeams: {},
     participantSquads: {},
-    finaleHref: null,
     selfReport: { on: true, linkedParticipantId: null, reportableHeatId: null },
   };
 
@@ -77,6 +80,35 @@ describe("BracketView", () => {
     );
     expect(html).toContain("The Bracket hasn&#x27;t been drawn yet.");
     expect(html).toContain("data-auto-refresh");
+  });
+
+  it("shows the decided places as Top finishers with their points, 1st the Winner, and no Finale link", () => {
+    const podium: PodiumPlace[] = [
+      { entrantId: "e2", place: 1, points: 5 },
+      { entrantId: "e1", place: 2, points: 3 },
+    ];
+    const text = (html: string) => html.replace(/<[^>]+>/g, " ");
+    const html = renderToStaticMarkup(
+      <BracketView {...props} bracket={bracket} podium={podium} />,
+    );
+    expect(html).toContain('aria-label="Top finishers"');
+    expect(html).toMatch(/data-winner="true"[\s\S]*?Blue[\s\S]*?Winner/);
+    expect(text(html)).toMatch(/2nd[\s\S]*Red[\s\S]*3 points/);
+    expect(text(html)).toContain("5 points");
+    expect(html).toContain("Provisional");
+    expect(html).not.toContain("Champion");
+    expect(html).not.toMatch(/play the finale/i);
+    const closed = renderToStaticMarkup(
+      <BracketView {...props} bracket={bracket} podium={podium} closed />,
+    );
+    expect(closed).not.toContain("Provisional");
+    expect(closed).not.toMatch(/play the finale/i);
+  });
+
+  it("shows no Top finishers before any place is decided", () => {
+    expect(
+      renderToStaticMarkup(<BracketView {...props} bracket={bracket} />),
+    ).not.toContain("Top finishers");
   });
 
   it("refreshes live while no report is open", () => {
@@ -94,7 +126,7 @@ describe("BracketView", () => {
     expect(html).not.toContain(">List<");
   });
 
-  it("shows when a played Heat was recorded, in the default tree", () => {
+  it("shows when a played Match was recorded, in the default tree", () => {
     const played = {
       ...bracket,
       heats: bracket.heats.map((h, i) =>
@@ -113,7 +145,7 @@ describe("BracketView", () => {
     expect(html).toContain("Recorded Sat 7:05 PM ET");
   });
 
-  it("shows no time on Heats that aren't played", () => {
+  it("shows no time on Matches that aren't played", () => {
     const html = renderToStaticMarkup(
       <BracketView {...props} bracket={bracket} />,
     );
@@ -175,12 +207,12 @@ describe("BracketView's Record result in the tree", () => {
           competitionId="c1"
           entrants={people}
           bracket={bracket}
-          champion={null}
+          podium={[]}
+          closed={false}
           scoring="individual"
           primaryColor="#000"
           participantTeams={{}}
           participantSquads={{}}
-          finaleHref={null}
           selfReport={selfReport}
         />
       </YouProvider>,
@@ -190,7 +222,7 @@ describe("BracketView's Record result in the tree", () => {
       (m) => m[1],
     );
 
-  it("a self-reporting Participant sees Record result on their own Heat", () => {
+  it("a self-reporting Participant sees Record result on their own Match", () => {
     const html = view("p1", {
       on: true,
       linkedParticipantId: "p1",
@@ -199,7 +231,7 @@ describe("BracketView's Record result in the tree", () => {
     expect(recordButtons(html)).toEqual(["Record result for Final"]);
   });
 
-  it("a Participant not in the Heat sees no Record result", () => {
+  it("a Participant not in the Match sees no Record result", () => {
     const html = view("p3", {
       on: true,
       linkedParticipantId: "p3",
@@ -208,7 +240,7 @@ describe("BracketView's Record result in the tree", () => {
     expect(recordButtons(html)).toEqual([]);
   });
 
-  it("with self-report off, a Participant in the Heat sees no Record result", () => {
+  it("with self-report off, a Participant in the Match sees no Record result", () => {
     const html = view("p1", {
       on: false,
       linkedParticipantId: "p1",

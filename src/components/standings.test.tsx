@@ -95,7 +95,30 @@ describe("LeaderboardStandings", () => {
       />,
     );
 
-    expect(html).toMatch(/Zion[\s\S]*?show points breakdown/);
-    expect(html).toMatch(/Neo[\s\S]*?show points breakdown/);
+    expect(html).toMatch(
+      /aria-expanded="false"[^>]*aria-label="Show points breakdown for Zion"/,
+    );
+    expect(html).toMatch(
+      /aria-expanded="false"[^>]*aria-label="Show points breakdown for Neo"/,
+    );
+  });
+
+  it("shows each list as a results table with no Score column and no Provisional badge", () => {
+    const html = renderToStaticMarkup(
+      <LeaderboardStandings
+        standings={teams}
+        teamLabel="Squad"
+        primaryColor="#00ff41"
+      />,
+    );
+    const text = html.replace(/<[^>]+>/g, " ");
+
+    expect(html).toMatch(/<table[^>]*aria-label="Squad standings"/);
+    expect(html).toMatch(/<table[^>]*aria-label="Individual leaderboard"/);
+    expect(html).toMatch(/<th[^>]*aria-sort="ascending"[^>]*>[\s\S]*?Rank/);
+    expect(text).toContain("War Week points");
+    expect(text).toContain("Winner");
+    expect(text).not.toContain("Score");
+    expect(text).not.toContain("Provisional");
   });
 });

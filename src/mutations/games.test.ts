@@ -19,11 +19,11 @@ const HOST = "games-test-host@jahnelgroup.com";
 const ORGANIZER = "games-test-organizer@jahnelgroup.com";
 
 const NOT_LINKED = "Your sign-in doesn't match a Participant of this War Week.";
-const NOT_A_PLAYER = "You're not a player in this Game.";
+const NOT_A_PLAYER = "You're not a player in this Match or Attempt.";
 const NOT_THE_LOGGER =
-  "Only the player who logged this Game can change it. Ask the Host.";
+  "Only the player who logged this Match or Attempt can change it. Ask the Host.";
 const CLOSED = "This Competition is closed.";
-const GAME_MISSING = "That Game no longer exists.";
+const GAME_MISSING = "That Match or Attempt no longer exists.";
 
 /**
  * A War Week with Red (Neo, Morpheus) and Blue (Trinity, Cypher with no
@@ -479,7 +479,7 @@ describe.skipIf(!isLocalDatabase)("logGame", () => {
         ),
       ).toEqual({
         ok: false,
-        error: "A best-score Game has exactly 1 player.",
+        error: "A Best score Attempt has exactly 1 player.",
       });
       expect(
         await logGame(
@@ -490,7 +490,7 @@ describe.skipIf(!isLocalDatabase)("logGame", () => {
         ),
       ).toEqual({
         ok: false,
-        error: "A head-to-head Game has exactly 2 players.",
+        error: "A Head-to-head Match has exactly 2 players.",
       });
     });
   });
@@ -507,7 +507,10 @@ describe.skipIf(!isLocalDatabase)("logGame", () => {
           f.ctx(HOST),
           tx,
         ),
-      ).toEqual({ ok: false, error: "This Competition isn't run as Games." });
+      ).toEqual({
+        ok: false,
+        error: "This Competition isn't run as Head-to-head or Best score.",
+      });
       expect(
         await logGame(
           f.ids.pong,
@@ -819,7 +822,7 @@ describe.skipIf(!isLocalDatabase)("closeGames and reopenGames", () => {
       const f = await fixture(tx);
       const notGames = {
         ok: false,
-        error: "This Competition isn't run as Games.",
+        error: "This Competition isn't run as Head-to-head or Best score.",
       };
       expect(await closeGames(f.ids.trivia, f.ctx(HOST), tx)).toEqual(notGames);
       expect(await reopenGames(f.ids.trivia, f.ctx(HOST), tx)).toEqual(
@@ -1004,7 +1007,7 @@ describe.skipIf(!isLocalDatabase)("setGamesSettings under logged Games", () => {
       ).toEqual({
         ok: false,
         error:
-          "Trinity has logged Games. Add them as an Entrant or delete their Games first.",
+          "Trinity has logged Matches or Attempts. Add them as an Entrant or delete those first.",
       });
       await tx.insert(f.schema.entrant).values({
         competitionId: f.ids.pong,
@@ -1046,7 +1049,7 @@ describe.skipIf(!isLocalDatabase)("setGamesSettings under logged Games", () => {
       ).toEqual({
         ok: false,
         error:
-          "A Game here is a draw. Delete or edit it before turning draws off.",
+          "A Match here is a draw. Delete or edit it before turning draws off.",
       });
       expect(
         await setGamesSettings(
@@ -1080,7 +1083,7 @@ describe.skipIf(!isLocalDatabase)("setGamesSettings under logged Games", () => {
 
       expect(
         await setGamesSettings(f.ids.duel, bestOf(3), f.ctx(HOST), tx),
-      ).toEqual({ ok: false, error: "These Games don't fit a Best of 3." });
+      ).toEqual({ ok: false, error: "These Matches don't fit a Best of 3." });
       expect(
         await setGamesSettings(f.ids.duel, bestOf(5), f.ctx(HOST), tx),
       ).toEqual({ ok: true });
@@ -1106,7 +1109,7 @@ describe.skipIf(!isLocalDatabase)("setGamesSettings under logged Games", () => {
       ]);
       expect(
         await setGamesSettings(f.ids.pong, bestOf(3), f.ctx(HOST), tx),
-      ).toEqual({ ok: false, error: "These Games don't fit a Best of 3." });
+      ).toEqual({ ok: false, error: "These Matches don't fit a Best of 3." });
     });
   });
 });

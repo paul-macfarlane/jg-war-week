@@ -18,6 +18,7 @@ function competition(over: Partial<Props["competition"]> = {}) {
   return {
     id: "c1",
     scoring: "individual" as const,
+    gameFormat: "head-to-head" as const,
     entrantsOpen: true,
     closed: false,
     placementPoints: [3, 2, 1],
@@ -40,6 +41,15 @@ function render(over: Partial<Props["competition"]> = {}) {
 }
 
 describe("GamesBuilder", () => {
+  it("names a Head-to-head result a Match and a Best score result an Attempt", () => {
+    expect(render({ gameFormat: "head-to-head" })).toContain(
+      "anyone eligible may log a Match.",
+    );
+    expect(render({ gameFormat: "best-score" })).toContain(
+      "anyone eligible may log an Attempt.",
+    );
+  });
+
   it("shows the fixed-list Entrants picker only when the list is fixed", () => {
     expect(render({ entrantsOpen: true })).not.toContain("Pick Participants");
     expect(render({ entrantsOpen: false })).toContain("Pick Participants");
@@ -68,16 +78,16 @@ describe("GamesBuilder", () => {
     expect(html).not.toContain(">Close<");
   });
 
-  it("says a closed Competition's Points Entries are in the ledger, with Placement Points", () => {
+  it("says a closed Competition's Points Entries are in the Standings, with Placement Points", () => {
     expect(render({ closed: true })).toContain(
-      "Closed: its Points Entries are in the ledger.",
+      "Closed: its Points Entries are in the Standings.",
     );
   });
 
   it("claims no Points Entries for a closed Competition without Placement Points", () => {
     const html = render({ closed: true, placementPoints: null });
     expect(html).toContain("it made no Points Entries");
-    expect(html).not.toContain("Points Entries are in the ledger");
+    expect(html).not.toContain("Points Entries are in the Standings");
   });
 
   it("offers a Close button, not yet confirmed, when open", () => {

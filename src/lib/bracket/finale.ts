@@ -47,7 +47,7 @@ export function bracketFinaleRows(
 
 /**
  * The Finale ranks for these rows: their places, so tied places appear
- * together and the champion is the last step shown.
+ * together and the Winner is the last step shown.
  */
 export function bracketFinaleRanks(rows: BracketFinaleRow[]): number[] {
   return rows.map((row) => row.place);

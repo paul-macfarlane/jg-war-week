@@ -227,7 +227,10 @@ describe("AboutPage", () => {
     expect(text).not.toMatch(/claude code/i);
     expect(text).not.toMatch(/atlas/i);
     expect(text).not.toMatch(/\bagents?\b/i);
-    expect(text).not.toMatch(/\b(event|tournament|member|match|league)s?\b/i);
+    expect(text).not.toMatch(
+      /\b(event|tournament|member|league|heat|champion|game)s?\b/i,
+    );
+    expect(text).not.toMatch(/\b(un-?)?finali[sz]/i);
   });
 
   it("is dynamic, not statically prerendered with a stale War Week", () => {

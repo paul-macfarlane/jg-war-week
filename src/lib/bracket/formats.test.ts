@@ -4,7 +4,7 @@ import type { BracketConfig } from "@/lib/bracket/config";
 import { singleElimination } from "@/lib/bracket/engine";
 import {
   applyResult,
-  champion,
+  bracketWinner,
   engineFor,
   finalPlacings,
   generate,
@@ -33,8 +33,8 @@ const entrants: Entrant[] = [
   { id: "c", seedPosition: 3, label: "C" },
 ];
 
-describe("a 2 per Heat, 1 advancing Bracket through the Format dispatch", () => {
-  it("generates, records and crowns a champion", () => {
+describe("a 2 per Match, 1 advancing Bracket through the Format dispatch", () => {
+  it("generates, records and crowns a Winner", () => {
     expect(validateConfig(config(2, 1), 3)).toBeNull();
     let bracket = generate(config(2, 1), entrants, (r, p) => `r${r}h${p}`);
     expect(bracket.config).toEqual(config(2, 1));
@@ -52,11 +52,10 @@ describe("a 2 per Heat, 1 advancing Bracket through the Format dispatch", () => 
     expect(hasResults(bracket)).toBe(true);
     bracket = applyResult(bracket, "r2h1", { order: ["a", "c"] });
     expect(isComplete(bracket)).toBe(true);
-    expect(champion(bracket)).toBe("a");
+    expect(bracketWinner(bracket)).toBe("a");
     expect(finalPlacings(bracket, entrants)).toEqual([
       { entrantId: "a", place: 1 },
       { entrantId: "c", place: 2 },
-      { entrantId: "b", place: 3 },
     ]);
 
     // A new winner in Round 1 clears the decided final.
@@ -68,7 +67,7 @@ describe("a 2 per Heat, 1 advancing Bracket through the Format dispatch", () => 
 });
 
 describe("engineFor", () => {
-  it("picks the single-elimination engine for 2 per Heat, 1 advancing only", () => {
+  it("picks the single-elimination engine for 2 per Match, 1 advancing only", () => {
     expect(engineFor(config(2, 1))).toBe(singleElimination);
     for (let size = 2; size <= 8; size++) {
       for (let advance = 1; advance < size; advance++) {
@@ -79,7 +78,7 @@ describe("engineFor", () => {
   });
 });
 
-describe("a 4 per Heat, 2 advancing Bracket through the Format dispatch", () => {
+describe("a 4 per Match, 2 advancing Bracket through the Format dispatch", () => {
   const six: Entrant[] = ["a", "b", "c", "d", "e", "f"].map((id, i) => ({
     id,
     seedPosition: i + 1,
@@ -88,7 +87,7 @@ describe("a 4 per Heat, 2 advancing Bracket through the Format dispatch", () => 
   const ids = (heat: { slots: { entrantId: string | null }[] }) =>
     heat.slots.map((s) => s.entrantId);
 
-  it("generates, records every Heat and crowns a champion", () => {
+  it("generates, records every Match and crowns a Winner", () => {
     expect(validateConfig(config(4, 2), 6)).toBeNull();
     let bracket = generate(config(4, 2), six, (r, p) => `r${r}h${p}`);
     expect(bracket.config).toEqual(config(4, 2));
@@ -114,7 +113,7 @@ describe("a 4 per Heat, 2 advancing Bracket through the Format dispatch", () => 
 
     bracket = applyResult(bracket, "r2h1", { order: ["b", "a", "c", "d"] });
     expect(isComplete(bracket)).toBe(true);
-    expect(champion(bracket)).toBe("b");
+    expect(bracketWinner(bracket)).toBe("b");
     expect(finalPlacings(bracket, six).slice(0, 2)).toEqual([
       { entrantId: "b", place: 1 },
       { entrantId: "a", place: 2 },

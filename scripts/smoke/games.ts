@@ -12,8 +12,8 @@ import {
 // The seeded Head-to-head and Best score Competitions of XI, by name, with the
 // Format label their pages show.
 const GAMES_COMPETITIONS = [
-  { name: "Bouncy Pong", label: "Head-to-head" },
-  { name: "Tuesday Stairs", label: "Best score" },
+  { name: "Bouncy Pong", label: "Head-to-head", empty: "No Matches yet." },
+  { name: "Tuesday Stairs", label: "Best score", empty: "No Attempts yet." },
 ] as const;
 const LOG_COMPETITION = "Bouncy Pong";
 /** Linked to the smoke Participant's email for the length of the check. */
@@ -65,15 +65,15 @@ function otherEmails(body: string, own: string): string[] {
   );
 }
 
-/** The "Log a Game" button, not the dialog title or the home card. */
-const LOG_BUTTON = />Log a Game</;
+/** The "Log a Match" button (Bouncy Pong is Head-to-head), not the dialog title or the home card. */
+const LOG_BUTTON = />Log a Match</;
 
 /**
- * The seeded Head-to-head or Best score Competitions (17-5, 17-A): each page renders its Game
- * Type and an empty log with no email in it; `logGame` over HTTP is refused
+ * The seeded Head-to-head or Best score Competitions (17-5, 17-A): each page renders its
+ * Format and its empty results (no Matches, no Attempts) with no email in it; `logGame` over HTTP is refused
  * before the smoke Participant's email links them, then succeeds and shows
  * in the log; closed and with XI ended, the page still renders the
- * leaderboard and log with no Log a Game. Then everything is undone: the
+ * results table and Matches with no Log a Match. Then everything is undone: the
  * Game deleted, the Competition reopened, XI `live` with no Winner, the
  * email cleared.
  */
@@ -92,9 +92,9 @@ export async function assertGamesLoop(sessions: {
   let competitionId: string | null = null;
   let playerId: string | null = null;
   try {
-    for (const { name, label } of GAMES_COMPETITIONS) {
+    for (const { name, label, empty } of GAMES_COMPETITIONS) {
       await runCheck(
-        `games: /xi/competitions/<${name}> answers 200 with "${label}", an empty log and no email but the viewer's`,
+        `games: /xi/competitions/<${name}> answers 200 with "${label}", "${empty}" and no email but the viewer's`,
         async () => {
           const id = await xiCompetitionIdByName(name);
           const { status, body } = await getPage(
@@ -104,7 +104,7 @@ export async function assertGamesLoop(sessions: {
           const checks = {
             status: status === 200,
             label: body.includes(label),
-            emptyLog: body.includes("No Games yet."),
+            empty: body.includes(empty),
             noEmail: otherEmails(body, SMOKE_PARTICIPANT_EMAIL).length === 0,
           };
           return Object.values(checks).every(Boolean)
@@ -136,7 +136,7 @@ export async function assertGamesLoop(sessions: {
     );
 
     await runCheck(
-      "games: logGame as the linked smoke Participant succeeds and the page shows the Game",
+      "games: logGame as the linked smoke Participant succeeds and the page shows the Match",
       async () => {
         await runQuery(`update participant set email = $1 where id = $2`, [
           SMOKE_PARTICIPANT_EMAIL,
@@ -174,7 +174,7 @@ export async function assertGamesLoop(sessions: {
     // Its own sequential step: never alongside the lifecycle check, which
     // also changes XI's status.
     await runCheck(
-      "games: closed and with XI ended, the page still renders the leaderboard and log, with no Log a Game",
+      "games: closed and with XI ended, the page still renders the results table and Matches, with no Log a Match",
       async () => {
         const closed = await callAction(
           ids.closeGames,
@@ -191,7 +191,7 @@ export async function assertGamesLoop(sessions: {
         );
         const checks = {
           status: status === 200,
-          leaderboard: body.includes(">Leaderboard<"),
+          resultsTable: body.includes('aria-label="Head-to-head results"'),
           player: body.includes(PLAYER),
           log: body.includes(LOGGED),
           noLogButton: !LOG_BUTTON.test(body),
@@ -252,10 +252,10 @@ export async function assertGamesLoop(sessions: {
         }
       };
       await restore()
-        .then(() => ok("games: reopen Bouncy Pong and delete the smoke Game"))
+        .then(() => ok("games: reopen Bouncy Pong and delete the smoke Match"))
         .catch((error) =>
           fail(
-            "games: reopen Bouncy Pong and delete the smoke Game",
+            "games: reopen Bouncy Pong and delete the smoke Match",
             String(error),
           ),
         );

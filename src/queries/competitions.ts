@@ -1,5 +1,5 @@
 import { type SQL, and, count, eq, inArray } from "drizzle-orm";
-import { type AnyPgColumn, type PgTable, alias } from "drizzle-orm/pg-core";
+import { type AnyPgColumn, type PgTable } from "drizzle-orm/pg-core";
 
 import { DBOrTx, db } from "@/db";
 import {
@@ -8,11 +8,9 @@ import {
   competition,
   entrant,
   game,
-  participant,
   participation,
   placement,
   pointsEntry,
-  team,
 } from "@/db/schema";
 import { hasResults } from "@/lib/bracket/formats";
 import { isBracketFormat } from "@/lib/bracket/view";
@@ -23,15 +21,12 @@ import {
   competitionStatus,
 } from "@/lib/competition-status";
 import {
-  type CompetitionLedger,
   type CompetitionListItem,
-  buildCompetitionLedger,
   groupCompetitions,
 } from "@/lib/competitions";
 import { finalWinners } from "@/lib/recent-results";
 import { isUuid } from "@/lib/uuid";
 import { loadBrackets } from "@/queries/brackets";
-import { participantNameSql, withProfile } from "@/queries/profile-join";
 import { resultEntryQuery, toResultEntry } from "@/queries/recent-results";
 
 const competitionColumns = {
@@ -190,73 +185,20 @@ export async function getCompetitions(
   return groupCompetitions(listed);
 }
 
-const participantTeam = alias(team, "participant_team");
-
-/** A left-joined Team's columns, or null when the join found no Team. */
-function toLedgerTeam(name: string | null, color: string | null) {
-  return name !== null && color !== null ? { name, color } : null;
-}
-
 /**
- * Loads one Competition of a War Week and its ledger. Returns `undefined`
- * when `id` is not a Competition of this War Week.
+ * Loads one Competition of a War Week. Returns `undefined` when `id` is not
+ * a Competition of this War Week.
  */
-export async function getCompetitionWithLedger(
+export async function getCompetition(
   warWeek: Pick<WarWeek, "id">,
   id: string,
   dbOrTx: DBOrTx = db,
-): Promise<
-  { competition: CompetitionListItem; ledger: CompetitionLedger } | undefined
-> {
+): Promise<CompetitionListItem | undefined> {
   if (!isUuid(id)) return undefined;
-
   const [found] = await dbOrTx
     .select(competitionColumns)
     .from(competition)
     .where(and(eq(competition.id, id), eq(competition.warWeekId, warWeek.id)))
     .limit(1);
-  if (!found) return undefined;
-
-  const rows = await withProfile(
-    dbOrTx
-      .select({
-        id: pointsEntry.id,
-        points: pointsEntry.points,
-        note: pointsEntry.note,
-        enteredAt: pointsEntry.enteredAt,
-        teamName: team.name,
-        teamColor: team.color,
-        participantName: participantNameSql(),
-        participantTeamName: participantTeam.name,
-        participantTeamColor: participantTeam.color,
-      })
-      .from(pointsEntry)
-      .leftJoin(team, eq(team.id, pointsEntry.teamId))
-      .leftJoin(participant, eq(participant.id, pointsEntry.participantId))
-      .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))
-      .$dynamic(),
-  ).where(eq(pointsEntry.competitionId, found.id));
-
-  return {
-    competition: found,
-    ledger: buildCompetitionLedger({
-      rows: rows.map((row) => ({
-        id: row.id,
-        points: row.points,
-        note: row.note,
-        enteredAt: row.enteredAt,
-        team: toLedgerTeam(row.teamName, row.teamColor),
-        participant:
-          row.participantName !== null
-            ? {
-                displayName: row.participantName,
-                team: toLedgerTeam(
-                  row.participantTeamName,
-                  row.participantTeamColor,
-                ),
-              }
-            : null,
-      })),
-    }),
-  };
+  return found;
 }

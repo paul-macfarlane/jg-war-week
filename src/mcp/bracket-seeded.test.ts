@@ -29,7 +29,7 @@ function demoXiiFiles(): string[] {
 }
 
 describe.skipIf(!isLocalDatabase)("get_bracket on the seeded demo XII", () => {
-  it("answers Chess Heats as a Bracket of 4 per Heat, 2 advancing, no 3rd place game, with no time, place, Forfeit or @", async () => {
+  it("answers Chess Heats as a Bracket of 4 per Match, 2 advancing, no 3rd place Match, with no time, place, Forfeit or @", async () => {
     await withThrowawayDatabase(async (url) => {
       const client = new Client({ connectionString: url });
       await client.connect();
@@ -62,9 +62,9 @@ describe.skipIf(!isLocalDatabase)("get_bracket on the seeded demo XII", () => {
           competition: {
             name: "Chess Heats",
             format: "bracket",
-            heatSize: 4,
+            matchSize: 4,
             advancing: 2,
-            thirdPlaceGame: false,
+            thirdPlaceMatch: false,
           },
         });
         expect(json).not.toContain("@");

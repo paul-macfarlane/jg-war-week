@@ -913,7 +913,7 @@ test("r5 38 Escape keeps chosen Entrants; Tree shows Recorded <time>; Format hel
     // Points were chosen.
     await expect(
       page.getByText(
-        "Entrants play in Heats and a set number advance each Round, down to a final. Two per Heat with one advancing is a head-to-head knockout.",
+        "Entrants play in Matches and a set number advance each Round, down to a final. Two per Match with one advancing is a head-to-head knockout.",
       ),
     ).toBeVisible();
     await expect(page.getByText("Points is Points Entries only")).toHaveCount(
@@ -965,7 +965,7 @@ test("r5 38 Escape keeps chosen Entrants; Tree shows Recorded <time>; Format hel
       .getByRole("button")
       .first()
       .click();
-    await sheet.getByRole("button", { name: "Save Heat Result" }).click();
+    await sheet.getByRole("button", { name: "Save Match Result" }).click();
     await expect(sheet).toBeHidden();
 
     // 38-1: the tree (the only layout) shows when the Heat was recorded.

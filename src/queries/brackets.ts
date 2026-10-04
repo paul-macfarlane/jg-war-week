@@ -15,11 +15,13 @@ import {
   team,
 } from "@/db/schema";
 import { DEFAULT_BRACKET_CONFIG, configOf } from "@/lib/bracket/config";
-import { champion } from "@/lib/bracket/formats";
+import { bracketWinner } from "@/lib/bracket/formats";
 import type { Bracket, Entrant } from "@/lib/bracket/types";
 import { BRACKET_FORMATS, isBracketFormat } from "@/lib/bracket/view";
 import { isGameFormat } from "@/lib/enums";
+import type { EntryPoints } from "@/lib/results-table";
 import { isUuid } from "@/lib/uuid";
+import { getCompetitionEntryPoints } from "@/queries/entry-points";
 import {
   participantImageSql,
   participantNameSql,
@@ -73,9 +75,14 @@ export type BracketView = {
   /** By Seed Position. */
   entrants: BracketEntrant[];
   bracket: Bracket;
-  /** The champion's Entrant id, once the final is decided. */
-  champion: string | null;
+  /** The Winner's Entrant id, once the final is decided. */
+  winner: string | null;
   finalized: boolean;
+  /**
+   * A Closed (finalized) Bracket's Points Entries, target and points: what
+   * its podium shows. [] while it isn't Closed.
+   */
+  entryPoints: EntryPoints[];
 };
 
 const participantTeam = alias(team, "participant_team");
@@ -198,7 +205,7 @@ export async function loadBracket(
     // A Placement, Head-to-head, Best score or Participation Competition (or a missing one) has no Bracket and
     // so no Heats: the config returned here is arbitrary, since nothing
     // reads its rules for an empty Bracket, and getBracket shows no
-    // champion for a points Competition.
+    // Winner for a points Competition.
     return { config: DEFAULT_BRACKET_CONFIG, heats: [] };
   }
   const brackets = await loadBrackets(
@@ -289,8 +296,8 @@ export async function loadBrackets(
 
 /**
  * A Competition's Bracket for display: its Entrants with labels and colors,
- * its Heats, the champion and whether it's finalized. Undefined when there's
- * no such Competition, or it's run as Games (a Head-to-head or Best score Competition is never
+ * its Heats, the Winner, whether it's finalized and, once it is, its
+ * Points Entries. Undefined when there's no such Competition, or it's run as Games (a Head-to-head or Best score Competition is never
  * a Bracket). A points Competition returns an empty Bracket.
  */
 export async function getBracket(
@@ -325,17 +332,21 @@ export async function getBracket(
   }
   // The config reaches the view through the Bracket, not the Competition.
   const { bracketConfig, ...shown } = found;
-  const [entrants, bracket] = await Promise.all([
+  const [entrants, bracket, entryPoints] = await Promise.all([
     getBracketEntrants(competitionId, dbOrTx),
     loadBracket(competitionId, dbOrTx, { format: found.format, bracketConfig }),
+    found.finalizedAt === null
+      ? Promise.resolve([])
+      : getCompetitionEntryPoints(competitionId, dbOrTx),
   ]);
   return {
     competition: shown,
     entrants,
     bracket,
-    // A points Competition has no Bracket, so no champion.
-    champion: isBracketFormat(found.format) ? champion(bracket) : null,
+    // A points Competition has no Bracket, so no Winner.
+    winner: isBracketFormat(found.format) ? bracketWinner(bracket) : null,
     finalized: found.finalizedAt !== null,
+    entryPoints,
   };
 }
 

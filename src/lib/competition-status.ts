@@ -84,7 +84,7 @@ export function competitionStatusText(status: CompetitionStatus): string {
 
 /**
  * The first Round with a Heat still to play (a bye never is one), out of
- * the Bracket's Rounds; the final's Round once only the 3rd place game, or
+ * the Bracket's Rounds; the final's Round once only the 3rd place Match, or
  * nothing, is left before Finalize. Null before Generate.
  */
 export function bracketRoundInPlay(

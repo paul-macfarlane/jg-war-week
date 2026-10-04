@@ -389,7 +389,7 @@ describe.skipIf(!isLocalDatabase)("Placement rows", () => {
   });
 });
 
-describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
+describe.skipIf(!isLocalDatabase)("Close and Reopen", () => {
   /** Darts with Neo 1st, Morpheus 1st (a tie), Trinity 3rd, Tank 4th (beyond the list) and Cypher unplaced. */
   async function placed(tx: DBTx) {
     const m = await load();
@@ -507,7 +507,7 @@ describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
     });
   });
 
-  it("refuses every row change while Finalized; Reopen withdraws the generated entries and keeps a non-generated one", async () => {
+  it("refuses every row change while Closed; Reopen withdraws the generated entries and keeps a non-generated one", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { m, f } = await placed(tx);
       await tx.insert(f.schema.pointsEntry).values({
@@ -562,7 +562,7 @@ describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
     });
   });
 
-  it("Finalize twice writes the same entries and keeps the first time; Reopen twice is harmless", async () => {
+  it("Close twice writes the same entries and keeps the first time; Reopen twice is harmless", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { m, f } = await placed(tx);
       await m.finalizePlacements(f.ids.darts, f.ctx, tx);
@@ -590,7 +590,7 @@ describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
 });
 
 describe.skipIf(!isLocalDatabase)("a Placement Competition's setup", () => {
-  it("refuses a Format or scoring change while Finalized, but takes a Placement Points change", async () => {
+  it("refuses a Format or scoring change while Closed, but takes a Placement Points change", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { addPlacement, finalizePlacements, savePlacements } = await load();
       const { setCompetitionFormat } = await import("@/mutations/brackets");
@@ -616,7 +616,7 @@ describe.skipIf(!isLocalDatabase)("a Placement Competition's setup", () => {
       });
       const refused = {
         ok: false,
-        error: "This Competition is finalized. Reopen it first.",
+        error: "This Competition is closed. Reopen it first.",
       };
       expect(
         await setCompetitionFormat(

@@ -1,13 +1,13 @@
 import type { FinaleSlideData } from "@/lib/finale-slides";
 
 import { AwardsSlide } from "./awards-slide";
-import { ChampionsSlide } from "./champions-slide";
 import { CustomSlide } from "./custom-slide";
 import { NumbersSlide } from "./numbers-slide";
 import { StandingsSlide } from "./standings-slide";
 import { TitleSlide } from "./title-slide";
 import type { FinaleSlideProps } from "./types";
 import { WinnerSlide } from "./winner-slide";
+import { WinnersSlide } from "./winners-slide";
 
 type AnySlideProps = Omit<FinaleSlideProps<FinaleSlideData["kind"]>, "data"> & {
   data: FinaleSlideData;
@@ -23,7 +23,7 @@ export function FinaleSlideView({ data, ...rest }: AnySlideProps) {
     case "awards":
       return <AwardsSlide data={data} {...rest} />;
     case "champions":
-      return <ChampionsSlide data={data} {...rest} />;
+      return <WinnersSlide data={data} {...rest} />;
     case "standings":
       return <StandingsSlide data={data} {...rest} />;
     case "winner":

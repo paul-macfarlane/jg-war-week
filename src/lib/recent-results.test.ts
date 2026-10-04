@@ -78,7 +78,7 @@ describe("shapeRecentResults", () => {
     expect(row).toMatchObject({ winners: [sam, otherSam] });
   });
 
-  it("shows a finalized Bracket's champion instead of its generated entries", () => {
+  it("shows a closed Bracket's Winner instead of its generated entries", () => {
     const bracket: ResultCompetition = {
       id: "b",
       name: "Foosball",
@@ -107,7 +107,7 @@ describe("shapeRecentResults", () => {
     expect(row).toMatchObject({ kind: "games-closed", winners: [red, blue] });
   });
 
-  it("shows a Finalized Placement's winner instead of its generated entries, listing a tie for first", () => {
+  it("shows a Closed Placement's winner instead of its generated entries, listing a tie for first", () => {
     const darts: ResultCompetition = {
       id: "darts",
       name: "Darts",

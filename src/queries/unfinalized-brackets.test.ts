@@ -32,7 +32,7 @@ async function fixture(tx: DBTx) {
         year: 9100 + n,
         startDate: "2099-01-01",
         endDate: "2099-01-05",
-        storyTheme: "Unfinalized Brackets test",
+        storyTheme: "Open Brackets test",
         status: "upcoming",
         mode: "teams",
         teamLabel: "Team",
@@ -86,7 +86,7 @@ async function modules() {
 }
 
 describe.skipIf(!isLocalDatabase)("getUnfinalizedBrackets", () => {
-  it("lists a generated, unfinalized single-elimination Competition", async () => {
+  it("lists a generated, open single-elimination Competition", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await fixture(tx);
@@ -113,7 +113,7 @@ describe.skipIf(!isLocalDatabase)("getUnfinalizedBrackets", () => {
     });
   });
 
-  it("excludes a finalized Bracket", async () => {
+  it("excludes a closed Bracket", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await fixture(tx);
@@ -162,7 +162,7 @@ describe.skipIf(!isLocalDatabase)("getUnfinalizedBrackets", () => {
     });
   });
 
-  it("excludes a single-elimination Competition with Entrants but no Heats", async () => {
+  it("excludes a single-elimination Competition with Entrants but no Matches", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await fixture(tx);

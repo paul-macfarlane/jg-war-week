@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
 import {
@@ -9,37 +8,35 @@ import {
   unfinalizeBracket,
 } from "@/actions/brackets";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { BracketPodium } from "@/components/bracket-podium";
 import { BracketTree } from "@/components/bracket-tree";
 import { ConfirmActionButton } from "@/components/confirm-dialog";
+import type { BracketViewEntrant } from "@/components/entrant-mark";
 import {
-  type BracketViewEntrant,
-  EntrantMark,
-} from "@/components/entrant-mark";
-import {
-  HeatResultForm,
-  type HeatResultFormProps,
-} from "@/components/heat-result-form";
+  MatchResultForm,
+  type MatchResultFormProps,
+} from "@/components/match-result-form";
 import { ResponsiveSheetDialog } from "@/components/responsive-sheet-dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { isComplete, isRecordable } from "@/lib/bracket/formats";
+import type { PodiumPlace } from "@/lib/bracket/podium";
 import type { Bracket } from "@/lib/bracket/types";
 import { hasPlacementPoints } from "@/lib/competitions";
 
 type Scoring = "team" | "individual";
 
 /**
- * The admin Bracket's Heat Result form: the Host's record, which asks
- * before resetting later Heats and toasts "<1st place> wins <Heat name>".
+ * The admin Bracket's Match result form: the Host's record, which asks
+ * before resetting later Matches and toasts "<1st place> wins <Match name>".
  */
-function HeatResultSheet({
+function MatchResultSheet({
   competitionId,
   ...props
-}: Omit<HeatResultFormProps, "submit" | "confirmResets" | "successToast"> & {
+}: Omit<MatchResultFormProps, "submit" | "confirmResets" | "successToast"> & {
   competitionId: string;
 }) {
   return (
-    <HeatResultForm
+    <MatchResultForm
       {...props}
       submit={(result) =>
         recordHeatResult(competitionId, props.heat.id, result)
@@ -50,44 +47,45 @@ function HeatResultSheet({
   );
 }
 
-/** Finalize's copy: Points Entries are only created with Placement Points. */
-export function finalizeCopy(placementPoints: number[] | null) {
+/** Close's copy: Points Entries are only created with Placement Points. */
+export function closeCopy(placementPoints: number[] | null) {
   return hasPlacementPoints(placementPoints)
     ? {
         confirmTitle: "Create Points Entries from the final placings?",
-        finalizedNote: "Finalized: its Points Entries are in the ledger.",
-        unfinalizeTitle: "Delete the Points Entries this Bracket created?",
+        closedNote: "Closed: its Points Entries are in the Standings.",
+        reopenTitle: "Delete the Points Entries this Bracket created?",
       }
     : {
         confirmTitle:
-          "Finalize the Bracket? It has no Placement Points, so no Points Entries are created.",
-        finalizedNote:
-          "Finalized: it has no Placement Points, so it made no Points Entries.",
-        unfinalizeTitle: "Un-finalize the Bracket?",
+          "Close the Bracket? It has no Placement Points, so no Points Entries are created.",
+        closedNote:
+          "Closed: it has no Placement Points, so it made no Points Entries.",
+        reopenTitle: "Reopen the Bracket?",
       };
 }
 
 type BracketAdminProps = {
   competitionId: string;
-  /** The Competition's Placement Points; none means Finalize creates no Points Entries. */
+  /** The Competition's Placement Points; none means Close creates no Points Entries. */
   placementPoints: number[] | null;
   scoring: Scoring;
   entrants: BracketViewEntrant[];
   bracket: Bracket;
-  champion: string | null;
+  /** The Winner's Entrant id, once the final is decided. */
+  winner: string | null;
+  /** The places decided so far, with their points (`podium`). */
+  podium: PodiumPlace[];
   finalized: boolean;
   primaryColor: string;
-  /** The Bracket Finale, once the Bracket is finalized; null before. */
-  finaleHref: string | null;
-  /** Who self-reported each Heat's current result, by Heat id: a name. */
+  /** Who self-reported each Match's current result, by Match id: a name. */
   reporters?: Record<string, string>;
 };
 
 /**
- * Runs a Bracket for an Organizer or the Competition's Host: the champion
- * and Finalize / Un-finalize on top, then the Bracket's tree (the same one
- * Participants see) with Record result (Edit once played) on every Heat
- * that can be recorded while it isn't finalized. A tap opens the Heat
+ * Runs a Bracket for an Organizer or the Competition's Host: Top finishers
+ * and Close / Reopen on top, then the Bracket's tree (the same one
+ * Participants see) with Record result (Edit once played) on every Match
+ * that can be recorded while it isn't Closed. A tap opens the Match
  * Result popup, a bottom Sheet on a phone and a centered Dialog on large
  * screens (`ResponsiveSheetDialog`). Refreshes live while no popup is open.
  */
@@ -103,9 +101,9 @@ export function BracketAdmin(props: BracketAdminProps) {
 }
 
 /**
- * The admin Bracket for a given open Heat Result (props only). Live
+ * The admin Bracket for a given open Match result (props only). Live
  * refresh runs only while no popup is open, so it never interrupts an
- * unsaved Heat Result.
+ * unsaved Match result.
  */
 export function BracketAdminView({
   competitionId,
@@ -113,10 +111,10 @@ export function BracketAdminView({
   scoring,
   entrants,
   bracket,
-  champion,
+  winner,
+  podium,
   finalized,
   primaryColor,
-  finaleHref,
   reporters = {},
   openHeatId,
   onOpenHeatChange,
@@ -128,84 +126,57 @@ export function BracketAdminView({
   const resultHeat = openHeatId
     ? bracket.heats.find((h) => h.id === openHeatId)
     : undefined;
-  const winner = champion ? entrantsById.get(champion) : undefined;
   const close = () => onOpenHeatChange(null);
-  const copy = finalizeCopy(placementPoints);
+  const copy = closeCopy(placementPoints);
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
-      {winner && (
-        <Card size="sm" aria-label="Champion" className="ring-primary ring-2">
-          <CardContent className="flex min-w-0 items-center gap-3">
-            <span aria-hidden className="text-3xl">
-              🏆
-            </span>
-            <div className="flex min-w-0 flex-col">
-              <span className="text-foreground/60 text-xs font-medium uppercase">
-                Champion
-              </span>
-              <span className="flex min-w-0 items-center gap-2 text-lg font-bold">
-                <EntrantMark
-                  entrant={winner}
-                  scoring={scoring}
-                  primaryColor={primaryColor}
-                />
-                <span className="truncate">{winner.label}</span>
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <BracketPodium
+        places={podium}
+        entrantsById={entrantsById}
+        scoring={scoring}
+        primaryColor={primaryColor}
+        closed={finalized}
+      />
 
       <div className="flex flex-wrap items-center gap-3">
         {finalized ? (
           <>
             <p className="text-foreground/70 text-sm">
-              {copy.finalizedNote} Un-finalize to change a Heat Result.
-              {finaleHref && (
-                <>
-                  {" "}
-                  <Link
-                    href={finaleHref}
-                    className="text-primary underline underline-offset-4"
-                  >
-                    Play the Finale
-                  </Link>
-                </>
-              )}
+              {copy.closedNote} Reopen it to change a Match result.
             </p>
             <ConfirmActionButton
-              title={copy.unfinalizeTitle}
-              confirmLabel="Un-finalize"
+              title={copy.reopenTitle}
+              confirmLabel="Reopen"
               action={() => unfinalizeBracket(competitionId)}
-              successMessage="Bracket un-finalized"
+              successMessage="Bracket reopened"
               variant="outline"
               size="lg"
               className="min-h-11"
             >
-              Un-finalize
+              Reopen
             </ConfirmActionButton>
           </>
         ) : winner && isComplete(bracket) ? (
-          // With a 3rd place game, the champion is known before it's played.
+          // With a 3rd place Match, the Winner is known before it's played.
           <ConfirmActionButton
             title={copy.confirmTitle}
-            confirmLabel="Finalize"
+            confirmLabel="Close"
             action={() => finalizeBracket(competitionId)}
-            successMessage="Bracket finalized"
+            successMessage="Bracket closed"
             variant="default"
             size="lg"
             className="min-h-11"
           >
-            Finalize
+            Close
           </ConfirmActionButton>
         ) : (
           <>
             <Button type="button" size="lg" className="min-h-11" disabled>
-              Finalize
+              Close
             </Button>
             <p className="text-foreground/70 text-sm">
-              Finish every Heat to finalize.
+              Finish every Match to close.
             </p>
           </>
         )}
@@ -240,7 +211,7 @@ export function BracketAdminView({
         }}
       >
         {resultHeat && (
-          <HeatResultSheet
+          <MatchResultSheet
             key={resultHeat.id}
             competitionId={competitionId}
             heat={resultHeat}

@@ -24,7 +24,7 @@ const facet = (over: Partial<HeatReportFacet> = {}): HeatReportFacet => ({
 });
 
 describe("heatReportError", () => {
-  it("allows a linked Participant whose Team is in an open Heat", () => {
+  it("allows a linked Participant whose Team is in an open Match", () => {
     expect(heatReportError(facet())).toBeNull();
   });
 
@@ -68,20 +68,20 @@ describe("heatReportError", () => {
     );
   });
 
-  it("refuses a Heat that no longer exists", () => {
+  it("refuses a Match that no longer exists", () => {
     expect(heatReportError(facet({ heat: "missing", entrants: [] }))).toBe(
-      "That Heat no longer exists.",
+      "That Match no longer exists.",
     );
   });
 
-  it("refuses a Participant on none of the Heat's Entrants", () => {
+  it("refuses a Participant on none of the Match's Entrants", () => {
     expect(
       heatReportError(
         facet({
           linked: { participantId: ASHLEY, teamId: "team-gold", squadId: null },
         }),
       ),
-    ).toBe("You're not in this Heat.");
+    ).toBe("You're not in this Match.");
   });
 
   it("refuses a Participant without a Team when neither Entrant has one", () => {
@@ -95,10 +95,10 @@ describe("heatReportError", () => {
           ],
         }),
       ),
-    ).toBe("You're not in this Heat.");
+    ).toBe("You're not in this Match.");
   });
 
-  it("refuses a Red Participant in neither Squad of a Red Alpha vs Red Bravo Heat", () => {
+  it("refuses a Red Participant in neither Squad of a Red Alpha vs Red Bravo Match", () => {
     expect(
       heatReportError(
         facet({
@@ -109,26 +109,26 @@ describe("heatReportError", () => {
           ],
         }),
       ),
-    ).toBe("You're not in this Heat.");
+    ).toBe("You're not in this Match.");
   });
 
   it("refuses a bye", () => {
     expect(heatReportError(facet({ heat: "bye" }))).toBe("A bye isn't played.");
   });
 
-  it("refuses a Heat still waiting for its Entrants", () => {
+  it("refuses a Match still waiting for its Entrants", () => {
     expect(heatReportError(facet({ heat: "unfilled" }))).toBe(
-      "This Heat is still waiting for its Entrants.",
+      "This Match is still waiting for its Entrants.",
     );
   });
 
-  it("refuses a Heat that already has a result", () => {
+  it("refuses a Match that already has a result", () => {
     expect(heatReportError(facet({ heat: "decided" }))).toBe(
-      "This Heat already has a result.",
+      "This Match already has a result.",
     );
   });
 
-  it("checks self-report before the sign-in link, and the link before the Heat", () => {
+  it("checks self-report before the sign-in link, and the link before the Match", () => {
     expect(
       heatReportError(
         facet({ selfReport: false, linked: null, heat: "missing" }),

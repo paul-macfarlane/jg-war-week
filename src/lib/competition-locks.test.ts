@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  APPLIES_AT_NEXT_FINALIZE,
+  APPLIES_AT_NEXT_CLOSE,
   COMPETITION_SETTING_FIELDS,
   type CompetitionLockFacts,
   type CompetitionSettingField,
-  LOCKED_BY_GAME,
-  LOCKED_BY_HEAT_RESULT,
+  LOCKED_BY_MATCH,
+  LOCKED_BY_MATCH_RESULT,
   LOCKED_BY_RESULT,
-  LOCKED_WHILE_FINALIZED,
+  LOCKED_WHILE_CLOSED,
   hasResult,
   lockFactsOf,
   settingLockReason,
@@ -56,8 +56,8 @@ describe("a result", () => {
     ["a Game", { games: 1 }],
     ["a Placement", { placements: 1 }],
     ["a check-in", { checkIns: 1 }],
-    ["a Heat", { heats: 1 }],
-    ["a Heat Result", { heatResult: true }],
+    ["a Match", { heats: 1 }],
+    ["a Match Result", { heatResult: true }],
     ["a generated Points Entry", { generatedPointsEntries: 1 }],
   ])("is %s", (_name, some) => {
     expect(hasResult({ ...NONE, ...some })).toBe(true);
@@ -76,7 +76,7 @@ describe("settingLockReason", () => {
     "participationPoints",
   ];
 
-  it.each(neverLocked)("never locks %s, not even while Finalized", (field) => {
+  it.each(neverLocked)("never locks %s, not even while Closed", (field) => {
     expect(settingLockReason(field, fresh)).toBeNull();
     expect(settingLockReason(field, heatPlayed)).toBeNull();
     expect(settingLockReason(field, finalized)).toBeNull();
@@ -110,9 +110,9 @@ describe("settingLockReason", () => {
     expect(settingLockReason("gameConfig", withEntrants)).toBeNull();
     const played = { ...withEntrants, hasGame: true };
     expect(settingLockReason("gameConfig", played)).toBe(
-      "Locked once the Competition has a Game.",
+      "Locked once the Competition has a Match or Attempt.",
     );
-    expect(settingLockReason("gameConfig", played)).toBe(LOCKED_BY_GAME);
+    expect(settingLockReason("gameConfig", played)).toBe(LOCKED_BY_MATCH);
   });
 
   it.each(["head-to-head", "best-score"] as const)(
@@ -122,19 +122,19 @@ describe("settingLockReason", () => {
       expect(settingLockReason("entrantsOpen", withEntrants)).toBeNull();
       expect(
         settingLockReason("entrantsOpen", { ...withEntrants, hasGame: true }),
-      ).toBe(LOCKED_BY_GAME);
+      ).toBe(LOCKED_BY_MATCH);
     },
   );
 
   it.each<CompetitionSettingField>(["bracketConfig", "entrants", "bracket"])(
-    "locks %s once a Heat Result exists, not before",
+    "locks %s once a Match Result exists, not before",
     (field) => {
       expect(settingLockReason(field, fresh)).toBeNull();
       expect(settingLockReason(field, started)).toBeNull();
       expect(settingLockReason(field, heatPlayed)).toBe(
-        "Locked once a Heat has a result.",
+        "Locked once a Match has a result.",
       );
-      expect(settingLockReason(field, heatPlayed)).toBe(LOCKED_BY_HEAT_RESULT);
+      expect(settingLockReason(field, heatPlayed)).toBe(LOCKED_BY_MATCH_RESULT);
     },
   );
 
@@ -146,21 +146,21 @@ describe("settingLockReason", () => {
     "selfReport",
     "selfCheckIn",
     "checkInClosesAt",
-  ])("locks %s only while Finalized or Closed", (field) => {
+  ])("locks %s only while Closed", (field) => {
     expect(settingLockReason(field, heatPlayed)).toBeNull();
     expect(settingLockReason(field, finalized)).toBe(
-      "Locked while the Competition is Finalized or Closed. Reopen or Un-finalize it first.",
+      "Locked while the Competition is Closed. Reopen it first.",
     );
-    expect(settingLockReason(field, finalized)).toBe(LOCKED_WHILE_FINALIZED);
+    expect(settingLockReason(field, finalized)).toBe(LOCKED_WHILE_CLOSED);
   });
 
   it.each(["placement", "bracket", "head-to-head", "best-score"] as const)(
-    "locks every field but the never-locked ones while a %s Competition is Finalized or Closed, even with no result",
+    "locks every field but the never-locked ones while a %s Competition is Closed, even with no result",
     (format) => {
       const bare = { ...fresh, format, finalized: true };
       for (const field of COMPETITION_SETTING_FIELDS) {
         expect(settingLockReason(field, bare), field).toBe(
-          neverLocked.includes(field) ? null : LOCKED_WHILE_FINALIZED,
+          neverLocked.includes(field) ? null : LOCKED_WHILE_CLOSED,
         );
       }
     },
@@ -197,15 +197,15 @@ describe("lockFactsOf", () => {
 });
 
 describe("settingNote", () => {
-  it("says a Placement Points change while Finalized applies at the next Finalize or Close", () => {
+  it("says a Placement Points change while Closed applies at the next Close or Close", () => {
     expect(settingNote("placementPoints", finalized)).toBe(
-      "Applies at the next Finalize or Close.",
+      "Applies at the next Close.",
     );
     expect(settingNote("placementPoints", finalized)).toBe(
-      APPLIES_AT_NEXT_FINALIZE,
+      APPLIES_AT_NEXT_CLOSE,
     );
     expect(settingNote("participationPoints", finalized)).toBe(
-      APPLIES_AT_NEXT_FINALIZE,
+      APPLIES_AT_NEXT_CLOSE,
     );
     expect(settingNote("placementPoints", heatPlayed)).toBeNull();
     expect(settingNote("name", finalized)).toBeNull();

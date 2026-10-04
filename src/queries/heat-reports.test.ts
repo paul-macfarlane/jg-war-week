@@ -27,7 +27,7 @@ async function warWeekRow(tx: DBTx, n: number) {
       year: 9200 + n,
       startDate: "2099-01-01",
       endDate: "2099-01-05",
-      storyTheme: "Heat report test",
+      storyTheme: "Match report test",
       status: "upcoming",
       mode: "teams",
       teamLabel: "Team",
@@ -198,7 +198,7 @@ describe.skipIf(!isLocalDatabase)("getHeatReportFacts", () => {
     });
   });
 
-  it("the same-Team Squad Heat: a Red Participant in neither Squad isn't in it; one in the opposing Squad is", async () => {
+  it("the same-Team Squad Match: a Red Participant in neither Squad isn't in it; one in the opposing Squad is", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { getHeatReportFacts } = await import("@/queries/heat-reports");
       const f = await fixture(tx);
@@ -214,7 +214,7 @@ describe.skipIf(!isLocalDatabase)("getHeatReportFacts", () => {
         teamId: f.red,
         squadId: null,
       });
-      expect(heatReportError(neo.heatReport)).toBe("You're not in this Heat.");
+      expect(heatReportError(neo.heatReport)).toBe("You're not in this Match.");
 
       const ryan = await getHeatReportFacts(
         f.cypherId,
@@ -233,7 +233,7 @@ describe.skipIf(!isLocalDatabase)("getHeatReportFacts", () => {
         tx,
       );
       expect(heatReportError(graham.heatReport)).toBe(
-        "You're not in this Heat.",
+        "You're not in this Match.",
       );
       for (const facts of [neo, ryan, graham]) {
         expect(JSON.stringify(facts)).not.toContain("@");
@@ -241,7 +241,7 @@ describe.skipIf(!isLocalDatabase)("getHeatReportFacts", () => {
     });
   });
 
-  it("reads each Heat state: open, unfilled, decided, missing", async () => {
+  it("reads each Match state: open, unfilled, decided, missing", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { getHeatReportFacts } = await import("@/queries/heat-reports");
       const { recordHeatResult } = await import("@/mutations/brackets");
@@ -268,7 +268,7 @@ describe.skipIf(!isLocalDatabase)("getHeatReportFacts", () => {
         entrants: [],
       });
       expect(heatReportError(missing.heatReport)).toBe(
-        "That Heat no longer exists.",
+        "That Match no longer exists.",
       );
       // A Heat of another Competition is missing from this one.
       const [other] = await tx

@@ -36,7 +36,7 @@ describe("toGamesResult", () => {
     });
   });
 
-  it("returns games: null with a message for a non-games Competition", () => {
+  it("returns matches: null and attempts: null with a message for a Competition run another way", () => {
     const result = toGamesResult(
       { name: "Trivia", scoring: "team", format: "placement" },
       undefined,
@@ -46,7 +46,8 @@ describe("toGamesResult", () => {
     expect(result).toEqual({
       found: true,
       competition: { name: "Trivia", scoring: "team", format: "placement" },
-      games: null,
+      matches: null,
+      attempts: null,
       message: expect.stringContaining(
         "isn't run as Head-to-head or Best score",
       ),
@@ -62,7 +63,8 @@ describe("toGamesResult", () => {
       ),
     ).toMatchObject({
       found: true,
-      games: null,
+      matches: null,
+      attempts: null,
       message:
         "Workout isn't run as Head-to-head or Best score; it's run as Participation. Call get_participation instead.",
     });
@@ -83,6 +85,7 @@ describe("toGamesResult", () => {
           total: null,
           name: "Ashley Schuliger",
           color: null,
+          points: null,
         },
         {
           id: "p2",
@@ -95,6 +98,7 @@ describe("toGamesResult", () => {
           total: null,
           name: "Sam Schantz",
           color: null,
+          points: null,
         },
       ],
       games: [
@@ -164,7 +168,7 @@ describe("toGamesResult", () => {
           draws: 0,
         },
       ],
-      games: [
+      matches: [
         {
           loggedAt: LOGGED_AT.toISOString(),
           summary: "Ashley Schuliger beat Sam Schantz",
@@ -196,6 +200,7 @@ describe("toGamesResult", () => {
           total: 42,
           name: "Alec Haring",
           color: null,
+          points: null,
         },
       ],
       games: [
@@ -225,7 +230,9 @@ describe("toGamesResult", () => {
     );
 
     expect(result.found).toBe(true);
-    if (!result.found || result.games === null) throw new Error("unreachable");
+    if (!result.found || !("attempts" in result) || result.attempts === null)
+      throw new Error("unreachable");
+    expect(result).not.toHaveProperty("matches");
     expect(result.competition).toMatchObject({ format: "best-score" });
     expect(result.competition).not.toHaveProperty("gameFormat");
     expect(result.competition.settings).toBe(
@@ -235,7 +242,7 @@ describe("toGamesResult", () => {
     expect(result.leaderboard).toEqual([
       { rank: 1, name: "Alec Haring", played: 1, total: 42 },
     ]);
-    expect(result.games[0].summary).toBe("Alec Haring · 42 trips");
+    expect(result.attempts[0].summary).toBe("Alec Haring · 42 trips");
   });
 
   it("serializes only whitelisted keys, even when the view carries an email, loggedBy and canEdit", () => {
@@ -253,6 +260,7 @@ describe("toGamesResult", () => {
           total: null,
           name: "Ashley Schuliger",
           color: null,
+          points: null,
         },
         {
           id: "p2",
@@ -265,6 +273,7 @@ describe("toGamesResult", () => {
           total: null,
           name: "Sam Schantz",
           color: null,
+          points: null,
         },
       ],
       games: [

@@ -877,7 +877,7 @@ export function participantGuardError(
 
 /** A Finalized Placement Competition's refusal of a setup or Format change. */
 export const PLACEMENT_IS_FINALIZED =
-  "This Competition is finalized. Reopen it first.";
+  "This Competition is closed. Reopen it first.";
 
 /**
  * Refuses a Competition whose name is taken, a team Competition in a
@@ -923,7 +923,7 @@ export function competitionGuardError(
     return (existing.format !== undefined && isGameFormat(existing.format)) ||
       existing.format === "participation"
       ? "This Competition is closed. Reopen the Competition first."
-      : "This Competition's Bracket is finalized. Un-finalize the Bracket first.";
+      : "This Competition's Bracket is closed. Reopen the Bracket first.";
   }
   if (
     existing &&

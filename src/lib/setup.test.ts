@@ -574,7 +574,7 @@ describe("competitionSeedSchema, games", () => {
     ).toEqual(["bracketConfig is only for a Bracket"]);
   });
 
-  it("refuses a 3rd place game on a Bracket config other than 2 per Heat with 1 advancing", () => {
+  it("refuses a 3rd place Match on a Bracket config other than 2 per Match with 1 advancing", () => {
     const bracket = (config: object) =>
       issues({
         ...base,
@@ -582,7 +582,7 @@ describe("competitionSeedSchema, games", () => {
         bracketConfig: { thirdPlaceGame: true, ...config },
       });
     expect(bracket({ entrantsPerHeat: 4, advancePerHeat: 2 })).toEqual([
-      "A 3rd place game is only for 2 per Heat with 1 advancing.",
+      "A 3rd place Match is only for 2 per Match with 1 advancing.",
     ]);
     expect(bracket({ entrantsPerHeat: 2, advancePerHeat: 1 })).toEqual([]);
   });
@@ -785,16 +785,14 @@ describe("competitionGuardError", () => {
     );
   });
 
-  it("refuses a scoring change while the Bracket is finalized, but allows a Placement Points change (it applies at the next Finalize)", () => {
+  it("refuses a scoring change while the Bracket is closed, but allows a Placement Points change (it applies at the next Close)", () => {
     const finalized = { ...existingBase, finalizedAt: new Date() };
     expect(
       competitionGuardError(values, {
         ...ctx,
         existing: { ...finalized, scoring: "individual" },
       }),
-    ).toBe(
-      "This Competition's Bracket is finalized. Un-finalize the Bracket first.",
-    );
+    ).toBe("This Competition's Bracket is closed. Reopen the Bracket first.");
     expect(
       competitionGuardError(
         { ...values, placementPoints: [10, 5] },
@@ -832,7 +830,7 @@ describe("competitionGuardError", () => {
     ).toBeNull();
   });
 
-  it("asks to reopen a Finalized Placement, not to un-finalize a Bracket, before a scoring change", () => {
+  it("asks to reopen a Closed Placement, or the Closed Bracket, before a scoring change", () => {
     const finalized = {
       ...existingBase,
       format: "placement" as const,
@@ -843,7 +841,7 @@ describe("competitionGuardError", () => {
         ...ctx,
         existing: { ...finalized, scoring: "individual" },
       }),
-    ).toBe("This Competition is finalized. Reopen it first.");
+    ).toBe("This Competition is closed. Reopen it first.");
   });
 });
 

@@ -42,6 +42,29 @@ describe("CompetitionFacts", () => {
     expect(html.match(/<span/g)).toHaveLength(2);
   });
 
+  it("shows no Individual label in a free-for-all War Week", () => {
+    const html = renderToStaticMarkup(
+      <CompetitionFacts
+        competition={{ ...competition, countsTowardTeam: false }}
+        teamLabel="House"
+        mode="free-for-all"
+      />,
+    );
+    expect(html).not.toContain("Individual");
+    expect(html).toContain("Head-to-head");
+  });
+
+  it("still shows Team for a Team Competition in a free-for-all War Week", () => {
+    const html = renderToStaticMarkup(
+      <CompetitionFacts
+        competition={{ ...competition, scoring: "team" }}
+        teamLabel="House"
+        mode="free-for-all"
+      />,
+    );
+    expect(html).toContain("Team");
+  });
+
   it("shows no Games Format badge for another Format", () => {
     const html = renderToStaticMarkup(
       <CompetitionFacts

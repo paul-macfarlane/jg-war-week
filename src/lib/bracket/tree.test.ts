@@ -49,16 +49,16 @@ describe("bracketTree, single elimination", () => {
       [
         "Round 1",
         [
-          ["Round 1 Heat 1", ["A>", "bye"]],
-          ["Round 1 Heat 2", ["D", "E"]],
-          ["Round 1 Heat 3", ["B>", "bye"]],
-          ["Round 1 Heat 4", ["C>", "bye"]],
+          ["Round 1 Match 1", ["A>", "bye"]],
+          ["Round 1 Match 2", ["D", "E"]],
+          ["Round 1 Match 3", ["B>", "bye"]],
+          ["Round 1 Match 4", ["C>", "bye"]],
         ],
       ],
       [
         "Semifinal",
         [
-          ["Semifinal 1", ["A", "…Round 1 Heat 2"]],
+          ["Semifinal 1", ["A", "…Round 1 Match 2"]],
           ["Semifinal 2", ["B", "C"]],
         ],
       ],
@@ -66,7 +66,7 @@ describe("bracketTree, single elimination", () => {
     ]);
   });
 
-  it("connects every Heat but the Final to the slot its winner fills", () => {
+  it("connects every Match but the Final to the slot its winner fills", () => {
     expect(bracketTree(knockout(["A", "B", "C", "D", "E"])).connectors).toEqual(
       [
         { fromHeatId: "r1h1", toHeatId: "r2h1", toSlot: 0 },
@@ -79,7 +79,7 @@ describe("bracketTree, single elimination", () => {
     );
   });
 
-  it("marks byes, and fills in results as Heats are decided", () => {
+  it("marks byes, and fills in results as Matches are decided", () => {
     let bracket = knockout(["A", "B", "C", "D", "E", "F", "G", "H"]);
     const before = bracketTree(bracket);
     expect(before.rounds[0].heats.map((h) => h.bye)).toEqual([
@@ -115,7 +115,7 @@ describe("bracketTree, single elimination", () => {
     ]);
     expect(after.rounds[1].heats[0].slots.map(show)).toEqual([
       "H",
-      "…Round 1 Heat 2",
+      "…Round 1 Match 2",
     ]);
   });
 
@@ -147,7 +147,7 @@ describe("bracketTree, single elimination", () => {
   });
 });
 
-describe("bracketTree, Heats", () => {
+describe("bracketTree, Matches", () => {
   /** 8 Entrants, 4 per Heat, top 2 advance: two Heats, then the Final. */
   const heats = () =>
     generate(
@@ -156,14 +156,14 @@ describe("bracketTree, Heats", () => {
       newId,
     );
 
-  it("draws a two-Round Heats Bracket with no connectors, the Final waiting", () => {
+  it("draws a two-Round Matches Bracket with no connectors, the Final waiting", () => {
     // Dealt snake-style: A, D, E, H to Heat 1 and B, C, F, G to Heat 2.
     expect(shape(heats())).toEqual([
       [
         "Round 1",
         [
-          ["Round 1 Heat 1", ["A", "D", "E", "H"]],
-          ["Round 1 Heat 2", ["B", "C", "F", "G"]],
+          ["Round 1 Match 1", ["A", "D", "E", "H"]],
+          ["Round 1 Match 2", ["B", "C", "F", "G"]],
         ],
       ],
       ["Final", [["Final", ["…Round 1"]]]],
@@ -171,11 +171,11 @@ describe("bracketTree, Heats", () => {
     expect(bracketTree(heats()).connectors).toEqual([]);
   });
 
-  it("lists a decided Heat by place, highlighting those who advance", () => {
+  it("lists a decided Match by place, highlighting those who advance", () => {
     let bracket = applyResult(heats(), "r1h1", { order: ["E", "A", "H", "D"] });
     expect(shape(bracket)[0][1]).toEqual([
-      ["Round 1 Heat 1", ["E>", "A>", "H", "D"]],
-      ["Round 1 Heat 2", ["B", "C", "F", "G"]],
+      ["Round 1 Match 1", ["E>", "A>", "H", "D"]],
+      ["Round 1 Match 2", ["B", "C", "F", "G"]],
     ]);
     bracket = applyResult(bracket, "r1h2", { order: ["G", "F", "C", "B"] });
     const final = bracketTree(bracket).rounds[1].heats[0];
@@ -192,8 +192,8 @@ describe("bracketTree, Heats", () => {
   });
 });
 
-describe("bracketTree, 3rd place game", () => {
-  it("flags only the final as the final, never the 3rd place game beside it", () => {
+describe("bracketTree, 3rd place Match", () => {
+  it("flags only the final as the final, never the 3rd place Match beside it", () => {
     let bracket = generate(
       { ...DEFAULT_BRACKET_CONFIG, thirdPlaceGame: true },
       entrants(["A", "B", "C", "D"]),
@@ -221,7 +221,7 @@ describe("bracketTree, 3rd place game", () => {
       ]),
     ).toEqual([
       ["Final", true, false, ["A>", "B"]],
-      ["3rd place game", false, true, ["D>", "C"]],
+      ["3rd place Match", false, true, ["D>", "C"]],
     ]);
   });
 });

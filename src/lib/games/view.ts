@@ -3,8 +3,16 @@
  * one-line copy for the log, and the "Mine" filter. Pure, like `bracket/view.ts`.
  */
 import type { GameFormat } from "@/lib/enums";
-import type { BestScoreConfig, GamesConfigFor } from "@/lib/games/config";
-import type { LeaderboardRow } from "@/lib/games/leaderboard";
+import type {
+  BestScoreConfig,
+  GamesConfigFor,
+  HeadToHeadConfig,
+} from "@/lib/games/config";
+import {
+  type GameFact,
+  type LeaderboardRow,
+  bestOfWinner,
+} from "@/lib/games/leaderboard";
 
 export type LeaderboardColumn = { key: string; label: string };
 
@@ -103,4 +111,93 @@ export function placementPointsList(placementPoints: number[] | null): string {
   return placementPoints && placementPoints.length > 0
     ? placementPoints.join(", ")
     : "none set";
+}
+
+/**
+ * A Best score row's expand toggle (spec R20, decision 4): in `best` mode
+ * it counts the other Attempts ("2 more attempts"); in `total` mode, every
+ * Attempt the total adds up ("3 attempts").
+ */
+export function attemptsLabel(count: number, mode: "best" | "total"): string {
+  const noun = count === 1 ? "attempt" : "attempts";
+  return mode === "best" ? `${count} more ${noun}` : `${count} ${noun}`;
+}
+
+/** A Match of a two-Entrant series: its Winner's id, "draw", or null. */
+export type SeriesMatch = { id: string; winner: string | "draw" | null };
+
+export type Series = {
+  /** Oldest first. */
+  matches: SeriesMatch[];
+  /** Matches won by each of the two Entrants, in their order. */
+  wins: [number, number];
+  draws: number;
+  /** The wins as "2–1". */
+  score: string;
+  /** The series Winner once decided, else null. */
+  winner: string | null;
+};
+
+/**
+ * A two-Entrant Head-to-head as a series (spec R20, decision 7): the
+ * Matches in order with each one's Winner (or a draw), the series score,
+ * and the series Winner once decided. A Best of is decided the moment a
+ * side has a majority (`bestOfWinner`, the rule logging stops on); with no
+ * Best of, or Closed short of one, the side with more wins once Closed.
+ */
+export function seriesOf(
+  config: HeadToHeadConfig,
+  games: GameFact[],
+  entrants: [string, string],
+  closed: boolean,
+): Series {
+  const ordered = [...games].sort(
+    (a, b) => a.loggedAt.getTime() - b.loggedAt.getTime(),
+  );
+  const wins: [number, number] = [0, 0];
+  let draws = 0;
+  const matches = ordered.map((game): SeriesMatch => {
+    const [a, b] = game.players;
+    let winner: SeriesMatch["winner"] = null;
+    if (a && b && a.place === 1 && b.place === 1) {
+      winner = "draw";
+      draws += 1;
+    } else {
+      const won = game.players.find((p) => p.place === 1)?.id ?? null;
+      const side = won === null ? -1 : entrants.indexOf(won);
+      if (side >= 0) {
+        wins[side] += 1;
+        winner = won;
+      }
+    }
+    return { id: game.id, winner };
+  });
+  const leader =
+    wins[0] === wins[1] ? null : wins[0] > wins[1] ? entrants[0] : entrants[1];
+  return {
+    matches,
+    wins,
+    draws,
+    score: `${wins[0]}–${wins[1]}`,
+    winner: bestOfWinner(config, games) ?? (closed ? leader : null),
+  };
+}
+
+/**
+ * The line under a two-Entrant series' score while it has no Winner: the
+ * Best of's target while it's open, "decided at Close" with no Best of,
+ * and, once Closed level, that it ended with no series Winner. Null once
+ * the series has a Winner.
+ */
+export function seriesNote(
+  config: HeadToHeadConfig,
+  series: Series,
+  closed: boolean,
+): string | null {
+  if (series.winner !== null) return null;
+  if (closed) return "Closed level: no series Winner.";
+  if (config.bestOf !== null) {
+    return `Best of ${config.bestOf}: first to ${Math.floor(config.bestOf / 2) + 1} wins.`;
+  }
+  return "The series Winner is decided at Close.";
 }

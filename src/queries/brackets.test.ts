@@ -294,7 +294,7 @@ describe.skipIf(!isLocalDatabase)("Bracket queries", () => {
     });
   });
 
-  it("names each self-reported Heat's reporter, never their email", async () => {
+  it("names each self-reported Match's reporter, never their email", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { generateBracket } = await import("@/mutations/brackets");
       const { getHeatReporters, loadBracket } =

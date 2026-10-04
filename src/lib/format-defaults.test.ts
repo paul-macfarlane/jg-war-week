@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { formatDefaults } from "@/lib/format-defaults";
 
 describe("formatDefaults", () => {
-  it("gives a Bracket the default heat settings, or the one given, and keeps at most 4 Placement Points", () => {
+  it("gives a Bracket the default match settings, or the one given, and keeps at most 4 Placement Points", () => {
     expect(
       formatDefaults("bracket", {
         scoring: "team",

@@ -83,7 +83,7 @@ export default async function PrivacyPage() {
             their Team and whether they lead it (when the War Week has Teams),
             and an optional email. That email links a signed-in visitor to their
             Participant: it highlights &quot;You&quot;, and lets them enroll in
-            a Bracket, log Games and report Heats.
+            a Bracket, log Matches and Attempts, and report Bracket Matches.
           </p>
         </section>
 
@@ -109,8 +109,8 @@ export default async function PrivacyPage() {
             Competition&apos;s Hosts. An Announcement author&apos;s email is
             shown in Admin to Organizers and Hosts; everyone else sees only the
             author&apos;s roster name, or the part of their email before the @.
-            The email of whoever logs a Game or reports a Bracket result is kept
-            for audit and never shown.
+            The email of whoever logs a Match or an Attempt or reports a Bracket
+            result is kept for audit and never shown.
           </p>
         </section>
 

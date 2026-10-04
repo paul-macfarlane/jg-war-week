@@ -53,8 +53,8 @@ export const ABOUT_FEATURES = [
     slug: "competitions",
     title:
       "Competitions: Placements, Brackets, Head-to-head, Best score and Participation",
-    text: "Run a Competition as a Placement sheet (who came 1st, 2nd, 3rd, with or without a Score), a Bracket, Head-to-head or Best score Games players log themselves from a phone, or Participation: the Host ticks who took part, or people check themselves in. Finalizing or closing it turns the results into points.",
-    alt: "A finished Bracket on its Competition page: two Round 1 Heats of Participants feeding the Final, with its champion on top.",
+    text: "Run a Competition as a Placement sheet (who came 1st, 2nd, 3rd, with or without a Score), a Bracket, Head-to-head Matches or Best score Attempts players log themselves from a phone, or Participation: the Host ticks who took part, or people check themselves in. Closing it turns the results into points.",
+    alt: "A finished Bracket on its Competition page: two Round 1 Matches of Participants feeding the Final, with its Winner on top.",
   },
   {
     slug: "archive",

@@ -46,7 +46,7 @@ export const BUILT_IN_FINALE_SLIDE_NAMES: Record<
   title: "Title",
   numbers: "By the numbers",
   awards: "Awards",
-  champions: "Champions",
+  champions: "Winners",
   standings: "Standings countdown",
   winner: "Winner",
 };
@@ -305,8 +305,8 @@ const count = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 /** Each figure's label, in the slide's order: plural, then singular. */
 const FIGURES: [keyof FinaleCounts, string, string][] = [
   ["competitionsRun", "Competitions run", "Competition run"],
-  ["gamesLogged", "Games logged", "Game logged"],
-  ["heatsPlayed", "Heats played", "Heat played"],
+  ["gamesLogged", "Matches and Attempts logged", "Match or Attempt logged"],
+  ["heatsPlayed", "Matches played", "Match played"],
   ["pointsEntries", "Points Entries", "Points Entry"],
   ["pointsHandedOut", "Points handed out", "Point handed out"],
   ["participants", "Participants", "Participant"],
@@ -328,13 +328,13 @@ export function byTheNumbers(counts: FinaleCounts): FinaleFigure[] {
   });
 }
 
-/** One line of the Champions slide. */
-export type FinaleChampion = {
+/** One line of the Winners slide. */
+export type FinaleWinner = {
   competitionId: string;
   competition: string;
   format: Competition["format"];
-  /** "Champion" for a Bracket's, "Winner" for a closed Competition's. */
-  label: "Champion" | "Winner";
+  /** Every line reads "Winner", a Bracket's or a closed Competition's. */
+  label: "Winner";
   /** The winner's name, or "Tie: A & B" (`tieTitle`). */
   title: string;
   /** More than one on a tie for first. */
@@ -342,7 +342,7 @@ export type FinaleChampion = {
 };
 
 /**
- * The Champions slide's lines: every finalized Bracket's champion and every
+ * The Winners slide's lines: every Closed Bracket's Winner and every
  * Finalized Placement's or closed Head-to-head, Best score or team-scoring `participation`
  * Competition's winner (ties
  * listed together), by the rule Recent results uses (`finalWinners`), never
@@ -350,10 +350,10 @@ export type FinaleChampion = {
  * individual-scoring Participation Competition has no winner and is left
  * out.
  */
-export function championsList(
+export function winnersList(
   competitions: ResultCompetition[],
   entries: ResultEntry[],
-): FinaleChampion[] {
+): FinaleWinner[] {
   return finalWinners(competitions, entries)
     .filter((final) => final.winners.length > 0)
     .sort(
@@ -366,7 +366,7 @@ export function championsList(
       competitionId: competition.id,
       competition: competition.name,
       format: competition.format,
-      label: competition.format === "bracket" ? "Champion" : "Winner",
+      label: "Winner",
       title: tieTitle(winners.map((winner) => winner.name)),
       winners,
     }));
@@ -428,7 +428,7 @@ export type FinaleSlideData =
     })
   | (SlideBase & {
       kind: "champions";
-      champions: FinaleChampion[];
+      winners: FinaleWinner[];
       primaryColor: string;
     })
   | (SlideBase & {
@@ -476,7 +476,7 @@ export type FinaleSlideContext = {
   standings: Standings;
   counts: FinaleCounts;
   awards: AwardView[];
-  champions: FinaleChampion[];
+  winners: FinaleWinner[];
 };
 
 function finaleAward(award: AwardView): FinaleAward {
@@ -585,7 +585,7 @@ function winnerSlide(
 /**
  * Each slide the Finale plays, in order, with its data: the visible slides,
  * less any with nothing to show (By the numbers with every figure zero, no
- * Awards, no Champions, no Standings rows, or a Winner with every total
+ * Awards, no Winners, no Standings rows, or a Winner with every total
  * zero). In the per-Category Awards layout the Awards slide becomes one
  * slide per Category. The Standings countdown and the Winner read the
  * page's one `getStandings` result, so the Finale never recomputes
@@ -622,12 +622,12 @@ export function finaleSlideData(
       case "awards":
         return awardSlides(base, context);
       case "champions":
-        return context.champions.length > 0
+        return context.winners.length > 0
           ? [
               {
                 ...base,
                 kind: "champions",
-                champions: context.champions,
+                winners: context.winners,
                 primaryColor: warWeek.primaryColor,
               },
             ]

@@ -28,7 +28,7 @@ type BracketFinaleProps = {
 /**
  * The Bracket Finale player (`/<edition>/finale/<competitionId>`): a
  * finalized Bracket's placings count in from last place to first, tied
- * places together, and end on the champion. Start, `Space` or a click on the
+ * places together, and end on the Winner. Start, `Space` or a click on the
  * stage plays it; Replay plays it again; `prefers-reduced-motion` shows the
  * final state. Plays `rows` as given: reads nothing from Standings, writes
  * nothing (CONTEXT.md, "Finale rules").
@@ -92,7 +92,7 @@ function PlaceMark({
 /**
  * The Bracket Finale stage for a phase (props only): `ready` shows the
  * title and Start; `playing` lists the places shown so far (the rest hold
- * their space, unnamed); `done` lists every place under the champion card
+ * their space, unnamed); `done` lists every place under the Winner card
  * and offers Replay.
  */
 export function BracketFinaleStage({
@@ -113,7 +113,7 @@ export function BracketFinaleStage({
   startedAt: number | null;
   onStart: () => void;
 }) {
-  const champion = rows.find((row) => row.place === 1);
+  const winner = rows.find((row) => row.place === 1);
 
   return (
     <div
@@ -158,22 +158,22 @@ export function BracketFinaleStage({
           </div>
         ) : (
           <div className="flex flex-col gap-6 md:text-lg">
-            {phase === "done" && champion ? (
-              <Card aria-label="Champion" className="ring-primary ring-2">
+            {phase === "done" && winner ? (
+              <Card aria-label="Winner" className="ring-primary ring-2">
                 <CardContent className="flex flex-col items-center gap-2 text-center">
                   <span aria-hidden className="text-6xl">
                     🏆
                   </span>
                   <span className="flex items-center gap-3 text-3xl font-bold md:text-4xl">
                     <PlaceMark
-                      row={champion}
+                      row={winner}
                       scoring={scoring}
                       primaryColor={primaryColor}
                     />
-                    {champion.label}
+                    {winner.label}
                   </span>
                   <span className="text-foreground/70">
-                    Champion of {competitionName}
+                    Winner of {competitionName}
                   </span>
                 </CardContent>
               </Card>

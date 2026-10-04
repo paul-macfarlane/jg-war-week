@@ -147,7 +147,7 @@ describe("War Week XI", () => {
     expect(xi.winner).toBe("Red");
   });
 
-  it("holds every wiki result as a Finalized Placement at the wiki scoreboard's time", () => {
+  it("holds every wiki result as a Closed Placement at the wiki scoreboard's time", () => {
     const placed = new Set(xi.placements.map((p) => p.competition));
     expect(placed.size).toBe(19);
     for (const name of placed) {
@@ -280,7 +280,7 @@ describe("War Week XI demo", () => {
     ]);
   });
 
-  it("has Finalized Placements: a fractional Placement Point value, a Counts-Toward-Team-off Competition, and the Settlers [5, 3, 1] kept", () => {
+  it("has Closed Placements: a fractional Placement Point value, a Counts-Toward-Team-off Competition, and the Settlers [5, 3, 1] kept", () => {
     const competitions = new Map(xi.competitions.map((c) => [c.name, c]));
     const finalized = xi.competitions.filter((c) => c.finalized);
     expect(finalized.length).toBe(12);
@@ -369,7 +369,7 @@ describe("War Week XII demo", () => {
     );
   });
 
-  it("has one pinned Announcement, a Finalized Mile Run, and a Finalized Step Challenge scored by steps", () => {
+  it("has one pinned Announcement, a Closed Mile Run, and a Closed Step Challenge scored by steps", () => {
     expect(xiiDemo.announcements.filter((a) => a.pinned)).toHaveLength(1);
     const rows = (name: string) =>
       xiiDemo.placements.filter((p) => p.competition === name);

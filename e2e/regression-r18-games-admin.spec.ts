@@ -10,21 +10,22 @@ import { E2E_HOST_EMAIL, asHost, asOrganizer } from "./session";
 
 // Epic R18, ticket 104 (.scratch/regression-2026-10/issues/104-log-games-from-admin.md):
 // a Host logs, edits and deletes a Best score attempt from the Competition's
-// admin page; the Competition's own leaderboard (not War Week Standings)
-// follows. The test makes its own `E2E R18 Best score …` Competition in demo
+// admin page (spec R20 decision 4: edit and delete sit in the person's
+// expanded row); the Competition's own results (not War Week Standings)
+// follow. The test makes its own `E2E R18 Best score …` Competition in demo
 // XI and deletes it in `finally`.
 
 const PLAYER = "Ashley Schuliger";
 
-/** The player's row on the Competition page's Games leaderboard. */
-function leaderboardRow(page: Page) {
+/** The player's row in a Best score results table (admin or Participant page). */
+function resultsRow(page: Page) {
   return page
-    .getByRole("region", { name: "Games" })
+    .getByRole("table", { name: "Best score results" })
     .getByRole("row")
     .filter({ has: page.getByRole("rowheader", { name: PLAYER }) });
 }
 
-test("r18 104 a Host logs, edits and deletes a Best score Game from admin, and the Competition leaderboard follows", async ({
+test("r18 104 a Host logs, edits and deletes a Best score Attempt from admin (in the person's expanded row), and the Competition's results follow", async ({
   browser,
   context,
   page,
@@ -65,46 +66,60 @@ test("r18 104 a Host logs, edits and deletes a Best score Game from admin, and t
       const host = await hostContext.newPage();
       await host.setViewportSize({ width: 1440, height: 900 });
       await openCompetitionPage(host, id);
-      const games = host.getByRole("region", { name: "Games" });
-      await expect(games.getByText("No Games yet.")).toBeVisible();
+      const attempts = host.getByRole("region", { name: "Attempts" });
+      // The fixed Entrant has a row with no place and nothing to expand.
+      await expect(resultsRow(host).getByRole("cell").first()).toHaveText("–");
+      await expect(
+        resultsRow(host).locator("button[aria-expanded]"),
+      ).toHaveCount(0);
 
       // Log an attempt for a Participant who is not the signed-in Host.
-      await games.getByRole("button", { name: "Log a Game" }).click();
-      const form = host.getByRole("dialog", { name: "Log a Game" });
+      await attempts.getByRole("button", { name: "Log an Attempt" }).click();
+      const form = host.getByRole("dialog", { name: "Log an Attempt" });
       await form.getByRole("combobox", { name: "Player" }).click();
       await host.getByRole("option", { name: PLAYER, exact: true }).click();
       await form.getByLabel(/^Score/).fill("42");
-      await form.getByRole("button", { name: "Log Game" }).click();
-      await expect(host.getByText("Game logged")).toBeVisible();
+      await form.getByRole("button", { name: "Log Attempt" }).click();
+      await expect(host.getByText("Attempt logged")).toBeVisible();
       await expect(form).toBeHidden();
-      await expect(games.getByText(/42/)).toBeVisible();
+      await expect(resultsRow(host)).toContainText("42");
 
-      // Edit it to 55.
-      await games.getByRole("button", { name: /^Edit Game:/ }).click();
+      // Edit it to 55 from the person's expanded row.
+      const toggle = resultsRow(host).getByRole("button", {
+        name: /1 attempt/,
+      });
+      await toggle.click();
+      await expect(toggle).toHaveAttribute("aria-expanded", "true");
+      await attempts
+        .getByRole("button", { name: `Edit Attempt: ${PLAYER} · 42` })
+        .click();
       const edit = host.getByRole("dialog");
       await edit.getByLabel(/^Score/).fill("55");
-      await edit.getByRole("button", { name: "Save Game" }).click();
-      await expect(host.getByText("Game updated")).toBeVisible();
+      await edit.getByRole("button", { name: "Save Attempt" }).click();
+      await expect(host.getByText("Attempt updated")).toBeVisible();
       await expect(edit).toBeHidden();
 
-      // The Competition's own leaderboard shows the edited score.
+      // The Competition's own results show the edited score.
       await host.goto(`/xi/competitions/${id}`);
-      await expect(leaderboardRow(host)).toContainText("55");
-      await expect(leaderboardRow(host)).not.toContainText("42");
+      await expect(resultsRow(host)).toContainText("55");
+      await expect(resultsRow(host)).not.toContainText("42");
 
-      // Delete it behind the ConfirmDialog; it leaves the leaderboard.
+      // Delete it from the expanded row behind the ConfirmDialog.
       await openCompetitionPage(host, id);
-      await games.getByRole("button", { name: /^Delete Game:/ }).click();
+      await resultsRow(host)
+        .getByRole("button", { name: /1 attempt/ })
+        .click();
+      await attempts
+        .getByRole("button", { name: `Delete Attempt: ${PLAYER} · 55` })
+        .click();
       const confirm = host.getByRole("alertdialog");
-      await expect(confirm).toContainText("Delete this Game?");
+      await expect(confirm).toContainText("Delete this Attempt?");
       await confirm.getByRole("button", { name: "Delete" }).click();
-      await expect(host.getByText("Game deleted")).toBeVisible();
-      await expect(games.getByText("No Games yet.")).toBeVisible();
+      await expect(host.getByText("Attempt deleted")).toBeVisible();
+      await expect(resultsRow(host).getByRole("cell").first()).toHaveText("–");
       await host.goto(`/xi/competitions/${id}`);
-      await expect(leaderboardRow(host).getByRole("cell").nth(0)).toHaveText(
-        "—",
-      );
-      await expect(leaderboardRow(host)).not.toContainText("55");
+      await expect(resultsRow(host).getByRole("cell").first()).toHaveText("–");
+      await expect(resultsRow(host)).not.toContainText("55");
     } finally {
       await hostContext.close();
     }

@@ -76,7 +76,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide mutations", () => {
         "Title",
         "By the numbers",
         "Awards",
-        "Champions",
+        "Winners",
         "Winner",
       ]);
       expect(slides.every((s) => s.id !== null)).toBe(true);
@@ -97,7 +97,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide mutations", () => {
         "By the numbers",
         "Title",
         "Awards",
-        "Champions",
+        "Winners",
         "Winner",
         "Standings countdown",
       ]);
@@ -117,7 +117,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide mutations", () => {
         "Title",
         "(By the numbers)",
         "Awards",
-        "Champions",
+        "Winners",
         "Standings countdown",
         "Winner",
       ]);
@@ -147,7 +147,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide mutations", () => {
         "Title",
         "By the numbers",
         "(Awards)",
-        "Champions",
+        "Winners",
         "Winner",
       ]);
       expect(slides.every((s) => s.id !== null)).toBe(true);
@@ -171,7 +171,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide mutations", () => {
         "Title",
         "By the numbers",
         "Awards",
-        "Champions",
+        "Winners",
         "(Winner)",
       ]);
       expect(await sortOrdersOf(f.home, tx)).toEqual([0, 1, 2, 3, 4, 5]);
@@ -209,7 +209,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide mutations", () => {
         "Title",
         "By the numbers",
         "Awards",
-        "Champions",
+        "Winners",
         "Standings countdown",
         "Winner",
       ]);
@@ -285,7 +285,7 @@ describe.skipIf(!isLocalDatabase)("Custom Finale slide mutations", () => {
         "Title",
         "By the numbers",
         "Awards",
-        "Champions",
+        "Winners",
         "Thank you",
         "Standings countdown",
         "Winner",
@@ -439,7 +439,7 @@ describe.skipIf(!isLocalDatabase)("Custom Finale slide mutations", () => {
         "Title",
         "By the numbers",
         "Awards",
-        "Champions",
+        "Winners",
         "Standings countdown",
         "Winner",
       ]);
@@ -474,7 +474,7 @@ describe.skipIf(!isLocalDatabase)("Custom Finale slide mutations", () => {
         "By the numbers",
         "Awards",
         "B",
-        "Champions",
+        "Winners",
         "Standings countdown",
         "Winner",
       ]);
@@ -507,7 +507,7 @@ describe.skipIf(!isLocalDatabase)("Custom Finale slide mutations", () => {
         "Title",
         "By the numbers",
         "Awards",
-        "Champions",
+        "Winners",
         "B",
         "C",
         "Standings countdown",

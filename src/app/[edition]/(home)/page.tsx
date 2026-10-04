@@ -5,7 +5,7 @@ import { getActor } from "@/auth/actor";
 import { AnnouncementCard } from "@/components/announcement-card";
 import { ArchiveDetailView } from "@/components/archive";
 import { AutoRefresh } from "@/components/auto-refresh";
-import { LogAGame } from "@/components/log-a-game";
+import { LogAResult } from "@/components/log-a-result";
 import { NowNextSection } from "@/components/now-next";
 import { RecentResultsSection } from "@/components/recent-results";
 import { HomeStandings } from "@/components/standings";
@@ -63,7 +63,7 @@ export default async function EditionHomePage({
       <div className="flex flex-col gap-4 px-4 pt-4 pb-6">
         <NowNextSection nowNext={nowNext} edition={warWeek.edition} />
 
-        <LogAGame edition={warWeek.edition} competitions={loggable} />
+        <LogAResult edition={warWeek.edition} competitions={loggable} />
 
         <RecentResultsSection
           results={recentResults}

@@ -6,30 +6,37 @@ import { gameSummary } from "@/lib/games/view";
 import { notFoundMessage } from "@/mcp/not-found";
 import type { GamesView, GamesViewRow } from "@/queries/games";
 
-/** The found Competition's basic facts, before deciding whether to load its Games. */
+/** The found Competition's basic facts, before deciding whether to load its Matches or Attempts. */
 export type FoundCompetition = Pick<Competition, "name" | "scoring" | "format">;
 
+/** One logged Match or Attempt in the tool payload. */
+export type LoggedResult = {
+  loggedAt: string;
+  summary: string;
+  players: { name: string; place: number | null; score: number | null }[];
+};
+
+type FoundGames = {
+  found: true;
+  competition: {
+    name: string;
+    scoring: Competition["scoring"];
+    /** Head-to-head or Best score. */
+    format: GamesView["competition"]["gameFormat"];
+    /** A short human summary of the Format's settings. */
+    settings: string;
+    /** "open to everyone", or the fixed list of Entrants by name. */
+    entrants: "open to everyone" | string[];
+    closed: boolean;
+  };
+  leaderboard: Record<string, unknown>[];
+};
+
 export type GamesResult =
-  | {
-      found: true;
-      competition: {
-        name: string;
-        scoring: Competition["scoring"];
-        /** Head-to-head or Best score. */
-        format: GamesView["competition"]["gameFormat"];
-        /** A short human summary of the Games settings, per Format. */
-        settings: string;
-        /** "open to everyone", or the fixed list of Entrants by name. */
-        entrants: "open to everyone" | string[];
-        closed: boolean;
-      };
-      leaderboard: Record<string, unknown>[];
-      games: {
-        loggedAt: string;
-        summary: string;
-        players: { name: string; place: number | null; score: number | null }[];
-      }[];
-    }
+  /** Head-to-head: its Matches, newest first. */
+  | (FoundGames & { matches: LoggedResult[] })
+  /** Best score: its Attempts, newest first. */
+  | (FoundGames & { attempts: LoggedResult[] })
   | {
       found: true;
       competition: {
@@ -37,7 +44,8 @@ export type GamesResult =
         scoring: Competition["scoring"];
         format: Exclude<Competition["format"], GameFormat>;
       };
-      games: null;
+      matches: null;
+      attempts: null;
       message: string;
     }
   | { found: false; message: string };
@@ -72,10 +80,11 @@ function leaderboardRow(
 
 /**
  * Serializes a Head-to-head or Best score Competition's `get_games` answer:
- * the leaderboard ranked by its Format and Games newest first. Pure: the route resolves
+ * the leaderboard ranked by its Format, and its Matches (Head-to-head) or
+ * Attempts (Best score) newest first. Pure: the route resolves
  * the Competition by name, loads `getGamesView` (viewer `null`) only when
  * its Format is one of those, and passes the result here. Names only: never an
- * email, who logged a Game, `canEdit`, Hosts or Organizers.
+ * email, who logged a Match or Attempt, `canEdit`, Hosts or Organizers.
  */
 export function toGamesResult(
   found: FoundCompetition | undefined,
@@ -104,7 +113,8 @@ export function toGamesResult(
         scoring: found.scoring,
         format: found.format as Exclude<Competition["format"], GameFormat>,
       },
-      games: null,
+      matches: null,
+      attempts: null,
       message:
         found.format === "participation"
           ? `${found.name} isn't run as Head-to-head or Best score; it's run as Participation. Call get_participation instead.`
@@ -114,7 +124,7 @@ export function toGamesResult(
 
   const { competition, leaderboard, games } = view;
 
-  return {
+  const base: FoundGames = {
     found: true,
     competition: {
       name: competition.name,
@@ -127,20 +137,23 @@ export function toGamesResult(
       closed: competition.closed,
     },
     leaderboard: leaderboard.map((row) => leaderboardRow(competition, row)),
-    games: games.map((g) => ({
-      loggedAt: g.loggedAt.toISOString(),
-      summary: gameSummary(
-        competition.gameFormat,
-        g.players,
-        competition.gameFormat === "best-score"
-          ? (competition.config as BestScoreConfig).unit
-          : "",
-      ),
-      players: g.players.map((p) => ({
-        name: p.name,
-        place: p.place,
-        score: p.score,
-      })),
-    })),
   };
+  const logged: LoggedResult[] = games.map((g) => ({
+    loggedAt: g.loggedAt.toISOString(),
+    summary: gameSummary(
+      competition.gameFormat,
+      g.players,
+      competition.gameFormat === "best-score"
+        ? (competition.config as BestScoreConfig).unit
+        : "",
+    ),
+    players: g.players.map((p) => ({
+      name: p.name,
+      place: p.place,
+      score: p.score,
+    })),
+  }));
+  return competition.gameFormat === "best-score"
+    ? { ...base, attempts: logged }
+    : { ...base, matches: logged };
 }

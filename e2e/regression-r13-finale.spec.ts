@@ -33,7 +33,7 @@ test("72-AC2: an Organizer moves the Standings slide and hides one, and the Fina
       "Title",
       "By the numbers",
       "Awards",
-      "Champions",
+      "Winners",
       "Standings countdown",
       "Winner",
     ]);
@@ -49,7 +49,7 @@ test("72-AC2: an Organizer moves the Standings slide and hides one, and the Fina
       "Title",
       "By the numbers",
       "Awards",
-      "Champions",
+      "Winners",
       "Winner",
     ]);
 
@@ -63,7 +63,7 @@ test("72-AC2: an Organizer moves the Standings slide and hides one, and the Fina
       "By the numbers",
       "Awards",
       "Winner",
-      "Champions",
+      "Winners",
     ]);
 
   await page.getByRole("button", { name: 'Hide "By the numbers"' }).click();
@@ -75,7 +75,7 @@ test("72-AC2: an Organizer moves the Standings slide and hides one, and the Fina
       "By the numbers (hidden)",
       "Awards",
       "Winner",
-      "Champions",
+      "Winners",
     ]);
   await expect(
     page.getByRole("button", { name: 'Show "By the numbers"' }),

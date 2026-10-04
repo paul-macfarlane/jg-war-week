@@ -73,12 +73,12 @@ describe("competitionStatus", () => {
     ).toBe("Underway · Final");
   });
 
-  it("a Bracket with Entrants but no Heats yet is Underway, with no Round", () => {
+  it("a Bracket with Entrants but no Matches yet is Underway, with no Round", () => {
     expect(text({ format: "bracket", hasResult: true })).toBe("Underway");
   });
 
   it.each(["placement", "bracket"] as const)(
-    "a Finalized %s with a 1st place is Done · Winner",
+    "a Closed %s with a 1st place is Done · Winner",
     (format) => {
       expect(
         competitionStatus(
@@ -147,7 +147,7 @@ describe("competitionStatus", () => {
     },
   );
 
-  it("a Finalized Placement without Placement Points is Done, naming no one", () => {
+  it("a Closed Placement without Placement Points is Done, naming no one", () => {
     expect(
       text({ format: "placement", hasResult: true, finalized: true }),
     ).toBe("Done");
@@ -187,7 +187,7 @@ describe("bracketRoundInPlay", () => {
     expect(bracketRoundInPlay(bracket([]))).toBeNull();
   });
 
-  it("is Round 1 while a first-Round Heat is unplayed", () => {
+  it("is Round 1 while a first-Round Match is unplayed", () => {
     expect(
       bracketRoundInPlay(
         bracket([
@@ -199,7 +199,7 @@ describe("bracketRoundInPlay", () => {
     ).toEqual({ round: 1, of: 2 });
   });
 
-  it("is the first Round with an unplayed Heat, a bye never counting", () => {
+  it("is the first Round with an unplayed Match, a bye never counting", () => {
     expect(
       bracketRoundInPlay(
         bracket([
@@ -214,7 +214,7 @@ describe("bracketRoundInPlay", () => {
     ).toEqual({ round: 2, of: 4 });
   });
 
-  it("is the final's Round while only the 3rd place game is left", () => {
+  it("is the final's Round while only the 3rd place Match is left", () => {
     expect(
       bracketRoundInPlay(
         bracket([
@@ -227,7 +227,7 @@ describe("bracketRoundInPlay", () => {
     ).toEqual({ round: 2, of: 2 });
   });
 
-  it("is the first Round with a Heat to play in a Heats Bracket, a bye never counting", () => {
+  it("is the first Round with a Match to play in a Matches Bracket, a bye never counting", () => {
     // 4 per Heat, 2 advancing: a Heat before the final with 2 Entrants is a bye.
     expect(
       bracketRoundInPlay({
@@ -245,7 +245,7 @@ describe("bracketRoundInPlay", () => {
     ).toEqual({ round: 2, of: 2 });
   });
 
-  it("is the final's Round while the final and the 3rd place game are both unplayed", () => {
+  it("is the final's Round while the final and the 3rd place Match are both unplayed", () => {
     expect(
       bracketRoundInPlay(
         bracket([
@@ -258,7 +258,7 @@ describe("bracketRoundInPlay", () => {
     ).toEqual({ round: 2, of: 2 });
   });
 
-  it("is the final's Round once every Heat is played but not Finalized", () => {
+  it("is the final's Round once every Match is played but not Closed", () => {
     expect(
       bracketRoundInPlay(
         bracket([

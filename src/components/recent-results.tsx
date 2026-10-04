@@ -69,7 +69,7 @@ function ResultSummary({
           ? "Winner"
           : result.kind === "participation-closed"
             ? "Top"
-            : "Champion"}
+            : "Winner"}
       </span>
       {result.winners.map((target) => (
         <TargetName
@@ -126,10 +126,10 @@ export function RecentResultsSection({
                   </Link>
                 )}
                 {result.kind === "bracket-finalized" ? (
-                  <Badge variant="secondary">Bracket finalized</Badge>
+                  <Badge variant="secondary">Bracket closed</Badge>
                 ) : null}
                 {result.kind === "placement-finalized" ? (
-                  <Badge variant="secondary">Finalized</Badge>
+                  <Badge variant="secondary">Closed</Badge>
                 ) : null}
                 {result.kind === "games-closed" ||
                 result.kind === "participation-closed" ? (

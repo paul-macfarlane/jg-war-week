@@ -80,7 +80,7 @@ export function validateConfig(
   const shape = roundShape(entrantCount, parsed.data);
   if ("neverEnds" in shape) {
     const { entrantsPerHeat, advancePerHeat } = parsed.data;
-    return `With ${entrantCount} Entrants, ${entrantsPerHeat} per Heat and ${advancePerHeat} advancing, Round ${shape.neverEnds} would never end. Lower how many advance.`;
+    return `With ${entrantCount} Entrants, ${entrantsPerHeat} per Match and ${advancePerHeat} advancing, Round ${shape.neverEnds} would never end. Lower how many advance.`;
   }
   return null;
 }
@@ -119,7 +119,7 @@ function fillRound(bracket: Bracket, round: number, ranked: string[]) {
   heats.forEach((heat, i) => {
     if (dealt[i].length !== heat.slots.length) {
       throw new Error(
-        `Round ${round} Heat ${heat.position} dealt ${dealt[i].length} for ${heat.slots.length} slots`,
+        `Round ${round} Match ${heat.position} dealt ${dealt[i].length} for ${heat.slots.length} slots`,
       );
     }
     const bye = isBye(bracket, heat);
@@ -201,7 +201,7 @@ export function generate(
 
 function findHeat(bracket: Bracket, heatId: string): Heat {
   const found = bracket.heats.find((h) => h.id === heatId);
-  if (!found) throw new BracketError("That Heat isn't in this Bracket.");
+  if (!found) throw new BracketError("That Match isn't in this Bracket.");
   return found;
 }
 
@@ -210,9 +210,10 @@ function findHeat(bracket: Bracket, heatId: string): Heat {
  * order of every Entrant.
  */
 function record(bracket: Bracket, heat: Heat, result: HeatResult) {
-  if (isBye(bracket, heat)) throw new BracketError("A bye has no Heat Result.");
+  if (isBye(bracket, heat))
+    throw new BracketError("A bye has no Match Result.");
   if (heat.slots.some((s) => s.entrantId === null)) {
-    throw new BracketError("This Heat is still waiting for its Entrants.");
+    throw new BracketError("This Match is still waiting for its Entrants.");
   }
   const ids = heat.slots.map((s) => s.entrantId!);
   const { order } = result;
@@ -222,13 +223,13 @@ function record(bracket: Bracket, heat: Heat, result: HeatResult) {
     !order.every((id) => ids.includes(id))
   ) {
     throw new BracketError(
-      "Put every Entrant of this Heat in finishing order, once each.",
+      "Put every Entrant of this Match in finishing order, once each.",
     );
   }
   const scores = result.scores ?? {};
   if (Object.keys(scores).some((id) => !ids.includes(id))) {
     throw new BracketError(
-      "Scores can only be given for this Heat's Entrants.",
+      "Scores can only be given for this Match's Entrants.",
     );
   }
   const finishing = order;
@@ -342,7 +343,7 @@ export function isComplete(bracket: Bracket): boolean {
 }
 
 /** The Entrant 1st in the final Heat, or null while it's undecided. */
-export function champion(bracket: Bracket): string | null {
+export function bracketWinner(bracket: Bracket): string | null {
   const final = finalHeatOf(bracket);
   if (!final || !isDecided(final)) return null;
   return final.slots.find((s) => s.place === 1)?.entrantId ?? null;
@@ -382,6 +383,6 @@ export const heats: FormatEngine = {
   isBye,
   hasResults,
   isComplete,
-  champion,
+  winner: bracketWinner,
   finalPlacings,
 };

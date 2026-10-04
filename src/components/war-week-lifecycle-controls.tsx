@@ -190,8 +190,8 @@ function EndWarWeekButton({
       {unfinalizedBrackets.length > 0 && (
         <>
           {" "}
-          Not finalized: {unfinalizedBrackets.join(", ")}. Their placings
-          aren&apos;t in the Standings until you finalize them.
+          Not closed: {unfinalizedBrackets.join(", ")}. Their placings
+          aren&apos;t in the Standings until you close them.
         </>
       )}
       {openUnscoredCompetitions.length > 0 && (

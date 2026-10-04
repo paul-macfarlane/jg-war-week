@@ -183,7 +183,9 @@ export function shownSettings(
     "group",
     "description",
     "format",
-    "scoring",
+    // A free-for-all has no Individual/Team choice, unless a Competition is
+    // already Team there (so it can be fixed).
+    (mode === "teams" || values.scoring === "team") && "scoring",
     mode === "teams" && "countsTowardTeam",
     !individualParticipation && "placementPoints",
     individualParticipation && "participationPoints",
@@ -230,13 +232,13 @@ export function hostNameOnPage(
 /** How each Format runs a Competition, shown under the Format field. */
 export const FORMAT_DESCRIPTIONS: Record<Format, string> = {
   placement:
-    "One result on one sheet: give each Team or Participant a Place, optionally a Score, then Finalize.",
+    "One result on one sheet: give each Team or Participant a Place, optionally a Score, then Close.",
   bracket:
-    "Entrants play in Heats and a set number advance each Round, down to a final. Two per Heat with one advancing is a head-to-head knockout.",
+    "Entrants play in Matches and a set number advance each Round, down to a final. Two per Match with one advancing is a head-to-head knockout.",
   "head-to-head":
-    "Two players per Game; a winner, or a draw when allowed. Players log Games themselves and a leaderboard ranks them.",
+    "Two players per Match; a Winner, or a draw when allowed. Players log Matches themselves and a leaderboard ranks them.",
   "best-score":
-    "Each Game records a score; the best or the total counts. Players log Games themselves and a leaderboard ranks them.",
+    "Each Attempt records a score; the best or the total counts. Players log Attempts themselves and a leaderboard ranks them.",
   participation:
     "Points for taking part: the Host ticks who took part, or Participants check in.",
 };

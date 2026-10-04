@@ -72,7 +72,7 @@ export async function deleteSmokeBracket() {
 
 export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
   const check =
-    "bracket loop: an Organizer sets a head-to-head Bracket (2 per Heat, 1 advances) with a 3rd place game on a Competition, enters 4 Teams, generates, records 4 Heat Results, finalizes; GET /xi/competitions/<id> shows the champion and /xi/leaderboard includes the generated points and /xi/finale/<id> answers 200; get_bracket names the Bracket with its heat size, advancing and 3rd place game, a recorded time per played Heat, no Heat time, place or Forfeit, the final's winner as champion and no @; un-finalize removes them and /xi/finale/<id> answers 404; then cleans up";
+    "bracket loop: an Organizer sets a head-to-head Bracket (2 per Match, 1 advances) with a 3rd place Match on a Competition, enters 4 Teams, generates, records 4 Match Results, closes; GET /xi/competitions/<id> shows Red as Winner in Top finishers (no Champion, no Play the finale) and /xi/leaderboard includes the generated points and /xi/finale/<id> answers 200; get_bracket names the Bracket with its match size, advancing and 3rd place Match, a recorded time per played Match, no Match time, place or Forfeit, the final's winner as winner (no champion field), matches (no heats) and closed (no finalized) and no @; reopen removes them and /xi/finale/<id> answers 404; then cleans up";
   const ids = serverActionIds();
   const missing = [
     "createCompetition",
@@ -163,10 +163,10 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
         organizer,
       ),
     );
-    // A 3rd place game needs at least 4 Entrants, so it's turned on once
+    // A 3rd place Match needs at least 4 Entrants, so it's turned on once
     // they're entered.
     expectOk(
-      "bracketConfig with a 3rd place game",
+      "bracketConfig with a 3rd place Match",
       await saveSetting(
         ids,
         id,
@@ -185,7 +185,7 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     );
 
     const before = await leaderboardTeamTotal("Red");
-    // Red wins every Heat it's in, so it's the champion; otherwise the
+    // Red wins every Heat it's in, so it's the Winner; otherwise the
     // first slot wins.
     let recorded = 0;
     for (const round of [1, 2]) {
@@ -216,8 +216,8 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
         if (result.ok) recorded += 1;
       }
     }
-    // Two semifinals, then the final and the 3rd place game.
-    if (recorded !== 4) problems.push(`recorded ${recorded} Heat Results`);
+    // Two semifinals, then the final and the 3rd place Match.
+    if (recorded !== 4) problems.push(`recorded ${recorded} Match Results`);
 
     for (const route of [`/admin/competitions/${id}`]) {
       const res = await get(route);
@@ -234,8 +234,18 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     const page = await (
       await signedInFetch(`${BASE_URL}/xi/competitions/${id}`)
     ).text();
-    if (!/aria-label="Champion"(?:(?!aria-label=)[\s\S])*?>Red</.test(page)) {
-      problems.push("the Competition page shows no Red champion");
+    if (
+      !/aria-label="Top finishers"[\s\S]*?data-winner="true"(?:(?!<\/li>)[\s\S])*?>Red</.test(
+        page,
+      )
+    ) {
+      problems.push("the Competition page's Top finishers show no Red Winner");
+    }
+    if (/Champion|Play the finale/i.test(page)) {
+      problems.push("the Competition page says Champion or Play the finale");
+    }
+    if (/\bHeats?\b|Finali[sz]e|Un-finali[sz]e/.test(page)) {
+      problems.push("the Competition page says Heat, Finalize or Un-finalize");
     }
     const finalized = await leaderboardTeamTotal("Red");
     if (before === null || finalized !== before + 10) {
@@ -248,7 +258,7 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
       !finaleBody.includes('data-finale="ready"') ||
       !finaleBody.includes(SMOKE_BRACKET_COMPETITION)
     ) {
-      problems.push(`/xi/finale/<id> after finalize status=${finale.status}`);
+      problems.push(`/xi/finale/<id> after close status=${finale.status}`);
     }
 
     // get_bracket over /api/mcp, with the bearer token and no session.
@@ -270,14 +280,14 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
       | {
           found: boolean;
           competition?: Record<string, unknown>;
-          champion?: string | null;
+          winner?: string | null;
           entrants?: unknown[];
-          rounds?: { round: number; heats: McpHeat[] }[];
+          rounds?: { round: number; matches: McpHeat[] }[];
         }
       | undefined;
     const rounds = bracketPayload?.rounds ?? [];
-    const heats = rounds.flatMap((round) => round.heats);
-    const lastRound = rounds[rounds.length - 1]?.heats ?? [];
+    const heats = rounds.flatMap((round) => round.matches ?? []);
+    const lastRound = rounds[rounds.length - 1]?.matches ?? [];
     const finalHeat = lastRound.filter((heat) => !heat.thirdPlace);
     const thirdPlaceHeats = heats.filter((heat) => heat.thirdPlace);
     const finalWinner = finalHeat[0]?.entrants.find(
@@ -287,30 +297,41 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     const bracketProblems = [
       bracketPayload?.found !== true && "not found",
       bracketPayload?.competition?.format !== "bracket" && "format",
-      bracketPayload?.competition?.heatSize !== 2 && "heatSize",
+      bracketPayload?.competition?.matchSize !== 2 && "matchSize",
       bracketPayload?.competition?.advancing !== 1 && "advancing",
-      bracketPayload?.competition?.thirdPlaceGame !== true && "thirdPlaceGame",
+      bracketPayload?.competition?.thirdPlaceMatch !== true &&
+        "thirdPlaceMatch",
+      bracketPayload?.competition?.closed !== true && "closed",
+      bracketPayload?.competition !== undefined &&
+        ["heatSize", "thirdPlaceGame", "finalized"].some(
+          (key) => key in bracketPayload.competition!,
+        ) &&
+        "an old Heat, Game or finalized field",
+      rounds.some((round) => "heats" in round) && "a heats field",
       bracketPayload?.entrants?.length !== 4 && "entrants",
-      heats.length !== 4 && `${heats.length} Heats`,
+      heats.length !== 4 && `${heats.length} Matches`,
       heats.some(
         (heat) =>
           JSON.stringify(Object.keys(heat).sort()) !== JSON.stringify(heatKeys),
-      ) && "Heat keys (no time, place or Forfeit)",
+      ) && "Match keys (no time, place or Forfeit)",
       heats.some(
         (heat) =>
           heat.status === "played" &&
           (heat.recordedAt === null ||
             Number.isNaN(Date.parse(heat.recordedAt))),
-      ) && "a played Heat without recordedAt",
+      ) && "a played Match without recordedAt",
       heats.some(
         (heat) => heat.status !== "played" && heat.recordedAt !== null,
-      ) && "an unplayed Heat with recordedAt",
+      ) && "an unplayed Match with recordedAt",
       (thirdPlaceHeats.length !== 1 ||
         !lastRound.includes(thirdPlaceHeats[0])) &&
-        "one 3rd place game in the last Round",
+        "one 3rd place Match in the last Round",
       finalHeat.length !== 1 && "one final",
-      (finalWinner !== "Red" || bracketPayload?.champion !== finalWinner) &&
-        "champion is the final's winner (Red)",
+      (finalWinner !== "Red" || bracketPayload?.winner !== finalWinner) &&
+        "winner is the final's winner (Red)",
+      bracketPayload !== undefined &&
+        "champion" in bracketPayload &&
+        "still has a champion field",
       /forfeit/i.test(bracket.text) && "mentions Forfeit",
       bracket.text.includes("@") && "has an @",
     ].filter(Boolean);
@@ -333,8 +354,8 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     }
 
     const competitionPage = await (await get(`/xi/competitions/${id}`)).text();
-    if (!competitionPage.includes("From bracket")) {
-      problems.push("/xi/competitions/<id> shows no From bracket row");
+    if (competitionPage.includes("Points Entries")) {
+      problems.push("/xi/competitions/<id> renders a Points Entries section");
     }
 
     expectOk(
@@ -343,12 +364,12 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     );
     const unfinalized = await leaderboardTeamTotal("Red");
     if (unfinalized !== before) {
-      problems.push(`Red total after un-finalize ${unfinalized} != ${before}`);
+      problems.push(`Red total after reopen ${unfinalized} != ${before}`);
     }
     const unfinalizedFinale = await get(`/xi/finale/${id}`);
     if (unfinalizedFinale.status !== 404) {
       problems.push(
-        `/xi/finale/<id> after un-finalize status=${unfinalizedFinale.status}`,
+        `/xi/finale/<id> after reopen status=${unfinalizedFinale.status}`,
       );
     }
     const [{ count }] = await runQuery<{ count: string }>(
@@ -407,7 +428,7 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
       redOrder,
     );
     if (sameWinner !== 0) {
-      problems.push(`a score-only edit reset ${sameWinner} later Heats`);
+      problems.push(`a score-only edit reset ${sameWinner} later Matches`);
     }
     const flipped = semis
       .filter((s) => s.heat_id === otherHeat)
@@ -420,7 +441,7 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     );
     if (changedWinner !== Number(decidedLater.count)) {
       problems.push(
-        `a winner change reset ${changedWinner} later Heats, expected the ${decidedLater.count} decided`,
+        `a winner change reset ${changedWinner} later Matches, expected the ${decidedLater.count} decided`,
       );
     }
 
@@ -437,8 +458,8 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
 
 // The heats loop check's own Competition and extra Teams, deleted after the
 // check and before it, so it's rerunnable.
-const SMOKE_HEATS_COMPETITION = "SMOKE TEST heats";
-const SMOKE_HEATS_TEAMS = ["SMOKE Heats Gold", "SMOKE Heats Green"];
+const SMOKE_HEATS_COMPETITION = "SMOKE TEST matches";
+const SMOKE_HEATS_TEAMS = ["SMOKE Matches Gold", "SMOKE Matches Green"];
 
 export async function deleteSmokeHeats() {
   await runQuery(
@@ -455,7 +476,7 @@ export async function deleteSmokeHeats() {
 
 export async function assertHeatsLoop(sessions: { organizer: SmokeSession }) {
   const check =
-    "heats loop: an Organizer sets a Bracket of 4 per Heat, 2 advance, on a Competition, enters 4 Teams, generates one Heat of four, records its four-Entrant Heat Result, finalizes; GET /xi/competitions/<id> shows the champion and /xi/leaderboard includes the generated points; un-finalize removes them; then cleans up";
+    "matches loop: an Organizer sets a Bracket of 4 per Match, 2 advance, on a Competition, enters 4 Teams, generates one Match of four, records its four-Entrant Match Result, closes; GET /xi/competitions/<id> shows Red as Winner in Top finishers (no Champion, no Play the finale) and /xi/leaderboard includes the generated points; reopen removes them; then cleans up";
   const ids = serverActionIds();
   const missing = [
     "createCompetition",
@@ -465,7 +486,7 @@ export async function assertHeatsLoop(sessions: { organizer: SmokeSession }) {
     "unfinalizeBracket",
   ].filter((name) => !ids[name]);
   if (missing.length > 0) {
-    fail("heats action ids", missing.join(", "));
+    fail("matches action ids", missing.join(", "));
     return;
   }
   const organizer = sessions.organizer;
@@ -565,7 +586,7 @@ export async function assertHeatsLoop(sessions: { organizer: SmokeSession }) {
     const heatIds = [...new Set(slots.map((s) => s.heat_id))];
     if (heatIds.length !== 1 || slots.length !== 4) {
       problems.push(
-        `generated ${heatIds.length} Heats holding ${slots.length} Entrants, expected one Heat of four`,
+        `generated ${heatIds.length} Matches holding ${slots.length} Entrants, expected one Match of four`,
       );
     }
 
@@ -591,8 +612,18 @@ export async function assertHeatsLoop(sessions: { organizer: SmokeSession }) {
     const page = await (
       await signedInFetch(`${BASE_URL}/xi/competitions/${id}`)
     ).text();
-    if (!/aria-label="Champion"(?:(?!aria-label=)[\s\S])*?>Red</.test(page)) {
-      problems.push("the Competition page shows no Red champion");
+    if (
+      !/aria-label="Top finishers"[\s\S]*?data-winner="true"(?:(?!<\/li>)[\s\S])*?>Red</.test(
+        page,
+      )
+    ) {
+      problems.push("the Competition page's Top finishers show no Red Winner");
+    }
+    if (/Champion|Play the finale/i.test(page)) {
+      problems.push("the Competition page says Champion or Play the finale");
+    }
+    if (/\bHeats?\b|Finali[sz]e|Un-finali[sz]e/.test(page)) {
+      problems.push("the Competition page says Heat, Finalize or Un-finalize");
     }
     const finalized = await leaderboardTeamTotal("Red");
     if (before === null || finalized !== before + 10) {
@@ -605,7 +636,7 @@ export async function assertHeatsLoop(sessions: { organizer: SmokeSession }) {
     );
     const unfinalized = await leaderboardTeamTotal("Red");
     if (unfinalized !== before) {
-      problems.push(`Red total after un-finalize ${unfinalized} != ${before}`);
+      problems.push(`Red total after reopen ${unfinalized} != ${before}`);
     }
 
     if (problems.length === 0) ok(check);
@@ -614,7 +645,7 @@ export async function assertHeatsLoop(sessions: { organizer: SmokeSession }) {
     fail(check, String(error));
   } finally {
     await deleteSmokeHeats().catch((error) =>
-      fail("delete the smoke heats", String(error)),
+      fail("delete the smoke matches", String(error)),
     );
   }
 }
@@ -626,8 +657,8 @@ export async function assertHeatsLoop(sessions: { organizer: SmokeSession }) {
 const SMOKE_SQUAD_COMPETITION = "SMOKE TEST squads";
 const SMOKE_SQUAD_PARTICIPANT_EMAIL = "smoke-participant@jahnelgroup.com";
 const SELF_REPORT_OFF = "Self-report is off for this Competition.";
-const NOT_IN_HEAT = "You're not in this Heat.";
-const HEAT_DECIDED = "This Heat already has a result.";
+const NOT_IN_HEAT = "You're not in this Match.";
+const HEAT_DECIDED = "This Match already has a result.";
 const NOT_HOST_REFUSAL_SQUAD = "You're not a Host of that Competition.";
 
 async function deleteSmokeSquadCompetition() {
@@ -647,7 +678,7 @@ export async function assertSquadSelfReportLoop(sessions: {
   outsider: SmokeSession;
 }) {
   const check =
-    "squad loop: an Organizer builds a head-to-head Bracket of four Squads from XI's two Teams, turns on self-report; a linked Participant reports their Heat and their Squad advances, a second report and an outsider's POST are refused, the Organizer overwrites and re-records, the Participant reports the Final, finalize splits Points Entries two per Team; then cleans up";
+    "squad loop: an Organizer builds a head-to-head Bracket of four Squads from XI's two Teams, turns on self-report; a linked Participant reports their Heat and their Squad advances, a second report and an outsider's POST are refused, the Organizer overwrites and re-records, the Participant reports the Final, finalize gives the two finalist Squads' Teams 10 and 6 (no 3rd place match: the semifinal losers get nothing); then cleans up";
   const ids = serverActionIds();
   const missing = [
     "createCompetition",
@@ -831,7 +862,7 @@ export async function assertSquadSelfReportLoop(sessions: {
     const heatIds = [...new Set(round1.map((r) => r.heat_id))];
     if (heatIds.length !== 2 || round1.length !== 4) {
       problems.push(
-        `generated ${heatIds.length} Round-1 Heats holding ${round1.length} Entrants, expected 2 Heats of two`,
+        `generated ${heatIds.length} Round-1 Matches holding ${round1.length} Entrants, expected 2 Matches of two`,
       );
     }
     const [heat1Id, heat2Id] = heatIds;
@@ -873,7 +904,7 @@ export async function assertSquadSelfReportLoop(sessions: {
       NOT_HOST_REFUSAL_SQUAD,
     );
     expectRefused(
-      "reportHeatResult on a Heat their Squad isn't in",
+      "reportHeatResult on a Match their Squad isn't in",
       await callAction(ids.reportHeatResult, [id, heat2Id, {}], notOrganizer),
       NOT_IN_HEAT,
     );
@@ -908,7 +939,7 @@ export async function assertSquadSelfReportLoop(sessions: {
       heat1BeforeReport.reported_by_email !== null
     ) {
       problems.push(
-        `the outsider's refused POST changed the Heat: ${JSON.stringify(heat1BeforeReport)}`,
+        `the outsider's refused POST changed the Match: ${JSON.stringify(heat1BeforeReport)}`,
       );
     }
 
@@ -940,7 +971,7 @@ export async function assertSquadSelfReportLoop(sessions: {
     }
 
     expectRefused(
-      "reportHeatResult on an already-decided Heat",
+      "reportHeatResult on an already-decided Match",
       await callAction(
         ids.reportHeatResult,
         [id, heat1Id, { order: [entrantA.entrant_id, entrantB.entrant_id] }],
@@ -1037,25 +1068,31 @@ export async function assertSquadSelfReportLoop(sessions: {
       `select team_id, points, generated_by_bracket from points_entry where competition_id = $1`,
       [id],
     );
-    const perTeamCount = new Map<string, number>();
-    let sum = 0;
     for (const entry of entries) {
       if (!entry.team_id || !entry.generated_by_bracket) {
         problems.push(
           `a Points Entry with no Team or not generated: ${JSON.stringify(entry)}`,
         );
       }
-      sum += Number(entry.points);
-      const key = entry.team_id ?? "";
-      perTeamCount.set(key, (perTeamCount.get(key) ?? 0) + 1);
     }
-    if (entries.length !== 4) {
-      problems.push(`${entries.length} Points Entries, expected 4`);
-    }
-    if (sum !== 22) problems.push(`Points Entries total ${sum}, expected 22`);
-    if ([...perTeamCount.values()].some((count) => count !== 2)) {
+    // A won the Final over C; with no 3rd place match B and D aren't placed.
+    const teamOfSquad = async (squadId: string) =>
+      (
+        await runQuery<{ team_id: string }>(
+          `select team_id from squad where id = $1`,
+          [squadId],
+        )
+      )[0]?.team_id;
+    const expectedEntries = [
+      { team: await teamOfSquad(entrantA.squad_id), points: 10 },
+      { team: await teamOfSquad(entrantC.squad_id), points: 6 },
+    ];
+    const gotEntries = entries
+      .map((entry) => ({ team: entry.team_id, points: Number(entry.points) }))
+      .sort((a, b) => b.points - a.points);
+    if (JSON.stringify(gotEntries) !== JSON.stringify(expectedEntries)) {
       problems.push(
-        `Points Entries per Team: ${JSON.stringify([...perTeamCount])}`,
+        `Points Entries ${JSON.stringify(gotEntries)}, expected ${JSON.stringify(expectedEntries)}`,
       );
     }
 
@@ -1105,7 +1142,7 @@ export async function assertSquadSelfReportLoop(sessions: {
       const after = await leaderboardTeamTotal(team.name);
       if (after !== beforeTotals[team.name]) {
         problems.push(
-          `${team.name} leaderboard total after un-finalize ${after}, expected ${beforeTotals[team.name]}`,
+          `${team.name} leaderboard total after reopen ${after}, expected ${beforeTotals[team.name]}`,
         );
       }
     }

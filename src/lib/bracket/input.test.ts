@@ -27,7 +27,7 @@ describe("Bracket action input", () => {
   it("refuses an empty finishing order", () => {
     expect(parseHeatResultInput({ order: [] })).toEqual({
       ok: false,
-      error: "Put the Heat's Entrants in finishing order.",
+      error: "Put the Match's Entrants in finishing order.",
     });
     expect(parseHeatResultInput({ order: 5 })).toMatchObject({ ok: false });
   });

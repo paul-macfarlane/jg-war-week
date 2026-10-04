@@ -14,8 +14,8 @@ export type FormatName =
 export const RUN_AREA_TITLE: Record<FormatName, string> = {
   Placement: "Record placements",
   Bracket: "Entrants and Bracket",
-  "Head-to-head": "Entrants and Games",
-  "Best score": "Entrants and Games",
+  "Head-to-head": "Entrants and Matches",
+  "Best score": "Entrants and Attempts",
   Participation: "Who took part",
 };
 

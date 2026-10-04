@@ -14,7 +14,11 @@ export default async function CompetitionsPage({
   if (!warWeek) notFound();
 
   const { groups, ungrouped } = await getCompetitions(warWeek);
-  const listProps = { edition: warWeek.edition, teamLabel: warWeek.teamLabel };
+  const listProps = {
+    edition: warWeek.edition,
+    teamLabel: warWeek.teamLabel,
+    mode: warWeek.mode,
+  };
 
   // Two or more Competition Groups switch by Tabs; every panel stays
   // mounted, so each group's Competitions are in the page HTML.

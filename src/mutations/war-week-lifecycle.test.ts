@@ -478,7 +478,7 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
     });
   });
 
-  it("refuses Unstart once a Heat has a result, or a Game is logged", async () => {
+  it("refuses Unstart once a Match has a result, or a Game is logged", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { unstartWarWeek } = await import("@/mutations/war-week-lifecycle");
       const { schema, byId } = await fixture(tx);
@@ -513,7 +513,7 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
         .where(eq(schema.heat.id, heat.id));
       expect(await unstartWarWeek(ctxOf(live.id), tx)).toEqual({
         ok: false,
-        error: "A Heat has a result; Unstart isn't available.",
+        error: "A Match has a result; Unstart isn't available.",
       });
       await tx.delete(schema.heat).where(eq(schema.heat.id, heat.id));
       await tx.insert(schema.game).values({
@@ -522,7 +522,7 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
       });
       expect(await unstartWarWeek(ctxOf(live.id), tx)).toEqual({
         ok: false,
-        error: "A Game has been logged; Unstart isn't available.",
+        error: "A Match or Attempt has been logged; Unstart isn't available.",
       });
       expect((await byId(live.id)).status).toBe("live");
     });

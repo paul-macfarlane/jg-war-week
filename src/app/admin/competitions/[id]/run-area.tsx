@@ -5,11 +5,13 @@ import { GamesBuilder } from "@/components/games-builder";
 import { ParticipationBuilder } from "@/components/participation-builder";
 import { PlacementSheet } from "@/components/placement-sheet";
 import type { Competition, WarWeek } from "@/db/schema";
+import { podiumOf } from "@/lib/bracket/podium";
 import {
   type CompetitionLockFacts,
   settingLockReason,
 } from "@/lib/competition-locks";
 import { isGameFormat } from "@/lib/enums";
+import { resultNoun } from "@/lib/games/config";
 import {
   getBracket,
   getBracketEntrants,
@@ -28,7 +30,7 @@ import { getTargetOptions } from "@/queries/target-options";
 export function runAreaTitle(format: Competition["format"]): string {
   if (format === "placement") return "Record placements";
   if (format === "participation") return "Who took part";
-  if (isGameFormat(format)) return "Entrants and Games";
+  if (isGameFormat(format)) return `Entrants and ${resultNoun(format).many}`;
   return "Entrants and Bracket";
 }
 
@@ -129,6 +131,7 @@ export async function CompetitionRunArea({
           competition={{
             id,
             scoring: view.competition.scoring,
+            gameFormat: view.competition.gameFormat,
             entrantsOpen: view.competition.entrantsOpen,
             closed: view.competition.closed,
             placementPoints: view.competition.placementPoints,
@@ -148,9 +151,13 @@ export async function CompetitionRunArea({
           gameFormat={view.competition.gameFormat}
           config={view.competition.config}
           scoring={view.competition.scoring}
+          closed={view.competition.closed}
           viewerCanLog={view.viewerCanLog}
+          leaderboard={view.leaderboard}
           games={view.games}
           entrantOptions={view.entrantOptions}
+          primaryColor={warWeek.primaryColor}
+          teamLabel={warWeek.teamLabel}
           now={new Date()}
         />
       </div>
@@ -189,13 +196,11 @@ export async function CompetitionRunArea({
             scoring={competition.scoring}
             entrants={view.entrants}
             bracket={view.bracket}
-            champion={view.champion}
+            winner={view.winner}
+            podium={podiumOf(view)}
             finalized={view.finalized}
             primaryColor={warWeek.primaryColor}
             reporters={reporters}
-            finaleHref={
-              view.finalized ? `/${warWeek.edition}/finale/${id}` : null
-            }
           />
         </section>
       )}

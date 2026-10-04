@@ -39,8 +39,8 @@ const NOT_HOST_REFUSAL = "You're not a Host of that Competition.";
 const NOT_A_BRACKET = "This Competition isn't run as a Bracket.";
 const SELF_REPORT_OFF = "Self-report is off for this Competition.";
 // A setting that locks while its Competition is Finalized (ticket 101).
-const LOCKED_WHILE_FINALIZED =
-  "Locked while the Competition is Finalized or Closed. Reopen or Un-finalize it first.";
+const LOCKED_WHILE_CLOSED =
+  "Locked while the Competition is Closed. Reopen it first.";
 
 /** Removes every `competition_host` row the smoke Host has. */
 export async function deleteSmokeHosts() {
@@ -266,7 +266,7 @@ async function assertHostAllowedAndRefused(fixture: HostFixture) {
       "self-report",
       "saveCompetitionSetting",
       { field: "selfReport", value: true },
-      LOCKED_WHILE_FINALIZED,
+      LOCKED_WHILE_CLOSED,
     ],
     [
       "createSquad",
@@ -276,7 +276,7 @@ async function assertHostAllowedAndRefused(fixture: HostFixture) {
     ],
   ] as const) {
     await runCheck(
-      `${label} as a Host on their own Finalized Placement is refused with '${expected}'`,
+      `${label} as a Host on their own Closed Placement is refused with '${expected}'`,
       async () => {
         const result = await callAction(
           ids[action],
@@ -647,7 +647,7 @@ async function assertAccessBeforeValidation(
     {
       // `authorizeHeatReport`'s Heat facts bind self-report-off before any
       // Host/Participant distinction, so both get the same refusal.
-      family: "Heat report",
+      family: "Match report",
       action: "reportHeatResult",
       args: [other, randomUUID(), "junk"],
       participant: SELF_REPORT_OFF,
@@ -914,7 +914,7 @@ export async function assertParticipantRefused(sessions: {
     [
       // The seeded Competitions default to self-report off, which
       // `heatReportError` refuses before the Heat itself is even loaded.
-      "Heat report",
+      "Match report",
       "reportHeatResult",
       [competition.id, randomUUID(), {}],
       SELF_REPORT_OFF,

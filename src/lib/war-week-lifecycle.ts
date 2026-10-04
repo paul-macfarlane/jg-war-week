@@ -100,10 +100,10 @@ export function unstartError({
     return "Points have been entered; Unstart isn't available.";
   }
   if (scored.heatResults > 0) {
-    return "A Heat has a result; Unstart isn't available.";
+    return "A Match has a result; Unstart isn't available.";
   }
   if (scored.games > 0) {
-    return "A Game has been logged; Unstart isn't available.";
+    return "A Match or Attempt has been logged; Unstart isn't available.";
   }
   return null;
 }

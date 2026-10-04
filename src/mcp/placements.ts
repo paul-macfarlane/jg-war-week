@@ -19,8 +19,8 @@ export type PlacementsResult =
         scoring: Competition["scoring"];
         scoreDirection: (typeof DIRECTIONS)[keyof typeof DIRECTIONS];
         placementPoints: number[] | null;
-        finalized: boolean;
-        finalizedAt: string | null;
+        closed: boolean;
+        closedAt: string | null;
       };
       placements: {
         place: number | null;
@@ -78,8 +78,8 @@ export function toPlacementsResult(
       scoring: competition.scoring,
       scoreDirection: DIRECTIONS[competition.scoreDirection],
       placementPoints: competition.placementPoints,
-      finalized: competition.finalizedAt !== null,
-      finalizedAt: competition.finalizedAt?.toISOString() ?? null,
+      closed: competition.finalizedAt !== null,
+      closedAt: competition.finalizedAt?.toISOString() ?? null,
     },
     placements: rows.map((row) => ({
       place: row.place,

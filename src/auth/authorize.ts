@@ -144,7 +144,7 @@ export async function authorizeHeatReport(
   const [competitionNotFound, load] = TARGETS.competition;
   if (!isUuid(competitionId)) return { ok: false, error: competitionNotFound };
   if (!isUuid(heatId)) {
-    return { ok: false, error: "That Heat no longer exists." };
+    return { ok: false, error: "That Match no longer exists." };
   }
   const target = await load(competitionId);
   if (!target) return { ok: false, error: competitionNotFound };

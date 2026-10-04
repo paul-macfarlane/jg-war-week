@@ -16,7 +16,7 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { isBye } from "@/lib/bracket/formats";
 import { type EntrantKind, squadLabel } from "@/lib/bracket/squads";
 import type { Bracket } from "@/lib/bracket/types";
-import { groupRounds, heatName } from "@/lib/bracket/view";
+import { groupRounds, matchName } from "@/lib/bracket/view";
 import type { MutationResult } from "@/mutations/types";
 import type { BracketEntrant, SquadRow } from "@/queries/brackets";
 
@@ -379,7 +379,7 @@ export function BracketBuilder({
                   return (
                     <li key={heat.id} className="flex min-w-0 flex-col">
                       <span className="text-foreground/60 text-xs font-medium">
-                        {heatName(bracket, heat)}
+                        {matchName(bracket, heat)}
                       </span>
                       <span className="break-words">
                         {isBye(bracket, heat)

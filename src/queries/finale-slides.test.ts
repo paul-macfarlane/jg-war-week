@@ -92,16 +92,16 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
     });
   });
 
-  it("lists a finalized Bracket's champion and a closed Head-to-head or Best score Competition's tied winners", async () => {
+  it("lists a closed Bracket's Winner and a closed Head-to-head or Best score Competition's tied winners", async () => {
     await inRolledBackTransaction(async (tx) => {
       const schema = await import("@/db/schema");
       const { asc, eq } = await import("drizzle-orm");
-      const { getChampions } = await import("@/queries/finale-slides");
+      const { getWinners } = await import("@/queries/finale-slides");
       const xi = await loadXiDemo(tx);
 
       // As seeded, only the demo's twelve Finalized Placement Competitions
       // have a champion; no Bracket or Games Competition is finalized.
-      const seeded = await getChampions(xi, tx);
+      const seeded = await getWinners(xi, tx);
       expect(seeded).toHaveLength(12);
       expect(seeded.map((champion) => champion.format)).toEqual(
         Array(12).fill("placement"),
@@ -164,7 +164,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
       await generated(foosball, c, 5);
       await generated(foosball, a, 3);
 
-      const champions = (await getChampions(xi, tx)).filter(
+      const champions = (await getWinners(xi, tx)).filter(
         (champion) => champion.format !== "placement",
       );
       expect(

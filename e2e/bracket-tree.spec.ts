@@ -46,7 +46,7 @@ let restoreCompetition: (() => Promise<void>) | null = null;
 test.beforeEach(async ({}, testInfo) => {
   restoreCompetition = await openForBracket(
     await xiCompetitionId(
-      testInfo.title.includes("4 per Heat") ? HEATS : KNOCKOUT,
+      testInfo.title.includes("4 per Match") ? HEATS : KNOCKOUT,
     ),
   );
 });
@@ -123,7 +123,7 @@ async function recordWinner(page: Page, heat: string, entrants: string[]) {
     .first();
   const name = entrantIn(await winner.innerText(), entrants);
   await winner.click();
-  await form.getByRole("button", { name: "Save Heat Result" }).click();
+  await form.getByRole("button", { name: "Save Match Result" }).click();
   await expect(page.getByText(`${name} wins ${heat}`)).toBeVisible();
   await expect(form).toBeHidden();
 }
@@ -140,21 +140,23 @@ async function recordOrder(page: Page, heat: string, entrants: string[]) {
   const first = entrantIn(await buttons.first().innerText(), entrants);
   const count = await buttons.count();
   for (let i = 0; i < count; i++) await buttons.nth(i).click();
-  await form.getByRole("button", { name: "Save Heat Result" }).click();
+  await form.getByRole("button", { name: "Save Match Result" }).click();
   await expect(page.getByText(`${first} wins ${heat}`)).toBeVisible();
   await expect(form).toBeHidden();
 }
 
-async function finalize(page: Page, action: "Finalize" | "Un-finalize") {
-  await page.getByRole("button", { name: action }).click();
+async function finalize(page: Page, action: "Close" | "Reopen") {
+  // Scoped to the Bracket: a closing Sheet has its own "Close" button.
+  await page
+    .getByRole("region", { name: "Bracket", exact: true })
+    .getByRole("button", { name: action, exact: true })
+    .click();
   await page
     .getByRole("alertdialog")
-    .getByRole("button", { name: action })
+    .getByRole("button", { name: action, exact: true })
     .click();
   await expect(
-    page.getByText(
-      action === "Finalize" ? "Bracket finalized" : "Bracket un-finalized",
-    ),
+    page.getByText(action === "Close" ? "Bracket closed" : "Bracket reopened"),
   ).toBeVisible();
 }
 
@@ -359,20 +361,20 @@ test("a head-to-head Bracket is one tree: the Organizer records from it in admin
   // Semifinal 2, whose two Entrants both came through byes. Byes and Heats
   // still waiting have none.
   await expect(admin.getByRole("button")).toHaveCount(2);
-  for (const heat of ["Round 1 Heat 2", "Semifinal 2"]) {
+  for (const heat of ["Round 1 Match 2", "Semifinal 2"]) {
     await expect(
       admin.getByRole("button", { name: `Record result for ${heat}` }),
     ).toHaveClass(/\bbg-primary\b/);
   }
-  await checkResultPopup(page, testInfo, "Round 1 Heat 2");
+  await checkResultPopup(page, testInfo, "Round 1 Match 2");
 
   // Mid-way: Round 1 and Semifinal 2 decided, Semifinal 1 and the Final not.
-  await recordWinner(page, "Round 1 Heat 2", KNOCKOUT_ENTRANTS);
+  await recordWinner(page, "Round 1 Match 2", KNOCKOUT_ENTRANTS);
   await expect(
-    heatBox(admin, "Round 1 Heat 2").getByText(/^Recorded .+ ET$/),
+    heatBox(admin, "Round 1 Match 2").getByText(/^Recorded .+ ET$/),
   ).toBeVisible();
   await expect(
-    admin.getByRole("button", { name: "Edit Round 1 Heat 2" }),
+    admin.getByRole("button", { name: "Edit Round 1 Match 2" }),
   ).toBeVisible();
   await recordWinner(page, "Semifinal 2", KNOCKOUT_ENTRANTS);
   await checkTree(page, admin, testInfo, "admin-knockout-midway", rounds);
@@ -394,8 +396,8 @@ test("a head-to-head Bracket is one tree: the Organizer records from it in admin
 
   await recordWinner(page, "Semifinal 1", KNOCKOUT_ENTRANTS);
   await recordWinner(page, "Final", KNOCKOUT_ENTRANTS);
-  await finalize(page, "Finalize");
-  // Finalized: nothing to record until Un-finalize.
+  await finalize(page, "Close");
+  // Closed: nothing to record until Reopen.
   await expect(admin.getByRole("button")).toHaveCount(0);
 
   await viewer.page.reload();
@@ -409,10 +411,10 @@ test("a head-to-head Bracket is one tree: the Organizer records from it in admin
   await viewer.context.close();
 
   // Leave the Standings the later flows read as they were.
-  await finalize(page, "Un-finalize");
+  await finalize(page, "Reopen");
 });
 
-test("a Bracket of 4 per Heat is the same tree of Heat boxes, advancers highlighted", async ({
+test("a Bracket of 4 per Match is the same tree of Match boxes, advancers highlighted", async ({
   browser,
   context,
   page,
@@ -424,25 +426,25 @@ test("a Bracket of 4 per Heat is the same tree of Heat boxes, advancers highligh
 
   await openCompetitionPage(page, id);
   await setFormat(page, "Bracket");
-  await page.getByRole("combobox", { name: "Entrants per Heat" }).click();
-  await page.getByRole("option", { name: "4 per Heat" }).click();
+  await page.getByRole("combobox", { name: "Entrants per Match" }).click();
+  await page.getByRole("option", { name: "4 per Match" }).click();
   await page.getByRole("combobox", { name: "How many advance" }).click();
   await page.getByRole("option", { name: "Top 2 advance" }).click();
   await expectSaved(page);
   await enterAndGenerate(page, HEATS_ENTRANTS);
 
-  await checkResultPopup(page, testInfo, "Round 1 Heat 1");
+  await checkResultPopup(page, testInfo, "Round 1 Match 1");
 
   // Mid-way: Heat 1 decided, its top two highlighted in both trees.
-  await recordOrder(page, "Round 1 Heat 1", HEATS_ENTRANTS);
+  await recordOrder(page, "Round 1 Match 1", HEATS_ENTRANTS);
   await expect(
-    heatBox(adminTreeOf(page), "Round 1 Heat 1").locator("[data-advances]"),
+    heatBox(adminTreeOf(page), "Round 1 Match 1").locator("[data-advances]"),
   ).toHaveCount(2);
 
   const viewer = await participantPage(browser, id);
   await checkNoListToggle(viewer.page);
   await expect(
-    heatBox(treeOf(viewer.page), "Round 1 Heat 1").locator("[data-advances]"),
+    heatBox(treeOf(viewer.page), "Round 1 Match 1").locator("[data-advances]"),
   ).toHaveCount(2);
   await checkTree(
     viewer.page,
@@ -452,9 +454,9 @@ test("a Bracket of 4 per Heat is the same tree of Heat boxes, advancers highligh
     rounds,
   );
 
-  await recordOrder(page, "Round 1 Heat 2", HEATS_ENTRANTS);
+  await recordOrder(page, "Round 1 Match 2", HEATS_ENTRANTS);
   await recordOrder(page, "Final", HEATS_ENTRANTS);
-  await finalize(page, "Finalize");
+  await finalize(page, "Close");
 
   await viewer.page.reload();
   // In the Final only the winner is highlighted.
@@ -470,7 +472,7 @@ test("a Bracket of 4 per Heat is the same tree of Heat boxes, advancers highligh
   );
   await viewer.context.close();
 
-  await finalize(page, "Un-finalize");
+  await finalize(page, "Reopen");
 });
 
 /** The Semifinal `displayName` plays in (the draw is random). */
@@ -570,7 +572,7 @@ test("a self-reporting Participant records their own Heat from the public tree; 
       .first();
     const name = entrantIn(await winner.innerText(), entrants);
     await winner.click();
-    await sheet.getByRole("button", { name: "Save Heat Result" }).click();
+    await sheet.getByRole("button", { name: "Save Match Result" }).click();
     await expect(you.page.getByText("Result reported.")).toBeVisible();
     await expect(sheet).toBeHidden();
     const own = heatBox(tree, ownHeat);
