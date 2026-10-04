@@ -215,7 +215,7 @@ describe("generate", () => {
       }
       expect(heats.hasResults(bracket)).toBe(false);
       expect(heats.isComplete(bracket)).toBe(false);
-      expect(heats.champion(bracket)).toBeNull();
+      expect(heats.winner(bracket)).toBeNull();
     },
   );
 
@@ -416,7 +416,7 @@ describe("applyResult", () => {
     expect(heats.isComplete(bracket)).toBe(false);
     bracket = heats.applyResult(bracket, "r3h1", { order: ["s3", "s6"] });
     expect(heats.isComplete(bracket)).toBe(true);
-    expect(heats.champion(bracket)).toBe("s3");
+    expect(heats.winner(bracket)).toBe("s3");
   });
 
   it("records a final that everyone in it would advance from", () => {
@@ -424,7 +424,7 @@ describe("applyResult", () => {
       order: ["s2", "s1"],
     });
     expect(heats.isComplete(bracket)).toBe(true);
-    expect(heats.champion(bracket)).toBe("s2");
+    expect(heats.winner(bracket)).toBe("s2");
   });
 });
 
@@ -444,7 +444,7 @@ function snakeDeal(ranked: string[], heatCount: number): string[][] {
 
 describe("playing a whole Bracket", () => {
   it.each(accepted)(
-    "plays $n Entrants, $config.entrantsPerHeat per Heat, $config.advancePerHeat advancing to a champion",
+    "plays $n Entrants, $config.entrantsPerHeat per Heat, $config.advancePerHeat advancing to a Winner",
     ({ n, config }) => {
       let bracket = heats.generate(config, entrants(n), newId);
       const roundCount = rounds(bracket).length;
@@ -490,7 +490,7 @@ describe("playing a whole Bracket", () => {
       }
       const final = rounds(bracket)[roundCount - 1][0];
       expect(heats.isComplete(bracket)).toBe(true);
-      expect(heats.champion(bracket)).toBe(final.slots[0].entrantId);
+      expect(heats.winner(bracket)).toBe(final.slots[0].entrantId);
       expect(heats.hasResults(bracket)).toBe(true);
     },
   );
@@ -524,7 +524,7 @@ describe("resetByResult", () => {
       order: ["s1", "s4", "s8", "s5"],
     });
     expect(places(heat(edited, "r1h1"))).toEqual([1, 2, 4, 3]);
-    expect(heats.champion(edited)).toBe("s2");
+    expect(heats.winner(edited)).toBe("s2");
   });
 
   it("clears the later Heats when an advancer changes", () => {
@@ -538,7 +538,7 @@ describe("resetByResult", () => {
     expect(summary(edited)[2]).toEqual(["r2h1", "s5 s2 s4 s3", "ready"]);
     expect(places(heat(edited, "r2h1"))).toEqual([null, null, null, null]);
     expect(heats.isComplete(edited)).toBe(false);
-    expect(heats.champion(edited)).toBeNull();
+    expect(heats.winner(edited)).toBeNull();
   });
 
   it("clears the later Heats when only the advancers' order changes", () => {
@@ -582,7 +582,7 @@ describe("resetByResult", () => {
     // Round 2: s1 s6 s5 and s2 s3 s4 → 1sts s1 s2, 2nds s6 s3.
     expect(lineup(heat(bracket, "r3h1"))).toBe("s1 s2 s6 s3");
     bracket = recordInSlotOrder(bracket, "r3h1");
-    expect(heats.champion(bracket)).toBe("s1");
+    expect(heats.winner(bracket)).toBe("s1");
 
     const result = { order: ["s6", "s1", "s7"] };
     expect(heats.resetByResult(bracket, "r1h1", result)).toEqual([

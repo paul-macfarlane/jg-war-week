@@ -67,8 +67,8 @@ export function isComplete(bracket: Bracket): boolean {
   return engineFor(bracket.config).isComplete(bracket);
 }
 
-export function champion(bracket: Bracket): string | null {
-  return engineFor(bracket.config).champion(bracket);
+export function bracketWinner(bracket: Bracket): string | null {
+  return engineFor(bracket.config).winner(bracket);
 }
 
 export function finalPlacings(

@@ -243,7 +243,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(heatAt(view, 1, 1).labels).toEqual(["Blue", "Red"]);
       expect(heatAt(view, 1, 2).labels).toEqual(["Green", "Gold"]);
       expect(heatAt(view, 2, 1).heat.status).toBe("pending");
-      expect(view.champion).toBeNull();
+      expect(view.winner).toBeNull();
       expect(view.finalized).toBe(false);
     });
   });
@@ -359,7 +359,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         tx,
       );
       view = (await queries.getBracket(f.competitionId, tx))!;
-      expect(view.champion).toBe(id("Gold"));
+      expect(view.winner).toBe(id("Gold"));
 
       // A score-only edit keeps the final.
       expect(
@@ -374,7 +374,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       view = (await queries.getBracket(f.competitionId, tx))!;
       expect(heatAt(view, 1, 1).heat.slots[1]).toMatchObject({ score: "25" });
       expect(heatAt(view, 2, 1).heat.status).toBe("played");
-      expect(view.champion).toBe(id("Gold"));
+      expect(view.winner).toBe(id("Gold"));
       // The later Heat's Entrants and recorded result are untouched.
       expect(heatAt(view, 2, 1).labels).toEqual(["Red", "Gold"]);
       expect(heatAt(view, 2, 1).heat.slots.map((s) => s.place)).toEqual([2, 1]);
@@ -392,7 +392,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       view = (await queries.getBracket(f.competitionId, tx))!;
       expect(heatAt(view, 2, 1).labels).toEqual(["Blue", "Gold"]);
       expect(heatAt(view, 2, 1).heat.status).toBe("ready");
-      expect(view.champion).toBeNull();
+      expect(view.winner).toBeNull();
 
       expect(
         await mutations.recordHeatResult(
@@ -555,7 +555,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(await generated()).toEqual(expected);
       view = (await queries.getBracket(f.competitionId, tx))!;
       expect(view.finalized).toBe(true);
-      expect(view.champion).toBe(id("Green"));
+      expect(view.winner).toBe(id("Green"));
 
       // A finalized Bracket can't change until it's un-finalized.
       expect(
@@ -777,7 +777,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(filled.slots.map((s) => s.entrantId).sort()).toEqual(
         [a0, a1, b1, b2].sort(),
       );
-      expect(view.champion).toBeNull();
+      expect(view.winner).toBeNull();
 
       expect(
         await mutations.recordHeatResult(
@@ -789,7 +789,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         ),
       ).toEqual({ ok: true, resetHeatIds: [] });
       view = (await queries.getBracket(f.relayId, tx))!;
-      expect(view.champion).toBe(a1);
+      expect(view.winner).toBe(a1);
 
       expect(await mutations.finalizeBracket(f.relayId, f.ctx, tx)).toEqual({
         ok: true,
@@ -877,7 +877,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         tx,
       );
       view = (await queries.getBracket(f.relayId, tx))!;
-      expect(view.champion).toBe(a0);
+      expect(view.winner).toBe(a0);
 
       // a2 now advances in place of a0.
       expect(
@@ -894,7 +894,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(after.slots.every((s) => s.place === null)).toBe(true);
       expect(after.slots.map((s) => s.entrantId)).not.toContain(a0);
       expect(after.status).not.toBe("played");
-      expect(view.champion).toBeNull();
+      expect(view.winner).toBeNull();
     });
   });
 
@@ -1131,11 +1131,11 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(
         await mutations.finalizeBracket(f.competitionId, f.ctx, tx),
       ).toEqual({ ok: false, error: "Finish every Heat before finalizing." });
-      expect((await queries.getBracket(f.competitionId, tx))!.champion).toBe(
+      expect((await queries.getBracket(f.competitionId, tx))!.winner).toBe(
         id("Green"),
       );
       await record(2, 2, "Gold");
-      expect((await queries.getBracket(f.competitionId, tx))!.champion).toBe(
+      expect((await queries.getBracket(f.competitionId, tx))!.winner).toBe(
         id("Green"),
       );
       expect(

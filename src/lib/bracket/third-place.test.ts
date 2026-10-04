@@ -4,7 +4,7 @@ import type { BracketConfig } from "@/lib/bracket/config";
 import { bracketFinaleRows } from "@/lib/bracket/finale";
 import {
   applyResult,
-  champion,
+  bracketWinner,
   finalPlacings,
   generate,
   isComplete,
@@ -246,14 +246,14 @@ describe("the final, with a 3rd place game present", () => {
   it("crowns the final's winner, even when the 3rd place game is recorded last", () => {
     let bracket = throughSemifinals(withGame);
     bracket = win(bracket, "r3h1", "s2");
-    expect(champion(bracket)).toBe("s2");
+    expect(bracketWinner(bracket)).toBe("s2");
     bracket = win(bracket, "r3h2", "s3");
-    expect(champion(bracket)).toBe("s2");
+    expect(bracketWinner(bracket)).toBe("s2");
   });
 
   it("crowns nobody when only the 3rd place game is recorded", () => {
     const bracket = win(throughSemifinals(withGame), "r3h2", "s3");
-    expect(champion(bracket)).toBeNull();
+    expect(bracketWinner(bracket)).toBeNull();
   });
 
   it("isn't complete until both the final and the 3rd place game are recorded", () => {

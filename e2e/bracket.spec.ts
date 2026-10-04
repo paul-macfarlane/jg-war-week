@@ -8,6 +8,7 @@ import {
   xiCompetitionId,
 } from "./db";
 import { E2E_BASE_URL } from "./env";
+import { axePodium, expectPodium, shootPodium } from "./podium";
 import {
   E2E_PARTICIPANT_EMAIL,
   asOrganizer,
@@ -36,7 +37,7 @@ const ENTRANTS = [
   "Alex Kelly",
 ];
 
-/** Whose "Your next Heat" the flow reads: a Heat has no time or place. */
+/** Whose "Your next Match" the flow reads: a Match has no time or place. */
 const YOU_ENTRANT = "Ashley Schuliger";
 /** On XI's first Day, in the evening (ET). */
 const HOME_AT = "2026-02-22T18:30:00-05:00";
@@ -109,7 +110,7 @@ async function recordHeat(page: Page, heat: string): Promise<string> {
   return name;
 }
 
-test("a Bracket is built, run and finalized into Points Entries", async ({
+test("a Bracket is built, run and Closed into Points Entries, its podium 1st and 2nd", async ({
   browser,
   context,
   page,
@@ -139,16 +140,16 @@ test("a Bracket is built, run and finalized into Points Entries", async ({
     fullPage: true,
   });
 
-  // Your next Heat names the round and opponent, with no time or place.
+  // Your next Match names the round and opponent, with no time or place.
   const yourHeat = await round1HeatOf(id, YOU_ENTRANT);
   const you = await participantPageAs(browser, YOU_ENTRANT);
   await you.page.goto(`/xi/competitions/${id}`);
   // Visible only: while a reload streams, React holds the new page in a
   // hidden container before swapping it in, and getByLabel counts it.
   const nextHeat = you.page
-    .getByLabel("Your next Heat")
+    .getByLabel("Your next Match")
     .filter({ visible: true });
-  await expect(nextHeat).toContainText(`Your next Heat · ${yourHeat}`);
+  await expect(nextHeat).toContainText(`Your next Match · ${yourHeat}`);
   await expect(nextHeat).toContainText("vs ");
   await expect(nextHeat).not.toContainText(/\bET\b|AM|PM/);
   await checkViewports(you.page, testInfo, "participant-next-heat");
@@ -170,17 +171,40 @@ test("a Bracket is built, run and finalized into Points Entries", async ({
   await expect(page.getByText(/^Recorded .+ ET$/).first()).toBeVisible();
   await recordHeat(page, "Semifinal 2");
   // Both semifinal winners advanced, so the Final is recordable.
-  const champion = await recordHeat(page, "Final");
-  await expect(page.getByLabel("Champion", { exact: true })).toContainText(
-    champion,
+  const winner = await recordHeat(page, "Final");
+  const [runnerUp] = await runQuery<{ display_name: string }>(
+    `select p.display_name from heat h
+     join heat_entrant he on he.heat_id = h.id
+     join entrant e on e.id = he.entrant_id
+     join participant p on p.id = e.participant_id
+     where h.competition_id = $1 and he.place = 2
+       and h.round = (select max(round) from heat where competition_id = $1)`,
+    [id],
   );
+  // No 3rd place match: Top finishers is the final's 1st and 2nd only,
+  // Provisional until the Bracket is Closed.
+  const podium = [
+    { place: "1st", name: winner, points: "5 points" },
+    { place: "2nd", name: runnerUp.display_name, points: "3 points" },
+  ];
+  await expectPodium(page, podium);
+  const topFinishers = page.getByRole("region", { name: "Top finishers" });
+  await expect(
+    topFinishers.getByRole("button", { name: "Provisional" }),
+  ).toBeVisible();
 
-  await page.getByRole("button", { name: "Finalize" }).click();
+  await page
+    .getByRole("region", { name: "Bracket", exact: true })
+    .getByRole("button", { name: "Close", exact: true })
+    .click();
   await page
     .getByRole("alertdialog")
-    .getByRole("button", { name: "Finalize" })
+    .getByRole("button", { name: "Close", exact: true })
     .click();
-  await expect(page.getByText("Bracket finalized")).toBeVisible();
+  await expect(page.getByText("Bracket closed")).toBeVisible();
+  await expect(
+    topFinishers.getByRole("button", { name: "Provisional" }),
+  ).toHaveCount(0);
   await page.screenshot({
     path: testInfo.outputPath("bracket-finalized.png"),
     fullPage: true,
@@ -197,23 +221,34 @@ test("a Bracket is built, run and finalized into Points Entries", async ({
   const entries = (await xiCompetitionEntries(COMPETITION)).filter(
     (entry) => entry.generated,
   );
-  // Placement Points 5 / 3 / 1: the champion, the runner-up, and both
+  // Placement Points 5 / 3 / 1: the Winner, the runner-up, and both
   // semifinal losers tied for third.
   expect(entries).toHaveLength(4);
-  expect(entries.find((entry) => entry.target === champion)?.points).toBe(5);
+  expect(entries.find((entry) => entry.target === winner)?.points).toBe(5);
+  // The podium shows the Points Entries Close wrote, and still only 1st and
+  // 2nd: semifinal losers with no 3rd place match aren't placed.
+  await expectPodium(page, podium);
+  await expect(
+    page
+      .getByRole("region", { name: "Top finishers" })
+      .getByRole("button", { name: "Provisional" }),
+  ).toHaveCount(0);
+  await shootPodium(page, testInfo, "podium-no-third-place");
+  await axePodium(page, testInfo, "podium-no-third-place-axe");
   await page.screenshot({
     path: testInfo.outputPath("competition-participant-page.png"),
     fullPage: true,
   });
 
-  // The Bracket Finale plays the placings and ends on the champion.
+  // The Bracket Finale (reached from /admin/finale, unchanged) plays the
+  // placings and ends on the champion.
   await page.goto(`/xi/finale/${id}`);
   await page.getByRole("button", { name: "Start" }).click();
   await expect(page.getByRole("button", { name: "Replay" })).toBeVisible({
     timeout: 20_000,
   });
   const championCard = page.getByLabel("Champion", { exact: true });
-  await expect(championCard).toContainText(champion);
+  await expect(championCard).toContainText(winner);
   await expect(championCard).toContainText(`Champion of ${COMPETITION}`);
   await checkViewports(page, testInfo, "bracket-finale");
 
@@ -231,7 +266,7 @@ test("a Bracket is built, run and finalized into Points Entries", async ({
     timeout: 2_000,
   });
   await expect(stillPage.getByLabel("Champion", { exact: true })).toContainText(
-    champion,
+    winner,
     { timeout: 2_000 },
   );
   await still.close();

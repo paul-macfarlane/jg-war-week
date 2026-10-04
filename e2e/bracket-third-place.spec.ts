@@ -11,6 +11,7 @@ import {
   xiCompetitionEntries,
   xiCompetitionId,
 } from "./db";
+import { axePodium, expectPodium, shootPodium } from "./podium";
 import { asOrganizer } from "./session";
 
 // Beyblades is an individual War Week XI Competition. This flow sets its
@@ -77,8 +78,39 @@ async function recordHeat(page: Page, heat: string) {
   await expect(page.getByText(`${name} wins ${heat}`)).toBeVisible();
   await expect(sheet).toBeHidden();
 }
+/** The last Round's places by name: the final's, then the 3rd place game's. */
+async function lastRoundPlaces() {
+  return runQuery<{
+    display_name: string;
+    third_place: boolean;
+    place: number;
+  }>(
+    `select p.display_name, h.third_place, he.place from heat h
+     join heat_entrant he on he.heat_id = h.id
+     join entrant e on e.id = he.entrant_id
+     join participant p on p.id = e.participant_id
+     where h.competition_id = $1 and he.place is not null
+       and h.round = (select max(round) from heat where competition_id = $1)
+     order by h.third_place, he.place`,
+    [competitionId],
+  );
+}
 
-test("a head-to-head Bracket of 8 with a 3rd place game is run to Finalize, placing 10, 7, 5 and 3", async ({
+const PLACES = ["1st", "2nd", "3rd", "4th"];
+
+/** The podium the last Round's places give, with Placement Points. */
+async function expectedPodium() {
+  return (await lastRoundPlaces()).map((row) => {
+    const place = (row.third_place ? 2 : 0) + row.place;
+    return {
+      place: PLACES[place - 1],
+      name: row.display_name,
+      points: `${PLACEMENT_POINTS[place - 1]} points`,
+    };
+  });
+}
+
+test("a head-to-head Bracket of 8 with a 3rd place game is run to Close, its podium 1st to 4th with 10, 7, 5 and 3", async ({
   context,
   page,
 }, testInfo) => {
@@ -134,31 +166,38 @@ test("a head-to-head Bracket of 8 with a 3rd place game is run to Finalize, plac
   }
 
   // The Final alone doesn't finish the Bracket: the 3rd place game is left.
-  await expect(page.getByRole("button", { name: "Finalize" })).toBeDisabled();
-  await expect(page.getByText("Finish every Heat to finalize.")).toBeVisible();
+  await expect(
+    page
+      .getByRole("region", { name: "Bracket", exact: true })
+      .getByRole("button", { name: "Close", exact: true }),
+  ).toBeDisabled();
+  await expect(page.getByText("Finish every Match to close.")).toBeVisible();
+  // Only the decided places show: 1st and 2nd, not yet 3rd and 4th.
+  const finalOnly = await expectedPodium();
+  expect(finalOnly).toHaveLength(2);
+  await expectPodium(page, finalOnly);
   await recordHeat(page, "3rd place game");
+  const podium = await expectedPodium();
+  expect(podium.map((place) => place.points)).toEqual([
+    "10 points",
+    "7 points",
+    "5 points",
+    "3 points",
+  ]);
+  await expectPodium(page, podium);
 
-  await page.getByRole("button", { name: "Finalize" }).click();
+  await page
+    .getByRole("region", { name: "Bracket", exact: true })
+    .getByRole("button", { name: "Close", exact: true })
+    .click();
   await page
     .getByRole("alertdialog")
-    .getByRole("button", { name: "Finalize" })
+    .getByRole("button", { name: "Close", exact: true })
     .click();
-  await expect(page.getByText("Bracket finalized")).toBeVisible();
+  await expect(page.getByText("Bracket closed")).toBeVisible();
 
   // The final's and the 3rd place game's places, from the database.
-  const placed = await runQuery<{
-    display_name: string;
-    third_place: boolean;
-    place: number;
-  }>(
-    `select p.display_name, h.third_place, he.place from heat h
-     join heat_entrant he on he.heat_id = h.id
-     join entrant e on e.id = he.entrant_id
-     join participant p on p.id = e.participant_id
-     where h.competition_id = $1
-       and h.round = (select max(round) from heat where competition_id = $1)`,
-    [competitionId],
-  );
+  const placed = await lastRoundPlaces();
   expect(placed).toHaveLength(4);
   const expected = Object.fromEntries(
     placed.map((row) => [
@@ -192,6 +231,15 @@ test("a head-to-head Bracket of 8 with a 3rd place game is run to Finalize, plac
     (entry) => entry.generated,
   );
   expect(listed).toHaveLength(4);
+  // Closed: 1st to 4th with the points Close wrote, no Provisional badge.
+  await expectPodium(page, podium);
+  await expect(
+    page
+      .getByRole("region", { name: "Top finishers" })
+      .getByRole("button", { name: "Provisional" }),
+  ).toHaveCount(0);
+  await shootPodium(page, testInfo, "podium-third-place");
+  await axePodium(page, testInfo, "podium-third-place-axe");
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.screenshot({
     path: testInfo.outputPath("third-place-finalized-1440.png"),

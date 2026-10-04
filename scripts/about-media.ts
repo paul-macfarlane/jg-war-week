@@ -1143,9 +1143,11 @@ async function main() {
       cookie,
       `${home()}/competitions/${bracketCompetitionId}`,
       async (page) => {
-        const found = await page.evaluate<boolean>(scrollToText("champion"));
+        const found = await page.evaluate<boolean>(
+          scrollToText("Top finishers"),
+        );
         await sleep(300);
-        if (!found) throw new Error("no champion card on the Bracket view");
+        if (!found) throw new Error("no Top finishers on the Bracket view");
       },
     );
     await captureGamesDemo(cookie);

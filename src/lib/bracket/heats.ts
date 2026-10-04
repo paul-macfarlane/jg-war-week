@@ -342,7 +342,7 @@ export function isComplete(bracket: Bracket): boolean {
 }
 
 /** The Entrant 1st in the final Heat, or null while it's undecided. */
-export function champion(bracket: Bracket): string | null {
+export function bracketWinner(bracket: Bracket): string | null {
   const final = finalHeatOf(bracket);
   if (!final || !isDecided(final)) return null;
   return final.slots.find((s) => s.place === 1)?.entrantId ?? null;
@@ -382,6 +382,6 @@ export const heats: FormatEngine = {
   isBye,
   hasResults,
   isComplete,
-  champion,
+  winner: bracketWinner,
   finalPlacings,
 };

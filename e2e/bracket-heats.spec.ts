@@ -12,6 +12,7 @@ import {
   setFormat,
 } from "./competition-page";
 import { openForBracket, xiCompetitionEntries, xiCompetitionId } from "./db";
+import { axePodium, expectPodium, shootPodium } from "./podium";
 import { asOrganizer, participantPageAs } from "./session";
 
 // Settlers of Catan is an individual War Week XI Competition with Placement
@@ -121,7 +122,7 @@ async function recordHeat(
   return order;
 }
 
-test("a Bracket of 4 per Heat is built, run and finalized into Points Entries", async ({
+test("a Bracket of 4 per Heat is built, run and Closed into Points Entries, its podium the final Match's order", async ({
   browser,
   context,
   page,
@@ -175,7 +176,7 @@ test("a Bracket of 4 per Heat is built, run and finalized into Points Entries", 
   // Visible only: while a reload streams, React holds the new page in a
   // hidden container before swapping it in, and getByLabel counts it.
   const nextHeat = you.page
-    .getByLabel("Your next Heat")
+    .getByLabel("Your next Match")
     .filter({ visible: true });
   await expect(nextHeat).toContainText(
     "Advanced to Round 2 · waiting for Round 1 to finish",
@@ -184,19 +185,25 @@ test("a Bracket of 4 per Heat is built, run and finalized into Points Entries", 
 
   const heat2 = await recordHeat(page, "Round 1 Heat 2");
 
-  // The Final is filled: their next Heat lists the three others in it.
+  // The Final is filled: their next Match lists the three others in it.
   await you.page.reload();
-  await expect(nextHeat).toContainText("Your next Heat · Final");
+  await expect(nextHeat).toContainText("Your next Match · Final");
   for (const opponent of [heat1[1], heat2[0], heat2[1]]) {
     await expect(nextHeat).toContainText(opponent);
   }
   await you.close();
 
   const finalOrder = await recordHeat(page, "Final");
-  const champion = finalOrder[0];
-  await expect(page.getByLabel("Champion", { exact: true })).toContainText(
-    champion,
-  );
+  const winner = finalOrder[0];
+  // A Group final: Top finishers is the final Match's order, each place
+  // with its Provisional points (5 / 3 / 1; 4th earns none).
+  const podium = finalOrder.map((name, i) => ({
+    place: ["1st", "2nd", "3rd", "4th"][i],
+    name,
+    points: ["5 points", "3 points", "1 point", "No points"][i],
+  }));
+  expect(podium).toHaveLength(4);
+  await expectPodium(page, podium);
   // Every played Heat says when it was recorded.
   await expect(page.getByText(/^Recorded .+ ET$/)).toHaveCount(3);
 
@@ -213,12 +220,15 @@ test("a Bracket of 4 per Heat is built, run and finalized into Points Entries", 
   await expect(endDialog).toBeHidden();
 
   await openCompetitionPage(page, id);
-  await page.getByRole("button", { name: "Finalize" }).click();
+  await page
+    .getByRole("region", { name: "Bracket", exact: true })
+    .getByRole("button", { name: "Close", exact: true })
+    .click();
   await page
     .getByRole("alertdialog")
-    .getByRole("button", { name: "Finalize" })
+    .getByRole("button", { name: "Close", exact: true })
     .click();
-  await expect(page.getByText("Bracket finalized")).toBeVisible();
+  await expect(page.getByText("Bracket closed")).toBeVisible();
 
   await page.goto(`/xi/competitions/${id}`);
   await expect(
@@ -227,11 +237,20 @@ test("a Bracket of 4 per Heat is built, run and finalized into Points Entries", 
   const entries = (await xiCompetitionEntries(COMPETITION)).filter(
     (entry) => entry.generated,
   );
-  // Placement Points 5 / 3 / 1: the champion, the runner-up and the Final's
+  // Placement Points 5 / 3 / 1: the Winner, the runner-up and the Final's
   // third place. The Final's fourth place gets nothing, and nobody outside
   // the Final is placed.
   expect(entries).toHaveLength(3);
-  expect(entries.find((entry) => entry.target === champion)?.points).toBe(5);
+  expect(entries.find((entry) => entry.target === winner)?.points).toBe(5);
+  // Closed: the same order, its points now the Points Entries Close wrote.
+  await expectPodium(page, podium);
+  await expect(
+    page
+      .getByRole("region", { name: "Top finishers" })
+      .getByRole("button", { name: "Provisional" }),
+  ).toHaveCount(0);
+  await shootPodium(page, testInfo, "podium-group-final");
+  await axePodium(page, testInfo, "podium-group-final-axe");
 
   await checkViewports(page, testInfo, "participant");
 });

@@ -145,16 +145,18 @@ async function recordOrder(page: Page, heat: string, entrants: string[]) {
   await expect(form).toBeHidden();
 }
 
-async function finalize(page: Page, action: "Finalize" | "Un-finalize") {
-  await page.getByRole("button", { name: action }).click();
+async function finalize(page: Page, action: "Close" | "Reopen") {
+  // Scoped to the Bracket: a closing Sheet has its own "Close" button.
+  await page
+    .getByRole("region", { name: "Bracket", exact: true })
+    .getByRole("button", { name: action, exact: true })
+    .click();
   await page
     .getByRole("alertdialog")
-    .getByRole("button", { name: action })
+    .getByRole("button", { name: action, exact: true })
     .click();
   await expect(
-    page.getByText(
-      action === "Finalize" ? "Bracket finalized" : "Bracket un-finalized",
-    ),
+    page.getByText(action === "Close" ? "Bracket closed" : "Bracket reopened"),
   ).toBeVisible();
 }
 
@@ -394,8 +396,8 @@ test("a head-to-head Bracket is one tree: the Organizer records from it in admin
 
   await recordWinner(page, "Semifinal 1", KNOCKOUT_ENTRANTS);
   await recordWinner(page, "Final", KNOCKOUT_ENTRANTS);
-  await finalize(page, "Finalize");
-  // Finalized: nothing to record until Un-finalize.
+  await finalize(page, "Close");
+  // Closed: nothing to record until Reopen.
   await expect(admin.getByRole("button")).toHaveCount(0);
 
   await viewer.page.reload();
@@ -409,7 +411,7 @@ test("a head-to-head Bracket is one tree: the Organizer records from it in admin
   await viewer.context.close();
 
   // Leave the Standings the later flows read as they were.
-  await finalize(page, "Un-finalize");
+  await finalize(page, "Reopen");
 });
 
 test("a Bracket of 4 per Heat is the same tree of Heat boxes, advancers highlighted", async ({
@@ -454,7 +456,7 @@ test("a Bracket of 4 per Heat is the same tree of Heat boxes, advancers highligh
 
   await recordOrder(page, "Round 1 Heat 2", HEATS_ENTRANTS);
   await recordOrder(page, "Final", HEATS_ENTRANTS);
-  await finalize(page, "Finalize");
+  await finalize(page, "Close");
 
   await viewer.page.reload();
   // In the Final only the winner is highlighted.
@@ -470,7 +472,7 @@ test("a Bracket of 4 per Heat is the same tree of Heat boxes, advancers highligh
   );
   await viewer.context.close();
 
-  await finalize(page, "Un-finalize");
+  await finalize(page, "Reopen");
 });
 
 /** The Semifinal `displayName` plays in (the draw is random). */

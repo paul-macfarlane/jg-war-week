@@ -1,20 +1,18 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
 import { reportHeatResult } from "@/actions/heat-reports";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { BracketPodium } from "@/components/bracket-podium";
 import { BracketTree } from "@/components/bracket-tree";
-import {
-  type BracketViewEntrant,
-  EntrantMark,
-} from "@/components/entrant-mark";
+import type { BracketViewEntrant } from "@/components/entrant-mark";
 import { HeatResultForm } from "@/components/heat-result-form";
 import { ResponsiveSheetDialog } from "@/components/responsive-sheet-dialog";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useYou } from "@/components/you";
+import type { PodiumPlace } from "@/lib/bracket/podium";
 import type { Bracket } from "@/lib/bracket/types";
 import {
   type NextHeat,
@@ -22,7 +20,6 @@ import {
   heatName,
   nextHeatFor,
 } from "@/lib/bracket/view";
-import { YOU_ROW_CLASS } from "@/lib/you";
 
 type Scoring = "team" | "individual";
 
@@ -45,9 +42,9 @@ function listNames(names: string[]): string {
 }
 
 /**
- * The "Your next Heat" card (props only): the Heat You play next and
+ * The "Your next Match" card (props only): the Match You play next and
  * against whom, or the Round You advanced to. `canReport` adds **Report
- * result** (the server found the Heat reportable by You, known by account
+ * result** (the server found the Match reportable by You, known by account
  * linking).
  */
 export function YourNextHeatCard({
@@ -64,12 +61,12 @@ export function YourNextHeatCard({
   onReport: () => void;
 }) {
   return (
-    <Card size="sm" aria-label="Your next Heat" className="ring-accent ring-2">
+    <Card size="sm" aria-label="Your next Match" className="ring-accent ring-2">
       <CardContent className="flex min-w-0 flex-col gap-1">
         {next.kind === "advanced" ? (
           <>
             <span className="text-foreground/60 text-xs font-medium uppercase">
-              Your next Heat
+              Your next Match
             </span>
             <span className="font-semibold">
               Advanced to Round {next.round} · waiting for Round{" "}
@@ -79,7 +76,7 @@ export function YourNextHeatCard({
         ) : (
           <>
             <span className="text-foreground/60 text-xs font-medium uppercase">
-              Your next Heat · {heatName(bracket, next.heat)}
+              Your next Match · {heatName(bracket, next.heat)}
             </span>
             {next.opponentIds.length > 0 ? (
               <span className="font-semibold break-words">
@@ -124,8 +121,9 @@ export type BracketViewSelfReport = {
 };
 
 /**
- * The Competition page's Bracket: the champion and Your next Heat pinned on
- * top, then the Bracket's tree (the same one admin records from), Your
+ * The Competition page's Bracket: Top finishers (the places decided so
+ * far, Provisional until it's Closed) and Your next Match pinned on top,
+ * then the Bracket's tree (the same one admin records from), Your
  * Entrant highlighted under the You rules. Your Heat, when you may
  * self-report it, carries Record result in the tree as on the card. Owns
  * the report Sheet (a centered Dialog on large screens), and refreshes
@@ -136,26 +134,27 @@ export function BracketView({
   competitionId,
   entrants,
   bracket,
-  champion,
+  podium,
+  closed,
   scoring,
   primaryColor,
   participantTeams,
   participantSquads,
-  finaleHref,
   selfReport,
 }: {
   competitionId: string;
   entrants: BracketViewEntrant[];
   bracket: Bracket;
-  champion: string | null;
+  /** The places decided so far, with their points (`podium`). */
+  podium: PodiumPlace[];
+  /** Whether the Bracket is Closed: its podium's points are final. */
+  closed: boolean;
   scoring: Scoring;
   primaryColor: string;
   /** Each Participant's Team id, for finding Your Team's Entrant. */
   participantTeams: Record<string, string>;
   /** Each Participant's Squad id in this Competition, for Your Squad's Entrant. */
   participantSquads: Record<string, string>;
-  /** The Bracket Finale, once the Bracket is finalized; null before. */
-  finaleHref: string | null;
   selfReport: BracketViewSelfReport;
 }) {
   const you = useYou();
@@ -173,7 +172,6 @@ export function BracketView({
     scoring,
   );
   const next = youEntrantId ? nextHeatFor(bracket, youEntrantId) : null;
-  const winner = champion ? entrantsById.get(champion) : undefined;
   const heatsById = new Map(bracket.heats.map((h) => [h.id, h]));
   const canReport =
     selfReport.on &&
@@ -207,39 +205,14 @@ export function BracketView({
       <h2 className="text-lg font-semibold">Bracket</h2>
       {squadHelp}
 
-      {winner && (
-        <Card size="sm" aria-label="Champion" className="ring-primary ring-2">
-          <CardContent className="flex min-w-0 items-center gap-3">
-            <span aria-hidden className="text-3xl">
-              🏆
-            </span>
-            <div className="flex min-w-0 flex-col">
-              <span className="text-foreground/60 text-xs font-medium uppercase">
-                Champion
-              </span>
-              <span
-                className={`flex min-w-0 items-center gap-2 text-lg font-bold ${YOU_ROW_CLASS}`}
-              >
-                <EntrantMark
-                  entrant={winner}
-                  scoring={scoring}
-                  primaryColor={primaryColor}
-                />
-                <span className="truncate">{winner.label}</span>
-                {winner.id === youEntrantId && <YouMark />}
-              </span>
-            </div>
-            {finaleHref && (
-              <Link
-                href={finaleHref}
-                className={`${buttonVariants({ variant: "outline", size: "sm" })} ml-auto shrink-0`}
-              >
-                Play the Finale
-              </Link>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      <BracketPodium
+        places={podium}
+        entrantsById={entrantsById}
+        scoring={scoring}
+        primaryColor={primaryColor}
+        closed={closed}
+        after={(id) => (id === youEntrantId ? <YouMark /> : null)}
+      />
 
       {next && (
         <YourNextHeatCard
