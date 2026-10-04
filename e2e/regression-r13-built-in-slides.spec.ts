@@ -3,7 +3,6 @@ import { expect, test } from "@playwright/test";
 import { resetXiFinaleSlides, runQuery, xiCompetitionId } from "./db";
 import {
   finaleStage,
-  nextSlide,
   nextUntil,
   openFinale,
   playedSlides,
