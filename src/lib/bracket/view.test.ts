@@ -7,8 +7,8 @@ import {
   entrantForYou,
   formatLabel,
   groupRounds,
-  heatName,
   isBracketFormat,
+  matchName,
   nextHeatFor,
   roundName,
 } from "@/lib/bracket/view";
@@ -51,7 +51,7 @@ describe("roundName", () => {
     expect(roundName(generate(entrants(letters(9))), 2)).toBe("Round 2");
   });
 
-  it("never says Semifinal in a Heats Bracket", () => {
+  it("never says Semifinal in a Matches Bracket", () => {
     // 16 Entrants, 4 per Heat, 2 advance: 4 Heats, then 2, then the Final.
     const sixteen = generateHeats(entrants(letters(16)));
     expect(roundName(sixteen, 1)).toBe("Round 1");
@@ -60,23 +60,27 @@ describe("roundName", () => {
   });
 });
 
-describe("heatName", () => {
-  it("names Heats by Round and position", () => {
-    expect(heatName(five, { round: 3, position: 1 })).toBe("Final");
-    expect(heatName(five, { round: 2, position: 2 })).toBe("Semifinal 2");
-    expect(heatName(five, { round: 1, position: 4 })).toBe("Round 1 Heat 4");
+describe("matchName", () => {
+  it("names Matches by Round and position", () => {
+    expect(matchName(five, { round: 3, position: 1 })).toBe("Final");
+    expect(matchName(five, { round: 2, position: 2 })).toBe("Semifinal 2");
+    expect(matchName(five, { round: 1, position: 4 })).toBe("Round 1 Match 4");
   });
 
-  it("names a Heats Bracket's Heats by Round and position, the last the Final", () => {
+  it("names a Matches Bracket's Matches by Round and position, the last the Final", () => {
     const sixteen = generateHeats(entrants(letters(16)));
-    expect(heatName(sixteen, { round: 1, position: 2 })).toBe("Round 1 Heat 2");
-    expect(heatName(sixteen, { round: 2, position: 1 })).toBe("Round 2 Heat 1");
-    expect(heatName(sixteen, { round: 3, position: 1 })).toBe("Final");
+    expect(matchName(sixteen, { round: 1, position: 2 })).toBe(
+      "Round 1 Match 2",
+    );
+    expect(matchName(sixteen, { round: 2, position: 1 })).toBe(
+      "Round 2 Match 1",
+    );
+    expect(matchName(sixteen, { round: 3, position: 1 })).toBe("Final");
   });
 });
 
 describe("groupRounds", () => {
-  it("groups a 5-Entrant Bracket's Heats into named Rounds in order", () => {
+  it("groups a 5-Entrant Bracket's Matches into named Rounds in order", () => {
     expect(
       groupRounds(five).map((r) => [r.name, r.heats.map((h) => h.id)]),
     ).toEqual([
@@ -97,7 +101,7 @@ describe("nextHeatFor", () => {
   // 3 Entrants: A has a bye into the Final; B plays C in Round 1 Heat 2.
   const three = generate(entrants(["A", "B", "C"]));
 
-  it("waits on the Heat feeding the empty slot after a bye", () => {
+  it("waits on the Match feeding the empty slot after a bye", () => {
     const next = nextHeatFor(three, "A");
     expect(next).toMatchObject({
       kind: "heat",
@@ -107,7 +111,7 @@ describe("nextHeatFor", () => {
     expect(next?.kind === "heat" && next.waitingFor?.id).toBe("r1h2");
   });
 
-  it("names the opponent of a ready Heat", () => {
+  it("names the opponent of a ready Match", () => {
     const next = nextHeatFor(three, "C");
     expect(next).toMatchObject({
       kind: "heat",
@@ -117,7 +121,7 @@ describe("nextHeatFor", () => {
     });
   });
 
-  it("finds the opponent once the feeding Heat is decided", () => {
+  it("finds the opponent once the feeding Match is decided", () => {
     const played = applyResult(three, "r1h2", { order: ["B", "C"] });
     expect(nextHeatFor(played, "A")).toMatchObject({ opponentIds: ["B"] });
     expect(nextHeatFor(played, "B")).toMatchObject({ heat: { id: "r2h1" } });
@@ -136,12 +140,12 @@ describe("nextHeatFor", () => {
   });
 });
 
-describe("nextHeatFor in a Heats Bracket", () => {
+describe("nextHeatFor in a Matches Bracket", () => {
   // 8 Entrants dealt snake-style into two Heats of 4:
   // Round 1 Heat 1 is A, D, E, H; Round 1 Heat 2 is B, C, F, G.
   const eight = generateHeats(entrants(letters(8)));
 
-  it("names every other Entrant of the Heat as an opponent", () => {
+  it("names every other Entrant of the Match as an opponent", () => {
     expect(nextHeatFor(eight, "A")).toEqual({
       kind: "heat",
       heat: expect.objectContaining({ id: "r1h1" }),

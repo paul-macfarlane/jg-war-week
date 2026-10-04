@@ -135,7 +135,7 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     await you.goto("/xi");
     const shortcut = you
       .locator("section")
-      .filter({ has: you.getByRole("heading", { name: "Log a Game" }) });
+      .filter({ has: you.getByRole("heading", { name: "Log a result" }) });
     await expect(shortcut).toBeVisible();
     await shoot(you, testInfo, "home-shortcut");
     await shortcut.getByRole("link", { name: new RegExp(COMPETITION) }).click();
@@ -144,7 +144,7 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
       you.getByText("Head-to-head", { exact: true }).first(),
     ).toBeVisible();
 
-    const form = you.getByRole("dialog", { name: "Log a Game" });
+    const form = you.getByRole("dialog", { name: "Log a Match" });
     await expect(form).toBeVisible();
     await expect(form.getByRole("combobox", { name: "Player A" })).toHaveValue(
       PLAYER.name,
@@ -164,8 +164,8 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     );
     await expect(won).toHaveAttribute("aria-pressed", "true");
     await shoot(you, testInfo, "log-form");
-    await form.getByRole("button", { name: "Log Game" }).click();
-    await expect(you.getByText("Game logged")).toBeVisible();
+    await form.getByRole("button", { name: "Log Match" }).click();
+    await expect(you.getByText("Match logged")).toBeVisible();
     await expect(form).toBeHidden();
 
     // The results table shows the win, with Provisional points 3 and 2
@@ -187,7 +187,7 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     // The Host flips the winner on the Competition page.
     await page.goto(`/xi/competitions/${id}`);
     await page.getByRole("button", { name: `Edit Match: ${logged}` }).click();
-    const edit = page.getByRole("dialog", { name: "Edit Game" });
+    const edit = page.getByRole("dialog", { name: "Edit Match" });
     await expect(edit).toBeVisible();
     await shoot(page, testInfo, "host-edit");
     // Keyboard proof: arrow off the pressed item onto the other, Space to
@@ -204,8 +204,8 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     await page.keyboard.press("Space");
     await expect(editOpponentWon).toHaveAttribute("aria-pressed", "true");
     await expect(editPlayerWon).toHaveAttribute("aria-pressed", "false");
-    await edit.getByRole("button", { name: "Save Game" }).click();
-    await expect(page.getByText("Game updated")).toBeVisible();
+    await edit.getByRole("button", { name: "Save Match" }).click();
+    await expect(page.getByText("Match updated")).toBeVisible();
     await expect(edit).toBeHidden();
     await expectResult(
       page,
@@ -279,7 +279,7 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
       "3",
     );
     await expectResult(page, PLAYER.name, "2", "0 won · 1 lost · 0 drawn", "2");
-    await expect(page.getByRole("button", { name: "Log a Game" })).toHaveCount(
+    await expect(page.getByRole("button", { name: "Log a Match" })).toHaveCount(
       0,
     );
     await shoot(page, testInfo, "closed");

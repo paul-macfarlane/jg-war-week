@@ -38,6 +38,20 @@ export function gameFormatLabel(gameFormat: GameFormat): string {
   return GAME_TYPE_LABELS[gameFormat];
 }
 
+/**
+ * What one logged result is called in this Format: a Head-to-head Match or
+ * a Best score Attempt (spec competition-results, decision 10).
+ */
+export function resultNoun(gameFormat: GameFormat): {
+  one: string;
+  many: string;
+  a: string;
+} {
+  return gameFormat === "best-score"
+    ? { one: "Attempt", many: "Attempts", a: "an Attempt" }
+    : { one: "Match", many: "Matches", a: "a Match" };
+}
+
 export function bestOfLabel(bestOf: BestOf | null): string {
   return bestOf === null ? "Off" : `Best of ${bestOf}`;
 }

@@ -47,7 +47,7 @@ export function seedingOrder(size: number): number[] {
 
 function findHeat(bracket: Bracket, heatId: string): Heat {
   const found = bracket.heats.find((h) => h.id === heatId);
-  if (!found) throw new BracketError("That Heat isn't in this Bracket.");
+  if (!found) throw new BracketError("That Match isn't in this Bracket.");
   return found;
 }
 
@@ -71,7 +71,7 @@ function advance(bracket: Bracket, to: WinnerTo | null, entrantId: string) {
 
 /**
  * Builds a single-elimination Bracket. Byes go to the top Seed Positions,
- * and each bye's Entrant is already advanced. With a 3rd place game, it
+ * and each bye's Entrant is already advanced. With a 3rd place Match, it
  * is one more Heat in the final's Round at position 2 (the final is 1),
  * fed by each semifinal's loser. Heat ids come from `newId`.
  */
@@ -162,7 +162,7 @@ export function hasResults(bracket: Bracket): boolean {
   return bracket.heats.some((h) => isDecided(h) && !isBye(h));
 }
 
-/** Whether the final, and the 3rd place game when there is one, are decided. */
+/** Whether the final, and the 3rd place Match when there is one, are decided. */
 export function isComplete(bracket: Bracket): boolean {
   const final = finalHeatOf(bracket);
   const third = thirdPlaceHeatOf(bracket);
@@ -235,7 +235,7 @@ export function resetByResult(
 
 /**
  * Records a Heat Result and advances the winner (and a semifinal's loser,
- * to the 3rd place game). A knockout Heat needs a
+ * to the 3rd place Match). A knockout Heat needs a
  * clear order of every Entrant.
  * Re-recording a decided Heat with a new winner first clears the old winner
  * from the later Heats it reached (see `resetByResult`); keeping the winner
@@ -248,9 +248,9 @@ export function applyResult(
 ): Bracket {
   const next = structuredClone(bracket);
   const heat = findHeat(next, heatId);
-  if (isBye(heat)) throw new BracketError("A bye has no Heat Result.");
+  if (isBye(heat)) throw new BracketError("A bye has no Match Result.");
   if (heat.slots.some((s) => s.entrantId === null)) {
-    throw new BracketError("This Heat is still waiting for its Entrants.");
+    throw new BracketError("This Match is still waiting for its Entrants.");
   }
   const ids = heat.slots.map((s) => s.entrantId!);
   const { order } = result;
@@ -260,13 +260,13 @@ export function applyResult(
     !order.every((id) => ids.includes(id))
   ) {
     throw new BracketError(
-      "Put every Entrant of this Heat in finishing order, once each.",
+      "Put every Entrant of this Match in finishing order, once each.",
     );
   }
   const scores = result.scores ?? {};
   if (Object.keys(scores).some((id) => !ids.includes(id))) {
     throw new BracketError(
-      "Scores can only be given for this Heat's Entrants.",
+      "Scores can only be given for this Match's Entrants.",
     );
   }
 
@@ -288,7 +288,7 @@ export function applyResult(
 
 /**
  * Final placings of a finished Bracket, from the final only: 1st and 2nd;
- * then the 3rd place game's 3rd and 4th, or without one, both semifinal
+ * then the 3rd place Match's 3rd and 4th, or without one, both semifinal
  * losers tie 3rd and nobody is 4th. Nobody else is placed. A bye is not a
  * played Heat. Sorted by place, then Seed Position.
  */
@@ -325,7 +325,7 @@ export function finalPlacings(
 /**
  * The engine for a Bracket of 2 per Heat with 1 advancing (a head-to-head
  * knockout, not a Format of its own): the winner advances. Its one extra
- * setting is the 3rd place game.
+ * setting is the 3rd place Match.
  */
 export const singleElimination: FormatEngine = {
   validateConfig: thirdPlaceRefusal,

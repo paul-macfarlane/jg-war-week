@@ -6,9 +6,9 @@ import { FinaleSlideshow } from "@/components/finale";
 import { finaleSlideData } from "@/lib/finale-slides";
 import { getAwards } from "@/queries/awards";
 import {
-  getChampions,
   getFinaleCounts,
   getFinaleSlides,
+  getWinners,
 } from "@/queries/finale-slides";
 import { getStandings } from "@/queries/standings";
 
@@ -44,7 +44,7 @@ export default async function FinalePage({
       getActor(),
       getFinaleCounts(warWeek.id),
       getAwards(warWeek),
-      getChampions(warWeek),
+      getWinners(warWeek),
     ]);
 
   return (

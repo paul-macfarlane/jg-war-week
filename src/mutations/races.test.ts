@@ -260,14 +260,14 @@ async function committedReportable(edition: string, n: number) {
 }
 
 describe.skipIf(!isLocalDatabase)(
-  "Heat Result reports on two connections",
+  "Match Result reports on two connections",
   () => {
     const edition = "zz-r-hr";
     beforeEach(() => clearWarWeek(edition));
     afterEach(() => clearWarWeek(edition));
 
     it.each([["Neo"], ["Trinity"]])(
-      "gives two reports of one Heat exactly one result; the other is told it's decided (%s first)",
+      "gives two reports of one Match exactly one result; the other is told it's decided (%s first)",
       async (first) => {
         const { submitHeatReport } = await import("@/mutations/heat-reports");
         const f = await committedReportable(edition, 6);
@@ -297,7 +297,7 @@ describe.skipIf(!isLocalDatabase)(
         // [Neo's, Trinity's]: the one that queued first wins.
         const decided = {
           ok: false,
-          error: "This Heat already has a result.",
+          error: "This Match already has a result.",
         };
         expect(results).toEqual(
           first === "Neo"
@@ -315,7 +315,7 @@ describe.skipIf(!isLocalDatabase)(
 );
 
 describe.skipIf(!isLocalDatabase)(
-  "Heat Result report beside a Host's result on two connections",
+  "Match Result report beside a Host's result on two connections",
   () => {
     const edition = "zz-r-hh";
     beforeEach(() => clearWarWeek(edition));
@@ -352,7 +352,7 @@ describe.skipIf(!isLocalDatabase)(
         expect(hosted).toEqual({ ok: true, resetHeatIds: [] });
         expect(reported).toEqual(
           first === "Host"
-            ? { ok: false, error: "This Heat already has a result." }
+            ? { ok: false, error: "This Match already has a result." }
             : { ok: true, resetHeatIds: [] },
         );
         // The Host's result stands either way, and it's the Host's: no reporter.

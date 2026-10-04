@@ -158,7 +158,7 @@ async function recordHeat(page: Page, heat: string): Promise<string> {
     .first();
   const name = squadIn(await winner.innerText());
   await winner.click();
-  await sheet.getByRole("button", { name: "Save Heat Result" }).click();
+  await sheet.getByRole("button", { name: "Save Match Result" }).click();
   await expect(page.getByText(`${name} wins ${heat}`)).toBeVisible();
   await expect(sheet).toBeHidden();
   return name;
@@ -284,7 +284,7 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
        where h.competition_id = $1 and h.round = 1 and s.name = 'Red Alpha'`,
       [id],
     );
-    if (!draw) throw new Error("Red Alpha isn't in a Round 1 Heat");
+    if (!draw) throw new Error("Red Alpha isn't in a Round 1 Match");
     const semifinal = `Semifinal ${draw.position}`;
     const otherSemifinal = `Semifinal ${draw.position === 1 ? 2 : 1}`;
     const opponent = draw.opponent;
@@ -358,16 +358,18 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
       .getByRole("group", { name: "Winner" })
       .getByRole("button", { name: "Red Alpha" })
       .click();
-    await firstSheet.getByRole("button", { name: "Save Heat Result" }).click();
+    await firstSheet.getByRole("button", { name: "Save Match Result" }).click();
     await expect(first.getByText("Result reported.")).toBeVisible();
     await expect(firstSheet).toBeHidden();
     await expect(heatCard(first, "Final")).toContainText("Red Alpha");
     await checkViewports(first, testInfo, "participant-reported");
 
     // The second's report now comes too late.
-    await secondSheet.getByRole("button", { name: "Save Heat Result" }).click();
+    await secondSheet
+      .getByRole("button", { name: "Save Match Result" })
+      .click();
     await expect(
-      second.getByText("This Heat already has a result."),
+      second.getByText("This Match already has a result."),
     ).toBeVisible();
     await expect(secondSheet).toBeVisible();
     await second.keyboard.press("Escape");
@@ -404,7 +406,7 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
       .getByRole("group", { name: "Winner" })
       .getByRole("button", { name: "Red Alpha" })
       .click();
-    await finalSheet.getByRole("button", { name: "Save Heat Result" }).click();
+    await finalSheet.getByRole("button", { name: "Save Match Result" }).click();
     await expect(first.getByText("Result reported.")).toBeVisible();
     await firstContext.close();
 
@@ -419,13 +421,13 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
       .getByRole("group", { name: "Winner" })
       .getByRole("button", { name: opponent })
       .click();
-    await overwrite.getByRole("button", { name: "Save Heat Result" }).click();
+    await overwrite.getByRole("button", { name: "Save Match Result" }).click();
     const resetConfirm = page.getByRole("alertdialog");
     await expect(resetConfirm).toContainText(`Change the ${semifinal} result?`);
     await expect(resetConfirm).toContainText("Final will be reset.");
     await resetConfirm.getByRole("button", { name: "Save and reset" }).click();
     await expect(
-      page.getByText(`${opponent} wins ${semifinal} · 1 later Heat reset`),
+      page.getByText(`${opponent} wins ${semifinal} · 1 later Match reset`),
     ).toBeVisible();
     await expect(overwrite).toBeHidden();
     await expect(heatCard(page, semifinal)).not.toContainText("Reported by");
@@ -442,7 +444,7 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
       .getByRole("group", { name: "Winner" })
       .getByRole("button", { name: "Red Alpha" })
       .click();
-    await overwrite.getByRole("button", { name: "Save Heat Result" }).click();
+    await overwrite.getByRole("button", { name: "Save Match Result" }).click();
     await expect(page.getByText(`Red Alpha wins ${semifinal}`)).toBeVisible();
     await expect(overwrite).toBeHidden();
     await recordHeat(page, "Final");

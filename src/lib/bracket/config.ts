@@ -9,13 +9,13 @@ export type BracketConfig = {
   entrantsPerHeat: number;
   advancePerHeat: number;
   /**
-   * A 3rd place game between the semifinal losers: head-to-head only, with
+   * A 3rd place Match between the semifinal losers: head-to-head only, with
    * at least 4 Entrants (see `thirdPlaceRefusal`).
    */
   thirdPlaceGame: boolean;
 };
 
-/** What a new Bracket gets: head-to-head, no 3rd place game. */
+/** What a new Bracket gets: head-to-head, no 3rd place Match. */
 export const DEFAULT_BRACKET_CONFIG: BracketConfig = {
   entrantsPerHeat: 2,
   advancePerHeat: 1,
@@ -31,16 +31,16 @@ export function isHeadToHead(config: BracketConfig): boolean {
   return config.entrantsPerHeat === 2 && config.advancePerHeat === 1;
 }
 
-/** A 3rd place game on any config but head-to-head. */
+/** A 3rd place Match on any config but head-to-head. */
 export const THIRD_PLACE_HEAD_TO_HEAD_ONLY =
-  "A 3rd place game is only for 2 per Heat with 1 advancing.";
+  "A 3rd place Match is only for 2 per Match with 1 advancing.";
 
-/** A 3rd place game with fewer than two real semifinals. */
+/** A 3rd place Match with fewer than two real semifinals. */
 export const THIRD_PLACE_NEEDS_FOUR =
-  "A 3rd place game needs at least 4 Entrants.";
+  "A 3rd place Match needs at least 4 Entrants.";
 
 /**
- * Why this config's 3rd place game is refused for `entrantCount` Entrants,
+ * Why this config's 3rd place Match is refused for `entrantCount` Entrants,
  * or null: it needs head-to-head and two real semifinals (4 Entrants).
  */
 export function thirdPlaceRefusal(
@@ -60,7 +60,7 @@ export const ENTRANTS_PER_HEAT_OPTIONS = [2, 3, 4, 5, 6, 7, 8] as const;
 export const ADVANCE_PER_HEAT_OPTIONS = [1, 2, 3, 4, 5, 6, 7] as const;
 
 export function entrantsPerHeatLabel(count: number): string {
-  return `${count} per Heat`;
+  return `${count} per Match`;
 }
 
 export function advancePerHeatLabel(count: number): string {
@@ -72,19 +72,19 @@ export const bracketConfigSchema = z
     entrantsPerHeat: z
       .number()
       .int()
-      .min(2, { error: "A Heat needs at least 2 Entrants." })
-      .max(8, { error: "A Heat holds at most 8 Entrants." }),
+      .min(2, { error: "A Match needs at least 2 Entrants." })
+      .max(8, { error: "A Match holds at most 8 Entrants." }),
     advancePerHeat: z
       .number()
       .int()
-      .min(1, { error: "At least 1 must advance from a Heat." })
-      .max(7, { error: "At most 7 can advance from a Heat." }),
+      .min(1, { error: "At least 1 must advance from a Match." })
+      .max(7, { error: "At most 7 can advance from a Match." }),
     thirdPlaceGame: z.boolean({
-      error: "Choose whether to play a 3rd place game.",
+      error: "Choose whether to play a 3rd place Match.",
     }),
   })
   .refine((c) => c.advancePerHeat < c.entrantsPerHeat, {
-    error: "Fewer must advance than play in a Heat.",
+    error: "Fewer must advance than play in a Match.",
     path: ["advancePerHeat"],
   });
 

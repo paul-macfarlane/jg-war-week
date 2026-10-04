@@ -277,7 +277,7 @@ describe.skipIf(!isLocalDatabase)("the placement actions' refusals", () => {
     });
   });
 
-  it("the Competition's Host gets through: Finalize writes its Points Entries", async () => {
+  it("the Competition's Host gets through: Close writes its Points Entries", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await fixture(tx);
       session.email = HOST;
@@ -349,7 +349,7 @@ describe.skipIf(!isLocalDatabase)("the placement actions' refusals", () => {
     });
   });
 
-  it("refuses, as the Host, every row change and a Format change while Finalized, writing nothing", async () => {
+  it("refuses, as the Host, every row change and a Format change while Closed, writing nothing", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await fixture(tx);
       session.email = HOST;

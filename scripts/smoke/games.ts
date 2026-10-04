@@ -65,15 +65,15 @@ function otherEmails(body: string, own: string): string[] {
   );
 }
 
-/** The "Log a Game" button, not the dialog title or the home card. */
-const LOG_BUTTON = />Log a Game</;
+/** The "Log a Match" button (Bouncy Pong is Head-to-head), not the dialog title or the home card. */
+const LOG_BUTTON = />Log a Match</;
 
 /**
  * The seeded Head-to-head or Best score Competitions (17-5, 17-A): each page renders its
  * Format and its empty results (no Matches, no Attempts) with no email in it; `logGame` over HTTP is refused
  * before the smoke Participant's email links them, then succeeds and shows
  * in the log; closed and with XI ended, the page still renders the
- * results table and Matches with no Log a Game. Then everything is undone: the
+ * results table and Matches with no Log a Match. Then everything is undone: the
  * Game deleted, the Competition reopened, XI `live` with no Winner, the
  * email cleared.
  */
@@ -136,7 +136,7 @@ export async function assertGamesLoop(sessions: {
     );
 
     await runCheck(
-      "games: logGame as the linked smoke Participant succeeds and the page shows the Game",
+      "games: logGame as the linked smoke Participant succeeds and the page shows the Match",
       async () => {
         await runQuery(`update participant set email = $1 where id = $2`, [
           SMOKE_PARTICIPANT_EMAIL,
@@ -174,7 +174,7 @@ export async function assertGamesLoop(sessions: {
     // Its own sequential step: never alongside the lifecycle check, which
     // also changes XI's status.
     await runCheck(
-      "games: closed and with XI ended, the page still renders the results table and Matches, with no Log a Game",
+      "games: closed and with XI ended, the page still renders the results table and Matches, with no Log a Match",
       async () => {
         const closed = await callAction(
           ids.closeGames,
@@ -252,10 +252,10 @@ export async function assertGamesLoop(sessions: {
         }
       };
       await restore()
-        .then(() => ok("games: reopen Bouncy Pong and delete the smoke Game"))
+        .then(() => ok("games: reopen Bouncy Pong and delete the smoke Match"))
         .catch((error) =>
           fail(
-            "games: reopen Bouncy Pong and delete the smoke Game",
+            "games: reopen Bouncy Pong and delete the smoke Match",
             String(error),
           ),
         );

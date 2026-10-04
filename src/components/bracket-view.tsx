@@ -7,7 +7,7 @@ import { AutoRefresh } from "@/components/auto-refresh";
 import { BracketPodium } from "@/components/bracket-podium";
 import { BracketTree } from "@/components/bracket-tree";
 import type { BracketViewEntrant } from "@/components/entrant-mark";
-import { HeatResultForm } from "@/components/heat-result-form";
+import { MatchResultForm } from "@/components/match-result-form";
 import { ResponsiveSheetDialog } from "@/components/responsive-sheet-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,7 +17,7 @@ import type { Bracket } from "@/lib/bracket/types";
 import {
   type NextHeat,
   entrantForYou,
-  heatName,
+  matchName,
   nextHeatFor,
 } from "@/lib/bracket/view";
 
@@ -47,7 +47,7 @@ function listNames(names: string[]): string {
  * result** (the server found the Match reportable by You, known by account
  * linking).
  */
-export function YourNextHeatCard({
+export function YourNextMatchCard({
   next,
   bracket,
   entrantsById,
@@ -76,7 +76,7 @@ export function YourNextHeatCard({
         ) : (
           <>
             <span className="text-foreground/60 text-xs font-medium uppercase">
-              Your next Match · {heatName(bracket, next.heat)}
+              Your next Match · {matchName(bracket, next.heat)}
             </span>
             {next.opponentIds.length > 0 ? (
               <span className="font-semibold break-words">
@@ -90,7 +90,7 @@ export function YourNextHeatCard({
             ) : (
               <span className="text-foreground/70">
                 {next.waitingFor
-                  ? `Waiting for ${heatName(bracket, next.waitingFor)}`
+                  ? `Waiting for ${matchName(bracket, next.waitingFor)}`
                   : "Waiting for an opponent"}
               </span>
             )}
@@ -215,7 +215,7 @@ export function BracketView({
       />
 
       {next && (
-        <YourNextHeatCard
+        <YourNextMatchCard
           next={next}
           bracket={bracket}
           entrantsById={entrantsById}
@@ -247,7 +247,7 @@ export function BracketView({
         }}
       >
         {reportHeat && (
-          <HeatResultForm
+          <MatchResultForm
             key={reportHeat.id}
             heat={reportHeat}
             bracket={bracket}

@@ -84,7 +84,7 @@ async function leaderboardTotals(page: Page) {
   };
 }
 
-test("r16 90 a Host records placements with Scores, breaks a tie and Finalizes: the Standings move, Recent results shows it, Reopen withdraws, a Participant is refused", async ({
+test("r16 90 a Host records placements with Scores, breaks a tie and Closes: the Standings move, Recent results shows it, Reopen withdraws, a Participant is refused", async ({
   browser,
   context,
   page,
@@ -167,13 +167,13 @@ test("r16 90 a Host records placements with Scores, breaks a tie and Finalizes: 
       page.getByRole("textbox", { name: `Place for ${TIE_BROKEN}` }),
     ).toHaveValue("3");
 
-    await page.getByRole("button", { name: "Finalize", exact: true }).click();
+    await page.getByRole("button", { name: "Close", exact: true }).click();
     const confirm = page.getByRole("alertdialog", {
-      name: "Finalize this Competition?",
+      name: "Close this Competition?",
     });
-    await confirm.getByRole("button", { name: "Finalize" }).click();
-    await expect(page.getByText("Competition finalized")).toBeVisible();
-    await expect(page.getByText("Finalized: its Points Entries")).toBeVisible();
+    await confirm.getByRole("button", { name: "Close" }).click();
+    await expect(page.getByText("Competition closed")).toBeVisible();
+    await expect(page.getByText("Closed: its Points Entries")).toBeVisible();
     await shoot(page, testInfo, "sheet-finalized");
 
     // The Standings move by exactly the Teams' points, matching SQL.
@@ -192,7 +192,7 @@ test("r16 90 a Host records placements with Scores, breaks a tie and Finalizes: 
     const result = recent
       .getByRole("listitem")
       .filter({ has: page.getByRole("link", { name }) });
-    await expect(result.getByText("Finalized", { exact: true })).toBeVisible();
+    await expect(result.getByText("Closed", { exact: true })).toBeVisible();
     await expect(result.getByText(ROWS[0].name)).toBeVisible();
     await shoot(page, testInfo, "recent-results");
 

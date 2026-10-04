@@ -243,12 +243,12 @@ test("r20 D1 a Placement's results table sorts by every header, marks the Winner
     // Close (the sheet's Finalize until the words change) as an Organizer.
     await page.setViewportSize(DESKTOP);
     await openCompetitionPage(page, id);
-    await page.getByRole("button", { name: "Finalize", exact: true }).click();
+    await page.getByRole("button", { name: "Close", exact: true }).click();
     await page
-      .getByRole("alertdialog", { name: "Finalize this Competition?" })
-      .getByRole("button", { name: "Finalize" })
+      .getByRole("alertdialog", { name: "Close this Competition?" })
+      .getByRole("button", { name: "Close" })
       .click();
-    await expect(page.getByText("Competition finalized")).toBeVisible();
+    await expect(page.getByText("Competition closed")).toBeVisible();
 
     // Closed: no badge; each row's points are its generated Points Entries.
     await page.goto(`/xi/competitions/${id}`);

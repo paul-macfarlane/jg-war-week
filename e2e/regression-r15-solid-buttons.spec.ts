@@ -17,7 +17,7 @@ const ENTRANTS = [
   "Austin Gage",
 ];
 
-test("r15 87 the admin Bracket's unrecorded Heat has a solid Record result button, and the whole card is one tap target", async ({
+test("r15 87 the admin Bracket's unrecorded Match has a solid Record result button, and the whole card is one tap target", async ({
   context,
   page,
 }, testInfo) => {

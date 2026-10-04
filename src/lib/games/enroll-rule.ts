@@ -72,7 +72,7 @@ export const ENROLL_CLOSED_TIME =
 export const ENROLL_CLOSED_BY_HOST =
   "Enrollment is closed: the Host closed this Competition.";
 export const ENROLL_CLOSED_GAME_LOGGED =
-  "Enrollment is closed: the first Game is logged.";
+  "Enrollment is closed: the first Match or Attempt is logged.";
 export const ALREADY_ENTERED = "You're already entered.";
 export const TEAM_ALREADY_ENTERED = "Your Team is already entered.";
 export const NOT_ENTERED = "You're not entered.";

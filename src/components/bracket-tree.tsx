@@ -271,7 +271,7 @@ export function BracketTree({
               <h3 className="mb-1 text-sm font-semibold">{round.name}</h3>
               {knockout && round.heats.some((h) => h.thirdPlace) ? (
                 // The final stays in the middle row, where its semifinals'
-                // lines meet; the 3rd place game sits under it, unjoined.
+                // lines meet; the 3rd place Match sits under it, unjoined.
                 // Equal outer rows leave room for it without overlap.
                 <div className="relative grid flex-1 grid-rows-[1fr_auto_1fr]">
                   <div aria-hidden />

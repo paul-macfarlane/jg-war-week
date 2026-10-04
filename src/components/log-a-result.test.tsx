@@ -1,12 +1,12 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { LogAGame } from "./log-a-game";
+import { LogAResult } from "./log-a-result";
 
-describe("LogAGame", () => {
+describe("LogAResult", () => {
   it("links each loggable Competition to its page with the form open", () => {
     const html = renderToStaticMarkup(
-      <LogAGame
+      <LogAResult
         edition="xii"
         competitions={[
           { id: "c1", name: "Bouncy Pong", gameFormat: "head-to-head" },
@@ -14,7 +14,7 @@ describe("LogAGame", () => {
         ]}
       />,
     );
-    expect(html).toMatch(/<h2[^>]*>Log a Game<\/h2>/);
+    expect(html).toMatch(/<h2[^>]*>Log a result<\/h2>/);
     expect(html).toContain('href="/xii/competitions/c1?log=1"');
     expect(html).toContain('href="/xii/competitions/c2?log=1"');
     expect(html).toContain("Bouncy Pong");
@@ -23,7 +23,7 @@ describe("LogAGame", () => {
 
   it("renders nothing when there is no Competition to log in", () => {
     expect(
-      renderToStaticMarkup(<LogAGame edition="xii" competitions={[]} />),
+      renderToStaticMarkup(<LogAResult edition="xii" competitions={[]} />),
     ).toBe("");
   });
 });

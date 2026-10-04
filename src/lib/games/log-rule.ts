@@ -10,7 +10,8 @@ import type { GameFormat } from "@/lib/enums";
 export { NOT_LINKED };
 
 /** Logging, or a Games write, on a Competition of another Format. */
-export const NOT_GAMES = "This Competition isn't run as Games.";
+export const NOT_GAMES =
+  "This Competition isn't run as Head-to-head or Best score.";
 
 /** A player in a Game, or an Entrant: a Team or a Participant by id. */
 export type GameSide = { teamId: string | null; participantId: string | null };
@@ -52,12 +53,12 @@ export type GameLogFacet = {
 export const COMPETITION_CLOSED = "This Competition is closed.";
 export const LOGGING_CLOSED = "Logging is closed for this Competition.";
 export const BEST_OF_DECIDED = "This Best of is decided, so logging is closed.";
-export const NOT_A_PLAYER = "You're not a player in this Game.";
+export const NOT_A_PLAYER = "You're not a player in this Match or Attempt.";
 export const NOT_AN_ENTRANT =
   "Every player must be an Entrant of this Competition.";
-export const GAME_MISSING = "That Game no longer exists.";
+export const GAME_MISSING = "That Match or Attempt no longer exists.";
 export const NOT_THE_LOGGER =
-  "Only the player who logged this Game can change it. Ask the Host.";
+  "Only the player who logged this Match or Attempt can change it. Ask the Host.";
 export const REPEATED_PLAYER = "Choose each player only once.";
 export const NOT_A_WAR_WEEK_TEAM =
   "Every player must be a Team of this War Week.";
@@ -141,9 +142,9 @@ export function canLogSomething(facet: GameLogFacet): boolean {
 const PLAYER_COUNT: Record<GameFormat, [(n: number) => boolean, string]> = {
   "head-to-head": [
     (n) => n === 2,
-    "A head-to-head Game has exactly 2 players.",
+    "A Head-to-head Match has exactly 2 players.",
   ],
-  "best-score": [(n) => n === 1, "A best-score Game has exactly 1 player."],
+  "best-score": [(n) => n === 1, "A Best score Attempt has exactly 1 player."],
 };
 
 /**

@@ -701,8 +701,8 @@ async function selectLabeledCombobox(
 }
 
 /**
- * Logs one head-to-head Game through the real Game form (the
- * `logGame` action, as the demo Organizer): opens "Log a Game" from the
+ * Logs one head-to-head Match through the real form (the
+ * `logGame` action, as the demo Organizer): opens "Log a Match" from the
  * Competition page, picks both players and who won, and saves. The
  * `finally` undoes the Game by the demo email (`teardownGamesDemo`).
  */
@@ -714,9 +714,9 @@ async function captureGamesDemo(cookie: string): Promise<void> {
   await page.goto(`${home()}/competitions/${competitionId}`);
 
   const opened = await page.evaluate<boolean>(
-    `(() => { const b = Array.from(document.querySelectorAll("button")).find((b) => b.innerText.trim() === "Log a Game"); b?.click(); return Boolean(b); })()`,
+    `(() => { const b = Array.from(document.querySelectorAll("button")).find((b) => b.innerText.trim() === "Log a Match"); b?.click(); return Boolean(b); })()`,
   );
-  if (!opened) throw new Error('no "Log a Game" button on the Competition');
+  if (!opened) throw new Error('no "Log a Match" button on the Competition');
   await sleep(500);
 
   await selectLabeledCombobox(page, "Player A", playerA);
@@ -727,13 +727,13 @@ async function captureGamesDemo(cookie: string): Promise<void> {
     button?.click();
     return Boolean(button);
   })()`);
-  if (!wonPicked) throw new Error(`no "${wonLabel}" button in the Game form`);
+  if (!wonPicked) throw new Error(`no "${wonLabel}" button in the Match form`);
   await sleep(300);
 
   const submitted = await page.evaluate<boolean>(
-    `(() => { const b = Array.from(document.querySelectorAll('button[type="submit"]')).find((b) => b.innerText.trim() === "Log Game"); b?.click(); return Boolean(b); })()`,
+    `(() => { const b = Array.from(document.querySelectorAll('button[type="submit"]')).find((b) => b.innerText.trim() === "Log Match"); b?.click(); return Boolean(b); })()`,
   );
-  if (!submitted) throw new Error('no "Log Game" submit button');
+  if (!submitted) throw new Error('no "Log Match" submit button');
 
   let saved = false;
   for (let i = 0; i < 40; i++) {
@@ -759,7 +759,7 @@ async function captureGamesDemo(cookie: string): Promise<void> {
     const h1 = document.querySelector("h1");
     const header = document.querySelector("header");
     const gamesHeading = Array.from(document.querySelectorAll("h2")).find(
-      (h) => h.textContent?.trim() === "Games",
+      (h) => h.textContent?.trim() === "Matches",
     );
     const row = gamesHeading?.parentElement?.nextElementSibling?.querySelector("li");
     if (!h1 || !header || !row) return null;
@@ -815,11 +815,11 @@ async function captureGamesDemo(cookie: string): Promise<void> {
     if (toastGone) break;
     await sleep(200);
   }
-  if (!toastGone) throw new Error('the "Game logged" toast never went away');
+  if (!toastGone) throw new Error('the "Match logged" toast never went away');
   await assertNoRealEmail(page, "games");
   await page.screenshot(path.join(EVIDENCE, "games.png"));
   note(
-    `evidence: games from ${home()}/competitions/${competitionId}, one Game logged`,
+    `evidence: games from ${home()}/competitions/${competitionId}, one Match logged`,
   );
   await page.close();
 }

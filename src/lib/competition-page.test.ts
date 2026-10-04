@@ -123,7 +123,7 @@ describe("shownSettings", () => {
     expect(shown).not.toContain("selfEnroll");
   });
 
-  it("shows a Bracket's heat settings, self-report and enrollment", () => {
+  it("shows a Bracket's match settings, self-report and enrollment", () => {
     const shown = shownSettings(
       settingsValuesOf({ ...PLACEMENT, format: "bracket", selfEnroll: true }),
       "teams",

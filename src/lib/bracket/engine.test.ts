@@ -22,7 +22,7 @@ function entrants(count: number): Entrant[] {
 
 function heat(bracket: Bracket, id: string): Heat {
   const found = bracket.heats.find((h) => h.id === id);
-  if (!found) throw new Error(`no Heat ${id}`);
+  if (!found) throw new Error(`no Match ${id}`);
   return found;
 }
 
@@ -218,31 +218,31 @@ describe("applyResult", () => {
       { order: ["s1", "s4"], scores: { s2: "3" } },
       "Scores can only be given",
     ],
-  ])("refuses a Heat Result with %s", (_, result, message) => {
+  ])("refuses a Match Result with %s", (_, result, message) => {
     expect(() => applyResult(generate(entrants(4)), "r1h1", result)).toThrow(
       message,
     );
   });
 
-  it("refuses a Heat still waiting for its Entrants", () => {
+  it("refuses a Match still waiting for its Entrants", () => {
     expect(() =>
       applyResult(generate(entrants(4)), "r2h1", { order: [] }),
-    ).toThrow("This Heat is still waiting for its Entrants.");
+    ).toThrow("This Match is still waiting for its Entrants.");
   });
 
   it("refuses a bye", () => {
     expect(() =>
       applyResult(generate(entrants(3)), "r1h1", { order: ["s1"] }),
-    ).toThrow("A bye has no Heat Result.");
+    ).toThrow("A bye has no Match Result.");
   });
 
-  it("refuses an unknown Heat", () => {
+  it("refuses an unknown Match", () => {
     expect(() =>
       applyResult(generate(entrants(2)), "nope", { order: [] }),
-    ).toThrow("That Heat isn't in this Bracket.");
+    ).toThrow("That Match isn't in this Bracket.");
   });
 
-  it("re-recording a played Heat replaces the advanced Entrant downstream", () => {
+  it("re-recording a played Match replaces the advanced Entrant downstream", () => {
     let bracket = generate(entrants(4));
     bracket = win(bracket, "r1h1", "s1");
     bracket = win(bracket, "r1h2", "s2");
@@ -276,8 +276,8 @@ function played8(): Bracket {
   return bracket;
 }
 
-describe("a score-only edit of a decided Heat", () => {
-  it("updates the Heat's scores and keeps every later Heat", () => {
+describe("a score-only edit of a decided Match", () => {
+  it("updates the Match's scores and keeps every later Match", () => {
     const bracket = played8();
 
     expect(resetByResult(bracket, "r1h2", "s4")).toEqual([]);
@@ -321,7 +321,7 @@ describe("resetByResult", () => {
     expect(isComplete(edited)).toBe(false);
   });
 
-  it("counts only later Heats that had a Heat Result", () => {
+  it("counts only later Matches that had a Match Result", () => {
     let bracket = generate(entrants(8));
     for (const [id, winner] of [
       ["r1h1", "s1"],
@@ -340,12 +340,12 @@ describe("resetByResult", () => {
     expect(pairing(heat(edited, "r3h1"))).toBe("- v -");
   });
 
-  it("names nothing when the winner has reached no decided Heat", () => {
+  it("names nothing when the winner has reached no decided Match", () => {
     const bracket = win(generate(entrants(4)), "r1h1", "s1");
     expect(resetByResult(bracket, "r1h1", "s4")).toEqual([]);
   });
 
-  it("names nothing for an undecided Heat, a bye or no winner", () => {
+  it("names nothing for an undecided Match, a bye or no winner", () => {
     const bracket = win(generate(entrants(3)), "r1h2", "s2");
     expect(resetByResult(bracket, "r2h1", "s1")).toEqual([]);
     expect(resetByResult(bracket, "r1h1", "s1")).toEqual([]);
@@ -379,7 +379,7 @@ describe("finalPlacings", () => {
     ]);
   });
 
-  it("doesn't count a bye as a played Heat", () => {
+  it("doesn't count a bye as a played Match", () => {
     // 3 Entrants: 1 has a bye, then loses the final.
     const list = entrants(3);
     let bracket = generate(list);
@@ -417,7 +417,7 @@ describe("finalPlacings", () => {
 });
 
 describe("hasResults", () => {
-  it("ignores byes and counts recorded Heat Results", () => {
+  it("ignores byes and counts recorded Match Results", () => {
     const bracket = generate(entrants(3));
     expect(hasResults(bracket)).toBe(false);
     expect(hasResults(win(bracket, "r1h2", "s2"))).toBe(true);

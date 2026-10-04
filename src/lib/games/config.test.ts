@@ -7,6 +7,7 @@ import {
   gameFormatLabel,
   gamesConfigOf,
   gamesConfigSchema,
+  resultNoun,
 } from "@/lib/games/config";
 
 function messages(
@@ -21,6 +22,21 @@ describe("gameFormatLabel", () => {
   it("names each Format for people", () => {
     expect(gameFormatLabel("head-to-head")).toBe("Head-to-head");
     expect(gameFormatLabel("best-score")).toBe("Best score");
+  });
+});
+
+describe("resultNoun", () => {
+  it("calls a Head-to-head result a Match and a Best score result an Attempt", () => {
+    expect(resultNoun("head-to-head")).toEqual({
+      one: "Match",
+      many: "Matches",
+      a: "a Match",
+    });
+    expect(resultNoun("best-score")).toEqual({
+      one: "Attempt",
+      many: "Attempts",
+      a: "an Attempt",
+    });
   });
 });
 

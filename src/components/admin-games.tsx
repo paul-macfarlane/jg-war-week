@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 
-import { GameForm, type GameFormGame } from "@/components/game-form";
 import { BestScoreResults, GameLog } from "@/components/games-view";
+import { ResultForm, type ResultFormGame } from "@/components/result-form";
 import { Button } from "@/components/ui/button";
 import type { GameFormat } from "@/lib/enums";
 import type { BestScoreConfig, GamesConfig } from "@/lib/games/config";
@@ -56,11 +56,11 @@ export function AdminGames({
   now,
 }: AdminGamesProps) {
   const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<GameFormGame | null>(null);
+  const [editing, setEditing] = useState<ResultFormGame | null>(null);
   const bestScore = gameFormat === "best-score";
   const title = bestScore ? "Attempts" : "Matches";
 
-  function openForm(game: GameFormGame | null) {
+  function openForm(game: ResultFormGame | null) {
     setEditing(game);
     setFormOpen(true);
   }
@@ -75,7 +75,7 @@ export function AdminGames({
             className="min-h-11 sm:min-h-0"
             onClick={() => openForm(null)}
           >
-            Log a Game
+            {bestScore ? "Log an Attempt" : "Log a Match"}
           </Button>
         ) : null}
       </div>
@@ -106,7 +106,7 @@ export function AdminGames({
         />
       )}
       {viewerCanLog || games.some((g) => g.canEdit) ? (
-        <GameForm
+        <ResultForm
           open={formOpen}
           onOpenChange={setFormOpen}
           competitionId={competitionId}

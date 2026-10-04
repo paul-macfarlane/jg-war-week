@@ -74,11 +74,11 @@ async function recordHeat(page: Page, heat: string) {
   const name = entrantNames.find((entrant) => text.includes(entrant));
   if (!name) throw new Error(`No Entrant named in "${text}"`);
   await winner.click();
-  await sheet.getByRole("button", { name: "Save Heat Result" }).click();
+  await sheet.getByRole("button", { name: "Save Match Result" }).click();
   await expect(page.getByText(`${name} wins ${heat}`)).toBeVisible();
   await expect(sheet).toBeHidden();
 }
-/** The last Round's places by name: the final's, then the 3rd place game's. */
+/** The last Round's places by name: the final's, then the 3rd place Match's. */
 async function lastRoundPlaces() {
   return runQuery<{
     display_name: string;
@@ -110,7 +110,7 @@ async function expectedPodium() {
   });
 }
 
-test("a head-to-head Bracket of 8 with a 3rd place game is run to Close, its podium 1st to 4th with 10, 7, 5 and 3", async ({
+test("a head-to-head Bracket of 8 with a 3rd place Match is run to Close, its podium 1st to 4th with 10, 7, 5 and 3", async ({
   context,
   page,
 }, testInfo) => {
@@ -119,11 +119,11 @@ test("a head-to-head Bracket of 8 with a 3rd place game is run to Close, its pod
   await openCompetitionPage(page, competitionId);
   await setFormat(page, "Bracket");
 
-  // Under 4 Entrants the 3rd place game is off and disabled, with its reason.
-  const thirdPlace = page.getByRole("switch", { name: "3rd place game" });
+  // Under 4 Entrants the 3rd place Match is off and disabled, with its reason.
+  const thirdPlace = page.getByRole("switch", { name: "3rd place Match" });
   await expect(thirdPlace).toBeDisabled();
   await expect(
-    page.getByText("A 3rd place game needs at least 4 Entrants."),
+    page.getByText("A 3rd place Match needs at least 4 Entrants."),
   ).toBeVisible();
 
   const find = page.locator("#bracket-entrants");
@@ -154,10 +154,10 @@ test("a head-to-head Bracket of 8 with a 3rd place game is run to Close, its pod
   // The Bracket tree is on the same page, below the Entrants.
   await expect(page.locator("[data-bracket-tree]")).toBeVisible();
   for (const heat of [
-    "Round 1 Heat 1",
-    "Round 1 Heat 2",
-    "Round 1 Heat 3",
-    "Round 1 Heat 4",
+    "Round 1 Match 1",
+    "Round 1 Match 2",
+    "Round 1 Match 3",
+    "Round 1 Match 4",
     "Semifinal 1",
     "Semifinal 2",
     "Final",
@@ -165,7 +165,7 @@ test("a head-to-head Bracket of 8 with a 3rd place game is run to Close, its pod
     await recordHeat(page, heat);
   }
 
-  // The Final alone doesn't finish the Bracket: the 3rd place game is left.
+  // The Final alone doesn't finish the Bracket: the 3rd place Match is left.
   await expect(
     page
       .getByRole("region", { name: "Bracket", exact: true })
@@ -176,7 +176,7 @@ test("a head-to-head Bracket of 8 with a 3rd place game is run to Close, its pod
   const finalOnly = await expectedPodium();
   expect(finalOnly).toHaveLength(2);
   await expectPodium(page, finalOnly);
-  await recordHeat(page, "3rd place game");
+  await recordHeat(page, "3rd place Match");
   const podium = await expectedPodium();
   expect(podium.map((place) => place.points)).toEqual([
     "10 points",
@@ -196,7 +196,7 @@ test("a head-to-head Bracket of 8 with a 3rd place game is run to Close, its pod
     .click();
   await expect(page.getByText("Bracket closed")).toBeVisible();
 
-  // The final's and the 3rd place game's places, from the database.
+  // The final's and the 3rd place Match's places, from the database.
   const placed = await lastRoundPlaces();
   expect(placed).toHaveLength(4);
   const expected = Object.fromEntries(
@@ -223,7 +223,7 @@ test("a head-to-head Bracket of 8 with a 3rd place game is run to Close, its pod
   );
 
   await page.goto(`/xi/competitions/${competitionId}`);
-  await expect(page.getByText("3rd place game").first()).toBeVisible();
+  await expect(page.getByText("3rd place Match").first()).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Points Entries" }),
   ).toHaveCount(0);

@@ -60,9 +60,9 @@ const render = (props: Partial<AdminGamesProps> = {}) =>
 const text = (html: string) => html.replace(/<[^>]+>/g, " ");
 
 describe("AdminGames, Best score", () => {
-  it("shows the per-person table with Log a Game, and no separate list of Attempts", () => {
+  it("shows the per-person table with Log an Attempt, and no separate list of Attempts", () => {
     const html = render();
-    expect(html).toMatch(/<button[^>]*>Log a Game<\/button>/);
+    expect(html).toMatch(/<button[^>]*>Log an Attempt<\/button>/);
     expect(html).toContain('aria-label="Best score results"');
     expect(html.match(/data-slot="results-row"/g)).toHaveLength(1);
     // Every Attempt shows only inside the person's expanded row.
@@ -89,9 +89,9 @@ describe("AdminGames, Best score", () => {
     );
   });
 
-  it("hides Log a Game when logging is refused (a Closed Competition)", () => {
+  it("hides Log an Attempt when logging is refused (a Closed Competition)", () => {
     expect(render({ viewerCanLog: false, closed: true })).not.toContain(
-      "Log a Game</button>",
+      "Log an Attempt</button>",
     );
   });
 

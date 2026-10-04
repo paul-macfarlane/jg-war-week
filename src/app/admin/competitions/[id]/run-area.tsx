@@ -11,6 +11,7 @@ import {
   settingLockReason,
 } from "@/lib/competition-locks";
 import { isGameFormat } from "@/lib/enums";
+import { resultNoun } from "@/lib/games/config";
 import {
   getBracket,
   getBracketEntrants,
@@ -29,7 +30,7 @@ import { getTargetOptions } from "@/queries/target-options";
 export function runAreaTitle(format: Competition["format"]): string {
   if (format === "placement") return "Record placements";
   if (format === "participation") return "Who took part";
-  if (isGameFormat(format)) return "Entrants and Games";
+  if (isGameFormat(format)) return `Entrants and ${resultNoun(format).many}`;
   return "Entrants and Bracket";
 }
 
@@ -130,6 +131,7 @@ export async function CompetitionRunArea({
           competition={{
             id,
             scoring: view.competition.scoring,
+            gameFormat: view.competition.gameFormat,
             entrantsOpen: view.competition.entrantsOpen,
             closed: view.competition.closed,
             placementPoints: view.competition.placementPoints,

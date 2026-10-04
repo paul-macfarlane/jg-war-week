@@ -1,7 +1,7 @@
 /**
  * Which Heat is the final, the one rule every reader uses: the Heat of the
- * last Round that isn't the 3rd place game. Never "the only Heat of the
- * last Round": with a 3rd place game, that Round holds two. Pure.
+ * last Round that isn't the 3rd place Match. Never "the only Heat of the
+ * last Round": with a 3rd place Match, that Round holds two. Pure.
  */
 import type { Bracket, Heat } from "@/lib/bracket/types";
 
@@ -16,7 +16,7 @@ export function finalHeatOf(bracket: Pick<Bracket, "heats">): Heat | undefined {
   return bracket.heats.find((h) => h.round === round && !h.thirdPlace);
 }
 
-/** The 3rd place game, when the Bracket has one. */
+/** The 3rd place Match, when the Bracket has one. */
 export function thirdPlaceHeatOf(
   bracket: Pick<Bracket, "heats">,
 ): Heat | undefined {

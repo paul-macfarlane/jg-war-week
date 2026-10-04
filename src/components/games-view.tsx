@@ -6,7 +6,7 @@ import { type ReactNode, useState } from "react";
 import { deleteGame } from "@/actions/games";
 import { Avatar } from "@/components/avatar";
 import { ConfirmActionButton } from "@/components/confirm-dialog";
-import { GameForm, type GameFormGame } from "@/components/game-form";
+import { ResultForm, type ResultFormGame } from "@/components/result-form";
 import {
   ProvisionalBadge,
   ResultsTable,
@@ -20,10 +20,11 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { YouTag } from "@/components/you";
 import { placementLabel } from "@/lib/competitions";
 import type { GameFormat } from "@/lib/enums";
-import type {
-  BestScoreConfig,
-  GamesConfig,
-  HeadToHeadConfig,
+import {
+  type BestScoreConfig,
+  type GamesConfig,
+  type HeadToHeadConfig,
+  resultNoun,
 } from "@/lib/games/config";
 import { attemptsOf } from "@/lib/games/leaderboard";
 import {
@@ -175,7 +176,7 @@ export function GameActions({
   /** "Match" (Head-to-head) or "Attempt" (Best score). */
   word: "Match" | "Attempt";
   summary: string;
-  onEdit: (game: GameFormGame) => void;
+  onEdit: (game: ResultFormGame) => void;
 }) {
   if (!game.canEdit && !game.canDelete) return null;
   return (
@@ -231,7 +232,7 @@ export function GameLog({
   filter: Filter;
   linked: Linked;
   now: Date;
-  onEdit: (game: GameFormGame) => void;
+  onEdit: (game: ResultFormGame) => void;
 }) {
   const shown =
     filter === "mine" && linked
@@ -315,7 +316,7 @@ export function BestScoreResults({
   primaryColor: string;
   teamLabel: string;
   now: Date;
-  onEdit: (game: GameFormGame) => void;
+  onEdit: (game: ResultFormGame) => void;
 }) {
   if (rows.length === 0) {
     return <p className="text-foreground/70 text-sm">No Attempts yet.</p>;
@@ -496,7 +497,7 @@ export function SeriesView({
   linked: Linked;
   primaryColor: string;
   now: Date;
-  onEdit: (game: GameFormGame) => void;
+  onEdit: (game: ResultFormGame) => void;
 }) {
   const [a, b] = entrants;
   // Oldest first among equal times too: the view's list is newest first.
@@ -716,10 +717,10 @@ export function GamesView(props: GamesViewProps) {
   } = props;
   const [filter, setFilter] = useState<Filter>("all");
   const [formOpen, setFormOpen] = useState(openLog && viewerCanLog);
-  const [editing, setEditing] = useState<GameFormGame | null>(null);
+  const [editing, setEditing] = useState<ResultFormGame | null>(null);
   const series = seriesEntrants(props);
 
-  function openForm(game: GameFormGame | null) {
+  function openForm(game: ResultFormGame | null) {
     setEditing(game);
     setFormOpen(true);
   }
@@ -828,14 +829,14 @@ export function GamesView(props: GamesViewProps) {
           className="min-h-11 w-full md:w-auto md:self-start"
           onClick={() => openForm(null)}
         >
-          Log a Game
+          {`Log ${resultNoun(gameFormat).a}`}
         </Button>
       ) : null}
 
       {results}
 
       {viewerCanLog || games.some((g) => g.canEdit) ? (
-        <GameForm
+        <ResultForm
           open={formOpen}
           onOpenChange={setFormOpen}
           competitionId={competitionId}

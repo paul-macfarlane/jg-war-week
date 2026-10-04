@@ -11,15 +11,15 @@ export type LoggedGame = {
 };
 
 export const DRAW_LOGGED =
-  "A Game here is a draw. Delete or edit it before turning draws off.";
+  "A Match here is a draw. Delete or edit it before turning draws off.";
 
 /** A Best of whose Games are too many, or not between its 2 Entrants. */
 export const bestOfMisfit = (bestOf: number) =>
-  `These Games don't fit a Best of ${bestOf}.`;
+  `These Matches don't fit a Best of ${bestOf}.`;
 
 /** A fixed list that would leave out someone who has played. */
 export const loggedOffList = (name: string) =>
-  `${name} has logged Games. Add them as an Entrant or delete their Games first.`;
+  `${name} has logged Matches or Attempts. Add them as an Entrant or delete those first.`;
 
 /**
  * Why the new settings don't fit the logged Games, or null. In order: a

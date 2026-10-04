@@ -229,7 +229,7 @@ export async function setupBracketDemo(
       [competitionId],
     );
     note(
-      `bracket demo: ${seeded ? "seeded" : "added"} competition ${competitionId}, champion entrant ${e1}`,
+      `bracket demo: ${seeded ? "seeded" : "added"} competition ${competitionId}, Winner entrant ${e1}`,
     );
   } catch (error) {
     await teardown();

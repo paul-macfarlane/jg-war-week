@@ -52,21 +52,21 @@ export const MCP_TOOLS = {
   get_bracket: {
     title: "Get Bracket",
     description:
-      "Returns a Competition's Bracket by name: Entrants by Seed Position, each Round's Heats with status and, for a played Heat, when its result was recorded (a 3rd place game is marked thirdPlace; the final is the last Round's other Heat), and the winner once the Bracket is Closed. A Competition run another way instead returns bracket: null; an unknown Competition returns found: false.",
+      "Returns a Competition's Bracket by name: Entrants by Seed Position; its Match size, how many advance, whether it has a 3rd place Match and whether it's Closed; each Round's Matches with status and, for a played Match, when its result was recorded (a 3rd place Match is marked thirdPlace; the final is the last Round's other Match); and the Winner once the Bracket is Closed. A Competition run another way instead returns bracket: null; an unknown Competition returns found: false.",
   },
   get_games: {
     title: "Get Head-to-head and Best score",
     description:
-      "Returns a Head-to-head or Best score Competition by name: its Format, settings, leaderboard ranked by that Format, and its logged Games newest first. A Competition run another way instead returns games: null; an unknown Competition returns found: false.",
+      "Returns a Head-to-head or Best score Competition by name: its Format, settings, leaderboard ranked by that Format, and its logged results newest first: matches for Head-to-head, attempts for Best score. A Competition run another way instead returns matches: null and attempts: null; an unknown Competition returns found: false.",
   },
   get_participation: {
     title: "Get Participation",
     description:
-      "Returns a Competition run as Participation (points for taking part) by name: its scoring settings, whether Participants can check in and until when, whether it's closed, who took part by name, and in team scoring each Team's headcount and place. A Competition run another way instead returns participation: null; an unknown Competition returns found: false.",
+      "Returns a Competition run as Participation (points for taking part) by name: its scoring settings, whether Participants can check in and until when, whether it's Closed and when, who took part by name, and in team scoring each Team's headcount and place. A Competition run another way instead returns participation: null; an unknown Competition returns found: false.",
   },
   get_placements: {
     title: "Get Placements",
     description:
-      "Returns a Competition run as Placement (one result recorded on one sheet) by name: its Score direction, Placement Points, whether it's finalized, and each row by place with name, Team, Score and points; unplaced rows last. A Competition run another way instead returns placements: null; an unknown Competition returns found: false.",
+      "Returns a Competition run as Placement (one result recorded on one sheet) by name: its Score direction, Placement Points, whether it's Closed and when, and each row by place with name, Team, Score and points; unplaced rows last. A Competition run another way instead returns placements: null; an unknown Competition returns found: false.",
   },
 } satisfies Record<string, { title: string; description: string }>;

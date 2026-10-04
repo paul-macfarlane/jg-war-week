@@ -141,7 +141,7 @@ const CASES: FormatCase[] = [
       ).toBeVisible();
       // Entrants are a result; the heat settings wait for a Heat Result.
       await expect(
-        page.getByRole("combobox", { name: "Entrants per Heat" }),
+        page.getByRole("combobox", { name: "Entrants per Match" }),
       ).toBeEnabled();
     },
   },
@@ -245,7 +245,7 @@ test("r18 101 a new Competition with no result changes Format, Placement → Bra
     // Bracket: heat settings and self-report, and the Entrants and Generate.
     await setFormat(page, "Bracket");
     await expect(
-      page.getByRole("combobox", { name: "Entrants per Heat" }),
+      page.getByRole("combobox", { name: "Entrants per Match" }),
     ).toBeVisible();
     await expect(
       page.getByRole("switch", { name: "Self-report" }),
@@ -272,7 +272,7 @@ test("r18 101 a new Competition with no result changes Format, Placement → Bra
       page.getByRole("button", { name: "Close", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("combobox", { name: "Entrants per Heat" }),
+      page.getByRole("combobox", { name: "Entrants per Match" }),
     ).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Generate" })).toHaveCount(0);
     await page.screenshot({

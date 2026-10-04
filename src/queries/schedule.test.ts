@@ -33,7 +33,7 @@ async function fixture(tx: DBTx) {
         year: 9200 + n,
         startDate: "2099-01-01",
         endDate: "2099-01-05",
-        storyTheme: "Timed Heats test",
+        storyTheme: "Timed Matches test",
         status: "upcoming",
         mode: "teams",
         teamLabel: "Team",
@@ -151,7 +151,7 @@ async function bracket(
 }
 
 describe.skipIf(!isLocalDatabase)("getSchedule", () => {
-  it("lists a Competition's own Schedule Items and no Heat, however ready the Heats are", async () => {
+  it("lists a Competition's own Schedule Items and no Match, however ready the Matches are", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { queries } = await modules();
       const f = await fixture(tx);

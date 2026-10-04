@@ -159,7 +159,7 @@ export function BracketFinaleStage({
         ) : (
           <div className="flex flex-col gap-6 md:text-lg">
             {phase === "done" && champion ? (
-              <Card aria-label="Champion" className="ring-primary ring-2">
+              <Card aria-label="Winner" className="ring-primary ring-2">
                 <CardContent className="flex flex-col items-center gap-2 text-center">
                   <span aria-hidden className="text-6xl">
                     🏆
@@ -173,7 +173,7 @@ export function BracketFinaleStage({
                     {champion.label}
                   </span>
                   <span className="text-foreground/70">
-                    Champion of {competitionName}
+                    Winner of {competitionName}
                   </span>
                 </CardContent>
               </Card>

@@ -46,7 +46,7 @@ describe("BracketFinaleStage", () => {
     }
   });
 
-  it("while playing, lists only the places shown so far and no champion", () => {
+  it("while playing, lists only the places shown so far and no Winner", () => {
     const { html, text } = render("playing", [
       { shown: false, progress: 0 },
       { shown: false, progress: 0 },
@@ -58,18 +58,18 @@ describe("BracketFinaleStage", () => {
     expect(text).toContain("Green");
     expect(text).not.toContain("Red");
     expect(text).not.toContain("Gold");
-    expect(html).not.toContain('aria-label="Champion"');
-    expect(text).not.toContain("Champion of");
+    expect(html).not.toContain('aria-label="Winner"');
+    expect(text).not.toContain("Winner of");
   });
 
-  it("when done, lists every place and crowns the champion", () => {
+  it("when done, lists every place and crowns the Winner", () => {
     const { html, text } = render("done");
     expect(html).toContain('data-finale="done"');
     for (const name of ["Gold", "Red", "Blue", "Green"]) {
       expect(text).toContain(name);
     }
-    expect(html).toMatch(/aria-label="Champion"[\s\S]*🏆[\s\S]*Gold/);
-    expect(text).toContain("Champion of Tug of War");
+    expect(html).toMatch(/aria-label="Winner"[\s\S]*🏆[\s\S]*Gold/);
+    expect(text).toContain("Winner of Tug of War");
     expect(html).toMatch(/<button[^>]*>[^<]*Replay/);
   });
 });

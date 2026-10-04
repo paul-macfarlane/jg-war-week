@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 import { generate } from "@/lib/bracket/formats";
 import type { Bracket } from "@/lib/bracket/types";
-import { LOCKED_BY_HEAT_RESULT } from "@/lib/competition-locks";
+import { LOCKED_BY_MATCH_RESULT } from "@/lib/competition-locks";
 import type { BracketEntrant } from "@/queries/brackets";
 
 import { BracketBuilder } from "./bracket-builder";
@@ -70,7 +70,7 @@ describe("BracketBuilder", () => {
 
   it("holds none of the Bracket's settings: they're in the page's Settings", () => {
     const html = renderToStaticMarkup(<BracketBuilder {...baseProps} />);
-    expect(html).not.toContain("Entrants per Heat");
+    expect(html).not.toContain("Entrants per Match");
     expect(html).not.toContain("Self-report");
     expect(html).not.toContain("Participants can enroll");
     expect(html).not.toContain(">Format<");
@@ -91,15 +91,15 @@ describe("BracketBuilder", () => {
     expect(html).toContain("Re-roll");
   });
 
-  it("locks the Entrants and Generate with the reason once a Heat has a result", () => {
+  it("locks the Entrants and Generate with the reason once a Match has a result", () => {
     const html = renderToStaticMarkup(
       <BracketBuilder
         {...baseProps}
         entrants={savedEntrants(4)}
-        entrantsLock={LOCKED_BY_HEAT_RESULT}
+        entrantsLock={LOCKED_BY_MATCH_RESULT}
       />,
     );
-    expect(html).toContain(LOCKED_BY_HEAT_RESULT);
+    expect(html).toContain(LOCKED_BY_MATCH_RESULT);
     const generate = html.match(
       /<button[^>]*>(?:(?!<\/button>).)*Generate<\/button>/,
     )![0];

@@ -417,7 +417,7 @@ const seed = {
       },
       placementPoints: [8, 5, 3, 1],
       description:
-        "Sixty-four players, single elimination, with a 3rd place game.",
+        "Sixty-four players, single elimination, with a 3rd place Match.",
     },
     {
       name: "Morning Stretch",
@@ -434,7 +434,7 @@ const seed = {
       gameConfig: { drawsAllowed: false, bestOf: null },
       entrantsOpen: true,
       placementPoints: [5, 3, 1],
-      description: "Log a Game whenever the boards are free.",
+      description: "Log a Match whenever the boards are free.",
     },
     {
       name: "Darts",

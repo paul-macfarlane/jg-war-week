@@ -25,7 +25,7 @@ const ENTRANTS = [
   "Bryan Sambrook",
 ];
 
-test("r15 84 a recorded Heat of 4 with 2 advancing highlights both advancers in admin", async ({
+test("r15 84 a recorded Match of 4 with 2 advancing highlights both advancers in admin", async ({
   context,
   page,
 }, testInfo) => {
@@ -37,8 +37,8 @@ test("r15 84 a recorded Heat of 4 with 2 advancing highlights both advancers in 
   try {
     await openCompetitionPage(page, id);
     await setFormat(page, "Bracket");
-    await page.getByRole("combobox", { name: "Entrants per Heat" }).click();
-    await page.getByRole("option", { name: "4 per Heat" }).click();
+    await page.getByRole("combobox", { name: "Entrants per Match" }).click();
+    await page.getByRole("option", { name: "4 per Match" }).click();
     await page.getByRole("combobox", { name: "How many advance" }).click();
     await page.getByRole("option", { name: "Top 2 advance" }).click();
     await expectSaved(page);
@@ -60,7 +60,7 @@ test("r15 84 a recorded Heat of 4 with 2 advancing highlights both advancers in 
     await expect(page.getByText("Bracket generated")).toBeVisible();
 
     await openCompetitionPage(page, id);
-    const heat = "Round 1 Heat 1";
+    const heat = "Round 1 Match 1";
     // From the admin Bracket's tree, the one Participants see (100).
     await page
       .locator("[data-bracket-tree]")
@@ -79,7 +79,7 @@ test("r15 84 a recorded Heat of 4 with 2 advancing highlights both advancers in 
     for (let i = 0; i < count; i++) await buttons.nth(i).click();
     // Both top places are marked as advancing before saving.
     await expect(sheet.locator("[data-advances]")).toHaveCount(2);
-    await sheet.getByRole("button", { name: "Save Heat Result" }).click();
+    await sheet.getByRole("button", { name: "Save Match Result" }).click();
     await expect(page.getByText(`${winner} wins ${heat}`)).toBeVisible();
     await expect(sheet).toBeHidden();
 

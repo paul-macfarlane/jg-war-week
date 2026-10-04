@@ -1,6 +1,6 @@
 "use server";
 
-import type { HeatResultActionResult } from "@/actions/brackets";
+import type { MatchResultActionResult } from "@/actions/brackets";
 import { guarded } from "@/actions/result";
 import { revalidateWarWeek } from "@/actions/revalidate";
 import { authorizeHeatReport } from "@/auth/authorize";
@@ -16,7 +16,7 @@ export async function reportHeatResult(
   competitionId: string,
   heatId: string,
   input: unknown,
-): Promise<HeatResultActionResult> {
+): Promise<MatchResultActionResult> {
   return guarded(async () => {
     const authorized = await authorizeHeatReport(competitionId, heatId);
     if (!authorized.ok) return authorized;

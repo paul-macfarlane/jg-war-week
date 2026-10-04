@@ -28,7 +28,7 @@ export const COMPETITION_SETTING_FIELDS = [
   "gameConfig",
   /** Head-to-head or Best score: open to everyone, or a fixed Entrant list. */
   "entrantsOpen",
-  /** A Bracket's heat size, how many advance and the 3rd place game. */
+  /** A Bracket's heat size, how many advance and the 3rd place Match. */
   "bracketConfig",
   "entrants",
   /** Building (generating or re-rolling) the Bracket. */
@@ -105,14 +105,14 @@ export function settingLock(
 }
 
 export const LOCKED_BY_RESULT = "Locked once the Competition has a result.";
-export const LOCKED_BY_GAME = "Locked once the Competition has a Game.";
-export const LOCKED_BY_HEAT_RESULT = "Locked once a Heat has a result.";
+export const LOCKED_BY_MATCH =
+  "Locked once the Competition has a Match or Attempt.";
+export const LOCKED_BY_MATCH_RESULT = "Locked once a Match has a result.";
 /** Reopen for a Placement, Games or Participation run; Un-finalize for a Bracket. */
-export const LOCKED_WHILE_FINALIZED =
-  "Locked while the Competition is Finalized or Closed. Reopen or Un-finalize it first.";
+export const LOCKED_WHILE_CLOSED =
+  "Locked while the Competition is Closed. Reopen it first.";
 /** A points setting changed while Finalized or Closed: when it takes effect. */
-export const APPLIES_AT_NEXT_FINALIZE =
-  "Applies at the next Finalize or Close.";
+export const APPLIES_AT_NEXT_CLOSE = "Applies at the next Close.";
 
 /**
  * What a Competition has entered so far. A result is any of them: an
@@ -179,11 +179,11 @@ export function settingLockReason(
   const lock = settingLock(field, facts.format);
   if (lock === "never") return null;
   if (lock === "result" && facts.hasResult) return LOCKED_BY_RESULT;
-  if (lock === "game" && facts.hasGame) return LOCKED_BY_GAME;
+  if (lock === "game" && facts.hasGame) return LOCKED_BY_MATCH;
   if (lock === "heat-result" && facts.hasHeatResult) {
-    return LOCKED_BY_HEAT_RESULT;
+    return LOCKED_BY_MATCH_RESULT;
   }
-  return facts.finalized ? LOCKED_WHILE_FINALIZED : null;
+  return facts.finalized ? LOCKED_WHILE_CLOSED : null;
 }
 
 /** The note an unlocked field shows, or null: points changed after Finalize. */
@@ -193,6 +193,6 @@ export function settingNote(
 ): string | null {
   return (field === "placementPoints" || field === "participationPoints") &&
     facts.finalized
-    ? APPLIES_AT_NEXT_FINALIZE
+    ? APPLIES_AT_NEXT_CLOSE
     : null;
 }

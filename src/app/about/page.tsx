@@ -116,8 +116,8 @@ export default async function AboutPage() {
             <AboutFinaleDemo />
             <p className="text-foreground/75 max-w-sm text-sm leading-relaxed">
               And at closing ceremonies, the Finale is a slideshow on the
-              projector: By the numbers, Awards and Champions, then the
-              Standings countdown, from last place to first.
+              projector: By the numbers, Awards and Winners, then the Standings
+              countdown, from last place to first.
             </p>
           </div>
           <p className="text-foreground/75 max-w-3xl leading-relaxed">

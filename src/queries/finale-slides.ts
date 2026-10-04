@@ -19,11 +19,11 @@ import {
   pointsEntry,
 } from "@/db/schema";
 import {
-  type FinaleChampion,
   type FinaleCounts,
+  type FinaleWinner,
   type ResolvedFinaleSlide,
-  championsList,
   resolveFinaleSlides,
+  winnersList,
 } from "@/lib/finale-slides";
 import { resultEntryQuery, toResultEntry } from "@/queries/recent-results";
 
@@ -100,14 +100,14 @@ export async function getFinaleCounts(
 }
 
 /**
- * The Champions slide's lines (`championsList`): every finalized Bracket's
+ * The Winners slide's lines (`winnersList`): every Closed Bracket's
  * champion and closed Competition's winner, uncapped. Reads the finalized
  * Competitions and only their generated Points Entries.
  */
-export async function getChampions(
+export async function getWinners(
   warWeek: Pick<WarWeek, "id">,
   dbOrTx: DBOrTx = db,
-): Promise<FinaleChampion[]> {
+): Promise<FinaleWinner[]> {
   const competitions = await dbOrTx
     .select({
       id: competition.id,
@@ -134,5 +134,5 @@ export async function getChampions(
       ),
     )
     .orderBy(asc(pointsEntry.enteredAt), asc(pointsEntry.id));
-  return championsList(competitions, entries.map(toResultEntry));
+  return winnersList(competitions, entries.map(toResultEntry));
 }

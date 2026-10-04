@@ -36,11 +36,11 @@ export type HeatReportFacet = {
 export const SELF_REPORT_OFF = "Self-report is off for this Competition.";
 export const NOT_LINKED =
   "Your sign-in doesn't match a Participant of this War Week.";
-export const HEAT_MISSING = "That Heat no longer exists.";
-export const NOT_IN_HEAT = "You're not in this Heat.";
+export const HEAT_MISSING = "That Match no longer exists.";
+export const NOT_IN_HEAT = "You're not in this Match.";
 export const BYE_NOT_REPORTED = "A bye isn't played.";
-export const HEAT_UNFILLED = "This Heat is still waiting for its Entrants.";
-export const HEAT_DECIDED = "This Heat already has a result.";
+export const HEAT_UNFILLED = "This Match is still waiting for its Entrants.";
+export const HEAT_DECIDED = "This Match already has a result.";
 
 /**
  * Why the linked Participant can't report this Heat, or null when they

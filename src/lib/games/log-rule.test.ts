@@ -389,12 +389,12 @@ describe("playersRuleError: the posted players' shape", () => {
     [
       "refuses a head-to-head Game without exactly 2 players",
       { ...ok, ids: [ME, RIVAL, THIRD] },
-      "A head-to-head Game has exactly 2 players.",
+      "A Head-to-head Match has exactly 2 players.",
     ],
     [
       "refuses a best-score Game without exactly 1 player",
       { ...ok, gameFormat: "best-score" as const },
-      "A best-score Game has exactly 1 player.",
+      "A Best score Attempt has exactly 1 player.",
     ],
     [
       "refuses a Participant of another War Week",

@@ -6,12 +6,12 @@ import type { GameFormat } from "@/lib/enums";
 import { gameFormatLabel } from "@/lib/games/config";
 
 /**
- * The home page's "Log a Game" card (Games rules): the open Head-to-head or Best score Competitions
- * the linked Participant may log in right now, each opening its page with
- * the Game form up. Nothing when there are none, so a signed-in person no Participant email
+ * The home page's "Log a result" card: the open Head-to-head or Best score
+ * Competitions the linked Participant may log a Match or an Attempt in right
+ * now, each opening its page with the form up. Nothing when there are none, so a signed-in person no Participant email
  * matches (who can't log) never sees it.
  */
-export function LogAGame({
+export function LogAResult({
   edition,
   competitions,
 }: {
@@ -21,7 +21,7 @@ export function LogAGame({
   if (competitions.length === 0) return null;
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-lg font-semibold">Log a Game</h2>
+      <h2 className="text-lg font-semibold">Log a result</h2>
       <Card size="sm" className="py-1">
         <ul className="flex flex-col divide-y px-(--card-spacing)">
           {competitions.map((c) => (

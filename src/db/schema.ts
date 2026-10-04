@@ -224,7 +224,7 @@ export const competition = pgTable(
     // wins, filling Places from Scores; `none` means Places are set by hand.
     scoreDirection: scoreDirection("score_direction").notNull().default("none"),
     // A Bracket's settings (`src/lib/bracket/config.ts`): heat size,
-    // advancing per Heat and the 3rd place game. Set for every Bracket (app
+    // advancing per Heat and the 3rd place Match. Set for every Bracket (app
     // logic, not a CHECK); null for every other Format.
     bracketConfig: jsonb("bracket_config").$type<BracketConfig | null>(),
     // Participants in a Heat may enter its result themselves (ADR 0005).
@@ -507,7 +507,7 @@ export const entrant = pgTable(
 /**
  * One game of a Bracket, with `slotCount` places (two at heat size 2; larger
  * Heats may hold more). A head-to-head winner feeds `winnerToHeatId`; with a
- * 3rd place game, each semifinal's loser feeds `loserToHeatId`, and the 3rd
+ * 3rd place Match, each semifinal's loser feeds `loserToHeatId`, and the 3rd
  * place game is the Heat marked `thirdPlace`.
  */
 export const heat = pgTable(
@@ -527,13 +527,13 @@ export const heat = pgTable(
       { onDelete: "set null" },
     ),
     winnerToSlot: integer("winner_to_slot"),
-    // A semifinal's loser feeds the 3rd place game (part 98).
+    // A semifinal's loser feeds the 3rd place Match (part 98).
     loserToHeatId: uuid("loser_to_heat_id").references(
       (): AnyPgColumn => heat.id,
       { onDelete: "set null" },
     ),
     loserToSlot: integer("loser_to_slot"),
-    // The 3rd place game: in the final's round, beside the final.
+    // The 3rd place Match: in the final's round, beside the final.
     thirdPlace: boolean("third_place").notNull().default(false),
     // When the Heat's result was last saved; null until it is played.
     recordedAt: timestamp("recorded_at", { withTimezone: true }),

@@ -420,12 +420,22 @@ describe("GamesView Best score (one row per person)", () => {
   });
 });
 
-describe("GamesView Log a Game and banners", () => {
-  it("offers Log a Game only when the viewer may log", () => {
+describe("GamesView Log a Match or Attempt and banners", () => {
+  it("offers Log a Match only when the viewer may log", () => {
     expect(render({ viewerCanLog: true })).toMatch(
-      /<button[^>]*>Log a Game<\/button>/,
+      /<button[^>]*>Log a Match<\/button>/,
     );
-    expect(text(render({ viewerCanLog: false }))).not.toContain("Log a Game");
+    expect(text(render({ viewerCanLog: false }))).not.toContain("Log a Match");
+  });
+
+  it("offers Log an Attempt on a Best score Competition", () => {
+    expect(
+      render({
+        gameFormat: "best-score",
+        config: { count: "best", betterIs: "higher", unit: "trips" },
+        viewerCanLog: true,
+      }),
+    ).toMatch(/<button[^>]*>Log an Attempt<\/button>/);
   });
 
   it("says a closed Competition's points are in the Standings", () => {

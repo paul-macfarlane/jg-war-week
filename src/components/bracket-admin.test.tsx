@@ -5,7 +5,7 @@ import { applyResult, generate } from "@/lib/bracket/engine";
 import type { PodiumPlace } from "@/lib/bracket/podium";
 import type { Bracket, Entrant } from "@/lib/bracket/types";
 
-import { BracketAdminView, finalizeCopy } from "./bracket-admin";
+import { BracketAdminView, closeCopy } from "./bracket-admin";
 
 vi.mock("@/components/auto-refresh", () => ({
   AutoRefresh: () => <span data-auto-refresh />,
@@ -73,7 +73,7 @@ describe("BracketAdminView", () => {
     expect(html).not.toMatch(/<section[^>]*aria-label="Semifinal"/);
   });
 
-  it("offers Record result or Edit on every Heat the Host can record, none on a bye or a Heat still waiting", () => {
+  it("offers Record result or Edit on every Match the Host can record, none on a bye or a Match still waiting", () => {
     // Semifinal 1 is a bye; Semifinal 2 is played; the Final waits for Blue
     // or Green, so it's not recordable yet.
     expect(recordButtons(render(null))).toEqual(["Edit Semifinal 2"]);
@@ -87,7 +87,7 @@ describe("BracketAdminView", () => {
     ).toEqual(["Edit Semifinal 2", "Record result for Final"]);
   });
 
-  it("offers no Record result or Edit while the Bracket is finalized", () => {
+  it("offers no Record result or Edit while the Bracket is closed", () => {
     expect(
       recordButtons(
         renderToStaticMarkup(
@@ -101,15 +101,15 @@ describe("BracketAdminView", () => {
     expect(render(null)).toContain("data-auto-refresh");
   });
 
-  it("stops refreshing while a Heat Result Sheet is open, so an unsaved result is kept", () => {
+  it("stops refreshing while a Match Result Sheet is open, so an unsaved result is kept", () => {
     expect(render("r1h2")).not.toContain("data-auto-refresh");
   });
 
-  it("offers no time and place on any Heat", () => {
+  it("offers no time and place on any Match", () => {
     expect(render(null)).not.toContain("Time &amp; place");
   });
 
-  it("shows when a played Heat was recorded, in ET, in its box", () => {
+  it("shows when a played Match was recorded, in ET, in its box", () => {
     expect(render(null)).toContain("Recorded Sat 7:05 PM ET");
   });
 
@@ -155,14 +155,14 @@ describe("BracketAdminView", () => {
     expect(closed).not.toContain("Provisional");
   });
 
-  it("says a finalized Bracket's Points Entries are in the ledger with Placement Points", () => {
+  it("says a closed Bracket's Points Entries are in the ledger with Placement Points", () => {
     const html = renderToStaticMarkup(
       <BracketAdminView {...props} finalized openHeatId={null} />,
     );
     expect(html).toContain("Closed: its Points Entries are in the ledger.");
   });
 
-  it("claims no Points Entries for a finalized Bracket without Placement Points", () => {
+  it("claims no Points Entries for a closed Bracket without Placement Points", () => {
     const html = renderToStaticMarkup(
       <BracketAdminView
         {...props}
@@ -176,16 +176,16 @@ describe("BracketAdminView", () => {
   });
 
   it("words the Close confirm by whether Placement Points exist", () => {
-    expect(finalizeCopy([5, 3, 1]).confirmTitle).toBe(
+    expect(closeCopy([5, 3, 1]).confirmTitle).toBe(
       "Create Points Entries from the final placings?",
     );
-    expect(finalizeCopy(null).confirmTitle).toBe(
+    expect(closeCopy(null).confirmTitle).toBe(
       "Close the Bracket? It has no Placement Points, so no Points Entries are created.",
     );
-    expect(finalizeCopy([]).confirmTitle).toBe(finalizeCopy(null).confirmTitle);
+    expect(closeCopy([]).confirmTitle).toBe(closeCopy(null).confirmTitle);
   });
 
-  it("names who self-reported a Heat's result in its box", () => {
+  it("names who self-reported a Match's result in its box", () => {
     const html = renderToStaticMarkup(
       <BracketAdminView
         {...props}
@@ -196,11 +196,11 @@ describe("BracketAdminView", () => {
     expect(html).toContain("Reported by Ashley Schuliger");
   });
 
-  it("shows no reporter on a Heat the Host entered", () => {
+  it("shows no reporter on a Match the Host entered", () => {
     expect(render(null)).not.toContain("Reported by");
   });
 
-  it("keeps Close off until the 3rd place game is recorded, though the Winner is known", () => {
+  it("keeps Close off until the 3rd place Match is recorded, though the Winner is known", () => {
     const four: Entrant[] = ["Red", "Blue", "Green", "Gold"].map(
       (label, i) => ({ id: `e${i + 1}`, seedPosition: i + 1, label }),
     );
@@ -231,7 +231,7 @@ describe("BracketAdminView", () => {
 
     const before = view(played);
     expect(before).toContain("Finish every Match to close.");
-    expect(before).toContain("3rd place game");
+    expect(before).toContain("3rd place Match");
     const after = view(applyResult(played, "r2h2", { order: ["e3", "e4"] }));
     expect(after).not.toContain("Finish every Match to close.");
   });

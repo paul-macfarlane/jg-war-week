@@ -2,12 +2,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import {
-  APPLIES_AT_NEXT_FINALIZE,
+  APPLIES_AT_NEXT_CLOSE,
   type CompetitionLockFacts,
-  LOCKED_BY_GAME,
-  LOCKED_BY_HEAT_RESULT,
+  LOCKED_BY_MATCH,
+  LOCKED_BY_MATCH_RESULT,
   LOCKED_BY_RESULT,
-  LOCKED_WHILE_FINALIZED,
+  LOCKED_WHILE_CLOSED,
 } from "@/lib/competition-locks";
 import {
   type CompetitionSettingsSource,
@@ -102,16 +102,16 @@ describe("CompetitionSettingsForm", () => {
     expect(control(html, "competition-name")).not.toMatch(DISABLED);
   });
 
-  it("says a Placement Points change while Finalized applies at the next Finalize, and locks the rest", () => {
+  it("says a Placement Points change while Closed applies at the next Close, and locks the rest", () => {
     const html = render(
       {},
       { facts: { ...OPEN, hasResult: true, finalized: true } },
     );
-    expect(html).toContain(APPLIES_AT_NEXT_FINALIZE);
+    expect(html).toContain(APPLIES_AT_NEXT_CLOSE);
     expect(html).toContain(LOCKED_BY_RESULT);
   });
 
-  it("locks an enrollment setting only while Finalized, with the Reopen reason", () => {
+  it("locks an enrollment setting only while Closed, with the Reopen reason", () => {
     const bracket = { format: "bracket" as const, selfEnroll: true };
     const open = render(bracket, { facts: { ...OPEN, hasResult: true } });
     expect(control(open, "competition-selfEnroll")).not.toMatch(DISABLED);
@@ -119,7 +119,7 @@ describe("CompetitionSettingsForm", () => {
       facts: { ...OPEN, hasResult: true, hasHeatResult: true, finalized: true },
     });
     expect(control(finalized, "competition-selfEnroll")).toMatch(DISABLED);
-    expect(finalized).toContain(LOCKED_WHILE_FINALIZED);
+    expect(finalized).toContain(LOCKED_WHILE_CLOSED);
   });
 
   it("leaves a Head-to-head Competition's Best of open with Entrants, and locks it with the Game reason once it has a Game", () => {
@@ -132,12 +132,14 @@ describe("CompetitionSettingsForm", () => {
     const withEntrants = render(headToHead, { facts });
     expect(control(withEntrants, "competition-best-of")).not.toMatch(DISABLED);
     expect(control(withEntrants, "competition-format")).toMatch(DISABLED);
-    expect(withEntrants).not.toContain(LOCKED_BY_GAME);
+    expect(withEntrants).not.toContain(LOCKED_BY_MATCH);
 
     const played = render(headToHead, { facts: { ...facts, hasGame: true } });
     expect(control(played, "competition-best-of")).toMatch(DISABLED);
     expect(control(played, "competition-draws-allowed")).toMatch(DISABLED);
-    expect(played).toContain("Locked once the Competition has a Game.");
+    expect(played).toContain(
+      "Locked once the Competition has a Match or Attempt.",
+    );
   });
 
   it("shows a Host the Hosts as names only, never an email", () => {
@@ -169,27 +171,27 @@ describe("CompetitionSettingsForm", () => {
     expect(html).not.toContain("not on the roster");
   });
 
-  describe("a Bracket's heat settings", () => {
+  describe("a Bracket's match settings", () => {
     const bracket = { format: "bracket" as const };
 
-    it("offers the head-to-head preset, Heat size and how many advance", () => {
+    it("offers the head-to-head preset, Match size and how many advance", () => {
       const html = render(bracket);
       expect(html).toContain("Head-to-head (single elimination)");
-      expect(html).toContain("Entrants per Heat");
+      expect(html).toContain("Entrants per Match");
       expect(html).toContain("How many advance");
       expect(html).toContain("Self-report");
       expect(html).not.toContain("Score direction");
     });
 
-    it("shows the 3rd place game off and disabled with its reason under 4 Entrants", () => {
+    it("shows the 3rd place Match off and disabled with its reason under 4 Entrants", () => {
       const html = render(bracket);
-      expect(html).toContain("A 3rd place game needs at least 4 Entrants.");
+      expect(html).toContain("A 3rd place Match needs at least 4 Entrants.");
       const third = control(html, "bracket-third-place");
       expect(third).toMatch(DISABLED);
       expect(third).not.toMatch(CHECKED);
     });
 
-    it("shows a saved 3rd place game as on under 4 Entrants, and lets it be turned off", () => {
+    it("shows a saved 3rd place Match as on under 4 Entrants, and lets it be turned off", () => {
       const html = render(
         {
           ...bracket,
@@ -205,11 +207,11 @@ describe("CompetitionSettingsForm", () => {
       expect(third).toMatch(CHECKED);
       expect(third).not.toMatch(DISABLED);
       expect(html).toContain(
-        "A 3rd place game needs at least 4 Entrants. Turn it off, or enter 4, to generate.",
+        "A 3rd place Match needs at least 4 Entrants. Turn it off, or enter 4, to generate.",
       );
     });
 
-    it("locks the heat settings once a Heat has a result", () => {
+    it("locks the match settings once a Match has a result", () => {
       const html = render(
         {
           ...bracket,
@@ -230,10 +232,10 @@ describe("CompetitionSettingsForm", () => {
         },
       );
       expect(control(html, "bracket-third-place")).toMatch(DISABLED);
-      expect(html).toContain(LOCKED_BY_HEAT_RESULT);
+      expect(html).toContain(LOCKED_BY_MATCH_RESULT);
     });
 
-    it("offers no 3rd place game at another Heat size", () => {
+    it("offers no 3rd place Match at another Match size", () => {
       const html = render({
         ...bracket,
         bracketConfig: {
@@ -242,7 +244,7 @@ describe("CompetitionSettingsForm", () => {
           thirdPlaceGame: false,
         },
       });
-      expect(html).not.toContain("3rd place game");
+      expect(html).not.toContain("3rd place Match");
     });
   });
 

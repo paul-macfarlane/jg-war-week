@@ -86,7 +86,7 @@ test("74-AC1 74-AC2: an Organizer adds a Custom slide with an image between Awar
       "Title",
       "By the numbers",
       "Awards",
-      "Champions",
+      "Winners",
       HEADING,
       "Standings countdown",
       "Winner",
@@ -186,7 +186,7 @@ test("74-AC1 74-AC2: an Organizer adds a Custom slide with an image between Awar
       "Title",
       "By the numbers",
       "Awards",
-      "Champions",
+      "Winners",
       "Standings countdown",
       "Winner",
     ]);

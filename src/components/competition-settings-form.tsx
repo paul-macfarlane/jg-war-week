@@ -90,7 +90,7 @@ const FIELD_LABELS: Record<SettingsField, string> = {
   scoreDirection: "Score direction",
   gameConfig: "The Format's settings",
   entrantsOpen: "Entrants",
-  bracketConfig: "Heat settings",
+  bracketConfig: "Match settings",
   selfEnroll: "Participants can enroll",
   entrantLimit: "Entrant limit",
   enrollClosesAt: "Enrollment closes",
@@ -581,7 +581,7 @@ export function CompetitionSettingsForm({
           )}
 
         {shown.has("bracketConfig") && (
-          <HeatSettingsFields
+          <MatchSettingsFields
             config={values.bracketConfig ?? DEFAULT_BRACKET_CONFIG}
             entrantCount={entrantCount}
             reason={lock("bracketConfig")}
@@ -594,7 +594,7 @@ export function CompetitionSettingsForm({
           switchField(
             "selfReport",
             "Self-report",
-            "Participants in a Heat can enter its result from their phone. It counts at once; you can still change any result in the Bracket below.",
+            "Participants in a Match can enter its result from their phone. It counts at once; you can still change any result in the Bracket below.",
           )}
 
         {shown.has("selfEnroll") &&
@@ -603,7 +603,7 @@ export function CompetitionSettingsForm({
             "Participants can enroll",
             values.format === "bracket"
               ? "Participants enter themselves until the Bracket is built, the limit is reached or the close time passes."
-              : "Participants enter themselves until the Entrant limit is reached, the close time passes, the first Game is logged, or you close this Competition.",
+              : `Participants enter themselves until the Entrant limit is reached, the close time passes, the first ${values.format === "best-score" ? "Attempt" : "Match"} is logged, or you close this Competition.`,
           )}
         {shown.has("entrantLimit") && (
           <Field className="sm:max-w-48" data-invalid={!!errors.entrantLimit}>
@@ -792,12 +792,12 @@ function GamesConfigFields({
 /**
  * A Bracket's heat settings: how many play in each Heat and how many
  * advance (2 with 1 advancing is the "Head-to-head (single elimination)"
- * preset), and at head-to-head the 3rd place game. With saved Entrants, a
+ * preset), and at head-to-head the 3rd place Match. With saved Entrants, a
  * "how many advance" Generate would refuse is disabled; turning the 3rd
  * place game on is disabled, with its reason, under 4 Entrants, though a
  * saved one can still be turned off. One setting (`bracketConfig`).
  */
-function HeatSettingsFields({
+function MatchSettingsFields({
   config,
   entrantCount,
   reason,
@@ -831,7 +831,7 @@ function HeatSettingsFields({
   const refusal = refusalAt(perHeat, advance);
   const set = (next: Partial<BracketConfig>) => {
     const merged = { ...config, ...next };
-    // Only head-to-head plays a 3rd place game.
+    // Only head-to-head plays a 3rd place Match.
     onChange({
       ...merged,
       thirdPlaceGame: isHeadToHead(merged) && merged.thirdPlaceGame,
@@ -840,10 +840,10 @@ function HeatSettingsFields({
 
   return (
     <FieldSet data-invalid={!!error || refusal !== null}>
-      <FieldLegend>Heat settings</FieldLegend>
+      <FieldLegend>Match settings</FieldLegend>
       <FieldDescription>
-        Each Round deals the Entrants into Heats; the top few of each go on to
-        the next Round until one Heat, the Final, is left.
+        Each Round deals the Entrants into Matches; the top few of each go on to
+        the next Round until one Match, the Final, is left.
       </FieldDescription>
       <div className="flex flex-wrap items-center gap-2">
         <Toggle
@@ -862,7 +862,7 @@ function HeatSettingsFields({
       </div>
       <FieldGroup className="gap-4 sm:flex-row">
         <Field className="sm:max-w-48">
-          <FieldLabel htmlFor="heat-entrants">Entrants per Heat</FieldLabel>
+          <FieldLabel htmlFor="heat-entrants">Entrants per Match</FieldLabel>
           <OptionSelect
             id="heat-entrants"
             name="entrantsPerHeat"
@@ -922,7 +922,7 @@ function HeatSettingsFields({
           />
           <FieldContent>
             <FieldLabel htmlFor="bracket-third-place">
-              3rd place game
+              3rd place Match
             </FieldLabel>
             <FieldDescription>
               {thirdPlaceReason ??

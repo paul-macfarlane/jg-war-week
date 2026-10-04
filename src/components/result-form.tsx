@@ -27,10 +27,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { GameFormat } from "@/lib/enums";
-import type {
-  BestScoreConfig,
-  GamesConfig,
-  HeadToHeadConfig,
+import {
+  type BestScoreConfig,
+  type GamesConfig,
+  type HeadToHeadConfig,
+  resultNoun,
 } from "@/lib/games/config";
 import type { FieldErrors } from "@/lib/result";
 import type { GamesViewName, GamesViewPlayer } from "@/queries/games";
@@ -41,9 +42,9 @@ type Outcome = "a" | "b" | "draw";
 type Linked = { participantId: string; teamId: string | null } | null;
 
 /** A Game being edited: its id and its players with places and scores. */
-export type GameFormGame = { id: string; players: GamesViewPlayer[] };
+export type ResultFormGame = { id: string; players: GamesViewPlayer[] };
 
-export type GameFormProps = {
+export type ResultFormProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   competitionId: string;
@@ -55,7 +56,7 @@ export type GameFormProps = {
   /** The viewer's linked Participant, preselected as a player when listed. */
   linked: Linked;
   /** The Game to edit, or null to log a new one. */
-  game: GameFormGame | null;
+  game: ResultFormGame | null;
 };
 
 /**
@@ -65,11 +66,11 @@ export type GameFormProps = {
  * The result toasts; a refusal toasts the server's message and keeps the
  * form open with its input.
  */
-export function GameForm(props: GameFormProps) {
+export function ResultForm(props: ResultFormProps) {
   const { open, onOpenChange, game } = props;
   return (
     <ResponsiveSheetDialog open={open} onOpenChange={onOpenChange}>
-      {open ? <GameFormBody key={game?.id ?? "new"} {...props} /> : null}
+      {open ? <ResultFormBody key={game?.id ?? "new"} {...props} /> : null}
     </ResponsiveSheetDialog>
   );
 }
@@ -94,7 +95,7 @@ function youIn(
 
 type Row = { key: number; id: string; place: string };
 
-function GameFormBody({
+function ResultFormBody({
   onOpenChange,
   competitionId,
   gameFormat,
@@ -103,7 +104,7 @@ function GameFormBody({
   entrantOptions,
   linked,
   game,
-}: GameFormProps) {
+}: ResultFormProps) {
   const id = useId();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -144,6 +145,7 @@ function GameFormBody({
         ],
   );
   const [nextKey, setNextKey] = useState(rows.length);
+  const noun = resultNoun(gameFormat);
 
   function raw(): Record<string, unknown> {
     if (gameFormat === "head-to-head") return { playerA, playerB, outcome };
@@ -167,7 +169,7 @@ function GameFormBody({
         toast.error(result.error);
         return;
       }
-      toast.success(game ? "Game updated" : "Game logged");
+      toast.success(game ? `${noun.one} updated` : `${noun.one} logged`);
       onOpenChange(false);
       router.refresh();
     });
@@ -182,7 +184,7 @@ function GameFormBody({
     <form onSubmit={submit} className="flex flex-col gap-4">
       <ResponsiveSheetDialogHeader>
         <ResponsiveSheetDialogTitle>
-          {game ? "Edit Game" : "Log a Game"}
+          {game ? `Edit ${noun.one}` : `Log ${noun.a}`}
         </ResponsiveSheetDialogTitle>
         <ResponsiveSheetDialogDescription>
           {gameFormat === "head-to-head"
@@ -365,7 +367,7 @@ function GameFormBody({
       </FieldGroup>
       <ResponsiveSheetDialogFooter>
         <Button type="submit" size="lg" className="min-h-11" disabled={pending}>
-          {pending ? "Saving…" : game ? "Save Game" : "Log Game"}
+          {pending ? "Saving…" : game ? `Save ${noun.one}` : `Log ${noun.one}`}
         </Button>
       </ResponsiveSheetDialogFooter>
     </form>

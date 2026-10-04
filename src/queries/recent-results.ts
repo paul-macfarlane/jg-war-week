@@ -74,7 +74,7 @@ export async function getRecentResults(
 
 /**
  * Points Entries (Discretionary ones included: no Competition) with who each
- * is for, as Recent results and the Finale's Champions read them: a query to add `where`, `orderBy` and `limit` to.
+ * is for, as Recent results and the Finale's Winners slide read them: a query to add `where`, `orderBy` and `limit` to.
  */
 export function resultEntryQuery(dbOrTx: DBOrTx) {
   const participantTeam = aliasedTable(team, "participant_team");

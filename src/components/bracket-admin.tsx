@@ -13,9 +13,9 @@ import { BracketTree } from "@/components/bracket-tree";
 import { ConfirmActionButton } from "@/components/confirm-dialog";
 import type { BracketViewEntrant } from "@/components/entrant-mark";
 import {
-  HeatResultForm,
-  type HeatResultFormProps,
-} from "@/components/heat-result-form";
+  MatchResultForm,
+  type MatchResultFormProps,
+} from "@/components/match-result-form";
 import { ResponsiveSheetDialog } from "@/components/responsive-sheet-dialog";
 import { Button } from "@/components/ui/button";
 import { isComplete, isRecordable } from "@/lib/bracket/formats";
@@ -29,14 +29,14 @@ type Scoring = "team" | "individual";
  * The admin Bracket's Heat Result form: the Host's record, which asks
  * before resetting later Heats and toasts "<1st place> wins <Heat name>".
  */
-function HeatResultSheet({
+function MatchResultSheet({
   competitionId,
   ...props
-}: Omit<HeatResultFormProps, "submit" | "confirmResets" | "successToast"> & {
+}: Omit<MatchResultFormProps, "submit" | "confirmResets" | "successToast"> & {
   competitionId: string;
 }) {
   return (
-    <HeatResultForm
+    <MatchResultForm
       {...props}
       submit={(result) =>
         recordHeatResult(competitionId, props.heat.id, result)
@@ -48,19 +48,19 @@ function HeatResultSheet({
 }
 
 /** Close's copy: Points Entries are only created with Placement Points. */
-export function finalizeCopy(placementPoints: number[] | null) {
+export function closeCopy(placementPoints: number[] | null) {
   return hasPlacementPoints(placementPoints)
     ? {
         confirmTitle: "Create Points Entries from the final placings?",
-        finalizedNote: "Closed: its Points Entries are in the ledger.",
-        unfinalizeTitle: "Delete the Points Entries this Bracket created?",
+        closedNote: "Closed: its Points Entries are in the ledger.",
+        reopenTitle: "Delete the Points Entries this Bracket created?",
       }
     : {
         confirmTitle:
           "Close the Bracket? It has no Placement Points, so no Points Entries are created.",
-        finalizedNote:
+        closedNote:
           "Closed: it has no Placement Points, so it made no Points Entries.",
-        unfinalizeTitle: "Reopen the Bracket?",
+        reopenTitle: "Reopen the Bracket?",
       };
 }
 
@@ -127,7 +127,7 @@ export function BracketAdminView({
     ? bracket.heats.find((h) => h.id === openHeatId)
     : undefined;
   const close = () => onOpenHeatChange(null);
-  const copy = finalizeCopy(placementPoints);
+  const copy = closeCopy(placementPoints);
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
@@ -143,10 +143,10 @@ export function BracketAdminView({
         {finalized ? (
           <>
             <p className="text-foreground/70 text-sm">
-              {copy.finalizedNote} Reopen it to change a Match result.
+              {copy.closedNote} Reopen it to change a Match result.
             </p>
             <ConfirmActionButton
-              title={copy.unfinalizeTitle}
+              title={copy.reopenTitle}
               confirmLabel="Reopen"
               action={() => unfinalizeBracket(competitionId)}
               successMessage="Bracket reopened"
@@ -211,7 +211,7 @@ export function BracketAdminView({
         }}
       >
         {resultHeat && (
-          <HeatResultSheet
+          <MatchResultSheet
             key={resultHeat.id}
             competitionId={competitionId}
             heat={resultHeat}

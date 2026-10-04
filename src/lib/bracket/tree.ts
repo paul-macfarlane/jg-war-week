@@ -10,8 +10,8 @@ import { isBye } from "@/lib/bracket/formats";
 import type { Bracket, Heat } from "@/lib/bracket/types";
 import {
   groupRounds,
-  heatName,
   isDecided,
+  matchName,
   roundName,
 } from "@/lib/bracket/view";
 
@@ -25,7 +25,7 @@ export type TreeSlot =
       score: string | null;
       /**
        * Through to the next Round (a bye's Entrant too), or, in the final,
-       * the winner, or, in the 3rd place game, who takes 3rd: the tree
+       * the winner, or, in the 3rd place Match, who takes 3rd: the tree
        * highlights it.
        */
       advances: boolean;
@@ -49,7 +49,7 @@ export type TreeHeat = {
   bye: boolean;
   /** The final (`finalHeatOf`): its winner wins the Bracket. */
   final: boolean;
-  /** The 3rd place game, beside the final and drawn secondary to it. */
+  /** The 3rd place Match, beside the final and drawn secondary to it. */
   thirdPlace: boolean;
   /**
    * Head-to-head: in slot order, so connectors meet the right slot. More
@@ -77,7 +77,7 @@ export type BracketTree = {
 
 /**
  * How many of a decided Heat's places go through: head-to-head, 1 (in the
- * 3rd place game, who takes 3rd); the final, 1, the winner.
+ * 3rd place Match, who takes 3rd); the final, 1, the winner.
  */
 export function advancingPlaces(bracket: Bracket, heat: Heat): number {
   if (isHeadToHead(bracket.config)) return 1;
@@ -127,9 +127,9 @@ function treeSlots(bracket: Bracket, heat: Heat, bye: boolean): TreeSlot[] {
       return {
         kind: "waiting",
         waitingFor: feeder
-          ? heatName(bracket, feeder)
+          ? matchName(bracket, feeder)
           : loserFeeder
-            ? `${heatName(bracket, loserFeeder)}'s loser`
+            ? `${matchName(bracket, loserFeeder)}'s loser`
             : "an Entrant",
       };
     }
@@ -159,7 +159,7 @@ export function bracketTree(bracket: Bracket): BracketTree {
       const bye = isBye(bracket, heat);
       return {
         id: heat.id,
-        name: heatName(bracket, heat),
+        name: matchName(bracket, heat),
         round: heat.round,
         position: heat.position,
         decided: isDecided(heat),

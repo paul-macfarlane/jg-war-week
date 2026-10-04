@@ -274,13 +274,13 @@ describe("unstartError", () => {
       "This War Week has been ended; Unstart isn't available.",
     ],
     [
-      "then Points, Heat results and Games, in that order",
+      "then Points, Match results and Games, in that order",
       {
         status: "live",
         winner: null,
         scored: { pointsEntries: 0, heatResults: 1, games: 1 },
       },
-      "A Heat has a result; Unstart isn't available.",
+      "A Match has a result; Unstart isn't available.",
     ],
   ])("%s", (_, input, expected) => {
     expect(unstartError(input)).toBe(expected);
@@ -376,14 +376,14 @@ describe("lifecycleActionError", () => {
       "Points have been entered; Unstart isn't available.",
     ],
     [
-      "Unstart refuses once a Heat has a result",
+      "Unstart refuses once a Match has a result",
       {
         action: "unstart",
         target: xiiLive,
         warWeeks: liveWeeks,
         scored: { ...none, heatResults: 2 },
       },
-      "A Heat has a result; Unstart isn't available.",
+      "A Match has a result; Unstart isn't available.",
     ],
     [
       "Unstart refuses once a Game is logged",
@@ -393,7 +393,7 @@ describe("lifecycleActionError", () => {
         warWeeks: liveWeeks,
         scored: { ...none, games: 1 },
       },
-      "A Game has been logged; Unstart isn't available.",
+      "A Match or Attempt has been logged; Unstart isn't available.",
     ],
     [
       "Unstart names the Points Entry first when several apply",

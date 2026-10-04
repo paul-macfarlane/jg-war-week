@@ -35,16 +35,16 @@ export function isBracketFormat(
 /** Every Format that runs as a Bracket. */
 export const BRACKET_FORMATS: BracketFormat[] = ["bracket"];
 
-/** The 3rd place game's name, beside the final. */
-export const THIRD_PLACE_GAME = "3rd place game";
+/** The 3rd place Match's name, beside the final. */
+export const THIRD_PLACE_MATCH = "3rd place Match";
 
 /**
  * "Final", "Round N", or (head-to-head only) "Semifinal", by distance
  * from the final Round; with a `position`, "Round N Heat P" or
- * "Semifinal P" instead of the bare Round name. The 3rd place game is
- * "3rd place game".
+ * "Semifinal P" instead of the bare Round name. The 3rd place Match is
+ * "3rd place Match".
  */
-export function heatNameAt({
+export function matchNameAt({
   headToHead,
   finalRound,
   round,
@@ -57,7 +57,7 @@ export function heatNameAt({
   position?: number;
   thirdPlace?: boolean;
 }): string {
-  if (thirdPlace) return THIRD_PLACE_GAME;
+  if (thirdPlace) return THIRD_PLACE_MATCH;
   if (round === finalRound) return "Final";
   const isSemifinal = headToHead && round === finalRound - 1;
   if (isSemifinal) {
@@ -65,7 +65,7 @@ export function heatNameAt({
   }
   return position === undefined
     ? `Round ${round}`
-    : `Round ${round} Heat ${position}`;
+    : `Round ${round} Match ${position}`;
 }
 
 /**
@@ -73,7 +73,7 @@ export function heatNameAt({
  * from the final Round.
  */
 export function roundName(bracket: Bracket, round: number): string {
-  return heatNameAt({
+  return matchNameAt({
     headToHead: isHeadToHead(bracket.config),
     finalRound: finalRoundOf(bracket),
     round,
@@ -81,14 +81,14 @@ export function roundName(bracket: Bracket, round: number): string {
 }
 
 /**
- * "Final", "3rd place game", "Round 1 Heat 4", or (head-to-head only)
+ * "Final", "3rd place Match", "Round 1 Heat 4", or (head-to-head only)
  * "Semifinal 2".
  */
-export function heatName(
+export function matchName(
   bracket: Bracket,
   heat: Pick<Heat, "round" | "position"> & { thirdPlace?: boolean },
 ): string {
-  return heatNameAt({
+  return matchNameAt({
     headToHead: isHeadToHead(bracket.config),
     finalRound: finalRoundOf(bracket),
     round: heat.round,

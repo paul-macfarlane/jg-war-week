@@ -58,12 +58,12 @@ function buttonNames(html: string): string[] {
 }
 
 describe("BracketTree's Record result buttons", () => {
-  it("shows no button on any Heat when the viewer may record none", () => {
+  it("shows no button on any Match when the viewer may record none", () => {
     expect(buttonNames(tree())).toEqual([]);
     expect(tree()).not.toContain("Record result");
   });
 
-  it("shows a solid Record result only on the Heats the viewer may record", () => {
+  it("shows a solid Record result only on the Matches the viewer may record", () => {
     const html = tree({ recordableHeatIds: ["r1h2"], onRecord: () => {} });
     expect(buttonNames(html)).toEqual(["Record result for Semifinal 2"]);
     const button = html.match(/<button[^>]*>Record result<\/button>/)?.[0];
@@ -71,7 +71,7 @@ describe("BracketTree's Record result buttons", () => {
     expect(button).toContain("bg-primary");
   });
 
-  it("offers Edit on a played Heat the viewer may record", () => {
+  it("offers Edit on a played Match the viewer may record", () => {
     const played = applyResult(three, "r1h2", { order: ["e2", "e3"] });
     const html = tree(
       { recordableHeatIds: ["r1h2", "r2h1"], onRecord: () => {} },
@@ -83,7 +83,7 @@ describe("BracketTree's Record result buttons", () => {
     ]);
   });
 
-  it("names who self-reported a Heat's result in its box", () => {
+  it("names who self-reported a Match's result in its box", () => {
     expect(tree({ reporters: { r1h2: "Ashley Schuliger" } })).toContain(
       "Reported by Ashley Schuliger",
     );
@@ -131,7 +131,7 @@ describe("BracketTree's layout", () => {
     expect(html).toContain("Alec Haring");
   });
 
-  it("highlights places 1 and 2 of a Heat of 4 with 2 advancing, and only 1st in the final", () => {
+  it("highlights places 1 and 2 of a Match of 4 with 2 advancing, and only 1st in the final", () => {
     const eight: Entrant[] = Array.from({ length: 8 }, (_, i) => ({
       id: `h${i + 1}`,
       seedPosition: i + 1,
@@ -164,15 +164,15 @@ describe("BracketTree's layout", () => {
     };
 
     play("r1h1");
-    expect(advancing("Round 1 Heat 1")).toEqual(["1", "2"]);
+    expect(advancing("Round 1 Match 1")).toEqual(["1", "2"]);
     play("r1h2");
     play("r2h1");
     expect(advancing("Final")).toEqual(["1"]);
   });
 });
 
-describe("BracketTree's 3rd place game", () => {
-  it("names the final's winner the winner, and the 3rd place game's winner 3rd", () => {
+describe("BracketTree's 3rd place Match", () => {
+  it("names the final's winner the winner, and the 3rd place Match's winner 3rd", () => {
     const four: Entrant[] = ["A", "B", "C", "D"].map((label, i) => ({
       id: label,
       seedPosition: i + 1,
@@ -212,6 +212,6 @@ describe("BracketTree's 3rd place game", () => {
           .matchAll(/class="sr-only">([^<]*)</g),
       ].map((m) => m[1].trim());
     expect(notes("Final")).toEqual(["wins"]);
-    expect(notes("3rd place game")).toEqual(["takes 3rd"]);
+    expect(notes("3rd place Match")).toEqual(["takes 3rd"]);
   });
 });

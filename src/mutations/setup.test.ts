@@ -983,7 +983,7 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
     });
   });
 
-  it("creates a Bracket with the default config: 2 per Heat, 1 advancing, no 3rd place game", async () => {
+  it("creates a Bracket with the default config: 2 per Match, 1 advancing, no 3rd place Match", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { createCompetition } = await import("@/mutations/setup");
       const { schema, ctx } = await rosterFixture(tx);
@@ -1089,7 +1089,7 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
     });
   });
 
-  it("refuses a scoring change while the Bracket is finalized, but not Placement Points or other fields", async () => {
+  it("refuses a scoring change while the Bracket is closed, but not Placement Points or other fields", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { updateCompetition } = await import("@/mutations/setup");
       const { schema, home, ctx } = await rosterFixture(tx);
@@ -1132,7 +1132,7 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
       ).toEqual({
         ok: false,
         error:
-          "This Competition's Bracket is finalized. Un-finalize the Bracket first.",
+          "This Competition's Bracket is closed. Reopen the Bracket first.",
       });
       const [saved] = await tx
         .select()

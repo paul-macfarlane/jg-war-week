@@ -314,7 +314,7 @@ describe.skipIf(!isLocalDatabase)("enroll (individual scoring)", () => {
     });
   });
 
-  it("refuses a finalized Competition", async () => {
+  it("refuses a closed Competition", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { enroll } = await mutations();
       const { ENROLL_CLOSED_BY_HOST } = await rule();
@@ -547,7 +547,7 @@ describe.skipIf(!isLocalDatabase)("Squads", () => {
     });
   });
 
-  it("refuses a join on a finalized Competition", async () => {
+  it("refuses a join on a closed Competition", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { joinSquad } = await mutations();
       const { ENROLL_CLOSED_BY_HOST } = await rule();
@@ -585,7 +585,7 @@ describe.skipIf(!isLocalDatabase)("Squads", () => {
     });
   });
 
-  it("refuses a leave on a finalized Competition", async () => {
+  it("refuses a leave on a closed Competition", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { joinSquad, leaveSquad } = await mutations();
       const { ENROLL_CLOSED_BY_HOST } = await rule();
@@ -657,7 +657,7 @@ describe.skipIf(!isLocalDatabase)("setSelfEnroll", () => {
     });
   });
 
-  it("refuses a points, a Best of, an open-to-everyone and a finalized Competition", async () => {
+  it("refuses a points, a Best of, an open-to-everyone and a closed Competition", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { setSelfEnroll } = await mutations();
       const { BEST_OF_NO_ENROLL, OPEN_NO_ENROLL, POINTS_NO_ENROLL } =

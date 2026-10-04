@@ -212,7 +212,7 @@ describe("warWeekSeedSchema", () => {
       );
     });
 
-    it("rejects a Bracket config missing its 3rd place game", () => {
+    it("rejects a Bracket config missing its 3rd place Match", () => {
       expect(
         rejectionOf(
           withCompetition({
@@ -236,7 +236,7 @@ describe("warWeekSeedSchema", () => {
           }),
         ),
       ).toContain(
-        `${at}.advancePerHeat: Fewer must advance than play in a Heat.`,
+        `${at}.advancePerHeat: Fewer must advance than play in a Match.`,
       );
     });
 
@@ -655,7 +655,7 @@ describe("warWeekSeedSchema Placements", () => {
   const participant = () => loadFixture().participants[0].displayName;
   const team = () => loadFixture().teams[0].name;
 
-  it("parses Placements and a Finalized Placement Competition", () => {
+  it("parses Placements and a Closed Placement Competition", () => {
     const seed = warWeekSeedSchema.parse({
       ...base(),
       placements: [

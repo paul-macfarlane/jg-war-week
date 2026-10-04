@@ -38,11 +38,16 @@ export async function expectPodium(page: Page, expected: ExpectedPlace[]) {
   await expectNoOldWords(page);
 }
 
-/** Neither "Champion" nor "Play the finale" anywhere on the page. */
+/**
+ * No "Champion", "Play the finale", Heat or Finalize / Un-finalize anywhere
+ * on the page (spec competition-results, decision 10).
+ */
 export async function expectNoOldWords(page: Page) {
   const text = await page.locator("body").innerText();
   expect(text).not.toMatch(/champion/i);
   expect(text).not.toMatch(/play the finale/i);
+  expect(text).not.toMatch(/\bheats?\b/i);
+  expect(text).not.toMatch(/\b(un-?)?finali[sz]/i);
 }
 
 /**

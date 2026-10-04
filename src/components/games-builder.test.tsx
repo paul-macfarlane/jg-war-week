@@ -18,6 +18,7 @@ function competition(over: Partial<Props["competition"]> = {}) {
   return {
     id: "c1",
     scoring: "individual" as const,
+    gameFormat: "head-to-head" as const,
     entrantsOpen: true,
     closed: false,
     placementPoints: [3, 2, 1],
@@ -40,6 +41,15 @@ function render(over: Partial<Props["competition"]> = {}) {
 }
 
 describe("GamesBuilder", () => {
+  it("names a Head-to-head result a Match and a Best score result an Attempt", () => {
+    expect(render({ gameFormat: "head-to-head" })).toContain(
+      "anyone eligible may log a Match.",
+    );
+    expect(render({ gameFormat: "best-score" })).toContain(
+      "anyone eligible may log an Attempt.",
+    );
+  });
+
   it("shows the fixed-list Entrants picker only when the list is fixed", () => {
     expect(render({ entrantsOpen: true })).not.toContain("Pick Participants");
     expect(render({ entrantsOpen: false })).toContain("Pick Participants");

@@ -39,7 +39,7 @@ const newId = (round: number, position: number) => `r${round}h${position}`;
 
 function heat(bracket: Bracket, id: string): Heat {
   const found = bracket.heats.find((h) => h.id === id);
-  if (!found) throw new Error(`no Heat ${id}`);
+  if (!found) throw new Error(`no Match ${id}`);
   return found;
 }
 

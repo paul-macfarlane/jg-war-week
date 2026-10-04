@@ -63,7 +63,7 @@ async function fixture(tx: DBTx, selfReport: boolean) {
       year: 9731,
       startDate: "2099-01-01",
       endDate: "2099-01-05",
-      storyTheme: "Heat report refusal test",
+      storyTheme: "Match report refusal test",
       status: "upcoming",
       mode: "teams",
       teamLabel: "Team",
@@ -142,9 +142,9 @@ async function fixture(tx: DBTx, selfReport: boolean) {
 }
 
 describe.skipIf(!isLocalDatabase)(
-  "reportHeatResult refuses a Participant who may not record the Heat",
+  "reportHeatResult refuses a Participant who may not record the Match",
   () => {
-    it("refuses a Participant not in the Heat, recording nothing", async () => {
+    it("refuses a Participant not in the Match, recording nothing", async () => {
       await inRolledBackTransaction(async (tx) => {
         const f = await fixture(tx, true);
         const before = await f.heatNow();
@@ -158,7 +158,7 @@ describe.skipIf(!isLocalDatabase)(
       });
     });
 
-    it("refuses a Participant in the Heat while self-report is off, recording nothing", async () => {
+    it("refuses a Participant in the Match while self-report is off, recording nothing", async () => {
       await inRolledBackTransaction(async (tx) => {
         const f = await fixture(tx, false);
         const before = await f.heatNow();

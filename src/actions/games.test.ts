@@ -37,7 +37,10 @@ const PLAYER_OK = {
     config: { drawsAllowed: false, bestOf: null },
   },
 };
-const REFUSED = { ok: false, error: "You're not a player in this Game." };
+const REFUSED = {
+  ok: false,
+  error: "You're not a player in this Match or Attempt.",
+};
 
 const revalidatePath = vi.hoisted(() => vi.fn());
 vi.mock("next/cache", () => ({ revalidatePath }));

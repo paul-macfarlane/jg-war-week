@@ -542,7 +542,7 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Finale slides", () => {
         "Title",
         "By the numbers",
         "Awards",
-        "Champions",
+        "Winners",
         "Standings countdown",
         "Winner",
         "Thank you",
@@ -591,7 +591,7 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Finale slides", () => {
         // Not in the seed's list: unsaved, at the end in the default order.
         "By the numbers*",
         "Awards*",
-        "Champions*",
+        "Winners*",
       ]);
     });
   });
@@ -809,7 +809,7 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Placements", () => {
     };
   }
 
-  it("writes the Placements and a Finalized Competition's entries with the seed's time and author; a reload changes nothing", async () => {
+  it("writes the Placements and a Closed Competition's entries with the seed's time and author; a reload changes nothing", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { loadWarWeekSeed } = await import("@/seed/load");
       await clearLive(tx);

@@ -83,7 +83,7 @@ async function round1HeatOf(
      where h.competition_id = $1 and h.round = 1 and p.display_name = $2`,
     [competitionId, displayName],
   );
-  if (!row) throw new Error(`No Round 1 Heat holds "${displayName}"`);
+  if (!row) throw new Error(`No Round 1 Match holds "${displayName}"`);
   return `Semifinal ${row.position}`;
 }
 
@@ -104,7 +104,7 @@ async function recordHeat(page: Page, heat: string): Promise<string> {
   const name = ENTRANTS.find((entrant) => text.includes(entrant));
   if (!name) throw new Error(`No Entrant named in "${text}"`);
   await winner.click();
-  await sheet.getByRole("button", { name: "Save Heat Result" }).click();
+  await sheet.getByRole("button", { name: "Save Match Result" }).click();
   await expect(page.getByText(`${name} wins ${heat}`)).toBeVisible();
   await expect(sheet).toBeHidden();
   return name;
@@ -247,9 +247,9 @@ test("a Bracket is built, run and Closed into Points Entries, its podium 1st and
   await expect(page.getByRole("button", { name: "Replay" })).toBeVisible({
     timeout: 20_000,
   });
-  const championCard = page.getByLabel("Champion", { exact: true });
+  const championCard = page.getByLabel("Winner", { exact: true });
   await expect(championCard).toContainText(winner);
-  await expect(championCard).toContainText(`Champion of ${COMPETITION}`);
+  await expect(championCard).toContainText(`Winner of ${COMPETITION}`);
   await checkViewports(page, testInfo, "bracket-finale");
 
   // Reduced motion shows the final state as soon as Start is pressed:
@@ -265,7 +265,7 @@ test("a Bracket is built, run and Closed into Points Entries, its podium 1st and
   await expect(stillPage.locator('[data-finale="done"]')).toBeVisible({
     timeout: 2_000,
   });
-  await expect(stillPage.getByLabel("Champion", { exact: true })).toContainText(
+  await expect(stillPage.getByLabel("Winner", { exact: true })).toContainText(
     winner,
     { timeout: 2_000 },
   );

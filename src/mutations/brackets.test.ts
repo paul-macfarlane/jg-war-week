@@ -153,7 +153,7 @@ async function heatsFixture(tx: DBTx) {
     .insert(schema.competition)
     .values({
       warWeekId: f.ctx.warWeekId,
-      name: "Relay Heats",
+      name: "Relay Matches",
       scoring: "individual",
       format: "bracket",
       placementPoints: [5, 3, 1],
@@ -303,7 +303,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
     });
   });
 
-  it("records Heat Results, advances winners and resets later Heats on an edit", async () => {
+  it("records Match Results, advances winners and resets later Matches on an edit", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await fixture(tx);
@@ -404,12 +404,12 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         ),
       ).toEqual({
         ok: false,
-        error: "Put every Entrant of this Heat in finishing order, once each.",
+        error: "Put every Entrant of this Match in finishing order, once each.",
       });
     });
   });
 
-  it("locks regenerating and replacing Entrants once a Heat has a result, clearing nothing", async () => {
+  it("locks regenerating and replacing Entrants once a Match has a result, clearing nothing", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await fixture(tx);
@@ -444,7 +444,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         tx,
       );
 
-      const locked = { ok: false, error: "Locked once a Heat has a result." };
+      const locked = { ok: false, error: "Locked once a Match has a result." };
       expect(
         await mutations.generateBracket(
           f.competitionId,
@@ -469,7 +469,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
     });
   });
 
-  it("finalizes into generated Points Entries, and un-finalizing removes only those", async () => {
+  it("closes into generated Points Entries, and un-finalizing removes only those", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await fixture(tx);
@@ -496,7 +496,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       );
       expect(
         await mutations.finalizeBracket(f.competitionId, f.ctx, tx),
-      ).toEqual({ ok: false, error: "Finish every Heat before finalizing." });
+      ).toEqual({ ok: false, error: "Finish every Match before closing." });
 
       // Seeded Blue 1, Green 2, Gold 3, Red 4: Blue and Green win the
       // semifinals, Green wins the final.
@@ -567,7 +567,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         ),
       ).toEqual({
         ok: false,
-        error: "Un-finalize the Bracket before changing it.",
+        error: "Reopen the Bracket before changing it.",
       });
 
       // Re-finalizing replaces the generated entries with the same ones.
@@ -596,7 +596,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
     });
   });
 
-  it("takes a Placement Points change while the Bracket is finalized, applying it at the next Finalize", async () => {
+  it("takes a Placement Points change while the Bracket is closed, applying it at the next Close", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const setup = await import("@/mutations/setup");
@@ -839,13 +839,13 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         ),
       ).toEqual({
         ok: false,
-        error: "Locked once a Heat has a result.",
+        error: "Locked once a Match has a result.",
       });
       expect(await savedConfig(tx, f, f.relayId)).toEqual(fourTwo);
     });
   });
 
-  it("empties a decided heats final when a re-recorded Heat changes who advances", async () => {
+  it("empties a decided matches final when a re-recorded Match changes who advances", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await generatedHeats(tx);
@@ -898,7 +898,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
     });
   });
 
-  it("refuses to generate Heats that would never end", async () => {
+  it("refuses to generate Matches that would never end", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await fixture(tx);
@@ -931,7 +931,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       ).toEqual({
         ok: false,
         error:
-          "With 4 Entrants, 3 per Heat and 2 advancing, Round 1 would never end. Lower how many advance.",
+          "With 4 Entrants, 3 per Match and 2 advancing, Round 1 would never end. Lower how many advance.",
       });
       expect(
         (await queries.getBracket(f.competitionId, tx))!.bracket.heats,
@@ -939,7 +939,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
     });
   });
 
-  it("saves a heats config, and a different one clears the Heats until a Heat has a result, then locks it", async () => {
+  it("saves a matches config, and a different one clears the Matches until a Match has a result, then locks it", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await generatedHeats(tx);
@@ -992,14 +992,14 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
           f.ctx,
           tx,
         ),
-      ).toEqual({ ok: false, error: "Locked once a Heat has a result." });
+      ).toEqual({ ok: false, error: "Locked once a Match has a result." });
       expect(await savedConfig(tx, f, f.relayId)).toEqual(fourOne);
       view = (await queries.getBracket(f.relayId, tx))!;
       expect(heatAt(view, 1, 1).heat.status).toBe("played");
     });
   });
 
-  it("refuses to save Heat settings that Generate would refuse, keeping the drawn Heats", async () => {
+  it("refuses to save Match settings that Generate would refuse, keeping the drawn Matches", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await generatedHeats(tx);
@@ -1021,7 +1021,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       ).toEqual({
         ok: false,
         error:
-          "With 8 Entrants, 3 per Heat and 2 advancing, Round 3 would never end. Lower how many advance.",
+          "With 8 Entrants, 3 per Match and 2 advancing, Round 3 would never end. Lower how many advance.",
       });
       expect(await savedConfig(tx, f, f.relayId)).toEqual(fourTwo);
       expect(
@@ -1030,7 +1030,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
     });
   });
 
-  it("runs a 3rd place game: refused under 4 Entrants or off 2 / 1, locked once a Heat has a result, placed from the final", async () => {
+  it("runs a 3rd place Match: refused under 4 Entrants or off 2 / 1, locked once a Heat has a result, placed from the final", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await fixture(tx);
@@ -1055,7 +1055,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       );
       expect(await setGame(withGame)).toEqual({
         ok: false,
-        error: "A 3rd place game needs at least 4 Entrants.",
+        error: "A 3rd place Match needs at least 4 Entrants.",
       });
       await mutations.replaceEntrants(
         f.competitionId,
@@ -1067,7 +1067,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         await setGame({ ...withGame, entrantsPerHeat: 4, advancePerHeat: 2 }),
       ).toEqual({
         ok: false,
-        error: "A 3rd place game is only for 2 per Heat with 1 advancing.",
+        error: "A 3rd place Match is only for 2 per Match with 1 advancing.",
       });
       expect(await setGame(withGame)).toEqual({ ok: true });
       expect(await savedConfig(tx, f, f.competitionId)).toEqual(withGame);
@@ -1119,7 +1119,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       // Locked once a Heat Result exists.
       expect(await setGame({ ...withGame, thirdPlaceGame: false })).toEqual({
         ok: false,
-        error: "Locked once a Heat has a result.",
+        error: "Locked once a Match has a result.",
       });
       expect(await savedConfig(tx, f, f.competitionId)).toEqual(withGame);
       expect(
@@ -1130,7 +1130,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       await record(2, 1, "Green");
       expect(
         await mutations.finalizeBracket(f.competitionId, f.ctx, tx),
-      ).toEqual({ ok: false, error: "Finish every Heat before finalizing." });
+      ).toEqual({ ok: false, error: "Finish every Match before closing." });
       expect((await queries.getBracket(f.competitionId, tx))!.winner).toBe(
         id("Green"),
       );
@@ -1233,7 +1233,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
     });
   });
 
-  it("refuses a Heat slot below 0, or a place below 1", async () => {
+  it("refuses a Match slot below 0, or a place below 1", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations } = await modules();
       const f = await fixture(tx);
@@ -1290,7 +1290,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
   });
 });
 
-describe.skipIf(!isLocalDatabase)("Heat recorded_at", () => {
+describe.skipIf(!isLocalDatabase)("Match recorded_at", () => {
   /** A Heat's `recorded_at`, straight from the row. */
   async function recordedAtOf(
     tx: DBTx,
@@ -1335,7 +1335,7 @@ describe.skipIf(!isLocalDatabase)("Heat recorded_at", () => {
 
   const LONG_AGO = new Date("2000-01-01T00:00:00Z");
 
-  it("is null for a Heat that isn't played, and set when an Organizer saves its result", async () => {
+  it("is null for a Match that isn't played, and set when an Organizer saves its result", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { f, mutations, id, semi1, semi2 } = await generated(tx);
       expect(await recordedAtOf(tx, f, semi1)).toBeNull();
@@ -1357,7 +1357,7 @@ describe.skipIf(!isLocalDatabase)("Heat recorded_at", () => {
     });
   });
 
-  it("is set again by an edit of a played Heat", async () => {
+  it("is set again by an edit of a played Match", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { f, mutations, id, semi1 } = await generated(tx);
       const result = { order: [id("Red"), id("Blue")] };
@@ -1402,7 +1402,7 @@ describe.skipIf(!isLocalDatabase)("Heat recorded_at", () => {
     });
   });
 
-  it("is cleared on a later Heat that a changed winner resets, and kept on the Heat that was saved", async () => {
+  it("is cleared on a later Match that a changed winner resets, and kept on the Match that was saved", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { f, mutations, id, semi1, semi2, final } = await generated(tx);
       await mutations.recordHeatResult(
@@ -1444,7 +1444,7 @@ describe.skipIf(!isLocalDatabase)("Heat recorded_at", () => {
     });
   });
 
-  it("reaches the Bracket view as recordedAt on a played Heat", async () => {
+  it("reaches the Bracket view as recordedAt on a played Match", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { f, mutations, id, semi1, semi2 } = await generated(tx);
       const { queries } = await modules();
@@ -1463,7 +1463,7 @@ describe.skipIf(!isLocalDatabase)("Heat recorded_at", () => {
   });
 });
 
-describe.skipIf(!isLocalDatabase)("Heat reporters", () => {
+describe.skipIf(!isLocalDatabase)("Match reporters", () => {
   const reporterEmail = "neo@jahnelgroup.com";
 
   /** A Heat's reporter columns, straight from the row. */
@@ -1541,7 +1541,7 @@ describe.skipIf(!isLocalDatabase)("Heat reporters", () => {
     });
   });
 
-  it("a reported result records its reporter on that Heat only", async () => {
+  it("a reported result records its reporter on that Match only", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations } = await modules();
       const { f, id, semi1, semi2, final } = await drawn(tx);
@@ -1617,7 +1617,7 @@ describe.skipIf(!isLocalDatabase)("Heat reporters", () => {
     });
   });
 
-  it("single elimination: re-recording an earlier Heat clears the reporter of a later Heat it refills", async () => {
+  it("single elimination: re-recording an earlier Match clears the reporter of a later Match it refills", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations } = await modules();
       const { f, id, semi1, semi2, final } = await drawn(tx);
@@ -1657,7 +1657,7 @@ describe.skipIf(!isLocalDatabase)("Heat reporters", () => {
     });
   });
 
-  it("Heats: re-recording an earlier Heat clears the reporter of the Final it refills", async () => {
+  it("Matches: re-recording an earlier Match clears the reporter of the Final it refills", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await generatedHeats(tx);
@@ -1934,7 +1934,7 @@ describe.skipIf(!isLocalDatabase)("Squads", () => {
     });
   });
 
-  it("refuses Squads on an individual, a points or a finalized Competition", async () => {
+  it("refuses Squads on an individual, a points or a closed Competition", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations } = await modules();
       const f = await squadFixture(tx);
@@ -1963,7 +1963,7 @@ describe.skipIf(!isLocalDatabase)("Squads", () => {
         .where(eq(f.schema.competition.id, f.competitionId));
       const finalized = {
         ok: false,
-        error: "Un-finalize the Bracket before changing it.",
+        error: "Reopen the Bracket before changing it.",
       };
       expect(
         await mutations.createSquad(
@@ -2073,7 +2073,7 @@ describe.skipIf(!isLocalDatabase)("Squads", () => {
     });
   });
 
-  it("four Squads of two Teams generate, play out and finalize into two Team Points Entries per Team", async () => {
+  it("four Squads of two Teams generate, play out and close into two Team Points Entries per Team", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const setup = await import("@/mutations/setup");
@@ -2380,7 +2380,8 @@ describe.skipIf(!isLocalDatabase)(
         await f.logGame(f.stairsId, [{ teamId: f.blue }]);
         expect(await f.setup.deleteCompetition(f.stairsId, f.ctx, tx)).toEqual({
           ok: false,
-          error: "This Competition has 1 Game. Delete or move them first.",
+          error:
+            "This Competition has 1 Match or Attempt. Delete or move them first.",
         });
         expect(await f.setup.deleteCompetition(f.pongId, f.ctx, tx)).toEqual({
           ok: true,
@@ -2493,7 +2494,10 @@ describe.skipIf(!isLocalDatabase)(
             f.ctx,
             tx,
           ),
-        ).toEqual({ ok: false, error: "This Competition isn't run as Games." });
+        ).toEqual({
+          ok: false,
+          error: "This Competition isn't run as Head-to-head or Best score.",
+        });
         expect(
           await mutations.replaceEntrants(
             f.pongId,
@@ -2629,7 +2633,7 @@ describe.skipIf(!isLocalDatabase)(
           ),
         ).toEqual({
           ok: false,
-          error: "Blue has logged Games. Delete them first.",
+          error: "Blue has logged Matches or Attempts. Delete them first.",
         });
         expect(
           await mutations.replaceEntrants(
@@ -2653,12 +2657,12 @@ describe.skipIf(!isLocalDatabase)(
 
         expect(await f.setup.deleteTeam(f.gold, f.ctx, tx)).toEqual({
           ok: false,
-          error: "This Team has 1 Game. Move or delete them first.",
+          error: "This Team has 1 Match or Attempt. Move or delete them first.",
         });
         expect(await f.setup.deleteParticipant(f.trinity, f.ctx, tx)).toEqual({
           ok: false,
           error:
-            "This Participant has 1 Game. Delete them or remove the Participant from them first.",
+            "This Participant has 1 Match or Attempt. Delete them or remove the Participant from them first.",
         });
         expect(
           await f.setup.updateCompetition(
@@ -2677,7 +2681,7 @@ describe.skipIf(!isLocalDatabase)(
         ).toEqual({
           ok: false,
           error:
-            "This Competition has 1 Game. Delete them before changing its scoring.",
+            "This Competition has 1 Match or Attempt. Delete them before changing its scoring.",
         });
       });
     });

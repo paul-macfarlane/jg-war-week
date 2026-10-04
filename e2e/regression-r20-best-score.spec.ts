@@ -308,8 +308,8 @@ test("r20 D3 Best score admin: no separate list; an Organizer edits and deletes 
       .click();
     const edit = page.getByRole("dialog");
     await edit.getByLabel(/^Score/).fill("35");
-    await edit.getByRole("button", { name: "Save Game" }).click();
-    await expect(page.getByText("Game updated")).toBeVisible();
+    await edit.getByRole("button", { name: "Save Attempt" }).click();
+    await expect(page.getByText("Attempt updated")).toBeVisible();
     await expect(edit).toBeHidden();
     await expect(row(table, ASHLEY).getByRole("cell").nth(1)).toHaveText("35");
 

@@ -26,18 +26,17 @@ const LOCKED_BY_RESULT = {
   ok: false,
   error: "Locked once the Competition has a result.",
 };
-const LOCKED_BY_GAME = {
+const LOCKED_BY_MATCH = {
   ok: false,
-  error: "Locked once the Competition has a Game.",
+  error: "Locked once the Competition has a Match or Attempt.",
 };
-const LOCKED_BY_HEAT_RESULT = {
+const LOCKED_BY_MATCH_RESULT = {
   ok: false,
-  error: "Locked once a Heat has a result.",
+  error: "Locked once a Match has a result.",
 };
-const LOCKED_WHILE_FINALIZED = {
+const LOCKED_WHILE_CLOSED = {
   ok: false,
-  error:
-    "Locked while the Competition is Finalized or Closed. Reopen or Un-finalize it first.",
+  error: "Locked while the Competition is Closed. Reopen it first.",
 };
 const OK = { ok: true };
 
@@ -396,7 +395,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: description", () => {
 });
 
 describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
-  it("accepts name, description, Group, Hosts and Placement Points while Finalized", async () => {
+  it("accepts name, description, Group, Hosts and Placement Points while Closed", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await fixture(tx);
       await finalizeDarts(f);
@@ -555,10 +554,10 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
           field: "gameConfig",
           value: { drawsAllowed: true, bestOf: 3 },
         }),
-      ).toMatchObject(LOCKED_BY_GAME);
+      ).toMatchObject(LOCKED_BY_MATCH);
       expect(
         await f.save(f.ids.pong, { field: "entrantsOpen", value: true }),
-      ).toMatchObject(LOCKED_BY_GAME);
+      ).toMatchObject(LOCKED_BY_MATCH);
       expect(await f.row(f.ids.pong)).toMatchObject({
         gameConfig: bestOf3,
         entrantsOpen: false,
@@ -566,7 +565,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
     });
   });
 
-  it("accepts heat size, advancing, 3rd place game, Entrants and building the Bracket until a Heat has a result, then refuses them", async () => {
+  it("accepts match size, advancing, 3rd place Match, Entrants and building the Bracket until a Match has a result, then refuses them", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await fixture(tx);
       const threeOne = {
@@ -603,27 +602,27 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
       const before = await f.row(f.ids.chess);
       expect(
         await f.save(f.ids.chess, { field: "bracketConfig", value: threeOne }),
-      ).toMatchObject(LOCKED_BY_HEAT_RESULT);
+      ).toMatchObject(LOCKED_BY_MATCH_RESULT);
       expect(
         await f.save(f.ids.chess, {
           field: "bracketConfig",
           value: { ...headToHead, thirdPlaceGame: true },
         }),
-      ).toMatchObject(LOCKED_BY_HEAT_RESULT);
+      ).toMatchObject(LOCKED_BY_MATCH_RESULT);
       expect(
         await f.save(f.ids.chess, {
           field: "entrants",
           value: { targetIds: [f.neo] },
         }),
-      ).toMatchObject(LOCKED_BY_HEAT_RESULT);
+      ).toMatchObject(LOCKED_BY_MATCH_RESULT);
       expect(
         await f.save(f.ids.chess, { field: "bracket", value: null }),
-      ).toMatchObject(LOCKED_BY_HEAT_RESULT);
+      ).toMatchObject(LOCKED_BY_MATCH_RESULT);
       expect(await f.row(f.ids.chess)).toEqual(before);
     });
   });
 
-  it("accepts self-enroll, Entrant limit, close times and self-report mid-run, and refuses them while Finalized", async () => {
+  it("accepts self-enroll, Entrant limit, close times and self-report mid-run, and refuses them while Closed", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await fixture(tx);
       await playChess(f);
@@ -656,7 +655,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
         { field: "selfReport", value: false },
       ] as CompetitionSettingChange[]) {
         expect(await f.save(f.ids.chess, change), change.field).toMatchObject(
-          LOCKED_WHILE_FINALIZED,
+          LOCKED_WHILE_CLOSED,
         );
       }
       expect(await f.row(f.ids.chess)).toEqual(before);
@@ -681,7 +680,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
       ).toEqual(OK);
       expect(
         await f.save(f.ids.stairs, { field: "loggingClosesAt", value: null }),
-      ).toMatchObject(LOCKED_WHILE_FINALIZED);
+      ).toMatchObject(LOCKED_WHILE_CLOSED);
     });
   });
 
@@ -721,10 +720,10 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
       ).toEqual(OK);
       expect(
         await f.save(f.ids.workout, { field: "selfCheckIn", value: false }),
-      ).toMatchObject(LOCKED_WHILE_FINALIZED);
+      ).toMatchObject(LOCKED_WHILE_CLOSED);
       expect(
         await f.save(f.ids.workout, { field: "checkInClosesAt", value: null }),
-      ).toMatchObject(LOCKED_WHILE_FINALIZED);
+      ).toMatchObject(LOCKED_WHILE_CLOSED);
       expect(
         await f.save(f.ids.workout, {
           field: "placementPoints",
@@ -735,7 +734,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
     });
   });
 
-  it("refuses everything but the never-locked fields while Finalized", async () => {
+  it("refuses everything but the never-locked fields while Closed", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await fixture(tx);
       await finalizeDarts(f);
@@ -744,7 +743,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
       ).toMatchObject(LOCKED_BY_RESULT);
       expect(
         await f.save(f.ids.darts, { field: "selfEnroll", value: true }),
-      ).toMatchObject(LOCKED_WHILE_FINALIZED);
+      ).toMatchObject(LOCKED_WHILE_CLOSED);
     });
   });
 });

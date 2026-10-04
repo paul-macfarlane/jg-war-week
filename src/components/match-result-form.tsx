@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import type { HeatResultActionResult } from "@/actions/brackets";
+import type { MatchResultActionResult } from "@/actions/brackets";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
   type BracketViewEntrant,
@@ -23,7 +23,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { resetByResult } from "@/lib/bracket/formats";
 import { advancesAtPlace } from "@/lib/bracket/tree";
 import type { Bracket, Heat, HeatResult } from "@/lib/bracket/types";
-import { finalRoundOf, heatName, isDecided } from "@/lib/bracket/view";
+import { finalRoundOf, isDecided, matchName } from "@/lib/bracket/view";
 
 type Scoring = "team" | "individual";
 
@@ -31,14 +31,14 @@ function plural(count: number, one: string, many: string) {
   return `${count} ${count === 1 ? one : many}`;
 }
 
-export type HeatResultFormProps = {
+export type MatchResultFormProps = {
   heat: Heat;
   bracket: Bracket;
   entrantsById: Map<string, BracketViewEntrant>;
   scoring: Scoring;
   primaryColor: string;
   /** Saves the Heat Result: a Host's record, or a Participant's report. */
-  submit: (result: HeatResult) => Promise<HeatResultActionResult>;
+  submit: (result: HeatResult) => Promise<MatchResultActionResult>;
   /**
    * Whether a result that resets later Heats asks first, naming them (the
    * results screen). A report is of an open Heat, which has none to reset.
@@ -55,7 +55,7 @@ export type HeatResultFormProps = {
  * `successToast` (plus how many later Heats were reset). A refusal toasts
  * the server's message and leaves the form open with its input kept.
  */
-function useSaveHeatResult(
+function useSaveMatchResult(
   {
     heat,
     bracket,
@@ -64,19 +64,19 @@ function useSaveHeatResult(
     confirmResets,
     successToast,
     onSaved,
-  }: HeatResultFormProps,
+  }: MatchResultFormProps,
   result: HeatResult | null,
 ) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const name = heatName(bracket, heat);
+  const name = matchName(bracket, heat);
   const label = (entrantId: string) =>
     entrantsById.get(entrantId)?.label ?? "Unknown";
   const resetNames = (
     confirmResets && result ? resetByResult(bracket, heat.id, result) : []
   ).map((resetId) =>
-    heatName(
+    matchName(
       bracket,
       bracket.heats.find((h) => h.id === resetId)!,
     ),
@@ -96,7 +96,7 @@ function useSaveHeatResult(
       toast.success(
         successToast(label(first), name) +
           (reset > 0
-            ? ` · ${plural(reset, "later Heat", "later Heats")} reset`
+            ? ` · ${plural(reset, "later Match", "later Matches")} reset`
             : ""),
       );
       onSaved();
@@ -113,7 +113,7 @@ function useSaveHeatResult(
         disabled={!result || pending}
         onClick={() => (resetNames.length > 0 ? setConfirmOpen(true) : save())}
       >
-        {pending ? "Saving…" : "Save Heat Result"}
+        {pending ? "Saving…" : "Save Match Result"}
       </Button>
     </ResponsiveSheetDialogFooter>
   );
@@ -177,7 +177,7 @@ function ScoreField({
  * winner of a Heat whose later Heats have results asks first, naming them;
  * a score-only edit doesn't ask.
  */
-export function WinnerForm(props: HeatResultFormProps) {
+export function WinnerForm(props: MatchResultFormProps) {
   const { heat, entrantsById, scoring, primaryColor } = props;
   const id = useId();
   const ids = heat.slots.map((s) => s.entrantId!);
@@ -194,7 +194,10 @@ export function WinnerForm(props: HeatResultFormProps) {
         scores: filledScores(scores),
       }
     : null;
-  const { name, label, saveButton, confirm } = useSaveHeatResult(props, result);
+  const { name, label, saveButton, confirm } = useSaveMatchResult(
+    props,
+    result,
+  );
 
   return (
     <>
@@ -265,7 +268,7 @@ export function WinnerForm(props: HeatResultFormProps) {
  * scores. With `confirmResets`, a result that changes who advances
  * from a complete Round asks first, naming the later Heats it resets.
  */
-export function FinishingOrderForm(props: HeatResultFormProps) {
+export function FinishingOrderForm(props: MatchResultFormProps) {
   const { heat, entrantsById, scoring, primaryColor } = props;
   const id = useId();
   const ids = heat.slots.map((s) => s.entrantId!);
@@ -288,7 +291,10 @@ export function FinishingOrderForm(props: HeatResultFormProps) {
         scores: filledScores(scores),
       }
     : null;
-  const { name, label, saveButton, confirm } = useSaveHeatResult(props, result);
+  const { name, label, saveButton, confirm } = useSaveMatchResult(
+    props,
+    result,
+  );
 
   return (
     <>
@@ -376,7 +382,7 @@ export function FinishingOrderForm(props: HeatResultFormProps) {
 }
 
 /** A two-slot Heat takes its winner; a bigger one its finishing order. */
-export function HeatResultForm(props: HeatResultFormProps) {
+export function MatchResultForm(props: MatchResultFormProps) {
   return props.heat.slots.length > 2 ? (
     <FinishingOrderForm {...props} />
   ) : (

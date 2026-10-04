@@ -53,11 +53,11 @@ export function parseSquadInput(input: unknown): Parsed<SquadInput> {
   };
 }
 
-const entrantId = id("Choose the Heat's Entrants.");
+const entrantId = id("Choose the Match's Entrants.");
 
 const heatResultSchema = z.object({
   order: z.array(entrantId).min(1, {
-    error: "Put the Heat's Entrants in finishing order.",
+    error: "Put the Match's Entrants in finishing order.",
   }),
   scores: z
     .record(

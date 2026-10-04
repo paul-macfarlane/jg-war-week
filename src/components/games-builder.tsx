@@ -13,6 +13,8 @@ import {
 } from "@/components/entrants-picker";
 import type { EntrantKind } from "@/lib/bracket/squads";
 import { hasPlacementPoints } from "@/lib/competitions";
+import type { GameFormat } from "@/lib/enums";
+import { resultNoun } from "@/lib/games/config";
 import { placementPointsList } from "@/lib/games/view";
 
 type Target = { id: string; name: string; team: string | null };
@@ -34,6 +36,7 @@ export function GamesBuilder({
   competition: {
     id: string;
     scoring: "team" | "individual";
+    gameFormat: GameFormat;
     entrantsOpen: boolean;
     closed: boolean;
     placementPoints: number[] | null;
@@ -51,6 +54,7 @@ export function GamesBuilder({
   const isTeam = competition.scoring === "team";
   const kind: EntrantKind = isTeam ? "team" : "participant";
   const locked = competition.closed;
+  const noun = resultNoun(competition.gameFormat);
 
   const savedEntrantIds = entrants.map((e) => (e.teamId ?? e.participantId)!);
   const [selected, setSelected] = useState<string[]>(savedEntrantIds);
@@ -88,14 +92,14 @@ export function GamesBuilder({
 
       {locked && (
         <p className="border-border rounded-lg border px-3 py-2 text-sm">
-          This Competition is closed. Reopen it to change its Entrants, Games or
-          settings.
+          This Competition is closed. Reopen it to change its Entrants,{" "}
+          {noun.many} or settings.
         </p>
       )}
 
       {competition.entrantsOpen ? (
         <p className="text-foreground/70 text-sm">
-          Entrants are open to everyone: anyone eligible may log a Game.
+          Entrants are open to everyone: anyone eligible may log {noun.a}.
         </p>
       ) : (
         <EntrantsPicker
@@ -122,14 +126,14 @@ export function GamesBuilder({
               {hasPlacementPoints(competition.placementPoints)
                 ? "Closed: its Points Entries are in the ledger."
                 : "Closed: it has no Placement Points, so it made no Points Entries."}{" "}
-              Reopen to log more Games.
+              Reopen to log more {noun.many}.
             </p>
             <ConfirmActionButton
               title="Reopen this Competition?"
               description={
                 hasPlacementPoints(competition.placementPoints)
                   ? "The generated Points Entries are withdrawn."
-                  : "Players can log Games again."
+                  : `Players can log ${noun.many} again.`
               }
               confirmLabel="Reopen"
               action={() => reopenGames(competition.id)}

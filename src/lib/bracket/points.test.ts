@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { heats } from "@/lib/bracket/heats";
 import { pointsFor } from "@/lib/bracket/points";
 
-// A head-to-head final without a 3rd place game: 1st, 2nd, tied 3rd.
+// A head-to-head final without a 3rd place Match: 1st, 2nd, tied 3rd.
 const placings = [
   { entrantId: "a", place: 1 },
   { entrantId: "b", place: 2 },
@@ -33,7 +33,7 @@ describe("pointsFor", () => {
     expect(pointsFor(placings, { placementPoints: null })).toEqual([]);
   });
 
-  it("a Heats Bracket's placings", () => {
+  it("a Matches Bracket's placings", () => {
     // 8 Entrants, 4 per Heat, 2 advancing: the final finishes e1 e2 e5 e6
     // and the four Round-1 losers tie 5th.
     const entrants = Array.from({ length: 8 }, (_, i) => ({

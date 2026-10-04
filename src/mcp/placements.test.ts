@@ -91,7 +91,7 @@ describe("toPlacementsResult", () => {
     });
   });
 
-  it("serializes each row's place, name, Team, Score and points, and whether it's Finalized", () => {
+  it("serializes each row's place, name, Team, Score and points, and whether it's Closed", () => {
     expect(
       toPlacementsResult(
         { name: "Darts", scoring: "individual", format: "placement" },
@@ -105,8 +105,8 @@ describe("toPlacementsResult", () => {
         scoring: "individual",
         scoreDirection: "higher wins",
         placementPoints: [10, 6, 3],
-        finalized: true,
-        finalizedAt: "2027-02-24T21:30:00.000Z",
+        closed: true,
+        closedAt: "2027-02-24T21:30:00.000Z",
       },
       placements: [
         { place: 1, name: "Neo", team: "Red", score: 30, points: 10 },
@@ -126,8 +126,8 @@ describe("toPlacementsResult", () => {
     ).toMatchObject({
       competition: {
         scoreDirection: "none",
-        finalized: false,
-        finalizedAt: null,
+        closed: false,
+        closedAt: null,
       },
     });
   });

@@ -287,7 +287,7 @@ test("r1 06 09 the Competitions form offers Format including Bracket and no poin
   await expect(addForm.getByRole("combobox", { name: "Format" })).toBeVisible();
   await expect(
     addForm.getByText(
-      "One result on one sheet: give each Team or Participant a Place, optionally a Score, then Finalize.",
+      "One result on one sheet: give each Team or Participant a Place, optionally a Score, then Close.",
     ),
   ).toBeVisible();
 
@@ -299,7 +299,7 @@ test("r1 06 09 the Competitions form offers Format including Bracket and no poin
     await page.getByRole("option", { name: "Bracket", exact: true }).click();
     await expect(
       addForm.getByText(
-        "Entrants play in Heats and a set number advance each Round, down to a final. Two per Heat with one advancing is a head-to-head knockout.",
+        "Entrants play in Matches and a set number advance each Round, down to a final. Two per Match with one advancing is a head-to-head knockout.",
       ),
     ).toBeVisible();
     await page.screenshot({

@@ -116,13 +116,13 @@ async function recordHeat(
     order.push(name);
     await button.click();
   }
-  await sheet.getByRole("button", { name: "Save Heat Result" }).click();
+  await sheet.getByRole("button", { name: "Save Match Result" }).click();
   await expect(page.getByText(`${order[0]} wins ${heat}`)).toBeVisible();
   await expect(sheet).toBeHidden();
   return order;
 }
 
-test("a Bracket of 4 per Heat is built, run and Closed into Points Entries, its podium the final Match's order", async ({
+test("a Bracket of 4 per Match is built, run and Closed into Points Entries, its podium the final Match's order", async ({
   browser,
   context,
   page,
@@ -134,8 +134,8 @@ test("a Bracket of 4 per Heat is built, run and Closed into Points Entries, its 
   await openCompetitionPage(page, id);
   await setFormat(page, "Bracket");
 
-  await page.getByRole("combobox", { name: "Entrants per Heat" }).click();
-  await page.getByRole("option", { name: "4 per Heat" }).click();
+  await page.getByRole("combobox", { name: "Entrants per Match" }).click();
+  await page.getByRole("option", { name: "4 per Match" }).click();
   await page.getByRole("combobox", { name: "How many advance" }).click();
   await page.getByRole("option", { name: "Top 2 advance" }).click();
   await expectSaved(page);
@@ -155,8 +155,8 @@ test("a Bracket of 4 per Heat is built, run and Closed into Points Entries, its 
   await expect(page.getByText("Bracket generated")).toBeVisible();
 
   const preview = page.getByRole("region", { name: "Preview" });
-  await expect(preview.getByText("Round 1 Heat 1")).toBeVisible();
-  await expect(preview.getByText("Round 1 Heat 2")).toBeVisible();
+  await expect(preview.getByText("Round 1 Match 1")).toBeVisible();
+  await expect(preview.getByText("Round 1 Match 2")).toBeVisible();
 
   await checkViewports(page, testInfo, "builder");
 
@@ -165,7 +165,7 @@ test("a Bracket of 4 per Heat is built, run and Closed into Points Entries, its 
 
   // Screenshots and the overflow check happen with the Sheet open, on a
   // four-Entrant Heat, before any tap.
-  const heat1 = await recordHeat(page, "Round 1 Heat 1", async (sheet) => {
+  const heat1 = await recordHeat(page, "Round 1 Match 1", async (sheet) => {
     await checkViewports(page, testInfo, "results-sheet", sheet);
   });
 
@@ -183,7 +183,7 @@ test("a Bracket of 4 per Heat is built, run and Closed into Points Entries, its 
   );
   await checkViewports(you.page, testInfo, "participant-advanced");
 
-  const heat2 = await recordHeat(page, "Round 1 Heat 2");
+  const heat2 = await recordHeat(page, "Round 1 Match 2");
 
   // The Final is filled: their next Match lists the three others in it.
   await you.page.reload();
@@ -214,7 +214,7 @@ test("a Bracket of 4 per Heat is built, run and Closed into Points Entries, its 
   await page.goto("/admin/settings");
   await page.getByRole("button", { name: "End War Week" }).click();
   const endDialog = page.getByRole("alertdialog");
-  await expect(endDialog).toContainText("Not finalized:");
+  await expect(endDialog).toContainText("Not closed:");
   await expect(endDialog).toContainText(COMPETITION);
   await endDialog.getByRole("button", { name: "Cancel" }).click();
   await expect(endDialog).toBeHidden();

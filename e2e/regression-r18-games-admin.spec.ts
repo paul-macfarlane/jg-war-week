@@ -74,13 +74,13 @@ test("r18 104 a Host logs, edits and deletes a Best score Attempt from admin (in
       ).toHaveCount(0);
 
       // Log an attempt for a Participant who is not the signed-in Host.
-      await attempts.getByRole("button", { name: "Log a Game" }).click();
-      const form = host.getByRole("dialog", { name: "Log a Game" });
+      await attempts.getByRole("button", { name: "Log an Attempt" }).click();
+      const form = host.getByRole("dialog", { name: "Log an Attempt" });
       await form.getByRole("combobox", { name: "Player" }).click();
       await host.getByRole("option", { name: PLAYER, exact: true }).click();
       await form.getByLabel(/^Score/).fill("42");
-      await form.getByRole("button", { name: "Log Game" }).click();
-      await expect(host.getByText("Game logged")).toBeVisible();
+      await form.getByRole("button", { name: "Log Attempt" }).click();
+      await expect(host.getByText("Attempt logged")).toBeVisible();
       await expect(form).toBeHidden();
       await expect(resultsRow(host)).toContainText("42");
 
@@ -95,8 +95,8 @@ test("r18 104 a Host logs, edits and deletes a Best score Attempt from admin (in
         .click();
       const edit = host.getByRole("dialog");
       await edit.getByLabel(/^Score/).fill("55");
-      await edit.getByRole("button", { name: "Save Game" }).click();
-      await expect(host.getByText("Game updated")).toBeVisible();
+      await edit.getByRole("button", { name: "Save Attempt" }).click();
+      await expect(host.getByText("Attempt updated")).toBeVisible();
       await expect(edit).toBeHidden();
 
       // The Competition's own results show the edited score.

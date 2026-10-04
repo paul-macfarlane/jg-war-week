@@ -6,11 +6,11 @@ import { SlideEyebrow } from "./slide-eyebrow";
 import type { FinaleSlideProps } from "./types";
 
 /**
- * The Champions slide: each finalized Bracket's champion and each closed
+ * The Winners slide: each Closed Bracket's Winner and each closed
  * Head-to-head, Best score or team-scoring `participation` Competition's winner, ties
  * together, in the order they were decided.
  */
-export function ChampionsSlide({
+export function WinnersSlide({
   data,
   edition,
   storyTheme,

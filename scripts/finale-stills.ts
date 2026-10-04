@@ -93,7 +93,7 @@ async function addAwards(warWeek: StillsWarWeek) {
     {
       key: AWARD_CATEGORIES[1],
       name: "Hardest Worker",
-      description: "Billable hours by day, Heats by night.",
+      description: "Billable hours by day, Matches by night.",
       recipients: people.slice(1, 3),
     },
   ];
