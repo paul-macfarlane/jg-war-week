@@ -47,4 +47,4 @@
   - **Screenshots:** `e2e/regression-r19-scale.spec.ts` covers every listed page at 1440 and 390, plus XI's 101 in Teams, with exact counts (100 roster rows, 64 Entrants, 72 of 100 ticks).
   - **Fixes:** Organizer-only pickers search by email; Placement sheet names wrap.
   - **Filed:** findings 108–113.
-  - Every AC PASS; evidence in [`R19-execution.md`](../epics/R19-execution.md). `ai-review` → `done`.
+  - Every AC PASS; evidence in [`R19-execution.md`](../epics/R19-execution.md). `ai-review` → `done`. PR: https://github.com/paul-macfarlane/jg-war-week/pull/131

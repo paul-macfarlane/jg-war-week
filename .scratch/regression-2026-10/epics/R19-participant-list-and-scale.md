@@ -30,4 +30,4 @@ Each ticket's own, plus:
 ## Comments
 
 - 2026-10-03 (Paul): grilled and approved; tickets `ready-for-agent`.
-- 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r19`): one work package, one branch, one PR. Status lists and preview (105), the 100-Participant scale demo and pass (106), docs, review fixes. Findings 108–113 filed `needs-triage`. Execution record and verdicts: [`R19-execution.md`](./R19-execution.md). `ai-review` → `done`.
+- 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r19`): one work package, one branch, one PR. Status lists and preview (105), the 100-Participant scale demo and pass (106), docs, review fixes. Findings 108–113 filed `needs-triage`. Execution record and verdicts: [`R19-execution.md`](./R19-execution.md). `ai-review` → `done`. PR: https://github.com/paul-macfarlane/jg-war-week/pull/131

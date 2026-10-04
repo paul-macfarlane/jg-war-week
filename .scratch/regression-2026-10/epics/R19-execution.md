@@ -153,3 +153,4 @@ Earlier orchestrator fix to DX (`1af9afe9`): the email rule moved from the Host 
 | E4 skip grep | PASS | `git diff 65431510 -- e2e src scripts \| grep …` empty |
 | E5 closeouts | PASS | this record, the epic and tickets 105, 106 `done` |
 | E6 gate | PASS (local); CI on the PR pending | gate.log |
+- **PR:** https://github.com/paul-macfarlane/jg-war-week/pull/131
