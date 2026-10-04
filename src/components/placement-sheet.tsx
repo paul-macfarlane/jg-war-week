@@ -211,7 +211,7 @@ export function PlacementSheet({
 
       {locked ? (
         <p className="border-border rounded-lg border px-3 py-2 text-sm">
-          Closed: its Points Entries are in the ledger. Reopen to change the
+          Closed: its Points Entries are in the Standings. Reopen to change the
           sheet.
         </p>
       ) : (

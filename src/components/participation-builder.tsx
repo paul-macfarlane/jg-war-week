@@ -189,8 +189,8 @@ export function ParticipationBuilder({
         {competition.closed ? (
           <>
             <p className="text-foreground/70 text-sm">
-              Closed: its Points Entries are in the ledger. Reopen to change who
-              took part.
+              Closed: its Points Entries are in the Standings. Reopen to change
+              who took part.
             </p>
             <ConfirmActionButton
               title="Reopen this Competition?"

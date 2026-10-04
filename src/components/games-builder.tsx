@@ -124,7 +124,7 @@ export function GamesBuilder({
           <>
             <p className="text-foreground/70 text-sm">
               {hasPlacementPoints(competition.placementPoints)
-                ? "Closed: its Points Entries are in the ledger."
+                ? "Closed: its Points Entries are in the Standings."
                 : "Closed: it has no Placement Points, so it made no Points Entries."}{" "}
               Reopen to log more {noun.many}.
             </p>
