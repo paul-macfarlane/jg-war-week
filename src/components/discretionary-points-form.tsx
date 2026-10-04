@@ -6,7 +6,7 @@ import {
   createDiscretionaryPoints,
   updateDiscretionaryPoints,
 } from "@/actions/discretionary-points";
-import { EntityCombobox } from "@/components/entity-combobox";
+import { ParticipantPicker } from "@/components/participant-picker";
 import {
   SetupRowError,
   SetupSaveButton,
@@ -21,14 +21,17 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import type { WarWeek } from "@/db/schema";
+import { buildParticipantOptions } from "@/lib/participant-options";
 
 export type DiscretionaryTarget = {
   id: string;
   name: string;
-  /** Shown muted beside the name: "Team" for a Team, else the Team's name. */
-  detail?: string;
-  /** A Participant's roster email: searched, never shown. */
-  email?: string;
+  /** A Participant's Team name; null for a Team or none. */
+  team?: string | null;
+  teamColor?: string | null;
+  image?: string | null;
+  /** A Team offered beside the Participants. */
+  isTeam?: boolean;
 };
 
 export type DiscretionaryInitial = {
@@ -88,19 +91,24 @@ export function DiscretionaryPointsForm({
       <FieldGroup className="gap-4 px-4">
         <Field data-invalid={!!fieldErrors.targetId}>
           <FieldLabel htmlFor={`${id}-target`}>{targetLabel}</FieldLabel>
-          <EntityCombobox
+          <ParticipantPicker
             id={`${id}-target`}
             name="targetId"
             aria-label={targetLabel}
             aria-invalid={!!fieldErrors.targetId}
             required
             placeholder={`Choose a ${targetLabel.toLowerCase()}…`}
-            items={targets.map((t) => ({
-              id: t.id,
-              label: t.name,
-              detail: t.detail,
-              keywords: t.email,
-            }))}
+            options={buildParticipantOptions(
+              targets.map((t) => ({
+                id: t.id,
+                name: t.name,
+                image: t.image,
+                teamName: t.isTeam ? undefined : t.team,
+                teamColor: t.teamColor,
+                note: t.isTeam ? teamLabel : undefined,
+                kind: t.isTeam ? ("team" as const) : undefined,
+              })),
+            )}
             value={targetId}
             onValueChange={setTargetId}
           />

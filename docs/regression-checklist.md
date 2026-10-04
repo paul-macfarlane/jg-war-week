@@ -478,7 +478,8 @@ on the matching War Week page.
       Best score and Participation: each applies the new Format's
       defaults and shows its run area. Add a result and the Format locks.
 - [ ] **Competition page: Hosts picker.** In the Hosts field, search the
-      roster by name: each option shows the name only, never an email. A
+      roster by name: each option is avatar, name and Team (the Team only in a
+      teams War Week), never an email, and an email typed finds no one. A
       Participant with no email is pickable; a non-@jahnelgroup.com one is
       pickable and marked "Can't sign in". Pick one (it saves at once),
       remove it, and open the Competition as that Host once their roster email
@@ -724,8 +725,8 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       Placement sheet lists its rows with names wrapping (not truncating)
       at 390; the 64-Entrant Bracket tree scrolls sideways only in its own
       "Rounds" region; as an Organizer, the Discretionary points and Award
-      pickers find a Participant by email (never shown) with no cap on the
-      list.
+      pickers find a Participant by display name (never by email) with no
+      cap on the list.
 - [ ] **Teams show in team events.** *(teams)* Wherever a Participant
   appears in a Competition or scoring context (individual Standings, a
   Bracket's entrants and Match results, the Head-to-head and Best score results,

@@ -37,7 +37,7 @@ describe("EntrantsPicker", () => {
     expect(html).toContain("Find a Cabin");
   });
 
-  it("labels a participant kind generically, by name or Team", () => {
+  it("labels a participant kind by name alone", () => {
     const html = renderToStaticMarkup(
       <EntrantsPicker
         description="d"
@@ -49,7 +49,8 @@ describe("EntrantsPicker", () => {
       />,
     );
     expect(html).toContain("Pick Participants (0 chosen)");
-    expect(html).toContain("Find by name or Team");
+    expect(html).toContain("Find by name");
+    expect(html).not.toContain("Find by name or");
   });
 
   it("labels a squad kind", () => {

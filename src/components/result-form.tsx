@@ -11,10 +11,7 @@ import {
 import { toast } from "sonner";
 
 import { logResult, updateResult } from "@/actions/logged-results";
-import {
-  EntityCombobox,
-  type EntityComboboxItem,
-} from "@/components/entity-combobox";
+import { ParticipantPicker } from "@/components/participant-picker";
 import {
   ResponsiveSheetDialog,
   ResponsiveSheetDialogDescription,
@@ -35,6 +32,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { attemptsLeft } from "@/lib/best-score/log-rule";
 import type { LoggedFormat } from "@/lib/enums";
 import { resultNoun } from "@/lib/logged-results";
+import { buildParticipantOptions } from "@/lib/participant-options";
 import type { FieldErrors } from "@/lib/result";
 import { type ScoringConfig, parseScore, scoreLabel } from "@/lib/scoring";
 import type { SeriesConfig } from "@/lib/series/config";
@@ -43,6 +41,7 @@ import type {
   LoggedConfig,
   LoggedResultsName,
   LoggedResultsPlayer,
+  LoggedResultsPlayerOption,
 } from "@/queries/logged-results";
 
 type Scoring = "team" | "individual";
@@ -64,7 +63,7 @@ export type ResultFormProps = {
    * A Head-to-head's two Entrants (its fixed rows), or Best score's
    * Participants (a Host's picker): names and ids only.
    */
-  playerOptions: LoggedResultsName[];
+  playerOptions: LoggedResultsPlayerOption[];
   /** The viewer's linked Participant: who a Participant logs as. */
   linked: Linked;
   /** The viewer runs the Competition: logs for anyone. */
@@ -334,10 +333,15 @@ function AttemptForm(props: ResultFormProps) {
     result: editing,
   } = props;
   const id = useId();
-  const items: EntityComboboxItem[] = playerOptions.map((o) => ({
-    id: o.id,
-    label: o.name,
-  }));
+  const options = buildParticipantOptions(
+    playerOptions.map((o) => ({
+      id: o.id,
+      name: o.name,
+      image: o.image,
+      teamName: o.teamName,
+      teamColor: o.color,
+    })),
+  );
   const fixed =
     editing?.players[0]?.id ?? (runs ? null : linked?.participantId);
   const [player, setPlayer] = useState(fixed ?? "");
@@ -375,9 +379,9 @@ function AttemptForm(props: ResultFormProps) {
       {fixed === null || fixed === undefined ? (
         <Field data-invalid={Boolean(errors.player)}>
           <FieldLabel htmlFor={`${id}-player`}>Participant</FieldLabel>
-          <EntityCombobox
+          <ParticipantPicker
             id={`${id}-player`}
-            items={items}
+            options={options}
             value={player}
             onValueChange={setPlayer}
             placeholder="Choose a Participant"

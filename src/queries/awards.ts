@@ -104,7 +104,13 @@ export async function getAwardPresets(
 export type AwardFormOptions = {
   teams: { id: string; name: string }[];
   /** `team` is the Participant's Team name, when they have one. */
-  participants: { id: string; name: string; team: string | null }[];
+  participants: {
+    id: string;
+    name: string;
+    team: string | null;
+    teamColor: string | null;
+    image: string | null;
+  }[];
   /** Award names to start from (see `awardPresets`). */
   presets: AwardPreset[];
 };
@@ -125,7 +131,9 @@ export async function getAwardFormOptions(
         .select({
           id: participant.id,
           name: participantNameSql(),
+          image: participantImageSql(),
           team: team.name,
+          teamColor: team.color,
         })
         .from(participant)
         .leftJoin(team, eq(team.id, participant.teamId))

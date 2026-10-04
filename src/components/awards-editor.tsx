@@ -1,10 +1,7 @@
 "use client";
 
 import { deleteAward } from "@/actions/awards";
-import {
-  AwardForm,
-  type AwardFormPickerOptions,
-} from "@/components/award-form";
+import { AwardForm } from "@/components/award-form";
 import {
   SETUP_EDITOR,
   SetupAddButton,
@@ -12,6 +9,7 @@ import {
 } from "@/components/setup-row";
 import type { WarWeek } from "@/db/schema";
 import type { AwardView } from "@/lib/awards";
+import type { AwardFormOptions } from "@/queries/awards";
 
 /**
  * The War Week's Awards by name, each with its recipients, Edit (the form
@@ -28,7 +26,7 @@ export function AwardsEditor({
   /** The War Week this page was rendered for; creates post it. */
   warWeekId: string;
   awards: AwardView[];
-  options: AwardFormPickerOptions;
+  options: AwardFormOptions;
   /** The War Week's Team Label, e.g. "House". */
   teamLabel: string;
   mode: WarWeek["mode"];

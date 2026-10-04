@@ -85,7 +85,7 @@ before it says it's done.
 | The Bracket engine (seeding, Rounds/Matches, advancing winners, Bracket → Points Entries) | `src/lib/bracket/` (`*.test.ts` next to each file) |
 | The admin Competition page (Settings on top, the Format's run area below) | `src/app/admin/competitions/[id]/page.tsx` and `run-area.tsx`, `src/components/competition-settings-form.tsx`, `src/lib/competition-page.ts`, `src/queries/competition-page.ts` |
 | Which settings lock, and the per-field save | `src/lib/competition-locks.ts` (the one lock table and its one-line reasons), `src/queries/competition-locks.ts`, `src/mutations/competition-settings.ts`, `src/lib/competition-settings.ts`, `src/lib/autosave.ts` |
-| The Hosts picker (roster by name, no emails) | `src/lib/host-options.ts`, `getHostCandidates` in `src/queries/roster.ts` |
+| The one Participant picker (avatar, name, Team; name-only search, no cap, no email in any option or payload) | `src/components/participant-picker.tsx` (on `entity-combobox.tsx`), `src/lib/participant-options.ts` (the option type and the name match, with its vitest); the Hosts picker's "Can't sign in" note in `src/lib/host-options.ts`, `getHostCandidates` in `src/queries/roster.ts` |
 | The description's plain-text to rich-text conversion for seeds | `src/lib/rich-text/from-plain-text.ts` |
 | Bracket builder and results screens                | the Bracket section of `src/components/competition-settings-form.tsx` and of the run area; `src/components/bracket-builder.tsx` |
 | The retired setup routes (308 to the Competition page) | `src/app/admin/competitions/[id]/{bracket,games,participation}/`, `src/app/admin/brackets/[id]/`, `src/app/admin/placements/[competitionId]/`: each a redirect page, proven by `retired-routes.test.ts` |

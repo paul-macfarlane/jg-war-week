@@ -70,6 +70,11 @@ test("r18 102 an Organizer picks two Hosts by name from the roster, and a picked
           await expect(outsider).toContainText("Can't sign in");
           await expect(outsider).not.toContainText("@");
           await expect(outsider).not.toHaveAttribute("aria-disabled", "true");
+          // The picker searches names only: a roster email finds no one.
+          for (const email of [E2E_HOST_EMAIL, "@jahnelgroup", "example.org"]) {
+            await picker.fill(email);
+            await expect(page.getByRole("option")).toHaveCount(0);
+          }
           await page.keyboard.press("Escape");
           const html = await page.content();
           for (const email of [

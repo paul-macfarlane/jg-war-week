@@ -78,16 +78,23 @@ export async function getHostCandidates(
       .select({
         id: participant.id,
         name: participantNameSql(),
+        image: participantImageSql(),
+        teamName: team.name,
+        teamColor: team.color,
         email: participant.email,
       })
       .from(participant)
+      .leftJoin(team, eq(team.id, participant.teamId))
       .$dynamic(),
   )
     .where(eq(participant.warWeekId, warWeek.id))
     .orderBy(participantNameSql(), participant.id);
-  return rows.map(({ id, name, email }) => ({
+  return rows.map(({ id, name, image, teamName, teamColor, email }) => ({
     id,
     name,
+    image,
+    teamName,
+    teamColor,
     cantSignIn: !!email?.trim() && !isJahnelGroupEmail(email),
   }));
 }

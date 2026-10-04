@@ -18,8 +18,13 @@ import type { EntrantKind } from "@/lib/bracket/squads";
 import { hasPlacementPoints } from "@/lib/competitions";
 import type { LoggedFormat } from "@/lib/enums";
 import { placementPointsList, resultNoun } from "@/lib/logged-results";
+import { optionsFromTargets } from "@/lib/participant-options";
 
 type Target = { id: string; name: string; team: string | null };
+type ParticipantTarget = Target & {
+  teamColor?: string | null;
+  image?: string | null;
+};
 
 /**
  * A Head-to-head or Best score Competition's run area on its Competition
@@ -47,7 +52,7 @@ export function LoggedResultsBuilder({
   /** A Head-to-head's saved Entrants, by Team or Participant id. */
   entrants: { teamId: string | null; participantId: string | null }[];
   teams: Target[];
-  participants: Target[];
+  participants: ParticipantTarget[];
   /** Why the Entrants can't change now (Closed), or null. */
   entrantsLock: string | null;
 }) {
@@ -64,9 +69,11 @@ export function LoggedResultsBuilder({
     !selected.every((id) => savedEntrantIds.includes(id));
   const [savingEntrants, setSavingEntrants] = useState(false);
 
-  const items: EntrantsPickerItem[] = (isTeam ? teams : participants).map(
-    (t) => ({ id: t.id, label: t.name, detail: t.team ?? undefined }),
-  );
+  const items: EntrantsPickerItem[] = teams.map((t) => ({
+    id: t.id,
+    label: t.name,
+  }));
+  const participantOptions = optionsFromTargets(participants);
 
   async function saveEntrants() {
     setSavingEntrants(true);
@@ -113,6 +120,7 @@ export function LoggedResultsBuilder({
           }
           kind={kind}
           options={items}
+          participantOptions={participantOptions}
           selected={selected}
           onChange={setSelected}
           onSave={saveEntrants}

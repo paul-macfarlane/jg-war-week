@@ -37,7 +37,7 @@ import type {
   LogOffer,
   LoggedConfig,
   LoggedResultView,
-  LoggedResultsName,
+  LoggedResultsPlayerOption,
   LoggedResultsRow,
 } from "@/queries/logged-results";
 
@@ -80,7 +80,7 @@ export type LoggedResultsProps = {
   decided: boolean;
   seriesWinner: string | null;
   /** A Head-to-head's two Entrants in order, or Best score's Participants. */
-  playerOptions: LoggedResultsName[];
+  playerOptions: LoggedResultsPlayerOption[];
   primaryColor: string;
   /** What this War Week calls a Team, for a team Competition's header. */
   teamLabel: string;

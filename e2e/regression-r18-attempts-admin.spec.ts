@@ -58,7 +58,9 @@ test("r18 104 a Host logs, edits and deletes a Best score Attempt from admin (in
       await attempts.getByRole("button", { name: "Log an Attempt" }).click();
       const form = host.getByRole("dialog", { name: "Log an Attempt" });
       await form.getByRole("combobox", { name: "Participant" }).click();
-      await host.getByRole("option", { name: PLAYER, exact: true }).click();
+      await host
+        .getByRole("option", { name: new RegExp(`^${PLAYER}`) })
+        .click();
       await form.getByLabel(/^Score/).fill("42");
       await form.getByRole("button", { name: "Log Attempt" }).click();
       await expect(host.getByText("Attempt logged")).toBeVisible();

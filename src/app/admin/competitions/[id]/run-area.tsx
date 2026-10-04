@@ -101,11 +101,15 @@ export async function CompetitionRunArea({
           placementPoints: view.competition.placementPoints,
           closed: view.competition.closed,
         }}
-        roster={options.participants.map(({ id: pid, name, team }) => ({
-          id: pid,
-          name,
-          team,
-        }))}
+        roster={options.participants.map(
+          ({ id: pid, name, team, teamColor, image }) => ({
+            id: pid,
+            name,
+            team,
+            teamColor,
+            image,
+          }),
+        )}
         tookPart={view.tookPart.map(({ participantId, checkedIn }) => ({
           participantId,
           checkedIn,

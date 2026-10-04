@@ -23,6 +23,7 @@ import {
   serverActionIds,
   xiWarWeekId,
 } from "./harness";
+import { assertNoRosterEmailInPickers } from "./pickers";
 
 // The smoke Host (ADR 0002): a JG user with no Organizer row who hosts one
 // seeded XI Competition. Both Competitions are picked by name from
@@ -94,6 +95,7 @@ async function hostFixture(session: SmokeSession): Promise<HostFixture> {
 export async function assertHostChecks(sessions: {
   host: SmokeSession;
   notOrganizer: SmokeSession;
+  organizer: SmokeSession;
 }) {
   const setup =
     "the smoke Host, a roster Participant, hosts one XI Competition";
@@ -123,6 +125,12 @@ export async function assertHostChecks(sessions: {
     await assertAdminLinkForHost(sessions);
     await assertAccessBeforeValidation(sessions, fixture);
     await assertImportOrganizerOnly(sessions, fixture);
+    await assertNoRosterEmailInPickers(
+      sessions,
+      SMOKE_HOST_EMAIL,
+      SMOKE_ORGANIZER_EMAIL,
+      "smoke-participant@jahnelgroup.com",
+    );
     await assertFormerHostRefused(fixture);
   } finally {
     await deleteSmokeHosts().catch((error) =>

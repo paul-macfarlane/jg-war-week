@@ -16,6 +16,7 @@ import {
   useFocusFirstInvalid,
 } from "@/components/form-field-errors";
 import { FormValueInput } from "@/components/form-value-input";
+import { ParticipantPicker } from "@/components/participant-picker";
 import {
   SetupRowError,
   SetupSaveButton,
@@ -45,17 +46,8 @@ import {
   AWARD_NAME_MAX,
   type AwardInput,
 } from "@/lib/awards";
+import { optionsFromTargets } from "@/lib/participant-options";
 import type { AwardFormOptions } from "@/queries/awards";
-
-/**
- * The form's options: the query's, plus each Participant's `email`, for the
- * picker's search only, which only the Organizer-only Awards page adds.
- */
-export type AwardFormPickerOptions = Omit<AwardFormOptions, "participants"> & {
-  participants: (AwardFormOptions["participants"][number] & {
-    email?: string;
-  })[];
-};
 
 /** Base UI's Select won't accept `""` as an item value. */
 const NO_TEAM = "none";
@@ -80,7 +72,7 @@ export function AwardForm({
   /** Set when editing an existing Award. */
   awardId?: string;
   initial?: AwardInput;
-  options: AwardFormPickerOptions;
+  options: AwardFormOptions;
   /** The War Week's Team Label, e.g. "House". */
   teamLabel: string;
   /** The War Week's Mode: a free-for-all has no Team field. */
@@ -120,12 +112,7 @@ export function AwardForm({
     setName(picked.name);
     setDescription(picked.description ?? "");
   }
-  const participantItems = options.participants.map((p) => ({
-    id: p.id,
-    label: p.name,
-    detail: p.team ?? undefined,
-    keywords: p.email,
-  }));
+  const participantOptions = optionsFromTargets(options.participants);
 
   // Validation runs on the server; a refusal names its fields. Every field
   // is closed over from state (rather than read off `FormData`).
@@ -259,17 +246,15 @@ export function AwardForm({
               <FieldLabel htmlFor="award-participants">
                 Participants ({participantIds.length} chosen)
               </FieldLabel>
-              <EntityCombobox
+              <ParticipantPicker
                 id="award-participants"
                 multiple
                 name="participantIds"
                 aria-invalid={!!fieldErrors.participantIds}
-                items={participantItems}
+                options={participantOptions}
                 value={participantIds}
                 onValueChange={setParticipantIds}
-                placeholder={
-                  showTeam ? `Find by name or ${teamLabel}` : "Find by name"
-                }
+                placeholder="Find by name"
               />
               <FieldError>{fieldErrors.participantIds}</FieldError>
             </Field>

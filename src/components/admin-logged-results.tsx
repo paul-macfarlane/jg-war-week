@@ -16,7 +16,7 @@ import type {
   LogOffer,
   LoggedConfig,
   LoggedResultView,
-  LoggedResultsName,
+  LoggedResultsPlayerOption,
   LoggedResultsRow,
 } from "@/queries/logged-results";
 
@@ -40,7 +40,7 @@ export type AdminLoggedResultsProps = {
   /** Newest first, each with whether the viewer may edit or delete it. */
   results: LoggedResultView[];
   /** A Head-to-head's two Entrants, or Best score's Participants. */
-  playerOptions: LoggedResultsName[];
+  playerOptions: LoggedResultsPlayerOption[];
   primaryColor: string;
   teamLabel: string;
   now: Date;

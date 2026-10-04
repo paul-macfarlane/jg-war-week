@@ -4,6 +4,7 @@ import {
   Avatar as AvatarRoot,
 } from "@/components/ui/avatar";
 import { avatarColors, initials } from "@/lib/avatar";
+import { cn } from "@/lib/utils";
 
 /**
  * A Participant's Avatar: their picture (a Profile picture URL or Google
@@ -21,11 +22,17 @@ export function Avatar({
 }: {
   name: string;
   teamColor: string | null;
-  primaryColor: string;
+  /** The Appearance Theme's primary color; omitted, the themed `bg-primary` is used. */
+  primaryColor?: string;
   image?: string | null;
   className?: string;
 }) {
-  const { fill, text } = avatarColors({ teamColor, primaryColor });
+  // With no Team and no primary color given, the theme's own tokens fill it.
+  const themed = teamColor === null && primaryColor === undefined;
+  const { fill, text } = avatarColors({
+    teamColor,
+    primaryColor: primaryColor ?? "#000000",
+  });
   return (
     <AvatarRoot aria-hidden className={className}>
       {image && (
@@ -33,8 +40,11 @@ export function Avatar({
         <AvatarImage src={image} alt="" referrerPolicy="no-referrer" />
       )}
       <AvatarFallback
-        className="text-xs font-semibold"
-        style={{ backgroundColor: fill, color: text }}
+        className={cn(
+          "text-xs font-semibold",
+          themed && "bg-primary text-primary-foreground",
+        )}
+        style={themed ? undefined : { backgroundColor: fill, color: text }}
       >
         {initials(name)}
       </AvatarFallback>

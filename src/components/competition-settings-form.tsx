@@ -9,8 +9,8 @@ import {
   AutosaveStatusLine,
   useAutosaveLifecycle,
 } from "@/components/autosave-status";
-import { EntityCombobox } from "@/components/entity-combobox";
 import { OptionSelect } from "@/components/option-select";
+import { ParticipantPicker } from "@/components/participant-picker";
 import { PlacementPointsRows } from "@/components/placement-points-rows";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { SuggestionCombobox } from "@/components/suggestion-combobox";
@@ -473,12 +473,12 @@ export function CompetitionSettingsForm({
               <>
                 <Field data-invalid={!!errors.hosts}>
                   <FieldLabel htmlFor={id("hosts")}>Hosts</FieldLabel>
-                  <EntityCombobox
+                  <ParticipantPicker
                     multiple
                     id={id("hosts")}
                     aria-label="Hosts"
                     aria-invalid={!!errors.hosts}
-                    items={hostOptions}
+                    options={hostOptions}
                     value={values.hosts}
                     onValueChange={(hosts) => edit({ hosts })}
                     placeholder="Search the roster by name"

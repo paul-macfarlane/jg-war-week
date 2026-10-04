@@ -166,6 +166,9 @@ export type PlacementCandidate = {
   id: string;
   name: string;
   team: string | null;
+  teamColor: string | null;
+  /** A Participant's picture URL; null for a Team and for initials. */
+  image: string | null;
 };
 
 /**
@@ -192,7 +195,12 @@ export async function getPlacementCandidates(
       .from(team)
       .where(and(eq(team.warWeekId, warWeek.id), notInArray(team.id, placed)))
       .orderBy(asc(team.name));
-    return teams.map((t) => ({ ...t, team: null }));
+    return teams.map((t) => ({
+      ...t,
+      team: null,
+      teamColor: null,
+      image: null,
+    }));
   }
   const participantTeam = aliasedTable(team, "participant_team");
   const placed = dbOrTx
@@ -209,7 +217,9 @@ export async function getPlacementCandidates(
       .select({
         id: participant.id,
         name: participantNameSql(),
+        image: participantImageSql(),
         team: participantTeam.name,
+        teamColor: participantTeam.color,
       })
       .from(participant)
       .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))

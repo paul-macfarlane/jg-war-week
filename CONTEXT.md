@@ -26,6 +26,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Team Label**                | What teams are called this year (House / Tribe / Team).                                                                           |
 | **Leader** / **Leader Title** | A participant flagged as a team leader, displayed with the year's title (Captain, Head of House). A label only, not a permission. |
 | **Participant**               | A person in a War Week. A record, not a user.                                                                                     |
+| **Participant picker**        | The one control (`ParticipantPicker`) wherever someone chooses a Participant (Hosts, Placement sheet, Entrants, Squads, Attempts, Award recipients, Discretionary points; the Participation list's filter shows the same rows). Each row is avatar, name and, in a teams War Week, Team. It searches the **display name only**, lists every match with no cap, and no option, keyword or page payload carries an email. |
 | **Profile**                   | A person's own Profile name and picture URL, stored once by email (ADR 0007). It overrides the roster name and picture wherever that email is on a roster, in every War Week, past ones too. Set on the Profile page, opened from the Account menu. |
 | **Profile name**              | The name a person sets on their Profile. Empty means the roster name shows. An Organizer's roster form shows a set one read-only, "Set by the person".  |
 | **Avatar**                    | A person's visual marker: their Profile's picture URL (`https://` only), else their Google photo, else their initials in their Team's color. |
@@ -194,9 +195,9 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   Participant, that Participant is You; otherwise nobody is. There is no
   self-pick. The roster admin shows "No email: won't be linked when they sign
   in" on a Participant row without an email. Participant emails never reach
-  a Participant's or Host's page, only the matched id; the Organizer-only
-  Discretionary points and Award pickers match a Participant's email in
-  their search without showing it. Past editions use their own roster.
+  a Participant's or Host's page, only the matched id; no picker's options,
+  search or page payload carries a Participant's email for any actor (the
+  **Participant picker** is name-only). Past editions use their own roster.
 - **The Team shows in team events.** In a teams War Week, wherever a
   Participant appears in a Competition or scoring context (Standings,
   Brackets and Matches, Placements, Head-to-head and Best score, Recent results, the leaderboard's points breakdown, Awards,

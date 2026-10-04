@@ -75,9 +75,7 @@ async function logAttempt(page: Page) {
   await page.getByRole("button", { name: "Log an Attempt" }).click();
   const form = page.getByRole("dialog", { name: "Log an Attempt" });
   await form.getByRole("combobox", { name: "Participant" }).click();
-  await page
-    .getByRole("option", { name: "Ashley Schuliger", exact: true })
-    .click();
+  await page.getByRole("option", { name: /^Ashley Schuliger/ }).click();
   await form.getByLabel(/^Score/).fill("12");
   await form.getByRole("button", { name: "Log Attempt" }).click();
   await expect(page.getByText("Attempt logged")).toBeVisible();

@@ -8,10 +8,10 @@ describe("buildHostOptions", () => {
       buildHostOptions([
         { id: "p1", name: "Ana P", cantSignIn: false },
         { id: "p2", name: "Bo K", cantSignIn: false },
-      ]),
+      ]).map(({ id, name }) => ({ id, name })),
     ).toEqual([
-      { id: "p1", label: "Ana P" },
-      { id: "p2", label: "Bo K" },
+      { id: "p1", name: "Ana P" },
+      { id: "p2", name: "Bo K" },
     ]);
   });
 
@@ -19,18 +19,36 @@ describe("buildHostOptions", () => {
     const [option] = buildHostOptions([
       { id: "p2", name: "Bo K", cantSignIn: false },
     ]);
-    expect(option.detail).toBeUndefined();
+    expect(option.note).toBeUndefined();
   });
 
   it("keeps a non-Jahnel Group Participant selectable, marked Can't sign in, without the email", () => {
     const [option] = buildHostOptions([
       { id: "p3", name: "Cy Q", cantSignIn: true },
     ]);
-    expect(option).toEqual({
+    expect(option).toMatchObject({
       id: "p3",
-      label: "Cy Q",
-      detail: "Can't sign in",
+      name: "Cy Q",
+      note: "Can't sign in",
     });
     expect(JSON.stringify(option)).not.toContain("@");
+  });
+
+  it("carries the picture and Team the picker shows", () => {
+    const [option] = buildHostOptions([
+      {
+        id: "p4",
+        name: "Di R",
+        image: "https://example.test/d.png",
+        teamName: "Red",
+        teamColor: "#ff0000",
+        cantSignIn: false,
+      },
+    ]);
+    expect(option).toMatchObject({
+      image: "https://example.test/d.png",
+      teamName: "Red",
+      teamColor: "#ff0000",
+    });
   });
 });

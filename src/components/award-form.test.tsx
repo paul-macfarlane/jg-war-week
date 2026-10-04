@@ -70,7 +70,9 @@ describe("AwardForm Recipients copy", () => {
   it("names the Team Label when the Team field shows", () => {
     const html = render("teams");
     expect(html).toContain("A House, Participants, or both.");
-    expect(html).toContain('placeholder="Find by name or House"');
+    // The picker searches by name alone, so it never offers the Team Label.
+    expect(html).toContain('placeholder="Find by name"');
+    expect(html).not.toContain("Find by name or");
   });
 
   it("drops it when the Team field is hidden", () => {
