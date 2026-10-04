@@ -19,7 +19,9 @@
  * a local Postgres seeded with that edition's demo, and Google Chrome:
  *   pnpm build && pnpm seed:demo:xii
  * (next year, write `seeds/demo/<edition>.json` and use
- * `pnpm seed:demo:<edition>`). Starts its own server on port 3202, signs in
+ * `pnpm seed:demo:<edition>`). Starts its own server on port 3202 (override with
+ * `ABOUT_MEDIA_PORT`, and Chrome's debugging port 9304 with
+ * `ABOUT_MEDIA_DEBUG_PORT`, when another session uses them), signs in
  * as a made-up Organizer (`about-demo@jahnelgroup.com`) that it adds to the
  * Organizer list and lends the War Week's seeded Points Entries and
  * Announcements for the run, so no real email is in any file, and restores
@@ -63,12 +65,12 @@ import {
 
 loadEnvConfig(process.cwd());
 
-const PORT = 3202;
+const PORT = Number(process.env.ABOUT_MEDIA_PORT ?? 3202);
 const BASE_URL = `http://localhost:${PORT}`;
 const CHROME =
   process.env.CHROME_PATH ??
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-const DEBUG_PORT = 9304;
+const DEBUG_PORT = Number(process.env.ABOUT_MEDIA_DEBUG_PORT ?? 9304);
 const MEDIA = path.resolve(process.cwd(), "public/about");
 const EVIDENCE = path.resolve(process.cwd(), "test-results/about-media");
 const AUTH_SECRET = `about-media-secret-${randomUUID()}`;
