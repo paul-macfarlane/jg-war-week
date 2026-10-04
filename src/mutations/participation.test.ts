@@ -807,12 +807,10 @@ describe.skipIf(!isLocalDatabase)(
       });
     });
 
-    it("keeps its Format: no change to or from participation", async () => {
+    it("changes Format to and from participation while it has no result", async () => {
       await inRolledBackTransaction(async (tx) => {
         const { setCompetitionFormat } = await import("@/mutations/brackets");
         const f = await fixture(tx);
-        const keeps =
-          "A Participation Competition keeps its Format; add a new Competition to run it another way.";
         expect(
           await setCompetitionFormat(
             f.ids.workout,
@@ -820,7 +818,20 @@ describe.skipIf(!isLocalDatabase)(
             f.ctx(HOST),
             tx,
           ),
-        ).toEqual({ ok: false, error: keeps });
+        ).toEqual({ ok: true });
+        const [row] = await tx
+          .select({
+            format: f.schema.competition.format,
+            participationPoints: f.schema.competition.participationPoints,
+            selfCheckIn: f.schema.competition.selfCheckIn,
+          })
+          .from(f.schema.competition)
+          .where(eq(f.schema.competition.id, f.ids.workout));
+        expect(row).toEqual({
+          format: "bracket",
+          participationPoints: null,
+          selfCheckIn: false,
+        });
         expect(
           await setCompetitionFormat(
             f.ids.trivia,
@@ -828,7 +839,7 @@ describe.skipIf(!isLocalDatabase)(
             f.ctx(HOST),
             tx,
           ),
-        ).toEqual({ ok: false, error: keeps });
+        ).toEqual({ ok: true });
       });
     });
   },

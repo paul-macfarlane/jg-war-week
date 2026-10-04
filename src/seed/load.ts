@@ -37,6 +37,7 @@ import {
 } from "@/db/schema";
 import type { GamesConfig } from "@/lib/games/config";
 import { placementEntryValues } from "@/lib/placement/score";
+import { descriptionContent } from "@/lib/rich-text/from-plain-text";
 import { getPlacementRows } from "@/queries/placements";
 import { WarWeekSeed } from "@/seed/schema";
 
@@ -302,7 +303,7 @@ async function syncCompetitions(
     rows: seed.competitions.map((c) => ({
       warWeekId,
       name: c.name,
-      description: c.description ?? null,
+      description: descriptionContent(c.description),
       // An individual `participation` Competition has none; a team one has
       // them, not N (the CHECK `competition_participation_columns`).
       placementPoints:

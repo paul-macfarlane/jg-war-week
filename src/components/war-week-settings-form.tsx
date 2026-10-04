@@ -1,11 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { updateWarWeekSettingsFields } from "@/actions/setup";
+import {
+  AUTOSAVE_DELAY_MS,
+  AutosaveStatusLine,
+  useAutosaveLifecycle,
+} from "@/components/autosave-status";
 import { ColorField, type ColorSwatch } from "@/components/color-field";
-import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DateRangePicker } from "@/components/date-range-picker";
 import { OptionSelect, type SelectOption } from "@/components/option-select";
 import { ThemeRoot } from "@/components/theme-root";
@@ -22,13 +26,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { WarWeek } from "@/db/schema";
-import {
-  type AutosaveSnapshot,
-  type AutosaveStatus,
-  createAutosave,
-} from "@/lib/autosave";
+import { type AutosaveSnapshot, createAutosave } from "@/lib/autosave";
 import { normalizeHex } from "@/lib/color";
-import { leavingHref } from "@/lib/leave-guard";
 import {
   type OverrideColumn,
   type WarWeekSettingsInput,
@@ -102,16 +101,6 @@ const FONT_OPTIONS: SelectOption[] = [
   { value: "mono", label: "Mono" },
 ];
 
-/** How long after the last edit a change saves. */
-const AUTOSAVE_DELAY_MS = 800;
-
-const STATUS_TEXT: Record<AutosaveStatus, string> = {
-  idle: "Changes save automatically",
-  saving: "Saving…",
-  saved: "Saved",
-  failed: "Not saved: see the field marked below",
-};
-
 /**
  * The "War Week settings" heading and its form: a War Week's settings,
  * Appearance Theme and closing (Winner and highlights). Status isn't here:
@@ -127,15 +116,11 @@ const STATUS_TEXT: Record<AutosaveStatus, string> = {
  * refused field shows its error under it and keeps the typed value, and
  * every other field still saves.
  *
- * Leaving the page: an in-app navigation (unmount) and the tab going
- * hidden (`visibilitychange`, which also covers a phone switching apps)
- * send a waiting change at once, and the save runs to completion in the
- * still-open app. A reload or close can't promise a request finishes once
- * the page unloads, so `beforeunload` sends what's waiting and asks the
- * browser to warn while a save is waiting, in flight, or refused. A
- * refused field isn't sent again on its own, so while one is showing, a
- * click on an in-app link asks first ("Leave without saving?"); a save
- * merely waiting or in flight lets the link go and finishes on unmount.
+ * Leaving the page (`useAutosaveLifecycle`): an in-app navigation, the
+ * tab going hidden and `beforeunload` send what's waiting; while a refused
+ * field shows, a click on an in-app link asks first ("Leave without
+ * saving?"); a save merely waiting or in flight lets the link go and
+ * finishes on unmount.
  */
 export function WarWeekSettingsForm({
   warWeekId,
@@ -177,56 +162,7 @@ export function WarWeekSettingsForm({
     }),
   );
 
-  useEffect(() => {
-    const onVisibilityChange = () => {
-      if (document.visibilityState === "hidden") void autosave.flush();
-    };
-    const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      void autosave.flush();
-      if (autosave.unsaved()) event.preventDefault();
-    };
-    document.addEventListener("visibilitychange", onVisibilityChange);
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-      window.removeEventListener("beforeunload", onBeforeUnload);
-      void autosave.flush();
-    };
-  }, [autosave]);
-
-  // While a refusal shows, an in-app link click asks before leaving. A
-  // capture listener on the document runs before the link's own handler,
-  // and Next's Link doesn't navigate a click that was prevented.
-  const [leaving, setLeaving] = useState<string | null>(null);
-  const refused = Object.entries(saveState.fieldErrors);
-  const hasRefusal = refused.length > 0;
-  useEffect(() => {
-    if (!hasRefusal) return;
-    const onClick = (event: MouseEvent) => {
-      const link =
-        event.target instanceof Element
-          ? event.target.closest("a[href]")
-          : null;
-      if (!(link instanceof HTMLAnchorElement)) return;
-      const href = leavingHref(
-        {
-          href: link.href,
-          target: link.target,
-          download: link.hasAttribute("download"),
-          button: event.button,
-          modified:
-            event.metaKey || event.ctrlKey || event.shiftKey || event.altKey,
-          defaultPrevented: event.defaultPrevented,
-        },
-        window.location.href,
-      );
-      if (href === null) return;
-      event.preventDefault();
-      setLeaving(href);
-    };
-    document.addEventListener("click", onClick, true);
-    return () => document.removeEventListener("click", onClick, true);
-  }, [hasRefusal]);
+  const guard = useAutosaveLifecycle(autosave, saveState.fieldErrors);
 
   /** Applies an edit to `fields` and queues them to save. */
   function edit(
@@ -323,37 +259,12 @@ export function WarWeekSettingsForm({
         <h2 id={headingId} className="text-lg font-semibold">
           War Week settings
         </h2>
-        <p
-          role="status"
-          aria-live="polite"
-          data-slot="autosave-status"
-          data-status={saveState.status}
-          className={
-            saveState.status === "failed"
-              ? "text-destructive text-sm"
-              : "text-foreground/70 text-sm"
-          }
-        >
-          {STATUS_TEXT[saveState.status]}
-        </p>
+        <AutosaveStatusLine
+          state={saveState}
+          guard={guard}
+          fieldLabel={setupFieldLabel}
+        />
       </div>
-      <ConfirmDialog
-        open={leaving !== null}
-        onOpenChange={(open) => {
-          if (!open) setLeaving(null);
-        }}
-        title="Leave without saving?"
-        description={
-          hasRefusal
-            ? `${setupFieldLabel(refused[0][0])} wasn't saved: ${refused[0][1]}`
-            : undefined
-        }
-        confirmLabel="Leave"
-        onConfirm={() => {
-          if (leaving) router.push(leaving);
-          setLeaving(null);
-        }}
-      />
       <form
         // Enter in a field saves it now instead of submitting the page.
         onSubmit={(event) => {

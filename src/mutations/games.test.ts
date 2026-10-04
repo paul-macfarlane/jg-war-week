@@ -957,7 +957,7 @@ describe.skipIf(!isLocalDatabase)("setGamesSettings", () => {
       ).toEqual({
         ok: false,
         error:
-          "A Head-to-head or Best score Competition keeps its Format; add a new Competition to play another.",
+          "Those settings are for another Format. Change the Format first.",
       });
       await f.setCompetition(f.ids.pong, { finalizedAt: new Date() });
       expect(

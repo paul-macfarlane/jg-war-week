@@ -361,7 +361,7 @@ export async function assertSetupTeamsAndCompetitions(sessions: {
     "updateParticipant",
     "deleteParticipant",
     "createCompetition",
-    "updateCompetition",
+    "saveCompetitionSetting",
     "deleteCompetition",
   ].filter((name) => !ids[name]);
   if (missing.length > 0) {

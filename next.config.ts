@@ -24,6 +24,9 @@ const nextConfig: NextConfig = {
           ["/admin/setup/days", "/admin/schedule"],
           ["/admin/setup/schedule/:path*", "/admin/schedule"],
           ["/admin/setup/teams", "/admin/roster"],
+          // A Competition's Bracket and Games setup are its one page now
+          // (ticket 101); straight there, not through the retired routes.
+          ["/admin/setup/competitions/:id/:part", "/admin/competitions/:id"],
           ["/admin/setup/competitions/:path*", "/admin/competitions/:path*"],
           ["/admin/setup/faq/:path*", "/admin/faq"],
           ["/admin/standings", "/admin/finale"],

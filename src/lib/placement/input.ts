@@ -4,14 +4,16 @@
  */
 import { z } from "zod";
 
-import { SCORE_DIRECTIONS, type ScoreDirection } from "@/lib/enums";
 import type { Parsed } from "@/lib/result";
 
 /** Who a row is for: a Team, or a Participant. */
 export type PlacementTarget = { teamId: string } | { participantId: string };
 
+/**
+ * The sheet's Save: each row's Place and Score. Never the Score direction:
+ * that saves on its own (`saveCompetitionSetting`), under its result lock.
+ */
 export type SavePlacementsValues = {
-  scoreDirection: ScoreDirection;
   rows: { id: string; place: number | null; score: number | null }[];
 };
 
@@ -49,9 +51,6 @@ const scoreSchema = blankable.refine(
 );
 
 const saveSchema = z.object({
-  scoreDirection: z.enum(SCORE_DIRECTIONS, {
-    error: "Choose how Scores decide Places.",
-  }),
   rows: z
     .array(
       z.object({
@@ -63,7 +62,7 @@ const saveSchema = z.object({
     .max(2000),
 });
 
-/** The sheet's Save: the Score direction and every row's Place and Score. */
+/** The sheet's Save: every row's Place and Score (any other key is dropped). */
 export function parseSavePlacementsInput(
   raw: unknown,
 ): Parsed<SavePlacementsValues> {

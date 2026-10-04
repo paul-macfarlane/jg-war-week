@@ -20,9 +20,7 @@ import {
   team,
   warWeek,
 } from "@/db/schema";
-import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
-import { isGameFormat } from "@/lib/enums";
-import { defaultGamesConfig } from "@/lib/games/config";
+import { formatDefaults } from "@/lib/format-defaults";
 import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
 import type { FieldErrors } from "@/lib/result";
 import {
@@ -827,12 +825,12 @@ export type CreateCompetitionResult =
 
 /**
  * Creates a Competition, with the Format an Organizer chose (default
- * "placement") and, for a Bracket with none given, the Bracket builder's
- * default config (`DEFAULT_BRACKET_CONFIG`). A Head-to-head or Best score Competition
- * stores that Format's default settings; any other Format has none.
- * A `participation` Competition starts at 1 point per Participant when
- * individual, or at the Placement Points 3, 2, 1 (ranked by headcount) when
- * team, with Self check-in off.
+ * "placement") and that Format's create defaults (`formatDefaults`, as a
+ * Format change gives): a Bracket's default heat settings, a Head-to-head
+ * or Best score Competition's default settings open to everyone, a
+ * `participation` Competition's 1 point per Participant when individual or
+ * Placement Points 3, 2, 1 (ranked by headcount) when team, with Self
+ * check-in off.
  */
 export async function createCompetition(
   values: CompetitionCreateValues,
@@ -852,21 +850,7 @@ export async function createCompetition(
             warWeekId: ctx.warWeekId,
             ...values,
             format,
-            bracketConfig: format === "bracket" ? DEFAULT_BRACKET_CONFIG : null,
-            gameConfig: isGameFormat(format)
-              ? defaultGamesConfig(format)
-              : null,
-            // A new Head-to-head or Best score Competition is open to
-            // everyone (Best of is off).
-            entrantsOpen: isGameFormat(format),
-            ...(format === "participation"
-              ? values.scoring === "team"
-                ? {
-                    participationPoints: null,
-                    placementPoints: values.placementPoints ?? [3, 2, 1],
-                  }
-                : { participationPoints: 1, placementPoints: null }
-              : {}),
+            ...formatDefaults(format, values),
           })
           .returning({ id: competition.id });
         return { ok: true, id: created.id };

@@ -187,8 +187,9 @@ export async function removePlacement(
 }
 
 /**
- * Saves the sheet: the Score direction and each listed row's Place and
- * Score (rows not listed keep theirs). A row of another Competition
+ * Saves the sheet: each listed row's Place and Score (rows not listed keep
+ * theirs). Never the Score direction: it saves as its own setting, locked
+ * once the Competition has a result. A row of another Competition
  * refuses the whole save. A Score without a Place is allowed until
  * Finalize.
  */
@@ -218,10 +219,6 @@ export async function savePlacements(
         .set({ place: row.place, score: row.score, updatedAt: sql`now()` })
         .where(eq(placement.id, row.id));
     }
-    await tx
-      .update(competition)
-      .set({ scoreDirection: values.scoreDirection, updatedAt: sql`now()` })
-      .where(eq(competition.id, competitionId));
     return { ok: true };
   });
 }

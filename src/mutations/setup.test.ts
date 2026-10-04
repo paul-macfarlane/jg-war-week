@@ -1089,7 +1089,7 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
     });
   });
 
-  it("refuses Placement Points or scoring changes while the Bracket is finalized, but not other fields", async () => {
+  it("refuses a scoring change while the Bracket is finalized, but not Placement Points or other fields", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { updateCompetition } = await import("@/mutations/setup");
       const { schema, home, ctx } = await rosterFixture(tx);
@@ -1115,18 +1115,33 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
           ctx,
           tx,
         ),
+      ).toEqual({ ok: true });
+      expect(
+        await updateCompetition(
+          bracket.id,
+          {
+            ...competitionValues,
+            name: "Knockout",
+            scoring: "team",
+            countsTowardTeam: false,
+            placementPoints: [10, 5],
+          },
+          ctx,
+          tx,
+        ),
       ).toEqual({
         ok: false,
         error:
           "This Competition's Bracket is finalized. Un-finalize the Bracket first.",
       });
-      const [unchanged] = await tx
+      const [saved] = await tx
         .select()
         .from(schema.competition)
         .where(eq(schema.competition.id, bracket.id));
-      expect(unchanged).toMatchObject({
+      expect(saved).toMatchObject({
         name: "Knockout",
-        placementPoints: [5, 3, 1],
+        scoring: "individual",
+        placementPoints: [10, 5],
       });
 
       expect(
@@ -1135,7 +1150,15 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
           {
             ...competitionValues,
             name: "Renamed Knockout",
-            description: "Single elimination",
+            description: {
+              type: "doc",
+              content: [
+                {
+                  type: "paragraph",
+                  content: [{ type: "text", text: "Single elimination" }],
+                },
+              ],
+            },
           },
           ctx,
           tx,

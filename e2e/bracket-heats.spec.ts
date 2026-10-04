@@ -6,6 +6,11 @@ import {
   test,
 } from "@playwright/test";
 
+import {
+  expectSaved,
+  openCompetitionPage,
+  setFormat,
+} from "./competition-page";
 import { openForBracket, xiCompetitionId } from "./db";
 import { asOrganizer, participantPageAs } from "./session";
 
@@ -125,17 +130,14 @@ test("a Bracket of 4 per Heat is built, run and finalized into Points Entries", 
   await asOrganizer(context);
   const id = await xiCompetitionId(COMPETITION);
 
-  await page.goto(`/admin/competitions/${id}/bracket`);
-  await page.getByRole("combobox", { name: "Format" }).click();
-  await page.getByRole("option", { name: "Bracket", exact: true }).click();
-  await expect(page.getByText("Format set to Bracket")).toBeVisible();
+  await openCompetitionPage(page, id);
+  await setFormat(page, "Bracket");
 
   await page.getByRole("combobox", { name: "Entrants per Heat" }).click();
   await page.getByRole("option", { name: "4 per Heat" }).click();
   await page.getByRole("combobox", { name: "How many advance" }).click();
   await page.getByRole("option", { name: "Top 2 advance" }).click();
-  await page.getByRole("button", { name: "Save Heat settings" }).click();
-  await expect(page.getByText("Heat settings saved")).toBeVisible();
+  await expectSaved(page);
 
   const find = page.locator("#bracket-entrants");
   for (const entrant of ENTRANTS) {
@@ -155,10 +157,8 @@ test("a Bracket of 4 per Heat is built, run and finalized into Points Entries", 
 
   await checkViewports(page, testInfo, "builder");
 
-  await page.getByRole("link", { name: "Results", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: `${COMPETITION} · Results` }),
-  ).toBeVisible();
+  // The Bracket tree is on the same page, below the Entrants.
+  await expect(page.locator("[data-bracket-tree]")).toBeVisible();
 
   // Screenshots and the overflow check happen with the Sheet open, on a
   // four-Entrant Heat, before any tap.
@@ -210,7 +210,7 @@ test("a Bracket of 4 per Heat is built, run and finalized into Points Entries", 
   await endDialog.getByRole("button", { name: "Cancel" }).click();
   await expect(endDialog).toBeHidden();
 
-  await page.goto(`/admin/brackets/${id}`);
+  await openCompetitionPage(page, id);
   await page.getByRole("button", { name: "Finalize" }).click();
   await page
     .getByRole("alertdialog")

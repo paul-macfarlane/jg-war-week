@@ -4,13 +4,10 @@
  * `heat-report-rule.ts` (kept engine- and zod-free for `access.ts`) and is
  * re-exported here for the mutation and the page.
  */
-import { z } from "zod";
-
 import { isBye } from "@/lib/bracket/formats";
 import type { HeatReportState } from "@/lib/bracket/heat-report-rule";
 import { isDecided } from "@/lib/bracket/heat-status";
 import type { Bracket, Heat } from "@/lib/bracket/types";
-import type { Parsed } from "@/lib/result";
 
 export {
   type HeatReportFacet,
@@ -27,15 +24,4 @@ export function heatReportState(bracket: Bracket, heat: Heat): HeatReportState {
   if (isDecided(heat)) return "decided";
   if (heat.slots.some((s) => s.entrantId === null)) return "unfilled";
   return "open";
-}
-
-const selfReportSchema = z.object({ on: z.boolean() });
-
-/** The self-report toggle's input: `{ on }`. */
-export function parseSelfReportInput(input: unknown): Parsed<{ on: boolean }> {
-  const parsed = selfReportSchema.safeParse(input);
-  if (!parsed.success) {
-    return { ok: false, error: "Turn self-report on or off." };
-  }
-  return { ok: true, value: { on: parsed.data.on } };
 }

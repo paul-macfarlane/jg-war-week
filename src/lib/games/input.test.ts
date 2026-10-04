@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { BestScoreConfig, HeadToHeadConfig } from "@/lib/games/config";
-import {
-  parseGameInput,
-  parseGamesSettingsInput,
-  postedGamePlayerIds,
-} from "@/lib/games/input";
+import { parseGameInput, postedGamePlayerIds } from "@/lib/games/input";
 
 const A = "11111111-1111-4111-8111-111111111111";
 const B = "22222222-2222-4222-8222-222222222222";
@@ -137,81 +133,6 @@ describe("parseGameInput best-score", () => {
   });
 });
 
-describe("parseGamesSettingsInput", () => {
-  it("parses head-to-head settings with Best of and finish times", () => {
-    const result = parseGamesSettingsInput({
-      gameFormat: "head-to-head",
-      drawsAllowed: true,
-      bestOf: "5",
-      entrantsOpen: true,
-      loggingClosesAt: "2027-02-22T19:00:00.000Z",
-      selfEnroll: false,
-      entrantLimit: "",
-      enrollClosesAt: "",
-    });
-    expect(result).toEqual({
-      ok: true,
-      value: {
-        gameConfig: { drawsAllowed: true, bestOf: 5 },
-        entrantsOpen: true,
-        loggingClosesAt: new Date("2027-02-22T19:00:00.000Z"),
-        selfEnroll: false,
-        entrantLimit: null,
-        enrollClosesAt: null,
-      },
-    });
-  });
-
-  it("parses best-score settings", () => {
-    const result = parseGamesSettingsInput({
-      gameFormat: "best-score",
-      count: "total",
-      betterIs: "lower",
-      unit: "trips",
-      entrantsOpen: false,
-      loggingClosesAt: "",
-      selfEnroll: true,
-      entrantLimit: 4,
-      enrollClosesAt: "",
-    });
-    expect(result).toEqual({
-      ok: true,
-      value: {
-        gameConfig: { count: "total", betterIs: "lower", unit: "trips" },
-        entrantsOpen: false,
-        loggingClosesAt: null,
-        selfEnroll: true,
-        entrantLimit: 4,
-        enrollClosesAt: null,
-      },
-    });
-  });
-
-  it("refuses an Entrant limit of 1", () => {
-    const result = parseGamesSettingsInput({
-      gameFormat: "best-score",
-      count: "best",
-      betterIs: "higher",
-      unit: "",
-      entrantsOpen: true,
-      loggingClosesAt: "",
-      selfEnroll: true,
-      entrantLimit: 1,
-      enrollClosesAt: "",
-    });
-    expect(result.ok).toBe(false);
-    if (!result.ok)
-      expect(result.error).toBe("An Entrant limit is at least 2.");
-  });
-
-  it("refuses an unknown Format", () => {
-    const result = parseGamesSettingsInput({ gameFormat: "not-a-type" });
-    expect(result.ok).toBe(false);
-    if (!result.ok)
-      expect(result.error).toBe("Choose Head-to-head or Best score.");
-  });
-});
-
 describe("postedGamePlayerIds", () => {
   it("reads only the player ids the Format's form posts", () => {
     expect(
@@ -245,60 +166,5 @@ describe("postedGamePlayerIds", () => {
     expect(
       postedGamePlayerIds("head-to-head", { playerA: 7, playerB: "" }),
     ).toEqual([]);
-  });
-});
-
-describe("parseGamesSettingsInput close times", () => {
-  const base = {
-    gameFormat: "best-score",
-    count: "best",
-    betterIs: "higher",
-    unit: "",
-    entrantsOpen: false,
-    selfEnroll: true,
-    entrantLimit: " 6 ",
-  };
-
-  it("reads a trimmed Entrant limit and both close times", () => {
-    expect(
-      parseGamesSettingsInput({
-        ...base,
-        loggingClosesAt: "2027-02-26T17:00:00.000Z",
-        enrollClosesAt: "2027-02-22T17:00:00.000Z",
-      }),
-    ).toEqual({
-      ok: true,
-      value: {
-        gameConfig: { count: "best", betterIs: "higher", unit: "" },
-        entrantsOpen: false,
-        loggingClosesAt: new Date("2027-02-26T17:00:00.000Z"),
-        selfEnroll: true,
-        entrantLimit: 6,
-        enrollClosesAt: new Date("2027-02-22T17:00:00.000Z"),
-      },
-    });
-  });
-
-  it("refuses an Entrant limit that isn't a whole number", () => {
-    expect(parseGamesSettingsInput({ ...base, entrantLimit: "2.5" })).toEqual({
-      ok: false,
-      error: "An Entrant limit is at least 2.",
-      fieldErrors: { entrantLimit: "An Entrant limit is at least 2." },
-    });
-    expect(parseGamesSettingsInput({ ...base, entrantLimit: true })).toEqual({
-      ok: false,
-      error: "An Entrant limit is at least 2.",
-      fieldErrors: { entrantLimit: "An Entrant limit is at least 2." },
-    });
-  });
-
-  it("refuses a close time that isn't a date", () => {
-    expect(
-      parseGamesSettingsInput({ ...base, loggingClosesAt: "someday" }),
-    ).toEqual({ ok: false, error: "Enter a valid logging close time." });
-    expect(parseGamesSettingsInput({ ...base, enrollClosesAt: 5 })).toEqual({
-      ok: false,
-      error: "Enter a valid enrollment close time.",
-    });
   });
 });

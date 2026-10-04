@@ -6,7 +6,7 @@
 
 **Blocked by:** none inside R18 (first part)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: autosave, "Run as a bracket"); grilling Q6, Q14, Q30, Q31; red-team pass 1 W1, W2, W3, W5, W8, M1, M4
 
@@ -34,10 +34,16 @@
 
 ## Acceptance criteria
 
-- [ ] e2e per Format (Placement, Head-to-head, Best score, Bracket, Participation; each on its own `E2E R18 …` Competition): change a setting, reload, it's kept; leave and return, it's kept; add a result, and a locked field shows its reason.
-- [ ] e2e: change Format on a new Competition with no result (Placement → Bracket → Head-to-head), and each Format's settings and run area appear.
-- [ ] e2e: a Host edits their Competition's settings, sees Hosts read-only, and the page holds no email but their own.
-- [ ] Postgres tests on the per-field save, each row of the lock table: the change is refused with the reason once its lock applies, and accepted before. Name, description, Group, Hosts and Placement Points are accepted while Finalized.
-- [ ] Postgres tests: a Host is refused changing Hosts; a Host of another Competition is refused any field; a Participant is refused any field; a Format change applies the new Format's defaults and keeps 4 Placement Points for a Bracket.
-- [ ] Test: each old route answers 308 to the new page (smoke over HTTP).
-- [ ] No test or code refers to `HAS_RESULTS_ERROR` or a `force` option on the Bracket mutations.
+- [x] e2e per Format (Placement, Head-to-head, Best score, Bracket, Participation; each on its own `E2E R18 …` Competition): change a setting, reload, it's kept; leave and return, it's kept; add a result, and a locked field shows its reason.
+- [x] e2e: change Format on a new Competition with no result (Placement → Bracket → Head-to-head), and each Format's settings and run area appear.
+- [x] e2e: a Host edits their Competition's settings, sees Hosts read-only, and the page holds no email but their own.
+- [x] Postgres tests on the per-field save, each row of the lock table: the change is refused with the reason once its lock applies, and accepted before. Name, description, Group, Hosts and Placement Points are accepted while Finalized.
+- [x] Postgres tests: a Host is refused changing Hosts; a Host of another Competition is refused any field; a Participant is refused any field; a Format change applies the new Format's defaults and keeps 4 Placement Points for a Bracket.
+- [x] Test: each old route answers 308 to the new page (smoke over HTTP).
+- [x] No test or code refers to `HAS_RESULTS_ERROR` or a `force` option on the Bracket mutations.
+
+## Comments
+
+- 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r18`): claimed with Epic R18; `ready-for-agent` → `in-progress`. Execution record: [`R18-execution.md`](../epics/R18-execution.md).
+
+- 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r18`): D101S `d05e896` and DR1 `794a03e` (Opus): lock table and reasons once in `src/lib/competition-locks.ts`, one per-field save `saveCompetitionSetting` checking role, then lock, then the field (Postgres tests per lock row and role). D101P `e4f0a41`, `6438fa5` (Opus): `/admin/competitions/[id]` with autosaving Settings and the run area; five retired routes 308; edit sheet, old pages and the retired per-setting actions deleted. DE `1114387` fixed a Format change to a Games Format crashing the form. **Reading recorded by the AI Code Review:** the lock table names no Head-to-head setting; Best of needs two fixed Entrants and Entrants are a result, so Head-to-head's settings and Entrants open lock once a **Game** exists (`LOCKED_BY_GAME`), Best score's direction and attempts on any result as the table says. Deleted: the edit sheet, `games-builder.refresh.test.tsx` (replaced by `competition-settings-form.refresh.test.tsx`), the retired action tests; rewritten: 16 e2e specs and smoke `brackets.ts`, `hosts.ts`, `setup.ts`, `admin.ts`. Every AC PASS; evidence and the AI Code Review in [`R18-execution.md`](../epics/R18-execution.md). `ai-review` → `done`. PR: https://github.com/paul-macfarlane/jg-war-week/pull/130

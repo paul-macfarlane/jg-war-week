@@ -4,7 +4,6 @@ import {
   createSquad,
   deleteSquad,
   finalizeBracket,
-  generateBracket,
   updateSquad,
 } from "@/actions/brackets";
 
@@ -44,7 +43,6 @@ vi.mock("@/auth/authorize", () => ({
 }));
 vi.mock("@/mutations/brackets", () => ({
   finalizeBracket: vi.fn(boom),
-  generateBracket: vi.fn(async () => ({ ok: true })),
   createSquad: vi.fn(async () => ({ ok: true })),
   updateSquad: vi.fn(async () => ({ ok: true })),
   deleteSquad: vi.fn(async () => ({ ok: true })),
@@ -64,23 +62,6 @@ describe("Bracket actions", () => {
       error: "Something went wrong. Try again.",
     });
     expect(console.error).toHaveBeenCalled();
-  });
-});
-
-describe("generateBracket", () => {
-  it("passes force through to the mutation, and no seeding option", async () => {
-    authorized.current = { ...AUTHORIZED_OK };
-    const mutations = await import("@/mutations/brackets");
-
-    await expect(
-      generateBracket(ID, { force: true, seeding: "standings" }),
-    ).resolves.toEqual({ ok: true });
-
-    expect(mutations.generateBracket).toHaveBeenCalledWith(
-      ID,
-      { force: true },
-      (authorized.current as { ctx: unknown }).ctx,
-    );
   });
 });
 

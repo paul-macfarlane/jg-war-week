@@ -4,7 +4,7 @@ import { guarded } from "@/actions/result";
 import { revalidateSite, revalidateWarWeek } from "@/actions/revalidate";
 import { type TargetKind, authorize } from "@/auth/authorize";
 import type { WarWeekAction } from "@/lib/access";
-import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
+import { parseCompetitionSetting } from "@/lib/competition-settings";
 import type { Parsed } from "@/lib/result";
 import { rosterImportInputSchema } from "@/lib/roster-import";
 import {
@@ -13,13 +13,13 @@ import {
   type ParticipantInput,
   type TeamInput,
   type WarWeekSettingsInput,
-  parseCompetitionInput,
   parseCreateCompetitionInput,
   parseDayInput,
   parseParticipantInput,
   parseTeamInput,
   parseWarWeekSettingsFields,
 } from "@/lib/setup";
+import { saveCompetitionSetting as saveSetting } from "@/mutations/competition-settings";
 import * as mutations from "@/mutations/setup";
 import type {
   CreateCompetitionResult,
@@ -240,17 +240,23 @@ export async function createCompetition(
   });
 }
 
-/** A Competition's setup: its Organizers, or a Host of that Competition. */
-export async function updateCompetition(
-  id: string,
-  input: CompetitionInput,
+/**
+ * Saves one setting of a Competition (the admin Competition page's
+ * autosave): `{ field, value }` (`parseCompetitionSetting`). An Organizer,
+ * or a Host of this Competition for any field but Hosts; the mutation
+ * checks the role again with the field, and refuses a locked field with
+ * its one-line reason (`src/lib/competition-locks.ts`).
+ */
+export async function saveCompetitionSetting(
+  competitionId: string,
+  input: unknown,
 ): Promise<SetupActionResult> {
   return setupWrite(
     "competition.edit",
     "competition",
-    id,
-    () => parseCompetitionInput(input),
-    (value, ctx) => mutations.updateCompetition(id, value, ctx),
+    competitionId,
+    () => parseCompetitionSetting(input),
+    (value, ctx) => saveSetting(competitionId, value, ctx),
   );
 }
 
@@ -263,28 +269,5 @@ export async function deleteCompetition(
     id,
     nothing,
     (_, ctx) => mutations.deleteCompetition(id, ctx),
-  );
-}
-
-/**
- * Replaces a Competition's Hosts ("assign Hosts", Organizer only). Saved on
- * its own, never with the Competition's setup, so a Host's setup save can't
- * carry a Hosts list.
- */
-export async function setCompetitionHosts(
-  competitionId: string,
-  emails: string[],
-): Promise<SetupActionResult> {
-  return setupWrite(
-    "competition.assign-hosts",
-    "competition",
-    competitionId,
-    (): Parsed<string[]> => {
-      const parsed = jgEmailListSchema.safeParse(emails);
-      return parsed.success
-        ? { ok: true, value: parsed.data }
-        : { ok: false, error: JG_EMAIL_MESSAGE };
-    },
-    (value, ctx) => mutations.setCompetitionHosts(competitionId, value, ctx),
   );
 }

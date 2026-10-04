@@ -179,7 +179,7 @@ describe("GamesView Log a Game", () => {
     });
     expect(text(html)).toContain("Best of decided: Ashley —");
     expect(html).toMatch(
-      /<a[^>]*href="\/admin\/competitions\/c1\/games"[^>]*>Close it<\/a>/,
+      /<a[^>]*href="\/admin\/competitions\/c1"[^>]*>Close it<\/a>/,
     );
   });
 

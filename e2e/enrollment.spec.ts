@@ -9,6 +9,7 @@ import path from "node:path";
 
 import { DISPLAY_STORAGE_KEY } from "@/lib/display";
 
+import { openCompetitionPage } from "./competition-page";
 import {
   openForBracket,
   runQuery,
@@ -216,7 +217,7 @@ test("enrollment: a Participant enrolls, withdraws and enrolls again; once the H
 
     // The Host generates the Bracket.
     await asHost(context);
-    await page.goto(`/admin/competitions/${id}/bracket`);
+    await openCompetitionPage(page, id);
     await page.getByRole("button", { name: "Generate" }).click();
     await expect(page.getByText("Bracket generated")).toBeVisible();
     await shoot(page, testInfo, "generated");

@@ -38,6 +38,9 @@ const NOT_HOST_REFUSAL = "You're not a Host of that Competition.";
 // reaches a Host check.
 const NOT_A_BRACKET = "This Competition isn't run as a Bracket.";
 const SELF_REPORT_OFF = "Self-report is off for this Competition.";
+// A setting that locks while its Competition is Finalized (ticket 101).
+const LOCKED_WHILE_FINALIZED =
+  "Locked while the Competition is Finalized or Closed. Reopen or Un-finalize it first.";
 
 /** Removes every `competition_host` row the smoke Host has. */
 export async function deleteSmokeHosts() {
@@ -253,32 +256,40 @@ async function assertHostAllowedAndRefused(fixture: HostFixture) {
     );
   }
 
-  // Squads and self-report are Bracket-only actions. The hosted Competition
-  // (AI Survey Completion) is a `points` Competition, so access passes (it's the
-  // Host's own) and the Bracket rule refuses it; the other Competition
-  // (Cypher, not hosted by this Host) refuses on access first.
-  for (const [action, args] of [
-    ["setSelfReport", { on: true }],
+  // Squads and self-report are Bracket-only. The hosted Competition (AI
+  // Survey Completion) is a Finalized Placement, so access passes (it's the
+  // Host's own): self-report, a setting saved on the Competition page, is
+  // refused by its lock, and a Squad by the Bracket rule. The other
+  // Competition (Cypher, not hosted by this Host) refuses on access first.
+  for (const [label, action, args, expected] of [
+    [
+      "self-report",
+      "saveCompetitionSetting",
+      { field: "selfReport", value: true },
+      LOCKED_WHILE_FINALIZED,
+    ],
     [
       "createSquad",
+      "createSquad",
       { name: "SMOKE Host Squad", teamId: fixture.teamId, participantIds: [] },
+      NOT_A_BRACKET,
     ],
   ] as const) {
     await runCheck(
-      `${action} as a Host on their own points Competition is refused with '${NOT_A_BRACKET}'`,
+      `${label} as a Host on their own Finalized Placement is refused with '${expected}'`,
       async () => {
         const result = await callAction(
           ids[action],
           [fixture.hostCompetitionId, args],
           session,
         );
-        return !result.ok && result.error === NOT_A_BRACKET
+        return !result.ok && result.error === expected
           ? null
           : `result=${JSON.stringify(result)}`;
       },
     );
     await runCheck(
-      `${action} as a Host on another Competition is refused with '${NOT_HOST_REFUSAL}'`,
+      `${label} as a Host on another Competition is refused with '${NOT_HOST_REFUSAL}'`,
       async () => {
         const result = await callAction(
           ids[action],
@@ -579,8 +590,8 @@ async function assertAccessBeforeValidation(
     },
     {
       family: "Competition",
-      action: "updateCompetition",
-      args: [other, { scoring: 7 }],
+      action: "saveCompetitionSetting",
+      args: [other, { field: "scoring", value: 7 }],
       participant: NOT_HOST_REFUSAL,
       host: NOT_HOST_REFUSAL,
     },
@@ -621,8 +632,8 @@ async function assertAccessBeforeValidation(
     },
     {
       family: "Bracket",
-      action: "replaceEntrants",
-      args: [other, { targetIds: "everyone" }],
+      action: "saveCompetitionSetting",
+      args: [other, { field: "entrants", value: { targetIds: "everyone" } }],
       participant: NOT_HOST_REFUSAL,
       host: NOT_HOST_REFUSAL,
     },
@@ -731,13 +742,13 @@ async function assertImportOrganizerOnly(
 async function assertFormerHostRefused(fixture: HostFixture) {
   const ids = serverActionIds();
   await runCheck(
-    "updateCompetition as a former Host is refused on the Competition they no longer host",
+    "saveCompetitionSetting as a former Host is refused on the Competition they no longer host",
     async () => {
       await deleteSmokeHosts();
       const result = await callAction(
-        ids.updateCompetition,
+        ids.saveCompetitionSetting,
         // Junk input: access is checked before it is read.
-        [fixture.hostCompetitionId, { scoring: 7 }],
+        [fixture.hostCompetitionId, { field: "scoring", value: 7 }],
         fixture.session,
       );
       return !result.ok && result.error === NOT_HOST_REFUSAL
@@ -882,7 +893,12 @@ export async function assertParticipantRefused(sessions: {
       ],
       organizerOnly("give Discretionary points"),
     ],
-    ["Bracket", "generateBracket", [competition.id, {}], NOT_HOST_REFUSAL],
+    [
+      "Bracket",
+      "saveCompetitionSetting",
+      [competition.id, { field: "bracket", value: null }],
+      NOT_HOST_REFUSAL,
+    ],
     [
       "Squad",
       "createSquad",
@@ -891,8 +907,8 @@ export async function assertParticipantRefused(sessions: {
     ],
     [
       "Self-report",
-      "setSelfReport",
-      [competition.id, { on: true }],
+      "saveCompetitionSetting",
+      [competition.id, { field: "selfReport", value: true }],
       NOT_HOST_REFUSAL,
     ],
     [

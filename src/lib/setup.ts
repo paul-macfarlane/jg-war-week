@@ -19,6 +19,8 @@ import { participationPointsSchema } from "@/lib/participation/input";
 import { parsePlacementPointsText } from "@/lib/placement-points";
 import { pointsSchema as points } from "@/lib/points-entry";
 import type { Parsed } from "@/lib/result";
+import { contentInputSchema } from "@/lib/rich-text/content";
+import { descriptionContent } from "@/lib/rich-text/from-plain-text";
 
 export { dayOutsideRangeError } from "@/lib/day-range";
 
@@ -101,7 +103,8 @@ export const competitionSeedSchema = z
   // error, never silently ignored.
   .strictObject({
     name: z.string().min(1).max(120),
-    description: z.string().max(2000).nullish(),
+    /** Rich text, or plain text the loader turns into paragraphs. */
+    description: z.union([z.string(), contentInputSchema]).nullish(),
     /** Placement Points for 1st, 2nd, 3rd…, highest first. */
     placementPoints: z
       .array(points.min(0, { error: "must be at least 0" }))
@@ -786,7 +789,7 @@ export function parseCompetitionInput(
     ok: true,
     value: {
       name: value.name,
-      description: value.description ?? null,
+      description: descriptionContent(value.description),
       scoring: value.scoring,
       placementPoints: value.placementPoints ?? null,
       countsTowardTeam: value.countsTowardTeam,
@@ -872,23 +875,6 @@ export function participantGuardError(
   return null;
 }
 
-/** Placement Points as either `null` or `[]` normalize to, for comparison. */
-function normalizedPlacementPoints(
-  points: CompetitionValues["placementPoints"],
-): readonly number[] {
-  return points ?? [];
-}
-
-/** Whether Placement Points changed, treating `null` and `[]` as the same. */
-function placementPointsChanged(
-  before: CompetitionValues["placementPoints"],
-  after: CompetitionValues["placementPoints"],
-): boolean {
-  const a = normalizedPlacementPoints(before);
-  const b = normalizedPlacementPoints(after);
-  return a.length !== b.length || a.some((value, index) => value !== b[index]);
-}
-
 /** A Finalized Placement Competition's refusal of a setup or Format change. */
 export const PLACEMENT_IS_FINALIZED =
   "This Competition is finalized. Reopen it first.";
@@ -896,7 +882,9 @@ export const PLACEMENT_IS_FINALIZED =
 /**
  * Refuses a Competition whose name is taken, a team Competition in a
  * free-for-all, a scoring change that would strand its Points Entries, or a
- * scoring or Placement Points change while it's Finalized or closed.
+ * scoring change while it's Finalized or closed. Placement Points change
+ * any time; while Finalized or closed they apply at the next Finalize or
+ * Close (ticket 101).
  */
 export function competitionGuardError(
   values: Pick<CompetitionValues, "name" | "scoring" | "placementPoints"> & {
@@ -928,12 +916,7 @@ export function competitionGuardError(
   const tooMany =
     format && placementLimitRefusal(format, values.placementPoints);
   if (tooMany) return tooMany;
-  if (
-    existing &&
-    existing.finalizedAt &&
-    (existing.scoring !== values.scoring ||
-      placementPointsChanged(existing.placementPoints, values.placementPoints))
-  ) {
+  if (existing && existing.finalizedAt && existing.scoring !== values.scoring) {
     // A closed Head-to-head, Best score or `participation` Competition
     // reuses `finalized_at` (R3 decision 1); so does a Finalized Placement.
     if (existing.format === "placement") return PLACEMENT_IS_FINALIZED;

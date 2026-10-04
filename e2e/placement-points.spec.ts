@@ -1,13 +1,19 @@
 import { expect, test } from "@playwright/test";
 import path from "node:path";
 
+import {
+  addCompetition,
+  expectSaved,
+  openCompetitionPage,
+} from "./competition-page";
 import { deleteXiCompetition } from "./db";
 import { asOrganizer } from "./session";
 
 // Epic R16, ticket 95 (.scratch/regression-2026-10/issues/95-placement-points-without-a-limit.md):
 // a Placement Competition takes any number of places, and the list editor
-// stays usable on a phone at 20 places. The spec adds its own Competition
-// and deletes it.
+// stays usable on a phone at 20 places. The places are set on the
+// Competition's page (ticket 101), where they autosave. The spec adds its
+// own Competition and deletes it.
 test("r16 95 twenty Placement Points places are all reachable at 390 wide without horizontal scroll", async ({
   context,
   page,
@@ -18,24 +24,20 @@ test("r16 95 twenty Placement Points places are all reachable at 390 wide withou
   try {
     await asOrganizer(context);
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/admin/competitions");
-    await page.getByRole("button", { name: "Add Competition" }).click();
-    const addForm = page
-      .getByRole("dialog", { name: "Add Competition" })
-      .getByRole("form", { name: "New Competition" });
-    await addForm.getByRole("textbox", { name: "Name" }).fill(name);
+    const id = await addCompetition(page, { name });
+    const settings = page.getByRole("form", { name: "Competition settings" });
 
-    const add = addForm.getByRole("button", { name: "Add place" });
+    const add = settings.getByRole("button", { name: "Add place" });
     for (let place = 1; place <= places; place++) {
       await add.click();
-      await addForm
+      await settings
         .getByRole("spinbutton", {
           name: new RegExp(`^${place}(st|nd|rd|th) place Placement Points$`),
         })
         .fill(String(places + 1 - place));
     }
 
-    const inputs = addForm.getByRole("spinbutton", {
+    const inputs = settings.getByRole("spinbutton", {
       name: /place Placement Points$/,
     });
     await expect(inputs).toHaveCount(places);
@@ -64,19 +66,19 @@ test("r16 95 twenty Placement Points places are all reachable at 390 wide withou
       animations: "disabled",
     });
 
-    await addForm.getByRole("button", { name: "Add Competition" }).click();
-    await expect(page.getByText("Competition saved")).toBeVisible();
+    await expectSaved(page);
 
-    // All 20 places were saved.
+    // All 20 places were saved: they're there after leaving and returning.
     await page.goto("/admin/competitions");
-    await page
-      .getByRole("button", { name: `Edit ${name}`, exact: true })
-      .click();
-    const sheet = page.getByRole("dialog", { name: `Edit ${name}` });
-    await expect(
-      sheet.getByRole("spinbutton", { name: /place Placement Points$/ }),
-    ).toHaveCount(places);
-    await expect(sheet.getByLabel("20th place Placement Points")).toHaveValue(
+    await openCompetitionPage(page, id);
+    const saved = page
+      .getByRole("form", { name: "Competition settings" })
+      .getByRole("spinbutton", { name: /place Placement Points$/ });
+    await expect(saved).toHaveCount(places);
+    await expect(page.getByLabel("1st place Placement Points")).toHaveValue(
+      "20",
+    );
+    await expect(page.getByLabel("20th place Placement Points")).toHaveValue(
       "1",
     );
   } finally {

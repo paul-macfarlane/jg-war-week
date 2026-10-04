@@ -1,6 +1,7 @@
 import { type Page, type TestInfo, expect, test } from "@playwright/test";
 import path from "node:path";
 
+import { openCompetitionPage } from "./competition-page";
 import {
   runQuery,
   setParticipantEmail,
@@ -220,7 +221,7 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     ).toBeVisible();
 
     // Ending the War Week while this Competition is still open warns an
-    // Organizer, naming it with a link to its Games setup page, and never
+    // Organizer, naming it with a link to its Competition page, and never
     // refuses; Cancel, so the Host can close it below.
     const organizerContext = await browser.newContext({
       baseURL: E2E_BASE_URL,
@@ -235,7 +236,7 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
       await expect(endDialog).toContainText(COMPETITION);
       await expect(
         endDialog.getByRole("link", { name: COMPETITION }),
-      ).toHaveAttribute("href", `/admin/competitions/${id}/games`);
+      ).toHaveAttribute("href", `/admin/competitions/${id}`);
       await shoot(organizerPage, testInfo, "end-warning");
       await endDialog.getByRole("button", { name: "Cancel" }).click();
       await expect(endDialog).toBeHidden();
@@ -243,8 +244,8 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
       await organizerContext.close();
     }
 
-    // The Host closes it from the Games setup page.
-    await page.goto(`/admin/competitions/${id}/games`);
+    // The Host closes it from the Competition's page.
+    await openCompetitionPage(page, id);
     await page.getByRole("button", { name: "Close", exact: true }).click();
     const closeConfirm = page.getByRole("alertdialog", {
       name: "Close this Competition?",
@@ -284,7 +285,7 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     await shoot(page, testInfo, "standings");
 
     // Reopen and delete the Game: the Standings go back.
-    await page.goto(`/admin/competitions/${id}/games`);
+    await openCompetitionPage(page, id);
     await page.getByRole("button", { name: "Reopen" }).click();
     await page
       .getByRole("alertdialog", { name: "Reopen this Competition?" })

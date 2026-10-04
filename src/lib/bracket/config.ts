@@ -39,10 +39,6 @@ export const THIRD_PLACE_HEAD_TO_HEAD_ONLY =
 export const THIRD_PLACE_NEEDS_FOUR =
   "A 3rd place game needs at least 4 Entrants.";
 
-/** A 3rd place game change once the Bracket has started, even forced. */
-export const THIRD_PLACE_LOCKED =
-  "The 3rd place game can't be changed once a Heat Result exists.";
-
 /**
  * Why this config's 3rd place game is refused for `entrantCount` Entrants,
  * or null: it needs head-to-head and two real semifinals (4 Entrants).

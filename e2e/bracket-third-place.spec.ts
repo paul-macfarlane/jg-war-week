@@ -1,5 +1,10 @@
 import { type Page, expect, test } from "@playwright/test";
 
+import {
+  expectSaved,
+  openCompetitionPage,
+  setFormat,
+} from "./competition-page";
 import { openForBracket, runQuery, xiCompetitionId } from "./db";
 import { asOrganizer } from "./session";
 
@@ -74,10 +79,8 @@ test("a head-to-head Bracket of 8 with a 3rd place game is run to Finalize, plac
 }, testInfo) => {
   test.setTimeout(240_000);
   await asOrganizer(context);
-  await page.goto(`/admin/competitions/${competitionId}/bracket`);
-  await page.getByRole("combobox", { name: "Format" }).click();
-  await page.getByRole("option", { name: "Bracket", exact: true }).click();
-  await expect(page.getByText("Format set to Bracket")).toBeVisible();
+  await openCompetitionPage(page, competitionId);
+  await setFormat(page, "Bracket");
 
   // Under 4 Entrants the 3rd place game is off and disabled, with its reason.
   const thirdPlace = page.getByRole("switch", { name: "3rd place game" });
@@ -100,8 +103,7 @@ test("a head-to-head Bracket of 8 with a 3rd place game is run to Finalize, plac
   await expect(thirdPlace).not.toBeChecked();
   await thirdPlace.click();
   await expect(thirdPlace).toBeChecked();
-  await page.getByRole("button", { name: "Save Heat settings" }).click();
-  await expect(page.getByText("Heat settings saved")).toBeVisible();
+  await expectSaved(page);
   const [saved] = await runQuery<{ third: boolean }>(
     `select (bracket_config->>'thirdPlaceGame')::boolean as third
      from competition where id = $1`,
@@ -112,10 +114,8 @@ test("a head-to-head Bracket of 8 with a 3rd place game is run to Finalize, plac
   await page.getByRole("button", { name: "Generate" }).click();
   await expect(page.getByText("Bracket generated")).toBeVisible();
 
-  await page.getByRole("link", { name: "Results", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: `${COMPETITION} · Results` }),
-  ).toBeVisible();
+  // The Bracket tree is on the same page, below the Entrants.
+  await expect(page.locator("[data-bracket-tree]")).toBeVisible();
   for (const heat of [
     "Round 1 Heat 1",
     "Round 1 Heat 2",

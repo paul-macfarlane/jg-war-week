@@ -2,11 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 import { applyResult, generate } from "@/lib/bracket/formats";
-import {
-  heatReportError,
-  heatReportState,
-  parseSelfReportInput,
-} from "@/lib/bracket/self-report";
+import { heatReportError, heatReportState } from "@/lib/bracket/self-report";
 import type { Bracket, Entrant } from "@/lib/bracket/types";
 
 const entrants = (count: number): Entrant[] =>
@@ -71,27 +67,4 @@ describe("heatReportError", () => {
       }),
     ).toBe("This Heat already has a result.");
   });
-});
-
-describe("parseSelfReportInput", () => {
-  it("takes on or off", () => {
-    expect(parseSelfReportInput({ on: true })).toEqual({
-      ok: true,
-      value: { on: true },
-    });
-    expect(parseSelfReportInput({ on: false })).toEqual({
-      ok: true,
-      value: { on: false },
-    });
-  });
-
-  it.each([undefined, null, "junk", {}, { on: "yes" }])(
-    "refuses %j",
-    (input) => {
-      expect(parseSelfReportInput(input)).toEqual({
-        ok: false,
-        error: "Turn self-report on or off.",
-      });
-    },
-  );
 });

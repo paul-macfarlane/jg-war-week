@@ -785,7 +785,7 @@ describe("competitionGuardError", () => {
     );
   });
 
-  it("refuses a scoring or Placement Points change while the Bracket is finalized, but allows an unchanged save", () => {
+  it("refuses a scoring change while the Bracket is finalized, but allows a Placement Points change (it applies at the next Finalize)", () => {
     const finalized = { ...existingBase, finalizedAt: new Date() };
     expect(
       competitionGuardError(values, {
@@ -800,9 +800,7 @@ describe("competitionGuardError", () => {
         { ...values, placementPoints: [10, 5] },
         { ...ctx, existing: finalized },
       ),
-    ).toBe(
-      "This Competition's Bracket is finalized. Un-finalize the Bracket first.",
-    );
+    ).toBeNull();
     expect(
       competitionGuardError(values, { ...ctx, existing: finalized }),
     ).toBeNull();
@@ -814,32 +812,32 @@ describe("competitionGuardError", () => {
     ).toBeNull();
   });
 
-  it("asks to reopen a closed Head-to-head or Best score Competition before a scoring or Placement Points change", () => {
+  it("asks to reopen a closed Head-to-head or Best score Competition before a scoring change, not a Placement Points one", () => {
     const closed = {
       ...existingBase,
       format: "head-to-head" as const,
       finalizedAt: new Date(),
     };
     expect(
+      competitionGuardError(values, {
+        ...ctx,
+        existing: { ...closed, scoring: "individual" },
+      }),
+    ).toBe("This Competition is closed. Reopen the Competition first.");
+    expect(
       competitionGuardError(
         { ...values, placementPoints: [10, 5] },
         { ...ctx, existing: closed },
       ),
-    ).toBe("This Competition is closed. Reopen the Competition first.");
+    ).toBeNull();
   });
 
-  it("asks to reopen a Finalized Placement, not to un-finalize a Bracket, before a scoring or Placement Points change", () => {
+  it("asks to reopen a Finalized Placement, not to un-finalize a Bracket, before a scoring change", () => {
     const finalized = {
       ...existingBase,
       format: "placement" as const,
       finalizedAt: new Date(),
     };
-    expect(
-      competitionGuardError(
-        { ...values, placementPoints: [10, 5] },
-        { ...ctx, existing: finalized },
-      ),
-    ).toBe("This Competition is finalized. Reopen it first.");
     expect(
       competitionGuardError(values, {
         ...ctx,

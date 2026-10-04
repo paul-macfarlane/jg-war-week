@@ -1,7 +1,13 @@
 import { type Page, type TestInfo, expect, test } from "@playwright/test";
 
 import {
+  addCompetition,
+  expectSaved,
+  openCompetitionPage,
+} from "./competition-page";
+import {
   deleteXiCompetition,
+  runQuery,
   xiCompetitionEntries,
   xiTeamPointsBreakdown,
 } from "./db";
@@ -15,7 +21,8 @@ import {
 import { teamTotal } from "./standings";
 
 // Epic R12, ticket 69 (69-AC2 as red-team C1 reads it): an Organizer
-// creates a team Participation Competition and assigns its Host; the Host
+// creates a team Participation Competition, its Host is added by SQL (the
+// e2e Host isn't on the roster, so the Hosts picker can't choose them); the Host
 // sets its Placement Points (a team Competition is always ranked by
 // headcount) to 5 / 3 / 1 and Self check-in on; two Participants check in; the Host ticks a third; Close
 // moves the Standings and Reopen withdraws them. Fixture: the live XI demo
@@ -85,31 +92,31 @@ test("r12 69 a Host runs a team Participation Competition: check-ins, a tick, Cl
     await addForm.getByRole("textbox", { name: "Name" }).fill(name);
     await addForm.getByRole("combobox", { name: "Format" }).click();
     await page.getByRole("option", { name: "Participation" }).click();
-    await expect(addForm.getByText("Participation:")).toBeVisible();
+    await expect(
+      addForm.getByText(
+        "Points for taking part: the Host ticks who took part, or Participants check in.",
+      ),
+    ).toBeVisible();
     await shoot(page, testInfo, "create-form");
     await addForm.getByRole("button", { name: "Add Competition" }).click();
-    await expect(page.getByText("Competition saved")).toBeVisible();
-    await expect(page).toHaveURL(
-      /\/admin\/competitions\/[0-9a-f-]+\/participation$/,
-    );
-    const id = page.url().split("/").at(-2) ?? "";
+    // Add opens the new Competition's page (ticket 101).
+    await page.waitForURL(/\/admin\/competitions\/[0-9a-f-]{36}$/);
+    const id = page.url().split("/").at(-1) ?? "";
 
-    // …and assigns the e2e Host in the Competition's Sheet.
-    await page.goto("/admin/competitions");
-    await page
-      .getByRole("button", { name: `Edit ${name}`, exact: true })
-      .click();
-    const sheet = page.getByRole("dialog", { name: `Edit ${name}` });
-    await sheet
-      .getByRole("textbox", { name: "Hosts", exact: true })
-      .fill(E2E_HOST_EMAIL);
-    await page.keyboard.press("Enter");
+    // …and makes the e2e Host its Host. They aren't on the roster, so the
+    // Hosts picker can't choose them: the row is inserted directly, and the
+    // reloaded page shows them among the Hosts.
+    const settings = page.getByRole("form", { name: "Competition settings" });
+    await runQuery(
+      `insert into competition_host (competition_id, email) values ($1, $2)`,
+      [id, E2E_HOST_EMAIL],
+    );
+    await page.reload();
     await expect(
-      sheet.getByRole("button", { name: `Remove ${E2E_HOST_EMAIL}` }),
+      settings.getByRole("button", {
+        name: `Remove ${E2E_HOST_EMAIL} (not on the roster)`,
+      }),
     ).toBeVisible();
-    await sheet.getByRole("button", { name: "Save", exact: true }).click();
-    await expect(page.getByText("Competition saved")).toBeVisible();
-    await expect(sheet).toBeHidden();
 
     const before = await breakdownTotals();
     expect(await leaderboardTotals(page)).toEqual(before);
@@ -120,7 +127,7 @@ test("r12 69 a Host runs a team Participation Competition: check-ins, a tick, Cl
     await asHost(hostContext);
     const host = await hostContext.newPage();
     await host.setViewportSize({ width: 1440, height: 900 });
-    await host.goto(`/admin/competitions/${id}/participation`);
+    await openCompetitionPage(host, id);
     await expect(host.getByRole("heading", { name })).toBeVisible();
     await expect(
       host.getByRole("button", { name: "Ranked by headcount" }),
@@ -133,8 +140,7 @@ test("r12 69 a Host runs a team Participation Competition: check-ins, a tick, Cl
     await host
       .getByRole("switch", { name: "Participants can check in" })
       .click();
-    await host.getByRole("button", { name: "Save settings" }).click();
-    await expect(host.getByText("Participation settings saved")).toBeVisible();
+    await expectSaved(host);
     await shoot(host, testInfo, "host-settings");
 
     // Two Participants check themselves in from the Competition's page.
@@ -230,23 +236,13 @@ test("r16 94 an individual Participation Competition gives N points to each Part
   try {
     await asOrganizer(context);
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/admin/competitions");
-    await page.getByRole("button", { name: "Add Competition" }).click();
-    const addForm = page
-      .getByRole("dialog", { name: "Add Competition" })
-      .getByRole("form", { name: "New Competition" });
-    await addForm.getByRole("textbox", { name: "Name" }).fill(name);
-    await addForm.getByRole("combobox", { name: "Scoring" }).click();
-    await page.getByRole("option", { name: "Individual" }).click();
-    await addForm.getByRole("combobox", { name: "Format" }).click();
-    await page.getByRole("option", { name: "Participation" }).click();
-    // An individual Participation Competition has no Placement Points.
-    await expect(addForm.getByText("Placement Points")).toHaveCount(0);
-    await addForm.getByRole("button", { name: "Add Competition" }).click();
-    await expect(page.getByText("Competition saved")).toBeVisible();
-    await expect(page).toHaveURL(
-      /\/admin\/competitions\/[0-9a-f-]+\/participation$/,
-    );
+    // The Add sheet asks only name, Format and scoring; the rest is on the
+    // Competition's page it opens.
+    await addCompetition(page, {
+      name,
+      format: "Participation",
+      scoring: "Individual",
+    });
 
     // N, and no Placement Points or ranking choice.
     await expect(page.getByLabel("Points per Participant")).toHaveValue("1");
@@ -254,8 +250,7 @@ test("r16 94 an individual Participation Competition gives N points to each Part
       page.getByRole("group", { name: "Placement Points" }),
     ).toHaveCount(0);
     await page.getByLabel("Points per Participant").fill("2");
-    await page.getByRole("button", { name: "Save settings" }).click();
-    await expect(page.getByText("Participation settings saved")).toBeVisible();
+    await expectSaved(page);
 
     for (const who of TOOK_PART) {
       await page

@@ -32,7 +32,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { WarWeek } from "@/db/schema";
-import { setupHref } from "@/lib/competitions";
+import { competitionPageHref } from "@/lib/competitions";
 import type { OpenUnscoredCompetition } from "@/queries/open-unscored-competitions";
 
 /**
@@ -202,7 +202,7 @@ function EndWarWeekButton({
             <span key={c.id}>
               {i > 0 && ", "}
               <Link
-                href={setupHref(c.format, c.id)}
+                href={competitionPageHref(c.id)}
                 className="text-primary underline underline-offset-4"
               >
                 {c.name}

@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test";
 
+import {
+  expectSaved,
+  openCompetitionPage,
+  setFormat,
+} from "./competition-page";
 import { openForBracket, xiCompetitionId } from "./db";
 import { asOrganizer } from "./session";
 
@@ -30,16 +35,13 @@ test("r15 84 a recorded Heat of 4 with 2 advancing highlights both advancers in 
   const restore = await openForBracket(id);
 
   try {
-    await page.goto(`/admin/competitions/${id}/bracket`);
-    await page.getByRole("combobox", { name: "Format" }).click();
-    await page.getByRole("option", { name: "Bracket", exact: true }).click();
-    await expect(page.getByText("Format set to Bracket")).toBeVisible();
+    await openCompetitionPage(page, id);
+    await setFormat(page, "Bracket");
     await page.getByRole("combobox", { name: "Entrants per Heat" }).click();
     await page.getByRole("option", { name: "4 per Heat" }).click();
     await page.getByRole("combobox", { name: "How many advance" }).click();
     await page.getByRole("option", { name: "Top 2 advance" }).click();
-    await page.getByRole("button", { name: "Save Heat settings" }).click();
-    await expect(page.getByText("Heat settings saved")).toBeVisible();
+    await expectSaved(page);
 
     const find = page.locator("#bracket-entrants");
     for (const entrant of ENTRANTS) {
@@ -57,7 +59,7 @@ test("r15 84 a recorded Heat of 4 with 2 advancing highlights both advancers in 
     await page.getByRole("button", { name: "Generate" }).click();
     await expect(page.getByText("Bracket generated")).toBeVisible();
 
-    await page.goto(`/admin/brackets/${id}`);
+    await openCompetitionPage(page, id);
     const heat = "Round 1 Heat 1";
     // From the admin Bracket's tree, the one Participants see (100).
     await page

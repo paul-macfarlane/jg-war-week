@@ -89,12 +89,12 @@ describe("SetupListRow", () => {
 
   it("keeps the row's own controls (aside) before Edit and Delete", () => {
     const html = render({
-      aside: <Link href="/admin/competitions/c1/bracket">Bracket</Link>,
+      aside: <Link href="/xi/competitions/c1">Participant view</Link>,
       form: () => null,
       onDelete: ok,
     });
     expect(controls(html).map((c) => c.text)).toEqual([
-      "Bracket",
+      "Participant view",
       "Edit",
       "Delete",
     ]);

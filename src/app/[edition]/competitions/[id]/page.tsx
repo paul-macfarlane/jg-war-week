@@ -13,6 +13,7 @@ import { EnrollButton } from "@/components/enroll-button";
 import { GamesView } from "@/components/games-view";
 import { ParticipationView } from "@/components/participation-view";
 import { PlacementView } from "@/components/placement-view";
+import { RichText } from "@/components/rich-text";
 import { Toaster } from "@/components/ui/sonner";
 import { can } from "@/lib/access";
 import { entrantForYou, nextHeatFor } from "@/lib/bracket/view";
@@ -215,7 +216,9 @@ export default async function CompetitionPage({
         />
       ) : null}
       {competition.description ? (
-        <p className="text-sm whitespace-pre-line">{competition.description}</p>
+        <div className="text-sm">
+          <RichText content={competition.description} headingFloor={3} />
+        </div>
       ) : null}
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Points Entries</h2>

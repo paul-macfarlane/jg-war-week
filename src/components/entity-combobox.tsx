@@ -21,6 +21,8 @@ export type EntityComboboxItem = {
   label: string;
   /** Shown muted next to the label, and included in the search. */
   detail?: string;
+  /** Shown but not selectable. */
+  disabled?: boolean;
 };
 
 type CommonProps = {
@@ -159,6 +161,7 @@ export function EntityCombobox(props: EntityComboboxProps) {
               <ComboboxItem
                 key={item.id}
                 value={item}
+                disabled={item.disabled}
                 className="min-h-11 sm:min-h-9"
               >
                 <EntityComboboxItemRow item={item} />
@@ -203,6 +206,7 @@ export function EntityCombobox(props: EntityComboboxProps) {
             <ComboboxItem
               key={item.id}
               value={item}
+              disabled={item.disabled}
               className="min-h-11 sm:min-h-9"
             >
               <EntityComboboxItemRow item={item} />
