@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 
+import type { GameFact } from "@/lib/games/leaderboard";
 import {
+  attemptsLabel,
   formatScore,
   gameSummary,
   isMine,
   leaderboardColumns,
   placementPointsList,
   recordLabel,
+  seriesOf,
 } from "@/lib/games/view";
 
 describe("leaderboardColumns", () => {
@@ -125,5 +128,89 @@ describe("placementPointsList", () => {
   it("says none set when there are none", () => {
     expect(placementPointsList(null)).toBe("none set");
     expect(placementPointsList([])).toBe("none set");
+  });
+});
+
+describe("attemptsLabel (spec R20, decision 4)", () => {
+  it("best mode counts the other Attempts", () => {
+    expect(attemptsLabel(2, "best")).toBe("2 more attempts");
+    expect(attemptsLabel(1, "best")).toBe("1 more attempt");
+  });
+
+  it("total mode counts every Attempt", () => {
+    expect(attemptsLabel(3, "total")).toBe("3 attempts");
+    expect(attemptsLabel(1, "total")).toBe("1 attempt");
+  });
+});
+
+describe("seriesOf (spec R20, decision 7)", () => {
+  let minute = 0;
+  function match(
+    id: string,
+    a: { place: number; score?: number },
+    b: { place: number; score?: number },
+  ): GameFact {
+    minute += 1;
+    return {
+      id,
+      loggedAt: new Date(Date.UTC(2027, 1, 20, 12, minute)),
+      players: [
+        { id: "ashley", place: a.place, score: a.score ?? null },
+        { id: "sam", place: b.place, score: b.score ?? null },
+      ],
+    };
+  }
+  const m1 = match("m1", { place: 1, score: 21 }, { place: 2, score: 15 });
+  const m2 = match("m2", { place: 2, score: 18 }, { place: 1, score: 21 });
+  const m3 = match("m3", { place: 1 }, { place: 1 });
+  const m4 = match("m4", { place: 1, score: 21 }, { place: 2, score: 9 });
+  const pair: [string, string] = ["ashley", "sam"];
+
+  it("lists the Matches oldest first, each with its Winner or a draw, and the score 2–1", () => {
+    const series = seriesOf(
+      { drawsAllowed: true, bestOf: null },
+      [m4, m3, m2, m1],
+      pair,
+      false,
+    );
+    expect(series.matches).toEqual([
+      { id: "m1", winner: "ashley" },
+      { id: "m2", winner: "sam" },
+      { id: "m3", winner: "draw" },
+      { id: "m4", winner: "ashley" },
+    ]);
+    expect(series.wins).toEqual([2, 1]);
+    expect(series.draws).toBe(1);
+    expect(series.score).toBe("2–1");
+    // No Best of and not Closed: nobody has won the series yet.
+    expect(series.winner).toBeNull();
+  });
+
+  it("a Best of 3 has its Winner the moment one side has 2 wins", () => {
+    const config = { drawsAllowed: false, bestOf: 3 } as const;
+    expect(seriesOf(config, [m1, m2], pair, false).winner).toBeNull();
+    expect(seriesOf(config, [m1, m2, m4], pair, false).winner).toBe("ashley");
+  });
+
+  it("once Closed the side with more wins is the Winner; level is no Winner", () => {
+    const config = { drawsAllowed: true, bestOf: null } as const;
+    expect(seriesOf(config, [m1, m2, m4], pair, true).winner).toBe("ashley");
+    expect(seriesOf(config, [m1, m2], pair, true).winner).toBeNull();
+  });
+
+  it("with no Match the score is 0–0", () => {
+    const series = seriesOf(
+      { drawsAllowed: false, bestOf: 3 },
+      [],
+      pair,
+      false,
+    );
+    expect(series).toEqual({
+      matches: [],
+      wins: [0, 0],
+      draws: 0,
+      score: "0–0",
+      winner: null,
+    });
   });
 });

@@ -120,14 +120,14 @@ for (const viewport of VIEWPORTS) {
 
       await page.goto(`/xi/competitions/${competitionId}`);
       const gamesRow = page
-        .getByRole("region", { name: "Games" })
+        .getByRole("table", { name: "Head-to-head results" })
         .getByRole("row")
         .filter({ has: page.getByRole("rowheader", { name: PROFILE_NAME }) });
       await expect(gamesRow.locator("img")).toHaveAttribute("src", PICTURE_URL);
-      // The logged Game's entry in the Game log names them by Profile name.
+      // The logged Match's entry in the Matches list names them by Profile name.
       await expect(
         page
-          .getByRole("region", { name: "Games" })
+          .getByRole("region", { name: "Matches" })
           .getByRole("listitem")
           .filter({ hasText: `${PROFILE_NAME} beat ${OPPONENT}` }),
       ).toBeVisible();

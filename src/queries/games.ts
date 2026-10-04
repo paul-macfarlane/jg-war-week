@@ -12,6 +12,7 @@ import {
   participant,
   team,
 } from "@/db/schema";
+import { pointsFor } from "@/lib/bracket/points";
 import { GAME_FORMATS, type GameFormat, isGameFormat } from "@/lib/enums";
 import {
   type GamesConfig,
@@ -21,6 +22,7 @@ import {
 import {
   type GameFact,
   type LeaderboardRow,
+  placingsOf,
   rankGames,
 } from "@/lib/games/leaderboard";
 import {
@@ -30,8 +32,10 @@ import {
   gameChangeError,
 } from "@/lib/games/log-rule";
 import { loggingStateOf } from "@/lib/games/log-state";
+import { entryPointsFor } from "@/lib/results-table";
 import { isUuid } from "@/lib/uuid";
 import type { BracketCompetitionLink } from "@/queries/brackets";
+import { getCompetitionEntryPoints } from "@/queries/entry-points";
 import {
   participantImageSql,
   participantNameSql,
@@ -382,6 +386,13 @@ export type GamesViewRow = LeaderboardRow & {
   color: string | null;
   /** A Participant's picture URL; null for initials and for Teams. */
   image?: string | null;
+  /**
+   * War Week points for the row (spec R20, decision 2): while open, the
+   * Provisional points Close would award (`pointsFor` on the leaderboard's
+   * placings, the rule Close runs); once Closed, what its generated Points
+   * Entries add up to. Null when it earns none.
+   */
+  points: number | null;
 };
 
 export type GamesViewPlayer = GamesViewName & {
@@ -436,7 +447,7 @@ export async function getGamesView(
   const found = await loadGamesCompetition(competitionId, dbOrTx);
   if (!found) return null;
   const email = normalizedEmail(viewerEmail);
-  const [runs, linked, entrants, games, teams, participants] =
+  const [runs, linked, entrants, games, teams, participants, entryPoints] =
     await Promise.all([
       runsCompetition(competitionId, email, dbOrTx),
       linkedIn(found.warWeekId, email, dbOrTx),
@@ -460,6 +471,9 @@ export async function getGamesView(
       )
         .where(eq(participant.warWeekId, found.warWeekId))
         .orderBy(asc(participantNameSql())),
+      found.closed
+        ? getCompetitionEntryPoints(competitionId, dbOrTx)
+        : Promise.resolve([]),
     ]);
 
   const colorOfTeam = new Map(teams.map((t) => [t.id, t.color]));
@@ -496,6 +510,13 @@ export async function getGamesView(
     factsOf(games),
     found.entrantsOpen ? null : entrants.map(idOf),
   );
+  const provisional = new Map(
+    pointsFor(placingsOf(rows), found).map((p) => [p.entrantId, p.points]),
+  );
+  const pointsOf = (id: string) =>
+    found.closed
+      ? entryPointsFor(entryPoints, sideOf(found.scoring, id))
+      : (provisional.get(id) ?? null);
   const options = found.entrantsOpen
     ? found.scoring === "team"
       ? teams
@@ -506,7 +527,7 @@ export async function getGamesView(
     competition: found,
     leaderboard: rows.map((row) => {
       const { name, color, image } = nameOf(row.id);
-      return { ...row, name, color, image };
+      return { ...row, name, color, image, points: pointsOf(row.id) };
     }),
     games: games.map((g) => {
       const allowed =

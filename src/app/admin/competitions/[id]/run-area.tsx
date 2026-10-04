@@ -148,9 +148,13 @@ export async function CompetitionRunArea({
           gameFormat={view.competition.gameFormat}
           config={view.competition.config}
           scoring={view.competition.scoring}
+          closed={view.competition.closed}
           viewerCanLog={view.viewerCanLog}
+          leaderboard={view.leaderboard}
           games={view.games}
           entrantOptions={view.entrantOptions}
+          primaryColor={warWeek.primaryColor}
+          teamLabel={warWeek.teamLabel}
           now={new Date()}
         />
       </div>
