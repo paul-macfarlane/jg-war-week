@@ -197,6 +197,7 @@ export default async function CompetitionPage({
           config={games.competition.config}
           scoring={games.competition.scoring}
           closed={games.competition.closed}
+          entrantsOpen={games.competition.entrantsOpen}
           loggingOpen={games.loggingOpen}
           leaderboard={games.leaderboard}
           games={games.games}
@@ -207,6 +208,7 @@ export default async function CompetitionPage({
           bestOfWinner={games.bestOfWinner}
           entrantOptions={games.entrantOptions}
           primaryColor={warWeek.primaryColor}
+          teamLabel={warWeek.teamLabel}
           now={new Date()}
           openLog={log === "1"}
         />

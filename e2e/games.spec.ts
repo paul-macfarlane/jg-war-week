@@ -52,13 +52,28 @@ async function shoot(page: Page, testInfo: TestInfo, step: string) {
   await page.setViewportSize({ width: 1280, height: 900 });
 }
 
-/** A leaderboard row's cells after the name: Rank, Played, W, L, D. */
-function leaderboardRow(page: Page, name: string) {
+/**
+ * A row of the Head-to-head results table (Bouncy Pong is open, so not a
+ * two-Entrant series): its record under the name, and its cells, Rank and
+ * Provisional War Week points.
+ */
+function resultsTableRow(page: Page, name: string) {
   return page
-    .getByRole("region", { name: "Games" })
+    .getByRole("table", { name: "Head-to-head results" })
     .getByRole("row")
-    .filter({ has: page.getByRole("rowheader", { name }) })
-    .getByRole("cell");
+    .filter({ has: page.getByRole("rowheader", { name }) });
+}
+
+async function expectResult(
+  page: Page,
+  name: string,
+  rank: string,
+  record: string,
+  points: string,
+) {
+  const row = resultsTableRow(page, name);
+  await expect(row.getByRole("cell")).toHaveText([rank, points]);
+  await expect(row.getByRole("rowheader")).toContainText(record);
 }
 
 /** A Participant's total on `/xi/leaderboard`, 0 when they have no row. */
@@ -153,30 +168,25 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     await expect(you.getByText("Game logged")).toBeVisible();
     await expect(form).toBeHidden();
 
-    // The leaderboard shows the win: W 1, L 0 against L 1.
-    await expect(leaderboardRow(you, PLAYER.name)).toHaveText([
-      "1",
-      "1",
-      "1",
-      "0",
-      "0",
-    ]);
-    await expect(leaderboardRow(you, OPPONENT.name)).toHaveText([
+    // The results table shows the win, with Provisional points 3 and 2
+    // (Placement Points 3 / 2 / 1).
+    await expectResult(you, PLAYER.name, "1", "1 won · 0 lost · 0 drawn", "3");
+    await expectResult(
+      you,
+      OPPONENT.name,
       "2",
-      "1",
-      "0",
-      "1",
-      "0",
-    ]);
+      "0 won · 1 lost · 0 drawn",
+      "2",
+    );
     const logged = `${PLAYER.name} beat ${OPPONENT.name}`;
     await expect(
-      you.getByRole("region", { name: "Games" }).getByText(logged),
+      you.getByRole("region", { name: "Matches" }).getByText(logged),
     ).toBeVisible();
     await shoot(you, testInfo, "logged");
 
     // The Host flips the winner on the Competition page.
     await page.goto(`/xi/competitions/${id}`);
-    await page.getByRole("button", { name: `Edit Game: ${logged}` }).click();
+    await page.getByRole("button", { name: `Edit Match: ${logged}` }).click();
     const edit = page.getByRole("dialog", { name: "Edit Game" });
     await expect(edit).toBeVisible();
     await shoot(page, testInfo, "host-edit");
@@ -197,23 +207,17 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     await edit.getByRole("button", { name: "Save Game" }).click();
     await expect(page.getByText("Game updated")).toBeVisible();
     await expect(edit).toBeHidden();
-    await expect(leaderboardRow(page, OPPONENT.name)).toHaveText([
+    await expectResult(
+      page,
+      OPPONENT.name,
       "1",
-      "1",
-      "1",
-      "0",
-      "0",
-    ]);
-    await expect(leaderboardRow(page, PLAYER.name)).toHaveText([
-      "2",
-      "1",
-      "0",
-      "1",
-      "0",
-    ]);
+      "1 won · 0 lost · 0 drawn",
+      "3",
+    );
+    await expectResult(page, PLAYER.name, "2", "0 won · 1 lost · 0 drawn", "2");
     const edited = `${OPPONENT.name} beat ${PLAYER.name}`;
     await expect(
-      page.getByRole("region", { name: "Games" }).getByText(edited),
+      page.getByRole("region", { name: "Matches" }).getByText(edited),
     ).toBeVisible();
 
     // Ending the War Week while this Competition is still open warns an
@@ -258,11 +262,23 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     // (Next's `<div hidden id="S:0">`) can still be in the document.
     await expect(
       page
-        .getByRole("region", { name: "Games" })
-        .getByText(
-          "Closed — the leaderboard's Placement Points are in the Standings.",
-        ),
+        .getByRole("region", { name: "Results" })
+        .getByText("Closed — its Placement Points are in the Standings."),
     ).toBeVisible();
+    // Closed: no Provisional badge, and the points are the Points Entries.
+    await expect(
+      page
+        .getByRole("table", { name: "Head-to-head results" })
+        .getByRole("button", { name: "Provisional" }),
+    ).toHaveCount(0);
+    await expectResult(
+      page,
+      OPPONENT.name,
+      "1",
+      "1 won · 0 lost · 0 drawn",
+      "3",
+    );
+    await expectResult(page, PLAYER.name, "2", "0 won · 1 lost · 0 drawn", "2");
     await expect(page.getByRole("button", { name: "Log a Game" })).toHaveCount(
       0,
     );
@@ -289,14 +305,16 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
       .click();
     await expect(page.getByText("Competition reopened")).toBeVisible();
     await page.goto(`/xi/competitions/${id}`);
-    await page.getByRole("button", { name: `Delete Game: ${edited}` }).click();
+    await page.getByRole("button", { name: `Delete Match: ${edited}` }).click();
     await page
-      .getByRole("alertdialog")
+      .getByRole("alertdialog", { name: "Delete this Match?" })
       .getByRole("button", { name: "Delete" })
       .click();
-    await expect(page.getByText("Game deleted")).toBeVisible();
+    await expect(page.getByText("Match deleted")).toBeVisible();
     await expect(
-      page.getByRole("region", { name: "Games" }).getByText("No Games yet."),
+      page
+        .getByRole("region", { name: "Matches" })
+        .getByText("No Matches yet."),
     ).toBeVisible();
     expect(await breakdownTotals()).toEqual(before);
   } finally {

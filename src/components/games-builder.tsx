@@ -144,7 +144,7 @@ export function GamesBuilder({
         ) : (
           <ConfirmActionButton
             title="Close this Competition?"
-            description={`The leaderboard's top places get Placement Points (${placementPointsList(
+            description={`The results' top places get Placement Points (${placementPointsList(
               competition.placementPoints,
             )}) and logging stops.`}
             confirmLabel="Close"

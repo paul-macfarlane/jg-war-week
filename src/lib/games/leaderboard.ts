@@ -209,3 +209,55 @@ export function isBestOfDecided(
 ): boolean {
   return bestOfWinner(config, games) !== null;
 }
+
+/** A Best score player's Attempts, by Game id. */
+export type PlayerAttempts = {
+  /** The Attempt that counts in `count: best` mode (a tie: the earlier). */
+  best: string;
+  /** Every Attempt with a Score, newest first. */
+  attempts: string[];
+};
+
+/**
+ * Each Best score player's Attempts (spec R20, decision 4): the one their
+ * row's best comes from, by the configured direction, and all of them
+ * newest first, so a row can list "2 more attempts" (or, in `total` mode,
+ * the Attempts its total adds up). A player with no scored Attempt has no
+ * entry.
+ */
+export function attemptsOf(
+  config: BestScoreConfig,
+  games: GameFact[],
+): Map<string, PlayerAttempts> {
+  type Scored = { id: string; at: number; score: number };
+  const byPlayer = new Map<string, Scored[]>();
+  for (const game of games) {
+    for (const player of game.players) {
+      if (player.score === null) continue;
+      const list = byPlayer.get(player.id) ?? [];
+      list.push({
+        id: game.id,
+        at: game.loggedAt.getTime(),
+        score: player.score,
+      });
+      byPlayer.set(player.id, list);
+    }
+  }
+  const better = (a: Scored, b: Scored) =>
+    a.score !== b.score
+      ? config.betterIs === "higher"
+        ? a.score > b.score
+        : a.score < b.score
+      : a.at !== b.at
+        ? a.at < b.at
+        : a.id < b.id;
+  const result = new Map<string, PlayerAttempts>();
+  for (const [id, list] of byPlayer) {
+    const best = list.reduce((top, next) => (better(next, top) ? next : top));
+    const newestFirst = [...list].sort(
+      (a, b) => b.at - a.at || a.id.localeCompare(b.id),
+    );
+    result.set(id, { best: best.id, attempts: newestFirst.map((a) => a.id) });
+  }
+  return result;
+}

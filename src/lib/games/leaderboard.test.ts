@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { BestScoreConfig, HeadToHeadConfig } from "@/lib/games/config";
 import {
   type GameFact,
+  attemptsOf,
   bestOfWinner,
   isBestOfDecided,
   placingsOf,
@@ -242,5 +243,103 @@ describe("bestOfWinner / isBestOfDecided", () => {
     ];
     expect(bestOfWinner(config, games)).toBeNull();
     expect(isBestOfDecided(config, games)).toBe(false);
+  });
+});
+
+describe("attemptsOf (spec R20, decision 4)", () => {
+  function attempt(
+    id: string,
+    who: string,
+    value: number,
+    at: string,
+  ): GameFact {
+    return {
+      id,
+      loggedAt: new Date(at),
+      players: [{ id: who, place: null, score: value }],
+    };
+  }
+  // Ashley has three Attempts (12, 30, 18), Sam one (25); newest last here.
+  const games: GameFact[] = [
+    attempt("a1", "ashley", 12, "2027-02-20T10:00:00Z"),
+    attempt("s1", "sam", 25, "2027-02-20T10:30:00Z"),
+    attempt("a2", "ashley", 30, "2027-02-20T11:00:00Z"),
+    attempt("a3", "ashley", 18, "2027-02-20T12:00:00Z"),
+  ];
+
+  it("a person with three Attempts holds one place: their best, the other two listed newest first", () => {
+    const config: BestScoreConfig = {
+      count: "best",
+      betterIs: "higher",
+      unit: "",
+    };
+    const rows = rankGames("best-score", config, games, null);
+    expect(rows.map((r) => [r.id, r.rank, r.best])).toEqual([
+      ["ashley", 1, 30],
+      ["sam", 2, 25],
+    ]);
+    const byPlayer = attemptsOf(config, games);
+    expect(byPlayer.get("ashley")).toEqual({
+      best: "a2",
+      attempts: ["a3", "a2", "a1"],
+    });
+    expect(byPlayer.get("sam")).toEqual({ best: "s1", attempts: ["s1"] });
+  });
+
+  it("lower is better: the best is the lowest Score", () => {
+    const config: BestScoreConfig = {
+      count: "best",
+      betterIs: "lower",
+      unit: "s",
+    };
+    expect(attemptsOf(config, games).get("ashley")?.best).toBe("a1");
+  });
+
+  it("a tie for best goes to the earlier Attempt", () => {
+    const config: BestScoreConfig = {
+      count: "best",
+      betterIs: "higher",
+      unit: "",
+    };
+    const tied = [
+      attempt("late", "kim", 40, "2027-02-21T09:00:00Z"),
+      attempt("early", "kim", 40, "2027-02-20T09:00:00Z"),
+    ];
+    expect(attemptsOf(config, tied).get("kim")).toEqual({
+      best: "early",
+      attempts: ["late", "early"],
+    });
+  });
+
+  it("total mode: the row is the sum (12 + 30 + 18 = 60) and every Attempt makes it up", () => {
+    const config: BestScoreConfig = {
+      count: "total",
+      betterIs: "higher",
+      unit: "",
+    };
+    const rows = rankGames("best-score", config, games, null);
+    expect(rows.find((r) => r.id === "ashley")?.total).toBe(60);
+    expect(rows.filter((r) => r.id === "ashley")).toHaveLength(1);
+    expect(attemptsOf(config, games).get("ashley")?.attempts).toEqual([
+      "a3",
+      "a2",
+      "a1",
+    ]);
+  });
+
+  it("an Attempt with no Score is not one", () => {
+    const config: BestScoreConfig = {
+      count: "best",
+      betterIs: "higher",
+      unit: "",
+    };
+    const blank: GameFact = {
+      id: "x",
+      loggedAt: new Date("2027-02-20T13:00:00Z"),
+      players: [{ id: "ashley", place: null, score: null }],
+    };
+    expect(
+      attemptsOf(config, [...games, blank]).get("ashley")?.attempts,
+    ).toEqual(["a3", "a2", "a1"]);
   });
 });

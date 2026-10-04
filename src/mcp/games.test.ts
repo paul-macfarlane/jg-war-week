@@ -83,6 +83,7 @@ describe("toGamesResult", () => {
           total: null,
           name: "Ashley Schuliger",
           color: null,
+          points: null,
         },
         {
           id: "p2",
@@ -95,6 +96,7 @@ describe("toGamesResult", () => {
           total: null,
           name: "Sam Schantz",
           color: null,
+          points: null,
         },
       ],
       games: [
@@ -196,6 +198,7 @@ describe("toGamesResult", () => {
           total: 42,
           name: "Alec Haring",
           color: null,
+          points: null,
         },
       ],
       games: [
@@ -253,6 +256,7 @@ describe("toGamesResult", () => {
           total: null,
           name: "Ashley Schuliger",
           color: null,
+          points: null,
         },
         {
           id: "p2",
@@ -265,6 +269,7 @@ describe("toGamesResult", () => {
           total: null,
           name: "Sam Schantz",
           color: null,
+          points: null,
         },
       ],
       games: [
