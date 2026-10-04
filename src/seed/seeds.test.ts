@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { categoryKeyForAwardName } from "@/lib/award-categories";
+import { awardNameSlug } from "@/lib/award-names";
 import { DEMO_SEED } from "@/seed/local-files";
 import { type WarWeekSeed, warWeekSeedSchema } from "@/seed/schema";
 
@@ -102,32 +102,67 @@ describe("War Week history", () => {
   });
 });
 
-describe("Award Categories", () => {
-  it("tag every seed Award exactly as the name matcher says", () => {
-    const tagged = [...all, demo, xiiDemo].flatMap((s) =>
-      s.awards.map((a) => ({
-        edition: s.edition,
-        name: a.name,
-        category: a.category ?? null,
-        expected: categoryKeyForAwardName(a.name),
-      })),
-    );
-    expect(tagged.length).toBeGreaterThan(0);
-    for (const a of tagged) {
-      expect(a.category, `${a.edition}: ${a.name}`).toBe(a.expected);
+describe("Award names", () => {
+  const namesOf = (edition: string) =>
+    all.find((s) => s.edition === edition)?.awards.map((a) => a.name) ?? [];
+
+  it("carry no Category tagging", () => {
+    for (const s of [...all, demo, xiiDemo]) {
+      for (const a of s.awards) {
+        expect(Object.keys(a), `${s.edition}: ${a.name}`).not.toContain(
+          "category",
+        );
+      }
     }
   });
 
-  it("tags the Awards the wikis name for each seeded Category", () => {
-    const keysOf = (edition: string) =>
-      all
-        .find((s) => s.edition === edition)
-        ?.awards.flatMap((a) => (a.category ? [a.category] : [])) ?? [];
-    expect(keysOf("iv")).toEqual(["war-week-mvp", "billable-hours-champ"]);
-    expect(keysOf("viii")).toEqual(["billable-hours-champ", "black-midnight"]);
-    expect(demo.awards.find((a) => a.name === "Black Midnight")?.category).toBe(
-      "black-midnight",
+  it("are aligned so the same Award groups across years", () => {
+    for (const edition of ["iv", "v", "viii"]) {
+      expect(namesOf(edition), edition).toContain("Billable Hours Champ");
+    }
+    expect(namesOf("iii")).toEqual(
+      expect.arrayContaining([
+        "Settlers of Catan Champion",
+        "Chess Tournament Champion",
+      ]),
     );
+    expect(namesOf("iv")).toEqual(
+      expect.arrayContaining([
+        "Settlers of Catan Champion",
+        "Chess Tournament Champion",
+        "Super Smash Bros. Champion",
+      ]),
+    );
+    expect(namesOf("vii")).toEqual(
+      expect.arrayContaining([
+        "Chess Tournament Champion",
+        "Battle of the Memes Champion",
+      ]),
+    );
+    expect(namesOf("ix")).toEqual(
+      expect.arrayContaining([
+        "Stairs Challenge Winner",
+        "Mario Kart Champion",
+      ]),
+    );
+    const retired = [
+      "Billing Hours Champ",
+      "Chess Tourney Champion",
+      "Chess Tournament Winners",
+      "Stairs Challenge Winners",
+      "Mario Kart Winner",
+      "Battle of the Memes Winner",
+    ];
+    const everyName = all.flatMap((s) => s.awards.map((a) => a.name));
+    for (const name of retired) expect(everyName).not.toContain(name);
+  });
+
+  it("every Award name has a slug to link to", () => {
+    for (const s of [...all, demo, xiiDemo]) {
+      for (const a of s.awards) {
+        expect(awardNameSlug(a.name), a.name).not.toBe("");
+      }
+    }
   });
 });
 

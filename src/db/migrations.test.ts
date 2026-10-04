@@ -1180,7 +1180,7 @@ describe.skipIf(!isLocalDatabase)(
 describe.skipIf(!isLocalDatabase)(
   "migrating email Hosts to roster-Participant Hosts (0033)",
   () => {
-    it("deletes the email Hosts, then holds Participant Hosts the roster owns", async () => {
+    it("deletes the email Hosts, holds Participant Hosts the roster owns, and drops Award Categories and the Finale Awards layout", async () => {
       const upTo0032 = migrationsUpTo(32);
       try {
         await withThrowawayDatabase(
@@ -1222,6 +1222,22 @@ describe.skipIf(!isLocalDatabase)(
                 { column_name: "id" },
                 { column_name: "participant_id" },
               ]);
+
+              // Award Categories and the Finale Awards layout are gone.
+              expect(
+                await q(
+                  `select table_name from information_schema.tables
+                   where table_name = 'award_category'`,
+                ),
+              ).toEqual([]);
+              expect(
+                await q(
+                  `select column_name from information_schema.columns
+                   where (table_name = 'award' and column_name = 'category_id')
+                      or (table_name = 'war_week'
+                          and column_name = 'finale_awards_layout')`,
+                ),
+              ).toEqual([]);
 
               // A Host is a roster Participant; the same one can't host twice,
               // and deleting the Participant deletes the Host row.

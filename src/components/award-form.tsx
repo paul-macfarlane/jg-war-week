@@ -16,7 +16,6 @@ import {
   useFocusFirstInvalid,
 } from "@/components/form-field-errors";
 import { FormValueInput } from "@/components/form-value-input";
-import { OptionSelect } from "@/components/option-select";
 import {
   SetupRowError,
   SetupSaveButton,
@@ -71,7 +70,6 @@ export function AwardForm({
   warWeekId,
   awardId,
   initial,
-  currentCategory,
   options,
   teamLabel,
   mode,
@@ -82,8 +80,6 @@ export function AwardForm({
   /** Set when editing an existing Award. */
   awardId?: string;
   initial?: AwardInput;
-  /** The Award's Category when editing; an archived one stays selectable. */
-  currentCategory?: { id: string; name: string; archived: boolean } | null;
   options: AwardFormPickerOptions;
   /** The War Week's Team Label, e.g. "House". */
   teamLabel: string;
@@ -96,7 +92,7 @@ export function AwardForm({
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [teamId, setTeamId] = useState(initial?.teamId ?? "");
-  const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
+  const [preset, setPreset] = useState("");
   const [participantIds, setParticipantIds] = useState<string[]>(
     initial?.participantIds ?? [],
   );
@@ -111,18 +107,19 @@ export function AwardForm({
     { value: NO_TEAM, label: `No ${teamLabel}` },
     ...options.teams.map((team) => ({ value: team.id, label: team.name })),
   ];
-  const categoryItems = [
-    { value: "", label: "None" },
-    ...options.categories.map((c) => ({ value: c.id, label: c.name })),
-    ...(currentCategory?.archived
-      ? [
-          {
-            value: currentCategory.id,
-            label: `${currentCategory.name} (archived)`,
-          },
-        ]
-      : []),
-  ];
+  const presetItems = options.presets.map((p) => ({
+    id: p.name,
+    label: p.name,
+  }));
+  // Picking a preset copies its name and most recent description into the
+  // form; both stay editable.
+  function pickPreset(presetName: string) {
+    setPreset(presetName);
+    const picked = options.presets.find((p) => p.name === presetName);
+    if (!picked) return;
+    setName(picked.name);
+    setDescription(picked.description ?? "");
+  }
   const participantItems = options.participants.map((p) => ({
     id: p.id,
     label: p.name,
@@ -138,7 +135,6 @@ export function AwardForm({
         name,
         description,
         teamId: teamId || null,
-        categoryId: categoryId || null,
         participantIds,
       };
       const saved = awardId
@@ -167,6 +163,24 @@ export function AwardForm({
       aria-label="Award"
     >
       <FieldGroup className="px-4">
+        {!awardId && (
+          <Field>
+            <FieldLabel htmlFor="award-preset">Preset</FieldLabel>
+            <EntityCombobox
+              id="award-preset"
+              items={presetItems}
+              value={preset}
+              onValueChange={pickPreset}
+              placeholder="Start from a past Award name"
+              emptyText="No preset matches. Type a new name below."
+            />
+            <FieldDescription>
+              Copies the name and its latest description. Both stay editable,
+              and a new name always works.
+            </FieldDescription>
+          </Field>
+        )}
+
         <Field data-invalid={!!fieldErrors.name}>
           <FieldLabel htmlFor="award-name">Name</FieldLabel>
           <Input
@@ -194,22 +208,6 @@ export function AwardForm({
             onChange={(event) => setDescription(event.target.value)}
           />
           <FieldError>{fieldErrors.description}</FieldError>
-        </Field>
-
-        <Field data-invalid={!!fieldErrors.categoryId}>
-          <FieldLabel htmlFor="award-category">Category</FieldLabel>
-          <OptionSelect
-            id="award-category"
-            name="categoryId"
-            value={categoryId}
-            onValueChange={setCategoryId}
-            options={categoryItems}
-            aria-invalid={!!fieldErrors.categoryId}
-          />
-          <FieldDescription>
-            Groups this Award with the same Category in other War Weeks.
-          </FieldDescription>
-          <FieldError>{fieldErrors.categoryId}</FieldError>
         </Field>
 
         <FieldSet>

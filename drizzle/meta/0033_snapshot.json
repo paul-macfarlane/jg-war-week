@@ -1,5 +1,5 @@
 {
-  "id": "31813651-2b90-4ed2-91ea-44015d5d4b7f",
+  "id": "fcc428af-fc72-4a0c-9ccf-00ca775ca5bd",
   "prevId": "747f575b-9f7d-41f7-89b5-275eb049b2b0",
   "version": "7",
   "dialect": "postgresql",
@@ -454,12 +454,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "category_id": {
-          "name": "category_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
         "seed_key": {
           "name": "seed_key",
           "type": "varchar(80)",
@@ -487,21 +481,6 @@
           "columns": [
             {
               "expression": "team_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "award_category_id_idx": {
-          "name": "award_category_id_idx",
-          "columns": [
-            {
-              "expression": "category_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -539,19 +518,6 @@
           ],
           "onDelete": "set null",
           "onUpdate": "no action"
-        },
-        "award_category_id_award_category_id_fk": {
-          "name": "award_category_id_award_category_id_fk",
-          "tableFrom": "award",
-          "tableTo": "award_category",
-          "columnsFrom": [
-            "category_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -562,82 +528,6 @@
           "columns": [
             "war_week_id",
             "seed_key"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.award_category": {
-      "name": "award_category",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "name": {
-          "name": "name",
-          "type": "varchar(80)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "key": {
-          "name": "key",
-          "type": "varchar(80)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "archived_at": {
-          "name": "archived_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "award_category_name_lower": {
-          "name": "award_category_name_lower",
-          "columns": [
-            {
-              "expression": "lower(\"name\")",
-              "asc": true,
-              "isExpression": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "award_category_key_unique": {
-          "name": "award_category_key_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "key"
           ]
         }
       },
@@ -3532,14 +3422,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "finale_awards_layout": {
-          "name": "finale_awards_layout",
-          "type": "finale_awards_layout",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'one-slide'"
-        },
         "highlights": {
           "name": "highlights",
           "type": "varchar(500)[]",
@@ -3637,14 +3519,6 @@
       "values": [
         "team",
         "individual"
-      ]
-    },
-    "public.finale_awards_layout": {
-      "name": "finale_awards_layout",
-      "schema": "public",
-      "values": [
-        "one-slide",
-        "per-category"
       ]
     },
     "public.finale_slide_kind": {

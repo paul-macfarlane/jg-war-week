@@ -87,7 +87,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Enroll** / **Withdraw**     | A Participant's writes entering or leaving a Bracket themselves, when its "Participants can enroll" switch is on. Only a Bracket has enrollment. |
 | **Participation**             | A Participation Competition: scored by who took part (Black Midnight, a daily workout, HQ attendance). The Host or an Organizer ticks Participants as having **taken part**, and Participants can **Check in** themselves; points land at **Close**. The Format, not a Participant's act. |
 | **Check in** / **Check out**  | A Participant's write saying they took part in a Participation Competition, when its **Self check-in** switch is on (ADR 0009). Check out removes only their own check-in, never a tick the Host made. |
-| **Award Category**            | A global name that groups Awards across War Weeks (War Week MVP, Grow, Black Midnight…). Managed by Organizers at `/admin/awards`; archived, never deleted. An Award has at most one. |
+| **Award preset**              | A name an Organizer can start an Award from when adding one: every distinct Award name in any War Week (case-insensitive) plus seven fixed names in code (War Week MVP, Billable Hours Champ, Black Midnight, Grow, Grind, Serve, Inspire). Picking one copies its name and most recent description into the form. There is no Award Category; the same name is what groups an Award across years. |
 
 **Reveal** is retired: Standings are never hidden any more, and the
 countdown it played is now the **Finale**.
@@ -391,10 +391,8 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   delete refuses a generated entry (one with a Competition).
 - **Placements** (`placement.edit`, `.finalize`, `.reopen`, ADR 0010) are the
   Organizers' and that Competition's Hosts'; a Participant is refused.
-- **Award Categories** are global (no War Week), so every `award-category.*`
-  action (create, rename, archive, restore) is Organizer-only and takes no
-  target, like the Organizer list. A Host or Participant is refused. Awards
-  themselves stay Organizer-only too.
+- **Awards** are Organizer-only (`award.create`, `.edit`, `.delete`); a Host
+  or Participant is refused. There is no Award Category to manage.
 - Standings are always visible to every signed-in user. `/<edition>/finale`
   and a closed Bracket's `/<edition>/finale/<competitionId>` are readable
   by any signed-in JG user; Organizers and Hosts see the links to them in
@@ -749,28 +747,35 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   team scoring its top Team, in individual scoring how many took part.
 - Who took part isn't seeded, like Matches and Attempts.
 
-## Award Category rules
+## Award preset and history rules
 
-- An **Award Category** is global: one list across every War Week, managed
-  by Organizers in a Categories section on `/admin/awards`. Seven come from
-  a migration: War Week MVP, Billable Hours Champ, Black Midnight, Grow,
-  Grind, Serve, Inspire.
-- Names are trimmed, at most 80 characters and unique ignoring case. A
-  Category is **renamed**, **archived** and **restored**, never deleted. An
-  archived Category stays on the past Awards that have it (and is labeled
-  archived) but can't be picked for another Award; restoring it makes it
-  pickable again. An Award has one Category or none ("None" in the Award
-  form's Category select).
-- A seeded Category has a stable key, so renaming never breaks a seed.
-- `/<edition>/awards` groups Awards under their Category's heading, linked
-  to its page, then "Other Awards" for those with none; with no Category on
-  any Award there are no headings. The Award's own name always shows here.
-- **Through the years**: `/history` lists every Category that has an Award
-  under "Awards through the years", and `/history/awards/<categoryId>` shows
-  that Category's Awards by War Week, newest first, with their recipients
-  (Profile names). An Award's own name shows there only when it adds to its
-  Category's ("MVP 1st Place" under War Week MVP). It is keyed by id, so a rename never breaks the link; an
-  unknown or malformed id is a 404.
+- There are no Award Categories (R22). An Award is a name, a description,
+  and its recipients.
+- **Presets.** When an Organizer adds an Award, the form's **Preset** picker
+  offers every distinct Award name already in the database across War Weeks
+  (case-insensitive) plus the seven former Category names, a constant in
+  code (`FORMER_CATEGORY_NAMES`). Picking one copies its name and its most
+  recent description into the form; both stay editable. Typing a brand-new
+  name always works.
+- `/<edition>/awards` lists the War Week's Awards flat, each name linking to
+  its history.
+- **History by name.** The same name is the same Award across years:
+  grouping is case-insensitive and by **slug** (the lowercased name with
+  each run of non-alphanumerics collapsed to "-", none leading or
+  trailing), so names that differ only in case or punctuation share a page.
+  `/history/awards` lists every Award name; `/history/awards/<slug>` shows
+  that name by War Week, newest first, with the recipients (Profile names).
+  An unknown slug, and an old `/history/awards/<categoryId>`, is a 404 (no
+  redirects). `/history` lists the names too, under "Awards through the
+  years".
+- To make a name group across years, **write it the same**: the history
+  seeds apply a rename table (Billing Hours Champ to Billable Hours Champ,
+  Settlers of Catan to Settlers of Catan Champion, Chess Tourney Champion,
+  Chess and Chess Tournament Winners to Chess Tournament Champion, Stairs
+  Challenge Winners to Stairs Challenge Winner, Mario Kart Winner to Mario
+  Kart Champion, Super Smash Bros to Super Smash Bros. Champion, Battle of
+  the Memes Winner to Battle of the Memes Champion); all other names stay as
+  the wikis wrote them.
 
 ## Enrollment rules
 
@@ -828,12 +833,8 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
     **Points handed out** (the sum of every Points Entry, generated ones
     included: not a Standings total) and Participants (the roster). Only
     non-zero figures show; with every figure zero the slide is skipped.
-  - **Awards:** one Award revealed per step, grouped by Award Category
-    (Categories by name, the uncategorized last as "Other Awards"). The
-    War Week's **Awards layout**, set by an Organizer in admin → Finale:
-    "All on one slide", or "One slide per Category" (each slide named
-    "Awards: <Category>", the uncategorized "Other Awards"). No Awards: no
-    slide.
+  - **Awards:** one slide, one Award revealed per step, always (no
+    layout setting, no grouping). No Awards: no slide.
   - **Winners:** every closed Bracket's winner and the winner of every
     Closed Placement and every closed Head-to-head, Best score or team-scoring Participation
     Competition, ties listed together, by the rule Recent results uses but never capped, in
@@ -946,17 +947,10 @@ same rows with the same values (only `updated_at` moves).
     entries. **Discretionary points** (`{key, team|participant, points,
     reason, enteredByEmail, enteredAt}`) are idempotent on
     `(war_week_id, seed_key)`. A seed's old `pointsEntries` list is refused.
-  - An Award's `category` in a seed is a seeded Category's **key**, never
-    its name; an unknown key fails the load naming it. It is applied when
-    the Award is inserted. The one exception to "never updated" is
-    fill-if-empty: a seeded Award that has no Category and was never edited
-    in the app (`updated_at` still equals `created_at`) gets the seed's. An
-    Organizer's choice, "None" included, is never overwritten.
-  - A War Week's `finaleAwardsLayout` (the Finale's Awards layout) is
-    insert-only: set from the seed when the War Week is first inserted
-    (default "All on one slide"), then owned by the Organizer's setting.
-  - **Award Categories** themselves come from a migration, not a seed, are
-    global, and survive `--reset`.
+  - A seed's Awards carry no `category` and a seed has no
+    `finaleAwardsLayout` (both were removed in R22); a seed that names them
+    is refused. An Award's name is what groups it across years (see "Award
+    preset and history rules").
 
 **Setup in the UI.** Organizers can also edit setup in `/admin`: War Week
 settings and the Appearance Theme in `/admin/settings`, Days and Schedule

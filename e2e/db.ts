@@ -99,29 +99,15 @@ export async function removeE2eHost(
 }
 
 /**
- * Deletes the Award Categories an e2e run added: only the seeded ones have a
- * `key`. Awards go with their War Week's reset first (`on delete restrict`).
- */
-export async function deleteE2eAwardCategories() {
-  await runQuery(
-    `delete from award_category c where c.key is null
-     and not exists (select 1 from award a where a.category_id = c.id)`,
-  );
-}
-
-/**
  * Gives War Week XI back the default Finale: no saved slide list (so it
  * plays Title, By the numbers, Awards, Winners, Standings countdown,
- * Winner) and the one-slide Awards layout. Each Finale slide spec calls it
+ * Winner). Each Finale slide spec calls it
  * before and after its flows.
  */
 export async function resetXiFinaleSlides() {
   await runQuery(
     `delete from finale_slide s using war_week w
      where s.war_week_id = w.id and w.edition = 'xi'`,
-  );
-  await runQuery(
-    `update war_week set finale_awards_layout = 'one-slide' where edition = 'xi'`,
   );
 }
 

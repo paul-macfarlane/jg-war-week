@@ -22,8 +22,8 @@ async function shoot(page: Page, testInfo: TestInfo, name: string) {
 }
 
 // Epic R15, ticket 88 (.scratch/regression-2026-10/issues/88-history-in-war-week-chrome.md):
-// /history and a Category page wear the current War Week's chrome.
-test("r15 88 History and a Category page wear the current War Week's nav, tab bar and theme", async ({
+// /history and an Award name page wear the current War Week's chrome.
+test("r15 88 History and an Award name page wear the current War Week's nav, tab bar and theme", async ({
   context,
   page,
 }, testInfo) => {
@@ -37,16 +37,17 @@ test("r15 88 History and a Category page wear the current War Week's nav, tab ba
   expect(currentTheme).not.toBe("");
 
   await page.goto("/history");
-  const categoryHref = await page
+  const awardHref = await page
     .getByRole("region", { name: "Awards through the years" })
+    .getByRole("list")
     .getByRole("link")
     .first()
     .getAttribute("href");
-  expect(categoryHref).toMatch(/^\/history\/awards\/[0-9a-f-]{36}$/);
+  expect(awardHref).toMatch(/^\/history\/awards\/[a-z0-9-]+$/);
 
   for (const [path, label] of [
     ["/history", "history"],
-    [categoryHref as string, "category"],
+    [awardHref as string, "award-name"],
   ] as const) {
     await page.setViewportSize(LG_DESKTOP);
     await page.goto(path);

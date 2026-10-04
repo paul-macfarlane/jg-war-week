@@ -59,14 +59,11 @@ export type Actor = {
 export type SelfAction = "profile.save" | "account.delete";
 
 /**
- * The global Organizer-only families (the Organizer list, Award Categories):
- * no War Week, so they take no target.
+ * The global Organizer-only family (the Organizer list): no War Week, so it
+ * takes no target.
  */
 export type OrganizerListAction =
-  | "organizers.view"
-  | "organizers.add"
-  | "organizers.remove"
-  | `award-category.${"create" | "rename" | "archive" | "restore"}`;
+  "organizers.view" | "organizers.add" | "organizers.remove";
 
 type Crud = "create" | "edit" | "delete";
 
@@ -90,8 +87,6 @@ export type WarWeekAction =
   | "finale-slide.create"
   | "finale-slide.update"
   | "finale-slide.delete"
-  /** How the Finale shows Awards: one slide, or one per Category (ticket 73). */
-  | "finale.awards-layout"
   | "competition.create"
   | "competition.delete"
   | "competition.assign-hosts"
@@ -173,10 +168,6 @@ const ORGANIZER_ONLY: Partial<
   "organizers.view": "see the Organizer list",
   "organizers.add": "add an Organizer",
   "organizers.remove": "remove an Organizer",
-  "award-category.create": "add Award Categories",
-  "award-category.rename": "rename Award Categories",
-  "award-category.archive": "archive Award Categories",
-  "award-category.restore": "restore Award Categories",
   "settings.save": "change War Week settings",
   "lifecycle.start": "start a War Week",
   "lifecycle.end": "end a War Week",
@@ -202,7 +193,6 @@ const ORGANIZER_ONLY: Partial<
   "finale-slide.create": "add Custom Finale slides",
   "finale-slide.update": "change Custom Finale slides",
   "finale-slide.delete": "delete Custom Finale slides",
-  "finale.awards-layout": "change how the Finale shows Awards",
   "discretionary.create": "give Discretionary points",
   "discretionary.edit": "change Discretionary points",
   "discretionary.delete": "delete Discretionary points",

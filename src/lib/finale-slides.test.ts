@@ -459,21 +459,15 @@ describe("finaleSlideData", () => {
     total,
     rank,
   });
-  const award = (
-    name: string,
-    category: { id: string; name: string } | null,
-  ): AwardView => ({
+  const award = (name: string): AwardView => ({
     id: `a-${name}`,
     name,
     description: null,
     team: null,
-    category: category && { ...category, archived: false },
     participants: [
       { id: "p-ada", displayName: "Ada Anvil", image: null, teamColor: null },
     ],
   });
-  const grind = { id: "c-grind", name: "Grind" };
-  const mvp = { id: "c-mvp", name: "War Week MVP" };
   const standings: Standings = {
     main: "team",
     team: [team("Red", 40, 1), team("Blue", 40, 1), team("Green", 12, 3)],
@@ -491,7 +485,6 @@ describe("finaleSlideData", () => {
       teamLabel: "Team",
       primaryColor: "#123456",
       foregroundColor: "#111111",
-      finaleAwardsLayout: "one-slide",
     },
     standings,
     counts: {
@@ -503,10 +496,10 @@ describe("finaleSlideData", () => {
       participants: 12,
     },
     awards: [
-      award("Black Midnight", null),
-      award("Hardest Worker", grind),
-      award("MVP", mvp),
-      award("Most Steps", grind),
+      award("Black Midnight"),
+      award("Hardest Worker"),
+      award("MVP"),
+      award("Most Steps"),
     ],
     winners: [
       {
@@ -553,80 +546,27 @@ describe("finaleSlideData", () => {
     expect(slides[5]).toMatchObject({ title: "Tie: Red & Blue" });
   });
 
-  it("puts every Award on one slide, by Category, the uncategorized last, one Award per step", () => {
-    const [awards] = finaleSlideData(defaults, context()).filter(
-      (s) => s.kind === "awards",
-    );
-    expect(awards).toMatchObject({
-      kind: "awards",
-      heading: "Awards",
-      groups: [
-        {
-          name: "Grind",
-          awards: [{ name: "Hardest Worker" }, { name: "Most Steps" }],
-        },
-        { name: "War Week MVP", awards: [{ name: "MVP" }] },
-        { name: "Other Awards", awards: [{ name: "Black Midnight" }] },
-      ],
-    });
-    expect(finaleSlideSteps(awards)).toBe(4);
-  });
-
-  it("gives each Category its own Awards slide in the per-Category layout", () => {
-    const slides = finaleSlideData(
-      defaults,
-      context({
-        warWeek: { ...context().warWeek, finaleAwardsLayout: "per-category" },
-      }),
-    );
+  it("puts every Award on one slide, one Award per step, in the order given", () => {
+    const slides = finaleSlideData(defaults, context());
     const awards = slides.filter((s) => s.kind === "awards");
-    expect(kinds(awards)).toEqual([
-      "awards:Awards: Grind",
-      "awards:Awards: War Week MVP",
-      "awards:Other Awards",
-    ]);
-    expect(new Set(slides.map((s) => s.key)).size).toBe(slides.length);
-    expect(awards.map((s) => finaleSlideSteps(s))).toEqual([2, 1, 1]);
+    expect(awards).toHaveLength(1);
     expect(awards[0]).toMatchObject({
-      heading: "Grind",
-      groups: [
-        {
-          name: null,
-          awards: [{ name: "Hardest Worker" }, { name: "Most Steps" }],
-        },
-      ],
-    });
-  });
-
-  it("shows no Category headings when no Award has a Category", () => {
-    const [awards] = finaleSlideData(
-      defaults,
-      context({ awards: [award("Black Midnight", null)] }),
-    ).filter((s) => s.kind === "awards");
-    expect(awards).toMatchObject({
-      groups: [{ name: null, awards: [{ name: "Black Midnight" }] }],
-    });
-  });
-
-  it("falls back to one Awards slide in the per-Category layout when no Award has a Category", () => {
-    const awards = finaleSlideData(
-      defaults,
-      context({
-        warWeek: { ...context().warWeek, finaleAwardsLayout: "per-category" },
-        awards: [award("Black Midnight", null), award("Night Owl", null)],
-      }),
-    ).filter((s) => s.kind === "awards");
-    expect(kinds(awards)).toEqual(["awards:Awards"]);
-    expect(awards[0]).toMatchObject({
+      kind: "awards",
       key: "awards",
       heading: "Awards",
       groups: [
         {
           name: null,
-          awards: [{ name: "Black Midnight" }, { name: "Night Owl" }],
+          awards: [
+            { name: "Black Midnight" },
+            { name: "Hardest Worker" },
+            { name: "MVP" },
+            { name: "Most Steps" },
+          ],
         },
       ],
     });
+    expect(finaleSlideSteps(awards[0])).toBe(4);
   });
 
   it("skips the slides with nothing to show", () => {

@@ -12,8 +12,7 @@
  * which is emptied first. Starts its own server on port 3212 and signs in
  * as a made-up Organizer (`finale-stills@jahnelgroup.com`), so the stills
  * show what the Organizer presents. So every built-in slide has something
- * to show, it adds, and removes again afterwards: two Awards in Award
- * Categories, a closed Matches Bracket (`setupBracketDemo`, closed
+ * to show, it adds, and removes again afterwards: two Awards, a closed Matches Bracket (`setupBracketDemo`, closed
  * here with its placings' points) and the seeded Ping Pong Head-to-head
  * Competition closed with a winner. Pass an edition to shoot another War
  * Week's demo:
@@ -66,8 +65,6 @@ const SIZES = [
   { width: 1920, height: 1080 },
   { width: 390, height: 844 },
 ];
-/** The Award Categories the two demo Awards go in (seeded keys). */
-const AWARD_CATEGORIES = ["war-week-mvp", "grind"];
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const note = (line: string) => console.log(line);
@@ -77,7 +74,7 @@ type StillsWarWeek = DemoWarWeek & { background_color: string };
 /** Undo steps, run in reverse in `finally` whatever happened. */
 const undo: (() => Promise<unknown>)[] = [];
 
-/** Two Awards, each in a seeded Award Category, with recipients. */
+/** Two Awards with recipients. */
 async function addAwards(warWeek: StillsWarWeek) {
   const people = await query<{ id: string }>(
     `select id from participant where war_week_id = $1 order by display_name limit 3`,
@@ -85,13 +82,11 @@ async function addAwards(warWeek: StillsWarWeek) {
   );
   const awards = [
     {
-      key: AWARD_CATEGORIES[0],
       name: "MVP",
       description: "Showed up for every Competition and carried the room.",
       recipients: people.slice(0, 1),
     },
     {
-      key: AWARD_CATEGORIES[1],
       name: "Hardest Worker",
       description: "Billable hours by day, Matches by night.",
       recipients: people.slice(1, 3),
@@ -99,10 +94,10 @@ async function addAwards(warWeek: StillsWarWeek) {
   ];
   for (const award of awards) {
     const [row] = await query<{ id: string }>(
-      `insert into award (war_week_id, name, description, category_id)
-       values ($1, $2, $3, (select id from award_category where key = $4))
+      `insert into award (war_week_id, name, description)
+       values ($1, $2, $3)
        returning id`,
-      [warWeek.id, award.name, award.description, award.key],
+      [warWeek.id, award.name, award.description],
     );
     undo.push(() => query(`delete from award where id = $1`, [row.id]));
     for (const p of award.recipients) {
@@ -111,7 +106,7 @@ async function addAwards(warWeek: StillsWarWeek) {
         [row.id, p.id],
       );
     }
-    note(`fixture: Award "${award.name}" in ${award.key}`);
+    note(`fixture: Award "${award.name}"`);
   }
 }
 

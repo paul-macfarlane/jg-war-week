@@ -584,16 +584,6 @@ describe("warWeekSeedSchema", () => {
     );
   });
 
-  it("accepts an Award's Category key and refuses a name-like value", () => {
-    const fixture = loadFixture();
-    fixture.awards[0].category = "war-week-mvp";
-    expect(warWeekSeedSchema.parse(fixture).awards[0].category).toBe(
-      "war-week-mvp",
-    );
-    fixture.awards[0].category = "War Week MVP";
-    expect(rejectionOf(fixture).join("\n")).toContain("awards.0.category");
-  });
-
   it("rejects Teams in a free-for-all War Week", () => {
     expect(rejectionOf({ ...loadFixture(), mode: "free-for-all" })).toContain(
       "teams: a free-for-all War Week has no Teams",
@@ -669,18 +659,11 @@ describe("warWeekSeedSchema Finale slides", () => {
     ]);
   });
 
-  it("leaves finaleSlides and finaleAwardsLayout out when a seed has none", () => {
+  it("leaves finaleSlides out when a seed has none", () => {
     const fixture = loadFixture();
     delete fixture.finaleSlides;
     const seed = warWeekSeedSchema.parse(fixture);
     expect(seed.finaleSlides).toBeUndefined();
-    expect(seed.finaleAwardsLayout).toBeUndefined();
-    expect(
-      warWeekSeedSchema.parse({
-        ...fixture,
-        finaleAwardsLayout: "per-category",
-      }).finaleAwardsLayout,
-    ).toBe("per-category");
   });
 
   it("requires a heading on a Custom slide and refuses Custom fields on a built-in", () => {

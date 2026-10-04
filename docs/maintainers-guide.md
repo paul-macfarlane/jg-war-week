@@ -91,8 +91,8 @@ before it says it's done.
 | The retired setup routes (308 to the Competition page) | `src/app/admin/competitions/[id]/{bracket,games,participation}/`, `src/app/admin/brackets/[id]/`, `src/app/admin/placements/[competitionId]/`: each a redirect page, proven by `retired-routes.test.ts` |
 | Participation (scoring, Check in rule)     | `src/lib/participation/` (`score.ts`, `check-in-rule.ts`, `input.ts`), `src/mutations/participation.ts`, `src/queries/participation.ts` |
 | Participation run area, and its Competition page parts | `src/components/participation-builder.tsx`, `participation-view.tsx`, `check-in-button.tsx` |
-| Award Categories (list, rename, archive, restore) | `src/lib/award-categories.ts`, `src/mutations/award-categories.ts`, `src/components/award-categories-editor.tsx` (on `/admin/awards`) |
-| Awards grouped by Category; a Category through the years | `src/app/[edition]/awards/`, `src/app/history/awards/[id]/`, `src/queries/award-category-history.ts`; the list on `/history` is `src/app/history/(list)/` |
+| Award presets (the names the Add Award form offers) and the name slug | `src/lib/award-names.ts` (the seven `FORMER_CATEGORY_NAMES`, `awardNameSlug`, `awardPresets`), `getAwardPresets` in `src/queries/awards.ts`, the Preset picker in `src/components/award-form.tsx` |
+| An Award name through the years | `src/app/[edition]/awards/` (names link to history), `src/app/history/awards/page.tsx` (every name) and `[slug]/page.tsx` (one name), `src/queries/award-history.ts`; the list on `/history` is `src/app/history/(list)/` |
 | The Competitions list's status (Not started, Underway, Closed, Done · Winner) | `src/lib/competition-status.ts` (the one rule, with `*.test.ts`; the list query only loads the facts) |
 | Database schema                            | `src/db/schema.ts`                                                     |
 | Migrations (generated, never hand-edited)  | `drizzle/`                                                             |
@@ -270,7 +270,7 @@ redirect to their new homes.
   sign in" on Roster.
 - **`/admin/organizers`**: the Organizer list (see
   [Add an Organizer or assign Hosts](#add-an-organizer-or-assign-hosts)).
-- **`/admin/discretionary-points`** (Organizers only: give, edit or delete points with no Competition, each with a required reason; the old `/admin/points` redirects here), **`/admin/finale`** (Run the Finale: the slide list and Awards layout, "Open Finale" at closing ceremonies, and "Finale: <Competition>" for each closed Bracket),
+- **`/admin/discretionary-points`** (Organizers only: give, edit or delete points with no Competition, each with a required reason; the old `/admin/points` redirects here), **`/admin/finale`** (Run the Finale: the slide list, "Open Finale" at closing ceremonies, and "Finale: <Competition>" for each closed Bracket),
   **`/admin/announcements`**, **`/admin/awards`**.
 
 To start next year's edition in the app:
@@ -655,19 +655,18 @@ back, Escape to the first slide) and nothing advances on its own. Its
 slides are the built-ins (Title, By the numbers, Awards, Winners,
 Standings countdown, Winner) plus any **Custom slides**. In `/admin/finale`
 an Organizer sees the slide list, moves a slide (drag, or ↑/↓), hides or
-shows it, adds a Custom slide (heading, rich-text body, optional background
-color; its text colors adjust to read on it) and edits or deletes it, and
-picks the Awards layout ("All on one slide" or "One slide per Category").
-Every change saves at once. Writes are Organizer-only: a Host sees the list
+shows it, and adds a Custom slide (heading, rich-text body, optional
+background color; its text colors adjust to read on it) and edits or deletes
+it. The Awards slide always reveals one Award per step; there is no layout
+setting. Every change saves at once. Writes are Organizer-only: a Host sees the list
 but no controls. A slide with nothing to show is skipped, and with every
 slide hidden the Finale says "Nothing to show yet." The rules are under
 "Finale rules" in `CONTEXT.md`.
 
 Schema: slides live in the `finale_slide` table (unique on War Week, kind and
 heading, so each built-in is once per War Week and a Custom slide is unique
-by heading) and the layout in `war_week.finale_awards_layout`. A seed's
-optional `finaleSlides` list is synced like FAQ Items and its
-`finaleAwardsLayout` is insert-only (`CONTEXT.md`, "Seed idempotence rules").
+by heading). A seed's optional `finaleSlides` list is synced like FAQ Items
+(`CONTEXT.md`, "Seed idempotence rules").
 The demo seeds `seeds/demo/xi.json` and `xii.json` carry a list (the six
 built-ins plus a Custom "Thank you").
 
@@ -720,17 +719,21 @@ Who took part isn't seeded. A seed's `participation` Competition may set
 `participationPoints` (individual only) and `selfCheckIn`, but they are applied only when the Competition is first
 inserted, never on a reload.
 
-### Manage Award Categories
+### Manage Awards
 
-On `/admin/awards` (Organizers only) the **Categories** section adds, renames,
-archives and restores global Award Categories; there is no delete. An
-archived one stays on its past Awards but can't be picked for another. Give an
-Award a Category in the Award form's **Category** select ("None" is allowed).
-`/<edition>/awards` groups by Category, and `/history` and
-`/history/awards/<id>` show each Category through the years. A seed's Award
-`category` is a Category's **key** (the seven seeded: `war-week-mvp`,
-`billable-hours-champ`, `black-midnight`, `grow`, `grind`, `serve`,
-`inspire`), never its name, so a rename doesn't break a seed.
+On `/admin/awards` (Organizers only) **Add Award** opens the form. Its
+**Preset** picker offers every Award name already used in any War Week plus
+the seven that used to be Categories (War Week MVP, Billable Hours Champ,
+Black Midnight, Grow, Grind, Serve, Inspire); picking one fills the name and
+its most recent description, and both stay editable. A brand-new name works
+too. There are no Categories: the same name, written the same way, is what
+ties an Award together across years. `/<edition>/awards` lists the Awards,
+each name linking to `/history/awards/<slug>`, which shows that name by War
+Week, newest first (case and punctuation don't split a name). `/history` and
+`/history/awards` list every name. To make a historic Award group with
+another year's, spell it the same in its seed; the wikis' differing spellings
+were aligned once (the rename table is in `CONTEXT.md`, "Award preset and
+history rules").
 
 ### Record a Placement (the default Format)
 
@@ -922,7 +925,7 @@ The chain is schema → `pnpm db:generate` → migration in `drizzle/` →
 `pnpm db:migrate` locally → seed format and seed files → UI. Never hand-edit
 a migration. The one exception is a data step that the schema diff can't
 express (copying rows between tables, or inserting fixed reference rows
-such as the seeded Award Categories): create it with
+such as inserting fixed reference rows): create it with
 `pnpm db:generate --custom --name <what-it-copies>` so it gets its
 own journal entry, and write only that file.
 
@@ -1079,7 +1082,7 @@ Competiscore data is gone; `old-wikis/`, the live wiki pages (and the Drive
 folders they link to) and what you remember are the only sources. For
 Claude to read the wiki, sign in to it in the Claude Code browser first.
 Leave `seeds/demo/xi.json` alone unless a test needs different demo data. Load locally with `pnpm seed:load seeds/<edition>.json`, then check
-`/history` and `/<edition>`. `/history` and a Category page wear the
+`/history` and `/<edition>`. `/history` and an Award name page wear the
 current War Week's nav, tab bar, footer and theme (`src/app/history/layout.tsx`).
 
 ### How R16 reached staging and production (the reset)

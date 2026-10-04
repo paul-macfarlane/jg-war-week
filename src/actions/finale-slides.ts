@@ -7,10 +7,8 @@ import {
   type CustomSlideInput,
   parseCustomSlideInput,
 } from "@/lib/custom-finale-slide";
-import type { FinaleAwardsLayout } from "@/lib/enums";
 import {
   type FinaleSlideRef,
-  parseFinaleAwardsLayout,
   parseFinaleSlideHidden,
   parseFinaleSlideMove,
 } from "@/lib/finale-slides";
@@ -132,33 +130,6 @@ export async function deleteCustomFinaleSlide(
     if (!authorized.ok) return authorized;
 
     const result = await mutations.deleteCustomFinaleSlide(id, authorized.ctx);
-    if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
-    return result;
-  });
-}
-
-/**
- * How the Finale shows Awards: "one-slide" or "per-category" (Organizer
- * only; admin → Finale's Awards layout saves it on change).
- */
-export async function setFinaleAwardsLayout(
-  warWeekId: string,
-  layout: FinaleAwardsLayout,
-): Promise<WriteResult> {
-  return guarded(async () => {
-    const authorized = await authorize(
-      "finale.awards-layout",
-      "warWeek",
-      warWeekId,
-    );
-    if (!authorized.ok) return authorized;
-    const parsed = parseFinaleAwardsLayout(layout);
-    if (!parsed.ok) return parsed;
-
-    const result = await mutations.setFinaleAwardsLayout(
-      parsed.value,
-      authorized.ctx,
-    );
     if (result.ok) revalidateWarWeek(authorized.warWeek.edition);
     return result;
   });

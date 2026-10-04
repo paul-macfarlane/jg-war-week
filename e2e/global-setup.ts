@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 
 import { localSeedFiles } from "@/seed/local-files";
 
-import { deleteE2eAwardCategories, deleteE2eUsers } from "./db";
+import { deleteE2eUsers } from "./db";
 
 function run(args: string[]) {
   const result = spawnSync("pnpm", args, { stdio: "inherit" });
@@ -21,6 +21,4 @@ export default async function globalSetup() {
   run(["db:migrate"]);
   run(["seed:load", "--reset", ...localSeedFiles()]);
   await deleteE2eUsers();
-  // After the reset: Awards of the reset War Weeks no longer hold them.
-  await deleteE2eAwardCategories();
 }

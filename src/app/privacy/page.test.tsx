@@ -41,7 +41,6 @@ function warWeekFixture(): WarWeek {
     wikiUrl: null,
     winner: null,
     highlights: [],
-    finaleAwardsLayout: "one-slide",
     createdAt: new Date(),
     updatedAt: new Date(),
   } as WarWeek;

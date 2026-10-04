@@ -33,10 +33,6 @@ export const awardInputSchema = z
       .uuid({ error: "Choose a Team of this War Week." })
       .nullish()
       .transform((value) => value ?? null),
-    categoryId: z
-      .uuid({ error: "Choose a Category from the list." })
-      .nullish()
-      .transform((value) => value ?? null),
     participantIds: z
       .array(z.uuid({ error: "Choose Participants of this War Week." }))
       .default([])
@@ -52,18 +48,11 @@ export type AwardInput = {
   name: string;
   description: string | null;
   teamId: string | null;
-  /** The Award Category; omitted or null for none. */
-  categoryId?: string | null;
   participantIds: string[];
 };
 
-/** The parsed Award; `categoryId` may be left out (none). */
-export type AwardValues = Omit<
-  z.infer<typeof awardInputSchema>,
-  "categoryId"
-> & {
-  categoryId?: string | null;
-};
+/** The parsed Award. */
+export type AwardValues = z.infer<typeof awardInputSchema>;
 
 const FIELD_LABELS: Record<string, string> = {
   name: "Name",
@@ -90,8 +79,6 @@ export type AwardView = {
   name: string;
   description: string | null;
   team: { id: string; name: string; color: string } | null;
-  /** The Award Category, null when uncategorized. */
-  category: { id: string; name: string; archived: boolean } | null;
   /** Ordered by display name. `teamColor` is null with no Team. */
   participants: {
     id: string;
@@ -111,39 +98,4 @@ export function namedAward(award: AwardView): ArchiveAward {
     team: award.team?.name ?? null,
     participants: award.participants.map((p) => p.displayName),
   };
-}
-
-/** One heading's worth of Awards on the participant Awards page. */
-export type AwardGroup = {
-  /** Null for the Awards with no Category. */
-  category: { id: string; name: string } | null;
-  awards: AwardView[];
-};
-
-/**
- * Groups Awards by Category, Categories by name and the uncategorized last
- * (shown as "Other Awards"). Awards keep their order within a group. A
- * result of one uncategorized group means no headings at all.
- */
-export function groupAwardsByCategory(awards: AwardView[]): AwardGroup[] {
-  const byCategory = new Map<string, AwardGroup>();
-  const other: AwardView[] = [];
-  for (const award of awards) {
-    if (!award.category) {
-      other.push(award);
-      continue;
-    }
-    const group = byCategory.get(award.category.id) ?? {
-      category: { id: award.category.id, name: award.category.name },
-      awards: [],
-    };
-    group.awards.push(award);
-    byCategory.set(award.category.id, group);
-  }
-  const groups = [...byCategory.values()].sort((a, b) =>
-    (a.category?.name ?? "").localeCompare(b.category?.name ?? ""),
-  );
-  return other.length > 0
-    ? [...groups, { category: null, awards: other }]
-    : groups;
 }

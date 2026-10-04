@@ -1,46 +1,52 @@
-import { BASE_URL, fail, ok, runQuery, signedInFetch } from "./harness";
+import { BASE_URL, fail, ok, signedInFetch } from "./harness";
 
 /**
- * /history lists "Awards through the years"; a seeded Category's page is 200
- * with its recipients newest War Week first; an unknown or malformed id is 404.
+ * /history and /history/awards list Award names; a name's page is 200 with
+ * every War Week that has it, newest first (Billable Hours Champ: viii, v
+ * and iv together); an old numeric/uuid Category id and an unknown slug 404.
  */
 export async function assertAwardHistoryRoute() {
   const check =
-    "GET /history/awards/<War Week MVP> is 200 newest first and linked from /history; an unknown or malformed id is 404";
+    "GET /history/awards lists Award names, /history/awards/billable-hours-champ is 200 with viii, v and iv newest first, and an old Category id or an unknown slug is 404";
   try {
-    const [category] = await runQuery<{ id: string }>(
-      "select id from award_category where key = 'war-week-mvp'",
-    );
     const history = await (await signedInFetch(`${BASE_URL}/history`)).text();
+    const index = await signedInFetch(`${BASE_URL}/history/awards`);
+    const indexBody = await index.text();
     const res = await signedInFetch(
-      `${BASE_URL}/history/awards/${category?.id}`,
+      `${BASE_URL}/history/awards/billable-hours-champ`,
     );
     const body = await res.text();
+    const viii = body.indexOf('href="/viii"');
     const v = body.indexOf('href="/v"');
     const iv = body.indexOf('href="/iv"');
-    const unknown = await signedInFetch(
+    const oldCategoryId = await signedInFetch(
       `${BASE_URL}/history/awards/00000000-0000-4000-8000-000000000000`,
     );
-    const malformed = await signedInFetch(`${BASE_URL}/history/awards/nope`);
+    const unknown = await signedInFetch(
+      `${BASE_URL}/history/awards/no-such-award-name`,
+    );
     const checks = {
-      listed:
+      listedOnHistory:
         history.includes("Awards through the years") &&
-        history.includes(`href="/history/awards/${category?.id}"`),
-      newestFirst: v >= 0 && iv > v,
-      recipients:
-        body.includes("Ian Ballard") && body.includes("Anthony Conway"),
+        history.includes('href="/history/awards/billable-hours-champ"'),
+      listedOnIndex:
+        indexBody.includes('href="/history/awards/billable-hours-champ"') &&
+        indexBody.includes('href="/history/awards/chess-tournament-champion"'),
+      grouped: viii >= 0 && v > viii && iv > v,
+      recipients: body.includes("Akshay Palekar"),
     };
     if (
+      index.status === 200 &&
       res.status === 200 &&
+      oldCategoryId.status === 404 &&
       unknown.status === 404 &&
-      malformed.status === 404 &&
       Object.values(checks).every(Boolean)
     ) {
       ok(check);
     } else {
       fail(
         check,
-        `status=${res.status} unknown=${unknown.status} malformed=${malformed.status} ${JSON.stringify(checks)}`,
+        `index=${index.status} page=${res.status} oldCategoryId=${oldCategoryId.status} unknown=${unknown.status} ${JSON.stringify(checks)}`,
       );
     }
   } catch (error) {

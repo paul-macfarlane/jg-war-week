@@ -457,122 +457,33 @@ describe.skipIf(!isLocalDatabase)(
   },
 );
 
-describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Award Categories", () => {
-  const awards = (category?: string) => [
-    {
-      key: "mvp",
-      name: "MVP 1st Place",
-      participants: ["Neo"],
-      ...(category && { category }),
-    },
-  ];
-  const withAwards = (category?: string) =>
-    seed("sa", 1, "upcoming", {
-      teams: [{ name: "Red", color: "#ff0000" }],
-      participants: [{ displayName: "Neo", team: "Red" }],
-      awards: awards(category),
-    });
-
-  async function categoryOfSeededAward(tx: DBTx) {
-    const schema = await import("@/db/schema");
-    const { eq } = await import("drizzle-orm");
-    const [row] = await tx
-      .select({ key: schema.awardCategory.key })
-      .from(schema.award)
-      .leftJoin(
-        schema.awardCategory,
-        eq(schema.award.categoryId, schema.awardCategory.id),
-      )
-      .where(eq(schema.award.seedKey, "mvp"));
-    return row.key;
-  }
-
-  it("has the seven seeded Categories without any seed load", async () => {
+describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Awards", () => {
+  it("loads an Award by name and a reload changes nothing", async () => {
     await inRolledBackTransaction(async (tx) => {
+      const { loadWarWeekSeed } = await import("@/seed/load");
       const schema = await import("@/db/schema");
-      const { isNotNull } = await import("drizzle-orm");
-      const rows = await tx
-        .select({ key: schema.awardCategory.key })
-        .from(schema.awardCategory)
-        .where(isNotNull(schema.awardCategory.key));
-      expect(rows.map((r) => r.key).sort()).toEqual([
-        "billable-hours-champ",
-        "black-midnight",
-        "grind",
-        "grow",
-        "inspire",
-        "serve",
-        "war-week-mvp",
-      ]);
-    });
-  });
-
-  it("tags a new Award with its Category and a reload changes nothing", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { loadWarWeekSeed } = await import("@/seed/load");
-      await clearLive(tx);
-      await loadWarWeekSeed(await withAwards("war-week-mvp"), tx);
-      expect(await categoryOfSeededAward(tx)).toBe("war-week-mvp");
-      await loadWarWeekSeed(await withAwards("war-week-mvp"), tx);
-      expect(await categoryOfSeededAward(tx)).toBe("war-week-mvp");
-    });
-  });
-
-  it("fails on an unknown Category key, naming it", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { loadWarWeekSeed } = await import("@/seed/load");
-      await clearLive(tx);
-      await expect(
-        loadWarWeekSeed(await withAwards("no-such-category"), tx),
-      ).rejects.toThrow('Unknown Award Category key "no-such-category"');
-    });
-  });
-
-  it("fills an untagged, never-edited seeded Award on reload", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { loadWarWeekSeed } = await import("@/seed/load");
+      const awards = async () =>
+        (
+          await tx.select({ name: schema.award.name }).from(schema.award)
+        ).filter((a) => a.name === "Billable Hours Champ").length;
+      const withAwards = async () =>
+        seed("sa", 1, "upcoming", {
+          teams: [{ name: "Red", color: "#ff0000" }],
+          participants: [{ displayName: "Neo", team: "Red" }],
+          awards: [
+            {
+              key: "billable",
+              name: "Billable Hours Champ",
+              participants: ["Neo"],
+            },
+          ],
+        });
       await clearLive(tx);
       await loadWarWeekSeed(await withAwards(), tx);
-      expect(await categoryOfSeededAward(tx)).toBeNull();
-      await loadWarWeekSeed(await withAwards("war-week-mvp"), tx);
-      expect(await categoryOfSeededAward(tx)).toBe("war-week-mvp");
-    });
-  });
-
-  it("keeps an Organizer's None on an Award edited in the app", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { loadWarWeekSeed } = await import("@/seed/load");
-      const schema = await import("@/db/schema");
-      const { eq } = await import("drizzle-orm");
-      await clearLive(tx);
+      const once = await awards();
       await loadWarWeekSeed(await withAwards(), tx);
-      // A real edit runs in its own transaction, so `updated_at` moves on.
-      await tx
-        .update(schema.award)
-        .set({ updatedAt: new Date("2100-01-01T00:00:00Z") })
-        .where(eq(schema.award.seedKey, "mvp"));
-      await loadWarWeekSeed(await withAwards("war-week-mvp"), tx);
-      expect(await categoryOfSeededAward(tx)).toBeNull();
-    });
-  });
-
-  it("never overwrites a Category an Organizer chose", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { loadWarWeekSeed } = await import("@/seed/load");
-      const schema = await import("@/db/schema");
-      const { eq } = await import("drizzle-orm");
-      await clearLive(tx);
-      await loadWarWeekSeed(await withAwards("war-week-mvp"), tx);
-      const [grow] = await tx
-        .select({ id: schema.awardCategory.id })
-        .from(schema.awardCategory)
-        .where(eq(schema.awardCategory.key, "grow"));
-      await tx
-        .update(schema.award)
-        .set({ categoryId: grow.id })
-        .where(eq(schema.award.seedKey, "mvp"));
-      await loadWarWeekSeed(await withAwards("war-week-mvp"), tx);
-      expect(await categoryOfSeededAward(tx)).toBe("grow");
+      expect(once).toBeGreaterThanOrEqual(1);
+      expect(await awards()).toBe(once);
     });
   });
 });
@@ -687,37 +598,6 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Finale slides", () => {
 
       await loadWarWeekSeed(await seed("sf", 23, "upcoming"), tx);
       expect(await slidesOf(first.id, tx)).toEqual(saved);
-    });
-  });
-
-  it("sets the Awards layout on insert only", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { loadWarWeekSeed } = await import("@/seed/load");
-      const schema = await import("@/db/schema");
-      const { eq } = await import("drizzle-orm");
-      const layout = async (id: string) =>
-        (
-          await tx
-            .select({ layout: schema.warWeek.finaleAwardsLayout })
-            .from(schema.warWeek)
-            .where(eq(schema.warWeek.id, id))
-        )[0].layout;
-
-      const first = await loadWarWeekSeed(
-        await seed("sf", 24, "upcoming", {
-          finaleAwardsLayout: "per-category",
-        }),
-        tx,
-      );
-      expect(await layout(first.id)).toBe("per-category");
-      await loadWarWeekSeed(
-        await seed("sf", 24, "upcoming", { finaleAwardsLayout: "one-slide" }),
-        tx,
-      );
-      expect(await layout(first.id)).toBe("per-category");
-
-      const other = await loadWarWeekSeed(await seed("sg", 25, "upcoming"), tx);
-      expect(await layout(other.id)).toBe("one-slide");
     });
   });
 

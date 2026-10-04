@@ -27,7 +27,7 @@ export function OrganizerGuide({
       "The War Week's Days with their Day Themes and short descriptions, and each Day's Schedule Items.",
     Roster: `${teamLabel}s, Participants and ${leaderTitle}s, with Import from a sheet or CSV.`,
     Announcements: "Post, pin and edit Announcements.",
-    Awards: `Give Awards to a ${teamLower} or to Participants, and manage the Award Categories that group them.`,
+    Awards: `Give Awards to a ${teamLower} or to Participants, and add one from a preset name.`,
     FAQ: "FAQ Items and their order on the public FAQ.",
     Finale:
       "Open the Finale, and each closed Bracket's Finale, on the projector.",
@@ -292,20 +292,21 @@ export function OrganizerGuide({
       </section>
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Award Categories</h2>
+        <h2 className="text-lg font-semibold">Awards across years</h2>
         <p className="text-foreground/70">
-          A Category groups Awards across War Weeks (War Week MVP, Grow…).
-          Manage them in the Categories section of{" "}
+          When you add an Award on{" "}
           <Link
             href="/admin/awards"
             className="text-primary underline underline-offset-4"
           >
             Awards
           </Link>
-          : add, rename, archive or restore, never delete. An archived Category
-          stays on its past Awards but can&apos;t be picked for new ones. Pick
-          an Award&apos;s Category in the Award form; the Awards page groups by
-          it, and History shows each Category through the years.
+          , the Preset picker offers every Award name used in any War Week, plus
+          War Week MVP, Billable Hours Champ, Black Midnight, Grow, Grind, Serve
+          and Inspire. Picking one fills in the name and its latest description;
+          both stay editable, and a brand-new name works too. There are no
+          Categories: the same name, spelled the same way, is what History uses
+          to show an Award through the years.
         </p>
       </section>
 
@@ -328,9 +329,9 @@ export function OrganizerGuide({
           Title, By the numbers, Awards, Winners, the Standings countdown (last
           place to first) and Winner; the countdown plays when you arrive on it,
           and Replay runs it again. On the Finale page you can reorder or hide
-          the slides, add your own Custom slides, and choose whether the Awards
-          are on one slide or one per Category (only Organizers open this page).
-          The Finale never changes the Standings, it only plays them.
+          the slides, add your own Custom slides (only Organizers open this
+          page). The Awards slide reveals one Award per step. The Finale never
+          changes the Standings, it only plays them.
         </p>
         <p className="text-foreground/70">
           A Closed Bracket has its own Finale: open it from the same page

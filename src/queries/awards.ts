@@ -1,14 +1,15 @@
-import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import {
   type WarWeek,
   award,
-  awardCategory,
   awardParticipant,
   participant,
   team,
+  warWeek,
 } from "@/db/schema";
+import { type AwardPreset, awardPresets } from "@/lib/award-names";
 import { type AwardView } from "@/lib/awards";
 import {
   participantImageSql,
@@ -31,13 +32,9 @@ export async function getAwards(
       teamId: team.id,
       teamName: team.name,
       teamColor: team.color,
-      categoryId: awardCategory.id,
-      categoryName: awardCategory.name,
-      categoryArchivedAt: awardCategory.archivedAt,
     })
     .from(award)
     .leftJoin(team, eq(award.teamId, team.id))
-    .leftJoin(awardCategory, eq(award.categoryId, awardCategory.id))
     .where(eq(award.warWeekId, warWeek.id))
     .orderBy(asc(award.name), asc(award.id));
 
@@ -77,14 +74,6 @@ export async function getAwards(
       row.teamId && row.teamName && row.teamColor
         ? { id: row.teamId, name: row.teamName, color: row.teamColor }
         : null,
-    category:
-      row.categoryId && row.categoryName
-        ? {
-            id: row.categoryId,
-            name: row.categoryName,
-            archived: row.categoryArchivedAt !== null,
-          }
-        : null,
     participants: recipients
       .filter((r) => r.awardId === row.id)
       .map(({ id, displayName, image, teamColor }) => ({
@@ -96,20 +85,36 @@ export async function getAwards(
   }));
 }
 
+/**
+ * The names an Organizer can add an Award from: every Award name in any War
+ * Week (case-insensitive, with its most recent description) and the seven
+ * former Category names.
+ */
+export async function getAwardPresets(
+  dbOrTx: DBOrTx = db,
+): Promise<AwardPreset[]> {
+  const rows = await dbOrTx
+    .select({ name: award.name, description: award.description })
+    .from(award)
+    .innerJoin(warWeek, eq(award.warWeekId, warWeek.id))
+    .orderBy(desc(warWeek.editionNumber), desc(award.createdAt), asc(award.id));
+  return awardPresets(rows);
+}
+
 export type AwardFormOptions = {
   teams: { id: string; name: string }[];
   /** `team` is the Participant's Team name, when they have one. */
   participants: { id: string; name: string; team: string | null }[];
-  /** Active Award Categories, by name. */
-  categories: { id: string; name: string }[];
+  /** Award names to start from (see `awardPresets`). */
+  presets: AwardPreset[];
 };
 
-/** The Teams, Participants and active Categories an Award of this War Week may use. */
+/** The Teams, Participants and name presets an Award of this War Week may use. */
 export async function getAwardFormOptions(
   warWeek: Pick<WarWeek, "id">,
   dbOrTx: DBOrTx = db,
 ): Promise<AwardFormOptions> {
-  const [teams, participants, categories] = await Promise.all([
+  const [teams, participants, presets] = await Promise.all([
     dbOrTx
       .select({ id: team.id, name: team.name })
       .from(team)
@@ -128,13 +133,9 @@ export async function getAwardFormOptions(
     )
       .where(eq(participant.warWeekId, warWeek.id))
       .orderBy(asc(participantNameSql())),
-    dbOrTx
-      .select({ id: awardCategory.id, name: awardCategory.name })
-      .from(awardCategory)
-      .where(isNull(awardCategory.archivedAt))
-      .orderBy(asc(awardCategory.name)),
+    getAwardPresets(dbOrTx),
   ]);
-  return { teams, participants, categories };
+  return { teams, participants, presets };
 }
 
 /**

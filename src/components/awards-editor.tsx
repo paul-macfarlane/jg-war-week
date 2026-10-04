@@ -49,8 +49,6 @@ export function AwardsEditor({
               name={award.name}
               details={[
                 showTeam && `${teamLabel}: ${award.team?.name ?? "—"}`,
-                award.category &&
-                  `Category: ${award.category.name}${award.category.archived ? " (archived)" : ""}`,
                 `Participants: ${
                   award.participants.map((p) => p.displayName).join(", ") || "—"
                 }`,
@@ -61,12 +59,10 @@ export function AwardsEditor({
                 <AwardForm
                   {...formProps}
                   awardId={award.id}
-                  currentCategory={award.category}
                   initial={{
                     name: award.name,
                     description: award.description,
                     teamId: award.team?.id ?? null,
-                    categoryId: award.category?.id ?? null,
                     participantIds: award.participants.map((p) => p.id),
                   }}
                   onSaved={close}

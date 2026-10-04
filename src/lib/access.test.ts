@@ -164,16 +164,6 @@ describe("can: the Organizer list", () => {
     ["organizers.view", "Only an Organizer can see the Organizer list."],
     ["organizers.add", "Only an Organizer can add an Organizer."],
     ["organizers.remove", "Only an Organizer can remove an Organizer."],
-    ["award-category.create", "Only an Organizer can add Award Categories."],
-    ["award-category.rename", "Only an Organizer can rename Award Categories."],
-    [
-      "award-category.archive",
-      "Only an Organizer can archive Award Categories.",
-    ],
-    [
-      "award-category.restore",
-      "Only an Organizer can restore Award Categories.",
-    ],
   ])("%s is Organizer-only", (action, message) => {
     const expected = organizerOnly(message);
     for (const name of Object.keys(ACTORS) as ActorName[]) {
@@ -248,7 +238,6 @@ describe("can: Organizer-only War Week families", () => {
           ["finale-slide.create", "add Custom Finale slides"],
           ["finale-slide.update", "change Custom Finale slides"],
           ["finale-slide.delete", "delete Custom Finale slides"],
-          ["finale.awards-layout", "change how the Finale shows Awards"],
           ["award.create", "give Awards"],
           ["award.edit", "change Awards"],
           ["award.delete", "delete Awards"],

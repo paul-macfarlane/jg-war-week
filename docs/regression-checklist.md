@@ -518,13 +518,13 @@ on the matching War Week page.
       in the plain-text body.
 - [ ] **Awards.** Give an Award to two Participants (and a Team,
       *(teams)*); it shows on `/<edition>/awards`. Delete it.
-- [ ] **Award Categories.** On `/admin/awards`, Categories lists the seven
-      seeded ones. Add one (a name already taken, ignoring case, is refused),
-      rename it, archive it, restore it; there is no delete. Archived, it's
-      absent from the Award form's Category select, but an Award that already
-      has it keeps it (labeled archived) when edited. Give an Award a
-      Category with the select ("None" is allowed): `/<edition>/awards` shows
-      it under that Category's heading.
+- [ ] **Award presets.** On `/admin/awards`, Add Award: the Preset picker
+      offers every past Award name (case-insensitive, each once) and the seven
+      former Category names (War Week MVP, Billable Hours Champ, Black
+      Midnight, Grow, Grind, Serve, Inspire). Pick one: the name and its most
+      recent description fill in, and both stay editable. A brand-new name
+      saves and is then offered as a preset. There is no Category anywhere in
+      `/admin/awards` (no Categories section, no Category select).
 - [ ] **FAQ.** Add an FAQ Item and move it first; `/<edition>/faq` shows it
       first. Delete it.
 - [ ] **Organizers.** Add `e2e-extra@jahnelgroup.com`, then remove it
@@ -574,10 +574,8 @@ on the matching War Week page.
       second one with the same heading is refused ("There's already a Custom
       slide called <heading>."); delete asks first and removes it. A
       built-in has Hide/Show but no Delete.
-- [ ] **Awards layout.** On `/admin/finale`, set the Awards layout to "One
-      slide per Category": the Finale's Awards become one slide per Category
-      ("Awards: <Category>", the uncategorized "Other Awards"); back to "All
-      on one slide": one Awards slide. Each choice saves at once.
+- [ ] **Awards slide.** `/admin/finale` has no Awards layout control; the
+      Finale plays one Awards slide that reveals one Award per step.
 - [ ] **Forms behave the same everywhere.** On a long form (Competition),
       resize from 1440 to 390 (crossing 768) with typed input: the input
       survives the dialog-to-sheet switch. At 820 the add-Participant and
@@ -789,9 +787,8 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       Participants. The linked Participant is highlighted.
 - [ ] **Awards and FAQ.** `/<edition>/awards` and `/<edition>/faq` show
       their content, or a plain empty state when there is none (XII demo).
-      Once an Award has a Category, Awards sit under Category headings (each
-      a link to its through-the-years page), then "Other Awards"; with no
-      Category anywhere there are no headings.
+      Awards are listed flat, with no headings; each Award's name links to
+      its through-the-years page (`/history/awards/<slug>`).
 - [ ] **Top nav is centred.** At 1440, on `/<edition>` and `/history`, the
       links in the header's top nav sit in the header's true centre (their
       midpoint within a few px of the viewport's midpoint, with the brand on
@@ -807,8 +804,8 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       "Add Participant", etc.) is a solid button, secondary ones are
       outline (on the Competition page's Bracket section, Add Squad sits outline beside the solid
       Generate), and only icon or tertiary actions are ghost.
-- [ ] **History wears the War Week chrome.** `/history` and a Category page
-      (`/history/awards/<id>`) show the current War Week's top nav (at
+- [ ] **History wears the War Week chrome.** `/history` and an Award name page
+      (`/history/awards/<slug>`) show the current War Week's top nav (at
       1440), phone tab bar (at 390) and footer, in the current War Week's
       Appearance Theme and the viewer's Display; there is no "Back to War
       Week" link; the edition cards keep their own colors.
@@ -816,9 +813,10 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       Theme and Winner; open three past editions, including the oldest:
       each shows its archive view (an edition with no Banner URL shows no
       banner block and names the War Week once in the hero). "Awards
-      through the years" lists each
-      Award Category; open one: `/history/awards/<id>` shows its War Weeks
-      newest first with recipients, and an unknown id is a 404 page.
+      through the years" lists each Award name (`/history/awards` lists them
+      all); open "Billable Hours Champ": `/history/awards/billable-hours-champ`
+      shows War Weeks VIII, V and IV together, newest first, with
+      recipients, and an unknown slug (or an old Category id) is a 404 page.
 - [ ] **Finale slideshow.** `/<edition>/finale` opens full screen (over the
       edition nav, with a small Exit link back to the edition) on the Title
       slide, showing no Standings. `→`, `Space` or a click on the stage
@@ -832,8 +830,7 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       to show yet." (an Organizer also sees "Set up the Finale").
 - [ ] **Finale slides.** Step through the demo's Finale: By the numbers shows
       only non-zero figures ("Points handed out" among them); Awards lists
-      each Award once, grouped by Category (or one slide per Category, per
-      the Awards layout); Winners lists each closed Bracket's winner
+      each Award once, one per step; Winners lists each closed Bracket's winner
       and the winner of each Closed Placement and each closed Head-to-head, Best score or
       team-scoring Participation Competition, ties together; Winner is the first place of the Standings, a
       tie shown as "Tie: A & B". No slide scrolls at 1440 (1920x1080 is the
