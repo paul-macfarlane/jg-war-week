@@ -26,7 +26,12 @@ Done: Epics R9–R14 (`regression-2026-09`, PRs through #122).
 
 ## Needs a decision, info or grilling before a plan
 
-
+- [ ] **Search by email on Host pickers**: Placement, Entrants, Games and Who took part search names only; emails never reach a Host's page today. [`regression-2026-10/issues/108`](./regression-2026-10/issues/108-host-picker-email-search.md) (`needs-triage`)
+- [ ] **Roster admin at 100 Participants**: one long list, no search, actions below the last row. [`regression-2026-10/issues/109`](./regression-2026-10/issues/109-roster-at-a-hundred.md) (`needs-triage`)
+- [ ] **Bracket admin at 64 Entrants**: every Entrant listed three times before the tree. [`regression-2026-10/issues/110`](./regression-2026-10/issues/110-bracket-admin-at-sixty-four.md) (`needs-triage`)
+- [ ] **Bracket tree at 64 Entrants**: narrow on desktop, 4,700 px tall, no jump to your Heat. [`regression-2026-10/issues/111`](./regression-2026-10/issues/111-bracket-tree-at-sixty-four.md) (`needs-triage`)
+- [ ] **Admin bottom bar with a wide font**: "More" clipped at 390 in XI's monospace preset. [`regression-2026-10/issues/112`](./regression-2026-10/issues/112-admin-bottom-bar-wide-font.md) (`needs-triage`)
+- [ ] **Finale Standings with many scorers**: rows below the screen never show; the countdown runs a second a row. [`regression-2026-10/issues/113`](./regression-2026-10/issues/113-finale-standings-at-scale.md) (`needs-triage`)
 - [ ] **Move to Jahnel Group ownership**: GitHub, Vercel, Neon, the GCP OAuth project, the domain and any other secret or bill; who owns and pays for each, cutover order, whether Paul keeps admin. [`hardening/issues/20`](./hardening/issues/20-transfer-to-jahnel-group-ownership.md) (`needs-triage`)
 - [ ] **Stairs integration**: wayfinder map charted; mirror Stairs climbs so Hosts can score a stair Competition without re-typing. Work the frontier tickets. [`stairs/map`](./stairs/map.md)
 - [ ] **Beytopia integration**: read beyblade rip results instead of re-entering them; needs owner, access and an API or export. [`beytopia/issues/01`](./beytopia/issues/01-beytopia-integration.md) (`needs-info`)
