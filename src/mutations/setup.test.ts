@@ -579,7 +579,7 @@ const competitionValues = {
   scoring: "individual" as const,
   placementPoints: [5, 3, 1],
   countsTowardTeam: true,
-  competitionGroup: "Board games",
+  competitionGroup: "Tabletop",
 };
 
 describe.skipIf(!isLocalDatabase)("Team mutations", () => {
@@ -965,7 +965,7 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
       expect(chess).toMatchObject({
         placementPoints: [5, 3, 1],
         countsTowardTeam: true,
-        competitionGroup: "Board games",
+        competitionGroup: "Tabletop",
         format: "placement",
         bracketConfig: null,
       });
@@ -1005,9 +1005,11 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
       expect(row).toMatchObject({
         format: "bracket",
         bracketConfig: {
-          entrantsPerHeat: 2,
-          advancePerHeat: 1,
-          thirdPlaceGame: false,
+          kind: "head-to-head" as const,
+          entrantsPerMatch: 2,
+          advancePerMatch: 1,
+          thirdPlaceMatch: false,
+          rounds: {},
         },
       });
     });
@@ -1105,7 +1107,7 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
         .returning({ id: schema.competition.id });
       await tx
         .update(schema.competition)
-        .set({ finalizedAt: new Date() })
+        .set({ closedAt: new Date() })
         .where(eq(schema.competition.id, bracket.id));
 
       expect(
@@ -1167,7 +1169,7 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
 
       await tx
         .update(schema.competition)
-        .set({ finalizedAt: null })
+        .set({ closedAt: null })
         .where(eq(schema.competition.id, bracket.id));
 
       expect(

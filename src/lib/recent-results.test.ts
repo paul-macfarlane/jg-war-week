@@ -27,7 +27,7 @@ const trivia: ResultCompetition = {
   id: "trivia",
   name: "Trivia",
   format: "placement",
-  finalizedAt: null,
+  closedAt: null,
 };
 
 /** A row's Competition name; a Discretionary row has none. */
@@ -40,14 +40,14 @@ function entry(
   target: ResultTarget,
   points: number,
   enteredAt: Date,
-  generatedByBracket = false,
+  generated = false,
 ): ResultEntry {
   return {
     id: `e${n++}`,
     competitionId,
     points,
     enteredAt,
-    generatedByBracket,
+    generated,
     target,
   };
 }
@@ -65,14 +65,14 @@ describe("shapeRecentResults", () => {
       kind: "participant",
     };
     const otherSam: ResultTarget = { ...sam, id: "p-sam-2" };
-    const games: ResultCompetition = {
+    const logged: ResultCompetition = {
       id: "g",
       name: "Darts",
       format: "head-to-head",
-      finalizedAt: at(5),
+      closedAt: at(5),
     };
     const [row] = shapeRecentResults(
-      [games],
+      [logged],
       [entry("g", sam, 10, at(5), true), entry("g", otherSam, 10, at(5), true)],
     );
     expect(row).toMatchObject({ winners: [sam, otherSam] });
@@ -83,28 +83,28 @@ describe("shapeRecentResults", () => {
       id: "b",
       name: "Foosball",
       format: "bracket",
-      finalizedAt: at(20),
+      closedAt: at(20),
     };
     const rows = shapeRecentResults(
       [bracket, trivia],
       [entry("b", blue, 5, at(20), true), entry("b", red, 10, at(20), true)],
     );
-    expect(rows.map((r) => r.kind)).toEqual(["bracket-finalized"]);
+    expect(rows.map((r) => r.kind)).toEqual(["bracket-closed"]);
     expect(rows[0]).toMatchObject({ winners: [red], competition: "Foosball" });
   });
 
   it("shows a closed Head-to-head Competition's winner, listing a tie for first", () => {
-    const games: ResultCompetition = {
+    const logged: ResultCompetition = {
       id: "g",
       name: "Darts",
       format: "head-to-head",
-      finalizedAt: at(5),
+      closedAt: at(5),
     };
     const [row] = shapeRecentResults(
-      [games],
+      [logged],
       [entry("g", red, 10, at(5), true), entry("g", blue, 10, at(5), true)],
     );
-    expect(row).toMatchObject({ kind: "games-closed", winners: [red, blue] });
+    expect(row).toMatchObject({ kind: "results-closed", winners: [red, blue] });
   });
 
   it("shows a Closed Placement's winner instead of its generated entries, listing a tie for first", () => {
@@ -112,7 +112,7 @@ describe("shapeRecentResults", () => {
       id: "darts",
       name: "Darts",
       format: "placement",
-      finalizedAt: at(30),
+      closedAt: at(30),
     };
     const rows = shapeRecentResults(
       [darts, trivia],
@@ -128,7 +128,7 @@ describe("shapeRecentResults", () => {
         ),
       ],
     );
-    expect(rows.map((r) => r.kind)).toEqual(["placement-finalized"]);
+    expect(rows.map((r) => r.kind)).toEqual(["placement-closed"]);
     expect(rows[0]).toMatchObject({
       competition: "Darts",
       when: at(30),
@@ -141,7 +141,7 @@ describe("shapeRecentResults", () => {
       id: "p",
       name: "Workout",
       format: "participation",
-      finalizedAt: at(7),
+      closedAt: at(7),
     };
     const green: ResultTarget = { ...red, id: "t-green", name: "Green" };
     const [row] = shapeRecentResults(
@@ -168,7 +168,7 @@ describe("shapeRecentResults", () => {
       id: "s",
       name: "Spirit",
       format: "participation",
-      finalizedAt: at(9),
+      closedAt: at(9),
     };
     const person = (id: string): ResultTarget => ({
       id,
@@ -196,7 +196,7 @@ describe("shapeRecentResults", () => {
       name: `C${i}`,
     }));
     const rows = shapeRecentResults(
-      comps.map((c, i) => ({ ...c, finalizedAt: at(i * 30) })),
+      comps.map((c, i) => ({ ...c, closedAt: at(i * 30) })),
       comps.map((c, i) => entry(c.id, red, 1, at(i * 30), true)),
     );
     expect(rows).toHaveLength(RECENT_RESULTS_LIMIT);
@@ -217,13 +217,13 @@ describe("shapeRecentResults with Discretionary points", () => {
     points,
     note: reason,
     enteredAt,
-    generatedByBracket: false,
+    generated: false,
     target,
   });
 
   it("makes each entry a row of its own, with its reason, among the Competition rows", () => {
     const rows = shapeRecentResults(
-      [{ ...trivia, id: "darts", name: "Darts", finalizedAt: at(0) }],
+      [{ ...trivia, id: "darts", name: "Darts", closedAt: at(0) }],
       [
         entry("darts", red, 3, at(0), true),
         discretionary(blue, 4, "Spirit", at(30)),
@@ -233,7 +233,7 @@ describe("shapeRecentResults with Discretionary points", () => {
     expect(rows.map((r) => r.kind)).toEqual([
       "discretionary",
       "discretionary",
-      "placement-finalized",
+      "placement-closed",
     ]);
     expect(rows[0]).toMatchObject({
       target: blue,

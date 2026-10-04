@@ -377,7 +377,7 @@ describe("parseCompetitionInput", () => {
     scoring: "individual",
     placementPoints: "5, 3 1",
     countsTowardTeam: true,
-    group: " Board games ",
+    group: " Tabletop ",
   };
 
   it("parses numbers, the Placement Points list and blank fields", () => {
@@ -389,7 +389,7 @@ describe("parseCompetitionInput", () => {
         scoring: "individual",
         placementPoints: [5, 3, 1],
         countsTowardTeam: true,
-        competitionGroup: "Board games",
+        competitionGroup: "Tabletop",
       },
     });
     expect(
@@ -519,78 +519,54 @@ describe("parseCreateCompetitionInput", () => {
   });
 });
 
-describe("competitionSeedSchema, games", () => {
+describe("competitionSeedSchema, Head-to-head and Best score", () => {
   const base = { name: "Bouncy Pong", scoring: "individual" as const };
   const issues = (input: unknown) => {
     const result = competitionSeedSchema.safeParse(input);
     return result.success ? [] : result.error.issues.map((i) => i.message);
   };
 
-  it("takes a Head-to-head Competition with its settings and Entrants open", () => {
+  it("takes a Head-to-head with its Best of and two Entrants, and a Best score Competition with its settings", () => {
     expect(
       issues({
         ...base,
         format: "head-to-head",
-        gameConfig: { drawsAllowed: false, bestOf: null },
-        entrantsOpen: true,
+        seriesConfig: { drawsAllowed: false, bestOf: 3 },
+        entrants: ["Ana", "Ben"],
+      }),
+    ).toEqual([]);
+    expect(
+      issues({
+        ...base,
+        format: "best-score",
+        scoreDirection: "lower",
+        scoreUnit: "sec",
+        bestScoreConfig: { teamScore: "best-member" },
       }),
     ).toEqual([]);
     expect(issues({ ...base, format: "best-score" })).toEqual([]);
   });
 
-  it("takes gameConfig and entrantsOpen only on a Head-to-head or Best score Competition", () => {
-    expect(issues({ ...base, entrantsOpen: true })).toEqual([
-      "entrantsOpen is only for a head-to-head or best-score Competition",
-    ]);
-    expect(issues({ ...base, gameConfig: { drawsAllowed: true } })).toEqual([
-      "gameConfig is only for a head-to-head or best-score Competition",
-    ]);
-  });
-
-  it("needs a Bracket's full bracketConfig, and gives no other Format one", () => {
-    expect(issues({ ...base, format: "bracket" })).toEqual([
-      "a Bracket needs its bracketConfig (entrantsPerHeat, advancePerHeat, thirdPlaceGame)",
+  it("takes each Format's settings only on that Format", () => {
+    expect(
+      issues({ ...base, seriesConfig: { drawsAllowed: true, bestOf: 3 } }),
+    ).toEqual(["seriesConfig is only for a head-to-head Competition"]);
+    expect(issues({ ...base, entrants: ["Ana", "Ben"] })).toEqual([
+      "entrants is only for a head-to-head Competition",
     ]);
     expect(
-      issues({
-        ...base,
-        format: "bracket",
-        bracketConfig: {
-          entrantsPerHeat: 2,
-          advancePerHeat: 1,
-          thirdPlaceGame: false,
-        },
-      }),
-    ).toEqual([]);
+      issues({ ...base, bestScoreConfig: { teamScore: "best-member" } }),
+    ).toEqual(["bestScoreConfig is only for a best-score Competition"]);
     expect(
-      issues({
-        ...base,
-        bracketConfig: {
-          entrantsPerHeat: 2,
-          advancePerHeat: 1,
-          thirdPlaceGame: false,
-        },
-      }),
-    ).toEqual(["bracketConfig is only for a Bracket"]);
+      issues({ ...base, format: "head-to-head", scoreUnit: "pts" }),
+    ).toEqual(["scoreUnit is only for a placement or best-score Competition"]);
   });
 
-  it("refuses a 3rd place Match on a Bracket config other than 2 per Match with 1 advancing", () => {
-    const bracket = (config: object) =>
-      issues({
-        ...base,
-        format: "bracket",
-        bracketConfig: { thirdPlaceGame: true, ...config },
-      });
-    expect(bracket({ entrantsPerHeat: 4, advancePerHeat: 2 })).toEqual([
-      "A 3rd place Match is only for 2 per Match with 1 advancing.",
-    ]);
-    expect(bracket({ entrantsPerHeat: 2, advancePerHeat: 1 })).toEqual([]);
-  });
-
-  it("refuses the removed gameType and finishPoints keys", () => {
+  it("refuses the removed keys: entrantsOpen and the close times", () => {
     for (const extra of [
-      { gameType: "head-to-head" },
-      { gameConfig: { finishPoints: [] }, format: "best-score" },
+      { entrantsOpen: true },
+      { loggingClosesAt: null },
+      { enrollClosesAt: null },
     ]) {
       expect(issues({ ...base, format: "head-to-head", ...extra })).not.toEqual(
         [],
@@ -598,14 +574,36 @@ describe("competitionSeedSchema, games", () => {
     }
   });
 
-  it("checks gameConfig against the Format", () => {
+  it("needs a Bracket's full bracketConfig, and gives no other Format one", () => {
+    expect(issues({ ...base, format: "bracket" })).toEqual([
+      "a Bracket needs its bracketConfig (kind, entrantsPerMatch, advancePerMatch, thirdPlaceMatch, rounds)",
+    ]);
+    const headToHead = {
+      kind: "head-to-head" as const,
+      entrantsPerMatch: 2,
+      advancePerMatch: 1,
+      thirdPlaceMatch: false,
+      rounds: {},
+    };
     expect(
+      issues({ ...base, format: "bracket", bracketConfig: headToHead }),
+    ).toEqual([]);
+    expect(issues({ ...base, bracketConfig: headToHead })).toEqual([
+      "bracketConfig is only for a Bracket",
+    ]);
+  });
+
+  it("refuses a 3rd place Match on a Bracket config other than 2 per Match with 1 advancing", () => {
+    const bracket = (config: object) =>
       issues({
         ...base,
-        format: "best-score",
-        gameConfig: { drawsAllowed: true, bestOf: null },
-      }),
-    ).not.toEqual([]);
+        format: "bracket",
+        bracketConfig: { thirdPlaceMatch: true, ...config },
+      });
+    expect(bracket({ entrantsPerMatch: 4, advancePerMatch: 2 })).toEqual([
+      "A 3rd place Match is only for 2 per Match with 1 advancing.",
+    ]);
+    expect(bracket({ entrantsPerMatch: 2, advancePerMatch: 1 })).toEqual([]);
   });
 });
 
@@ -726,7 +724,7 @@ describe("competitionGuardError", () => {
     scoring: "team" as const,
     placementPoints: [5, 3, 1] as number[] | null,
     pointsEntryCount: 0,
-    finalizedAt: null as Date | null,
+    closedAt: null as Date | null,
   };
 
   it("refuses more than 4 places for a Bracket, on create and on edit, but not for Placement", () => {
@@ -786,26 +784,26 @@ describe("competitionGuardError", () => {
   });
 
   it("refuses a scoring change while the Bracket is closed, but allows a Placement Points change (it applies at the next Close)", () => {
-    const finalized = { ...existingBase, finalizedAt: new Date() };
+    const closed = { ...existingBase, closedAt: new Date() };
     expect(
       competitionGuardError(values, {
         ...ctx,
-        existing: { ...finalized, scoring: "individual" },
+        existing: { ...closed, scoring: "individual" },
       }),
     ).toBe("This Competition's Bracket is closed. Reopen the Bracket first.");
     expect(
       competitionGuardError(
         { ...values, placementPoints: [10, 5] },
-        { ...ctx, existing: finalized },
+        { ...ctx, existing: closed },
       ),
     ).toBeNull();
     expect(
-      competitionGuardError(values, { ...ctx, existing: finalized }),
+      competitionGuardError(values, { ...ctx, existing: closed }),
     ).toBeNull();
     expect(
       competitionGuardError(
         { ...values, placementPoints: null },
-        { ...ctx, existing: { ...finalized, placementPoints: [] } },
+        { ...ctx, existing: { ...closed, placementPoints: [] } },
       ),
     ).toBeNull();
   });
@@ -814,7 +812,7 @@ describe("competitionGuardError", () => {
     const closed = {
       ...existingBase,
       format: "head-to-head" as const,
-      finalizedAt: new Date(),
+      closedAt: new Date(),
     };
     expect(
       competitionGuardError(values, {
@@ -831,15 +829,15 @@ describe("competitionGuardError", () => {
   });
 
   it("asks to reopen a Closed Placement, or the Closed Bracket, before a scoring change", () => {
-    const finalized = {
+    const closed = {
       ...existingBase,
       format: "placement" as const,
-      finalizedAt: new Date(),
+      closedAt: new Date(),
     };
     expect(
       competitionGuardError(values, {
         ...ctx,
-        existing: { ...finalized, scoring: "individual" },
+        existing: { ...closed, scoring: "individual" },
       }),
     ).toBe("This Competition is closed. Reopen it first.");
   });

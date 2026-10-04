@@ -3,12 +3,14 @@
 import { useState } from "react";
 
 import {
-  finalizeBracket,
-  recordHeatResult,
-  unfinalizeBracket,
+  clearMatchResult,
+  closeBracket,
+  recordMatchResult,
+  reopenBracket,
 } from "@/actions/brackets";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { BracketPodium } from "@/components/bracket-podium";
+import { BracketRoundEditor } from "@/components/bracket-round-editor";
 import { BracketTree } from "@/components/bracket-tree";
 import { ConfirmActionButton } from "@/components/confirm-dialog";
 import type { BracketViewEntrant } from "@/components/entrant-mark";
@@ -18,31 +20,34 @@ import {
 } from "@/components/match-result-form";
 import { ResponsiveSheetDialog } from "@/components/responsive-sheet-dialog";
 import { Button } from "@/components/ui/button";
+import { isHeadToHead } from "@/lib/bracket/config";
 import { isComplete, isRecordable } from "@/lib/bracket/formats";
 import type { PodiumPlace } from "@/lib/bracket/podium";
+import { resultLockReason } from "@/lib/bracket/self-report";
 import type { Bracket } from "@/lib/bracket/types";
 import { hasPlacementPoints } from "@/lib/competitions";
+import type { ScoreDirection } from "@/lib/enums";
 
 type Scoring = "team" | "individual";
 
 /**
- * The admin Bracket's Match result form: the Host's record, which asks
- * before resetting later Matches and toasts "<1st place> wins <Match name>".
+ * The admin Bracket's Match result form: the Host's record, toasting
+ * "<1st place> wins <Match name>", with Clear result once decided.
  */
 function MatchResultSheet({
   competitionId,
   ...props
-}: Omit<MatchResultFormProps, "submit" | "confirmResets" | "successToast"> & {
+}: Omit<MatchResultFormProps, "submit" | "clear" | "successToast"> & {
   competitionId: string;
 }) {
   return (
     <MatchResultForm
       {...props}
       submit={(result) =>
-        recordHeatResult(competitionId, props.heat.id, result)
+        recordMatchResult(competitionId, props.match.id, result)
       }
-      confirmResets
-      successToast={(winner, heat) => `${winner} wins ${heat}`}
+      clear={() => clearMatchResult(competitionId, props.match.id)}
+      successToast={(winner, match) => `${winner} wins ${match}`}
     />
   );
 }
@@ -69,13 +74,17 @@ type BracketAdminProps = {
   /** The Competition's Placement Points; none means Close creates no Points Entries. */
   placementPoints: number[] | null;
   scoring: Scoring;
+  /** The Competition's Score unit, for Score labels. */
+  scoreUnit?: string | null;
+  /** The Score direction: with one, Scores decide a Match's places. */
+  scoreDirection?: ScoreDirection;
   entrants: BracketViewEntrant[];
   bracket: Bracket;
   /** The Winner's Entrant id, once the final is decided. */
   winner: string | null;
   /** The places decided so far, with their points (`podium`). */
   podium: PodiumPlace[];
-  finalized: boolean;
+  closed: boolean;
   primaryColor: string;
   /** Who self-reported each Match's current result, by Match id: a name. */
   reporters?: Record<string, string>;
@@ -85,17 +94,23 @@ type BracketAdminProps = {
  * Runs a Bracket for an Organizer or the Competition's Host: Top finishers
  * and Close / Reopen on top, then the Bracket's tree (the same one
  * Participants see) with Record result (Edit once played) on every Match
- * that can be recorded while it isn't Closed. A tap opens the Match
+ * that can be recorded while it isn't Closed, and Edit disabled with the
+ * reason on a Match a later Match already used. A tap opens the Match
  * Result popup, a bottom Sheet on a phone and a centered Dialog on large
- * screens (`ResponsiveSheetDialog`). Refreshes live while no popup is open.
+ * screens (`ResponsiveSheetDialog`). A Group Bracket's Round headings each
+ * carry an Edit that opens that Round's editor (`BracketRoundEditor`) the
+ * same way. Refreshes live while no popup is open.
  */
 export function BracketAdmin(props: BracketAdminProps) {
-  const [openHeatId, setOpenHeatId] = useState<string | null>(null);
+  const [openMatchId, setOpenMatchId] = useState<string | null>(null);
+  const [editRound, setEditRound] = useState<number | null>(null);
   return (
     <BracketAdminView
       {...props}
-      openHeatId={openHeatId}
-      onOpenHeatChange={setOpenHeatId}
+      openMatchId={openMatchId}
+      onOpenMatchChange={setOpenMatchId}
+      editRound={editRound}
+      onEditRoundChange={setEditRound}
     />
   );
 }
@@ -109,24 +124,38 @@ export function BracketAdminView({
   competitionId,
   placementPoints,
   scoring,
+  scoreUnit = null,
+  scoreDirection = "none",
   entrants,
   bracket,
   winner,
   podium,
-  finalized,
+  closed,
   primaryColor,
   reporters = {},
-  openHeatId,
-  onOpenHeatChange,
+  openMatchId,
+  onOpenMatchChange,
+  editRound = null,
+  onEditRoundChange,
 }: BracketAdminProps & {
-  openHeatId: string | null;
-  onOpenHeatChange: (heatId: string | null) => void;
+  openMatchId: string | null;
+  onOpenMatchChange: (matchId: string | null) => void;
+  /** The Group Bracket Round being edited, if any. */
+  editRound?: number | null;
+  onEditRoundChange?: (round: number | null) => void;
 }) {
   const entrantsById = new Map(entrants.map((e) => [e.id, e]));
-  const resultHeat = openHeatId
-    ? bracket.heats.find((h) => h.id === openHeatId)
+  const resultMatch = openMatchId
+    ? bracket.matches.find((m) => m.id === openMatchId)
     : undefined;
-  const close = () => onOpenHeatChange(null);
+  const close = () => onOpenMatchChange(null);
+  // A Round an edit took away (it became the final's) closes its editor.
+  const roundShown =
+    editRound !== null &&
+    !closed &&
+    bracket.matches.some((m) => m.round === editRound)
+      ? editRound
+      : null;
   const copy = closeCopy(placementPoints);
 
   return (
@@ -136,11 +165,11 @@ export function BracketAdminView({
         entrantsById={entrantsById}
         scoring={scoring}
         primaryColor={primaryColor}
-        closed={finalized}
+        closed={closed}
       />
 
       <div className="flex flex-wrap items-center gap-3">
-        {finalized ? (
+        {closed ? (
           <>
             <p className="text-foreground/70 text-sm">
               {copy.closedNote} Reopen it to change a Match result.
@@ -148,7 +177,7 @@ export function BracketAdminView({
             <ConfirmActionButton
               title={copy.reopenTitle}
               confirmLabel="Reopen"
-              action={() => unfinalizeBracket(competitionId)}
+              action={() => reopenBracket(competitionId)}
               successMessage="Bracket reopened"
               variant="outline"
               size="lg"
@@ -162,7 +191,7 @@ export function BracketAdminView({
           <ConfirmActionButton
             title={copy.confirmTitle}
             confirmLabel="Close"
-            action={() => finalizeBracket(competitionId)}
+            action={() => closeBracket(competitionId)}
             successMessage="Bracket closed"
             variant="default"
             size="lg"
@@ -182,7 +211,7 @@ export function BracketAdminView({
         )}
       </div>
 
-      {bracket.heats.length === 0 && (
+      {bracket.matches.length === 0 && (
         <p className="text-foreground/70 text-sm">
           No Bracket yet. Generate it in the builder first.
         </p>
@@ -192,39 +221,78 @@ export function BracketAdminView({
         bracket={bracket}
         entrantsById={entrantsById}
         scoring={scoring}
+        scoreUnit={scoreUnit}
+        scoreDirection={scoreDirection}
         primaryColor={primaryColor}
-        recordableHeatIds={
-          finalized
+        recordableMatchIds={
+          closed
             ? []
-            : bracket.heats
-                .filter((h) => isRecordable(bracket, h.id))
-                .map((h) => h.id)
+            : bracket.matches
+                .filter(
+                  (m) =>
+                    isRecordable(bracket, m.id) &&
+                    !resultLockReason(bracket, m),
+                )
+                .map((m) => m.id)
         }
-        onRecord={onOpenHeatChange}
+        lockedMatchIds={
+          closed
+            ? []
+            : bracket.matches
+                .filter(
+                  (m) =>
+                    isRecordable(bracket, m.id) &&
+                    !!resultLockReason(bracket, m),
+                )
+                .map((m) => m.id)
+        }
+        onRecord={onOpenMatchChange}
+        onEditRound={
+          closed || isHeadToHead(bracket.config) ? undefined : onEditRoundChange
+        }
         reporters={reporters}
       />
 
       <ResponsiveSheetDialog
-        open={resultHeat !== undefined}
+        open={roundShown !== null}
+        onOpenChange={(open) => {
+          if (!open) onEditRoundChange?.(null);
+        }}
+      >
+        {roundShown !== null && (
+          <BracketRoundEditor
+            key={roundShown}
+            competitionId={competitionId}
+            bracket={bracket}
+            round={roundShown}
+            entrantsById={entrantsById}
+          />
+        )}
+      </ResponsiveSheetDialog>
+
+      <ResponsiveSheetDialog
+        open={resultMatch !== undefined}
         onOpenChange={(open) => {
           if (!open) close();
         }}
       >
-        {resultHeat && (
+        {resultMatch && (
           <MatchResultSheet
-            key={resultHeat.id}
+            key={resultMatch.id}
             competitionId={competitionId}
-            heat={resultHeat}
+            match={resultMatch}
             bracket={bracket}
             entrantsById={entrantsById}
             scoring={scoring}
+            scoreUnit={scoreUnit}
+            scoreDirection={scoreDirection}
             primaryColor={primaryColor}
             onSaved={close}
           />
         )}
       </ResponsiveSheetDialog>
 
-      {openHeatId === null && <AutoRefresh />}
+      {openMatchId === null && editRound === null && <AutoRefresh />}
     </div>
   );
 }

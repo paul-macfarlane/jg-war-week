@@ -33,7 +33,7 @@ const FIELD_LABEL: Record<EntrantKind, (label: string) => string> = {
 
 /**
  * The Entrants field: a multi-select combobox of Teams, Participants or
- * Squads and its Save button, shared by the Bracket and Games builders
+ * Squads and its Save button, shared by the Bracket and Head-to-head builders
  * (extracted from `BracketBuilder`, no behavior change there). `note` sits
  * above the combobox for controls the caller owns, like the Bracket's
  * "Entrants are" kind select and "All Teams" quick-select.

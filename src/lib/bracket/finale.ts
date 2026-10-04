@@ -1,6 +1,6 @@
 /**
  * The Bracket Finale's rows (`/<edition>/finale/<competitionId>`): a
- * finalized Bracket's final placings, counted in from last place to first.
+ * closed Bracket's final placings, counted in from last place to first.
  * Pure: the placings come from the Bracket's engine as is; nothing here
  * reads or recomputes Standings.
  */

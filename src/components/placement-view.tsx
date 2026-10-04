@@ -23,7 +23,7 @@ export function PlacementView({
   teamLabel: string;
 }) {
   const { competition, rows, entryPoints } = view;
-  const closed = competition.finalizedAt !== null;
+  const closed = competition.closedAt !== null;
   const pointsOf = (row: PlacementRowView) =>
     closed ? entryPointsFor(entryPoints, row) : row.points;
   const lead = (row: PlacementRowView) =>
@@ -85,6 +85,7 @@ export function PlacementView({
               competition.scoring === "team" ? teamLabel : "Participant"
             }
             provisional={!closed}
+            scoreUnit={competition.scoreUnit}
           />
         </>
       )}

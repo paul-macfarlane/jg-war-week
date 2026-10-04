@@ -12,8 +12,9 @@ import { E2E_PARTICIPANT_EMAIL, asOrganizer, signIn } from "./session";
 
 // Epic R20, deliverable D3 (.scratch/competition-results/spec.md, decision
 // 4 and decision 5's last bullet): a Best score Competition's results are
-// one row per person, from their best Attempt (in `total` mode, their
-// total), with Top finishers above; a row's other Attempts open under it,
+// one row per person, from their best Attempt (in team scoring, by Sum of
+// members, each Team's members' bests added up; R21), with Top finishers
+// above; a row's other Attempts open under it,
 // by keyboard too; an Organizer edits and deletes an Attempt from the
 // expanded row on the admin page. Each test makes its own `E2E R20 …`
 // Competition in XI (Attempts inserted directly) and deletes it in
@@ -28,9 +29,9 @@ const GRAHAM = "Graham Macbeth";
 
 /**
  * Ashley has three Attempts (12, 30, 18 laps, oldest first), Sam one (25)
- * and Graham one (20). Worked by hand: best mode ranks Ashley 30, Sam 25,
- * Graham 20; total mode Ashley 60, Sam 25, Graham 20. Placement Points
- * 5 / 3 / 1 either way.
+ * and Graham one (20). Worked by hand: individually Ashley 30, Sam 25,
+ * Graham 20; by Team, Sum of members, Red (Ashley 30 + Sam 25) 55 and Blue
+ * (Graham) 20. Placement Points 5 / 3 / 1.
  */
 const ATTEMPTS: [string, number, number][] = [
   [ASHLEY, 12, 50],
@@ -42,26 +43,26 @@ const ATTEMPTS: [string, number, number][] = [
 
 async function addBestScore(
   name: string,
-  count: "best" | "total",
+  scoring: "individual" | "team",
 ): Promise<string> {
   const [{ id }] = await runQuery<{ id: string }>(
     `insert into competition
-       (war_week_id, name, scoring, format, game_config, entrants_open, placement_points)
-     select id, $1, 'individual', 'best-score', $2::jsonb, true, '{5,3,1}'
+       (war_week_id, name, scoring, format, score_direction, score_unit,
+        best_score_config, placement_points)
+     select id, $1, $2, 'best-score', 'higher', 'laps', $3::jsonb, '{5,3,1}'
      from war_week where edition = 'xi'
      returning id`,
-    [name, JSON.stringify({ count, betterIs: "higher", unit: "laps" })],
+    [name, scoring, JSON.stringify({ teamScore: "sum-of-members" })],
   );
   for (const [who, score, minutesAgo] of ATTEMPTS) {
-    const [game] = await runQuery<{ id: string }>(
-      `insert into game (competition_id, logged_at, logged_by_email)
-       values ($1, now() - make_interval(mins => $2), 'e2e-organizer@jahnelgroup.com')
-       returning id`,
-      [id, minutesAgo],
-    );
+    // Each Attempt counts for its Participant's Team, as at logging.
     await runQuery(
-      `insert into game_player (game_id, participant_id, score) values ($1, $2, $3)`,
-      [game.id, await xiParticipantId(who), score],
+      `insert into attempt (competition_id, participant_id, team_id, score,
+         recorded_at, logged_by_email)
+       select $1, p.id, p.team_id, $3, now() - make_interval(mins => $4),
+         'e2e-organizer@jahnelgroup.com'
+       from participant p where p.id = $2`,
+      [id, await xiParticipantId(who), score, minutesAgo],
     );
   }
   return id;
@@ -109,7 +110,7 @@ test("r20 D3 Best score: a person with three Attempts holds one place, and their
 }, testInfo) => {
   test.setTimeout(120_000);
   const name = `E2E R20 Laps best ${Date.now()}`;
-  const id = await addBestScore(name, "best");
+  const id = await addBestScore(name, "individual");
   try {
     await signIn(context, E2E_PARTICIPANT_EMAIL);
     for (const [label, viewport] of [
@@ -156,7 +157,11 @@ test("r20 D3 Best score: a person with three Attempts holds one place, and their
       ).toBe(true);
 
       // No separate list of Attempts: each shows only in its person's row.
-      await expect(page.getByText("18 laps")).toBeHidden();
+      // By role: until React reveals the streamed page, a hidden copy of it
+      // can still be in the document.
+      await expect(
+        page.getByRole("region", { name: "Results" }).getByText("18 laps"),
+      ).toBeHidden();
       await expect(page.getByRole("region", { name: "Matches" })).toHaveCount(
         0,
       );
@@ -219,12 +224,12 @@ test("r20 D3 Best score: a person with three Attempts holds one place, and their
   }
 });
 
-test("r20 D3 Best score in total mode: the row is the sum of the person's Attempts, and the expansion lists all of them", async ({
+test("r21 Best score by Team, Sum of members: the row is each member's best added up, and the expansion lists every Attempt", async ({
   context,
   page,
 }, testInfo) => {
-  const name = `E2E R20 Laps total ${Date.now()}`;
-  const id = await addBestScore(name, "total");
+  const name = `E2E R21 Laps team ${Date.now()}`;
+  const id = await addBestScore(name, "team");
   try {
     await signIn(context, E2E_PARTICIPANT_EMAIL);
     for (const [label, viewport] of [
@@ -235,28 +240,24 @@ test("r20 D3 Best score in total mode: the row is the sum of the person's Attemp
       await page.goto(`/xi/competitions/${id}`);
       const table = resultsTable(page);
       await expect(table.locator('[data-slot="results-name"]')).toHaveText([
-        ASHLEY,
-        SAM,
-        GRAHAM,
+        "Red",
+        "Blue",
       ]);
-      // 12 + 30 + 18 = 60.
-      await expect(row(table, ASHLEY).getByRole("cell").nth(1)).toHaveText(
-        "60",
-      );
-      const { toggle, content } = await expansionOf(table, ASHLEY);
-      await expect(toggle).toContainText("3 attempts");
+      // Ashley's best 30 + Sam's 25 = 55; Ashley's 12 and 18 don't add.
+      await expect(row(table, "Red").getByRole("cell").nth(1)).toHaveText("55");
+      const { toggle, content } = await expansionOf(table, "Red");
+      await expect(toggle).toContainText("4 attempts");
       await toggle.focus();
       await page.keyboard.press("Enter");
       await expect(content.locator('[data-slot="attempt"]')).toContainText([
-        "18 laps",
-        "30 laps",
-        "12 laps",
+        new RegExp(`${ASHLEY}\\s*18 laps`),
+        new RegExp(`${ASHLEY}\\s*30 laps`),
+        new RegExp(`${SAM}\\s*25 laps`),
+        new RegExp(`${ASHLEY}\\s*12 laps`),
       ]);
-      await expect((await expansionOf(table, SAM)).toggle).toContainText(
-        "1 attempt",
-      );
+      await expect(content).not.toContainText("Best");
       await expectNoSidewaysScroll(page);
-      await shoot(page, testInfo, `total-${label}`);
+      await shoot(page, testInfo, `team-sum-${label}`);
     }
   } finally {
     await runQuery(`delete from competition where id = $1`, [id]);
@@ -269,7 +270,7 @@ test("r20 D3 Best score admin: no separate list; an Organizer edits and deletes 
 }, testInfo) => {
   test.setTimeout(120_000);
   const name = `E2E R20 Laps admin ${Date.now()}`;
-  const id = await addBestScore(name, "best");
+  const id = await addBestScore(name, "individual");
   try {
     await asOrganizer(context);
     await page.setViewportSize(DESKTOP);
@@ -327,7 +328,7 @@ test("r20 D3 Best score admin: no separate list; an Organizer edits and deletes 
     await expect(row(table, ASHLEY).getByRole("cell").nth(1)).toHaveText("30");
     await expect(toggle).toContainText("1 more attempt");
     const [{ count }] = await runQuery<{ count: number }>(
-      `select count(*)::int as count from game where competition_id = $1`,
+      `select count(*)::int as count from attempt where competition_id = $1`,
       [id],
     );
     expect(count).toBe(4);

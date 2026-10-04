@@ -957,9 +957,9 @@
       "group": "Pre-War Week and General",
       "description": "Attendance at JGHQ over the 14 business days before War Week, tracked with the stairs app.",
       "placementPoints": [2, 1],
-      "finalized": true,
-      "finalizedAt": "2026-02-22T09:01:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-22T09:01:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "AI Survey Completion",
@@ -967,9 +967,9 @@
       "group": "Pre-War Week and General",
       "description": "The team with the highest completion rate of the AI questionnaire by Tuesday morning.",
       "placementPoints": [1],
-      "finalized": true,
-      "finalizedAt": "2026-02-24T09:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-24T09:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Subjective Points",
@@ -982,9 +982,9 @@
       "scoring": "team",
       "description": "The team with the most people who go from 12:01 AM Sunday to noon with no nonsense.",
       "placementPoints": [3],
-      "finalized": true,
-      "finalizedAt": "2026-02-22T12:30:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-22T12:30:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Settlers of Catan",
@@ -992,18 +992,18 @@
       "countsTowardTeam": true,
       "placementPoints": [5, 3, 1],
       "description": "The 9th annual Catan tournament hosted by Tony Mercadante.",
-      "finalized": true,
-      "finalizedAt": "2026-02-22T21:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-22T21:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Beast Mode Workout",
       "scoring": "team",
       "description": "The team with the most people who complete Lucier's workout, at JGHQ or virtually.",
       "placementPoints": [3],
-      "finalized": true,
-      "finalizedAt": "2026-02-23T08:30:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-23T08:30:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Speed Chess",
@@ -1011,9 +1011,9 @@
       "countsTowardTeam": true,
       "description": "Run by Ben Sadick in a new format. Finals Monday night.",
       "placementPoints": [1.5],
-      "finalized": true,
-      "finalizedAt": "2026-02-23T21:30:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-23T21:30:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Beyblades",
@@ -1021,9 +1021,9 @@
       "countsTowardTeam": true,
       "placementPoints": [5, 3, 1],
       "description": "Finals Monday night in Team Room 4's new Beyblade Terrordome.",
-      "finalized": true,
-      "finalizedAt": "2026-02-23T21:45:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-23T21:45:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Pool",
@@ -1031,9 +1031,9 @@
       "countsTowardTeam": true,
       "description": "Organized by Dom Favata. Preliminaries before War Week, finals Monday night.",
       "placementPoints": [3],
-      "finalized": true,
-      "finalizedAt": "2026-02-23T22:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-23T22:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Super Smash Bros",
@@ -1041,9 +1041,9 @@
       "countsTowardTeam": true,
       "description": "Paul Macfarlane runs back this classic JG gaming competition.",
       "placementPoints": [3],
-      "finalized": true,
-      "finalizedAt": "2026-02-23T22:10:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-23T22:10:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Bouncy Pong",
@@ -1051,23 +1051,22 @@
       "countsTowardTeam": true,
       "placementPoints": [3, 2, 1],
       "format": "head-to-head",
-      "gameConfig": {
+      "seriesConfig": {
         "drawsAllowed": false,
-        "bestOf": null
+        "bestOf": 3
       },
-      "entrantsOpen": true,
+      "entrants": ["Albert Hernandez", "Austin Gage"],
       "description": "The inaugural Bouncy Ping Pong, run by Casey Snow."
     },
     {
       "name": "Tuesday Stairs",
       "scoring": "team",
       "format": "best-score",
-      "gameConfig": {
-        "count": "total",
-        "betterIs": "higher",
-        "unit": "trips"
+      "scoreDirection": "higher",
+      "scoreUnit": "trips",
+      "bestScoreConfig": {
+        "teamScore": "sum-of-members"
       },
-      "entrantsOpen": true,
       "description": "Stairway to Heaven: of course stairs on Tuesday counts."
     },
     {
@@ -1075,18 +1074,18 @@
       "scoring": "team",
       "group": "Team Night Events",
       "placementPoints": [3],
-      "finalized": true,
-      "finalizedAt": "2026-02-24T19:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-24T19:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Hard Line / White Rabbit",
       "scoring": "team",
       "group": "Team Night Events",
       "placementPoints": [3],
-      "finalized": true,
-      "finalizedAt": "2026-02-24T19:30:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-24T19:30:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Cypher",
@@ -1139,9 +1138,9 @@
       "countsTowardTeam": false,
       "description": "Complete 10 wellness tasks to have the best day possible. Recognition only; does not count toward team totals.",
       "placementPoints": [1],
-      "finalized": true,
-      "finalizedAt": "2026-02-25T13:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-25T13:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     }
   ],
   "awards": [
@@ -1158,13 +1157,13 @@
       "category": "black-midnight"
     },
     {
-      "key": "catan-champion",
+      "key": "catan-winner",
       "name": "Catan Champion",
       "description": "Winner of the 9th annual Settlers of Catan tournament.",
       "participants": ["Anthony Conway"]
     },
     {
-      "key": "terrordome-champion",
+      "key": "terrordome-winner",
       "name": "Terrordome Champion",
       "description": "Last Beyblade spinning in the Terrordome.",
       "participants": ["Jory Hutchins"]
@@ -1419,7 +1418,7 @@
       "kind": "awards"
     },
     {
-      "kind": "champions"
+      "kind": "winners"
     },
     {
       "kind": "standings"

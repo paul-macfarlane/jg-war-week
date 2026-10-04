@@ -102,7 +102,7 @@ async function fixture(tx: DBTx) {
       description: ONE_V_ONE,
       placementPoints: [10, 5],
       scoring: "team",
-      competitionGroup: "Board games",
+      competitionGroup: "Tabletop",
     })
     .returning();
   await tx.insert(schema.pointsEntry).values({
@@ -458,8 +458,8 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
       // The action's check sees nothing scored...
       expect(await getScoredCounts(empty.id, tx)).toEqual({
         pointsEntries: 0,
-        heatResults: 0,
-        games: 0,
+        matchResults: 0,
+        logged: 0,
       });
       // ...then a Points Entry lands before the mutation locks the row.
       await tx.insert(schema.pointsEntry).values({
@@ -478,7 +478,7 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
     });
   });
 
-  it("refuses Unstart once a Match has a result, or a Game is logged", async () => {
+  it("refuses Unstart once a Match has a result, or a Match or Attempt is logged", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { unstartWarWeek } = await import("@/mutations/war-week-lifecycle");
       const { schema, byId } = await fixture(tx);
@@ -497,26 +497,33 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
           scoring: "team",
         })
         .returning();
-      const [heat] = await tx
-        .insert(schema.heat)
-        .values({ competitionId: cup.id, round: 1, position: 1 })
+      const [match] = await tx
+        .insert(schema.bracketMatch)
+        .values({
+          competitionId: cup.id,
+          round: 1,
+          position: 1,
+          advanceCount: 1,
+        })
         .returning();
-      // A pending Heat isn't a result.
+      // A pending Match isn't a result.
       expect(await unstartWarWeek(ctxOf(live.id), tx)).toEqual({ ok: true });
       await tx
         .update(schema.warWeek)
         .set({ status: "live" })
         .where(eq(schema.warWeek.id, live.id));
       await tx
-        .update(schema.heat)
+        .update(schema.bracketMatch)
         .set({ status: "played" })
-        .where(eq(schema.heat.id, heat.id));
+        .where(eq(schema.bracketMatch.id, match.id));
       expect(await unstartWarWeek(ctxOf(live.id), tx)).toEqual({
         ok: false,
         error: "A Match has a result; Unstart isn't available.",
       });
-      await tx.delete(schema.heat).where(eq(schema.heat.id, heat.id));
-      await tx.insert(schema.game).values({
+      await tx
+        .delete(schema.bracketMatch)
+        .where(eq(schema.bracketMatch.id, match.id));
+      await tx.insert(schema.seriesMatch).values({
         competitionId: cup.id,
         loggedByEmail: "lead@jahnelgroup.com",
       });
@@ -711,7 +718,7 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
         placementPoints: [10, 5],
         scoring: "team",
         countsTowardTeam: false,
-        competitionGroup: "Board games",
+        competitionGroup: "Tabletop",
       });
       expect(competitions[0].id).not.toBe(chess.id);
       const entries = await tx

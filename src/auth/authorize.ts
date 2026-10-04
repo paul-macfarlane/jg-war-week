@@ -8,19 +8,25 @@ import {
   type WarWeekAction,
   can,
 } from "@/lib/access";
-import type { GameFormat } from "@/lib/enums";
-import type { GamesConfig } from "@/lib/games/config";
-import { SQUAD_MISSING } from "@/lib/games/enroll-rule";
-import { postedGamePlayerIds } from "@/lib/games/input";
-import { GAME_MISSING, NOT_GAMES } from "@/lib/games/log-rule";
+import { postedAttemptParticipantId } from "@/lib/best-score/input";
+import { ATTEMPT_MISSING } from "@/lib/best-score/log-rule";
+import { SQUAD_MISSING } from "@/lib/bracket/enroll-rule";
+import { NOT_LOGGED_FORMAT } from "@/lib/logged-results";
+import { postedMatchPlayerIds } from "@/lib/series/input";
+import { MATCH_MISSING } from "@/lib/series/log-rule";
 import { isUuid } from "@/lib/uuid";
 import type { MutationContext } from "@/mutations/types";
 import { type EnrollFacts, getEnrollFacts } from "@/queries/enrollment";
-import { getGameLogFacts } from "@/queries/games";
 import {
-  type HeatReportFacts,
-  getHeatReportFacts,
-} from "@/queries/heat-reports";
+  type LoggedCompetition,
+  getAttemptLogFacts,
+  getLoggedCompetition,
+  getSeriesLogFacts,
+} from "@/queries/logged-results";
+import {
+  type MatchReportFacts,
+  getMatchReportFacts,
+} from "@/queries/match-reports";
 import { getCheckInFacts } from "@/queries/participation";
 import {
   type LoadedTarget,
@@ -119,23 +125,23 @@ export async function authorize(
 }
 
 /**
- * The authorize step for self-report, the one Participant write (ADR 0005),
+ * The authorize step for a Bracket Match self-report (ADR 0011),
  * in ADR 0003's order: authenticate; both ids shaped like row ids; load the
- * Competition and its War Week; load the Heat's facts for the actor's email
- * (account linking); run `can("bracket.heat-report")`,
+ * Competition and its War Week; load the Match's facts for the actor's email
+ * (account linking); run `can("bracket.match-report")`,
  * which binds Organizers and Hosts too. The caller parses its input only
  * after this. Never throws on a refusal.
  */
-export async function authorizeHeatReport(
+export async function authorizeMatchReport(
   competitionId: unknown,
-  heatId: unknown,
+  matchId: unknown,
 ): Promise<
   | {
       ok: true;
       actor: NonNullable<Actor>;
       warWeek: TargetWarWeek;
       ctx: MutationContext;
-      linked: NonNullable<HeatReportFacts["linked"]>;
+      linked: NonNullable<MatchReportFacts["linked"]>;
     }
   | Refused
 > {
@@ -143,17 +149,17 @@ export async function authorizeHeatReport(
   if (!actor) return { ok: false, error: SIGN_IN_REFUSAL };
   const [competitionNotFound, load] = TARGETS.competition;
   if (!isUuid(competitionId)) return { ok: false, error: competitionNotFound };
-  if (!isUuid(heatId)) {
+  if (!isUuid(matchId)) {
     return { ok: false, error: "That Match no longer exists." };
   }
   const target = await load(competitionId);
   if (!target) return { ok: false, error: competitionNotFound };
 
-  const facts = await getHeatReportFacts(competitionId, heatId, actor.email);
-  const refusal = can(actor, "bracket.heat-report", {
+  const facts = await getMatchReportFacts(competitionId, matchId, actor.email);
+  const refusal = can(actor, "bracket.match-report", {
     warWeekId: target.warWeek.id,
     competitionId: target.competitionId,
-    heatReport: facts.heatReport,
+    matchReport: facts.matchReport,
   });
   if (refusal) return { ok: false, error: refusal };
   // `can` refuses an unlinked actor, so this is only for the type.
@@ -260,22 +266,25 @@ export async function authorizeCheckIn(
   };
 }
 
+/** What a logged-result write does: log one, edit one, or delete one. */
+export type ResultOperation = "log" | "edit" | "delete";
+
 /**
- * The authorize step for logging, editing and deleting a Game (ADR 0006),
- * in ADR 0003's order: authenticate; the ids shaped like row ids; load the
- * Competition and its War Week; load the Game facts for the actor's email
- * (whether they run this Competition, account linking) with
- * the player ids `input` posts for the Competition's Format
- * (`postedGamePlayerIds`, so another type's keys never reach `can`; none
- * for a delete); run
- * `can`, which binds Organizers and Hosts too when closed. Returns the
- * Competition's Format and config, which the caller parses its input
- * with only after this. Never throws on a refusal.
+ * The authorize step for logging, editing and deleting a Head-to-head
+ * Match or a Best score Attempt (ADR 0011), in ADR 0003's order:
+ * authenticate; the ids shaped like row ids; load the Competition and its
+ * War Week; load the Format's facts for the actor's email (whether they
+ * run this Competition, account linking) with what `input` posts for that
+ * Format (`postedMatchPlayerIds` or `postedAttemptParticipantId`, so
+ * another Format's keys never reach `can`; none for a delete); run `can`
+ * with `series.<op>` or `attempts.<op>`, which binds Organizers and Hosts
+ * too when closed. Returns the Competition, whose Format and config the
+ * caller parses its input with only after this. Never throws on a refusal.
  */
-export async function authorizeGameWrite(
-  action: "games.log" | "games.edit" | "games.delete",
+export async function authorizeResultWrite(
+  operation: ResultOperation,
   competitionId: unknown,
-  gameId: unknown,
+  resultId: unknown,
   input: unknown = null,
 ): Promise<
   | {
@@ -283,7 +292,7 @@ export async function authorizeGameWrite(
       actor: NonNullable<Actor>;
       warWeek: TargetWarWeek;
       ctx: MutationContext;
-      competition: { gameFormat: GameFormat; config: GamesConfig };
+      competition: LoggedCompetition;
     }
   | Refused
 > {
@@ -291,40 +300,53 @@ export async function authorizeGameWrite(
   if (!actor) return { ok: false, error: SIGN_IN_REFUSAL };
   const [competitionNotFound, load] = TARGETS.competition;
   if (!isUuid(competitionId)) return { ok: false, error: competitionNotFound };
-  const isLog = action === "games.log";
-  if (!isLog && !isUuid(gameId)) return { ok: false, error: GAME_MISSING };
   const target = await load(competitionId);
   if (!target) return { ok: false, error: competitionNotFound };
-
-  const facts = await getGameLogFacts(
-    competitionId,
-    isLog ? null : (gameId as string),
-    actor.email,
-    {
-      playerIds: (gameFormat) =>
-        action === "games.delete" ? [] : postedGamePlayerIds(gameFormat, input),
-    },
-  );
-  if (!facts.competition) return { ok: false, error: NOT_GAMES };
-  const refusal = can(actor, action, {
+  const found = await getLoggedCompetition(competitionId);
+  if (!found) return { ok: false, error: NOT_LOGGED_FORMAT };
+  const isLog = operation === "log";
+  const missing =
+    found.format === "head-to-head" ? MATCH_MISSING : ATTEMPT_MISSING;
+  if (!isLog && !isUuid(resultId)) return { ok: false, error: missing };
+  const id = isLog ? null : (resultId as string);
+  const posted = operation === "delete" ? null : input;
+  const access: AccessTarget = {
     warWeekId: target.warWeek.id,
     competitionId: target.competitionId,
-    gameLog: facts.gameLog,
-  });
-  if (refusal) return { ok: false, error: refusal };
-  // A Host or Organizer passes the rule before the Game is looked up.
-  if (facts.gameLog.game === "missing") {
-    return { ok: false, error: GAME_MISSING };
+  };
+  let gone = false;
+  if (found.format === "head-to-head") {
+    const facts = await getSeriesLogFacts(
+      competitionId,
+      id,
+      actor.email,
+      postedMatchPlayerIds(posted),
+    );
+    if (!facts) return { ok: false, error: NOT_LOGGED_FORMAT };
+    access.seriesLog = facts.seriesLog;
+    gone = facts.seriesLog.match === "missing";
+  } else {
+    const facts = await getAttemptLogFacts(
+      competitionId,
+      id,
+      actor.email,
+      postedAttemptParticipantId(posted),
+    );
+    if (!facts) return { ok: false, error: NOT_LOGGED_FORMAT };
+    access.attemptLog = facts.attemptLog;
+    gone = facts.attemptLog.attempt === "missing";
   }
+  const family = found.format === "head-to-head" ? "series" : "attempts";
+  const refusal = can(actor, `${family}.${operation}`, access);
+  if (refusal) return { ok: false, error: refusal };
+  // A Host or Organizer passes the rule before the result is looked up.
+  if (gone) return { ok: false, error: missing };
   return {
     ok: true,
     actor,
     warWeek: target.warWeek,
     ctx: { warWeekId: target.warWeek.id, actorEmail: actor.email },
-    competition: {
-      gameFormat: facts.competition.gameFormat,
-      config: facts.competition.config,
-    },
+    competition: found,
   };
 }
 

@@ -963,9 +963,9 @@
       "group": "Pre-War Week and General",
       "description": "Attendance at JGHQ over the 14 business days before War Week, tracked with the stairs app.",
       "placementPoints": [3],
-      "finalized": true,
-      "finalizedAt": "2026-02-27T15:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-27T15:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "AI Survey Completion",
@@ -973,27 +973,27 @@
       "group": "Pre-War Week and General",
       "description": "The team with the highest completion rate of the AI questionnaire by Tuesday morning.",
       "placementPoints": [1],
-      "finalized": true,
-      "finalizedAt": "2026-02-27T15:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-27T15:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Black Midnight",
       "scoring": "team",
       "description": "The team with the most people who go from 12:01 AM Sunday to noon with no nonsense.",
       "placementPoints": [3],
-      "finalized": true,
-      "finalizedAt": "2026-02-27T15:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-27T15:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Settlers of Catan",
       "scoring": "team",
       "description": "The 9th annual Catan tournament hosted by Tony Mercadante.",
       "placementPoints": [5],
-      "finalized": true,
-      "finalizedAt": "2026-02-27T15:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-27T15:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Beast Mode Workout",
@@ -1005,135 +1005,135 @@
       "scoring": "team",
       "description": "Run by Ben Sadick in a new format. Finals Monday night.",
       "placementPoints": [1.5],
-      "finalized": true,
-      "finalizedAt": "2026-02-27T15:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-27T15:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Beyblades",
       "scoring": "team",
       "description": "Finals Monday night in Team Room 4's new Beyblade Terrordome.",
       "placementPoints": [5],
-      "finalized": true,
-      "finalizedAt": "2026-02-27T15:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-27T15:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Pool",
       "scoring": "team",
       "description": "Organized by Dom Favata. Preliminaries before War Week, finals Monday night.",
       "placementPoints": [3],
-      "finalized": true,
-      "finalizedAt": "2026-02-27T15:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-27T15:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Super Smash Bros",
       "scoring": "team",
       "description": "Paul Macfarlane runs back this classic JG gaming competition.",
       "placementPoints": [3],
-      "finalized": true,
-      "finalizedAt": "2026-02-27T15:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-27T15:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Bouncy Pong",
       "scoring": "team",
       "description": "The inaugural Bouncy Ping Pong, run by Casey Snow.",
       "placementPoints": [3],
-      "finalized": true,
-      "finalizedAt": "2026-02-27T15:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-27T15:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Tuesday Stairs",
       "scoring": "team",
       "description": "Stairway to Heaven: of course stairs on Tuesday counts.",
       "placementPoints": [2, 1],
-      "finalized": true,
-      "finalizedAt": "2026-02-27T15:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-27T15:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "This is Zion",
       "scoring": "team",
       "group": "Team Night Events",
       "placementPoints": [3],
-      "finalized": true,
-      "finalizedAt": "2026-02-27T15:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-27T15:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Hard Line / White Rabbit",
       "scoring": "team",
       "group": "Team Night Events",
       "placementPoints": [2, 1],
-      "finalized": true,
-      "finalizedAt": "2026-02-27T15:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-27T15:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Cypher",
       "scoring": "team",
       "group": "Team Night Events",
       "placementPoints": [2, 1],
-      "finalized": true,
-      "finalizedAt": "2026-02-27T15:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-27T15:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Red Pill / Blue Pill",
       "scoring": "team",
       "group": "Team Night Events",
       "placementPoints": [3],
-      "finalized": true,
-      "finalizedAt": "2026-02-27T15:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-27T15:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "There is No Spoon",
       "scoring": "team",
       "group": "Team Night Events",
       "placementPoints": [3],
-      "finalized": true,
-      "finalizedAt": "2026-02-27T15:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-27T15:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "The Keymaker",
       "scoring": "team",
       "group": "Team Night Events",
       "placementPoints": [3],
-      "finalized": true,
-      "finalizedAt": "2026-02-27T15:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-27T15:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Deja Vu",
       "scoring": "team",
       "group": "Team Night Events",
       "placementPoints": [3],
-      "finalized": true,
-      "finalizedAt": "2026-02-27T15:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-27T15:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Guns, Lots of Guns",
       "scoring": "team",
       "group": "Team Night Events",
       "placementPoints": [3],
-      "finalized": true,
-      "finalizedAt": "2026-02-27T15:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-27T15:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Electric City Matrix",
       "scoring": "team",
       "group": "Team Night Events",
       "placementPoints": [5],
-      "finalized": true,
-      "finalizedAt": "2026-02-27T15:00:00-05:00",
-      "finalizedByEmail": "pmacfarlane@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2026-02-27T15:00:00-05:00",
+      "closedByEmail": "pmacfarlane@jahnelgroup.com"
     },
     {
       "name": "Winning the Day Challenge",

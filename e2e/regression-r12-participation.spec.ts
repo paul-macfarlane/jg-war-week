@@ -136,7 +136,14 @@ test("r12 69 a Host runs a team Participation Competition: check-ins, a tick, Cl
     await expect(
       host.getByRole("group", { name: "Placement Points" }),
     ).toBeVisible();
-    await host.getByRole("button", { name: "Fill 5, 3, 1" }).click();
+    for (const [place, points] of [
+      ["1st", "5"],
+      ["2nd", "3"],
+      ["3rd", "1"],
+    ]) {
+      await host.getByRole("button", { name: "Add place" }).click();
+      await host.getByLabel(`${place} place Placement Points`).fill(points);
+    }
     await host
       .getByRole("switch", { name: "Participants can check in" })
       .click();

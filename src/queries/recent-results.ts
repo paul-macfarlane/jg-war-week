@@ -23,7 +23,7 @@ import {
 /**
  * A War Week's Recent results for Home, newest first (shaping rules in
  * `shapeRecentResults`). Reads the newest Discretionary entries and the
- * generated ones of only the newest finalized Competitions: the rest
+ * generated ones of only the newest closed Competitions: the rest
  * can't reach the newest `RECENT_RESULTS_LIMIT` rows.
  */
 export async function getRecentResults(
@@ -35,13 +35,13 @@ export async function getRecentResults(
       id: competition.id,
       name: competition.name,
       format: competition.format,
-      finalizedAt: competition.finalizedAt,
+      closedAt: competition.closedAt,
     })
     .from(competition)
     .where(eq(competition.warWeekId, warWeek.id));
-  const newestFinalized = competitions
+  const newestClosed = competitions
     .flatMap((c) =>
-      c.finalizedAt ? [{ id: c.id, at: c.finalizedAt.getTime() }] : [],
+      c.closedAt ? [{ id: c.id, at: c.closedAt.getTime() }] : [],
     )
     .sort((a, b) => b.at - a.at)
     .slice(0, RECENT_RESULTS_LIMIT)
@@ -58,11 +58,11 @@ export async function getRecentResults(
       )
       .orderBy(desc(pointsEntry.enteredAt))
       .limit(RECENT_RESULTS_LIMIT),
-    newestFinalized.length > 0
+    newestClosed.length > 0
       ? entries().where(
           and(
-            inArray(pointsEntry.competitionId, newestFinalized),
-            eq(pointsEntry.generatedByBracket, true),
+            inArray(pointsEntry.competitionId, newestClosed),
+            eq(pointsEntry.generated, true),
           ),
         )
       : Promise.resolve([]),
@@ -86,7 +86,7 @@ export function resultEntryQuery(dbOrTx: DBOrTx) {
         points: pointsEntry.points,
         note: pointsEntry.note,
         enteredAt: pointsEntry.enteredAt,
-        generatedByBracket: pointsEntry.generatedByBracket,
+        generated: pointsEntry.generated,
         teamId: pointsEntry.teamId,
         participantId: pointsEntry.participantId,
         teamName: team.name,
@@ -113,7 +113,7 @@ export function toResultEntry(
     points: r.points,
     note: r.note,
     enteredAt: r.enteredAt,
-    generatedByBracket: r.generatedByBracket,
+    generated: r.generated,
     target: r.teamId
       ? {
           kind: "team",

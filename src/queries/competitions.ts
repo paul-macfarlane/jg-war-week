@@ -5,12 +5,13 @@ import { DBOrTx, db } from "@/db";
 import {
   type Competition,
   WarWeek,
+  attempt,
   competition,
   entrant,
-  game,
   participation,
   placement,
   pointsEntry,
+  seriesMatch,
 } from "@/db/schema";
 import { hasResults } from "@/lib/bracket/formats";
 import { isBracketFormat } from "@/lib/bracket/view";
@@ -80,8 +81,8 @@ export type CompetitionListRow = CompetitionListItem & {
  * Loads a War Week's Competitions, grouped by `groupCompetitions`, each
  * with its status (`competitionStatus`). The facts come in one batch per
  * War Week, never a query per Competition: what each has entered (as
- * `hasResult` reads it), the Brackets' Heats, and the generated Points
- * Entries of the finalized ones, whose winners `finalWinners` names.
+ * `hasResult` reads it), the Brackets' Matches, and the generated Points
+ * Entries of the closed ones, whose winners `finalWinners` names.
  */
 export async function getCompetitions(
   warWeek: Pick<WarWeek, "id">,
@@ -90,13 +91,13 @@ export async function getCompetitions(
   const rows = await dbOrTx
     .select({
       ...competitionColumns,
-      finalizedAt: competition.finalizedAt,
+      closedAt: competition.closedAt,
       bracketConfig: competition.bracketConfig,
     })
     .from(competition)
     .where(eq(competition.warWeekId, warWeek.id));
   const ids = rows.map((c) => c.id);
-  const finalizedIds = rows.flatMap((c) => (c.finalizedAt ? [c.id] : []));
+  const closedIds = rows.flatMap((c) => (c.closedAt ? [c.id] : []));
 
   /** How many rows of `table` each Competition has, by Competition id. */
   const countsBy = async (
@@ -115,7 +116,8 @@ export async function getCompetitions(
 
   const [
     entrants,
-    games,
+    matches,
+    attempts,
     placements,
     checkIns,
     generated,
@@ -123,23 +125,24 @@ export async function getCompetitions(
     generatedEntries,
   ] = await Promise.all([
     countsBy(entrant, entrant.competitionId),
-    countsBy(game, game.competitionId),
+    countsBy(seriesMatch, seriesMatch.competitionId),
+    countsBy(attempt, attempt.competitionId),
     countsBy(placement, placement.competitionId),
     countsBy(participation, participation.competitionId),
     countsBy(
       pointsEntry,
       pointsEntry.competitionId,
-      eq(pointsEntry.generatedByBracket, true),
+      eq(pointsEntry.generated, true),
     ),
     loadBrackets(
       rows.filter((c) => isBracketFormat(c.format)),
       dbOrTx,
     ),
-    finalizedIds.length > 0
+    closedIds.length > 0
       ? resultEntryQuery(dbOrTx).where(
           and(
-            inArray(pointsEntry.competitionId, finalizedIds),
-            eq(pointsEntry.generatedByBracket, true),
+            inArray(pointsEntry.competitionId, closedIds),
+            eq(pointsEntry.generated, true),
           ),
         )
       : Promise.resolve([]),
@@ -166,15 +169,15 @@ export async function getCompetitions(
       status: competitionStatus({
         format: row.format,
         scoring: row.scoring,
-        finalized: row.finalizedAt !== null,
+        closed: row.closedAt !== null,
         hasResult: hasResult({
           entrants: entrants.get(row.id) ?? 0,
-          games: games.get(row.id) ?? 0,
+          logged: (matches.get(row.id) ?? 0) + (attempts.get(row.id) ?? 0),
           placements: placements.get(row.id) ?? 0,
           checkIns: checkIns.get(row.id) ?? 0,
-          // Only Brackets have Heats, and `loadBrackets` has them.
-          heats: bracket?.heats.length ?? 0,
-          heatResult: bracket ? hasResults(bracket) : false,
+          // Only Brackets have Matches, and `loadBrackets` has them.
+          matches: bracket?.matches.length ?? 0,
+          matchResult: bracket ? hasResults(bracket) : false,
           generatedPointsEntries: generated.get(row.id) ?? 0,
         }),
         bracketRound: bracket ? bracketRoundInPlay(bracket) : null,

@@ -25,7 +25,6 @@ export type ParticipationSettings = {
   participationPoints: number | null;
   placementPoints: number[] | null;
   selfCheckIn: boolean;
-  checkInClosesAt: Date | null;
 };
 
 function refuse(error: string, field?: string): Parsed<never> {

@@ -7,7 +7,16 @@
  */
 import { z } from "zod";
 
+import {
+  type BestScoreConfig,
+  bestScoreConfigSchema,
+} from "@/lib/best-score/config";
 import { type BracketConfig, bracketConfigSchema } from "@/lib/bracket/config";
+import {
+  ENROLL_SWITCH_INVALID,
+  ENTRANT_LIMIT_TOO_LOW,
+  limitOf,
+} from "@/lib/bracket/enroll-input";
 import { MAX_ENTRANTS } from "@/lib/bracket/input";
 import type { EntrantKind } from "@/lib/bracket/squads";
 import type { Format } from "@/lib/bracket/types";
@@ -18,13 +27,6 @@ import {
   SCORE_DIRECTIONS,
   type ScoreDirection,
 } from "@/lib/enums";
-import {
-  ENROLL_CLOSES_AT_INVALID,
-  ENROLL_SWITCH_INVALID,
-  ENTRANT_LIMIT_TOO_LOW,
-  closesAtOf,
-  limitOf,
-} from "@/lib/games/enroll-input";
 import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
 import { participationPointsSchema } from "@/lib/participation/input";
 import { parsePlacementPointsText } from "@/lib/placement-points";
@@ -34,6 +36,10 @@ import {
   contentInputSchema,
   isBlankContent,
 } from "@/lib/rich-text/content";
+import { type SeriesConfig, seriesConfigSchema } from "@/lib/series/config";
+
+/** The highest "Max attempts per person" the form takes. */
+export const MAX_ATTEMPTS_LIMIT = 999;
 
 /** The longest Competition name and Group (the columns). */
 export const COMPETITION_NAME_MAX = 120;
@@ -53,9 +59,10 @@ export type CompetitionSettingChange =
   | { field: "scoring"; value: (typeof COMPETITION_SCORINGS)[number] }
   | { field: "countsTowardTeam"; value: boolean }
   | { field: "scoreDirection"; value: ScoreDirection }
-  /** Checked against the Competition's Format by the mutation. */
-  | { field: "gameConfig"; value: unknown }
-  | { field: "entrantsOpen"; value: boolean }
+  /** At most 20 characters; blank is none. */
+  | { field: "scoreUnit"; value: string | null }
+  | { field: "seriesConfig"; value: SeriesConfig }
+  | { field: "bestScoreConfig"; value: BestScoreConfig }
   | { field: "bracketConfig"; value: BracketConfig }
   | {
       field: "entrants";
@@ -66,11 +73,10 @@ export type CompetitionSettingChange =
   | { field: "selfEnroll"; value: boolean }
   /** Null for no limit; else at least 2. */
   | { field: "entrantLimit"; value: number | null }
-  | { field: "enrollClosesAt"; value: Date | null }
-  | { field: "loggingClosesAt"; value: Date | null }
   | { field: "selfReport"; value: boolean }
   | { field: "selfCheckIn"; value: boolean }
-  | { field: "checkInClosesAt"; value: Date | null };
+  /** Best score's limit per person; null for none. */
+  | { field: "maxAttempts"; value: number | null };
 
 // Every lock-table field has a change, and every change a lock-table field.
 type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
@@ -87,16 +93,9 @@ export function refusedAt(field: string, error: string): Parsed<never> {
 
 const BOOLEAN_FIELDS = {
   countsTowardTeam: "Choose whether it counts toward the Team.",
-  entrantsOpen: "Choose whether Entrants are open.",
   selfEnroll: ENROLL_SWITCH_INVALID,
-  selfReport: "Turn self-report on or off.",
+  selfReport: "Choose whether Participants can log their own results.",
   selfCheckIn: "Choose whether Participants can check in.",
-} as const;
-
-const CLOSES_AT_FIELDS = {
-  enrollClosesAt: ENROLL_CLOSES_AT_INVALID,
-  loggingClosesAt: "Enter a valid logging close time.",
-  checkInClosesAt: "Enter a valid check-in close time.",
 } as const;
 
 /** Trimmed text, blank as null, at most `max` characters. */
@@ -201,18 +200,29 @@ export function parseCompetitionSetting(
         ? ok({ field, value: parsed.data })
         : refusedAt(field, "Choose a Score direction.");
     }
+    case "scoreUnit": {
+      const text = optionalText(field, value, 20, "unit");
+      return text.ok ? ok({ field, value: text.value }) : text;
+    }
     case "countsTowardTeam":
-    case "entrantsOpen":
     case "selfEnroll":
     case "selfReport":
     case "selfCheckIn":
       return typeof value === "boolean"
         ? ok({ field, value })
         : refusedAt(field, BOOLEAN_FIELDS[field]);
-    case "gameConfig":
-      return typeof value === "object" && value !== null
-        ? ok({ field, value })
-        : refusedAt(field, "Choose the Format's settings.");
+    case "seriesConfig": {
+      const parsed = seriesConfigSchema.safeParse(value);
+      return parsed.success
+        ? ok({ field, value: parsed.data })
+        : refusedAt(field, parsed.error.issues[0].message);
+    }
+    case "bestScoreConfig": {
+      const parsed = bestScoreConfigSchema.safeParse(value);
+      return parsed.success
+        ? ok({ field, value: parsed.data })
+        : refusedAt(field, parsed.error.issues[0].message);
+    }
     case "bracketConfig": {
       const parsed = bracketConfigSchema.safeParse(value);
       return parsed.success
@@ -233,19 +243,27 @@ export function parseCompetitionSetting(
     }
     case "bracket":
       return ok({ field, value: null });
+    case "maxAttempts": {
+      const text = typeof value === "string" ? value.trim() : value;
+      if (text === "" || text === null || text === undefined) {
+        return ok({ field, value: null });
+      }
+      const n = typeof text === "string" ? Number(text) : text;
+      return typeof n === "number" &&
+        Number.isInteger(n) &&
+        n >= 1 &&
+        n <= MAX_ATTEMPTS_LIMIT
+        ? ok({ field, value: n })
+        : refusedAt(
+            field,
+            "Max attempts is a whole number of at least 1, or blank.",
+          );
+    }
     case "entrantLimit": {
       const limit = limitOf(value);
       return limit.ok
         ? ok({ field, value: limit.value })
         : refusedAt(field, ENTRANT_LIMIT_TOO_LOW);
-    }
-    case "enrollClosesAt":
-    case "loggingClosesAt":
-    case "checkInClosesAt": {
-      const closesAt = closesAtOf(value);
-      return closesAt.ok
-        ? ok({ field, value: closesAt.value })
-        : refusedAt(field, CLOSES_AT_FIELDS[field]);
     }
     default:
       return { ok: false, error: "Choose a setting to save." };

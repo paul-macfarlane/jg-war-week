@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { BracketConfig } from "@/lib/bracket/config";
+import { type BracketConfig, kindOf } from "@/lib/bracket/config";
 import { singleElimination } from "@/lib/bracket/engine";
 import {
   applyResult,
@@ -15,16 +15,19 @@ import {
   resetByResult,
   validateConfig,
 } from "@/lib/bracket/formats";
-import { heats } from "@/lib/bracket/heats";
+import { matches } from "@/lib/bracket/groups";
+import { LATER_MATCH_USED } from "@/lib/bracket/match-report-rule";
 import type { Entrant } from "@/lib/bracket/types";
 
 const config = (
-  entrantsPerHeat: number,
-  advancePerHeat: number,
+  entrantsPerMatch: number,
+  advancePerMatch: number,
 ): BracketConfig => ({
-  entrantsPerHeat,
-  advancePerHeat,
-  thirdPlaceGame: false,
+  kind: kindOf(entrantsPerMatch, advancePerMatch),
+  entrantsPerMatch,
+  advancePerMatch,
+  thirdPlaceMatch: false,
+  rounds: {},
 });
 
 const entrants: Entrant[] = [
@@ -38,10 +41,10 @@ describe("a 2 per Match, 1 advancing Bracket through the Format dispatch", () =>
     expect(validateConfig(config(2, 1), 3)).toBeNull();
     let bracket = generate(config(2, 1), entrants, (r, p) => `r${r}h${p}`);
     expect(bracket.config).toEqual(config(2, 1));
-    expect(bracket.heats.map((h) => h.slots.length)).toEqual([2, 2, 2]);
+    expect(bracket.matches.map((h) => h.slots.length)).toEqual([2, 2, 2]);
 
     // Seed Position 1 has the bye into the final.
-    const bye = bracket.heats.find((h) => h.id === "r1h1")!;
+    const bye = bracket.matches.find((h) => h.id === "r1h1")!;
     expect(isBye(bracket, bye)).toBe(true);
     expect(isRecordable(bracket, "r1h1")).toBe(false);
     expect(isRecordable(bracket, "r1h2")).toBe(true);
@@ -58,11 +61,12 @@ describe("a 2 per Match, 1 advancing Bracket through the Format dispatch", () =>
       { entrantId: "c", place: 2 },
     ]);
 
-    // A new winner in Round 1 clears the decided final.
-    expect(resetByResult(bracket, "r1h2", { order: ["b", "c"] })).toEqual([
-      "r2h1",
-    ]);
-    expect(resetByResult(bracket, "r1h2", { order: ["c", "b"] })).toEqual([]);
+    // A new winner in Round 1 is refused once the final used it (D1c);
+    // nothing is reset.
+    expect(resetByResult(bracket, "r1h2", { order: ["b", "c"] })).toEqual([]);
+    expect(() => applyResult(bracket, "r1h2", { order: ["b", "c"] })).toThrow(
+      LATER_MATCH_USED,
+    );
   });
 });
 
@@ -72,7 +76,7 @@ describe("engineFor", () => {
     for (let size = 2; size <= 8; size++) {
       for (let advance = 1; advance < size; advance++) {
         if (size === 2 && advance === 1) continue;
-        expect(engineFor(config(size, advance))).toBe(heats);
+        expect(engineFor(config(size, advance))).toBe(matches);
       }
     }
   });
@@ -84,29 +88,29 @@ describe("a 4 per Match, 2 advancing Bracket through the Format dispatch", () =>
     seedPosition: i + 1,
     label: id.toUpperCase(),
   }));
-  const ids = (heat: { slots: { entrantId: string | null }[] }) =>
-    heat.slots.map((s) => s.entrantId);
+  const ids = (match: { slots: { entrantId: string | null }[] }) =>
+    match.slots.map((s) => s.entrantId);
 
   it("generates, records every Match and crowns a Winner", () => {
     expect(validateConfig(config(4, 2), 6)).toBeNull();
     let bracket = generate(config(4, 2), six, (r, p) => `r${r}h${p}`);
     expect(bracket.config).toEqual(config(4, 2));
-    expect(bracket.heats.map((h) => h.slots.length)).toEqual([3, 3, 4]);
+    expect(bracket.matches.map((h) => h.slots.length)).toEqual([3, 3, 4]);
     expect(isRecordable(bracket, "r1h1")).toBe(true);
     expect(isRecordable(bracket, "r2h1")).toBe(false);
-    expect(isBye(bracket, bracket.heats[0])).toBe(false);
+    expect(isBye(bracket, bracket.matches[0])).toBe(false);
     expect(hasResults(bracket)).toBe(false);
 
-    const first = ids(bracket.heats[0]) as string[];
-    const second = ids(bracket.heats[1]) as string[];
+    const first = ids(bracket.matches[0]) as string[];
+    const second = ids(bracket.matches[1]) as string[];
     expect(first).toEqual(["a", "d", "e"]);
     expect(second).toEqual(["b", "c", "f"]);
 
     bracket = applyResult(bracket, "r1h1", { order: first });
     expect(hasResults(bracket)).toBe(true);
     bracket = applyResult(bracket, "r1h2", { order: second });
-    // The top 2 of each Heat go on to the final.
-    expect(new Set(ids(bracket.heats[2]))).toEqual(
+    // The top 2 of each Match go on to the final.
+    expect(new Set(ids(bracket.matches[2]))).toEqual(
       new Set(["a", "d", "b", "c"]),
     );
     expect(isRecordable(bracket, "r2h1")).toBe(true);

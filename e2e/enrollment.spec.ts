@@ -30,7 +30,7 @@ import {
 // with "Participants can enroll" on, then puts it back.
 const COMPETITION = "Pool";
 
-// The seeded Competitions are Finalized Placement sheets; open each for a
+// The seeded Competitions are Closed Placement sheets; open each for a
 // Bracket and put the sheet back afterwards.
 let restoreCompetition: (() => Promise<void>) | null = null;
 test.beforeEach(async () => {
@@ -154,15 +154,15 @@ test("enrollment: a Participant enrolls, withdraws and enrolls again; once the H
     format: string;
     bracket_config: unknown;
     self_enroll: boolean;
-    finalized_at: Date | null;
+    closed_at: Date | null;
   }>(
-    `select format::text as format, bracket_config, self_enroll, finalized_at
+    `select format::text as format, bracket_config, self_enroll, closed_at
      from competition where id = $1`,
     [id],
   );
   await runQuery(
     `update competition set format = 'bracket',
-       bracket_config = '{"entrantsPerHeat":2,"advancePerHeat":1,"thirdPlaceGame":false}'::jsonb,
+       bracket_config = '{"kind":"head-to-head","entrantsPerMatch":2,"advancePerMatch":1,"thirdPlaceMatch":false,"rounds": {}}'::jsonb,
        self_enroll = true
      where id = $1`,
     [id],
@@ -276,11 +276,11 @@ test("enrollment: a Participant enrolls, withdraws and enrolls again; once the H
   } finally {
     await youContext.close();
     await lateContext.close();
-    await runQuery(`delete from heat where competition_id = $1`, [id]);
+    await runQuery(`delete from bracket_match where competition_id = $1`, [id]);
     await runQuery(`delete from entrant where competition_id = $1`, [id]);
     await runQuery(
       `update competition set format = $2::competition_format,
-         bracket_config = $3, self_enroll = $4, finalized_at = $5
+         bracket_config = $3, self_enroll = $4, closed_at = $5
        where id = $1`,
       [
         id,
@@ -289,7 +289,7 @@ test("enrollment: a Participant enrolls, withdraws and enrolls again; once the H
           ? null
           : JSON.stringify(original.bracket_config),
         original.self_enroll,
-        original.finalized_at,
+        original.closed_at,
       ],
     );
     await setParticipantEmail(enrolleeId, null);

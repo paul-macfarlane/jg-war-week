@@ -18,7 +18,6 @@ export type ParticipationResult =
         /** Ranked by headcount: the places' points, highest first. */
         placementPoints: number[] | null;
         selfCheckIn: boolean;
-        checkInClosesAt: string | null;
         closed: boolean;
       };
       tookPart: { name: string; team: string | null; checkedIn: boolean }[];
@@ -75,7 +74,6 @@ export function toParticipationResult(
       pointsPerParticipant: competition.participationPoints,
       placementPoints: competition.placementPoints,
       selfCheckIn: competition.selfCheckIn,
-      checkInClosesAt: competition.checkInClosesAt?.toISOString() ?? null,
       closed: competition.closed,
     },
     tookPart: tookPart.map((row) => ({

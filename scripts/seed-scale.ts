@@ -1,6 +1,6 @@
 /**
  * Adds what seeds/demo/xii-scale.json can't hold (Hosts, the generated
- * Bracket, ticks, Games) to a loaded XII: `pnpm seed:demo:scale` runs it.
+ * Bracket, ticks, Matches and Attempts) to a loaded XII: `pnpm seed:demo:scale` runs it.
  */
 import { loadEnvConfig } from "@next/env";
 

@@ -11,7 +11,7 @@ import {
 import { CollapsibleDescription } from "@/components/collapsible-description";
 import { CompetitionFacts } from "@/components/competitions";
 import { EnrollButton } from "@/components/enroll-button";
-import { GamesView } from "@/components/games-view";
+import { LoggedResults } from "@/components/logged-results-view";
 import { ParticipationView } from "@/components/participation-view";
 import { PlacementView } from "@/components/placement-view";
 import { RichText } from "@/components/rich-text";
@@ -19,8 +19,9 @@ import { buttonVariants } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import { can } from "@/lib/access";
 import { podiumOf } from "@/lib/bracket/podium";
-import { entrantForYou, nextMatchFor } from "@/lib/bracket/view";
-import { isGameFormat } from "@/lib/enums";
+import { resultLockReason } from "@/lib/bracket/self-report";
+import { entrantForYou } from "@/lib/bracket/view";
+import { isLoggedFormat } from "@/lib/enums";
 import { resolveYou } from "@/lib/you";
 import {
   type BracketView as BracketData,
@@ -28,8 +29,8 @@ import {
   getParticipantSquadIds,
   getParticipantTeamIds,
 } from "@/queries/brackets";
-import { getGamesView } from "@/queries/games";
-import { getHeatReportFacts } from "@/queries/heat-reports";
+import { getLoggedResultsView } from "@/queries/logged-results";
+import { getMatchReportFacts } from "@/queries/match-reports";
 import { getParticipationView } from "@/queries/participation";
 import { getPlacementsView } from "@/queries/placements";
 import { getYouCandidates } from "@/queries/roster";
@@ -41,13 +42,16 @@ import { enrollOfferFor } from "./enrollment";
 const SELF_REPORT_OFF: BracketViewSelfReport = {
   on: false,
   linkedParticipantId: null,
-  reportableHeatId: null,
+  reportableMatchIds: [],
+  lockedMatchIds: [],
 };
 
 /**
- * Whether the signed-in person may report their next Heat (ADR 0005): the
- * Participant their session email links to (as the layout finds them), and Your next Heat when the same
- * `can` rule the report action runs lets them report it now.
+ * Which Matches the signed-in person may record or change (spec R21,
+ * decision 4; D1c, D1d): with self-report on and the Bracket open, the
+ * Matches their Entrant plays that the same `can` rule the report action
+ * runs lets them record now, and those whose result a later Match already
+ * used (shown disabled, with the reason).
  */
 async function selfReportFor(
   warWeek: { id: string },
@@ -65,8 +69,12 @@ async function selfReportFor(
     sessionEmail: actor?.email,
     participants: candidates,
   });
-  if (!actor || !linked) {
-    return { on: true, linkedParticipantId: null, reportableHeatId: null };
+  if (!actor || !linked || view.closed) {
+    return {
+      ...SELF_REPORT_OFF,
+      on: true,
+      linkedParticipantId: linked?.participantId ?? null,
+    };
   }
   const youEntrantId = entrantForYou(
     view.entrants,
@@ -77,25 +85,34 @@ async function selfReportFor(
     },
     competition.scoring,
   );
-  const next = youEntrantId ? nextMatchFor(view.bracket, youEntrantId) : null;
-  let reportableHeatId: string | null = null;
-  if (next?.kind === "heat") {
-    const facts = await getHeatReportFacts(
+  const played = youEntrantId
+    ? view.bracket.matches.filter((m) =>
+        m.slots.some((s) => s.entrantId === youEntrantId),
+      )
+    : [];
+  const reportableMatchIds: string[] = [];
+  const lockedMatchIds: string[] = [];
+  for (const match of played) {
+    const facts = await getMatchReportFacts(
       competition.id,
-      next.heat.id,
+      match.id,
       actor.email,
     );
-    const refusal = can(actor, "bracket.heat-report", {
+    const refusal = can(actor, "bracket.match-report", {
       warWeekId: competition.warWeekId,
       competitionId: competition.id,
-      heatReport: facts.heatReport,
+      matchReport: facts.matchReport,
     });
-    if (!refusal) reportableHeatId = next.heat.id;
+    if (!refusal) reportableMatchIds.push(match.id);
+    else if (resultLockReason(view.bracket, match)) {
+      lockedMatchIds.push(match.id);
+    }
   }
   return {
     on: true,
     linkedParticipantId: linked.participantId,
-    reportableHeatId,
+    reportableMatchIds,
+    lockedMatchIds,
   };
 }
 
@@ -122,7 +139,7 @@ export default async function CompetitionPage({
   const selfReport = isBracket
     ? await selfReportFor(warWeek, bracket, participantTeams, participantSquads)
     : SELF_REPORT_OFF;
-  const isGames = isGameFormat(competition.format);
+  const isLogged = isLoggedFormat(competition.format);
   const isParticipation = competition.format === "participation";
   const isPlacement = competition.format === "placement";
   // The viewer's email stays on the server: the page gets names, ids and
@@ -136,12 +153,12 @@ export default async function CompetitionPage({
       warWeekId: warWeek.id,
       competitionId: competition.id,
     }) === null;
-  const [games, enrollOffer, participation, checkInOffer, placements] =
+  const [logged, enrollOffer, participation, checkInOffer, placements] =
     await Promise.all([
-      isGames ? getGamesView(competition.id, email) : Promise.resolve(null),
-      isBracket || isGames
-        ? enrollOfferFor(competition, email)
+      isLogged
+        ? getLoggedResultsView(competition.id, email)
         : Promise.resolve(null),
+      isBracket ? enrollOfferFor(competition, email) : Promise.resolve(null),
       isParticipation
         ? getParticipationView(competition.id)
         : Promise.resolve(undefined),
@@ -193,23 +210,25 @@ export default async function CompetitionPage({
         </CollapsibleDescription>
       ) : null}
       {enrollOffer ? <EnrollButton offer={enrollOffer} /> : null}
-      {games ? (
-        <GamesView
+      {logged ? (
+        <LoggedResults
           competitionId={competition.id}
-          gameFormat={games.competition.gameFormat}
-          config={games.competition.config}
-          scoring={games.competition.scoring}
-          closed={games.competition.closed}
-          entrantsOpen={games.competition.entrantsOpen}
-          loggingOpen={games.loggingOpen}
-          leaderboard={games.leaderboard}
-          games={games.games}
-          linked={games.linked}
-          runs={games.runs}
-          viewerCanLog={games.viewerCanLog}
-          bestOfDecided={games.bestOfDecided}
-          bestOfWinner={games.bestOfWinner}
-          entrantOptions={games.entrantOptions}
+          format={logged.competition.format}
+          config={logged.competition.config}
+          scoring={logged.competition.scoring}
+          closed={logged.competition.closed}
+          leaderboard={logged.leaderboard}
+          results={logged.results}
+          linked={logged.linked}
+          runs={logged.runs}
+          viewerCanLog={logged.viewerCanLog}
+          logOffer={logged.logOffer}
+          scoringConfig={logged.competition.scoringConfig}
+          maxAttempts={logged.competition.maxAttempts}
+          attemptCounts={logged.attemptCounts}
+          decided={logged.decided}
+          seriesWinner={logged.seriesWinner}
+          playerOptions={logged.playerOptions}
           primaryColor={warWeek.primaryColor}
           teamLabel={warWeek.teamLabel}
           now={new Date()}
@@ -222,7 +241,6 @@ export default async function CompetitionPage({
           offer={checkInOffer}
           teamLabel={warWeek.teamLabel}
           primaryColor={warWeek.primaryColor}
-          now={new Date()}
         />
       ) : null}
       {placements ? (
@@ -238,8 +256,10 @@ export default async function CompetitionPage({
           entrants={bracket.entrants}
           bracket={bracket.bracket}
           podium={podiumOf(bracket)}
-          closed={bracket.finalized}
+          closed={bracket.closed}
           scoring={competition.scoring}
+          scoreUnit={bracket.competition.scoreUnit}
+          scoreDirection={bracket.competition.scoreDirection}
           primaryColor={warWeek.primaryColor}
           participantTeams={participantTeams}
           participantSquads={participantSquads}
@@ -249,7 +269,7 @@ export default async function CompetitionPage({
       {/* A Bracket's view refreshes itself, pausing while a report is open. */}
       {isBracket ? null : <AutoRefresh />}
       {/* Results and refusals toast here, as on the admin screens. */}
-      {isBracket || isGames || enrollOffer || checkInOffer ? (
+      {isBracket || isLogged || enrollOffer || checkInOffer ? (
         <Toaster position="bottom-center" closeButton />
       ) : null}
     </main>

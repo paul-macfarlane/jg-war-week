@@ -1,15 +1,14 @@
 import type { Competition } from "@/db/schema";
 import { notFoundMessage } from "@/mcp/not-found";
+import {
+  type ScoreDirectionLabel,
+  scoreDirectionLabel,
+  scoreUnitLabel,
+} from "@/mcp/score";
 import type { PlacementsView } from "@/queries/placements";
 
 /** The found Competition's basic facts, before deciding whether to load its rows. */
 export type FoundCompetition = Pick<Competition, "name" | "scoring" | "format">;
-
-const DIRECTIONS = {
-  none: "none",
-  higher: "higher wins",
-  lower: "lower wins",
-} as const;
 
 export type PlacementsResult =
   | {
@@ -17,7 +16,8 @@ export type PlacementsResult =
       competition: {
         name: string;
         scoring: Competition["scoring"];
-        scoreDirection: (typeof DIRECTIONS)[keyof typeof DIRECTIONS];
+        scoreDirection: ScoreDirectionLabel;
+        scoreUnit: string | null;
         placementPoints: number[] | null;
         closed: boolean;
         closedAt: string | null;
@@ -44,7 +44,7 @@ export type PlacementsResult =
 
 /**
  * Serializes a Placement Competition's `get_placements` answer: its Score
- * direction, Placement Points, whether it's Finalized, and each row by
+ * direction and unit, Placement Points, whether it's Closed, and each row by
  * place with its name, Team, Score and points. Pure: the route resolves
  * the Competition by name and loads `getPlacementsView` only when its
  * Format is `placement`. Names only: never an email, an id or a picture.
@@ -76,10 +76,11 @@ export function toPlacementsResult(
     competition: {
       name: competition.name,
       scoring: competition.scoring,
-      scoreDirection: DIRECTIONS[competition.scoreDirection],
+      scoreDirection: scoreDirectionLabel(competition.scoreDirection),
+      scoreUnit: scoreUnitLabel(competition.scoreUnit),
       placementPoints: competition.placementPoints,
-      closed: competition.finalizedAt !== null,
-      closedAt: competition.finalizedAt?.toISOString() ?? null,
+      closed: competition.closedAt !== null,
+      closedAt: competition.closedAt?.toISOString() ?? null,
     },
     placements: rows.map((row) => ({
       place: row.place,

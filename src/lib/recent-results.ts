@@ -1,5 +1,5 @@
 import type { Competition } from "@/db/schema";
-import { isGameFormat } from "@/lib/enums";
+import { isLoggedFormat } from "@/lib/enums";
 
 /** Home shows at most this many Recent results rows. */
 export const RECENT_RESULTS_LIMIT = 5;
@@ -18,7 +18,7 @@ export type ResultTarget = {
 
 export type ResultCompetition = Pick<
   Competition,
-  "id" | "name" | "format" | "finalizedAt"
+  "id" | "name" | "format" | "closedAt"
 >;
 
 export type ResultEntry = {
@@ -29,19 +29,19 @@ export type ResultEntry = {
   /** A Discretionary entry's reason; a Competition entry's note. */
   note?: string | null;
   enteredAt: Date;
-  /** Written by finalizing a Bracket or Placement or closing a Head-to-head or Best score Competition. */
-  generatedByBracket: boolean;
+  /** Written by closing a Bracket or Placement or closing a Head-to-head or Best score Competition. */
+  generated: boolean;
   target: ResultTarget;
 };
 
 export type RecentResult =
   | {
-      kind: "bracket-finalized" | "games-closed" | "placement-finalized";
+      kind: "bracket-closed" | "results-closed" | "placement-closed";
       key: string;
       competitionId: string;
       competition: string;
       when: Date;
-      /** The champion / winner; more than one on a tie for first. */
+      /** The winner / winner; more than one on a tie for first. */
       winners: ResultTarget[];
     }
   | {
@@ -69,19 +69,19 @@ export type RecentResult =
  * Shapes a War Week's Recent results, newest first, at most
  * `RECENT_RESULTS_LIMIT` rows:
  *
- * - A finalized Bracket is one
- *   "bracket-finalized" row, a Finalized Placement one
- *   "placement-finalized" row and a closed Head-to-head or Best score Competition one
- *   "games-closed" row, all at `finalizedAt`. The champion or winner is the
+ * - A closed Bracket is one
+ *   "bracket-closed" row, a Closed Placement one
+ *   "placement-closed" row and a closed Head-to-head or Best score Competition one
+ *   "results-closed" row, all at `closedAt`. The winner or winner is the
  *   target of the highest generated Points Entry (the 1st-place entry its
- *   finalize or close wrote); a tie for first lists every target.
+ *   close or close wrote); a tie for first lists every target.
  * - A closed `participation` Competition is one "participation-closed" row
- *   at `finalizedAt`: in team scoring its top Team (as above), in
+ *   at `closedAt`: in team scoring its top Team (as above), in
  *   individual scoring how many took part (one generated entry each).
  * - The generated entries themselves are not rows of their own.
  * - Each Discretionary entry (no Competition) is a "discretionary" row of
  *   its own at `enteredAt`, with its reason.
- * - Competitions without a finalize time and entries of unknown Competitions
+ * - Competitions without a close time and entries of unknown Competitions
  *   contribute nothing.
  */
 export function shapeRecentResults(
@@ -96,7 +96,7 @@ export function shapeRecentResults(
       key: `final-${c.id}`,
       competitionId: c.id,
       competition: c.name,
-      when: c.finalizedAt,
+      when: c.closedAt,
     };
     if (c.format === "participation") {
       results.push({
@@ -108,18 +108,18 @@ export function shapeRecentResults(
       continue;
     }
     results.push({
-      kind: isGameFormat(c.format)
-        ? "games-closed"
+      kind: isLoggedFormat(c.format)
+        ? "results-closed"
         : c.format === "placement"
-          ? "placement-finalized"
-          : "bracket-finalized",
+          ? "placement-closed"
+          : "bracket-closed",
       ...base,
       winners: final.winners,
     });
   }
 
   for (const e of entries) {
-    if (e.competitionId !== null || e.generatedByBracket) continue;
+    if (e.competitionId !== null || e.generated) continue;
     results.push({
       kind: "discretionary",
       key: `discretionary-${e.id}`,
@@ -138,11 +138,11 @@ export function shapeRecentResults(
     .slice(0, RECENT_RESULTS_LIMIT);
 }
 
-/** A finalized Competition's result, as its finalize or close wrote it. */
+/** A closed Competition's result, as its close or close wrote it. */
 export type FinalWinners = {
-  competition: ResultCompetition & { finalizedAt: Date };
+  competition: ResultCompetition & { closedAt: Date };
   /**
-   * The champion or winner: the target of the highest generated Points
+   * The winner or winner: the target of the highest generated Points
    * Entry; more than one on a tie for first. Empty for an
    * individual-scoring Participation Competition, which has no winner.
    */
@@ -152,10 +152,10 @@ export type FinalWinners = {
 };
 
 /**
- * The winner of each finalized Bracket or Placement, closed Head-to-head or Best score
+ * The winner of each closed Bracket or Placement, closed Head-to-head or Best score
  * Competition and closed `participation` Competition, in `competitions`
  * order: the one rule Recent results and the Finale's Winners slide
- * share. A Competition with no finalize time, or one with no generated
+ * share. A Competition with no close time, or one with no generated
  * Points Entries, has none and is left out.
  */
 export function finalWinners(
@@ -164,10 +164,10 @@ export function finalWinners(
 ): FinalWinners[] {
   const results: FinalWinners[] = [];
   for (const c of competitions) {
-    const finalizedAt = c.finalizedAt;
-    if (!finalizedAt) continue;
+    const closedAt = c.closedAt;
+    if (!closedAt) continue;
     const generated = entries.filter(
-      (e) => e.competitionId === c.id && e.generatedByBracket,
+      (e) => e.competitionId === c.id && e.generated,
     );
     const top = Math.max(...generated.map((e) => e.points));
     const winners: ResultTarget[] = [];
@@ -181,7 +181,7 @@ export function finalWinners(
       c.format === "participation" &&
       generated.every((e) => e.target.kind !== "team");
     results.push({
-      competition: { ...c, finalizedAt },
+      competition: { ...c, closedAt },
       winners: individual ? [] : winners,
       tookPart: individual ? generated.length : null,
     });

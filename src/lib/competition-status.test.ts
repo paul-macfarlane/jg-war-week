@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
-import type { Bracket, Heat } from "@/lib/bracket/types";
+import type { Bracket, Match } from "@/lib/bracket/types";
 import {
   type CompetitionStatusFacts,
   bracketRoundInPlay,
@@ -16,7 +16,7 @@ function facts(
   return {
     format: "placement",
     scoring: "team",
-    finalized: false,
+    closed: false,
     hasResult: false,
     bracketRound: null,
     winners: [],
@@ -85,7 +85,7 @@ describe("competitionStatus", () => {
           facts({
             format,
             hasResult: true,
-            finalized: true,
+            closed: true,
             winners: ["Red Pill"],
           }),
         ),
@@ -97,7 +97,7 @@ describe("competitionStatus", () => {
     "a Closed %s Competition with a 1st place is Done · Winner",
     (format) => {
       expect(
-        text({ format, hasResult: true, finalized: true, winners: ["Zion"] }),
+        text({ format, hasResult: true, closed: true, winners: ["Zion"] }),
       ).toBe("Done · Winner: Zion");
     },
   );
@@ -108,7 +108,7 @@ describe("competitionStatus", () => {
         format: "participation",
         scoring: "team",
         hasResult: true,
-        finalized: true,
+        closed: true,
         winners: ["Nebuchadnezzar"],
       }),
     ).toBe("Done · Winner: Nebuchadnezzar");
@@ -119,7 +119,7 @@ describe("competitionStatus", () => {
       text({
         format: "placement",
         hasResult: true,
-        finalized: true,
+        closed: true,
         winners: ["Morpheus", "Trinity"],
       }),
     ).toBe("Done · Winners: Morpheus, Trinity");
@@ -132,7 +132,7 @@ describe("competitionStatus", () => {
           format: "participation",
           scoring: "individual",
           hasResult: true,
-          finalized: true,
+          closed: true,
           // Even were a winner passed, individual Participation names none.
           winners: ["Neo"],
         }),
@@ -143,24 +143,24 @@ describe("competitionStatus", () => {
   it.each(["head-to-head", "best-score"] as const)(
     "a Closed %s Competition without a 1st place is Closed",
     (format) => {
-      expect(text({ format, hasResult: true, finalized: true })).toBe("Closed");
+      expect(text({ format, hasResult: true, closed: true })).toBe("Closed");
     },
   );
 
   it("a Closed Placement without Placement Points is Done, naming no one", () => {
-    expect(
-      text({ format: "placement", hasResult: true, finalized: true }),
-    ).toBe("Done");
+    expect(text({ format: "placement", hasResult: true, closed: true })).toBe(
+      "Done",
+    );
   });
 });
 
-/** A Heat of a head-to-head Bracket: two Entrants unless `bye`. */
-function heat(
+/** A Match of a head-to-head Bracket: two Entrants unless `bye`. */
+function match(
   round: number,
   position: number,
-  status: Heat["status"],
+  status: Match["status"],
   { bye = false, thirdPlace = false } = {},
-): Heat {
+): Match {
   return {
     id: `r${round}p${position}${thirdPlace ? "-3rd" : ""}`,
     round,
@@ -177,9 +177,9 @@ function heat(
   };
 }
 
-const bracket = (heats: Heat[]): Bracket => ({
+const bracket = (matches: Match[]): Bracket => ({
   config: DEFAULT_BRACKET_CONFIG,
-  heats,
+  matches,
 });
 
 describe("bracketRoundInPlay", () => {
@@ -191,9 +191,9 @@ describe("bracketRoundInPlay", () => {
     expect(
       bracketRoundInPlay(
         bracket([
-          heat(1, 1, "played"),
-          heat(1, 2, "ready"),
-          heat(2, 1, "pending"),
+          match(1, 1, "played"),
+          match(1, 2, "ready"),
+          match(2, 1, "pending"),
         ]),
       ),
     ).toEqual({ round: 1, of: 2 });
@@ -203,12 +203,12 @@ describe("bracketRoundInPlay", () => {
     expect(
       bracketRoundInPlay(
         bracket([
-          heat(1, 1, "played"),
-          heat(1, 2, "pending", { bye: true }),
-          heat(2, 1, "ready"),
-          heat(2, 2, "pending"),
-          heat(3, 1, "pending"),
-          heat(4, 1, "pending"),
+          match(1, 1, "played"),
+          match(1, 2, "pending", { bye: true }),
+          match(2, 1, "ready"),
+          match(2, 2, "pending"),
+          match(3, 1, "pending"),
+          match(4, 1, "pending"),
         ]),
       ),
     ).toEqual({ round: 2, of: 4 });
@@ -218,28 +218,30 @@ describe("bracketRoundInPlay", () => {
     expect(
       bracketRoundInPlay(
         bracket([
-          heat(1, 1, "played"),
-          heat(1, 2, "played"),
-          heat(2, 1, "played"),
-          heat(2, 2, "ready", { thirdPlace: true }),
+          match(1, 1, "played"),
+          match(1, 2, "played"),
+          match(2, 1, "played"),
+          match(2, 2, "ready", { thirdPlace: true }),
         ]),
       ),
     ).toEqual({ round: 2, of: 2 });
   });
 
   it("is the first Round with a Match to play in a Matches Bracket, a bye never counting", () => {
-    // 4 per Heat, 2 advancing: a Heat before the final with 2 Entrants is a bye.
+    // 4 per Match, 2 advancing: a Match before the final with 2 Entrants is a bye.
     expect(
       bracketRoundInPlay({
         config: {
-          entrantsPerHeat: 4,
-          advancePerHeat: 2,
-          thirdPlaceGame: false,
+          kind: "group" as const,
+          entrantsPerMatch: 4,
+          advancePerMatch: 2,
+          thirdPlaceMatch: false,
+          rounds: {},
         },
-        heats: [
-          heat(1, 1, "played"),
-          heat(1, 2, "pending", { bye: true }),
-          heat(2, 1, "pending"),
+        matches: [
+          match(1, 1, "played"),
+          match(1, 2, "pending", { bye: true }),
+          match(2, 1, "pending"),
         ],
       }),
     ).toEqual({ round: 2, of: 2 });
@@ -249,10 +251,10 @@ describe("bracketRoundInPlay", () => {
     expect(
       bracketRoundInPlay(
         bracket([
-          heat(1, 1, "played"),
-          heat(1, 2, "played"),
-          heat(2, 1, "ready"),
-          heat(2, 2, "ready", { thirdPlace: true }),
+          match(1, 1, "played"),
+          match(1, 2, "played"),
+          match(2, 1, "ready"),
+          match(2, 2, "ready", { thirdPlace: true }),
         ]),
       ),
     ).toEqual({ round: 2, of: 2 });
@@ -262,9 +264,9 @@ describe("bracketRoundInPlay", () => {
     expect(
       bracketRoundInPlay(
         bracket([
-          heat(1, 1, "played"),
-          heat(1, 2, "played"),
-          heat(2, 1, "played"),
+          match(1, 1, "played"),
+          match(1, 2, "played"),
+          match(2, 1, "played"),
         ]),
       ),
     ).toEqual({ round: 2, of: 2 });

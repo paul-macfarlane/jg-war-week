@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { heats } from "@/lib/bracket/heats";
+import { matches } from "@/lib/bracket/groups";
 import { pointsFor } from "@/lib/bracket/points";
 
 // Placings with a tie at 3rd.
@@ -49,29 +49,35 @@ describe("pointsFor", () => {
   });
 
   it("a Matches Bracket's placings", () => {
-    // 8 Entrants, 4 per Heat, 2 advancing: the final finishes e1 e2 e5 e6
+    // 8 Entrants, 4 per Match, 2 advancing: the final finishes e1 e2 e5 e6
     // and the four Round-1 losers tie 5th.
     const entrants = Array.from({ length: 8 }, (_, i) => ({
       id: `e${i + 1}`,
       seedPosition: i + 1,
       label: `E${i + 1}`,
     }));
-    let bracket = heats.generate(
-      { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
+    let bracket = matches.generate(
+      {
+        kind: "group" as const,
+        entrantsPerMatch: 4,
+        advancePerMatch: 2,
+        thirdPlaceMatch: false,
+        rounds: {},
+      },
       entrants,
       (r, p) => `r${r}h${p}`,
     );
-    bracket = heats.applyResult(bracket, "r1h1", {
+    bracket = matches.applyResult(bracket, "r1h1", {
       order: ["e1", "e5", "e4", "e8"],
     });
-    bracket = heats.applyResult(bracket, "r1h2", {
+    bracket = matches.applyResult(bracket, "r1h2", {
       order: ["e2", "e6", "e3", "e7"],
     });
-    bracket = heats.applyResult(bracket, "r2h1", {
+    bracket = matches.applyResult(bracket, "r2h1", {
       order: ["e1", "e2", "e5", "e6"],
     });
     expect(
-      pointsFor(heats.finalPlacings(bracket, entrants), {
+      pointsFor(matches.finalPlacings(bracket, entrants), {
         placementPoints: [5, 3, 1],
       }),
     ).toEqual([

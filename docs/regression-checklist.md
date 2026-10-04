@@ -263,31 +263,43 @@ on the matching War Week page.
 - [ ] **Competitions, one of each Format.** Create a Placement Competition
       with Placement Points 5/3/1, a Bracket Competition, and a
       Head-to-head Competition (Add Competition creates it in a sheet and
-      opens its Competition page: set Entrants to "A fixed list" and turn on
-      "Participants can enroll"; each saves as you change it); assign
+      opens its Competition page: on the Bracket turn on "Participants can
+      enroll", on the Head-to-head pick its two Entrants; each saves as you
+      change it); assign
       `e2e-host@jahnelgroup.com` as Host of the Placement one (the Hosts
       field is in its page's Settings, not in Add; see the Competition page
       lines below). The Format select
       offers Placement, Bracket, Head-to-head, Best score
-      and Participation (no Single-elimination or Heats, no "Games" Format or Game Type). Each
+      and Participation (no Single-elimination or Heats, no "Games" Format or Game Type). Only the
+      Bracket offers "Participants can enroll"; no Format offers a "closes at" time. Each
       shows on `/<edition>/competitions` (when the War Week has Groups, as
       the XI demo does, one without a Group is under the Other
       Competitions tab).
 - [ ] **Placement Points: 20 places at 390.** At 390, in a new
       Competition's page Settings, add Placement Points places up to 20 with
       "add a place": every place is reachable with no sideways scroll, a
-      place can be removed from anywhere in the list, and the 5·3·1 quick
-      fill works; a list that rises (1, 3) is refused. On a Bracket the list
+      place can be removed from anywhere in the list, and there is no 5·3·1
+      quick fill; a list that rises (1, 3) is refused. On a Bracket the list
       stops at 4 places with the message naming the limit.
 - [ ] **Record placements: add rows.** On the Placement Competition's
-      page, under "Record placements", add a row by search and press Add everyone
-      (Teams for a team Competition, Participants for an individual one):
-      each saves at once. Remove one. Edit a Place and press Save.
-- [ ] **Record placements: Score direction.** Set Score direction to Higher
+      page, under "Record placements", add a row by search (Teams for a team
+      Competition, Participants for an individual one): it saves at once, and
+      there is neither an Add everyone button nor a 5 · 3 · 1 button (assert
+      neither exists). Remove one. Edit a Place and press Save.
+- [ ] **Record placements: Score direction and unit.** Set Score direction to Higher
       wins and type Scores: the Places fill from the Scores (highest first);
       switch to Lower wins and they refill (lowest first); the Places stay
-      editable (make two tie: 1, 1, then 3). Set it to none and Places are
-      manual.
+      editable (make two tie: 1, 1, then 3, and a Place set against the
+      Scores shows "set by hand"). Set it to none and Places are manual. Set
+      the Score unit to "sec": the Score column header reads "Score (sec)"
+      and the unit never locks.
+- [ ] **Score direction and unit on every scored Format.** In the Settings of
+      a Bracket, a Head-to-head and a Best score Competition, Score direction
+      and Unit are offered (Best score: higher or lower only, never none;
+      Participation shows neither). In a Group Bracket Match, once every
+      Entrant has a Score the places follow the Scores; in a Head-to-head
+      Match the higher or lower Score wins, equal Scores record a Draw when
+      draws are allowed and otherwise need a pick shown as "set by hand".
 - [ ] **Record placements: Score without a Place.** Type a Score on a row
       and clear its Place: Close is refused with "Give every row with a
       Score a Place, or clear its Score.", naming the row(s). A sheet with
@@ -322,8 +334,8 @@ on the matching War Week page.
       entries by name and reason. Neither output contains an `@`. For a
       Placement Competition `get_bracket` points to `get_placements`.
 - [ ] **Run a Bracket end to end.** On the Bracket Competition's page
-      (Format "Bracket"), tap the "Head-to-head (single elimination)" preset
-      (2 per Match, 1 advancing), pick Entrants and Save Entrants, then
+      (Format "Bracket"), leave the Bracket kind on Head-to-head (the toggle
+      beside Group; 2 per Match, 1 advancing, no size fields shown), pick Entrants and Save Entrants, then
       Generate to build it. There is no By Standings button and no Time &
       place. *(teams)* A new Competition scores by Team: Add Squad two
       Squads per Team, set Entrants are to Squads and press All Squads; the
@@ -338,8 +350,8 @@ on the matching War Week page.
 - [ ] **Bracket: 3rd place match.** In a head-to-head Bracket of at least 4
       Entrants (a new Bracket of 4 or 8), turn on the Bracket's 3rd place
       match switch: the tree shows it beside the Final, labelled "3rd place
-      match"; with 3 Entrants, or a Match size other than 2 with 1 advancing,
-      the switch is off or absent with a reason. Record the semifinals, the
+      match"; with 3 Entrants, or on a Group Bracket, the switch is off or
+      absent with a reason. Record the semifinals, the
       final and the 3rd place match and Close: the Winner is the
       final's winner whichever Match was recorded last, and Points Entries
       give 1st, 2nd, 3rd and 4th their Placement Points (a fifth place is
@@ -348,33 +360,78 @@ on the matching War Week page.
       switch can't change. Without the 3rd place match, only 1st and 2nd are
       placed: Close gives Placement Points to 1st and 2nd only (the semifinal
       losers get none), and Top finishers shows 1st and 2nd only (a semifinal loser is neither placed nor shown).
-      A Bracket of 4 per Match with 2 advancing shows the final Match's order.
+      A Group Bracket shows the final Match's order.
 - [ ] **Bracket tree: one tree, admin and Participant.** Open the same
       Bracket on its admin Competition page and on its public Competition page: both
       show the one tree (Rounds left to right at 1440), with no List toggle
       anywhere. An unplayed Match has a solid "Record result" in the admin
       tree and a recorded one an outline "Edit"; the Participant tree shows
       neither unless self-report is on and the Match is their own. A Bracket
-      of more per Match (4 with 2 advancing, e.g. Chess Heats) is the same
+      of more per Match (a Group Bracket of 4 with 2 advancing, e.g. Chess Matches) is the same
       tree of Match boxes, with every Entrant that advances highlighted and
       the Match result form marking "Advances" beside those places (only 1st
       highlighted, "Wins", in the final). At 390 the tree scrolls sideways
       inside its own "Rounds" region and the page itself never scrolls
       sideways.
 - [ ] **Head-to-head and Best score settings show what was saved.** On a Head-to-head or Best
-      score Competition's page, change a setting (Draws or Best of; for
-      Best score, count best or total, direction, unit label): it saves as
-      you change it, and the fields keep the saved values with no reload; reload and
-      come back later, and they are still there. There is no Finish Points
-      table. The page's Settings show Placement Points as what
+      score Competition's page, change a setting (Draws or Best of 1/3/5/7;
+      for Best score, direction, unit label, Max attempts and, in team
+      scoring, Team score): it saves as you change it, and the fields keep
+      the saved values with no reload; reload and come back later, and they
+      are still there. There is no Best/Total (count) control and no
+      Finish Points table. The page's Settings show Placement Points as what
       each place earns in the Standings.
+- [ ] **Self-report: one setting.** Create a Competition of each Format: the
+      "Participants can log their own results" switch is off on every one,
+      and only Bracket, Head-to-head and Best score show it (Placement and
+      Participation never do). With it off, a linked Participant has no
+      Report result / Log a Match / Log an Attempt and a posted one is
+      refused with the server's message. Turn it on: the Participant records
+      their own Bracket Match, logs a Head-to-head Match as one of the two
+      Entrants and a Best score Attempt as themselves (no participant picker),
+      and edits or deletes a result they could have logged, including one a
+      Host logged; another Participant cannot. Closed, nobody can.
+- [ ] **Head-to-head: two Entrants, Best of.** A Head-to-head Competition
+      shows exactly two Entrants (no enrollment, no "open to everyone"), and
+      Log a Match has two fixed rows and no player picker. In a Best of 3,
+      log 2–0: the series is decided, Log a Match is disabled with a visible
+      reason and the server refuses a third. Delete or edit a Match and
+      logging reopens. With draws allowed, a series whose Matches all play
+      out with no majority (win, Draw, Draw) is drawn: it takes no more
+      Matches, names no series Winner, and Close gives both Entrants the
+      higher place's full points.
+- [ ] **Best score: Max attempts and Team score.** Set Max attempts per person
+      to 3: the Attempt form says "N attempts left", a fourth is refused for
+      a Participant and for an Organizer, and Max attempts cannot be lowered
+      below the most any one person has. At 1 the button reads "Update your
+      score" and saving edits the one Attempt. There is no Entrant list and
+      no enroll button. In team scoring, the Team score field (Best member or
+      Sum of members) shows, and each Team's row follows the choice.
+- [ ] **Group Bracket: edit, bye, lock.** On a Group Bracket (Bracket kind
+      Group, e.g. 11 Entrants at 4 per Match, 2 advancing) press Generate,
+      then in the tree set one Match to advance 1, move an Entrant to another
+      Match of the same Round and change the Round's defaults ("Edit <Round>
+      settings"): the later Rounds re-project; a Match short of Entrants shows
+      as a bye. Record a Match: that Round locks. Close and the Final's order
+      gives places 1 to 4 their points.
+- [ ] **Bracket: edit a result only along the latest path.** Record two
+      Matches that feed a Final and the Final. Each semifinal's Edit and
+      Clear result are disabled with "A later Match already used this result.
+      Change that Match first." as visible text (also at 390), and a posted
+      change is refused by the server. Clear the Final, then a semifinal's
+      Edit is offered again. In a Group Bracket, once any later round has a
+      result, every earlier Match's Edit and Clear result are disabled with
+      "A later round already has a result. Change that round first."
 - [ ] **Close a Head-to-head Competition.** Log two Matches as the Organizer
       in a Head-to-head Competition with Placement Points (Log a Match on its
       public Competition page), then Close in its run area: its top
       finishers get Placement Points ("From head-to-head" in the leaderboard's points breakdown) and
       the Standings move. Reopen withdraws them. *(teams)* Add it with
       Scoring Individual and Counts toward the Team on, so the Team Standings
-      move. Do the same with a Best score Competition ("From best score");
+      move. Every Format uses the same Close and Reopen words (Placement,
+      Bracket, Head-to-head, Best score and Participation); a Closed one takes
+      no writes from anyone until Reopen. Do the same with a Best score
+      Competition ("From best score");
       its Competitions-list Edit opens its page, whose run area logs Attempts
       ("Log an Attempt").
 - [ ] **Run a Competition as Participation.** Add a Participation
@@ -394,21 +451,25 @@ on the matching War Week page.
       saves on its own (no Save button), "Saved" shows by the Settings
       heading (no toast), and it is still there after a reload. Check at 1440 and 390: no sideways scroll.
 - [ ] **Competition page: locks with reasons.** On a Competition with a
-      result (a recorded Placement, a Match, an Attempt or an Entrant), Format, scoring,
-      Score direction and Best score's count and direction are disabled
-      with "Locked once the Competition has a result."; on a Head-to-head
-      Competition with a fixed list of two Entrants and no Match, Draws and
+      result (a recorded Placement, a Match, an Attempt or an Entrant), Format, scoring and
+      counts toward team are disabled with "Locked once the Competition has
+      a result."; Score direction locks per Format once play has started
+      there, and the Score unit never locks; on a Head-to-head
+      Competition with its two Entrants and no Match, Draws and
       Best of still save (choose Best of 3: "Saved", kept after a reload),
-      and once a Match is logged they and the Entrants' open or fixed list
-      are disabled with "Locked once the Competition has a Match or Attempt."; name, description, Group, Hosts and
-      Placement Points still save. In a Bracket with a recorded Match, match
-      size, how many advance, the 3rd place match, the Entrants and Generate
+      and once a Match is logged they are
+      disabled with "Locked once the Competition has a Match or Attempt."; name, description, Group, Hosts and
+      Placement Points still save. In a Bracket with a recorded Match, the
+      Bracket kind, Entrants per Match, how many advance, the 3rd place match,
+      the Entrants and Generate
       are disabled with "Locked once a Match has a result." Close
-      (Placement or Bracket) or Close: everything but name, description,
-      Group, Hosts and Placement Points is disabled with "Locked while the
+      (any Format): everything but name, description,
+      Group, Hosts, Placement Points and the Score unit is disabled with "Locked while the
       Competition is Closed. Reopen it first."; a Placement
       Points change then says "Applies at the next Close."
-      Reopen unlocks the fields that only the Closed state locked. There
+      Reopen unlocks the fields that only the Closed state locked
+      (self-report, enrollment, check-in, Max attempts). There are no
+      "closes at" fields anywhere. There
       is no Reset bracket and no "confirm to clear and start over".
 - [ ] **Competition page: change the Format.** On a new Competition with no
       result, change the Format between Placement, Bracket, Head-to-head,
@@ -591,7 +652,7 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       "Join the Slack channel" button on Home (it moved to the account
       menu). Home's
       "Your next Match", for a linked Participant in a generated Bracket
-      (generate Chess Heats as the Organizer), names the Round and opponent
+      (generate Chess Matches as the Organizer), names the Round and opponent
       with no time or place.
 - [ ] **Recent results.** After a Bracket or Placement is closed or a
       Head-to-head or Best score Competition closed and Discretionary points are given, Home's
@@ -605,14 +666,15 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       Competitions on `/<edition>/competitions` and on a Competition page,
       More on Announcements, Roster, Awards, FAQ and About. At 1440 the top
       nav is Home, Schedule, Competitions, Leaderboard, Announcements, More.
-- [ ] **Log a Match from a phone.** At 390, log a head-to-head Match from
-      Home's shortcut against another Entrant; it shows in that
+- [ ] **Log a Match from a phone.** With self-report on, at 390, log a Head-to-head Match from
+      Home's shortcut as one of its two Entrants; it shows in that
       Competition's Matches list as the newest Match, and its results
       update. Log an Attempt on a Best score Competition the same way: the
       person's row shows their best Attempt and "N more attempts" expands the
       rest. As the unlinked account, there's no shortcut and no Log a
-      Match or Log an Attempt on the Competition page (the server's refusal of a posted one
-      is unit-tested in `src/lib/access.test.ts`).
+      Match or Log an Attempt on the Competition page, and none with self-report
+      off (the server's refusal of a posted one is unit-tested in
+      `src/lib/access.test.ts`).
 - [ ] **A Participation Competition page.** In the Participation
       Competition (Self check-in on), the page says how it scores, shows
       "Took part" with the ticked Participants by name and *(teams)* each
@@ -620,13 +682,13 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       ("You're checked in") and **Check out** removes them; one the Host
       ticked can't be checked out ("The Host marked you; ask them to remove
       it."). With Self check-in off, or once closed, there is no Check in
-      button (closed shows the Closed badge); after the close time, for a
+      button (closed shows the Closed badge); for a
       Participant on no Team, or when the Host marked them, the button is
       disabled with its reason, e.g. *(teams)* a Participant on no Team is
       told only those on a Team can take part. As the unlinked account there
       is no Check in. At
       390 the button and list fit without sideways scrolling.
-- [ ] **Enroll and withdraw.** In the self-enroll Competition, the linked
+- [ ] **Enroll and withdraw.** In the self-enroll Bracket, the linked
       Participant enrolls, withdraws and enrolls again; the Entrant list
       follows each step.
 - [ ] **Schedule.** `/<edition>/schedule` lists every Day with its Day
@@ -647,13 +709,11 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       scrolls sideways in its own region) and Top finishers once closed; a Best score Competition shows Top finishers and a
       results table with one row per person (best Attempt) and an expandable
       "N more attempts" row; a Head-to-head Competition with a fixed list of
-      exactly two Entrants shows the series view (Matches with both Scores and the
+      two Entrants (always two) shows the series view (Matches with both Scores and the
       Winner or Draw, the series score, the series Winner once decided, and
-      each Entrant's Placement Points; a series Closed level, with no Best
-      of decided, says it ended level and names no series Winner) and no
-      leaderboard; any other
-      Head-to-head Competition shows the results table with its Matches
-      newest first, with the "Mine" filter. On every one: no Points Entries
+      each Entrant's Placement Points; a drawn series, or one Closed early
+      with equal wins, says so and names no series Winner) and no
+      leaderboard. On every one: no Points Entries
       section anywhere on the page.
 - [ ] **Scale: 100 Participants.** Run `pnpm seed:demo:scale`, then
       `pnpm seed:demo` when done. At both viewports: the admin roster lists all
@@ -679,7 +739,7 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       fits with no sideways scroll and no column's data is dropped.
 - [ ] **Competition page: results table and Provisional points.** At 1440
       and 390, on an open Placement, Best score and team Participation
-      Competition (and a Head-to-head with other than two Entrants): the
+      Competition: the
       results table has Rank, name, Score (with its unit; no Score column
       when no row has a Score) and War Week points, with no "Score" text
       inside cells; click each header and the rows reorder; the Winner's
@@ -706,10 +766,13 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       is already Team shows "Team".
 - [ ] **MCP: `get_bracket` and `get_games` words.** Call each against the
       Bracket and the Head-to-head and Best score Competitions: `get_bracket`
-      returns `matchSize`, `advancing`, `thirdPlaceMatch`, `closed`, each
+      returns the Bracket kind, `matchSize`, `advancing` (per Match),
+      `thirdPlaceMatch`, `closed`, each
       Round's `matches` and a `winner` (the final's winner once Closed;
-      null before); `get_games` returns `closed`, a leaderboard and
-      `matches` (Head-to-head) or `attempts` (Best score). No field or
+      null before); `get_games` returns `closed`, the Score direction and
+      unit, Best of, draws, Max attempts and Team score, a leaderboard and
+      `matches` (Head-to-head) or `attempts` (Best score), with no count
+      (best/total) field. `get_placements` shows the direction and unit. No field or
       description says Heat, Champion, Finalize or Game, and there is no `@`.
 - [ ] **Announcements.** The Announcements page (`/<edition>/announcements`;
       at 390 it is More's first item and More is highlighted there)

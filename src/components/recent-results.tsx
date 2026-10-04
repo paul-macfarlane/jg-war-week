@@ -65,7 +65,7 @@ function ResultSummary({
   return (
     <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
       <span className="text-foreground/70">
-        {result.kind === "games-closed" || result.kind === "placement-finalized"
+        {result.kind === "results-closed" || result.kind === "placement-closed"
           ? "Winner"
           : result.kind === "participation-closed"
             ? "Top"
@@ -125,13 +125,13 @@ export function RecentResultsSection({
                     {result.competition}
                   </Link>
                 )}
-                {result.kind === "bracket-finalized" ? (
+                {result.kind === "bracket-closed" ? (
                   <Badge variant="secondary">Bracket closed</Badge>
                 ) : null}
-                {result.kind === "placement-finalized" ? (
+                {result.kind === "placement-closed" ? (
                   <Badge variant="secondary">Closed</Badge>
                 ) : null}
-                {result.kind === "games-closed" ||
+                {result.kind === "results-closed" ||
                 result.kind === "participation-closed" ? (
                   <Badge variant="secondary">Closed</Badge>
                 ) : null}

@@ -65,11 +65,22 @@ async function enterRedAndBlue(page: Page, pickerId: string) {
   await expect(page.getByText("Entrants saved", { exact: true })).toBeVisible();
 }
 
-/** A Games Format's result: a fixed Entrant list, entered from the run area. */
-async function addGamesEntrants(page: Page) {
-  await chooseOption(page, "Entrants", "A fixed list");
-  await expectSaved(page);
-  await enterRedAndBlue(page, "games-entrants");
+/** A Head-to-head's result: its two Entrants, entered from the run area. */
+async function addSeriesEntrants(page: Page) {
+  await enterRedAndBlue(page, "series-entrants");
+}
+
+/** A Best score result: an Attempt, logged from the run area. */
+async function logAttempt(page: Page) {
+  await page.getByRole("button", { name: "Log an Attempt" }).click();
+  const form = page.getByRole("dialog", { name: "Log an Attempt" });
+  await form.getByRole("combobox", { name: "Participant" }).click();
+  await page
+    .getByRole("option", { name: "Ashley Schuliger", exact: true })
+    .click();
+  await form.getByLabel(/^Score/).fill("12");
+  await form.getByRole("button", { name: "Log Attempt" }).click();
+  await expect(page.getByText("Attempt logged")).toBeVisible();
 }
 
 const CASES: FormatCase[] = [
@@ -77,12 +88,11 @@ const CASES: FormatCase[] = [
     format: "Placement",
     // Its result adds a Participant, so the sheet lists Participants.
     scoring: "Individual",
-    change: (page) =>
-      chooseOption(page, "Score direction", "Higher Score wins"),
+    change: (page) => chooseOption(page, "Score direction", "Higher is better"),
     kept: (page) =>
       expect(
         page.getByRole("combobox", { name: "Score direction", exact: true }),
-      ).toContainText("Higher Score wins"),
+      ).toContainText("Higher is better"),
     addResult: async (page) => {
       const search = page.getByRole("combobox", { name: "Add a Participant" });
       await search.click();
@@ -104,34 +114,47 @@ const CASES: FormatCase[] = [
     kept: (page) =>
       expect(page.getByRole("switch", { name: "Draws allowed" })).toBeChecked(),
     addResult: async (page) => {
-      await addGamesEntrants(page);
-      // Entrants are a result, but Head-to-head's settings wait for a Game:
-      // a Best of needs its two fixed Entrants first.
+      await addSeriesEntrants(page);
+      // Entrants are a result, but Head-to-head's settings wait for a Match.
       await expect(
         page.getByRole("switch", { name: "Draws allowed" }),
       ).toBeEnabled();
-      await chooseOption(page, "Best of", "Best of 3");
+      await chooseOption(page, "Best of", "Best of 5");
       await expectSaved(page);
       await page.reload();
       await expect(
         page.getByRole("combobox", { name: "Best of", exact: true }),
-      ).toContainText("Best of 3");
+      ).toContainText("Best of 5");
     },
   },
   {
     format: "Best score",
-    change: (page) => page.getByLabel("Unit").fill("laps"),
-    kept: (page) => expect(page.getByLabel("Unit")).toHaveValue("laps"),
+    change: (page) => chooseOption(page, "Score direction", "Lower is better"),
+    kept: (page) =>
+      expect(
+        page.getByRole("combobox", { name: "Score direction", exact: true }),
+      ).toContainText("Lower is better"),
     addResult: async (page) => {
-      await addGamesEntrants(page);
-      await expect(page.getByLabel("Unit")).toBeDisabled();
+      await logAttempt(page);
+      await expect(
+        page.getByRole("combobox", { name: "Score direction", exact: true }),
+      ).toBeDisabled();
+      // The unit is a label: it never locks.
+      await expect(page.getByLabel("Unit")).toBeEnabled();
     },
   },
   {
     format: "Bracket",
-    change: (page) => page.getByRole("switch", { name: "Self-report" }).click(),
+    change: (page) =>
+      page
+        .getByRole("switch", { name: "Participants can log their own results" })
+        .click(),
     kept: (page) =>
-      expect(page.getByRole("switch", { name: "Self-report" })).toBeChecked(),
+      expect(
+        page.getByRole("switch", {
+          name: "Participants can log their own results",
+        }),
+      ).toBeChecked(),
     addResult: async (page) => {
       await page.getByRole("button", { name: "All Teams" }).click();
       await expect(page.getByText("(2 chosen)")).toBeVisible();
@@ -139,9 +162,9 @@ const CASES: FormatCase[] = [
       await expect(
         page.getByText("Entrants saved", { exact: true }),
       ).toBeVisible();
-      // Entrants are a result; the heat settings wait for a Heat Result.
+      // Entrants are a result; the match settings wait for a Match Result.
       await expect(
-        page.getByRole("combobox", { name: "Entrants per Match" }),
+        page.getByRole("button", { name: "Group", exact: true }),
       ).toBeEnabled();
     },
   },
@@ -242,24 +265,28 @@ test("r18 101 a new Competition with no result changes Format, Placement → Bra
       page.getByRole("combobox", { name: "Add a Participant" }),
     ).toBeVisible();
 
-    // Bracket: heat settings and self-report, and the Entrants and Generate.
+    // Bracket: match settings (Head-to-head / Group) and self-report, and
+    // the Entrants and Generate.
     await setFormat(page, "Bracket");
     await expect(
-      page.getByRole("combobox", { name: "Entrants per Match" }),
+      page.getByRole("button", { name: "Head-to-head", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("switch", { name: "Self-report" }),
+      page.getByRole("switch", {
+        name: "Participants can log their own results",
+      }),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Generate" })).toBeVisible();
+    // Every Format with Scores takes a direction and unit (R21, decision 6).
     await expect(
       page.getByRole("combobox", { name: "Score direction", exact: true }),
-    ).toHaveCount(0);
+    ).toBeVisible();
     await page.screenshot({
       path: testInfo.outputPath("format-bracket.png"),
       fullPage: true,
     });
 
-    // Head-to-head: draws and Best of, Entrants, logging close; Close.
+    // Head-to-head: draws and Best of, Entrants, no close time; Close.
     await setFormat(page, "Head-to-head");
     await expect(
       page.getByRole("switch", { name: "Draws allowed" }),
@@ -267,12 +294,12 @@ test("r18 101 a new Competition with no result changes Format, Placement → Bra
     await expect(
       page.getByRole("combobox", { name: "Best of", exact: true }),
     ).toBeVisible();
-    await expect(page.getByText("Logging closes")).toBeVisible();
+    await expect(page.getByText(/closes/i)).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: "Close", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("combobox", { name: "Entrants per Match" }),
+      page.getByRole("button", { name: "Group", exact: true }),
     ).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Generate" })).toHaveCount(0);
     await page.screenshot({
@@ -281,12 +308,12 @@ test("r18 101 a new Competition with no result changes Format, Placement → Bra
     });
 
     // Stored, independently of the page.
-    const [row] = await runQuery<{ format: string; game_config: unknown }>(
-      `select format::text as format, game_config from competition where id = $1`,
+    const [row] = await runQuery<{ format: string; series_config: unknown }>(
+      `select format::text as format, series_config from competition where id = $1`,
       [id],
     );
     expect(row.format).toBe("head-to-head");
-    expect(row.game_config).toEqual({ drawsAllowed: false, bestOf: null });
+    expect(row.series_config).toEqual({ drawsAllowed: false, bestOf: 3 });
   } finally {
     await deleteXiCompetition(name);
   }

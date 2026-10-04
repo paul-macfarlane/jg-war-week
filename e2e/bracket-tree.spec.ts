@@ -37,16 +37,16 @@ const KNOCKOUT_ENTRANTS = [
   "Anthony Crisafulli",
   "Bich Dudla",
 ];
-const HEATS = "Super Smash Bros";
+const MATCHES = "Super Smash Bros";
 
-// The seeded Competitions are Finalized Placement sheets; open each for a
+// The seeded Competitions are Closed Placement sheets; open each for a
 // Bracket and put the sheet back afterwards (its Format, Bracket settings
 // and self-report too).
 let restoreCompetition: (() => Promise<void>) | null = null;
 test.beforeEach(async ({}, testInfo) => {
   restoreCompetition = await openForBracket(
     await xiCompetitionId(
-      testInfo.title.includes("4 per Match") ? HEATS : KNOCKOUT,
+      testInfo.title.includes("4 per Match") ? MATCHES : KNOCKOUT,
     ),
   );
 });
@@ -54,7 +54,7 @@ test.afterEach(async () => {
   await restoreCompetition?.();
   restoreCompetition = null;
 });
-const HEATS_ENTRANTS = [
+const MATCHES_ENTRANTS = [
   "Bob Strubel",
   "Brandon Thivierge",
   "Cameron Lynch",
@@ -106,17 +106,17 @@ function treeOf(page: Page): Locator {
     .locator("[data-bracket-tree]");
 }
 
-/** The box of the Heat named `heat` (the last: the Final's Round is "Final" too). */
-function heatBox(tree: Locator, heat: string): Locator {
-  return tree.getByRole("group", { name: heat, exact: true }).last();
+/** The box of the Match named `match` (the last: the Final's Round is "Final" too). */
+function matchBox(tree: Locator, match: string): Locator {
+  return tree.getByRole("group", { name: match, exact: true }).last();
 }
 
-/** Records a two-Entrant Heat from the admin tree, its first-listed winning. */
-async function recordWinner(page: Page, heat: string, entrants: string[]) {
+/** Records a two-Entrant Match from the admin tree, its first-listed winning. */
+async function recordWinner(page: Page, match: string, entrants: string[]) {
   await adminTreeOf(page)
-    .getByRole("button", { name: `Record result for ${heat}` })
+    .getByRole("button", { name: `Record result for ${match}` })
     .click();
-  const form = page.getByRole("dialog", { name: heat });
+  const form = page.getByRole("dialog", { name: match });
   const winner = form
     .getByRole("group", { name: "Winner" })
     .getByRole("button")
@@ -124,16 +124,16 @@ async function recordWinner(page: Page, heat: string, entrants: string[]) {
   const name = entrantIn(await winner.innerText(), entrants);
   await winner.click();
   await form.getByRole("button", { name: "Save Match Result" }).click();
-  await expect(page.getByText(`${name} wins ${heat}`)).toBeVisible();
+  await expect(page.getByText(`${name} wins ${match}`)).toBeVisible();
   await expect(form).toBeHidden();
 }
 
-/** Records a Heat of more than two from the admin tree, in listed order. */
-async function recordOrder(page: Page, heat: string, entrants: string[]) {
+/** Records a Match of more than two from the admin tree, in listed order. */
+async function recordOrder(page: Page, match: string, entrants: string[]) {
   await adminTreeOf(page)
-    .getByRole("button", { name: `Record result for ${heat}` })
+    .getByRole("button", { name: `Record result for ${match}` })
     .click();
-  const form = page.getByRole("dialog", { name: heat });
+  const form = page.getByRole("dialog", { name: match });
   const buttons = form
     .getByRole("group", { name: "Finishing order" })
     .getByRole("button");
@@ -141,11 +141,11 @@ async function recordOrder(page: Page, heat: string, entrants: string[]) {
   const count = await buttons.count();
   for (let i = 0; i < count; i++) await buttons.nth(i).click();
   await form.getByRole("button", { name: "Save Match Result" }).click();
-  await expect(page.getByText(`${first} wins ${heat}`)).toBeVisible();
+  await expect(page.getByText(`${first} wins ${match}`)).toBeVisible();
   await expect(form).toBeHidden();
 }
 
-async function finalize(page: Page, action: "Close" | "Reopen") {
+async function close(page: Page, action: "Close" | "Reopen") {
   // Scoped to the Bracket: a closing Sheet has its own "Close" button.
   await page
     .getByRole("region", { name: "Bracket", exact: true })
@@ -161,16 +161,16 @@ async function finalize(page: Page, action: "Close" | "Reopen") {
 }
 
 /**
- * 07: at 1440 the Heat Result opens as a centered Dialog; at 390 as the
+ * 07: at 1440 the Match Result opens as a centered Dialog; at 390 as the
  * bottom Sheet. Opened from the admin tree; closed each time unsaved.
  */
-async function checkResultPopup(page: Page, testInfo: TestInfo, heat: string) {
+async function checkResultPopup(page: Page, testInfo: TestInfo, match: string) {
   const record = adminTreeOf(page).getByRole("button", {
-    name: `Record result for ${heat}`,
+    name: `Record result for ${match}`,
   });
   await page.setViewportSize(DESKTOP);
   await record.click();
-  const dialog = page.getByRole("dialog", { name: heat });
+  const dialog = page.getByRole("dialog", { name: match });
   await expect(dialog).toBeVisible();
   await expect
     .poll(async () => {
@@ -192,7 +192,7 @@ async function checkResultPopup(page: Page, testInfo: TestInfo, heat: string) {
   await page.setViewportSize(PHONE);
   await record.scrollIntoViewIfNeeded();
   await record.click();
-  const sheet = page.getByRole("dialog", { name: heat });
+  const sheet = page.getByRole("dialog", { name: match });
   await expect(sheet).toBeVisible();
   await expect
     .poll(async () => {
@@ -357,13 +357,13 @@ test("a head-to-head Bracket is one tree: the Organizer records from it in admin
   await expect(page.getByText(/Run\s+results/i)).toHaveCount(0);
   const admin = adminTreeOf(page);
   await expect(admin).toBeVisible();
-  // The Heats ready to play have a solid Record result: Round 1 Heat 2, and
-  // Semifinal 2, whose two Entrants both came through byes. Byes and Heats
+  // The Matches ready to play have a solid Record result: Round 1 Match 2, and
+  // Semifinal 2, whose two Entrants both came through byes. Byes and Matches
   // still waiting have none.
   await expect(admin.getByRole("button")).toHaveCount(2);
-  for (const heat of ["Round 1 Match 2", "Semifinal 2"]) {
+  for (const match of ["Round 1 Match 2", "Semifinal 2"]) {
     await expect(
-      admin.getByRole("button", { name: `Record result for ${heat}` }),
+      admin.getByRole("button", { name: `Record result for ${match}` }),
     ).toHaveClass(/\bbg-primary\b/);
   }
   await checkResultPopup(page, testInfo, "Round 1 Match 2");
@@ -371,7 +371,7 @@ test("a head-to-head Bracket is one tree: the Organizer records from it in admin
   // Mid-way: Round 1 and Semifinal 2 decided, Semifinal 1 and the Final not.
   await recordWinner(page, "Round 1 Match 2", KNOCKOUT_ENTRANTS);
   await expect(
-    heatBox(admin, "Round 1 Match 2").getByText(/^Recorded .+ ET$/),
+    matchBox(admin, "Round 1 Match 2").getByText(/^Recorded .+ ET$/),
   ).toBeVisible();
   await expect(
     admin.getByRole("button", { name: "Edit Round 1 Match 2" }),
@@ -380,7 +380,7 @@ test("a head-to-head Bracket is one tree: the Organizer records from it in admin
   await checkTree(page, admin, testInfo, "admin-knockout-midway", rounds);
   await checkTreeAxe(page, testInfo, "admin-knockout");
 
-  // A signed-in Participant in no Heat sees the same tree, no List toggle
+  // A signed-in Participant in no Match sees the same tree, no List toggle
   // and no Record result anywhere.
   const viewer = await participantPage(browser, id);
   await checkNoListToggle(viewer.page);
@@ -396,7 +396,7 @@ test("a head-to-head Bracket is one tree: the Organizer records from it in admin
 
   await recordWinner(page, "Semifinal 1", KNOCKOUT_ENTRANTS);
   await recordWinner(page, "Final", KNOCKOUT_ENTRANTS);
-  await finalize(page, "Close");
+  await close(page, "Close");
   // Closed: nothing to record until Reopen.
   await expect(admin.getByRole("button")).toHaveCount(0);
 
@@ -405,13 +405,13 @@ test("a head-to-head Bracket is one tree: the Organizer records from it in admin
     viewer.page,
     treeOf(viewer.page),
     testInfo,
-    "knockout-finalized",
+    "knockout-closed",
     rounds,
   );
   await viewer.context.close();
 
   // Leave the Standings the later flows read as they were.
-  await finalize(page, "Reopen");
+  await close(page, "Reopen");
 });
 
 test("a Bracket of 4 per Match is the same tree of Match boxes, advancers highlighted", async ({
@@ -421,58 +421,61 @@ test("a Bracket of 4 per Match is the same tree of Match boxes, advancers highli
 }, testInfo) => {
   test.setTimeout(180_000);
   await asOrganizer(context);
-  const id = await xiCompetitionId(HEATS);
+  const id = await xiCompetitionId(MATCHES);
   const rounds = ["Round 1", "Final"];
 
   await openCompetitionPage(page, id);
   await setFormat(page, "Bracket");
+  // A Group (spec R21, decision 10) shows its Match size fields.
+  await page.getByRole("button", { name: "Group", exact: true }).click();
+  await expectSaved(page);
   await page.getByRole("combobox", { name: "Entrants per Match" }).click();
   await page.getByRole("option", { name: "4 per Match" }).click();
   await page.getByRole("combobox", { name: "How many advance" }).click();
   await page.getByRole("option", { name: "Top 2 advance" }).click();
   await expectSaved(page);
-  await enterAndGenerate(page, HEATS_ENTRANTS);
+  await enterAndGenerate(page, MATCHES_ENTRANTS);
 
   await checkResultPopup(page, testInfo, "Round 1 Match 1");
 
-  // Mid-way: Heat 1 decided, its top two highlighted in both trees.
-  await recordOrder(page, "Round 1 Match 1", HEATS_ENTRANTS);
+  // Mid-way: Match 1 decided, its top two highlighted in both trees.
+  await recordOrder(page, "Round 1 Match 1", MATCHES_ENTRANTS);
   await expect(
-    heatBox(adminTreeOf(page), "Round 1 Match 1").locator("[data-advances]"),
+    matchBox(adminTreeOf(page), "Round 1 Match 1").locator("[data-advances]"),
   ).toHaveCount(2);
 
   const viewer = await participantPage(browser, id);
   await checkNoListToggle(viewer.page);
   await expect(
-    heatBox(treeOf(viewer.page), "Round 1 Match 1").locator("[data-advances]"),
+    matchBox(treeOf(viewer.page), "Round 1 Match 1").locator("[data-advances]"),
   ).toHaveCount(2);
   await checkTree(
     viewer.page,
     treeOf(viewer.page),
     testInfo,
-    "heats-midway",
+    "matches-midway",
     rounds,
   );
 
-  await recordOrder(page, "Round 1 Match 2", HEATS_ENTRANTS);
-  await recordOrder(page, "Final", HEATS_ENTRANTS);
-  await finalize(page, "Close");
+  await recordOrder(page, "Round 1 Match 2", MATCHES_ENTRANTS);
+  await recordOrder(page, "Final", MATCHES_ENTRANTS);
+  await close(page, "Close");
 
   await viewer.page.reload();
   // In the Final only the winner is highlighted.
   await expect(
-    heatBox(treeOf(viewer.page), "Final").locator("[data-advances]"),
+    matchBox(treeOf(viewer.page), "Final").locator("[data-advances]"),
   ).toHaveCount(1);
   await checkTree(
     viewer.page,
     treeOf(viewer.page),
     testInfo,
-    "heats-finalized",
+    "matches-closed",
     rounds,
   );
   await viewer.context.close();
 
-  await finalize(page, "Reopen");
+  await close(page, "Reopen");
 });
 
 /** The Semifinal `displayName` plays in (the draw is random). */
@@ -481,8 +484,8 @@ async function semifinalOf(
   displayName: string,
 ): Promise<string> {
   const [row] = await runQuery<{ position: number }>(
-    `select h.position from heat h
-     join heat_entrant he on he.heat_id = h.id
+    `select h.position from bracket_match h
+     join bracket_match_entrant he on he.bracket_match_id = h.id
      join entrant e on e.id = he.entrant_id
      join participant p on p.id = e.participant_id
      where h.competition_id = $1 and h.round = 1 and p.display_name = $2`,
@@ -499,7 +502,7 @@ async function setSelfReport(competitionId: string, on: boolean) {
   ]);
 }
 
-test("a self-reporting Participant records their own Heat from the public tree; nobody else sees Record result on it", async ({
+test("a self-reporting Participant records their own Match from the public tree, and may still edit it; nobody else sees Record result on it", async ({
   browser,
   context,
   page,
@@ -515,21 +518,21 @@ test("a self-reporting Participant records their own Heat from the public tree; 
   await enterAndGenerate(page, entrants);
 
   const reporter = entrants[0];
-  const ownHeat = await semifinalOf(id, reporter);
-  const otherHeat = ownHeat === "Semifinal 1" ? "Semifinal 2" : "Semifinal 1";
+  const ownMatch = await semifinalOf(id, reporter);
+  const otherMatch = ownMatch === "Semifinal 1" ? "Semifinal 2" : "Semifinal 1";
   const rival = (
     await Promise.all(
       entrants.map(async (name) => ({
         name,
-        heat: await semifinalOf(id, name),
+        match: await semifinalOf(id, name),
       })),
     )
-  ).find((e) => e.heat === otherHeat)!.name;
+  ).find((e) => e.match === otherMatch)!.name;
 
   const you = await participantPageAs(browser, reporter);
   const other = await participantPageAs(browser, rival);
   try {
-    // Self-report off: a Participant in the Heat sees no Record result.
+    // Self-report off: a Participant in the Match sees no Record result.
     await setSelfReport(id, false);
     await you.page.goto(`/xi/competitions/${id}`);
     await checkNoListToggle(you.page);
@@ -538,34 +541,34 @@ test("a self-reporting Participant records their own Heat from the public tree; 
       you.page.getByRole("button", { name: "Report result" }),
     ).toHaveCount(0);
 
-    // Self-report on: their own Heat, and only it, carries Record result.
+    // Self-report on: their own Match, and only it, carries Record result.
     await setSelfReport(id, true);
     await you.page.reload();
     const tree = treeOf(you.page);
-    const record = heatBox(tree, ownHeat).getByRole("button", {
-      name: `Record result for ${ownHeat}`,
+    const record = matchBox(tree, ownMatch).getByRole("button", {
+      name: `Record result for ${ownMatch}`,
     });
     await expect(record).toBeVisible();
     await expect(record).toHaveClass(/\bbg-primary\b/);
     await expect(tree.getByRole("button")).toHaveCount(1);
-    await expect(heatBox(tree, otherHeat).getByRole("button")).toHaveCount(0);
+    await expect(matchBox(tree, otherMatch).getByRole("button")).toHaveCount(0);
 
-    // A Participant not in that Heat sees no Record result on it (only on
+    // A Participant not in that Match sees no Record result on it (only on
     // their own).
     await other.page.goto(`/xi/competitions/${id}`);
     const otherTree = treeOf(other.page);
-    await expect(heatBox(otherTree, ownHeat).getByRole("button")).toHaveCount(
+    await expect(matchBox(otherTree, ownMatch).getByRole("button")).toHaveCount(
       0,
     );
     await expect(
-      heatBox(otherTree, otherHeat).getByRole("button", {
-        name: `Record result for ${otherHeat}`,
+      matchBox(otherTree, otherMatch).getByRole("button", {
+        name: `Record result for ${otherMatch}`,
       }),
     ).toBeVisible();
 
     // They record it from the tree; it counts at once.
     await record.click();
-    const sheet = you.page.getByRole("dialog", { name: ownHeat });
+    const sheet = you.page.getByRole("dialog", { name: ownMatch });
     const winner = sheet
       .getByRole("group", { name: "Winner" })
       .getByRole("button")
@@ -575,11 +578,15 @@ test("a self-reporting Participant records their own Heat from the public tree; 
     await sheet.getByRole("button", { name: "Save Match Result" }).click();
     await expect(you.page.getByText("Result reported.")).toBeVisible();
     await expect(sheet).toBeHidden();
-    const own = heatBox(tree, ownHeat);
+    const own = matchBox(tree, ownMatch);
     await expect(own.locator("[data-advances]")).toContainText(name);
     await expect(own.getByText(/^Recorded .+ ET$/)).toBeVisible();
-    // Decided: a Participant can't change it, so no Edit.
-    await expect(own.getByRole("button")).toHaveCount(0);
+    // Decided, and no later Match used it yet: they can still change it
+    // (spec R21, D1d), so it carries Edit.
+    await expect(own.getByRole("button")).toHaveCount(1);
+    await expect(
+      own.getByRole("button", { name: `Edit ${ownMatch}` }),
+    ).toBeVisible();
     await checkTree(you.page, tree, testInfo, "participant-reported", [
       "Semifinal",
       "Final",
@@ -587,7 +594,7 @@ test("a self-reporting Participant records their own Heat from the public tree; 
 
     // The Organizer sees who reported it, in the admin tree.
     await openCompetitionPage(page, id);
-    await expect(heatBox(adminTreeOf(page), ownHeat)).toContainText(
+    await expect(matchBox(adminTreeOf(page), ownMatch)).toContainText(
       `Reported by ${reporter}`,
     );
   } finally {

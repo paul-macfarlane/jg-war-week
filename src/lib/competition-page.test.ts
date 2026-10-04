@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  CLOCK_HALF_SET,
   type CompetitionSettingsSource,
   HOST_NOT_ON_ROSTER,
   hostNameOnPage,
@@ -13,7 +12,7 @@ import {
 const PLACEMENT: CompetitionSettingsSource = {
   name: "Darts",
   description: null,
-  competitionGroup: "Bar games",
+  competitionGroup: "Bar contests",
   hosts: ["ana@jahnelgroup.com"],
   placementPoints: [10, 7, 5],
   participationPoints: null,
@@ -21,16 +20,15 @@ const PLACEMENT: CompetitionSettingsSource = {
   scoring: "individual",
   countsTowardTeam: true,
   scoreDirection: "higher",
-  gameConfig: null,
-  entrantsOpen: true,
+  scoreUnit: null,
+  seriesConfig: null,
+  bestScoreConfig: null,
   bracketConfig: null,
   selfEnroll: false,
   entrantLimit: null,
-  enrollClosesAt: null,
-  loggingClosesAt: null,
   selfReport: false,
   selfCheckIn: false,
-  checkInClosesAt: null,
+  maxAttempts: null,
 };
 
 describe("settingsValuesOf", () => {
@@ -38,42 +36,44 @@ describe("settingsValuesOf", () => {
     const values = settingsValuesOf(PLACEMENT);
     expect(values.name).toBe("Darts");
     expect(values.description).toEqual({ type: "doc", content: [] });
-    expect(values.group).toBe("Bar games");
+    expect(values.group).toBe("Bar contests");
     expect(values.placementPoints).toBe("10, 7, 5");
     expect(values.participationPoints).toBe("");
     expect(values.entrantLimit).toBe("");
-    expect(values.enrollClosesAt).toEqual({ date: "", time: "" });
-    expect(values.gameConfig).toBeNull();
+    expect(values.scoreUnit).toBe("");
+    expect(values.seriesConfig).toBeNull();
+    expect(values.bestScoreConfig).toBeNull();
     expect(values.bracketConfig).toBeNull();
   });
 
-  it("gives a Bracket its config and a Games Format its Format's config", () => {
+  it("gives a Bracket, a Head-to-head and a Best score Competition their configs", () => {
     expect(
       settingsValuesOf({ ...PLACEMENT, format: "bracket", bracketConfig: null })
         .bracketConfig,
-    ).toEqual({ entrantsPerHeat: 2, advancePerHeat: 1, thirdPlaceGame: false });
-    expect(
-      settingsValuesOf({ ...PLACEMENT, format: "best-score", gameConfig: null })
-        .gameConfig,
-    ).toEqual({ count: "best", betterIs: "higher", unit: "" });
-  });
-
-  it("shows a close time as its ET date and time", () => {
-    // 17:30 UTC on 1 March 2027 is 12:30 in New York (EST).
-    const values = settingsValuesOf({
-      ...PLACEMENT,
-      enrollClosesAt: new Date("2027-03-01T17:30:00Z"),
+    ).toEqual({
+      kind: "head-to-head" as const,
+      entrantsPerMatch: 2,
+      advancePerMatch: 1,
+      thirdPlaceMatch: false,
+      rounds: {},
     });
-    expect(values.enrollClosesAt).toEqual({
-      date: "2027-03-01",
-      time: "12:30",
+    expect(
+      settingsValuesOf({ ...PLACEMENT, format: "head-to-head" }).seriesConfig,
+    ).toEqual({ drawsAllowed: false, bestOf: 3 });
+    expect(
+      settingsValuesOf({
+        ...PLACEMENT,
+        format: "best-score",
+        scoreUnit: "sec",
+      }),
+    ).toMatchObject({
+      bestScoreConfig: { teamScore: "best-member" },
+      scoreUnit: "sec",
     });
   });
 });
 
 describe("settingChangeOf", () => {
-  const values = settingsValuesOf(PLACEMENT);
-
   it("posts text, booleans and the Placement Points text as typed", () => {
     expect(settingChangeOf("name", "Darts II")).toEqual({
       ok: true,
@@ -88,38 +88,16 @@ describe("settingChangeOf", () => {
       change: { field: "placementPoints", value: "5, 3" },
     });
   });
-
-  it("posts a close time as the instant, or null when both are blank", () => {
-    expect(
-      settingChangeOf("loggingClosesAt", { date: "2027-03-01", time: "12:30" }),
-    ).toEqual({
-      ok: true,
-      change: {
-        field: "loggingClosesAt",
-        value: "2027-03-01T17:30:00.000Z",
-      },
-    });
-    expect(settingChangeOf("loggingClosesAt", values.loggingClosesAt)).toEqual({
-      ok: true,
-      change: { field: "loggingClosesAt", value: null },
-    });
-  });
-
-  it("refuses a close time with only a date or only a time", () => {
-    expect(
-      settingChangeOf("checkInClosesAt", { date: "2027-03-01", time: "" }),
-    ).toEqual({ ok: false, error: CLOCK_HALF_SET });
-  });
 });
 
 describe("shownSettings", () => {
-  it("shows a Placement Competition's Score direction and no Bracket or Games settings", () => {
+  it("shows a Placement Competition's Score direction and no other Format's settings", () => {
     const shown = shownSettings(settingsValuesOf(PLACEMENT), "teams");
     expect(shown).toContain("scoreDirection");
     expect(shown).toContain("placementPoints");
     expect(shown).toContain("countsTowardTeam");
     expect(shown).not.toContain("bracketConfig");
-    expect(shown).not.toContain("gameConfig");
+    expect(shown).not.toContain("seriesConfig");
     expect(shown).not.toContain("selfEnroll");
   });
 
@@ -134,10 +112,20 @@ describe("shownSettings", () => {
         "selfReport",
         "selfEnroll",
         "entrantLimit",
-        "enrollClosesAt",
       ]),
     );
+    expect(shown).toEqual(
+      expect.arrayContaining(["scoreDirection", "scoreUnit"]),
+    );
+  });
+
+  it("shows no Score direction or unit for Participation", () => {
+    const shown = shownSettings(
+      settingsValuesOf({ ...PLACEMENT, format: "participation" }),
+      "teams",
+    );
     expect(shown).not.toContain("scoreDirection");
+    expect(shown).not.toContain("scoreUnit");
   });
 
   it("hides the Scoring choice in a free-for-all War Week unless the Competition is Team", () => {
@@ -148,19 +136,102 @@ describe("shownSettings", () => {
     expect(shownSettings(team, "free-for-all")).toContain("scoring");
   });
 
-  it("offers a Games Competition enrollment only with a fixed list and no Best of", () => {
-    const open = settingsValuesOf({ ...PLACEMENT, format: "head-to-head" });
-    expect(shownSettings(open, "teams")).not.toContain("selfEnroll");
-    const fixed = { ...open, entrantsOpen: false };
-    expect(shownSettings(fixed, "teams")).toContain("selfEnroll");
-    const bestOf = {
-      ...fixed,
-      gameConfig: { drawsAllowed: false, bestOf: 3 as const },
-    };
-    expect(shownSettings(bestOf, "teams")).not.toContain("selfEnroll");
-    expect(shownSettings(open, "teams")).toEqual(
-      expect.arrayContaining(["gameConfig", "entrantsOpen", "loggingClosesAt"]),
+  it("offers self-report on a Bracket, Head-to-head and Best score, never Placement or Participation (AC 3)", () => {
+    for (const [format, shows] of [
+      ["bracket", true],
+      ["head-to-head", true],
+      ["best-score", true],
+      ["placement", false],
+      ["participation", false],
+    ] as const) {
+      const values = settingsValuesOf({ ...PLACEMENT, format });
+      expect(
+        shownSettings(values, "teams").includes("selfReport"),
+        format,
+      ).toBe(shows);
+    }
+  });
+
+  it("offers Max attempts per person on Best score only", () => {
+    for (const format of [
+      "placement",
+      "bracket",
+      "head-to-head",
+      "best-score",
+      "participation",
+    ] as const) {
+      const values = settingsValuesOf({ ...PLACEMENT, format });
+      expect(
+        shownSettings(values, "teams").includes("maxAttempts"),
+        format,
+      ).toBe(format === "best-score");
+    }
+    expect(
+      settingsValuesOf({ ...PLACEMENT, format: "best-score", maxAttempts: 3 })
+        .maxAttempts,
+    ).toBe("3");
+  });
+
+  it("offers enrollment only on a Bracket", () => {
+    for (const format of [
+      "placement",
+      "head-to-head",
+      "best-score",
+      "participation",
+    ] as const) {
+      const values = settingsValuesOf({ ...PLACEMENT, format });
+      expect(shownSettings(values, "teams"), format).not.toContain(
+        "selfEnroll",
+      );
+    }
+  });
+
+  it("shows no close time on any Format", () => {
+    for (const format of [
+      "placement",
+      "bracket",
+      "head-to-head",
+      "best-score",
+      "participation",
+    ] as const) {
+      const values = settingsValuesOf({
+        ...PLACEMENT,
+        format,
+        selfEnroll: true,
+        selfCheckIn: true,
+      });
+      expect(
+        shownSettings(values, "teams").filter((f) => /ClosesAt$/.test(f)),
+        format,
+      ).toEqual([]);
+    }
+  });
+
+  it("shows a Head-to-head its series settings, and Best score its direction, unit and, in team scoring, Team score", () => {
+    expect(
+      shownSettings(
+        settingsValuesOf({ ...PLACEMENT, format: "head-to-head" }),
+        "teams",
+      ),
+    ).toContain("seriesConfig");
+    const individual = shownSettings(
+      settingsValuesOf({ ...PLACEMENT, format: "best-score" }),
+      "teams",
     );
+    expect(individual).toEqual(
+      expect.arrayContaining(["scoreDirection", "scoreUnit"]),
+    );
+    expect(individual).not.toContain("bestScoreConfig");
+    expect(
+      shownSettings(
+        settingsValuesOf({
+          ...PLACEMENT,
+          format: "best-score",
+          scoring: "team",
+        }),
+        "teams",
+      ),
+    ).toContain("bestScoreConfig");
   });
 
   it("gives an individual Participation Competition points per Participant, not Placement Points", () => {
@@ -173,10 +244,6 @@ describe("shownSettings", () => {
     expect(shown).toContain("participationPoints");
     expect(shown).not.toContain("placementPoints");
     expect(shown).toContain("selfCheckIn");
-    expect(shown).not.toContain("checkInClosesAt");
-    expect(
-      shownSettings({ ...individual, selfCheckIn: true }, "teams"),
-    ).toContain("checkInClosesAt");
   });
 
   it("hides counts toward the Team in a free-for-all", () => {

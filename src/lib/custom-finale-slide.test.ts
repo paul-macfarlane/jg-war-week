@@ -70,7 +70,7 @@ describe("customSlidePlacement", () => {
         "title",
         "numbers",
         "awards",
-        "champions",
+        "winners",
         "standings",
         "winner",
       ]),

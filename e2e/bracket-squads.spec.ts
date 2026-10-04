@@ -127,13 +127,13 @@ async function checkViewports(
 }
 
 /**
- * The box of the Heat named `heat` in the Bracket's tree, admin's or the
+ * The box of the Match named `match` in the Bracket's tree, admin's or the
  * Competition page's (the last match: the Final's Round is named Final too).
  */
-function heatCard(page: Page, heat: string): Locator {
+function matchCard(page: Page, match: string): Locator {
   return page
     .locator("[data-bracket-tree]")
-    .getByRole("group", { name: heat, exact: true })
+    .getByRole("group", { name: match, exact: true })
     .last();
 }
 
@@ -144,14 +144,14 @@ function squadIn(text: string): string {
   return name;
 }
 
-/** Records the Heat named `heat` as the Host, its first-listed Squad winning. */
-async function recordHeat(page: Page, heat: string): Promise<string> {
+/** Records the Match named `match` as the Host, its first-listed Squad winning. */
+async function recordMatch(page: Page, match: string): Promise<string> {
   // From the admin Bracket's tree, the one Participants see.
   await page
     .locator("[data-bracket-tree]")
-    .getByRole("button", { name: `Record result for ${heat}` })
+    .getByRole("button", { name: `Record result for ${match}` })
     .click();
-  const sheet = page.getByRole("dialog", { name: heat });
+  const sheet = page.getByRole("dialog", { name: match });
   const winner = sheet
     .getByRole("group", { name: "Winner" })
     .getByRole("button")
@@ -159,7 +159,7 @@ async function recordHeat(page: Page, heat: string): Promise<string> {
   const name = squadIn(await winner.innerText());
   await winner.click();
   await sheet.getByRole("button", { name: "Save Match Result" }).click();
-  await expect(page.getByText(`${name} wins ${heat}`)).toBeVisible();
+  await expect(page.getByText(`${name} wins ${match}`)).toBeVisible();
   await expect(sheet).toBeHidden();
   return name;
 }
@@ -194,7 +194,7 @@ async function addSquad(page: Page, squad: (typeof SQUADS)[number]) {
   ).toBeVisible();
 }
 
-test("a Squad Bracket with self-report: a Participant reports, a second report is refused, the Host overwrites", async ({
+test("a Squad Bracket with self-report: a Participant reports, the other player changes it (D1d), the Host can't change a Semifinal the Final used until the Final is cleared (D1c)", async ({
   browser,
   context,
   page,
@@ -208,8 +208,8 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
   // only the ones the Bracket generates are removed.
   const [before] = await runQuery<{ settings: string }>(
     `select row_to_json(c)::text as settings from (
-       select format, bracket_config, self_report, finalized_at,
-              placement_points, self_enroll, entrant_limit, enroll_closes_at
+       select format, bracket_config, self_report, closed_at,
+              placement_points, self_enroll, entrant_limit
        from competition where id = $1) c`,
     [id],
   );
@@ -252,7 +252,9 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     ).toBeVisible();
 
     // Self-report is a setting: it autosaves.
-    const selfReport = page.getByRole("switch", { name: "Self-report" });
+    const selfReport = page.getByRole("switch", {
+      name: "Participants can log their own results",
+    });
     await selfReport.click();
     await expect(selfReport).toBeChecked();
     await expectSaved(page);
@@ -274,11 +276,11 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
 
     // The draw is random: Red Alpha's Semifinal and its opponent, by SQL.
     const [draw] = await runQuery<{ position: number; opponent: string }>(
-      `select h.position, s2.name as opponent from heat h
-       join heat_entrant he on he.heat_id = h.id
+      `select h.position, s2.name as opponent from bracket_match h
+       join bracket_match_entrant he on he.bracket_match_id = h.id
        join entrant e on e.id = he.entrant_id
        join squad s on s.id = e.squad_id
-       join heat_entrant he2 on he2.heat_id = h.id and he2.entrant_id <> he.entrant_id
+       join bracket_match_entrant he2 on he2.bracket_match_id = h.id and he2.entrant_id <> he.entrant_id
        join entrant e2 on e2.id = he2.entrant_id
        join squad s2 on s2.id = e2.squad_id
        where h.competition_id = $1 and h.round = 1 and s.name = 'Red Alpha'`,
@@ -315,21 +317,21 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
       await expect(
         you.getByRole("region", { name: "Bracket" }).getByRole("tab"),
       ).toHaveCount(0);
-      // Their own Heat carries Record result in the tree; the other doesn't.
+      // Their own Match carries Record result in the tree; the other doesn't.
       await expect(
-        heatCard(you, semifinal).getByRole("button", {
+        matchCard(you, semifinal).getByRole("button", {
           name: `Record result for ${semifinal}`,
         }),
       ).toBeVisible();
       await expect(
-        heatCard(you, otherSemifinal).getByRole("button"),
+        matchCard(you, otherSemifinal).getByRole("button"),
       ).toHaveCount(0);
-      const nextHeat = you
+      const nextMatch = you
         .getByRole("region", { name: "Bracket" })
         .getByLabel("Your next Match");
-      await expect(nextHeat).toContainText(`Your next Match · ${semifinal}`);
+      await expect(nextMatch).toContainText(`Your next Match · ${semifinal}`);
       await expect(
-        nextHeat.getByRole("button", { name: "Report result" }),
+        nextMatch.getByRole("button", { name: "Report result" }),
       ).toBeVisible();
     }
 
@@ -361,44 +363,52 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await firstSheet.getByRole("button", { name: "Save Match Result" }).click();
     await expect(first.getByText("Result reported.")).toBeVisible();
     await expect(firstSheet).toBeHidden();
-    await expect(heatCard(first, "Final")).toContainText("Red Alpha");
+    await expect(matchCard(first, "Final")).toContainText("Red Alpha");
     await checkViewports(first, testInfo, "participant-reported");
 
-    // The second's report now comes too late.
+    // The second player saves after it: a player may change their Match's
+    // recorded result (spec R21, D1d), so theirs stands.
     await secondSheet
       .getByRole("button", { name: "Save Match Result" })
       .click();
-    await expect(
-      second.getByText("This Match already has a result."),
-    ).toBeVisible();
-    await expect(secondSheet).toBeVisible();
-    await second.keyboard.press("Escape");
+    await expect(second.getByText("Result reported.")).toBeVisible();
     await expect(secondSheet).toBeHidden();
     await second.reload();
     await expect(
-      heatCard(second, semifinal).locator("[data-advances]"),
-    ).toContainText("Red Alpha");
-    // Decided: no Record result for the second any more.
-    await expect(heatCard(second, semifinal).getByRole("button")).toHaveCount(
-      0,
-    );
+      matchCard(second, semifinal).locator("[data-advances]"),
+    ).toContainText(opponent);
+    await expect(matchCard(second, "Final")).not.toContainText("Red Alpha");
     await secondContext.close();
+
+    // The first player edits it back from the tree: Red Alpha won.
+    await first.reload();
+    await matchCard(first, semifinal)
+      .getByRole("button", { name: `Edit ${semifinal}` })
+      .click();
+    const firstEdit = first.getByRole("dialog", { name: semifinal });
+    await firstEdit
+      .getByRole("group", { name: "Winner" })
+      .getByRole("button", { name: "Red Alpha" })
+      .click();
+    await firstEdit.getByRole("button", { name: "Save Match Result" }).click();
+    await expect(first.getByText("Result reported.")).toBeVisible();
+    await expect(matchCard(first, "Final")).toContainText("Red Alpha");
 
     // The Host sees who reported it.
     await openCompetitionPage(page, id);
-    await expect(heatCard(page, semifinal)).toContainText(
+    await expect(matchCard(page, semifinal)).toContainText(
       `Reported by ${REPORTER}`,
     );
     await checkViewports(page, testInfo, "results-reported");
-    const otherFinalist = await recordHeat(page, otherSemifinal);
+    const otherFinalist = await recordMatch(page, otherSemifinal);
 
     // The first reports the Final too, from its Record result in the tree.
     await first.reload();
-    const nextHeat = first
+    const nextMatch = first
       .getByRole("region", { name: "Bracket" })
       .getByLabel("Your next Match");
-    await expect(nextHeat).toContainText("Your next Match · Final");
-    await heatCard(first, "Final")
+    await expect(nextMatch).toContainText("Your next Match · Final");
+    await matchCard(first, "Final")
       .getByRole("button", { name: "Record result for Final" })
       .click();
     const finalSheet = first.getByRole("dialog", { name: "Final" });
@@ -410,11 +420,34 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await expect(first.getByText("Result reported.")).toBeVisible();
     await firstContext.close();
 
-    // The Host overwrites Red Alpha's Semifinal: the reported Final resets.
+    // The Final used Red Alpha's Semifinal: its Edit and Clear result are
+    // disabled, the reason beside them, and nothing resets (D1c).
     await page.reload();
-    await expect(heatCard(page, "Final")).toContainText(
+    await expect(matchCard(page, "Final")).toContainText(
       `Reported by ${REPORTER}`,
     );
+    const locked = matchCard(page, semifinal);
+    await expect(
+      locked.getByRole("button", { name: `Edit ${semifinal}` }),
+    ).toBeDisabled();
+    await expect(
+      locked.getByRole("button", { name: `Clear result of ${semifinal}` }),
+    ).toBeDisabled();
+    await expect(locked.locator('[data-slot="match-lock-reason"]')).toHaveText(
+      "A later Match already used this result. Change that Match first.",
+    );
+    await checkViewports(page, testInfo, "semifinal-locked");
+
+    // The Host clears the Final, then overwrites the Semifinal.
+    await page.getByRole("button", { name: "Edit Final" }).click();
+    const finalEdit = page.getByRole("dialog", { name: "Final" });
+    await finalEdit.getByRole("button", { name: "Clear result" }).click();
+    await page
+      .getByRole("alertdialog", { name: "Clear the Final result?" })
+      .getByRole("button", { name: "Clear result" })
+      .click();
+    await expect(page.getByText("Final result cleared")).toBeVisible();
+    await expect(finalEdit).toBeHidden();
     await page.getByRole("button", { name: `Edit ${semifinal}` }).click();
     const overwrite = page.getByRole("dialog", { name: semifinal });
     await overwrite
@@ -422,23 +455,17 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
       .getByRole("button", { name: opponent })
       .click();
     await overwrite.getByRole("button", { name: "Save Match Result" }).click();
-    const resetConfirm = page.getByRole("alertdialog");
-    await expect(resetConfirm).toContainText(`Change the ${semifinal} result?`);
-    await expect(resetConfirm).toContainText("Final will be reset.");
-    await resetConfirm.getByRole("button", { name: "Save and reset" }).click();
-    await expect(
-      page.getByText(`${opponent} wins ${semifinal} · 1 later Match reset`),
-    ).toBeVisible();
+    await expect(page.getByText(`${opponent} wins ${semifinal}`)).toBeVisible();
     await expect(overwrite).toBeHidden();
-    await expect(heatCard(page, semifinal)).not.toContainText("Reported by");
-    await expect(heatCard(page, "Final")).not.toContainText("Reported by");
-    await expect(heatCard(page, "Final")).toContainText(opponent);
-    await expect(heatCard(page, "Final")).not.toContainText("Red Alpha");
+    await expect(matchCard(page, semifinal)).not.toContainText("Reported by");
+    await expect(matchCard(page, "Final")).not.toContainText("Reported by");
+    await expect(matchCard(page, "Final")).toContainText(opponent);
+    await expect(matchCard(page, "Final")).not.toContainText("Red Alpha");
     await expect(
       page.getByRole("button", { name: "Record result for Final" }),
     ).toBeVisible();
 
-    // Put Red Alpha back, play the Final, finalize.
+    // Put Red Alpha back, play the Final, close.
     await page.getByRole("button", { name: `Edit ${semifinal}` }).click();
     await overwrite
       .getByRole("group", { name: "Winner" })
@@ -447,7 +474,7 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await overwrite.getByRole("button", { name: "Save Match Result" }).click();
     await expect(page.getByText(`Red Alpha wins ${semifinal}`)).toBeVisible();
     await expect(overwrite).toBeHidden();
-    const champion = await recordHeat(page, "Final");
+    const winner = await recordMatch(page, "Final");
     await page
       .getByRole("region", { name: "Bracket", exact: true })
       .getByRole("button", { name: "Close", exact: true })
@@ -466,9 +493,9 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     ).toHaveCount(0);
     const teamOf = (squad: string) =>
       SQUADS.find((s) => s.name === squad)!.team;
-    const runnerUp = champion === "Red Alpha" ? otherFinalist : "Red Alpha";
+    const runnerUp = winner === "Red Alpha" ? otherFinalist : "Red Alpha";
     const expected = [
-      { target: teamOf(champion), points: 3 },
+      { target: teamOf(winner), points: 3 },
       { target: teamOf(runnerUp), points: 2 },
     ];
     const entries = (await xiCompetitionEntries(COMPETITION)).filter(
@@ -481,7 +508,7 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     ).toEqual(expected);
     const byTeam = await runQuery<{ team_id: string; points: number }>(
       `select team_id, points::float as points from points_entry
-       where competition_id = $1 and generated_by_bracket
+       where competition_id = $1 and generated
        order by points desc`,
       [id],
     );
@@ -512,10 +539,10 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
       `delete from competition_host where competition_id = $1 and email = $2`,
       [id, E2E_HOST_EMAIL],
     );
-    // The Bracket, its Entrants and Squads (their Heat Entrants and Squad
+    // The Bracket, its Entrants and Squads (their Match Entrants and Squad
     // members cascade), the Points Entries it generated, then Cypher as it
     // was.
-    await runQuery(`delete from heat where competition_id = $1`, [id]);
+    await runQuery(`delete from bracket_match where competition_id = $1`, [id]);
     await runQuery(`delete from entrant where competition_id = $1`, [id]);
     await runQuery(`delete from squad where competition_id = $1`, [id]);
     await runQuery(
@@ -526,9 +553,9 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await runQuery(
       `update competition c set
          format = b.format, bracket_config = b.bracket_config,
-         self_report = b.self_report, finalized_at = b.finalized_at,
+         self_report = b.self_report, closed_at = b.closed_at,
          placement_points = b.placement_points, self_enroll = b.self_enroll,
-         entrant_limit = b.entrant_limit, enroll_closes_at = b.enroll_closes_at
+         entrant_limit = b.entrant_limit
        from json_populate_record(null::competition, $2::json) b
        where c.id = $1`,
       [id, before.settings],

@@ -62,7 +62,7 @@ describe.skipIf(!isLocalDatabase)("getCompetitionEntryPoints", () => {
           teamId: red.id,
           points: 10,
           enteredByEmail: "host@jahnelgroup.com",
-          generatedByBracket: true,
+          generated: true,
         },
         {
           warWeekId,
@@ -71,7 +71,7 @@ describe.skipIf(!isLocalDatabase)("getCompetitionEntryPoints", () => {
           points: 4,
           note: "Entered by hand",
           enteredByEmail: "host@jahnelgroup.com",
-          generatedByBracket: false,
+          generated: false,
         },
       ]);
 

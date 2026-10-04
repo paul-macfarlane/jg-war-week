@@ -18,9 +18,6 @@ const MORPHEUS = "morpheus@jahnelgroup.com";
 /** Matches no Participant: Tank has no email, so nothing links him. */
 const TANK = "tank@jahnelgroup.com";
 
-const PAST = new Date("2020-01-01T00:00:00Z");
-const FUTURE = new Date("2099-12-31T00:00:00Z");
-
 /**
  * A War Week with Red (Neo, Trinity) and Blue (Morpheus), Tank on no Team
  * and with no email, and Competitions with the enroll switch on: Cypher
@@ -107,9 +104,7 @@ async function fixture(tx: DBTx) {
         name: "Pong",
         scoring: "individual",
         format: "head-to-head",
-        gameConfig: { drawsAllowed: false, bestOf: null },
-        entrantsOpen: false,
-        selfEnroll: true,
+        seriesConfig: { drawsAllowed: false, bestOf: 3 },
       },
       { warWeekId, name: "Trivia", scoring: "team", format: "placement" },
     ])
@@ -170,7 +165,6 @@ async function fixture(tx: DBTx) {
         .select({
           selfEnroll: schema.competition.selfEnroll,
           entrantLimit: schema.competition.entrantLimit,
-          enrollClosesAt: schema.competition.enrollClosesAt,
         })
         .from(schema.competition)
         .where(eq(schema.competition.id, id))
@@ -203,7 +197,7 @@ async function fixture(tx: DBTx) {
 }
 
 const mutations = () => import("@/mutations/enrollment");
-const rule = () => import("@/lib/games/enroll-rule");
+const rule = () => import("@/lib/bracket/enroll-rule");
 
 describe.skipIf(!isLocalDatabase)("enroll (individual scoring)", () => {
   it("enters the linked Participant at the next Seed Position, once", async () => {
@@ -289,27 +283,16 @@ describe.skipIf(!isLocalDatabase)("enroll (individual scoring)", () => {
       const { enroll } = await mutations();
       const { ENROLL_CLOSED_BUILT } = await rule();
       const f = await fixture(tx);
-      await tx
-        .insert(f.schema.heat)
-        .values({ competitionId: f.cypher, round: 1, position: 1 });
+      await tx.insert(f.schema.bracketMatch).values({
+        competitionId: f.cypher,
+        round: 1,
+        position: 1,
+        advanceCount: 1,
+      });
 
       expect(await enroll(f.cypher, f.as(NEO), tx)).toEqual({
         ok: false,
         error: ENROLL_CLOSED_BUILT,
-      });
-    });
-  });
-
-  it("refuses once the close time has passed", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { enroll } = await mutations();
-      const { ENROLL_CLOSED_TIME } = await rule();
-      const f = await fixture(tx);
-      await f.set(f.cypher, { enrollClosesAt: PAST });
-
-      expect(await enroll(f.cypher, f.as(NEO), tx)).toEqual({
-        ok: false,
-        error: ENROLL_CLOSED_TIME,
       });
     });
   });
@@ -319,7 +302,7 @@ describe.skipIf(!isLocalDatabase)("enroll (individual scoring)", () => {
       const { enroll } = await mutations();
       const { ENROLL_CLOSED_BY_HOST } = await rule();
       const f = await fixture(tx);
-      await f.set(f.cypher, { finalizedAt: new Date() });
+      await f.set(f.cypher, { closedAt: new Date() });
 
       expect(await enroll(f.cypher, f.as(NEO), tx)).toEqual({
         ok: false,
@@ -350,51 +333,29 @@ describe.skipIf(!isLocalDatabase)("enroll (individual scoring)", () => {
   });
 });
 
-describe.skipIf(!isLocalDatabase)(
-  "enroll (a fixed-list Head-to-head or Best score Competition)",
-  () => {
-    it("enrolls before the first Game and refuses after it", async () => {
-      await inRolledBackTransaction(async (tx) => {
-        const { enroll } = await mutations();
-        const { ENROLL_CLOSED_GAME_LOGGED } = await rule();
-        const f = await fixture(tx);
+describe.skipIf(!isLocalDatabase)("enroll on another Format", () => {
+  it("refuses a Head-to-head and a Placement whatever is stored", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { enroll, withdraw } = await mutations();
+      const { HEAD_TO_HEAD_NO_ENROLL, POINTS_NO_ENROLL } = await rule();
+      const f = await fixture(tx);
 
-        expect(await enroll(f.pong, f.as(NEO), tx)).toEqual({ ok: true });
-        await tx
-          .insert(f.schema.game)
-          .values({ competitionId: f.pong, loggedByEmail: HOST });
-
-        expect(await enroll(f.pong, f.as(TRINITY), tx)).toEqual({
-          ok: false,
-          error: ENROLL_CLOSED_GAME_LOGGED,
-        });
+      expect(await enroll(f.pong, f.as(NEO), tx)).toEqual({
+        ok: false,
+        error: HEAD_TO_HEAD_NO_ENROLL,
       });
-    });
-
-    it("is off on a Best of or open-to-everyone Head-to-head or Best score Competition, whatever the switch", async () => {
-      await inRolledBackTransaction(async (tx) => {
-        const { enroll } = await mutations();
-        const { ENROLL_OFF } = await rule();
-        const f = await fixture(tx);
-
-        await f.set(f.pong, { gameConfig: { drawsAllowed: false, bestOf: 3 } });
-        expect(await enroll(f.pong, f.as(NEO), tx)).toEqual({
-          ok: false,
-          error: ENROLL_OFF,
-        });
-
-        await f.set(f.pong, {
-          gameConfig: { drawsAllowed: false, bestOf: null },
-          entrantsOpen: true,
-        });
-        expect(await enroll(f.pong, f.as(NEO), tx)).toEqual({
-          ok: false,
-          error: ENROLL_OFF,
-        });
+      expect(await withdraw(f.pong, f.as(NEO), tx)).toEqual({
+        ok: false,
+        error: HEAD_TO_HEAD_NO_ENROLL,
       });
+      expect(await enroll(f.trivia, f.as(NEO), tx)).toEqual({
+        ok: false,
+        error: POINTS_NO_ENROLL,
+      });
+      expect(await f.entrantsOf(f.pong)).toEqual([]);
     });
-  },
-);
+  });
+});
 
 describe.skipIf(!isLocalDatabase)("withdraw", () => {
   it("removes the Entrant and keeps Seed Positions 1..n in order", async () => {
@@ -419,7 +380,7 @@ describe.skipIf(!isLocalDatabase)("withdraw", () => {
     await inRolledBackTransaction(async (tx) => {
       const { withdraw } = await mutations();
       const f = await fixture(tx);
-      await f.set(f.cypher, { entrantLimit: 2, enrollClosesAt: FUTURE });
+      await f.set(f.cypher, { entrantLimit: 2 });
       await f.enter(f.cypher, 1, { participantId: f.neo });
       await f.enter(f.cypher, 2, { participantId: f.morpheus });
 
@@ -433,7 +394,7 @@ describe.skipIf(!isLocalDatabase)("withdraw", () => {
   it("is refused after enrollment closes, and when not entered", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { withdraw } = await mutations();
-      const { ENROLL_CLOSED_TIME, NOT_ENTERED } = await rule();
+      const { ENROLL_CLOSED_BY_HOST, NOT_ENTERED } = await rule();
       const f = await fixture(tx);
       await f.enter(f.cypher, 1, { participantId: f.neo });
 
@@ -442,10 +403,10 @@ describe.skipIf(!isLocalDatabase)("withdraw", () => {
         error: NOT_ENTERED,
       });
 
-      await f.set(f.cypher, { enrollClosesAt: PAST });
+      await f.set(f.cypher, { closedAt: new Date() });
       expect(await withdraw(f.cypher, f.as(NEO), tx)).toEqual({
         ok: false,
-        error: ENROLL_CLOSED_TIME,
+        error: ENROLL_CLOSED_BY_HOST,
       });
       expect(await f.entrantsOf(f.cypher)).toHaveLength(1);
     });
@@ -552,7 +513,7 @@ describe.skipIf(!isLocalDatabase)("Squads", () => {
       const { joinSquad } = await mutations();
       const { ENROLL_CLOSED_BY_HOST } = await rule();
       const f = await fixture(tx);
-      await f.set(f.relay, { finalizedAt: new Date() });
+      await f.set(f.relay, { closedAt: new Date() });
 
       expect(await joinSquad(f.relay, f.redOne, f.as(NEO), tx)).toEqual({
         ok: false,
@@ -591,7 +552,7 @@ describe.skipIf(!isLocalDatabase)("Squads", () => {
       const { ENROLL_CLOSED_BY_HOST } = await rule();
       const f = await fixture(tx);
       await joinSquad(f.relay, f.redOne, f.as(NEO), tx);
-      await f.set(f.relay, { finalizedAt: new Date() });
+      await f.set(f.relay, { closedAt: new Date() });
 
       expect(await leaveSquad(f.relay, f.redOne, f.as(NEO), tx)).toEqual({
         ok: false,
@@ -603,7 +564,7 @@ describe.skipIf(!isLocalDatabase)("Squads", () => {
 });
 
 describe.skipIf(!isLocalDatabase)("setSelfEnroll", () => {
-  it("turns the switch on with a limit and close time, and off", async () => {
+  it("turns the switch on with a limit, and off", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { setSelfEnroll } = await mutations();
       const f = await fixture(tx);
@@ -612,7 +573,7 @@ describe.skipIf(!isLocalDatabase)("setSelfEnroll", () => {
       expect(
         await setSelfEnroll(
           f.cypher,
-          { on: true, entrantLimit: 8, enrollClosesAt: FUTURE },
+          { on: true, entrantLimit: 8 },
           f.as(HOST),
           tx,
         ),
@@ -620,13 +581,12 @@ describe.skipIf(!isLocalDatabase)("setSelfEnroll", () => {
       expect(await f.competitionRow(f.cypher)).toEqual({
         selfEnroll: true,
         entrantLimit: 8,
-        enrollClosesAt: FUTURE,
       });
 
       expect(
         await setSelfEnroll(
           f.cypher,
-          { on: false, entrantLimit: null, enrollClosesAt: null },
+          { on: false, entrantLimit: null },
           f.as(HOST),
           tx,
         ),
@@ -634,70 +594,44 @@ describe.skipIf(!isLocalDatabase)("setSelfEnroll", () => {
       expect(await f.competitionRow(f.cypher)).toEqual({
         selfEnroll: false,
         entrantLimit: null,
-        enrollClosesAt: null,
       });
     });
   });
 
-  it("turns it on for a fixed-list Head-to-head or Best score Competition", async () => {
+  it("refuses every Format but a Bracket, and a closed Competition", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { setSelfEnroll } = await mutations();
+      const { HEAD_TO_HEAD_NO_ENROLL, POINTS_NO_ENROLL } = await rule();
       const f = await fixture(tx);
-      await f.set(f.pong, { selfEnroll: false });
-
-      expect(
-        await setSelfEnroll(
-          f.pong,
-          { on: true, entrantLimit: null, enrollClosesAt: null },
-          f.as(HOST),
-          tx,
-        ),
-      ).toEqual({ ok: true });
-      expect((await f.competitionRow(f.pong)).selfEnroll).toBe(true);
-    });
-  });
-
-  it("refuses a points, a Best of, an open-to-everyone and a closed Competition", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { setSelfEnroll } = await mutations();
-      const { BEST_OF_NO_ENROLL, OPEN_NO_ENROLL, POINTS_NO_ENROLL } =
-        await import("@/lib/games/enroll-rule");
-      const f = await fixture(tx);
-      const on = { on: true, entrantLimit: null, enrollClosesAt: null };
+      const on = { on: true, entrantLimit: null };
 
       expect(await setSelfEnroll(f.trivia, on, f.as(HOST), tx)).toEqual({
         ok: false,
         error: POINTS_NO_ENROLL,
       });
-
-      await f.set(f.pong, {
-        selfEnroll: false,
-        gameConfig: { drawsAllowed: false, bestOf: 5 },
-      });
       expect(await setSelfEnroll(f.pong, on, f.as(HOST), tx)).toEqual({
         ok: false,
-        error: "A Best of is set by the Host; enrollment is off.",
+        error: HEAD_TO_HEAD_NO_ENROLL,
       });
-      expect(BEST_OF_NO_ENROLL).toBe(
-        "A Best of is set by the Host; enrollment is off.",
-      );
-
-      await f.set(f.pong, {
-        gameConfig: { drawsAllowed: false, bestOf: null },
-        entrantsOpen: true,
-      });
-      expect(await setSelfEnroll(f.pong, on, f.as(HOST), tx)).toEqual({
-        ok: false,
-        error: "Everyone can play already; there's no list to enroll in.",
-      });
-      expect(OPEN_NO_ENROLL).toBe(
-        "Everyone can play already; there's no list to enroll in.",
-      );
       expect((await f.competitionRow(f.pong)).selfEnroll).toBe(false);
 
-      await f.set(f.cypher, { finalizedAt: new Date() });
-      const finalized = await setSelfEnroll(f.cypher, on, f.as(HOST), tx);
-      expect(finalized.ok).toBe(false);
+      await f.set(f.cypher, { closedAt: new Date() });
+      const closed = await setSelfEnroll(f.cypher, on, f.as(HOST), tx);
+      expect(closed.ok).toBe(false);
+    });
+  });
+
+  it("is backed by the CHECK: a Head-to-head never stores the switch on", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const f = await fixture(tx);
+      await expect(
+        tx.transaction((inner) =>
+          inner
+            .update(f.schema.competition)
+            .set({ selfEnroll: true })
+            .where(eq(f.schema.competition.id, f.pong)),
+        ),
+      ).rejects.toThrow();
     });
   });
 
@@ -707,12 +641,7 @@ describe.skipIf(!isLocalDatabase)("setSelfEnroll", () => {
       const f = await fixture(tx);
 
       await expect(
-        setSelfEnroll(
-          f.cypher,
-          { on: true, entrantLimit: 1, enrollClosesAt: null },
-          f.as(HOST),
-          tx,
-        ),
+        setSelfEnroll(f.cypher, { on: true, entrantLimit: 1 }, f.as(HOST), tx),
       ).rejects.toThrow();
       expect((await f.competitionRow(f.cypher)).entrantLimit).toBeNull();
     });

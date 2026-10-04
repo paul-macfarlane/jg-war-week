@@ -17,7 +17,7 @@ vi.mock("next/navigation", () => ({
 
 const emptyBracket: Bracket = {
   config: DEFAULT_BRACKET_CONFIG,
-  heats: [],
+  matches: [],
 };
 
 const baseProps = {

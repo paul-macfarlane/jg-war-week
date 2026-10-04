@@ -6,7 +6,7 @@ import type { EntryPoints } from "@/lib/results-table";
 
 /**
  * A Competition's generated Points Entries (the ones its Close wrote,
- * `generatedByBracket`) as target and points (no note, no email): what a
+ * `generated`) as target and points (no note, no email): what a
  * Closed Competition's results table shows as its points.
  */
 export async function getCompetitionEntryPoints(
@@ -23,7 +23,7 @@ export async function getCompetitionEntryPoints(
     .where(
       and(
         eq(pointsEntry.competitionId, competitionId),
-        eq(pointsEntry.generatedByBracket, true),
+        eq(pointsEntry.generated, true),
       ),
     );
 }

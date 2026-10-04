@@ -29,7 +29,7 @@ import {
 // seeds/xi.json; the smoke Organizer, the Participant and everyone else
 // never host anything.
 // AI Survey Completion stays `placement` (team scoring); Tuesday Stairs is
-// run as Games now.
+// run as Best score now.
 const HOST_COMPETITION = "AI Survey Completion";
 const OTHER_COMPETITION = "Cypher";
 const NOT_HOST_REFUSAL = "You're not a Host of that Competition.";
@@ -38,7 +38,7 @@ const NOT_HOST_REFUSAL = "You're not a Host of that Competition.";
 // reaches a Host check.
 const NOT_A_BRACKET = "This Competition isn't run as a Bracket.";
 const SELF_REPORT_OFF = "Self-report is off for this Competition.";
-// A setting that locks while its Competition is Finalized (ticket 101).
+// A setting that locks while its Competition is Closed (ticket 101).
 const LOCKED_WHILE_CLOSED =
   "Locked while the Competition is Closed. Reopen it first.";
 
@@ -257,7 +257,7 @@ async function assertHostAllowedAndRefused(fixture: HostFixture) {
   }
 
   // Squads and self-report are Bracket-only. The hosted Competition (AI
-  // Survey Completion) is a Finalized Placement, so access passes (it's the
+  // Survey Completion) is a Closed Placement, so access passes (it's the
   // Host's own): self-report, a setting saved on the Competition page, is
   // refused by its lock, and a Squad by the Bracket rule. The other
   // Competition (Cypher, not hosted by this Host) refuses on access first.
@@ -645,10 +645,10 @@ async function assertAccessBeforeValidation(
       host: NOT_HOST_REFUSAL,
     },
     {
-      // `authorizeHeatReport`'s Heat facts bind self-report-off before any
+      // `authorizeMatchReport`'s Match facts bind self-report-off before any
       // Host/Participant distinction, so both get the same refusal.
       family: "Match report",
-      action: "reportHeatResult",
+      action: "reportMatchResult",
       args: [other, randomUUID(), "junk"],
       participant: SELF_REPORT_OFF,
       host: SELF_REPORT_OFF,
@@ -913,9 +913,9 @@ export async function assertParticipantRefused(sessions: {
     ],
     [
       // The seeded Competitions default to self-report off, which
-      // `heatReportError` refuses before the Heat itself is even loaded.
+      // `matchReportError` refuses before the Match itself is even loaded.
       "Match report",
-      "reportHeatResult",
+      "reportMatchResult",
       [competition.id, randomUUID(), {}],
       SELF_REPORT_OFF,
     ],
@@ -962,7 +962,7 @@ export async function assertParticipantRefused(sessions: {
          (select count(*) from war_week where edition = 'xi' and status = 'live') as xi_live,
          (select count(*) from organizer where email = $3) as smoke_organizer,
          (select count(*) from squad) as squads,
-         (select count(*) from heat where reported_by_email is not null) as reported_heats`,
+         (select count(*) from bracket_match where reported_by_email is not null) as reported_matches`,
       [
         `${SMOKE_REASON_PREFIX}participant`,
         `${SMOKE_ANNOUNCEMENT_PREFIX}participant`,

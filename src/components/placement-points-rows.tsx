@@ -13,7 +13,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { placementLabel } from "@/lib/competitions";
 import {
-  QUICK_FILL,
   placementPointsFromRows,
   placementRowErrors,
   rowsFromPlacementPoints,
@@ -21,7 +20,7 @@ import {
 
 /**
  * Placement Points as a list editor of numbered rows (1st, 2nd…): add a
- * place, remove any place, a 5 · 3 · 1 quick fill and live errors. `limit`
+ * place, remove any place, and live errors. `limit`
  * is the Format's `placementLimit` (null: any number of places). `value` is the same comma-separated
  * text the Competition action already validates. `invalid` marks every
  * row when the server refused the Placement Points.
@@ -66,9 +65,7 @@ export function PlacementPointsRows({
         Placement Points
       </FieldLegend>
       {rows.length === 0 ? (
-        <FieldDescription>
-          None. Add places, 1st first, or use 5 · 3 · 1.
-        </FieldDescription>
+        <FieldDescription>None. Add places, 1st first.</FieldDescription>
       ) : (
         <ol className="flex flex-col gap-2">
           {rows.map((row, index) => {
@@ -121,15 +118,6 @@ export function PlacementPointsRows({
             Add place
           </Button>
         )}
-        <Button
-          type="button"
-          variant="outline"
-          aria-label="Fill 5, 3, 1"
-          className="min-h-11 sm:min-h-9"
-          onClick={() => setRows([...QUICK_FILL])}
-        >
-          5 · 3 · 1
-        </Button>
       </div>
       <FieldError
         aria-live="polite"

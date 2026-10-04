@@ -59,9 +59,9 @@
         },
         {
           "startTime": "19:00",
-          "title": "Chess Heats, Round 1",
+          "title": "Chess Matches, Round 1",
           "category": "competition",
-          "competition": "Chess Heats",
+          "competition": "Chess Matches",
           "location": "Main room"
         }
       ]
@@ -142,9 +142,9 @@
         },
         {
           "startTime": "17:00",
-          "title": "Chess Heats, Final",
+          "title": "Chess Matches, Final",
           "category": "competition",
-          "competition": "Chess Heats",
+          "competition": "Chess Matches",
           "location": "Main room"
         }
       ]
@@ -231,9 +231,9 @@
       "scoring": "individual",
       "placementPoints": [3, 2, 1],
       "description": "One mile around the block, timed. Top three take Placement Points.",
-      "finalized": true,
-      "finalizedAt": "2027-02-21T11:17:00-05:00",
-      "finalizedByEmail": "demo-organizer@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2027-02-21T11:17:00-05:00",
+      "closedByEmail": "demo-organizer@jahnelgroup.com"
     },
     {
       "name": "Step Challenge",
@@ -241,33 +241,35 @@
       "description": "Points for steps logged each day of the week; no cap.",
       "scoreDirection": "higher",
       "placementPoints": [7, 6.5, 5.5, 4.5, 3.5, 3, 2.5, 2, 1.5, 1, 1, 0.5],
-      "finalized": true,
-      "finalizedAt": "2027-02-23T09:02:00-05:00",
-      "finalizedByEmail": "demo-organizer@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2027-02-23T09:02:00-05:00",
+      "closedByEmail": "demo-organizer@jahnelgroup.com"
     },
     {
       "name": "Ping Pong",
       "scoring": "individual",
       "format": "head-to-head",
-      "gameConfig": {
+      "seriesConfig": {
         "drawsAllowed": false,
-        "bestOf": null
+        "bestOf": 3
       },
-      "entrantsOpen": true,
+      "entrants": ["Ada Anvil", "Bo Banner"],
       "placementPoints": [3, 2, 1],
-      "description": "Log a Game from your phone whenever a table frees up."
+      "description": "Log a Match from your phone whenever a table frees up."
     },
     {
-      "name": "Chess Heats",
+      "name": "Chess Matches",
       "scoring": "individual",
       "format": "bracket",
       "bracketConfig": {
-        "entrantsPerHeat": 4,
-        "advancePerHeat": 2,
-        "thirdPlaceGame": false
+        "kind": "group",
+        "entrantsPerMatch": 4,
+        "advancePerMatch": 2,
+        "thirdPlaceMatch": false,
+        "rounds": {}
       },
       "placementPoints": [5, 3, 1],
-      "description": "Four-player Heats; the top two advance to the Final."
+      "description": "Four-player Matches; the top two advance to the Final."
     }
   ],
   "announcements": [
@@ -318,8 +320,8 @@
       }
     },
     {
-      "key": "chess-heats-tonight",
-      "title": "Chess Heats start tonight",
+      "key": "chess-matches-tonight",
+      "title": "Chess Matches start tonight",
       "authorEmail": "demo-organizer@jahnelgroup.com",
       "publishedAt": "2027-02-21T13:00:00-05:00",
       "body": {
@@ -368,7 +370,7 @@
       "kind": "awards"
     },
     {
-      "kind": "champions"
+      "kind": "winners"
     },
     {
       "kind": "standings"

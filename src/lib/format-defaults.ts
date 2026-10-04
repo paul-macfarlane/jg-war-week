@@ -4,27 +4,33 @@
  * whose Format changes. Pure.
  */
 import {
+  type BestScoreConfig,
+  DEFAULT_BEST_SCORE_CONFIG,
+} from "@/lib/best-score/config";
+import {
   type BracketConfig,
   DEFAULT_BRACKET_CONFIG,
 } from "@/lib/bracket/config";
 import type { Format } from "@/lib/bracket/types";
 import { BRACKET_PLACEMENTS } from "@/lib/competitions";
-import { type COMPETITION_SCORINGS, isGameFormat } from "@/lib/enums";
-import { type GamesConfig, defaultGamesConfig } from "@/lib/games/config";
+import type { COMPETITION_SCORINGS, ScoreDirection } from "@/lib/enums";
+import { DEFAULT_SERIES_CONFIG, type SeriesConfig } from "@/lib/series/config";
 
 export type FormatDefaults = {
   bracketConfig: BracketConfig | null;
-  gameConfig: GamesConfig | null;
-  entrantsOpen: boolean;
+  seriesConfig: SeriesConfig | null;
+  bestScoreConfig: BestScoreConfig | null;
+  scoreDirection: ScoreDirection;
   participationPoints: number | null;
   placementPoints: number[] | null;
 };
 
 /**
  * A `format` Competition's settings from its scoring and Placement Points:
- * a Bracket's heat settings (`bracketConfig`, else the default) and at
- * most its first 4 Placement Points; a Head-to-head or Best score
- * Competition's default settings, open to everyone (Best of off); a team
+ * a Bracket's match settings (`bracketConfig`, else the default) and at
+ * most its first 4 Placement Points; a Head-to-head's default series (no
+ * draws, Best of 3); Best score's default Team score and a `higher` Score
+ * direction (it has no `none`); every other Format `none`; a team
  * Participation Competition's Placement Points (3/2/1 when it has none)
  * and an individual one's 1 point per Participant instead.
  */
@@ -55,8 +61,9 @@ export function formatDefaults(
   return {
     bracketConfig:
       format === "bracket" ? (bracketConfig ?? DEFAULT_BRACKET_CONFIG) : null,
-    gameConfig: isGameFormat(format) ? defaultGamesConfig(format) : null,
-    entrantsOpen: isGameFormat(format),
+    seriesConfig: format === "head-to-head" ? DEFAULT_SERIES_CONFIG : null,
+    bestScoreConfig: format === "best-score" ? DEFAULT_BEST_SCORE_CONFIG : null,
+    scoreDirection: format === "best-score" ? "higher" : "none",
     ...points,
   };
 }

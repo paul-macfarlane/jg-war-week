@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { reportHeatResult } from "@/actions/heat-reports";
+import { clearMatchReport, reportMatchResult } from "@/actions/match-reports";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { BracketPodium } from "@/components/bracket-podium";
 import { BracketTree } from "@/components/bracket-tree";
@@ -20,6 +20,7 @@ import {
   matchName,
   nextMatchFor,
 } from "@/lib/bracket/view";
+import type { ScoreDirection } from "@/lib/enums";
 
 type Scoring = "team" | "individual";
 
@@ -76,7 +77,7 @@ export function YourNextMatchCard({
         ) : (
           <>
             <span className="text-foreground/60 text-xs font-medium uppercase">
-              Your next Match · {matchName(bracket, next.heat)}
+              Your next Match · {matchName(bracket, next.match)}
             </span>
             {next.opponentIds.length > 0 ? (
               <span className="font-semibold break-words">
@@ -116,16 +117,20 @@ export type BracketViewSelfReport = {
   on: boolean;
   /** The Participant the session email links to, or null. */
   linkedParticipantId: string | null;
-  /** Your next Heat, when the server found it reportable by You; else null. */
-  reportableHeatId: string | null;
+  /** Your Matches the server found You may record or change now. */
+  reportableMatchIds: string[];
+  /** Your decided Matches whose result is locked (`resultLockReason`). */
+  lockedMatchIds: string[];
 };
 
 /**
  * The Competition page's Bracket: Top finishers (the places decided so
  * far, Provisional until it's Closed) and Your next Match pinned on top,
  * then the Bracket's tree (the same one admin records from), Your
- * Entrant highlighted under the You rules. Your Heat, when you may
- * self-report it, carries Record result in the tree as on the card. Owns
+ * Entrant highlighted under the You rules. Each Match of yours you may
+ * record or change carries Record result (Edit once played) in the tree,
+ * and your next one on the card too; one a later Match already used shows
+ * Edit disabled with the reason. Owns
  * the report Sheet (a centered Dialog on large screens), and refreshes
  * live while it's closed (a Bracket not drawn yet too, so the draw
  * appears).
@@ -137,6 +142,8 @@ export function BracketView({
   podium,
   closed,
   scoring,
+  scoreUnit = null,
+  scoreDirection = "none",
   primaryColor,
   participantTeams,
   participantSquads,
@@ -150,6 +157,10 @@ export function BracketView({
   /** Whether the Bracket is Closed: its podium's points are final. */
   closed: boolean;
   scoring: Scoring;
+  /** The Competition's Score unit, for Score labels. */
+  scoreUnit?: string | null;
+  /** The Score direction: with one, Scores decide a Match's places. */
+  scoreDirection?: ScoreDirection;
   primaryColor: string;
   /** Each Participant's Team id, for finding Your Team's Entrant. */
   participantTeams: Record<string, string>;
@@ -172,13 +183,13 @@ export function BracketView({
     scoring,
   );
   const next = youEntrantId ? nextMatchFor(bracket, youEntrantId) : null;
-  const heatsById = new Map(bracket.heats.map((h) => [h.id, h]));
+  const matchesById = new Map(bracket.matches.map((h) => [h.id, h]));
+  const mine =
+    selfReport.on && you?.participantId === selfReport.linkedParticipantId;
+  const reportable = mine ? selfReport.reportableMatchIds : [];
   const canReport =
-    selfReport.on &&
-    you?.participantId === selfReport.linkedParticipantId &&
-    next?.kind === "heat" &&
-    next.heat.id === selfReport.reportableHeatId;
-  const reportHeat = reporting ? heatsById.get(reporting) : undefined;
+    next?.kind === "match" && reportable.includes(next.match.id);
+  const reportMatch = reporting ? matchesById.get(reporting) : undefined;
   const close = () => setReporting(null);
   const squadHelp = entrants.some((e) => e.squadId) ? (
     <p className="text-foreground/70 text-sm">
@@ -187,7 +198,7 @@ export function BracketView({
     </p>
   ) : null;
 
-  if (bracket.heats.length === 0) {
+  if (bracket.matches.length === 0) {
     return (
       <section className="flex flex-col gap-2" aria-label="Bracket">
         <h2 className="text-lg font-semibold">Bracket</h2>
@@ -221,7 +232,7 @@ export function BracketView({
           entrantsById={entrantsById}
           canReport={canReport}
           onReport={() => {
-            if (next.kind === "heat") setReporting(next.heat.id);
+            if (next.kind === "match") setReporting(next.match.id);
           }}
         />
       )}
@@ -230,41 +241,42 @@ export function BracketView({
         bracket={bracket}
         entrantsById={entrantsById}
         scoring={scoring}
+        scoreUnit={scoreUnit}
+        scoreDirection={scoreDirection}
         primaryColor={primaryColor}
         youEntrantId={youEntrantId}
-        recordableHeatIds={
-          canReport && selfReport.reportableHeatId
-            ? [selfReport.reportableHeatId]
-            : []
-        }
+        recordableMatchIds={reportable}
+        lockedMatchIds={mine ? selfReport.lockedMatchIds : []}
         onRecord={setReporting}
       />
 
       <ResponsiveSheetDialog
-        open={reportHeat !== undefined}
+        open={reportMatch !== undefined}
         onOpenChange={(open) => {
           if (!open) close();
         }}
       >
-        {reportHeat && (
+        {reportMatch && (
           <MatchResultForm
-            key={reportHeat.id}
-            heat={reportHeat}
+            key={reportMatch.id}
+            match={reportMatch}
             bracket={bracket}
             entrantsById={entrantsById}
             scoring={scoring}
+            scoreUnit={scoreUnit}
+            scoreDirection={scoreDirection}
             primaryColor={primaryColor}
             submit={(result) =>
-              reportHeatResult(competitionId, reportHeat.id, result)
+              reportMatchResult(competitionId, reportMatch.id, result)
             }
-            confirmResets={false}
+            clear={() => clearMatchReport(competitionId, reportMatch.id)}
             successToast={() => "Result reported."}
             onSaved={close}
           />
         )}
       </ResponsiveSheetDialog>
 
-      {reportHeat === undefined && <AutoRefresh />}
+      {reportMatch === undefined && <AutoRefresh />}
     </section>
   );
 }

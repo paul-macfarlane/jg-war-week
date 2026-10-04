@@ -1,38 +1,42 @@
-import { and, asc, eq, inArray, ne, or, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, ne, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
 import { DBOrTx, db } from "@/db";
 import {
   type Competition,
+  bracketMatch,
+  bracketMatchEntrant,
   competition,
   entrant,
-  game,
-  gamePlayer,
-  heat,
-  heatEntrant,
   participant,
   pointsEntry,
+  seriesMatch,
+  seriesMatchEntrant,
   squad,
   squadParticipant,
   team,
   warWeek,
 } from "@/db/schema";
+import { clearResult, otherResultsChanged } from "@/lib/bracket/clear-result";
 import {
   type BracketConfig,
   configOf,
+  kindOf,
   thirdPlaceRefusal,
 } from "@/lib/bracket/config";
 import {
   applyResult,
-  finalPlacings,
   generate,
   hasResults,
-  isComplete,
-  resetByResult,
   validateConfig,
 } from "@/lib/bracket/formats";
-import { pointsFor } from "@/lib/bracket/points";
+import { matchAdvanceCount } from "@/lib/bracket/groups";
 import { shuffleSeedPositions } from "@/lib/bracket/seeding";
+import {
+  LATER_MATCH_USED,
+  matchReportState,
+  matchResultError,
+} from "@/lib/bracket/self-report";
 import {
   type EntrantKind,
   entrantKindError,
@@ -42,35 +46,38 @@ import {
   type Bracket,
   BracketError,
   type BracketFormat,
-  type HeatResult,
+  type MatchResult,
 } from "@/lib/bracket/types";
 import { isBracketFormat } from "@/lib/bracket/view";
 import {
   LOCKED_BY_MATCH_RESULT,
   settingLockReason,
 } from "@/lib/competition-locks";
-import { isGameFormat } from "@/lib/enums";
+import { isLoggedFormat } from "@/lib/enums";
 import { formatDefaults } from "@/lib/format-defaults";
-import { gamesConfigOf } from "@/lib/games/config";
-import { NOT_GAMES } from "@/lib/games/log-rule";
+import { isUuid } from "@/lib/uuid";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 import { getBracketEntrants, loadBracket } from "@/queries/brackets";
 import { getCompetitionLockFacts } from "@/queries/competition-locks";
 
 export const COMPETITION_NOT_FOUND = "That Competition no longer exists.";
-export const HEAT_NOT_FOUND = "That Match no longer exists.";
+export const MATCH_NOT_FOUND = "That Match no longer exists.";
 export const NOT_A_BRACKET = "This Competition isn't run as a Bracket.";
-export const FINALIZED = "Reopen the Bracket before changing it.";
+export const CLOSED = "Reopen the Bracket before changing it.";
 export const SQUAD_NOT_FOUND = "That Squad no longer exists.";
-export const ONLY_A_BRACKET_TAKES_HEATS =
+export const ONLY_A_BRACKET_TAKES_MATCHES =
   "Only a Bracket takes Match settings.";
 const NOT_A_TEAM_COMPETITION = "Squads are only for team Competitions.";
-/** A closed Head-to-head or Best score Competition's Entrants can't change. */
-export const GAMES_CLOSED = "Reopen the Competition first.";
-const NO_SQUADS_IN_GAMES =
-  "Squads aren't entered in a Head-to-head or Best score Competition.";
-export const BEST_OF_NEEDS_TWO = "A Best of needs exactly 2 Entrants.";
-/** The note on every Points Entry a finalized Bracket generates. */
+/** A closed Competition's Entrants or settings can't change. */
+export const REOPEN_FIRST = "Reopen the Competition first.";
+const NO_SQUADS_IN_HEAD_TO_HEAD = "Squads aren't entered in a Head-to-head.";
+export const HEAD_TO_HEAD_NEEDS_TWO =
+  "A Head-to-head needs exactly 2 Entrants.";
+/** Best score takes no Entrant list (spec R21, decision 5). */
+export const BEST_SCORE_NO_ENTRANTS =
+  "Best score has no Entrant list: anyone can log an Attempt.";
+const NOT_HEAD_TO_HEAD = "This Competition isn't run as Head-to-head.";
+/** The note on every Points Entry a closed Bracket generates. */
 export const FROM_BRACKET_NOTE = "From bracket";
 
 export type BracketCompetition = Pick<
@@ -81,13 +88,9 @@ export type BracketCompetition = Pick<
   | "format"
   | "bracketConfig"
   | "placementPoints"
-  | "finalizedAt"
-  | "gameConfig"
-  | "entrantsOpen"
-  | "loggingClosesAt"
+  | "closedAt"
   | "selfEnroll"
   | "entrantLimit"
-  | "enrollClosesAt"
 >;
 
 /** A Competition run as a Bracket (its Format isn't placement, Head-to-head, Best score or participation). */
@@ -111,13 +114,9 @@ export async function lockedCompetition(
       format: competition.format,
       bracketConfig: competition.bracketConfig,
       placementPoints: competition.placementPoints,
-      finalizedAt: competition.finalizedAt,
-      gameConfig: competition.gameConfig,
-      entrantsOpen: competition.entrantsOpen,
-      loggingClosesAt: competition.loggingClosesAt,
+      closedAt: competition.closedAt,
       selfEnroll: competition.selfEnroll,
       entrantLimit: competition.entrantLimit,
-      enrollClosesAt: competition.enrollClosesAt,
     })
     .from(competition)
     .where(
@@ -133,11 +132,11 @@ export async function lockedCompetition(
 /** Why this Competition's Bracket can't change right now, or null. */
 export function bracketRefusal(
   found: BracketCompetition | undefined,
-  { allowFinalized = false } = {},
+  { allowClosed = false } = {},
 ): string | null {
   if (!found) return COMPETITION_NOT_FOUND;
   if (!isBracketFormat(found.format)) return NOT_A_BRACKET;
-  if (found.finalizedAt && !allowFinalized) return FINALIZED;
+  if (found.closedAt && !allowClosed) return CLOSED;
   return null;
 }
 
@@ -157,127 +156,243 @@ export function isBracketRun(
 
 function sameConfig(a: BracketConfig, b: BracketConfig): boolean {
   return (
-    a.entrantsPerHeat === b.entrantsPerHeat &&
-    a.advancePerHeat === b.advancePerHeat &&
-    a.thirdPlaceGame === b.thirdPlaceGame
+    a.kind === b.kind &&
+    a.entrantsPerMatch === b.entrantsPerMatch &&
+    a.advancePerMatch === b.advancePerMatch &&
+    a.thirdPlaceMatch === b.thirdPlaceMatch &&
+    JSON.stringify(a.rounds) === JSON.stringify(b.rounds)
   );
+}
+
+/**
+ * How many of a Match advance, as stored: 1 in a head-to-head Bracket and
+ * in the final, else the Group Match's own count (`matchAdvanceCount`).
+ */
+function advanceCountOf(
+  bracket: Bracket,
+  match: Bracket["matches"][number],
+): number {
+  if (bracket.config.kind === "head-to-head" || match.thirdPlace) return 1;
+  return matchAdvanceCount(bracket, match);
+}
+
+/** A slot's Score as stored: numeric, or null when blank or not a number. */
+function storedScore(score: string | null): number | null {
+  if (score === null || score.trim() === "") return null;
+  const n = Number(score);
+  return Number.isFinite(n) ? n : null;
 }
 
 export function refuse(error: string): { ok: false; error: string } {
   return { ok: false, error };
 }
 
-/** Inserts a freshly generated Bracket's Heats and slots. */
+/** Inserts a freshly generated Bracket's Matches and slots. */
 async function insertBracket(
   tx: DBOrTx,
   competitionId: string,
   bracket: Bracket,
 ) {
-  // One statement, so each winner's (and loser's) Heat exists when the row
-  // is checked.
-  await tx.insert(heat).values(
-    bracket.heats.map((h) => ({
+  await insertMatches(tx, competitionId, bracket, bracket.matches);
+}
+
+/**
+ * Inserts these Matches of `bracket`, with their slots, unrecorded.
+ * One statement, so each winner's (and loser's) Match exists when the row
+ * is checked.
+ */
+async function insertMatches(
+  tx: DBOrTx,
+  competitionId: string,
+  bracket: Bracket,
+  matches: Bracket["matches"],
+) {
+  if (matches.length === 0) return;
+  await tx.insert(bracketMatch).values(
+    matches.map((h) => ({
       id: h.id,
       competitionId,
       round: h.round,
       position: h.position,
       status: h.status,
       slotCount: h.slots.length,
-      winnerToHeatId: h.winnerTo?.heatId ?? null,
+      advanceCount: advanceCountOf(bracket, h),
+      winnerToMatchId: h.winnerTo?.matchId ?? null,
       winnerToSlot: h.winnerTo?.slot ?? null,
-      loserToHeatId: h.loserTo?.heatId ?? null,
+      loserToMatchId: h.loserTo?.matchId ?? null,
       loserToSlot: h.loserTo?.slot ?? null,
       thirdPlace: h.thirdPlace,
-      // A freshly generated Heat is never played: a re-draw clears results.
+      // A freshly generated Match is never played: a re-draw clears results.
       recordedAt: null,
     })),
   );
-  await insertSlots(tx, bracket.heats);
+  await insertSlots(tx, matches);
 }
 
-async function insertSlots(tx: DBOrTx, heats: Bracket["heats"]) {
-  const rows = heats.flatMap((h) =>
+/**
+ * Rewrites a Group Bracket's Rounds from `round` on as `after` has them:
+ * their rows are deleted and inserted again (spec R21, plan P5), in the
+ * caller's transaction. Only for Rounds with no Match Result (a bye isn't
+ * one): their reporters and recorded times are all empty. A Match the
+ * engine named with no row id gets a new one.
+ */
+export async function replaceRoundsFrom(
+  tx: DBOrTx,
+  competitionId: string,
+  after: Bracket,
+  round: number,
+) {
+  await tx
+    .delete(bracketMatch)
+    .where(
+      and(
+        eq(bracketMatch.competitionId, competitionId),
+        gte(bracketMatch.round, round),
+      ),
+    );
+  await insertMatches(
+    tx,
+    competitionId,
+    after,
+    after.matches
+      .filter((h) => h.round >= round)
+      .map((h) => (isUuid(h.id) ? h : { ...h, id: randomUUID() })),
+  );
+}
+
+/** A Bracket's Matches up to and including `round`. */
+function throughRound(bracket: Bracket, round: number): Bracket {
+  return {
+    ...bracket,
+    matches: bracket.matches.filter((h) => h.round <= round),
+  };
+}
+
+/** Each Match after `round` as its id, size and advancing count. */
+function laterShape(bracket: Bracket, round: number): string {
+  return JSON.stringify(
+    bracket.matches
+      .filter((h) => h.round > round)
+      .map((h) => [h.id, h.slots.length, advanceCountOf(bracket, h)]),
+  );
+}
+
+/**
+ * Saves a recorded Match Result (`saveBracket`). When it re-filled the
+ * Rounds after the Match's own with a different shape (a Group Bracket's
+ * D1f re-fill drops the moves and advancing counts made there), those
+ * Rounds' rows are replaced (`replaceRoundsFrom`).
+ */
+async function saveRecorded(
+  tx: DBOrTx,
+  competitionId: string,
+  before: Bracket,
+  after: Bracket,
+  reporter: (MatchReporter & { matchId: string }) | null,
+  recordedMatchId: string,
+) {
+  const round = after.matches.find((h) => h.id === recordedMatchId)!.round;
+  if (laterShape(before, round) === laterShape(after, round)) {
+    return saveBracket(tx, before, after, reporter, recordedMatchId);
+  }
+  await saveBracket(
+    tx,
+    throughRound(before, round),
+    throughRound(after, round),
+    reporter,
+    recordedMatchId,
+  );
+  await replaceRoundsFrom(tx, competitionId, after, round + 1);
+}
+
+async function insertSlots(tx: DBOrTx, matches: Bracket["matches"]) {
+  const rows = matches.flatMap((h) =>
     h.slots.flatMap((slot, i) =>
       slot.entrantId
         ? [
             {
-              heatId: h.id,
+              matchId: h.id,
               entrantId: slot.entrantId,
               slot: i,
               place: slot.place,
-              score: slot.score,
+              score: storedScore(slot.score),
             },
           ]
         : [],
     ),
   );
-  if (rows.length) await tx.insert(heatEntrant).values(rows);
+  if (rows.length) await tx.insert(bracketMatchEntrant).values(rows);
 }
 
-/** Who self-reported a Heat's result; null for a Host or Organizer. */
-export type HeatReporter = { email: string; participantId: string };
+/** Who self-reported a Match's result; null for a Host or Organizer. */
+export type MatchReporter = { email: string; participantId: string };
 
 /**
- * Writes an existing Bracket's Heat statuses and slots back, looking each
- * Heat up by id. Only Generate adds or removes Heats (and sets their slot counts),
- * so a different set of Heat ids here is a programming error.
+ * Writes an existing Bracket's Match statuses and slots back, looking each
+ * Match up by id. Only Generate adds or removes Matches (and sets their slot counts),
+ * so a different set of Match ids here is a programming error.
  *
- * Every changed Heat's reporter columns are rewritten too: `reporter`'s for
- * `reporter.heatId`, null for every other changed Heat. So a save that
- * changes a self-reported result (or refills or empties a later Heat)
- * clears its reporter, and an identical re-save, changing no Heat, keeps it.
+ * Every changed Match's reporter columns are rewritten too: `reporter`'s for
+ * `reporter.matchId`, null for every other changed Match. So a save that
+ * changes a self-reported result (or refills or empties a later Match)
+ * clears its reporter, and an identical re-save, changing no Match, keeps it.
  *
- * `recordedHeatId` is the Heat whose Result is being saved: its `recorded_at`
- * becomes now, even when the save changes nothing else. Any other changed Heat
- * that is no longer played (a later Heat the result reset) loses its
- * `recorded_at`; a changed Heat still played keeps it.
+ * `recordedMatchId` is the Match whose Result is being saved: its `recorded_at`
+ * becomes now, even when the save changes nothing else. Any other changed Match
+ * that is no longer played (a later Match the result reset) loses its
+ * `recorded_at`; a changed Match still played keeps it.
  */
 async function saveBracket(
   tx: DBOrTx,
   before: Bracket,
   after: Bracket,
-  reporter: (HeatReporter & { heatId: string }) | null,
-  recordedHeatId: string,
+  reporter: (MatchReporter & { matchId: string }) | null,
+  recordedMatchId: string,
 ) {
-  const beforeById = new Map(before.heats.map((h) => [h.id, h]));
+  const beforeById = new Map(before.matches.map((h) => [h.id, h]));
   if (
-    after.heats.length !== before.heats.length ||
-    new Set(after.heats.map((h) => h.id)).size !== after.heats.length ||
-    after.heats.some((h) => !beforeById.has(h.id))
+    after.matches.length !== before.matches.length ||
+    new Set(after.matches.map((h) => h.id)).size !== after.matches.length ||
+    after.matches.some((h) => !beforeById.has(h.id))
   ) {
     throw new Error("saveBracket: the Bracket's Match ids changed.");
   }
-  const changed = after.heats.filter(
+  const changed = after.matches.filter(
     (h) => JSON.stringify(h) !== JSON.stringify(beforeById.get(h.id)),
   );
-  if (!changed.some((h) => h.id === recordedHeatId)) {
+  if (!changed.some((h) => h.id === recordedMatchId)) {
     // An identical re-save still records when the Result was saved.
     await tx
-      .update(heat)
+      .update(bracketMatch)
       .set({ recordedAt: sql`now()` })
-      .where(and(eq(heat.id, recordedHeatId), eq(heat.status, "played")));
+      .where(
+        and(
+          eq(bracketMatch.id, recordedMatchId),
+          eq(bracketMatch.status, "played"),
+        ),
+      );
   }
   if (changed.length === 0) return;
   for (const h of changed) {
     await tx
-      .update(heat)
+      .update(bracketMatch)
       .set({
         status: h.status,
         ...(h.status !== "played"
           ? { recordedAt: null }
-          : h.id === recordedHeatId
+          : h.id === recordedMatchId
             ? { recordedAt: sql`now()` }
             : {}),
-        reportedByEmail: reporter?.heatId === h.id ? reporter.email : null,
+        reportedByEmail: reporter?.matchId === h.id ? reporter.email : null,
         reportedByParticipantId:
-          reporter?.heatId === h.id ? reporter.participantId : null,
+          reporter?.matchId === h.id ? reporter.participantId : null,
         updatedAt: sql`now()`,
       })
-      .where(eq(heat.id, h.id));
+      .where(eq(bracketMatch.id, h.id));
   }
-  await tx.delete(heatEntrant).where(
+  await tx.delete(bracketMatchEntrant).where(
     inArray(
-      heatEntrant.heatId,
+      bracketMatchEntrant.matchId,
       changed.map((h) => h.id),
     ),
   );
@@ -290,17 +405,17 @@ async function saveBracket(
  * A Format change goes from any Format to any other while the Competition
  * has no result (`settingLockReason("format")`), and applies what
  * `createCompetition` gives a new Competition of that Format: a Bracket's
- * config (`config`, else the default), a Head-to-head or Best score
- * Competition's default settings and open Entrants, a Participation
+ * config (`config`, else the default), a Head-to-head's Best of 3, Best
+ * score's higher-is-better direction and Team score, a Participation
  * Competition's points columns. The old Format's settings go: the Score
- * direction back to none, Self-report, self-enroll, close times and Self
- * check-in off, a Bracket's Squads deleted. Placement Points are kept
+ * direction back to none (Best score's to higher), the unit and Max
+ * attempts cleared, Self-report, self-enroll and Self check-in off, a Bracket's Squads deleted. Placement Points are kept
  * (the first 4 for a Bracket; none for an individual Participation
  * Competition, which takes points per Participant instead).
  *
- * A Bracket's config locks once a Heat has a result
+ * A Bracket's config locks once a Match has a result
  * (`settingLockReason("bracketConfig")`); before that a different config
- * clears the drawn Heats, keeping the Entrants. Omitting the config keeps
+ * clears the drawn Matches, keeping the Entrants. Omitting the config keeps
  * the saved one.
  */
 export async function setCompetitionFormat(
@@ -312,11 +427,22 @@ export async function setCompetitionFormat(
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
+  // The kind always follows the sizes (head-to-head is 2 / 1).
+  if (values.config) {
+    const { entrantsPerMatch, advancePerMatch } = values.config;
+    values = {
+      ...values,
+      config: {
+        ...values.config,
+        kind: kindOf(entrantsPerMatch, advancePerMatch),
+      },
+    };
+  }
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedCompetition(tx, competitionId, ctx);
     if (!found) return refuse(COMPETITION_NOT_FOUND);
     if (values.config != null && values.format !== "bracket") {
-      return refuse(ONLY_A_BRACKET_TAKES_HEATS);
+      return refuse(ONLY_A_BRACKET_TAKES_MATCHES);
     }
     const facts = await getCompetitionLockFacts(found, tx);
 
@@ -342,8 +468,10 @@ export async function setCompetitionFormat(
       const refusal = validateConfig(values.config, entrants);
       if (refusal) return refuse(refusal);
     }
-    // No Heat has a result: the drawn Heats go, the Entrants stay.
-    await tx.delete(heat).where(eq(heat.competitionId, competitionId));
+    // No Match has a result: the drawn Matches go, the Entrants stay.
+    await tx
+      .delete(bracketMatch)
+      .where(eq(bracketMatch.competitionId, competitionId));
     await tx
       .update(competition)
       .set({ bracketConfig: values.config, updatedAt: sql`now()` })
@@ -377,15 +505,15 @@ async function changeFormat(
     .update(competition)
     .set({
       format,
+      // Each Format's defaults, Best score's `higher` direction among them,
+      // in the one update so the Format CHECKs never see a half change.
       ...defaults,
-      scoreDirection: "none",
+      scoreUnit: null,
+      maxAttempts: null,
       selfReport: false,
       selfEnroll: false,
       entrantLimit: null,
-      enrollClosesAt: null,
-      loggingClosesAt: null,
       selfCheckIn: false,
-      checkInClosesAt: null,
       updatedAt: sql`now()`,
     })
     .where(eq(competition.id, found.id));
@@ -396,16 +524,17 @@ async function changeFormat(
  * Replaces a Bracket's Entrants with these Teams, Participants or Squads of
  * one `kind` (omitted: whichever the Competition's scoring takes), at Seed
  * Positions in the given order. Squads must be this Competition's. It
- * clears the drawn Bracket; once a Heat has a Heat Result the Entrants are
+ * clears the drawn Bracket; once a Match has a Match Result the Entrants are
  * locked (`LOCKED_BY_MATCH_RESULT`).
  *
- * A Head-to-head or Best score Competition's fixed Entrant list takes the same Teams or
- * Participants (never Squads), in the order added; it has no Heats to
- * clear. While Best of is on it takes exactly 2, and an Entrant who has
- * logged Games can't be removed until they're deleted.
+ * A Head-to-head's two Entrants (spec R21, decision 12) take the same
+ * Teams or Participants (never Squads), exactly 2, in the order added.
+ * Its Matches reference the Entrant rows, so once a Match is logged its
+ * Entrants can't change until the Matches are deleted. Best score has no
+ * Entrant list.
  *
  * `format` says which the caller sets: a Bracket's Entrants refuse a
- * Head-to-head or Best score Competition, theirs refuse any other Format.
+ * Head-to-head, a Head-to-head's refuse any other Format.
  */
 export async function replaceEntrants(
   competitionId: string,
@@ -416,19 +545,22 @@ export async function replaceEntrants(
   }: {
     targetIds: string[];
     kind?: EntrantKind;
-    format?: "bracket" | "games";
+    format?: "bracket" | "head-to-head";
   },
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedCompetition(tx, competitionId, ctx);
-    const isGames = found !== undefined && isGameFormat(found.format);
-    if (found && format === "games" && !isGames) return refuse(NOT_GAMES);
-    if (found && format === "bracket" && isGames) return refuse(NOT_A_BRACKET);
-    if (isGames) {
-      if (found.finalizedAt) return refuse(GAMES_CLOSED);
-      if (givenKind === "squad") return refuse(NO_SQUADS_IN_GAMES);
+    if (found?.format === "best-score") return refuse(BEST_SCORE_NO_ENTRANTS);
+    const isSeries = found !== undefined && isLoggedFormat(found.format);
+    if (found && format === "head-to-head" && !isSeries) {
+      return refuse(NOT_HEAD_TO_HEAD);
+    }
+    if (found && format === "bracket" && isSeries) return refuse(NOT_A_BRACKET);
+    if (isSeries) {
+      if (found.closedAt) return refuse(REOPEN_FIRST);
+      if (givenKind === "squad") return refuse(NO_SQUADS_IN_HEAD_TO_HEAD);
     } else {
       const refusal = bracketRefusal(found);
       if (refusal || !isBracketRun(found)) {
@@ -480,26 +612,30 @@ export async function replaceEntrants(
         );
       }
     }
-    if (isGames) {
-      const config = isGameFormat(found.format)
-        ? gamesConfigOf({
-            format: found.format,
-            gameConfig: found.gameConfig,
-          })
-        : null;
-      if (config && "bestOf" in config && config.bestOf !== null) {
-        if (targetIds.length !== 2) return refuse(BEST_OF_NEEDS_TWO);
+    if (isSeries) {
+      if (targetIds.length !== 2) return refuse(HEAD_TO_HEAD_NEEDS_TWO);
+      const current = await tx
+        .select({
+          teamId: entrant.teamId,
+          participantId: entrant.participantId,
+        })
+        .from(entrant)
+        .where(eq(entrant.competitionId, competitionId))
+        .orderBy(asc(entrant.seedPosition));
+      const currentIds = current.map((e) => (e.teamId ?? e.participantId)!);
+      // The same two in the same order: nothing to change.
+      if (currentIds.join() === targetIds.join()) return { ok: true };
+      const played = await seriesPlayerOf(tx, competitionId);
+      if (played) {
+        return refuse(`${played} has logged Matches. Delete them first.`);
       }
-      const played = await removedPlayerWithGames(tx, competitionId, targetIds);
-      if (played)
-        return refuse(
-          `${played} has logged Matches or Attempts. Delete them first.`,
-        );
     } else {
       if (isBracketRun(found) && hasResults(await bracketOf(tx, found))) {
         return refuse(LOCKED_BY_MATCH_RESULT);
       }
-      await tx.delete(heat).where(eq(heat.competitionId, competitionId));
+      await tx
+        .delete(bracketMatch)
+        .where(eq(bracketMatch.competitionId, competitionId));
     }
 
     await tx.delete(entrant).where(eq(entrant.competitionId, competitionId));
@@ -519,40 +655,25 @@ export async function replaceEntrants(
 }
 
 /**
- * The name of a current Entrant of this Head-to-head or Best score Competition, left out of
- * `keptIds`, who is a player in one of its Games; null when there's none.
- * Games reference Teams and Participants, never Entrant rows.
+ * The name of an Entrant of this Head-to-head who plays in one of its
+ * Matches, or null when no Match is logged. Matches reference the Entrant
+ * rows, so replacing the Entrants would delete them.
  */
-async function removedPlayerWithGames(
+async function seriesPlayerOf(
   tx: DBOrTx,
   competitionId: string,
-  keptIds: string[],
 ): Promise<string | null> {
-  const kept = new Set(keptIds);
-  const removed = (
-    await tx
-      .select({ teamId: entrant.teamId, participantId: entrant.participantId })
-      .from(entrant)
-      .where(eq(entrant.competitionId, competitionId))
-  )
-    .map((row) => row.teamId ?? row.participantId)
-    .filter((id): id is string => id !== null && !kept.has(id));
-  if (removed.length === 0) return null;
   const [played] = await tx
     .select({ teamName: team.name, participantName: participant.displayName })
-    .from(gamePlayer)
-    .innerJoin(game, eq(game.id, gamePlayer.gameId))
-    .leftJoin(team, eq(team.id, gamePlayer.teamId))
-    .leftJoin(participant, eq(participant.id, gamePlayer.participantId))
-    .where(
-      and(
-        eq(game.competitionId, competitionId),
-        or(
-          inArray(gamePlayer.teamId, removed),
-          inArray(gamePlayer.participantId, removed),
-        ),
-      ),
+    .from(seriesMatchEntrant)
+    .innerJoin(
+      seriesMatch,
+      eq(seriesMatch.id, seriesMatchEntrant.seriesMatchId),
     )
+    .innerJoin(entrant, eq(entrant.id, seriesMatchEntrant.entrantId))
+    .leftJoin(team, eq(team.id, entrant.teamId))
+    .leftJoin(participant, eq(participant.id, entrant.participantId))
+    .where(eq(seriesMatch.competitionId, competitionId))
     .orderBy(asc(team.name), asc(participant.displayName))
     .limit(1);
   return played ? (played.teamName ?? played.participantName) : null;
@@ -560,7 +681,7 @@ async function removedPlayerWithGames(
 
 /**
  * Draws the Seed Positions at random (by `rng`) and builds the Bracket,
- * byes included. Once a Heat has a Heat Result the Bracket is locked
+ * byes included. Once a Match has a Match Result the Bracket is locked
  * (`LOCKED_BY_MATCH_RESULT`): no re-draw clears it.
  */
 export async function generateBracket(
@@ -612,128 +733,103 @@ export async function generateBracket(
       })),
       () => randomUUID(),
     );
-    await tx.delete(heat).where(eq(heat.competitionId, competitionId));
+    await tx
+      .delete(bracketMatch)
+      .where(eq(bracketMatch.competitionId, competitionId));
     await insertBracket(tx, competitionId, bracket);
     return { ok: true };
   });
 }
 
 /**
- * Records a Heat Result and advances who goes on, per the Format. Changing
- * who advances from a decided Heat resets the later Heats that followed
- * from it; the ids of those that had a Heat Result are returned. A
- * score-only edit resets nothing.
+ * Records a Match Result and advances who goes on, per the Format. A
+ * decided Match's result changes only while no later Match has used it
+ * (in a Group Bracket, while no later Round has a result; spec R21, D1c):
+ * nothing that already has a result is ever reset.
  */
-export async function recordHeatResult(
+export async function recordMatchResult(
   competitionId: string,
-  heatId: string,
-  result: HeatResult,
+  matchId: string,
+  result: MatchResult,
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
-): Promise<
-  { ok: true; resetHeatIds: string[] } | { ok: false; error: string }
-> {
+): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx) => {
     const found = await lockedCompetition(tx, competitionId, ctx);
-    return writeHeatResult(tx, found, heatId, result, null);
+    return writeMatchResult(tx, found, matchId, result, null);
   });
 }
 
 /**
- * The one Heat Result write, shared by a Host's `recordHeatResult` and a
- * Participant's self-report, run with the Competition's row lock already
- * held: refuses a Competition that can't change, finds the Heat in its own
- * Bracket, resets and applies the result per the Format, and saves it with
- * its reporter (null for a Host or Organizer).
+ * Clears a Match's result (spec R21, S4): its places and Scores go, and
+ * who it sent on leaves the unplayed Matches they went to. Refused, for
+ * everyone, once a later Match used the result (in a Group Bracket, once a
+ * later Round has one; D1c).
  */
-export async function writeHeatResult(
+export async function clearMatchResult(
+  competitionId: string,
+  matchId: string,
+  ctx: MutationContext,
+  dbOrTx: DBOrTx = db,
+): Promise<MutationResult> {
+  return dbOrTx.transaction(async (tx) => {
+    const found = await lockedCompetition(tx, competitionId, ctx);
+    return writeMatchResult(tx, found, matchId, null, null);
+  });
+}
+
+/**
+ * The one Match Result write, shared by a Host's record or clear and a
+ * Participant's self-report, run with the Competition's row lock already
+ * held: refuses a Competition that can't change, finds the Match in its
+ * own Bracket, refuses a locked result (`resultLockReason`), applies the
+ * result (or, for `null`, clears it) per the Format, refuses a write that
+ * would change any other recorded result (the backstop), and saves it
+ * with its reporter (null for a Host or Organizer, and on a clear).
+ */
+export async function writeMatchResult(
   tx: DBOrTx,
   found: BracketCompetition | undefined,
-  heatId: string,
-  result: HeatResult,
-  reporter: HeatReporter | null,
-): Promise<
-  { ok: true; resetHeatIds: string[] } | { ok: false; error: string }
-> {
+  matchId: string,
+  result: MatchResult | null,
+  reporter: MatchReporter | null,
+): Promise<MutationResult> {
   const refusal = bracketRefusal(found);
   if (refusal || !isBracketRun(found)) {
     return refuse(refusal ?? NOT_A_BRACKET);
   }
   const bracket = await bracketOf(tx, found);
-  const target = bracket.heats.find((h) => h.id === heatId);
-  if (!target) return refuse(HEAT_NOT_FOUND);
+  const target = bracket.matches.find((m) => m.id === matchId);
+  if (!target) return refuse(MATCH_NOT_FOUND);
+  const used = matchResultError(matchReportState(bracket, target));
+  if (used) return refuse(used);
 
   let next: Bracket;
-  let resetHeatIds: string[];
   try {
-    resetHeatIds = resetByResult(bracket, heatId, result);
-    next = applyResult(bracket, heatId, result);
+    next = result
+      ? applyResult(bracket, matchId, result)
+      : clearResult(bracket, matchId);
   } catch (error) {
     if (error instanceof BracketError) return refuse(error.message);
     throw error;
   }
-  await saveBracket(
+  if (otherResultsChanged(bracket, next, matchId)) {
+    return refuse(LATER_MATCH_USED);
+  }
+  await saveRecorded(
     tx,
+    found.id,
     bracket,
     next,
-    reporter && { ...reporter, heatId },
-    heatId,
+    reporter && result ? { ...reporter, matchId } : null,
+    matchId,
   );
-  return { ok: true as const, resetHeatIds };
-}
-
-/**
- * Finalizes a finished Bracket: replaces its generated Points Entries with
- * new ones from the final placings and Placement Points, and marks it
- * finalized.
- */
-export async function finalizeBracket(
-  competitionId: string,
-  ctx: MutationContext,
-  dbOrTx: DBOrTx = db,
-): Promise<MutationResult> {
-  return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-    const found = await lockedCompetition(tx, competitionId, ctx);
-    const refusal = bracketRefusal(found, { allowFinalized: true });
-    if (refusal || !isBracketRun(found)) {
-      return refuse(refusal ?? NOT_A_BRACKET);
-    }
-    const bracket = await bracketOf(tx, found);
-    if (!isComplete(bracket)) {
-      return refuse("Finish every Match before closing.");
-    }
-
-    const entrants = await getBracketEntrants(competitionId, tx);
-    const byId = new Map(entrants.map((e) => [e.id, e]));
-    const awarded = pointsFor(finalPlacings(bracket, entrants), found);
-
-    await deleteGenerated(tx, competitionId);
-    if (awarded.length) {
-      await tx.insert(pointsEntry).values(
-        awarded.map(({ entrantId, points }) => ({
-          warWeekId: ctx.warWeekId,
-          competitionId,
-          // A Team's, or a Squad's Team's; null for a Participant.
-          teamId: byId.get(entrantId)!.pointsTeamId,
-          participantId: byId.get(entrantId)!.participantId,
-          points,
-          note: FROM_BRACKET_NOTE,
-          enteredByEmail: ctx.actorEmail,
-          generatedByBracket: true,
-        })),
-      );
-    }
-    await tx
-      .update(competition)
-      .set({ finalizedAt: sql`now()`, updatedAt: sql`now()` })
-      .where(eq(competition.id, competitionId));
-    return { ok: true };
-  });
+  return { ok: true };
 }
 
 /**
  * Deletes a Competition's generated Points Entries: a Bracket's on
- * un-finalize or re-finalize; a Head-to-head, Best score, Participation
+ * reopen or re-close; a Head-to-head, Best score, Participation
  * or Placement Competition's on Reopen.
  */
 export function deleteGenerated(tx: DBOrTx, competitionId: string) {
@@ -742,28 +838,9 @@ export function deleteGenerated(tx: DBOrTx, competitionId: string) {
     .where(
       and(
         eq(pointsEntry.competitionId, competitionId),
-        eq(pointsEntry.generatedByBracket, true),
+        eq(pointsEntry.generated, true),
       ),
     );
-}
-
-/** Deletes a Bracket's generated Points Entries and un-finalizes it. */
-export async function unfinalizeBracket(
-  competitionId: string,
-  ctx: MutationContext,
-  dbOrTx: DBOrTx = db,
-): Promise<MutationResult> {
-  return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-    const found = await lockedCompetition(tx, competitionId, ctx);
-    const refusal = bracketRefusal(found, { allowFinalized: true });
-    if (refusal) return refuse(refusal);
-    await deleteGenerated(tx, competitionId);
-    await tx
-      .update(competition)
-      .set({ finalizedAt: null, updatedAt: sql`now()` })
-      .where(eq(competition.id, competitionId));
-    return { ok: true };
-  });
 }
 
 /** A Squad's name, Team and Participants, as the Squad form posts them. */
@@ -775,7 +852,7 @@ export type SquadValues = {
 
 /**
  * The Competition, locked, if Squads of it may be written: refuses one that
- * isn't a Bracket, is finalized or isn't team-scoring.
+ * isn't a Bracket, is closed or isn't team-scoring.
  */
 async function lockedForSquads(
   tx: DBOrTx,
@@ -937,7 +1014,7 @@ export async function createSquad(
  * Competition is "no longer exists"). An entered Squad may be renamed or
  * have its Participants changed; its Team is fixed while it's an Entrant
  * (decision 4), so a roster change can't move its points. Its Entrant and
- * Heats are untouched.
+ * Matches are untouched.
  */
 export async function updateSquad(
   competitionId: string,

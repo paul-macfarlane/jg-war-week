@@ -218,6 +218,20 @@
       "when": 1791065986467,
       "tag": "0030_woozy_amphibian",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1791120491965,
+      "tag": "0031_fearless_red_shift",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1791121757627,
+      "tag": "0032_slim_flatman",
+      "breakpoints": true
     }
   ]
 }

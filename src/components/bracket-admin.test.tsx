@@ -25,7 +25,7 @@ const seeds: Entrant[] = ["Red", "Blue", "Green"].map((label, i) => ({
 const generated = generate(seeds);
 const bracket: Bracket = {
   ...generated,
-  heats: generated.heats.map((h) =>
+  matches: generated.matches.map((h) =>
     h.id === "r1h2"
       ? { ...h, status: "played", recordedAt: new Date("2026-02-22T00:05:00Z") }
       : h,
@@ -48,14 +48,14 @@ const props = {
   bracket,
   winner: null as string | null,
   podium: [] as PodiumPlace[],
-  finalized: false,
+  closed: false,
   primaryColor: "#000",
-  onOpenHeatChange: () => {},
+  onOpenMatchChange: () => {},
 };
 
-function render(openHeatId: string | null) {
+function render(openMatchId: string | null) {
   return renderToStaticMarkup(
-    <BracketAdminView {...props} openHeatId={openHeatId} />,
+    <BracketAdminView {...props} openMatchId={openMatchId} />,
   );
 }
 
@@ -81,7 +81,7 @@ describe("BracketAdminView", () => {
     expect(
       recordButtons(
         renderToStaticMarkup(
-          <BracketAdminView {...props} bracket={both} openHeatId={null} />,
+          <BracketAdminView {...props} bracket={both} openMatchId={null} />,
         ),
       ),
     ).toEqual(["Edit Semifinal 2", "Record result for Final"]);
@@ -91,7 +91,7 @@ describe("BracketAdminView", () => {
     expect(
       recordButtons(
         renderToStaticMarkup(
-          <BracketAdminView {...props} finalized openHeatId={null} />,
+          <BracketAdminView {...props} closed openMatchId={null} />,
         ),
       ),
     ).toEqual([]);
@@ -115,7 +115,7 @@ describe("BracketAdminView", () => {
 
   it("offers no way to play the Finale from a Closed Bracket", () => {
     const html = renderToStaticMarkup(
-      <BracketAdminView {...props} finalized openHeatId={null} />,
+      <BracketAdminView {...props} closed openMatchId={null} />,
     );
     expect(html).not.toMatch(/play the finale/i);
     expect(html).not.toContain("/finale/");
@@ -133,7 +133,7 @@ describe("BracketAdminView", () => {
         {...props}
         winner="e2"
         podium={podium}
-        openHeatId={null}
+        openMatchId={null}
       />,
     );
     expect(open).toContain('aria-label="Top finishers"');
@@ -147,8 +147,8 @@ describe("BracketAdminView", () => {
         {...props}
         winner="e2"
         podium={podium}
-        finalized
-        openHeatId={null}
+        closed
+        openMatchId={null}
       />,
     );
     expect(closed).toContain('aria-label="Top finishers"');
@@ -157,7 +157,7 @@ describe("BracketAdminView", () => {
 
   it("says a closed Bracket's Points Entries are in the Standings with Placement Points", () => {
     const html = renderToStaticMarkup(
-      <BracketAdminView {...props} finalized openHeatId={null} />,
+      <BracketAdminView {...props} closed openMatchId={null} />,
     );
     expect(html).toContain("Closed: its Points Entries are in the Standings.");
   });
@@ -167,8 +167,8 @@ describe("BracketAdminView", () => {
       <BracketAdminView
         {...props}
         placementPoints={null}
-        finalized
-        openHeatId={null}
+        closed
+        openMatchId={null}
       />,
     );
     expect(html).toContain("it made no Points Entries");
@@ -190,7 +190,7 @@ describe("BracketAdminView", () => {
       <BracketAdminView
         {...props}
         reporters={{ r1h2: "Ashley Schuliger" }}
-        openHeatId={null}
+        openMatchId={null}
       />,
     );
     expect(html).toContain("Reported by Ashley Schuliger");
@@ -205,9 +205,11 @@ describe("BracketAdminView", () => {
       (label, i) => ({ id: `e${i + 1}`, seedPosition: i + 1, label }),
     );
     const config = {
-      entrantsPerHeat: 2,
-      advancePerHeat: 1,
-      thirdPlaceGame: true,
+      kind: "head-to-head" as const,
+      entrantsPerMatch: 2,
+      advancePerMatch: 1,
+      thirdPlaceMatch: true,
+      rounds: {},
     };
     let played = generate(four, undefined, config);
     played = applyResult(played, "r1h1", { order: ["e1", "e4"] });
@@ -225,7 +227,7 @@ describe("BracketAdminView", () => {
           entrants={entrants}
           bracket={b}
           winner="e1"
-          openHeatId={null}
+          openMatchId={null}
         />,
       );
 

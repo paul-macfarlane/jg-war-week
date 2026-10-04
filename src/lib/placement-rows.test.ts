@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  QUICK_FILL,
   placementPointsFromRows,
   placementRowErrors,
   rowsFromPlacementPoints,
@@ -77,10 +76,5 @@ describe("placementRowErrors", () => {
 
   it("ignores a blank trailing row", () => {
     expect(placementRowErrors(["5", "3", ""])).toEqual([]);
-  });
-
-  it("offers a 5 · 3 · 1 quick fill that is itself valid", () => {
-    expect(QUICK_FILL).toEqual(["5", "3", "1"]);
-    expect(placementRowErrors(QUICK_FILL)).toEqual([]);
   });
 });

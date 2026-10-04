@@ -4,24 +4,19 @@
  * change as `saveCompetitionSetting` takes it; and which fields the
  * Competition's Format shows. Pure: no database, no framework.
  */
+import {
+  type BestScoreConfig,
+  bestScoreConfigOf,
+} from "@/lib/best-score/config";
 import { type BracketConfig, configOf } from "@/lib/bracket/config";
 import type { Format } from "@/lib/bracket/types";
 import type { CompetitionSettingField } from "@/lib/competition-locks";
 import type { CompetitionSettingChange } from "@/lib/competition-settings";
-import {
-  type COMPETITION_SCORINGS,
-  type ScoreDirection,
-  isGameFormat,
-} from "@/lib/enums";
-import { type GamesConfig, gamesConfigOf } from "@/lib/games/config";
-import { enrollmentUnavailable } from "@/lib/games/enroll-rule";
+import type { COMPETITION_SCORINGS, ScoreDirection } from "@/lib/enums";
 import { formatPoints } from "@/lib/points";
 import { type ProfilesByEmail, resolveProfile } from "@/lib/profile";
 import { type Content } from "@/lib/rich-text/content";
-import { fromEasternClock, toEasternClock } from "@/lib/schedule";
-
-/** A close time as its two pickers hold it: ET date and `HH:MM`, blank for none. */
-export type Clock = { date: string; time: string };
+import { type SeriesConfig, seriesConfigOf } from "@/lib/series/config";
 
 /** A description with nothing in it, as the editor starts. */
 export const EMPTY_CONTENT: Content = { type: "doc", content: [] };
@@ -41,18 +36,20 @@ export type CompetitionSettingsValues = {
   scoring: (typeof COMPETITION_SCORINGS)[number];
   countsTowardTeam: boolean;
   scoreDirection: ScoreDirection;
-  /** A Head-to-head or Best score Competition's config; else null. */
-  gameConfig: GamesConfig | null;
-  entrantsOpen: boolean;
+  /** The Scores' unit label, like "sec"; blank for none. */
+  scoreUnit: string;
+  /** A Head-to-head's draws and Best of; else null. */
+  seriesConfig: SeriesConfig | null;
+  /** A Best score Competition's Team score; else null. */
+  bestScoreConfig: BestScoreConfig | null;
   /** A Bracket's config; else null. */
   bracketConfig: BracketConfig | null;
   selfEnroll: boolean;
   entrantLimit: string;
-  enrollClosesAt: Clock;
-  loggingClosesAt: Clock;
   selfReport: boolean;
   selfCheckIn: boolean;
-  checkInClosesAt: Clock;
+  /** Best score's "Max attempts per person"; blank for no limit. */
+  maxAttempts: string;
 };
 
 export type SettingsField = keyof CompetitionSettingsValues &
@@ -70,26 +67,16 @@ export type CompetitionSettingsSource = {
   scoring: (typeof COMPETITION_SCORINGS)[number];
   countsTowardTeam: boolean;
   scoreDirection: ScoreDirection;
-  gameConfig: unknown;
-  entrantsOpen: boolean;
+  scoreUnit: string | null;
+  seriesConfig: unknown;
+  bestScoreConfig: unknown;
   bracketConfig: unknown;
   selfEnroll: boolean;
   entrantLimit: number | null;
-  enrollClosesAt: Date | null;
-  loggingClosesAt: Date | null;
   selfReport: boolean;
   selfCheckIn: boolean;
-  checkInClosesAt: Date | null;
+  maxAttempts: number | null;
 };
-
-/** What a close time with only its date or only its time shows. */
-export const CLOCK_HALF_SET = "Choose both a date and a time, or neither.";
-
-function clockOf(date: Date | null): Clock {
-  if (!date) return { date: "", time: "" };
-  const clock = toEasternClock(date);
-  return { date: clock.date, time: clock.time.slice(0, 5) };
-}
 
 /** The form's values from the stored Competition. */
 export function settingsValuesOf(
@@ -110,19 +97,16 @@ export function settingsValuesOf(
     scoring: source.scoring,
     countsTowardTeam: source.countsTowardTeam,
     scoreDirection: source.scoreDirection,
-    gameConfig: isGameFormat(format)
-      ? gamesConfigOf({ format, gameConfig: source.gameConfig })
-      : null,
-    entrantsOpen: source.entrantsOpen,
+    scoreUnit: source.scoreUnit ?? "",
+    seriesConfig: format === "head-to-head" ? seriesConfigOf(source) : null,
+    bestScoreConfig: format === "best-score" ? bestScoreConfigOf(source) : null,
     bracketConfig: format === "bracket" ? configOf(source) : null,
     selfEnroll: source.selfEnroll,
     entrantLimit:
       source.entrantLimit === null ? "" : String(source.entrantLimit),
-    enrollClosesAt: clockOf(source.enrollClosesAt),
-    loggingClosesAt: clockOf(source.loggingClosesAt),
     selfReport: source.selfReport,
     selfCheckIn: source.selfCheckIn,
-    checkInClosesAt: clockOf(source.checkInClosesAt),
+    maxAttempts: source.maxAttempts === null ? "" : String(source.maxAttempts),
   };
 }
 
@@ -132,31 +116,11 @@ export type SettingPost = {
   value: unknown;
 };
 
-/** A close time as posted: its instant (ISO), null for none, or a refusal. */
-function closesAt(clock: Clock): { ok: true; value: string | null } | null {
-  if (!clock.date && !clock.time) return { ok: true, value: null };
-  const instant = fromEasternClock(clock.date, clock.time);
-  return instant ? { ok: true, value: instant.toISOString() } : null;
-}
-
-/**
- * One field's change as `saveCompetitionSetting` takes it, or why it
- * can't be sent yet (a close time with only half set).
- */
+/** One field's change as `saveCompetitionSetting` takes it. */
 export function settingChangeOf<K extends SettingsField>(
   field: K,
   value: CompetitionSettingsValues[K],
 ): { ok: true; change: SettingPost } | { ok: false; error: string } {
-  if (
-    field === "enrollClosesAt" ||
-    field === "loggingClosesAt" ||
-    field === "checkInClosesAt"
-  ) {
-    const instant = closesAt(value as Clock);
-    return instant
-      ? { ok: true, change: { field, value: instant.value } }
-      : { ok: false, error: CLOCK_HALF_SET };
-  }
   return { ok: true, change: { field, value } };
 }
 
@@ -171,13 +135,8 @@ export function shownSettings(
   const { format } = values;
   const individualParticipation =
     format === "participation" && values.scoring === "individual";
-  const enrolls =
-    (format === "bracket" || isGameFormat(format)) &&
-    enrollmentUnavailable({
-      format,
-      entrantsOpen: values.entrantsOpen,
-      gameConfig: values.gameConfig,
-    }) === null;
+  // Only a Bracket takes enrollment (spec R21, decision 5).
+  const enrolls = format === "bracket";
   const fields: (SettingsField | false)[] = [
     "name",
     "group",
@@ -190,17 +149,21 @@ export function shownSettings(
     !individualParticipation && "placementPoints",
     individualParticipation && "participationPoints",
     "hosts",
-    format === "placement" && "scoreDirection",
-    isGameFormat(format) && "gameConfig",
-    isGameFormat(format) && "entrantsOpen",
-    isGameFormat(format) && "loggingClosesAt",
+    format !== "participation" && "scoreDirection",
+    format !== "participation" && "scoreUnit",
+    format === "best-score" && values.scoring === "team" && "bestScoreConfig",
+    format === "head-to-head" && "seriesConfig",
     format === "bracket" && "bracketConfig",
-    format === "bracket" && "selfReport",
+    format === "best-score" && "maxAttempts",
+    // "Participants can log their own results" (spec R21, decision 4):
+    // never Placement (ADR 0010) or Participation.
+    (format === "bracket" ||
+      format === "head-to-head" ||
+      format === "best-score") &&
+      "selfReport",
     enrolls && "selfEnroll",
     enrolls && values.selfEnroll && "entrantLimit",
-    enrolls && values.selfEnroll && "enrollClosesAt",
     format === "participation" && "selfCheckIn",
-    format === "participation" && values.selfCheckIn && "checkInClosesAt",
   ];
   return fields.filter((field): field is SettingsField => field !== false);
 }
@@ -236,9 +199,9 @@ export const FORMAT_DESCRIPTIONS: Record<Format, string> = {
   bracket:
     "Entrants play in Matches and a set number advance each Round, down to a final. Two per Match with one advancing is a head-to-head knockout.",
   "head-to-head":
-    "Two players per Match; a Winner, or a draw when allowed. Players log Matches themselves and a leaderboard ranks them.",
+    "Two Entrants play a Best of series; each Match has a Winner, or a draw when allowed. Players log Matches themselves.",
   "best-score":
-    "Each Attempt records a score; the best or the total counts. Players log Attempts themselves and a leaderboard ranks them.",
+    "Each Attempt records a Score; a person's best counts. Anyone logs Attempts as themselves and a leaderboard ranks them.",
   participation:
     "Points for taking part: the Host ticks who took part, or Participants check in.",
 };

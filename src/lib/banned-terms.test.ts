@@ -46,23 +46,22 @@ type Allowed = {
   reason: string;
 };
 
-// Old words that stay until spec B renames the tables and columns. Spec B
-// deletes this list. Each entry is one literal in one file, for one term;
-// keep it short.
+// A literal allowed to keep a banned term, one literal in one file for one
+// term. Keep the mechanism for the next exception.
 const ALLOWLIST: Allowed[] = [
   {
-    file: "src/lib/setup.ts",
-    term: "Finalize",
-    text: "finalized needs finalizedAt and finalizedByEmail together",
+    file: "src/lib/best-score/config.ts",
+    term: "Member",
+    text: "Best member",
     reason:
-      "spec B: names the seed file's `finalized` field, which mirrors the finalized_at column",
+      "Spec R21 decision 13 names the Team score setting's options Best member and Sum of members.",
   },
   {
-    file: "src/seed/schema.ts",
-    term: "Finalize",
-    text: "use placements (with finalized)",
+    file: "src/lib/best-score/config.ts",
+    term: "Member",
+    text: "Sum of members",
     reason:
-      "spec B: names the seed file's `finalized` field, which mirrors the finalized_at column",
+      "Spec R21 decision 13 names the Team score setting's options Best member and Sum of members.",
   },
 ];
 

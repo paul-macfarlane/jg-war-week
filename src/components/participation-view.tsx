@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { YouTag } from "@/components/you";
 import { scoreParticipation } from "@/lib/participation/score";
 import { formatPoints, formatPointsLabel } from "@/lib/points";
-import { formatLedgerTime } from "@/lib/points-entry";
 import { entryPointsFor } from "@/lib/results-table";
 import type { ParticipationView as ParticipationData } from "@/queries/participation";
 
@@ -23,7 +22,7 @@ function scoringLine(
 
 /**
  * A `participation` Competition on its page: how it scores, Check in or
- * out for the linked Participant (ADR 0009), the close time and "Closed",
+ * out for the linked Participant (ADR 0009), "Closed",
  * in team scoring the results table ranked by headcount, and who took part
  * by Profile name (ADR 0007) with their Team (and, in individual scoring,
  * their points). Until Closed the points are Provisional, by the rule
@@ -35,14 +34,11 @@ export function ParticipationView({
   offer,
   teamLabel,
   primaryColor,
-  now,
 }: {
   view: ParticipationData;
   offer: CheckInOffer | null;
   teamLabel: string;
   primaryColor: string;
-  /** The current time, so the close time reads as past or to come. */
-  now: Date;
 }) {
   const { competition, tookPart, teamCounts, entryPoints } = view;
   const isTeam = competition.scoring === "team";
@@ -63,11 +59,6 @@ export function ParticipationView({
           <Badge variant="secondary" className="self-start">
             Closed
           </Badge>
-        ) : competition.selfCheckIn && competition.checkInClosesAt ? (
-          <p className="text-foreground/70 text-sm">
-            Check-in {now >= competition.checkInClosesAt ? "closed" : "closes"}{" "}
-            {formatLedgerTime(competition.checkInClosesAt)}.
-          </p>
         ) : null}
       </div>
       {offer ? <CheckInButton offer={offer} /> : null}

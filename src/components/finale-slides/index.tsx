@@ -22,7 +22,7 @@ export function FinaleSlideView({ data, ...rest }: AnySlideProps) {
       return <NumbersSlide data={data} {...rest} />;
     case "awards":
       return <AwardsSlide data={data} {...rest} />;
-    case "champions":
+    case "winners":
       return <WinnersSlide data={data} {...rest} />;
     case "standings":
       return <StandingsSlide data={data} {...rest} />;

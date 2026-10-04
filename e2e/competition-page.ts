@@ -15,7 +15,7 @@ export const RUN_AREA_TITLE: Record<FormatName, string> = {
   Placement: "Record placements",
   Bracket: "Entrants and Bracket",
   "Head-to-head": "Entrants and Matches",
-  "Best score": "Entrants and Attempts",
+  "Best score": "Attempts",
   Participation: "Who took part",
 };
 

@@ -34,12 +34,11 @@ import {
 } from "./awards";
 import {
   assertBracketLoop,
-  assertHeatsLoop,
+  assertMatchesLoop,
   assertSquadSelfReportLoop,
 } from "./brackets";
 import { assertDiscretionaryPoints } from "./discretionary-points";
 import { assertFinale } from "./finale";
-import { assertGamesLoop } from "./games";
 import {
   BASE_URL,
   PORT,
@@ -65,6 +64,7 @@ import {
   deleteSmokeHosts,
 } from "./hosts";
 import { assertPostedWarWeekWins, assertWarWeekLifecycle } from "./lifecycle";
+import { assertLoggedResultsLoop } from "./logged-results";
 import { assertMcp } from "./mcp";
 import {
   assertAboutPage,
@@ -74,6 +74,7 @@ import {
   assertDisplayScriptInHead,
   assertEditionErrorBoundary,
   assertFinaleSlidesKeptIds,
+  assertFormatColumnsConstraints,
   assertFreeForAllRoster,
   assertHomeNowNext,
   assertInstallable,
@@ -160,6 +161,7 @@ async function main() {
   await assertDiscretionaryReasonConstraint();
   await assertPlacementTargetConstraint();
   await assertParticipationColumnsConstraint();
+  await assertFormatColumnsConstraints();
   await assertPlacementPointsSeeded();
   await assertAwardCategoriesSeeded();
 
@@ -238,13 +240,13 @@ async function main() {
       await assertSetupTeamsAndCompetitions(sessions);
       await assertSetupScheduleFaq(sessions);
       await assertBracketLoop(sessions);
-      await assertHeatsLoop(sessions);
+      await assertMatchesLoop(sessions);
       await assertSquadSelfReportLoop(sessions);
       await assertHostChecks(sessions);
       await assertParticipantRefused(sessions);
       await assertParticipationLoop(sessions);
       // Ends XI by SQL in its own step, then restores it.
-      await assertGamesLoop(sessions);
+      await assertLoggedResultsLoop(sessions);
       await assertPostedWarWeekWins(sessions);
       // It changes which War Week is current, then restores XI.
       await assertWarWeekLifecycle(sessions);

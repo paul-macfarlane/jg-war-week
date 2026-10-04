@@ -15,7 +15,7 @@ import type { RowFinale } from "@/lib/finale";
 type Scoring = "team" | "individual";
 
 type BracketFinaleProps = {
-  /** The finalized Bracket's placings, by place then Seed Position. */
+  /** The closed Bracket's placings, by place then Seed Position. */
   rows: BracketFinaleRow[];
   competitionName: string;
   edition: string;
@@ -27,7 +27,7 @@ type BracketFinaleProps = {
 
 /**
  * The Bracket Finale player (`/<edition>/finale/<competitionId>`): a
- * finalized Bracket's placings count in from last place to first, tied
+ * closed Bracket's placings count in from last place to first, tied
  * places together, and end on the Winner. Start, `Space` or a click on the
  * stage plays it; Replay plays it again; `prefers-reduced-motion` shows the
  * final state. Plays `rows` as given: reads nothing from Standings, writes

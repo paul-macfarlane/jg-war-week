@@ -229,16 +229,21 @@ describe.skipIf(!isLocalDatabase)("getCompetitions", () => {
         .values(
           [
             { name: "Fresh", format: "placement" as const },
-            { name: "Open games", format: "head-to-head" as const },
+            {
+              name: "Open series",
+              format: "head-to-head" as const,
+              seriesConfig: { drawsAllowed: false, bestOf: 3 as const },
+            },
             {
               name: "Tied",
               format: "placement" as const,
-              finalizedAt: new Date("2099-01-03T12:00:00Z"),
+              closedAt: new Date("2099-01-03T12:00:00Z"),
             },
             {
               name: "Stairs",
               format: "best-score" as const,
-              finalizedAt: new Date("2099-01-03T13:00:00Z"),
+              scoreDirection: "higher" as const,
+              closedAt: new Date("2099-01-03T13:00:00Z"),
             },
             { name: "Knockout", format: "bracket" as const },
           ].map((c) => ({
@@ -254,9 +259,9 @@ describe.skipIf(!isLocalDatabase)("getCompetitions", () => {
       const id = (name: string) =>
         competitions.find((c) => c.name === name)!.id;
 
-      // Open games: an Entrant is a result.
+      // Open series: an Entrant is a result.
       await tx.insert(schema.entrant).values({
-        competitionId: id("Open games"),
+        competitionId: id("Open series"),
         teamId: zion.id,
         seedPosition: 1,
       });
@@ -272,7 +277,7 @@ describe.skipIf(!isLocalDatabase)("getCompetitions", () => {
           warWeekId: warWeek.id,
           competitionId: id("Tied"),
           enteredByEmail: "organizer@jahnelgroup.com",
-          generatedByBracket: true,
+          generated: true,
         })),
       );
 
@@ -287,22 +292,36 @@ describe.skipIf(!isLocalDatabase)("getCompetitions", () => {
           })),
         )
         .returning({ id: schema.entrant.id });
-      const heats = await tx
-        .insert(schema.heat)
+      const matches = await tx
+        .insert(schema.bracketMatch)
         .values(
           [
             { round: 1, position: 1, status: "played" as const },
             { round: 1, position: 2, status: "ready" as const },
             { round: 2, position: 1, status: "pending" as const },
-          ].map((h) => ({ ...h, competitionId: id("Knockout") })),
+          ].map((h) => ({
+            ...h,
+            competitionId: id("Knockout"),
+            advanceCount: 1,
+          })),
         )
-        .returning({ id: schema.heat.id });
-      await tx.insert(schema.heatEntrant).values([
-        { heatId: heats[0].id, entrantId: entrants[0].id, slot: 0, place: 1 },
-        { heatId: heats[0].id, entrantId: entrants[3].id, slot: 1, place: 2 },
-        { heatId: heats[1].id, entrantId: entrants[1].id, slot: 0 },
-        { heatId: heats[1].id, entrantId: entrants[2].id, slot: 1 },
-        { heatId: heats[2].id, entrantId: entrants[0].id, slot: 0 },
+        .returning({ id: schema.bracketMatch.id });
+      await tx.insert(schema.bracketMatchEntrant).values([
+        {
+          matchId: matches[0].id,
+          entrantId: entrants[0].id,
+          slot: 0,
+          place: 1,
+        },
+        {
+          matchId: matches[0].id,
+          entrantId: entrants[3].id,
+          slot: 1,
+          place: 2,
+        },
+        { matchId: matches[1].id, entrantId: entrants[1].id, slot: 0 },
+        { matchId: matches[1].id, entrantId: entrants[2].id, slot: 1 },
+        { matchId: matches[2].id, entrantId: entrants[0].id, slot: 0 },
       ]);
 
       const { ungrouped } = await getCompetitions(warWeek, tx);
@@ -312,7 +331,7 @@ describe.skipIf(!isLocalDatabase)("getCompetitions", () => {
         ),
       ).toEqual({
         Fresh: "Not started",
-        "Open games": "Underway",
+        "Open series": "Underway",
         Tied: "Done · Winners: Nebuchadnezzar, Zion",
         Stairs: "Closed",
         Knockout: "Underway · Round 1 of 2",

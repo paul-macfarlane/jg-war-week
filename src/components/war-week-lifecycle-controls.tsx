@@ -46,7 +46,7 @@ export function WarWeekLifecycleControls({
   status,
   suggestedWinner,
   highlights,
-  unfinalizedBrackets,
+  unclosedBrackets,
   openUnscoredCompetitions,
 }: {
   warWeekId: string;
@@ -58,10 +58,10 @@ export function WarWeekLifecycleControls({
    */
   suggestedWinner: string;
   highlights: string[];
-  /** Names of Brackets not yet finalized, to warn about when ending. */
-  unfinalizedBrackets: string[];
+  /** Names of Brackets not yet closed, to warn about when ending. */
+  unclosedBrackets: string[];
   /**
-   * Open Head-to-head or Best score Competitions with Games and `participation` ones with
+   * Open Head-to-head or Best score Competitions with Matches or Attempts and `participation` ones with
    * anyone marked, to warn about when ending.
    */
   openUnscoredCompetitions: OpenUnscoredCompetition[];
@@ -109,7 +109,7 @@ export function WarWeekLifecycleControls({
         name={name}
         suggestedWinner={suggestedWinner}
         highlights={highlights}
-        unfinalizedBrackets={unfinalizedBrackets}
+        unclosedBrackets={unclosedBrackets}
         openUnscoredCompetitions={openUnscoredCompetitions}
       />
       <ConfirmActionButton
@@ -133,14 +133,14 @@ function EndWarWeekButton({
   name,
   suggestedWinner,
   highlights: initialHighlights,
-  unfinalizedBrackets,
+  unclosedBrackets,
   openUnscoredCompetitions,
 }: {
   warWeekId: string;
   name: string;
   suggestedWinner: string;
   highlights: string[];
-  unfinalizedBrackets: string[];
+  unclosedBrackets: string[];
   openUnscoredCompetitions: OpenUnscoredCompetition[];
 }) {
   const router = useRouter();
@@ -187,11 +187,11 @@ function EndWarWeekButton({
   const description = (
     <>
       {endDescription}
-      {unfinalizedBrackets.length > 0 && (
+      {unclosedBrackets.length > 0 && (
         <>
           {" "}
-          Not closed: {unfinalizedBrackets.join(", ")}. Their placings
-          aren&apos;t in the Standings until you close them.
+          Not closed: {unclosedBrackets.join(", ")}. Their placings aren&apos;t
+          in the Standings until you close them.
         </>
       )}
       {openUnscoredCompetitions.length > 0 && (

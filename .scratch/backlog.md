@@ -21,7 +21,7 @@ October Competition feedback, grilled 2026-10-03 ([`regression-2026-10/spec.md`]
 Regression feedback "10/3", grilled 2026-10-04 ([grilling record](./regression-2026-10/grilling-2026-10-04.md)). One work package per spec. R20 first, then R21 → R23; R22 runs alongside R20, its migration landing one at a time with R21's. R21, R22 and R23 change the schema and are red-teamed.
 
 - [ ] **Epic R20, Competition results and language**: one sortable results table with points and a Provisional badge, no Point Entries sections, Best score one row per person, Bracket top finishers, Head-to-head series view, description first, "Manage" link, Match / Attempt / Winner / Close. [`competition-results/spec.md`](./competition-results/spec.md) (`done`; [PR #133](https://github.com/paul-macfarlane/jg-war-week/pull/133) into `staging` awaiting review)
-- [ ] **Epic R21, Competition setup and logging**: Close everywhere and no scheduled times, one self-report setting (off by default), score direction and unit decide places and winners, Head-to-head / Group toggle and flexible Group Matches, Head-to-head as a fixed two-Entrant series, Best score attempt limits and no Entrant list; absorbs backlog 25. After R20. [`competition-setup/spec.md`](./competition-setup/spec.md) (`ready-for-agent`)
+- [ ] **Epic R21, Competition setup and logging**: Close everywhere and no scheduled times, one self-report setting (off by default), score direction and unit decide places and winners, Head-to-head / Group toggle and flexible Group Matches, Head-to-head as a fixed two-Entrant series, Best score attempt limits and no Entrant list; absorbs backlog 25. After R20. [`competition-setup/spec.md`](./competition-setup/spec.md) (`done`; built on `feat/r21-competition-setup`, PR into `staging` to follow)
 - [ ] **Epic R22, People and admin**: Hosts are roster Participants (no email needed), Hosts see only their Competitions and the guide, one `ParticipantPicker` with avatars and email search (absorbs 108), Award presets replace Categories, `/about` stills in XII. [`people-and-admin/spec.md`](./people-and-admin/spec.md) (`ready-for-agent`)
 - [ ] **Epic R23, League (round robin and Swiss)**: a new Format for chess-style tournaments, with draws, 1 / ½ / 0, tiebreaks and Swiss pairing. After R21. [`league/spec.md`](./league/spec.md) (`ready-for-agent`)
 
@@ -56,4 +56,4 @@ Done: Epics R9–R14 (`regression-2026-09`, PRs through #122).
 
 ## Deferred on purpose
 
-- [ ] **Rename `finalized_at` / `generated_by_bracket`**: folded into Epic R21 ([`competition-setup/spec.md`](./competition-setup/spec.md)). [`regression-2026-09/issues/25`](./regression-2026-09/issues/25-rename-finalized-generated-columns.md) (`needs-triage`)
+- [ ] **Rename `finalized_at` / `generated_by_bracket`**: folded into Epic R21 ([`competition-setup/spec.md`](./competition-setup/spec.md)). [`regression-2026-09/issues/25`](./regression-2026-09/issues/25-rename-finalized-generated-columns.md) (`done`)

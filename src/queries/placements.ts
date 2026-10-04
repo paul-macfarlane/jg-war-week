@@ -51,21 +51,22 @@ export type PlacementCompetition = Pick<
   | "countsTowardTeam"
   | "placementPoints"
   | "scoreDirection"
-  | "finalizedAt"
+  | "scoreUnit"
+  | "closedAt"
 >;
 
 export type PlacementsView = {
   competition: PlacementCompetition;
   /** Placed rows by Place (ties by name), then unplaced rows by name. */
   rows: PlacementRowView[];
-  /** Once Finalized (Closed), its generated Points Entries; else empty. */
+  /** Once Closed (Closed), its generated Points Entries; else empty. */
   entryPoints: EntryPoints[];
 };
 
 /**
  * A Placement Competition's rows with names (Profile names, ADR 0007) and
  * what each Place earns, ordered for display. Reads within `dbOrTx`, so
- * Finalize reads the rows it locked.
+ * Close reads the rows it locked.
  */
 export async function getPlacementRows(
   competitionRow: Pick<Competition, "id" | "placementPoints">,
@@ -134,7 +135,8 @@ export async function getPlacementsView(
       countsTowardTeam: competition.countsTowardTeam,
       placementPoints: competition.placementPoints,
       scoreDirection: competition.scoreDirection,
-      finalizedAt: competition.finalizedAt,
+      scoreUnit: competition.scoreUnit,
+      closedAt: competition.closedAt,
     })
     .from(competition)
     .where(eq(competition.id, competitionId))
@@ -149,10 +151,11 @@ export async function getPlacementsView(
       countsTowardTeam: found.countsTowardTeam,
       placementPoints: found.placementPoints,
       scoreDirection: found.scoreDirection,
-      finalizedAt: found.finalizedAt,
+      scoreUnit: found.scoreUnit,
+      closedAt: found.closedAt,
     },
     rows: await getPlacementRows(found, dbOrTx),
-    entryPoints: found.finalizedAt
+    entryPoints: found.closedAt
       ? await getCompetitionEntryPoints(found.id, dbOrTx)
       : [],
   };

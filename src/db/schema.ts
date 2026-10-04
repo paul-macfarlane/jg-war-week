@@ -26,6 +26,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
+import type { BestScoreConfig } from "@/lib/best-score/config";
 import type { BracketConfig } from "@/lib/bracket/config";
 import {
   COMPETITION_FORMATS,
@@ -33,14 +34,14 @@ import {
   FINALE_AWARDS_LAYOUTS,
   FINALE_SLIDE_KINDS,
   FONT_PRESETS,
-  HEAT_STATUSES,
+  MATCH_STATUSES,
   SCHEDULE_ITEM_CATEGORIES,
   SCORE_DIRECTIONS,
   WAR_WEEK_MODES,
   WAR_WEEK_STATUSES,
 } from "@/lib/enums";
-import type { GamesConfig } from "@/lib/games/config";
 import type { Content } from "@/lib/rich-text/content";
+import type { SeriesConfig } from "@/lib/series/config";
 
 // The value lists live in `src/lib/enums.ts`, so client code can use them
 // without importing this module.
@@ -65,7 +66,10 @@ export const competitionFormat = pgEnum(
   COMPETITION_FORMATS,
 );
 
-export const heatStatus = pgEnum("heat_status", HEAT_STATUSES);
+export const bracketMatchStatus = pgEnum(
+  "bracket_match_status",
+  MATCH_STATUSES,
+);
 
 export const scoreDirection = pgEnum("score_direction", SCORE_DIRECTIONS);
 
@@ -220,34 +224,38 @@ export const competition = pgTable(
     countsTowardTeam: boolean("counts_toward_team").notNull().default(false),
     competitionGroup: varchar("competition_group", { length: 120 }),
     format: competitionFormat("format").notNull().default("placement"),
-    // Placement only (the CHECK below): whether a higher or lower Score
-    // wins, filling Places from Scores; `none` means Places are set by hand.
+    // Whether a higher or lower Score wins; `none` means places are set by
+    // hand. Best score is always higher or lower, Participation always
+    // `none` (the CHECK below).
     scoreDirection: scoreDirection("score_direction").notNull().default("none"),
-    // A Bracket's settings (`src/lib/bracket/config.ts`): heat size,
-    // advancing per Heat and the 3rd place game. Set for every Bracket (app
-    // logic, not a CHECK); null for every other Format.
+    // The Scores' unit label, like "sec"; null for none.
+    scoreUnit: varchar("score_unit", { length: 20 }),
+    // A Bracket's settings (`src/lib/bracket/config.ts`): its kind, match
+    // size, advancing per Match, the 3rd place Match and per-round
+    // defaults. Set for every Bracket (app logic, not a CHECK); null for
+    // every other Format.
     bracketConfig: jsonb("bracket_config").$type<BracketConfig | null>(),
-    // Participants in a Heat may enter its result themselves (ADR 0005).
+    // "Participants can log their own results" (ADR 0011): with it on,
+    // anyone who could have logged a result logs it and changes it while
+    // the Competition is open.
     selfReport: boolean("self_report").notNull().default(false),
     // Set while the Competition's generated Points Entries exist: a
-    // finalized Bracket or Placement, or a closed Head-to-head or Best score
+    // closed Bracket or Placement, or a closed Head-to-head or Best score
     // Competition.
-    finalizedAt: timestamp("finalized_at", { withTimezone: true }),
-    // Head-to-head and Best score only (the CHECK below): the Format's
-    // settings (`src/lib/games/config.ts`); null means the Format's default.
-    gameConfig: jsonb("game_config").$type<GamesConfig | null>(),
-    // Head-to-head and Best score: true lets everyone eligible play; false
-    // keeps a fixed Entrant list (`entrant` rows).
-    entrantsOpen: boolean("entrants_open").notNull().default(false),
-    // Head-to-head and Best score: Participants can't log Games after it.
-    // Awards nothing.
-    loggingClosesAt: timestamp("logging_closes_at", { withTimezone: true }),
-    // Participants may enroll themselves as Entrants (ticket 15).
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    // Head-to-head only, and always set there (the CHECK below): draws and
+    // Best of (`src/lib/series/config.ts`).
+    seriesConfig: jsonb("series_config").$type<SeriesConfig | null>(),
+    // Best score only (the CHECK below): how a Team's score adds up
+    // (`src/lib/best-score/config.ts`); null means the default.
+    bestScoreConfig: jsonb("best_score_config").$type<BestScoreConfig | null>(),
+    // Best score only: the most Attempts per person; null for no limit.
+    maxAttempts: integer("max_attempts"),
+    // Bracket only (the CHECK below): Participants may enroll themselves as
+    // Entrants (ticket 15).
     selfEnroll: boolean("self_enroll").notNull().default(false),
     // Enrollment closes once this many Entrants are in; null for no limit.
     entrantLimit: integer("entrant_limit"),
-    // Enrollment closes after this time; null for no close time.
-    enrollClosesAt: timestamp("enroll_closes_at", { withTimezone: true }),
     // `participation` with individual scoring only (the CHECK below): N, the
     // points per Participant who took part. A team `participation`
     // Competition ranks Teams by headcount for its Placement Points instead.
@@ -258,8 +266,6 @@ export const competition = pgTable(
     }),
     // `participation` only: Participants may check themselves in (ADR 0009).
     selfCheckIn: boolean("self_check_in").notNull().default(false),
-    // `participation` only: Participants can't check in or out after it.
-    checkInClosesAt: timestamp("check_in_closes_at", { withTimezone: true }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -273,12 +279,28 @@ export const competition = pgTable(
     // migration that changes the enum can re-add them in the same
     // transaction (R3 decision 13).
     check(
-      "competition_score_direction_placement_only",
-      sql`${table.scoreDirection}::text = 'none' or ${table.format}::text = 'placement'`,
+      "competition_score_direction_by_format",
+      sql`case ${table.format}::text
+        when 'participation' then ${table.scoreDirection}::text = 'none'
+        when 'best-score' then ${table.scoreDirection}::text in ('higher', 'lower')
+        else true
+        end`,
     ),
     check(
-      "competition_game_config_head_to_head_or_best_score",
-      sql`${table.gameConfig} is null or ${table.format}::text in ('head-to-head', 'best-score')`,
+      "competition_series_config_head_to_head",
+      sql`(${table.seriesConfig} is not null) = (${table.format}::text = 'head-to-head')`,
+    ),
+    check(
+      "competition_best_score_config_best_score",
+      sql`${table.bestScoreConfig} is null or ${table.format}::text = 'best-score'`,
+    ),
+    check(
+      "competition_max_attempts",
+      sql`${table.maxAttempts} is null or (${table.maxAttempts} >= 1 and ${table.format}::text = 'best-score')`,
+    ),
+    check(
+      "competition_self_enroll_bracket_only",
+      sql`${table.format}::text = 'bracket' or (not ${table.selfEnroll} and ${table.entrantLimit} is null)`,
     ),
     check(
       "competition_entrant_limit_above_1",
@@ -298,7 +320,6 @@ export const competition = pgTable(
             and ${table.participationPoints} is null
           end
         else ${table.participationPoints} is null
-          and ${table.checkInClosesAt} is null
           and not ${table.selfCheckIn}
         end`,
     ),
@@ -365,12 +386,10 @@ export const pointsEntry = pgTable(
       .defaultNow(),
     // Set only on rows that came from a seed file; see CONTEXT.md.
     seedKey: varchar("seed_key", { length: 80 }),
-    // Written by finalizing a Bracket or Placement or closing a Head-to-head
+    // Written by closing a Bracket or Placement or closing a Head-to-head
     // or Best score Competition; changed only through that Competition. The
     // name predates those Formats (R3 decision 1 keeps it).
-    generatedByBracket: boolean("generated_by_bracket")
-      .notNull()
-      .default(false),
+    generated: boolean("generated").notNull().default(false),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -392,7 +411,7 @@ export const pointsEntry = pgTable(
 
 /**
  * One row of a Placement Competition's sheet: a Team or Participant with its
- * Place (null while unplaced) and optional Score. Finalize turns Places into
+ * Place (null while unplaced) and optional Score. Close turns Places into
  * generated Points Entries by the Competition's Placement Points.
  */
 export const placement = pgTable(
@@ -505,13 +524,14 @@ export const entrant = pgTable(
 );
 
 /**
- * One game of a Bracket, with `slotCount` places (two at heat size 2; larger
- * Heats may hold more). A head-to-head winner feeds `winnerToHeatId`; with a
- * 3rd place game, each semifinal's loser feeds `loserToHeatId`, and the 3rd
- * place game is the Heat marked `thirdPlace`.
+ * One Match of a Bracket, with `slotCount` places (two at match size 2;
+ * larger Matches may hold more) and `advanceCount` of them advancing. A
+ * head-to-head winner feeds `winnerToMatchId`; with a 3rd place Match, each
+ * semifinal's loser feeds `loserToMatchId`, and the 3rd place Match is the
+ * one marked `thirdPlace`.
  */
-export const heat = pgTable(
-  "heat",
+export const bracketMatch = pgTable(
+  "bracket_match",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     competitionId: uuid("competition_id")
@@ -519,26 +539,29 @@ export const heat = pgTable(
       .references(() => competition.id, { onDelete: "cascade" }),
     round: integer("round").notNull(),
     position: integer("position").notNull(),
-    status: heatStatus("status").notNull().default("pending"),
-    // Fixed at Generate; `heat_entrant.slot` runs 0…slotCount-1.
+    status: bracketMatchStatus("status").notNull().default("pending"),
+    // Fixed at Generate; `bracket_match_entrant.slot` runs 0…slotCount-1.
     slotCount: smallint("slot_count").notNull().default(2),
-    winnerToHeatId: uuid("winner_to_heat_id").references(
-      (): AnyPgColumn => heat.id,
+    // How many of the Match advance (1 in a head-to-head Bracket and in the
+    // final); fixed at Generate.
+    advanceCount: smallint("advance_count").notNull(),
+    winnerToMatchId: uuid("winner_to_match_id").references(
+      (): AnyPgColumn => bracketMatch.id,
       { onDelete: "set null" },
     ),
     winnerToSlot: integer("winner_to_slot"),
-    // A semifinal's loser feeds the 3rd place game (part 98).
-    loserToHeatId: uuid("loser_to_heat_id").references(
-      (): AnyPgColumn => heat.id,
+    // A semifinal's loser feeds the 3rd place Match (part 98).
+    loserToMatchId: uuid("loser_to_match_id").references(
+      (): AnyPgColumn => bracketMatch.id,
       { onDelete: "set null" },
     ),
     loserToSlot: integer("loser_to_slot"),
-    // The 3rd place game: in the final's round, beside the final.
+    // The 3rd place Match: in the final's round, beside the final.
     thirdPlace: boolean("third_place").notNull().default(false),
-    // When the Heat's result was last saved; null until it is played.
+    // When the Match's result was last saved; null until it is played.
     recordedAt: timestamp("recorded_at", { withTimezone: true }),
     // Set when a Participant self-reported the current result; cleared when
-    // a later save changes the Heat. The email is kept for audit and never
+    // a later save changes the Match. The email is kept for audit and never
     // read back to a page or MCP (see CONTEXT.md, Access rules).
     reportedByEmail: varchar("reported_by_email", { length: 254 }),
     reportedByParticipantId: uuid("reported_by_participant_id").references(
@@ -550,55 +573,58 @@ export const heat = pgTable(
   },
   (table) => [
     unique().on(table.competitionId, table.round, table.position),
-    index("heat_winner_to_heat_id_idx").on(table.winnerToHeatId),
-    index("heat_loser_to_heat_id_idx").on(table.loserToHeatId),
-    index("heat_reported_by_participant_id_idx").on(
+    index("bracket_match_winner_to_match_id_idx").on(table.winnerToMatchId),
+    index("bracket_match_loser_to_match_id_idx").on(table.loserToMatchId),
+    index("bracket_match_reported_by_participant_id_idx").on(
       table.reportedByParticipantId,
+    ),
+    check(
+      "bracket_match_advance_count_from_1",
+      sql`${table.advanceCount} >= 1`,
     ),
   ],
 );
 
-/** An Entrant in a Heat's slot, with its place and score once decided. */
-export const heatEntrant = pgTable(
-  "heat_entrant",
+/** An Entrant in a Match's slot, with its place and score once decided. */
+export const bracketMatchEntrant = pgTable(
+  "bracket_match_entrant",
   {
-    heatId: uuid("heat_id")
+    matchId: uuid("bracket_match_id")
       .notNull()
-      .references(() => heat.id, { onDelete: "cascade" }),
+      .references(() => bracketMatch.id, { onDelete: "cascade" }),
     entrantId: uuid("entrant_id")
       .notNull()
       .references(() => entrant.id, { onDelete: "cascade" }),
     slot: integer("slot").notNull(),
     place: integer("place"),
-    score: varchar("score", { length: 40 }),
+    score: numeric("score", { precision: 12, scale: 3, mode: "number" }),
   },
   (table) => [
-    primaryKey({ columns: [table.heatId, table.slot] }),
-    unique().on(table.heatId, table.entrantId),
-    index("heat_entrant_entrant_id_idx").on(table.entrantId),
+    primaryKey({ columns: [table.matchId, table.slot] }),
+    unique().on(table.matchId, table.entrantId),
+    index("bracket_match_entrant_entrant_id_idx").on(table.entrantId),
     // The engine's slots are 0-based and its places 1-based.
-    check("heat_entrant_slot_from_0", sql`${table.slot} >= 0`),
+    check("bracket_match_entrant_slot_from_0", sql`${table.slot} >= 0`),
     check(
-      "heat_entrant_place_from_1",
+      "bracket_match_entrant_place_from_1",
       sql`${table.place} is null or ${table.place} >= 1`,
     ),
   ],
 );
 
 /**
- * One recorded contest in a Head-to-head or Best score Competition, logged
- * by a player in it or
- * by a Host or Organizer. Games have no scheduled time: `logged_at` orders
- * the log.
+ * One Match of a Head-to-head series, between the Competition's two
+ * Entrants, logged by a player in it or by a Host or Organizer. Matches
+ * have no scheduled time: `recorded_at` orders the series.
  */
-export const game = pgTable(
-  "game",
+export const seriesMatch = pgTable(
+  "series_match",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     competitionId: uuid("competition_id")
       .notNull()
       .references(() => competition.id, { onDelete: "cascade" }),
-    loggedAt: timestamp("logged_at", { withTimezone: true })
+    recordedAt: timestamp("recorded_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
     // Kept for audit and never read back to a page or MCP (CONTEXT.md,
@@ -613,44 +639,83 @@ export const game = pgTable(
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (table) => [
-    index("game_competition_id_idx").on(table.competitionId),
-    index("game_logged_by_participant_id_idx").on(table.loggedByParticipantId),
+    index("series_match_competition_id_idx").on(table.competitionId),
+    index("series_match_logged_by_participant_id_idx").on(
+      table.loggedByParticipantId,
+    ),
   ],
 );
 
 /**
- * A Team or Participant in a Game, never an Entrant row (an open Competition
- * has none): its place (Head-to-head 1/2, 1/1 for a draw) or its score
- * (Best score).
+ * One of the two Entrants in a series Match: its place (1 and 2, or 1 and 1
+ * for a Draw) and its Score.
  */
-export const gamePlayer = pgTable(
-  "game_player",
+export const seriesMatchEntrant = pgTable(
+  "series_match_entrant",
+  {
+    seriesMatchId: uuid("series_match_id")
+      .notNull()
+      .references(() => seriesMatch.id, { onDelete: "cascade" }),
+    entrantId: uuid("entrant_id")
+      .notNull()
+      .references(() => entrant.id, { onDelete: "cascade" }),
+    place: integer("place"),
+    score: numeric("score", { precision: 12, scale: 3, mode: "number" }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.seriesMatchId, table.entrantId] }),
+    index("series_match_entrant_entrant_id_idx").on(table.entrantId),
+    check(
+      "series_match_entrant_place_from_1",
+      sql`${table.place} is null or ${table.place} >= 1`,
+    ),
+  ],
+);
+
+/**
+ * One Attempt in a Best score Competition: a Participant's Score, logged by
+ * them or by a Host or Organizer. In team scoring it counts for `team_id`,
+ * the Participant's Team when it was logged (a later Team change doesn't
+ * move it).
+ */
+export const attempt = pgTable(
+  "attempt",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    gameId: uuid("game_id")
+    competitionId: uuid("competition_id")
       .notNull()
-      .references(() => game.id, { onDelete: "cascade" }),
+      .references(() => competition.id, { onDelete: "cascade" }),
+    participantId: uuid("participant_id")
+      .notNull()
+      .references(() => participant.id, { onDelete: "cascade" }),
     teamId: uuid("team_id").references(() => team.id, {
       onDelete: "cascade",
     }),
-    participantId: uuid("participant_id").references(() => participant.id, {
-      onDelete: "cascade",
-    }),
-    place: integer("place"),
-    score: numeric("score", { precision: 10, scale: 2, mode: "number" }),
+    score: numeric("score", {
+      precision: 12,
+      scale: 3,
+      mode: "number",
+    }).notNull(),
+    recordedAt: timestamp("recorded_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    // Kept for audit and never read back to a page or MCP (CONTEXT.md,
+    // Access rules).
+    loggedByEmail: varchar("logged_by_email", { length: 254 }).notNull(),
+    // The linked Participant who logged it; null for a Host or Organizer.
+    loggedByParticipantId: uuid("logged_by_participant_id").references(
+      () => participant.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (table) => [
-    unique().on(table.gameId, table.teamId),
-    unique().on(table.gameId, table.participantId),
-    index("game_player_team_id_idx").on(table.teamId),
-    index("game_player_participant_id_idx").on(table.participantId),
-    check(
-      "game_player_exactly_one_target",
-      sql`num_nonnulls(${table.teamId}, ${table.participantId}) = 1`,
-    ),
-    check(
-      "game_player_place_from_1",
-      sql`${table.place} is null or ${table.place} >= 1`,
+    index("attempt_competition_id_idx").on(table.competitionId),
+    index("attempt_participant_id_idx").on(table.participantId),
+    index("attempt_team_id_idx").on(table.teamId),
+    index("attempt_logged_by_participant_id_idx").on(
+      table.loggedByParticipantId,
     ),
   ],
 );
@@ -1115,10 +1180,13 @@ export type FinaleSlide = InferSelectModel<typeof finaleSlide>;
 export type Squad = InferSelectModel<typeof squad>;
 export type SquadParticipant = InferSelectModel<typeof squadParticipant>;
 export type EntrantRow = InferSelectModel<typeof entrant>;
-export type HeatRow = InferSelectModel<typeof heat>;
-export type HeatEntrantRow = InferSelectModel<typeof heatEntrant>;
-export type GameRow = InferSelectModel<typeof game>;
-export type GamePlayerRow = InferSelectModel<typeof gamePlayer>;
+export type BracketMatchRow = InferSelectModel<typeof bracketMatch>;
+export type BracketMatchEntrantRow = InferSelectModel<
+  typeof bracketMatchEntrant
+>;
+export type SeriesMatchRow = InferSelectModel<typeof seriesMatch>;
+export type SeriesMatchEntrantRow = InferSelectModel<typeof seriesMatchEntrant>;
+export type AttemptRow = InferSelectModel<typeof attempt>;
 export type ParticipationRow = InferSelectModel<typeof participation>;
 export type Organizer = InferSelectModel<typeof organizer>;
 export type Profile = InferSelectModel<typeof profile>;

@@ -1,14 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  ADVANCE_PER_HEAT_OPTIONS,
+  ADVANCE_PER_MATCH_OPTIONS,
   DEFAULT_BRACKET_CONFIG,
-  ENTRANTS_PER_HEAT_OPTIONS,
-  advancePerHeatLabel,
+  ENTRANTS_PER_MATCH_OPTIONS,
+  advancePerMatchLabel,
   bracketConfigSchema,
   configOf,
-  entrantsPerHeatLabel,
+  entrantsPerMatchLabel,
   isHeadToHead,
+  kindOf,
 } from "@/lib/bracket/config";
 
 function messages(input: unknown): string[] {
@@ -16,10 +17,12 @@ function messages(input: unknown): string[] {
   return result.success ? [] : result.error.issues.map((i) => i.message);
 }
 
-const full = (entrantsPerHeat: number, advancePerHeat: number) => ({
-  entrantsPerHeat,
-  advancePerHeat,
-  thirdPlaceGame: false,
+const full = (entrantsPerMatch: number, advancePerMatch: number) => ({
+  kind: kindOf(entrantsPerMatch, advancePerMatch),
+  entrantsPerMatch,
+  advancePerMatch,
+  thirdPlaceMatch: false,
+  rounds: {},
 });
 
 describe("bracketConfigSchema", () => {
@@ -46,10 +49,43 @@ describe("bracketConfigSchema", () => {
   });
 
   it("needs the 3rd place Match as a boolean, and a config at all", () => {
-    expect(messages({ entrantsPerHeat: 4, advancePerHeat: 2 })).not.toEqual([]);
-    expect(messages({ ...full(4, 2), thirdPlaceGame: "yes" })).not.toEqual([]);
-    expect(messages({ ...full(4, 2), thirdPlaceGame: true })).toEqual([]);
+    expect(messages({ entrantsPerMatch: 4, advancePerMatch: 2 })).not.toEqual(
+      [],
+    );
+    expect(messages({ ...full(4, 2), thirdPlaceMatch: "yes" })).not.toEqual([]);
+    expect(messages({ ...full(4, 2), thirdPlaceMatch: true })).toEqual([]);
     expect(messages(null)).not.toEqual([]);
+  });
+
+  it("stores the kind and per-round defaults, filling them when omitted", () => {
+    expect(
+      bracketConfigSchema.parse({
+        entrantsPerMatch: 4,
+        advancePerMatch: 2,
+        thirdPlaceMatch: false,
+      }),
+    ).toEqual({
+      kind: "group",
+      entrantsPerMatch: 4,
+      advancePerMatch: 2,
+      thirdPlaceMatch: false,
+      rounds: {},
+    });
+    expect(
+      messages({
+        ...full(4, 2),
+        rounds: { 2: { entrantsPerMatch: 3, advancePerMatch: 1 } },
+      }),
+    ).toEqual([]);
+  });
+
+  it("refuses a kind that doesn't match the sizes", () => {
+    expect(messages({ ...full(4, 2), kind: "head-to-head" })).toEqual([
+      "Head-to-head is 2 per Match with 1 advancing.",
+    ]);
+    expect(messages({ ...full(2, 1), kind: "group" })).toEqual([
+      "Head-to-head is 2 per Match with 1 advancing.",
+    ]);
   });
 });
 
@@ -73,12 +109,20 @@ describe("configOf", () => {
     expect(
       configOf({
         bracketConfig: {
-          entrantsPerHeat: 6,
-          advancePerHeat: 3,
-          thirdPlaceGame: true,
+          kind: "group" as const,
+          entrantsPerMatch: 6,
+          advancePerMatch: 3,
+          thirdPlaceMatch: true,
+          rounds: {},
         },
       }),
-    ).toEqual({ entrantsPerHeat: 6, advancePerHeat: 3, thirdPlaceGame: true });
+    ).toEqual({
+      kind: "group" as const,
+      entrantsPerMatch: 6,
+      advancePerMatch: 3,
+      thirdPlaceMatch: true,
+      rounds: {},
+    });
   });
 
   it("falls back to 2 per Match, 1 advancing when none is saved or it doesn't parse", () => {
@@ -86,20 +130,20 @@ describe("configOf", () => {
     expect(configOf({ bracketConfig: full(3, 3) })).toEqual(full(2, 1));
     expect(configOf({ bracketConfig: "garbage" })).toEqual(full(2, 1));
     expect(
-      configOf({ bracketConfig: { entrantsPerHeat: 4, advancePerHeat: 2 } }),
+      configOf({ bracketConfig: { entrantsPerMatch: 4, advancePerMatch: 2 } }),
     ).toEqual(full(2, 1));
   });
 });
 
 describe("builder options", () => {
   it("lists 2 to 8 per Match and 1 to 7 advancing", () => {
-    expect(ENTRANTS_PER_HEAT_OPTIONS).toEqual([2, 3, 4, 5, 6, 7, 8]);
-    expect(ADVANCE_PER_HEAT_OPTIONS).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(ENTRANTS_PER_MATCH_OPTIONS).toEqual([2, 3, 4, 5, 6, 7, 8]);
+    expect(ADVANCE_PER_MATCH_OPTIONS).toEqual([1, 2, 3, 4, 5, 6, 7]);
   });
 
   it("labels them for Organizers", () => {
-    expect(entrantsPerHeatLabel(4)).toBe("4 per Match");
-    expect(advancePerHeatLabel(2)).toBe("Top 2 advance");
-    expect(advancePerHeatLabel(1)).toBe("Top 1 advances");
+    expect(entrantsPerMatchLabel(4)).toBe("4 per Match");
+    expect(advancePerMatchLabel(2)).toBe("Top 2 advance");
+    expect(advancePerMatchLabel(1)).toBe("Top 1 advances");
   });
 });

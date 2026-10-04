@@ -4,10 +4,10 @@
  * admin and the tests share one rule.
  */
 import type { Competition } from "@/db/schema";
-import { finalHeatOf, thirdPlaceHeatOf } from "@/lib/bracket/final";
-import { isDecided } from "@/lib/bracket/heat-status";
+import { finalMatchOf, thirdPlaceMatchOf } from "@/lib/bracket/final";
+import { isDecided } from "@/lib/bracket/match-status";
 import { pointsFor } from "@/lib/bracket/points";
-import type { Bracket, Heat, Placing } from "@/lib/bracket/types";
+import type { Bracket, Match, Placing } from "@/lib/bracket/types";
 import { BRACKET_PLACEMENTS } from "@/lib/competitions";
 import type { EntryPoints } from "@/lib/results-table";
 
@@ -23,9 +23,9 @@ export type PodiumEntrant = {
 };
 
 /** A played Match's places, `offset` added, up to the Bracket's last place. */
-function placesOf(heat: Heat | undefined, offset: number): Placing[] {
-  if (!heat || !isDecided(heat)) return [];
-  return heat.slots.flatMap((slot) =>
+function placesOf(match: Match | undefined, offset: number): Placing[] {
+  if (!match || !isDecided(match)) return [];
+  return match.slots.flatMap((slot) =>
     slot.entrantId !== null &&
     slot.place !== null &&
     slot.place + offset <= BRACKET_PLACEMENTS
@@ -40,10 +40,10 @@ function placesOf(heat: Heat | undefined, offset: number): Placing[] {
  * 4th once a 3rd place match is played. Semifinal losers with no 3rd place
  * match are not placed.
  */
-export function decidedPlaces(bracket: Pick<Bracket, "heats">): Placing[] {
+export function decidedPlaces(bracket: Pick<Bracket, "matches">): Placing[] {
   return [
-    ...placesOf(finalHeatOf(bracket), 0),
-    ...placesOf(thirdPlaceHeatOf(bracket), 2),
+    ...placesOf(finalMatchOf(bracket), 0),
+    ...placesOf(thirdPlaceMatchOf(bracket), 2),
   ].sort((a, b) => a.place - b.place);
 }
 
@@ -98,7 +98,7 @@ export function podium({
   placementPoints,
   entryPoints,
 }: {
-  bracket: Pick<Bracket, "heats">;
+  bracket: Pick<Bracket, "matches">;
   entrants: PodiumEntrant[];
   placementPoints: Competition["placementPoints"];
   /** A Closed Bracket's Points Entries; null while it isn't Closed. */
@@ -126,16 +126,16 @@ export function podium({
 
 /** A loaded Bracket's podium (`getBracket`'s view): Provisional until Closed. */
 export function podiumOf(view: {
-  bracket: Pick<Bracket, "heats">;
+  bracket: Pick<Bracket, "matches">;
   entrants: PodiumEntrant[];
   competition: Pick<Competition, "placementPoints">;
-  finalized: boolean;
+  closed: boolean;
   entryPoints: EntryPoints[];
 }): PodiumPlace[] {
   return podium({
     bracket: view.bracket,
     entrants: view.entrants,
     placementPoints: view.competition.placementPoints,
-    entryPoints: view.finalized ? view.entryPoints : null,
+    entryPoints: view.closed ? view.entryPoints : null,
   });
 }

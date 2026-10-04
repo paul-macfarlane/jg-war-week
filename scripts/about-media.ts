@@ -11,7 +11,7 @@
  * the still matching its viewer's Display. Afterwards it screenshots
  * `/about` as an anonymous visitor at 390px, desktop (light and dark) and
  * with reduced motion into `test-results/about-media/`, with a log (and a
- * logged-Game still there as evidence).
+ * logged-Match still there as evidence).
  *
  * Every page is the current War Week's (live, else next upcoming, else most
  * recent completed: the same resolution as `/` and `/about`), in its
@@ -105,7 +105,7 @@ let current: CurrentWarWeek;
 const home = () => `/${current.edition}`;
 /**
  * The About stills and the Finale poster are captured once per scheme in
- * `SCHEMES` (the About dark stills fix); anything else (the Games and
+ * `SCHEMES` (the About dark stills fix); anything else (the Head-to-head and
  * `/about` evidence) wears the current War Week's base palette, the scheme
  * its Organizer designed. Either way the Display is pinned, never whatever
  * this Chrome's OS happens to be set to (it has no stored `ww:display`, so
@@ -506,7 +506,7 @@ async function recordFinale(cookie: string, scheme: Scheme) {
 }
 
 // ---------------------------------------------------------------------------
-// A finished Heats Bracket for the "competitions" still (`setupBracketDemo`
+// A finished Matches Bracket for the "competitions" still (`setupBracketDemo`
 // in `scripts/media/demo.ts`, shared with the Finale stills)
 
 const setupBracketDemo = () => setupBracketDemoOn(current, note);
@@ -634,82 +634,52 @@ async function askMcp(cookie: string): Promise<LeaderboardResult> {
 }
 
 // ---------------------------------------------------------------------------
-// A logged Game, as evidence beside the "competitions" still (R3)
+// A logged Match, as evidence beside the "competitions" still (R3)
 
 /**
- * The current War Week's seeded head-to-head, individual, open-to-everyone
- * Head-to-head or Best score Competition, and two Participant names to log a Game between.
+ * The current War Week's seeded individual Head-to-head with its two
+ * Entrants, and their names to log a Match between.
  */
-async function findGamesDemo(): Promise<{
+async function findSeriesDemo(): Promise<{
   competitionId: string;
   playerA: string;
   playerB: string;
 }> {
   const [comp] = await query<{ id: string }>(
-    `select id from competition
-     where war_week_id = $1 and format = 'head-to-head'
-       and scoring = 'individual' and entrants_open
-     order by name limit 1`,
+    `select c.id from competition c
+     where c.war_week_id = $1 and c.format = 'head-to-head'
+       and c.scoring = 'individual'
+       and (select count(*) from entrant e where e.competition_id = c.id) = 2
+     order by c.name limit 1`,
     [current.id],
   );
   if (!comp) {
     throw new Error(
-      `no seeded open Head-to-head Competition on ${current.edition}`,
+      `no seeded Head-to-head with its 2 Entrants on ${current.edition}`,
     );
   }
-  const participants = await query<{ display_name: string }>(
-    `select display_name from participant where war_week_id = $1
-     order by display_name limit 2`,
-    [current.id],
+  const entrants = await query<{ display_name: string }>(
+    `select p.display_name from entrant e
+     join participant p on p.id = e.participant_id
+     where e.competition_id = $1 order by e.seed_position`,
+    [comp.id],
   );
-  if (participants.length < 2) {
-    throw new Error(
-      `${current.edition} needs at least 2 Participants for the Games demo`,
-    );
-  }
   return {
     competitionId: comp.id,
-    playerA: participants[0].display_name,
-    playerB: participants[1].display_name,
+    playerA: entrants[0].display_name,
+    playerB: entrants[1].display_name,
   };
 }
 
 /**
- * Picks `name` in a combobox found by its `<label for>` text (the Game
- * form's fields have no `aria-label`, unlike the Points Entry form's).
+ * Logs one Head-to-head Match through the real form (the
+ * `logResult` action, as the demo Organizer): opens "Log a Match" from the
+ * Competition page, where both Entrants are fixed rows, picks who won,
+ * and saves. The
+ * `finally` undoes the Match by the demo email (`teardownSeriesDemo`).
  */
-async function selectLabeledCombobox(
-  page: Page,
-  labelText: string,
-  name: string,
-): Promise<string> {
-  const inputId = await page.evaluate<string | null>(`(() => {
-    const label = Array.from(document.querySelectorAll("label")).find((l) => l.textContent?.trim() === ${JSON.stringify(labelText)});
-    return label ? label.getAttribute("for") : null;
-  })()`);
-  if (!inputId) throw new Error(`no field labeled "${labelText}"`);
-  await page.evaluate(
-    `document.getElementById(${JSON.stringify(inputId)})?.focus()`,
-  );
-  await page.send("Input.insertText", { text: name });
-  await sleep(500);
-  const picked = await page.evaluate<string | null>(`(() => {
-    const option = Array.from(document.querySelectorAll('[role="option"]')).find((o) => o.innerText.includes(${JSON.stringify(name)}));
-    option?.click();
-    return option ? option.innerText : null;
-  })()`);
-  if (!picked) throw new Error(`no "${labelText}" option for ${name}`);
-  return picked;
-}
-
-/**
- * Logs one head-to-head Match through the real form (the
- * `logGame` action, as the demo Organizer): opens "Log a Match" from the
- * Competition page, picks both players and who won, and saves. The
- * `finally` undoes the Match by the demo email (`teardownGamesDemo`).
- */
-async function captureGamesDemo(cookie: string): Promise<void> {
-  const { competitionId, playerA, playerB } = await findGamesDemo();
+async function captureSeriesDemo(cookie: string): Promise<void> {
+  const { competitionId, playerA } = await findSeriesDemo();
   const page = await Page.open();
   await page.viewport(STILL, false);
   await page.cookie(cookie);
@@ -721,8 +691,6 @@ async function captureGamesDemo(cookie: string): Promise<void> {
   if (!opened) throw new Error('no "Log a Match" button on the Competition');
   await sleep(500);
 
-  await selectLabeledCombobox(page, "Player A", playerA);
-  await selectLabeledCombobox(page, "Player B", playerB);
   const wonLabel = `${playerA} won`;
   const wonPicked = await page.evaluate<boolean>(`(() => {
     const button = Array.from(document.querySelectorAll("button")).find((b) => b.innerText.trim() === ${JSON.stringify(wonLabel)});
@@ -741,29 +709,31 @@ async function captureGamesDemo(cookie: string): Promise<void> {
   for (let i = 0; i < 40; i++) {
     await sleep(200);
     const stillOpen = await page.evaluate<boolean>(
-      `document.body.innerText.includes("Choose both players and who won.")`,
+      `document.body.innerText.includes("Enter both Scores; the Winner follows them.")`,
     );
     if (!stillOpen) {
       saved = true;
       break;
     }
   }
-  if (!saved) throw new Error("the demo Game never finished saving");
+  if (!saved) throw new Error("the demo Match never finished saving");
 
   // The TopNav is `sticky top-0` (`primary-nav.tsx:164`), so scrolling the
   // Competition's `h1` to the frame's top hides it under the header; scroll
   // to the very top instead and frame wide enough to hold the title, the
-  // Leaderboard and the first Game row together (ticket 26).
+  // series and the first Match row together (ticket 26).
   await page.evaluate(`window.scrollTo(0, 0)`);
   await sleep(300);
 
-  const measureGamesFrame = `(() => {
+  const measureSeriesFrame = `(() => {
     const h1 = document.querySelector("h1");
     const header = document.querySelector("header");
-    const gamesHeading = Array.from(document.querySelectorAll("h2")).find(
+    const matchesHeading = Array.from(document.querySelectorAll("h2")).find(
       (h) => h.textContent?.trim() === "Matches",
     );
-    const row = gamesHeading?.parentElement?.nextElementSibling?.querySelector("li");
+    const row =
+      matchesHeading?.nextElementSibling?.querySelector("li") ??
+      matchesHeading?.parentElement?.nextElementSibling?.querySelector("li");
     if (!h1 || !header || !row) return null;
     return {
       h1Top: h1.getBoundingClientRect().top,
@@ -773,42 +743,42 @@ async function captureGamesDemo(cookie: string): Promise<void> {
     };
   })()`;
 
-  const gamesFrames = [
+  const seriesFrames = [
     { width: 1600, height: 900, scale: 1.6 },
     { width: 1920, height: 1080, scale: 1.3333 },
   ];
-  let usedGamesFrame: (typeof gamesFrames)[number] | null = null;
-  let gamesMeasurement: Record<string, number> | null = null;
-  for (const frame of gamesFrames) {
+  let usedSeriesFrame: (typeof seriesFrames)[number] | null = null;
+  let seriesMeasurement: Record<string, number> | null = null;
+  for (const frame of seriesFrames) {
     await page.viewport(
       { width: frame.width, height: frame.height },
       false,
       frame.scale,
     );
     await sleep(300);
-    gamesMeasurement = await page.evaluate<Record<string, number> | null>(
-      measureGamesFrame,
+    seriesMeasurement = await page.evaluate<Record<string, number> | null>(
+      measureSeriesFrame,
     );
     if (
-      gamesMeasurement &&
-      gamesMeasurement.h1Top >= gamesMeasurement.headerBottom &&
-      gamesMeasurement.rowBottom <= gamesMeasurement.innerHeight
+      seriesMeasurement &&
+      seriesMeasurement.h1Top >= seriesMeasurement.headerBottom &&
+      seriesMeasurement.rowBottom <= seriesMeasurement.innerHeight
     ) {
-      usedGamesFrame = frame;
+      usedSeriesFrame = frame;
       break;
     }
   }
-  if (!usedGamesFrame) {
+  if (!usedSeriesFrame) {
     throw new Error(
-      `games still: the Competition name or first Game row never fit either frame: ${JSON.stringify(gamesMeasurement)}`,
+      `series still: the Competition name or first Match row never fit either frame: ${JSON.stringify(seriesMeasurement)}`,
     );
   }
   note(
-    `games: frame ${usedGamesFrame.width}x${usedGamesFrame.height}@${usedGamesFrame.scale} used ` +
-      `(h1 top ${gamesMeasurement?.h1Top}, header bottom ${gamesMeasurement?.headerBottom}, ` +
-      `first Game row bottom ${gamesMeasurement?.rowBottom}, viewport height ${gamesMeasurement?.innerHeight})`,
+    `series: frame ${usedSeriesFrame.width}x${usedSeriesFrame.height}@${usedSeriesFrame.scale} used ` +
+      `(h1 top ${seriesMeasurement?.h1Top}, header bottom ${seriesMeasurement?.headerBottom}, ` +
+      `first Match row bottom ${seriesMeasurement?.rowBottom}, viewport height ${seriesMeasurement?.innerHeight})`,
   );
-  // The "Game logged" toast would sit over the still: wait it out.
+  // The "Match logged" toast would sit over the still: wait it out.
   let toastGone = false;
   for (let i = 0; i < 75; i++) {
     toastGone = await page.evaluate<boolean>(
@@ -818,20 +788,24 @@ async function captureGamesDemo(cookie: string): Promise<void> {
     await sleep(200);
   }
   if (!toastGone) throw new Error('the "Match logged" toast never went away');
-  await assertNoRealEmail(page, "games");
-  await page.screenshot(path.join(EVIDENCE, "games.png"));
+  await assertNoRealEmail(page, "series");
+  await page.screenshot(path.join(EVIDENCE, "series.png"));
   note(
-    `evidence: games from ${home()}/competitions/${competitionId}, one Match logged`,
+    `evidence: series from ${home()}/competitions/${competitionId}, one Match logged`,
   );
   await page.close();
 }
 
 /**
- * Undoes every Game the demo Organizer logged (the one `captureGamesDemo`
- * saves), by the demo email, so a throw after the save still cleans up.
+ * Undoes every Match and Attempt the demo Organizer logged (the one
+ * `captureSeriesDemo` saves), by the demo email, so a throw after the save
+ * still cleans up.
  */
-async function teardownGamesDemo() {
-  await query(`delete from game where logged_by_email = $1`, [DEMO_EMAIL]);
+async function teardownSeriesDemo() {
+  await query(`delete from series_match where logged_by_email = $1`, [
+    DEMO_EMAIL,
+  ]);
+  await query(`delete from attempt where logged_by_email = $1`, [DEMO_EMAIL]);
 }
 
 // ---------------------------------------------------------------------------
@@ -1152,7 +1126,7 @@ async function main() {
         if (!found) throw new Error("no Top finishers on the Bracket view");
       },
     );
-    await captureGamesDemo(cookie);
+    await captureSeriesDemo(cookie);
     await still("archive", cookie, "/history");
     await evidence();
 
@@ -1184,7 +1158,7 @@ async function main() {
       rmSync(chrome.dir, { recursive: true, force: true, maxRetries: 3 }),
     );
     await attempt(() => teardownStandingsDemo());
-    await attempt(() => teardownGamesDemo());
+    await attempt(() => teardownSeriesDemo());
     await attempt(() =>
       query(`delete from organizer where email = $1`, [DEMO_EMAIL]),
     );

@@ -53,7 +53,7 @@ export const ABOUT_FEATURES = [
     slug: "competitions",
     title:
       "Competitions: Placements, Brackets, Head-to-head, Best score and Participation",
-    text: "Run a Competition as a Placement sheet (who came 1st, 2nd, 3rd, with or without a Score), a Bracket, Head-to-head Matches or Best score Attempts players log themselves from a phone, or Participation: the Host ticks who took part, or people check themselves in. Closing it turns the results into points.",
+    text: "Run a Competition as a Placement sheet (who came 1st, 2nd, 3rd), a Bracket (a head-to-head knockout, or Group Matches of several Entrants), a Head-to-head series between two Entrants, Best score Attempts, or Participation: the Host ticks who took part, or people check themselves in. Set which Score wins, higher or lower, and its unit, and the places and Winners follow the Scores. Hosts log results, or turn on 'Participants can log their own results' so players do it from a phone. Close turns the results into points; Reopen to correct them.",
     alt: "A finished Bracket on its Competition page: two Round 1 Matches of Participants feeding the Final, with its Winner on top.",
   },
   {

@@ -9,13 +9,11 @@ import {
   AutosaveStatusLine,
   useAutosaveLifecycle,
 } from "@/components/autosave-status";
-import { DatePicker } from "@/components/date-picker";
 import { EntityCombobox } from "@/components/entity-combobox";
 import { OptionSelect } from "@/components/option-select";
 import { PlacementPointsRows } from "@/components/placement-points-rows";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { SuggestionCombobox } from "@/components/suggestion-combobox";
-import { TimeCombobox } from "@/components/time-combobox";
 import {
   Field,
   FieldContent,
@@ -29,20 +27,27 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Toggle } from "@/components/ui/toggle";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   type AutosaveSnapshot,
   createAutosave,
   sameValue,
 } from "@/lib/autosave";
 import {
-  ADVANCE_PER_HEAT_OPTIONS,
+  TEAM_SCORES,
+  bestScoreConfigOf,
+  teamScoreLabel,
+} from "@/lib/best-score/config";
+import {
+  ADVANCE_PER_MATCH_OPTIONS,
   type BracketConfig,
+  type BracketKind,
   DEFAULT_BRACKET_CONFIG,
-  ENTRANTS_PER_HEAT_OPTIONS,
-  advancePerHeatLabel,
-  entrantsPerHeatLabel,
+  GROUP_ENTRANTS_PER_MATCH_OPTIONS,
+  advancePerMatchLabel,
+  entrantsPerMatchLabel,
   isHeadToHead,
+  kindOf,
   thirdPlaceRefusal,
 } from "@/lib/bracket/config";
 import { validateConfig } from "@/lib/bracket/formats";
@@ -53,7 +58,6 @@ import {
   settingNote,
 } from "@/lib/competition-locks";
 import {
-  type Clock,
   type CompetitionSettingsValues,
   FORMAT_DESCRIPTIONS,
   type SettingsField,
@@ -65,17 +69,14 @@ import {
   COMPETITION_NAME_MAX,
 } from "@/lib/competition-settings";
 import { placementLimit } from "@/lib/competitions";
-import { COMPETITION_FORMATS, type GameFormat } from "@/lib/enums";
+import { COMPETITION_FORMATS } from "@/lib/enums";
+import { type HostCandidate, buildHostOptions } from "@/lib/host-options";
 import {
   BEST_OF_OPTIONS,
   type BestOf,
-  type BestScoreConfig,
-  type HeadToHeadConfig,
   bestOfLabel,
-  gamesConfigOf,
-  resultNoun,
-} from "@/lib/games/config";
-import { type HostCandidate, buildHostOptions } from "@/lib/host-options";
+  seriesConfigOf,
+} from "@/lib/series/config";
 
 /** What the leave confirm calls a refused field. */
 const FIELD_LABELS: Record<SettingsField, string> = {
@@ -89,28 +90,58 @@ const FIELD_LABELS: Record<SettingsField, string> = {
   scoring: "Scoring",
   countsTowardTeam: "Counts toward the Team",
   scoreDirection: "Score direction",
-  gameConfig: "The Format's settings",
-  entrantsOpen: "Entrants",
+  scoreUnit: "Unit",
+  seriesConfig: "Head-to-head settings",
+  bestScoreConfig: "Team score",
   bracketConfig: "Match settings",
   selfEnroll: "Participants can enroll",
   entrantLimit: "Entrant limit",
-  enrollClosesAt: "Enrollment closes",
-  loggingClosesAt: "Logging closes",
-  selfReport: "Self-report",
+  selfReport: "Participants can log their own results",
   selfCheckIn: "Participants can check in",
-  checkInClosesAt: "Check-in closes",
+  maxAttempts: "Max attempts per person",
 };
 
 const DIRECTION_OPTIONS = [
-  { value: "none", label: "None: type or choose Places" },
-  { value: "higher", label: "Higher Score wins" },
-  { value: "lower", label: "Lower Score wins" },
+  { value: "none", label: "None: set by hand" },
+  { value: "higher", label: "Higher is better" },
+  { value: "lower", label: "Lower is better" },
 ] as const;
 
-const BEST_OF_SELECT_OPTIONS = [
-  { value: "off", label: bestOfLabel(null) },
-  ...BEST_OF_OPTIONS.map((n) => ({ value: String(n), label: bestOfLabel(n) })),
-];
+/** Best score always ranks by its Scores. */
+const BEST_SCORE_DIRECTION_OPTIONS = DIRECTION_OPTIONS.filter(
+  (option) => option.value !== "none",
+);
+
+/** What a Score direction does in this Format. */
+function directionHelp(format: CompetitionSettingsValues["format"]): string {
+  switch (format) {
+    case "placement":
+      return "With a direction, Places fill from Scores as you type; you can still change any Place.";
+    case "bracket":
+      return "With a direction, a Match's places and who advances follow its Scores; you can still set them by hand.";
+    case "head-to-head":
+      return "With a direction, the better Score wins a Match; equal Scores are a Draw or need a pick.";
+    default:
+      return "Which Score is better.";
+  }
+}
+
+/** What "Participants can log their own results" lets them do, by Format. */
+function selfReportHelp(format: CompetitionSettingsValues["format"]): string {
+  switch (format) {
+    case "head-to-head":
+      return "Either Entrant (or anyone on an Entrant Team) logs a Match, and changes any Match of the series, from their phone. You can always log and change any Match.";
+    case "best-score":
+      return "A Participant logs Attempts as themselves, and changes or deletes their own. You can always log for anyone.";
+    default:
+      return "Participants in a Match enter its result from their phone, and change it until a later Match uses it. It counts at once; you can still change any result in the Bracket below.";
+  }
+}
+
+const BEST_OF_SELECT_OPTIONS = BEST_OF_OPTIONS.map((n) => ({
+  value: String(n),
+  label: bestOfLabel(n),
+}));
 
 /** A set of Host emails is the same in any order. */
 function sameSetting(field: string, a: unknown, b: unknown): boolean {
@@ -160,7 +191,7 @@ export function CompetitionSettingsForm({
   hostNames: string[];
   /** The roster Participants an Organizer picks Hosts from; empty for a Host. */
   hostCandidates?: HostCandidate[];
-  /** A Bracket's saved Entrants, for the heat settings it would refuse. */
+  /** A Bracket's saved Entrants, for the match settings it would refuse. */
   entrantCount: number;
 }) {
   const router = useRouter();
@@ -242,42 +273,6 @@ export function CompetitionSettingsForm({
         ) : null}
         <FieldError>{errors[field]}</FieldError>
       </>
-    );
-  };
-
-  const clockFields = (
-    field: "enrollClosesAt" | "loggingClosesAt" | "checkInClosesAt",
-    label: string,
-    help: ReactNode,
-  ) => {
-    const clock: Clock = values[field];
-    const off = lock(field) !== null;
-    return (
-      <Field data-invalid={!!errors[field]}>
-        <FieldGroup className="gap-4 sm:flex-row">
-          <Field className="sm:max-w-48">
-            <FieldLabel htmlFor={`${id(field)}-date`}>{label}</FieldLabel>
-            <DatePicker
-              id={`${id(field)}-date`}
-              name={`${field}Date`}
-              value={clock.date}
-              disabled={off}
-              onValueChange={(date) => edit({ [field]: { ...clock, date } })}
-            />
-          </Field>
-          <Field className="sm:max-w-40">
-            <FieldLabel htmlFor={`${id(field)}-time`}>Time (ET)</FieldLabel>
-            <TimeCombobox
-              id={`${id(field)}-time`}
-              name={`${field}Time`}
-              value={clock.time}
-              disabled={off}
-              onValueChange={(time) => edit({ [field]: { ...clock, time } })}
-            />
-          </Field>
-        </FieldGroup>
-        {below(field, help)}
-      </Field>
     );
   };
 
@@ -514,72 +509,91 @@ export function CompetitionSettingsForm({
           </div>
         </FieldGroup>
 
-        {shown.has("scoreDirection") && (
-          <Field className="sm:max-w-xs" data-invalid={!!errors.scoreDirection}>
-            <FieldLabel htmlFor={id("scoreDirection")}>
-              Score direction
-            </FieldLabel>
-            <OptionSelect
-              id={id("scoreDirection")}
-              options={DIRECTION_OPTIONS}
-              value={values.scoreDirection}
-              disabled={lock("scoreDirection") !== null}
-              aria-invalid={!!errors.scoreDirection}
-              onValueChange={(value) =>
-                edit({
-                  scoreDirection:
-                    value as CompetitionSettingsValues["scoreDirection"],
-                })
-              }
-            />
-            {below(
-              "scoreDirection",
-              "With a direction, Places fill from Scores as you type; you can still change any Place.",
-            )}
-          </Field>
-        )}
-
-        {shown.has("gameConfig") && (
-          <GamesConfigFields
+        {shown.has("seriesConfig") && (
+          <SeriesConfigFields
             values={values}
-            reason={lock("gameConfig")}
-            error={errors.gameConfig}
+            reason={lock("seriesConfig")}
+            error={errors.seriesConfig}
             onEdit={edit}
           />
         )}
 
-        {shown.has("entrantsOpen") && (
-          <Field className="max-w-xs" data-invalid={!!errors.entrantsOpen}>
-            <FieldLabel htmlFor={id("entrantsOpen")}>Entrants</FieldLabel>
-            <OptionSelect
-              id={id("entrantsOpen")}
-              options={[
-                { value: "open", label: "Open to everyone" },
-                { value: "fixed", label: "A fixed list" },
-              ]}
-              value={values.entrantsOpen ? "open" : "fixed"}
-              disabled={
-                lock("entrantsOpen") !== null || bestOfOf(values) !== null
-              }
-              onValueChange={(value) =>
-                edit({ entrantsOpen: value === "open" })
-              }
-            />
-            {below(
-              "entrantsOpen",
-              bestOfOf(values) !== null
-                ? "Best of needs a fixed list of exactly two Entrants."
-                : null,
-            )}
-          </Field>
+        {shown.has("scoreDirection") && (
+          <FieldSet>
+            <FieldLegend>Scores</FieldLegend>
+            <FieldGroup className="gap-4 sm:flex-row">
+              <Field
+                className="sm:max-w-64"
+                data-invalid={!!errors.scoreDirection}
+              >
+                <FieldLabel htmlFor={id("scoreDirection")}>
+                  Score direction
+                </FieldLabel>
+                <OptionSelect
+                  id={id("scoreDirection")}
+                  options={
+                    values.format === "best-score"
+                      ? BEST_SCORE_DIRECTION_OPTIONS
+                      : DIRECTION_OPTIONS
+                  }
+                  value={values.scoreDirection}
+                  disabled={lock("scoreDirection") !== null}
+                  aria-invalid={!!errors.scoreDirection}
+                  onValueChange={(value) =>
+                    edit({
+                      scoreDirection:
+                        value as CompetitionSettingsValues["scoreDirection"],
+                    })
+                  }
+                />
+                {below("scoreDirection", directionHelp(values.format))}
+              </Field>
+              <Field className="sm:max-w-48" data-invalid={!!errors.scoreUnit}>
+                <FieldLabel htmlFor={id("scoreUnit")}>Unit</FieldLabel>
+                <Input
+                  id={id("scoreUnit")}
+                  maxLength={20}
+                  className="h-11 sm:h-9"
+                  disabled={lock("scoreUnit") !== null}
+                  aria-invalid={!!errors.scoreUnit}
+                  value={values.scoreUnit}
+                  onChange={(event) => edit({ scoreUnit: event.target.value })}
+                />
+                {below("scoreUnit", "Optional, like sec or points.")}
+              </Field>
+              {shown.has("bestScoreConfig") && (
+                <Field
+                  className="sm:max-w-56"
+                  data-invalid={!!errors.bestScoreConfig}
+                >
+                  <FieldLabel htmlFor={id("bestScoreConfig")}>
+                    Team score
+                  </FieldLabel>
+                  <OptionSelect
+                    id={id("bestScoreConfig")}
+                    options={TEAM_SCORES.map((teamScore) => ({
+                      value: teamScore,
+                      label: teamScoreLabel(teamScore),
+                    }))}
+                    value={bestScoreConfigOf(values).teamScore}
+                    disabled={lock("bestScoreConfig") !== null}
+                    onValueChange={(teamScore) =>
+                      edit({
+                        bestScoreConfig: {
+                          teamScore: teamScore as (typeof TEAM_SCORES)[number],
+                        },
+                      })
+                    }
+                  />
+                  {below(
+                    "bestScoreConfig",
+                    "The Team's single best Attempt, or each Participant's best Attempt added up.",
+                  )}
+                </Field>
+              )}
+            </FieldGroup>
+          </FieldSet>
         )}
-
-        {shown.has("loggingClosesAt") &&
-          clockFields(
-            "loggingClosesAt",
-            "Logging closes",
-            "Participants can't log after this. Awards nothing — press Close.",
-          )}
 
         {shown.has("bracketConfig") && (
           <MatchSettingsFields
@@ -591,20 +605,42 @@ export function CompetitionSettingsForm({
           />
         )}
 
+        {shown.has("maxAttempts") && (
+          <Field className="sm:max-w-56" data-invalid={!!errors.maxAttempts}>
+            <FieldLabel htmlFor={id("maxAttempts")}>
+              Max attempts per person
+            </FieldLabel>
+            <Input
+              id={id("maxAttempts")}
+              type="number"
+              inputMode="numeric"
+              min={1}
+              placeholder="Unlimited"
+              className="h-11 sm:h-9"
+              disabled={lock("maxAttempts") !== null}
+              aria-invalid={!!errors.maxAttempts}
+              value={values.maxAttempts}
+              onChange={(event) => edit({ maxAttempts: event.target.value })}
+            />
+            {below(
+              "maxAttempts",
+              "Blank for unlimited. Binds everyone, you included; fix a mistake by editing an Attempt.",
+            )}
+          </Field>
+        )}
+
         {shown.has("selfReport") &&
           switchField(
             "selfReport",
-            "Self-report",
-            "Participants in a Match can enter its result from their phone. It counts at once; you can still change any result in the Bracket below.",
+            "Participants can log their own results",
+            selfReportHelp(values.format),
           )}
 
         {shown.has("selfEnroll") &&
           switchField(
             "selfEnroll",
             "Participants can enroll",
-            values.format === "bracket"
-              ? "Participants enter themselves until the Bracket is built, the limit is reached or the close time passes."
-              : `Participants enter themselves until the Entrant limit is reached, the close time passes, the first ${resultNoun(values.format as GameFormat).one} is logged, or you close this Competition.`,
+            "Participants enter themselves until the Bracket is built, the limit is reached or you close this Competition.",
           )}
         {shown.has("entrantLimit") && (
           <Field className="sm:max-w-48" data-invalid={!!errors.entrantLimit}>
@@ -623,36 +659,23 @@ export function CompetitionSettingsForm({
             {below("entrantLimit")}
           </Field>
         )}
-        {shown.has("enrollClosesAt") &&
-          clockFields("enrollClosesAt", "Enrollment closes", null)}
 
         {shown.has("selfCheckIn") &&
           switchField(
             "selfCheckIn",
             "Participants can check in",
-            "Participants check themselves in, or out again, from this Competition's page until the close time or until you close it. You can tick or untick anyone.",
+            "Participants check themselves in, or out again, from this Competition's page until you close it. You can tick or untick anyone.",
           )}
-        {shown.has("checkInClosesAt") &&
-          clockFields("checkInClosesAt", "Check-in closes", null)}
       </form>
     </section>
   );
 }
 
-/** A Head-to-head Competition's Best of, or null when off or not one. */
-function bestOfOf(values: CompetitionSettingsValues): BestOf | null {
-  const config = values.gameConfig;
-  return values.format === "head-to-head" && config && "bestOf" in config
-    ? config.bestOf
-    : null;
-}
-
 /**
- * Head-to-head's draws and Best of, or Best score's count, direction and
- * unit: one setting (`gameConfig`), saved whole. Turning a Best of on
- * also makes the Entrants a fixed list, saved first.
+ * Head-to-head's draws and Best of: one setting (`seriesConfig`), saved
+ * whole. Every Head-to-head has a Best of.
  */
-function GamesConfigFields({
+function SeriesConfigFields({
   values,
   reason,
   error,
@@ -664,120 +687,43 @@ function GamesConfigFields({
   onEdit: (next: Partial<CompetitionSettingsValues>) => void;
 }) {
   const off = reason !== null;
-  if (values.format === "head-to-head") {
-    // Right after a Format change the form still holds the old Format's
-    // config (or none); the server saved this Format's default.
-    const config: HeadToHeadConfig = gamesConfigOf({
-      format: "head-to-head",
-      gameConfig: values.gameConfig,
-    });
-    return (
-      <FieldSet data-invalid={!!error}>
-        <FieldLegend>Head-to-head settings</FieldLegend>
-        <FieldGroup className="gap-4 sm:flex-row">
-          <Field
-            orientation="horizontal"
-            className="sm:max-w-56"
-            data-disabled={off}
-          >
-            <Switch
-              id="competition-draws-allowed"
-              checked={config.drawsAllowed}
-              disabled={off}
-              onCheckedChange={(drawsAllowed) =>
-                onEdit({ gameConfig: { ...config, drawsAllowed } })
-              }
-            />
-            <FieldContent>
-              <FieldLabel htmlFor="competition-draws-allowed">
-                Draws allowed
-              </FieldLabel>
-            </FieldContent>
-          </Field>
-          <Field className="sm:max-w-48">
-            <FieldLabel htmlFor="competition-best-of">Best of</FieldLabel>
-            <OptionSelect
-              id="competition-best-of"
-              options={BEST_OF_SELECT_OPTIONS}
-              value={config.bestOf === null ? "off" : String(config.bestOf)}
-              disabled={off}
-              onValueChange={(value) => {
-                const bestOf =
-                  value === "off" ? null : (Number(value) as BestOf);
-                onEdit({
-                  // A Best of is played between a fixed list's two Entrants.
-                  ...(bestOf !== null && values.entrantsOpen
-                    ? { entrantsOpen: false }
-                    : {}),
-                  gameConfig: { ...config, bestOf },
-                });
-              }}
-            />
-          </Field>
-        </FieldGroup>
-        {reason && (
-          <FieldDescription data-slot="lock-reason">{reason}</FieldDescription>
-        )}
-        <FieldError>{error}</FieldError>
-      </FieldSet>
-    );
-  }
-  const config: BestScoreConfig = gamesConfigOf({
-    format: "best-score",
-    gameConfig: values.gameConfig,
-  });
+  // Right after a Format change the form may hold no config yet; the
+  // server saved the default.
+  const config = seriesConfigOf(values);
   return (
     <FieldSet data-invalid={!!error}>
-      <FieldLegend>Best score settings</FieldLegend>
+      <FieldLegend>Head-to-head settings</FieldLegend>
       <FieldGroup className="gap-4 sm:flex-row">
-        <Field className="sm:max-w-48">
-          <FieldLabel htmlFor="competition-count">Count</FieldLabel>
-          <OptionSelect
-            id="competition-count"
-            options={[
-              { value: "best", label: "Best" },
-              { value: "total", label: "Total" },
-            ]}
-            value={config.count}
+        <Field
+          orientation="horizontal"
+          className="sm:max-w-56"
+          data-disabled={off}
+        >
+          <Switch
+            id="competition-draws-allowed"
+            checked={config.drawsAllowed}
             disabled={off}
-            onValueChange={(count) =>
-              onEdit({
-                gameConfig: { ...config, count: count as "best" | "total" },
-              })
+            onCheckedChange={(drawsAllowed) =>
+              onEdit({ seriesConfig: { ...config, drawsAllowed } })
             }
           />
+          <FieldContent>
+            <FieldLabel htmlFor="competition-draws-allowed">
+              Draws allowed
+            </FieldLabel>
+          </FieldContent>
         </Field>
         <Field className="sm:max-w-48">
-          <FieldLabel htmlFor="competition-better-is">Better is</FieldLabel>
+          <FieldLabel htmlFor="competition-best-of">Best of</FieldLabel>
           <OptionSelect
-            id="competition-better-is"
-            options={[
-              { value: "higher", label: "Higher" },
-              { value: "lower", label: "Lower" },
-            ]}
-            value={config.betterIs}
+            id="competition-best-of"
+            options={BEST_OF_SELECT_OPTIONS}
+            value={String(config.bestOf)}
             disabled={off}
-            onValueChange={(betterIs) =>
+            onValueChange={(value) =>
               onEdit({
-                gameConfig: {
-                  ...config,
-                  betterIs: betterIs as "higher" | "lower",
-                },
+                seriesConfig: { ...config, bestOf: Number(value) as BestOf },
               })
-            }
-          />
-        </Field>
-        <Field className="sm:max-w-48">
-          <FieldLabel htmlFor="competition-unit">Unit</FieldLabel>
-          <Input
-            id="competition-unit"
-            maxLength={20}
-            className="h-11 sm:h-9"
-            disabled={off}
-            aria-invalid={!!error}
-            value={config.unit}
-            onChange={(event) =>
-              onEdit({ gameConfig: { ...config, unit: event.target.value } })
             }
           />
         </Field>
@@ -791,12 +737,14 @@ function GamesConfigFields({
 }
 
 /**
- * A Bracket's heat settings: how many play in each Heat and how many
- * advance (2 with 1 advancing is the "Head-to-head (single elimination)"
- * preset), and at head-to-head the 3rd place Match. With saved Entrants, a
- * "how many advance" Generate would refuse is disabled; turning the 3rd
- * place game on is disabled, with its reason, under 4 Entrants, though a
- * saved one can still be turned off. One setting (`bracketConfig`).
+ * A Bracket's match settings (spec R21, decision 10): a two-way toggle,
+ * Head-to-head (2 per Match, 1 advancing, and the 3rd place Match) or Group
+ * (entrants per Match, 3 to 8, and how many advance). Each shows only its
+ * own fields. With saved Entrants, a "how many advance" Generate would
+ * refuse is disabled; turning the 3rd place Match on is disabled, with its
+ * reason, under 4 Entrants, though a saved one can still be turned off.
+ * Changing them starts the Round defaults over. One setting
+ * (`bracketConfig`).
  */
 function MatchSettingsFields({
   config,
@@ -812,30 +760,51 @@ function MatchSettingsFields({
   onChange: (config: BracketConfig) => void;
 }) {
   const off = reason !== null;
-  const { entrantsPerHeat: perHeat, advancePerHeat: advance } = config;
+  const { entrantsPerMatch: perMatch, advancePerMatch: advance } = config;
   const headToHead = isHeadToHead(config);
   const turnOnRefusal = thirdPlaceRefusal(
-    { entrantsPerHeat: perHeat, advancePerHeat: advance, thirdPlaceGame: true },
+    { ...config, thirdPlaceMatch: true },
     entrantCount,
   );
   const thirdPlaceReason =
-    turnOnRefusal && config.thirdPlaceGame
+    turnOnRefusal && config.thirdPlaceMatch
       ? `${turnOnRefusal} Turn it off, or enter 4, to generate.`
       : turnOnRefusal;
-  const refusalAt = (entrantsPerHeat: number, advancePerHeat: number) =>
+  const refusalAt = (entrantsPerMatch: number, advancePerMatch: number) =>
     entrantCount >= 2
       ? validateConfig(
-          { entrantsPerHeat, advancePerHeat, thirdPlaceGame: false },
+          {
+            kind: kindOf(entrantsPerMatch, advancePerMatch),
+            entrantsPerMatch,
+            advancePerMatch,
+            thirdPlaceMatch: false,
+            rounds: {},
+          },
           entrantCount,
         )
       : null;
-  const refusal = refusalAt(perHeat, advance);
+  const refusal = headToHead ? null : refusalAt(perMatch, advance);
+  /** The most that can advance at this size for these Entrants, at most `cap`. */
+  const bestAdvance = (size: number, cap = size - 1) =>
+    ADVANCE_PER_MATCH_OPTIONS.filter(
+      (count) =>
+        count < size && count <= cap && refusalAt(size, count) === null,
+    ).at(-1) ?? 1;
   const set = (next: Partial<BracketConfig>) => {
-    const merged = { ...config, ...next };
+    const sized = { ...config, ...next };
+    const merged = {
+      ...sized,
+      kind: kindOf(sized.entrantsPerMatch, sized.advancePerMatch),
+      // New Bracket-wide sizes start the Round defaults over.
+      rounds:
+        sized.entrantsPerMatch === perMatch && sized.advancePerMatch === advance
+          ? config.rounds
+          : {},
+    };
     // Only head-to-head plays a 3rd place Match.
     onChange({
       ...merged,
-      thirdPlaceGame: isHeadToHead(merged) && merged.thirdPlaceGame,
+      thirdPlaceMatch: isHeadToHead(merged) && merged.thirdPlaceMatch,
     });
   };
 
@@ -843,83 +812,105 @@ function MatchSettingsFields({
     <FieldSet data-invalid={!!error || refusal !== null}>
       <FieldLegend>Match settings</FieldLegend>
       <FieldDescription>
-        Each Round deals the Entrants into Matches; the top few of each go on to
-        the next Round until one Match, the Final, is left.
+        {headToHead
+          ? "Two play each Match and the winner goes on, Round after Round, to the Final."
+          : "Each Round deals the Entrants into Matches; the top few of each go on to the next Round until one Match, the Final, is left."}
       </FieldDescription>
-      <div className="flex flex-wrap items-center gap-2">
-        <Toggle
-          variant="outline"
-          size="lg"
-          className="min-h-11 px-3"
-          pressed={headToHead}
-          disabled={off}
-          onPressedChange={(pressed) => {
-            // A preset: pressing sets it; pressing again leaves it.
-            if (pressed) set({ entrantsPerHeat: 2, advancePerHeat: 1 });
-          }}
-        >
-          Head-to-head (single elimination)
-        </Toggle>
-      </div>
-      <FieldGroup className="gap-4 sm:flex-row">
-        <Field className="sm:max-w-48">
-          <FieldLabel htmlFor="heat-entrants">Entrants per Match</FieldLabel>
-          <OptionSelect
-            id="heat-entrants"
-            name="entrantsPerHeat"
-            options={ENTRANTS_PER_HEAT_OPTIONS.map((count) => ({
-              value: String(count),
-              label: entrantsPerHeatLabel(count),
-            }))}
-            value={String(perHeat)}
-            disabled={off}
-            onValueChange={(value) => {
-              const size = Number(value);
-              // The most that can advance at this size, for these Entrants.
-              const best = ADVANCE_PER_HEAT_OPTIONS.filter(
-                (count) => count < size && refusalAt(size, count) === null,
-              ).at(-1);
-              set({ entrantsPerHeat: size, advancePerHeat: best ?? 1 });
-            }}
-          />
-        </Field>
-        <Field className="sm:max-w-48" data-invalid={refusal !== null}>
-          <FieldLabel htmlFor="heat-advance">How many advance</FieldLabel>
-          <OptionSelect
-            id="heat-advance"
-            name="advancePerHeat"
-            options={ADVANCE_PER_HEAT_OPTIONS.filter(
-              (count) => count < perHeat,
-            ).map((count) => {
-              const why = refusalAt(perHeat, count);
-              return {
+      <ToggleGroup
+        aria-label="Bracket kind"
+        value={[headToHead ? "head-to-head" : "group"]}
+        onValueChange={(value) => {
+          // A choice can't be deselected: pressing the pressed item again
+          // would otherwise clear the group.
+          const [kind] = value as BracketKind[];
+          if (!kind || kind === config.kind) return;
+          if (kind === "head-to-head") {
+            set({ entrantsPerMatch: 2, advancePerMatch: 1 });
+          } else {
+            set({ entrantsPerMatch: 4, advancePerMatch: bestAdvance(4, 2) });
+          }
+        }}
+        disabled={off}
+        variant="outline"
+        className="grid w-full max-w-md grid-cols-2 gap-2"
+      >
+        {(
+          [
+            ["head-to-head", "Head-to-head"],
+            ["group", "Group"],
+          ] as const
+        ).map(([value, label]) => (
+          <ToggleGroupItem
+            key={value}
+            value={value}
+            className="aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary/80 h-auto min-h-11 py-2"
+          >
+            {label}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+      {!headToHead && (
+        <FieldGroup className="gap-4 sm:flex-row">
+          <Field className="sm:max-w-48">
+            <FieldLabel htmlFor="match-entrants">Entrants per Match</FieldLabel>
+            <OptionSelect
+              id="match-entrants"
+              name="entrantsPerMatch"
+              options={GROUP_ENTRANTS_PER_MATCH_OPTIONS.map((count) => ({
                 value: String(count),
-                label: advancePerHeatLabel(count),
-                disabled: why !== null,
-                title: why ?? undefined,
-              };
-            })}
-            value={String(advance)}
-            disabled={off}
-            aria-invalid={refusal !== null}
-            onValueChange={(value) => set({ advancePerHeat: Number(value) })}
-          />
-        </Field>
-      </FieldGroup>
+                label: entrantsPerMatchLabel(count),
+              }))}
+              value={String(perMatch)}
+              disabled={off}
+              onValueChange={(value) => {
+                const size = Number(value);
+                set({
+                  entrantsPerMatch: size,
+                  advancePerMatch: bestAdvance(size),
+                });
+              }}
+            />
+          </Field>
+          <Field className="sm:max-w-48" data-invalid={refusal !== null}>
+            <FieldLabel htmlFor="match-advance">How many advance</FieldLabel>
+            <OptionSelect
+              id="match-advance"
+              name="advancePerMatch"
+              options={ADVANCE_PER_MATCH_OPTIONS.filter(
+                (count) => count < perMatch,
+              ).map((count) => {
+                const why = refusalAt(perMatch, count);
+                return {
+                  value: String(count),
+                  label: advancePerMatchLabel(count),
+                  disabled: why !== null,
+                  title: why ?? undefined,
+                };
+              })}
+              value={String(advance)}
+              disabled={off}
+              aria-invalid={refusal !== null}
+              onValueChange={(value) => set({ advancePerMatch: Number(value) })}
+            />
+          </Field>
+        </FieldGroup>
+      )}
       {refusal && <FieldDescription>{refusal}</FieldDescription>}
       {headToHead && (
         <Field
           orientation="horizontal"
           className="max-w-xl"
           data-disabled={
-            off || (turnOnRefusal !== null && !config.thirdPlaceGame)
+            off || (turnOnRefusal !== null && !config.thirdPlaceMatch)
           }
         >
           <Switch
             id="bracket-third-place"
-            checked={config.thirdPlaceGame}
-            disabled={off || (turnOnRefusal !== null && !config.thirdPlaceGame)}
-            onCheckedChange={(thirdPlaceGame) => set({ thirdPlaceGame })}
+            checked={config.thirdPlaceMatch}
+            disabled={
+              off || (turnOnRefusal !== null && !config.thirdPlaceMatch)
+            }
+            onCheckedChange={(thirdPlaceMatch) => set({ thirdPlaceMatch })}
           />
           <FieldContent>
             <FieldLabel htmlFor="bracket-third-place">

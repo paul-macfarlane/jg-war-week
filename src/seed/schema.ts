@@ -155,7 +155,7 @@ export const warWeekSeedSchema = z
     pointsEntries: z
       .never({
         error:
-          "pointsEntries is gone; use placements (with finalized) or discretionaryPoints",
+          "pointsEntries is gone; use placements (with closed) or discretionaryPoints",
       })
       .optional(),
     discretionaryPoints: z.array(discretionaryPointsSeedSchema).default([]),
@@ -315,6 +315,18 @@ export const warWeekSeedSchema = z
           `unknown Participant "${entry.participant}"`,
         );
       }
+    });
+
+    seed.competitions.forEach((c, index) => {
+      (c.entrants ?? []).forEach((name, entrantIndex) => {
+        const known = c.scoring === "team" ? teams : participants;
+        if (!known.has(name)) {
+          issue(
+            ["competitions", index, "entrants", entrantIndex],
+            `unknown ${c.scoring === "team" ? "Team" : "Participant"} "${name}"`,
+          );
+        }
+      });
     });
 
     seed.placements.forEach((row, index) => {
