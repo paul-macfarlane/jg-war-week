@@ -577,9 +577,11 @@ result a later Match already used shows **Edit** and **Clear result**
 disabled with "A later Match already used this result. Change that Match
 first." (visible text, so it shows on a phone); the server refuses it too.
 Clear back from the latest result. In a Group Bracket a Match is editable
-while no Match its advancers went to has a result. Editing a finished Round's
-result while the next Match is unplayed is allowed; the next Round re-fills
-from the new advancers and anything you moved or set there is lost.
+only while no later Round has a result; otherwise Edit and Clear result are
+disabled with "A later round already has a result. Change that round
+first." Editing a finished Round's result while the next Round has no result
+is allowed; the next Round re-fills from the new advancers and anything you
+moved or set there is lost.
 
 A team Competition can enter **Squads** instead of whole Teams: in the
 Bracket section's Squads, **Add Squad** names a group of one Team's

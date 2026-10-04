@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { isHeadToHead } from "@/lib/bracket/config";
 import { isComplete, isRecordable } from "@/lib/bracket/formats";
 import type { PodiumPlace } from "@/lib/bracket/podium";
-import { usedLater } from "@/lib/bracket/self-report";
+import { resultLockReason } from "@/lib/bracket/self-report";
 import type { Bracket } from "@/lib/bracket/types";
 import { hasPlacementPoints } from "@/lib/competitions";
 import type { ScoreDirection } from "@/lib/enums";
@@ -146,14 +146,14 @@ export function BracketAdminView({
 }) {
   const entrantsById = new Map(entrants.map((e) => [e.id, e]));
   const resultMatch = openMatchId
-    ? bracket.matches.find((h) => h.id === openMatchId)
+    ? bracket.matches.find((m) => m.id === openMatchId)
     : undefined;
   const close = () => onOpenMatchChange(null);
   // A Round an edit took away (it became the final's) closes its editor.
   const roundShown =
     editRound !== null &&
     !closed &&
-    bracket.matches.some((h) => h.round === editRound)
+    bracket.matches.some((m) => m.round === editRound)
       ? editRound
       : null;
   const copy = closeCopy(placementPoints);
@@ -229,18 +229,22 @@ export function BracketAdminView({
             ? []
             : bracket.matches
                 .filter(
-                  (h) => isRecordable(bracket, h.id) && !usedLater(bracket, h),
+                  (m) =>
+                    isRecordable(bracket, m.id) &&
+                    !resultLockReason(bracket, m),
                 )
-                .map((h) => h.id)
+                .map((m) => m.id)
         }
         lockedMatchIds={
           closed
             ? []
             : bracket.matches
                 .filter(
-                  (h) => isRecordable(bracket, h.id) && usedLater(bracket, h),
+                  (m) =>
+                    isRecordable(bracket, m.id) &&
+                    !!resultLockReason(bracket, m),
                 )
-                .map((h) => h.id)
+                .map((m) => m.id)
         }
         onRecord={onOpenMatchChange}
         onEditRound={

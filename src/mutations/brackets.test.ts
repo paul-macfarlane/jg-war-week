@@ -887,7 +887,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
     });
   });
 
-  it("refuses a re-record that changes who advances once the final has a result; cleared, the final re-fills (D1c)", async () => {
+  it("refuses a re-record once a later round (the final) has a result; cleared, the final re-fills (D1c)", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await generatedMatches(tx);
@@ -921,7 +921,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       view = (await queries.getBracket(f.relayId, tx))!;
       expect(view.winner).toBe(a0);
 
-      // a2 would advance in place of a0, but the final used the result.
+      // a2 would advance in place of a0, but a later round (the final) has a result.
       expect(
         await mutations.recordMatchResult(
           f.relayId,
@@ -932,8 +932,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         ),
       ).toEqual({
         ok: false,
-        error:
-          "A later Match already used this result. Change that Match first.",
+        error: "A later round already has a result. Change that round first.",
       });
       view = (await queries.getBracket(f.relayId, tx))!;
       expect(view.winner).toBe(a0);
@@ -1803,8 +1802,7 @@ describe.skipIf(!isLocalDatabase)("Match reporters", () => {
         ),
       ).toEqual({
         ok: false,
-        error:
-          "A later Match already used this result. Change that Match first.",
+        error: "A later round already has a result. Change that round first.",
       });
       expect(await reporterOf(tx, f, final.id)).toEqual(reported);
       expect(

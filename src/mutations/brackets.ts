@@ -744,7 +744,8 @@ export async function generateBracket(
 /**
  * Records a Match Result and advances who goes on, per the Format. A
  * decided Match's result changes only while no later Match has used it
- * (spec R21, D1c): nothing that already has a result is ever reset.
+ * (in a Group Bracket, while no later Round has a result; spec R21, D1c):
+ * nothing that already has a result is ever reset.
  */
 export async function recordMatchResult(
   competitionId: string,
@@ -762,7 +763,8 @@ export async function recordMatchResult(
 /**
  * Clears a Match's result (spec R21, S4): its places and Scores go, and
  * who it sent on leaves the unplayed Matches they went to. Refused, for
- * everyone, once a later Match used the result (D1c).
+ * everyone, once a later Match used the result (in a Group Bracket, once a
+ * later Round has one; D1c).
  */
 export async function clearMatchResult(
   competitionId: string,
@@ -780,7 +782,7 @@ export async function clearMatchResult(
  * The one Match Result write, shared by a Host's record or clear and a
  * Participant's self-report, run with the Competition's row lock already
  * held: refuses a Competition that can't change, finds the Match in its
- * own Bracket, refuses a result a later Match already used, applies the
+ * own Bracket, refuses a locked result (`resultLockReason`), applies the
  * result (or, for `null`, clears it) per the Format, refuses a write that
  * would change any other recorded result (the backstop), and saves it
  * with its reporter (null for a Host or Organizer, and on a clear).
@@ -797,7 +799,7 @@ export async function writeMatchResult(
     return refuse(refusal ?? NOT_A_BRACKET);
   }
   const bracket = await bracketOf(tx, found);
-  const target = bracket.matches.find((h) => h.id === matchId);
+  const target = bracket.matches.find((m) => m.id === matchId);
   if (!target) return refuse(MATCH_NOT_FOUND);
   const used = matchResultError(matchReportState(bracket, target));
   if (used) return refuse(used);

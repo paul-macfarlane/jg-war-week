@@ -419,7 +419,9 @@ on the matching War Week page.
       Clear result are disabled with "A later Match already used this result.
       Change that Match first." as visible text (also at 390), and a posted
       change is refused by the server. Clear the Final, then a semifinal's
-      Edit is offered again.
+      Edit is offered again. In a Group Bracket, once any later round has a
+      result, every earlier Match's Edit and Clear result are disabled with
+      "A later round already has a result. Change that round first."
 - [ ] **Close a Head-to-head Competition.** Log two Matches as the Organizer
       in a Head-to-head Competition with Placement Points (Log a Match on its
       public Competition page), then Close in its run area: its top

@@ -7,7 +7,10 @@ import {
 } from "@/lib/bracket/clear-result";
 import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 import { applyResult, generate } from "@/lib/bracket/formats";
-import { LATER_MATCH_USED } from "@/lib/bracket/match-report-rule";
+import {
+  LATER_MATCH_USED,
+  LATER_ROUND_HAS_RESULT,
+} from "@/lib/bracket/match-report-rule";
 import type { Bracket, Entrant } from "@/lib/bracket/types";
 
 const entrants = (count: number): Entrant[] =>
@@ -86,10 +89,10 @@ describe("clearResult, Group", () => {
     expect(match(cleared, "r2h1").status).toBe("pending");
   });
 
-  it("refuses once a Match its advancers went to has a result", () => {
+  it("refuses once a later Round has a result", () => {
     let bracket = generate(group, entrants(6), newId);
     bracket = play(play(play(bracket, "r1h1"), "r1h2"), "r2h1");
-    expect(() => clearResult(bracket, "r1h1")).toThrow(LATER_MATCH_USED);
+    expect(() => clearResult(bracket, "r1h1")).toThrow(LATER_ROUND_HAS_RESULT);
   });
 });
 

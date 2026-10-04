@@ -580,8 +580,9 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   already used this result. Change that Match first.", and the server
   refuses a direct request. A correction clears results back from the latest
   one; nothing resets later Matches for you. In a Group Bracket a Match is
-  editable while no Match its advancers went to has a result, and an edit that
-  would change who advances is refused once the next Round has a result. An
+  editable only while no later Round has a result; otherwise its Edit and
+  Clear result are disabled with "A later round already has a result. Change
+  that round first.", and the server refuses it. An
   edit after a Round is complete, with the next Match unplayed (D1f), is
   allowed: the next Round re-fills from the new advancers and any moves or
   overrides made there are lost.

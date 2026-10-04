@@ -119,7 +119,7 @@ export type BracketViewSelfReport = {
   linkedParticipantId: string | null;
   /** Your Matches the server found You may record or change now. */
   reportableMatchIds: string[];
-  /** Your decided Matches whose result a later Match already used. */
+  /** Your decided Matches whose result is locked (`resultLockReason`). */
   lockedMatchIds: string[];
 };
 

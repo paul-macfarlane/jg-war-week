@@ -2,13 +2,13 @@
  * Clearing a Bracket Match's result (spec R21, S4; D1c), and the check that
  * a write leaves every other recorded result as it was. Only the latest
  * result along a path changes: a Match whose result a later Match already
- * used is refused. Pure: takes a Bracket and returns a new one.
+ * used (in a Group Bracket, any Match before a Round with a result) is
+ * refused. Pure: takes a Bracket and returns a new one.
  */
 import { isHeadToHead } from "@/lib/bracket/config";
 import { isBye } from "@/lib/bracket/formats";
-import { LATER_MATCH_USED } from "@/lib/bracket/match-report-rule";
 import { isDecided } from "@/lib/bracket/match-status";
-import { usedLater } from "@/lib/bracket/self-report";
+import { resultLockReason } from "@/lib/bracket/self-report";
 import {
   type Bracket,
   BracketError,
@@ -48,15 +48,17 @@ function unlink(bracket: Bracket, link: WinnerTo | null) {
  * emptied and the Match ready to record again. In a head-to-head Bracket
  * its winner (and a semifinal's loser) leave the Matches they went to; in
  * a Group Bracket the later Rounds wait again, empty, as before the Round
- * was complete. Refuses a bye, a Match with no result, and one whose
- * result a later Match already used.
+ * was complete. Refuses a bye, a Match with no result, and a locked one
+ * (`resultLockReason`: a result a later Match already used, or in a Group
+ * Bracket one before a Round with a result).
  */
 export function clearResult(bracket: Bracket, matchId: string): Bracket {
   const found = find(bracket, matchId);
   if (isBye(bracket, found) || !isDecided(found)) {
     throw new BracketError(NO_RESULT_TO_CLEAR);
   }
-  if (usedLater(bracket, found)) throw new BracketError(LATER_MATCH_USED);
+  const locked = resultLockReason(bracket, found);
+  if (locked) throw new BracketError(locked);
   const next = structuredClone(bracket);
   const match = find(next, matchId);
   match.slots = match.slots.map(unplaced);

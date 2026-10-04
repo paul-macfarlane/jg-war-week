@@ -6,7 +6,7 @@ import {
 } from "@/components/entrant-mark";
 import { Button } from "@/components/ui/button";
 import { advancePerMatchLabel } from "@/lib/bracket/config";
-import { LATER_MATCH_USED } from "@/lib/bracket/match-report-rule";
+import { resultLockReason } from "@/lib/bracket/self-report";
 import {
   type TreeConnector,
   type TreeMatch,
@@ -185,9 +185,10 @@ function SlotRow({
  * each winner goes to. The Rounds scroll sideways inside their own region
  * when they don't fit, so the page itself never does. Each Match in
  * `recordableMatchIds` carries a visible Record result (Edit once played)
- * that calls `onRecord`; each in `lockedMatchIds` (its result a later Match
- * already used, spec R21 D1c) shows Edit and Clear result disabled with
- * the reason beside them; any other Match has none. Hiding a button grants
+ * that calls `onRecord`; each in `lockedMatchIds` (locked by
+ * `resultLockReason`, spec R21 D1c: a later Match used its result, or in a
+ * Group Bracket a later Round has one) shows Edit and Clear result
+ * disabled with that reason beside them; any other Match has none. Hiding a button grants
  * nothing: the action authorizes. A decided Match whose places differ from
  * its Scores says "Set by hand".
  */
@@ -216,7 +217,7 @@ export function BracketTree({
   youEntrantId?: string | null;
   /** The Matches the viewer may record now; each shows Record result or Edit. */
   recordableMatchIds?: readonly string[];
-  /** Decided Matches the viewer would edit, but a later Match used the result. */
+  /** Decided Matches the viewer would edit, but whose result is locked (`resultLockReason`). */
   lockedMatchIds?: readonly string[];
   onRecord?: (matchId: string) => void;
   /**
@@ -227,7 +228,7 @@ export function BracketTree({
   /** Who self-reported each Match's current result, by Match id: a name. */
   reporters?: Record<string, string>;
 }) {
-  const matchesById = new Map(bracket.matches.map((h) => [h.id, h]));
+  const matchesById = new Map(bracket.matches.map((m) => [m.id, m]));
   const recordable = new Set(onRecord ? recordableMatchIds : []);
   const locked = new Set(onRecord ? lockedMatchIds : []);
   const tree = bracketTree(bracket);
@@ -242,6 +243,10 @@ export function BracketTree({
       ? formatRecordedAt(source.recordedAt)
       : "";
     const reporter = reporters[match.id];
+    const lockReason =
+      source && locked.has(match.id) && !recordable.has(match.id)
+        ? resultLockReason(bracket, source)
+        : null;
     return (
       <div
         key={match.id}
@@ -305,7 +310,7 @@ export function BracketTree({
               Reported by {reporter}
             </span>
           )}
-          {locked.has(match.id) && !recordable.has(match.id) && (
+          {lockReason && (
             <div className="mt-1 flex flex-col gap-1">
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -336,7 +341,7 @@ export function BracketTree({
                 data-slot="match-lock-reason"
                 className="text-foreground/70 px-1.5 text-xs"
               >
-                {LATER_MATCH_USED}
+                {lockReason}
               </p>
             </div>
           )}
@@ -390,17 +395,17 @@ export function BracketTree({
                   </Button>
                 )}
               </div>
-              {knockout && round.matches.some((h) => h.thirdPlace) ? (
+              {knockout && round.matches.some((m) => m.thirdPlace) ? (
                 // The final stays in the middle row, where its semifinals'
                 // lines meet; the 3rd place Match sits under it, unjoined.
                 // Equal outer rows leave room for it without overlap.
                 <div className="relative grid flex-1 grid-rows-[1fr_auto_1fr]">
                   <div aria-hidden />
                   {round.matches
-                    .filter((h) => !h.thirdPlace)
+                    .filter((m) => !m.thirdPlace)
                     .map((match) => renderMatch(match, "py-2"))}
                   {round.matches
-                    .filter((h) => h.thirdPlace)
+                    .filter((m) => m.thirdPlace)
                     .map((match) => renderMatch(match, "self-start py-2"))}
                 </div>
               ) : (

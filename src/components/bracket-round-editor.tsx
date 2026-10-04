@@ -191,7 +191,7 @@ export function BracketRoundEditor({
   const disabled = locked !== null || pending;
   const final = round >= finalRoundOf(bracket);
   const matches = bracket.matches
-    .filter((h) => h.round === round)
+    .filter((m) => m.round === round)
     .sort((a, b) => a.position - b.position);
   const defaults = roundDefaultsOf(bracket.config, round);
   const [perMatch, setPerMatch] = useState(defaults.entrantsPerMatch);
@@ -283,7 +283,7 @@ export function BracketRoundEditor({
               competitionId={competitionId}
               bracket={bracket}
               match={match}
-              others={matches.filter((h) => h.id !== match.id)}
+              others={matches.filter((m) => m.id !== match.id)}
               entrantsById={entrantsById}
               disabled={disabled}
               run={run}

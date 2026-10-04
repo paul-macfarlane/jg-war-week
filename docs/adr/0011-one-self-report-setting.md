@@ -63,8 +63,10 @@ exist only after Close.
   tooltip, so it shows on phones), and the server refuses a direct request as
   a backstop. A correction clears results back from the latest one. The old
   confirm-and-reset of later results is removed. In a Group Bracket a Match is
-  editable while no Match its advancers went to has a result, and an edit that
-  would change who advances is refused once the next round has a result.
+  editable only while no later round has a result (a clear empties every
+  later round and an advancer change re-deals the next, so any later result
+  would be lost); otherwise its buttons are disabled with "A later round
+  already has a result. Change that round first."
 - **D1d Bracket players editing a recorded result:** allowed with self-report
   on, for the Matches they played. This replaces ADR 0005's "a second report
   is refused".

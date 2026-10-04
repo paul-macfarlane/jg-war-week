@@ -18,8 +18,8 @@ import { RichText } from "@/components/rich-text";
 import { buttonVariants } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import { can } from "@/lib/access";
-import { LATER_MATCH_USED } from "@/lib/bracket/match-report-rule";
 import { podiumOf } from "@/lib/bracket/podium";
+import { resultLockReason } from "@/lib/bracket/self-report";
 import { entrantForYou } from "@/lib/bracket/view";
 import { isLoggedFormat } from "@/lib/enums";
 import { resolveYou } from "@/lib/you";
@@ -86,8 +86,8 @@ async function selfReportFor(
     competition.scoring,
   );
   const played = youEntrantId
-    ? view.bracket.matches.filter((h) =>
-        h.slots.some((s) => s.entrantId === youEntrantId),
+    ? view.bracket.matches.filter((m) =>
+        m.slots.some((s) => s.entrantId === youEntrantId),
       )
     : [];
   const reportableMatchIds: string[] = [];
@@ -104,7 +104,9 @@ async function selfReportFor(
       matchReport: facts.matchReport,
     });
     if (!refusal) reportableMatchIds.push(match.id);
-    else if (refusal === LATER_MATCH_USED) lockedMatchIds.push(match.id);
+    else if (resultLockReason(view.bracket, match)) {
+      lockedMatchIds.push(match.id);
+    }
   }
   return {
     on: true,

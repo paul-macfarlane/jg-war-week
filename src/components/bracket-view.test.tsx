@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { generate } from "@/lib/bracket/engine";
+import { applyResult } from "@/lib/bracket/formats";
 import type { PodiumPlace } from "@/lib/bracket/podium";
 import type { Entrant } from "@/lib/bracket/types";
 import { nextMatchFor } from "@/lib/bracket/view";
@@ -206,13 +207,17 @@ describe("BracketView's Record result in the tree", () => {
       reportableMatchIds: string[];
       lockedMatchIds?: string[];
     },
+    shown: { bracket: typeof bracket; entrants: typeof people } = {
+      bracket,
+      entrants: people,
+    },
   ) =>
     renderToStaticMarkup(
       <YouProvider linkedId={linkedId}>
         <BracketView
           competitionId="c1"
-          entrants={people}
-          bracket={bracket}
+          entrants={shown.entrants}
+          bracket={shown.bracket}
           podium={[]}
           closed={false}
           scoring="individual"
@@ -257,12 +262,37 @@ describe("BracketView's Record result in the tree", () => {
   });
 
   it("a Match a later Match already used shows Edit disabled with the reason beside it (D1c)", () => {
-    const html = view("p1", {
-      on: true,
-      linkedParticipantId: "p1",
-      reportableMatchIds: [],
-      lockedMatchIds: [matchId],
-    });
+    // Four people: Neo beats Morpheus, Trinity beats Tank, Neo wins the
+    // Final, which used Neo's semifinal.
+    const four = ["Neo", "Trinity", "Morpheus", "Tank"].map((label, i) => ({
+      ...people[0],
+      id: `e${i + 1}`,
+      participantId: `p${i + 1}`,
+      label,
+    }));
+    let played = generate(
+      four.map((e, i) => ({ id: e.id, seedPosition: i + 1, label: e.label })),
+    );
+    const order = (id: string) =>
+      played.matches.find((m) => m.id === id)!.slots.map((s) => s.entrantId!);
+    for (const round of [1, 2]) {
+      for (const m of played.matches.filter((m) => m.round === round)) {
+        played = applyResult(played, m.id, { order: order(m.id) });
+      }
+    }
+    const semifinal = played.matches.find(
+      (m) => m.round === 1 && m.slots.some((s) => s.entrantId === "e1"),
+    )!;
+    const html = view(
+      "p1",
+      {
+        on: true,
+        linkedParticipantId: "p1",
+        reportableMatchIds: [],
+        lockedMatchIds: [semifinal.id],
+      },
+      { bracket: played, entrants: four },
+    );
     expect(recordButtons(html)).toEqual([]);
     expect(html).toMatch(/<button[^>]*disabled[^>]*>Edit<\/button>/);
     expect(html).toMatch(/<button[^>]*disabled[^>]*>Clear result<\/button>/);
