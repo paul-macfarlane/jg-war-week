@@ -99,6 +99,9 @@ describe("TermsPage", () => {
     const { text } = await render();
     const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
     expect(source).toContain('export const dynamic = "force-dynamic"');
-    expect(text).not.toMatch(/\b(event|tournament|member|match|league)s?\b/i);
+    expect(text).not.toMatch(
+      /\b(event|tournament|member|league|heat|champion|game)s?\b/i,
+    );
+    expect(text).not.toMatch(/\b(un-?)?finali[sz]/i);
   });
 });
