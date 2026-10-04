@@ -37,7 +37,7 @@ Attempt limits and no Entrant list.
 | **Placement** | Organizers, Hosts (no self-report) | One sheet; Places, or Scores plus a direction and unit, fill Places | Placement Points on **Close**; **Reopen** withdraws |
 | **Bracket** | Organizers, Hosts; players in a Match when self-report is on | Head-to-head (2 per Match, 1 advances, optional 3rd place match) or Group (per-round defaults, per-Match overrides); a direction and unit order each Match | Placement Points for decided places (max 4) on **Close** |
 | **Head-to-head** | Organizers, Hosts; either player when self-report is on | Exactly 2 Entrants, Best of 1/3/5/7; a direction and unit pick each Match's Winner | Placement Points by series result on **Close** |
-| **Best score** | Organizers, Hosts for anyone; any War Week Participant as themselves when self-report is on | Attempts, optional max per person; best (or total) per person | Placement Points by standing on **Close** |
+| **Best score** | Organizers, Hosts for anyone; any War Week Participant as themselves when self-report is on | Attempts, optional max per person; each person's best Attempt | Placement Points by standing on **Close** |
 | **Participation** | Organizers, Hosts; self check-in where on | Who took part | unchanged |
 
 ## Decisions
@@ -178,6 +178,12 @@ Attempt limits and no Entrant list.
       enforced on the server for everyone, Organizers and Hosts included;
       mistakes are fixed by editing or deleting an Attempt.
     - The log form says how many Attempts you have left.
+    - **No total mode** (Paul, 2026-10-04: no use case yet). A person's
+      Score is always their best Attempt. The Best / Total ("count")
+      setting goes from the settings form, the config schema, MCP and the
+      seed format. A Best score Competition saved with total converts to
+      best; the XI demo's Tuesday Stairs is the only one, and the PR lists
+      it. The results row's expansion always reads "N more attempts".
 
 ## Schema change (for the red-team)
 
@@ -229,6 +235,10 @@ Attempt limits and no Entrant list.
 - [ ] Best score with "Max attempts" 3: a fourth Attempt is refused for the
       Participant and for an Organizer, the form shows attempts left, and
       there's no Entrant list or enroll button (vitest; e2e).
+- [ ] Best score has no Best / Total choice: the settings form, config
+      schema, MCP output and seed format have no `count`, a Competition
+      stored with total loads and ranks by best, and the XI demo's Tuesday
+      Stairs ranks by best (vitest; e2e).
 - [ ] Bracket settings show Head-to-head / Group. Only Group shows the size
       fields, and only Head-to-head shows the 3rd place match (e2e).
 - [ ] Group Bracket of 11 with defaults of 4 per Match, 2 advancing:
