@@ -295,3 +295,5 @@ Deployed smoke: not run (DoD10 resets the deployed data after merge).
 **Human step after merge (DoD10):** Paul resets and reseeds staging, then
 production after the `staging` → `main` PR. Expected: XII serves with
 Hosts as Participants and no Award Categories.
+
+**PR:** https://github.com/paul-macfarlane/jg-war-week/pull/138
