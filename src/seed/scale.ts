@@ -139,7 +139,8 @@ async function buildBracket(
     .from(entrant)
     .where(eq(entrant.competitionId, competitionId));
   if (n > 0) return;
-  // Every third Participant first, so the Entrants aren't just A to M.
+  // A stride-37 shuffle (37 shares no factor with 100, so each key is
+  // distinct), so the Entrants are spread over the roster, not just A to M.
   const order = people
     .map((p, i) => ({ p, key: (i * 37) % people.length }))
     .sort((a, b) => a.key - b.key)

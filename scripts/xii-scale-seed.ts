@@ -1,4 +1,7 @@
-// Writes seeds/demo/xii-scale.json, the 100-Participant XII demo (ticket 106): `pnpm tsx scripts/xii-scale-seed.ts`.
+/**
+ * Writes seeds/demo/xii-scale.json, the 100-Participant XII demo (ticket
+ * 106): `pnpm tsx scripts/xii-scale-seed.ts`.
+ */
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 

@@ -129,6 +129,9 @@ test.describe("100 Participants in the XII scale demo", () => {
       await shootBoth(page, testInfo, "roster", async () => {
         await page.goto("/admin/roster");
         await expect(page.getByText(LONG_NAME).first()).toBeVisible();
+        await expect(
+          page.getByRole("list", { name: "Roster" }).locator("> li"),
+        ).toHaveCount(100);
       });
     } finally {
       await context.close();
@@ -170,7 +173,30 @@ test.describe("100 Participants in the XII scale demo", () => {
           page.getByRole("heading", { name: "Record placements" }),
         ).toBeVisible();
         await expect(page.getByText(LONG_NAME).first()).toBeVisible();
+        // Finalized: no Remove column, header or button in the sheet.
+        const sheet = page.getByRole("list", { name: "Placements" });
+        await expect(
+          sheet.getByRole("button", { name: /^Remove / }),
+        ).toHaveCount(0);
+        await expect(sheet.getByText("Remove")).toHaveCount(0);
+        await expect(
+          page.getByRole("list", { name: "Placements" }).locator("> li"),
+        ).toHaveCount(101);
       });
+      // At 390 (the last width shot) the long name wraps, never truncates.
+      const longName = page
+        .getByRole("list", { name: "Placements" })
+        .getByText(LONG_NAME, { exact: true });
+      const wrap = await longName.evaluate((el) => ({
+        scroll: el.scrollWidth,
+        client: el.clientWidth,
+        overflow: getComputedStyle(el).textOverflow,
+        height: el.getBoundingClientRect().height,
+        line: parseFloat(getComputedStyle(el).lineHeight),
+      }));
+      expect(wrap.scroll).toBeLessThanOrEqual(wrap.client);
+      expect(wrap.overflow).not.toBe("ellipsis");
+      expect(wrap.height).toBeGreaterThan(wrap.line * 1.5);
 
       const bracket = await competitionId("xii", "Ping Pong Bracket");
       await shootBoth(page, testInfo, "entrants", async () => {
@@ -178,6 +204,7 @@ test.describe("100 Participants in the XII scale demo", () => {
         await expect(
           page.getByRole("heading", { name: "Entrants and Bracket" }),
         ).toBeVisible();
+        await expect(page.getByText("(64 chosen)")).toBeVisible();
       });
 
       const stretch = await competitionId("xii", "Morning Stretch");
@@ -186,6 +213,7 @@ test.describe("100 Participants in the XII scale demo", () => {
         await expect(
           page.getByRole("heading", { name: "Who took part" }),
         ).toBeVisible();
+        await expect(page.getByText("72 of 100")).toBeVisible();
       });
     } finally {
       await context.close();
@@ -221,6 +249,23 @@ test.describe("100 Participants in the XII scale demo", () => {
           animations: "disabled",
         });
       }
+    } finally {
+      await context.close();
+    }
+  });
+
+  test("r19 106 the Awards recipient picker finds a Participant by email", async ({
+    browser,
+  }) => {
+    const { context, page } = await organizerPage(browser);
+    try {
+      await page.goto("/admin/awards");
+      await page.getByRole("button", { name: "Add Award" }).click();
+      const picker = page.getByRole("combobox", { name: /^Participants/ });
+      await picker.click();
+      // By email: nothing in the name says "pim.ocelot".
+      await picker.fill("pim.ocelot@jahnel");
+      await expect(page.getByRole("option")).toHaveText(["Pim Ocelot"]);
     } finally {
       await context.close();
     }

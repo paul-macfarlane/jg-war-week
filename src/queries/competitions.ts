@@ -8,7 +8,6 @@ import {
   competition,
   entrant,
   game,
-  heat,
   participant,
   participation,
   placement,
@@ -124,7 +123,6 @@ export async function getCompetitions(
     games,
     placements,
     checkIns,
-    heats,
     generated,
     brackets,
     generatedEntries,
@@ -133,7 +131,6 @@ export async function getCompetitions(
     countsBy(game, game.competitionId),
     countsBy(placement, placement.competitionId),
     countsBy(participation, participation.competitionId),
-    countsBy(heat, heat.competitionId),
     countsBy(
       pointsEntry,
       pointsEntry.competitionId,
@@ -180,7 +177,8 @@ export async function getCompetitions(
           games: games.get(row.id) ?? 0,
           placements: placements.get(row.id) ?? 0,
           checkIns: checkIns.get(row.id) ?? 0,
-          heats: heats.get(row.id) ?? 0,
+          // Only Brackets have Heats, and `loadBrackets` has them.
+          heats: bracket?.heats.length ?? 0,
           heatResult: bracket ? hasResults(bracket) : false,
           generatedPointsEntries: generated.get(row.id) ?? 0,
         }),

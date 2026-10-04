@@ -227,6 +227,37 @@ describe("bracketRoundInPlay", () => {
     ).toEqual({ round: 2, of: 2 });
   });
 
+  it("is the first Round with a Heat to play in a Heats Bracket, a bye never counting", () => {
+    // 4 per Heat, 2 advancing: a Heat before the final with 2 Entrants is a bye.
+    expect(
+      bracketRoundInPlay({
+        config: {
+          entrantsPerHeat: 4,
+          advancePerHeat: 2,
+          thirdPlaceGame: false,
+        },
+        heats: [
+          heat(1, 1, "played"),
+          heat(1, 2, "pending", { bye: true }),
+          heat(2, 1, "pending"),
+        ],
+      }),
+    ).toEqual({ round: 2, of: 2 });
+  });
+
+  it("is the final's Round while the final and the 3rd place game are both unplayed", () => {
+    expect(
+      bracketRoundInPlay(
+        bracket([
+          heat(1, 1, "played"),
+          heat(1, 2, "played"),
+          heat(2, 1, "ready"),
+          heat(2, 2, "ready", { thirdPlace: true }),
+        ]),
+      ),
+    ).toEqual({ round: 2, of: 2 });
+  });
+
   it("is the final's Round once every Heat is played but not Finalized", () => {
     expect(
       bracketRoundInPlay(

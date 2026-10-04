@@ -1,4 +1,7 @@
-// Adds what seeds/demo/xii-scale.json can't hold (Hosts, the generated Bracket, ticks, Games) to a loaded XII: `pnpm seed:demo:scale` runs it.
+/**
+ * Adds what seeds/demo/xii-scale.json can't hold (Hosts, the generated
+ * Bracket, ticks, Games) to a loaded XII: `pnpm seed:demo:scale` runs it.
+ */
 import { loadEnvConfig } from "@next/env";
 
 import { isLocalDatabaseUrl } from "@/db/local-url";

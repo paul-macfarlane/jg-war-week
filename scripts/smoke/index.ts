@@ -248,11 +248,12 @@ async function main() {
       await assertPostedWarWeekWins(sessions);
       // It changes which War Week is current, then restores XI.
       await assertWarWeekLifecycle(sessions);
+      // Final phase: reloads the seeds with the XII scale demo, then puts
+      // localSeedFiles() back. Before the step below, which can leave the
+      // faq_item table hidden until `restoreFaqTable` in `finally`.
+      await assertScaleSeed();
       // Last: it hides the faq_item table for one request, then restores it.
       await assertEditionErrorBoundary();
-      // Final phase: reloads the seeds with the XII scale demo, then puts
-      // localSeedFiles() back.
-      await assertScaleSeed();
     }
   } finally {
     await restoreFaqTable().catch((error) =>
