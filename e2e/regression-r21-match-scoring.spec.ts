@@ -106,7 +106,7 @@ test("r21 AC5 a Group Bracket Match's places follow its Scores; equal Scores are
     ]);
 
     // Sam ties Adam at 40: no order until it's settled by hand.
-    await tree.getByRole("button", { name: "Edit Final" }).click();
+    await tree.getByRole("button", { name: "Edit Final", exact: true }).click();
     await sheet.getByLabel(`${SAM} score (pts)`).fill("40");
     await expect(save).toBeDisabled();
     await expect(
