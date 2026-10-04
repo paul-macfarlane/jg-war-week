@@ -18,6 +18,7 @@ import { RichText } from "@/components/rich-text";
 import { buttonVariants } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import { can } from "@/lib/access";
+import { podiumOf } from "@/lib/bracket/podium";
 import { entrantForYou, nextHeatFor } from "@/lib/bracket/view";
 import { isGameFormat } from "@/lib/enums";
 import { resolveYou } from "@/lib/you";
@@ -107,7 +108,7 @@ export default async function CompetitionPage({
   // The layout already answered 404 for a missing one, above `loading.tsx`.
   const found = await getCompetitionPage(edition, id);
   if (!found) notFound();
-  const { warWeek, competition, ledger } = found;
+  const { warWeek, competition } = found;
   const bracket = await getBracket(competition.id);
   const isBracket = bracket && bracket.competition.format !== "placement";
   const [participantTeams, participantSquads] = isBracket
@@ -234,16 +235,12 @@ export default async function CompetitionPage({
           competitionId={competition.id}
           entrants={bracket.entrants}
           bracket={bracket.bracket}
-          champion={bracket.champion}
+          podium={podiumOf(bracket)}
+          closed={bracket.finalized}
           scoring={competition.scoring}
           primaryColor={warWeek.primaryColor}
           participantTeams={participantTeams}
           participantSquads={participantSquads}
-          finaleHref={
-            bracket.finalized
-              ? `/${warWeek.edition}/finale/${competition.id}`
-              : null
-          }
           selfReport={selfReport}
         />
       ) : null}

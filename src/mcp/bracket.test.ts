@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 import { applyResult, generate } from "@/lib/bracket/engine";
-import { champion as championOf } from "@/lib/bracket/formats";
+import { bracketWinner as winnerOf } from "@/lib/bracket/formats";
 import type { Entrant } from "@/lib/bracket/types";
 import {
   toBracketResult,
@@ -110,8 +110,9 @@ describe("toBracketResult", () => {
       },
       entrants: [],
       bracket: { config: DEFAULT_BRACKET_CONFIG, heats: [] },
-      champion: null,
+      winner: null,
       finalized: false,
+      entryPoints: [],
     };
 
     expect(toBracketResult(view, "Trivia")).toEqual({
@@ -154,8 +155,9 @@ describe("toBracketResult", () => {
         bracketEntrantFixture(e, `${e.label} Squad`),
       ),
       bracket,
-      champion: null,
+      winner: null,
       finalized: false,
+      entryPoints: [],
     };
 
     const result = toBracketResult(view, "Beyblades");
@@ -191,7 +193,7 @@ describe("toBracketResult", () => {
         participants: null,
       },
     ]);
-    expect(result.champion).toBeNull();
+    expect(result.winner).toBeNull();
 
     const round1 = result.rounds.find((r) => r.round === 1)!;
     const bye = round1.heats.find((h) => h.entrants.length === 1)!;
@@ -215,7 +217,7 @@ describe("toBracketResult", () => {
     expect(ready).not.toHaveProperty("location");
   });
 
-  it("returns champion: null for a decided but unfinalized Bracket", () => {
+  it("returns winner: null for a decided but unfinalized Bracket", () => {
     let bracket = bracketFixture();
     const round1Heat = bracket.heats.find(
       (h) => h.round === 1 && h.slots.every((s) => s.entrantId !== null),
@@ -223,8 +225,8 @@ describe("toBracketResult", () => {
     bracket = applyResult(bracket, round1Heat.id, { order: ["e2", "e3"] });
     const final = bracket.heats.find((h) => h.round === 2)!;
     bracket = applyResult(bracket, final.id, { order: ["e1", "e2"] });
-    const championId = championOf(bracket);
-    expect(championId).toBe("e1");
+    const winnerId = winnerOf(bracket);
+    expect(winnerId).toBe("e1");
 
     const view: BracketView = {
       competition: {
@@ -244,8 +246,9 @@ describe("toBracketResult", () => {
         bracketEntrantFixture(e, `${e.label} Squad`),
       ),
       bracket,
-      champion: championId,
+      winner: winnerId,
       finalized: false,
+      entryPoints: [],
     };
 
     const result = toBracketResult(view, "Beyblades");
@@ -253,10 +256,10 @@ describe("toBracketResult", () => {
     expect(result.found).toBe(true);
     if (!result.found || "bracket" in result) throw new Error("unreachable");
     expect(result.competition.finalized).toBe(false);
-    expect(result.champion).toBeNull();
+    expect(result.winner).toBeNull();
   });
 
-  it("shows a finalized Bracket's champion", () => {
+  it("shows a finalized Bracket's Winner", () => {
     let bracket = bracketFixture();
     const round1Heat = bracket.heats.find(
       (h) => h.round === 1 && h.slots.every((s) => s.entrantId !== null),
@@ -264,8 +267,8 @@ describe("toBracketResult", () => {
     bracket = applyResult(bracket, round1Heat.id, { order: ["e2", "e3"] });
     const final = bracket.heats.find((h) => h.round === 2)!;
     bracket = applyResult(bracket, final.id, { order: ["e1", "e2"] });
-    const championId = championOf(bracket);
-    expect(championId).toBe("e1");
+    const winnerId = winnerOf(bracket);
+    expect(winnerId).toBe("e1");
 
     const view: BracketView = {
       competition: {
@@ -285,8 +288,9 @@ describe("toBracketResult", () => {
         bracketEntrantFixture(e, `${e.label} Squad`),
       ),
       bracket,
-      champion: championId,
+      winner: winnerId,
       finalized: true,
+      entryPoints: [],
     };
 
     const result = toBracketResult(view, "Beyblades");
@@ -294,7 +298,8 @@ describe("toBracketResult", () => {
     expect(result.found).toBe(true);
     if (!result.found || "bracket" in result) throw new Error("unreachable");
     expect(result.competition.finalized).toBe(true);
-    expect(result.champion).toBe("Alpha");
+    expect(result.winner).toBe("Alpha");
+    expect(result).not.toHaveProperty("champion");
   });
 
   it("lists a Squad's Participants by name", () => {
@@ -342,8 +347,9 @@ describe("toBracketResult", () => {
         { id: "e1", seedPosition: 1, label: "Red Alpha" },
         { id: "e2", seedPosition: 2, label: "Blue Bravo" },
       ]),
-      champion: null,
+      winner: null,
       finalized: false,
+      entryPoints: [],
     };
 
     const result = toBracketResult(view, "Cypher");
@@ -401,8 +407,9 @@ describe("toBracketResult", () => {
       },
       entrants: entrantsWithExtras,
       bracket,
-      champion: null,
+      winner: null,
       finalized: false,
+      entryPoints: [],
     };
 
     const result = toBracketResult(view, "Beyblades");
@@ -429,7 +436,7 @@ describe("toBracketResult", () => {
 });
 
 describe("toBracketResult with a 3rd place game", () => {
-  it("gives the final's winner as champion and marks the 3rd place game", () => {
+  it("gives the final's winner as the Winner and marks the 3rd place game", () => {
     const eight: Entrant[] = Array.from({ length: 8 }, (_, i) => ({
       id: `s${i + 1}`,
       seedPosition: i + 1,
@@ -448,7 +455,7 @@ describe("toBracketResult with a 3rd place game", () => {
       ["r2h1", ["s1", "s4"]],
       ["r2h2", ["s2", "s3"]],
       ["r3h1", ["s2", "s1"]],
-      // The 3rd place game last: the champion is still the final's winner.
+      // The 3rd place game last: the Winner is still the final's winner.
       ["r3h2", ["s3", "s4"]],
     ] as const) {
       bracket = applyResult(bracket, heatId, { order: [...order] });
@@ -469,13 +476,14 @@ describe("toBracketResult with a 3rd place game", () => {
       },
       entrants: eight.map((e) => bracketEntrantFixture(e, null)),
       bracket,
-      champion: championOf(bracket),
+      winner: winnerOf(bracket),
       finalized: true,
+      entryPoints: [],
     };
 
     const result = toBracketResult(view, "Beyblades");
     if (!result.found || !("rounds" in result)) throw new Error("no rounds");
-    expect(result.champion).toBe("S2");
+    expect(result.winner).toBe("S2");
     expect(result.competition.thirdPlaceGame).toBe(true);
     expect(
       result.rounds.at(-1)!.heats.map((h) => [h.name, h.thirdPlace]),

@@ -326,8 +326,8 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
       ).toHaveCount(0);
       const nextHeat = you
         .getByRole("region", { name: "Bracket" })
-        .getByLabel("Your next Heat");
-      await expect(nextHeat).toContainText(`Your next Heat · ${semifinal}`);
+        .getByLabel("Your next Match");
+      await expect(nextHeat).toContainText(`Your next Match · ${semifinal}`);
       await expect(
         nextHeat.getByRole("button", { name: "Report result" }),
       ).toBeVisible();
@@ -336,7 +336,7 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     // The second opens its Sheet first and picks its own Squad, unsaved.
     await second
       .getByRole("region", { name: "Bracket" })
-      .getByLabel("Your next Heat")
+      .getByLabel("Your next Match")
       .getByRole("button", { name: "Report result" })
       .click();
     const secondSheet = second.getByRole("dialog", { name: semifinal });
@@ -348,7 +348,7 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     // The first reports Red Alpha's win; it counts at once.
     await first
       .getByRole("region", { name: "Bracket" })
-      .getByLabel("Your next Heat")
+      .getByLabel("Your next Match")
       .getByRole("button", { name: "Report result" })
       .click();
     const firstSheet = first.getByRole("dialog", { name: semifinal });
@@ -394,8 +394,8 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await first.reload();
     const nextHeat = first
       .getByRole("region", { name: "Bracket" })
-      .getByLabel("Your next Heat");
-    await expect(nextHeat).toContainText("Your next Heat · Final");
+      .getByLabel("Your next Match");
+    await expect(nextHeat).toContainText("Your next Match · Final");
     await heatCard(first, "Final")
       .getByRole("button", { name: "Record result for Final" })
       .click();
@@ -446,12 +446,15 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await expect(page.getByText(`Red Alpha wins ${semifinal}`)).toBeVisible();
     await expect(overwrite).toBeHidden();
     await recordHeat(page, "Final");
-    await page.getByRole("button", { name: "Finalize" }).click();
+    await page
+      .getByRole("region", { name: "Bracket", exact: true })
+      .getByRole("button", { name: "Close", exact: true })
+      .click();
     await page
       .getByRole("alertdialog")
-      .getByRole("button", { name: "Finalize" })
+      .getByRole("button", { name: "Close", exact: true })
       .click();
-    await expect(page.getByText("Bracket finalized")).toBeVisible();
+    await expect(page.getByText("Bracket closed")).toBeVisible();
 
     // Each Squad's Placement Points go to its Team: two Red, two Blue.
     await page.goto(`/xi/competitions/${id}`);
@@ -477,14 +480,14 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
       [await xiTeamId("Blue")]: 2,
     });
 
-    // Un-finalize, so the Team Standings later flows read are unchanged.
+    // Reopen, so the Team Standings later flows read are unchanged.
     await openCompetitionPage(page, id);
-    await page.getByRole("button", { name: "Un-finalize" }).click();
+    await page.getByRole("button", { name: "Reopen", exact: true }).click();
     await page
       .getByRole("alertdialog")
-      .getByRole("button", { name: "Un-finalize" })
+      .getByRole("button", { name: "Reopen", exact: true })
       .click();
-    await expect(page.getByText("Bracket un-finalized")).toBeVisible();
+    await expect(page.getByText("Bracket reopened")).toBeVisible();
     expect(
       (await xiCompetitionEntries(COMPETITION)).filter(
         (entry) => entry.generated,

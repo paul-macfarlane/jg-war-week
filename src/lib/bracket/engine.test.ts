@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyResult,
-  champion,
+  bracketWinner,
   finalPlacings,
   generate,
   hasResults,
@@ -206,7 +206,7 @@ describe("applyResult", () => {
         { entrantId: "s2", place: 1 },
       ],
     });
-    expect(champion(bracket)).toBe("s2");
+    expect(bracketWinner(bracket)).toBe("s2");
   });
 
   it.each([
@@ -255,7 +255,7 @@ describe("applyResult", () => {
       status: "ready",
       slots: [{ place: null }, { place: null }],
     });
-    expect(champion(bracket)).toBeNull();
+    expect(bracketWinner(bracket)).toBeNull();
   });
 });
 
@@ -295,7 +295,7 @@ describe("a score-only edit of a decided Heat", () => {
     });
     expect(heat(edited, "r2h1")).toEqual(heat(bracket, "r2h1"));
     expect(heat(edited, "r3h1")).toEqual(heat(bracket, "r3h1"));
-    expect(champion(edited)).toBe("s1");
+    expect(bracketWinner(edited)).toBe("s1");
   });
 });
 
@@ -370,7 +370,7 @@ describe("finalPlacings", () => {
     }
 
     expect(isComplete(bracket)).toBe(true);
-    expect(champion(bracket)).toBe("s2");
+    expect(bracketWinner(bracket)).toBe("s2");
     expect(finalPlacings(bracket, list)).toEqual([
       { entrantId: "s2", place: 1 },
       { entrantId: "s5", place: 2 },

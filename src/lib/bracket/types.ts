@@ -103,7 +103,8 @@ export type FormatEngine = {
   /** Whether any Heat has a Heat Result; byes and empty Heats don't count. */
   hasResults(bracket: Bracket): boolean;
   isComplete(bracket: Bracket): boolean;
-  champion(bracket: Bracket): string | null;
+  /** The Entrant 1st in the final, or null while it is undecided. */
+  winner(bracket: Bracket): string | null;
   finalPlacings(bracket: Bracket, entrants: Entrant[]): Placing[];
 };
 

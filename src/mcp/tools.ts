@@ -52,7 +52,7 @@ export const MCP_TOOLS = {
   get_bracket: {
     title: "Get Bracket",
     description:
-      "Returns a Competition's Bracket by name: Entrants by Seed Position, each Round's Heats with status and, for a played Heat, when its result was recorded (a 3rd place game is marked thirdPlace; the final is the last Round's other Heat), and the champion once finalized. A Competition run another way instead returns bracket: null; an unknown Competition returns found: false.",
+      "Returns a Competition's Bracket by name: Entrants by Seed Position, each Round's Heats with status and, for a played Heat, when its result was recorded (a 3rd place game is marked thirdPlace; the final is the last Round's other Heat), and the winner once the Bracket is Closed. A Competition run another way instead returns bracket: null; an unknown Competition returns found: false.",
   },
   get_games: {
     title: "Get Head-to-head and Best score",

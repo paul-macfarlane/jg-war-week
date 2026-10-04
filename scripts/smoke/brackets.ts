@@ -72,7 +72,7 @@ export async function deleteSmokeBracket() {
 
 export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
   const check =
-    "bracket loop: an Organizer sets a head-to-head Bracket (2 per Heat, 1 advances) with a 3rd place game on a Competition, enters 4 Teams, generates, records 4 Heat Results, finalizes; GET /xi/competitions/<id> shows the champion and /xi/leaderboard includes the generated points and /xi/finale/<id> answers 200; get_bracket names the Bracket with its heat size, advancing and 3rd place game, a recorded time per played Heat, no Heat time, place or Forfeit, the final's winner as champion and no @; un-finalize removes them and /xi/finale/<id> answers 404; then cleans up";
+    "bracket loop: an Organizer sets a head-to-head Bracket (2 per Heat, 1 advances) with a 3rd place game on a Competition, enters 4 Teams, generates, records 4 Heat Results, finalizes; GET /xi/competitions/<id> shows Red as Winner in Top finishers (no Champion, no Play the finale) and /xi/leaderboard includes the generated points and /xi/finale/<id> answers 200; get_bracket names the Bracket with its heat size, advancing and 3rd place game, a recorded time per played Heat, no Heat time, place or Forfeit, the final's winner as winner (no champion field) and no @; un-finalize removes them and /xi/finale/<id> answers 404; then cleans up";
   const ids = serverActionIds();
   const missing = [
     "createCompetition",
@@ -185,7 +185,7 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     );
 
     const before = await leaderboardTeamTotal("Red");
-    // Red wins every Heat it's in, so it's the champion; otherwise the
+    // Red wins every Heat it's in, so it's the Winner; otherwise the
     // first slot wins.
     let recorded = 0;
     for (const round of [1, 2]) {
@@ -234,8 +234,15 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     const page = await (
       await signedInFetch(`${BASE_URL}/xi/competitions/${id}`)
     ).text();
-    if (!/aria-label="Champion"(?:(?!aria-label=)[\s\S])*?>Red</.test(page)) {
-      problems.push("the Competition page shows no Red champion");
+    if (
+      !/aria-label="Top finishers"[\s\S]*?data-winner="true"(?:(?!<\/li>)[\s\S])*?>Red</.test(
+        page,
+      )
+    ) {
+      problems.push("the Competition page's Top finishers show no Red Winner");
+    }
+    if (/Champion|Play the finale/i.test(page)) {
+      problems.push("the Competition page says Champion or Play the finale");
     }
     const finalized = await leaderboardTeamTotal("Red");
     if (before === null || finalized !== before + 10) {
@@ -270,7 +277,7 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
       | {
           found: boolean;
           competition?: Record<string, unknown>;
-          champion?: string | null;
+          winner?: string | null;
           entrants?: unknown[];
           rounds?: { round: number; heats: McpHeat[] }[];
         }
@@ -309,8 +316,11 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
         !lastRound.includes(thirdPlaceHeats[0])) &&
         "one 3rd place game in the last Round",
       finalHeat.length !== 1 && "one final",
-      (finalWinner !== "Red" || bracketPayload?.champion !== finalWinner) &&
-        "champion is the final's winner (Red)",
+      (finalWinner !== "Red" || bracketPayload?.winner !== finalWinner) &&
+        "winner is the final's winner (Red)",
+      bracketPayload !== undefined &&
+        "champion" in bracketPayload &&
+        "still has a champion field",
       /forfeit/i.test(bracket.text) && "mentions Forfeit",
       bracket.text.includes("@") && "has an @",
     ].filter(Boolean);
@@ -455,7 +465,7 @@ export async function deleteSmokeHeats() {
 
 export async function assertHeatsLoop(sessions: { organizer: SmokeSession }) {
   const check =
-    "heats loop: an Organizer sets a Bracket of 4 per Heat, 2 advance, on a Competition, enters 4 Teams, generates one Heat of four, records its four-Entrant Heat Result, finalizes; GET /xi/competitions/<id> shows the champion and /xi/leaderboard includes the generated points; un-finalize removes them; then cleans up";
+    "heats loop: an Organizer sets a Bracket of 4 per Heat, 2 advance, on a Competition, enters 4 Teams, generates one Heat of four, records its four-Entrant Heat Result, finalizes; GET /xi/competitions/<id> shows Red as Winner in Top finishers (no Champion, no Play the finale) and /xi/leaderboard includes the generated points; un-finalize removes them; then cleans up";
   const ids = serverActionIds();
   const missing = [
     "createCompetition",
@@ -591,8 +601,15 @@ export async function assertHeatsLoop(sessions: { organizer: SmokeSession }) {
     const page = await (
       await signedInFetch(`${BASE_URL}/xi/competitions/${id}`)
     ).text();
-    if (!/aria-label="Champion"(?:(?!aria-label=)[\s\S])*?>Red</.test(page)) {
-      problems.push("the Competition page shows no Red champion");
+    if (
+      !/aria-label="Top finishers"[\s\S]*?data-winner="true"(?:(?!<\/li>)[\s\S])*?>Red</.test(
+        page,
+      )
+    ) {
+      problems.push("the Competition page's Top finishers show no Red Winner");
+    }
+    if (/Champion|Play the finale/i.test(page)) {
+      problems.push("the Competition page says Champion or Play the finale");
     }
     const finalized = await leaderboardTeamTotal("Red");
     if (before === null || finalized !== before + 10) {

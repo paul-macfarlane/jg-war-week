@@ -5,6 +5,7 @@ import { GamesBuilder } from "@/components/games-builder";
 import { ParticipationBuilder } from "@/components/participation-builder";
 import { PlacementSheet } from "@/components/placement-sheet";
 import type { Competition, WarWeek } from "@/db/schema";
+import { podiumOf } from "@/lib/bracket/podium";
 import {
   type CompetitionLockFacts,
   settingLockReason,
@@ -193,13 +194,11 @@ export async function CompetitionRunArea({
             scoring={competition.scoring}
             entrants={view.entrants}
             bracket={view.bracket}
-            champion={view.champion}
+            winner={view.winner}
+            podium={podiumOf(view)}
             finalized={view.finalized}
             primaryColor={warWeek.primaryColor}
             reporters={reporters}
-            finaleHref={
-              view.finalized ? `/${warWeek.edition}/finale/${id}` : null
-            }
           />
         </section>
       )}

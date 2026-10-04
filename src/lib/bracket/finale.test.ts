@@ -34,7 +34,7 @@ describe("bracketFinaleRows", () => {
 });
 
 describe("bracketFinaleRanks", () => {
-  it("is each row's place, so tied 3rds share a step and the champion comes last", () => {
+  it("is each row's place, so tied 3rds share a step and the Winner comes last", () => {
     expect(bracketFinaleRanks(bracketFinaleRows(placings, entrants))).toEqual([
       1, 2, 3, 3,
     ]);

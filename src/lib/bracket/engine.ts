@@ -174,7 +174,7 @@ export function isComplete(bracket: Bracket): boolean {
 }
 
 /** The Entrant who won the final, or null while it's undecided. */
-export function champion(bracket: Bracket): string | null {
+export function bracketWinner(bracket: Bracket): string | null {
   const final = finalHeatOf(bracket);
   if (!final || !isDecided(final)) return null;
   return final.slots.find((s) => s.place === 1)?.entrantId ?? null;
@@ -345,6 +345,6 @@ export const singleElimination: FormatEngine = {
   isBye: (_bracket, heat) => isBye(heat),
   hasResults,
   isComplete,
-  champion,
+  winner: bracketWinner,
   finalPlacings,
 };

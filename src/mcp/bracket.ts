@@ -47,7 +47,8 @@ export type BracketResult =
           }[];
         }[];
       }[];
-      champion: string | null;
+      /** The final's Winner once the Bracket is Closed; else null. */
+      winner: string | null;
     }
   | {
       found: true;
@@ -188,9 +189,9 @@ export function toBracketResult(
           })),
       })),
     })),
-    champion:
-      view.finalized && view.champion
-        ? (entrantsById[view.champion] ?? null)
+    winner:
+      view.finalized && view.winner
+        ? (entrantsById[view.winner] ?? null)
         : null,
   };
 }
