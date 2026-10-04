@@ -15,6 +15,7 @@ import {
 import {
   runQuery,
   setParticipantEmail,
+  xiCompetitionEntries,
   xiCompetitionId,
   xiParticipantId,
   xiTeamId,
@@ -454,14 +455,15 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
 
     // Each Squad's Placement Points go to its Team: two Red, two Blue.
     await page.goto(`/xi/competitions/${id}`);
-    const entries = page
-      .locator("section")
-      .filter({ has: page.getByRole("heading", { name: "Points Entries" }) })
-      .getByRole("listitem")
-      .filter({ hasText: "From bracket" });
-    await expect(entries).toHaveCount(4);
-    await expect(entries.filter({ hasText: /^\s*Red/ })).toHaveCount(2);
-    await expect(entries.filter({ hasText: /^\s*Blue/ })).toHaveCount(2);
+    await expect(
+      page.getByRole("heading", { name: "Points Entries" }),
+    ).toHaveCount(0);
+    const entries = (await xiCompetitionEntries(COMPETITION)).filter(
+      (entry) => entry.generated,
+    );
+    expect(entries).toHaveLength(4);
+    expect(entries.filter((entry) => entry.target === "Red")).toHaveLength(2);
+    expect(entries.filter((entry) => entry.target === "Blue")).toHaveLength(2);
     const byTeam = await runQuery<{ team_id: string; count: number }>(
       `select team_id, count(*)::int as count from points_entry
        where competition_id = $1 and generated_by_bracket group by team_id`,
@@ -483,8 +485,11 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
       .getByRole("button", { name: "Un-finalize" })
       .click();
     await expect(page.getByText("Bracket un-finalized")).toBeVisible();
-    await page.goto(`/xi/competitions/${id}`);
-    await expect(entries).toHaveCount(0);
+    expect(
+      (await xiCompetitionEntries(COMPETITION)).filter(
+        (entry) => entry.generated,
+      ),
+    ).toHaveLength(0);
   } finally {
     await setParticipantEmail(reporterId, null);
     if (opponentParticipantId) {

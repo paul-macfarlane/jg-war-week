@@ -598,14 +598,14 @@ export async function assertCompetitionDetail() {
   const url = `${BASE_URL}/xi/competitions/${id}`;
 
   const shownCheck =
-    "GET /xi/competitions/[id] shows the Competition and shows its Placement and the Points Entries it generated";
+    "GET /xi/competitions/[id] shows the Competition and shows its Placement and no Points Entries section";
   try {
     const res = await signedInFetch(url);
     const body = await res.text();
     const checks = {
       name: body.includes("Winning the Day Challenge"),
       target: body.includes("Dani Milliken"),
-      entries: body.includes("Points Entries"),
+      noEntriesSection: !body.includes("Points Entries"),
     };
     if (res.status === 200 && Object.values(checks).every(Boolean)) {
       ok(shownCheck);

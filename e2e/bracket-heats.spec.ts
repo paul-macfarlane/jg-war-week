@@ -11,7 +11,7 @@ import {
   openCompetitionPage,
   setFormat,
 } from "./competition-page";
-import { openForBracket, xiCompetitionId } from "./db";
+import { openForBracket, xiCompetitionEntries, xiCompetitionId } from "./db";
 import { asOrganizer, participantPageAs } from "./session";
 
 // Settlers of Catan is an individual War Week XI Competition with Placement
@@ -221,18 +221,17 @@ test("a Bracket of 4 per Heat is built, run and finalized into Points Entries", 
   await expect(page.getByText("Bracket finalized")).toBeVisible();
 
   await page.goto(`/xi/competitions/${id}`);
-  const entries = page
-    .locator("section")
-    .filter({ has: page.getByRole("heading", { name: "Points Entries" }) })
-    .getByRole("listitem")
-    .filter({ hasText: "From bracket" });
+  await expect(
+    page.getByRole("heading", { name: "Points Entries" }),
+  ).toHaveCount(0);
+  const entries = (await xiCompetitionEntries(COMPETITION)).filter(
+    (entry) => entry.generated,
+  );
   // Placement Points 5 / 3 / 1: the champion, the runner-up and the Final's
   // third place. The Final's fourth place gets nothing, and nobody outside
   // the Final is placed.
-  await expect(entries).toHaveCount(3);
-  await expect(entries.filter({ hasText: champion })).toHaveText(
-    /From bracket\s*5$/,
-  );
+  expect(entries).toHaveLength(3);
+  expect(entries.find((entry) => entry.target === champion)?.points).toBe(5);
 
   await checkViewports(page, testInfo, "participant");
 });

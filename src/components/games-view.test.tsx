@@ -170,17 +170,16 @@ describe("GamesView Log a Game", () => {
     expect(text(render())).not.toContain("Closed —");
   });
 
-  it("prompts whoever runs a decided Best of to close it", () => {
+  it("tells whoever runs a decided Best of it is decided, with no Close link (Manage is on the page)", () => {
     const html = render({
       runs: true,
       bestOfDecided: true,
       bestOfWinner: "Ashley",
       loggingOpen: false,
     });
-    expect(text(html)).toContain("Best of decided: Ashley —");
-    expect(html).toMatch(
-      /<a[^>]*href="\/admin\/competitions\/c1"[^>]*>Close it<\/a>/,
-    );
+    expect(text(html)).toContain("Best of decided: Ashley");
+    expect(html).not.toContain("Close it");
+    expect(html).not.toContain("/admin/competitions/");
   });
 
   it("tells a Participant the Best of is decided, without the Close link", () => {

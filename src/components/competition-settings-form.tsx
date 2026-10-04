@@ -401,25 +401,27 @@ export function CompetitionSettingsForm({
             />
             {below("format", FORMAT_DESCRIPTIONS[values.format])}
           </Field>
-          <Field data-invalid={!!errors.scoring}>
-            <FieldLabel htmlFor={id("scoring")}>Scoring</FieldLabel>
-            <OptionSelect
-              id={id("scoring")}
-              name="scoring"
-              options={scoringOptions}
-              value={values.scoring}
-              disabled={lock("scoring") !== null}
-              aria-invalid={!!errors.scoring}
-              onValueChange={(scoring) =>
-                edit({
-                  scoring: scoring as CompetitionSettingsValues["scoring"],
-                  // Team scoring already counts toward the Team.
-                  ...(scoring === "team" ? { countsTowardTeam: false } : {}),
-                })
-              }
-            />
-            {below("scoring")}
-          </Field>
+          {shown.has("scoring") && (
+            <Field data-invalid={!!errors.scoring}>
+              <FieldLabel htmlFor={id("scoring")}>Scoring</FieldLabel>
+              <OptionSelect
+                id={id("scoring")}
+                name="scoring"
+                options={scoringOptions}
+                value={values.scoring}
+                disabled={lock("scoring") !== null}
+                aria-invalid={!!errors.scoring}
+                onValueChange={(scoring) =>
+                  edit({
+                    scoring: scoring as CompetitionSettingsValues["scoring"],
+                    // Team scoring already counts toward the Team.
+                    ...(scoring === "team" ? { countsTowardTeam: false } : {}),
+                  })
+                }
+              />
+              {below("scoring")}
+            </Field>
+          )}
           {shown.has("countsTowardTeam") && (
             <div className="sm:self-end">
               {switchField(

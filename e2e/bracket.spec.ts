@@ -1,7 +1,12 @@
 import { type Page, type TestInfo, expect, test } from "@playwright/test";
 
 import { openCompetitionPage, setFormat } from "./competition-page";
-import { openForBracket, runQuery, xiCompetitionId } from "./db";
+import {
+  openForBracket,
+  runQuery,
+  xiCompetitionEntries,
+  xiCompetitionId,
+} from "./db";
 import { E2E_BASE_URL } from "./env";
 import {
   E2E_PARTICIPANT_EMAIL,
@@ -184,19 +189,20 @@ test("a Bracket is built, run and finalized into Points Entries", async ({
   await page.goto(`/xi/competitions/${id}`);
   // The participant view shows "Recorded <time>" on every played Heat.
   await expect(page.getByText(/^Recorded .+ ET$/)).toHaveCount(3);
-  const entries = page
-    .locator("section")
-    .filter({ has: page.getByRole("heading", { name: "Points Entries" }) })
-    .getByRole("listitem")
-    .filter({ hasText: "From bracket" });
+  // The Participant page lists no Points Entries (R20): read what Finalize
+  // wrote from the database.
+  await expect(
+    page.getByRole("heading", { name: "Points Entries" }),
+  ).toHaveCount(0);
+  const entries = (await xiCompetitionEntries(COMPETITION)).filter(
+    (entry) => entry.generated,
+  );
   // Placement Points 5 / 3 / 1: the champion, the runner-up, and both
   // semifinal losers tied for third.
-  await expect(entries).toHaveCount(4);
-  await expect(entries.filter({ hasText: champion })).toHaveText(
-    /From bracket\s*5$/,
-  );
+  expect(entries).toHaveLength(4);
+  expect(entries.find((entry) => entry.target === champion)?.points).toBe(5);
   await page.screenshot({
-    path: testInfo.outputPath("competition-points-entries.png"),
+    path: testInfo.outputPath("competition-participant-page.png"),
     fullPage: true,
   });
 

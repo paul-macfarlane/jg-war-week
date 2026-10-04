@@ -19,18 +19,24 @@ import { toPlainText } from "@/lib/rich-text/plain-text";
 export function CompetitionFacts({
   competition,
   teamLabel,
+  mode = "teams",
 }: {
   competition: CompetitionListItem;
   teamLabel: string;
+  /** A free-for-all War Week has no Individual/Team choice to show. */
+  mode?: "teams" | "free-for-all";
 }) {
+  const hideScoring = mode === "free-for-all" && competition.scoring !== "team";
   return (
     <div className="flex flex-wrap gap-1.5">
-      <Badge
-        variant="outline"
-        className="text-foreground/70 h-auto text-left whitespace-normal"
-      >
-        {describeScoring(competition, teamLabel)}
-      </Badge>
+      {hideScoring ? null : (
+        <Badge
+          variant="outline"
+          className="text-foreground/70 h-auto text-left whitespace-normal"
+        >
+          {describeScoring(competition, teamLabel)}
+        </Badge>
+      )}
       {isGameFormat(competition.format) ? (
         <Badge variant="outline" className="text-foreground/70">
           {gameFormatLabel(competition.format)}
@@ -77,10 +83,12 @@ export function CompetitionList({
   competitions,
   edition,
   teamLabel,
+  mode,
 }: {
   competitions: (CompetitionListItem & { status: CompetitionStatus })[];
   edition: string;
   teamLabel: string;
+  mode?: "teams" | "free-for-all";
 }) {
   return (
     <ul className="flex flex-col gap-2">
@@ -108,6 +116,7 @@ export function CompetitionList({
                 <CompetitionFacts
                   competition={competition}
                   teamLabel={teamLabel}
+                  mode={mode}
                 />
               </Card>
             </Link>

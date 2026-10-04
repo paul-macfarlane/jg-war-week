@@ -5,7 +5,12 @@ import {
   openCompetitionPage,
   setFormat,
 } from "./competition-page";
-import { openForBracket, runQuery, xiCompetitionId } from "./db";
+import {
+  openForBracket,
+  runQuery,
+  xiCompetitionEntries,
+  xiCompetitionId,
+} from "./db";
 import { asOrganizer } from "./session";
 
 // Beyblades is an individual War Week XI Competition. This flow sets its
@@ -180,12 +185,13 @@ test("a head-to-head Bracket of 8 with a 3rd place game is run to Finalize, plac
 
   await page.goto(`/xi/competitions/${competitionId}`);
   await expect(page.getByText("3rd place game").first()).toBeVisible();
-  const listed = page
-    .locator("section")
-    .filter({ has: page.getByRole("heading", { name: "Points Entries" }) })
-    .getByRole("listitem")
-    .filter({ hasText: "From bracket" });
-  await expect(listed).toHaveCount(4);
+  await expect(
+    page.getByRole("heading", { name: "Points Entries" }),
+  ).toHaveCount(0);
+  const listed = (await xiCompetitionEntries(COMPETITION)).filter(
+    (entry) => entry.generated,
+  );
+  expect(listed).toHaveLength(4);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.screenshot({
     path: testInfo.outputPath("third-place-finalized-1440.png"),

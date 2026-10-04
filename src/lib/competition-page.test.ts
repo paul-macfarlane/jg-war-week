@@ -140,6 +140,14 @@ describe("shownSettings", () => {
     expect(shown).not.toContain("scoreDirection");
   });
 
+  it("hides the Scoring choice in a free-for-all War Week unless the Competition is Team", () => {
+    const individual = settingsValuesOf(PLACEMENT);
+    expect(shownSettings(individual, "free-for-all")).not.toContain("scoring");
+    expect(shownSettings(individual, "teams")).toContain("scoring");
+    const team = settingsValuesOf({ ...PLACEMENT, scoring: "team" });
+    expect(shownSettings(team, "free-for-all")).toContain("scoring");
+  });
+
   it("offers a Games Competition enrollment only with a fixed list and no Best of", () => {
     const open = settingsValuesOf({ ...PLACEMENT, format: "head-to-head" });
     expect(shownSettings(open, "teams")).not.toContain("selfEnroll");

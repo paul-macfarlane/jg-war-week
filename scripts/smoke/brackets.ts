@@ -333,8 +333,8 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     }
 
     const competitionPage = await (await get(`/xi/competitions/${id}`)).text();
-    if (!competitionPage.includes("From bracket")) {
-      problems.push("/xi/competitions/<id> shows no From bracket row");
+    if (competitionPage.includes("Points Entries")) {
+      problems.push("/xi/competitions/<id> renders a Points Entries section");
     }
 
     expectOk(

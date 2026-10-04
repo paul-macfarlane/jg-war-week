@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
 import { deleteGame } from "@/actions/games";
@@ -11,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { YouTag } from "@/components/you";
-import { competitionPageHref } from "@/lib/competitions";
 import type { GameFormat } from "@/lib/enums";
 import type {
   BestScoreConfig,
@@ -321,19 +319,7 @@ export function GamesView(props: GamesViewProps) {
           role="status"
           className="bg-muted text-foreground rounded-lg px-3 py-2 text-sm"
         >
-          {runs ? (
-            <>
-              Best of decided: {bestOfWinner} —{" "}
-              <Link
-                href={competitionPageHref(competitionId)}
-                className="text-primary font-medium underline underline-offset-4"
-              >
-                Close it
-              </Link>
-            </>
-          ) : (
-            <>Best of decided: {bestOfWinner}.</>
-          )}
+          Best of decided: {bestOfWinner}.
         </p>
       ) : !loggingOpen && linked && !runs ? (
         <p className="text-foreground/70 text-sm">Logging is closed.</p>

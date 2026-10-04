@@ -8,12 +8,14 @@ import {
   BracketView,
   type BracketViewSelfReport,
 } from "@/components/bracket-view";
-import { CompetitionFacts, PointsEntryList } from "@/components/competitions";
+import { CollapsibleDescription } from "@/components/collapsible-description";
+import { CompetitionFacts } from "@/components/competitions";
 import { EnrollButton } from "@/components/enroll-button";
 import { GamesView } from "@/components/games-view";
 import { ParticipationView } from "@/components/participation-view";
 import { PlacementView } from "@/components/placement-view";
 import { RichText } from "@/components/rich-text";
+import { buttonVariants } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import { can } from "@/lib/access";
 import { entrantForYou, nextHeatFor } from "@/lib/bracket/view";
@@ -124,7 +126,15 @@ export default async function CompetitionPage({
   const isPlacement = competition.format === "placement";
   // The viewer's email stays on the server: the page gets names, ids and
   // booleans computed from it (R3 decision 17).
-  const email = (await getActor())?.email ?? null;
+  const actor = await getActor();
+  const email = actor?.email ?? null;
+  // Manage shows to whoever the admin Competition page lets in: the same
+  // `can` rule, decided here so the client gets only a boolean.
+  const canManage =
+    can(actor, "competition.edit", {
+      warWeekId: warWeek.id,
+      competitionId: competition.id,
+    }) === null;
   const [games, enrollOffer, participation, checkInOffer, placements] =
     await Promise.all([
       isGames ? getGamesView(competition.id, email) : Promise.resolve(null),
@@ -157,12 +167,28 @@ export default async function CompetitionPage({
             {competition.competitionGroup}
           </span>
         ) : null}
-        <h1 className="text-2xl font-bold">{competition.name}</h1>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <h1 className="text-2xl font-bold">{competition.name}</h1>
+          {canManage ? (
+            <Link
+              href={`/admin/competitions/${competition.id}`}
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              Manage
+            </Link>
+          ) : null}
+        </div>
         <CompetitionFacts
           competition={competition}
           teamLabel={warWeek.teamLabel}
+          mode={warWeek.mode}
         />
       </div>
+      {competition.description ? (
+        <CollapsibleDescription>
+          <RichText content={competition.description} headingFloor={3} />
+        </CollapsibleDescription>
+      ) : null}
       {enrollOffer ? <EnrollButton offer={enrollOffer} /> : null}
       {games ? (
         <GamesView
@@ -215,15 +241,6 @@ export default async function CompetitionPage({
           selfReport={selfReport}
         />
       ) : null}
-      {competition.description ? (
-        <div className="text-sm">
-          <RichText content={competition.description} headingFloor={3} />
-        </div>
-      ) : null}
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">Points Entries</h2>
-        <PointsEntryList entries={ledger.entries} />
-      </section>
       {/* A Bracket's view refreshes itself, pausing while a report is open. */}
       {isBracket ? null : <AutoRefresh />}
       {/* Results and refusals toast here, as on the admin screens. */}

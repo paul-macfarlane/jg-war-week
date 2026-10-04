@@ -183,7 +183,9 @@ export function shownSettings(
     "group",
     "description",
     "format",
-    "scoring",
+    // A free-for-all has no Individual/Team choice, unless a Competition is
+    // already Team there (so it can be fixed).
+    (mode === "teams" || values.scoring === "team") && "scoring",
     mode === "teams" && "countsTowardTeam",
     !individualParticipation && "placementPoints",
     individualParticipation && "participationPoints",
