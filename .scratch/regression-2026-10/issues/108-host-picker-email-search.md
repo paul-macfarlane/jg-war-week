@@ -26,3 +26,4 @@
 ## Comments
 
 - 2026-10-04: folded into Epic R22 (`../../people-and-admin/spec.md`, ParticipantPicker searches name and email); closes when that epic ships.
+- 2026-10-04: decided with R22's red-team pass 1: **name-only**. No picker searches or carries a Participant's email, for any actor (the Organizer-only email keyword from 106 goes too). Implemented in Epic R22; closes when it ships.
