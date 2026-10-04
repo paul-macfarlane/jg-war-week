@@ -453,6 +453,67 @@ describe.skipIf(!isLocalDatabase)("updateAttempt and deleteAttempt", () => {
       expect(await f.attemptRows(f.ids.bowl)).toEqual([]);
     });
   });
+  it("with Max attempts 2, refuses moving an Attempt to someone who has used theirs, but not to someone with one left", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { logAttempt, updateAttempt } = await load();
+      const f = await fixture(tx);
+      await f.setCompetition(f.ids.bowl, { maxAttempts: 2 });
+      const log = async (participantId: string, score: number) => {
+        const logged = await logAttempt(
+          f.ids.bowl,
+          { participantId, score },
+          f.ctx(HOST),
+          tx,
+        );
+        if (!logged.ok) throw new Error(logged.error);
+        return logged.resultId;
+      };
+      await log(f.ids.trinity, 1);
+      await log(f.ids.trinity, 2);
+      const neos = await log(f.ids.neo, 3);
+
+      // Trinity has used her 2: Neo's Attempt can't become hers.
+      expect(
+        await updateAttempt(
+          f.ids.bowl,
+          neos,
+          { participantId: f.ids.trinity, score: 3 },
+          f.ctx(HOST),
+          tx,
+        ),
+      ).toEqual({
+        ok: false,
+        error: "No Attempts left: the limit is 2 per person.",
+      });
+      expect(
+        (await f.attemptRows(f.ids.bowl)).filter(
+          (row) => row.participantId === f.ids.trinity,
+        ),
+      ).toHaveLength(2);
+
+      // Editing an Attempt in place never counts against the limit.
+      expect(
+        await updateAttempt(
+          f.ids.bowl,
+          neos,
+          { participantId: f.ids.neo, score: 4 },
+          f.ctx(HOST),
+          tx,
+        ),
+      ).toEqual({ ok: true });
+
+      // Morpheus has none: the move goes through.
+      expect(
+        await updateAttempt(
+          f.ids.bowl,
+          neos,
+          { participantId: f.ids.morpheus, score: 4 },
+          f.ctx(HOST),
+          tx,
+        ),
+      ).toEqual({ ok: true });
+    });
+  });
 });
 
 describe.skipIf(!isLocalDatabase)("Best score standings and Close", () => {

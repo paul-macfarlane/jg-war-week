@@ -8,6 +8,8 @@ import {
   NOT_LINKED,
   attemptChangeError,
   attemptLogError,
+  attemptsLeft,
+  noAttemptsLeft,
   updatesInPlace,
 } from "@/lib/best-score/log-rule";
 import { refuse } from "@/mutations/brackets";
@@ -131,9 +133,10 @@ export async function logAttempt(
 /**
  * Changes an Attempt (spec R21, D1a): a Host or Organizer, or with
  * self-report on the Participant it's for, whoever logged it, checked
- * again under the lock. Never counts against "Max attempts per person". A
- * new Participant's Team is credited as at logging; its recorded time
- * never changes.
+ * again under the lock. An edit in place never counts against "Max
+ * attempts per person"; moving it to another Participant is refused when
+ * they have none left. A new Participant's Team is credited as at
+ * logging; its recorded time never changes.
  */
 export async function updateAttempt(
   competitionId: string,
@@ -156,6 +159,14 @@ export async function updateAttempt(
     const existing = facts.attemptLog.attempt;
     if (!existing || existing === "missing") return refuse(ATTEMPT_MISSING);
     const moved = existing.participantId !== input.participantId;
+    const { maxAttempts, attemptsSoFar } = facts.attemptLog;
+    if (
+      moved &&
+      maxAttempts !== null &&
+      attemptsLeft(maxAttempts, attemptsSoFar) === 0
+    ) {
+      return refuse(noAttemptsLeft(maxAttempts));
+    }
     const credit = moved
       ? await creditOf(tx, facts, input.participantId, ctx)
       : null;
