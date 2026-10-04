@@ -22,3 +22,7 @@
 
 - [ ] The decision is recorded; the chosen pickers match by email, or the name-only rule is written down.
 - [ ] `pnpm gate` passes.
+
+## Comments
+
+- 2026-10-04: folded into Epic R22 (`../../people-and-admin/spec.md`, ParticipantPicker searches name and email); closes when that epic ships.
