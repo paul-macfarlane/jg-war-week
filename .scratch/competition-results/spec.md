@@ -1,6 +1,6 @@
 ---
 title: Competition results and language (Epic R20)
-status: ready-for-agent
+status: in-progress
 grilled: 2026-10-04 (see ../regression-2026-10/grilling-2026-10-04.md)
 created: 2026-10-04
 source: Paul's regression feedback "10/3", items 1, 3.1, 3.3, 4, 5.5, 6, 8.2, 8.6, 9.1, 10.2, 10.4, 11
@@ -11,7 +11,7 @@ source: Paul's regression feedback "10/3", items 1, 3.1, 3.3, 4, 5.5, 6, 8.2, 8.
 **Epic:** R20 · **Branch:** `feat/r20-competition-results` · **Blocked by:**
 R19 merged into `staging` · **Red-team:** not required (no schema change; if
 planning finds one is needed, it becomes required) · **Status:**
-ready-for-agent
+in-progress (claimed 2026-10-04, `/atlas-implement`; [execution record](./execution.md))
 
 ## Summary
 
