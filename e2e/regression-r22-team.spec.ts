@@ -22,10 +22,11 @@ import { resultsRow } from "./standings";
 // Week (XI) every surface where a Participant competes or scores shows
 // their Team: by NAME beside the name where the row has room, by COLOR (the
 // Avatar's `data-team-color`, a ring on a picture) where it doesn't (Bracket
-// tree nodes, Finale steps, and below `md` the Heat result form). A
+// tree nodes, Finale steps, and below `md` the Match result form). A
 // free-for-all War Week (XII) shows none. Expected Teams come from the
 // database, not from the page. The specs' own Competitions, the Discretionary
-// points and the XII rows are made by SQL and removed in `finally`.
+// points and the XII rows are made by SQL and removed in `finally` or
+// `afterAll`.
 
 const DESKTOP = { width: 1440, height: 900 };
 const PHONE = { width: 390, height: 844 };
@@ -255,22 +256,6 @@ test("r22 team: Recent results names the Participant's Team beside them", async 
   });
 });
 
-test("r22 team: Now/Next tiles are Schedule Items with no Participant, so carry no Team", async ({
-  page,
-}, testInfo) => {
-  await atBothViewports(page, testInfo, "/xi", "now-next", async () => {
-    // The tile, when the schedule has something on, holds no Team mark.
-    const tile = page
-      .locator("main")
-      .locator('div:has(> div > a[href$="/schedule"])')
-      .first();
-    if ((await tile.count()) > 0) {
-      await expect(tile.locator("[data-team-name]")).toHaveCount(0);
-      await expect(tile.locator("[data-team-color]")).toHaveCount(0);
-    }
-  });
-});
-
 test("r22 team: a Bracket's tree marks nodes by Team color, the podium and the Match result form name the Team", async ({
   page,
 }, testInfo) => {
@@ -316,6 +301,88 @@ test("r22 team: a Bracket's tree marks nodes by Team color, the podium and the M
       await shoot(page, testInfo, `bracket-form-${width}`);
       await page.keyboard.press("Escape");
       await expect(dialog).toBeHidden();
+    },
+  );
+});
+
+test("r22 team: a Group Bracket's Match result form marks each Entrant by Team color, and names the Team at 1440 only", async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(120_000);
+  const name = "E2E R22 Team Group Bracket";
+  const id = await addXiCompetition(name, {
+    format: "bracket",
+    scoreDirection: "higher",
+    bracketConfig: {
+      kind: "group",
+      entrantsPerMatch: 3,
+      advancePerMatch: 1,
+      thirdPlaceMatch: false,
+      rounds: {},
+    },
+  });
+  try {
+    await addEntrants(id, [ASHLEY, ABBY, SAM]);
+    await page.setViewportSize(DESKTOP);
+    await page.goto(`/admin/competitions/${id}`);
+    await page.getByRole("button", { name: "Generate" }).click();
+    await expect(page.getByText("Bracket generated")).toBeVisible();
+    await atBothViewports(
+      page,
+      testInfo,
+      `/admin/competitions/${id}`,
+      "group-bracket",
+      async (width) => {
+        const tree = page.locator("[data-bracket-tree]").first();
+        await expectTeamColor(tree, ASHLEY);
+        await expectTeamColor(tree, ABBY);
+        await expect(tree.locator("[data-team-name]")).toHaveCount(0);
+        await tree
+          .getByRole("button", { name: "Record result for Final" })
+          .click();
+        const dialog = page.getByRole("dialog", { name: "Final" });
+        const order = dialog.getByRole("group", { name: "Finishing order" });
+        for (const person of [ASHLEY, ABBY, SAM]) {
+          const entrant = order.getByRole("button", {
+            name: new RegExp(person),
+          });
+          await expectTeamColor(entrant, person);
+          await expectTeamName(entrant, person, width === "1440");
+        }
+        await shoot(page, testInfo, `group-bracket-form-${width}`);
+        await page.keyboard.press("Escape");
+        await expect(dialog).toBeHidden();
+      },
+    );
+  } finally {
+    await deleteCompetitions(name);
+  }
+});
+
+test("r22 team: the Log an Attempt form's Participant picker shows each row's Team on a Best score Competition's page", async ({
+  page,
+}, testInfo) => {
+  await atBothViewports(
+    page,
+    testInfo,
+    `/xi/competitions/${ids.best}`,
+    "log-attempt-picker",
+    async () => {
+      await page.getByRole("button", { name: "Log an Attempt" }).click();
+      const form = page.getByRole("dialog", { name: "Log an Attempt" });
+      await form.getByRole("combobox", { name: "Participant" }).click();
+      for (const person of [ASHLEY, ABBY]) {
+        const option = page.getByRole("option", {
+          name: new RegExp(`^${person}`),
+        });
+        await expect(option).toHaveCount(1);
+        await expect(option.locator('[data-slot="avatar"]')).toHaveCount(1);
+        await expect(option).toContainText(teamOf.get(person)!.name);
+      }
+      await shoot(page, testInfo, "log-attempt-picker-open");
+      await page.keyboard.press("Escape");
+      await page.keyboard.press("Escape");
+      await expect(form).toBeHidden();
     },
   );
 });
@@ -498,9 +565,8 @@ test("r22 team: the admin Placement sheet, Participation list, Discretionary poi
       const row = page
         .getByRole("listitem")
         .filter({ hasText: "Catan Champion" });
-      await expect(row.first()).toContainText(
-        `${person} (${teamOf.get(person)!.name})`,
-      );
+      await expect(row.first()).toContainText(person);
+      await expectTeamName(row, person, true);
     },
   );
 });

@@ -36,7 +36,6 @@ import {
   isBlankContent,
 } from "@/lib/rich-text/content";
 import { type SeriesConfig, seriesConfigSchema } from "@/lib/series/config";
-import { isUuid } from "@/lib/uuid";
 
 /** The refusal for a Hosts list that isn't Participant ids. */
 const HOSTS_MESSAGE = "Pick Hosts from the roster.";
@@ -156,13 +155,9 @@ export function parseCompetitionSetting(
       return text.ok ? ok({ field, value: text.value }) : text;
     }
     case "hosts": {
-      if (
-        !Array.isArray(value) ||
-        !value.every((id) => typeof id === "string" && isUuid(id))
-      ) {
-        return refusedAt(field, HOSTS_MESSAGE);
-      }
-      return ok({ field, value: [...new Set<string>(value)] });
+      const parsed = z.array(z.uuid()).safeParse(value);
+      if (!parsed.success) return refusedAt(field, HOSTS_MESSAGE);
+      return ok({ field, value: [...new Set<string>(parsed.data)] });
     }
     case "placementPoints": {
       const text = Array.isArray(value)

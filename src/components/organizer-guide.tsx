@@ -90,8 +90,8 @@ export function OrganizerGuide({
           Week and Sign out are in the account menu (your initials, top right).
         </p>
         <p className="text-foreground/70">
-          A Host sees Competitions, Schedule, Announcements, Finale and Guide;
-          the other pages are for Organizers.
+          A Host sees only the Competitions they host and the Guide; the other
+          pages are for Organizers.
         </p>
       </section>
 
@@ -304,8 +304,8 @@ export function OrganizerGuide({
           War Week MVP, Billable Hours Champ, Black Midnight, Grow, Grind, Serve
           and Inspire. Picking one fills in the name and its latest description;
           both stay editable, and a brand-new name works too. There are no
-          Categories: the same name, spelled the same way, is what History uses
-          to show an Award through the years.
+          Categories: the same name, ignoring case and punctuation, is what
+          History uses to show an Award through the years.
         </p>
       </section>
 

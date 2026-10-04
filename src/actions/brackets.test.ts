@@ -42,7 +42,6 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 const authorize = vi.hoisted(() => vi.fn(async () => authorized.current));
 vi.mock("@/auth/authorize", () => ({
   authorize,
-  postedCompetitionId: () => null,
 }));
 vi.mock("@/mutations/close", () => ({
   closeCompetition: vi.fn(boom),

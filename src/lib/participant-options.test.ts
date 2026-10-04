@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildParticipantOptions,
-  filterParticipantOptions,
   nameMatches,
   optionDetail,
 } from "./participant-options";
@@ -43,33 +42,34 @@ describe("buildParticipantOptions", () => {
 });
 
 describe("name-only search", () => {
+  // The picker filters its rows with nameMatches over each option's name.
   const options = buildParticipantOptions(roster(120));
+  const filterParticipantOptions = (query: string) =>
+    options.filter((o) => nameMatches(o.name, query));
 
   it("finds a Participant by part of their display name, ignoring case", () => {
-    expect(
-      filterParticipantOptions(options, "PERSON 117").map((o) => o.id),
-    ).toEqual(["p117"]);
+    expect(filterParticipantOptions("PERSON 117").map((o) => o.id)).toEqual([
+      "p117",
+    ]);
   });
 
   it("returns every match with no cap at 100+ options", () => {
-    expect(filterParticipantOptions(options, "ocelot")).toHaveLength(120);
-    expect(filterParticipantOptions(options, "")).toHaveLength(120);
+    expect(filterParticipantOptions("ocelot")).toHaveLength(120);
+    expect(filterParticipantOptions("")).toHaveLength(120);
   });
 
   it("finds a Participant beyond the 100th", () => {
-    expect(filterParticipantOptions(options, "Person 119")).toHaveLength(1);
+    expect(filterParticipantOptions("Person 119")).toHaveLength(1);
   });
 
   it("finds nothing by an email or a part of one", () => {
-    expect(
-      filterParticipantOptions(options, "person5@jahnelgroup.com"),
-    ).toEqual([]);
-    expect(filterParticipantOptions(options, "@jahnelgroup")).toEqual([]);
-    expect(filterParticipantOptions(options, "jahnelgroup.com")).toEqual([]);
+    expect(filterParticipantOptions("person5@jahnelgroup.com")).toEqual([]);
+    expect(filterParticipantOptions("@jahnelgroup")).toEqual([]);
+    expect(filterParticipantOptions("jahnelgroup.com")).toEqual([]);
   });
 
   it("does not match on the Team's name", () => {
-    expect(filterParticipantOptions(options, "Red Alpha")).toEqual([]);
+    expect(filterParticipantOptions("Red Alpha")).toEqual([]);
     expect(nameMatches("Ana P", "alpha")).toBe(false);
   });
 });

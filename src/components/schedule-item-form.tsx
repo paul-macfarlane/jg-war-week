@@ -70,7 +70,6 @@ const EMPTY: ScheduleItemInput = {
 export function ScheduleItemForm({
   warWeekId,
   itemId,
-  requireCompetition = false,
   initial,
   days,
   competitions,
@@ -78,11 +77,6 @@ export function ScheduleItemForm({
 }: {
   /** The War Week this page was rendered for; creates post it. */
   warWeekId: string;
-  /**
-   * A Host must link each Schedule Item to a Competition they host, so the
-   * form offers no "No Competition" choice.
-   */
-  requireCompetition?: boolean;
   /** Set when editing an existing Schedule Item. */
   itemId?: string;
   initial?: ScheduleItemInput;
@@ -96,7 +90,7 @@ export function ScheduleItemForm({
     initial ?? {
       ...EMPTY,
       dayId: days[0]?.id ?? "",
-      competitionId: requireCompetition ? (competitions[0]?.id ?? "") : "",
+      competitionId: "",
     },
   );
 
@@ -130,7 +124,7 @@ export function ScheduleItemForm({
     label: `${formatDayHeading(day.date)} · ${day.dayTheme}`,
   }));
   const competitionItems = [
-    ...(requireCompetition ? [] : [{ id: "", label: "No Competition" }]),
+    { id: "", label: "No Competition" },
     ...competitions.map((competition) => ({
       id: competition.id,
       label: competition.name,

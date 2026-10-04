@@ -36,7 +36,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Test sign-in**              | A maintainer tool at `/sign-in/test` for testing as any `@jahnelgroup.com` address (`+` aliases included) on staging, by typing a secret. Never on production (ADR 0008). |
 | **Company Tag**               | An optional affiliation label on a participant (LTI, IL, …).                                                                      |
 | **Organizer**                 | A signed-in `@jahnelgroup.com` user on the global Organizer list. Can change anything in any War Week (ADR 0002).                 |
-| **Host**                      | A **roster Participant** an Organizer assigns to a Competition of their War Week ("hosted by Tony M"), **picked by name** (no email shown), with or without an email on the roster (ADR 0012). Runs that Competition. Their access is worked out at sign-in time: the session email matches their roster email. A Participant with no email, or a non-@jahnelgroup.com one, can be picked but can't sign in until an Organizer fixes the email. A Schedule Item's free-text `host` field is display copy, not the Host role. |
+| **Host**                      | A **roster Participant** an Organizer assigns to a Competition of their War Week ("hosted by Tony M"), **picked by name** (no email shown), with or without an email on the roster (ADR 0012). Runs that Competition. Their access is worked out on every request: the session email matches their roster email. A Participant with no email, or a non-@jahnelgroup.com one, can be picked but can't sign in until an Organizer fixes the email. A Schedule Item's free-text `host` field is display copy, not the Host role. |
 | **Admin**                     | The management area at `/admin`. Organizers use all of it; a Host sees only their Competitions and the Guide. A place, never a role: say Organizer or Host for people. |
 | **Competition**               | Anything that awards points. Scored as team or individual. Skill divisions are separate Competitions ("MTG Advanced", "MTG Beginner"). |
 | **Competition Group**         | An optional grouping of competitions ("Team Night Events").                                                                       |
@@ -52,7 +52,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Finale slide**              | One full-screen step of the Finale: a built-in (Title, By the numbers, Awards, Winners, **Standings countdown**, Winner) or a **Custom slide**. Each War Week orders and hides its slides in admin → Finale. |
 | **Custom slide**              | An Organizer's own Finale slide: a heading (unique among the War Week's Custom slides), a rich-text body (the editor's images and video by URL) and an optional background color. It's added just before the Standings countdown, then moved, edited, hidden or deleted like any slide; a built-in is hidden, never deleted. Its text colors are overridden so they read on the background. |
 | **Award**                     | A named honor given to participants or a team. It doesn't affect points.                                                          |
-| **Announcement**              | A post by an Organizer or Host (rich text, videos included).                                                                      |
+| **Announcement**              | A post by an Organizer (rich text, videos included).                                                                              |
 | **FAQ Item**                  | A question and answer pair for a War Week.                                                                                        |
 | **Archive**                   | The past War Weeks shown at `/history`.                                                                                           |
 | **Recent results**            | Home's section of the latest results: closed Brackets, closed Placements, closed Head-to-head, Best score and Participation Competitions and Discretionary points, newest first, up to 5. |
@@ -206,8 +206,8 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   where there isn't (the initials Avatar's fill; a Profile picture hides it,
   so a pictured Avatar needs another mark, such as a Team-colored ring).
   Never by color alone where the name fits.
-  Free-for-all War Weeks have no Teams. One display, `ParticipantMark` and
-  `TeamTag` (`participant-mark.tsx`), with `EntrantMark` and the `Avatar`'s
+  Free-for-all War Weeks have no Teams. One display, `TeamTag`
+  (`participant-mark.tsx`), with `EntrantMark` and the `Avatar`'s
   `data-team-color` ring, serves every surface: Standings (Home's and the
   leaderboard's individual list, its points breakdown, the Finale's
   Standings); Brackets (tree nodes show the Team **color** only; Top
@@ -763,14 +763,14 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   and its recipients.
 - **Presets.** When an Organizer adds an Award, the form's **Preset** picker
   offers every distinct Award name already in the database across War Weeks
-  (case-insensitive) plus the seven former Category names, a constant in
-  code (`FORMER_CATEGORY_NAMES`). Picking one copies its name and its most
+  (ignoring case and punctuation) plus the seven former Category names, a
+  constant in code (`FORMER_CATEGORY_NAMES`). Picking one copies its name and its most
   recent description into the form; both stay editable. Typing a brand-new
   name always works.
 - `/<edition>/awards` lists the War Week's Awards flat, each name linking to
   its history.
 - **History by name.** The same name is the same Award across years:
-  grouping is case-insensitive and by **slug** (the lowercased name with
+  grouping is by **slug**, ignoring case and punctuation (the lowercased name with
   each run of non-alphanumerics collapsed to "-", none leading or
   trailing), so names that differ only in case or punctuation share a page.
   `/history/awards` lists every Award name; `/history/awards/<slug>` shows
@@ -812,7 +812,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 ## Finale rules
 
 - The Finale is the closing-ceremony slideshow at `/<edition>/finale`, for
-  the projector. Organizers and Hosts open it from `/admin/finale` ("Open
+  the projector. Organizers open it from `/admin/finale` ("Open
   Finale"); anyone signed in may watch it. One Finale slide fills the
   screen at a time, over the edition's navigation; Exit goes back to the
   edition.
@@ -822,8 +822,8 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   moves a slide (drag on a pointer device, or Move up/down) and hides or
   shows it; each change saves at once, and the first one saves the whole
   list. A hidden slide keeps its place in the list and is skipped by the
-  Finale. A built-in missing from a saved list is added at its end. Hosts
-  see the list but can't change it. With every slide hidden, the Finale
+  Finale. A built-in missing from a saved list is added at its end. A Host
+  can't open it. With every slide hidden, the Finale
   says "Nothing to show yet."
 - **Keys.** `→`, `Space`, `PageDown` or a click on the stage: next. `←` or
   `PageUp`: back. `Escape`: back to the first slide. `Space` (and `Enter`)

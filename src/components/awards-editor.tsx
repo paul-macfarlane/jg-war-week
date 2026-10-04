@@ -2,6 +2,7 @@
 
 import { deleteAward } from "@/actions/awards";
 import { AwardForm } from "@/components/award-form";
+import { TeamTag } from "@/components/participant-mark";
 import {
   SETUP_EDITOR,
   SetupAddButton,
@@ -45,20 +46,22 @@ export function AwardsEditor({
               key={award.id}
               id={award.id}
               name={award.name}
-              details={[
-                showTeam && `${teamLabel}: ${award.team?.name ?? "—"}`,
-                `Participants: ${
-                  award.participants
-                    .map((p) =>
-                      p.teamName
-                        ? `${p.displayName} (${p.teamName})`
-                        : p.displayName,
-                    )
-                    .join(", ") || "—"
-                }`,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
+              details={
+                <>
+                  {showTeam && `${teamLabel}: ${award.team?.name ?? "—"}`}
+                  {showTeam ? " · " : null}
+                  Participants:{" "}
+                  {award.participants.length === 0
+                    ? "—"
+                    : award.participants.map((p, i) => (
+                        <span key={p.id}>
+                          {i > 0 ? ", " : null}
+                          {p.displayName}{" "}
+                          <TeamTag name={p.teamName} color={p.teamColor} />
+                        </span>
+                      ))}
+                </>
+              }
               form={(close) => (
                 <AwardForm
                   {...formProps}

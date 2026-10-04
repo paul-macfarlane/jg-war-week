@@ -4,9 +4,7 @@ import { DBOrTx, db } from "@/db";
 import {
   attempt,
   competition,
-  competitionHost,
   entrant,
-  organizer,
   participant,
   seriesMatch,
   seriesMatchEntrant,
@@ -45,6 +43,7 @@ import {
 import { bestOfWinner, rankSeries } from "@/lib/series/standings";
 import { isUuid } from "@/lib/uuid";
 import { getCompetitionEntryPoints } from "@/queries/entry-points";
+import { getHostedCompetitions, isOrganizerEmail } from "@/queries/organizers";
 import {
   participantImageSql,
   participantNameSql,
@@ -175,22 +174,10 @@ async function runsCompetition(
   dbOrTx: DBOrTx,
 ): Promise<boolean> {
   if (!email) return false;
-  const [organizers, hosts] = await Promise.all([
-    dbOrTx.$count(organizer, eq(organizer.email, email)),
-    // A Host by roster email, case-insensitive (ADR 0012).
-    dbOrTx
-      .select({ id: competitionHost.id })
-      .from(competitionHost)
-      .innerJoin(participant, eq(participant.id, competitionHost.participantId))
-      .where(
-        and(
-          eq(competitionHost.competitionId, competitionId),
-          eq(sql`lower(${participant.email})`, email.trim().toLowerCase()),
-        ),
-      )
-      .then((rows) => rows.length),
-  ]);
-  return organizers + hosts > 0;
+  if (await isOrganizerEmail(email, dbOrTx)) return true;
+  // The one Host rule (ADR 0012), shared with the admin gate.
+  const hosted = await getHostedCompetitions(email, dbOrTx);
+  return hosted.some((h) => h.competitionId === competitionId);
 }
 
 /**

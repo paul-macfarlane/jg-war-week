@@ -7,7 +7,7 @@ import type { Entrant } from "@/lib/bracket/types";
 import { Avatar } from "./avatar";
 import { BracketTree } from "./bracket-tree";
 import { type BracketViewEntrant, EntrantTeam } from "./entrant-mark";
-import { ParticipantMark, TeamTag } from "./participant-mark";
+import { TeamTag } from "./participant-mark";
 
 describe("Avatar's Team mark", () => {
   it("wears a Team-colored ring when it is a picture", () => {
@@ -55,36 +55,6 @@ describe("TeamTag", () => {
       <TeamTag name="Red Rockets" color="#e11d48" responsive />,
     );
     expect(html).toContain("hidden md:inline-flex");
-  });
-});
-
-describe("ParticipantMark", () => {
-  const props = {
-    name: "Ada Lovelace",
-    teamName: "Red Rockets",
-    teamColor: "#e11d48",
-  };
-
-  it("shows avatar, name and Team", () => {
-    const html = renderToStaticMarkup(<ParticipantMark {...props} />);
-    expect(html).toContain("Ada Lovelace");
-    expect(html).toContain("Red Rockets");
-    expect(html).toContain('data-team-color="#e11d48"');
-  });
-
-  it("leaves the Team to the color where asked", () => {
-    const html = renderToStaticMarkup(
-      <ParticipantMark {...props} team="color" />,
-    );
-    expect(html).not.toContain("Red Rockets");
-    expect(html).toContain('data-team-color="#e11d48"');
-  });
-
-  it("shows no Team in a free-for-all War Week", () => {
-    const html = renderToStaticMarkup(
-      <ParticipantMark name="Ada Lovelace" teamColor={null} />,
-    );
-    expect(html).not.toContain("data-team");
   });
 });
 

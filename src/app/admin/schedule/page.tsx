@@ -29,7 +29,7 @@ export default async function AdminSchedulePage() {
 
   const [schedule, setupDays, competitions] = await Promise.all([
     getSchedule(warWeek.id),
-    isOrganizer ? getSetupDays(warWeek) : [],
+    getSetupDays(warWeek),
     getCompetitionOptions(warWeek),
   ]);
   // The same grouping and order as the public Schedule page.
@@ -72,27 +72,22 @@ export default async function AdminSchedulePage() {
       <section className="flex max-w-3xl flex-col gap-6">
         <h1 className="text-2xl font-bold">Schedule</h1>
 
-        {isOrganizer && (
-          <section
-            aria-labelledby="days-heading"
-            className="flex flex-col gap-2"
-          >
-            <h2 id="days-heading" className="text-lg font-semibold">
-              Days
-            </h2>
-            <p className="text-foreground/70 text-sm">
-              Each Day falls within the War Week (
-              {formatDateRange(warWeek.startDate, warWeek.endDate)}) and has a
-              Day Theme. A Day with Schedule Items can&apos;t be deleted.
-            </p>
-            <DaysEditor
-              warWeekId={warWeek.id}
-              days={setupDays}
-              startDate={warWeek.startDate}
-              endDate={warWeek.endDate}
-            />
-          </section>
-        )}
+        <section aria-labelledby="days-heading" className="flex flex-col gap-2">
+          <h2 id="days-heading" className="text-lg font-semibold">
+            Days
+          </h2>
+          <p className="text-foreground/70 text-sm">
+            Each Day falls within the War Week (
+            {formatDateRange(warWeek.startDate, warWeek.endDate)}) and has a Day
+            Theme. A Day with Schedule Items can&apos;t be deleted.
+          </p>
+          <DaysEditor
+            warWeekId={warWeek.id}
+            days={setupDays}
+            startDate={warWeek.startDate}
+            endDate={warWeek.endDate}
+          />
+        </section>
 
         <section
           aria-labelledby="schedule-items-heading"
@@ -107,14 +102,11 @@ export default async function AdminSchedulePage() {
           </p>
           {days.length === 0 ? (
             <p className="text-foreground/70 text-sm">
-              {isOrganizer
-                ? "Add a Day above before adding Schedule Items."
-                : "No Days yet. An Organizer adds the Days first."}
+              Add a Day above before adding Schedule Items.
             </p>
           ) : (
             <ScheduleItemsEditor
               warWeekId={warWeek.id}
-              requireCompetition={!isOrganizer}
               days={days}
               competitions={competitions}
             />

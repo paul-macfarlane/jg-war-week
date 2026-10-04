@@ -3,7 +3,7 @@
 - Status: accepted (built in Epic R22, work package people-and-admin)
 - Date: 2026-10-04
 - Supersedes in part: ADR 0002 (its Host storage as an email, "A Host doesn't have to be a Participant", "Create next War Week copies Hosts" and the Host's Schedule Item and Announcement rights)
-- Extends: ADR 0007 (email matching, case-insensitive), ADR 0010 (Placement stays Host-recorded)
+- Extends: ADR 0007 (email matching, case-insensitive)
 
 ## Context
 
@@ -74,17 +74,7 @@ never removes a Host an Organizer added.
 MCP still never returns Host lists or emails. Organizers stay a typed email
 on a global list: they needn't be on a roster.
 
-## Consequences
-
-- One migration (`0033`) reshapes `competition_host`. XII is test data, so
-  existing Host rows are deleted rather than converted; staging and
-  production are reset and reseeded after merge.
-- ADR 0002 carries a "Superseded in part" line pointing here.
-- `CONTEXT.md` (Host, Access rules for Hosts), the maintainers' guide and
-  the regression checklist say Hosts are roster Participants and see only
-  Competitions and the Guide.
-
-## Alternatives considered
+## Considered options
 
 - **Keep the email and add a Participant link.** Rejected: two sources of
   truth, and a Host still could not be chosen without an email.
@@ -95,3 +85,13 @@ on a global list: they needn't be on a roster.
 - **Keep Hosts' Schedule and Announcements rights.** Rejected: a Host runs
   one Competition; the Schedule and Announcements are the Organizers' voice
   for the whole War Week.
+
+## Consequences
+
+- One migration (`0033`) reshapes `competition_host`. XII is test data, so
+  existing Host rows are deleted rather than converted; staging and
+  production are reset and reseeded after merge.
+- ADR 0002 carries a "Superseded in part" line pointing here.
+- `CONTEXT.md` (Host, Access rules for Hosts), the maintainers' guide and
+  the regression checklist say Hosts are roster Participants and see only
+  Competitions and the Guide.

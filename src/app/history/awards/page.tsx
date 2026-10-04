@@ -2,6 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { AwardNameChips } from "@/components/award-name-chips";
 import { getAwardNamesWithHistory } from "@/queries/award-history";
 
 export const dynamic = "force-dynamic";
@@ -32,18 +33,7 @@ export default async function AwardNamesPage() {
       {awardNames.length === 0 ? (
         <p className="text-foreground/70 text-sm">No Awards yet.</p>
       ) : (
-        <ul aria-label="Award names" className="flex flex-wrap gap-2">
-          {awardNames.map((awardName) => (
-            <li key={awardName.slug}>
-              <Link
-                href={`/history/awards/${awardName.slug}`}
-                className="border-border hover:bg-muted inline-flex min-h-11 items-center rounded-md border px-3 text-sm font-medium sm:min-h-9"
-              >
-                {awardName.name}
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <AwardNameChips names={awardNames} label="Award names" />
       )}
     </main>
   );

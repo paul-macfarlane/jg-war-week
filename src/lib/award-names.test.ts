@@ -27,6 +27,20 @@ describe("awardNameSlug", () => {
 });
 
 describe("awardPresets", () => {
+  it("treats names that differ only in case or punctuation as one preset", () => {
+    const presets = awardPresets([
+      { name: "Best Dressed!", description: null },
+      { name: "best-dressed", description: "Fashion" },
+      { name: "Grow!", description: null },
+    ]);
+    expect(presets.filter((p) => /best/i.test(p.name))).toEqual([
+      { name: "Best Dressed!", description: "Fashion" },
+    ]);
+    expect(presets.filter((p) => /^grow/i.test(p.name))).toEqual([
+      { name: "Grow!", description: null },
+    ]);
+  });
+
   it("lists the seven former Category names with no Awards at all", () => {
     expect(awardPresets([]).map((p) => p.name)).toEqual([
       "Billable Hours Champ",

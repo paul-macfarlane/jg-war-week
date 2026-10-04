@@ -1039,7 +1039,6 @@ describe("can: Discretionary points", () => {
         can(ACTORS.host, action, {
           warWeekId: XI,
           competitionId: CATAN,
-          postedCompetitionId: CATAN,
         }),
         action,
       ).toMatch(/^Only an Organizer can /);
@@ -1061,14 +1060,10 @@ describe("can: Schedule Items and Announcements are Organizer-only (ADR 0012)", 
   };
   it.each(
     cases([
-      [
-        "schedule-item.create",
-        { warWeekId: XI, postedCompetitionId: CATAN },
-        only("add Schedule Items"),
-      ],
+      ["schedule-item.create", { warWeekId: XI }, only("add Schedule Items")],
       [
         "schedule-item.edit",
-        { warWeekId: XI, competitionId: CATAN, postedCompetitionId: CATAN },
+        { warWeekId: XI, competitionId: CATAN },
         only("change Schedule Items"),
       ],
       [
@@ -1077,16 +1072,8 @@ describe("can: Schedule Items and Announcements are Organizer-only (ADR 0012)", 
         only("delete Schedule Items"),
       ],
       ["announcement.create", { warWeekId: XI }, only("post Announcements")],
-      [
-        "announcement.edit",
-        { warWeekId: XI, authorEmail: "tony@jahnelgroup.com" },
-        only("change Announcements"),
-      ],
-      [
-        "announcement.delete",
-        { warWeekId: XI, authorEmail: "tony@jahnelgroup.com" },
-        only("delete Announcements"),
-      ],
+      ["announcement.edit", { warWeekId: XI }, only("change Announcements")],
+      ["announcement.delete", { warWeekId: XI }, only("delete Announcements")],
     ]),
   )("%s", (_, action, target, actor, expected) => {
     expect(can(ACTORS[actor], action, target)).toBe(expected);

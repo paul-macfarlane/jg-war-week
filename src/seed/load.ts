@@ -124,7 +124,6 @@ async function insertEntrants(
   if (rows.length) await tx.insert(entrant).values(rows).onConflictDoNothing();
 }
 
-/** Resolves a seed reference that the seed schema has already checked. */
 /**
  * Each seeded Host, a roster Participant of this War Week named by display
  * name, added when absent. The loader refuses a name that isn't on the
@@ -146,6 +145,7 @@ async function insertHosts(
   await tx.insert(competitionHost).values(rows).onConflictDoNothing();
 }
 
+/** Resolves a seed reference that the seed schema has already checked. */
 function resolve(ids: Map<string, string>, name: string): string {
   const id = ids.get(name);
   if (!id) {

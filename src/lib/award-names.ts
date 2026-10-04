@@ -35,8 +35,8 @@ export function awardNameSlug(name: string): string {
 export type AwardPreset = { name: string; description: string | null };
 
 /**
- * Every distinct Award name (case-insensitive) with its most recent
- * description, then the former Category names not already there, by name.
+ * Every distinct Award name (one per slug, so case and punctuation don't
+ * split a name) with its most recent description, then the former Category names not already there, by name.
  * `awards` must be newest first: the first spelling of a name wins, and the
  * most recent description that isn't empty.
  */
@@ -45,7 +45,7 @@ export function awardPresets(
 ): AwardPreset[] {
   const byName = new Map<string, AwardPreset>();
   for (const { name, description } of awards) {
-    const key = name.trim().toLowerCase();
+    const key = awardNameSlug(name);
     if (!key) continue;
     const found = byName.get(key);
     if (!found) {
@@ -55,7 +55,7 @@ export function awardPresets(
     }
   }
   for (const name of FORMER_CATEGORY_NAMES) {
-    const key = name.toLowerCase();
+    const key = awardNameSlug(name);
     if (!byName.has(key)) byName.set(key, { name, description: null });
   }
   return [...byName.values()].sort((a, b) =>

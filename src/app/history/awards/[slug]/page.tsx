@@ -36,9 +36,7 @@ export default async function AwardNameHistoryPage({
         Back to history
       </Link>
       <div className="flex flex-col gap-1">
-        <h1 className="flex flex-wrap items-center gap-2 text-3xl font-bold">
-          {name}
-        </h1>
+        <h1 className="text-3xl font-bold">{name}</h1>
         <p className="text-foreground/70">
           Every War Week&apos;s recipients, newest first.
         </p>

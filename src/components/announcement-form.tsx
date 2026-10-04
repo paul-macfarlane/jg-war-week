@@ -48,7 +48,7 @@ export function AnnouncementForm({
 }: {
   /** The War Week this page was rendered for; creates post it. */
   warWeekId: string;
-  /** Pinning is Organizer-only; a Host doesn't see the switch. */
+  /** Pinning is Organizer-only; the switch shows only with this. */
   canPin?: boolean;
   /** Set when editing an existing Announcement. */
   announcementId?: string;

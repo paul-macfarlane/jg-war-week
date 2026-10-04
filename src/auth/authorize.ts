@@ -85,7 +85,7 @@ export type TargetKind = keyof typeof TARGETS;
  * 2. check the id is shaped like a row id (the family's not-found message);
  * 3. load the row and its War Week (a create or the settings save passes
  *    the posted `warWeekId` as a `warWeek` target);
- * 4. run `can`, with any posted Competition the request carries.
+ * 4. run `can`.
  * The caller parses its input only after this. Never throws on a refusal.
  */
 export async function authorize(
@@ -93,7 +93,6 @@ export async function authorize(
   kind: TargetKind,
   id: unknown,
   options: {
-    postedCompetitionId?: string | null;
     notFound?: string;
   } = {},
 ): Promise<Authorized | Refused> {
@@ -108,11 +107,7 @@ export async function authorize(
   const access: AccessTarget = {
     warWeekId: target.warWeek.id,
     competitionId: target.competitionId,
-    authorEmail: target.authorEmail,
   };
-  if ("postedCompetitionId" in options) {
-    access.postedCompetitionId = options.postedCompetitionId;
-  }
   const refusal = can(actor, action, access);
   if (refusal) return { ok: false, error: refusal };
   return {
@@ -373,14 +368,4 @@ export async function authorizeSelf(
   if (refusal || !actor)
     return { ok: false, error: refusal ?? SIGN_IN_REFUSAL };
   return { ok: true, actor };
-}
-
-/**
- * A Competition id a request posts, read before the input is parsed so
- * `can` can check it: a string as sent, blank or missing as null (none).
- */
-export function postedCompetitionId(input: unknown): string | null {
-  if (typeof input !== "object" || input === null) return null;
-  const value = (input as { competitionId?: unknown }).competitionId;
-  return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { ArchiveCard } from "@/components/archive";
+import { AwardNameChips } from "@/components/award-name-chips";
 import { listArchive } from "@/queries/archive";
 import { getAwardNamesWithHistory } from "@/queries/award-history";
 
@@ -48,18 +49,7 @@ export default async function HistoryPage() {
               All Award names
             </Link>
           </p>
-          <ul className="flex flex-wrap gap-2">
-            {awardNames.map((awardName) => (
-              <li key={awardName.slug}>
-                <Link
-                  href={`/history/awards/${awardName.slug}`}
-                  className="border-border hover:bg-muted inline-flex min-h-11 items-center rounded-md border px-3 text-sm font-medium sm:min-h-9"
-                >
-                  {awardName.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <AwardNameChips names={awardNames} />
         </section>
       ) : null}
     </main>

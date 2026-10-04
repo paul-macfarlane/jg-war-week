@@ -33,10 +33,8 @@ export type TargetWarWeek = {
 /** A row an action changes: its War Week and what `can` checks on it. */
 export type LoadedTarget = {
   warWeek: TargetWarWeek;
-  /** The row's current Competition (null for an unlinked Schedule Item). */
+  /** The row's current Competition. */
   competitionId?: string | null;
-  /** An Announcement's author. */
-  authorEmail?: string;
   /** Whether an Announcement is pinned now. */
   pinned?: boolean;
 };
@@ -137,7 +135,6 @@ export async function loadScheduleItemTarget(
   const [found] = await dbOrTx
     .select({
       warWeek: warWeekColumns,
-      competitionId: scheduleItem.competitionId,
     })
     .from(scheduleItem)
     .innerJoin(day, eq(day.id, scheduleItem.dayId))
@@ -154,7 +151,6 @@ export async function loadAnnouncementTarget(
   const [found] = await dbOrTx
     .select({
       warWeek: warWeekColumns,
-      authorEmail: announcement.authorEmail,
       pinned: announcement.pinned,
     })
     .from(announcement)

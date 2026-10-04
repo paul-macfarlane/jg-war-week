@@ -62,14 +62,6 @@ export function nameMatches(name: string, query: string): boolean {
   return name.toLowerCase().includes(needle);
 }
 
-/** The options whose name fits the query. No cap: every match is returned. */
-export function filterParticipantOptions(
-  options: ParticipantOption[],
-  query: string,
-): ParticipantOption[] {
-  return options.filter((option) => nameMatches(option.name, query));
-}
-
 /** The muted text beside a name: the Team's name, then the note. */
 export function optionDetail(option: ParticipantOption): string | undefined {
   const parts = [option.teamName, option.note].filter(Boolean);

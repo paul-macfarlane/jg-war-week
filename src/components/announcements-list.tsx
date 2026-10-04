@@ -20,8 +20,6 @@ export function AnnouncementsList({
     pinned: boolean;
     /** "Posted by … · Published … (ET)". */
     details: string;
-    /** May this viewer edit and delete it (their own, for a Host)? */
-    mayChange: boolean;
   }[];
   /** Only an Organizer pins. */
   canPin: boolean;
@@ -50,12 +48,8 @@ export function AnnouncementsList({
                 <PinAnnouncementButton id={row.id} pinned={row.pinned} />
               )
             }
-            editHref={
-              row.mayChange ? `/admin/announcements/${row.id}` : undefined
-            }
-            onDelete={
-              row.mayChange ? () => deleteAnnouncement(row.id) : undefined
-            }
+            editHref={`/admin/announcements/${row.id}`}
+            onDelete={() => deleteAnnouncement(row.id)}
             deleteTitle={`Delete "${row.title}"?`}
             deleteSuccess="Announcement deleted"
           />

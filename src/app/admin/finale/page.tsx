@@ -18,8 +18,8 @@ export const metadata: Metadata = {
 };
 
 /**
- * The Organizer's way into the Finale, its slide list (order and hidden
- * slides; Organizers change it, Hosts see it).
+ * The Organizer's way into the Finale and its slide list (order, hidden
+ * slides and Custom slides). Organizers only.
  */
 export default async function AdminFinalePage() {
   const { warWeek, email, allowed, isOrganizer, editions } =
@@ -66,9 +66,8 @@ export default async function AdminFinalePage() {
         <section className="flex flex-col gap-2">
           <h2 className="text-lg font-semibold">Slides</h2>
           <p className="text-foreground/70 text-sm">
-            {isOrganizer
-              ? "The Finale plays these in order. Drag a slide, or use its arrows, to move it; hide a slide to skip it. Each change saves at once."
-              : "The Finale plays these in order. Only an Organizer can change them."}
+            The Finale plays these in order. Drag a slide, or use its arrows, to
+            move it; hide a slide to skip it. Each change saves at once.
           </p>
           <FinaleSlidesEditor
             warWeekId={warWeek.id}
@@ -88,7 +87,6 @@ export default async function AdminFinalePage() {
                 };
               },
             )}
-            canEdit={isOrganizer}
             themeSwatches={themeSwatches(warWeek)}
           />
         </section>

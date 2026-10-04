@@ -112,8 +112,10 @@ export async function resetXiFinaleSlides() {
 }
 
 /**
- * Deletes a War Week XI Competition by name, if it exists, and the roster
- * Participants `addE2eHost` made that no longer host anything. Test cleanup.
+ * Deletes a War Week XI Competition by name, if it exists, and every roster
+ * Participant `addE2eHost` made (named "E2E %", an `e2e-` email) that no
+ * longer hosts anything. The orphan sweep covers every War Week, not just XI.
+ * Test cleanup.
  */
 export async function deleteXiCompetition(name: string) {
   await runQuery(

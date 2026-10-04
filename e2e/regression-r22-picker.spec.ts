@@ -8,9 +8,11 @@ import {
 } from "@playwright/test";
 import { spawnSync } from "node:child_process";
 
+import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 import { localSeedFiles } from "@/seed/local-files";
 
-import { runQuery } from "./db";
+import { deleteXiCompetition, runQuery } from "./db";
+import { addXiCompetition } from "./r21-logging";
 import { asOrganizer } from "./session";
 
 // Epic R22, Decision 3 and ACs 6-8 (.scratch/people-and-admin/spec.md): one
@@ -351,6 +353,67 @@ test("r22 picker: in a teams War Week every row shows avatar, name and Team, and
       await expect(row).toHaveCount(0);
     }
   } finally {
+    await context.close();
+  }
+});
+
+test("r22 picker: the Squads picker shows avatar, name and Team rows, finds by name and not by Team, at 1440 and 390", async ({
+  browser,
+}, testInfo) => {
+  test.setTimeout(90_000);
+  const { context, page } = await organizerPage(browser);
+  const name = "E2E R22 Picker Squads";
+  try {
+    // A team-scoring Bracket in demo XI: its Squads are made on its page.
+    const id = await addXiCompetition(name, {
+      format: "bracket",
+      scoring: "team",
+      scoreDirection: "higher",
+      bracketConfig: DEFAULT_BRACKET_CONFIG,
+    });
+    const [{ person, team }] = await runQuery<{
+      person: string;
+      team: string;
+    }>(
+      `select p.display_name as person, t.name as team
+       from participant p join team t on t.id = p.team_id
+       join war_week w on w.id = p.war_week_id
+       where w.edition = 'xi' and p.display_name = 'Ashley Schuliger'`,
+    );
+    for (const [width, size] of VIEWPORTS) {
+      await page.setViewportSize(size);
+      await page.goto(`/admin/competitions/${id}`);
+      await page.getByRole("button", { name: "Add Squad" }).click();
+      const sheet = page.getByRole("dialog", { name: "Add Squad" });
+      await sheet.getByRole("combobox", { name: "Team", exact: true }).click();
+      await page.getByRole("option", { name: team, exact: true }).click();
+      const find = sheet.getByRole("combobox", { name: /^Participants/ });
+      await find.click();
+      const options = page.getByRole("option");
+      expect(await options.count()).toBeGreaterThan(1);
+      // Every row is avatar, name and the Squad's Team.
+      for (const row of await options.all()) {
+        await expect(row.locator('[data-slot="avatar"]')).toHaveCount(1);
+        await expect(row).toContainText(team);
+      }
+      await expectRowsDoNotWrap(options);
+      await page.screenshot({
+        path: testInfo.outputPath(`squads-picker-${width}.png`),
+        animations: "disabled",
+      });
+      // Found by name; the Team's name is not a search term.
+      await find.fill("Ashley");
+      await expect(
+        page.getByRole("option", { name: new RegExp(`^${person}`) }),
+      ).toHaveCount(1);
+      await find.fill(team);
+      await expect(
+        page.getByRole("option", { name: new RegExp(`^${person}`) }),
+      ).toHaveCount(0);
+      await page.keyboard.press("Escape");
+    }
+  } finally {
+    await deleteXiCompetition(name);
     await context.close();
   }
 });

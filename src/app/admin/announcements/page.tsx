@@ -4,7 +4,6 @@ import Link from "next/link";
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { AnnouncementsList } from "@/components/announcements-list";
 import { buttonVariants } from "@/components/ui/button";
-import { can } from "@/lib/access";
 import { formatPublishedAt } from "@/lib/announcements";
 import { getAdminAnnouncementRows } from "@/queries/announcements";
 
@@ -15,14 +14,11 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Announcements · JG War Week" };
 
 export default async function AdminAnnouncementsPage() {
-  const { warWeek, email, actor, allowed, isOrganizer, editions } =
+  const { warWeek, email, allowed, isOrganizer, editions } =
     await loadAdminPage("/admin/announcements", "organizers");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const announcements = await getAdminAnnouncementRows(warWeek);
-  const mayChange = (authorEmail: string) =>
-    can(actor, "announcement.edit", { warWeekId: warWeek.id, authorEmail }) ===
-    null;
 
   return (
     <AdminShell
@@ -53,7 +49,6 @@ export default async function AdminAnnouncementsPage() {
               title: row.title,
               pinned: row.pinned,
               details: `Posted by ${row.authorName} · Published ${formatPublishedAt(row.publishedAt)} (ET)`,
-              mayChange: mayChange(row.authorEmail),
             }))}
           />
         )}

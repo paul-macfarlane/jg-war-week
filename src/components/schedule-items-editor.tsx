@@ -27,14 +27,11 @@ export type ScheduleItemRow = {
  */
 export function ScheduleItemsEditor({
   warWeekId,
-  requireCompetition,
   days,
   competitions,
 }: {
   /** The War Week this page was rendered for; creates post it. */
   warWeekId: string;
-  /** A Host links each Schedule Item to a Competition they host. */
-  requireCompetition: boolean;
   days: {
     id: string;
     date: string;
@@ -46,7 +43,6 @@ export function ScheduleItemsEditor({
 }) {
   const formProps = {
     warWeekId,
-    requireCompetition,
     days: days.map(({ id, date, dayTheme }) => ({ id, date, dayTheme })),
     competitions,
   };

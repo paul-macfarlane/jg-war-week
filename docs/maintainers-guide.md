@@ -86,7 +86,7 @@ before it says it's done.
 | The admin Competition page (Settings on top, the Format's run area below) | `src/app/admin/competitions/[id]/page.tsx` and `run-area.tsx`, `src/components/competition-settings-form.tsx`, `src/lib/competition-page.ts`, `src/queries/competition-page.ts` |
 | Which settings lock, and the per-field save | `src/lib/competition-locks.ts` (the one lock table and its one-line reasons), `src/queries/competition-locks.ts`, `src/mutations/competition-settings.ts`, `src/lib/competition-settings.ts`, `src/lib/autosave.ts` |
 | The one Participant picker (avatar, name, Team; name-only search, no cap, no email in any option or payload) | `src/components/participant-picker.tsx` (on `entity-combobox.tsx`), `src/lib/participant-options.ts` (the option type and the name match, with its vitest); the Hosts picker's "Can't sign in" note in `src/lib/host-options.ts`, `getHostCandidates` in `src/queries/roster.ts` |
-| How a Participant's Team shows wherever they compete or score (name beside the name, color where tight; a ring on a pictured Avatar) | `src/components/participant-mark.tsx` (`TeamTag`, `ParticipantMark`), `src/components/entrant-mark.tsx`, `src/components/avatar.tsx` |
+| How a Participant's Team shows wherever they compete or score (name beside the name, color where tight; a ring on a pictured Avatar) | `src/components/participant-mark.tsx` (`TeamTag`), `src/components/entrant-mark.tsx`, `src/components/avatar.tsx` |
 | The description's plain-text to rich-text conversion for seeds | `src/lib/rich-text/from-plain-text.ts` |
 | Bracket builder and results screens                | the Bracket section of `src/components/competition-settings-form.tsx` and of the run area; `src/components/bracket-builder.tsx` |
 | The retired setup routes (308 to the Competition page) | `src/app/admin/competitions/[id]/{bracket,games,participation}/`, `src/app/admin/brackets/[id]/`, `src/app/admin/placements/[competitionId]/`: each a redirect page, proven by `retired-routes.test.ts` |
@@ -271,7 +271,7 @@ redirect to their new homes.
   sign in" on Roster.
 - **`/admin/organizers`**: the Organizer list (see
   [Add an Organizer or assign Hosts](#add-an-organizer-or-assign-hosts)).
-- **`/admin/discretionary-points`** (Organizers only: give, edit or delete points with no Competition, each with a required reason; the old `/admin/points` redirects here), **`/admin/finale`** (Run the Finale: the slide list, "Open Finale" at closing ceremonies, and "Finale: <Competition>" for each closed Bracket),
+- **`/admin/discretionary-points`** (Organizers only: give, edit or delete points with no Competition, each with a required reason; the old `/admin/points` redirects here), **`/admin/finale`** (Run the Finale: the slide list, "Open Finale" at closing ceremonies),
   **`/admin/announcements`**, **`/admin/awards`**.
 
 To start next year's edition in the app:
@@ -657,8 +657,8 @@ an Organizer sees the slide list, moves a slide (drag, or ↑/↓), hides or
 shows it, and adds a Custom slide (heading, rich-text body, optional
 background color; its text colors adjust to read on it) and edits or deletes
 it. The Awards slide always reveals one Award per step; there is no layout
-setting. Every change saves at once. Writes are Organizer-only: a Host sees the list
-but no controls. A slide with nothing to show is skipped, and with every
+setting. Every change saves at once. Only Organizers can open it: a Host can't open
+`/admin/finale`. A slide with nothing to show is skipped, and with every
 slide hidden the Finale says "Nothing to show yet." The rules are under
 "Finale rules" in `CONTEXT.md`.
 
@@ -725,7 +725,7 @@ On `/admin/awards` (Organizers only) **Add Award** opens the form. Its
 the seven that used to be Categories (War Week MVP, Billable Hours Champ,
 Black Midnight, Grow, Grind, Serve, Inspire); picking one fills the name and
 its most recent description, and both stay editable. A brand-new name works
-too. There are no Categories: the same name, written the same way, is what
+too. There are no Categories: the same name, ignoring case and punctuation, is what
 ties an Award together across years. `/<edition>/awards` lists the Awards,
 each name linking to `/history/awards/<slug>`, which shows that name by War
 Week, newest first (case and punctuation don't split a name). `/history` and

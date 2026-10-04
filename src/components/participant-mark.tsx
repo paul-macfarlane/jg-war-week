@@ -1,4 +1,3 @@
-import { Avatar } from "@/components/avatar";
 import { cn } from "@/lib/utils";
 
 /**
@@ -38,45 +37,6 @@ export function TeamTag({
         />
       ) : null}
       {name}
-    </span>
-  );
-}
-
-/**
- * The one Participant display: Avatar, name and, in a teams War Week, the
- * Team (the Team rule, CONTEXT.md). `team="color"` leaves the Team to the
- * Avatar's color alone, where there is no room for the name.
- */
-export function ParticipantMark({
-  name,
-  image,
-  teamName,
-  teamColor,
-  primaryColor,
-  team = "name",
-  className,
-  avatarClassName,
-}: {
-  name: string;
-  image?: string | null;
-  teamName?: string | null;
-  teamColor: string | null;
-  primaryColor?: string;
-  team?: "name" | "color";
-  className?: string;
-  avatarClassName?: string;
-}) {
-  return (
-    <span className={cn("inline-flex min-w-0 items-center gap-2", className)}>
-      <Avatar
-        name={name}
-        teamColor={teamColor}
-        primaryColor={primaryColor}
-        image={image}
-        className={avatarClassName}
-      />
-      <span className="min-w-0 break-words">{name}</span>
-      {team === "name" ? <TeamTag name={teamName} color={teamColor} /> : null}
     </span>
   );
 }

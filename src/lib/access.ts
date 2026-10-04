@@ -137,18 +137,14 @@ export type WarWeekAction =
 
 /**
  * What a War Week action is checked against: the War Week, plus where the
- * family needs it the row's current Competition (`competitionId`, null for
- * an unlinked Schedule Item), the Competition the request posts
- * (`postedCompetitionId`, null to unlink), an Announcement's author and,
- * for the Participant writes, their facts: a Bracket Match's
+ * family needs it the row's current Competition (`competitionId`) and, for
+ * the Participant writes, their facts: a Bracket Match's
  * (`matchReport`), a Head-to-head Match's (`seriesLog`), an Attempt's
  * (`attemptLog`), enrollment's (`enroll`) or Check in's (`checkIn`).
  */
 export type AccessTarget = {
   warWeekId: string;
   competitionId?: string | null;
-  postedCompetitionId?: string | null;
-  authorEmail?: string;
   matchReport?: MatchReportFacet;
   seriesLog?: SeriesLogFacet;
   attemptLog?: AttemptLogFacet;
@@ -359,8 +355,8 @@ export function can(
       // this Competition. Participants never record Placements.
       return hostsCurrent ? null : NOT_HOST;
     default:
-      // A Competition's setup and Bracket, and deleting a Points Entry or
-      // Schedule Item: the Host of the row's current Competition.
+      // A Competition's setup and Bracket, and deleting a Points Entry: the
+      // Host of the row's current Competition.
       return hostsCurrent ? null : NOT_HOST;
   }
 }
