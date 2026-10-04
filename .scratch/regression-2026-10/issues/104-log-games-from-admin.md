@@ -24,4 +24,4 @@
 
 - 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r18`): claimed with Epic R18; `ready-for-agent` → `in-progress`. Execution record: [`R18-execution.md`](../epics/R18-execution.md).
 
-- 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r18`): D104 `303f082` (Sonnet): `AdminGames` in the Head-to-head and Best score run area reuses `GameLog` and `GameForm` with no player preselected; existing Game authorization unchanged. Every AC PASS; evidence in [`R18-execution.md`](../epics/R18-execution.md). `ai-review` → `done`.
+- 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r18`): D104 `303f082` (Sonnet): `AdminGames` in the Head-to-head and Best score run area reuses `GameLog` and `GameForm` with no player preselected; existing Game authorization unchanged. Every AC PASS; evidence in [`R18-execution.md`](../epics/R18-execution.md). `ai-review` → `done`. PR: https://github.com/paul-macfarlane/jg-war-week/pull/130

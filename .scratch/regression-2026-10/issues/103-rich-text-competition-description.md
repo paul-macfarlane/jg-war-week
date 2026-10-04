@@ -29,4 +29,4 @@
 
 - 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r18`): claimed with Epic R18; `ready-for-agent` → `in-progress`. Execution record: [`R18-execution.md`](../epics/R18-execution.md).
 
-- 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r18`): D103 `b052a82` (Sonnet): `drizzle/0030_woozy_amphibian.sql` (`USING NULL`), `contentInputSchema` on save, `RichTextEditor` on the page, `RichText` on the Participant page, `plainTextToContent` for seeds. DR1 added the old-row migration test and an image-by-URL e2e step. Every AC PASS; evidence in [`R18-execution.md`](../epics/R18-execution.md). `ai-review` → `done`.
+- 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r18`): D103 `b052a82` (Sonnet): `drizzle/0030_woozy_amphibian.sql` (`USING NULL`), `contentInputSchema` on save, `RichTextEditor` on the page, `RichText` on the Participant page, `plainTextToContent` for seeds. DR1 added the old-row migration test and an image-by-URL e2e step. Every AC PASS; evidence in [`R18-execution.md`](../epics/R18-execution.md). `ai-review` → `done`. PR: https://github.com/paul-macfarlane/jg-war-week/pull/130

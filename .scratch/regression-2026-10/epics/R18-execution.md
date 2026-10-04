@@ -148,3 +148,4 @@ Remaining risks, not in R18's contract: (1) the Placement sheet's "Add a Partici
 | P104-e2e-log-edit, P104-e2e-delete | PASS | gate.log (`regression-r18-games-admin`) |
 
 **Human prerequisite (post-merge, Paul):** the epic's reset of staging, the prod pre-check, then prod (see the PR description and `docs/maintainers-guide.md`).
+- **PR:** https://github.com/paul-macfarlane/jg-war-week/pull/130
