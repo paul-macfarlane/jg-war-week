@@ -16,14 +16,17 @@ import { bracketTree } from "@/lib/bracket/tree";
 import type { Bracket, Entrant, Match } from "@/lib/bracket/types";
 import { matchName } from "@/lib/bracket/view";
 
-const withGame: BracketConfig = {
+const withThirdPlace: BracketConfig = {
   kind: "head-to-head" as const,
   entrantsPerMatch: 2,
   advancePerMatch: 1,
   thirdPlaceMatch: true,
   rounds: {},
 };
-const withoutGame: BracketConfig = { ...withGame, thirdPlaceMatch: false };
+const withoutThirdPlace: BracketConfig = {
+  ...withThirdPlace,
+  thirdPlaceMatch: false,
+};
 const placementPoints = [10, 7, 5, 3];
 
 /** Entrants s1…sN at Seed Positions 1…N. */
@@ -72,7 +75,7 @@ function throughSemifinals(config: BracketConfig): Bracket {
 
 describe("Generate with a 3rd place Match", () => {
   it("adds the 3rd place Match beside the final, fed by each semifinal's loser", () => {
-    const bracket = generate(withGame, entrants(8), newId);
+    const bracket = generate(withThirdPlace, entrants(8), newId);
 
     const final = match(bracket, "r3h1");
     const third = match(bracket, "r3h2");
@@ -100,20 +103,20 @@ describe("Generate with a 3rd place Match", () => {
   });
 
   it("has no 3rd place Match without the setting", () => {
-    const bracket = generate(withoutGame, entrants(8), newId);
+    const bracket = generate(withoutThirdPlace, entrants(8), newId);
     expect(bracket.matches.some((h) => h.thirdPlace)).toBe(false);
     expect(bracket.matches.every((h) => h.loserTo === null)).toBe(true);
     expect(bracket.matches).toHaveLength(7);
   });
 
   it("sends each semifinal's loser to the 3rd place Match", () => {
-    const third = match(throughSemifinals(withGame), "r3h2");
+    const third = match(throughSemifinals(withThirdPlace), "r3h2");
     expect(third.slots.map((s) => s.entrantId)).toEqual(["s4", "s3"]);
     expect(third.status).toBe("ready");
   });
 
   it("plays 4 Entrants: two semifinals, the final and the 3rd place Match", () => {
-    let bracket = generate(withGame, entrants(4), newId);
+    let bracket = generate(withThirdPlace, entrants(4), newId);
     expect(
       bracket.matches.map((h) => [h.id, h.round, h.position, h.thirdPlace]),
     ).toEqual([
@@ -141,14 +144,14 @@ describe("Generate with a 3rd place Match", () => {
 
 describe("refusing a 3rd place Match", () => {
   it("needs at least 4 Entrants", () => {
-    expect(validateConfig(withGame, 3)).toBe(
+    expect(validateConfig(withThirdPlace, 3)).toBe(
       "A 3rd place Match needs at least 4 Entrants.",
     );
-    expect(() => generate(withGame, entrants(3), newId)).toThrow(
+    expect(() => generate(withThirdPlace, entrants(3), newId)).toThrow(
       "A 3rd place Match needs at least 4 Entrants.",
     );
-    expect(validateConfig(withGame, 4)).toBeNull();
-    expect(validateConfig(withoutGame, 3)).toBeNull();
+    expect(validateConfig(withThirdPlace, 4)).toBeNull();
+    expect(validateConfig(withoutThirdPlace, 3)).toBeNull();
   });
 
   it("is only for 2 per Match with 1 advancing", () => {
@@ -172,7 +175,7 @@ describe("refusing a 3rd place Match", () => {
 
 describe("places and points from the final", () => {
   it("8 Entrants with a 3rd place Match: 10, 7, 5, 3 to the four placed", () => {
-    let bracket = throughSemifinals(withGame);
+    let bracket = throughSemifinals(withThirdPlace);
     bracket = win(bracket, "r3h1", "s2");
     bracket = win(bracket, "r3h2", "s3");
 
@@ -193,7 +196,7 @@ describe("places and points from the final", () => {
   });
 
   it("8 Entrants without one: only 1st and 2nd are placed and get points", () => {
-    const bracket = win(throughSemifinals(withoutGame), "r3h1", "s2");
+    const bracket = win(throughSemifinals(withoutThirdPlace), "r3h1", "s2");
 
     expect(finalPlacings(bracket, entrants(8))).toEqual([
       { entrantId: "s2", place: 1 },
@@ -259,7 +262,7 @@ describe("places and points from the final", () => {
 
 describe("the final, with a 3rd place Match present", () => {
   it("crowns the final's winner, even when the 3rd place Match is recorded last", () => {
-    let bracket = throughSemifinals(withGame);
+    let bracket = throughSemifinals(withThirdPlace);
     bracket = win(bracket, "r3h1", "s2");
     expect(bracketWinner(bracket)).toBe("s2");
     bracket = win(bracket, "r3h2", "s3");
@@ -267,12 +270,12 @@ describe("the final, with a 3rd place Match present", () => {
   });
 
   it("crowns nobody when only the 3rd place Match is recorded", () => {
-    const bracket = win(throughSemifinals(withGame), "r3h2", "s3");
+    const bracket = win(throughSemifinals(withThirdPlace), "r3h2", "s3");
     expect(bracketWinner(bracket)).toBeNull();
   });
 
   it("isn't complete until both the final and the 3rd place Match are recorded", () => {
-    let bracket = throughSemifinals(withGame);
+    let bracket = throughSemifinals(withThirdPlace);
     expect(isComplete(bracket)).toBe(false);
     bracket = win(bracket, "r3h1", "s2");
     expect(isComplete(bracket)).toBe(false);
@@ -282,12 +285,12 @@ describe("the final, with a 3rd place Match present", () => {
     bracket = win(bracket, "r3h2", "s3");
     expect(isComplete(bracket)).toBe(true);
 
-    const other = win(throughSemifinals(withGame), "r3h2", "s3");
+    const other = win(throughSemifinals(withThirdPlace), "r3h2", "s3");
     expect(isComplete(other)).toBe(false);
   });
 
   it("names the Matches Final and 3rd place Match, in the tree too", () => {
-    const bracket = generate(withGame, entrants(8), newId);
+    const bracket = generate(withThirdPlace, entrants(8), newId);
     expect(matchName(bracket, match(bracket, "r3h1"))).toBe("Final");
     expect(matchName(bracket, match(bracket, "r3h2"))).toBe("3rd place Match");
     expect(matchName(bracket, match(bracket, "r2h1"))).toBe("Semifinal 1");
@@ -299,7 +302,7 @@ describe("the final, with a 3rd place Match present", () => {
   });
 
   it("a changed semifinal winner sends the new loser to the unplayed 3rd place Match", () => {
-    let bracket = throughSemifinals(withGame);
+    let bracket = throughSemifinals(withThirdPlace);
     bracket = applyResult(bracket, "r2h1", { order: ["s4", "s1"] });
     const third = match(bracket, "r3h2");
     expect(third.slots.map((s) => s.entrantId)).toEqual(["s1", "s3"]);
@@ -311,7 +314,7 @@ describe("the final, with a 3rd place Match present", () => {
   });
 
   it("refuses a changed semifinal winner once the 3rd place Match has a result (D1c)", () => {
-    const bracket = win(throughSemifinals(withGame), "r3h2", "s3");
+    const bracket = win(throughSemifinals(withThirdPlace), "r3h2", "s3");
     expect(() => applyResult(bracket, "r2h1", { order: ["s4", "s1"] })).toThrow(
       LATER_MATCH_USED,
     );
@@ -321,7 +324,7 @@ describe("the final, with a 3rd place Match present", () => {
   });
 
   it("shows the final as the final in the Finale's rows", () => {
-    let bracket = throughSemifinals(withGame);
+    let bracket = throughSemifinals(withThirdPlace);
     bracket = win(bracket, "r3h1", "s2");
     bracket = win(bracket, "r3h2", "s3");
     const rows = bracketFinaleRows(

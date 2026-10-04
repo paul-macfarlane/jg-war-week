@@ -144,7 +144,7 @@ describe.skipIf(!isLocalDatabase)(
           .where(eq(schema.entrant.competitionId, ids.pong));
         const entrantOf = (participantId: string) =>
           entrants.find((e) => e.participantId === participantId)!.id;
-        for (let game = 0; game < 2; game += 1) {
+        for (let n = 0; n < 2; n += 1) {
           const [match] = await tx
             .insert(schema.seriesMatch)
             .values({ competitionId: ids.pong, loggedByEmail: HOST })

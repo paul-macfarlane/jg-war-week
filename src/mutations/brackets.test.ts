@@ -1101,14 +1101,14 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await fixture(tx);
-      const withGame = {
+      const withThirdPlace = {
         kind: "head-to-head" as const,
         entrantsPerMatch: 2,
         advancePerMatch: 1,
         thirdPlaceMatch: true,
         rounds: {},
       };
-      const setGame = (config: typeof withGame) =>
+      const setThirdPlace = (config: typeof withThirdPlace) =>
         mutations.setCompetitionFormat(
           f.competitionId,
           { format: "bracket", config },
@@ -1122,7 +1122,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         f.ctx,
         tx,
       );
-      expect(await setGame(withGame)).toEqual({
+      expect(await setThirdPlace(withThirdPlace)).toEqual({
         ok: false,
         error: "A 3rd place Match needs at least 4 Entrants.",
       });
@@ -1133,13 +1133,17 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         tx,
       );
       expect(
-        await setGame({ ...withGame, entrantsPerMatch: 4, advancePerMatch: 2 }),
+        await setThirdPlace({
+          ...withThirdPlace,
+          entrantsPerMatch: 4,
+          advancePerMatch: 2,
+        }),
       ).toEqual({
         ok: false,
         error: "A 3rd place Match is only for 2 per Match with 1 advancing.",
       });
-      expect(await setGame(withGame)).toEqual({ ok: true });
-      expect(await savedConfig(tx, f, f.competitionId)).toEqual(withGame);
+      expect(await setThirdPlace(withThirdPlace)).toEqual({ ok: true });
+      expect(await savedConfig(tx, f, f.competitionId)).toEqual(withThirdPlace);
       expect(
         await mutations.generateBracket(
           f.competitionId,
@@ -1186,11 +1190,13 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(matchAt(view, 2, 2).labels).toEqual(["Red", null]);
 
       // Locked once a Match Result exists.
-      expect(await setGame({ ...withGame, thirdPlaceMatch: false })).toEqual({
+      expect(
+        await setThirdPlace({ ...withThirdPlace, thirdPlaceMatch: false }),
+      ).toEqual({
         ok: false,
         error: "Locked once a Match has a result.",
       });
-      expect(await savedConfig(tx, f, f.competitionId)).toEqual(withGame);
+      expect(await savedConfig(tx, f, f.competitionId)).toEqual(withThirdPlace);
       expect(
         (await queries.getBracket(f.competitionId, tx))!.bracket.matches,
       ).toHaveLength(4);
