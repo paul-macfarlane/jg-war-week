@@ -13,6 +13,8 @@ export type ResultTarget = {
   image?: string | null;
   /** The Team's color, or the Participant's Team's color; null without one. */
   color: string | null;
+  /** A Participant's Team name, for the Team rule; null or absent without one. */
+  teamName?: string | null;
   kind: "team" | "participant";
 };
 

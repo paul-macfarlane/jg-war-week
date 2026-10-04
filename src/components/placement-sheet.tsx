@@ -329,7 +329,9 @@ export function PlacementSheet({
                     <span className="font-medium break-words">{row.name}</span>
                     {row.team || needsPlace ? (
                       <span className="text-foreground/60 truncate text-xs">
-                        {needsPlace ? "Needs a Place" : row.team}
+                        {[row.team, needsPlace && "Needs a Place"]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </span>
                     ) : null}
                   </span>

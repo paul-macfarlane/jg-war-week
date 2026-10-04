@@ -49,6 +49,7 @@ export async function getAwards(
               displayName: participantNameSql(),
               image: participantImageSql(),
               teamColor: team.color,
+              teamName: team.name,
             })
             .from(awardParticipant)
             .innerJoin(
@@ -76,11 +77,12 @@ export async function getAwards(
         : null,
     participants: recipients
       .filter((r) => r.awardId === row.id)
-      .map(({ id, displayName, image, teamColor }) => ({
+      .map(({ id, displayName, image, teamColor, teamName }) => ({
         id,
         displayName,
         image,
         teamColor,
+        teamName,
       })),
   }));
 }

@@ -206,8 +206,18 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   where there isn't (the initials Avatar's fill; a Profile picture hides it,
   so a pictured Avatar needs another mark, such as a Team-colored ring).
   Never by color alone where the name fits.
-  Free-for-all War Weeks have no Teams. Ticket 83 audits the surfaces that
-  don't yet.
+  Free-for-all War Weeks have no Teams. One display, `ParticipantMark` and
+  `TeamTag` (`participant-mark.tsx`), with `EntrantMark` and the `Avatar`'s
+  `data-team-color` ring, serves every surface: Standings (Home's and the
+  leaderboard's individual list, its points breakdown, the Finale's
+  Standings); Brackets (tree nodes show the Team **color** only; Top
+  finishers show the name; the Match result form shows the name from `sm`
+  up and the color below); Matches and Attempts (Head-to-head series and
+  results table, Best score table); Placement results table and Top
+  finishers; Recent results; Now/Next (Schedule Items: no Participant, so no
+  Team); Award recipients (`/awards`, `/history/awards/<slug>`, the admin
+  list by name; the Finale's Awards and Winners steps by color); and the
+  admin Placement sheet, Participation list and Discretionary points ledger.
 - A Participant-facing Announcement card shows its author's Profile name,
   else their Participant display name when the author's email matches a
   Participant's (account linking), else the part of the email before the

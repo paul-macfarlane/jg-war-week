@@ -52,12 +52,15 @@ export async function getAwardNameHistory(
         awardId: awardParticipant.awardId,
         id: participant.id,
         displayName: participantNameSql(),
+        teamName: team.name,
+        teamColor: team.color,
       })
       .from(awardParticipant)
       .innerJoin(
         participant,
         eq(awardParticipant.participantId, participant.id),
       )
+      .leftJoin(team, eq(team.id, participant.teamId))
       .$dynamic(),
   )
     .where(
@@ -81,7 +84,12 @@ export async function getAwardNameHistory(
           : null,
       participants: recipients
         .filter((r) => r.awardId === row.id)
-        .map(({ id, displayName }) => ({ id, displayName })),
+        .map(({ id, displayName, teamName, teamColor }) => ({
+          id,
+          displayName,
+          teamName,
+          teamColor,
+        })),
     };
     // Rows arrive grouped by War Week, newest first.
     const last = warWeeks.at(-1);

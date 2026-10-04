@@ -728,11 +728,15 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       pickers find a Participant by display name (never by email) with no
       cap on the list.
 - [ ] **Teams show in team events.** *(teams)* Wherever a Participant
-  appears in a Competition or scoring context (individual Standings, a
-  Bracket's entrants and Match results, the Head-to-head and Best score results,
-  Recent results, the leaderboard's points breakdown, Award recipients, the Finale,
-  Now/Next), their Team shows by name where there's room, else by its
-  color, including for a Participant whose Avatar is a Profile picture (`CONTEXT.md`, "The Team shows in team events").
+  appears in a Competition or scoring context (individual Standings on
+  Home, `/leaderboard` and the Finale; a Bracket's tree (color), Top
+  finishers and Match result form; the Head-to-head series and results
+  table, Best score and Placement results and Top finishers; Recent results;
+  Award recipients on `/awards`, `/history/awards/<slug>` and the Finale's
+  Awards steps (color); the admin Placement sheet, Participation list,
+  Discretionary points and Awards; Now/Next shows no Participant), their
+  Team shows by name where there's room, else by its
+  color, in XI at 1440 and 390, and a free-for-all War Week shows none, including for a Participant whose Avatar is a Profile picture (`CONTEXT.md`, "The Team shows in team events").
 - [ ] **Leaderboard.** `/<edition>/leaderboard` shows the main Standings
       as the results table (Team Standings *(teams)*, individual Standings
       *(free-for-all)*): Rank, name, War Week points, the points breakdown

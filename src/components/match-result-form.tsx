@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
   type BracketViewEntrant,
   EntrantMark,
+  EntrantTeam,
 } from "@/components/entrant-mark";
 import {
   ResponsiveSheetDialogDescription,
@@ -327,6 +328,7 @@ export function WinnerForm(props: MatchResultFormProps) {
                   primaryColor={primaryColor}
                 />
                 <span className="min-w-0 truncate">{entrant.label}</span>
+                <EntrantTeam entrant={entrant} scoring={scoring} responsive />
                 {chosen && <span className="ml-auto">✓ Winner</span>}
               </ToggleGroupItem>
             );
@@ -437,6 +439,7 @@ export function FinishingOrderForm(props: MatchResultFormProps) {
                   primaryColor={primaryColor}
                 />
                 <span className="min-w-0 truncate">{entrant.label}</span>
+                <EntrantTeam entrant={entrant} scoring={scoring} responsive />
                 {advances && (
                   <span className="ml-auto text-xs font-semibold">
                     {isFinal && place === 1 ? "Wins" : "Advances"}

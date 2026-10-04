@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { TeamTag } from "@/components/participant-mark";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getAwardNameHistory } from "@/queries/award-history";
 
@@ -90,8 +91,12 @@ export default async function AwardNameHistoryPage({
                       {award.participants.length > 0 ? (
                         <ul className="flex flex-col gap-1">
                           {award.participants.map((p) => (
-                            <li key={p.id} className="font-medium">
+                            <li
+                              key={p.id}
+                              className="flex flex-wrap items-center gap-x-2 font-medium"
+                            >
                               {p.displayName}
+                              <TeamTag name={p.teamName} color={p.teamColor} />
                             </li>
                           ))}
                         </ul>

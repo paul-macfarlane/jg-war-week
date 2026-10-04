@@ -90,7 +90,13 @@ export type AwardHistoryAward = {
   name: string;
   team: { id: string; name: string; color: string } | null;
   /** The Profile name where linked, else the roster name. */
-  participants: { id: string; displayName: string }[];
+  participants: {
+    id: string;
+    displayName: string;
+    /** That War Week's Team for them; null with none. */
+    teamName?: string | null;
+    teamColor?: string | null;
+  }[];
 };
 
 /** One War Week's Awards of a name. */

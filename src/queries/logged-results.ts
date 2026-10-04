@@ -548,6 +548,8 @@ export type LoggedResultsPlayerOption = LoggedResultsName & {
 export type LoggedResultsRow = StandingsRow & {
   name: string;
   color: string | null;
+  /** A Participant's Team name, for the Team rule; null or absent for none. */
+  teamName?: string | null;
   /** A Participant's picture URL; null for initials and for Teams. */
   image?: string | null;
   /**
@@ -705,8 +707,8 @@ export async function getLoggedResultsView(
       ? entryPointsFor(entryPoints, sideOf(found.scoring, id))
       : (provisional.get(id) ?? null);
   const leaderboard = rows.map((row) => {
-    const { name, color, image } = nameOf(row.id);
-    return { ...row, name, color, image, points: pointsOf(row.id) };
+    const { name, color, image, teamName } = nameOf(row.id);
+    return { ...row, name, color, image, teamName, points: pointsOf(row.id) };
   });
   const { decided, winnerId } = decidedOf(found, matches);
   const seriesWinner = winnerId ? nameOf(winnerId).name : null;

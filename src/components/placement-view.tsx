@@ -1,4 +1,5 @@
 import { Avatar } from "@/components/avatar";
+import { TeamTag } from "@/components/participant-mark";
 import { ResultsTable, type ResultsTableRow } from "@/components/results-table";
 import { TOP_PLACES, TopFinishers } from "@/components/top-finishers";
 import { Badge } from "@/components/ui/badge";
@@ -50,7 +51,7 @@ export function PlacementView({
     after: row.participantId ? (
       <YouTag participantId={row.participantId} />
     ) : null,
-    detail: row.team,
+    detail: row.team ? <TeamTag name={row.team} color={row.color} /> : null,
     score: row.score,
     points: pointsOf(row),
   }));
@@ -63,6 +64,9 @@ export function PlacementView({
             name: row.name,
             points: pointsOf(row),
             lead: lead(row),
+            team: row.participantId ? (
+              <TeamTag name={row.team} color={row.color} />
+            ) : null,
           },
         ]
       : [],

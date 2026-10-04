@@ -6,6 +6,7 @@ import { type ReactNode, useId, useState } from "react";
 import { deleteResult } from "@/actions/logged-results";
 import { Avatar } from "@/components/avatar";
 import { ConfirmActionButton } from "@/components/confirm-dialog";
+import { TeamTag } from "@/components/participant-mark";
 import { ResultForm, type ResultFormValue } from "@/components/result-form";
 import {
   ProvisionalBadge,
@@ -149,6 +150,18 @@ function Lead({
       style={{ backgroundColor: row.color ?? primaryColor }}
     />
   );
+}
+
+/** A Participant's Team by name (the Team rule); a Team row is the Team. */
+function RowTeam({
+  scoring,
+  row,
+}: {
+  scoring: Scoring;
+  row: { color: string | null; teamName?: string | null };
+}) {
+  if (scoring !== "individual") return null;
+  return <TeamTag name={row.teamName} color={row.color} />;
 }
 
 /** "You" on your own row, "Your Team" on your Team's. */
@@ -407,6 +420,7 @@ export function BestScoreResults({
     name: row.name,
     lead: <Lead scoring={scoring} row={row} primaryColor={primaryColor} />,
     after: <YouMark scoring={scoring} id={row.id} linked={linked} />,
+    detail: <RowTeam scoring={scoring} row={row} />,
     score: scoreOf(row),
     points: row.points,
     expansion: expansionOf(row),
@@ -422,6 +436,7 @@ export function BestScoreResults({
             lead: (
               <Lead scoring={scoring} row={row} primaryColor={primaryColor} />
             ),
+            team: <RowTeam scoring={scoring} row={row} />,
           },
         ]
       : [],
@@ -475,7 +490,12 @@ function HeadToHeadTable({
         name: row.name,
         lead: <Lead scoring={scoring} row={row} primaryColor={primaryColor} />,
         after: <YouMark scoring={scoring} id={row.id} linked={linked} />,
-        detail: row.played > 0 ? recordText(row) : null,
+        detail: (
+          <span className="flex flex-col gap-0.5">
+            <RowTeam scoring={scoring} row={row} />
+            {row.played > 0 ? <span>{recordText(row)}</span> : null}
+          </span>
+        ),
         points: row.points,
       }))}
       label="Head-to-head results"
@@ -540,6 +560,7 @@ export function SeriesView({
         <span className="font-medium break-words">{row.name}</span>
         <YouMark scoring={scoring} id={row.id} linked={linked} />
       </span>
+      <RowTeam scoring={scoring} row={row} />
       <span className="sr-only">{wins} won</span>
     </span>
   );

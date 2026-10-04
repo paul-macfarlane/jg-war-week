@@ -124,7 +124,7 @@ export function ParticipationView({
                   />
                   <span className="truncate font-medium">{row.name}</span>
                   <YouTag participantId={row.participantId} />
-                  {isTeam && row.team ? (
+                  {row.team ? (
                     <span className="text-foreground/60 truncate">
                       {row.team}
                     </span>

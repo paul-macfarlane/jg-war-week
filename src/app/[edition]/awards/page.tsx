@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Avatar } from "@/components/avatar";
+import { TeamTag } from "@/components/participant-mark";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { YouTag } from "@/components/you";
 import { awardNameSlug } from "@/lib/award-names";
@@ -95,6 +96,7 @@ function AwardCard({
                   image={p.image}
                 />
                 {p.displayName}
+                <TeamTag name={p.teamName} color={p.teamColor} />
                 <YouTag participantId={p.id} />
               </li>
             ))}

@@ -5,6 +5,7 @@ import {
   DiscretionaryPointsForm,
   type DiscretionaryTarget,
 } from "@/components/discretionary-points-form";
+import { TeamTag } from "@/components/participant-mark";
 import {
   SETUP_EDITOR,
   SetupAddButton,
@@ -83,6 +84,12 @@ export function DiscretionaryPointsEditor({
                 name={
                   <>
                     {entry.target}{" "}
+                    {entry.targetTeam ? (
+                      <TeamTag
+                        name={entry.targetTeam.name}
+                        color={entry.targetTeam.color}
+                      />
+                    ) : null}{" "}
                     <span className="tabular-nums">
                       {formatPoints(entry.points)}
                     </span>

@@ -48,7 +48,13 @@ export function AwardsEditor({
               details={[
                 showTeam && `${teamLabel}: ${award.team?.name ?? "—"}`,
                 `Participants: ${
-                  award.participants.map((p) => p.displayName).join(", ") || "—"
+                  award.participants
+                    .map((p) =>
+                      p.teamName
+                        ? `${p.displayName} (${p.teamName})`
+                        : p.displayName,
+                    )
+                    .join(", ") || "—"
                 }`,
               ]
                 .filter(Boolean)

@@ -87,6 +87,8 @@ export type AwardView = {
     /** The picture URL; null for initials. */
     image?: string | null;
     teamColor: string | null;
+    /** The Team's name, for the Team rule; null or absent with no Team. */
+    teamName?: string | null;
   }[];
 };
 

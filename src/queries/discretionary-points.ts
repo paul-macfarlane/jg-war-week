@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { aliasedTable, and, eq, isNull } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import { WarWeek, participant, pointsEntry, team, warWeek } from "@/db/schema";
@@ -18,6 +18,7 @@ export async function getDiscretionaryLedger(
   warWeek: Pick<WarWeek, "id">,
   dbOrTx: DBOrTx = db,
 ): Promise<DiscretionaryLedgerEntry[]> {
+  const participantTeam = aliasedTable(team, "participant_team");
   const rows = await withProfile(
     dbOrTx
       .select({
@@ -26,6 +27,8 @@ export async function getDiscretionaryLedger(
         participantId: pointsEntry.participantId,
         teamName: team.name,
         participantName: participantNameSql(),
+        participantTeamName: participantTeam.name,
+        participantTeamColor: participantTeam.color,
         points: pointsEntry.points,
         note: pointsEntry.note,
         enteredByEmail: pointsEntry.enteredByEmail,
@@ -36,6 +39,7 @@ export async function getDiscretionaryLedger(
       .from(pointsEntry)
       .leftJoin(team, eq(team.id, pointsEntry.teamId))
       .leftJoin(participant, eq(participant.id, pointsEntry.participantId))
+      .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))
       .$dynamic(),
   ).where(
     and(

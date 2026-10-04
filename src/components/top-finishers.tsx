@@ -20,6 +20,8 @@ export type TopFinisher = {
   lead?: ReactNode;
   /** Right after the name: the "You" tag. */
   after?: ReactNode;
+  /** Under the name, beside the points: a Participant's Team. */
+  team?: ReactNode;
 };
 
 /**
@@ -81,6 +83,7 @@ export function TopFinishers({
                   {winner ? <Badge>Winner</Badge> : null}
                   {finisher.after}
                 </span>
+                {finisher.team}
                 <span className="text-foreground/70 text-xs tabular-nums">
                   {finisher.points === null
                     ? "No points"

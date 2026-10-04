@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Avatar } from "@/components/avatar";
+import { TeamTag } from "@/components/participant-mark";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { formatPoints } from "@/lib/points";
@@ -32,6 +33,9 @@ function TargetName({
         />
       )}
       <span className="font-medium">{target.name}</span>
+      {target.kind === "participant" ? (
+        <TeamTag name={target.teamName} color={target.color} />
+      ) : null}
     </span>
   );
 }
