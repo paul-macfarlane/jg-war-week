@@ -572,4 +572,4 @@ pastes the output in the PR before `migrate.yml`; reseed staging and
 production with `seed.yml`; post-checks `/xii/competitions`, the Bracket
 page and MCP `get_games` answer.
 
-PR: see below.
+PR: https://github.com/paul-macfarlane/jg-war-week/pull/135
