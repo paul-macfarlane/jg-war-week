@@ -91,7 +91,8 @@ FROM "competition" c
 WHERE c."id" = "bracket_match"."competition_id";--> statement-breakpoint
 UPDATE "bracket_match" SET "advance_count" = 1 WHERE "advance_count" IS NULL;--> statement-breakpoint
 
--- Head-to-head: draws as saved, Best of as saved or 7 (so existing Matches fit).
+-- Head-to-head: draws as saved, Best of as saved or 7 (grown below if the
+-- converted Matches outnumber it).
 UPDATE "competition" SET "series_config" = jsonb_build_object(
 	'drawsAllowed', coalesce(("game_config"->>'drawsAllowed')::boolean, false),
 	'bestOf', coalesce(("game_config"->>'bestOf')::int, 7))
@@ -115,6 +116,19 @@ GROUP BY p."competition_id"
 HAVING count(DISTINCT p."player_id") = 2
 	AND count(DISTINCT p."game_id") <= 7
 	AND count(*) = 2 * count(DISTINCT p."game_id");--> statement-breakpoint
+-- A saved Best of shorter than the Matches converted grows to the shortest
+-- Best of (1, 3, 5, 7) that holds them (at most 7: longer series dropped).
+UPDATE "competition" c SET "series_config" = jsonb_set(c."series_config", '{bestOf}',
+	to_jsonb(CASE WHEN n."games" <= 1 THEN 1 WHEN n."games" <= 3 THEN 3
+		WHEN n."games" <= 5 THEN 5 ELSE 7 END))
+FROM (
+	SELECT p."competition_id", count(DISTINCT p."game_id") AS "games"
+	FROM "r21_h2h_player" p
+	JOIN "r21_h2h_kept" k ON k."competition_id" = p."competition_id"
+	GROUP BY p."competition_id"
+) n
+WHERE c."id" = n."competition_id"
+	AND (c."series_config"->>'bestOf')::int < n."games";--> statement-breakpoint
 -- Both players become Entrants (reused when already entered).
 INSERT INTO "entrant" ("competition_id", "team_id", "participant_id", "seed_position")
 SELECT x."competition_id", x."team_id", x."participant_id",

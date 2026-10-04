@@ -634,6 +634,10 @@ const H2H_THREE = R21(33);
 const H2H_CROWD = R21(34);
 const H2H_LONG = R21(35);
 const H2H_IDLE = R21(36);
+// Saved Best of shorter than the Matches converted: Best of 3 with 4, and
+// Best of 1 with 2.
+const H2H_GROWN = R21(37);
+const H2H_ONE = R21(38);
 const BEST_TEAM = R21(41);
 const BEST_IND = R21(42);
 const BEST_NULL = R21(43);
@@ -686,6 +690,10 @@ const PRE_R21_ROWS = `
       null, false, false, null),
     ('${H2H_IDLE}', '${WW_XI}', 'Idle', 'individual', 'head-to-head', null,
       null, false, false, null),
+    ('${H2H_GROWN}', '${WW_XI}', 'Grown', 'individual', 'head-to-head', null,
+      '{"drawsAllowed":false,"bestOf":3}', false, false, null),
+    ('${H2H_ONE}', '${WW_XI}', 'One', 'individual', 'head-to-head', null,
+      '{"drawsAllowed":true,"bestOf":1}', false, false, null),
     ('${BEST_TEAM}', '${WW_XI}', 'Team Stairs', 'team', 'best-score', null,
       '{"count":"total","betterIs":"lower","unit":"sec"}', false, false, null),
     ('${BEST_IND}', '${WW_XI}', 'Solo Stairs', 'individual', 'best-score',
@@ -755,6 +763,13 @@ const PRE_R21_ROWS = `
       (_, i) =>
         `('${G(10 + i)}', '${H2H_LONG}', '2026-02-24T1${i}:00:00Z', 'host@example.com', null)`,
     ).join(",\n    ")},
+    ${Array.from(
+      { length: 4 },
+      (_, i) =>
+        `('${G(40 + i)}', '${H2H_GROWN}', '2026-02-24T1${i}:00:00Z', 'host@example.com', null)`,
+    ).join(",\n    ")},
+    ('${G(45)}', '${H2H_ONE}', '2026-02-24T10:00:00Z', 'host@example.com', null),
+    ('${G(46)}', '${H2H_ONE}', '2026-02-24T11:00:00Z', 'host@example.com', null),
     ('${G(21)}', '${BEST_TEAM}', '2026-02-24T10:00:00Z', 'ana@example.com', '${ANA21}'),
     ('${G(22)}', '${BEST_TEAM}', '2026-02-24T11:00:00Z', 'host@example.com', null),
     ('${G(23)}', '${BEST_TEAM}', '2026-02-24T12:00:00Z', 'ana@example.com', '${ANA21}'),
@@ -781,6 +796,15 @@ const PRE_R21_ROWS = `
       (_, i) =>
         `('${G(10 + i)}', null, '${ANA21}', 1, null), ('${G(10 + i)}', null, '${BEN21}', 2, null)`,
     ).join(",\n    ")},
+    ${Array.from(
+      { length: 4 },
+      (_, i) =>
+        `('${G(40 + i)}', null, '${CAL21}', 1, null), ('${G(40 + i)}', null, '${DEE21}', 2, null)`,
+    ).join(",\n    ")},
+    ('${G(45)}', null, '${CAL21}', 1, null),
+    ('${G(45)}', null, '${DEE21}', 2, null),
+    ('${G(46)}', null, '${CAL21}', 1, null),
+    ('${G(46)}', null, '${DEE21}', 1, null),
     ('${G(21)}', '${RED21}', null, null, 12),
     ('${G(22)}', '${BLUE21}', null, null, 9),
     ('${G(23)}', '${BLUE21}', null, null, 8),
@@ -895,6 +919,27 @@ describe.skipIf(!isLocalDatabase)(
                 drawsAllowed: true,
                 bestOf: 3,
               });
+              // A saved Best of shorter than the converted Matches grows to
+              // the shortest Best of (1, 3, 5, 7) that holds them.
+              expect(series[H2H_GROWN]).toEqual({
+                drawsAllowed: false,
+                bestOf: 5,
+              });
+              expect(series[H2H_ONE]).toEqual({
+                drawsAllowed: true,
+                bestOf: 3,
+              });
+              expect(
+                await q(
+                  `select competition_id, count(*)::int as n from series_match
+                  where competition_id = any($1)
+                  group by competition_id order by count(*)`,
+                  [[H2H_GROWN, H2H_ONE]],
+                ),
+              ).toEqual([
+                { competition_id: H2H_ONE, n: 2 },
+                { competition_id: H2H_GROWN, n: 4 },
+              ]);
 
               // Each Head-to-head's Entrants, by Seed Position.
               const entrantsOf = async (competition: string) =>
@@ -929,7 +974,9 @@ describe.skipIf(!isLocalDatabase)(
                 from series_match m
                 join series_match_entrant sme on sme.series_match_id = m.id
                 join entrant e on e.id = sme.entrant_id
+                where m.competition_id <> all($1)
                 group by m.id order by m.id`,
+                [[H2H_GROWN, H2H_ONE]],
               );
               expect(matches).toEqual([
                 {
