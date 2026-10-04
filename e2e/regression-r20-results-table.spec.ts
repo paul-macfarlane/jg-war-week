@@ -240,7 +240,7 @@ test("r20 D1 a Placement's results table sorts by every header, marks the Winner
     await expectNoSidewaysScroll(page);
     await shoot(page, testInfo, "placement-open-390");
 
-    // Close (the sheet's Finalize until the words change) as an Organizer.
+    // Close the sheet as an Organizer.
     await page.setViewportSize(DESKTOP);
     await openCompetitionPage(page, id);
     await page.getByRole("button", { name: "Close", exact: true }).click();

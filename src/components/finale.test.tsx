@@ -68,7 +68,7 @@ const defaultSlides: FinaleSlideData[] = [
     kind: "champions",
     name: "Winners",
     primaryColor: "#00ff41",
-    champions: [
+    winners: [
       {
         competitionId: "c1",
         competition: "Pool",

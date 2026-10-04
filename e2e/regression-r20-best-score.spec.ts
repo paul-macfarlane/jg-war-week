@@ -283,7 +283,6 @@ test("r20 D3 Best score admin: no separate list; an Organizer edits and deletes 
     ]);
     // The list of Attempts is gone: only the table's rows.
     await expect(attempts.getByRole("listitem")).toHaveCount(3); // Top finishers
-    await expect(page.getByText("No Games yet.")).toHaveCount(0);
 
     // Expand Ashley's row: all three Attempts, the best marked, each with
     // Edit and Delete.

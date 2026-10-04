@@ -6,6 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { placementLabel } from "@/lib/competitions";
 import { formatPointsLabel } from "@/lib/points";
 
+/** How many places the Top finishers summary shows. */
+export const TOP_PLACES = 3;
+
 /** A decided place: who holds it and what it earns. */
 export type TopFinisher = {
   key: string;
@@ -21,18 +24,22 @@ export type TopFinisher = {
 
 /**
  * "Top finishers" (spec R20, decision 5): a compact summary of the places
- * a Competition has decided, each with its points, 1st marked Winner. It
+ * a Competition has decided, each with its points, the Winner marked. It
  * is given only the decided places and is a summary above the results,
  * never a second list of every row. Renders nothing with none. Where no
  * results table carries the Provisional badge (a Bracket), `provisional`
- * puts it beside the heading.
+ * puts it beside the heading. `winners`, when given, are the keys the
+ * results table marks Winner (`winnerKeys`), so the two agree; without
+ * it, 1st place is the Winner.
  */
 export function TopFinishers({
   finishers,
   provisional = false,
+  winners,
 }: {
   finishers: TopFinisher[];
   provisional?: boolean;
+  winners?: ReadonlySet<string>;
 }) {
   if (finishers.length === 0) return null;
   const ordered = [...finishers].sort(
@@ -50,7 +57,9 @@ export function TopFinishers({
         className={`grid gap-2 ${ordered.length === 4 ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}
       >
         {ordered.map((finisher) => {
-          const winner = finisher.place === 1;
+          const winner = winners
+            ? winners.has(finisher.key)
+            : finisher.place === 1;
           return (
             <li
               key={finisher.key}

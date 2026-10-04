@@ -6,13 +6,13 @@ import { type ReactNode, useState } from "react";
 import { deleteGame } from "@/actions/games";
 import { Avatar } from "@/components/avatar";
 import { ConfirmActionButton } from "@/components/confirm-dialog";
-import { ResultForm, type ResultFormGame } from "@/components/result-form";
+import { ResultForm, type ResultFormValue } from "@/components/result-form";
 import {
   ProvisionalBadge,
   ResultsTable,
   type ResultsTableRow,
 } from "@/components/results-table";
-import { TopFinishers } from "@/components/top-finishers";
+import { TOP_PLACES, TopFinishers } from "@/components/top-finishers";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -32,9 +32,11 @@ import {
   formatScore,
   gameSummary,
   isMine,
+  seriesNote,
   seriesOf,
 } from "@/lib/games/view";
 import { formatPointsLabel } from "@/lib/points";
+import { winnerKeys } from "@/lib/results-table";
 import type {
   GamesViewGame,
   GamesViewName,
@@ -58,7 +60,10 @@ export type GamesViewProps = {
   /** Anyone eligible may play; false for a fixed Entrant list. */
   entrantsOpen: boolean;
   loggingOpen: boolean;
-  /** Ranked best first; unranked (no Game yet) last; each with its points. */
+  /**
+   * Ranked best first; unranked (no Match or Attempt yet) last; each with
+   * its points.
+   */
   leaderboard: GamesViewRow[];
   /** Newest first, each with whether the viewer may edit or delete it. */
   games: GamesViewGame[];
@@ -76,7 +81,10 @@ export type GamesViewProps = {
   teamLabel: string;
   /** The server's clock, so "5 minutes ago" reads the same once hydrated. */
   now: Date;
-  /** Open the Game form on load (`?log=1`, the home "Log a Game" card). */
+  /**
+   * Open the result form on load (`?log=1`, the home card's Log a Match or
+   * Log an Attempt).
+   */
   openLog: boolean;
 };
 
@@ -164,42 +172,42 @@ function YouMark({
  * said the viewer may change it; Delete asks first (`ConfirmDialog`) and
  * toasts the result.
  */
-export function GameActions({
+export function ResultActions({
   competitionId,
-  game,
+  result,
   word,
   summary,
   onEdit,
 }: {
   competitionId: string;
-  game: GamesViewGame;
+  result: GamesViewGame;
   /** "Match" (Head-to-head) or "Attempt" (Best score). */
   word: "Match" | "Attempt";
   summary: string;
-  onEdit: (game: ResultFormGame) => void;
+  onEdit: (result: ResultFormValue) => void;
 }) {
-  if (!game.canEdit && !game.canDelete) return null;
+  if (!result.canEdit && !result.canDelete) return null;
   return (
     <span className="flex gap-2">
-      {game.canEdit ? (
+      {result.canEdit ? (
         <Button
           type="button"
           variant="outline"
           size="xs"
           className="min-h-11 min-w-11 sm:min-h-0 sm:min-w-0"
           aria-label={`Edit ${word}: ${summary}`}
-          onClick={() => onEdit({ id: game.id, players: game.players })}
+          onClick={() => onEdit({ id: result.id, players: result.players })}
         >
           Edit
         </Button>
       ) : null}
-      {game.canDelete ? (
+      {result.canDelete ? (
         <ConfirmActionButton
           title={`Delete this ${word}?`}
           description={`${summary}. The results update at once.`}
           confirmLabel="Delete"
           ariaLabel={`Delete ${word}: ${summary}`}
-          action={() => deleteGame(competitionId, game.id)}
+          action={() => deleteGame(competitionId, result.id)}
           successMessage={`${word} deleted`}
           className="min-h-11 min-w-11 sm:min-h-0 sm:min-w-0"
         >
@@ -215,10 +223,8 @@ export function GameActions({
  * the viewer's. Edit and Delete show on the Matches the server said the
  * viewer may change.
  */
-export function GameLog({
+export function MatchLog({
   competitionId,
-  gameFormat,
-  unit,
   games,
   filter,
   linked,
@@ -226,13 +232,11 @@ export function GameLog({
   onEdit,
 }: {
   competitionId: string;
-  gameFormat: GameFormat;
-  unit: string;
   games: GamesViewGame[];
   filter: Filter;
   linked: Linked;
   now: Date;
-  onEdit: (game: ResultFormGame) => void;
+  onEdit: (result: ResultFormValue) => void;
 }) {
   const shown =
     filter === "mine" && linked
@@ -251,7 +255,7 @@ export function GameLog({
     <Card size="sm" className="py-1">
       <ol className="flex flex-col divide-y px-(--card-spacing)">
         {shown.map((g) => {
-          const summary = gameSummary(gameFormat, g.players, unit);
+          const summary = gameSummary("head-to-head", g.players);
           return (
             <li
               key={g.id}
@@ -261,9 +265,9 @@ export function GameLog({
                 <span className="font-medium break-words">{summary}</span>
                 <When at={g.loggedAt} now={now} />
               </span>
-              <GameActions
+              <ResultActions
                 competitionId={competitionId}
-                game={g}
+                result={g}
                 word="Match"
                 summary={summary}
                 onEdit={onEdit}
@@ -275,9 +279,6 @@ export function GameLog({
     </Card>
   );
 }
-
-/** How many places the Top finishers summary shows. */
-const TOP_PLACES = 3;
 
 function entrantHeaderOf(scoring: Scoring, teamLabel: string): string {
   return scoring === "team" ? teamLabel : "Participant";
@@ -316,7 +317,7 @@ export function BestScoreResults({
   primaryColor: string;
   teamLabel: string;
   now: Date;
-  onEdit: (game: ResultFormGame) => void;
+  onEdit: (result: ResultFormValue) => void;
 }) {
   if (rows.length === 0) {
     return <p className="text-foreground/70 text-sm">No Attempts yet.</p>;
@@ -368,9 +369,9 @@ export function BestScoreResults({
                   {isBest ? <Badge variant="secondary">Best</Badge> : null}
                   <When at={game.loggedAt} now={now} />
                 </span>
-                <GameActions
+                <ResultActions
                   competitionId={competitionId}
-                  game={game}
+                  result={game}
                   word="Attempt"
                   summary={`${row.name} · ${score}`}
                   onEdit={onEdit}
@@ -412,7 +413,7 @@ export function BestScoreResults({
   );
   return (
     <div className="flex flex-col gap-3">
-      <TopFinishers finishers={finishers} />
+      <TopFinishers finishers={finishers} winners={winnerKeys(tableRows)} />
       <ResultsTable
         rows={tableRows}
         label="Best score results"
@@ -497,7 +498,7 @@ export function SeriesView({
   linked: Linked;
   primaryColor: string;
   now: Date;
-  onEdit: (game: ResultFormGame) => void;
+  onEdit: (result: ResultFormValue) => void;
 }) {
   const [a, b] = entrants;
   // Oldest first among equal times too: the view's list is newest first.
@@ -505,6 +506,7 @@ export function SeriesView({
   const nameOf = (id: string) => (id === a.id ? a.name : b.name);
   const gameById = new Map(games.map((g) => [g.id, g]));
   const winner = series.winner === null ? null : nameOf(series.winner);
+  const note = seriesNote(config, series, closed);
   const side = (row: GamesViewRow, wins: number) => (
     <span className="flex min-w-0 flex-col items-center gap-1 text-center">
       <Lead scoring={scoring} row={row} primaryColor={primaryColor} />
@@ -540,13 +542,8 @@ export function SeriesView({
                 <Badge>Winner</Badge>
                 {winner}
               </span>
-            ) : config.bestOf !== null ? (
-              <span>
-                Best of {config.bestOf}: first to{" "}
-                {Math.floor(config.bestOf / 2) + 1} wins.
-              </span>
             ) : (
-              <span>The series Winner is decided at Close.</span>
+              <span data-slot="series-note">{note}</span>
             )}
             {series.draws > 0 ? (
               <span>
@@ -613,9 +610,9 @@ export function SeriesView({
                         <When at={game.loggedAt} now={now} />
                       </span>
                     </span>
-                    <GameActions
+                    <ResultActions
                       competitionId={competitionId}
-                      game={game}
+                      result={game}
                       word="Match"
                       summary={summary}
                       onEdit={onEdit}
@@ -688,11 +685,11 @@ function seriesEntrants(
 }
 
 /**
- * A Head-to-head or Best score Competition on its page: the closed or Best
- * of banner, Log a Game (when the viewer may), then the Format's results:
- * Best score's per-person table; a two-Entrant Head-to-head's series;
- * otherwise the Head-to-head table and its Matches, with an All / Mine
- * filter for a linked Participant.
+ * A Head-to-head or Best score Competition on its page: the Closed or Best
+ * of banner, Log a Match or Log an Attempt (when the viewer may), then the
+ * Format's results: Best score's per-person table; a two-Entrant
+ * Head-to-head's series; otherwise the Head-to-head table and its Matches,
+ * with an All / Mine filter for a linked Participant.
  */
 export function GamesView(props: GamesViewProps) {
   const {
@@ -717,11 +714,11 @@ export function GamesView(props: GamesViewProps) {
   } = props;
   const [filter, setFilter] = useState<Filter>("all");
   const [formOpen, setFormOpen] = useState(openLog && viewerCanLog);
-  const [editing, setEditing] = useState<ResultFormGame | null>(null);
+  const [editing, setEditing] = useState<ResultFormValue | null>(null);
   const series = seriesEntrants(props);
 
-  function openForm(game: ResultFormGame | null) {
-    setEditing(game);
+  function openForm(result: ResultFormValue | null) {
+    setEditing(result);
     setFormOpen(true);
   }
 
@@ -787,10 +784,8 @@ export function GamesView(props: GamesViewProps) {
               </Tabs>
             ) : null}
           </div>
-          <GameLog
+          <MatchLog
             competitionId={competitionId}
-            gameFormat={gameFormat}
-            unit=""
             games={games}
             filter={filter}
             linked={linked}

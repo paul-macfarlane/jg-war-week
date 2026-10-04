@@ -15,10 +15,10 @@ import { useYou } from "@/components/you";
 import type { PodiumPlace } from "@/lib/bracket/podium";
 import type { Bracket } from "@/lib/bracket/types";
 import {
-  type NextHeat,
+  type NextMatch,
   entrantForYou,
   matchName,
-  nextHeatFor,
+  nextMatchFor,
 } from "@/lib/bracket/view";
 
 type Scoring = "team" | "individual";
@@ -54,7 +54,7 @@ export function YourNextMatchCard({
   canReport,
   onReport,
 }: {
-  next: NextHeat;
+  next: NextMatch;
   bracket: Bracket;
   entrantsById: Map<string, BracketViewEntrant>;
   canReport: boolean;
@@ -171,7 +171,7 @@ export function BracketView({
       : null,
     scoring,
   );
-  const next = youEntrantId ? nextHeatFor(bracket, youEntrantId) : null;
+  const next = youEntrantId ? nextMatchFor(bracket, youEntrantId) : null;
   const heatsById = new Map(bracket.heats.map((h) => [h.id, h]));
   const canReport =
     selfReport.on &&

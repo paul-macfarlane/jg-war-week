@@ -26,8 +26,8 @@ import { hasPlacementPoints } from "@/lib/competitions";
 type Scoring = "team" | "individual";
 
 /**
- * The admin Bracket's Heat Result form: the Host's record, which asks
- * before resetting later Heats and toasts "<1st place> wins <Heat name>".
+ * The admin Bracket's Match result form: the Host's record, which asks
+ * before resetting later Matches and toasts "<1st place> wins <Match name>".
  */
 function MatchResultSheet({
   competitionId,
@@ -77,15 +77,15 @@ type BracketAdminProps = {
   podium: PodiumPlace[];
   finalized: boolean;
   primaryColor: string;
-  /** Who self-reported each Heat's current result, by Heat id: a name. */
+  /** Who self-reported each Match's current result, by Match id: a name. */
   reporters?: Record<string, string>;
 };
 
 /**
  * Runs a Bracket for an Organizer or the Competition's Host: Top finishers
  * and Close / Reopen on top, then the Bracket's tree (the same one
- * Participants see) with Record result (Edit once played) on every Heat
- * that can be recorded while it isn't Closed. A tap opens the Heat
+ * Participants see) with Record result (Edit once played) on every Match
+ * that can be recorded while it isn't Closed. A tap opens the Match
  * Result popup, a bottom Sheet on a phone and a centered Dialog on large
  * screens (`ResponsiveSheetDialog`). Refreshes live while no popup is open.
  */
@@ -101,9 +101,9 @@ export function BracketAdmin(props: BracketAdminProps) {
 }
 
 /**
- * The admin Bracket for a given open Heat Result (props only). Live
+ * The admin Bracket for a given open Match result (props only). Live
  * refresh runs only while no popup is open, so it never interrupts an
- * unsaved Heat Result.
+ * unsaved Match result.
  */
 export function BracketAdminView({
   competitionId,
@@ -158,7 +158,7 @@ export function BracketAdminView({
             </ConfirmActionButton>
           </>
         ) : winner && isComplete(bracket) ? (
-          // With a 3rd place match, the Winner is known before it's played.
+          // With a 3rd place Match, the Winner is known before it's played.
           <ConfirmActionButton
             title={copy.confirmTitle}
             confirmLabel="Close"

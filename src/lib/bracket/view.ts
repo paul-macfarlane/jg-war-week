@@ -129,15 +129,15 @@ export function groupRounds(bracket: Bracket): BracketRound[] {
   return rounds;
 }
 
-export type NextHeat =
+export type NextMatch =
   | {
       kind: "heat";
       heat: Heat;
-      /** The other Entrants already in the Heat. */
+      /** The other Entrants already in the Match. */
       opponentIds: string[];
       /**
-       * Single elimination: the Heat whose winner (or, for the 3rd place
-       * game, loser) fills the empty slot, while there is one.
+       * Single elimination: the Match whose Winner (or, for the 3rd place
+       * Match, loser) fills the empty slot, while there is one.
        */
       waitingFor: Heat | null;
     }
@@ -148,16 +148,16 @@ export type NextHeat =
     };
 
 /**
- * What's next for an Entrant: the unplayed Heat they're in, with their
- * opponents (or, in single elimination, the Heat still to decide one); or,
+ * What's next for an Entrant: the unplayed Match they're in, with their
+ * opponents (or, in single elimination, the Match still to decide one); or,
  * in a Heats Bracket, the Round they've advanced to while the rest of their
  * Round finishes. Null when they're out, the Bracket is over, or they
  * aren't an Entrant.
  */
-export function nextHeatFor(
+export function nextMatchFor(
   bracket: Bracket,
   entrantId: string,
-): NextHeat | null {
+): NextMatch | null {
   const inHeat = (h: Heat) => h.slots.some((s) => s.entrantId === entrantId);
   const heat = bracket.heats.find(
     (h) => !isDecided(h) && !isBye(bracket, h) && inHeat(h),

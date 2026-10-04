@@ -2,18 +2,14 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import type { WarWeek } from "@/db/schema";
 import {
   type CompetitionStatus,
   competitionStatusText,
 } from "@/lib/competition-status";
-import {
-  type CompetitionListItem,
-  type LedgerEntry,
-  describeScoring,
-} from "@/lib/competitions";
+import { type CompetitionListItem, describeScoring } from "@/lib/competitions";
 import { isGameFormat } from "@/lib/enums";
 import { gameFormatLabel } from "@/lib/games/config";
-import { formatPoints } from "@/lib/points";
 import { toPlainText } from "@/lib/rich-text/plain-text";
 
 export function CompetitionFacts({
@@ -24,7 +20,7 @@ export function CompetitionFacts({
   competition: CompetitionListItem;
   teamLabel: string;
   /** A free-for-all War Week has no Individual/Team choice to show. */
-  mode?: "teams" | "free-for-all";
+  mode?: WarWeek["mode"];
 }) {
   const hideScoring = mode === "free-for-all" && competition.scoring !== "team";
   return (
@@ -88,7 +84,7 @@ export function CompetitionList({
   competitions: (CompetitionListItem & { status: CompetitionStatus })[];
   edition: string;
   teamLabel: string;
-  mode?: "teams" | "free-for-all";
+  mode?: WarWeek["mode"];
 }) {
   return (
     <ul className="flex flex-col gap-2">
@@ -124,46 +120,5 @@ export function CompetitionList({
         );
       })}
     </ul>
-  );
-}
-
-export function PointsEntryList({ entries }: { entries: LedgerEntry[] }) {
-  if (entries.length === 0) {
-    return <p className="text-foreground/70 text-sm">No points yet.</p>;
-  }
-
-  return (
-    <Card size="sm" className="py-1">
-      <ul className="flex flex-col divide-y px-(--card-spacing)">
-        {entries.map(({ id, target, points, note }) => (
-          <li key={id} className="flex items-start gap-3 px-2 py-2">
-            <span
-              aria-hidden
-              className="mt-1.5 size-3 shrink-0 rounded-full"
-              style={{ backgroundColor: target.color ?? "transparent" }}
-            />
-            <span className="flex flex-1 flex-col">
-              <span>
-                <span className="font-medium">{target.name}</span>
-                {target.team ? (
-                  <span
-                    className="ml-2 text-xs font-medium"
-                    style={{ color: target.color ?? undefined }}
-                  >
-                    {target.team}
-                  </span>
-                ) : null}
-              </span>
-              {note ? (
-                <span className="text-foreground/70 text-sm">{note}</span>
-              ) : null}
-            </span>
-            <span className="font-semibold tabular-nums">
-              {formatPoints(points)}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </Card>
   );
 }

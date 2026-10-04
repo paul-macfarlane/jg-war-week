@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { generate } from "@/lib/bracket/engine";
 import type { PodiumPlace } from "@/lib/bracket/podium";
 import type { Entrant } from "@/lib/bracket/types";
-import { nextHeatFor } from "@/lib/bracket/view";
+import { nextMatchFor } from "@/lib/bracket/view";
 
 import { BracketView, YourNextMatchCard } from "./bracket-view";
 import { YouProvider } from "./you";
@@ -37,7 +37,7 @@ const entrantsById = new Map(entrants.map((e) => [e.id, e]));
 function card(options: { canReport: boolean }) {
   return renderToStaticMarkup(
     <YourNextMatchCard
-      next={nextHeatFor(bracket, "e1")!}
+      next={nextMatchFor(bracket, "e1")!}
       bracket={bracket}
       entrantsById={entrantsById}
       onReport={() => {}}

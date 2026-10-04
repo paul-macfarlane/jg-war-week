@@ -24,29 +24,29 @@ export function WinnersSlide({
         </h1>
       </header>
       <ul className="grid w-full max-w-[min(110rem,92vw)] grid-cols-1 gap-[2.5vh] lg:grid-cols-2">
-        {data.champions.map((champion) => (
+        {data.winners.map((winner) => (
           <li
-            key={champion.competitionId}
+            key={winner.competitionId}
             className="bg-card text-card-foreground ring-foreground/10 flex items-center gap-[clamp(0.75rem,1.5vw,2rem)] rounded-2xl p-[clamp(1rem,1.6vw,2rem)] ring-1"
           >
             <div className="flex shrink-0 -space-x-[0.6em] text-[clamp(1.125rem,1.8vw,2rem)]">
-              {champion.winners.map((winner) =>
-                winner.kind === "participant" ? (
+              {winner.winners.map((who) =>
+                who.kind === "participant" ? (
                   <Avatar
-                    key={winner.id}
-                    name={winner.name}
-                    teamColor={winner.color}
+                    key={who.id}
+                    name={who.name}
+                    teamColor={who.color}
                     primaryColor={data.primaryColor}
-                    image={winner.image}
+                    image={who.image}
                     className="ring-card size-[2.4em] ring-2"
                   />
                 ) : (
                   <span
-                    key={winner.id}
+                    key={who.id}
                     aria-hidden
                     className="ring-card flex size-[2.4em] items-center justify-center rounded-full ring-2"
                     style={{
-                      backgroundColor: winner.color ?? data.primaryColor,
+                      backgroundColor: who.color ?? data.primaryColor,
                     }}
                   >
                     <Trophy className="size-[1.1em] text-white" />
@@ -56,10 +56,10 @@ export function WinnersSlide({
             </div>
             <div className="flex min-w-0 flex-col gap-[0.5vh]">
               <p className="text-foreground/75 text-[clamp(0.875rem,1.4vw,1.5rem)] font-medium tracking-wide uppercase">
-                {champion.competition} · {champion.label}
+                {winner.competition} · {winner.label}
               </p>
               <p className="text-[clamp(1.375rem,2.5vw,2.75rem)] leading-tight font-bold break-words">
-                {champion.title}
+                {winner.title}
               </p>
             </div>
           </li>

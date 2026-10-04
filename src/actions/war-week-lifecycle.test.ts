@@ -29,8 +29,8 @@ vi.mock("@/auth/authorize", () => ({
 }));
 vi.mock("next/headers", () => ({ cookies: vi.fn() }));
 vi.mock("@/auth/actor", () => ({
-  ADMIN_EDITION_COOKIE: "admin_edition",
   getActor: vi.fn(),
+  setAdminEditionCookie: vi.fn(),
 }));
 vi.mock("@/auth/server", () => ({ getSessionEmail: vi.fn() }));
 vi.mock("@/queries/war-weeks", () => ({

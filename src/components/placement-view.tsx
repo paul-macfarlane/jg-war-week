@@ -1,13 +1,10 @@
 import { Avatar } from "@/components/avatar";
 import { ResultsTable, type ResultsTableRow } from "@/components/results-table";
-import { TopFinishers } from "@/components/top-finishers";
+import { TOP_PLACES, TopFinishers } from "@/components/top-finishers";
 import { Badge } from "@/components/ui/badge";
 import { YouTag } from "@/components/you";
-import { entryPointsFor } from "@/lib/results-table";
+import { entryPointsFor, winnerKeys } from "@/lib/results-table";
 import type { PlacementRowView, PlacementsView } from "@/queries/placements";
-
-/** How many places the Top finishers summary shows. */
-const TOP_PLACES = 3;
 
 /**
  * A Placement Competition on its page: Top finishers, then the results
@@ -80,7 +77,7 @@ export function PlacementView({
         <p className="text-foreground/70 text-sm">No placements yet.</p>
       ) : (
         <>
-          <TopFinishers finishers={finishers} />
+          <TopFinishers finishers={finishers} winners={winnerKeys(tableRows)} />
           <ResultsTable
             rows={tableRows}
             label="Placement results"

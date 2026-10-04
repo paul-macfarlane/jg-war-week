@@ -5,7 +5,6 @@ import {
   ariaSortFor,
   entryPointsFor,
   nextResultsSort,
-  sharedRanks,
   showsScore,
   sortResults,
   winnerKeys,
@@ -108,54 +107,13 @@ describe("ariaSortFor and nextResultsSort", () => {
   });
 });
 
-describe("sharedRanks", () => {
-  it("gives tied values a shared place and skips the next (1, 1, 3)", () => {
-    expect(
-      sharedRanks(
-        [
-          { key: "a", value: 9 },
-          { key: "b", value: 7 },
-          { key: "c", value: 9 },
-          { key: "d", value: null },
-        ],
-        "higher",
-      ),
-    ).toEqual(
-      new Map([
-        ["a", 1],
-        ["c", 1],
-        ["b", 3],
-      ]),
-    );
-  });
-
-  it("ranks lower values first when lower wins", () => {
-    expect(
-      sharedRanks(
-        [
-          { key: "a", value: 12.5 },
-          { key: "b", value: 10 },
-          { key: "c", value: 12.5 },
-        ],
-        "lower",
-      ),
-    ).toEqual(
-      new Map([
-        ["b", 1],
-        ["a", 2],
-        ["c", 2],
-      ]),
-    );
-  });
-});
-
 describe("winnerKeys", () => {
-  it("is every row in first place", () => {
+  it("is every row in first place, tied or not", () => {
     expect(
       winnerKeys([
-        { key: "a", rank: 1 },
-        { key: "b", rank: 1 },
-        { key: "c", rank: 3 },
+        { key: "a", rank: 1, points: 10 },
+        { key: "b", rank: 1, points: 10 },
+        { key: "c", rank: 3, points: 4 },
       ]),
     ).toEqual(new Set(["a", "b"]));
   });
@@ -163,10 +121,44 @@ describe("winnerKeys", () => {
   it("is nobody when no row is first", () => {
     expect(
       winnerKeys([
-        { key: "a", rank: 2 },
-        { key: "b", rank: null },
+        { key: "a", rank: 2, points: 3 },
+        { key: "b", rank: null, points: null },
       ]),
     ).toEqual(new Set());
+  });
+
+  it("is nobody when no row has points or a Score yet (every Team at 0)", () => {
+    expect(
+      winnerKeys([
+        { key: "red", rank: 1, points: 0 },
+        { key: "blue", rank: 1, points: 0 },
+        { key: "green", rank: 1, points: null, score: null },
+      ]),
+    ).toEqual(new Set());
+  });
+
+  it("is nobody when every row ties", () => {
+    expect(
+      winnerKeys([
+        { key: "a", rank: 1, points: 5, score: 12 },
+        { key: "b", rank: 1, points: 5, score: 12 },
+      ]),
+    ).toEqual(new Set());
+  });
+
+  it("is the one row of a one-row table that has a result", () => {
+    expect(winnerKeys([{ key: "a", rank: 1, points: null, score: 7 }])).toEqual(
+      new Set(["a"]),
+    );
+  });
+
+  it("counts a Score alone as a result, before any points", () => {
+    expect(
+      winnerKeys([
+        { key: "a", rank: 1, points: null, score: 9 },
+        { key: "b", rank: 2, points: null, score: 7 },
+      ]),
+    ).toEqual(new Set(["a"]));
   });
 });
 

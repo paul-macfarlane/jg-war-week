@@ -4,7 +4,11 @@ import type { DBTx } from "@/db";
 import { isLocalDatabaseUrl } from "@/db/local-url";
 import { inRolledBackTransaction } from "@/db/test-transaction";
 import { competitionStatusText } from "@/lib/competition-status";
-import { getCompetitionByName, getCompetitions } from "@/queries/competitions";
+import {
+  getCompetition,
+  getCompetitionByName,
+  getCompetitions,
+} from "@/queries/competitions";
 
 // Runs only against a local Postgres (CI's service or docker compose; see
 // vitest.config.ts), never a hosted database.
@@ -156,6 +160,52 @@ describe.skipIf(!isLocalDatabase)("getCompetitionByName", () => {
       expect(
         await getCompetitionByName(warWeek, "Nonexistent", tx),
       ).toBeUndefined();
+    });
+  });
+});
+
+describe.skipIf(!isLocalDatabase)("getCompetition", () => {
+  it("finds a Competition of this War Week by id", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { schema, warWeek } = await fixture(tx);
+      const [pool] = await tx
+        .insert(schema.competition)
+        .values({
+          warWeekId: warWeek.id,
+          name: "Beyblades",
+          scoring: "individual",
+          competitionGroup: "Floor",
+        })
+        .returning({ id: schema.competition.id });
+
+      expect(await getCompetition(warWeek, pool.id, tx)).toEqual({
+        id: pool.id,
+        name: "Beyblades",
+        description: null,
+        scoring: "individual",
+        countsTowardTeam: false,
+        competitionGroup: "Floor",
+        format: "placement",
+      });
+    });
+  });
+
+  it("returns undefined for another War Week's Competition or a malformed id", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { schema, warWeek } = await fixture(tx);
+      const [pool] = await tx
+        .insert(schema.competition)
+        .values({ warWeekId: warWeek.id, name: "Beyblades", scoring: "team" })
+        .returning({ id: schema.competition.id });
+
+      expect(
+        await getCompetition(
+          { id: "00000000-0000-4000-8000-000000000000" },
+          pool.id,
+          tx,
+        ),
+      ).toBeUndefined();
+      expect(await getCompetition(warWeek, "not-a-uuid", tx)).toBeUndefined();
     });
   });
 });

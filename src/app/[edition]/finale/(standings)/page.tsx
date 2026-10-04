@@ -37,15 +37,16 @@ export default async function FinalePage({
   const warWeek = await getWarWeekForEdition(edition);
   if (!warWeek) notFound();
 
-  const [slides, standings, actor, counts, awards, champions] =
-    await Promise.all([
+  const [slides, standings, actor, counts, awards, winners] = await Promise.all(
+    [
       getFinaleSlides(warWeek.id),
       getStandings(warWeek),
       getActor(),
       getFinaleCounts(warWeek.id),
       getAwards(warWeek),
       getWinners(warWeek),
-    ]);
+    ],
+  );
 
   return (
     <main>
@@ -55,7 +56,7 @@ export default async function FinalePage({
           standings,
           counts,
           awards,
-          champions,
+          winners,
         })}
         edition={warWeek.edition}
         storyTheme={warWeek.storyTheme}

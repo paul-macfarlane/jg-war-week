@@ -1,8 +1,8 @@
 /**
  * The results table's rules (spec R20, decisions 1 and 2): sorting by any
- * column with its `aria-sort` state, shared places for ties, who the
- * Winner is, and the points a Closed Competition's Points Entries give.
- * Pure, so the table, its views and the tests share one rule.
+ * column with its `aria-sort` state, who the Winner is, and the points a
+ * Closed Competition's Points Entries give. Pure, so the table, its views
+ * and the tests share one rule.
  */
 
 export type ResultsColumn = "rank" | "name" | "score" | "points";
@@ -103,34 +103,28 @@ export function nextResultsSort(
 }
 
 /**
- * Places by value, by standard competition ranking: equal values share a
- * place and the next is skipped (1, 1, 3). A row with no value is left out.
+ * The Winner rows: every row in first place, tied or not, once something
+ * decides first place. Nobody is the Winner while no row has points or a
+ * Score (a leaderboard with every Team at 0), or when every row ties.
  */
-export function sharedRanks(
-  rows: { key: string; value: number | null }[],
-  better: "higher" | "lower",
-): Map<string, number> {
-  const valued = rows.filter(
-    (row): row is { key: string; value: number } => row.value !== null,
-  );
-  const beats = (a: number, b: number) => (better === "higher" ? a > b : a < b);
-  return new Map(
-    valued
-      .map((row) => ({
-        key: row.key,
-        rank:
-          valued.filter((other) => beats(other.value, row.value)).length + 1,
-      }))
-      .sort((a, b) => a.rank - b.rank)
-      .map(({ key, rank }) => [key, rank]),
-  );
-}
-
-/** The Winner rows: every row in first place, tied or not. */
 export function winnerKeys(
-  rows: { key: string; rank: number | null }[],
+  rows: {
+    key: string;
+    rank: number | null;
+    score?: number | null;
+    points: number | null;
+  }[],
 ): Set<string> {
-  return new Set(rows.filter((row) => row.rank === 1).map((row) => row.key));
+  const hasResult = rows.some(
+    (row) =>
+      (row.points !== null && row.points !== 0) ||
+      (row.score !== null && row.score !== undefined),
+  );
+  const first = rows.filter((row) => row.rank === 1);
+  if (!hasResult || (rows.length > 1 && first.length === rows.length)) {
+    return new Set();
+  }
+  return new Set(first.map((row) => row.key));
 }
 
 /** Whether the table shows a Score column: only when some row has a Score. */
