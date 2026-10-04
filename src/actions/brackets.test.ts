@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  closeBracket,
   createSquad,
   deleteSquad,
-  finalizeBracket,
   updateSquad,
 } from "@/actions/brackets";
 
@@ -42,7 +42,7 @@ vi.mock("@/auth/authorize", () => ({
   postedCompetitionId: () => null,
 }));
 vi.mock("@/mutations/brackets", () => ({
-  finalizeBracket: vi.fn(boom),
+  closeBracket: vi.fn(boom),
   createSquad: vi.fn(async () => ({ ok: true })),
   updateSquad: vi.fn(async () => ({ ok: true })),
   deleteSquad: vi.fn(async () => ({ ok: true })),
@@ -57,7 +57,7 @@ afterEach(() => {
 
 describe("Bracket actions", () => {
   it("return the generic error when the mutation throws", async () => {
-    await expect(finalizeBracket(ID)).resolves.toEqual({
+    await expect(closeBracket(ID)).resolves.toEqual({
       ok: false,
       error: "Something went wrong. Try again.",
     });

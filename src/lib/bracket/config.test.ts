@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  ADVANCE_PER_HEAT_OPTIONS,
+  ADVANCE_PER_MATCH_OPTIONS,
   DEFAULT_BRACKET_CONFIG,
-  ENTRANTS_PER_HEAT_OPTIONS,
-  advancePerHeatLabel,
+  ENTRANTS_PER_MATCH_OPTIONS,
+  advancePerMatchLabel,
   bracketConfigSchema,
   configOf,
-  entrantsPerHeatLabel,
+  entrantsPerMatchLabel,
   isHeadToHead,
 } from "@/lib/bracket/config";
 
@@ -93,13 +93,13 @@ describe("configOf", () => {
 
 describe("builder options", () => {
   it("lists 2 to 8 per Match and 1 to 7 advancing", () => {
-    expect(ENTRANTS_PER_HEAT_OPTIONS).toEqual([2, 3, 4, 5, 6, 7, 8]);
-    expect(ADVANCE_PER_HEAT_OPTIONS).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(ENTRANTS_PER_MATCH_OPTIONS).toEqual([2, 3, 4, 5, 6, 7, 8]);
+    expect(ADVANCE_PER_MATCH_OPTIONS).toEqual([1, 2, 3, 4, 5, 6, 7]);
   });
 
   it("labels them for Organizers", () => {
-    expect(entrantsPerHeatLabel(4)).toBe("4 per Match");
-    expect(advancePerHeatLabel(2)).toBe("Top 2 advance");
-    expect(advancePerHeatLabel(1)).toBe("Top 1 advances");
+    expect(entrantsPerMatchLabel(4)).toBe("4 per Match");
+    expect(advancePerMatchLabel(2)).toBe("Top 2 advance");
+    expect(advancePerMatchLabel(1)).toBe("Top 1 advances");
   });
 });

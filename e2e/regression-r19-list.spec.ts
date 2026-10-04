@@ -28,7 +28,7 @@ async function shoot(page: Page, testInfo: TestInfo, name: string) {
 async function addClosedParticipation() {
   await runQuery(
     `insert into competition (war_week_id, name, scoring, format,
-       participation_points, finalized_at)
+       participation_points, closed_at)
      select id, $1, 'individual', 'participation', 1, now()
      from war_week where edition = 'xi'`,
     [CLOSED],
@@ -36,7 +36,7 @@ async function addClosedParticipation() {
 }
 
 /**
- * A four-Entrant head-to-head Bracket in XI: Round 1's first Heat played,
+ * A four-Entrant head-to-head Bracket in XI: Round 1's first Match played,
  * its second ready, the final pending.
  */
 async function addKnockoutInRoundOne() {
@@ -55,23 +55,23 @@ async function addKnockoutInRoundOne() {
      returning id`,
     [id],
   );
-  const heats = await runQuery<{ id: string }>(
-    `insert into heat (competition_id, round, position, status) values
+  const matches = await runQuery<{ id: string }>(
+    `insert into bracket_match (competition_id, round, position, status) values
        ($1, 1, 1, 'played'), ($1, 1, 2, 'ready'), ($1, 2, 1, 'pending')
      returning id`,
     [id],
   );
-  const [first, second, final] = heats.map((h) => h.id);
+  const [first, second, final] = matches.map((h) => h.id);
   await runQuery(
-    `update heat set winner_to_heat_id = $1, winner_to_slot = 0 where id = $2`,
+    `update bracket_match set winner_to_match_id = $1, winner_to_slot = 0 where id = $2`,
     [final, first],
   );
   await runQuery(
-    `update heat set winner_to_heat_id = $1, winner_to_slot = 1 where id = $2`,
+    `update bracket_match set winner_to_match_id = $1, winner_to_slot = 1 where id = $2`,
     [final, second],
   );
   await runQuery(
-    `insert into heat_entrant (heat_id, entrant_id, slot, place) values
+    `insert into bracket_match_entrant (bracket_match_id, entrant_id, slot, place) values
        ($1, $3, 0, 1), ($1, $4, 1, 2), ($2, $5, 0, null), ($2, $6, 1, null),
        ($7, $3, 0, null)`,
     [first, second, ...entrants.map((e) => e.id), final],

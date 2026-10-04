@@ -11,10 +11,10 @@ import {
 import { DBOrTx, db } from "@/db";
 import {
   type WarWeek,
+  bracketMatch,
   competition,
   finaleSlide,
   game,
-  heat,
   participant,
   pointsEntry,
 } from "@/db/schema";
@@ -57,7 +57,7 @@ export async function getFinaleSlides(
 
 /**
  * A War Week's figures for the By the numbers slide (`byTheNumbers` labels
- * and filters them): Competitions with a Points Entry, Games logged, Heats
+ * and filters them): Competitions with a Points Entry, Games logged, Matches
  * played, Points Entries (Discretionary points too) and the points they hand out, and the roster.
  */
 export async function getFinaleCounts(
@@ -65,7 +65,7 @@ export async function getFinaleCounts(
   dbOrTx: DBOrTx = db,
 ): Promise<FinaleCounts> {
   const ofWarWeek = eq(competition.warWeekId, warWeekId);
-  const [[entries], [games], [heats], [roster]] = await Promise.all([
+  const [[entries], [games], [matches], [roster]] = await Promise.all([
     dbOrTx
       .select({
         competitions: countDistinct(pointsEntry.competitionId),
@@ -81,9 +81,9 @@ export async function getFinaleCounts(
       .where(ofWarWeek),
     dbOrTx
       .select({ n: sql<number>`count(*)::int` })
-      .from(heat)
-      .innerJoin(competition, eq(competition.id, heat.competitionId))
-      .where(and(ofWarWeek, eq(heat.status, "played"))),
+      .from(bracketMatch)
+      .innerJoin(competition, eq(competition.id, bracketMatch.competitionId))
+      .where(and(ofWarWeek, eq(bracketMatch.status, "played"))),
     dbOrTx
       .select({ n: sql<number>`count(*)::int` })
       .from(participant)
@@ -92,7 +92,7 @@ export async function getFinaleCounts(
   return {
     competitionsRun: Number(entries?.competitions ?? 0),
     gamesLogged: Number(games?.n ?? 0),
-    heatsPlayed: Number(heats?.n ?? 0),
+    matchesPlayed: Number(matches?.n ?? 0),
     pointsEntries: Number(entries?.entries ?? 0),
     pointsHandedOut: Number(entries?.points ?? 0),
     participants: Number(roster?.n ?? 0),
@@ -113,13 +113,13 @@ export async function getWinners(
       id: competition.id,
       name: competition.name,
       format: competition.format,
-      finalizedAt: competition.finalizedAt,
+      closedAt: competition.closedAt,
     })
     .from(competition)
     .where(
       and(
         eq(competition.warWeekId, warWeek.id),
-        isNotNull(competition.finalizedAt),
+        isNotNull(competition.closedAt),
       ),
     );
   if (competitions.length === 0) return [];
@@ -130,7 +130,7 @@ export async function getWinners(
           pointsEntry.competitionId,
           competitions.map((c) => c.id),
         ),
-        eq(pointsEntry.generatedByBracket, true),
+        eq(pointsEntry.generated, true),
       ),
     )
     .orderBy(asc(pointsEntry.enteredAt), asc(pointsEntry.id));

@@ -79,16 +79,16 @@ export async function savePlacements(
   });
 }
 
-/** Finalizes the sheet into generated Points Entries. */
-export async function finalizePlacements(
+/** Closes the sheet into generated Points Entries. */
+export async function closePlacements(
   competitionId: string,
 ): Promise<MutationResult> {
-  return placementWrite("placement.finalize", competitionId, (id, ctx) =>
-    mutations.finalizePlacements(id, ctx),
+  return placementWrite("placement.close", competitionId, (id, ctx) =>
+    mutations.closePlacements(id, ctx),
   );
 }
 
-/** Reopens a Finalized sheet, withdrawing its points. */
+/** Reopens a Closed sheet, withdrawing its points. */
 export async function reopenPlacements(
   competitionId: string,
 ): Promise<MutationResult> {

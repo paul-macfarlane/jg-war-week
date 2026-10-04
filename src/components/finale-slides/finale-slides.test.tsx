@@ -120,7 +120,7 @@ describe("the built-in Finale slides", () => {
       winners: [
         {
           competitionId: "c1",
-          competition: "Chess Heats",
+          competition: "Chess Matches",
           format: "bracket",
           label: "Winner",
           title: "Ada Anvil",
@@ -141,7 +141,7 @@ describe("the built-in Finale slides", () => {
         },
       ],
     });
-    expect(text).toContain("Chess Heats");
+    expect(text).toContain("Chess Matches");
     expect(text).toContain("Ada Anvil");
     expect(text).toContain("Ping Pong");
     expect(text).toContain("Tie: Fay Falcon & Jax Jetpack");

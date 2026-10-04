@@ -44,7 +44,7 @@ export type PlacementsResult =
 
 /**
  * Serializes a Placement Competition's `get_placements` answer: its Score
- * direction, Placement Points, whether it's Finalized, and each row by
+ * direction, Placement Points, whether it's Closed, and each row by
  * place with its name, Team, Score and points. Pure: the route resolves
  * the Competition by name and loads `getPlacementsView` only when its
  * Format is `placement`. Names only: never an email, an id or a picture.
@@ -78,8 +78,8 @@ export function toPlacementsResult(
       scoring: competition.scoring,
       scoreDirection: DIRECTIONS[competition.scoreDirection],
       placementPoints: competition.placementPoints,
-      closed: competition.finalizedAt !== null,
-      closedAt: competition.finalizedAt?.toISOString() ?? null,
+      closed: competition.closedAt !== null,
+      closedAt: competition.closedAt?.toISOString() ?? null,
     },
     placements: rows.map((row) => ({
       place: row.place,

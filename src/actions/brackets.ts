@@ -4,7 +4,7 @@ import { guarded } from "@/actions/result";
 import { revalidateWarWeek } from "@/actions/revalidate";
 import { authorize } from "@/auth/authorize";
 import type { WarWeekAction } from "@/lib/access";
-import { parseHeatResultInput, parseSquadInput } from "@/lib/bracket/input";
+import { parseMatchResultInput, parseSquadInput } from "@/lib/bracket/input";
 import { isUuid } from "@/lib/uuid";
 import * as mutations from "@/mutations/brackets";
 import type { MutationContext, MutationResult } from "@/mutations/types";
@@ -15,7 +15,7 @@ export type BracketActionResult = MutationResult;
 const SQUAD_NOT_FOUND = "That Squad no longer exists.";
 
 export type MatchResultActionResult =
-  { ok: true; resetHeatIds: string[] } | { ok: false; error: string };
+  { ok: true; resetMatchIds: string[] } | { ok: false; error: string };
 
 /**
  * Runs a Bracket write as an Organizer or a Host of the Competition, in the
@@ -37,39 +37,35 @@ async function bracketWrite<R extends { ok: boolean }>(
   });
 }
 
-export async function recordHeatResult(
+export async function recordMatchResult(
   competitionId: string,
-  heatId: string,
+  matchId: string,
   input: unknown,
 ): Promise<MatchResultActionResult> {
-  return bracketWrite("bracket.heat-result", competitionId, async (id, ctx) => {
-    if (!isUuid(heatId)) {
-      return { ok: false, error: "That Match no longer exists." };
-    }
-    const parsed = parseHeatResultInput(input);
-    if (!parsed.ok) return parsed;
-    return mutations.recordHeatResult(id, heatId, parsed.value, ctx);
-  });
-}
-
-export async function finalizeBracket(
-  competitionId: string,
-): Promise<BracketActionResult> {
   return bracketWrite(
-    "bracket.finalize",
+    "bracket.match-result",
     competitionId,
-    mutations.finalizeBracket,
+    async (id, ctx) => {
+      if (!isUuid(matchId)) {
+        return { ok: false, error: "That Match no longer exists." };
+      }
+      const parsed = parseMatchResultInput(input);
+      if (!parsed.ok) return parsed;
+      return mutations.recordMatchResult(id, matchId, parsed.value, ctx);
+    },
   );
 }
 
-export async function unfinalizeBracket(
+export async function closeBracket(
   competitionId: string,
 ): Promise<BracketActionResult> {
-  return bracketWrite(
-    "bracket.unfinalize",
-    competitionId,
-    mutations.unfinalizeBracket,
-  );
+  return bracketWrite("bracket.close", competitionId, mutations.closeBracket);
+}
+
+export async function reopenBracket(
+  competitionId: string,
+): Promise<BracketActionResult> {
+  return bracketWrite("bracket.reopen", competitionId, mutations.reopenBracket);
 }
 
 /**

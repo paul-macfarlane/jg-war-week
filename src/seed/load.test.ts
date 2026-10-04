@@ -701,9 +701,9 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Finale slides", () => {
 
 describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Placements", () => {
   const HOST = "seed-placement-host@jahnelgroup.com";
-  const FINALIZED_AT = "2099-01-03T18:00:00.000Z";
+  const CLOSED_AT = "2099-01-03T18:00:00.000Z";
 
-  /** Darts (individual, Finalized by HOST at FINALIZED_AT) and Quiz (team, open), each with seeded Placements. */
+  /** Darts (individual, Closed by HOST at CLOSED_AT) and Quiz (team, open), each with seeded Placements. */
   async function placementSeed() {
     return seed("spl", 7, "upcoming", {
       teams: [
@@ -722,9 +722,9 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Placements", () => {
           countsTowardTeam: true,
           placementPoints: [10, 6, 3],
           scoreDirection: "higher",
-          finalized: true,
-          finalizedAt: FINALIZED_AT,
-          finalizedByEmail: HOST,
+          closed: true,
+          closedAt: CLOSED_AT,
+          closedByEmail: HOST,
         },
         { name: "Quiz", scoring: "team", placementPoints: [5, 3] },
       ],
@@ -762,7 +762,7 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Placements", () => {
         id: schema.competition.id,
         name: schema.competition.name,
         scoreDirection: schema.competition.scoreDirection,
-        finalizedAt: schema.competition.finalizedAt,
+        closedAt: schema.competition.closedAt,
       })
       .from(schema.competition)
       .where(eq(schema.competition.warWeekId, warWeekId));
@@ -793,7 +793,7 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Placements", () => {
         enteredByEmail: schema.pointsEntry.enteredByEmail,
         enteredAt: schema.pointsEntry.enteredAt,
         note: schema.pointsEntry.note,
-        generated: schema.pointsEntry.generatedByBracket,
+        generated: schema.pointsEntry.generated,
       })
       .from(schema.pointsEntry)
       .where(eq(schema.pointsEntry.warWeekId, warWeekId));
@@ -818,11 +818,11 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Placements", () => {
 
       expect(loaded.darts).toMatchObject({
         scoreDirection: "higher",
-        finalizedAt: new Date(FINALIZED_AT),
+        closedAt: new Date(CLOSED_AT),
       });
       expect(loaded.quiz).toMatchObject({
         scoreDirection: "none",
-        finalizedAt: null,
+        closedAt: null,
       });
       expect(
         loaded.rows.map(({ seedKey, place, score, competitionId }) => ({
@@ -858,7 +858,7 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Placements", () => {
           points,
           seedKey,
           enteredByEmail: HOST,
-          enteredAt: new Date(FINALIZED_AT),
+          enteredAt: new Date(CLOSED_AT),
           note: "From placement",
           generated: true,
         })),
@@ -895,7 +895,7 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Placements", () => {
       await loadWarWeekSeed(await placementSeed(), tx);
       const reloaded = await read(tx, first.id);
       expect(reloaded).toEqual(edited);
-      expect(reloaded.darts.finalizedAt).toBeNull();
+      expect(reloaded.darts.closedAt).toBeNull();
       expect(reloaded.entries).toEqual([]);
     });
   });

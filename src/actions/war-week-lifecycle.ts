@@ -112,7 +112,7 @@ export async function reopenWarWeek(
 
 /**
  * Unstart: `live → upcoming`, only while nothing has been scored (no Points
- * Entry, Heat result or Game). Re-checked under the row lock.
+ * Entry, Match result or Game). Re-checked under the row lock.
  */
 export async function unstartWarWeek(
   warWeekId: string,

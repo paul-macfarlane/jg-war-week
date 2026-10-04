@@ -941,7 +941,7 @@ test("r5 38 Escape keeps chosen Entrants; Tree shows Recorded <time>; Format hel
     await shoot(page, testInfo, "escape-keeps-entrants-375");
     await page.setViewportSize(DESKTOP);
 
-    // Build the Bracket and place a Heat, to see it in the Tree.
+    // Build the Bracket and place a Match, to see it in the Tree.
     await find.fill(teams[3].name);
     await page
       .getByRole("option", { name: new RegExp(`^${teams[3].name}`) })
@@ -968,7 +968,7 @@ test("r5 38 Escape keeps chosen Entrants; Tree shows Recorded <time>; Format hel
     await sheet.getByRole("button", { name: "Save Match Result" }).click();
     await expect(sheet).toBeHidden();
 
-    // 38-1: the tree (the only layout) shows when the Heat was recorded.
+    // 38-1: the tree (the only layout) shows when the Match was recorded.
     for (const viewport of [PHONE, DESKTOP]) {
       await page.setViewportSize(viewport);
       await page.goto(`/xi/competitions/${id}`);
@@ -979,7 +979,12 @@ test("r5 38 Escape keeps chosen Entrants; Tree shows Recorded <time>; Format hel
           .getByRole("group", { name: "Semifinal 1" })
           .getByText(/^Recorded .+ ET$/),
       ).toBeVisible();
-      await shoot(page, testInfo, `tree-heat-recorded-${viewport.width}`, true);
+      await shoot(
+        page,
+        testInfo,
+        `tree-match-recorded-${viewport.width}`,
+        true,
+      );
     }
   } finally {
     await deleteXiCompetition(name);

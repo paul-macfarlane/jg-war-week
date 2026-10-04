@@ -456,7 +456,7 @@ export async function assertMcp() {
       fail(participationCheck, `result=${JSON.stringify(participation.raw)}`);
     }
 
-    // Speed Chess is seeded as an individual, Finalized Placement Competition
+    // Speed Chess is seeded as an individual, Closed Placement Competition
     // with one row (James Novak, 1st); the sheet comes by name only.
     const placements = await callTool(19, "get_placements", {
       competition: "Speed Chess",

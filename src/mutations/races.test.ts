@@ -179,12 +179,12 @@ describe.skipIf(!isLocalDatabase)("Day delete on two connections", () => {
 
 /**
  * A committed single-elimination Competition with self-report on: Red v
- * Blue in its one Heat, the Final, with Neo (Red) and Trinity (Blue)
+ * Blue in its one Match, the Final, with Neo (Red) and Trinity (Blue)
  * linked by email.
  */
 async function committedReportable(edition: string, n: number) {
   const brackets = await import("@/mutations/brackets");
-  const { setSelfReport } = await import("@/mutations/heat-reports");
+  const { setSelfReport } = await import("@/mutations/match-reports");
   const { getBracket } = await import("@/queries/brackets");
   const f = await committedWarWeek(edition, n);
   const { competition, participant, team } = f.schema;
@@ -224,7 +224,7 @@ async function committedReportable(edition: string, n: number) {
   await brackets.generateBracket(clash.id, {}, f.ctx, f.db);
   await setSelfReport(clash.id, { on: true }, f.ctx, f.db);
   const view = (await getBracket(clash.id, f.db))!;
-  const [final] = view.bracket.heats;
+  const [final] = view.bracket.matches;
   const red = view.entrants.find((e) => e.label === "Red")!.id;
   const blueEntrant = view.entrants.find((e) => e.label === "Blue")!.id;
   const lockRow = (tx: ConnectionTx) =>
@@ -235,15 +235,20 @@ async function committedReportable(edition: string, n: number) {
       .for("update");
   /** The Final's winner and its reporter's email, as committed. */
   const saved = async () => {
-    const { heat, heatEntrant } = f.schema;
+    const { bracketMatch, bracketMatchEntrant } = f.schema;
     const [winner] = await f.db
-      .select({ entrantId: heatEntrant.entrantId })
-      .from(heatEntrant)
-      .where(and(eq(heatEntrant.heatId, final.id), eq(heatEntrant.place, 1)));
+      .select({ entrantId: bracketMatchEntrant.entrantId })
+      .from(bracketMatchEntrant)
+      .where(
+        and(
+          eq(bracketMatchEntrant.matchId, final.id),
+          eq(bracketMatchEntrant.place, 1),
+        ),
+      );
     const [row] = await f.db
-      .select({ email: heat.reportedByEmail })
-      .from(heat)
-      .where(eq(heat.id, final.id));
+      .select({ email: bracketMatch.reportedByEmail })
+      .from(bracketMatch)
+      .where(eq(bracketMatch.id, final.id));
     return { winner: winner?.entrantId ?? null, reporter: row.email };
   };
   return {
@@ -269,12 +274,12 @@ describe.skipIf(!isLocalDatabase)(
     it.each([["Neo"], ["Trinity"]])(
       "gives two reports of one Match exactly one result; the other is told it's decided (%s first)",
       async (first) => {
-        const { submitHeatReport } = await import("@/mutations/heat-reports");
+        const { submitMatchReport } = await import("@/mutations/match-reports");
         const f = await committedReportable(edition, 6);
 
         const results = await withConnections(2, async ([a, b]) => {
           const neo = () =>
-            submitHeatReport(
+            submitMatchReport(
               f.competitionId,
               f.finalId,
               { order: [f.red, f.blue] },
@@ -282,7 +287,7 @@ describe.skipIf(!isLocalDatabase)(
               a,
             );
           const trinity = () =>
-            submitHeatReport(
+            submitMatchReport(
               f.competitionId,
               f.finalId,
               { order: [f.blue, f.red] },
@@ -301,8 +306,8 @@ describe.skipIf(!isLocalDatabase)(
         };
         expect(results).toEqual(
           first === "Neo"
-            ? [{ ok: true, resetHeatIds: [] }, decided]
-            : [decided, { ok: true, resetHeatIds: [] }],
+            ? [{ ok: true, resetMatchIds: [] }, decided]
+            : [decided, { ok: true, resetMatchIds: [] }],
         );
         expect(await f.saved()).toEqual(
           first === "Neo"
@@ -324,12 +329,12 @@ describe.skipIf(!isLocalDatabase)(
     it.each([["Host"], ["report"]])(
       "never lets a report overwrite the Host's result (%s first)",
       async (first) => {
-        const { submitHeatReport } = await import("@/mutations/heat-reports");
+        const { submitMatchReport } = await import("@/mutations/match-reports");
         const f = await committedReportable(edition, 7);
 
         const [hosted, reported] = await withConnections(2, async ([a, b]) => {
           const host = () =>
-            f.brackets.recordHeatResult(
+            f.brackets.recordMatchResult(
               f.competitionId,
               f.finalId,
               { order: [f.blue, f.red] },
@@ -337,7 +342,7 @@ describe.skipIf(!isLocalDatabase)(
               a,
             );
           const report = () =>
-            submitHeatReport(
+            submitMatchReport(
               f.competitionId,
               f.finalId,
               { order: [f.red, f.blue] },
@@ -349,11 +354,11 @@ describe.skipIf(!isLocalDatabase)(
             : (await staggered(f.lockRow, report, host)).reverse();
         });
 
-        expect(hosted).toEqual({ ok: true, resetHeatIds: [] });
+        expect(hosted).toEqual({ ok: true, resetMatchIds: [] });
         expect(reported).toEqual(
           first === "Host"
             ? { ok: false, error: "This Match already has a result." }
-            : { ok: true, resetHeatIds: [] },
+            : { ok: true, resetMatchIds: [] },
         );
         // The Host's result stands either way, and it's the Host's: no reporter.
         expect(await f.saved()).toEqual({ winner: f.blue, reporter: null });

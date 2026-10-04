@@ -255,7 +255,7 @@ describe("parseNextWarWeekInput", () => {
 });
 
 describe("unstartError", () => {
-  const none = { pointsEntries: 0, heatResults: 0, games: 0 };
+  const none = { pointsEntries: 0, matchResults: 0, games: 0 };
 
   it.each<[string, Parameters<typeof unstartError>[0], string | null]>([
     [
@@ -278,7 +278,7 @@ describe("unstartError", () => {
       {
         status: "live",
         winner: null,
-        scored: { pointsEntries: 0, heatResults: 1, games: 1 },
+        scored: { pointsEntries: 0, matchResults: 1, games: 1 },
       },
       "A Match has a result; Unstart isn't available.",
     ],
@@ -317,7 +317,7 @@ describe("lifecycleActionError", () => {
   const xiiUpcoming = edition(12, "xii", "upcoming");
   const upcomingWeeks = [x, xi, xiiUpcoming];
 
-  const none = { pointsEntries: 0, heatResults: 0, games: 0 };
+  const none = { pointsEntries: 0, matchResults: 0, games: 0 };
 
   it.each<[string, Parameters<typeof lifecycleActionError>[0], string | null]>([
     [
@@ -381,7 +381,7 @@ describe("lifecycleActionError", () => {
         action: "unstart",
         target: xiiLive,
         warWeeks: liveWeeks,
-        scored: { ...none, heatResults: 2 },
+        scored: { ...none, matchResults: 2 },
       },
       "A Match has a result; Unstart isn't available.",
     ],
@@ -401,7 +401,7 @@ describe("lifecycleActionError", () => {
         action: "unstart",
         target: xiiLive,
         warWeeks: liveWeeks,
-        scored: { pointsEntries: 1, heatResults: 1, games: 1 },
+        scored: { pointsEntries: 1, matchResults: 1, games: 1 },
       },
       "Points have been entered; Unstart isn't available.",
     ],
@@ -421,7 +421,7 @@ describe("lifecycleActionError", () => {
         action: "unstart",
         target: { ...xi, status: "live" },
         warWeeks: [x, { ...xi, status: "live" }],
-        scored: { pointsEntries: 1, heatResults: 0, games: 0 },
+        scored: { pointsEntries: 1, matchResults: 0, games: 0 },
       },
       "This War Week has been ended; Unstart isn't available.",
     ],

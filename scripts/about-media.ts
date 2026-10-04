@@ -506,7 +506,7 @@ async function recordFinale(cookie: string, scheme: Scheme) {
 }
 
 // ---------------------------------------------------------------------------
-// A finished Heats Bracket for the "competitions" still (`setupBracketDemo`
+// A finished Matches Bracket for the "competitions" still (`setupBracketDemo`
 // in `scripts/media/demo.ts`, shared with the Finale stills)
 
 const setupBracketDemo = () => setupBracketDemoOn(current, note);

@@ -713,7 +713,7 @@ async function competitionRefusal(
       .select({
         scoring: competition.scoring,
         placementPoints: competition.placementPoints,
-        finalizedAt: competition.finalizedAt,
+        closedAt: competition.closedAt,
         format: competition.format,
       })
       .from(competition)
@@ -727,7 +727,7 @@ async function competitionRefusal(
     existing = {
       scoring: found.scoring,
       placementPoints: found.placementPoints,
-      finalizedAt: found.finalizedAt,
+      closedAt: found.closedAt,
       format: found.format,
       pointsEntryCount: await tx.$count(
         pointsEntry,
@@ -826,7 +826,7 @@ export type CreateCompetitionResult =
 /**
  * Creates a Competition, with the Format an Organizer chose (default
  * "placement") and that Format's create defaults (`formatDefaults`, as a
- * Format change gives): a Bracket's default heat settings, a Head-to-head
+ * Format change gives): a Bracket's default match settings, a Head-to-head
  * or Best score Competition's default settings open to everyone, a
  * `participation` Competition's 1 point per Participant when individual or
  * Placement Points 3, 2, 1 (ranked by headcount) when team, with Self
@@ -868,7 +868,7 @@ export async function updateCompetition(
     `There's already a Competition named "${values.name}".`,
     () =>
       dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-        // Adding a Placement or Entrant, and Finalizing or closing (which
+        // Adding a Placement or Entrant, and Closing or closing (which
         // write its Points Entries), take the same lock, so the counts below
         // hold until this commits.
         if (!(await locked(competition, id, ctx, tx))) {

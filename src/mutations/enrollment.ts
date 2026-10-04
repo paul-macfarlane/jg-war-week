@@ -20,8 +20,8 @@ import {
   withdrawError,
 } from "@/lib/games/enroll-rule";
 import {
+  CLOSED,
   COMPETITION_NOT_FOUND,
-  FINALIZED,
   GAMES_CLOSED,
   lockedCompetition,
   refuse,
@@ -35,7 +35,7 @@ export type SelfEnrollValues = SelfEnrollInput;
  * Sets the "Participants can enroll" switch, the Entrant limit and the
  * close time (ADR 0006), under the Competition's row lock so an enrollment
  * in flight runs before or after it. Refused on a points Competition, a
- * finalized (closed) one, and, when turning it on, a Best of or an
+ * closed (closed) one, and, when turning it on, a Best of or an
  * open-to-everyone Head-to-head or Best score Competition (R3 decision 12;
  * `enrollmentUnavailable`). The parser and the column's CHECK bound the
  * Entrant limit.
@@ -66,8 +66,8 @@ export async function setSelfEnroll(
     ) {
       return refuse(unavailable);
     }
-    if (found.finalizedAt) {
-      return refuse(isGameFormat(found.format) ? GAMES_CLOSED : FINALIZED);
+    if (found.closedAt) {
+      return refuse(isGameFormat(found.format) ? GAMES_CLOSED : CLOSED);
     }
     if (on && unavailable) return refuse(unavailable);
     await tx

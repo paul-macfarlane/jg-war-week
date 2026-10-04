@@ -20,7 +20,7 @@ import {
 // 5 / 3 / 1. None of these four is on the seeded Beyblades sheet (it places only a Team).
 const COMPETITION = "Beyblades";
 
-// The seeded Competitions are Finalized Placement sheets; open each for a
+// The seeded Competitions are Closed Placement sheets; open each for a
 // Bracket and put the sheet back afterwards.
 let restoreCompetition: (() => Promise<void>) | null = null;
 test.beforeEach(async () => {
@@ -70,14 +70,14 @@ async function checkViewports(page: Page, testInfo: TestInfo, name: string) {
   await page.setViewportSize({ width: 1280, height: 900 });
 }
 
-/** The name of the Round 1 Heat that holds `displayName` (the draw is random). */
-async function round1HeatOf(
+/** The name of the Round 1 Match that holds `displayName` (the draw is random). */
+async function round1MatchOf(
   competitionId: string,
   displayName: string,
 ): Promise<string> {
   const [row] = await runQuery<{ position: number }>(
-    `select h.position from heat h
-     join heat_entrant he on he.heat_id = h.id
+    `select h.position from bracket_match h
+     join bracket_match_entrant he on he.bracket_match_id = h.id
      join entrant e on e.id = he.entrant_id
      join participant p on p.id = e.participant_id
      where h.competition_id = $1 and h.round = 1 and p.display_name = $2`,
@@ -87,14 +87,14 @@ async function round1HeatOf(
   return `Semifinal ${row.position}`;
 }
 
-/** Records the Heat named `heat`, with its first-listed Entrant winning. */
-async function recordHeat(page: Page, heat: string): Promise<string> {
+/** Records the Match named `match`, with its first-listed Entrant winning. */
+async function recordMatch(page: Page, match: string): Promise<string> {
   // From the admin Bracket's tree, the one Participants see.
   await page
     .locator("[data-bracket-tree]")
-    .getByRole("button", { name: `Record result for ${heat}` })
+    .getByRole("button", { name: `Record result for ${match}` })
     .click();
-  const sheet = page.getByRole("dialog", { name: heat });
+  const sheet = page.getByRole("dialog", { name: match });
   const winner = sheet
     .getByRole("group", { name: "Winner" })
     .getByRole("button")
@@ -105,7 +105,7 @@ async function recordHeat(page: Page, heat: string): Promise<string> {
   if (!name) throw new Error(`No Entrant named in "${text}"`);
   await winner.click();
   await sheet.getByRole("button", { name: "Save Match Result" }).click();
-  await expect(page.getByText(`${name} wins ${heat}`)).toBeVisible();
+  await expect(page.getByText(`${name} wins ${match}`)).toBeVisible();
   await expect(sheet).toBeHidden();
   return name;
 }
@@ -141,44 +141,44 @@ test("a Bracket is built, run and Closed into Points Entries, its podium 1st and
   });
 
   // Your next Match names the round and opponent, with no time or place.
-  const yourHeat = await round1HeatOf(id, YOU_ENTRANT);
+  const yourMatch = await round1MatchOf(id, YOU_ENTRANT);
   const you = await participantPageAs(browser, YOU_ENTRANT);
   await you.page.goto(`/xi/competitions/${id}`);
   // Visible only: while a reload streams, React holds the new page in a
   // hidden container before swapping it in, and getByLabel counts it.
-  const nextHeat = you.page
+  const nextMatch = you.page
     .getByLabel("Your next Match")
     .filter({ visible: true });
-  await expect(nextHeat).toContainText(`Your next Match · ${yourHeat}`);
-  await expect(nextHeat).toContainText("vs ");
-  await expect(nextHeat).not.toContainText(/\bET\b|AM|PM/);
-  await checkViewports(you.page, testInfo, "participant-next-heat");
+  await expect(nextMatch).toContainText(`Your next Match · ${yourMatch}`);
+  await expect(nextMatch).toContainText("vs ");
+  await expect(nextMatch).not.toContainText(/\bET\b|AM|PM/);
+  await checkViewports(you.page, testInfo, "participant-next-match");
 
-  // Heats are not on Home's Now/Next.
+  // Matches are not on Home's Now/Next.
   await you.page.goto(`/xi?at=${encodeURIComponent(HOME_AT)}`);
   await expect(
     you.page.getByRole("heading", { name: /standings/i }).first(),
   ).toBeVisible();
-  await expect(you.page.getByText(`${COMPETITION} · ${yourHeat}`)).toHaveCount(
+  await expect(you.page.getByText(`${COMPETITION} · ${yourMatch}`)).toHaveCount(
     0,
   );
   await you.close();
 
   // The Bracket tree is on the same page, below the Entrants.
   await expect(page.locator("[data-bracket-tree]")).toBeVisible();
-  await recordHeat(page, "Semifinal 1");
-  // A played Heat says when it was recorded.
+  await recordMatch(page, "Semifinal 1");
+  // A played Match says when it was recorded.
   await expect(page.getByText(/^Recorded .+ ET$/).first()).toBeVisible();
-  await recordHeat(page, "Semifinal 2");
+  await recordMatch(page, "Semifinal 2");
   // Both semifinal winners advanced, so the Final is recordable.
-  const winner = await recordHeat(page, "Final");
+  const winner = await recordMatch(page, "Final");
   const [runnerUp] = await runQuery<{ display_name: string }>(
-    `select p.display_name from heat h
-     join heat_entrant he on he.heat_id = h.id
+    `select p.display_name from bracket_match h
+     join bracket_match_entrant he on he.bracket_match_id = h.id
      join entrant e on e.id = he.entrant_id
      join participant p on p.id = e.participant_id
      where h.competition_id = $1 and he.place = 2
-       and h.round = (select max(round) from heat where competition_id = $1)`,
+       and h.round = (select max(round) from bracket_match where competition_id = $1)`,
     [id],
   );
   // No 3rd place match: Top finishers is the final's 1st and 2nd only,
@@ -206,14 +206,14 @@ test("a Bracket is built, run and Closed into Points Entries, its podium 1st and
     topFinishers.getByRole("button", { name: "Provisional" }),
   ).toHaveCount(0);
   await page.screenshot({
-    path: testInfo.outputPath("bracket-finalized.png"),
+    path: testInfo.outputPath("bracket-closed.png"),
     fullPage: true,
   });
 
   await page.goto(`/xi/competitions/${id}`);
-  // The participant view shows "Recorded <time>" on every played Heat.
+  // The participant view shows "Recorded <time>" on every played Match.
   await expect(page.getByText(/^Recorded .+ ET$/)).toHaveCount(3);
-  // The Participant page lists no Points Entries (R20): read what Finalize
+  // The Participant page lists no Points Entries (R20): read what Close
   // wrote from the database.
   await expect(
     page.getByRole("heading", { name: "Points Entries" }),
@@ -246,15 +246,15 @@ test("a Bracket is built, run and Closed into Points Entries, its podium 1st and
   });
 
   // The Bracket Finale (reached from /admin/finale, unchanged) plays the
-  // placings and ends on the champion.
+  // placings and ends on the winner.
   await page.goto(`/xi/finale/${id}`);
   await page.getByRole("button", { name: "Start" }).click();
   await expect(page.getByRole("button", { name: "Replay" })).toBeVisible({
     timeout: 20_000,
   });
-  const championCard = page.getByLabel("Winner", { exact: true });
-  await expect(championCard).toContainText(winner);
-  await expect(championCard).toContainText(`Winner of ${COMPETITION}`);
+  const winnerCard = page.getByLabel("Winner", { exact: true });
+  await expect(winnerCard).toContainText(winner);
+  await expect(winnerCard).toContainText(`Winner of ${COMPETITION}`);
   await checkViewports(page, testInfo, "bracket-finale");
 
   // Reduced motion shows the final state as soon as Start is pressed:

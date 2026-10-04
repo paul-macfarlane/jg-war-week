@@ -263,7 +263,7 @@ describe.skipIf(!isLocalDatabase)("Discretionary points actions", () => {
         points: 5,
         note: "From bracket",
         enteredByEmail: ORGANIZER,
-        generatedByBracket: true,
+        generated: true,
       })
       .returning({ id: pointsEntry.id });
     asOrganizer();

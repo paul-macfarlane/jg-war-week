@@ -33,7 +33,7 @@ import {
   FINALE_AWARDS_LAYOUTS,
   FINALE_SLIDE_KINDS,
   FONT_PRESETS,
-  HEAT_STATUSES,
+  MATCH_STATUSES,
   SCHEDULE_ITEM_CATEGORIES,
   SCORE_DIRECTIONS,
   WAR_WEEK_MODES,
@@ -65,7 +65,10 @@ export const competitionFormat = pgEnum(
   COMPETITION_FORMATS,
 );
 
-export const heatStatus = pgEnum("heat_status", HEAT_STATUSES);
+export const bracketMatchStatus = pgEnum(
+  "bracket_match_status",
+  MATCH_STATUSES,
+);
 
 export const scoreDirection = pgEnum("score_direction", SCORE_DIRECTIONS);
 
@@ -223,16 +226,16 @@ export const competition = pgTable(
     // Placement only (the CHECK below): whether a higher or lower Score
     // wins, filling Places from Scores; `none` means Places are set by hand.
     scoreDirection: scoreDirection("score_direction").notNull().default("none"),
-    // A Bracket's settings (`src/lib/bracket/config.ts`): heat size,
-    // advancing per Heat and the 3rd place game. Set for every Bracket (app
+    // A Bracket's settings (`src/lib/bracket/config.ts`): match size,
+    // advancing per Match and the 3rd place game. Set for every Bracket (app
     // logic, not a CHECK); null for every other Format.
     bracketConfig: jsonb("bracket_config").$type<BracketConfig | null>(),
-    // Participants in a Heat may enter its result themselves (ADR 0005).
+    // Participants in a Match may enter its result themselves (ADR 0005).
     selfReport: boolean("self_report").notNull().default(false),
     // Set while the Competition's generated Points Entries exist: a
-    // finalized Bracket or Placement, or a closed Head-to-head or Best score
+    // closed Bracket or Placement, or a closed Head-to-head or Best score
     // Competition.
-    finalizedAt: timestamp("finalized_at", { withTimezone: true }),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
     // Head-to-head and Best score only (the CHECK below): the Format's
     // settings (`src/lib/games/config.ts`); null means the Format's default.
     gameConfig: jsonb("game_config").$type<GamesConfig | null>(),
@@ -365,12 +368,10 @@ export const pointsEntry = pgTable(
       .defaultNow(),
     // Set only on rows that came from a seed file; see CONTEXT.md.
     seedKey: varchar("seed_key", { length: 80 }),
-    // Written by finalizing a Bracket or Placement or closing a Head-to-head
+    // Written by closing a Bracket or Placement or closing a Head-to-head
     // or Best score Competition; changed only through that Competition. The
     // name predates those Formats (R3 decision 1 keeps it).
-    generatedByBracket: boolean("generated_by_bracket")
-      .notNull()
-      .default(false),
+    generated: boolean("generated").notNull().default(false),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -392,7 +393,7 @@ export const pointsEntry = pgTable(
 
 /**
  * One row of a Placement Competition's sheet: a Team or Participant with its
- * Place (null while unplaced) and optional Score. Finalize turns Places into
+ * Place (null while unplaced) and optional Score. Close turns Places into
  * generated Points Entries by the Competition's Placement Points.
  */
 export const placement = pgTable(
@@ -505,13 +506,13 @@ export const entrant = pgTable(
 );
 
 /**
- * One game of a Bracket, with `slotCount` places (two at heat size 2; larger
- * Heats may hold more). A head-to-head winner feeds `winnerToHeatId`; with a
- * 3rd place game, each semifinal's loser feeds `loserToHeatId`, and the 3rd
- * place game is the Heat marked `thirdPlace`.
+ * One game of a Bracket, with `slotCount` places (two at match size 2; larger
+ * Matches may hold more). A head-to-head winner feeds `winnerToMatchId`; with a
+ * 3rd place game, each semifinal's loser feeds `loserToMatchId`, and the 3rd
+ * place game is the Match marked `thirdPlace`.
  */
-export const heat = pgTable(
-  "heat",
+export const bracketMatch = pgTable(
+  "bracket_match",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     competitionId: uuid("competition_id")
@@ -519,26 +520,26 @@ export const heat = pgTable(
       .references(() => competition.id, { onDelete: "cascade" }),
     round: integer("round").notNull(),
     position: integer("position").notNull(),
-    status: heatStatus("status").notNull().default("pending"),
-    // Fixed at Generate; `heat_entrant.slot` runs 0…slotCount-1.
+    status: bracketMatchStatus("status").notNull().default("pending"),
+    // Fixed at Generate; `bracket_match_entrant.slot` runs 0…slotCount-1.
     slotCount: smallint("slot_count").notNull().default(2),
-    winnerToHeatId: uuid("winner_to_heat_id").references(
-      (): AnyPgColumn => heat.id,
+    winnerToMatchId: uuid("winner_to_match_id").references(
+      (): AnyPgColumn => bracketMatch.id,
       { onDelete: "set null" },
     ),
     winnerToSlot: integer("winner_to_slot"),
     // A semifinal's loser feeds the 3rd place game (part 98).
-    loserToHeatId: uuid("loser_to_heat_id").references(
-      (): AnyPgColumn => heat.id,
+    loserToMatchId: uuid("loser_to_match_id").references(
+      (): AnyPgColumn => bracketMatch.id,
       { onDelete: "set null" },
     ),
     loserToSlot: integer("loser_to_slot"),
     // The 3rd place game: in the final's round, beside the final.
     thirdPlace: boolean("third_place").notNull().default(false),
-    // When the Heat's result was last saved; null until it is played.
+    // When the Match's result was last saved; null until it is played.
     recordedAt: timestamp("recorded_at", { withTimezone: true }),
     // Set when a Participant self-reported the current result; cleared when
-    // a later save changes the Heat. The email is kept for audit and never
+    // a later save changes the Match. The email is kept for audit and never
     // read back to a page or MCP (see CONTEXT.md, Access rules).
     reportedByEmail: varchar("reported_by_email", { length: 254 }),
     reportedByParticipantId: uuid("reported_by_participant_id").references(
@@ -550,21 +551,21 @@ export const heat = pgTable(
   },
   (table) => [
     unique().on(table.competitionId, table.round, table.position),
-    index("heat_winner_to_heat_id_idx").on(table.winnerToHeatId),
-    index("heat_loser_to_heat_id_idx").on(table.loserToHeatId),
-    index("heat_reported_by_participant_id_idx").on(
+    index("bracket_match_winner_to_match_id_idx").on(table.winnerToMatchId),
+    index("bracket_match_loser_to_match_id_idx").on(table.loserToMatchId),
+    index("bracket_match_reported_by_participant_id_idx").on(
       table.reportedByParticipantId,
     ),
   ],
 );
 
-/** An Entrant in a Heat's slot, with its place and score once decided. */
-export const heatEntrant = pgTable(
-  "heat_entrant",
+/** An Entrant in a Match's slot, with its place and score once decided. */
+export const bracketMatchEntrant = pgTable(
+  "bracket_match_entrant",
   {
-    heatId: uuid("heat_id")
+    matchId: uuid("bracket_match_id")
       .notNull()
-      .references(() => heat.id, { onDelete: "cascade" }),
+      .references(() => bracketMatch.id, { onDelete: "cascade" }),
     entrantId: uuid("entrant_id")
       .notNull()
       .references(() => entrant.id, { onDelete: "cascade" }),
@@ -573,13 +574,13 @@ export const heatEntrant = pgTable(
     score: varchar("score", { length: 40 }),
   },
   (table) => [
-    primaryKey({ columns: [table.heatId, table.slot] }),
-    unique().on(table.heatId, table.entrantId),
-    index("heat_entrant_entrant_id_idx").on(table.entrantId),
+    primaryKey({ columns: [table.matchId, table.slot] }),
+    unique().on(table.matchId, table.entrantId),
+    index("bracket_match_entrant_entrant_id_idx").on(table.entrantId),
     // The engine's slots are 0-based and its places 1-based.
-    check("heat_entrant_slot_from_0", sql`${table.slot} >= 0`),
+    check("bracket_match_entrant_slot_from_0", sql`${table.slot} >= 0`),
     check(
-      "heat_entrant_place_from_1",
+      "bracket_match_entrant_place_from_1",
       sql`${table.place} is null or ${table.place} >= 1`,
     ),
   ],
@@ -1115,8 +1116,10 @@ export type FinaleSlide = InferSelectModel<typeof finaleSlide>;
 export type Squad = InferSelectModel<typeof squad>;
 export type SquadParticipant = InferSelectModel<typeof squadParticipant>;
 export type EntrantRow = InferSelectModel<typeof entrant>;
-export type HeatRow = InferSelectModel<typeof heat>;
-export type HeatEntrantRow = InferSelectModel<typeof heatEntrant>;
+export type BracketMatchRow = InferSelectModel<typeof bracketMatch>;
+export type BracketMatchEntrantRow = InferSelectModel<
+  typeof bracketMatchEntrant
+>;
 export type GameRow = InferSelectModel<typeof game>;
 export type GamePlayerRow = InferSelectModel<typeof gamePlayer>;
 export type ParticipationRow = InferSelectModel<typeof participation>;

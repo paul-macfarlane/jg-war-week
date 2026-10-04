@@ -134,9 +134,9 @@ describe("parseCompetitionSetting", () => {
     expect(
       parseCompetitionSetting({ field: "selfReport", value: "yes" }),
     ).toMatchObject({ ok: false, error: "Turn self-report on or off." });
-    expect(
-      parseCompetitionSetting({ field: "finalizedAt", value: null }),
-    ).toEqual({ ok: false, error: "Choose a setting to save." });
+    expect(parseCompetitionSetting({ field: "closedAt", value: null })).toEqual(
+      { ok: false, error: "Choose a setting to save." },
+    );
     expect(parseCompetitionSetting(null)).toEqual({
       ok: false,
       error: "Choose a setting to save.",

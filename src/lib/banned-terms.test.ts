@@ -46,25 +46,9 @@ type Allowed = {
   reason: string;
 };
 
-// Old words that stay until spec B renames the tables and columns. Spec B
-// deletes this list. Each entry is one literal in one file, for one term;
-// keep it short.
-const ALLOWLIST: Allowed[] = [
-  {
-    file: "src/lib/setup.ts",
-    term: "Finalize",
-    text: "finalized needs finalizedAt and finalizedByEmail together",
-    reason:
-      "spec B: names the seed file's `finalized` field, which mirrors the finalized_at column",
-  },
-  {
-    file: "src/seed/schema.ts",
-    term: "Finalize",
-    text: "use placements (with finalized)",
-    reason:
-      "spec B: names the seed file's `finalized` field, which mirrors the finalized_at column",
-  },
-];
+// A literal allowed to keep a banned term, one literal in one file for one
+// term. Empty: nothing is allowed. Keep the mechanism for the next exception.
+const ALLOWLIST: Allowed[] = [];
 
 // Property names under here are MCP output fields (and its input
 // schemas), which an MCP client reads as words.

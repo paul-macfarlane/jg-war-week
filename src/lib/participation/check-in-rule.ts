@@ -6,7 +6,7 @@
  * Organizer marks anyone through `participation.mark`; checking
  * themselves in, they're bound by this rule like any Participant.
  */
-import { NOT_LINKED } from "@/lib/bracket/heat-report-rule";
+import { NOT_LINKED } from "@/lib/bracket/match-report-rule";
 
 export { NOT_LINKED };
 

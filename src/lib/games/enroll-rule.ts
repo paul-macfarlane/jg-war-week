@@ -6,7 +6,7 @@
  * the client bundle. There is no Host shortcut: a Host adds and removes
  * Entrants through the picker.
  */
-import { NOT_LINKED } from "@/lib/bracket/heat-report-rule";
+import { NOT_LINKED } from "@/lib/bracket/match-report-rule";
 import { type COMPETITION_FORMATS, isGameFormat } from "@/lib/enums";
 import type { GamesConfig } from "@/lib/games/config";
 import { onEntrantList } from "@/lib/games/log-rule";
@@ -25,9 +25,9 @@ export type EnrollEntrant = {
 /**
  * What `can("competition.enroll" | "competition.withdraw", …)` checks:
  * - `selfEnroll`: the "Participants can enroll" switch.
- * - The close conditions: `built` (the Bracket has Heats), `entrantLimit`
+ * - The close conditions: `built` (the Bracket has Matches), `entrantLimit`
  *   against `entrantCount`, `enrollClosesAt` against `now`, `closed`
- *   (finalized), `hasGames` (a Head-to-head or Best score Competition's first Game).
+ *   (closed), `hasGames` (a Head-to-head or Best score Competition's first Game).
  * - `linked`: the Participant the actor's email links to, with their Team
  *   and their Squad in this Competition.
  * - `scoring` and `entrants`: who is entered.

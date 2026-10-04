@@ -1,7 +1,10 @@
 /**
  * A Bracket's settings, saved in `competition.bracket_config`: how many
- * Entrants play in each Heat, how many of them advance, and the 3rd place
+ * Entrants play in each Match, how many of them advance, and the 3rd place
  * game. Never null for a Bracket. Pure, like the engine.
+ *
+ * `entrantsPerHeat` and `advancePerHeat` are stored JSON keys: they keep
+ * their old names until the data migration that rewrites them (r21 0032).
  */
 import { z } from "zod";
 
@@ -23,7 +26,7 @@ export const DEFAULT_BRACKET_CONFIG: BracketConfig = {
 };
 
 /**
- * Whether a config is the head-to-head preset (2 per Heat, 1 advancing):
+ * Whether a config is the head-to-head preset (2 per Match, 1 advancing):
  * the one config the single-elimination engine runs. `engineFor`
  * (`formats.ts`) is where it picks the engine.
  */
@@ -53,17 +56,17 @@ export function thirdPlaceRefusal(
   return null;
 }
 
-/** The Heat sizes the builder offers. */
-export const ENTRANTS_PER_HEAT_OPTIONS = [2, 3, 4, 5, 6, 7, 8] as const;
+/** The Match sizes the builder offers. */
+export const ENTRANTS_PER_MATCH_OPTIONS = [2, 3, 4, 5, 6, 7, 8] as const;
 
-/** How many of a Heat can advance, before the Heat size narrows it. */
-export const ADVANCE_PER_HEAT_OPTIONS = [1, 2, 3, 4, 5, 6, 7] as const;
+/** How many of a Match can advance, before the Match size narrows it. */
+export const ADVANCE_PER_MATCH_OPTIONS = [1, 2, 3, 4, 5, 6, 7] as const;
 
-export function entrantsPerHeatLabel(count: number): string {
+export function entrantsPerMatchLabel(count: number): string {
   return `${count} per Match`;
 }
 
-export function advancePerHeatLabel(count: number): string {
+export function advancePerMatchLabel(count: number): string {
   return count === 1 ? "Top 1 advances" : `Top ${count} advance`;
 }
 

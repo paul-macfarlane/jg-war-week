@@ -81,7 +81,7 @@ export async function getParticipationView(
       participationPoints: competition.participationPoints,
       selfCheckIn: competition.selfCheckIn,
       checkInClosesAt: competition.checkInClosesAt,
-      finalizedAt: competition.finalizedAt,
+      closedAt: competition.closedAt,
     })
     .from(competition)
     .where(eq(competition.id, competitionId))
@@ -122,7 +122,7 @@ export async function getParticipationView(
       participationPoints: found.participationPoints,
       selfCheckIn: found.selfCheckIn,
       checkInClosesAt: found.checkInClosesAt,
-      closed: found.finalizedAt !== null,
+      closed: found.closedAt !== null,
     },
     tookPart: rows,
     teamCounts:
@@ -130,7 +130,7 @@ export async function getParticipationView(
         ? teamHeadcounts(rows).map((h) => ({ ...h, ...teams.get(h.teamId)! }))
         : [],
     entryPoints:
-      found.finalizedAt !== null
+      found.closedAt !== null
         ? await getCompetitionEntryPoints(found.id, dbOrTx)
         : [],
   };
@@ -178,7 +178,7 @@ export async function getCheckInFacts(
           warWeekId: competition.warWeekId,
           format: competition.format,
           scoring: competition.scoring,
-          finalizedAt: competition.finalizedAt,
+          closedAt: competition.closedAt,
           selfCheckIn: competition.selfCheckIn,
           checkInClosesAt: competition.checkInClosesAt,
           teamLabel: warWeek.teamLabel,
@@ -205,7 +205,7 @@ export async function getCheckInFacts(
     : [];
   const checkIn: CheckInFacet = {
     isParticipation: found.format === "participation",
-    closed: found.finalizedAt !== null,
+    closed: found.closedAt !== null,
     selfCheckIn: found.selfCheckIn,
     checkInClosesAt: found.checkInClosesAt,
     now: new Date(),
@@ -248,7 +248,7 @@ export async function getParticipationCompetitions(
       id: competition.id,
       name: competition.name,
       format: competition.format,
-      finalizedAt: competition.finalizedAt,
+      closedAt: competition.closedAt,
     })
     .from(competition)
     .where(

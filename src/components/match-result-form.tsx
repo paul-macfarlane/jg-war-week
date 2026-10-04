@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { resetByResult } from "@/lib/bracket/formats";
 import { advancesAtPlace } from "@/lib/bracket/tree";
-import type { Bracket, Heat, HeatResult } from "@/lib/bracket/types";
+import type { Bracket, Match, MatchResult } from "@/lib/bracket/types";
 import { finalRoundOf, isDecided, matchName } from "@/lib/bracket/view";
 
 type Scoring = "team" | "individual";
@@ -32,20 +32,20 @@ function plural(count: number, one: string, many: string) {
 }
 
 export type MatchResultFormProps = {
-  heat: Heat;
+  match: Match;
   bracket: Bracket;
   entrantsById: Map<string, BracketViewEntrant>;
   scoring: Scoring;
   primaryColor: string;
   /** Saves the Match result: a Host's record, or a Participant's report. */
-  submit: (result: HeatResult) => Promise<MatchResultActionResult>;
+  submit: (result: MatchResult) => Promise<MatchResultActionResult>;
   /**
    * Whether a result that resets later Matches asks first, naming them (the
    * results screen). A report is of an open Match, which has none to reset.
    */
   confirmResets: boolean;
   /** The success toast, given the 1st-place Entrant's label and the Match's name. */
-  successToast: (winner: string, heat: string) => string;
+  successToast: (winner: string, match: string) => string;
   onSaved: () => void;
 };
 
@@ -57,7 +57,7 @@ export type MatchResultFormProps = {
  */
 function useSaveMatchResult(
   {
-    heat,
+    match,
     bracket,
     entrantsById,
     submit,
@@ -65,20 +65,20 @@ function useSaveMatchResult(
     successToast,
     onSaved,
   }: MatchResultFormProps,
-  result: HeatResult | null,
+  result: MatchResult | null,
 ) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const name = matchName(bracket, heat);
+  const name = matchName(bracket, match);
   const label = (entrantId: string) =>
     entrantsById.get(entrantId)?.label ?? "Unknown";
   const resetNames = (
-    confirmResets && result ? resetByResult(bracket, heat.id, result) : []
+    confirmResets && result ? resetByResult(bracket, match.id, result) : []
   ).map((resetId) =>
     matchName(
       bracket,
-      bracket.heats.find((h) => h.id === resetId)!,
+      bracket.matches.find((h) => h.id === resetId)!,
     ),
   );
 
@@ -92,7 +92,7 @@ function useSaveMatchResult(
         toast.error(saved.error);
         return;
       }
-      const reset = saved.resetHeatIds.length;
+      const reset = saved.resetMatchIds.length;
       toast.success(
         successToast(label(first), name) +
           (reset > 0
@@ -178,17 +178,19 @@ function ScoreField({
  * ask.
  */
 export function WinnerForm(props: MatchResultFormProps) {
-  const { heat, entrantsById, scoring, primaryColor } = props;
+  const { match, entrantsById, scoring, primaryColor } = props;
   const id = useId();
-  const ids = heat.slots.map((s) => s.entrantId!);
-  const decided = isDecided(heat);
+  const ids = match.slots.map((s) => s.entrantId!);
+  const decided = isDecided(match);
   const [winner, setWinner] = useState<string | null>(
-    decided ? (heat.slots.find((s) => s.place === 1)?.entrantId ?? null) : null,
+    decided
+      ? (match.slots.find((s) => s.place === 1)?.entrantId ?? null)
+      : null,
   );
   const [scores, setScores] = useState<Record<string, string>>(() =>
-    Object.fromEntries(heat.slots.map((s) => [s.entrantId!, s.score ?? ""])),
+    Object.fromEntries(match.slots.map((s) => [s.entrantId!, s.score ?? ""])),
   );
-  const result: HeatResult | null = winner
+  const result: MatchResult | null = winner
     ? {
         order: [winner, ...ids.filter((e) => e !== winner)],
         scores: filledScores(scores),
@@ -269,23 +271,23 @@ export function WinnerForm(props: MatchResultFormProps) {
  * from a complete Round asks first, naming the later Matches it resets.
  */
 export function FinishingOrderForm(props: MatchResultFormProps) {
-  const { heat, entrantsById, scoring, primaryColor } = props;
+  const { match, entrantsById, scoring, primaryColor } = props;
   const id = useId();
-  const ids = heat.slots.map((s) => s.entrantId!);
-  const decided = isDecided(heat);
+  const ids = match.slots.map((s) => s.entrantId!);
+  const decided = isDecided(match);
   const [order, setOrder] = useState<string[]>(() =>
     decided
-      ? [...heat.slots]
+      ? [...match.slots]
           .sort((a, b) => (a.place ?? 0) - (b.place ?? 0))
           .map((s) => s.entrantId!)
       : [],
   );
   const [scores, setScores] = useState<Record<string, string>>(() =>
-    Object.fromEntries(heat.slots.map((s) => [s.entrantId!, s.score ?? ""])),
+    Object.fromEntries(match.slots.map((s) => [s.entrantId!, s.score ?? ""])),
   );
-  const isFinal = heat.round >= finalRoundOf(props.bracket);
+  const isFinal = match.round >= finalRoundOf(props.bracket);
   const complete = order.length === ids.length;
-  const result: HeatResult | null = complete
+  const result: MatchResult | null = complete
     ? {
         order,
         scores: filledScores(scores),
@@ -314,7 +316,7 @@ export function FinishingOrderForm(props: MatchResultFormProps) {
             const entrant = entrantsById.get(entrantId)!;
             const place = order.indexOf(entrantId) + 1;
             const advances =
-              place > 0 && advancesAtPlace(props.bracket, heat, place);
+              place > 0 && advancesAtPlace(props.bracket, match, place);
             return (
               <Button
                 key={entrantId}
@@ -383,7 +385,7 @@ export function FinishingOrderForm(props: MatchResultFormProps) {
 
 /** A two-slot Match takes its Winner; a bigger one its finishing order. */
 export function MatchResultForm(props: MatchResultFormProps) {
-  return props.heat.slots.length > 2 ? (
+  return props.match.slots.length > 2 ? (
     <FinishingOrderForm {...props} />
   ) : (
     <WinnerForm {...props} />

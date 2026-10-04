@@ -75,7 +75,7 @@ async function fixture(tx: DBTx) {
 describe.skipIf(!isLocalDatabase)("setSelfReport", () => {
   it("is off by default, and turns on and off", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { setSelfReport } = await import("@/mutations/heat-reports");
+      const { setSelfReport } = await import("@/mutations/match-reports");
       const f = await fixture(tx);
       expect(await f.selfReportOf(f.competitionId)).toBe(false);
 
@@ -93,11 +93,11 @@ describe.skipIf(!isLocalDatabase)("setSelfReport", () => {
 
   it("is allowed while the Bracket is closed", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { setSelfReport } = await import("@/mutations/heat-reports");
+      const { setSelfReport } = await import("@/mutations/match-reports");
       const f = await fixture(tx);
       await tx
         .update(f.schema.competition)
-        .set({ finalizedAt: new Date() })
+        .set({ closedAt: new Date() })
         .where(eq(f.schema.competition.id, f.competitionId));
 
       expect(
@@ -109,7 +109,7 @@ describe.skipIf(!isLocalDatabase)("setSelfReport", () => {
 
   it("refuses a points Competition and one of another War Week, changing nothing", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { setSelfReport } = await import("@/mutations/heat-reports");
+      const { setSelfReport } = await import("@/mutations/match-reports");
       const f = await fixture(tx);
 
       expect(await setSelfReport(f.pointsId, { on: true }, f.ctx, tx)).toEqual({
@@ -140,14 +140,14 @@ const NONE = { email: null, participantId: null };
  * The fixture's War Week with Red, Blue, Green and Gold, a linked
  * Participant on each (Neo is Red, Trinity Blue), and three Brackets with
  * self-report on: Cypher drawn Blue v Red, Green v Gold; Tug of War, Red,
- * Blue and Green (so one Semifinal is a bye); and Relay Heats, eight
- * linked runners, 4 per Heat, 2 advancing.
+ * Blue and Green (so one Semifinal is a bye); and Relay Matches, eight
+ * linked runners, 4 per Match, 2 advancing.
  */
 async function reportFixture(tx: DBTx) {
   const f = await fixture(tx);
   const { schema } = f;
   const brackets = await import("@/mutations/brackets");
-  const { setSelfReport } = await import("@/mutations/heat-reports");
+  const { setSelfReport } = await import("@/mutations/match-reports");
   const { getBracket } = await import("@/queries/brackets");
   const warWeekId = f.ctx.warWeekId;
   const teams = await tx
@@ -259,12 +259,12 @@ async function reportFixture(tx: DBTx) {
   const cypher = await view(f.competitionId);
   const entrantOf = (label: string) =>
     cypher.entrants.find((e) => e.label === label)!.id;
-  const heatAt = (
+  const matchAt = (
     v: Awaited<ReturnType<typeof view>>,
     round: number,
     position: number,
   ) =>
-    v.bracket.heats.find((h) => h.round === round && h.position === position)!
+    v.bracket.matches.find((h) => h.round === round && h.position === position)!
       .id;
   const participantOf = (email: string) =>
     [...people, ...runners].find((p) => p.email === email)!.id;
@@ -277,42 +277,42 @@ async function reportFixture(tx: DBTx) {
     view,
     entrantOf,
     participantOf,
-    semi1: heatAt(cypher, 1, 1),
-    semi2: heatAt(cypher, 1, 2),
-    final: heatAt(cypher, 2, 1),
-    heatAt,
+    semi1: matchAt(cypher, 1, 1),
+    semi2: matchAt(cypher, 1, 2),
+    final: matchAt(cypher, 2, 1),
+    matchAt,
     as: (actorEmail: string) => ({ warWeekId, actorEmail }),
   };
 }
 
-/** A Competition's Bracket and every Heat's reporter columns. */
+/** A Competition's Bracket and every Match's reporter columns. */
 async function snapshot(tx: DBTx, competitionId: string) {
   const { loadBracket } = await import("@/queries/brackets");
-  const { heat } = await import("@/db/schema");
+  const { bracketMatch } = await import("@/db/schema");
   return {
     bracket: await loadBracket(competitionId, tx),
     reporters: await tx
       .select({
-        id: heat.id,
-        email: heat.reportedByEmail,
-        participantId: heat.reportedByParticipantId,
+        id: bracketMatch.id,
+        email: bracketMatch.reportedByEmail,
+        participantId: bracketMatch.reportedByParticipantId,
       })
-      .from(heat)
-      .where(eq(heat.competitionId, competitionId))
-      .orderBy(heat.id),
+      .from(bracketMatch)
+      .where(eq(bracketMatch.competitionId, competitionId))
+      .orderBy(bracketMatch.id),
   };
 }
 
-/** One Heat's reporter columns. */
-async function reporterOf(tx: DBTx, heatId: string) {
-  const { heat } = await import("@/db/schema");
+/** One Match's reporter columns. */
+async function reporterOf(tx: DBTx, matchId: string) {
+  const { bracketMatch } = await import("@/db/schema");
   const [row] = await tx
     .select({
-      email: heat.reportedByEmail,
-      participantId: heat.reportedByParticipantId,
+      email: bracketMatch.reportedByEmail,
+      participantId: bracketMatch.reportedByParticipantId,
     })
-    .from(heat)
-    .where(eq(heat.id, heatId));
+    .from(bracketMatch)
+    .where(eq(bracketMatch.id, matchId));
   return row;
 }
 
@@ -323,41 +323,41 @@ async function reporterOf(tx: DBTx, heatId: string) {
 async function reportThenHost(
   tx: DBTx,
   competitionId: string,
-  heatId: string,
+  matchId: string,
   result: { order: string[] },
   reporter: { email: string; participantId: string },
   hostCtx: { warWeekId: string; actorEmail: string },
 ) {
-  const { submitHeatReport } = await import("@/mutations/heat-reports");
-  const { recordHeatResult } = await import("@/mutations/brackets");
+  const { submitMatchReport } = await import("@/mutations/match-reports");
+  const { recordMatchResult } = await import("@/mutations/brackets");
   const { loadBracket } = await import("@/queries/brackets");
   let reported: Awaited<ReturnType<typeof loadBracket>> | undefined;
   await tx
     .transaction(async (sp) => {
       expect(
-        await submitHeatReport(
+        await submitMatchReport(
           competitionId,
-          heatId,
+          matchId,
           result,
           { warWeekId: hostCtx.warWeekId, actorEmail: reporter.email },
           sp,
         ),
-      ).toEqual({ ok: true, resetHeatIds: [] });
+      ).toEqual({ ok: true, resetMatchIds: [] });
       reported = await loadBracket(competitionId, sp);
-      expect(await reporterOf(sp, heatId)).toEqual(reporter);
+      expect(await reporterOf(sp, matchId)).toEqual(reporter);
       throw new Rollback();
     })
     .catch((error) => {
       if (!(error instanceof Rollback)) throw error;
     });
-  expect(await reporterOf(tx, heatId)).toEqual(NONE);
+  expect(await reporterOf(tx, matchId)).toEqual(NONE);
   expect(
-    await recordHeatResult(competitionId, heatId, result, hostCtx, tx),
-  ).toEqual({ ok: true, resetHeatIds: [] });
+    await recordMatchResult(competitionId, matchId, result, hostCtx, tx),
+  ).toEqual({ ok: true, resetMatchIds: [] });
   return { reported, recorded: await loadBracket(competitionId, tx) };
 }
 
-describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
+describe.skipIf(!isLocalDatabase)("submitMatchReport", () => {
   it("single elimination: a report saves exactly what the Host's result would, and records its reporter", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await reportFixture(tx);
@@ -372,7 +372,7 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
 
       expect(reported).toEqual(recorded);
       // Red advanced into the Final, as the Host's result does.
-      const final = recorded.heats.find((h) => h.id === f.final)!;
+      const final = recorded.matches.find((h) => h.id === f.final)!;
       expect(final.slots[0].entrantId).toBe(f.entrantOf("Red"));
     });
   });
@@ -381,8 +381,8 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await reportFixture(tx);
       const relay = await f.view(f.relayId);
-      const first = relay.bracket.heats.find(
-        (h) => h.id === f.heatAt(relay, 1, 1),
+      const first = relay.bracket.matches.find(
+        (h) => h.id === f.matchAt(relay, 1, 1),
       )!;
       const order = first.slots.map((s) => s.entrantId!);
       const runner = relay.entrants.find(
@@ -401,7 +401,7 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
 
       expect(reported).toEqual(recorded);
       expect(
-        recorded.heats
+        recorded.matches
           .find((h) => h.id === first.id)!
           .slots.map((s) => s.place),
       ).toEqual([1, 2, 3, 4]);
@@ -411,26 +411,26 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
   it("sets the Match's recorded_at when a Participant self-reports, and not on any other Match", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await reportFixture(tx);
-      const { submitHeatReport } = await import("@/mutations/heat-reports");
-      const { heat } = await import("@/db/schema");
-      const recordedAtOf = async (heatId: string) =>
+      const { submitMatchReport } = await import("@/mutations/match-reports");
+      const { bracketMatch } = await import("@/db/schema");
+      const recordedAtOf = async (matchId: string) =>
         (
           await tx
-            .select({ recordedAt: heat.recordedAt })
-            .from(heat)
-            .where(eq(heat.id, heatId))
+            .select({ recordedAt: bracketMatch.recordedAt })
+            .from(bracketMatch)
+            .where(eq(bracketMatch.id, matchId))
         )[0].recordedAt;
       expect(await recordedAtOf(f.semi1)).toBeNull();
 
       expect(
-        await submitHeatReport(
+        await submitMatchReport(
           f.competitionId,
           f.semi1,
           { order: [f.entrantOf("Red"), f.entrantOf("Blue")] },
           { warWeekId: f.ctx.warWeekId, actorEmail: NEO },
           tx,
         ),
-      ).toEqual({ ok: true, resetHeatIds: [] });
+      ).toEqual({ ok: true, resetMatchIds: [] });
 
       expect(await recordedAtOf(f.semi1)).toBeInstanceOf(Date);
       expect(await recordedAtOf(f.semi2)).toBeNull();
@@ -440,23 +440,23 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
 
   it("refuses a second report on the now-decided Match, changing nothing", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { submitHeatReport } = await import("@/mutations/heat-reports");
+      const { submitMatchReport } = await import("@/mutations/match-reports");
       const f = await reportFixture(tx);
       const red = f.entrantOf("Red");
       const blue = f.entrantOf("Blue");
       expect(
-        await submitHeatReport(
+        await submitMatchReport(
           f.competitionId,
           f.semi1,
           { order: [red, blue] },
           f.as(NEO),
           tx,
         ),
-      ).toEqual({ ok: true, resetHeatIds: [] });
+      ).toEqual({ ok: true, resetMatchIds: [] });
       const before = await snapshot(tx, f.competitionId);
 
       expect(
-        await submitHeatReport(
+        await submitMatchReport(
           f.competitionId,
           f.semi1,
           { order: [blue, red] },
@@ -474,9 +474,9 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
 
   it("refuses self-report off, an unlinked sign-in, a Match you're not in, an unfilled Match and a bye, writing nothing", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { submitHeatReport, setSelfReport } =
-        await import("@/mutations/heat-reports");
-      const { recordHeatResult } = await import("@/mutations/brackets");
+      const { submitMatchReport, setSelfReport } =
+        await import("@/mutations/match-reports");
+      const { recordMatchResult } = await import("@/mutations/brackets");
       const { isBye } = await import("@/lib/bracket/formats");
       const f = await reportFixture(tx);
       const red = f.entrantOf("Red");
@@ -485,16 +485,16 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
       const gold = f.entrantOf("Gold");
       const refused = async (
         competitionId: string,
-        heatId: string,
+        matchId: string,
         order: string[],
         email: string,
         error: string,
       ) => {
         const before = await snapshot(tx, competitionId);
         expect(
-          await submitHeatReport(
+          await submitMatchReport(
             competitionId,
-            heatId,
+            matchId,
             { order },
             f.as(email),
             tx,
@@ -529,7 +529,7 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
       );
 
       // Red is through to the Final; Green v Gold isn't played yet.
-      await recordHeatResult(
+      await recordMatchResult(
         f.competitionId,
         f.semi1,
         { order: [red, blue] },
@@ -545,7 +545,7 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
       );
 
       const tug = await f.view(f.tugId);
-      const bye = tug.bracket.heats.find((h) => isBye(tug.bracket, h))!;
+      const bye = tug.bracket.matches.find((h) => isBye(tug.bracket, h))!;
       const byeEntrant = bye.slots.find((s) => s.entrantId)!.entrantId!;
       const byeTeam = tug.entrants.find((e) => e.id === byeEntrant)!.teamId;
       const byeEmail = f.people.find((p) => p.teamId === byeTeam)!.email!;
@@ -561,10 +561,10 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
 
   it("refuses a Match of another Competition as gone, writing nothing", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { submitHeatReport } = await import("@/mutations/heat-reports");
+      const { submitMatchReport } = await import("@/mutations/match-reports");
       const f = await reportFixture(tx);
       const tug = await f.view(f.tugId);
-      const tugHeat = tug.bracket.heats.find((h) =>
+      const tugMatch = tug.bracket.matches.find((h) =>
         h.slots.every((s) => s.entrantId),
       )!;
       const before = [
@@ -573,10 +573,10 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
       ];
 
       expect(
-        await submitHeatReport(
+        await submitMatchReport(
           f.competitionId,
-          tugHeat.id,
-          { order: tugHeat.slots.map((s) => s.entrantId!) },
+          tugMatch.id,
+          { order: tugMatch.slots.map((s) => s.entrantId!) },
           f.as(NEO),
           tx,
         ),
@@ -590,12 +590,12 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
 
   it("refuses a malformed finishing order, writing nothing", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { submitHeatReport } = await import("@/mutations/heat-reports");
+      const { submitMatchReport } = await import("@/mutations/match-reports");
       const f = await reportFixture(tx);
       const before = await snapshot(tx, f.competitionId);
 
       expect(
-        await submitHeatReport(
+        await submitMatchReport(
           f.competitionId,
           f.semi1,
           { order: [f.entrantOf("Red")] },
@@ -612,8 +612,8 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
 
   it("a Host overwrite of a reported Semifinal resets the reported Final and clears both reporters", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { submitHeatReport } = await import("@/mutations/heat-reports");
-      const { recordHeatResult } = await import("@/mutations/brackets");
+      const { submitMatchReport } = await import("@/mutations/match-reports");
+      const { recordMatchResult } = await import("@/mutations/brackets");
       const { isDecided } = await import("@/lib/bracket/view");
       const f = await reportFixture(tx);
       const red = f.entrantOf("Red");
@@ -623,7 +623,7 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
       const neo = { email: NEO, participantId: f.participantOf(NEO) };
 
       expect(
-        await submitHeatReport(
+        await submitMatchReport(
           f.competitionId,
           f.semi1,
           { order: [red, blue] },
@@ -631,7 +631,7 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
           tx,
         ),
       ).toMatchObject({ ok: true });
-      await recordHeatResult(
+      await recordMatchResult(
         f.competitionId,
         f.semi2,
         { order: [gold, green] },
@@ -639,18 +639,18 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
         tx,
       );
       expect(
-        await submitHeatReport(
+        await submitMatchReport(
           f.competitionId,
           f.final,
           { order: [red, gold] },
           f.as(NEO),
           tx,
         ),
-      ).toEqual({ ok: true, resetHeatIds: [] });
+      ).toEqual({ ok: true, resetMatchIds: [] });
       expect(await reporterOf(tx, f.semi1)).toEqual(neo);
       expect(await reporterOf(tx, f.final)).toEqual(neo);
 
-      const overwritten = await recordHeatResult(
+      const overwritten = await recordMatchResult(
         f.competitionId,
         f.semi1,
         { order: [blue, red] },
@@ -658,9 +658,9 @@ describe.skipIf(!isLocalDatabase)("submitHeatReport", () => {
         tx,
       );
       expect(overwritten).toMatchObject({ ok: true });
-      expect(overwritten.ok && overwritten.resetHeatIds).toContain(f.final);
+      expect(overwritten.ok && overwritten.resetMatchIds).toContain(f.final);
       const { bracket } = await snapshot(tx, f.competitionId);
-      expect(isDecided(bracket.heats.find((h) => h.id === f.final)!)).toBe(
+      expect(isDecided(bracket.matches.find((h) => h.id === f.final)!)).toBe(
         false,
       );
       expect(await reporterOf(tx, f.semi1)).toEqual(NONE);

@@ -81,11 +81,11 @@ async function fixture(tx: DBTx) {
 async function modules() {
   return {
     mutations: await import("@/mutations/brackets"),
-    queries: await import("@/queries/unfinalized-brackets"),
+    queries: await import("@/queries/unclosed-brackets"),
   };
 }
 
-describe.skipIf(!isLocalDatabase)("getUnfinalizedBrackets", () => {
+describe.skipIf(!isLocalDatabase)("getUnclosedBrackets", () => {
   it("lists a generated, open single-elimination Competition", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
@@ -108,7 +108,7 @@ describe.skipIf(!isLocalDatabase)("getUnfinalizedBrackets", () => {
       await mutations.generateBracket(pool.id, { rng: rngZero }, f.ctx, tx);
 
       expect(
-        await queries.getUnfinalizedBrackets({ id: f.ctx.warWeekId }, tx),
+        await queries.getUnclosedBrackets({ id: f.ctx.warWeekId }, tx),
       ).toEqual([{ id: pool.id, name: "Pool" }]);
     });
   });
@@ -136,11 +136,11 @@ describe.skipIf(!isLocalDatabase)("getUnfinalizedBrackets", () => {
       await mutations.generateBracket(pool.id, { rng: rngZero }, f.ctx, tx);
       await tx
         .update(f.schema.competition)
-        .set({ finalizedAt: new Date() })
+        .set({ closedAt: new Date() })
         .where(eq(f.schema.competition.id, pool.id));
 
       expect(
-        await queries.getUnfinalizedBrackets({ id: f.ctx.warWeekId }, tx),
+        await queries.getUnclosedBrackets({ id: f.ctx.warWeekId }, tx),
       ).toEqual([]);
     });
   });
@@ -157,7 +157,7 @@ describe.skipIf(!isLocalDatabase)("getUnfinalizedBrackets", () => {
       });
 
       expect(
-        await queries.getUnfinalizedBrackets({ id: f.ctx.warWeekId }, tx),
+        await queries.getUnclosedBrackets({ id: f.ctx.warWeekId }, tx),
       ).toEqual([]);
     });
   });
@@ -183,7 +183,7 @@ describe.skipIf(!isLocalDatabase)("getUnfinalizedBrackets", () => {
       );
 
       expect(
-        await queries.getUnfinalizedBrackets({ id: f.ctx.warWeekId }, tx),
+        await queries.getUnclosedBrackets({ id: f.ctx.warWeekId }, tx),
       ).toEqual([]);
     });
   });
@@ -202,11 +202,11 @@ describe.skipIf(!isLocalDatabase)("getUnfinalizedBrackets", () => {
         })
         .returning({ id: f.schema.competition.id });
       await tx
-        .insert(f.schema.heat)
+        .insert(f.schema.bracketMatch)
         .values({ competitionId: pool.id, round: 1, position: 1 });
 
       expect(
-        await queries.getUnfinalizedBrackets({ id: f.ctx.warWeekId }, tx),
+        await queries.getUnclosedBrackets({ id: f.ctx.warWeekId }, tx),
       ).toEqual([]);
     });
   });

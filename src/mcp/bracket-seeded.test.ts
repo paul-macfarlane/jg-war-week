@@ -10,7 +10,7 @@ import { warWeekSeedSchema } from "@/seed/schema";
 
 // Runs only against a local Postgres (CI's service or docker compose), never
 // a hosted database. Smoke never loads `seeds/demo/xii.json`, so this is the
-// one check of `get_bracket` on the seeded Chess Heats.
+// one check of `get_bracket` on the seeded Chess Matches.
 const isLocalDatabase = isLocalDatabaseUrl(
   process.env.DATABASE_URL,
   process.env.DATABASE_DRIVER,
@@ -29,7 +29,7 @@ function demoXiiFiles(): string[] {
 }
 
 describe.skipIf(!isLocalDatabase)("get_bracket on the seeded demo XII", () => {
-  it("answers Chess Heats as a Bracket of 4 per Match, 2 advancing, no 3rd place Match, with no time, place, Forfeit or @", async () => {
+  it("answers Chess Matches as a Bracket of 4 per Match, 2 advancing, no 3rd place Match, with no time, place, Forfeit or @", async () => {
     await withThrowawayDatabase(async (url) => {
       const client = new Client({ connectionString: url });
       await client.connect();
@@ -50,17 +50,17 @@ describe.skipIf(!isLocalDatabase)("get_bracket on the seeded demo XII", () => {
         }
         const found = await getCompetitionByName(
           warWeek!,
-          "Chess Heats",
+          "Chess Matches",
           database,
         );
         const view = found ? await getBracket(found.id, database) : undefined;
-        const result = toBracketResult(view, "Chess Heats");
+        const result = toBracketResult(view, "Chess Matches");
         const json = JSON.stringify(result);
 
         expect(result).toMatchObject({
           found: true,
           competition: {
-            name: "Chess Heats",
+            name: "Chess Matches",
             format: "bracket",
             matchSize: 4,
             advancing: 2,

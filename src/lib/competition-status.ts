@@ -5,7 +5,7 @@
  */
 import { finalRoundOf } from "@/lib/bracket/final";
 import { isBye } from "@/lib/bracket/formats";
-import { isDecided } from "@/lib/bracket/heat-status";
+import { isDecided } from "@/lib/bracket/match-status";
 import type { Bracket, Format } from "@/lib/bracket/types";
 import type { COMPETITION_SCORINGS } from "@/lib/enums";
 
@@ -16,15 +16,15 @@ export type BracketRoundInPlay = { round: number; of: number };
 export type CompetitionStatusFacts = {
   format: Format;
   scoring: (typeof COMPETITION_SCORINGS)[number];
-  /** Finalized (Placement, Bracket) or Closed (the others). */
-  finalized: boolean;
+  /** Closed (Placement, Bracket) or Closed (the others). */
+  closed: boolean;
   /** `hasResult` (`src/lib/competition-locks.ts`): the one definition. */
   hasResult: boolean;
   /** A generated Bracket's Round in play (`bracketRoundInPlay`); else null. */
   bracketRound: BracketRoundInPlay | null;
   /**
    * The 1st place's names (`finalWinners`, the rule Recent results uses);
-   * more than one on a tie, none before Finalize or Close.
+   * more than one on a tie, none before Close or Close.
    */
   winners: string[];
 };
@@ -38,16 +38,16 @@ export type CompetitionStatus =
   | { kind: "done"; label: "Done"; detail: string | null };
 
 /**
- * - Finalized or Closed with a 1st place: Done · Winner (every tied winner).
+ * - Closed or Closed with a 1st place: Done · Winner (every tied winner).
  *   An individual Participation Competition names none, so it is Closed.
  * - Closed Head-to-head, Best score or Participation without one: Closed. A
- *   Finalized Placement or Bracket without one is still Done.
+ *   Closed Placement or Bracket without one is still Done.
  * - Else Underway once it has a result, Not started before.
  */
 export function competitionStatus(
   facts: CompetitionStatusFacts,
 ): CompetitionStatus {
-  if (facts.finalized) {
+  if (facts.closed) {
     const individualParticipation =
       facts.format === "participation" && facts.scoring === "individual";
     const winners = individualParticipation ? [] : facts.winners;
@@ -83,16 +83,16 @@ export function competitionStatusText(status: CompetitionStatus): string {
 }
 
 /**
- * The first Round with a Heat still to play (a bye never is one), out of
+ * The first Round with a Match still to play (a bye never is one), out of
  * the Bracket's Rounds; the final's Round once only the 3rd place Match, or
- * nothing, is left before Finalize. Null before Generate.
+ * nothing, is left before Close. Null before Generate.
  */
 export function bracketRoundInPlay(
   bracket: Bracket,
 ): BracketRoundInPlay | null {
   const of = finalRoundOf(bracket);
   if (of === 0) return null;
-  const unplayed = bracket.heats.filter(
+  const unplayed = bracket.matches.filter(
     (h) => !isDecided(h) && !isBye(bracket, h),
   );
   const round = Math.min(of, ...unplayed.map((h) => h.round));

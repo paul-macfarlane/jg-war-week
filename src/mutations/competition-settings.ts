@@ -21,7 +21,7 @@ import {
 } from "@/mutations/brackets";
 import { setSelfEnroll } from "@/mutations/enrollment";
 import { setGamesSettings } from "@/mutations/games";
-import { setSelfReport } from "@/mutations/heat-reports";
+import { setSelfReport } from "@/mutations/match-reports";
 import { setParticipationSettings } from "@/mutations/participation";
 import { setCompetitionHosts, updateCompetition } from "@/mutations/setup";
 import type { MutationContext, MutationResult } from "@/mutations/types";

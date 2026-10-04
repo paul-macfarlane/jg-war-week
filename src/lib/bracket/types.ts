@@ -12,7 +12,7 @@ export type Format = (typeof COMPETITION_FORMATS)[number];
 /**
  * The Format that runs as a Bracket, `bracket`: what's left once
  * `placement`, the Games Formats (a Head-to-head or Best score Competition
- * is decided by logged Games, never Heats) and `participation` (decided by
+ * is decided by logged Games, never Matches) and `participation` (decided by
  * who took part) are excluded.
  */
 export type BracketFormat = Exclude<
@@ -23,20 +23,20 @@ export type BracketFormat = Exclude<
 /** A Team or Participant entered in a Bracket, at its Seed Position. */
 export type Entrant = { id: string; seedPosition: number; label: string };
 
-export type HeatStatus = "pending" | "ready" | "played";
+export type MatchStatus = "pending" | "ready" | "played";
 
-/** One place in a Heat. An empty slot is waiting for an Entrant (or a bye). */
-export type HeatSlot = {
+/** One place in a Match. An empty slot is waiting for an Entrant (or a bye). */
+export type MatchSlot = {
   entrantId: string | null;
   /** The finishing place, 1…n (1 is the winner); null until decided. */
   place: number | null;
   score: string | null;
 };
 
-/** Where a Heat's winner (or loser) goes: a later Heat and its slot index. */
-export type WinnerTo = { heatId: string; slot: number };
+/** Where a Match's winner (or loser) goes: a later Match and its slot index. */
+export type WinnerTo = { matchId: string; slot: number };
 
-export type Heat = {
+export type Match = {
   id: string;
   /**
    * 1 is the first Round; the last Round holds the final (and, beside it,
@@ -45,19 +45,19 @@ export type Heat = {
   round: number;
   /** 1-based, top to bottom within the Round; the final is 1. */
   position: number;
-  /** One per place in the Heat: its length is the Heat's slot count. */
-  slots: HeatSlot[];
+  /** One per place in the Match: its length is the Match's slot count. */
+  slots: MatchSlot[];
   winnerTo: WinnerTo | null;
   /** A semifinal with a 3rd place Match: where its loser goes. */
   loserTo: WinnerTo | null;
   /**
    * The 3rd place Match: in the final's Round, beside the final. The final
-   * is the Heat of the last Round that isn't this.
+   * is the Match of the last Round that isn't this.
    */
   thirdPlace: boolean;
-  status: HeatStatus;
+  status: MatchStatus;
   /**
-   * When the Heat's Result was last saved; null until it is played. The
+   * When the Match's Result was last saved; null until it is played. The
    * engines never set it: the mutation stamps it when it saves a Result.
    */
   recordedAt: Date | null;
@@ -66,14 +66,14 @@ export type Heat = {
 export type Bracket = {
   /** The Bracket's settings; never null. */
   config: BracketConfig;
-  heats: Heat[];
+  matches: Match[];
 };
 
 /**
- * A Heat Result: every Entrant of the Heat in finishing order, with optional
+ * A Match Result: every Entrant of the Match in finishing order, with optional
  * scores (a no-show just loses: it is last in the order).
  */
-export type HeatResult = {
+export type MatchResult = {
   order: string[];
   scores?: Record<string, string>;
 };
@@ -87,20 +87,24 @@ export type Placing = { entrantId: string; place: number };
 export type FormatEngine = {
   /** Why Generate is refused for this config and count, or null. */
   validateConfig(config: BracketConfig, entrantCount: number): string | null;
-  /** Every Heat of every Round; Heat ids come from `newId`. */
+  /** Every Match of every Round; Match ids come from `newId`. */
   generate(
     config: BracketConfig,
     entrants: Entrant[],
     newId: (round: number, position: number) => string,
   ): Bracket;
-  applyResult(bracket: Bracket, heatId: string, result: HeatResult): Bracket;
-  /** The later Heats with a Heat Result that this result would clear. */
-  resetByResult(bracket: Bracket, heatId: string, result: HeatResult): string[];
-  /** Whether the Heat can take a Heat Result now. */
-  isRecordable(bracket: Bracket, heatId: string): boolean;
-  /** Each Format's own rule for a Heat that is never played. */
-  isBye(bracket: Bracket, heat: Heat): boolean;
-  /** Whether any Heat has a Heat Result; byes and empty Heats don't count. */
+  applyResult(bracket: Bracket, matchId: string, result: MatchResult): Bracket;
+  /** The later Matches with a Match Result that this result would clear. */
+  resetByResult(
+    bracket: Bracket,
+    matchId: string,
+    result: MatchResult,
+  ): string[];
+  /** Whether the Match can take a Match Result now. */
+  isRecordable(bracket: Bracket, matchId: string): boolean;
+  /** Each Format's own rule for a Match that is never played. */
+  isBye(bracket: Bracket, match: Match): boolean;
+  /** Whether any Match has a Match Result; byes and empty Matches don't count. */
   hasResults(bracket: Bracket): boolean;
   isComplete(bracket: Bracket): boolean;
   /** The Entrant 1st in the final, or null while it is undecided. */

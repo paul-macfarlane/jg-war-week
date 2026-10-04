@@ -50,8 +50,8 @@ function squadDetail(squad: SquadRow): string {
  * Competition's Squads, the Entrants ("All Teams", "All Squads" or picked
  * ones for team scoring, picked Participants for individual), their Seed
  * Positions with Generate / Re-roll, and a preview of Round 1. Its settings
- * (heat size, self-report, enrollment) are in the page's Settings. Saving
- * Entrants and Generate go through the per-field save, so once a Heat has
+ * (match size, self-report, enrollment) are in the page's Settings. Saving
+ * Entrants and Generate go through the per-field save, so once a Match has
  * a result they're locked (`entrantsLock`, shown with its reason).
  */
 export function BracketBuilder({
@@ -101,7 +101,7 @@ export function BracketBuilder({
   // "Entrants are" shows once there's a Squad to choose, or Squads are saved.
   const showKind = isTeam && (squads.length > 0 || savedKind === "squad");
   const locked = entrantsLock !== null;
-  const generated = bracket.heats.length > 0;
+  const generated = bracket.matches.length > 0;
 
   function runAction(action: BracketAction) {
     startTransition(async () => {
@@ -372,17 +372,17 @@ export function BracketBuilder({
                 Preview · {firstRound.name}
               </h2>
               <ul className="flex flex-col gap-2 text-sm">
-                {firstRound.heats.map((heat) => {
-                  const names = heat.slots
+                {firstRound.matches.map((match) => {
+                  const names = match.slots
                     .filter((s) => s.entrantId !== null)
                     .map((s) => labelOf(s.entrantId));
                   return (
-                    <li key={heat.id} className="flex min-w-0 flex-col">
+                    <li key={match.id} className="flex min-w-0 flex-col">
                       <span className="text-foreground/60 text-xs font-medium">
-                        {matchName(bracket, heat)}
+                        {matchName(bracket, match)}
                       </span>
                       <span className="break-words">
-                        {isBye(bracket, heat)
+                        {isBye(bracket, match)
                           ? `${names.join(", ")} · Bye — advances`
                           : names.join(" vs ")}
                       </span>

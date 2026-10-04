@@ -5,10 +5,10 @@ import { DBOrTx, db } from "@/db";
 import {
   type Competition,
   type WarWeek,
+  bracketMatch,
+  bracketMatchEntrant,
   competition,
   entrant,
-  heat,
-  heatEntrant,
   participant,
   squad,
   squadParticipant,
@@ -28,7 +28,7 @@ import {
   withProfile,
 } from "@/queries/profile-join";
 
-/** An Entrant with what the Bracket view shows and finalizing needs. */
+/** An Entrant with what the Bracket view shows and closing needs. */
 export type BracketEntrant = Entrant & {
   /** The Entrant row's own Team: null for a Participant or a Squad. */
   teamId: string | null;
@@ -63,7 +63,7 @@ export type BracketCompetition = Pick<
   | "scoring"
   | "format"
   | "placementPoints"
-  | "finalizedAt"
+  | "closedAt"
   | "selfReport"
   | "selfEnroll"
   | "entrantLimit"
@@ -77,9 +77,9 @@ export type BracketView = {
   bracket: Bracket;
   /** The Winner's Entrant id, once the final is decided. */
   winner: string | null;
-  finalized: boolean;
+  closed: boolean;
   /**
-   * A Closed (finalized) Bracket's Points Entries, target and points: what
+   * A Closed (closed) Bracket's Points Entries, target and points: what
    * its podium shows. [] while it isn't Closed.
    */
   entryPoints: EntryPoints[];
@@ -180,7 +180,7 @@ export async function getBracketEntrants(
 }
 
 /**
- * A Competition's Bracket from its Format, config and Heat rows; no Heats
+ * A Competition's Bracket from its Format, config and Match rows; no Matches
  * before Generate. Pass `known` when the Competition's `format` and
  * `bracketConfig` are already loaded, to skip reading them again.
  */
@@ -203,10 +203,10 @@ export async function loadBracket(
     )[0];
   if (!found || !isBracketFormat(found.format)) {
     // A Placement, Head-to-head, Best score or Participation Competition (or a missing one) has no Bracket and
-    // so no Heats: the config returned here is arbitrary, since nothing
+    // so no Matches: the config returned here is arbitrary, since nothing
     // reads its rules for an empty Bracket, and getBracket shows no
     // Winner for a points Competition.
-    return { config: DEFAULT_BRACKET_CONFIG, heats: [] };
+    return { config: DEFAULT_BRACKET_CONFIG, matches: [] };
   }
   const brackets = await loadBrackets(
     [{ id: competitionId, bracketConfig: found.bracketConfig }],
@@ -216,8 +216,8 @@ export async function loadBracket(
 }
 
 /**
- * Several Bracket Competitions' Brackets in two queries (their Heats, then
- * every Heat's slots), by Competition id; a Bracket with no Heats before
+ * Several Bracket Competitions' Brackets in two queries (their Matches, then
+ * every Match's slots), by Competition id; a Bracket with no Matches before
  * Generate. Pass only Competitions of the Bracket Format.
  */
 export async function loadBrackets(
@@ -225,59 +225,59 @@ export async function loadBrackets(
   dbOrTx: DBOrTx = db,
 ): Promise<Map<string, Bracket>> {
   const brackets = new Map<string, Bracket>(
-    competitions.map((c) => [c.id, { config: configOf(c), heats: [] }]),
+    competitions.map((c) => [c.id, { config: configOf(c), matches: [] }]),
   );
   if (competitions.length === 0) return brackets;
   // An explicit list: the reporter columns (an email among them) are never
   // read into a Bracket, which feeds pages and MCP.
-  const heats = await dbOrTx
+  const matches = await dbOrTx
     .select({
-      id: heat.id,
-      competitionId: heat.competitionId,
-      round: heat.round,
-      position: heat.position,
-      status: heat.status,
-      slotCount: heat.slotCount,
-      winnerToHeatId: heat.winnerToHeatId,
-      winnerToSlot: heat.winnerToSlot,
-      loserToHeatId: heat.loserToHeatId,
-      loserToSlot: heat.loserToSlot,
-      thirdPlace: heat.thirdPlace,
-      recordedAt: heat.recordedAt,
+      id: bracketMatch.id,
+      competitionId: bracketMatch.competitionId,
+      round: bracketMatch.round,
+      position: bracketMatch.position,
+      status: bracketMatch.status,
+      slotCount: bracketMatch.slotCount,
+      winnerToMatchId: bracketMatch.winnerToMatchId,
+      winnerToSlot: bracketMatch.winnerToSlot,
+      loserToMatchId: bracketMatch.loserToMatchId,
+      loserToSlot: bracketMatch.loserToSlot,
+      thirdPlace: bracketMatch.thirdPlace,
+      recordedAt: bracketMatch.recordedAt,
     })
-    .from(heat)
+    .from(bracketMatch)
     .where(
       inArray(
-        heat.competitionId,
+        bracketMatch.competitionId,
         competitions.map((c) => c.id),
       ),
     )
-    .orderBy(asc(heat.round), asc(heat.position));
-  const slots = heats.length
+    .orderBy(asc(bracketMatch.round), asc(bracketMatch.position));
+  const slots = matches.length
     ? await dbOrTx
         .select()
-        .from(heatEntrant)
+        .from(bracketMatchEntrant)
         .where(
           inArray(
-            heatEntrant.heatId,
-            heats.map((h) => h.id),
+            bracketMatchEntrant.matchId,
+            matches.map((h) => h.id),
           ),
         )
     : [];
-  const slotOf = new Map(slots.map((s) => [`${s.heatId}:${s.slot}`, s]));
-  for (const row of heats) {
-    brackets.get(row.competitionId)?.heats.push({
+  const slotOf = new Map(slots.map((s) => [`${s.matchId}:${s.slot}`, s]));
+  for (const row of matches) {
+    brackets.get(row.competitionId)?.matches.push({
       id: row.id,
       round: row.round,
       position: row.position,
       status: row.status,
       winnerTo:
-        row.winnerToHeatId !== null && row.winnerToSlot !== null
-          ? { heatId: row.winnerToHeatId, slot: row.winnerToSlot }
+        row.winnerToMatchId !== null && row.winnerToSlot !== null
+          ? { matchId: row.winnerToMatchId, slot: row.winnerToSlot }
           : null,
       loserTo:
-        row.loserToHeatId !== null && row.loserToSlot !== null
-          ? { heatId: row.loserToHeatId, slot: row.loserToSlot }
+        row.loserToMatchId !== null && row.loserToSlot !== null
+          ? { matchId: row.loserToMatchId, slot: row.loserToSlot }
           : null,
       thirdPlace: row.thirdPlace,
       recordedAt: row.recordedAt,
@@ -296,7 +296,7 @@ export async function loadBrackets(
 
 /**
  * A Competition's Bracket for display: its Entrants with labels and colors,
- * its Heats, the Winner, whether it's finalized and, once it is, its
+ * its Matches, the Winner, whether it's closed and, once it is, its
  * Points Entries. Undefined when there's no such Competition, or it's run as Games (a Head-to-head or Best score Competition is never
  * a Bracket). A points Competition returns an empty Bracket.
  */
@@ -314,7 +314,7 @@ export async function getBracket(
       format: competition.format,
       bracketConfig: competition.bracketConfig,
       placementPoints: competition.placementPoints,
-      finalizedAt: competition.finalizedAt,
+      closedAt: competition.closedAt,
       selfReport: competition.selfReport,
       selfEnroll: competition.selfEnroll,
       entrantLimit: competition.entrantLimit,
@@ -335,7 +335,7 @@ export async function getBracket(
   const [entrants, bracket, entryPoints] = await Promise.all([
     getBracketEntrants(competitionId, dbOrTx),
     loadBracket(competitionId, dbOrTx, { format: found.format, bracketConfig }),
-    found.finalizedAt === null
+    found.closedAt === null
       ? Promise.resolve([])
       : getCompetitionEntryPoints(competitionId, dbOrTx),
   ]);
@@ -345,14 +345,14 @@ export async function getBracket(
     bracket,
     // A points Competition has no Bracket, so no Winner.
     winner: isBracketFormat(found.format) ? bracketWinner(bracket) : null,
-    finalized: found.finalizedAt !== null,
+    closed: found.closedAt !== null,
     entryPoints,
   };
 }
 
 export type BracketCompetitionLink = Pick<
   Competition,
-  "id" | "name" | "format" | "finalizedAt"
+  "id" | "name" | "format" | "closedAt"
 >;
 
 /** A War Week's Competitions run as a Bracket (never Head-to-head or Best score), by name. */
@@ -373,7 +373,7 @@ function competitionLinks(
       id: competition.id,
       name: competition.name,
       format: competition.format,
-      finalizedAt: competition.finalizedAt,
+      closedAt: competition.closedAt,
     })
     .from(competition)
     .where(
@@ -484,24 +484,30 @@ export async function getParticipantSquadIds(
 export const UNKNOWN_REPORTER = "a Participant";
 
 /**
- * Who self-reported each Heat's current result, by Heat id: the reporter's
+ * Who self-reported each Match's current result, by Match id: the reporter's
  * Participant name, or "a Participant" once that row is deleted. Never the
- * email, which stays on the Heat for audit only.
+ * email, which stays on the Match for audit only.
  */
-export async function getHeatReporters(
+export async function getMatchReporters(
   competitionId: string,
   dbOrTx: DBOrTx = db,
 ): Promise<Record<string, string>> {
   const rows = await withProfile(
     dbOrTx
-      .select({ heatId: heat.id, name: participantNameSql() })
-      .from(heat)
-      .leftJoin(participant, eq(participant.id, heat.reportedByParticipantId))
+      .select({ matchId: bracketMatch.id, name: participantNameSql() })
+      .from(bracketMatch)
+      .leftJoin(
+        participant,
+        eq(participant.id, bracketMatch.reportedByParticipantId),
+      )
       .$dynamic(),
   ).where(
-    and(eq(heat.competitionId, competitionId), isNotNull(heat.reportedByEmail)),
+    and(
+      eq(bracketMatch.competitionId, competitionId),
+      isNotNull(bracketMatch.reportedByEmail),
+    ),
   );
   return Object.fromEntries(
-    rows.map((row) => [row.heatId, row.name ?? UNKNOWN_REPORTER]),
+    rows.map((row) => [row.matchId, row.name ?? UNKNOWN_REPORTER]),
   );
 }

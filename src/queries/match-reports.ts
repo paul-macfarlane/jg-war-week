@@ -9,32 +9,32 @@ import {
   squadParticipant,
 } from "@/db/schema";
 import {
-  type HeatReportFacet,
-  heatReportState,
+  type MatchReportFacet,
+  matchReportState,
 } from "@/lib/bracket/self-report";
 import { loadBracket } from "@/queries/brackets";
 
-export type HeatReportFacts = {
-  /** What `can("bracket.heat-report", …)` checks. */
-  heatReport: HeatReportFacet;
+export type MatchReportFacts = {
+  /** What `can("bracket.match-report", …)` checks. */
+  matchReport: MatchReportFacet;
   /** The Participant the email links to, or null; the same as the facet's. */
-  linked: HeatReportFacet["linked"];
+  linked: MatchReportFacet["linked"];
 };
 
 /**
  * The facts a self-report is checked against (ADR 0005): the Competition's
- * setting, the Heat's state in its own Bracket and its Entrants, and the
+ * setting, the Match's state in its own Bracket and its Entrants, and the
  * Participant of the Competition's War Week whose email is `email`,
  * ignoring case (account linking; more than one match counts as none), with
  * their Team and their Squad in this Competition. Matches on the email
  * without ever selecting an email column back.
  */
-export async function getHeatReportFacts(
+export async function getMatchReportFacts(
   competitionId: string,
-  heatId: string,
+  matchId: string,
   email: string | null | undefined,
   dbOrTx: DBOrTx = db,
-): Promise<HeatReportFacts> {
+): Promise<MatchReportFacts> {
   const [found] = await dbOrTx
     .select({
       warWeekId: competition.warWeekId,
@@ -47,9 +47,9 @@ export async function getHeatReportFacts(
     .limit(1);
   if (!found) {
     return {
-      heatReport: {
+      matchReport: {
         selfReport: false,
-        heat: "missing",
+        match: "missing",
         linked: null,
         entrants: [],
       },
@@ -61,9 +61,9 @@ export async function getHeatReportFacts(
     loadBracket(competitionId, dbOrTx, found),
     linkedParticipant(competitionId, found.warWeekId, email, dbOrTx),
   ]);
-  const heat = bracket.heats.find((h) => h.id === heatId);
-  const entrantIds = heat
-    ? heat.slots.flatMap((s) => (s.entrantId ? [s.entrantId] : []))
+  const match = bracket.matches.find((h) => h.id === matchId);
+  const entrantIds = match
+    ? match.slots.flatMap((s) => (s.entrantId ? [s.entrantId] : []))
     : [];
   const entrants = entrantIds.length
     ? await dbOrTx
@@ -82,9 +82,9 @@ export async function getHeatReportFacts(
     : [];
 
   return {
-    heatReport: {
+    matchReport: {
       selfReport: found.selfReport,
-      heat: heat ? heatReportState(bracket, heat) : "missing",
+      match: match ? matchReportState(bracket, match) : "missing",
       linked,
       entrants,
     },
@@ -97,7 +97,7 @@ async function linkedParticipant(
   warWeekId: string,
   email: string | null | undefined,
   dbOrTx: DBOrTx,
-): Promise<HeatReportFacet["linked"]> {
+): Promise<MatchReportFacet["linked"]> {
   const normalized = email?.trim().toLowerCase();
   if (!normalized) return null;
   const rows = await dbOrTx

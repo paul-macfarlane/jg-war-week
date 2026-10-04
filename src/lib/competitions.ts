@@ -56,7 +56,7 @@ export function pointsForPlacement(
 }
 
 /**
- * Whether a Competition has Placement Points, so finalizing its Bracket or
+ * Whether a Competition has Placement Points, so closing its Bracket or
  * closing its Games creates Points Entries.
  */
 export function hasPlacementPoints(placementPoints: number[] | null): boolean {

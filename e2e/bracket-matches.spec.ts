@@ -20,7 +20,7 @@ import { asOrganizer, participantPageAs } from "./session";
 // places only a Team).
 const COMPETITION = "Settlers of Catan";
 
-// The seeded Competitions are Finalized Placement sheets; open each for a
+// The seeded Competitions are Closed Placement sheets; open each for a
 // Bracket and put the sheet back afterwards.
 let restoreCompetition: (() => Promise<void>) | null = null;
 test.beforeEach(async () => {
@@ -84,22 +84,22 @@ async function checkViewports(
 }
 
 /**
- * Records the Heat named `heat` by tapping every Entrant in the order the
- * Sheet lists them (a finishing-order Heat of more than two Entrants), and
+ * Records the Match named `match` by tapping every Entrant in the order the
+ * Sheet lists them (a finishing-order Match of more than two Entrants), and
  * returns the names in tap order. `onOpen` runs with the Sheet open, before
  * any tap.
  */
-async function recordHeat(
+async function recordMatch(
   page: Page,
-  heat: string,
+  match: string,
   onOpen?: (sheet: Locator) => Promise<void>,
 ): Promise<string[]> {
   // From the admin Bracket's tree, the one Participants see.
   await page
     .locator("[data-bracket-tree]")
-    .getByRole("button", { name: `Record result for ${heat}` })
+    .getByRole("button", { name: `Record result for ${match}` })
     .click();
-  const sheet = page.getByRole("dialog", { name: heat });
+  const sheet = page.getByRole("dialog", { name: match });
   await expect(sheet).toBeVisible();
   if (onOpen) await onOpen(sheet);
   const buttons = sheet
@@ -117,7 +117,7 @@ async function recordHeat(
     await button.click();
   }
   await sheet.getByRole("button", { name: "Save Match Result" }).click();
-  await expect(page.getByText(`${order[0]} wins ${heat}`)).toBeVisible();
+  await expect(page.getByText(`${order[0]} wins ${match}`)).toBeVisible();
   await expect(sheet).toBeHidden();
   return order;
 }
@@ -164,36 +164,36 @@ test("a Bracket of 4 per Match is built, run and Closed into Points Entries, its
   await expect(page.locator("[data-bracket-tree]")).toBeVisible();
 
   // Screenshots and the overflow check happen with the Sheet open, on a
-  // four-Entrant Heat, before any tap.
-  const heat1 = await recordHeat(page, "Round 1 Match 1", async (sheet) => {
+  // four-Entrant Match, before any tap.
+  const match1 = await recordMatch(page, "Round 1 Match 1", async (sheet) => {
     await checkViewports(page, testInfo, "results-sheet", sheet);
   });
 
-  // Heat 1's winner, as "You", has advanced while Heat 2 is still to play.
-  const advancer = heat1[0];
+  // Match 1's winner, as "You", has advanced while Match 2 is still to play.
+  const advancer = match1[0];
   const you = await participantPageAs(browser, advancer);
   await you.page.goto(`/xi/competitions/${id}`);
   // Visible only: while a reload streams, React holds the new page in a
   // hidden container before swapping it in, and getByLabel counts it.
-  const nextHeat = you.page
+  const nextMatch = you.page
     .getByLabel("Your next Match")
     .filter({ visible: true });
-  await expect(nextHeat).toContainText(
+  await expect(nextMatch).toContainText(
     "Advanced to Round 2 · waiting for Round 1 to finish",
   );
   await checkViewports(you.page, testInfo, "participant-advanced");
 
-  const heat2 = await recordHeat(page, "Round 1 Match 2");
+  const match2 = await recordMatch(page, "Round 1 Match 2");
 
   // The Final is filled: their next Match lists the three others in it.
   await you.page.reload();
-  await expect(nextHeat).toContainText("Your next Match · Final");
-  for (const opponent of [heat1[1], heat2[0], heat2[1]]) {
-    await expect(nextHeat).toContainText(opponent);
+  await expect(nextMatch).toContainText("Your next Match · Final");
+  for (const opponent of [match1[1], match2[0], match2[1]]) {
+    await expect(nextMatch).toContainText(opponent);
   }
   await you.close();
 
-  const finalOrder = await recordHeat(page, "Final");
+  const finalOrder = await recordMatch(page, "Final");
   const winner = finalOrder[0];
   // A Group final: Top finishers is the final Match's order, each place
   // with its Provisional points (5 / 3 / 1; 4th earns none).
@@ -204,12 +204,12 @@ test("a Bracket of 4 per Match is built, run and Closed into Points Entries, its
   }));
   expect(podium).toHaveLength(4);
   await expectPodium(page, podium);
-  // Every played Heat says when it was recorded.
+  // Every played Match says when it was recorded.
   await expect(page.getByText(/^Recorded .+ ET$/)).toHaveCount(3);
 
   await checkViewports(page, testInfo, "results-final");
 
-  // Before finalizing: End War Week must warn (never refuse), naming this
+  // Before closing: End War Week must warn (never refuse), naming this
   // Bracket, then Cancel without ever confirming it (XI stays live).
   await page.goto("/admin/settings");
   await page.getByRole("button", { name: "End War Week" }).click();

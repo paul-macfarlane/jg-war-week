@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { toPlacementsResult } from "@/mcp/placements";
 import type { PlacementsView } from "@/queries/placements";
 
-const FINALIZED = new Date("2027-02-24T21:30:00.000Z");
+const CLOSED = new Date("2027-02-24T21:30:00.000Z");
 
 function view(
   overrides: Partial<PlacementsView["competition"]> = {},
@@ -24,7 +24,7 @@ function view(
       countsTowardTeam: true,
       placementPoints: [10, 6, 3],
       scoreDirection: "higher",
-      finalizedAt: FINALIZED,
+      closedAt: CLOSED,
       ...overrides,
     },
     rows: [
@@ -120,7 +120,7 @@ describe("toPlacementsResult", () => {
     expect(
       toPlacementsResult(
         { name: "Darts", scoring: "individual", format: "placement" },
-        view({ finalizedAt: null, scoreDirection: "none" }),
+        view({ closedAt: null, scoreDirection: "none" }),
         "Darts",
       ),
     ).toMatchObject({

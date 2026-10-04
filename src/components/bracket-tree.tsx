@@ -7,7 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   type TreeConnector,
-  type TreeHeat,
+  type TreeMatch,
   type TreeSlot,
   bracketTree,
 } from "@/lib/bracket/tree";
@@ -20,8 +20,8 @@ type Scoring = "team" | "individual";
 const LINE = "pointer-events-none absolute border-foreground/30";
 
 /**
- * A head-to-head Heat's connector lines: in from the Heat that feeds
- * it, and out to the Heat its winner goes to, half of the bracket shape
+ * A head-to-head Match's connector lines: in from the Match that feeds
+ * it, and out to the Match its winner goes to, half of the bracket shape
  * joining it to its pair.
  */
 function Connectors({
@@ -55,10 +55,10 @@ function Connectors({
   );
 }
 
-/** One line of a Heat's box; a Squad's Participants under its name. */
+/** One line of a Match's box; a Squad's Participants under its name. */
 function SlotRow({
   slot,
-  heat,
+  match,
   multiEntrant,
   entrantsById,
   scoring,
@@ -66,8 +66,8 @@ function SlotRow({
   youEntrantId,
 }: {
   slot: TreeSlot;
-  heat: TreeHeat;
-  /** More than 2 per Heat: places shown, a waiting Heat as one line. */
+  match: TreeMatch;
+  /** More than 2 per Match: places shown, a waiting Match as one line. */
   multiEntrant: boolean;
   entrantsById: Map<string, BracketViewEntrant>;
   scoring: Scoring;
@@ -88,7 +88,7 @@ function SlotRow({
     );
   }
   const entrant = entrantsById.get(slot.entrantId);
-  const out = heat.decided && !heat.bye && !slot.advances;
+  const out = match.decided && !match.bye && !slot.advances;
   const squadNames =
     entrant?.squadId && entrant.participantNames.length > 0
       ? entrant.participantNames.join(", ")
@@ -98,7 +98,7 @@ function SlotRow({
       data-advances={slot.advances || undefined}
       className={`flex min-h-8 min-w-0 items-center gap-2 rounded-md px-1.5 text-sm ${slot.advances ? "bg-primary/15 font-semibold" : out ? "text-foreground/60" : ""} ${YOU_ROW_CLASS}`}
     >
-      {multiEntrant && heat.decided && slot.place !== null && (
+      {multiEntrant && match.decided && slot.place !== null && (
         <span
           aria-label={`Place ${slot.place}`}
           className="w-4 shrink-0 text-right text-xs tabular-nums"
@@ -125,7 +125,11 @@ function SlotRow({
       )}
       {slot.advances && (
         <span className="sr-only">
-          {heat.final ? " wins" : heat.thirdPlace ? " takes 3rd" : " advances"}
+          {match.final
+            ? " wins"
+            : match.thirdPlace
+              ? " takes 3rd"
+              : " advances"}
         </span>
       )}
       {slot.entrantId === youEntrantId && (
@@ -142,12 +146,12 @@ function SlotRow({
 
 /**
  * The one tree of a Bracket, for admin and Participants alike: Rounds as
- * columns left to right, each Heat a box of its Entrants with those going
- * through highlighted, and (head-to-head) connector lines to the Heat
+ * columns left to right, each Match a box of its Entrants with those going
+ * through highlighted, and (head-to-head) connector lines to the Match
  * each winner goes to. The Rounds scroll sideways inside their own region
- * when they don't fit, so the page itself never does. Each Heat in
- * `recordableHeatIds` carries a visible Record result (Edit once played)
- * that calls `onRecord`; any other Heat has none. Hiding a button grants
+ * when they don't fit, so the page itself never does. Each Match in
+ * `recordableMatchIds` carries a visible Record result (Edit once played)
+ * that calls `onRecord`; any other Match has none. Hiding a button grants
  * nothing: the action authorizes.
  */
 export function BracketTree({
@@ -156,7 +160,7 @@ export function BracketTree({
   scoring,
   primaryColor,
   youEntrantId = null,
-  recordableHeatIds = [],
+  recordableMatchIds = [],
   onRecord,
   reporters = {},
 }: {
@@ -165,57 +169,57 @@ export function BracketTree({
   scoring: Scoring;
   primaryColor: string;
   youEntrantId?: string | null;
-  /** The Heats the viewer may record now; each shows Record result or Edit. */
-  recordableHeatIds?: readonly string[];
-  onRecord?: (heatId: string) => void;
-  /** Who self-reported each Heat's current result, by Heat id: a name. */
+  /** The Matches the viewer may record now; each shows Record result or Edit. */
+  recordableMatchIds?: readonly string[];
+  onRecord?: (matchId: string) => void;
+  /** Who self-reported each Match's current result, by Match id: a name. */
   reporters?: Record<string, string>;
 }) {
-  const heatsById = new Map(bracket.heats.map((h) => [h.id, h]));
-  const recordable = new Set(onRecord ? recordableHeatIds : []);
+  const matchesById = new Map(bracket.matches.map((h) => [h.id, h]));
+  const recordable = new Set(onRecord ? recordableMatchIds : []);
   const tree = bracketTree(bracket);
   const knockout = tree.headToHead;
   const multiEntrant = !tree.headToHead;
-  const outOf = new Map(tree.connectors.map((c) => [c.fromHeatId, c]));
+  const outOf = new Map(tree.connectors.map((c) => [c.fromMatchId, c]));
 
-  /** One Heat's box in its slot of the Round's column (`place` sizes it). */
-  const renderHeat = (heat: TreeHeat, place: string) => {
-    const source = heatsById.get(heat.id);
+  /** One Match's box in its slot of the Round's column (`place` sizes it). */
+  const renderMatch = (match: TreeMatch, place: string) => {
+    const source = matchesById.get(match.id);
     const recorded = source?.recordedAt
       ? formatRecordedAt(source.recordedAt)
       : "";
-    const reporter = reporters[heat.id];
+    const reporter = reporters[match.id];
     return (
       <div
-        key={heat.id}
-        data-third-place={heat.thirdPlace ? "" : undefined}
+        key={match.id}
+        data-third-place={match.thirdPlace ? "" : undefined}
         className={`relative flex items-center ${place}`}
       >
-        {knockout && !heat.thirdPlace && (
-          <Connectors incoming={heat.round > 1} out={outOf.get(heat.id)} />
+        {knockout && !match.thirdPlace && (
+          <Connectors incoming={match.round > 1} out={outOf.get(match.id)} />
         )}
         <div
           role="group"
-          aria-label={heat.name}
+          aria-label={match.name}
           className={`text-card-foreground relative flex w-full min-w-0 flex-col gap-1 rounded-lg p-2 ring-1 ${
-            heat.thirdPlace
+            match.thirdPlace
               ? "bg-muted/40 ring-foreground/5 opacity-90"
               : "bg-card ring-foreground/10"
           }`}
         >
           <span className="text-foreground/60 px-1.5 text-xs font-medium">
-            {heat.name}
+            {match.name}
           </span>
           {recorded && (
             <span className="text-foreground/70 px-1.5 text-xs">
               {recorded}
             </span>
           )}
-          {heat.slots.map((slot, i) => (
+          {match.slots.map((slot, i) => (
             <SlotRow
               key={i}
               slot={slot}
-              heat={heat}
+              match={match}
               multiEntrant={multiEntrant}
               entrantsById={entrantsById}
               scoring={scoring}
@@ -223,7 +227,7 @@ export function BracketTree({
               youEntrantId={youEntrantId}
             />
           ))}
-          {heat.bye && multiEntrant && (
+          {match.bye && multiEntrant && (
             <span className="text-foreground/60 px-1.5 text-sm italic">
               Bye — advances
             </span>
@@ -233,18 +237,18 @@ export function BracketTree({
               Reported by {reporter}
             </span>
           )}
-          {recordable.has(heat.id) && (
-            // Its ::after stretches over the Heat's box, so the whole Heat
+          {recordable.has(match.id) && (
+            // Its ::after stretches over the Match's box, so the whole Match
             // is one tap target; the box is the containing block.
             <Button
               type="button"
-              variant={heat.decided ? "outline" : "default"}
+              variant={match.decided ? "outline" : "default"}
               size="sm"
-              aria-label={`${heat.decided ? "Edit" : "Record result for"} ${heat.name}`}
+              aria-label={`${match.decided ? "Edit" : "Record result for"} ${match.name}`}
               className="mt-1 min-h-11 self-start after:absolute after:inset-0 after:rounded-lg active:not-aria-[haspopup]:translate-none sm:min-h-8"
-              onClick={() => onRecord?.(heat.id)}
+              onClick={() => onRecord?.(match.id)}
             >
-              {heat.decided ? "Edit" : "Record result"}
+              {match.decided ? "Edit" : "Record result"}
             </Button>
           )}
         </div>
@@ -269,25 +273,25 @@ export function BracketTree({
               className="flex w-56 shrink-0 flex-col"
             >
               <h3 className="mb-1 text-sm font-semibold">{round.name}</h3>
-              {knockout && round.heats.some((h) => h.thirdPlace) ? (
+              {knockout && round.matches.some((h) => h.thirdPlace) ? (
                 // The final stays in the middle row, where its semifinals'
                 // lines meet; the 3rd place Match sits under it, unjoined.
                 // Equal outer rows leave room for it without overlap.
                 <div className="relative grid flex-1 grid-rows-[1fr_auto_1fr]">
                   <div aria-hidden />
-                  {round.heats
+                  {round.matches
                     .filter((h) => !h.thirdPlace)
-                    .map((heat) => renderHeat(heat, "py-2"))}
-                  {round.heats
+                    .map((match) => renderMatch(match, "py-2"))}
+                  {round.matches
                     .filter((h) => h.thirdPlace)
-                    .map((heat) => renderHeat(heat, "self-start py-2"))}
+                    .map((match) => renderMatch(match, "self-start py-2"))}
                 </div>
               ) : (
                 <div
                   className={`relative flex flex-1 flex-col ${knockout ? "" : "justify-center gap-3"}`}
                 >
-                  {round.heats.map((heat) =>
-                    renderHeat(heat, knockout ? "flex-1 py-2" : ""),
+                  {round.matches.map((match) =>
+                    renderMatch(match, knockout ? "flex-1 py-2" : ""),
                   )}
                 </div>
               )}

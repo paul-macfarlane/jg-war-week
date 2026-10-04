@@ -20,8 +20,8 @@ const NONE = {
   games: 0,
   placements: 0,
   checkIns: 0,
-  heats: 0,
-  heatResult: false,
+  matches: 0,
+  matchResult: false,
   generatedPointsEntries: 0,
 };
 
@@ -29,21 +29,21 @@ const fresh: CompetitionLockFacts = {
   format: "placement",
   hasResult: false,
   hasGame: false,
-  hasHeatResult: false,
-  finalized: false,
+  hasMatchResult: false,
+  closed: false,
 };
 const started: CompetitionLockFacts = { ...fresh, hasResult: true };
-const heatPlayed: CompetitionLockFacts = {
+const matchPlayed: CompetitionLockFacts = {
   ...started,
   format: "bracket",
-  hasHeatResult: true,
+  hasMatchResult: true,
 };
-const finalized: CompetitionLockFacts = {
+const closed: CompetitionLockFacts = {
   ...fresh,
   hasResult: true,
   hasGame: true,
-  hasHeatResult: true,
-  finalized: true,
+  hasMatchResult: true,
+  closed: true,
 };
 
 describe("a result", () => {
@@ -56,8 +56,8 @@ describe("a result", () => {
     ["a Game", { games: 1 }],
     ["a Placement", { placements: 1 }],
     ["a check-in", { checkIns: 1 }],
-    ["a Match", { heats: 1 }],
-    ["a Match Result", { heatResult: true }],
+    ["a Match", { matches: 1 }],
+    ["a Match Result", { matchResult: true }],
     ["a generated Points Entry", { generatedPointsEntries: 1 }],
   ])("is %s", (_name, some) => {
     expect(hasResult({ ...NONE, ...some })).toBe(true);
@@ -78,8 +78,8 @@ describe("settingLockReason", () => {
 
   it.each(neverLocked)("never locks %s, not even while Closed", (field) => {
     expect(settingLockReason(field, fresh)).toBeNull();
-    expect(settingLockReason(field, heatPlayed)).toBeNull();
-    expect(settingLockReason(field, finalized)).toBeNull();
+    expect(settingLockReason(field, matchPlayed)).toBeNull();
+    expect(settingLockReason(field, closed)).toBeNull();
   });
 
   it.each<CompetitionSettingField>([
@@ -131,10 +131,12 @@ describe("settingLockReason", () => {
     (field) => {
       expect(settingLockReason(field, fresh)).toBeNull();
       expect(settingLockReason(field, started)).toBeNull();
-      expect(settingLockReason(field, heatPlayed)).toBe(
+      expect(settingLockReason(field, matchPlayed)).toBe(
         "Locked once a Match has a result.",
       );
-      expect(settingLockReason(field, heatPlayed)).toBe(LOCKED_BY_MATCH_RESULT);
+      expect(settingLockReason(field, matchPlayed)).toBe(
+        LOCKED_BY_MATCH_RESULT,
+      );
     },
   );
 
@@ -147,17 +149,17 @@ describe("settingLockReason", () => {
     "selfCheckIn",
     "checkInClosesAt",
   ])("locks %s only while Closed", (field) => {
-    expect(settingLockReason(field, heatPlayed)).toBeNull();
-    expect(settingLockReason(field, finalized)).toBe(
+    expect(settingLockReason(field, matchPlayed)).toBeNull();
+    expect(settingLockReason(field, closed)).toBe(
       "Locked while the Competition is Closed. Reopen it first.",
     );
-    expect(settingLockReason(field, finalized)).toBe(LOCKED_WHILE_CLOSED);
+    expect(settingLockReason(field, closed)).toBe(LOCKED_WHILE_CLOSED);
   });
 
   it.each(["placement", "bracket", "head-to-head", "best-score"] as const)(
     "locks every field but the never-locked ones while a %s Competition is Closed, even with no result",
     (format) => {
-      const bare = { ...fresh, format, finalized: true };
+      const bare = { ...fresh, format, closed: true };
       for (const field of COMPETITION_SETTING_FIELDS) {
         expect(settingLockReason(field, bare), field).toBe(
           neverLocked.includes(field) ? null : LOCKED_WHILE_CLOSED,
@@ -168,46 +170,44 @@ describe("settingLockReason", () => {
 });
 
 describe("lockFactsOf", () => {
-  it("reads a Game, any result, a Heat Result and Finalized from what was entered", () => {
+  it("reads a Game, any result, a Match Result and Closed from what was entered", () => {
     expect(
       lockFactsOf(
         { ...NONE, entrants: 2 },
-        { format: "head-to-head", finalizedAt: null },
+        { format: "head-to-head", closedAt: null },
       ),
     ).toEqual({
       format: "head-to-head",
       hasResult: true,
       hasGame: false,
-      hasHeatResult: false,
-      finalized: false,
+      hasMatchResult: false,
+      closed: false,
     });
     expect(
       lockFactsOf(
         { ...NONE, games: 1 },
-        { format: "best-score", finalizedAt: new Date("2027-02-26T17:00:00Z") },
+        { format: "best-score", closedAt: new Date("2027-02-26T17:00:00Z") },
       ),
     ).toEqual({
       format: "best-score",
       hasResult: true,
       hasGame: true,
-      hasHeatResult: false,
-      finalized: true,
+      hasMatchResult: false,
+      closed: true,
     });
   });
 });
 
 describe("settingNote", () => {
   it("says a Placement Points change while Closed applies at the next Close or Close", () => {
-    expect(settingNote("placementPoints", finalized)).toBe(
+    expect(settingNote("placementPoints", closed)).toBe(
       "Applies at the next Close.",
     );
-    expect(settingNote("placementPoints", finalized)).toBe(
+    expect(settingNote("placementPoints", closed)).toBe(APPLIES_AT_NEXT_CLOSE);
+    expect(settingNote("participationPoints", closed)).toBe(
       APPLIES_AT_NEXT_CLOSE,
     );
-    expect(settingNote("participationPoints", finalized)).toBe(
-      APPLIES_AT_NEXT_CLOSE,
-    );
-    expect(settingNote("placementPoints", heatPlayed)).toBeNull();
-    expect(settingNote("name", finalized)).toBeNull();
+    expect(settingNote("placementPoints", matchPlayed)).toBeNull();
+    expect(settingNote("name", closed)).toBeNull();
   });
 });

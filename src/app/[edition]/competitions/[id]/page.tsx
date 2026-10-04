@@ -29,7 +29,7 @@ import {
   getParticipantTeamIds,
 } from "@/queries/brackets";
 import { getGamesView } from "@/queries/games";
-import { getHeatReportFacts } from "@/queries/heat-reports";
+import { getMatchReportFacts } from "@/queries/match-reports";
 import { getParticipationView } from "@/queries/participation";
 import { getPlacementsView } from "@/queries/placements";
 import { getYouCandidates } from "@/queries/roster";
@@ -41,12 +41,12 @@ import { enrollOfferFor } from "./enrollment";
 const SELF_REPORT_OFF: BracketViewSelfReport = {
   on: false,
   linkedParticipantId: null,
-  reportableHeatId: null,
+  reportableMatchId: null,
 };
 
 /**
- * Whether the signed-in person may report their next Heat (ADR 0005): the
- * Participant their session email links to (as the layout finds them), and Your next Heat when the same
+ * Whether the signed-in person may report their next Match (ADR 0005): the
+ * Participant their session email links to (as the layout finds them), and Your next Match when the same
  * `can` rule the report action runs lets them report it now.
  */
 async function selfReportFor(
@@ -66,7 +66,7 @@ async function selfReportFor(
     participants: candidates,
   });
   if (!actor || !linked) {
-    return { on: true, linkedParticipantId: null, reportableHeatId: null };
+    return { on: true, linkedParticipantId: null, reportableMatchId: null };
   }
   const youEntrantId = entrantForYou(
     view.entrants,
@@ -78,24 +78,24 @@ async function selfReportFor(
     competition.scoring,
   );
   const next = youEntrantId ? nextMatchFor(view.bracket, youEntrantId) : null;
-  let reportableHeatId: string | null = null;
-  if (next?.kind === "heat") {
-    const facts = await getHeatReportFacts(
+  let reportableMatchId: string | null = null;
+  if (next?.kind === "match") {
+    const facts = await getMatchReportFacts(
       competition.id,
-      next.heat.id,
+      next.match.id,
       actor.email,
     );
-    const refusal = can(actor, "bracket.heat-report", {
+    const refusal = can(actor, "bracket.match-report", {
       warWeekId: competition.warWeekId,
       competitionId: competition.id,
-      heatReport: facts.heatReport,
+      matchReport: facts.matchReport,
     });
-    if (!refusal) reportableHeatId = next.heat.id;
+    if (!refusal) reportableMatchId = next.match.id;
   }
   return {
     on: true,
     linkedParticipantId: linked.participantId,
-    reportableHeatId,
+    reportableMatchId,
   };
 }
 
@@ -238,7 +238,7 @@ export default async function CompetitionPage({
           entrants={bracket.entrants}
           bracket={bracket.bracket}
           podium={podiumOf(bracket)}
-          closed={bracket.finalized}
+          closed={bracket.closed}
           scoring={competition.scoring}
           primaryColor={warWeek.primaryColor}
           participantTeams={participantTeams}

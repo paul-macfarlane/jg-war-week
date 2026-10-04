@@ -3,9 +3,9 @@ import { and, eq } from "drizzle-orm";
 import { DBOrTx, db } from "@/db";
 import {
   type Competition,
+  bracketMatch,
   entrant,
   game,
-  heat,
   participation,
   placement,
   pointsEntry,
@@ -25,7 +25,10 @@ export async function getCompetitionResults(
   dbOrTx: DBOrTx = db,
 ): Promise<CompetitionResults> {
   const id = found.id;
-  const heats = await dbOrTx.$count(heat, eq(heat.competitionId, id));
+  const matches = await dbOrTx.$count(
+    bracketMatch,
+    eq(bracketMatch.competitionId, id),
+  );
   return {
     entrants: await dbOrTx.$count(entrant, eq(entrant.competitionId, id)),
     games: await dbOrTx.$count(game, eq(game.competitionId, id)),
@@ -34,24 +37,21 @@ export async function getCompetitionResults(
       participation,
       eq(participation.competitionId, id),
     ),
-    heats,
-    heatResult:
-      heats > 0 &&
+    matches,
+    matchResult:
+      matches > 0 &&
       isBracketFormat(found.format) &&
       hasResults(await loadBracket(id, dbOrTx, found)),
     generatedPointsEntries: await dbOrTx.$count(
       pointsEntry,
-      and(
-        eq(pointsEntry.competitionId, id),
-        eq(pointsEntry.generatedByBracket, true),
-      ),
+      and(eq(pointsEntry.competitionId, id), eq(pointsEntry.generated, true)),
     ),
   };
 }
 
 /** What the lock rules (`settingLockReason`) read about this Competition. */
 export async function getCompetitionLockFacts(
-  found: Pick<Competition, "id" | "format" | "bracketConfig" | "finalizedAt">,
+  found: Pick<Competition, "id" | "format" | "bracketConfig" | "closedAt">,
   dbOrTx: DBOrTx = db,
 ): Promise<CompetitionLockFacts> {
   return lockFactsOf(await getCompetitionResults(found, dbOrTx), found);

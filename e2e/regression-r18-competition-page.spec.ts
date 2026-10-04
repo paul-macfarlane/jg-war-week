@@ -139,7 +139,7 @@ const CASES: FormatCase[] = [
       await expect(
         page.getByText("Entrants saved", { exact: true }),
       ).toBeVisible();
-      // Entrants are a result; the heat settings wait for a Heat Result.
+      // Entrants are a result; the match settings wait for a Match Result.
       await expect(
         page.getByRole("combobox", { name: "Entrants per Match" }),
       ).toBeEnabled();
@@ -242,7 +242,7 @@ test("r18 101 a new Competition with no result changes Format, Placement → Bra
       page.getByRole("combobox", { name: "Add a Participant" }),
     ).toBeVisible();
 
-    // Bracket: heat settings and self-report, and the Entrants and Generate.
+    // Bracket: match settings and self-report, and the Entrants and Generate.
     await setFormat(page, "Bracket");
     await expect(
       page.getByRole("combobox", { name: "Entrants per Match" }),

@@ -290,7 +290,7 @@ describe.skipIf(!isLocalDatabase)("enroll (individual scoring)", () => {
       const { ENROLL_CLOSED_BUILT } = await rule();
       const f = await fixture(tx);
       await tx
-        .insert(f.schema.heat)
+        .insert(f.schema.bracketMatch)
         .values({ competitionId: f.cypher, round: 1, position: 1 });
 
       expect(await enroll(f.cypher, f.as(NEO), tx)).toEqual({
@@ -319,7 +319,7 @@ describe.skipIf(!isLocalDatabase)("enroll (individual scoring)", () => {
       const { enroll } = await mutations();
       const { ENROLL_CLOSED_BY_HOST } = await rule();
       const f = await fixture(tx);
-      await f.set(f.cypher, { finalizedAt: new Date() });
+      await f.set(f.cypher, { closedAt: new Date() });
 
       expect(await enroll(f.cypher, f.as(NEO), tx)).toEqual({
         ok: false,
@@ -552,7 +552,7 @@ describe.skipIf(!isLocalDatabase)("Squads", () => {
       const { joinSquad } = await mutations();
       const { ENROLL_CLOSED_BY_HOST } = await rule();
       const f = await fixture(tx);
-      await f.set(f.relay, { finalizedAt: new Date() });
+      await f.set(f.relay, { closedAt: new Date() });
 
       expect(await joinSquad(f.relay, f.redOne, f.as(NEO), tx)).toEqual({
         ok: false,
@@ -591,7 +591,7 @@ describe.skipIf(!isLocalDatabase)("Squads", () => {
       const { ENROLL_CLOSED_BY_HOST } = await rule();
       const f = await fixture(tx);
       await joinSquad(f.relay, f.redOne, f.as(NEO), tx);
-      await f.set(f.relay, { finalizedAt: new Date() });
+      await f.set(f.relay, { closedAt: new Date() });
 
       expect(await leaveSquad(f.relay, f.redOne, f.as(NEO), tx)).toEqual({
         ok: false,
@@ -695,9 +695,9 @@ describe.skipIf(!isLocalDatabase)("setSelfEnroll", () => {
       );
       expect((await f.competitionRow(f.pong)).selfEnroll).toBe(false);
 
-      await f.set(f.cypher, { finalizedAt: new Date() });
-      const finalized = await setSelfEnroll(f.cypher, on, f.as(HOST), tx);
-      expect(finalized.ok).toBe(false);
+      await f.set(f.cypher, { closedAt: new Date() });
+      const closed = await setSelfEnroll(f.cypher, on, f.as(HOST), tx);
+      expect(closed.ok).toBe(false);
     });
   });
 

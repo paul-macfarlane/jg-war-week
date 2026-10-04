@@ -153,9 +153,9 @@ describe("War Week XI", () => {
     for (const name of placed) {
       const comp = xi.competitions.find((c) => c.name === name)!;
       expect(comp.format, name).toBe("placement");
-      expect(comp.finalized, name).toBe(true);
-      expect(comp.finalizedAt, name).toBe("2026-02-27T15:00:00-05:00");
-      expect(comp.finalizedByEmail, name).toBe("pmacfarlane@jahnelgroup.com");
+      expect(comp.closed, name).toBe(true);
+      expect(comp.closedAt, name).toBe("2026-02-27T15:00:00-05:00");
+      expect(comp.closedByEmail, name).toBe("pmacfarlane@jahnelgroup.com");
     }
     expect(xi.placements.every((p) => p.team != null)).toBe(true);
     // HQ Attendance and AI Survey Completion are Placements, not Discretionary.
@@ -245,7 +245,7 @@ describe("War Week XI demo", () => {
       (c) => c.name === "Electric City Matrix",
     )!;
     expect(matrix.format).toBe("placement");
-    expect(matrix.finalized).toBeUndefined();
+    expect(matrix.closed).toBeUndefined();
     expect(xi.placements.filter((p) => p.competition === matrix.name)).toEqual(
       [],
     );
@@ -282,20 +282,18 @@ describe("War Week XI demo", () => {
 
   it("has Closed Placements: a fractional Placement Point value, a Counts-Toward-Team-off Competition, and the Settlers [5, 3, 1] kept", () => {
     const competitions = new Map(xi.competitions.map((c) => [c.name, c]));
-    const finalized = xi.competitions.filter((c) => c.finalized);
-    expect(finalized.length).toBe(12);
-    expect(finalized.every((c) => c.finalizedAt! < "2026-02-26")).toBe(true);
+    const closed = xi.competitions.filter((c) => c.closed);
+    expect(closed.length).toBe(12);
+    expect(closed.every((c) => c.closedAt! < "2026-02-26")).toBe(true);
     expect(
-      finalized.some((c) =>
-        c.placementPoints?.some((n) => !Number.isInteger(n)),
-      ),
+      closed.some((c) => c.placementPoints?.some((n) => !Number.isInteger(n))),
     ).toBe(true);
     expect(
-      finalized.some((c) => c.scoring === "individual" && !c.countsTowardTeam),
+      closed.some((c) => c.scoring === "individual" && !c.countsTowardTeam),
     ).toBe(true);
     expect(competitions.get("Settlers of Catan")).toMatchObject({
       placementPoints: [5, 3, 1],
-      finalized: true,
+      closed: true,
     });
     expect(
       xi.placements.filter((p) => p.competition === "Settlers of Catan"),
@@ -395,7 +393,7 @@ describe("War Week XII demo", () => {
     expect(steps.some((p) => p.place === 11)).toBe(false);
     expect(
       xiiDemo.competitions.find((c) => c.name === "Step Challenge"),
-    ).toMatchObject({ scoreDirection: "higher", finalized: true });
+    ).toMatchObject({ scoreDirection: "higher", closed: true });
     expect(xiiDemo.awards).toEqual([]);
   });
 });

@@ -18,9 +18,9 @@ import type { MutationContext } from "@/mutations/types";
 import { type EnrollFacts, getEnrollFacts } from "@/queries/enrollment";
 import { getGameLogFacts } from "@/queries/games";
 import {
-  type HeatReportFacts,
-  getHeatReportFacts,
-} from "@/queries/heat-reports";
+  type MatchReportFacts,
+  getMatchReportFacts,
+} from "@/queries/match-reports";
 import { getCheckInFacts } from "@/queries/participation";
 import {
   type LoadedTarget,
@@ -121,21 +121,21 @@ export async function authorize(
 /**
  * The authorize step for self-report, the one Participant write (ADR 0005),
  * in ADR 0003's order: authenticate; both ids shaped like row ids; load the
- * Competition and its War Week; load the Heat's facts for the actor's email
- * (account linking); run `can("bracket.heat-report")`,
+ * Competition and its War Week; load the Match's facts for the actor's email
+ * (account linking); run `can("bracket.match-report")`,
  * which binds Organizers and Hosts too. The caller parses its input only
  * after this. Never throws on a refusal.
  */
-export async function authorizeHeatReport(
+export async function authorizeMatchReport(
   competitionId: unknown,
-  heatId: unknown,
+  matchId: unknown,
 ): Promise<
   | {
       ok: true;
       actor: NonNullable<Actor>;
       warWeek: TargetWarWeek;
       ctx: MutationContext;
-      linked: NonNullable<HeatReportFacts["linked"]>;
+      linked: NonNullable<MatchReportFacts["linked"]>;
     }
   | Refused
 > {
@@ -143,17 +143,17 @@ export async function authorizeHeatReport(
   if (!actor) return { ok: false, error: SIGN_IN_REFUSAL };
   const [competitionNotFound, load] = TARGETS.competition;
   if (!isUuid(competitionId)) return { ok: false, error: competitionNotFound };
-  if (!isUuid(heatId)) {
+  if (!isUuid(matchId)) {
     return { ok: false, error: "That Match no longer exists." };
   }
   const target = await load(competitionId);
   if (!target) return { ok: false, error: competitionNotFound };
 
-  const facts = await getHeatReportFacts(competitionId, heatId, actor.email);
-  const refusal = can(actor, "bracket.heat-report", {
+  const facts = await getMatchReportFacts(competitionId, matchId, actor.email);
+  const refusal = can(actor, "bracket.match-report", {
     warWeekId: target.warWeek.id,
     competitionId: target.competitionId,
-    heatReport: facts.heatReport,
+    matchReport: facts.matchReport,
   });
   if (refusal) return { ok: false, error: refusal };
   // `can` refuses an unlinked actor, so this is only for the type.

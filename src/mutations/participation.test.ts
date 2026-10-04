@@ -151,7 +151,7 @@ async function fixture(tx: DBTx) {
           participantId: schema.pointsEntry.participantId,
           points: schema.pointsEntry.points,
           note: schema.pointsEntry.note,
-          generated: schema.pointsEntry.generatedByBracket,
+          generated: schema.pointsEntry.generated,
         })
         .from(schema.pointsEntry)
         .where(eq(schema.pointsEntry.competitionId, competitionId))
@@ -162,10 +162,10 @@ async function fixture(tx: DBTx) {
           String(b.teamId ?? b.participantId),
         ),
     );
-  const finalizedAt = async (id: string) =>
+  const closedAt = async (id: string) =>
     (
       await tx
-        .select({ at: schema.competition.finalizedAt })
+        .select({ at: schema.competition.closedAt })
         .from(schema.competition)
         .where(eq(schema.competition.id, id))
     )[0].at;
@@ -194,7 +194,7 @@ async function fixture(tx: DBTx) {
     setCompetition,
     marks,
     generated,
-    finalizedAt,
+    closedAt,
   };
 }
 
@@ -418,7 +418,7 @@ describe.skipIf(!isLocalDatabase)(
             generated: true,
           },
         ]);
-        expect(await f.finalizedAt(f.ids.workout)).not.toBeNull();
+        expect(await f.closedAt(f.ids.workout)).not.toBeNull();
         const after = await teamTotals();
         expect(after.Red - before.Red).toBe(5);
         expect(after.Blue - before.Blue).toBe(3);
@@ -431,7 +431,7 @@ describe.skipIf(!isLocalDatabase)(
           await reopenParticipation(f.ids.workout, f.ctx(HOST), tx),
         ).toEqual({ ok: true });
         expect(await f.generated(f.ids.workout)).toEqual([]);
-        expect(await f.finalizedAt(f.ids.workout)).toBeNull();
+        expect(await f.closedAt(f.ids.workout)).toBeNull();
         expect(await teamTotals()).toEqual(before);
       });
     });

@@ -164,12 +164,12 @@ describe.skipIf(!isLocalDatabase)("every seed loads twice", () => {
       const sheet = await client.query<{
         rows: number;
         scored: number;
-        finalized: boolean;
+        closed: boolean;
         direction: string;
       }>(
         `select count(p.id)::int as rows,
            count(p.score)::int as scored,
-           bool_and(c.finalized_at is not null) as finalized,
+           bool_and(c.closed_at is not null) as closed,
            min(c.score_direction::text) as direction
          from competition c
          join placement p on p.competition_id = c.id
@@ -179,7 +179,7 @@ describe.skipIf(!isLocalDatabase)("every seed loads twice", () => {
       expect(sheet.rows[0]).toEqual({
         rows: 12,
         scored: 12,
-        finalized: true,
+        closed: true,
         direction: "higher",
       });
     });
@@ -198,7 +198,7 @@ describe.skipIf(!isLocalDatabase)("every seed loads twice", () => {
           await client.query<{
             participants: number;
             entrants: number;
-            heats: number;
+            matches: number;
             played: number;
             ticks: number;
           }>(
@@ -207,20 +207,20 @@ describe.skipIf(!isLocalDatabase)("every seed loads twice", () => {
                  on w.id = p.war_week_id where w.edition = 'xii') as participants,
                (select count(*)::int from entrant e join competition c
                  on c.id = e.competition_id where c.name = 'Ping Pong Bracket') as entrants,
-               (select count(*)::int from heat h join competition c
-                 on c.id = h.competition_id where c.name = 'Ping Pong Bracket') as heats,
-               (select count(*)::int from heat h join competition c
+               (select count(*)::int from bracket_match h join competition c
+                 on c.id = h.competition_id where c.name = 'Ping Pong Bracket') as matches,
+               (select count(*)::int from bracket_match h join competition c
                  on c.id = h.competition_id where c.name = 'Ping Pong Bracket'
                  and h.recorded_at is not null) as played,
                (select count(*)::int from participation x join competition c
                  on c.id = x.competition_id where c.name = 'Morning Stretch') as ticks`,
           )
         ).rows;
-        // 32 + 16 + 8 + 4 + 2 Heats, the final and the 3rd place Match.
+        // 32 + 16 + 8 + 4 + 2 Matches, the final and the 3rd place Match.
         expect(facts).toEqual({
           participants: 100,
           entrants: 64,
-          heats: 64,
+          matches: 64,
           played: 20,
           ticks: 72,
         });

@@ -8,11 +8,11 @@ import {
 import { openForBracket, xiCompetitionId } from "./db";
 import { asOrganizer } from "./session";
 
-// Epic R15, ticket 84 (.scratch/regression-2026-10/issues/84-heats-advancers-highlighted.md):
-// a recorded Heats Heat marks every advancing place, in the form and in the
-// results. Pool is shared with other specs, so its format, Entrants and Heats
+// Epic R15, ticket 84 (.scratch/regression-2026-10/issues/84-matches-advancers-highlighted.md):
+// a recorded Matches Match marks every advancing place, in the form and in the
+// results. Pool is shared with other specs, so its format, Entrants and Matches
 // are put back in `finally`. The eight are the Participants
-// bracket-heats.spec.ts uses.
+// bracket-matches.spec.ts uses.
 const COMPETITION = "Pool";
 const ENTRANTS = [
   "Albert Hernandez",
@@ -60,13 +60,13 @@ test("r15 84 a recorded Match of 4 with 2 advancing highlights both advancers in
     await expect(page.getByText("Bracket generated")).toBeVisible();
 
     await openCompetitionPage(page, id);
-    const heat = "Round 1 Match 1";
+    const match = "Round 1 Match 1";
     // From the admin Bracket's tree, the one Participants see (100).
     await page
       .locator("[data-bracket-tree]")
-      .getByRole("button", { name: `Record result for ${heat}` })
+      .getByRole("button", { name: `Record result for ${match}` })
       .click();
-    const sheet = page.getByRole("dialog", { name: heat });
+    const sheet = page.getByRole("dialog", { name: match });
     await expect(sheet).toBeVisible();
     const buttons = sheet
       .getByRole("group", { name: "Finishing order" })
@@ -80,13 +80,13 @@ test("r15 84 a recorded Match of 4 with 2 advancing highlights both advancers in
     // Both top places are marked as advancing before saving.
     await expect(sheet.locator("[data-advances]")).toHaveCount(2);
     await sheet.getByRole("button", { name: "Save Match Result" }).click();
-    await expect(page.getByText(`${winner} wins ${heat}`)).toBeVisible();
+    await expect(page.getByText(`${winner} wins ${match}`)).toBeVisible();
     await expect(sheet).toBeHidden();
 
-    // The decided Heat's box in the tree marks 1st and 2nd, not 3rd or 4th.
+    // The decided Match's box in the tree marks 1st and 2nd, not 3rd or 4th.
     const advancers = page
       .locator("[data-bracket-tree]")
-      .getByRole("group", { name: heat, exact: true })
+      .getByRole("group", { name: match, exact: true })
       .locator("[data-advances]");
     await expect(advancers).toHaveCount(2);
     await expect(
@@ -99,14 +99,14 @@ test("r15 84 a recorded Match of 4 with 2 advancing highlights both advancers in
       advancers.filter({ has: page.getByLabel("Place 3", { exact: true }) }),
     ).toHaveCount(0);
 
-    // The recorded Heat's Edit is secondary (outline), not the solid primary.
+    // The recorded Match's Edit is secondary (outline), not the solid primary.
     await expect(
-      page.getByRole("button", { name: `Edit ${heat}`, exact: true }),
+      page.getByRole("button", { name: `Edit ${match}`, exact: true }),
     ).toHaveClass(/\bbg-background\b/);
 
     // Shoot once the Sheet's overlay and the toast have gone.
     await expect(page.locator('[data-slot="sheet-overlay"]')).toHaveCount(0);
-    await expect(page.getByText(`${winner} wins ${heat}`)).toBeHidden({
+    await expect(page.getByText(`${winner} wins ${match}`)).toBeHidden({
       timeout: 15_000,
     });
     await page.screenshot({

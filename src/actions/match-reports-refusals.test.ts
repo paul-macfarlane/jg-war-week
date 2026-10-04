@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DBTx } from "@/db";
 import { isLocalDatabaseUrl } from "@/db/local-url";
 import { inRolledBackTransaction } from "@/db/test-transaction";
-import { NOT_IN_HEAT, SELF_REPORT_OFF } from "@/lib/bracket/heat-report-rule";
+import { NOT_IN_MATCH, SELF_REPORT_OFF } from "@/lib/bracket/match-report-rule";
 
 // Runs only against a local Postgres (see vitest.config.ts).
 const isLocalDatabase = isLocalDatabaseUrl(
@@ -11,7 +11,7 @@ const isLocalDatabase = isLocalDatabaseUrl(
   process.env.DATABASE_DRIVER,
 );
 
-// The report action runs for real (authorizeHeatReport, `can`, the
+// The report action runs for real (authorizeMatchReport, `can`, the
 // mutation) against a rolled-back transaction: `@/db` hands out the test's
 // transaction, and the session email is the one boundary stubbed. The tree
 // only hides Record result; this is the server refusing it.
@@ -40,20 +40,20 @@ afterEach(() => {
   current.tx = null;
 });
 
-const ORGANIZER = "heat-refusal-organizer@jahnelgroup.com";
-const NEO = "heat-refusal-neo@jahnelgroup.com";
-const MORPHEUS = "heat-refusal-morpheus@jahnelgroup.com";
+const ORGANIZER = "match-refusal-organizer@jahnelgroup.com";
+const NEO = "match-refusal-neo@jahnelgroup.com";
+const MORPHEUS = "match-refusal-morpheus@jahnelgroup.com";
 
 /**
  * A War Week with Red (Neo), Blue (Trinity) and Green (Morpheus), every
  * Participant linked by email, and Cypher: a team Bracket drawn Red v Blue
- * (one Heat, the Final). Self-report is `selfReport`.
+ * (one Match, the Final). Self-report is `selfReport`.
  */
 async function fixture(tx: DBTx, selfReport: boolean) {
   current.tx = tx;
   const schema = await import("@/db/schema");
   const brackets = await import("@/mutations/brackets");
-  const { setSelfReport } = await import("@/mutations/heat-reports");
+  const { setSelfReport } = await import("@/mutations/match-reports");
   const { getBracket } = await import("@/queries/brackets");
   const [w] = await tx
     .insert(schema.warWeek)
@@ -93,7 +93,7 @@ async function fixture(tx: DBTx, selfReport: boolean) {
     {
       warWeekId: w.id,
       displayName: "Trinity",
-      email: "heat-refusal-trinity@jahnelgroup.com",
+      email: "match-refusal-trinity@jahnelgroup.com",
       teamId: teamId("Blue"),
     },
     {
@@ -129,46 +129,46 @@ async function fixture(tx: DBTx, selfReport: boolean) {
   });
   const view = async () => (await getBracket(cypher.id, tx))!;
   const drawn = await view();
-  const final = drawn.bracket.heats[0];
+  const final = drawn.bracket.matches[0];
   const entrantOf = (label: string) =>
     drawn.entrants.find((e) => e.label === label)!.id;
   return {
     competitionId: cypher.id,
-    heatId: final.id,
+    matchId: final.id,
     result: { order: [entrantOf("Red"), entrantOf("Blue")] },
-    heatNow: async () =>
-      (await view()).bracket.heats.find((h) => h.id === final.id)!,
+    matchNow: async () =>
+      (await view()).bracket.matches.find((h) => h.id === final.id)!,
   };
 }
 
 describe.skipIf(!isLocalDatabase)(
-  "reportHeatResult refuses a Participant who may not record the Match",
+  "reportMatchResult refuses a Participant who may not record the Match",
   () => {
     it("refuses a Participant not in the Match, recording nothing", async () => {
       await inRolledBackTransaction(async (tx) => {
         const f = await fixture(tx, true);
-        const before = await f.heatNow();
+        const before = await f.matchNow();
         session.email = MORPHEUS;
-        const { reportHeatResult } = await import("@/actions/heat-reports");
+        const { reportMatchResult } = await import("@/actions/match-reports");
 
         expect(
-          await reportHeatResult(f.competitionId, f.heatId, f.result),
-        ).toEqual({ ok: false, error: NOT_IN_HEAT });
-        expect(await f.heatNow()).toEqual(before);
+          await reportMatchResult(f.competitionId, f.matchId, f.result),
+        ).toEqual({ ok: false, error: NOT_IN_MATCH });
+        expect(await f.matchNow()).toEqual(before);
       });
     });
 
     it("refuses a Participant in the Match while self-report is off, recording nothing", async () => {
       await inRolledBackTransaction(async (tx) => {
         const f = await fixture(tx, false);
-        const before = await f.heatNow();
+        const before = await f.matchNow();
         session.email = NEO;
-        const { reportHeatResult } = await import("@/actions/heat-reports");
+        const { reportMatchResult } = await import("@/actions/match-reports");
 
         expect(
-          await reportHeatResult(f.competitionId, f.heatId, f.result),
+          await reportMatchResult(f.competitionId, f.matchId, f.result),
         ).toEqual({ ok: false, error: SELF_REPORT_OFF });
-        expect(await f.heatNow()).toEqual(before);
+        expect(await f.matchNow()).toEqual(before);
       });
     });
 
@@ -176,14 +176,14 @@ describe.skipIf(!isLocalDatabase)(
       await inRolledBackTransaction(async (tx) => {
         const f = await fixture(tx, true);
         session.email = NEO;
-        const { reportHeatResult } = await import("@/actions/heat-reports");
+        const { reportMatchResult } = await import("@/actions/match-reports");
 
         expect(
-          await reportHeatResult(f.competitionId, f.heatId, f.result),
-        ).toEqual({ ok: true, resetHeatIds: [] });
-        const heat = await f.heatNow();
-        expect(heat.status).toBe("played");
-        expect(heat.slots.find((s) => s.place === 1)?.entrantId).toBe(
+          await reportMatchResult(f.competitionId, f.matchId, f.result),
+        ).toEqual({ ok: true, resetMatchIds: [] });
+        const match = await f.matchNow();
+        expect(match.status).toBe("played");
+        expect(match.slots.find((s) => s.place === 1)?.entrantId).toBe(
           f.result.order[0],
         );
       });

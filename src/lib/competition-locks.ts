@@ -28,7 +28,7 @@ export const COMPETITION_SETTING_FIELDS = [
   "gameConfig",
   /** Head-to-head or Best score: open to everyone, or a fixed Entrant list. */
   "entrantsOpen",
-  /** A Bracket's heat size, how many advance and the 3rd place Match. */
+  /** A Bracket's match size, how many advance and the 3rd place Match. */
   "bracketConfig",
   "entrants",
   /** Building (generating or re-rolling) the Bracket. */
@@ -47,12 +47,12 @@ export type CompetitionSettingField =
 
 /**
  * When a setting locks: `never`; once any `result` exists; once the
- * Competition has a `game`; once any `heat-result` exists; or only while
- * `finalized` (Finalized or Closed). Every setting but the `never` ones
- * also locks while Finalized or Closed.
+ * Competition has a `game`; once any `match-result` exists; or only while
+ * `closed` (Closed or Closed). Every setting but the `never` ones
+ * also locks while Closed or Closed.
  */
 export type SettingLock =
-  "never" | "result" | "game" | "heat-result" | "finalized";
+  "never" | "result" | "game" | "match-result" | "closed";
 
 /**
  * Each setting's lock, but `gameConfig`'s, which depends on the Format
@@ -75,18 +75,18 @@ export const SETTING_LOCKS: Record<
   // A Best of needs a fixed list of two Entrants, which are a result, so
   // the Entrant list and Head-to-head's settings wait for a Game.
   entrantsOpen: "game",
-  bracketConfig: "heat-result",
-  entrants: "heat-result",
-  bracket: "heat-result",
+  bracketConfig: "match-result",
+  entrants: "match-result",
+  bracket: "match-result",
   // They set who joins and until when, so an Organizer can extend a
   // deadline mid-week.
-  selfEnroll: "finalized",
-  entrantLimit: "finalized",
-  enrollClosesAt: "finalized",
-  loggingClosesAt: "finalized",
-  selfReport: "finalized",
-  selfCheckIn: "finalized",
-  checkInClosesAt: "finalized",
+  selfEnroll: "closed",
+  entrantLimit: "closed",
+  enrollClosesAt: "closed",
+  loggingClosesAt: "closed",
+  selfReport: "closed",
+  selfCheckIn: "closed",
+  checkInClosesAt: "closed",
 };
 
 /**
@@ -108,15 +108,15 @@ export const LOCKED_BY_RESULT = "Locked once the Competition has a result.";
 export const LOCKED_BY_MATCH =
   "Locked once the Competition has a Match or Attempt.";
 export const LOCKED_BY_MATCH_RESULT = "Locked once a Match has a result.";
-/** Reopen for a Placement, Games or Participation run; Un-finalize for a Bracket. */
+/** Reopen for a Placement, Games or Participation run; Reopen for a Bracket. */
 export const LOCKED_WHILE_CLOSED =
   "Locked while the Competition is Closed. Reopen it first.";
-/** A points setting changed while Finalized or Closed: when it takes effect. */
+/** A points setting changed while Closed or Closed: when it takes effect. */
 export const APPLIES_AT_NEXT_CLOSE = "Applies at the next Close.";
 
 /**
  * What a Competition has entered so far. A result is any of them: an
- * Entrant, Game, Placement, check-in (someone who took part), Heat or Heat
+ * Entrant, Game, Placement, check-in (someone who took part), Match or Match
  * Result, or a generated Points Entry.
  */
 export type CompetitionResults = {
@@ -124,21 +124,21 @@ export type CompetitionResults = {
   games: number;
   placements: number;
   checkIns: number;
-  heats: number;
-  /** Whether a Heat has a Heat Result (byes don't count). */
-  heatResult: boolean;
+  matches: number;
+  /** Whether a Match has a Match Result (byes don't count). */
+  matchResult: boolean;
   generatedPointsEntries: number;
 };
 
 /** Whether the Competition has a result: the one definition. */
 export function hasResult(results: CompetitionResults): boolean {
   return (
-    results.heatResult ||
+    results.matchResult ||
     results.entrants +
       results.games +
       results.placements +
       results.checkIns +
-      results.heats +
+      results.matches +
       results.generatedPointsEntries >
       0
   );
@@ -150,27 +150,27 @@ export type CompetitionLockFacts = {
   format: Format;
   hasResult: boolean;
   hasGame: boolean;
-  hasHeatResult: boolean;
-  /** Finalized (Placement, Bracket) or Closed (the others). */
-  finalized: boolean;
+  hasMatchResult: boolean;
+  /** Closed (Placement, Bracket) or Closed (the others). */
+  closed: boolean;
 };
 
 export function lockFactsOf(
   results: CompetitionResults,
-  { format, finalizedAt }: { format: Format; finalizedAt: Date | null },
+  { format, closedAt }: { format: Format; closedAt: Date | null },
 ): CompetitionLockFacts {
   return {
     format,
     hasResult: hasResult(results),
     hasGame: results.games > 0,
-    hasHeatResult: results.heatResult,
-    finalized: finalizedAt !== null,
+    hasMatchResult: results.matchResult,
+    closed: closedAt !== null,
   };
 }
 
 /**
- * Why `field` can't change now, or null. A result, Game or Heat Result
- * lock's reason comes before Finalized's: Reopen alone won't unlock it.
+ * Why `field` can't change now, or null. A result, Game or Match Result
+ * lock's reason comes before Closed's: Reopen alone won't unlock it.
  */
 export function settingLockReason(
   field: CompetitionSettingField,
@@ -180,19 +180,19 @@ export function settingLockReason(
   if (lock === "never") return null;
   if (lock === "result" && facts.hasResult) return LOCKED_BY_RESULT;
   if (lock === "game" && facts.hasGame) return LOCKED_BY_MATCH;
-  if (lock === "heat-result" && facts.hasHeatResult) {
+  if (lock === "match-result" && facts.hasMatchResult) {
     return LOCKED_BY_MATCH_RESULT;
   }
-  return facts.finalized ? LOCKED_WHILE_CLOSED : null;
+  return facts.closed ? LOCKED_WHILE_CLOSED : null;
 }
 
-/** The note an unlocked field shows, or null: points changed after Finalize. */
+/** The note an unlocked field shows, or null: points changed after Close. */
 export function settingNote(
   field: CompetitionSettingField,
   facts: CompetitionLockFacts,
 ): string | null {
   return (field === "placementPoints" || field === "participationPoints") &&
-    facts.finalized
+    facts.closed
     ? APPLIES_AT_NEXT_CLOSE
     : null;
 }

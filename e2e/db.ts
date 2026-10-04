@@ -58,7 +58,7 @@ export async function deleteE2eAwardCategories() {
 
 /**
  * Gives War Week XI back the default Finale: no saved slide list (so it
- * plays Title, By the numbers, Awards, Champions, Standings countdown,
+ * plays Title, By the numbers, Awards, Winners, Standings countdown,
  * Winner) and the one-slide Awards layout. Each Finale slide spec calls it
  * before and after its flows.
  */
@@ -91,7 +91,7 @@ export async function xiCompetitionEntries(
 ): Promise<{ target: string; points: number; generated: boolean }[]> {
   return runQuery<{ target: string; points: number; generated: boolean }>(
     `select coalesce(p.display_name, t.name) as target,
-       pe.points::float as points, pe.generated_by_bracket as generated
+       pe.points::float as points, pe.generated as generated
      from points_entry pe
      join war_week w on w.id = pe.war_week_id and w.edition = 'xi'
      left join competition c on c.id = pe.competition_id
@@ -239,7 +239,7 @@ export type BracketSnapshot = {
   bracket_config: unknown;
   self_enroll: boolean;
   self_report: boolean;
-  finalized_at: Date | null;
+  closed_at: Date | null;
   score_direction: string;
   /** A move to a Bracket keeps only the first 4 places (ticket 101). */
   placement_points: string | null;
@@ -250,7 +250,7 @@ export async function snapshotBracket(
 ): Promise<BracketSnapshot> {
   const [row] = await runQuery<BracketSnapshot>(
     `select format::text as format, bracket_config, self_enroll, self_report,
-       finalized_at,
+       closed_at,
        score_direction::text as score_direction,
        placement_points::text as placement_points
      from competition where id = $1`,
@@ -259,18 +259,20 @@ export async function snapshotBracket(
   return row;
 }
 
-/** Drops the Competition's Heats and Entrants and restores its snapshot. */
+/** Drops the Competition's Matches and Entrants and restores its snapshot. */
 export async function restoreBracket(
   competitionId: string,
   snapshot: BracketSnapshot,
 ) {
-  await runQuery(`delete from heat where competition_id = $1`, [competitionId]);
+  await runQuery(`delete from bracket_match where competition_id = $1`, [
+    competitionId,
+  ]);
   await runQuery(`delete from entrant where competition_id = $1`, [
     competitionId,
   ]);
   await runQuery(
     `update competition set format = $2::competition_format,
-       bracket_config = $3, self_enroll = $4, finalized_at = $5,
+       bracket_config = $3, self_enroll = $4, closed_at = $5,
        score_direction = $6::score_direction, self_report = $7,
        placement_points = $8::numeric[]
      where id = $1`,
@@ -281,7 +283,7 @@ export async function restoreBracket(
         ? null
         : JSON.stringify(snapshot.bracket_config),
       snapshot.self_enroll,
-      snapshot.finalized_at,
+      snapshot.closed_at,
       snapshot.score_direction,
       snapshot.self_report,
       snapshot.placement_points,
@@ -290,10 +292,10 @@ export async function restoreBracket(
 }
 
 /**
- * The seeded individual Competitions are Finalized Placement sheets (R16),
- * and a Finalized Competition's Format is locked. A Bracket flow calls this
+ * The seeded individual Competitions are Closed Placement sheets (R16),
+ * and a Closed Competition's Format is locked. A Bracket flow calls this
  * first: it snapshots the Competition (Format, Bracket settings, its
- * Placements and Points Entries), then clears them and un-finalizes it so a
+ * Placements and Points Entries), then clears them and reopens it so a
  * Bracket can be built. The returned function puts everything back; call it
  * in `finally` or `afterEach`.
  */
@@ -315,7 +317,7 @@ export async function openForBracket(
   await runQuery(`delete from placement where competition_id = $1`, [
     competitionId,
   ]);
-  await runQuery(`update competition set finalized_at = null where id = $1`, [
+  await runQuery(`update competition set closed_at = null where id = $1`, [
     competitionId,
   ]);
   return async () => {

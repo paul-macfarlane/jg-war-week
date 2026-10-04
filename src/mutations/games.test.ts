@@ -297,7 +297,7 @@ describe.skipIf(!isLocalDatabase)("logGame", () => {
         tx,
       );
       if (!logged.ok) throw new Error(logged.error);
-      await f.setCompetition(f.ids.pong, { finalizedAt: new Date() });
+      await f.setCompetition(f.ids.pong, { closedAt: new Date() });
 
       for (const email of [NEO, HOST, ORGANIZER]) {
         expect(
@@ -738,7 +738,7 @@ describe.skipIf(!isLocalDatabase)("closeGames and reopenGames", () => {
             teamId: f.schema.pointsEntry.teamId,
             points: f.schema.pointsEntry.points,
             note: f.schema.pointsEntry.note,
-            generated: f.schema.pointsEntry.generatedByBracket,
+            generated: f.schema.pointsEntry.generated,
           })
           .from(f.schema.pointsEntry)
           .where(eq(f.schema.pointsEntry.competitionId, f.ids.bowl));
@@ -809,10 +809,10 @@ describe.skipIf(!isLocalDatabase)("closeGames and reopenGames", () => {
       ]);
       expect(await totals()).toEqual(before);
       const [comp] = await tx
-        .select({ finalizedAt: f.schema.competition.finalizedAt })
+        .select({ closedAt: f.schema.competition.closedAt })
         .from(f.schema.competition)
         .where(eq(f.schema.competition.id, f.ids.bowl));
-      expect(comp.finalizedAt).toBeNull();
+      expect(comp.closedAt).toBeNull();
     });
   });
 
@@ -962,7 +962,7 @@ describe.skipIf(!isLocalDatabase)("setGamesSettings", () => {
         error:
           "Those settings are for another Format. Change the Format first.",
       });
-      await f.setCompetition(f.ids.pong, { finalizedAt: new Date() });
+      await f.setCompetition(f.ids.pong, { closedAt: new Date() });
       expect(
         await setGamesSettings(
           f.ids.pong,
@@ -1253,7 +1253,7 @@ describe.skipIf(!isLocalDatabase)("getLoggableCompetitions", () => {
     await inRolledBackTransaction(async (tx) => {
       const { getLoggableCompetitions } = await import("@/queries/games");
       const f = await fixture(tx);
-      await f.setCompetition(f.ids.bowl, { finalizedAt: new Date() });
+      await f.setCompetition(f.ids.bowl, { closedAt: new Date() });
       const names = async (email: string) =>
         (await getLoggableCompetitions(f.warWeekId, email, tx)).map(
           (c) => c.name,

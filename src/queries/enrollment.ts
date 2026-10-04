@@ -2,10 +2,10 @@ import { and, count, eq, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import {
+  bracketMatch,
   competition,
   entrant,
   game,
-  heat,
   participant,
   squad,
   squadParticipant,
@@ -47,7 +47,7 @@ function refusingFacet(): EnrollFacet {
 /**
  * The facts self-enrollment is checked against (ADR 0006): the
  * Competition's switch and close conditions (Bracket built, Entrant limit,
- * close time, finalized, first Game), its Entrants and Squads, the Squad
+ * close time, closed, first Game), its Entrants and Squads, the Squad
  * being joined or left (only a Squad of this Competition), and the
  * Participant of the Competition's War Week whose email is `email`,
  * ignoring case (account linking; more than one match counts as none), with
@@ -67,7 +67,7 @@ export async function getEnrollFacts(
           warWeekId: competition.warWeekId,
           scoring: competition.scoring,
           format: competition.format,
-          finalizedAt: competition.finalizedAt,
+          closedAt: competition.closedAt,
           gameConfig: competition.gameConfig,
           entrantsOpen: competition.entrantsOpen,
           selfEnroll: competition.selfEnroll,
@@ -80,7 +80,7 @@ export async function getEnrollFacts(
     : [];
   if (!found) return { enroll: refusingFacet(), linked: null };
 
-  const [linked, entrants, heats, games, squads, posted] = await Promise.all([
+  const [linked, entrants, matches, games, squads, posted] = await Promise.all([
     linkedParticipant(competitionId, found.warWeekId, email, dbOrTx),
     dbOrTx
       .select({
@@ -89,7 +89,7 @@ export async function getEnrollFacts(
       })
       .from(entrant)
       .where(eq(entrant.competitionId, competitionId)),
-    dbOrTx.$count(heat, eq(heat.competitionId, competitionId)),
+    dbOrTx.$count(bracketMatch, eq(bracketMatch.competitionId, competitionId)),
     dbOrTx.$count(game, eq(game.competitionId, competitionId)),
     dbOrTx.$count(squad, eq(squad.competitionId, competitionId)),
     squadId === undefined || squadId === null
@@ -111,8 +111,8 @@ export async function getEnrollFacts(
             })
           : null,
       }) === null,
-    closed: found.finalizedAt !== null,
-    built: heats > 0,
+    closed: found.closedAt !== null,
+    built: matches > 0,
     hasGames: games > 0,
     entrantLimit: found.entrantLimit,
     entrantCount: entrants.length,

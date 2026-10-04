@@ -14,7 +14,7 @@ export type OpenUnscoredCompetition = {
 /**
  * A War Week's open Head-to-head or Best score Competitions with at least one Game, and open
  * `participation` Competitions with anyone marked (not closed:
- * `finalized_at` is null until Close sets it), by name. Used to warn when
+ * `closed_at` is null until Close sets it), by name. Used to warn when
  * ending a War Week with Competitions whose points aren't yet in the
  * Standings: they land only on Close.
  */
@@ -32,7 +32,7 @@ export async function getOpenUnscoredCompetitions(
     .where(
       and(
         eq(competition.warWeekId, warWeek.id),
-        isNull(competition.finalizedAt),
+        isNull(competition.closedAt),
         or(
           and(
             inArray(competition.format, [...GAME_FORMATS]),

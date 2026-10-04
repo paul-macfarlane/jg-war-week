@@ -458,7 +458,7 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
       // The action's check sees nothing scored...
       expect(await getScoredCounts(empty.id, tx)).toEqual({
         pointsEntries: 0,
-        heatResults: 0,
+        matchResults: 0,
         games: 0,
       });
       // ...then a Points Entry lands before the mutation locks the row.
@@ -497,25 +497,27 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
           scoring: "team",
         })
         .returning();
-      const [heat] = await tx
-        .insert(schema.heat)
+      const [match] = await tx
+        .insert(schema.bracketMatch)
         .values({ competitionId: cup.id, round: 1, position: 1 })
         .returning();
-      // A pending Heat isn't a result.
+      // A pending Match isn't a result.
       expect(await unstartWarWeek(ctxOf(live.id), tx)).toEqual({ ok: true });
       await tx
         .update(schema.warWeek)
         .set({ status: "live" })
         .where(eq(schema.warWeek.id, live.id));
       await tx
-        .update(schema.heat)
+        .update(schema.bracketMatch)
         .set({ status: "played" })
-        .where(eq(schema.heat.id, heat.id));
+        .where(eq(schema.bracketMatch.id, match.id));
       expect(await unstartWarWeek(ctxOf(live.id), tx)).toEqual({
         ok: false,
         error: "A Match has a result; Unstart isn't available.",
       });
-      await tx.delete(schema.heat).where(eq(schema.heat.id, heat.id));
+      await tx
+        .delete(schema.bracketMatch)
+        .where(eq(schema.bracketMatch.id, match.id));
       await tx.insert(schema.game).values({
         competitionId: cup.id,
         loggedByEmail: "lead@jahnelgroup.com",

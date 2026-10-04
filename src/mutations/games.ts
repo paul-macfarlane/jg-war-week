@@ -279,7 +279,7 @@ export async function setGamesSettings(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedGames(tx, competitionId, ctx);
     if (typeof found === "string") return refuse(found);
-    if (found.finalizedAt) return refuse(GAMES_CLOSED);
+    if (found.closedAt) return refuse(GAMES_CLOSED);
     const config = gamesConfigSchema(found.format).safeParse(input.gameConfig);
     if (!config.success) return refuse(GAME_FORMAT_FIXED);
 
@@ -337,7 +337,7 @@ export async function setGamesSettings(
 /**
  * Closes a Head-to-head or Best score Competition: its leaderboard's places become Placement
  * Points Entries (`pointsFor`, ties sharing a place's points, as when
- * finalizing a Bracket), marked generated and noted "From head-to-head" or "From best score", to the
+ * closing a Bracket), marked generated and noted "From head-to-head" or "From best score", to the
  * Team or the Participant by scoring; then no Game changes until Reopen.
  */
 export async function closeGames(
@@ -348,7 +348,7 @@ export async function closeGames(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedGames(tx, competitionId, ctx);
     if (typeof found === "string") return refuse(found);
-    if (found.finalizedAt) return refuse(ALREADY_CLOSED);
+    if (found.closedAt) return refuse(ALREADY_CLOSED);
 
     const rows = await getGamesLeaderboard(competitionId, tx);
     const awarded = pointsFor(placingsOf(rows), found);
@@ -362,13 +362,13 @@ export async function closeGames(
           points,
           note: generatedNote(found.format),
           enteredByEmail: ctx.actorEmail,
-          generatedByBracket: true,
+          generated: true,
         })),
       );
     }
     await tx
       .update(competition)
-      .set({ finalizedAt: sql`now()`, updatedAt: sql`now()` })
+      .set({ closedAt: sql`now()`, updatedAt: sql`now()` })
       .where(eq(competition.id, competitionId));
     return { ok: true };
   });
@@ -376,7 +376,7 @@ export async function closeGames(
 
 /**
  * Reopens a closed Head-to-head or Best score Competition: deletes its generated Points
- * Entries and clears `finalized_at`.
+ * Entries and clears `closed_at`.
  */
 export async function reopenGames(
   competitionId: string,
@@ -389,7 +389,7 @@ export async function reopenGames(
     await deleteGenerated(tx, competitionId);
     await tx
       .update(competition)
-      .set({ finalizedAt: null, updatedAt: sql`now()` })
+      .set({ closedAt: null, updatedAt: sql`now()` })
       .where(eq(competition.id, competitionId));
     return { ok: true };
   });

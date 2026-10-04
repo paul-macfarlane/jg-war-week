@@ -26,12 +26,12 @@ function expectedXiCounts(): Record<string, number> {
     readFileSync(path.resolve(process.cwd(), DEMO_SEED), "utf-8"),
   );
   const count = (list: unknown[] | undefined) => list?.length ?? 0;
-  // A Finalize writes one generated Points Entry per Placement row whose
+  // A Close writes one generated Points Entry per Placement row whose
   // place is within the Competition's Placement Points list (zero-point
   // entries included), on top of the Discretionary points.
   const pointsListLength = new Map<string, number>(
     seed.competitions
-      .filter((c: { finalized?: boolean }) => c.finalized)
+      .filter((c: { closed?: boolean }) => c.closed)
       .map((c: { name: string; placementPoints?: number[] }) => [
         c.name,
         c.placementPoints?.length ?? 0,

@@ -396,9 +396,9 @@ const seed = {
         "Log your steps all week. Every one of the hundred is on the sheet; the top ten take Placement Points.",
       scoreDirection: "higher",
       placementPoints: [10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
-      finalized: true,
-      finalizedAt: "2027-02-23T09:00:00-05:00",
-      finalizedByEmail: organizer,
+      closed: true,
+      closedAt: "2027-02-23T09:00:00-05:00",
+      closedByEmail: organizer,
     },
     {
       name: "Trivia Night",

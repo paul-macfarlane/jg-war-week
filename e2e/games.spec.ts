@@ -321,10 +321,10 @@ test("games: a Participant logs a head-to-head Game from home, the Host edits it
     await participantContext.close();
     // Whatever the flow reached: no Game, not closed, no generated entries.
     await runQuery(
-      `delete from points_entry where competition_id = $1 and generated_by_bracket`,
+      `delete from points_entry where competition_id = $1 and generated`,
       [id],
     );
-    await runQuery(`update competition set finalized_at = null where id = $1`, [
+    await runQuery(`update competition set closed_at = null where id = $1`, [
       id,
     ]);
     await runQuery(`delete from game where competition_id = $1`, [id]);

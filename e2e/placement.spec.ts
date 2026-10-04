@@ -16,8 +16,8 @@ import { teamTotal } from "./standings";
 // inserted into the live XI demo with the e2e Host as its Host. The Host
 // records six Participants with Scores (Places fill from them, a tie at
 // 2nd), breaks the tie, edits another row's Score (the tie-break stays),
-// and Finalizes: the Standings move by exactly the
-// Teams' points, Recent results shows the Finalize, Reopen withdraws them,
+// and Closes: the Standings move by exactly the
+// Teams' points, Recent results shows the Close, Reopen withdraws them,
 // and a Participant is refused the sheet. The sheet is the run area of the
 // Competition's page (ticket 101). The Competition is deleted after
 // (its rows and Points Entries cascade), so XI is unchanged for other specs.
@@ -174,7 +174,7 @@ test("r16 90 a Host records placements with Scores, breaks a tie and Closes: the
     await confirm.getByRole("button", { name: "Close" }).click();
     await expect(page.getByText("Competition closed")).toBeVisible();
     await expect(page.getByText("Closed: its Points Entries")).toBeVisible();
-    await shoot(page, testInfo, "sheet-finalized");
+    await shoot(page, testInfo, "sheet-closed");
 
     // The Standings move by exactly the Teams' points, matching SQL.
     const after = await breakdownTotals();
@@ -184,7 +184,7 @@ test("r16 90 a Host records placements with Scores, breaks a tie and Closes: the
     });
     expect(await leaderboardTotals(page)).toEqual(after);
 
-    // Recent results shows the Finalize with its winner.
+    // Recent results shows the Close with its winner.
     await page.goto("/xi");
     const recent = page
       .locator("section")
@@ -197,7 +197,7 @@ test("r16 90 a Host records placements with Scores, breaks a tie and Closes: the
     await shoot(page, testInfo, "recent-results");
 
     // The Participant page's results table lists the Placements by place:
-    // Rank, Score and the points Finalize wrote, the Winner first.
+    // Rank, Score and the points Close wrote, the Winner first.
     await page.goto(`/xi/competitions/${id}`);
     const results = page
       .getByRole("region", { name: "Placements" })

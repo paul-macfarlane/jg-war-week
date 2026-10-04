@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 /**
  * The Organizer's way into the Finale, its slide list (order and hidden
  * slides; Organizers change it, Hosts see it), how it shows Awards (the
- * Awards layout, likewise), and each finalized Bracket's
+ * Awards layout, likewise), and each closed Bracket's
  * Bracket Finale ("Finale: <Competition>").
  */
 export default async function AdminFinalePage() {
@@ -35,8 +35,8 @@ export default async function AdminFinalePage() {
     getBracketCompetitions(warWeek),
     getFinaleSlides(warWeek.id),
   ]);
-  const finalized = competitions.filter(
-    (competition) => competition.finalizedAt !== null,
+  const closed = competitions.filter(
+    (competition) => competition.closedAt !== null,
   );
 
   return (
@@ -112,14 +112,14 @@ export default async function AdminFinalePage() {
         </section>
         <section className="flex flex-col gap-2">
           <h2 className="text-lg font-semibold">Bracket Finales</h2>
-          {finalized.length === 0 ? (
+          {closed.length === 0 ? (
             <p className="text-foreground/70 text-sm">
               Each closed Bracket gets its own Finale, counting its placings in
               to the Winner. None is closed yet.
             </p>
           ) : (
             <ul className="flex flex-wrap gap-2">
-              {finalized.map((competition) => (
+              {closed.map((competition) => (
                 <li key={competition.id}>
                   <Link
                     href={`/${edition}/finale/${competition.id}`}

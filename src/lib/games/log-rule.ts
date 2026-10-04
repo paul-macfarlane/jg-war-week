@@ -4,7 +4,7 @@
  * the Bracket engine: `src/lib/access.ts` imports it, and that module
  * reaches the client bundle.
  */
-import { NOT_LINKED } from "@/lib/bracket/heat-report-rule";
+import { NOT_LINKED } from "@/lib/bracket/match-report-rule";
 import type { GameFormat } from "@/lib/enums";
 
 export { NOT_LINKED };
@@ -20,7 +20,7 @@ export type GameSide = { teamId: string | null; participantId: string | null };
  * What `can("games.log" | "games.edit" | "games.delete", …)` checks:
  * - `runs`: the actor is an Organizer or a Host of this Competition
  *   (loaded by the caller, never `hostsIn`).
- * - `closed`: the Competition is closed (`finalized_at` set).
+ * - `closed`: the Competition is closed (`closed_at` set).
  * - `loggingOpen`: before `logging_closes_at` (or none) and no Best of
  *   decided; `bestOfDecided` says which of the two closed it.
  * - `linked`: the Participant the actor's email links to, with their Team.

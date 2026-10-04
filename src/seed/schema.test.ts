@@ -241,7 +241,7 @@ describe("warWeekSeedSchema", () => {
     });
 
     it("rejects the retired Format names", () => {
-      for (const format of ["single-elimination", "heats"]) {
+      for (const format of ["single-elimination", "matches"]) {
         expect(
           warWeekSeedSchema.safeParse(
             withCompetition({ format, bracketConfig: full }),
@@ -642,9 +642,9 @@ describe("warWeekSeedSchema Placements", () => {
         scoring: "individual",
         placementPoints: [10, 6, 3],
         scoreDirection: "higher",
-        finalized: true,
-        finalizedAt: "2099-01-03T18:00:00.000Z",
-        finalizedByEmail: "host@jahnelgroup.com",
+        closed: true,
+        closedAt: "2099-01-03T18:00:00.000Z",
+        closedByEmail: "host@jahnelgroup.com",
       },
       { name: "Quiz", scoring: "team" },
       { name: "Pong", scoring: "individual", format: "head-to-head" },
@@ -672,17 +672,17 @@ describe("warWeekSeedSchema Placements", () => {
     expect(seed.placements).toHaveLength(2);
     expect(seed.competitions[0]).toMatchObject({
       scoreDirection: "higher",
-      finalized: true,
+      closed: true,
     });
   });
 
-  it("requires finalizedAt and finalizedByEmail with finalized, and only on a Placement Competition", () => {
+  it("requires closedAt and closedByEmail with closed, and only on a Placement Competition", () => {
     const [darts, quiz, pong] = base().competitions;
-    const withoutEmail = { ...darts, finalizedByEmail: undefined };
+    const withoutEmail = { ...darts, closedByEmail: undefined };
     expect(
       rejectionOf({ ...base(), competitions: [withoutEmail, quiz, pong] }),
     ).toEqual([
-      "competitions.0.finalized: finalized needs finalizedAt and finalizedByEmail together",
+      "competitions.0.closed: closed needs closedAt and closedByEmail together",
     ]);
     expect(
       rejectionOf({
@@ -693,15 +693,15 @@ describe("warWeekSeedSchema Placements", () => {
           {
             ...pong,
             scoreDirection: "lower",
-            finalized: true,
-            finalizedAt: darts.finalizedAt,
-            finalizedByEmail: darts.finalizedByEmail,
+            closed: true,
+            closedAt: darts.closedAt,
+            closedByEmail: darts.closedByEmail,
           },
         ],
       }),
     ).toEqual([
       "competitions.2.scoreDirection: scoreDirection is only for a placement Competition",
-      "competitions.2.finalized: finalized is only for a placement Competition",
+      "competitions.2.closed: closed is only for a placement Competition",
     ]);
   });
 

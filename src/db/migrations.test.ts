@@ -442,16 +442,16 @@ describe.skipIf(!isLocalDatabase)(
               const applied = await client.query(
                 "select count(*)::int as n from drizzle.__drizzle_migrations",
               );
-              expect(applied.rows[0].n).toBe(31);
+              expect(applied.rows[0].n).toBe(32);
 
               const brackets = await client.query(
                 `select id, format::text as format, bracket_config,
-                  placement_points, finalized_at,
-                  (select count(*)::int from heat
+                  placement_points, closed_at,
+                  (select count(*)::int from bracket_match
                     where competition_id = competition.id) as heats,
                   (select count(*)::int from points_entry
                     where competition_id = competition.id
-                      and generated_by_bracket) as generated
+                      and generated) as generated
                 from competition order by name`,
               );
               expect(brackets.rows).toEqual([
@@ -464,7 +464,7 @@ describe.skipIf(!isLocalDatabase)(
                     thirdPlaceGame: false,
                   },
                   placement_points: [9, 7, 5, 3],
-                  finalized_at: null,
+                  closed_at: null,
                   heats: 0,
                   generated: 0,
                 },
@@ -477,7 +477,7 @@ describe.skipIf(!isLocalDatabase)(
                     thirdPlaceGame: false,
                   },
                   placement_points: [5, 3],
-                  finalized_at: null,
+                  closed_at: null,
                   heats: 0,
                   generated: 0,
                 },
@@ -488,7 +488,7 @@ describe.skipIf(!isLocalDatabase)(
               expect(kept.rows).toEqual([{ note: "Good sport" }]);
 
               const heatEntrants = await client.query(
-                "select count(*)::int as n from heat_entrant",
+                "select count(*)::int as n from bracket_match_entrant",
               );
               expect(heatEntrants.rows[0].n).toBe(0);
 
@@ -503,7 +503,7 @@ describe.skipIf(!isLocalDatabase)(
                 "participation",
               ]);
               const statuses = await client.query<{ value: string }>(
-                `select unnest(enum_range(null::heat_status))::text as value`,
+                `select unnest(enum_range(null::bracket_match_status))::text as value`,
               );
               expect(statuses.rows.map((r) => r.value)).toEqual([
                 "pending",
@@ -517,10 +517,10 @@ describe.skipIf(!isLocalDatabase)(
               }>(
                 `select table_name, column_name from information_schema.columns
                 where table_schema = 'public'
-                  and table_name in ('heat', 'heat_entrant')`,
+                  and table_name in ('bracket_match', 'bracket_match_entrant')`,
               );
               const heatColumns = columns.rows
-                .filter((r) => r.table_name === "heat")
+                .filter((r) => r.table_name === "bracket_match")
                 .map((r) => r.column_name);
               expect(heatColumns).not.toContain("day_id");
               expect(heatColumns).not.toContain("start_time");
@@ -528,14 +528,14 @@ describe.skipIf(!isLocalDatabase)(
               expect(heatColumns).toEqual(
                 expect.arrayContaining([
                   "recorded_at",
-                  "loser_to_heat_id",
+                  "loser_to_match_id",
                   "loser_to_slot",
                   "third_place",
                 ]),
               );
               expect(
                 columns.rows
-                  .filter((r) => r.table_name === "heat_entrant")
+                  .filter((r) => r.table_name === "bracket_match_entrant")
                   .map((r) => r.column_name),
               ).not.toContain("forfeited");
             } finally {
@@ -594,7 +594,7 @@ describe.skipIf(!isLocalDatabase)(
               const applied = await client.query(
                 "select count(*)::int as n from drizzle.__drizzle_migrations",
               );
-              expect(applied.rows[0].n).toBe(31);
+              expect(applied.rows[0].n).toBe(32);
               const after = await client.query(
                 `select id, description is null as cleared,
                   pg_typeof(description)::text as type

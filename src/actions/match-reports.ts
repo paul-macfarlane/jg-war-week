@@ -3,28 +3,28 @@
 import type { MatchResultActionResult } from "@/actions/brackets";
 import { guarded } from "@/actions/result";
 import { revalidateWarWeek } from "@/actions/revalidate";
-import { authorizeHeatReport } from "@/auth/authorize";
-import { parseHeatResultInput } from "@/lib/bracket/input";
-import * as mutations from "@/mutations/heat-reports";
+import { authorizeMatchReport } from "@/auth/authorize";
+import { parseMatchResultInput } from "@/lib/bracket/input";
+import * as mutations from "@/mutations/match-reports";
 
 /**
- * A linked Participant reports their own Heat's result (ADR 0005). Checks
- * who's asking and the Heat's facts first, so a refusal wins over malformed
+ * A linked Participant reports their own Match's result (ADR 0005). Checks
+ * who's asking and the Match's facts first, so a refusal wins over malformed
  * input; the mutation checks the facts again under the Competition's lock.
  */
-export async function reportHeatResult(
+export async function reportMatchResult(
   competitionId: string,
-  heatId: string,
+  matchId: string,
   input: unknown,
 ): Promise<MatchResultActionResult> {
   return guarded(async () => {
-    const authorized = await authorizeHeatReport(competitionId, heatId);
+    const authorized = await authorizeMatchReport(competitionId, matchId);
     if (!authorized.ok) return authorized;
-    const parsed = parseHeatResultInput(input);
+    const parsed = parseMatchResultInput(input);
     if (!parsed.ok) return parsed;
-    const result = await mutations.submitHeatReport(
+    const result = await mutations.submitMatchReport(
       competitionId,
-      heatId,
+      matchId,
       parsed.value,
       authorized.ctx,
     );

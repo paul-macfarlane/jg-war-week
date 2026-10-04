@@ -155,7 +155,7 @@ export const warWeekSeedSchema = z
     pointsEntries: z
       .never({
         error:
-          "pointsEntries is gone; use placements (with finalized) or discretionaryPoints",
+          "pointsEntries is gone; use placements (with closed) or discretionaryPoints",
       })
       .optional(),
     discretionaryPoints: z.array(discretionaryPointsSeedSchema).default([]),

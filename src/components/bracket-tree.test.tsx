@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 import { applyResult, generate } from "@/lib/bracket/engine";
 import * as formats from "@/lib/bracket/formats";
-import { heats } from "@/lib/bracket/heats";
+import { matches } from "@/lib/bracket/groups";
 import type { Entrant } from "@/lib/bracket/types";
 
 import { BracketTree } from "./bracket-tree";
@@ -64,7 +64,7 @@ describe("BracketTree's Record result buttons", () => {
   });
 
   it("shows a solid Record result only on the Matches the viewer may record", () => {
-    const html = tree({ recordableHeatIds: ["r1h2"], onRecord: () => {} });
+    const html = tree({ recordableMatchIds: ["r1h2"], onRecord: () => {} });
     expect(buttonNames(html)).toEqual(["Record result for Semifinal 2"]);
     const button = html.match(/<button[^>]*>Record result<\/button>/)?.[0];
     // The solid primary variant (87's rule), not a ghost overlay.
@@ -74,7 +74,7 @@ describe("BracketTree's Record result buttons", () => {
   it("offers Edit on a played Match the viewer may record", () => {
     const played = applyResult(three, "r1h2", { order: ["e2", "e3"] });
     const html = tree(
-      { recordableHeatIds: ["r1h2", "r2h1"], onRecord: () => {} },
+      { recordableMatchIds: ["r1h2", "r2h1"], onRecord: () => {} },
       played,
     );
     expect(buttonNames(html)).toEqual([
@@ -138,22 +138,22 @@ describe("BracketTree's layout", () => {
       label: `Entrant ${i + 1}`,
     }));
     const byId = new Map(eight.map((e) => [e.id, entrant(e.id, e.label)]));
-    let bracket = heats.generate(
+    let bracket = matches.generate(
       { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
       eight,
       (round, position) => `r${round}h${position}`,
     );
     const play = (id: string) => {
-      const heat = bracket.heats.find((h) => h.id === id)!;
-      bracket = heats.applyResult(bracket, id, {
-        order: heat.slots.map((s) => s.entrantId!),
+      const match = bracket.matches.find((h) => h.id === id)!;
+      bracket = matches.applyResult(bracket, id, {
+        order: match.slots.map((s) => s.entrantId!),
         scores: {},
       });
     };
-    /** The place numbers of the rows marked as advancing in Heat `name`. */
+    /** The place numbers of the rows marked as advancing in Match `name`. */
     const advancing = (name: string) => {
       const html = tree({}, bracket, byId);
-      // The Heat's box: from its (last) label to the next group.
+      // The Match's box: from its (last) label to the next group.
       const box = html
         .split(`aria-label="${name}"`)
         .at(-1)!
@@ -189,7 +189,7 @@ describe("BracketTree's 3rd place Match", () => {
       ["r2h1", "A"],
       ["r2h2", "D"],
     ]) {
-      const others = bracket.heats
+      const others = bracket.matches
         .find((h) => h.id === id)!
         .slots.map((s) => s.entrantId!)
         .filter((e) => e !== winner);
@@ -202,7 +202,7 @@ describe("BracketTree's 3rd place Match", () => {
       bracket,
       new Map(four.map((e) => [e.id, entrant(e.id, e.label)])),
     );
-    /** The screen-reader notes in Heat `name`'s box. */
+    /** The screen-reader notes in Match `name`'s box. */
     const notes = (name: string) =>
       [
         ...html

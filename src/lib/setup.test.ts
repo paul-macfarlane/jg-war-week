@@ -726,7 +726,7 @@ describe("competitionGuardError", () => {
     scoring: "team" as const,
     placementPoints: [5, 3, 1] as number[] | null,
     pointsEntryCount: 0,
-    finalizedAt: null as Date | null,
+    closedAt: null as Date | null,
   };
 
   it("refuses more than 4 places for a Bracket, on create and on edit, but not for Placement", () => {
@@ -786,26 +786,26 @@ describe("competitionGuardError", () => {
   });
 
   it("refuses a scoring change while the Bracket is closed, but allows a Placement Points change (it applies at the next Close)", () => {
-    const finalized = { ...existingBase, finalizedAt: new Date() };
+    const closed = { ...existingBase, closedAt: new Date() };
     expect(
       competitionGuardError(values, {
         ...ctx,
-        existing: { ...finalized, scoring: "individual" },
+        existing: { ...closed, scoring: "individual" },
       }),
     ).toBe("This Competition's Bracket is closed. Reopen the Bracket first.");
     expect(
       competitionGuardError(
         { ...values, placementPoints: [10, 5] },
-        { ...ctx, existing: finalized },
+        { ...ctx, existing: closed },
       ),
     ).toBeNull();
     expect(
-      competitionGuardError(values, { ...ctx, existing: finalized }),
+      competitionGuardError(values, { ...ctx, existing: closed }),
     ).toBeNull();
     expect(
       competitionGuardError(
         { ...values, placementPoints: null },
-        { ...ctx, existing: { ...finalized, placementPoints: [] } },
+        { ...ctx, existing: { ...closed, placementPoints: [] } },
       ),
     ).toBeNull();
   });
@@ -814,7 +814,7 @@ describe("competitionGuardError", () => {
     const closed = {
       ...existingBase,
       format: "head-to-head" as const,
-      finalizedAt: new Date(),
+      closedAt: new Date(),
     };
     expect(
       competitionGuardError(values, {
@@ -831,15 +831,15 @@ describe("competitionGuardError", () => {
   });
 
   it("asks to reopen a Closed Placement, or the Closed Bracket, before a scoring change", () => {
-    const finalized = {
+    const closed = {
       ...existingBase,
       format: "placement" as const,
-      finalizedAt: new Date(),
+      closedAt: new Date(),
     };
     expect(
       competitionGuardError(values, {
         ...ctx,
-        existing: { ...finalized, scoring: "individual" },
+        existing: { ...closed, scoring: "individual" },
       }),
     ).toBe("This Competition is closed. Reopen it first.");
   });

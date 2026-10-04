@@ -320,7 +320,7 @@ async function syncCompetitions(
       entrantsOpen: c.entrantsOpen ?? false,
       // Placement only (the seed schema); like `format`, set on insert only.
       scoreDirection: c.scoreDirection ?? "none",
-      finalizedAt: c.finalizedAt ? new Date(c.finalizedAt) : null,
+      closedAt: c.closedAt ? new Date(c.closedAt) : null,
       ...(c.format === "participation"
         ? {
             participationPoints:
@@ -347,10 +347,10 @@ async function syncCompetitions(
         then null
         else coalesce(${competition.participationPoints}, excluded.participation_points) end`,
       // `format`, `bracketConfig`, `gameConfig`, `entrantsOpen`, the Score
-      // direction, a seeded Finalize and the other Participation settings
+      // direction, a seeded Close and the other Participation settings
       // are set on insert only: a reload must
       // never turn an Organizer's Bracket back into `placement` or undo its
-      // Heats, Games or Participation settings.
+      // Matches, Games or Participation settings.
       updatedAt: new Date(),
     },
     scope: eq(competition.warWeekId, warWeekId),
@@ -507,10 +507,10 @@ async function insertDiscretionaryPoints(
 /**
  * Inserts the seed's Placements, each only if absent (by any of the
  * sheet's unique keys, `seed_key` among them), never updating one. Then,
- * for a Competition seeded Finalized that is still Finalized and has no
- * generated Points Entries yet, writes them as Finalize does, at the seed's
+ * for a Competition seeded Closed that is still Closed and has no
+ * generated Points Entries yet, writes them as Close does, at the seed's
  * time and author, keyed `placement:<placement key>`: so a reload, or a
- * Host's Reopen or re-Finalize, is never doubled or undone.
+ * Host's Reopen or re-Close, is never doubled or undone.
  */
 async function insertPlacements(
   tx: DBTx,
@@ -536,31 +536,31 @@ async function insertPlacements(
       .onConflictDoNothing();
   }
   for (const c of seed.competitions) {
-    if (!c.finalized || !c.finalizedAt || !c.finalizedByEmail) continue;
+    if (!c.closed || !c.closedAt || !c.closedByEmail) continue;
     const competitionId = resolve(competitionIds, c.name);
     const [found] = await tx
       .select({
         id: competition.id,
         warWeekId: competition.warWeekId,
         placementPoints: competition.placementPoints,
-        finalizedAt: competition.finalizedAt,
+        closedAt: competition.closedAt,
       })
       .from(competition)
       .where(eq(competition.id, competitionId));
-    if (!found.finalizedAt) continue;
+    if (!found.closedAt) continue;
     const generated = await tx.$count(
       pointsEntry,
       and(
         eq(pointsEntry.competitionId, competitionId),
-        eq(pointsEntry.generatedByBracket, true),
+        eq(pointsEntry.generated, true),
       ),
     );
     if (generated > 0) continue;
     const rows = await getPlacementRows(found, tx);
     const seedKeys = new Map(rows.map((r) => [r.id, r.seedKey]));
     const values = placementEntryValues(rows, found, {
-      actorEmail: c.finalizedByEmail,
-      enteredAt: new Date(c.finalizedAt),
+      actorEmail: c.closedByEmail,
+      enteredAt: new Date(c.closedAt),
       seedKeyOf: (rowId) => {
         const key = seedKeys.get(rowId);
         return key ? `placement:${key}` : null;

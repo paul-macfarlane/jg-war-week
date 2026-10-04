@@ -54,7 +54,7 @@ async function lockedParticipation(
       scoring: competition.scoring,
       placementPoints: competition.placementPoints,
       participationPoints: competition.participationPoints,
-      finalizedAt: competition.finalizedAt,
+      closedAt: competition.closedAt,
       teamLabel: warWeek.teamLabel,
     })
     .from(competition)
@@ -85,7 +85,7 @@ export async function setParticipationSettings(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedParticipation(tx, competitionId, ctx);
     if (typeof found === "string") return refuse(found);
-    if (found.finalizedAt) return refuse(GAMES_CLOSED);
+    if (found.closedAt) return refuse(GAMES_CLOSED);
     const individual = found.scoring === "individual";
     if (individual) {
       if (input.placementPoints) return refuse(INDIVIDUAL_NO_PLACEMENT_POINTS);
@@ -126,7 +126,7 @@ export async function markParticipant(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedParticipation(tx, competitionId, ctx);
     if (typeof found === "string") return refuse(found);
-    if (found.finalizedAt) return refuse(GAMES_CLOSED);
+    if (found.closedAt) return refuse(GAMES_CLOSED);
     const [who] = await tx
       .select({ teamId: participant.teamId })
       .from(participant)
@@ -166,7 +166,7 @@ export async function unmarkParticipant(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedParticipation(tx, competitionId, ctx);
     if (typeof found === "string") return refuse(found);
-    if (found.finalizedAt) return refuse(GAMES_CLOSED);
+    if (found.closedAt) return refuse(GAMES_CLOSED);
     await tx
       .delete(participation)
       .where(
@@ -253,7 +253,7 @@ export async function closeParticipation(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedParticipation(tx, competitionId, ctx);
     if (typeof found === "string") return refuse(found);
-    if (found.finalizedAt) return refuse(ALREADY_CLOSED);
+    if (found.closedAt) return refuse(ALREADY_CLOSED);
 
     const tookPart = await tx
       .select({
@@ -275,13 +275,13 @@ export async function closeParticipation(
           points,
           note: generatedNote("participation"),
           enteredByEmail: ctx.actorEmail,
-          generatedByBracket: true,
+          generated: true,
         })),
       );
     }
     await tx
       .update(competition)
-      .set({ finalizedAt: sql`now()`, updatedAt: sql`now()` })
+      .set({ closedAt: sql`now()`, updatedAt: sql`now()` })
       .where(eq(competition.id, competitionId));
     return { ok: true };
   });
@@ -289,7 +289,7 @@ export async function closeParticipation(
 
 /**
  * Reopens a `participation` Competition: deletes its generated Points
- * Entries and clears `finalized_at`.
+ * Entries and clears `closed_at`.
  */
 export async function reopenParticipation(
   competitionId: string,
@@ -302,7 +302,7 @@ export async function reopenParticipation(
     await deleteGenerated(tx, competitionId);
     await tx
       .update(competition)
-      .set({ finalizedAt: null, updatedAt: sql`now()` })
+      .set({ closedAt: null, updatedAt: sql`now()` })
       .where(eq(competition.id, competitionId));
     return { ok: true };
   });

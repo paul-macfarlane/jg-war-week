@@ -48,8 +48,8 @@ const OPEN: CompetitionLockFacts = {
   format: "placement",
   hasResult: false,
   hasGame: false,
-  hasHeatResult: false,
-  finalized: false,
+  hasMatchResult: false,
+  closed: false,
 };
 
 function render(
@@ -105,7 +105,7 @@ describe("CompetitionSettingsForm", () => {
   it("says a Placement Points change while Closed applies at the next Close, and locks the rest", () => {
     const html = render(
       {},
-      { facts: { ...OPEN, hasResult: true, finalized: true } },
+      { facts: { ...OPEN, hasResult: true, closed: true } },
     );
     expect(html).toContain(APPLIES_AT_NEXT_CLOSE);
     expect(html).toContain(LOCKED_BY_RESULT);
@@ -115,11 +115,11 @@ describe("CompetitionSettingsForm", () => {
     const bracket = { format: "bracket" as const, selfEnroll: true };
     const open = render(bracket, { facts: { ...OPEN, hasResult: true } });
     expect(control(open, "competition-selfEnroll")).not.toMatch(DISABLED);
-    const finalized = render(bracket, {
-      facts: { ...OPEN, hasResult: true, hasHeatResult: true, finalized: true },
+    const closed = render(bracket, {
+      facts: { ...OPEN, hasResult: true, hasMatchResult: true, closed: true },
     });
-    expect(control(finalized, "competition-selfEnroll")).toMatch(DISABLED);
-    expect(finalized).toContain(LOCKED_WHILE_CLOSED);
+    expect(control(closed, "competition-selfEnroll")).toMatch(DISABLED);
+    expect(closed).toContain(LOCKED_WHILE_CLOSED);
   });
 
   it("leaves a Head-to-head Competition's Best of open with Entrants, and locks it with the Game reason once it has a Game", () => {
@@ -227,7 +227,7 @@ describe("CompetitionSettingsForm", () => {
             ...OPEN,
             format: "bracket",
             hasResult: true,
-            hasHeatResult: true,
+            hasMatchResult: true,
           },
         },
       );

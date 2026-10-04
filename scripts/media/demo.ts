@@ -3,7 +3,7 @@
  * `scripts/finale-stills.ts`): their own production server, plain SQL on
  * `DATABASE_URL` (importing the app's database would keep a pool open), a
  * signed session cookie for a made-up user, the Display a page opens in,
- * and a finished Heats Bracket on a demo War Week.
+ * and a finished Matches Bracket on a demo War Week.
  */
 import { makeSignature } from "better-auth/crypto";
 import { spawn } from "node:child_process";
@@ -131,14 +131,14 @@ export async function createDemoSession(
 const BRACKET_COMP_NAME = "Capture the Flag";
 
 /**
- * Fills a small, already-finished Heats Bracket on `warWeek` (8
- * Participant Entrants, 4 per Heat with the top 2 advancing, two Round 1
- * Heats and a decided Final) directly in SQL: its Entrants at Seed
- * Positions 1–8, and each Heat with its slots and places. It uses the
- * demo's own seeded heats Competition when it has one with no Entrants yet
+ * Fills a small, already-finished Matches Bracket on `warWeek` (8
+ * Participant Entrants, 4 per Match with the top 2 advancing, two Round 1
+ * Matches and a decided Final) directly in SQL: its Entrants at Seed
+ * Positions 1–8, and each Match with its slots and places. It uses the
+ * demo's own seeded matches Competition when it has one with no Entrants yet
  * (seeds can't seed Entrants), else adds a Competition of its own. Returns
  * the Competition and the undo: delete the added Competition (which cascades
- * its Entrants and Heats), or the seeded one's Heats and Entrants.
+ * its Entrants and Matches), or the seeded one's Matches and Entrants.
  */
 export async function setupBracketDemo(
   warWeek: DemoWarWeek,
@@ -169,7 +169,7 @@ export async function setupBracketDemo(
     )[0].id;
   const teardown = seeded
     ? async () => {
-        await query(`delete from heat where competition_id = $1`, [
+        await query(`delete from bracket_match where competition_id = $1`, [
           competitionId,
         ]);
         await query(`delete from entrant where competition_id = $1`, [
@@ -199,32 +199,32 @@ export async function setupBracketDemo(
       entrantIds.push(entrant.id);
     }
     const [e1, e2, e3, e4, e5, e6, e7, e8] = entrantIds;
-    const [finalHeat] = await query<{ id: string }>(
-      `insert into heat (competition_id, round, position, status, slot_count)
+    const [finalMatch] = await query<{ id: string }>(
+      `insert into bracket_match (competition_id, round, position, status, slot_count)
        values ($1, 2, 1, 'played', 4) returning id`,
       [competitionId],
     );
-    const [heatA] = await query<{ id: string }>(
-      `insert into heat (competition_id, round, position, status, slot_count)
+    const [matchA] = await query<{ id: string }>(
+      `insert into bracket_match (competition_id, round, position, status, slot_count)
        values ($1, 1, 1, 'played', 4) returning id`,
       [competitionId],
     );
-    const [heatB] = await query<{ id: string }>(
-      `insert into heat (competition_id, round, position, status, slot_count)
+    const [matchB] = await query<{ id: string }>(
+      `insert into bracket_match (competition_id, round, position, status, slot_count)
        values ($1, 1, 2, 'played', 4) returning id`,
       [competitionId],
     );
     await query(
-      `insert into heat_entrant (heat_id, entrant_id, slot, place) values
+      `insert into bracket_match_entrant (bracket_match_id, entrant_id, slot, place) values
          ($1, $2, 0, 1), ($1, $3, 1, 2), ($1, $4, 2, 3), ($1, $5, 3, 4),
          ($6, $7, 0, 1), ($6, $8, 1, 2), ($6, $9, 2, 3), ($6, $10, 3, 4),
          ($11, $2, 0, 1), ($11, $7, 1, 2), ($11, $3, 2, 3), ($11, $8, 3, 4)`,
-      [heatA.id, e1, e2, e3, e4, heatB.id, e5, e6, e7, e8, finalHeat.id],
+      [matchA.id, e1, e2, e3, e4, matchB.id, e5, e6, e7, e8, finalMatch.id],
     );
-    // Every played Heat was recorded, so the still shows "Recorded <time>"
+    // Every played Match was recorded, so the still shows "Recorded <time>"
     // on its card.
     await query(
-      `update heat set recorded_at = '2026-02-21T19:00:00-05:00'
+      `update bracket_match set recorded_at = '2026-02-21T19:00:00-05:00'
        where competition_id = $1`,
       [competitionId],
     );

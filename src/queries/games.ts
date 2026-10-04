@@ -96,7 +96,7 @@ async function loadGamesCompetition(
       gameConfig: competition.gameConfig,
       entrantsOpen: competition.entrantsOpen,
       loggingClosesAt: competition.loggingClosesAt,
-      finalizedAt: competition.finalizedAt,
+      closedAt: competition.closedAt,
       placementPoints: competition.placementPoints,
       selfEnroll: competition.selfEnroll,
       entrantLimit: competition.entrantLimit,
@@ -118,7 +118,7 @@ async function loadGamesCompetition(
     }),
     entrantsOpen: found.entrantsOpen,
     loggingClosesAt: found.loggingClosesAt,
-    closed: found.finalizedAt !== null,
+    closed: found.closedAt !== null,
     placementPoints: found.placementPoints,
     selfEnroll: found.selfEnroll,
     entrantLimit: found.entrantLimit,
@@ -590,7 +590,7 @@ export async function getLoggableCompetitions(
         and(
           eq(competition.warWeekId, warWeekId),
           inArray(competition.format, [...GAME_FORMATS]),
-          isNull(competition.finalizedAt),
+          isNull(competition.closedAt),
         ),
       )
       .orderBy(asc(competition.name))
@@ -634,7 +634,7 @@ export async function getGamesCompetitions(
       id: competition.id,
       name: competition.name,
       format: competition.format,
-      finalizedAt: competition.finalizedAt,
+      closedAt: competition.closedAt,
     })
     .from(competition)
     .where(

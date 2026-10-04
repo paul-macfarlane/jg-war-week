@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  type HeatReportFacet,
-  heatReportError,
-} from "@/lib/bracket/heat-report-rule";
+  type MatchReportFacet,
+  matchReportError,
+} from "@/lib/bracket/match-report-rule";
 
 const RED = "team-red";
 const BLUE = "team-blue";
@@ -11,10 +11,10 @@ const ASHLEY = "participant-ashley";
 const RED_ALPHA = "squad-red-alpha";
 const RED_BRAVO = "squad-red-bravo";
 
-/** An open Heat, Red vs Blue, self-report on, Ashley (Red) signed in. */
-const facet = (over: Partial<HeatReportFacet> = {}): HeatReportFacet => ({
+/** An open Match, Red vs Blue, self-report on, Ashley (Red) signed in. */
+const facet = (over: Partial<MatchReportFacet> = {}): MatchReportFacet => ({
   selfReport: true,
-  heat: "open",
+  match: "open",
   linked: { participantId: ASHLEY, teamId: RED, squadId: null },
   entrants: [
     { teamId: RED, participantId: null, squadId: null },
@@ -23,14 +23,14 @@ const facet = (over: Partial<HeatReportFacet> = {}): HeatReportFacet => ({
   ...over,
 });
 
-describe("heatReportError", () => {
+describe("matchReportError", () => {
   it("allows a linked Participant whose Team is in an open Match", () => {
-    expect(heatReportError(facet())).toBeNull();
+    expect(matchReportError(facet())).toBeNull();
   });
 
   it("allows a linked Participant who is the Entrant", () => {
     expect(
-      heatReportError(
+      matchReportError(
         facet({
           linked: { participantId: ASHLEY, teamId: null, squadId: null },
           entrants: [
@@ -44,7 +44,7 @@ describe("heatReportError", () => {
 
   it("allows a linked Participant through their Squad", () => {
     expect(
-      heatReportError(
+      matchReportError(
         facet({
           linked: { participantId: ASHLEY, teamId: RED, squadId: RED_ALPHA },
           entrants: [
@@ -57,26 +57,26 @@ describe("heatReportError", () => {
   });
 
   it("refuses when self-report is off", () => {
-    expect(heatReportError(facet({ selfReport: false }))).toBe(
+    expect(matchReportError(facet({ selfReport: false }))).toBe(
       "Self-report is off for this Competition.",
     );
   });
 
   it("refuses a sign-in that links to no Participant", () => {
-    expect(heatReportError(facet({ linked: null }))).toBe(
+    expect(matchReportError(facet({ linked: null }))).toBe(
       "Your sign-in doesn't match a Participant of this War Week.",
     );
   });
 
   it("refuses a Match that no longer exists", () => {
-    expect(heatReportError(facet({ heat: "missing", entrants: [] }))).toBe(
+    expect(matchReportError(facet({ match: "missing", entrants: [] }))).toBe(
       "That Match no longer exists.",
     );
   });
 
   it("refuses a Participant on none of the Match's Entrants", () => {
     expect(
-      heatReportError(
+      matchReportError(
         facet({
           linked: { participantId: ASHLEY, teamId: "team-gold", squadId: null },
         }),
@@ -86,7 +86,7 @@ describe("heatReportError", () => {
 
   it("refuses a Participant without a Team when neither Entrant has one", () => {
     expect(
-      heatReportError(
+      matchReportError(
         facet({
           linked: { participantId: ASHLEY, teamId: null, squadId: null },
           entrants: [
@@ -100,7 +100,7 @@ describe("heatReportError", () => {
 
   it("refuses a Red Participant in neither Squad of a Red Alpha vs Red Bravo Match", () => {
     expect(
-      heatReportError(
+      matchReportError(
         facet({
           linked: { participantId: ASHLEY, teamId: RED, squadId: null },
           entrants: [
@@ -113,28 +113,30 @@ describe("heatReportError", () => {
   });
 
   it("refuses a bye", () => {
-    expect(heatReportError(facet({ heat: "bye" }))).toBe("A bye isn't played.");
+    expect(matchReportError(facet({ match: "bye" }))).toBe(
+      "A bye isn't played.",
+    );
   });
 
   it("refuses a Match still waiting for its Entrants", () => {
-    expect(heatReportError(facet({ heat: "unfilled" }))).toBe(
+    expect(matchReportError(facet({ match: "unfilled" }))).toBe(
       "This Match is still waiting for its Entrants.",
     );
   });
 
   it("refuses a Match that already has a result", () => {
-    expect(heatReportError(facet({ heat: "decided" }))).toBe(
+    expect(matchReportError(facet({ match: "decided" }))).toBe(
       "This Match already has a result.",
     );
   });
 
   it("checks self-report before the sign-in link, and the link before the Match", () => {
     expect(
-      heatReportError(
-        facet({ selfReport: false, linked: null, heat: "missing" }),
+      matchReportError(
+        facet({ selfReport: false, linked: null, match: "missing" }),
       ),
     ).toBe("Self-report is off for this Competition.");
-    expect(heatReportError(facet({ linked: null, heat: "decided" }))).toBe(
+    expect(matchReportError(facet({ linked: null, match: "decided" }))).toBe(
       "Your sign-in doesn't match a Participant of this War Week.",
     );
   });

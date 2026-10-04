@@ -1,17 +1,17 @@
 /**
  * The Placement Format's rules (CONTEXT.md, Placement): Places from Scores
  * by the Score direction, points by Place from the Placement Points, and
- * what Finalize refuses. Pure, so the sheet, Finalize, the seed loader and
+ * what Close refuses. Pure, so the sheet, Close, the seed loader and
  * the tests share one rule.
  */
 import type { Competition, pointsEntry } from "@/db/schema";
 import { pointsFor } from "@/lib/bracket/points";
 import { generatedNote } from "@/lib/points-entry";
 
-/** Finalize's refusal for a row with a Score and no Place. */
+/** Close's refusal for a row with a Score and no Place. */
 export const SCORE_WITHOUT_PLACE =
   "Give every row with a Score a Place, or clear its Score.";
-/** Finalize's refusal for a sheet with nobody placed. */
+/** Close's refusal for a sheet with nobody placed. */
 export const NOBODY_PLACED = "Give someone a Place first.";
 
 /**
@@ -96,10 +96,10 @@ export function placementPointsByRow(
 }
 
 /**
- * Why the sheet can't be Finalized, or null: a row with a Score and no
+ * Why the sheet can't be Closed, or null: a row with a Score and no
  * Place (naming each), or nobody placed at all.
  */
-export function finalizePlacementError(
+export function closePlacementError(
   rows: { name: string; place: number | null; score: number | null }[],
 ): string | null {
   const scoredUnplaced = rows.filter(
@@ -115,10 +115,10 @@ export function finalizePlacementError(
 }
 
 /**
- * The generated Points Entries a Finalize writes for these rows: each
+ * The generated Points Entries a Close writes for these rows: each
  * placed row's Placement Points (`placementPointsByRow`), to its Team or
  * Participant, noted "From placement". The seed loader passes the seeded
- * Finalize's time and a seed key per row.
+ * Close's time and a seed key per row.
  */
 export function placementEntryValues(
   rows: {
@@ -145,6 +145,6 @@ export function placementEntryValues(
     enteredByEmail: by.actorEmail,
     ...(by.enteredAt ? { enteredAt: by.enteredAt } : {}),
     seedKey: by.seedKeyOf?.(id) ?? null,
-    generatedByBracket: true,
+    generated: true,
   }));
 }

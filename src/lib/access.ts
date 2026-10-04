@@ -1,8 +1,8 @@
 import type { WarWeek } from "@/db/schema";
 import {
-  type HeatReportFacet,
-  heatReportError,
-} from "@/lib/bracket/heat-report-rule";
+  type MatchReportFacet,
+  matchReportError,
+} from "@/lib/bracket/match-report-rule";
 import {
   type EnrollFacet,
   enrollError,
@@ -93,9 +93,9 @@ export type WarWeekAction =
   | "competition.edit"
   | "bracket.entrants"
   | "bracket.generate"
-  | "bracket.heat-result"
-  | "bracket.finalize"
-  | "bracket.unfinalize"
+  | "bracket.match-result"
+  | "bracket.close"
+  | "bracket.reopen"
   | "bracket.squads"
   | "competition.self-report"
   | "games.settings"
@@ -110,16 +110,16 @@ export type WarWeekAction =
   | "participation.reopen"
   /**
    * A Placement Competition's sheet: adding, changing and removing rows and
-   * the Score direction, then Finalize and Reopen.
+   * the Score direction, then Close and Reopen.
    */
   | "placement.edit"
-  | "placement.finalize"
+  | "placement.close"
   | "placement.reopen"
   /** Checking yourself in or out (ADR 0009). */
   | "participation.check-in"
   | "participation.check-out"
   /** Self-report (ADR 0005). */
-  | "bracket.heat-report"
+  | "bracket.match-report"
   /** Logging, editing and deleting a Game (ADR 0006). */
   | "games.log"
   | "games.edit"
@@ -137,7 +137,7 @@ export type WarWeekAction =
  * family needs it the row's current Competition (`competitionId`, null for
  * an unlinked Schedule Item), the Competition the request posts
  * (`postedCompetitionId`, null to unlink), an Announcement's author and,
- * for the Participant writes, their facts: a Heat's (`heatReport`), a
+ * for the Participant writes, their facts: a Match's (`matchReport`), a
  * Game's (`gameLog`), enrollment's (`enroll`) or Check in's (`checkIn`).
  */
 export type AccessTarget = {
@@ -145,7 +145,7 @@ export type AccessTarget = {
   competitionId?: string | null;
   postedCompetitionId?: string | null;
   authorEmail?: string;
-  heatReport?: HeatReportFacet;
+  matchReport?: MatchReportFacet;
   gameLog?: GameLogFacet;
   enroll?: EnrollFacet;
   checkIn?: CheckInFacet;
@@ -237,7 +237,7 @@ export const sameEmail = (a: string | null | undefined, b: string) =>
  * War Week. A Host runs their own Competitions (setup, Bracket, Points
  * Entries, linked Schedule Items) and posts Announcements in a War Week
  * where they host, editing or deleting their own. Everyone else signed in
- * is a Participant, whose writes are reporting the result of a Heat
+ * is a Participant, whose writes are reporting the result of a Match
  * they're in when self-report is on (ADR 0005), and logging Games,
  * changing the Games they logged, and enrolling or withdrawing (ADR 0006),
  * and checking in or out (ADR 0009). Those facet-bound rules bind
@@ -264,13 +264,13 @@ export function can(
     // keyed on `actor.email`).
     return actor && isJahnelGroupEmail(actor.email) ? null : SIGN_IN_REFUSAL;
   }
-  if (action === "bracket.heat-report") {
-    // Before the Organizer shortcut: the Heat facts bind everyone. A non-JG
+  if (action === "bracket.match-report") {
+    // Before the Organizer shortcut: the Match facts bind everyone. A non-JG
     // session already counts as anonymous upstream; checked again here.
     if (!actor || !isJahnelGroupEmail(actor.email)) return SIGN_IN_REFUSAL;
     // A caller that forgot to load the facts can never grant.
-    if (!target?.heatReport) return ADMIN_REFUSAL;
-    return heatReportError(target.heatReport);
+    if (!target?.matchReport) return ADMIN_REFUSAL;
+    return matchReportError(target.matchReport);
   }
   if (
     action === "games.log" ||
@@ -358,9 +358,9 @@ export function can(
       // the Host of this Competition, like a Head-to-head or Best score Competition.
       return hostsCurrent ? null : NOT_HOST;
     case "placement.edit":
-    case "placement.finalize":
+    case "placement.close":
     case "placement.reopen":
-      // A Placement Competition's sheet, Finalize and Reopen: the Host of
+      // A Placement Competition's sheet, Close and Reopen: the Host of
       // this Competition. Participants never record Placements.
       return hostsCurrent ? null : NOT_HOST;
     default:

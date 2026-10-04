@@ -102,16 +102,16 @@ describe("toBracketResult", () => {
         scoring: "team",
         format: "placement",
         placementPoints: null,
-        finalizedAt: null,
+        closedAt: null,
         selfReport: false,
         selfEnroll: false,
         entrantLimit: null,
         enrollClosesAt: null,
       },
       entrants: [],
-      bracket: { config: DEFAULT_BRACKET_CONFIG, heats: [] },
+      bracket: { config: DEFAULT_BRACKET_CONFIG, matches: [] },
       winner: null,
-      finalized: false,
+      closed: false,
       entryPoints: [],
     };
 
@@ -126,13 +126,13 @@ describe("toBracketResult", () => {
 
   it("shows an open Bracket's bye, played Match with when it was recorded, and ready Match", () => {
     let bracket = bracketFixture();
-    // Round 1's non-bye Heat (Bravo v Charlie): Bravo wins.
-    const round1Heat = bracket.heats.find(
+    // Round 1's non-bye Match (Bravo v Charlie): Bravo wins.
+    const round1Match = bracket.matches.find(
       (h) => h.round === 1 && h.slots.every((s) => s.entrantId !== null),
     )!;
-    bracket = applyResult(bracket, round1Heat.id, { order: ["e2", "e3"] });
+    bracket = applyResult(bracket, round1Match.id, { order: ["e2", "e3"] });
     // The mutation stamps when the Result was saved; the engine doesn't.
-    bracket.heats.find((h) => h.id === round1Heat.id)!.recordedAt = new Date(
+    bracket.matches.find((h) => h.id === round1Match.id)!.recordedAt = new Date(
       "2026-02-22T00:05:00Z",
     );
     // The final is now ready (Alpha v Bravo) but not decided.
@@ -145,7 +145,7 @@ describe("toBracketResult", () => {
         scoring: "team",
         format: "bracket",
         placementPoints: [10, 6],
-        finalizedAt: null,
+        closedAt: null,
         selfReport: false,
         selfEnroll: false,
         entrantLimit: null,
@@ -156,7 +156,7 @@ describe("toBracketResult", () => {
       ),
       bracket,
       winner: null,
-      finalized: false,
+      closed: false,
       entryPoints: [],
     };
 
@@ -219,11 +219,11 @@ describe("toBracketResult", () => {
 
   it("returns winner: null for a decided but open Bracket", () => {
     let bracket = bracketFixture();
-    const round1Heat = bracket.heats.find(
+    const round1Match = bracket.matches.find(
       (h) => h.round === 1 && h.slots.every((s) => s.entrantId !== null),
     )!;
-    bracket = applyResult(bracket, round1Heat.id, { order: ["e2", "e3"] });
-    const final = bracket.heats.find((h) => h.round === 2)!;
+    bracket = applyResult(bracket, round1Match.id, { order: ["e2", "e3"] });
+    const final = bracket.matches.find((h) => h.round === 2)!;
     bracket = applyResult(bracket, final.id, { order: ["e1", "e2"] });
     const winnerId = winnerOf(bracket);
     expect(winnerId).toBe("e1");
@@ -236,7 +236,7 @@ describe("toBracketResult", () => {
         scoring: "team",
         format: "bracket",
         placementPoints: [10, 6],
-        finalizedAt: null,
+        closedAt: null,
         selfReport: false,
         selfEnroll: false,
         entrantLimit: null,
@@ -247,7 +247,7 @@ describe("toBracketResult", () => {
       ),
       bracket,
       winner: winnerId,
-      finalized: false,
+      closed: false,
       entryPoints: [],
     };
 
@@ -261,11 +261,11 @@ describe("toBracketResult", () => {
 
   it("shows a closed Bracket's Winner", () => {
     let bracket = bracketFixture();
-    const round1Heat = bracket.heats.find(
+    const round1Match = bracket.matches.find(
       (h) => h.round === 1 && h.slots.every((s) => s.entrantId !== null),
     )!;
-    bracket = applyResult(bracket, round1Heat.id, { order: ["e2", "e3"] });
-    const final = bracket.heats.find((h) => h.round === 2)!;
+    bracket = applyResult(bracket, round1Match.id, { order: ["e2", "e3"] });
+    const final = bracket.matches.find((h) => h.round === 2)!;
     bracket = applyResult(bracket, final.id, { order: ["e1", "e2"] });
     const winnerId = winnerOf(bracket);
     expect(winnerId).toBe("e1");
@@ -278,7 +278,7 @@ describe("toBracketResult", () => {
         scoring: "team",
         format: "bracket",
         placementPoints: [10, 6],
-        finalizedAt: new Date(),
+        closedAt: new Date(),
         selfReport: false,
         selfEnroll: false,
         entrantLimit: null,
@@ -289,7 +289,7 @@ describe("toBracketResult", () => {
       ),
       bracket,
       winner: winnerId,
-      finalized: true,
+      closed: true,
       entryPoints: [],
     };
 
@@ -311,7 +311,7 @@ describe("toBracketResult", () => {
         scoring: "team",
         format: "bracket",
         placementPoints: [3, 2, 1],
-        finalizedAt: null,
+        closedAt: null,
         selfReport: true,
         selfEnroll: false,
         entrantLimit: null,
@@ -348,7 +348,7 @@ describe("toBracketResult", () => {
         { id: "e2", seedPosition: 2, label: "Blue Bravo" },
       ]),
       winner: null,
-      finalized: false,
+      closed: false,
       entryPoints: [],
     };
 
@@ -373,10 +373,10 @@ describe("toBracketResult", () => {
 
   it("serializes only whitelisted keys, even when the Entrant carries an email and Hosts", () => {
     const bracket = bracketFixture();
-    bracket.heats[0].recordedAt = new Date("2026-02-22T00:05:00Z");
-    // A self-reported Heat: its reporter must never reach the payload.
-    for (const heat of bracket.heats) {
-      Object.assign(heat, {
+    bracket.matches[0].recordedAt = new Date("2026-02-22T00:05:00Z");
+    // A self-reported Match: its reporter must never reach the payload.
+    for (const match of bracket.matches) {
+      Object.assign(match, {
         reportedByEmail: "reporter@jahnelgroup.com",
         reportedByParticipantId: "p-reporter",
       });
@@ -399,7 +399,7 @@ describe("toBracketResult", () => {
         scoring: "team",
         format: "bracket",
         placementPoints: [10, 6],
-        finalizedAt: null,
+        closedAt: null,
         selfReport: false,
         selfEnroll: false,
         entrantLimit: null,
@@ -408,7 +408,7 @@ describe("toBracketResult", () => {
       entrants: entrantsWithExtras,
       bracket,
       winner: null,
-      finalized: false,
+      closed: false,
       entryPoints: [],
     };
 
@@ -427,8 +427,8 @@ describe("toBracketResult", () => {
       );
     }
     expect(result.entrants[0].participants).toEqual(["Ashley Schuliger"]);
-    for (const heat of result.rounds.flatMap((r) => r.matches)) {
-      expect(Object.keys(heat).sort()).toEqual(
+    for (const match of result.rounds.flatMap((r) => r.matches)) {
+      expect(Object.keys(match).sort()).toEqual(
         ["entrants", "name", "recordedAt", "status", "thirdPlace"].sort(),
       );
     }
@@ -447,7 +447,7 @@ describe("toBracketResult with a 3rd place Match", () => {
       advancePerHeat: 1,
       thirdPlaceGame: true,
     });
-    for (const [heatId, order] of [
+    for (const [matchId, order] of [
       ["r1h1", ["s1", "s8"]],
       ["r1h2", ["s4", "s5"]],
       ["r1h3", ["s2", "s7"]],
@@ -458,7 +458,7 @@ describe("toBracketResult with a 3rd place Match", () => {
       // The 3rd place Match last: the Winner is still the final's winner.
       ["r3h2", ["s3", "s4"]],
     ] as const) {
-      bracket = applyResult(bracket, heatId, { order: [...order] });
+      bracket = applyResult(bracket, matchId, { order: [...order] });
     }
     const view: BracketView = {
       competition: {
@@ -468,7 +468,7 @@ describe("toBracketResult with a 3rd place Match", () => {
         scoring: "team",
         format: "bracket",
         placementPoints: [10, 7, 5, 3],
-        finalizedAt: new Date("2026-02-22T00:00:00Z"),
+        closedAt: new Date("2026-02-22T00:00:00Z"),
         selfReport: false,
         selfEnroll: false,
         entrantLimit: null,
@@ -477,7 +477,7 @@ describe("toBracketResult with a 3rd place Match", () => {
       entrants: eight.map((e) => bracketEntrantFixture(e, null)),
       bracket,
       winner: winnerOf(bracket),
-      finalized: true,
+      closed: true,
       entryPoints: [],
     };
 

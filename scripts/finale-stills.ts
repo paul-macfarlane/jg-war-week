@@ -13,7 +13,7 @@
  * as a made-up Organizer (`finale-stills@jahnelgroup.com`), so the stills
  * show what the Organizer presents. So every built-in slide has something
  * to show, it adds, and removes again afterwards: two Awards in Award
- * Categories, a finalized Heats Bracket (`setupBracketDemo`, finalized
+ * Categories, a closed Matches Bracket (`setupBracketDemo`, closed
  * here with its placings' points) and the seeded Ping Pong Head-to-head
  * Competition closed with a winner. Pass an edition to shoot another War
  * Week's demo:
@@ -116,52 +116,52 @@ async function addAwards(warWeek: StillsWarWeek) {
 }
 
 /**
- * Finalizes a Competition the way finalize or close leaves it: its
+ * Closes a Competition the way close or close leaves it: its
  * placings' generated Points Entries (`[participantId, points]`) and its
- * finalize time; the undo removes both.
+ * close time; the undo removes both.
  */
-async function finalize(
+async function close(
   competitionId: string,
   placings: [string, number][],
   what: string,
 ) {
   undo.push(async () => {
     await query(
-      `delete from points_entry where competition_id = $1 and generated_by_bracket`,
+      `delete from points_entry where competition_id = $1 and generated`,
       [competitionId],
     );
-    await query(`update competition set finalized_at = null where id = $1`, [
+    await query(`update competition set closed_at = null where id = $1`, [
       competitionId,
     ]);
   });
   for (const [participantId, points] of placings) {
     await query(
-      `insert into points_entry (war_week_id, competition_id, participant_id, points, note, entered_by_email, generated_by_bracket)
+      `insert into points_entry (war_week_id, competition_id, participant_id, points, note, entered_by_email, generated)
        select war_week_id, id, $2, $3, 'Finale stills', $4, true from competition where id = $1`,
       [competitionId, participantId, points, DEMO_EMAIL],
     );
   }
-  await query(`update competition set finalized_at = now() where id = $1`, [
+  await query(`update competition set closed_at = now() where id = $1`, [
     competitionId,
   ]);
-  note(`fixture: ${what} finalized`);
+  note(`fixture: ${what} closed`);
 }
 
-/** A finished Heats Bracket, finalized: its Final's places get 5, 3, 1. */
-async function addFinalizedBracket(warWeek: StillsWarWeek) {
+/** A finished Matches Bracket, closed: its Final's places get 5, 3, 1. */
+async function addClosedBracket(warWeek: StillsWarWeek) {
   const bracket = await setupBracketDemo(warWeek, note);
   undo.push(bracket.teardown);
   const final = await query<{ participant_id: string }>(
-    `select e.participant_id from heat h
-     join heat_entrant he on he.heat_id = h.id
+    `select e.participant_id from bracket_match h
+     join bracket_match_entrant he on he.bracket_match_id = h.id
      join entrant e on e.id = he.entrant_id
      where h.competition_id = $1
-       and h.round = (select max(round) from heat where competition_id = $1)
+       and h.round = (select max(round) from bracket_match where competition_id = $1)
        and not h.third_place
      order by he.place limit 3`,
     [bracket.competitionId],
   );
-  await finalize(
+  await close(
     bracket.competitionId,
     final.map((row, i): [string, number] => [row.participant_id, [5, 3, 1][i]]),
     "the Bracket",
@@ -179,7 +179,7 @@ async function closePingPong(warWeek: StillsWarWeek) {
     `select id from participant where war_week_id = $1 order by display_name desc limit 3`,
     [warWeek.id],
   );
-  await finalize(
+  await close(
     pong.id,
     people.map((p, i): [string, number] => [p.id, [3, 2, 1][i]]),
     "Ping Pong",
@@ -293,7 +293,7 @@ async function main() {
       "Finale stills",
     );
     await addAwards(warWeek);
-    await addFinalizedBracket(warWeek);
+    await addClosedBracket(warWeek);
     await closePingPong(warWeek);
 
     await server.ready();

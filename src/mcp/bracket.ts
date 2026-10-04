@@ -164,7 +164,7 @@ export function toBracketResult(
       matchSize: view.bracket.config.entrantsPerHeat,
       advancing: view.bracket.config.advancePerHeat,
       thirdPlaceMatch: view.bracket.config.thirdPlaceGame,
-      closed: view.finalized,
+      closed: view.closed,
     },
     entrants: view.entrants.map((entrant) => ({
       seedPosition: entrant.seedPosition,
@@ -175,12 +175,12 @@ export function toBracketResult(
     rounds: groupRounds(view.bracket).map((round) => ({
       round: round.round,
       name: round.name,
-      matches: round.heats.map((heat) => ({
-        name: matchName(view.bracket, heat),
-        status: isBye(view.bracket, heat) ? "bye" : heat.status,
-        recordedAt: heat.recordedAt ? heat.recordedAt.toISOString() : null,
-        thirdPlace: heat.thirdPlace,
-        entrants: heat.slots
+      matches: round.matches.map((match) => ({
+        name: matchName(view.bracket, match),
+        status: isBye(view.bracket, match) ? "bye" : match.status,
+        recordedAt: match.recordedAt ? match.recordedAt.toISOString() : null,
+        thirdPlace: match.thirdPlace,
+        entrants: match.slots
           .filter((slot) => slot.entrantId !== null)
           .map((slot) => ({
             name: entrantsById[slot.entrantId!] ?? "Unknown",
@@ -190,8 +190,6 @@ export function toBracketResult(
       })),
     })),
     winner:
-      view.finalized && view.winner
-        ? (entrantsById[view.winner] ?? null)
-        : null,
+      view.closed && view.winner ? (entrantsById[view.winner] ?? null) : null,
   };
 }

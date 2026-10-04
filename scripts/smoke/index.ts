@@ -34,7 +34,7 @@ import {
 } from "./awards";
 import {
   assertBracketLoop,
-  assertHeatsLoop,
+  assertMatchesLoop,
   assertSquadSelfReportLoop,
 } from "./brackets";
 import { assertDiscretionaryPoints } from "./discretionary-points";
@@ -238,7 +238,7 @@ async function main() {
       await assertSetupTeamsAndCompetitions(sessions);
       await assertSetupScheduleFaq(sessions);
       await assertBracketLoop(sessions);
-      await assertHeatsLoop(sessions);
+      await assertMatchesLoop(sessions);
       await assertSquadSelfReportLoop(sessions);
       await assertHostChecks(sessions);
       await assertParticipantRefused(sessions);

@@ -7,9 +7,9 @@ import { getBracket } from "@/queries/brackets";
 import { getWarWeekForEdition } from "../../war-week";
 
 /**
- * The War Week and the finalized Bracket a `/[edition]/finale/[competition]`
+ * The War Week and the closed Bracket a `/[edition]/finale/[competition]`
  * URL names, memoized per request so the segment's layout and page share
- * one lookup. Undefined unless that Competition is a finalized Bracket of
+ * one lookup. Undefined unless that Competition is a closed Bracket of
  * that edition.
  */
 export const getBracketFinalePage = cache(
@@ -21,7 +21,7 @@ export const getBracketFinalePage = cache(
       !view ||
       view.competition.warWeekId !== warWeek.id ||
       !isBracketFormat(view.competition.format) ||
-      !view.finalized ||
+      !view.closed ||
       !isComplete(view.bracket)
     ) {
       return undefined;

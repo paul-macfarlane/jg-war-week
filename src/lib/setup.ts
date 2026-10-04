@@ -133,13 +133,13 @@ export const competitionSeedSchema = z
     /** A Placement Competition's Score direction; omitted is none. Set on insert only. */
     scoreDirection: z.enum(SCORE_DIRECTIONS).optional(),
     /**
-     * A Placement Competition seeded Finalized, with its real time and
+     * A Placement Competition seeded Closed, with its real time and
      * author (all three together): the loader writes its generated Points
-     * Entries as Finalize does. Set on insert only.
+     * Entries as Close does. Set on insert only.
      */
-    finalized: z.literal(true).optional(),
-    finalizedAt: z.iso.datetime({ offset: true }).optional(),
-    finalizedByEmail: emailSchema.optional(),
+    closed: z.literal(true).optional(),
+    closedAt: z.iso.datetime({ offset: true }).optional(),
+    closedByEmail: emailSchema.optional(),
   })
   .refine((c) => !c.countsTowardTeam || c.scoring === "individual", {
     message: "countsTowardTeam can only be set on an individual Competition",
@@ -158,9 +158,9 @@ export const competitionSeedSchema = z
         path: ["placementPoints"],
       });
     }
-    // The Score direction and a seeded Finalize are Placement's alone.
+    // The Score direction and a seeded Close are Placement's alone.
     if (c.format !== "placement") {
-      for (const key of ["scoreDirection", "finalized"] as const) {
+      for (const key of ["scoreDirection", "closed"] as const) {
         if (c[key] !== undefined) {
           ctx.addIssue({
             code: "custom",
@@ -170,15 +170,15 @@ export const competitionSeedSchema = z
         }
       }
     }
-    const finalizeKeys = [c.finalized, c.finalizedAt, c.finalizedByEmail];
+    const closeKeys = [c.closed, c.closedAt, c.closedByEmail];
     if (
-      finalizeKeys.some((v) => v !== undefined) &&
-      !finalizeKeys.every((v) => v !== undefined)
+      closeKeys.some((v) => v !== undefined) &&
+      !closeKeys.every((v) => v !== undefined)
     ) {
       ctx.addIssue({
         code: "custom",
-        message: "finalized needs finalizedAt and finalizedByEmail together",
-        path: ["finalized"],
+        message: "closed needs closedAt and closedByEmail together",
+        path: ["closed"],
       });
     }
     // A Bracket config is checked by its field; a Bracket must have one in
@@ -875,15 +875,15 @@ export function participantGuardError(
   return null;
 }
 
-/** A Finalized Placement Competition's refusal of a setup or Format change. */
-export const PLACEMENT_IS_FINALIZED =
+/** A Closed Placement Competition's refusal of a setup or Format change. */
+export const PLACEMENT_IS_CLOSED =
   "This Competition is closed. Reopen it first.";
 
 /**
  * Refuses a Competition whose name is taken, a team Competition in a
  * free-for-all, a scoring change that would strand its Points Entries, or a
- * scoring change while it's Finalized or closed. Placement Points change
- * any time; while Finalized or closed they apply at the next Finalize or
+ * scoring change while it's Closed or closed. Placement Points change
+ * any time; while Closed or closed they apply at the next Close or
  * Close (ticket 101).
  */
 export function competitionGuardError(
@@ -899,7 +899,7 @@ export function competitionGuardError(
       scoring: Competition["scoring"];
       placementPoints: Competition["placementPoints"];
       pointsEntryCount: number;
-      finalizedAt: Competition["finalizedAt"];
+      closedAt: Competition["closedAt"];
       /** Omitted for a Competition that predates Formats: not Head-to-head or Best score. */
       format?: Competition["format"];
     } | null;
@@ -916,10 +916,10 @@ export function competitionGuardError(
   const tooMany =
     format && placementLimitRefusal(format, values.placementPoints);
   if (tooMany) return tooMany;
-  if (existing && existing.finalizedAt && existing.scoring !== values.scoring) {
+  if (existing && existing.closedAt && existing.scoring !== values.scoring) {
     // A closed Head-to-head, Best score or `participation` Competition
-    // reuses `finalized_at` (R3 decision 1); so does a Finalized Placement.
-    if (existing.format === "placement") return PLACEMENT_IS_FINALIZED;
+    // reuses `closed_at` (R3 decision 1); so does a Closed Placement.
+    if (existing.format === "placement") return PLACEMENT_IS_CLOSED;
     return (existing.format !== undefined && isGameFormat(existing.format)) ||
       existing.format === "participation"
       ? "This Competition is closed. Reopen the Competition first."

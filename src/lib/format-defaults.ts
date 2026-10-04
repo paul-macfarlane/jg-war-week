@@ -22,7 +22,7 @@ export type FormatDefaults = {
 
 /**
  * A `format` Competition's settings from its scoring and Placement Points:
- * a Bracket's heat settings (`bracketConfig`, else the default) and at
+ * a Bracket's match settings (`bracketConfig`, else the default) and at
  * most its first 4 Placement Points; a Head-to-head or Best score
  * Competition's default settings, open to everyone (Best of off); a team
  * Participation Competition's Placement Points (3/2/1 when it has none)

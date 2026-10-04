@@ -138,7 +138,7 @@ async function fixture(tx: DBTx) {
           participantId: schema.pointsEntry.participantId,
           points: schema.pointsEntry.points,
           note: schema.pointsEntry.note,
-          generated: schema.pointsEntry.generatedByBracket,
+          generated: schema.pointsEntry.generated,
           enteredByEmail: schema.pointsEntry.enteredByEmail,
         })
         .from(schema.pointsEntry)
@@ -156,7 +156,7 @@ async function fixture(tx: DBTx) {
         .select({
           format: schema.competition.format,
           scoreDirection: schema.competition.scoreDirection,
-          finalizedAt: schema.competition.finalizedAt,
+          closedAt: schema.competition.closedAt,
         })
         .from(schema.competition)
         .where(eq(schema.competition.id, id))
@@ -366,9 +366,7 @@ describe.skipIf(!isLocalDatabase)("Placement rows", () => {
       expect(
         await m.savePlacements(f.ids.pong, { rows: [] }, f.ctx, tx),
       ).toEqual(refused);
-      expect(await m.finalizePlacements(f.ids.pong, f.ctx, tx)).toEqual(
-        refused,
-      );
+      expect(await m.closePlacements(f.ids.pong, f.ctx, tx)).toEqual(refused);
       expect(await m.reopenPlacements(f.ids.pong, f.ctx, tx)).toEqual(refused);
       expect(await f.rows(f.ids.pong)).toEqual([]);
       expect((await f.competitionRow(f.ids.pong)).scoreDirection).toBe("none");
@@ -416,7 +414,7 @@ describe.skipIf(!isLocalDatabase)("Close and Reopen", () => {
   it("writes generated Points Entries by Place: ties share the full points, beyond the list and unplaced earn nothing", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { m, f } = await placed(tx);
-      expect(await m.finalizePlacements(f.ids.darts, f.ctx, tx)).toEqual({
+      expect(await m.closePlacements(f.ids.darts, f.ctx, tx)).toEqual({
         ok: true,
       });
       const entry = (participantId: string, points: number) => ({
@@ -439,7 +437,7 @@ describe.skipIf(!isLocalDatabase)("Close and Reopen", () => {
             a.participantId.localeCompare(b.participantId),
         ),
       );
-      expect((await f.competitionRow(f.ids.darts)).finalizedAt).not.toBeNull();
+      expect((await f.competitionRow(f.ids.darts)).closedAt).not.toBeNull();
     });
   });
 
@@ -462,7 +460,7 @@ describe.skipIf(!isLocalDatabase)("Close and Reopen", () => {
         f.ctx,
         tx,
       );
-      expect(await m.finalizePlacements(f.ids.quiz, f.ctx, tx)).toEqual({
+      expect(await m.closePlacements(f.ids.quiz, f.ctx, tx)).toEqual({
         ok: true,
       });
       expect(
@@ -497,13 +495,13 @@ describe.skipIf(!isLocalDatabase)("Close and Reopen", () => {
         f.ctx,
         tx,
       );
-      expect(await m.finalizePlacements(f.ids.darts, f.ctx, tx)).toEqual({
+      expect(await m.closePlacements(f.ids.darts, f.ctx, tx)).toEqual({
         ok: false,
         error:
           "Give every row with a Score a Place, or clear its Score. No Place: Cypher.",
       });
       expect(await f.entries(f.ids.darts)).toEqual([]);
-      expect((await f.competitionRow(f.ids.darts)).finalizedAt).toBeNull();
+      expect((await f.competitionRow(f.ids.darts)).closedAt).toBeNull();
     });
   });
 
@@ -517,7 +515,7 @@ describe.skipIf(!isLocalDatabase)("Close and Reopen", () => {
         points: 2,
         enteredByEmail: HOST,
       });
-      await m.finalizePlacements(f.ids.darts, f.ctx, tx);
+      await m.closePlacements(f.ids.darts, f.ctx, tx);
       const before = await f.rows(f.ids.darts);
       const neo = await f.rowOf(f.ids.darts, f.ids.neo);
       const refused = { ok: false, error: REOPEN_FIRST };
@@ -558,21 +556,21 @@ describe.skipIf(!isLocalDatabase)("Close and Reopen", () => {
           enteredByEmail: HOST,
         },
       ]);
-      expect((await f.competitionRow(f.ids.darts)).finalizedAt).toBeNull();
+      expect((await f.competitionRow(f.ids.darts)).closedAt).toBeNull();
     });
   });
 
   it("Close twice writes the same entries and keeps the first time; Reopen twice is harmless", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { m, f } = await placed(tx);
-      await m.finalizePlacements(f.ids.darts, f.ctx, tx);
+      await m.closePlacements(f.ids.darts, f.ctx, tx);
       const entries = await f.entries(f.ids.darts);
-      const at = (await f.competitionRow(f.ids.darts)).finalizedAt;
-      expect(await m.finalizePlacements(f.ids.darts, f.ctx, tx)).toEqual({
+      const at = (await f.competitionRow(f.ids.darts)).closedAt;
+      expect(await m.closePlacements(f.ids.darts, f.ctx, tx)).toEqual({
         ok: true,
       });
       expect(await f.entries(f.ids.darts)).toEqual(entries);
-      expect((await f.competitionRow(f.ids.darts)).finalizedAt).toEqual(at);
+      expect((await f.competitionRow(f.ids.darts)).closedAt).toEqual(at);
 
       expect(await m.reopenPlacements(f.ids.darts, f.ctx, tx)).toEqual({
         ok: true,
@@ -581,7 +579,7 @@ describe.skipIf(!isLocalDatabase)("Close and Reopen", () => {
         ok: true,
       });
       expect(await f.entries(f.ids.darts)).toEqual([]);
-      expect(await m.finalizePlacements(f.ids.darts, f.ctx, tx)).toEqual({
+      expect(await m.closePlacements(f.ids.darts, f.ctx, tx)).toEqual({
         ok: true,
       });
       expect(await f.entries(f.ids.darts)).toEqual(entries);
@@ -592,7 +590,7 @@ describe.skipIf(!isLocalDatabase)("Close and Reopen", () => {
 describe.skipIf(!isLocalDatabase)("a Placement Competition's setup", () => {
   it("refuses a Format or scoring change while Closed, but takes a Placement Points change", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { addPlacement, finalizePlacements, savePlacements } = await load();
+      const { addPlacement, closePlacements, savePlacements } = await load();
       const { setCompetitionFormat } = await import("@/mutations/brackets");
       const { updateCompetition } = await import("@/mutations/setup");
       const f = await fixture(tx);
@@ -611,7 +609,7 @@ describe.skipIf(!isLocalDatabase)("a Placement Competition's setup", () => {
         f.ctx,
         tx,
       );
-      expect(await finalizePlacements(f.ids.darts, f.ctx, tx)).toEqual({
+      expect(await closePlacements(f.ids.darts, f.ctx, tx)).toEqual({
         ok: true,
       });
       const refused = {

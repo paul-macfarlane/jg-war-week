@@ -276,9 +276,9 @@ describe("can: a Competition's setup and Bracket", () => {
           "competition.edit",
           "bracket.entrants",
           "bracket.generate",
-          "bracket.heat-result",
-          "bracket.finalize",
-          "bracket.unfinalize",
+          "bracket.match-result",
+          "bracket.close",
+          "bracket.reopen",
         ] as WarWeekAction[]
       ).map((action) => [
         action,
@@ -307,7 +307,7 @@ describe("can: Squads and the self-report toggle", () => {
         [
           "bracket.squads",
           "competition.self-report",
-          "bracket.heat-result",
+          "bracket.match-result",
         ] as WarWeekAction[]
       ).map((action) => [
         action,
@@ -329,33 +329,33 @@ describe("can: reporting a Match's result (self-report)", () => {
   const OFF = "Self-report is off for this Competition.";
   const NOT_LINKED =
     "Your sign-in doesn't match a Participant of this War Week.";
-  const NOT_IN_HEAT = "You're not in this Match.";
+  const NOT_IN_MATCH = "You're not in this Match.";
   const ADMIN = "Organizers and Hosts only.";
 
   type Facet = NonNullable<
-    NonNullable<Parameters<typeof can>[2]>["heatReport"]
+    NonNullable<Parameters<typeof can>[2]>["matchReport"]
   >;
-  const teamHeat = [
+  const teamMatch = [
     { teamId: RED, participantId: null, squadId: null },
     { teamId: BLUE, participantId: null, squadId: null },
   ];
-  const sameTeamSquadHeat = [
+  const sameTeamSquadMatch = [
     { teamId: null, participantId: null, squadId: RED_ALPHA },
     { teamId: null, participantId: null, squadId: RED_BRAVO },
   ];
   const linkedRed = { participantId: ME, teamId: RED, squadId: null };
-  /** An open Red vs Blue Heat of Catan, self-report on, linked to Red. */
+  /** An open Red vs Blue Match of Catan, self-report on, linked to Red. */
   const facet = (over: Partial<Facet> = {}): Facet => ({
     selfReport: true,
-    heat: "open",
+    match: "open",
     linked: linkedRed,
-    entrants: teamHeat,
+    entrants: teamMatch,
     ...over,
   });
   const target = (over: Partial<Facet> = {}) => ({
     warWeekId: XI,
     competitionId: CATAN,
-    heatReport: facet(over),
+    matchReport: facet(over),
   });
 
   it.each<[string, Partial<Facet>, string | null]>([
@@ -364,7 +364,7 @@ describe("can: reporting a Match's result (self-report)", () => {
     [
       "linked but on none of the Entrants",
       { linked: { participantId: ME, teamId: "team-gold", squadId: null } },
-      NOT_IN_HEAT,
+      NOT_IN_MATCH,
     ],
     [
       "linked as the Participant Entrant",
@@ -391,41 +391,41 @@ describe("can: reporting a Match's result (self-report)", () => {
     ],
     [
       "on the Squads' Team but in neither Squad of Red Alpha vs Red Bravo",
-      { linked: linkedRed, entrants: sameTeamSquadHeat },
-      NOT_IN_HEAT,
+      { linked: linkedRed, entrants: sameTeamSquadMatch },
+      NOT_IN_MATCH,
     ],
     [
       "in the opposing same-Team Squad (Red Bravo) of Red Alpha vs Red Bravo",
       {
         linked: { participantId: ME, teamId: RED, squadId: RED_BRAVO },
-        entrants: sameTeamSquadHeat,
+        entrants: sameTeamSquadMatch,
       },
       null,
     ],
     [
       "a decided Match",
-      { heat: "decided" },
+      { match: "decided" },
       "This Match already has a result.",
     ],
     [
       "an unfilled Match",
-      { heat: "unfilled" },
+      { match: "unfilled" },
       "This Match is still waiting for its Entrants.",
     ],
-    ["a bye", { heat: "bye" }, "A bye isn't played."],
+    ["a bye", { match: "bye" }, "A bye isn't played."],
     [
       "a missing Match",
-      { heat: "missing", entrants: [] },
+      { match: "missing", entrants: [] },
       "That Match no longer exists.",
     ],
   ])("a Participant: %s", (_, over, expected) => {
-    expect(can(ACTORS.participant, "bracket.heat-report", target(over))).toBe(
+    expect(can(ACTORS.participant, "bracket.match-report", target(over))).toBe(
       expected,
     );
   });
 
   it("refuses an anonymous visitor", () => {
-    expect(can(null, "bracket.heat-report", target())).toBe(SIGN_IN);
+    expect(can(null, "bracket.match-report", target())).toBe(SIGN_IN);
   });
 
   it("refuses a non-JG email even with a matching linked Participant", () => {
@@ -435,14 +435,16 @@ describe("can: reporting a Match's result (self-report)", () => {
       hosts: [],
     };
     // The facet alone would allow it: the domain rule refuses, not linkage.
-    expect(can(ACTORS.participant, "bracket.heat-report", target())).toBeNull();
-    expect(can(outsider, "bracket.heat-report", target())).toBe(SIGN_IN);
+    expect(
+      can(ACTORS.participant, "bracket.match-report", target()),
+    ).toBeNull();
+    expect(can(outsider, "bracket.match-report", target())).toBe(SIGN_IN);
   });
 
   it("refuses when the Match facts weren't loaded, whoever asks", () => {
     for (const actor of [ACTORS.participant, ACTORS.organizer, ACTORS.host]) {
       expect(
-        can(actor, "bracket.heat-report", {
+        can(actor, "bracket.match-report", {
           warWeekId: XI,
           competitionId: CATAN,
         }),
@@ -452,23 +454,23 @@ describe("can: reporting a Match's result (self-report)", () => {
 
   it("binds an Organizer and the Host by the Match facts too", () => {
     for (const actor of [ACTORS.organizer, ACTORS.host]) {
-      expect(can(actor, "bracket.heat-report", target({ linked: null }))).toBe(
+      expect(can(actor, "bracket.match-report", target({ linked: null }))).toBe(
         NOT_LINKED,
       );
       expect(
-        can(actor, "bracket.heat-report", target({ heat: "decided" })),
+        can(actor, "bracket.match-report", target({ match: "decided" })),
       ).toBe("This Match already has a result.");
       expect(
-        can(actor, "bracket.heat-report", target({ selfReport: false })),
+        can(actor, "bracket.match-report", target({ selfReport: false })),
       ).toBe(OFF);
-      expect(can(actor, "bracket.heat-report", target())).toBeNull();
+      expect(can(actor, "bracket.match-report", target())).toBeNull();
     }
   });
 
   it("never lets a Participant in the Match change a result or the toggle", () => {
-    // The facet says they're in this open Heat; the direct paths ignore it.
+    // The facet says they're in this open Match; the direct paths ignore it.
     for (const action of [
-      "bracket.heat-result",
+      "bracket.match-result",
       "competition.self-report",
       "bracket.squads",
     ] as WarWeekAction[]) {
@@ -783,7 +785,7 @@ describe("can: recording a Placement Competition's placements", () => {
       (
         [
           "placement.edit",
-          "placement.finalize",
+          "placement.close",
           "placement.reopen",
         ] as WarWeekAction[]
       ).map((action) => [

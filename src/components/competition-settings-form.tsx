@@ -36,12 +36,12 @@ import {
   sameValue,
 } from "@/lib/autosave";
 import {
-  ADVANCE_PER_HEAT_OPTIONS,
+  ADVANCE_PER_MATCH_OPTIONS,
   type BracketConfig,
   DEFAULT_BRACKET_CONFIG,
-  ENTRANTS_PER_HEAT_OPTIONS,
-  advancePerHeatLabel,
-  entrantsPerHeatLabel,
+  ENTRANTS_PER_MATCH_OPTIONS,
+  advancePerMatchLabel,
+  entrantsPerMatchLabel,
   isHeadToHead,
   thirdPlaceRefusal,
 } from "@/lib/bracket/config";
@@ -160,7 +160,7 @@ export function CompetitionSettingsForm({
   hostNames: string[];
   /** The roster Participants an Organizer picks Hosts from; empty for a Host. */
   hostCandidates?: HostCandidate[];
-  /** A Bracket's saved Entrants, for the heat settings it would refuse. */
+  /** A Bracket's saved Entrants, for the match settings it would refuse. */
   entrantCount: number;
 }) {
   const router = useRouter();
@@ -791,7 +791,7 @@ function GamesConfigFields({
 }
 
 /**
- * A Bracket's heat settings: how many play in each Heat and how many
+ * A Bracket's match settings: how many play in each Match and how many
  * advance (2 with 1 advancing is the "Head-to-head (single elimination)"
  * preset), and at head-to-head the 3rd place Match. With saved Entrants, a
  * "how many advance" Generate would refuse is disabled; turning the 3rd
@@ -812,10 +812,14 @@ function MatchSettingsFields({
   onChange: (config: BracketConfig) => void;
 }) {
   const off = reason !== null;
-  const { entrantsPerHeat: perHeat, advancePerHeat: advance } = config;
+  const { entrantsPerHeat: perMatch, advancePerHeat: advance } = config;
   const headToHead = isHeadToHead(config);
   const turnOnRefusal = thirdPlaceRefusal(
-    { entrantsPerHeat: perHeat, advancePerHeat: advance, thirdPlaceGame: true },
+    {
+      entrantsPerHeat: perMatch,
+      advancePerHeat: advance,
+      thirdPlaceGame: true,
+    },
     entrantCount,
   );
   const thirdPlaceReason =
@@ -829,7 +833,7 @@ function MatchSettingsFields({
           entrantCount,
         )
       : null;
-  const refusal = refusalAt(perHeat, advance);
+  const refusal = refusalAt(perMatch, advance);
   const set = (next: Partial<BracketConfig>) => {
     const merged = { ...config, ...next };
     // Only head-to-head plays a 3rd place Match.
@@ -863,20 +867,20 @@ function MatchSettingsFields({
       </div>
       <FieldGroup className="gap-4 sm:flex-row">
         <Field className="sm:max-w-48">
-          <FieldLabel htmlFor="heat-entrants">Entrants per Match</FieldLabel>
+          <FieldLabel htmlFor="match-entrants">Entrants per Match</FieldLabel>
           <OptionSelect
-            id="heat-entrants"
+            id="match-entrants"
             name="entrantsPerHeat"
-            options={ENTRANTS_PER_HEAT_OPTIONS.map((count) => ({
+            options={ENTRANTS_PER_MATCH_OPTIONS.map((count) => ({
               value: String(count),
-              label: entrantsPerHeatLabel(count),
+              label: entrantsPerMatchLabel(count),
             }))}
-            value={String(perHeat)}
+            value={String(perMatch)}
             disabled={off}
             onValueChange={(value) => {
               const size = Number(value);
               // The most that can advance at this size, for these Entrants.
-              const best = ADVANCE_PER_HEAT_OPTIONS.filter(
+              const best = ADVANCE_PER_MATCH_OPTIONS.filter(
                 (count) => count < size && refusalAt(size, count) === null,
               ).at(-1);
               set({ entrantsPerHeat: size, advancePerHeat: best ?? 1 });
@@ -884,17 +888,17 @@ function MatchSettingsFields({
           />
         </Field>
         <Field className="sm:max-w-48" data-invalid={refusal !== null}>
-          <FieldLabel htmlFor="heat-advance">How many advance</FieldLabel>
+          <FieldLabel htmlFor="match-advance">How many advance</FieldLabel>
           <OptionSelect
-            id="heat-advance"
+            id="match-advance"
             name="advancePerHeat"
-            options={ADVANCE_PER_HEAT_OPTIONS.filter(
-              (count) => count < perHeat,
+            options={ADVANCE_PER_MATCH_OPTIONS.filter(
+              (count) => count < perMatch,
             ).map((count) => {
-              const why = refusalAt(perHeat, count);
+              const why = refusalAt(perMatch, count);
               return {
                 value: String(count),
-                label: advancePerHeatLabel(count),
+                label: advancePerMatchLabel(count),
                 disabled: why !== null,
                 title: why ?? undefined,
               };

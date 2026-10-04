@@ -5,7 +5,7 @@
 import { z } from "zod";
 
 import { SQUAD_PARTICIPANTS_MAX } from "@/lib/bracket/squads";
-import type { HeatResult } from "@/lib/bracket/types";
+import type { MatchResult } from "@/lib/bracket/types";
 import type { Parsed } from "@/lib/result";
 
 function parse<T>(schema: z.ZodType<T, unknown>, input: unknown): Parsed<T> {
@@ -55,7 +55,7 @@ export function parseSquadInput(input: unknown): Parsed<SquadInput> {
 
 const entrantId = id("Choose the Match's Entrants.");
 
-const heatResultSchema = z.object({
+const matchResultSchema = z.object({
   order: z.array(entrantId).min(1, {
     error: "Put the Match's Entrants in finishing order.",
   }),
@@ -67,6 +67,6 @@ const heatResultSchema = z.object({
     .optional(),
 });
 
-export function parseHeatResultInput(input: unknown): Parsed<HeatResult> {
-  return parse(heatResultSchema, input);
+export function parseMatchResultInput(input: unknown): Parsed<MatchResult> {
+  return parse(matchResultSchema, input);
 }

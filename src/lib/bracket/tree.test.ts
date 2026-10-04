@@ -26,11 +26,11 @@ function show(slot: TreeSlot): string {
   }
 }
 
-/** Each Round as its name and each Heat's name and slots. */
+/** Each Round as its name and each Match's name and slots. */
 function shape(bracket: Bracket) {
   return bracketTree(bracket).rounds.map((round) => [
     round.name,
-    round.heats.map((heat) => [heat.name, heat.slots.map(show)]),
+    round.matches.map((match) => [match.name, match.slots.map(show)]),
   ]);
 }
 
@@ -69,12 +69,12 @@ describe("bracketTree, single elimination", () => {
   it("connects every Match but the Final to the slot its winner fills", () => {
     expect(bracketTree(knockout(["A", "B", "C", "D", "E"])).connectors).toEqual(
       [
-        { fromHeatId: "r1h1", toHeatId: "r2h1", toSlot: 0 },
-        { fromHeatId: "r1h2", toHeatId: "r2h1", toSlot: 1 },
-        { fromHeatId: "r1h3", toHeatId: "r2h2", toSlot: 0 },
-        { fromHeatId: "r1h4", toHeatId: "r2h2", toSlot: 1 },
-        { fromHeatId: "r2h1", toHeatId: "r3h1", toSlot: 0 },
-        { fromHeatId: "r2h2", toHeatId: "r3h1", toSlot: 1 },
+        { fromMatchId: "r1h1", toMatchId: "r2h1", toSlot: 0 },
+        { fromMatchId: "r1h2", toMatchId: "r2h1", toSlot: 1 },
+        { fromMatchId: "r1h3", toMatchId: "r2h2", toSlot: 0 },
+        { fromMatchId: "r1h4", toMatchId: "r2h2", toSlot: 1 },
+        { fromMatchId: "r2h1", toMatchId: "r3h1", toSlot: 0 },
+        { fromMatchId: "r2h2", toMatchId: "r3h1", toSlot: 1 },
       ],
     );
   });
@@ -82,7 +82,7 @@ describe("bracketTree, single elimination", () => {
   it("marks byes, and fills in results as Matches are decided", () => {
     let bracket = knockout(["A", "B", "C", "D", "E", "F", "G", "H"]);
     const before = bracketTree(bracket);
-    expect(before.rounds[0].heats.map((h) => h.bye)).toEqual([
+    expect(before.rounds[0].matches.map((h) => h.bye)).toEqual([
       false,
       false,
       false,
@@ -95,9 +95,9 @@ describe("bracketTree, single elimination", () => {
       scores: { H: "3", A: "1" },
     });
     const after = bracketTree(bracket);
-    const [heat1] = after.rounds[0].heats;
-    expect(heat1.decided).toBe(true);
-    expect(heat1.slots).toEqual([
+    const [match1] = after.rounds[0].matches;
+    expect(match1.decided).toBe(true);
+    expect(match1.slots).toEqual([
       {
         kind: "entrant",
         entrantId: "A",
@@ -113,7 +113,7 @@ describe("bracketTree, single elimination", () => {
         advances: true,
       },
     ]);
-    expect(after.rounds[1].heats[0].slots.map(show)).toEqual([
+    expect(after.rounds[1].matches[0].slots.map(show)).toEqual([
       "H",
       "…Round 1 Match 2",
     ]);
@@ -121,7 +121,7 @@ describe("bracketTree, single elimination", () => {
 
   it("names the 8-Entrant Rounds and flags only first-Round byes", () => {
     const five = bracketTree(knockout(["A", "B", "C", "D", "E"]));
-    expect(five.rounds.flatMap((r) => r.heats.map((h) => h.bye))).toEqual([
+    expect(five.rounds.flatMap((r) => r.matches.map((h) => h.bye))).toEqual([
       true,
       false,
       true,
@@ -133,12 +133,12 @@ describe("bracketTree, single elimination", () => {
     const eight = bracketTree(
       knockout(["A", "B", "C", "D", "E", "F", "G", "H"]),
     );
-    expect(eight.rounds.map((r) => [r.name, r.heats.length])).toEqual([
+    expect(eight.rounds.map((r) => [r.name, r.matches.length])).toEqual([
       ["Round 1", 4],
       ["Semifinal", 2],
       ["Final", 1],
     ]);
-    expect(eight.rounds[0].heats.map((h) => h.slots.map(show))).toEqual([
+    expect(eight.rounds[0].matches.map((h) => h.slots.map(show))).toEqual([
       ["A", "H"],
       ["D", "E"],
       ["B", "G"],
@@ -148,8 +148,8 @@ describe("bracketTree, single elimination", () => {
 });
 
 describe("bracketTree, Matches", () => {
-  /** 8 Entrants, 4 per Heat, top 2 advance: two Heats, then the Final. */
-  const heats = () =>
+  /** 8 Entrants, 4 per Match, top 2 advance: two Matches, then the Final. */
+  const matches = () =>
     generate(
       { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
       entrants(["A", "B", "C", "D", "E", "F", "G", "H"]),
@@ -157,8 +157,8 @@ describe("bracketTree, Matches", () => {
     );
 
   it("draws a two-Round Matches Bracket with no connectors, the Final waiting", () => {
-    // Dealt snake-style: A, D, E, H to Heat 1 and B, C, F, G to Heat 2.
-    expect(shape(heats())).toEqual([
+    // Dealt snake-style: A, D, E, H to Match 1 and B, C, F, G to Match 2.
+    expect(shape(matches())).toEqual([
       [
         "Round 1",
         [
@@ -168,22 +168,24 @@ describe("bracketTree, Matches", () => {
       ],
       ["Final", [["Final", ["…Round 1"]]]],
     ]);
-    expect(bracketTree(heats()).connectors).toEqual([]);
+    expect(bracketTree(matches()).connectors).toEqual([]);
   });
 
   it("lists a decided Match by place, highlighting those who advance", () => {
-    let bracket = applyResult(heats(), "r1h1", { order: ["E", "A", "H", "D"] });
+    let bracket = applyResult(matches(), "r1h1", {
+      order: ["E", "A", "H", "D"],
+    });
     expect(shape(bracket)[0][1]).toEqual([
       ["Round 1 Match 1", ["E>", "A>", "H", "D"]],
       ["Round 1 Match 2", ["B", "C", "F", "G"]],
     ]);
     bracket = applyResult(bracket, "r1h2", { order: ["G", "F", "C", "B"] });
-    const final = bracketTree(bracket).rounds[1].heats[0];
+    const final = bracketTree(bracket).rounds[1].matches[0];
     expect(final.slots.map(show).sort()).toEqual(["A", "E", "F", "G"]);
 
     bracket = applyResult(bracket, "r2h1", { order: ["F", "E", "G", "A"] });
     // In the Final only the winner is highlighted.
-    expect(bracketTree(bracket).rounds[1].heats[0].slots.map(show)).toEqual([
+    expect(bracketTree(bracket).rounds[1].matches[0].slots.map(show)).toEqual([
       "F>",
       "E",
       "G",
@@ -205,7 +207,7 @@ describe("bracketTree, 3rd place Match", () => {
       ["r2h1", "A"],
       ["r2h2", "D"],
     ]) {
-      const others = bracket.heats
+      const others = bracket.matches
         .find((h) => h.id === id)!
         .slots.map((s) => s.entrantId!)
         .filter((e) => e !== winner);
@@ -213,11 +215,11 @@ describe("bracketTree, 3rd place Match", () => {
     }
     const last = bracketTree(bracket).rounds.at(-1)!;
     expect(
-      last.heats.map((heat) => [
-        heat.name,
-        heat.final,
-        heat.thirdPlace,
-        heat.slots.map(show),
+      last.matches.map((match) => [
+        match.name,
+        match.final,
+        match.thirdPlace,
+        match.slots.map(show),
       ]),
     ).toEqual([
       ["Final", true, false, ["A>", "B"]],

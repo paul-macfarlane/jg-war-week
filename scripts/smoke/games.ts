@@ -219,7 +219,7 @@ export async function assertGamesLoop(sessions: {
       const id = competitionId;
       const restore = async () => {
         const [row] = await runQuery<{ closed: boolean }>(
-          `select finalized_at is not null as closed from competition where id = $1`,
+          `select closed_at is not null as closed from competition where id = $1`,
           [id],
         );
         if (row?.closed) {
@@ -244,7 +244,7 @@ export async function assertGamesLoop(sessions: {
         }
         const [left] = await runQuery<{ games: number; entries: number }>(
           `select (select count(*)::int from game where competition_id = $1) as games,
-             (select count(*)::int from points_entry where competition_id = $1 and generated_by_bracket) as entries`,
+             (select count(*)::int from points_entry where competition_id = $1 and generated) as entries`,
           [id],
         );
         if (left.games !== 0 || left.entries !== 0) {

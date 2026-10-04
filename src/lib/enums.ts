@@ -39,7 +39,7 @@ export const SCORE_DIRECTIONS = ["none", "higher", "lower"] as const;
 
 export type ScoreDirection = (typeof SCORE_DIRECTIONS)[number];
 
-export const HEAT_STATUSES = ["pending", "ready", "played"] as const;
+export const MATCH_STATUSES = ["pending", "ready", "played"] as const;
 
 /**
  * A Finale slide's kind: the built-in slides, in their default order, then

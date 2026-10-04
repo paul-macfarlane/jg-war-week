@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   SCORE_WITHOUT_PLACE,
-  finalizePlacementError,
+  closePlacementError,
   orderPlacementRows,
   placementEntryValues,
   placementPointsByRow,
@@ -87,10 +87,10 @@ describe("placementPointsByRow", () => {
   });
 });
 
-describe("finalizePlacementError", () => {
+describe("closePlacementError", () => {
   it("refuses a row with a Score and no Place, naming every such row", () => {
     expect(
-      finalizePlacementError([
+      closePlacementError([
         { name: "Neo", place: 1, score: 3 },
         { name: "Trinity", place: null, score: 2 },
         { name: "Tank", place: null, score: null },
@@ -105,15 +105,15 @@ describe("finalizePlacementError", () => {
   });
 
   it("refuses a sheet with nobody placed", () => {
-    expect(finalizePlacementError([])).toBe("Give someone a Place first.");
+    expect(closePlacementError([])).toBe("Give someone a Place first.");
     expect(
-      finalizePlacementError([{ name: "Tank", place: null, score: null }]),
+      closePlacementError([{ name: "Tank", place: null, score: null }]),
     ).toBe("Give someone a Place first.");
   });
 
   it("allows unplaced rows without a Score beside placed ones", () => {
     expect(
-      finalizePlacementError([
+      closePlacementError([
         { name: "Neo", place: 1, score: null },
         { name: "Tank", place: null, score: null },
       ]),
@@ -234,7 +234,7 @@ describe("placementEntryValues", () => {
         note: "From placement",
         enteredByEmail: "host@jahnelgroup.com",
         seedKey: "darts-neo",
-        generatedByBracket: true,
+        generated: true,
       },
       {
         warWeekId: "xi",
@@ -245,7 +245,7 @@ describe("placementEntryValues", () => {
         note: "From placement",
         enteredByEmail: "host@jahnelgroup.com",
         seedKey: null,
-        generatedByBracket: true,
+        generated: true,
       },
     ]);
   });

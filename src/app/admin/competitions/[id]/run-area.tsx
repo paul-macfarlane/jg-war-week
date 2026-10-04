@@ -15,7 +15,7 @@ import { resultNoun } from "@/lib/games/config";
 import {
   getBracket,
   getBracketEntrants,
-  getHeatReporters,
+  getMatchReporters,
   getSquads,
 } from "@/queries/brackets";
 import { getGamesView } from "@/queries/games";
@@ -37,7 +37,7 @@ export function runAreaTitle(format: Competition["format"]): string {
 /**
  * The Format's run area on the Competition page (ticket 101), below the
  * Settings: Record placements (Placement); the Entrants and the Bracket
- * tree with Finalize (Bracket); the Entrant list and Close (Head-to-head,
+ * tree with Close (Bracket); the Entrant list and Close (Head-to-head,
  * Best score); who took part and Close (Participation). Each loads its own
  * data; a write that the lock table covers (Entrants, building the
  * Bracket) goes through the per-field save. Names only, never an email.
@@ -68,7 +68,7 @@ export async function CompetitionRunArea({
           scoring: view.competition.scoring,
           placementPoints: view.competition.placementPoints,
           scoreDirection: view.competition.scoreDirection,
-          finalized: view.competition.finalizedAt !== null,
+          closed: view.competition.closedAt !== null,
         }}
         rows={view.rows.map(({ id: rowId, name, team, place, score }) => ({
           id: rowId,
@@ -168,7 +168,7 @@ export async function CompetitionRunArea({
     getBracket(id),
     getTargetOptions(warWeek),
     getSquads(id),
-    getHeatReporters(id),
+    getMatchReporters(id),
   ]);
   if (!view) return null;
   return (
@@ -187,7 +187,7 @@ export async function CompetitionRunArea({
         teamLabel={warWeek.teamLabel}
         entrantsLock={entrantsLock}
       />
-      {view.bracket.heats.length > 0 && (
+      {view.bracket.matches.length > 0 && (
         <section className="flex min-w-0 flex-col gap-3" aria-label="Bracket">
           <h3 className="text-lg font-semibold">Bracket</h3>
           <BracketAdmin
@@ -198,7 +198,7 @@ export async function CompetitionRunArea({
             bracket={view.bracket}
             winner={view.winner}
             podium={podiumOf(view)}
-            finalized={view.finalized}
+            closed={view.closed}
             primaryColor={warWeek.primaryColor}
             reporters={reporters}
           />

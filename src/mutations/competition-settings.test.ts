@@ -195,8 +195,8 @@ async function fixture(tx: DBTx) {
 
 type Fixture = Awaited<ReturnType<typeof fixture>>;
 
-/** Places Neo 1st in Darts and Finalizes it. */
-async function finalizeDarts(f: Fixture) {
+/** Places Neo 1st in Darts and Closes it. */
+async function closeDarts(f: Fixture) {
   const placements = await import("@/mutations/placements");
   await placements.addPlacement(
     f.ids.darts,
@@ -214,16 +214,16 @@ async function finalizeDarts(f: Fixture) {
     f.ctx(ORGANIZER),
     f.tx,
   );
-  const finalized = await placements.finalizePlacements(
+  const closed = await placements.closePlacements(
     f.ids.darts,
     f.ctx(ORGANIZER),
     f.tx,
   );
-  if (!finalized.ok) throw new Error(finalized.error);
+  if (!closed.ok) throw new Error(closed.error);
 }
 
-/** Enters Neo and Trinity in Chess, draws it and plays its one Heat. */
-async function playChess(f: Fixture, { finalize = false } = {}) {
+/** Enters Neo and Trinity in Chess, draws it and plays its one Match. */
+async function playChess(f: Fixture, { close = false } = {}) {
   const brackets = await import("@/mutations/brackets");
   const { getBracket } = await import("@/queries/brackets");
   await brackets.replaceEntrants(
@@ -239,16 +239,16 @@ async function playChess(f: Fixture, { finalize = false } = {}) {
     f.tx,
   );
   const view = (await getBracket(f.ids.chess, f.tx))!;
-  const heat = view.bracket.heats[0];
-  await brackets.recordHeatResult(
+  const match = view.bracket.matches[0];
+  await brackets.recordMatchResult(
     f.ids.chess,
-    heat.id,
-    { order: heat.slots.map((s) => s.entrantId!) },
+    match.id,
+    { order: match.slots.map((s) => s.entrantId!) },
     f.ctx(ORGANIZER),
     f.tx,
   );
-  if (finalize) {
-    const done = await brackets.finalizeBracket(
+  if (close) {
+    const done = await brackets.closeBracket(
       f.ids.chess,
       f.ctx(ORGANIZER),
       f.tx,
@@ -398,7 +398,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
   it("accepts name, description, Group, Hosts and Placement Points while Closed", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await fixture(tx);
-      await finalizeDarts(f);
+      await closeDarts(f);
       for (const change of [
         { field: "name", value: "Darts Final" },
         { field: "description", value: words("Three darts each.") },
@@ -415,8 +415,8 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
         competitionGroup: "Pub games",
         placementPoints: [12, 9],
       });
-      expect(after.finalizedAt).toBeInstanceOf(Date);
-      // Applies at the next Finalize: the generated Points Entry stands.
+      expect(after.closedAt).toBeInstanceOf(Date);
+      // Applies at the next Close: the generated Points Entry stands.
       const entries = await tx
         .select({ points: f.schema.pointsEntry.points })
         .from(f.schema.pointsEntry)
@@ -587,7 +587,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
           value: { targetIds: [f.neo, f.trinity] },
         }),
       ).toEqual(OK);
-      // Entrants are a result, but no Heat has one yet.
+      // Entrants are a result, but no Match has one yet.
       expect(
         await f.save(f.ids.chess, {
           field: "bracketConfig",
@@ -645,7 +645,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
 
       const brackets = await import("@/mutations/brackets");
       expect(
-        await brackets.finalizeBracket(f.ids.chess, f.ctx(ORGANIZER), tx),
+        await brackets.closeBracket(f.ids.chess, f.ctx(ORGANIZER), tx),
       ).toEqual(OK);
       const before = await f.row(f.ids.chess);
       for (const change of [
@@ -737,7 +737,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
   it("refuses everything but the never-locked fields while Closed", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await fixture(tx);
-      await finalizeDarts(f);
+      await closeDarts(f);
       expect(
         await f.save(f.ids.darts, { field: "format", value: "bracket" }),
       ).toMatchObject(LOCKED_BY_RESULT);

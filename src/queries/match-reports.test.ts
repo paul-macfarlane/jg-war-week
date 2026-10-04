@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import type { DBTx } from "@/db";
 import { isLocalDatabaseUrl } from "@/db/local-url";
 import { inRolledBackTransaction } from "@/db/test-transaction";
-import { heatReportError } from "@/lib/bracket/heat-report-rule";
+import { matchReportError } from "@/lib/bracket/match-report-rule";
 
 // Runs only against a local Postgres (see vitest.config.ts).
 const isLocalDatabase = isLocalDatabaseUrl(
@@ -139,8 +139,8 @@ async function fixture(tx: DBTx) {
     ok: true,
   });
   const bracket = await loadBracket(cypher.id, tx);
-  const heatAt = (round: number, position: number) =>
-    bracket.heats.find((h) => h.round === round && h.position === position)!;
+  const matchAt = (round: number, position: number) =>
+    bracket.matches.find((h) => h.round === round && h.position === position)!;
 
   return {
     schema,
@@ -150,22 +150,22 @@ async function fixture(tx: DBTx) {
     p,
     squadIds,
     cypherId: cypher.id,
-    semi1: heatAt(1, 1),
-    semi2: heatAt(1, 2),
-    final: heatAt(2, 1),
+    semi1: matchAt(1, 1),
+    semi2: matchAt(1, 2),
+    final: matchAt(2, 1),
   };
 }
 
 const bySquad = <T extends { squadId: string | null }>(list: T[]) =>
   [...list].sort((a, b) => (a.squadId ?? "").localeCompare(b.squadId ?? ""));
 
-describe.skipIf(!isLocalDatabase)("getHeatReportFacts", () => {
+describe.skipIf(!isLocalDatabase)("getMatchReportFacts", () => {
   it("links through a Squad, ignoring case, in Red Bravo vs Red Alpha", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { getHeatReportFacts } = await import("@/queries/heat-reports");
+      const { getMatchReportFacts } = await import("@/queries/match-reports");
       const f = await fixture(tx);
 
-      const facts = await getHeatReportFacts(
+      const facts = await getMatchReportFacts(
         f.cypherId,
         f.semi1.id,
         "  Ashley@JahnelGroup.com ",
@@ -176,10 +176,10 @@ describe.skipIf(!isLocalDatabase)("getHeatReportFacts", () => {
         teamId: f.red,
         squadId: f.squadIds["Red Alpha"],
       });
-      expect(facts.heatReport.selfReport).toBe(true);
-      expect(facts.heatReport.heat).toBe("open");
+      expect(facts.matchReport.selfReport).toBe(true);
+      expect(facts.matchReport.match).toBe("open");
       // Squad Entrants carry no Team of their own.
-      expect(bySquad(facts.heatReport.entrants)).toEqual(
+      expect(bySquad(facts.matchReport.entrants)).toEqual(
         bySquad([
           {
             teamId: null,
@@ -193,17 +193,17 @@ describe.skipIf(!isLocalDatabase)("getHeatReportFacts", () => {
           },
         ]),
       );
-      expect(heatReportError(facts.heatReport)).toBeNull();
+      expect(matchReportError(facts.matchReport)).toBeNull();
       expect(JSON.stringify(facts)).not.toContain("@");
     });
   });
 
   it("the same-Team Squad Match: a Red Participant in neither Squad isn't in it; one in the opposing Squad is", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { getHeatReportFacts } = await import("@/queries/heat-reports");
+      const { getMatchReportFacts } = await import("@/queries/match-reports");
       const f = await fixture(tx);
 
-      const neo = await getHeatReportFacts(
+      const neo = await getMatchReportFacts(
         f.cypherId,
         f.semi1.id,
         "neo@jahnelgroup.com",
@@ -214,25 +214,27 @@ describe.skipIf(!isLocalDatabase)("getHeatReportFacts", () => {
         teamId: f.red,
         squadId: null,
       });
-      expect(heatReportError(neo.heatReport)).toBe("You're not in this Match.");
+      expect(matchReportError(neo.matchReport)).toBe(
+        "You're not in this Match.",
+      );
 
-      const ryan = await getHeatReportFacts(
+      const ryan = await getMatchReportFacts(
         f.cypherId,
         f.semi1.id,
         "ryan@jahnelgroup.com",
         tx,
       );
       expect(ryan.linked?.squadId).toBe(f.squadIds["Red Bravo"]);
-      expect(heatReportError(ryan.heatReport)).toBeNull();
+      expect(matchReportError(ryan.matchReport)).toBeNull();
 
       // Graham (Blue Alpha) isn't in the Red Semifinal.
-      const graham = await getHeatReportFacts(
+      const graham = await getMatchReportFacts(
         f.cypherId,
         f.semi1.id,
         "graham@jahnelgroup.com",
         tx,
       );
-      expect(heatReportError(graham.heatReport)).toBe(
+      expect(matchReportError(graham.matchReport)).toBe(
         "You're not in this Match.",
       );
       for (const facts of [neo, ryan, graham]) {
@@ -243,34 +245,34 @@ describe.skipIf(!isLocalDatabase)("getHeatReportFacts", () => {
 
   it("reads each Match state: open, unfilled, decided, missing", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { getHeatReportFacts } = await import("@/queries/heat-reports");
-      const { recordHeatResult } = await import("@/mutations/brackets");
+      const { getMatchReportFacts } = await import("@/queries/match-reports");
+      const { recordMatchResult } = await import("@/mutations/brackets");
       const f = await fixture(tx);
-      const facts = (heatId: string) =>
-        getHeatReportFacts(f.cypherId, heatId, "ashley@jahnelgroup.com", tx);
+      const facts = (matchId: string) =>
+        getMatchReportFacts(f.cypherId, matchId, "ashley@jahnelgroup.com", tx);
 
-      expect((await facts(f.final.id)).heatReport).toMatchObject({
-        heat: "unfilled",
+      expect((await facts(f.final.id)).matchReport).toMatchObject({
+        match: "unfilled",
         entrants: [],
       });
       const order = f.semi1.slots.map((s) => s.entrantId!);
       expect(
-        await recordHeatResult(f.cypherId, f.semi1.id, { order }, f.ctx, tx),
+        await recordMatchResult(f.cypherId, f.semi1.id, { order }, f.ctx, tx),
       ).toMatchObject({ ok: true });
-      expect((await facts(f.semi1.id)).heatReport.heat).toBe("decided");
+      expect((await facts(f.semi1.id)).matchReport.match).toBe("decided");
       const final = await facts(f.final.id);
-      expect(final.heatReport.heat).toBe("unfilled");
-      expect(final.heatReport.entrants).toHaveLength(1);
+      expect(final.matchReport.match).toBe("unfilled");
+      expect(final.matchReport.entrants).toHaveLength(1);
 
       const missing = await facts(randomUUID());
-      expect(missing.heatReport).toMatchObject({
-        heat: "missing",
+      expect(missing.matchReport).toMatchObject({
+        match: "missing",
         entrants: [],
       });
-      expect(heatReportError(missing.heatReport)).toBe(
+      expect(matchReportError(missing.matchReport)).toBe(
         "That Match no longer exists.",
       );
-      // A Heat of another Competition is missing from this one.
+      // A Match of another Competition is missing from this one.
       const [other] = await tx
         .insert(f.schema.competition)
         .values({
@@ -283,20 +285,20 @@ describe.skipIf(!isLocalDatabase)("getHeatReportFacts", () => {
         .returning({ id: f.schema.competition.id });
       expect(
         (
-          await getHeatReportFacts(
+          await getMatchReportFacts(
             other.id,
             f.semi2.id,
             "ashley@jahnelgroup.com",
             tx,
           )
-        ).heatReport.heat,
+        ).matchReport.match,
       ).toBe("missing");
     });
   });
 
   it("links through a Team and as the Participant, and reads a bye", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { getHeatReportFacts } = await import("@/queries/heat-reports");
+      const { getMatchReportFacts } = await import("@/queries/match-reports");
       const { generateBracket } = await import("@/mutations/brackets");
       const { loadBracket } = await import("@/queries/brackets");
       const { isBye } = await import("@/lib/bracket/formats");
@@ -342,69 +344,69 @@ describe.skipIf(!isLocalDatabase)("getHeatReportFacts", () => {
       await generateBracket(chess.id, { rng: rngZero }, f.ctx, tx);
 
       const relayBracket = await loadBracket(relay.id, tx);
-      const bye = relayBracket.heats.find(
+      const bye = relayBracket.matches.find(
         (h) => h.round === 1 && isBye(relayBracket, h),
       )!;
-      const played = relayBracket.heats.find(
+      const played = relayBracket.matches.find(
         (h) => h.round === 1 && !isBye(relayBracket, h),
       )!;
-      const byeFacts = await getHeatReportFacts(
+      const byeFacts = await getMatchReportFacts(
         relay.id,
         bye.id,
         "ashley@jahnelgroup.com",
         tx,
       );
-      expect(byeFacts.heatReport.heat).toBe("bye");
+      expect(byeFacts.matchReport.match).toBe("bye");
       expect(byeFacts.linked).toEqual({
         participantId: f.p("Ashley Schuliger"),
         teamId: f.red,
         squadId: null,
       });
 
-      // Of three Teams, one has the bye, so Red or Blue plays this Heat:
+      // Of three Teams, one has the bye, so Red or Blue plays this Match:
       // report as a Participant of whichever does, through their Team.
-      const teamsInHeat = (
+      const teamsInMatch = (
         await tx
           .select({ teamId: f.schema.entrant.teamId })
-          .from(f.schema.heatEntrant)
+          .from(f.schema.bracketMatchEntrant)
           .innerJoin(
             f.schema.entrant,
-            eq(f.schema.entrant.id, f.schema.heatEntrant.entrantId),
+            eq(f.schema.entrant.id, f.schema.bracketMatchEntrant.entrantId),
           )
-          .where(eq(f.schema.heatEntrant.heatId, played.id))
+          .where(eq(f.schema.bracketMatchEntrant.matchId, played.id))
       ).map((row) => row.teamId);
-      const [email, teamId] = teamsInHeat.includes(f.red)
+      const [email, teamId] = teamsInMatch.includes(f.red)
         ? ["ashley@jahnelgroup.com", f.red]
         : ["graham@jahnelgroup.com", f.blue];
-      const playedFacts = await getHeatReportFacts(
+      const playedFacts = await getMatchReportFacts(
         relay.id,
         played.id,
         email,
         tx,
       );
-      expect(playedFacts.heatReport.heat).toBe("open");
+      expect(playedFacts.matchReport.match).toBe("open");
       expect(playedFacts.linked).toMatchObject({ teamId, squadId: null });
-      expect(playedFacts.heatReport.entrants).toContainEqual({
+      expect(playedFacts.matchReport.entrants).toContainEqual({
         teamId,
         participantId: null,
         squadId: null,
       });
-      expect(heatReportError(playedFacts.heatReport)).toBeNull();
+      expect(matchReportError(playedFacts.matchReport)).toBeNull();
 
       const chessBracket = await loadBracket(chess.id, tx);
-      const chessFacts = await getHeatReportFacts(
+      const chessFacts = await getMatchReportFacts(
         chess.id,
-        chessBracket.heats[0].id,
+        chessBracket.matches[0].id,
         "ashley@jahnelgroup.com",
         tx,
       );
-      expect(chessFacts.heatReport.heat).toBe("open");
-      expect(chessFacts.heatReport.entrants).toContainEqual({
+      expect(chessFacts.matchReport.match).toBe("open");
+      expect(chessFacts.matchReport.entrants).toContainEqual({
         teamId: null,
         participantId: f.p("Ashley Schuliger"),
         squadId: null,
       });
-      expect(heatReportError(chessFacts.heatReport)).toBeNull();
+      expect(matchReportError(chessFacts.matchReport)).toBeNull();
       for (const facts of [byeFacts, playedFacts, chessFacts]) {
         expect(JSON.stringify(facts)).not.toContain("@");
       }
@@ -413,10 +415,10 @@ describe.skipIf(!isLocalDatabase)("getHeatReportFacts", () => {
 
   it("links no one for an unknown email, another War Week's, a blank one, or two case-variant matches", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { getHeatReportFacts } = await import("@/queries/heat-reports");
+      const { getMatchReportFacts } = await import("@/queries/match-reports");
       const f = await fixture(tx);
       const facts = (email: string | null) =>
-        getHeatReportFacts(f.cypherId, f.semi1.id, email, tx);
+        getMatchReportFacts(f.cypherId, f.semi1.id, email, tx);
 
       for (const email of [
         "nobody@jahnelgroup.com",
@@ -426,7 +428,7 @@ describe.skipIf(!isLocalDatabase)("getHeatReportFacts", () => {
       ]) {
         const result = await facts(email);
         expect(result.linked).toBeNull();
-        expect(heatReportError(result.heatReport)).toBe(
+        expect(matchReportError(result.matchReport)).toBe(
           "Your sign-in doesn't match a Participant of this War Week.",
         );
         expect(JSON.stringify(result)).not.toContain("@");
@@ -451,19 +453,19 @@ describe.skipIf(!isLocalDatabase)("getHeatReportFacts", () => {
 
   it("carries the Competition's self-report setting", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { getHeatReportFacts } = await import("@/queries/heat-reports");
-      const { setSelfReport } = await import("@/mutations/heat-reports");
+      const { getMatchReportFacts } = await import("@/queries/match-reports");
+      const { setSelfReport } = await import("@/mutations/match-reports");
       const f = await fixture(tx);
       await setSelfReport(f.cypherId, { on: false }, f.ctx, tx);
 
-      const facts = await getHeatReportFacts(
+      const facts = await getMatchReportFacts(
         f.cypherId,
         f.semi1.id,
         "ashley@jahnelgroup.com",
         tx,
       );
-      expect(facts.heatReport.selfReport).toBe(false);
-      expect(heatReportError(facts.heatReport)).toBe(
+      expect(facts.matchReport.selfReport).toBe(false);
+      expect(matchReportError(facts.matchReport)).toBe(
         "Self-report is off for this Competition.",
       );
     });

@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import {
   addEveryone,
   addPlacement,
-  finalizePlacements,
+  closePlacements,
   removePlacement,
   reopenPlacements,
   savePlacements,
@@ -58,7 +58,7 @@ function placeOf(text: string): number | null {
 /**
  * A Placement Competition's sheet (CONTEXT.md, Placement), the run area of
  * its Competition page: add people by search or Add everyone, give each
- * row a Place and an optional Score, Save, then Finalize into Points
+ * row a Place and an optional Score, Save, then Close into Points
  * Entries by the Placement Points; Reopen withdraws them. With a Score
  * direction (a setting in the page's Settings, saved on its own), Places
  * fill from Scores as they're typed and stay editable for ties and
@@ -75,7 +75,7 @@ export function PlacementSheet({
     scoring: "team" | "individual";
     placementPoints: number[] | null;
     scoreDirection: ScoreDirection;
-    finalized: boolean;
+    closed: boolean;
   };
   rows: PlacementSheetRow[];
   /** Who the search can add: Teams, or Participants with their Team. */
@@ -87,8 +87,8 @@ export function PlacementSheet({
   const [running, startTransition] = useTransition();
   const [saving, startSaving] = useTransition();
   const pending = running || saving;
-  const locked = competition.finalized;
-  // A Finalized sheet has no Remove buttons, so no column for them.
+  const locked = competition.closed;
+  // A Closed sheet has no Remove buttons, so no column for them.
   const columns = locked
     ? "grid-cols-[3.5rem_1fr_5.5rem_3rem]"
     : "grid-cols-[3.5rem_1fr_5.5rem_3rem_2.75rem]";
@@ -397,7 +397,7 @@ export function PlacementSheet({
                     : "It has no Placement Points, so no points are given."
                 }
                 confirmLabel="Close"
-                action={() => finalizePlacements(competition.id)}
+                action={() => closePlacements(competition.id)}
                 successMessage="Competition closed"
                 variant="default"
                 size="lg"

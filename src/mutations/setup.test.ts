@@ -1105,7 +1105,7 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
         .returning({ id: schema.competition.id });
       await tx
         .update(schema.competition)
-        .set({ finalizedAt: new Date() })
+        .set({ closedAt: new Date() })
         .where(eq(schema.competition.id, bracket.id));
 
       expect(
@@ -1167,7 +1167,7 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
 
       await tx
         .update(schema.competition)
-        .set({ finalizedAt: null })
+        .set({ closedAt: null })
         .where(eq(schema.competition.id, bracket.id));
 
       expect(

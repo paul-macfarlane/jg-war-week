@@ -77,8 +77,8 @@ function show(over: Partial<CompetitionSettingsSource>) {
           format: "placement",
           hasResult: false,
           hasGame: false,
-          hasHeatResult: false,
-          finalized: false,
+          hasMatchResult: false,
+          closed: false,
         }}
         mode="teams"
         teamLabel="Team"

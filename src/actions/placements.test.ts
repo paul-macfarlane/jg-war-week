@@ -182,7 +182,7 @@ async function fixture(tx: DBTx) {
         scoring: schema.competition.scoring,
         placementPoints: schema.competition.placementPoints,
         scoreDirection: schema.competition.scoreDirection,
-        finalizedAt: schema.competition.finalizedAt,
+        closedAt: schema.competition.closedAt,
       })
       .from(schema.competition)
       .where(inArray(schema.competition.id, ids))
@@ -239,7 +239,7 @@ async function everyAction(f: Fixture, competitionId = f.ids.darts) {
   const a = await actions();
   return [
     ...(await rowChanges(f, competitionId)),
-    ["finalizePlacements", () => a.finalizePlacements(competitionId)],
+    ["closePlacements", () => a.closePlacements(competitionId)],
     ["reopenPlacements", () => a.reopenPlacements(competitionId)],
   ] as const;
 }
@@ -282,7 +282,7 @@ describe.skipIf(!isLocalDatabase)("the placement actions' refusals", () => {
       const f = await fixture(tx);
       session.email = HOST;
       const a = await actions();
-      expect(await a.finalizePlacements(f.ids.darts)).toEqual({ ok: true });
+      expect(await a.closePlacements(f.ids.darts)).toEqual({ ok: true });
       const { entries } = await f.snapshot();
       expect(
         entries.map(({ participantId, points }) => ({ participantId, points })),
@@ -354,7 +354,7 @@ describe.skipIf(!isLocalDatabase)("the placement actions' refusals", () => {
       const f = await fixture(tx);
       session.email = HOST;
       const a = await actions();
-      expect(await a.finalizePlacements(f.ids.darts)).toEqual({ ok: true });
+      expect(await a.closePlacements(f.ids.darts)).toEqual({ ok: true });
       const before = await f.snapshot();
       for (const [name, run] of await rowChanges(f)) {
         expect(await run(), name).toEqual({

@@ -173,7 +173,7 @@ test.describe("100 Participants in the XII scale demo", () => {
           page.getByRole("heading", { name: "Record placements" }),
         ).toBeVisible();
         await expect(page.getByText(LONG_NAME).first()).toBeVisible();
-        // Finalized: no Remove column, header or button in the sheet.
+        // Closed: no Remove column, header or button in the sheet.
         const sheet = page.getByRole("list", { name: "Placements" });
         await expect(
           sheet.getByRole("button", { name: /^Remove / }),

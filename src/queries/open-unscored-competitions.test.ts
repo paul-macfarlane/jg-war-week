@@ -137,7 +137,7 @@ describe.skipIf(!isLocalDatabase)("getOpenUnscoredCompetitions", () => {
       await mutations.logGame(pong, redBeatsBlue(f.red, f.blue), f.ctx, tx);
       await tx
         .update(f.schema.competition)
-        .set({ finalizedAt: new Date() })
+        .set({ closedAt: new Date() })
         .where(eq(f.schema.competition.id, pong));
 
       expect(

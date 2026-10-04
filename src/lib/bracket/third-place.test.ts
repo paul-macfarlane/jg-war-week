@@ -13,7 +13,7 @@ import {
 } from "@/lib/bracket/formats";
 import { pointsFor } from "@/lib/bracket/points";
 import { bracketTree } from "@/lib/bracket/tree";
-import type { Bracket, Entrant, Heat } from "@/lib/bracket/types";
+import type { Bracket, Entrant, Match } from "@/lib/bracket/types";
 import { matchName } from "@/lib/bracket/view";
 
 const withGame: BracketConfig = {
@@ -35,18 +35,18 @@ function entrants(count: number): Entrant[] {
 
 const newId = (round: number, position: number) => `r${round}h${position}`;
 
-function heat(bracket: Bracket, id: string): Heat {
-  const found = bracket.heats.find((h) => h.id === id);
+function match(bracket: Bracket, id: string): Match {
+  const found = bracket.matches.find((h) => h.id === id);
   if (!found) throw new Error(`no Match ${id}`);
   return found;
 }
 
-/** Plays `heatId` with `winner` first. */
-function win(bracket: Bracket, heatId: string, winner: string): Bracket {
-  const others = heat(bracket, heatId)
+/** Plays `matchId` with `winner` first. */
+function win(bracket: Bracket, matchId: string, winner: string): Bracket {
+  const others = match(bracket, matchId)
     .slots.map((s) => s.entrantId!)
     .filter((id) => id !== winner);
-  return applyResult(bracket, heatId, { order: [winner, ...others] });
+  return applyResult(bracket, matchId, { order: [winner, ...others] });
 }
 
 /**
@@ -72,8 +72,8 @@ describe("Generate with a 3rd place Match", () => {
   it("adds the 3rd place Match beside the final, fed by each semifinal's loser", () => {
     const bracket = generate(withGame, entrants(8), newId);
 
-    const final = heat(bracket, "r3h1");
-    const third = heat(bracket, "r3h2");
+    const final = match(bracket, "r3h1");
+    const third = match(bracket, "r3h2");
     expect([final.round, final.position, final.thirdPlace]).toEqual([
       3,
       1,
@@ -84,22 +84,28 @@ describe("Generate with a 3rd place Match", () => {
       2,
       true,
     ]);
-    expect(heat(bracket, "r2h1").loserTo).toEqual({ heatId: "r3h2", slot: 0 });
-    expect(heat(bracket, "r2h2").loserTo).toEqual({ heatId: "r3h2", slot: 1 });
+    expect(match(bracket, "r2h1").loserTo).toEqual({
+      matchId: "r3h2",
+      slot: 0,
+    });
+    expect(match(bracket, "r2h2").loserTo).toEqual({
+      matchId: "r3h2",
+      slot: 1,
+    });
     expect(third.winnerTo).toBeNull();
-    expect(heat(bracket, "r1h1").loserTo).toBeNull();
-    expect(bracket.heats).toHaveLength(8);
+    expect(match(bracket, "r1h1").loserTo).toBeNull();
+    expect(bracket.matches).toHaveLength(8);
   });
 
   it("has no 3rd place Match without the setting", () => {
     const bracket = generate(withoutGame, entrants(8), newId);
-    expect(bracket.heats.some((h) => h.thirdPlace)).toBe(false);
-    expect(bracket.heats.every((h) => h.loserTo === null)).toBe(true);
-    expect(bracket.heats).toHaveLength(7);
+    expect(bracket.matches.some((h) => h.thirdPlace)).toBe(false);
+    expect(bracket.matches.every((h) => h.loserTo === null)).toBe(true);
+    expect(bracket.matches).toHaveLength(7);
   });
 
   it("sends each semifinal's loser to the 3rd place Match", () => {
-    const third = heat(throughSemifinals(withGame), "r3h2");
+    const third = match(throughSemifinals(withGame), "r3h2");
     expect(third.slots.map((s) => s.entrantId)).toEqual(["s4", "s3"]);
     expect(third.status).toBe("ready");
   });
@@ -107,7 +113,7 @@ describe("Generate with a 3rd place Match", () => {
   it("plays 4 Entrants: two semifinals, the final and the 3rd place Match", () => {
     let bracket = generate(withGame, entrants(4), newId);
     expect(
-      bracket.heats.map((h) => [h.id, h.round, h.position, h.thirdPlace]),
+      bracket.matches.map((h) => [h.id, h.round, h.position, h.thirdPlace]),
     ).toEqual([
       ["r1h1", 1, 1, false],
       ["r1h2", 1, 2, false],
@@ -116,7 +122,7 @@ describe("Generate with a 3rd place Match", () => {
     ]);
     bracket = win(bracket, "r1h1", "s4");
     bracket = win(bracket, "r1h2", "s2");
-    expect(heat(bracket, "r2h2").slots.map((s) => s.entrantId)).toEqual([
+    expect(match(bracket, "r2h2").slots.map((s) => s.entrantId)).toEqual([
       "s1",
       "s3",
     ]);
@@ -269,11 +275,14 @@ describe("the final, with a 3rd place Match present", () => {
 
   it("names the Matches Final and 3rd place Match, in the tree too", () => {
     const bracket = generate(withGame, entrants(8), newId);
-    expect(matchName(bracket, heat(bracket, "r3h1"))).toBe("Final");
-    expect(matchName(bracket, heat(bracket, "r3h2"))).toBe("3rd place Match");
-    expect(matchName(bracket, heat(bracket, "r2h1"))).toBe("Semifinal 1");
+    expect(matchName(bracket, match(bracket, "r3h1"))).toBe("Final");
+    expect(matchName(bracket, match(bracket, "r3h2"))).toBe("3rd place Match");
+    expect(matchName(bracket, match(bracket, "r2h1"))).toBe("Semifinal 1");
     const last = bracketTree(bracket).rounds.at(-1)!;
-    expect(last.heats.map((h) => h.name)).toEqual(["Final", "3rd place Match"]);
+    expect(last.matches.map((h) => h.name)).toEqual([
+      "Final",
+      "3rd place Match",
+    ]);
   });
 
   it("a changed semifinal winner empties the 3rd place Match and sends the new loser", () => {
@@ -282,13 +291,13 @@ describe("the final, with a 3rd place Match present", () => {
       "r3h2",
     ]);
     bracket = applyResult(bracket, "r2h1", { order: ["s4", "s1"] });
-    const third = heat(bracket, "r3h2");
+    const third = match(bracket, "r3h2");
     expect(third.slots).toEqual([
       { entrantId: "s1", place: null, score: null },
       { entrantId: "s3", place: null, score: null },
     ]);
     expect(third.status).toBe("ready");
-    expect(heat(bracket, "r3h1").slots.map((s) => s.entrantId)).toEqual([
+    expect(match(bracket, "r3h1").slots.map((s) => s.entrantId)).toEqual([
       "s4",
       "s2",
     ]);
@@ -301,12 +310,12 @@ describe("the final, with a 3rd place Match present", () => {
       "r3h2",
     ]);
     const next = applyResult(bracket, "r1h2", { order: ["s5", "s4"] });
-    expect(heat(next, "r3h2").slots.map((s) => s.entrantId)).toEqual([
+    expect(match(next, "r3h2").slots.map((s) => s.entrantId)).toEqual([
       null,
       "s3",
     ]);
-    expect(heat(next, "r3h2").status).toBe("pending");
-    expect(heat(next, "r2h1").slots.map((s) => s.entrantId)).toEqual([
+    expect(match(next, "r3h2").status).toBe("pending");
+    expect(match(next, "r2h1").slots.map((s) => s.entrantId)).toEqual([
       "s1",
       "s5",
     ]);

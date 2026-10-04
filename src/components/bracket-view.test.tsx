@@ -71,12 +71,16 @@ describe("BracketView", () => {
     primaryColor: "#000",
     participantTeams: {},
     participantSquads: {},
-    selfReport: { on: true, linkedParticipantId: null, reportableHeatId: null },
+    selfReport: {
+      on: true,
+      linkedParticipantId: null,
+      reportableMatchId: null,
+    },
   };
 
   it("refreshes live before the Bracket is drawn, so the draw appears", () => {
     const html = renderToStaticMarkup(
-      <BracketView {...props} bracket={{ ...bracket, heats: [] }} />,
+      <BracketView {...props} bracket={{ ...bracket, matches: [] }} />,
     );
     expect(html).toContain("The Bracket hasn&#x27;t been drawn yet.");
     expect(html).toContain("data-auto-refresh");
@@ -129,7 +133,7 @@ describe("BracketView", () => {
   it("shows when a played Match was recorded, in the default tree", () => {
     const played = {
       ...bracket,
-      heats: bracket.heats.map((h, i) =>
+      matches: bracket.matches.map((h, i) =>
         i === 0
           ? {
               ...h,
@@ -173,7 +177,7 @@ describe("BracketView", () => {
           <BracketView
             {...props}
             entrants={squads}
-            bracket={{ ...bracket, heats: [] }}
+            bracket={{ ...bracket, matches: [] }}
           />,
         ),
       ),
@@ -192,13 +196,13 @@ describe("BracketView's Record result in the tree", () => {
     participantId: `p${i + 1}`,
     label: ["Neo", "Trinity"][i],
   }));
-  const heatId = bracket.heats[0].id;
+  const matchId = bracket.matches[0].id;
   const view = (
     linkedId: string | null,
     selfReport: {
       on: boolean;
       linkedParticipantId: string | null;
-      reportableHeatId: string | null;
+      reportableMatchId: string | null;
     },
   ) =>
     renderToStaticMarkup(
@@ -226,7 +230,7 @@ describe("BracketView's Record result in the tree", () => {
     const html = view("p1", {
       on: true,
       linkedParticipantId: "p1",
-      reportableHeatId: heatId,
+      reportableMatchId: matchId,
     });
     expect(recordButtons(html)).toEqual(["Record result for Final"]);
   });
@@ -235,7 +239,7 @@ describe("BracketView's Record result in the tree", () => {
     const html = view("p3", {
       on: true,
       linkedParticipantId: "p3",
-      reportableHeatId: null,
+      reportableMatchId: null,
     });
     expect(recordButtons(html)).toEqual([]);
   });
@@ -244,7 +248,7 @@ describe("BracketView's Record result in the tree", () => {
     const html = view("p1", {
       on: false,
       linkedParticipantId: "p1",
-      reportableHeatId: heatId,
+      reportableMatchId: matchId,
     });
     expect(recordButtons(html)).toEqual([]);
     expect(html).not.toContain("Report result");

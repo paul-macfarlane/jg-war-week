@@ -94,7 +94,7 @@ describe.skipIf(!isLocalDatabase)("Discretionary points mutations", () => {
         points: 2.5,
         note: "Spirit award",
         enteredByEmail: actorEmail,
-        generatedByBracket: false,
+        generated: false,
       });
     });
   });
@@ -282,14 +282,14 @@ describe.skipIf(!isLocalDatabase)("Discretionary points mutations", () => {
         await tx
           .insert(schema.pointsEntry)
           .values(
-            [false, true].map((generatedByBracket) => ({
+            [false, true].map((generated) => ({
               warWeekId: home.ctx.warWeekId,
               competitionId: home.tugId,
               teamId: home.teamId,
               points: 3,
-              note: generatedByBracket ? "From bracket" : "typed",
+              note: generated ? "From bracket" : "typed",
               enteredByEmail: actorEmail,
-              generatedByBracket,
+              generated,
             })),
           )
           .returning({ id: schema.pointsEntry.id })

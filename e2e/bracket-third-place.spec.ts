@@ -57,14 +57,14 @@ test.afterEach(async () => {
   ]);
 });
 
-/** Records the Heat named `heat`, with its first-listed Entrant winning. */
-async function recordHeat(page: Page, heat: string) {
+/** Records the Match named `match`, with its first-listed Entrant winning. */
+async function recordMatch(page: Page, match: string) {
   // From the admin Bracket's tree, the one Participants see.
   await page
     .locator("[data-bracket-tree]")
-    .getByRole("button", { name: `Record result for ${heat}` })
+    .getByRole("button", { name: `Record result for ${match}` })
     .click();
-  const sheet = page.getByRole("dialog", { name: heat });
+  const sheet = page.getByRole("dialog", { name: match });
   const winner = sheet
     .getByRole("group", { name: "Winner" })
     .getByRole("button")
@@ -75,7 +75,7 @@ async function recordHeat(page: Page, heat: string) {
   if (!name) throw new Error(`No Entrant named in "${text}"`);
   await winner.click();
   await sheet.getByRole("button", { name: "Save Match Result" }).click();
-  await expect(page.getByText(`${name} wins ${heat}`)).toBeVisible();
+  await expect(page.getByText(`${name} wins ${match}`)).toBeVisible();
   await expect(sheet).toBeHidden();
 }
 /** The last Round's places by name: the final's, then the 3rd place Match's. */
@@ -85,12 +85,12 @@ async function lastRoundPlaces() {
     third_place: boolean;
     place: number;
   }>(
-    `select p.display_name, h.third_place, he.place from heat h
-     join heat_entrant he on he.heat_id = h.id
+    `select p.display_name, h.third_place, he.place from bracket_match h
+     join bracket_match_entrant he on he.bracket_match_id = h.id
      join entrant e on e.id = he.entrant_id
      join participant p on p.id = e.participant_id
      where h.competition_id = $1 and he.place is not null
-       and h.round = (select max(round) from heat where competition_id = $1)
+       and h.round = (select max(round) from bracket_match where competition_id = $1)
      order by h.third_place, he.place`,
     [competitionId],
   );
@@ -153,7 +153,7 @@ test("a head-to-head Bracket of 8 with a 3rd place Match is run to Close, its po
 
   // The Bracket tree is on the same page, below the Entrants.
   await expect(page.locator("[data-bracket-tree]")).toBeVisible();
-  for (const heat of [
+  for (const match of [
     "Round 1 Match 1",
     "Round 1 Match 2",
     "Round 1 Match 3",
@@ -162,7 +162,7 @@ test("a head-to-head Bracket of 8 with a 3rd place Match is run to Close, its po
     "Semifinal 2",
     "Final",
   ]) {
-    await recordHeat(page, heat);
+    await recordMatch(page, match);
   }
 
   // The Final alone doesn't finish the Bracket: the 3rd place Match is left.
@@ -176,7 +176,7 @@ test("a head-to-head Bracket of 8 with a 3rd place Match is run to Close, its po
   const finalOnly = await expectedPodium();
   expect(finalOnly).toHaveLength(2);
   await expectPodium(page, finalOnly);
-  await recordHeat(page, "3rd place Match");
+  await recordMatch(page, "3rd place Match");
   const podium = await expectedPodium();
   expect(podium.map((place) => place.points)).toEqual([
     "10 points",
@@ -208,7 +208,7 @@ test("a head-to-head Bracket of 8 with a 3rd place Match is run to Close, its po
   const entries = await runQuery<{ display_name: string; points: string }>(
     `select p.display_name, pe.points::text as points from points_entry pe
      join participant p on p.id = pe.participant_id
-     where pe.competition_id = $1 and pe.generated_by_bracket`,
+     where pe.competition_id = $1 and pe.generated`,
     [competitionId],
   );
   // Exactly the four placed Entrants get Points Entries, and nobody else.
@@ -242,7 +242,7 @@ test("a head-to-head Bracket of 8 with a 3rd place Match is run to Close, its po
   await axePodium(page, testInfo, "podium-third-place-axe");
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.screenshot({
-    path: testInfo.outputPath("third-place-finalized-1440.png"),
+    path: testInfo.outputPath("third-place-closed-1440.png"),
     fullPage: true,
   });
 });

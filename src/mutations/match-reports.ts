@@ -2,23 +2,23 @@ import { eq, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import { competition } from "@/db/schema";
-import { NOT_LINKED, heatReportError } from "@/lib/bracket/heat-report-rule";
-import type { HeatResult } from "@/lib/bracket/types";
+import { NOT_LINKED, matchReportError } from "@/lib/bracket/match-report-rule";
+import type { MatchResult } from "@/lib/bracket/types";
 import {
   COMPETITION_NOT_FOUND,
   bracketRefusal,
   lockedCompetition,
   refuse,
-  writeHeatResult,
+  writeMatchResult,
 } from "@/mutations/brackets";
 import type { MutationContext, MutationResult } from "@/mutations/types";
-import { getHeatReportFacts } from "@/queries/heat-reports";
+import { getMatchReportFacts } from "@/queries/match-reports";
 
 /**
  * Turns self-report on or off for a Bracket (ADR 0005). Takes the
  * Competition's row lock, so a report in flight runs before or after it and
- * its in-lock re-check sees the new setting. Allowed while finalized (it
- * changes no Heat); results already reported stand when it's turned off.
+ * its in-lock re-check sees the new setting. Allowed while closed (it
+ * changes no Match); results already reported stand when it's turned off.
  */
 export async function setSelfReport(
   competitionId: string,
@@ -28,7 +28,7 @@ export async function setSelfReport(
 ): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedCompetition(tx, competitionId, ctx);
-    const refusal = bracketRefusal(found, { allowFinalized: true });
+    const refusal = bracketRefusal(found, { allowClosed: true });
     if (refusal) return refuse(refusal);
     await tx
       .update(competition)
@@ -39,33 +39,33 @@ export async function setSelfReport(
 }
 
 /**
- * A linked Participant's own Heat Result (ADR 0005): under the
- * Competition's row lock, reloads the Heat facts and checks them again (so
- * of two racing reports the second sees the Heat decided, and a report
+ * A linked Participant's own Match Result (ADR 0005): under the
+ * Competition's row lock, reloads the Match facts and checks them again (so
+ * of two racing reports the second sees the Match decided, and a report
  * after self-report is turned off is refused), then writes it through the
- * same core as a Host's result, recording the reporter on that Heat.
+ * same core as a Host's result, recording the reporter on that Match.
  */
-export async function submitHeatReport(
+export async function submitMatchReport(
   competitionId: string,
-  heatId: string,
-  result: HeatResult,
+  matchId: string,
+  result: MatchResult,
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<
-  { ok: true; resetHeatIds: string[] } | { ok: false; error: string }
+  { ok: true; resetMatchIds: string[] } | { ok: false; error: string }
 > {
   return dbOrTx.transaction(async (tx) => {
     const found = await lockedCompetition(tx, competitionId, ctx);
     if (!found) return refuse(COMPETITION_NOT_FOUND);
-    const { heatReport, linked } = await getHeatReportFacts(
+    const { matchReport, linked } = await getMatchReportFacts(
       competitionId,
-      heatId,
+      matchId,
       ctx.actorEmail,
       tx,
     );
-    const refusal = heatReportError(heatReport);
+    const refusal = matchReportError(matchReport);
     if (refusal || !linked) return refuse(refusal ?? NOT_LINKED);
-    return writeHeatResult(tx, found, heatId, result, {
+    return writeMatchResult(tx, found, matchId, result, {
       email: ctx.actorEmail,
       participantId: linked.participantId,
     });

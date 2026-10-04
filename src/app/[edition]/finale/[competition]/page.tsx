@@ -19,8 +19,8 @@ export async function generateMetadata({
 }
 
 /**
- * The Bracket Finale, for the projector: a finalized Bracket's placings
- * count in from last place to first and end on the champion. Any signed-in
+ * The Bracket Finale, for the projector: a closed Bracket's placings
+ * count in from last place to first and end on the winner. Any signed-in
  * JG user may open it. No AutoRefresh: it plays what the page loaded.
  */
 export default async function BracketFinalePage({

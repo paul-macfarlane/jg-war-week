@@ -289,8 +289,8 @@ export type FinaleCounts = {
   competitionsRun: number;
   /** Games logged in Head-to-head or Best score Competitions. */
   gamesLogged: number;
-  /** Heats played (a bye is not played). */
-  heatsPlayed: number;
+  /** Matches played (a bye is not played). */
+  matchesPlayed: number;
   pointsEntries: number;
   pointsHandedOut: number;
   /** The War Week's roster. */
@@ -306,7 +306,7 @@ const count = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 const FIGURES: [keyof FinaleCounts, string, string][] = [
   ["competitionsRun", "Competitions run", "Competition run"],
   ["gamesLogged", "Matches and Attempts logged", "Match or Attempt logged"],
-  ["heatsPlayed", "Matches played", "Match played"],
+  ["matchesPlayed", "Matches played", "Match played"],
   ["pointsEntries", "Points Entries", "Points Entry"],
   ["pointsHandedOut", "Points handed out", "Point handed out"],
   ["participants", "Participants", "Participant"],
@@ -343,10 +343,10 @@ export type FinaleWinner = {
 
 /**
  * The Winners slide's lines: every Closed Bracket's Winner and every
- * Finalized Placement's or closed Head-to-head, Best score or team-scoring `participation`
+ * Closed Placement's or closed Head-to-head, Best score or team-scoring `participation`
  * Competition's winner (ties
  * listed together), by the rule Recent results uses (`finalWinners`), never
- * capped, ordered by when each was finalized or closed. An
+ * capped, ordered by when each was closed or closed. An
  * individual-scoring Participation Competition has no winner and is left
  * out.
  */
@@ -358,8 +358,7 @@ export function winnersList(
     .filter((final) => final.winners.length > 0)
     .sort(
       (a, b) =>
-        a.competition.finalizedAt.getTime() -
-          b.competition.finalizedAt.getTime() ||
+        a.competition.closedAt.getTime() - b.competition.closedAt.getTime() ||
         a.competition.name.localeCompare(b.competition.name),
     )
     .map(({ competition, winners }) => ({

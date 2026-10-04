@@ -2,19 +2,19 @@ import { and, asc, count, eq, like } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import {
+  bracketMatch,
+  bracketMatchEntrant,
   competition,
   competitionHost,
   entrant,
   game,
-  heat,
-  heatEntrant,
   participant,
   participation,
   warWeek,
 } from "@/db/schema";
 import {
   generateBracket,
-  recordHeatResult,
+  recordMatchResult,
   replaceEntrants,
 } from "@/mutations/brackets";
 import { logGame } from "@/mutations/games";
@@ -24,7 +24,7 @@ import type { MutationContext } from "@/mutations/types";
 
 export const BRACKET = "Ping Pong Bracket";
 export const BRACKET_ENTRANTS = 64;
-/** How many of the Bracket's 32 Round 1 Heats get a Heat Result. */
+/** How many of the Bracket's 32 Round 1 Matches get a Match Result. */
 export const RECORDED_ROUND_ONE = 20;
 export const PARTICIPATION = "Morning Stretch";
 export const PARTICIPATION_TICKS = 72;
@@ -160,21 +160,29 @@ async function buildBracket(
     "Generate",
   );
   const roundOne = await dbOrTx
-    .select({ id: heat.id, position: heat.position })
-    .from(heat)
-    .where(and(eq(heat.competitionId, competitionId), eq(heat.round, 1)))
-    .orderBy(asc(heat.position));
+    .select({ id: bracketMatch.id, position: bracketMatch.position })
+    .from(bracketMatch)
+    .where(
+      and(
+        eq(bracketMatch.competitionId, competitionId),
+        eq(bracketMatch.round, 1),
+      ),
+    )
+    .orderBy(asc(bracketMatch.position));
   for (const h of roundOne.slice(0, RECORDED_ROUND_ONE)) {
     const slots = await dbOrTx
-      .select({ entrantId: heatEntrant.entrantId, slot: heatEntrant.slot })
-      .from(heatEntrant)
-      .where(eq(heatEntrant.heatId, h.id))
-      .orderBy(asc(heatEntrant.slot));
+      .select({
+        entrantId: bracketMatchEntrant.entrantId,
+        slot: bracketMatchEntrant.slot,
+      })
+      .from(bracketMatchEntrant)
+      .where(eq(bracketMatchEntrant.matchId, h.id))
+      .orderBy(asc(bracketMatchEntrant.slot));
     const ids = slots.map((s) => s.entrantId);
-    // The upset every fourth Heat: slot 1 wins.
+    // The upset every fourth Match: slot 1 wins.
     const order = h.position % 4 === 0 ? [...ids].reverse() : ids;
     check(
-      await recordHeatResult(
+      await recordMatchResult(
         competitionId,
         h.id,
         {

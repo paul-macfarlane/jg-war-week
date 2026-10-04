@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { reportHeatResult } from "@/actions/heat-reports";
+import { reportMatchResult } from "@/actions/match-reports";
 
 // vi.mock factories are hoisted above the imports, so their values are too.
-const { ID, HEAT, WAR_WEEK, authorized } = vi.hoisted(() => {
+const { ID, MATCH, WAR_WEEK, authorized } = vi.hoisted(() => {
   const WAR_WEEK = "11111111-1111-4111-8111-111111111111";
   return {
     ID: "22222222-2222-4222-8222-222222222222",
-    HEAT: "33333333-3333-4333-8333-333333333333",
+    MATCH: "33333333-3333-4333-8333-333333333333",
     WAR_WEEK,
     /** What the mocked `authorize` returns; each test sets it. */
     authorized: { current: {} as Record<string, unknown> },
@@ -24,12 +24,12 @@ const OK = {
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 const authorize = vi.hoisted(() => vi.fn(async () => authorized.current));
-const authorizeHeatReport = vi.hoisted(() =>
+const authorizeMatchReport = vi.hoisted(() =>
   vi.fn(async () => authorized.current),
 );
-vi.mock("@/auth/authorize", () => ({ authorize, authorizeHeatReport }));
-vi.mock("@/mutations/heat-reports", () => ({
-  submitHeatReport: vi.fn(async () => ({ ok: true, resetHeatIds: [] })),
+vi.mock("@/auth/authorize", () => ({ authorize, authorizeMatchReport }));
+vi.mock("@/mutations/match-reports", () => ({
+  submitMatchReport: vi.fn(async () => ({ ok: true, resetMatchIds: [] })),
 }));
 
 beforeEach(() => {
@@ -40,7 +40,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("reportHeatResult", () => {
+describe("reportMatchResult", () => {
   const REPORTER = {
     ...OK,
     actor: { email: "neo@jahnelgroup.com", isOrganizer: false, hosts: [] },
@@ -53,40 +53,40 @@ describe("reportHeatResult", () => {
       ok: false,
       error: "Self-report is off for this Competition.",
     };
-    const mutations = await import("@/mutations/heat-reports");
+    const mutations = await import("@/mutations/match-reports");
 
-    await expect(reportHeatResult(ID, HEAT, "junk")).resolves.toEqual({
+    await expect(reportMatchResult(ID, MATCH, "junk")).resolves.toEqual({
       ok: false,
       error: "Self-report is off for this Competition.",
     });
-    expect(authorizeHeatReport).toHaveBeenCalledWith(ID, HEAT);
-    expect(mutations.submitHeatReport).not.toHaveBeenCalled();
+    expect(authorizeMatchReport).toHaveBeenCalledWith(ID, MATCH);
+    expect(mutations.submitMatchReport).not.toHaveBeenCalled();
   });
 
   it("refuses a malformed result once authorized", async () => {
     authorized.current = REPORTER;
-    const mutations = await import("@/mutations/heat-reports");
+    const mutations = await import("@/mutations/match-reports");
 
-    const result = await reportHeatResult(ID, HEAT, { order: "Red" });
+    const result = await reportMatchResult(ID, MATCH, { order: "Red" });
     expect(result.ok).toBe(false);
-    expect(mutations.submitHeatReport).not.toHaveBeenCalled();
+    expect(mutations.submitMatchReport).not.toHaveBeenCalled();
   });
 
   it("passes the parsed result and the reporter's context to the mutation", async () => {
     authorized.current = REPORTER;
-    const mutations = await import("@/mutations/heat-reports");
+    const mutations = await import("@/mutations/match-reports");
     const order = [
       "44444444-4444-4444-8444-444444444444",
       "55555555-5555-4555-8555-555555555555",
     ];
 
-    await expect(reportHeatResult(ID, HEAT, { order })).resolves.toEqual({
+    await expect(reportMatchResult(ID, MATCH, { order })).resolves.toEqual({
       ok: true,
-      resetHeatIds: [],
+      resetMatchIds: [],
     });
-    expect(mutations.submitHeatReport).toHaveBeenCalledWith(
+    expect(mutations.submitMatchReport).toHaveBeenCalledWith(
       ID,
-      HEAT,
+      MATCH,
       expect.objectContaining({ order }),
       REPORTER.ctx,
     );

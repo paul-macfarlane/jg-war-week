@@ -7,21 +7,21 @@ import {
   DEFAULT_BRACKET_CONFIG,
   thirdPlaceRefusal,
 } from "@/lib/bracket/config";
-import { finalHeatOf, thirdPlaceHeatOf } from "@/lib/bracket/final";
-import { isDecided } from "@/lib/bracket/heat-status";
+import { finalMatchOf, thirdPlaceMatchOf } from "@/lib/bracket/final";
+import { isDecided } from "@/lib/bracket/match-status";
 import {
   type Bracket,
   BracketError,
   type Entrant,
   type FormatEngine,
-  type Heat,
-  type HeatResult,
-  type HeatSlot,
+  type Match,
+  type MatchResult,
+  type MatchSlot,
   type Placing,
   type WinnerTo,
 } from "@/lib/bracket/types";
 
-function emptySlot(): HeatSlot {
+function emptySlot(): MatchSlot {
   return { entrantId: null, place: null, score: null };
 }
 
@@ -45,25 +45,25 @@ export function seedingOrder(size: number): number[] {
   return order;
 }
 
-function findHeat(bracket: Bracket, heatId: string): Heat {
-  const found = bracket.heats.find((h) => h.id === heatId);
+function findMatch(bracket: Bracket, matchId: string): Match {
+  const found = bracket.matches.find((h) => h.id === matchId);
   if (!found) throw new BracketError("That Match isn't in this Bracket.");
   return found;
 }
 
-/** A first-Round Heat with an empty slot: its one Entrant advances. */
-export function isBye(heat: Heat): boolean {
-  return heat.round === 1 && heat.slots.some((s) => s.entrantId === null);
+/** A first-Round Match with an empty slot: its one Entrant advances. */
+export function isBye(match: Match): boolean {
+  return match.round === 1 && match.slots.some((s) => s.entrantId === null);
 }
 
 /**
- * Moves an Entrant along a link (a Heat's winner, or a semifinal's loser)
- * into the Heat it feeds. One already there is left alone, keeping that
- * Heat's own result.
+ * Moves an Entrant along a link (a Match's winner, or a semifinal's loser)
+ * into the Match it feeds. One already there is left alone, keeping that
+ * Match's own result.
  */
 function advance(bracket: Bracket, to: WinnerTo | null, entrantId: string) {
   if (!to) return;
-  const next = findHeat(bracket, to.heatId);
+  const next = findMatch(bracket, to.matchId);
   if (next.slots[to.slot].entrantId === entrantId) return;
   next.slots[to.slot] = { ...emptySlot(), entrantId };
   if (next.slots.every((s) => s.entrantId !== null)) next.status = "ready";
@@ -72,8 +72,8 @@ function advance(bracket: Bracket, to: WinnerTo | null, entrantId: string) {
 /**
  * Builds a single-elimination Bracket. Byes go to the top Seed Positions,
  * and each bye's Entrant is already advanced. With a 3rd place Match, it
- * is one more Heat in the final's Round at position 2 (the final is 1),
- * fed by each semifinal's loser. Heat ids come from `newId`.
+ * is one more Match in the final's Round at position 2 (the final is 1),
+ * fed by each semifinal's loser. Match ids come from `newId`.
  */
 export function generate(
   entrants: Entrant[],
@@ -98,10 +98,10 @@ export function generate(
   }
   const thirdPlaceId = config.thirdPlaceGame ? newId(rounds, 2) : null;
 
-  const bracket: Bracket = { config, heats: [] };
+  const bracket: Bracket = { config, matches: [] };
   for (let round = 1; round <= rounds; round++) {
     for (let position = 1; position <= size / 2 ** round; position++) {
-      bracket.heats.push({
+      bracket.matches.push({
         id: ids.get(`${round}:${position}`)!,
         round,
         position,
@@ -109,13 +109,13 @@ export function generate(
         winnerTo:
           round < rounds
             ? {
-                heatId: ids.get(`${round + 1}:${Math.ceil(position / 2)}`)!,
+                matchId: ids.get(`${round + 1}:${Math.ceil(position / 2)}`)!,
                 slot: (position - 1) % 2,
               }
             : null,
         loserTo:
           thirdPlaceId && round === rounds - 1
-            ? { heatId: thirdPlaceId, slot: (position - 1) % 2 }
+            ? { matchId: thirdPlaceId, slot: (position - 1) % 2 }
             : null,
         thirdPlace: false,
         status: "pending",
@@ -124,7 +124,7 @@ export function generate(
     }
   }
   if (thirdPlaceId) {
-    bracket.heats.push({
+    bracket.matches.push({
       id: thirdPlaceId,
       round: rounds,
       position: 2,
@@ -138,34 +138,34 @@ export function generate(
   }
 
   const order = seedingOrder(size);
-  const firstRound = bracket.heats.filter((h) => h.round === 1);
-  firstRound.forEach((heat, i) => {
-    heat.slots.forEach((slot, s) => {
+  const firstRound = bracket.matches.filter((h) => h.round === 1);
+  firstRound.forEach((match, i) => {
+    match.slots.forEach((slot, s) => {
       slot.entrantId = ranked[order[i * 2 + s] - 1]?.id ?? null;
     });
   });
-  for (const heat of firstRound) {
-    const lone = heat.slots.filter((s) => s.entrantId !== null);
-    if (lone.length === heat.slots.length) {
-      heat.status = "ready";
+  for (const match of firstRound) {
+    const lone = match.slots.filter((s) => s.entrantId !== null);
+    if (lone.length === match.slots.length) {
+      match.status = "ready";
       continue;
     }
     lone[0].place = 1;
-    heat.status = "played";
-    advance(bracket, heat.winnerTo, lone[0].entrantId!);
+    match.status = "played";
+    advance(bracket, match.winnerTo, lone[0].entrantId!);
   }
   return bracket;
 }
 
-/** Whether any Heat has a recorded Heat Result (byes don't count). */
+/** Whether any Match has a recorded Match Result (byes don't count). */
 export function hasResults(bracket: Bracket): boolean {
-  return bracket.heats.some((h) => isDecided(h) && !isBye(h));
+  return bracket.matches.some((h) => isDecided(h) && !isBye(h));
 }
 
 /** Whether the final, and the 3rd place Match when there is one, are decided. */
 export function isComplete(bracket: Bracket): boolean {
-  const final = finalHeatOf(bracket);
-  const third = thirdPlaceHeatOf(bracket);
+  const final = finalMatchOf(bracket);
+  const third = thirdPlaceMatchOf(bracket);
   return (
     final !== undefined &&
     isDecided(final) &&
@@ -175,84 +175,84 @@ export function isComplete(bracket: Bracket): boolean {
 
 /** The Entrant who won the final, or null while it's undecided. */
 export function bracketWinner(bracket: Bracket): string | null {
-  const final = finalHeatOf(bracket);
+  const final = finalMatchOf(bracket);
   if (!final || !isDecided(final)) return null;
   return final.slots.find((s) => s.place === 1)?.entrantId ?? null;
 }
 
-function winnerOf(heat: Heat): string | null {
-  return heat.slots.find((s) => s.place === 1)?.entrantId ?? null;
+function winnerOf(match: Match): string | null {
+  return match.slots.find((s) => s.place === 1)?.entrantId ?? null;
 }
 
 /**
- * Empties the slot a link fills, sending its Heat back to pending, then
- * follows that Heat's own winner and loser on. Collects the ids of the
- * Heats that had a Heat Result.
+ * Empties the slot a link fills, sending its Match back to pending, then
+ * follows that Match's own winner and loser on. Collects the ids of the
+ * Matches that had a Match Result.
  */
-function clearLink(bracket: Bracket, link: WinnerTo, resetHeatIds: string[]) {
-  const next = findHeat(bracket, link.heatId);
+function clearLink(bracket: Bracket, link: WinnerTo, resetMatchIds: string[]) {
+  const next = findMatch(bracket, link.matchId);
   if (next.slots[link.slot].entrantId === null) return;
-  if (isDecided(next)) resetHeatIds.push(next.id);
+  if (isDecided(next)) resetMatchIds.push(next.id);
   next.slots = next.slots.map((slot, i) =>
     i === link.slot
       ? emptySlot()
       : { ...emptySlot(), entrantId: slot.entrantId },
   );
   next.status = "pending";
-  if (next.winnerTo) clearLink(bracket, next.winnerTo, resetHeatIds);
-  if (next.loserTo) clearLink(bracket, next.loserTo, resetHeatIds);
+  if (next.winnerTo) clearLink(bracket, next.winnerTo, resetMatchIds);
+  if (next.loserTo) clearLink(bracket, next.loserTo, resetMatchIds);
 }
 
 /**
- * Clears `heat`'s winner (and a semifinal's loser) out of every later Heat
- * they reached, sending those Heats back to pending. Returns the ids of the
- * ones that had a Heat Result.
+ * Clears `match`'s winner (and a semifinal's loser) out of every later Match
+ * they reached, sending those Matches back to pending. Returns the ids of the
+ * ones that had a Match Result.
  */
-function clearDownstream(bracket: Bracket, heat: Heat): string[] {
-  const resetHeatIds: string[] = [];
-  if (heat.winnerTo) clearLink(bracket, heat.winnerTo, resetHeatIds);
-  if (heat.loserTo) clearLink(bracket, heat.loserTo, resetHeatIds);
-  return resetHeatIds;
+function clearDownstream(bracket: Bracket, match: Match): string[] {
+  const resetMatchIds: string[] = [];
+  if (match.winnerTo) clearLink(bracket, match.winnerTo, resetMatchIds);
+  if (match.loserTo) clearLink(bracket, match.loserTo, resetMatchIds);
+  return resetMatchIds;
 }
 
 /**
- * The later Heats that recording `winnerId` as the winner of `heatId` would
- * send back to unplayed: those with a Heat Result that the current winner
- * reached. None when the Heat is undecided, is a bye, or keeps its winner
+ * The later Matches that recording `winnerId` as the winner of `matchId` would
+ * send back to unplayed: those with a Match Result that the current winner
+ * reached. None when the Match is undecided, is a bye, or keeps its winner
  * (a score-only edit).
  */
 export function resetByResult(
   bracket: Bracket,
-  heatId: string,
+  matchId: string,
   winnerId: string | null,
 ): string[] {
-  const heat = findHeat(bracket, heatId);
-  if (!isDecided(heat) || isBye(heat) || winnerId === null) return [];
-  if (winnerOf(heat) === winnerId) return [];
+  const match = findMatch(bracket, matchId);
+  if (!isDecided(match) || isBye(match) || winnerId === null) return [];
+  if (winnerOf(match) === winnerId) return [];
   const next = structuredClone(bracket);
-  return clearDownstream(next, findHeat(next, heatId));
+  return clearDownstream(next, findMatch(next, matchId));
 }
 
 /**
- * Records a Heat Result and advances the winner (and a semifinal's loser,
- * to the 3rd place Match). A knockout Heat needs a
+ * Records a Match Result and advances the winner (and a semifinal's loser,
+ * to the 3rd place Match). A knockout Match needs a
  * clear order of every Entrant.
- * Re-recording a decided Heat with a new winner first clears the old winner
- * from the later Heats it reached (see `resetByResult`); keeping the winner
- * changes only this Heat.
+ * Re-recording a decided Match with a new winner first clears the old winner
+ * from the later Matches it reached (see `resetByResult`); keeping the winner
+ * changes only this Match.
  */
 export function applyResult(
   bracket: Bracket,
-  heatId: string,
-  result: HeatResult,
+  matchId: string,
+  result: MatchResult,
 ): Bracket {
   const next = structuredClone(bracket);
-  const heat = findHeat(next, heatId);
-  if (isBye(heat)) throw new BracketError("A bye has no Match Result.");
-  if (heat.slots.some((s) => s.entrantId === null)) {
+  const match = findMatch(next, matchId);
+  if (isBye(match)) throw new BracketError("A bye has no Match Result.");
+  if (match.slots.some((s) => s.entrantId === null)) {
     throw new BracketError("This Match is still waiting for its Entrants.");
   }
-  const ids = heat.slots.map((s) => s.entrantId!);
+  const ids = match.slots.map((s) => s.entrantId!);
   const { order } = result;
   if (
     order.length !== ids.length ||
@@ -271,18 +271,18 @@ export function applyResult(
   }
 
   const finishing = order;
-  if (isDecided(heat) && winnerOf(heat) !== finishing[0]) {
-    clearDownstream(next, heat);
+  if (isDecided(match) && winnerOf(match) !== finishing[0]) {
+    clearDownstream(next, match);
   }
 
-  heat.slots = heat.slots.map((slot) => ({
+  match.slots = match.slots.map((slot) => ({
     entrantId: slot.entrantId,
     place: finishing.indexOf(slot.entrantId!) + 1,
     score: scores[slot.entrantId!]?.trim() || null,
   }));
-  heat.status = "played";
-  advance(next, heat.winnerTo, finishing[0]);
-  advance(next, heat.loserTo, finishing[1]);
+  match.status = "played";
+  advance(next, match.winnerTo, finishing[0]);
+  advance(next, match.loserTo, finishing[1]);
   return next;
 }
 
@@ -299,8 +299,8 @@ export function finalPlacings(
   if (!isComplete(bracket)) {
     throw new BracketError("The Bracket isn't finished yet.");
   }
-  const final = finalHeatOf(bracket)!;
-  const third = thirdPlaceHeatOf(bracket);
+  const final = finalMatchOf(bracket)!;
+  const third = thirdPlaceMatchOf(bracket);
   const place = new Map<string, number>();
   for (const slot of final.slots) place.set(slot.entrantId!, slot.place!);
   if (third) {
@@ -316,7 +316,7 @@ export function finalPlacings(
 }
 
 /**
- * The engine for a Bracket of 2 per Heat with 1 advancing (a head-to-head
+ * The engine for a Bracket of 2 per Match with 1 advancing (a head-to-head
  * knockout, not a Format of its own): the winner advances. Its one extra
  * setting is the 3rd place Match.
  */
@@ -324,18 +324,18 @@ export const singleElimination: FormatEngine = {
   validateConfig: thirdPlaceRefusal,
   generate: (config, entrants, newId) => generate(entrants, newId, config),
   applyResult,
-  resetByResult(bracket, heatId, result) {
-    return resetByResult(bracket, heatId, result.order[0] ?? null);
+  resetByResult(bracket, matchId, result) {
+    return resetByResult(bracket, matchId, result.order[0] ?? null);
   },
-  isRecordable(bracket, heatId) {
-    const heat = bracket.heats.find((h) => h.id === heatId);
+  isRecordable(bracket, matchId) {
+    const match = bracket.matches.find((h) => h.id === matchId);
     return (
-      heat !== undefined &&
-      !isBye(heat) &&
-      heat.slots.every((s) => s.entrantId !== null)
+      match !== undefined &&
+      !isBye(match) &&
+      match.slots.every((s) => s.entrantId !== null)
     );
   },
-  isBye: (_bracket, heat) => isBye(heat),
+  isBye: (_bracket, match) => isBye(match),
   hasResults,
   isComplete,
   winner: bracketWinner,
