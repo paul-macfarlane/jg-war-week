@@ -395,3 +395,22 @@ Extra checks for decisions without an AC:
 - Each deliverable ends green on `pnpm typecheck && pnpm lint && pnpm test`
   and `pnpm build && pnpm smoke && pnpm e2e` on its own database; the
   orchestrator reruns `pnpm gate` on the integrated head after each wave.
+- **Waves 1–3 integrated** on the integration worktree, each gate green
+  (typecheck, lint, test, build, smoke, e2e) on `war_weeker_r21`:
+  - D1 rename `266ece83` (sonnet): 0031 renames only; 3995 tests, 278
+    smoke, 141 e2e.
+  - D2 model `798f9e60` (opus): 0032, the `game` split into
+    `series_match` / `attempt`, finale kind `champions` → `winners`
+    (orchestrator's call: the enum value was the last Champion word in
+    code; label stays "Winners"), times and `entrants_open` gone,
+    enrollment Bracket only, seeds; schema parity empty; 3920 tests, 285
+    smoke, 146 e2e. Notes: "Best member" / "Sum of members" allowlisted
+    in the banned-term scan (spec decision 13 names them; D7 records the
+    exception in `CONTEXT.md`); MCP Best score `entrants: "open to
+    everyone"` goes in D6.
+  - D3 Close, locks, scoring UI `2d218deb` (sonnet): `scoring.ts`, one
+    `closeCompetition` / `reopenCompetition`, play-based locks, direction
+    and unit fields, "set by hand", quick fill and Add everyone gone;
+    3939 tests, 285 smoke, 147 e2e. Deviation: closing a Closed
+    Competition re-writes its generated entries for every Format (was
+    Placement and Bracket only) instead of refusing.
