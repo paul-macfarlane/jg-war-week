@@ -163,7 +163,13 @@ export async function setupBracketDemo(
         [
           warWeek.id,
           BRACKET_COMP_NAME,
-          { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
+          {
+            kind: "group" as const,
+            entrantsPerMatch: 4,
+            advancePerMatch: 2,
+            thirdPlaceMatch: false,
+            rounds: {},
+          },
         ],
       )
     )[0].id;
@@ -200,18 +206,18 @@ export async function setupBracketDemo(
     }
     const [e1, e2, e3, e4, e5, e6, e7, e8] = entrantIds;
     const [finalMatch] = await query<{ id: string }>(
-      `insert into bracket_match (competition_id, round, position, status, slot_count)
-       values ($1, 2, 1, 'played', 4) returning id`,
+      `insert into bracket_match (competition_id, round, position, status, slot_count, advance_count)
+       values ($1, 2, 1, 'played', 4, 1) returning id`,
       [competitionId],
     );
     const [matchA] = await query<{ id: string }>(
-      `insert into bracket_match (competition_id, round, position, status, slot_count)
-       values ($1, 1, 1, 'played', 4) returning id`,
+      `insert into bracket_match (competition_id, round, position, status, slot_count, advance_count)
+       values ($1, 1, 1, 'played', 4, 2) returning id`,
       [competitionId],
     );
     const [matchB] = await query<{ id: string }>(
-      `insert into bracket_match (competition_id, round, position, status, slot_count)
-       values ($1, 1, 2, 'played', 4) returning id`,
+      `insert into bracket_match (competition_id, round, position, status, slot_count, advance_count)
+       values ($1, 1, 2, 'played', 4, 2) returning id`,
       [competitionId],
     );
     await query(

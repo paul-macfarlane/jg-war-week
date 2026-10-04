@@ -152,9 +152,11 @@ describe("warWeekSeedSchema", () => {
           withCompetition({
             format: "bracket",
             bracketConfig: {
-              entrantsPerHeat: 4,
-              advancePerHeat: 2,
-              thirdPlaceGame: false,
+              kind: "group" as const,
+              entrantsPerMatch: 4,
+              advancePerMatch: 2,
+              thirdPlaceMatch: false,
+              rounds: {},
             },
             placementPoints: [5, 4, 3, 2, 1],
           }),
@@ -194,9 +196,11 @@ describe("warWeekSeedSchema", () => {
     }
     const at = `competitions.${loadFixture().competitions.length}.bracketConfig`;
     const full = {
-      entrantsPerHeat: 5,
-      advancePerHeat: 2,
-      thirdPlaceGame: false,
+      kind: "group" as const,
+      entrantsPerMatch: 5,
+      advancePerMatch: 2,
+      thirdPlaceMatch: false,
+      rounds: {},
     };
 
     it("accepts a Bracket with its full config", () => {
@@ -208,7 +212,7 @@ describe("warWeekSeedSchema", () => {
 
     it("rejects a Bracket without its config", () => {
       expect(rejectionOf(withCompetition({ format: "bracket" }))).toContain(
-        `${at}: a Bracket needs its bracketConfig (entrantsPerHeat, advancePerHeat, thirdPlaceGame)`,
+        `${at}: a Bracket needs its bracketConfig (kind, entrantsPerMatch, advancePerMatch, thirdPlaceMatch, rounds)`,
       );
     });
 
@@ -217,7 +221,7 @@ describe("warWeekSeedSchema", () => {
         rejectionOf(
           withCompetition({
             format: "bracket",
-            bracketConfig: { entrantsPerHeat: 4, advancePerHeat: 2 },
+            bracketConfig: { entrantsPerMatch: 4, advancePerMatch: 2 },
           }),
         ),
       ).not.toEqual([]);
@@ -229,14 +233,16 @@ describe("warWeekSeedSchema", () => {
           withCompetition({
             format: "bracket",
             bracketConfig: {
-              entrantsPerHeat: 4,
-              advancePerHeat: 4,
-              thirdPlaceGame: false,
+              kind: "group" as const,
+              entrantsPerMatch: 4,
+              advancePerMatch: 4,
+              thirdPlaceMatch: false,
+              rounds: {},
             },
           }),
         ),
       ).toContain(
-        `${at}.advancePerHeat: Fewer must advance than play in a Match.`,
+        `${at}.advancePerMatch: Fewer must advance than play in a Match.`,
       );
     });
 
@@ -259,6 +265,100 @@ describe("warWeekSeedSchema", () => {
     });
   });
 
+  describe("Head-to-head and Best score", () => {
+    function withCompetition(competition: Record<string, unknown>) {
+      const fixture = loadFixture();
+      return {
+        ...fixture,
+        competitions: [
+          ...fixture.competitions,
+          { name: "Fixture Series", scoring: "individual", ...competition },
+        ],
+      };
+    }
+    const at = `competitions.${loadFixture().competitions.length}`;
+
+    it("accepts a Head-to-head's Best of and two named Entrants", () => {
+      const result = warWeekSeedSchema.safeParse(
+        withCompetition({
+          format: "head-to-head",
+          seriesConfig: { drawsAllowed: true, bestOf: 1 },
+          entrants: ["Albert Hernandez", "Austin Gage"],
+        }),
+      );
+      expect(result.success ? [] : result.error.issues).toEqual([]);
+    });
+
+    it("rejects an unknown, repeated or third Entrant, and Entrants on another Format", () => {
+      expect(
+        rejectionOf(
+          withCompetition({
+            format: "head-to-head",
+            entrants: ["Albert Hernandez", "Nobody Atall"],
+          }),
+        ),
+      ).toContain(`${at}.entrants.1: unknown Participant "Nobody Atall"`);
+      expect(
+        rejectionOf(
+          withCompetition({
+            format: "head-to-head",
+            entrants: ["Albert Hernandez", "Albert Hernandez"],
+          }),
+        ),
+      ).toContain(`${at}.entrants: a head-to-head's 2 entrants are different`);
+      rejectionOf(
+        withCompetition({
+          format: "head-to-head",
+          entrants: ["Albert Hernandez", "Austin Gage", "Casey Snow"],
+        }),
+      );
+      expect(
+        rejectionOf(
+          withCompetition({
+            format: "best-score",
+            entrants: ["Albert Hernandez", "Austin Gage"],
+          }),
+        ),
+      ).toContain(
+        `${at}.entrants: entrants is only for a head-to-head Competition`,
+      );
+    });
+
+    it("has no Best of off and no Best / Total count", () => {
+      rejectionOf(
+        withCompetition({
+          format: "head-to-head",
+          seriesConfig: { drawsAllowed: false, bestOf: null },
+        }),
+      );
+      rejectionOf(
+        withCompetition({
+          format: "best-score",
+          bestScoreConfig: { teamScore: "best-member", count: "total" },
+        }),
+      );
+      rejectionOf(withCompetition({ format: "best-score", count: "best" }));
+    });
+
+    it("gives Best score a higher or lower direction, never none, and no close times anywhere", () => {
+      expect(
+        rejectionOf(
+          withCompetition({ format: "best-score", scoreDirection: "none" }),
+        ),
+      ).toContain(
+        `${at}.scoreDirection: a best-score Competition's scoreDirection is higher or lower`,
+      );
+      for (const key of [
+        "entrantsOpen",
+        "loggingClosesAt",
+        "enrollClosesAt",
+        "checkInClosesAt",
+      ]) {
+        rejectionOf(withCompetition({ format: "best-score", [key]: null }));
+      }
+    });
+  });
+
   describe("Participation", () => {
     function withCompetition(competition: Record<string, unknown>) {
       const fixture = loadFixture();
@@ -278,7 +378,6 @@ describe("warWeekSeedSchema", () => {
           scoring: "team",
           placementPoints: [5, 3, 1],
           selfCheckIn: true,
-          checkInClosesAt: "2026-02-27T22:00:00Z",
         },
         { scoring: "individual", participationPoints: 2 },
         { scoring: "individual" },
@@ -296,14 +395,9 @@ describe("warWeekSeedSchema", () => {
           format: "placement",
           participationPoints: 1,
           selfCheckIn: true,
-          checkInClosesAt: "2026-02-27T22:00:00Z",
         }),
       );
-      for (const key of [
-        "participationPoints",
-        "selfCheckIn",
-        "checkInClosesAt",
-      ]) {
+      for (const key of ["participationPoints", "selfCheckIn"]) {
         expect(issues).toContain(
           `${at}.${key}: ${key} is only for a participation Competition`,
         );
@@ -700,8 +794,8 @@ describe("warWeekSeedSchema Placements", () => {
         ],
       }),
     ).toEqual([
-      "competitions.2.scoreDirection: scoreDirection is only for a placement Competition",
       "competitions.2.closed: closed is only for a placement Competition",
+      "competitions.2.scoreDirection: scoreDirection is only for a placement or best-score Competition",
     ]);
   });
 

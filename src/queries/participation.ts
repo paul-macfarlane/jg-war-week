@@ -32,7 +32,6 @@ export type ParticipationCompetition = Pick<
   | "placementPoints"
   | "participationPoints"
   | "selfCheckIn"
-  | "checkInClosesAt"
 > & { closed: boolean };
 
 /** Someone who took part, by name: never an email or who marked them. */
@@ -80,7 +79,6 @@ export async function getParticipationView(
       placementPoints: competition.placementPoints,
       participationPoints: competition.participationPoints,
       selfCheckIn: competition.selfCheckIn,
-      checkInClosesAt: competition.checkInClosesAt,
       closedAt: competition.closedAt,
     })
     .from(competition)
@@ -121,7 +119,6 @@ export async function getParticipationView(
       placementPoints: found.placementPoints,
       participationPoints: found.participationPoints,
       selfCheckIn: found.selfCheckIn,
-      checkInClosesAt: found.checkInClosesAt,
       closed: found.closedAt !== null,
     },
     tookPart: rows,
@@ -149,8 +146,6 @@ function refusingFacet(): CheckInFacet {
     isParticipation: false,
     closed: false,
     selfCheckIn: false,
-    checkInClosesAt: null,
-    now: new Date(),
     scoring: "individual",
     teamLabel: "Team",
     linked: null,
@@ -160,7 +155,7 @@ function refusingFacet(): CheckInFacet {
 
 /**
  * The facts Check in is checked against (ADR 0009): the Competition's
- * Format, close, switch and close time, the War Week's Team Label, and the
+ * Format, close and switch, the War Week's Team Label, and the
  * Participant of the Competition's War Week whose email is `email`,
  * ignoring case (account linking; more than one match counts as none),
  * with their Team and their took-part row. Matches on the email without
@@ -180,7 +175,6 @@ export async function getCheckInFacts(
           scoring: competition.scoring,
           closedAt: competition.closedAt,
           selfCheckIn: competition.selfCheckIn,
-          checkInClosesAt: competition.checkInClosesAt,
           teamLabel: warWeek.teamLabel,
         })
         .from(competition)
@@ -207,8 +201,6 @@ export async function getCheckInFacts(
     isParticipation: found.format === "participation",
     closed: found.closedAt !== null,
     selfCheckIn: found.selfCheckIn,
-    checkInClosesAt: found.checkInClosesAt,
-    now: new Date(),
     scoring: found.scoring,
     teamLabel: found.teamLabel,
     linked,

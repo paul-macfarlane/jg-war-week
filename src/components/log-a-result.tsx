@@ -2,8 +2,8 @@ import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 import { Card } from "@/components/ui/card";
-import type { GameFormat } from "@/lib/enums";
-import { gameFormatLabel } from "@/lib/games/config";
+import type { LoggedFormat } from "@/lib/enums";
+import { loggedFormatLabel } from "@/lib/logged-results";
 
 /**
  * The home page's "Log a result" card: the open Head-to-head or Best score
@@ -16,7 +16,7 @@ export function LogAResult({
   competitions,
 }: {
   edition: string;
-  competitions: { id: string; name: string; gameFormat: GameFormat }[];
+  competitions: { id: string; name: string; format: LoggedFormat }[];
 }) {
   if (competitions.length === 0) return null;
   return (
@@ -33,7 +33,7 @@ export function LogAResult({
                 <span className="flex flex-1 flex-col">
                   <span className="font-medium">{c.name}</span>
                   <span className="text-foreground/60 text-xs">
-                    {gameFormatLabel(c.gameFormat)}
+                    {loggedFormatLabel(c.format)}
                   </span>
                 </span>
                 <ChevronRight aria-hidden className="text-primary size-4" />

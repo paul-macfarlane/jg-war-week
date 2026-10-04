@@ -232,9 +232,11 @@ describe("bracketRoundInPlay", () => {
     expect(
       bracketRoundInPlay({
         config: {
-          entrantsPerHeat: 4,
-          advancePerHeat: 2,
-          thirdPlaceGame: false,
+          kind: "group" as const,
+          entrantsPerMatch: 4,
+          advancePerMatch: 2,
+          thirdPlaceMatch: false,
+          rounds: {},
         },
         matches: [
           match(1, 1, "played"),

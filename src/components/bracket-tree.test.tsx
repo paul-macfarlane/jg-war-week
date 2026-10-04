@@ -139,7 +139,13 @@ describe("BracketTree's layout", () => {
     }));
     const byId = new Map(eight.map((e) => [e.id, entrant(e.id, e.label)]));
     let bracket = matches.generate(
-      { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
+      {
+        kind: "group" as const,
+        entrantsPerMatch: 4,
+        advancePerMatch: 2,
+        thirdPlaceMatch: false,
+        rounds: {},
+      },
       eight,
       (round, position) => `r${round}h${position}`,
     );
@@ -179,7 +185,7 @@ describe("BracketTree's 3rd place Match", () => {
       label,
     }));
     let bracket = formats.generate(
-      { ...DEFAULT_BRACKET_CONFIG, thirdPlaceGame: true },
+      { ...DEFAULT_BRACKET_CONFIG, thirdPlaceMatch: true },
       four,
       (round, position) => `r${round}h${position}`,
     );

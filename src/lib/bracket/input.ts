@@ -59,10 +59,16 @@ const matchResultSchema = z.object({
   order: z.array(entrantId).min(1, {
     error: "Put the Match's Entrants in finishing order.",
   }),
+  // A Score is a number (numeric(12,3)); blank is none.
   scores: z
     .record(
       entrantId,
-      z.string().trim().max(40, { error: "Scores are at most 40 characters." }),
+      z
+        .string()
+        .trim()
+        .regex(/^(-?\d{1,9}(\.\d{1,3})?)?$/, {
+          error: "A Score is a number, like 21 or 9.5.",
+        }),
     )
     .optional(),
 });

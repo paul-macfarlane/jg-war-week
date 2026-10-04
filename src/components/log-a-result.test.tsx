@@ -9,8 +9,8 @@ describe("LogAResult", () => {
       <LogAResult
         edition="xii"
         competitions={[
-          { id: "c1", name: "Bouncy Pong", gameFormat: "head-to-head" },
-          { id: "c2", name: "Mini Golf", gameFormat: "best-score" },
+          { id: "c1", name: "Bouncy Pong", format: "head-to-head" },
+          { id: "c2", name: "Mini Golf", format: "best-score" },
         ]}
       />,
     );

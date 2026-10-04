@@ -56,8 +56,8 @@ async function addKnockoutInRoundOne() {
     [id],
   );
   const matches = await runQuery<{ id: string }>(
-    `insert into bracket_match (competition_id, round, position, status) values
-       ($1, 1, 1, 'played'), ($1, 1, 2, 'ready'), ($1, 2, 1, 'pending')
+    `insert into bracket_match (competition_id, round, position, status, advance_count) values
+       ($1, 1, 1, 'played', 1), ($1, 1, 2, 'ready', 1), ($1, 2, 1, 'pending', 1)
      returning id`,
     [id],
   );

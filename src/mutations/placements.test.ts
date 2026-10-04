@@ -101,7 +101,7 @@ async function fixture(tx: DBTx) {
         name: "Pong",
         scoring: "individual" as const,
         format: "head-to-head" as const,
-        entrantsOpen: true,
+        seriesConfig: { drawsAllowed: false, bestOf: 3 as const },
       },
     ])
     .returning({ id: schema.competition.id });

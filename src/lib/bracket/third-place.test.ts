@@ -17,11 +17,13 @@ import type { Bracket, Entrant, Match } from "@/lib/bracket/types";
 import { matchName } from "@/lib/bracket/view";
 
 const withGame: BracketConfig = {
-  entrantsPerHeat: 2,
-  advancePerHeat: 1,
-  thirdPlaceGame: true,
+  kind: "head-to-head" as const,
+  entrantsPerMatch: 2,
+  advancePerMatch: 1,
+  thirdPlaceMatch: true,
+  rounds: {},
 };
-const withoutGame: BracketConfig = { ...withGame, thirdPlaceGame: false };
+const withoutGame: BracketConfig = { ...withGame, thirdPlaceMatch: false };
 const placementPoints = [10, 7, 5, 3];
 
 /** Entrants s1…sN at Seed Positions 1…N. */
@@ -150,14 +152,21 @@ describe("refusing a 3rd place Match", () => {
   });
 
   it("is only for 2 per Match with 1 advancing", () => {
-    const fourTwo = { entrantsPerHeat: 4, advancePerHeat: 2 };
-    expect(validateConfig({ ...fourTwo, thirdPlaceGame: true }, 8)).toBe(
+    const fourTwo = {
+      kind: "group" as const,
+      entrantsPerMatch: 4,
+      advancePerMatch: 2,
+      rounds: {},
+    };
+    expect(validateConfig({ ...fourTwo, thirdPlaceMatch: true }, 8)).toBe(
       "A 3rd place Match is only for 2 per Match with 1 advancing.",
     );
     expect(() =>
-      generate({ ...fourTwo, thirdPlaceGame: true }, entrants(8), newId),
+      generate({ ...fourTwo, thirdPlaceMatch: true }, entrants(8), newId),
     ).toThrow("A 3rd place Match is only for 2 per Match with 1 advancing.");
-    expect(validateConfig({ ...fourTwo, thirdPlaceGame: false }, 8)).toBeNull();
+    expect(
+      validateConfig({ ...fourTwo, thirdPlaceMatch: false }, 8),
+    ).toBeNull();
   });
 });
 
@@ -200,9 +209,11 @@ describe("places and points from the final", () => {
 
   it("a Matches final of 4 places 1st to 4th in its order, and nobody outside it", () => {
     const config = {
-      entrantsPerHeat: 4,
-      advancePerHeat: 2,
-      thirdPlaceGame: false,
+      kind: "group" as const,
+      entrantsPerMatch: 4,
+      advancePerMatch: 2,
+      thirdPlaceMatch: false,
+      rounds: {},
     };
     // Round 1 deals s1 s4 s5 s8 and s2 s3 s6 s7.
     let bracket = generate(config, entrants(8), newId);
@@ -228,9 +239,11 @@ describe("places and points from the final", () => {
 
   it("a Matches final of more than 4 places only its first 4", () => {
     const config = {
-      entrantsPerHeat: 6,
-      advancePerHeat: 1,
-      thirdPlaceGame: false,
+      kind: "group" as const,
+      entrantsPerMatch: 6,
+      advancePerMatch: 1,
+      thirdPlaceMatch: false,
+      rounds: {},
     };
     const bracket = applyResult(generate(config, entrants(6), newId), "r1h1", {
       order: ["s6", "s5", "s4", "s3", "s2", "s1"],

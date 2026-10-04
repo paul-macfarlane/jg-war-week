@@ -579,7 +579,7 @@ const competitionValues = {
   scoring: "individual" as const,
   placementPoints: [5, 3, 1],
   countsTowardTeam: true,
-  competitionGroup: "Board games",
+  competitionGroup: "Tabletop",
 };
 
 describe.skipIf(!isLocalDatabase)("Team mutations", () => {
@@ -965,7 +965,7 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
       expect(chess).toMatchObject({
         placementPoints: [5, 3, 1],
         countsTowardTeam: true,
-        competitionGroup: "Board games",
+        competitionGroup: "Tabletop",
         format: "placement",
         bracketConfig: null,
       });
@@ -1005,9 +1005,11 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
       expect(row).toMatchObject({
         format: "bracket",
         bracketConfig: {
-          entrantsPerHeat: 2,
-          advancePerHeat: 1,
-          thirdPlaceGame: false,
+          kind: "head-to-head" as const,
+          entrantsPerMatch: 2,
+          advancePerMatch: 1,
+          thirdPlaceMatch: false,
+          rounds: {},
         },
       });
     });

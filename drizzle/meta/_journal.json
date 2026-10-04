@@ -225,6 +225,13 @@
       "when": 1791120491965,
       "tag": "0031_fearless_red_shift",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1791121757627,
+      "tag": "0032_slim_flatman",
+      "breakpoints": true
     }
   ]
 }

@@ -2,19 +2,19 @@ import { type SQL, and, count, eq, ne, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import {
+  attempt,
   award,
   awardParticipant,
   competition,
   competitionHost,
   day,
   entrant,
-  game,
-  gamePlayer,
   participant,
   participation,
   placement,
   pointsEntry,
   scheduleItem,
+  seriesMatch,
   squad,
   squadParticipant,
   team,
@@ -411,9 +411,9 @@ export async function deleteTeam(
         ],
         [await tx.$count(squad, eq(squad.teamId, id)), "Squad", "Squads"],
         [
-          await tx.$count(gamePlayer, eq(gamePlayer.teamId, id)),
-          "Match or Attempt",
-          "Matches or Attempts",
+          await tx.$count(attempt, eq(attempt.teamId, id)),
+          "Attempt",
+          "Attempts",
         ],
       ],
       "Move or delete them first.",
@@ -678,9 +678,9 @@ export async function deleteParticipant(
           "Squads",
         ],
         [
-          await tx.$count(gamePlayer, eq(gamePlayer.participantId, id)),
-          "Match or Attempt",
-          "Matches or Attempts",
+          await tx.$count(attempt, eq(attempt.participantId, id)),
+          "Attempt",
+          "Attempts",
         ],
       ],
       "Delete them or remove the Participant from them first.",
@@ -762,19 +762,22 @@ async function competitionRefusal(
     "Remove them before changing its scoring.",
   );
   if (entrantRefusal) return entrantRefusal;
-  // A Game's players are Teams or Participants by its scoring.
-  const gameRefusal = inUseError(
+  // A Match's Entrants and an Attempt's Team follow its scoring.
+  const loggedRefusal = inUseError(
     "Competition",
     [
       [
-        await tx.$count(game, eq(game.competitionId, exceptId)),
+        (await tx.$count(
+          seriesMatch,
+          eq(seriesMatch.competitionId, exceptId),
+        )) + (await tx.$count(attempt, eq(attempt.competitionId, exceptId))),
         "Match or Attempt",
         "Matches or Attempts",
       ],
     ],
     "Delete them before changing its scoring.",
   );
-  if (gameRefusal) return gameRefusal;
+  if (loggedRefusal) return loggedRefusal;
   // Who took part is checked against Teams in team scoring (ADR 0009).
   const participationRefusal = inUseError(
     "Competition",
@@ -826,8 +829,8 @@ export type CreateCompetitionResult =
 /**
  * Creates a Competition, with the Format an Organizer chose (default
  * "placement") and that Format's create defaults (`formatDefaults`, as a
- * Format change gives): a Bracket's default match settings, a Head-to-head
- * or Best score Competition's default settings open to everyone, a
+ * Format change gives): a Bracket's default match settings, a Head-to-head's
+ * Best of 3, Best score's higher-is-better direction and Team score, a
  * `participation` Competition's 1 point per Participant when individual or
  * Placement Points 3, 2, 1 (ranked by headcount) when team, with Self
  * check-in off.
@@ -922,7 +925,7 @@ export async function updateCompetition(
 
 /**
  * Deletes a Competition of this War Week, refusing one with Points Entries,
- * Schedule Items, Games or anyone who took part.
+ * Schedule Items, Matches, Attempts or anyone who took part.
  */
 export async function deleteCompetition(
   id: string,
@@ -947,7 +950,8 @@ export async function deleteCompetition(
           "Schedule Items",
         ],
         [
-          await tx.$count(game, eq(game.competitionId, id)),
+          (await tx.$count(seriesMatch, eq(seriesMatch.competitionId, id))) +
+            (await tx.$count(attempt, eq(attempt.competitionId, id))),
           "Match or Attempt",
           "Matches or Attempts",
         ],

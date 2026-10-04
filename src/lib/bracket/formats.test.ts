@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { BracketConfig } from "@/lib/bracket/config";
+import { type BracketConfig, kindOf } from "@/lib/bracket/config";
 import { singleElimination } from "@/lib/bracket/engine";
 import {
   applyResult,
@@ -19,12 +19,14 @@ import { matches } from "@/lib/bracket/groups";
 import type { Entrant } from "@/lib/bracket/types";
 
 const config = (
-  entrantsPerHeat: number,
-  advancePerHeat: number,
+  entrantsPerMatch: number,
+  advancePerMatch: number,
 ): BracketConfig => ({
-  entrantsPerHeat,
-  advancePerHeat,
-  thirdPlaceGame: false,
+  kind: kindOf(entrantsPerMatch, advancePerMatch),
+  entrantsPerMatch,
+  advancePerMatch,
+  thirdPlaceMatch: false,
+  rounds: {},
 });
 
 const entrants: Entrant[] = [

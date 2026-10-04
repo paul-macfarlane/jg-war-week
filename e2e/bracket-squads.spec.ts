@@ -209,7 +209,7 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
   const [before] = await runQuery<{ settings: string }>(
     `select row_to_json(c)::text as settings from (
        select format, bracket_config, self_report, closed_at,
-              placement_points, self_enroll, entrant_limit, enroll_closes_at
+              placement_points, self_enroll, entrant_limit
        from competition where id = $1) c`,
     [id],
   );
@@ -528,7 +528,7 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
          format = b.format, bracket_config = b.bracket_config,
          self_report = b.self_report, closed_at = b.closed_at,
          placement_points = b.placement_points, self_enroll = b.self_enroll,
-         entrant_limit = b.entrant_limit, enroll_closes_at = b.enroll_closes_at
+         entrant_limit = b.entrant_limit
        from json_populate_record(null::competition, $2::json) b
        where c.id = $1`,
       [id, before.settings],

@@ -14,7 +14,7 @@ import { isArchived } from "@/lib/archive";
 import { computeNowNext, resolveClock } from "@/lib/schedule";
 import { getPinnedAnnouncementCard } from "@/queries/announcements";
 import { getArchiveDetail } from "@/queries/archive";
-import { getLoggableCompetitions } from "@/queries/games";
+import { getLoggableCompetitions } from "@/queries/logged-results";
 import { getRecentResults } from "@/queries/recent-results";
 import { getSchedule } from "@/queries/schedule";
 import { getPointsBreakdown, getStandings } from "@/queries/standings";

@@ -15,8 +15,7 @@ export { NOT_LINKED };
  * checks:
  * - `isParticipation`: the Competition is run as Participation.
  * - `closed`: the Host closed it (its points are in).
- * - `selfCheckIn` and `checkInClosesAt` against `now`: the switch and the
- *   optional close time.
+ * - `selfCheckIn`: the switch.
  * - `scoring` and `teamLabel`: in team scoring only a Participant on a
  *   Team (named by the War Week's Team Label) can take part.
  * - `linked`: the Participant the actor's email links to, with their Team.
@@ -27,8 +26,6 @@ export type CheckInFacet = {
   isParticipation: boolean;
   closed: boolean;
   selfCheckIn: boolean;
-  checkInClosesAt: Date | null;
-  now: Date;
   scoring: "team" | "individual";
   teamLabel: string;
   linked: { participantId: string; teamId: string | null } | null;
@@ -38,7 +35,6 @@ export type CheckInFacet = {
 export const NOT_PARTICIPATION = "This Competition isn't run as Participation.";
 export const PARTICIPATION_CLOSED = "This Competition is closed.";
 export const CHECK_IN_OFF = "Check-in is off for this Competition.";
-export const CHECK_IN_CLOSED = "Check-in is closed: the close time has passed.";
 export const ALREADY_CHECKED_IN = "You're already checked in.";
 export const NOT_CHECKED_IN = "You're not checked in.";
 export const MARKED_BY_HOST = "The Host marked you; ask them to remove it.";
@@ -66,16 +62,13 @@ export function markError({
 
 /**
  * Why checking in or out isn't open for the linked Participant, or null.
- * In order: not Participation, closed, switch off, close time passed, no
+ * In order: not Participation, closed, switch off, no
  * linked Participant, on no Team in team scoring.
  */
 function openError(facet: CheckInFacet): string | null {
   if (!facet.isParticipation) return NOT_PARTICIPATION;
   if (facet.closed) return PARTICIPATION_CLOSED;
   if (!facet.selfCheckIn) return CHECK_IN_OFF;
-  if (facet.checkInClosesAt && facet.now >= facet.checkInClosesAt) {
-    return CHECK_IN_CLOSED;
-  }
   if (!facet.linked) return NOT_LINKED;
   return markError({
     scoring: facet.scoring,

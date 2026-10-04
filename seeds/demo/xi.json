@@ -1051,23 +1051,22 @@
       "countsTowardTeam": true,
       "placementPoints": [3, 2, 1],
       "format": "head-to-head",
-      "gameConfig": {
+      "seriesConfig": {
         "drawsAllowed": false,
-        "bestOf": null
+        "bestOf": 3
       },
-      "entrantsOpen": true,
+      "entrants": ["Albert Hernandez", "Austin Gage"],
       "description": "The inaugural Bouncy Ping Pong, run by Casey Snow."
     },
     {
       "name": "Tuesday Stairs",
       "scoring": "team",
       "format": "best-score",
-      "gameConfig": {
-        "count": "total",
-        "betterIs": "higher",
-        "unit": "trips"
+      "scoreDirection": "higher",
+      "scoreUnit": "trips",
+      "bestScoreConfig": {
+        "teamScore": "sum-of-members"
       },
-      "entrantsOpen": true,
       "description": "Stairway to Heaven: of course stairs on Tuesday counts."
     },
     {
@@ -1419,7 +1418,7 @@
       "kind": "awards"
     },
     {
-      "kind": "champions"
+      "kind": "winners"
     },
     {
       "kind": "standings"

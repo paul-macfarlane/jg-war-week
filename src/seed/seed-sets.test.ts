@@ -201,6 +201,10 @@ describe.skipIf(!isLocalDatabase)("every seed loads twice", () => {
             matches: number;
             played: number;
             ticks: number;
+            cornhole: unknown;
+            matches_logged: number;
+            attempts: number;
+            attempters: number;
           }>(
             `select
                (select count(*)::int from participant p join war_week w
@@ -213,17 +217,35 @@ describe.skipIf(!isLocalDatabase)("every seed loads twice", () => {
                  on c.id = h.competition_id where c.name = 'Ping Pong Bracket'
                  and h.recorded_at is not null) as played,
                (select count(*)::int from participation x join competition c
-                 on c.id = x.competition_id where c.name = 'Morning Stretch') as ticks`,
+                 on c.id = x.competition_id where c.name = 'Morning Stretch') as ticks,
+               (select json_build_object('entrants', count(e.id),
+                   'bestOf', c.series_config->'bestOf')
+                 from competition c left join entrant e on e.competition_id = c.id
+                 where c.name = 'Cornhole' group by c.id) as cornhole,
+               (select count(*)::int from series_match m join competition c
+                 on c.id = m.competition_id where c.name = 'Cornhole') as matches_logged,
+               (select count(*)::int from attempt a join competition c
+                 on c.id = a.competition_id where c.name = 'Darts') as attempts,
+               (select count(distinct a.participant_id)::int from attempt a
+                 join competition c on c.id = a.competition_id
+                 where c.name = 'Darts') as attempters`,
           )
         ).rows;
-        // 32 + 16 + 8 + 4 + 2 Matches, the final and the 3rd place Match.
+        // 32 + 16 + 8 + 4 + 2 Matches, the final and the 3rd place Match;
+        // Cornhole a Best of 7 between its 2 Entrants with 5 Matches logged
+        // (3–2, still open); Darts 60 Attempts, each by a Participant.
         expect(facts).toEqual({
           participants: 100,
           entrants: 64,
           matches: 64,
           played: 20,
           ticks: 72,
+          cornhole: { entrants: 2, bestOf: 7 },
+          matches_logged: 5,
+          attempts: 60,
+          attempters: expect.any(Number),
         });
+        expect(facts.attempters).toBeGreaterThan(1);
       },
       (database) => applyScaleFixture(database),
     );

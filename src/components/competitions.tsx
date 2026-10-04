@@ -8,8 +8,8 @@ import {
   competitionStatusText,
 } from "@/lib/competition-status";
 import { type CompetitionListItem, describeScoring } from "@/lib/competitions";
-import { isGameFormat } from "@/lib/enums";
-import { gameFormatLabel } from "@/lib/games/config";
+import { isLoggedFormat } from "@/lib/enums";
+import { loggedFormatLabel } from "@/lib/logged-results";
 import { toPlainText } from "@/lib/rich-text/plain-text";
 
 export function CompetitionFacts({
@@ -33,9 +33,9 @@ export function CompetitionFacts({
           {describeScoring(competition, teamLabel)}
         </Badge>
       )}
-      {isGameFormat(competition.format) ? (
+      {isLoggedFormat(competition.format) ? (
         <Badge variant="outline" className="text-foreground/70">
-          {gameFormatLabel(competition.format)}
+          {loggedFormatLabel(competition.format)}
         </Badge>
       ) : null}
       {competition.format === "participation" ? (

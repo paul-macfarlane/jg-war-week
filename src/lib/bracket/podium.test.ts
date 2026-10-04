@@ -6,15 +6,19 @@ import { podium } from "@/lib/bracket/podium";
 import type { Bracket, Entrant, Match } from "@/lib/bracket/types";
 
 const knockout: BracketConfig = {
-  entrantsPerHeat: 2,
-  advancePerHeat: 1,
-  thirdPlaceGame: false,
+  kind: "head-to-head" as const,
+  entrantsPerMatch: 2,
+  advancePerMatch: 1,
+  thirdPlaceMatch: false,
+  rounds: {},
 };
-const withThirdPlace: BracketConfig = { ...knockout, thirdPlaceGame: true };
+const withThirdPlace: BracketConfig = { ...knockout, thirdPlaceMatch: true };
 const groupOfFour: BracketConfig = {
-  entrantsPerHeat: 4,
-  advancePerHeat: 2,
-  thirdPlaceGame: false,
+  kind: "group" as const,
+  entrantsPerMatch: 4,
+  advancePerMatch: 2,
+  thirdPlaceMatch: false,
+  rounds: {},
 };
 
 /** Entrants s1…sN at Seed Positions 1…N. */

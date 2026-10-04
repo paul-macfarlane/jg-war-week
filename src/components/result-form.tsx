@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { logGame, updateGame } from "@/actions/games";
+import { logResult, updateResult } from "@/actions/logged-results";
 import {
   EntityCombobox,
   type EntityComboboxItem,
@@ -26,51 +26,52 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import type { GameFormat } from "@/lib/enums";
-import {
-  type BestScoreConfig,
-  type GamesConfig,
-  type HeadToHeadConfig,
-  resultNoun,
-} from "@/lib/games/config";
+import type { BestScoreSettings } from "@/lib/best-score/config";
+import type { LoggedFormat } from "@/lib/enums";
+import { resultNoun } from "@/lib/logged-results";
 import type { FieldErrors } from "@/lib/result";
-import type { GamesViewName, GamesViewPlayer } from "@/queries/games";
+import type { SeriesConfig } from "@/lib/series/config";
+import type {
+  LoggedConfig,
+  LoggedResultsName,
+  LoggedResultsPlayer,
+} from "@/queries/logged-results";
 
 type Scoring = "team" | "individual";
-/** Who won a head-to-head Game: Player A, Player B, or a draw. */
+/** Who won a Head-to-head Match: Player A, Player B, or a draw. */
 type Outcome = "a" | "b" | "draw";
 type Linked = { participantId: string; teamId: string | null } | null;
 
-/** A Game being edited: its id and its players with places and scores. */
-export type ResultFormValue = { id: string; players: GamesViewPlayer[] };
+/** A Match or Attempt being edited: its id and its players with places and scores. */
+export type ResultFormValue = { id: string; players: LoggedResultsPlayer[] };
 
 export type ResultFormProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   competitionId: string;
-  gameFormat: GameFormat;
-  config: GamesConfig;
+  format: LoggedFormat;
+  config: LoggedConfig;
   scoring: Scoring;
   /** Who may play: names and ids only. */
-  entrantOptions: GamesViewName[];
+  playerOptions: LoggedResultsName[];
   /** The viewer's linked Participant, preselected as a player when listed. */
   linked: Linked;
-  /** The Game to edit, or null to log a new one. */
-  game: ResultFormValue | null;
+  /** The Match or Attempt to edit, or null to log a new one. */
+  result: ResultFormValue | null;
 };
 
 /**
- * Logging or editing a Game, in a bottom Sheet (a centered Dialog on large
- * screens), per Format: head-to-head takes two players and who won;
- * best-score one player and a score; ranked every player with a place.
- * The result toasts; a refusal toasts the server's message and keeps the
- * form open with its input.
+ * Logging or editing a Match or Attempt, in a bottom Sheet (a centered
+ * Dialog on large screens), per Format: Head-to-head takes its two players
+ * and who won; Best score a Participant and a Score. The result toasts; a
+ * refusal toasts the server's message and keeps the form open with its
+ * input.
  */
 export function ResultForm(props: ResultFormProps) {
-  const { open, onOpenChange, game } = props;
+  const { open, onOpenChange, result } = props;
   return (
     <ResponsiveSheetDialog open={open} onOpenChange={onOpenChange}>
-      {open ? <ResultFormBody key={game?.id ?? "new"} {...props} /> : null}
+      {open ? <ResultFormBody key={result?.id ?? "new"} {...props} /> : null}
     </ResponsiveSheetDialog>
   );
 }
@@ -79,14 +80,19 @@ function fieldErrorsFrom(result: { ok: boolean }): FieldErrors {
   return (result as { fieldErrors?: FieldErrors }).fieldErrors ?? {};
 }
 
-/** The viewer's own player id (their Team in a team Competition), if offered. */
+/**
+ * The viewer's own player id, if offered: their Team in a team
+ * Head-to-head, else themselves (a Best score Attempt is always a
+ * Participant's).
+ */
 function youIn(
+  format: LoggedFormat,
   scoring: Scoring,
   linked: Linked,
-  options: GamesViewName[],
+  options: LoggedResultsName[],
 ): string {
   const id = linked
-    ? scoring === "team"
+    ? scoring === "team" && format === "head-to-head"
       ? linked.teamId
       : linked.participantId
     : null;
@@ -98,25 +104,25 @@ type Row = { key: number; id: string; place: string };
 function ResultFormBody({
   onOpenChange,
   competitionId,
-  gameFormat,
+  format,
   config,
   scoring,
-  entrantOptions,
+  playerOptions,
   linked,
-  game,
+  result: editing,
 }: ResultFormProps) {
   const id = useId();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [errors, setErrors] = useState<FieldErrors>({});
-  const items: EntityComboboxItem[] = entrantOptions.map((o) => ({
+  const items: EntityComboboxItem[] = playerOptions.map((o) => ({
     id: o.id,
     label: o.name,
   }));
   const nameOf = (playerId: string) =>
-    entrantOptions.find((o) => o.id === playerId)?.name ?? null;
-  const you = youIn(scoring, linked, entrantOptions);
-  const players = game?.players ?? [];
+    playerOptions.find((o) => o.id === playerId)?.name ?? null;
+  const you = youIn(format, scoring, linked, playerOptions);
+  const players = editing?.players ?? [];
 
   // Head-to-head.
   const [playerA, setPlayerA] = useState(players[0]?.id ?? you);
@@ -145,11 +151,11 @@ function ResultFormBody({
         ],
   );
   const [nextKey, setNextKey] = useState(rows.length);
-  const noun = resultNoun(gameFormat);
+  const noun = resultNoun(format);
 
   function raw(): Record<string, unknown> {
-    if (gameFormat === "head-to-head") return { playerA, playerB, outcome };
-    if (gameFormat === "best-score") return { player, score };
+    if (format === "head-to-head") return { playerA, playerB, outcome };
+    if (format === "best-score") return { player, score };
     return {
       order: rows
         .filter((r) => r.id)
@@ -161,41 +167,41 @@ function ResultFormBody({
     event.preventDefault();
     const input = raw();
     startTransition(async () => {
-      const result = game
-        ? await updateGame(competitionId, game.id, input)
-        : await logGame(competitionId, input);
+      const result = editing
+        ? await updateResult(competitionId, editing.id, input)
+        : await logResult(competitionId, input);
       if (!result.ok) {
         setErrors(fieldErrorsFrom(result));
         toast.error(result.error);
         return;
       }
-      toast.success(game ? `${noun.one} updated` : `${noun.one} logged`);
+      toast.success(editing ? `${noun.one} updated` : `${noun.one} logged`);
       onOpenChange(false);
       router.refresh();
     });
   }
 
   const drawsAllowed =
-    gameFormat === "head-to-head" && (config as HeadToHeadConfig).drawsAllowed;
+    format === "head-to-head" && (config as SeriesConfig).drawsAllowed;
   const unit =
-    gameFormat === "best-score" ? (config as BestScoreConfig).unit : "";
+    format === "best-score" ? (config as BestScoreSettings).unit : "";
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
       <ResponsiveSheetDialogHeader>
         <ResponsiveSheetDialogTitle>
-          {game ? `Edit ${noun.one}` : `Log ${noun.a}`}
+          {editing ? `Edit ${noun.one}` : `Log ${noun.a}`}
         </ResponsiveSheetDialogTitle>
         <ResponsiveSheetDialogDescription>
-          {gameFormat === "head-to-head"
+          {format === "head-to-head"
             ? "Choose both players and who won."
-            : gameFormat === "best-score"
+            : format === "best-score"
               ? "Choose the player and their score."
               : "List everyone who played, with their place. Players who tie share a place."}
         </ResponsiveSheetDialogDescription>
       </ResponsiveSheetDialogHeader>
       <FieldGroup className="gap-4 px-4">
-        {gameFormat === "head-to-head" ? (
+        {format === "head-to-head" ? (
           <>
             <Field data-invalid={Boolean(errors.playerA)}>
               <FieldLabel htmlFor={`${id}-a`}>Player A</FieldLabel>
@@ -256,7 +262,7 @@ function ResultFormBody({
               <FieldError>{errors.outcome}</FieldError>
             </Field>
           </>
-        ) : gameFormat === "best-score" ? (
+        ) : format === "best-score" ? (
           <>
             <Field data-invalid={Boolean(errors.player)}>
               <FieldLabel htmlFor={`${id}-player`}>Player</FieldLabel>
@@ -367,7 +373,11 @@ function ResultFormBody({
       </FieldGroup>
       <ResponsiveSheetDialogFooter>
         <Button type="submit" size="lg" className="min-h-11" disabled={pending}>
-          {pending ? "Saving…" : game ? `Save ${noun.one}` : `Log ${noun.one}`}
+          {pending
+            ? "Saving…"
+            : editing
+              ? `Save ${noun.one}`
+              : `Log ${noun.one}`}
         </Button>
       </ResponsiveSheetDialogFooter>
     </form>

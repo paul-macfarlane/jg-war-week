@@ -83,7 +83,7 @@ describe("generate", () => {
     expect(match(bracket, "r1h1").slots[0].place).toBe(1);
   });
 
-  it("puts the only first-Round game of 17 Entrants between 16 and 17", () => {
+  it("puts the only first-Round Match of 17 Entrants between 16 and 17", () => {
     const bracket = generate(entrants(17));
     const ready = bracket.matches.filter(
       (h) => h.round === 1 && h.status === "ready",

@@ -25,7 +25,13 @@ const generate = (list: Entrant[]): Bracket =>
 /** A Matches Bracket of these Entrants, 4 per Match, top 2 advancing. */
 const generateMatches = (list: Entrant[]): Bracket =>
   generateFormat(
-    { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
+    {
+      kind: "group" as const,
+      entrantsPerMatch: 4,
+      advancePerMatch: 2,
+      thirdPlaceMatch: false,
+      rounds: {},
+    },
     list,
     newId,
   );
@@ -296,7 +302,7 @@ describe("formatLabel", () => {
 });
 
 describe("isBracketFormat", () => {
-  it("is false for placement, a Games Format or no Format chosen", () => {
+  it("is false for placement, Head-to-head, Best score or no Format chosen", () => {
     expect(isBracketFormat("placement")).toBe(false);
     expect(isBracketFormat("head-to-head")).toBe(false);
     expect(isBracketFormat("best-score")).toBe(false);

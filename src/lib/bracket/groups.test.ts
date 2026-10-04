@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { kindOf } from "@/lib/bracket/config";
 import { matches } from "@/lib/bracket/groups";
 import {
   type Bracket,
@@ -22,9 +23,11 @@ const newId = (round: number, position: number) => `r${round}h${position}`;
 function build(count: number, perMatch: number, advance: number): Bracket {
   return matches.generate(
     {
-      entrantsPerHeat: perMatch,
-      advancePerHeat: advance,
-      thirdPlaceGame: false,
+      kind: kindOf(perMatch, advance),
+      entrantsPerMatch: perMatch,
+      advancePerMatch: advance,
+      thirdPlaceMatch: false,
+      rounds: {},
     },
     entrants(count),
     newId,
@@ -74,9 +77,11 @@ const ranges = Array.from({ length: 16 }, (_, i) => i + 2).flatMap((n) =>
     Array.from({ length: s - 1 }, (_, a) => ({
       n,
       config: {
-        entrantsPerHeat: s,
-        advancePerHeat: a + 1,
-        thirdPlaceGame: false,
+        kind: kindOf(s, a + 1),
+        entrantsPerMatch: s,
+        advancePerMatch: a + 1,
+        thirdPlaceMatch: false,
+        rounds: {},
       },
     })),
   ),
@@ -101,7 +106,13 @@ describe("validateConfig", () => {
   it("names the Round that would never end", () => {
     expect(
       matches.validateConfig(
-        { entrantsPerHeat: 3, advancePerHeat: 2, thirdPlaceGame: false },
+        {
+          kind: "group" as const,
+          entrantsPerMatch: 3,
+          advancePerMatch: 2,
+          thirdPlaceMatch: false,
+          rounds: {},
+        },
         4,
       ),
     ).toBe(
@@ -110,7 +121,13 @@ describe("validateConfig", () => {
     // 7 → Matches of 3, 2, 2 send 6 on → 3, 3 send 4 on → 2, 2 send 4 on.
     expect(
       matches.validateConfig(
-        { entrantsPerHeat: 3, advancePerHeat: 2, thirdPlaceGame: false },
+        {
+          kind: "group" as const,
+          entrantsPerMatch: 3,
+          advancePerMatch: 2,
+          thirdPlaceMatch: false,
+          rounds: {},
+        },
         7,
       ),
     ).toBe(
@@ -121,13 +138,25 @@ describe("validateConfig", () => {
   it("accepts a count that fits in one Match, however many advance", () => {
     expect(
       matches.validateConfig(
-        { entrantsPerHeat: 3, advancePerHeat: 2, thirdPlaceGame: false },
+        {
+          kind: "group" as const,
+          entrantsPerMatch: 3,
+          advancePerMatch: 2,
+          thirdPlaceMatch: false,
+          rounds: {},
+        },
         3,
       ),
     ).toBeNull();
     expect(
       matches.validateConfig(
-        { entrantsPerHeat: 8, advancePerHeat: 7, thirdPlaceGame: false },
+        {
+          kind: "group" as const,
+          entrantsPerMatch: 8,
+          advancePerMatch: 7,
+          thirdPlaceMatch: false,
+          rounds: {},
+        },
         2,
       ),
     ).toBeNull();
@@ -136,26 +165,50 @@ describe("validateConfig", () => {
   it("needs 2 Entrants and a valid config", () => {
     expect(
       matches.validateConfig(
-        { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
+        {
+          kind: "group" as const,
+          entrantsPerMatch: 4,
+          advancePerMatch: 2,
+          thirdPlaceMatch: false,
+          rounds: {},
+        },
         1,
       ),
     ).toBe("A Bracket needs at least 2 Entrants.");
     expect(
       matches.validateConfig(
-        { entrantsPerHeat: 4, advancePerHeat: 4, thirdPlaceGame: false },
+        {
+          kind: "group" as const,
+          entrantsPerMatch: 4,
+          advancePerMatch: 4,
+          thirdPlaceMatch: false,
+          rounds: {},
+        },
         8,
       ),
     ).toBe("Fewer must advance than play in a Match.");
     expect(
       matches.validateConfig(
-        { entrantsPerHeat: 9, advancePerHeat: 2, thirdPlaceGame: false },
+        {
+          kind: "group" as const,
+          entrantsPerMatch: 9,
+          advancePerMatch: 2,
+          thirdPlaceMatch: false,
+          rounds: {},
+        },
         8,
       ),
     ).toBe("A Match holds at most 8 Entrants.");
     // 4 per Match, 2 advancing: 5 → Matches of 3 and 2 send 4 on (the final).
     expect(
       matches.validateConfig(
-        { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
+        {
+          kind: "group" as const,
+          entrantsPerMatch: 4,
+          advancePerMatch: 2,
+          thirdPlaceMatch: false,
+          rounds: {},
+        },
         5,
       ),
     ).toBeNull();
@@ -171,7 +224,7 @@ const refused = ranges.filter(
 
 describe("generate", () => {
   it.each(accepted)(
-    "builds every Round for $n Entrants, $config.entrantsPerHeat per Match, $config.advancePerHeat advancing",
+    "builds every Round for $n Entrants, $config.entrantsPerMatch per Match, $config.advancePerMatch advancing",
     ({ n, config }) => {
       const bracket = matches.generate(config, entrants(n), newId);
       expect(bracket.config).toEqual(config);
@@ -179,11 +232,13 @@ describe("generate", () => {
       const all = rounds(bracket);
       const final = all[all.length - 1];
       expect(final).toHaveLength(1);
-      expect(final[0].slots.length).toBeLessThanOrEqual(config.entrantsPerHeat);
+      expect(final[0].slots.length).toBeLessThanOrEqual(
+        config.entrantsPerMatch,
+      );
       for (const [r, round] of all.entries()) {
         const sizes = round.map((h) => h.slots.length);
         expect(Math.max(...sizes) - Math.min(...sizes)).toBeLessThanOrEqual(1);
-        expect(Math.max(...sizes)).toBeLessThanOrEqual(config.entrantsPerHeat);
+        expect(Math.max(...sizes)).toBeLessThanOrEqual(config.entrantsPerMatch);
         round.forEach((h, i) => {
           expect(h.id).toBe(`r${r + 1}h${i + 1}`);
           expect(h.position).toBe(i + 1);
@@ -199,7 +254,7 @@ describe("generate", () => {
           .sort(),
       );
       for (const h of all[0]) {
-        const bye = all.length > 1 && h.slots.length <= config.advancePerHeat;
+        const bye = all.length > 1 && h.slots.length <= config.advancePerMatch;
         expect(matches.isBye(bracket, h)).toBe(bye);
         expect(matches.isRecordable(bracket, h.id)).toBe(!bye);
         expect(h.status).toBe(bye ? "played" : "ready");
@@ -220,7 +275,7 @@ describe("generate", () => {
   );
 
   it.each(refused)(
-    "refuses $n Entrants, $config.entrantsPerHeat per Match, $config.advancePerHeat advancing",
+    "refuses $n Entrants, $config.entrantsPerMatch per Match, $config.advancePerMatch advancing",
     ({ n, config }) => {
       const message = matches.validateConfig(config, n)!;
       expect(() => matches.generate(config, entrants(n), newId)).toThrow(
@@ -445,7 +500,7 @@ function snakeDeal(ranked: string[], matchCount: number): string[][] {
 
 describe("playing a whole Bracket", () => {
   it.each(accepted)(
-    "plays $n Entrants, $config.entrantsPerHeat per Match, $config.advancePerHeat advancing to a Winner",
+    "plays $n Entrants, $config.entrantsPerMatch per Match, $config.advancePerMatch advancing to a Winner",
     ({ n, config }) => {
       let bracket = matches.generate(config, entrants(n), newId);
       const roundCount = rounds(bracket).length;
@@ -471,7 +526,7 @@ describe("playing a whole Bracket", () => {
 
         const played = rounds(bracket)[r - 1];
         const ranked: string[] = [];
-        for (let place = 1; place <= config.advancePerHeat; place++) {
+        for (let place = 1; place <= config.advancePerMatch; place++) {
           for (const h of played) {
             const slot = h.slots.find((s) => s.place === place);
             if (slot) ranked.push(slot.entrantId!);

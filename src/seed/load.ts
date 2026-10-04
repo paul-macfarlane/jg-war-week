@@ -25,6 +25,7 @@ import {
   awardParticipant,
   competition,
   day,
+  entrant,
   faqItem,
   finaleSlide,
   organizer,
@@ -35,9 +36,9 @@ import {
   team,
   warWeek,
 } from "@/db/schema";
-import type { GamesConfig } from "@/lib/games/config";
 import { placementEntryValues } from "@/lib/placement/score";
 import { descriptionContent } from "@/lib/rich-text/from-plain-text";
+import { DEFAULT_SERIES_CONFIG } from "@/lib/series/config";
 import { getPlacementRows } from "@/queries/placements";
 import { WarWeekSeed } from "@/seed/schema";
 
@@ -79,6 +80,7 @@ export async function loadWarWeekSeed(
     const teamIds = await syncTeams(tx, warWeekId, seed);
     const participantIds = await syncParticipants(tx, warWeekId, seed, teamIds);
     const competitionIds = await syncCompetitions(tx, warWeekId, seed);
+    await insertEntrants(tx, seed, competitionIds, teamIds, participantIds);
     await syncDays(tx, warWeekId, seed, competitionIds);
     await syncFaqItems(tx, warWeekId, seed);
     await syncFinaleSlides(tx, warWeekId, seed);
@@ -103,6 +105,33 @@ export async function loadWarWeekSeed(
 
     return warWeekRow;
   });
+}
+
+/**
+ * A Head-to-head's two seeded Entrants, at Seed Positions 1 and 2. Each is
+ * added only when absent (by Competition and Team or Participant), and
+ * nothing is added where an Organizer already set other Entrants, so a
+ * reload changes no row.
+ */
+async function insertEntrants(
+  tx: DBTx,
+  seed: WarWeekSeed,
+  competitionIds: Map<string, string>,
+  teamIds: Map<string, string>,
+  participantIds: Map<string, string>,
+) {
+  const rows = seed.competitions.flatMap((c) =>
+    (c.entrants ?? []).map((name, i) => {
+      const isTeam = c.scoring === "team";
+      return {
+        competitionId: resolve(competitionIds, c.name),
+        teamId: isTeam ? resolve(teamIds, name) : null,
+        participantId: isTeam ? null : resolve(participantIds, name),
+        seedPosition: i + 1,
+      };
+    }),
+  );
+  if (rows.length) await tx.insert(entrant).values(rows).onConflictDoNothing();
 }
 
 /** Resolves a seed reference that the seed schema has already checked. */
@@ -316,19 +345,22 @@ async function syncCompetitions(
       format: c.format,
       bracketConfig: c.bracketConfig ?? null,
       // Checked against the Format by `competitionSeedSchema`.
-      gameConfig: (c.gameConfig ?? null) as GamesConfig | null,
-      entrantsOpen: c.entrantsOpen ?? false,
-      // Placement only (the seed schema); like `format`, set on insert only.
-      scoreDirection: c.scoreDirection ?? "none",
+      seriesConfig:
+        c.format === "head-to-head"
+          ? (c.seriesConfig ?? DEFAULT_SERIES_CONFIG)
+          : null,
+      bestScoreConfig: c.bestScoreConfig ?? null,
+      // Placement's and Best score's (the seed schema; Best score never
+      // `none`); like `format`, set on insert only.
+      scoreDirection:
+        c.scoreDirection ?? (c.format === "best-score" ? "higher" : "none"),
+      scoreUnit: c.scoreUnit ?? null,
       closedAt: c.closedAt ? new Date(c.closedAt) : null,
       ...(c.format === "participation"
         ? {
             participationPoints:
               c.scoring === "individual" ? (c.participationPoints ?? 1) : null,
             selfCheckIn: c.selfCheckIn ?? false,
-            checkInClosesAt: c.checkInClosesAt
-              ? new Date(c.checkInClosesAt)
-              : null,
           }
         : {}),
     })),
@@ -346,11 +378,12 @@ async function syncCompetitions(
       participationPoints: sql`case when excluded.participation_points is null
         then null
         else coalesce(${competition.participationPoints}, excluded.participation_points) end`,
-      // `format`, `bracketConfig`, `gameConfig`, `entrantsOpen`, the Score
-      // direction, a seeded Close and the other Participation settings
+      // `format`, `bracketConfig`, `seriesConfig`, `bestScoreConfig`, the
+      // Score direction and unit, a seeded Close and the other Participation
+      // settings
       // are set on insert only: a reload must
       // never turn an Organizer's Bracket back into `placement` or undo its
-      // Matches, Games or Participation settings.
+      // Matches, Attempts or Participation settings.
       updatedAt: new Date(),
     },
     scope: eq(competition.warWeekId, warWeekId),

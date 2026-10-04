@@ -113,8 +113,8 @@ describe("the built-in Finale slides", () => {
 
   it("Winners: each Competition's Winner or winners, a tie together", () => {
     const { text } = render({
-      key: "champions",
-      kind: "champions",
+      key: "winners",
+      kind: "winners",
       name: "Winners",
       primaryColor: "#123456",
       winners: [

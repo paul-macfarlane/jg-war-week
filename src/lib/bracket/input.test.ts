@@ -15,13 +15,24 @@ describe("Bracket action input", () => {
     });
   });
 
-  it("trims scores and refuses long ones", () => {
+  it("trims scores and takes only numbers, blank for none", () => {
     expect(
-      parseMatchResultInput({ order: [a, b], scores: { [a]: " 21 " } }),
-    ).toEqual({ ok: true, value: { order: [a, b], scores: { [a]: "21" } } });
+      parseMatchResultInput({
+        order: [a, b],
+        scores: { [a]: " 21 ", [b]: "-9.125" },
+      }),
+    ).toEqual({
+      ok: true,
+      value: { order: [a, b], scores: { [a]: "21", [b]: "-9.125" } },
+    });
     expect(
-      parseMatchResultInput({ order: [a, b], scores: { [a]: "x".repeat(41) } }),
-    ).toEqual({ ok: false, error: "Scores are at most 40 characters." });
+      parseMatchResultInput({ order: [a, b], scores: { [a]: "" } }),
+    ).toMatchObject({ ok: true });
+    for (const score of ["21-19", "W", "1.2345", "1234567890"]) {
+      expect(
+        parseMatchResultInput({ order: [a, b], scores: { [a]: score } }),
+      ).toEqual({ ok: false, error: "A Score is a number, like 21 or 9.5." });
+    }
   });
 
   it("refuses an empty finishing order", () => {

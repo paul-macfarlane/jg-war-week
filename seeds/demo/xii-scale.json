@@ -41,7 +41,7 @@
           "title": "Ping Pong Bracket, Round 1",
           "category": "competition",
           "competition": "Ping Pong Bracket",
-          "location": "Game room"
+          "location": "Lounge"
         }
       ]
     },
@@ -91,7 +91,7 @@
           "title": "Darts throw-off",
           "category": "competition",
           "competition": "Darts",
-          "location": "Game room"
+          "location": "Lounge"
         }
       ]
     },
@@ -558,12 +558,14 @@
       "scoring": "individual",
       "format": "bracket",
       "bracketConfig": {
-        "entrantsPerHeat": 2,
-        "advancePerHeat": 1,
-        "thirdPlaceGame": true
+        "kind": "head-to-head",
+        "entrantsPerMatch": 2,
+        "advancePerMatch": 1,
+        "thirdPlaceMatch": true,
+        "rounds": {}
       },
       "placementPoints": [8, 5, 3, 1],
-      "description": "Sixty-four players, single elimination, with a 3rd place game."
+      "description": "Sixty-four players, single elimination, with a 3rd place Match."
     },
     {
       "name": "Morning Stretch",
@@ -577,24 +579,20 @@
       "name": "Cornhole",
       "scoring": "individual",
       "format": "head-to-head",
-      "gameConfig": {
+      "seriesConfig": {
         "drawsAllowed": false,
-        "bestOf": null
+        "bestOf": 7
       },
-      "entrantsOpen": true,
+      "entrants": ["Ada Anvil", "Bo Banner"],
       "placementPoints": [5, 3, 1],
-      "description": "Log a Game whenever the boards are free."
+      "description": "Log a Match whenever the boards are free."
     },
     {
       "name": "Darts",
       "scoring": "individual",
       "format": "best-score",
-      "gameConfig": {
-        "count": "best",
-        "betterIs": "higher",
-        "unit": "points"
-      },
-      "entrantsOpen": true,
+      "scoreDirection": "higher",
+      "scoreUnit": "points",
       "placementPoints": [5, 3, 1],
       "description": "Three darts a turn; your best turn counts."
     }
@@ -1381,7 +1379,7 @@
             "content": [
               {
                 "type": "text",
-                "text": "A hundred Participants, no Teams. Check the Standings and log your Games from your phone."
+                "text": "A hundred Participants, no Teams. Check the Standings and log your Matches and Attempts from your phone."
               }
             ]
           }
@@ -1419,7 +1417,7 @@
       "kind": "awards"
     },
     {
-      "kind": "champions"
+      "kind": "winners"
     },
     {
       "kind": "standings"

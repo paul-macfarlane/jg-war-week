@@ -317,6 +317,18 @@ export const warWeekSeedSchema = z
       }
     });
 
+    seed.competitions.forEach((c, index) => {
+      (c.entrants ?? []).forEach((name, entrantIndex) => {
+        const known = c.scoring === "team" ? teams : participants;
+        if (!known.has(name)) {
+          issue(
+            ["competitions", index, "entrants", entrantIndex],
+            `unknown ${c.scoring === "team" ? "Team" : "Participant"} "${name}"`,
+          );
+        }
+      });
+    });
+
     seed.placements.forEach((row, index) => {
       const path = ["placements", index];
       const comp = competitions.get(row.competition);

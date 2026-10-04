@@ -9,20 +9,17 @@ import {
   squadParticipant,
   warWeek,
 } from "@/db/schema";
-import { squadError } from "@/lib/bracket/squads";
-import { isGameFormat } from "@/lib/enums";
-import { gamesConfigOf } from "@/lib/games/config";
-import type { SelfEnrollInput } from "@/lib/games/enroll-input";
+import type { SelfEnrollInput } from "@/lib/bracket/enroll-input";
 import {
   NOT_LINKED,
   enrollError,
   enrollmentUnavailable,
   withdrawError,
-} from "@/lib/games/enroll-rule";
+} from "@/lib/bracket/enroll-rule";
+import { squadError } from "@/lib/bracket/squads";
 import {
   CLOSED,
   COMPETITION_NOT_FOUND,
-  GAMES_CLOSED,
   lockedCompetition,
   refuse,
 } from "@/mutations/brackets";
@@ -32,50 +29,30 @@ import { getEnrollFacts } from "@/queries/enrollment";
 export type SelfEnrollValues = SelfEnrollInput;
 
 /**
- * Sets the "Participants can enroll" switch, the Entrant limit and the
- * close time (ADR 0006), under the Competition's row lock so an enrollment
- * in flight runs before or after it. Refused on a points Competition, a
- * closed (closed) one, and, when turning it on, a Best of or an
- * open-to-everyone Head-to-head or Best score Competition (R3 decision 12;
- * `enrollmentUnavailable`). The parser and the column's CHECK bound the
- * Entrant limit.
+ * Sets the "Participants can enroll" switch and the Entrant limit (ADR
+ * 0006), under the Competition's row lock so an enrollment in flight runs
+ * before or after it. Refused on any Format but a Bracket
+ * (`enrollmentUnavailable`, backed by the CHECK
+ * `competition_self_enroll_bracket_only`) and on a Closed one. The parser
+ * and the column's CHECK bound the Entrant limit.
  */
 export async function setSelfEnroll(
   competitionId: string,
-  { on, entrantLimit, enrollClosesAt }: SelfEnrollValues,
+  { on, entrantLimit }: SelfEnrollValues,
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedCompetition(tx, competitionId, ctx);
     if (!found) return refuse(COMPETITION_NOT_FOUND);
-    const unavailable = enrollmentUnavailable({
-      format: found.format,
-      entrantsOpen: found.entrantsOpen,
-      gameConfig: isGameFormat(found.format)
-        ? gamesConfigOf({
-            format: found.format,
-            gameConfig: found.gameConfig,
-          })
-        : null,
-    });
-    // A placement or `participation` Competition refuses the switch either way.
-    if (
-      unavailable &&
-      (found.format === "placement" || found.format === "participation")
-    ) {
-      return refuse(unavailable);
-    }
-    if (found.closedAt) {
-      return refuse(isGameFormat(found.format) ? GAMES_CLOSED : CLOSED);
-    }
-    if (on && unavailable) return refuse(unavailable);
+    const unavailable = enrollmentUnavailable(found);
+    if (unavailable) return refuse(unavailable);
+    if (found.closedAt) return refuse(CLOSED);
     await tx
       .update(competition)
       .set({
         selfEnroll: on,
         entrantLimit,
-        enrollClosesAt,
         updatedAt: sql`now()`,
       })
       .where(eq(competition.id, competitionId));

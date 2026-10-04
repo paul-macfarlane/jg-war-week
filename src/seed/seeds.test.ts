@@ -209,31 +209,40 @@ describe("War Week XI demo", () => {
     expect(xi.competitions.length).toBeGreaterThan(15);
   });
 
-  it("runs a Head-to-head and a Best score Competition as Games, and the old ranked one as an empty Placement", () => {
+  it("runs Bouncy Pong as a Best of 3 between two Entrants, Tuesday Stairs as Sum of members, and the old ranked one as an empty Placement", () => {
     const formats = ["head-to-head", "best-score"];
-    const games = xi.competitions
+    const logged = xi.competitions
       .filter((c) => formats.includes(c.format))
       .map((c) => ({
         name: c.name,
         scoring: c.scoring,
         format: c.format,
-        gameConfig: c.gameConfig,
-        entrantsOpen: c.entrantsOpen,
+        seriesConfig: c.seriesConfig,
+        entrants: c.entrants,
+        scoreDirection: c.scoreDirection,
+        scoreUnit: c.scoreUnit,
+        bestScoreConfig: c.bestScoreConfig,
       }));
-    expect(games).toEqual([
+    expect(logged).toEqual([
       {
         name: "Bouncy Pong",
         scoring: "individual",
         format: "head-to-head",
-        gameConfig: { drawsAllowed: false, bestOf: null },
-        entrantsOpen: true,
+        seriesConfig: { drawsAllowed: false, bestOf: 3 },
+        entrants: ["Albert Hernandez", "Austin Gage"],
+        scoreDirection: undefined,
+        scoreUnit: undefined,
+        bestScoreConfig: undefined,
       },
       {
         name: "Tuesday Stairs",
         scoring: "team",
         format: "best-score",
-        gameConfig: { count: "total", betterIs: "higher", unit: "trips" },
-        entrantsOpen: true,
+        seriesConfig: undefined,
+        entrants: undefined,
+        scoreDirection: "higher",
+        scoreUnit: "trips",
+        bestScoreConfig: { teamScore: "sum-of-members" },
       },
     ]);
     const pong = xi.competitions.find((c) => c.name === "Bouncy Pong")!;
@@ -249,7 +258,7 @@ describe("War Week XI demo", () => {
     expect(xi.placements.filter((p) => p.competition === matrix.name)).toEqual(
       [],
     );
-    // Games aren't seeded: no Placements stand in for Pong or Stairs.
+    // Matches and Attempts aren't seeded: no Placements stand in for them.
     expect(
       xi.placements.filter((p) =>
         ["Bouncy Pong", "Tuesday Stairs"].includes(p.competition),
@@ -266,7 +275,6 @@ describe("War Week XI demo", () => {
         placementPoints: c.placementPoints,
         participationPoints: c.participationPoints,
         selfCheckIn: c.selfCheckIn,
-        checkInClosesAt: c.checkInClosesAt,
       }));
     expect(participation).toEqual([
       {
@@ -275,7 +283,6 @@ describe("War Week XI demo", () => {
         placementPoints: [5, 3, 1],
         participationPoints: undefined,
         selfCheckIn: true,
-        checkInClosesAt: undefined,
       },
     ]);
   });

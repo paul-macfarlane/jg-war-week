@@ -82,7 +82,7 @@ export type BracketTree = {
 export function advancingPlaces(bracket: Bracket, match: Match): number {
   if (isHeadToHead(bracket.config)) return 1;
   if (match.id === finalMatchOf(bracket)?.id) return 1;
-  return bracket.config.advancePerHeat;
+  return bracket.config.advancePerMatch;
 }
 
 /** Whether `place` is among the places that go through from `match`. */

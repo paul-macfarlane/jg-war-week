@@ -127,7 +127,7 @@ test("72-AC2: an Organizer moves the Standings slide and hides one, and the Fina
     (await stage.getAttribute("data-finale-slide-index")) !==
     String(winnerIndex);
   if (winners) {
-    await expect(stage).toHaveAttribute("data-finale-slide", "champions");
+    await expect(stage).toHaveAttribute("data-finale-slide", "winners");
   }
   const last = String(winners ? winnerIndex + 1 : winnerIndex);
 

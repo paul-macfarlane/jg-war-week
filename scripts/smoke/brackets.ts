@@ -39,9 +39,11 @@ async function runAsBracket(
   ids: Record<string, string>,
   id: string,
   config: {
-    entrantsPerHeat: number;
-    advancePerHeat: number;
-    thirdPlaceGame: boolean;
+    kind: "head-to-head" | "group";
+    entrantsPerMatch: number;
+    advancePerMatch: number;
+    thirdPlaceMatch: boolean;
+    rounds: Record<string, never>;
   },
   session: SmokeSession,
 ): Promise<WriteResult> {
@@ -141,9 +143,11 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
         ids,
         id,
         {
-          entrantsPerHeat: 2,
-          advancePerHeat: 1,
-          thirdPlaceGame: false,
+          kind: "head-to-head" as const,
+          entrantsPerMatch: 2,
+          advancePerMatch: 1,
+          thirdPlaceMatch: false,
+          rounds: {},
         },
         organizer,
       ),
@@ -172,9 +176,11 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
         id,
         "bracketConfig",
         {
-          entrantsPerHeat: 2,
-          advancePerHeat: 1,
-          thirdPlaceGame: true,
+          kind: "head-to-head" as const,
+          entrantsPerMatch: 2,
+          advancePerMatch: 1,
+          thirdPlaceMatch: true,
+          rounds: {},
         },
         organizer,
       ),
@@ -314,7 +320,7 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
         ["heatSize", "thirdPlaceGame", "finalized"].some(
           (key) => key in bracketPayload.competition!,
         ) &&
-        "an old Match, Game or closed field",
+        "an old Match or closed field",
       rounds.some((round) => "heats" in round) && "a heats field",
       bracketPayload?.entrants?.length !== 4 && "entrants",
       matches.length !== 4 && `${matches.length} Matches`,
@@ -561,9 +567,11 @@ export async function assertMatchesLoop(sessions: { organizer: SmokeSession }) {
         ids,
         id,
         {
-          entrantsPerHeat: 4,
-          advancePerHeat: 2,
-          thirdPlaceGame: false,
+          kind: "group" as const,
+          entrantsPerMatch: 4,
+          advancePerMatch: 2,
+          thirdPlaceMatch: false,
+          rounds: {},
         },
         organizer,
       ),
@@ -618,7 +626,7 @@ export async function assertMatchesLoop(sessions: { organizer: SmokeSession }) {
       "recordMatchResult",
       await callAction(
         ids.recordMatchResult,
-        [id, matchIds[0], { order, scores: { [order[0]]: "1:02" } }],
+        [id, matchIds[0], { order, scores: { [order[0]]: "62" } }],
         organizer,
       ),
     );

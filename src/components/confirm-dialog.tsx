@@ -158,7 +158,7 @@ export function ConfirmActionButton({
   variant?: React.ComponentProps<typeof Button>["variant"];
   size?: React.ComponentProps<typeof Button>["size"];
   className?: string;
-  /** Screen-reader label for the trigger, e.g. "Delete Game: <summary>". */
+  /** Screen-reader label for the trigger, e.g. "Delete Match: <summary>". */
   ariaLabel?: string;
   children: ReactNode;
 }) {

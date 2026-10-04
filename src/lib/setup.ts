@@ -1,6 +1,7 @@
 import { type ZodType, z } from "zod";
 
 import type { Competition, Participant, Team, WarWeek } from "@/db/schema";
+import { bestScoreConfigSchema } from "@/lib/best-score/config";
 import { bracketConfigSchema, thirdPlaceRefusal } from "@/lib/bracket/config";
 import { HEX_COLOR } from "@/lib/color";
 import { placementLimitRefusal } from "@/lib/competitions";
@@ -11,16 +12,16 @@ import {
   FONT_PRESETS,
   SCORE_DIRECTIONS,
   WAR_WEEK_MODES,
-  isGameFormat,
+  isLoggedFormat,
 } from "@/lib/enums";
 import { fieldErrorsFrom } from "@/lib/form-errors";
-import { gamesConfigSchema } from "@/lib/games/config";
 import { participationPointsSchema } from "@/lib/participation/input";
 import { parsePlacementPointsText } from "@/lib/placement-points";
 import { pointsSchema as points } from "@/lib/points-entry";
 import type { Parsed } from "@/lib/result";
 import { contentInputSchema } from "@/lib/rich-text/content";
 import { descriptionContent } from "@/lib/rich-text/from-plain-text";
+import { seriesConfigSchema } from "@/lib/series/config";
 
 export { dayOutsideRangeError } from "@/lib/day-range";
 
@@ -120,18 +121,27 @@ export const competitionSeedSchema = z
     format: z.enum(COMPETITION_FORMATS).default("placement"),
     /** A Bracket's settings; one without them gets the default. */
     bracketConfig: bracketConfigSchema.nullish(),
-    /** A Head-to-head or Best score Competition's settings (`src/lib/games/config.ts`); omitted for the default. */
-    gameConfig: z.unknown().optional(),
-    /** A Head-to-head or Best score Competition open to everyone eligible; omitted means a fixed list. */
-    entrantsOpen: z.boolean().optional(),
+    /** A Head-to-head's draws and Best of; omitted for the default (Best of 3). */
+    seriesConfig: seriesConfigSchema.optional(),
+    /**
+     * A Head-to-head's two Entrants: Participant display names (individual)
+     * or Team names (team) from this seed. Added when absent; a reload
+     * changes nothing.
+     */
+    entrants: z.array(z.string().min(1).max(120)).length(2).optional(),
+    /** A Best score Competition's Team score; omitted for Best member. */
+    bestScoreConfig: bestScoreConfigSchema.optional(),
     /** An individual `participation` Competition's points per Participant; omitted is 1. A team one takes `placementPoints` instead. */
     participationPoints: participationPointsSchema.nullish(),
     /** A `participation` Competition's Self check-in switch; omitted is off. */
     selfCheckIn: z.boolean().nullish(),
-    /** A `participation` Competition's check-in close time; omitted is none. */
-    checkInClosesAt: z.iso.datetime({ offset: true }).nullish(),
-    /** A Placement Competition's Score direction; omitted is none. Set on insert only. */
+    /**
+     * The Score direction: Placement's (omitted is none) or Best score's
+     * (higher or lower; omitted is higher). Set on insert only.
+     */
     scoreDirection: z.enum(SCORE_DIRECTIONS).optional(),
+    /** The Scores' unit label, like "sec" (Placement or Best score). Set on insert only. */
+    scoreUnit: z.string().trim().min(1).max(20).optional(),
     /**
      * A Placement Competition seeded Closed, with its real time and
      * author (all three together): the loader writes its generated Points
@@ -158,17 +168,33 @@ export const competitionSeedSchema = z
         path: ["placementPoints"],
       });
     }
-    // The Score direction and a seeded Close are Placement's alone.
-    if (c.format !== "placement") {
-      for (const key of ["scoreDirection", "closed"] as const) {
+    // A seeded Close is Placement's alone.
+    if (c.format !== "placement" && c.closed !== undefined) {
+      ctx.addIssue({
+        code: "custom",
+        message: "closed is only for a placement Competition",
+        path: ["closed"],
+      });
+    }
+    // The Score direction and unit are Placement's and Best score's; Best
+    // score's is never none (the CHECK `competition_score_direction_by_format`).
+    if (c.format !== "placement" && c.format !== "best-score") {
+      for (const key of ["scoreDirection", "scoreUnit"] as const) {
         if (c[key] !== undefined) {
           ctx.addIssue({
             code: "custom",
-            message: `${key} is only for a placement Competition`,
+            message: `${key} is only for a placement or best-score Competition`,
             path: [key],
           });
         }
       }
+    }
+    if (c.format === "best-score" && c.scoreDirection === "none") {
+      ctx.addIssue({
+        code: "custom",
+        message: "a best-score Competition's scoreDirection is higher or lower",
+        path: ["scoreDirection"],
+      });
     }
     const closeKeys = [c.closed, c.closedAt, c.closedByEmail];
     if (
@@ -187,12 +213,12 @@ export const competitionSeedSchema = z
       ctx.addIssue({
         code: "custom",
         message:
-          "a Bracket needs its bracketConfig (entrantsPerHeat, advancePerHeat, thirdPlaceGame)",
+          "a Bracket needs its bracketConfig (kind, entrantsPerMatch, advancePerMatch, thirdPlaceMatch, rounds)",
         path: ["bracketConfig"],
       });
     }
     // A seed has no Entrants yet, so only the config half of the 3rd place
-    // game rule applies; Generate checks the Entrant count.
+    // Match rule applies; Generate checks the Entrant count.
     const thirdPlace =
       c.bracketConfig &&
       thirdPlaceRefusal(c.bracketConfig, Number.POSITIVE_INFINITY);
@@ -200,7 +226,7 @@ export const competitionSeedSchema = z
       ctx.addIssue({
         code: "custom",
         message: thirdPlace,
-        path: ["bracketConfig", "thirdPlaceGame"],
+        path: ["bracketConfig", "thirdPlaceMatch"],
       });
     }
     if (c.bracketConfig != null && c.format !== "bracket") {
@@ -213,11 +239,7 @@ export const competitionSeedSchema = z
     // Participation settings only on a `participation` Competition: an
     // individual one takes N and no Placement Points, a team one Placement
     // Points and no N (the database CHECK `competition_participation_columns`).
-    const participationKeys = [
-      "participationPoints",
-      "selfCheckIn",
-      "checkInClosesAt",
-    ] as const;
+    const participationKeys = ["participationPoints", "selfCheckIn"] as const;
     if (c.format !== "participation") {
       for (const key of participationKeys) {
         if (c[key] != null) {
@@ -251,30 +273,34 @@ export const competitionSeedSchema = z
         path: ["placementPoints"],
       });
     }
-    // Game config only on a Head-to-head or Best score Competition (the
-    // database CHECK `competition_game_config_head_to_head_or_best_score`),
-    // so a bad seed is a zod error.
-    if (isGameFormat(c.format)) {
-      if (c.gameConfig != null) {
-        const config = gamesConfigSchema(c.format).safeParse(c.gameConfig);
-        if (!config.success) {
+    // Each Format's own settings only on that Format (the database CHECKs
+    // `competition_series_config_head_to_head` and
+    // `competition_best_score_config_best_score`), so a bad seed is a zod
+    // error.
+    if (c.format !== "head-to-head") {
+      for (const key of ["seriesConfig", "entrants"] as const) {
+        if (c[key] !== undefined) {
           ctx.addIssue({
             code: "custom",
-            message: `gameConfig: ${config.error.issues[0].message}`,
-            path: ["gameConfig"],
+            message: `${key} is only for a head-to-head Competition`,
+            path: [key],
           });
         }
       }
-      return;
     }
-    for (const key of ["gameConfig", "entrantsOpen"] as const) {
-      if (c[key] != null) {
-        ctx.addIssue({
-          code: "custom",
-          message: `${key} is only for a head-to-head or best-score Competition`,
-          path: [key],
-        });
-      }
+    if (c.entrants && c.entrants[0] === c.entrants[1]) {
+      ctx.addIssue({
+        code: "custom",
+        message: "a head-to-head's 2 entrants are different",
+        path: ["entrants"],
+      });
+    }
+    if (c.format !== "best-score" && c.bestScoreConfig !== undefined) {
+      ctx.addIssue({
+        code: "custom",
+        message: "bestScoreConfig is only for a best-score Competition",
+        path: ["bestScoreConfig"],
+      });
     }
   });
 
@@ -782,7 +808,7 @@ export function parseCompetitionInput(
     },
   );
   if (!parsed.ok) return parsed;
-  // Only the setup fields: the Format and its settings (Bracket or Games)
+  // Only the setup fields: the Format and its settings (Bracket, Head-to-head, Best score)
   // are set through their own actions, never a setup save.
   const value = parsed.value;
   return {
@@ -920,7 +946,7 @@ export function competitionGuardError(
     // A closed Head-to-head, Best score or `participation` Competition
     // reuses `closed_at` (R3 decision 1); so does a Closed Placement.
     if (existing.format === "placement") return PLACEMENT_IS_CLOSED;
-    return (existing.format !== undefined && isGameFormat(existing.format)) ||
+    return (existing.format !== undefined && isLoggedFormat(existing.format)) ||
       existing.format === "participation"
       ? "This Competition is closed. Reopen the Competition first."
       : "This Competition's Bracket is closed. Reopen the Bracket first.";

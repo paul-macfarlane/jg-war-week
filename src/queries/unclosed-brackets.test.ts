@@ -201,9 +201,12 @@ describe.skipIf(!isLocalDatabase)("getUnclosedBrackets", () => {
           format: "bracket",
         })
         .returning({ id: f.schema.competition.id });
-      await tx
-        .insert(f.schema.bracketMatch)
-        .values({ competitionId: pool.id, round: 1, position: 1 });
+      await tx.insert(f.schema.bracketMatch).values({
+        competitionId: pool.id,
+        round: 1,
+        position: 1,
+        advanceCount: 1,
+      });
 
       expect(
         await queries.getUnclosedBrackets({ id: f.ctx.warWeekId }, tx),

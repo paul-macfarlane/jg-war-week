@@ -18,7 +18,7 @@ import { DEFAULT_BRACKET_CONFIG, configOf } from "@/lib/bracket/config";
 import { bracketWinner } from "@/lib/bracket/formats";
 import type { Bracket, Entrant } from "@/lib/bracket/types";
 import { BRACKET_FORMATS, isBracketFormat } from "@/lib/bracket/view";
-import { isGameFormat } from "@/lib/enums";
+import { isLoggedFormat } from "@/lib/enums";
 import type { EntryPoints } from "@/lib/results-table";
 import { isUuid } from "@/lib/uuid";
 import { getCompetitionEntryPoints } from "@/queries/entry-points";
@@ -67,7 +67,6 @@ export type BracketCompetition = Pick<
   | "selfReport"
   | "selfEnroll"
   | "entrantLimit"
-  | "enrollClosesAt"
 >;
 
 export type BracketView = {
@@ -286,7 +285,8 @@ export async function loadBrackets(
         return {
           entrantId: found?.entrantId ?? null,
           place: found?.place ?? null,
-          score: found?.score ?? null,
+          // The engine reads a Score as text; the column is numeric.
+          score: found?.score == null ? null : String(found.score),
         };
       }),
     });
@@ -297,7 +297,7 @@ export async function loadBrackets(
 /**
  * A Competition's Bracket for display: its Entrants with labels and colors,
  * its Matches, the Winner, whether it's closed and, once it is, its
- * Points Entries. Undefined when there's no such Competition, or it's run as Games (a Head-to-head or Best score Competition is never
+ * Points Entries. Undefined when there's no such Competition, or it's run as Head-to-head or Best score (a Head-to-head or Best score Competition is never
  * a Bracket). A points Competition returns an empty Bracket.
  */
 export async function getBracket(
@@ -318,14 +318,13 @@ export async function getBracket(
       selfReport: competition.selfReport,
       selfEnroll: competition.selfEnroll,
       entrantLimit: competition.entrantLimit,
-      enrollClosesAt: competition.enrollClosesAt,
     })
     .from(competition)
     .where(eq(competition.id, competitionId))
     .limit(1);
   if (
     !found ||
-    isGameFormat(found.format) ||
+    isLoggedFormat(found.format) ||
     found.format === "participation"
   ) {
     return undefined;

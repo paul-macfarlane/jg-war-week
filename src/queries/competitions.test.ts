@@ -229,7 +229,11 @@ describe.skipIf(!isLocalDatabase)("getCompetitions", () => {
         .values(
           [
             { name: "Fresh", format: "placement" as const },
-            { name: "Open games", format: "head-to-head" as const },
+            {
+              name: "Open series",
+              format: "head-to-head" as const,
+              seriesConfig: { drawsAllowed: false, bestOf: 3 as const },
+            },
             {
               name: "Tied",
               format: "placement" as const,
@@ -238,6 +242,7 @@ describe.skipIf(!isLocalDatabase)("getCompetitions", () => {
             {
               name: "Stairs",
               format: "best-score" as const,
+              scoreDirection: "higher" as const,
               closedAt: new Date("2099-01-03T13:00:00Z"),
             },
             { name: "Knockout", format: "bracket" as const },
@@ -254,9 +259,9 @@ describe.skipIf(!isLocalDatabase)("getCompetitions", () => {
       const id = (name: string) =>
         competitions.find((c) => c.name === name)!.id;
 
-      // Open games: an Entrant is a result.
+      // Open series: an Entrant is a result.
       await tx.insert(schema.entrant).values({
-        competitionId: id("Open games"),
+        competitionId: id("Open series"),
         teamId: zion.id,
         seedPosition: 1,
       });
@@ -294,7 +299,11 @@ describe.skipIf(!isLocalDatabase)("getCompetitions", () => {
             { round: 1, position: 1, status: "played" as const },
             { round: 1, position: 2, status: "ready" as const },
             { round: 2, position: 1, status: "pending" as const },
-          ].map((h) => ({ ...h, competitionId: id("Knockout") })),
+          ].map((h) => ({
+            ...h,
+            competitionId: id("Knockout"),
+            advanceCount: 1,
+          })),
         )
         .returning({ id: schema.bracketMatch.id });
       await tx.insert(schema.bracketMatchEntrant).values([
@@ -322,7 +331,7 @@ describe.skipIf(!isLocalDatabase)("getCompetitions", () => {
         ),
       ).toEqual({
         Fresh: "Not started",
-        "Open games": "Underway",
+        "Open series": "Underway",
         Tied: "Done · Winners: Nebuchadnezzar, Zion",
         Stairs: "Closed",
         Knockout: "Underway · Round 1 of 2",

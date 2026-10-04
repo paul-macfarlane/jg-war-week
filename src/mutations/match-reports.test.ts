@@ -226,9 +226,11 @@ async function reportFixture(tx: DBTx) {
       {
         format: "bracket",
         config: {
-          entrantsPerHeat: 4,
-          advancePerHeat: 2,
-          thirdPlaceGame: false,
+          kind: "group" as const,
+          entrantsPerMatch: 4,
+          advancePerMatch: 2,
+          thirdPlaceMatch: false,
+          rounds: {},
         },
       },
       f.ctx,

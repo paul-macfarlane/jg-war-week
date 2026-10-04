@@ -142,7 +142,7 @@ test("a head-to-head Bracket of 8 with a 3rd place Match is run to Close, its po
   await expect(thirdPlace).toBeChecked();
   await expectSaved(page);
   const [saved] = await runQuery<{ third: boolean }>(
-    `select (bracket_config->>'thirdPlaceGame')::boolean as third
+    `select (bracket_config->>'thirdPlaceMatch')::boolean as third
      from competition where id = $1`,
     [competitionId],
   );

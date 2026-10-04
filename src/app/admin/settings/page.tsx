@@ -43,7 +43,7 @@ export default async function AdminSettingsPage() {
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const isLive = warWeek.status === "live";
-  const [days, teams, existing, standings, unclosedBrackets, openGames] =
+  const [days, teams, existing, standings, unclosedBrackets, openUnscored] =
     await Promise.all([
       getSetupDays(warWeek),
       getSetupTeams(warWeek),
@@ -92,7 +92,7 @@ export default async function AdminSettingsPage() {
               suggestedWinner={suggestedWinner}
               highlights={warWeek.highlights}
               unclosedBrackets={unclosedBrackets.map((c) => c.name)}
-              openUnscoredCompetitions={openGames}
+              openUnscoredCompetitions={openUnscored}
             />
             <Link
               href="#create-next-war-week"

@@ -163,9 +163,11 @@ async function matchesFixture(tx: DBTx) {
 }
 
 const fourTwo = {
-  entrantsPerHeat: 4,
-  advancePerHeat: 2,
-  thirdPlaceGame: false,
+  kind: "group" as const,
+  entrantsPerMatch: 4,
+  advancePerMatch: 2,
+  thirdPlaceMatch: false,
+  rounds: {},
 };
 
 /** Relay Matches set to 4 per Match, 2 advancing, entered and generated. */
@@ -830,9 +832,11 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
           {
             format: "bracket",
             config: {
-              entrantsPerHeat: 4,
-              advancePerHeat: 1,
-              thirdPlaceGame: false,
+              kind: "group" as const,
+              entrantsPerMatch: 4,
+              advancePerMatch: 1,
+              thirdPlaceMatch: false,
+              rounds: {},
             },
           },
           f.ctx,
@@ -908,9 +912,11 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         {
           format: "bracket",
           config: {
-            entrantsPerHeat: 3,
-            advancePerHeat: 2,
-            thirdPlaceGame: false,
+            kind: "group" as const,
+            entrantsPerMatch: 3,
+            advancePerMatch: 2,
+            thirdPlaceMatch: false,
+            rounds: {},
           },
         },
         f.ctx,
@@ -958,9 +964,11 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
 
       // No Match Result yet: a different config clears the drawn Matches.
       const fourOne = {
-        entrantsPerHeat: 4,
-        advancePerHeat: 1,
-        thirdPlaceGame: false,
+        kind: "group" as const,
+        entrantsPerMatch: 4,
+        advancePerMatch: 1,
+        thirdPlaceMatch: false,
+        rounds: {},
       };
       expect(
         await mutations.setCompetitionFormat(
@@ -1011,9 +1019,11 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
           {
             format: "bracket",
             config: {
-              entrantsPerHeat: 3,
-              advancePerHeat: 2,
-              thirdPlaceGame: false,
+              kind: "group" as const,
+              entrantsPerMatch: 3,
+              advancePerMatch: 2,
+              thirdPlaceMatch: false,
+              rounds: {},
             },
           },
           f.ctx,
@@ -1036,9 +1046,11 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       const { mutations, queries } = await modules();
       const f = await fixture(tx);
       const withGame = {
-        entrantsPerHeat: 2,
-        advancePerHeat: 1,
-        thirdPlaceGame: true,
+        kind: "head-to-head" as const,
+        entrantsPerMatch: 2,
+        advancePerMatch: 1,
+        thirdPlaceMatch: true,
+        rounds: {},
       };
       const setGame = (config: typeof withGame) =>
         mutations.setCompetitionFormat(
@@ -1065,7 +1077,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         tx,
       );
       expect(
-        await setGame({ ...withGame, entrantsPerHeat: 4, advancePerHeat: 2 }),
+        await setGame({ ...withGame, entrantsPerMatch: 4, advancePerMatch: 2 }),
       ).toEqual({
         ok: false,
         error: "A 3rd place Match is only for 2 per Match with 1 advancing.",
@@ -1118,7 +1130,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(matchAt(view, 2, 2).labels).toEqual(["Red", null]);
 
       // Locked once a Match Result exists.
-      expect(await setGame({ ...withGame, thirdPlaceGame: false })).toEqual({
+      expect(await setGame({ ...withGame, thirdPlaceMatch: false })).toEqual({
         ok: false,
         error: "Locked once a Match has a result.",
       });
@@ -1253,7 +1265,12 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         .orderBy(entrant.seedPosition);
       const [final] = await tx
         .insert(bracketMatch)
-        .values({ competitionId: f.competitionId, round: 1, position: 1 })
+        .values({
+          competitionId: f.competitionId,
+          round: 1,
+          position: 1,
+          advanceCount: 1,
+        })
         .returning({ id: bracketMatch.id });
 
       /** The Postgres error code an insert fails with, or null. */
@@ -2300,11 +2317,11 @@ describe.skipIf(!isLocalDatabase)("Squads", () => {
 });
 
 /**
- * The fixture plus two Head-to-head or Best score Competitions made by `createCompetition`:
- * "Bouncy Pong" (individual, head-to-head) and "Stairs" (team,
- * best-score), and a helper that logs a Game straight into the tables.
+ * The fixture plus two Competitions made by `createCompetition`: "Bouncy
+ * Pong" (individual Head-to-head) and "Stairs" (team Best score), and
+ * helpers that log a Match or an Attempt straight into the tables.
  */
-async function gamesFixture(tx: DBTx) {
+async function loggedFixture(tx: DBTx) {
   const f = await fixture(tx);
   const setup = await import("@/mutations/setup");
   const create = async (
@@ -2330,54 +2347,79 @@ async function gamesFixture(tx: DBTx) {
   };
   const pongId = await create("Bouncy Pong", "individual", "head-to-head");
   const stairsId = await create("Stairs", "team", "best-score");
-  const logGame = async (
-    competitionId: string,
-    players: { teamId?: string; participantId?: string }[],
-  ) => {
+  /** An Attempt by `participantId`, credited to `teamId`. */
+  const logAttempt = async (participantId: string, teamId: string) => {
+    await tx.insert(f.schema.attempt).values({
+      competitionId: stairsId,
+      participantId,
+      teamId,
+      score: 3,
+      loggedByEmail: actorEmail,
+    });
+  };
+  /** A Match between Bouncy Pong's two Entrants. */
+  const logMatch = async () => {
     const [row] = await tx
-      .insert(f.schema.game)
-      .values({ competitionId, loggedByEmail: actorEmail })
-      .returning({ id: f.schema.game.id });
-    await tx.insert(f.schema.gamePlayer).values(
-      players.map((p, i) => ({
-        gameId: row.id,
-        teamId: p.teamId ?? null,
-        participantId: p.participantId ?? null,
+      .insert(f.schema.seriesMatch)
+      .values({ competitionId: pongId, loggedByEmail: actorEmail })
+      .returning({ id: f.schema.seriesMatch.id });
+    const sides = await tx
+      .select({ id: f.schema.entrant.id })
+      .from(f.schema.entrant)
+      .where(eq(f.schema.entrant.competitionId, pongId));
+    await tx.insert(f.schema.seriesMatchEntrant).values(
+      sides.map((side, i) => ({
+        seriesMatchId: row.id,
+        entrantId: side.id,
         place: i + 1,
       })),
     );
   };
-  return { ...f, setup, pongId, stairsId, logGame };
+  return { ...f, setup, pongId, stairsId, logAttempt, logMatch };
 }
 
 describe.skipIf(!isLocalDatabase)(
-  "Head-to-head or Best score Competitions",
+  "Head-to-head and Best score Competitions",
   () => {
-    it("creates a Head-to-head Competition with its default settings", async () => {
+    const settingsOf = async (tx: DBTx, id: string) => {
+      const schema = await import("@/db/schema");
+      const [found] = await tx
+        .select({
+          format: schema.competition.format,
+          scoreDirection: schema.competition.scoreDirection,
+          seriesConfig: schema.competition.seriesConfig,
+          bestScoreConfig: schema.competition.bestScoreConfig,
+          bracketConfig: schema.competition.bracketConfig,
+        })
+        .from(schema.competition)
+        .where(eq(schema.competition.id, id));
+      return found;
+    };
+
+    it("creates a Head-to-head with Best of 3 and a Best score Competition with higher is better", async () => {
       await inRolledBackTransaction(async (tx) => {
-        const f = await gamesFixture(tx);
-        const [row] = await tx
-          .select({
-            format: f.schema.competition.format,
-            gameConfig: f.schema.competition.gameConfig,
-            entrantsOpen: f.schema.competition.entrantsOpen,
-            bracketConfig: f.schema.competition.bracketConfig,
-          })
-          .from(f.schema.competition)
-          .where(eq(f.schema.competition.id, f.pongId));
-        expect(row).toEqual({
+        const f = await loggedFixture(tx);
+        expect(await settingsOf(tx, f.pongId)).toEqual({
           format: "head-to-head",
-          gameConfig: { drawsAllowed: false, bestOf: null },
-          entrantsOpen: true,
+          scoreDirection: "none",
+          seriesConfig: { drawsAllowed: false, bestOf: 3 },
+          bestScoreConfig: null,
+          bracketConfig: null,
+        });
+        expect(await settingsOf(tx, f.stairsId)).toEqual({
+          format: "best-score",
+          scoreDirection: "higher",
+          seriesConfig: null,
+          bestScoreConfig: { teamScore: "best-member" },
           bracketConfig: null,
         });
       });
     });
 
-    it("won't delete a Head-to-head or Best score Competition that has Games", async () => {
+    it("won't delete a Competition that has Matches or Attempts", async () => {
       await inRolledBackTransaction(async (tx) => {
-        const f = await gamesFixture(tx);
-        await f.logGame(f.stairsId, [{ teamId: f.blue }]);
+        const f = await loggedFixture(tx);
+        await f.logAttempt(f.neo, f.red);
         expect(await f.setup.deleteCompetition(f.stairsId, f.ctx, tx)).toEqual({
           ok: false,
           error:
@@ -2392,38 +2434,19 @@ describe.skipIf(!isLocalDatabase)(
     it("is never a Bracket: getBracket is undefined and the Bracket list leaves it out", async () => {
       await inRolledBackTransaction(async (tx) => {
         const { queries } = await modules();
-        const f = await gamesFixture(tx);
+        const f = await loggedFixture(tx);
         expect(await queries.getBracket(f.pongId, tx)).toBeUndefined();
         const names = (
           await queries.getBracketCompetitions({ id: f.ctx.warWeekId }, tx)
         ).map((c) => c.name);
         expect(names).toEqual(["Captain Clash", "Speed Chess"]);
-        expect(
-          (
-            await (
-              await import("@/queries/games")
-            ).getGamesCompetitions({ id: f.ctx.warWeekId }, tx)
-          ).map((c) => c.name),
-        ).toEqual(["Bouncy Pong", "Stairs"]);
       });
     });
 
     it("changes Format to and from Head-to-head or Best score, with the new Format's create defaults", async () => {
       await inRolledBackTransaction(async (tx) => {
         const { mutations } = await modules();
-        const f = await gamesFixture(tx);
-        const row = async (id: string) => {
-          const [found] = await tx
-            .select({
-              format: f.schema.competition.format,
-              gameConfig: f.schema.competition.gameConfig,
-              entrantsOpen: f.schema.competition.entrantsOpen,
-              bracketConfig: f.schema.competition.bracketConfig,
-            })
-            .from(f.schema.competition)
-            .where(eq(f.schema.competition.id, id));
-          return found;
-        };
+        const f = await loggedFixture(tx);
         expect(
           await mutations.setCompetitionFormat(
             f.pongId,
@@ -2432,14 +2455,17 @@ describe.skipIf(!isLocalDatabase)(
             tx,
           ),
         ).toEqual({ ok: true });
-        expect(await row(f.pongId)).toEqual({
+        expect(await settingsOf(tx, f.pongId)).toEqual({
           format: "bracket",
-          gameConfig: null,
-          entrantsOpen: false,
+          scoreDirection: "none",
+          seriesConfig: null,
+          bestScoreConfig: null,
           bracketConfig: {
-            entrantsPerHeat: 2,
-            advancePerHeat: 1,
-            thirdPlaceGame: false,
+            kind: "head-to-head",
+            entrantsPerMatch: 2,
+            advancePerMatch: 1,
+            thirdPlaceMatch: false,
+            rounds: {},
           },
         });
         expect(
@@ -2450,14 +2476,15 @@ describe.skipIf(!isLocalDatabase)(
             tx,
           ),
         ).toEqual({ ok: true });
-        expect(await row(f.competitionId)).toEqual({
+        expect(await settingsOf(tx, f.competitionId)).toEqual({
           format: "best-score",
-          gameConfig: { count: "best", betterIs: "higher", unit: "" },
-          entrantsOpen: true,
+          scoreDirection: "higher",
+          seriesConfig: null,
+          bestScoreConfig: { teamScore: "best-member" },
           bracketConfig: null,
         });
-        // A logged Game is a result: the Format locks.
-        await f.logGame(f.stairsId, [{ teamId: f.blue }]);
+        // A logged Attempt is a result: the Format locks.
+        await f.logAttempt(f.neo, f.red);
         expect(
           await mutations.setCompetitionFormat(
             f.stairsId,
@@ -2472,10 +2499,10 @@ describe.skipIf(!isLocalDatabase)(
       });
     });
 
-    it("sets Entrants only for the Format the caller names", async () => {
+    it("sets Entrants only for the Format the caller names, and never on Best score", async () => {
       await inRolledBackTransaction(async (tx) => {
         const { mutations } = await modules();
-        const f = await gamesFixture(tx);
+        const f = await loggedFixture(tx);
         expect(
           await mutations.replaceEntrants(
             f.pongId,
@@ -2490,18 +2517,29 @@ describe.skipIf(!isLocalDatabase)(
         expect(
           await mutations.replaceEntrants(
             f.competitionId,
-            { targetIds: [], format: "games" },
+            { targetIds: [], format: "head-to-head" },
             f.ctx,
             tx,
           ),
         ).toEqual({
           ok: false,
-          error: "This Competition isn't run as Head-to-head or Best score.",
+          error: "This Competition isn't run as Head-to-head.",
+        });
+        expect(
+          await mutations.replaceEntrants(
+            f.stairsId,
+            { targetIds: [f.red] },
+            f.ctx,
+            tx,
+          ),
+        ).toEqual({
+          ok: false,
+          error: "Best score has no Entrant list: anyone can log an Attempt.",
         });
         expect(
           await mutations.replaceEntrants(
             f.pongId,
-            { targetIds: [f.neo, f.trinity], format: "games" },
+            { targetIds: [f.neo, f.trinity], format: "head-to-head" },
             f.ctx,
             tx,
           ),
@@ -2519,7 +2557,7 @@ describe.skipIf(!isLocalDatabase)(
     it("refuses Bracket writes on a Head-to-head or Best score Competition", async () => {
       await inRolledBackTransaction(async (tx) => {
         const { mutations } = await modules();
-        const f = await gamesFixture(tx);
+        const f = await loggedFixture(tx);
         expect(
           await mutations.generateBracket(f.pongId, {}, f.ctx, tx),
         ).toEqual({
@@ -2529,10 +2567,10 @@ describe.skipIf(!isLocalDatabase)(
       });
     });
 
-    it("enters Participants of an individual Head-to-head or Best score Competition, never Squads or Teams", async () => {
+    it("enters exactly 2 Participants in an individual Head-to-head, never Squads or Teams", async () => {
       await inRolledBackTransaction(async (tx) => {
         const { mutations, queries } = await modules();
-        const f = await gamesFixture(tx);
+        const f = await loggedFixture(tx);
         expect(
           await mutations.replaceEntrants(
             f.pongId,
@@ -2546,20 +2584,19 @@ describe.skipIf(!isLocalDatabase)(
         ).toEqual(["Neo", "Trinity"]);
         expect(
           await mutations.replaceEntrants(
-            f.stairsId,
+            f.pongId,
             { targetIds: [], kind: "squad" },
             f.ctx,
             tx,
           ),
         ).toEqual({
           ok: false,
-          error:
-            "Squads aren't entered in a Head-to-head or Best score Competition.",
+          error: "Squads aren't entered in a Head-to-head.",
         });
         expect(
           await mutations.replaceEntrants(
             f.pongId,
-            { targetIds: [f.red], kind: "team" },
+            { targetIds: [f.red, f.blue], kind: "team" },
             f.ctx,
             tx,
           ),
@@ -2567,29 +2604,6 @@ describe.skipIf(!isLocalDatabase)(
           ok: false,
           error: "An individual Competition's Entrants are Participants.",
         });
-        expect(
-          await mutations.replaceEntrants(
-            f.stairsId,
-            { targetIds: [f.outsider] },
-            f.ctx,
-            tx,
-          ),
-        ).toEqual({
-          ok: false,
-          error:
-            '"Stairs" is a team Competition, so its Entrants must be Teams of this War Week.',
-        });
-      });
-    });
-
-    it("takes exactly 2 Entrants while Best of is on", async () => {
-      await inRolledBackTransaction(async (tx) => {
-        const { mutations } = await modules();
-        const f = await gamesFixture(tx);
-        await tx
-          .update(f.schema.competition)
-          .set({ gameConfig: { drawsAllowed: false, bestOf: 5 } })
-          .where(eq(f.schema.competition.id, f.pongId));
         const [third] = await tx
           .insert(f.schema.participant)
           .values({ warWeekId: f.ctx.warWeekId, displayName: "Morpheus" })
@@ -2601,69 +2615,33 @@ describe.skipIf(!isLocalDatabase)(
             f.ctx,
             tx,
           ),
-        ).toEqual({ ok: false, error: "A Best of needs exactly 2 Entrants." });
-        expect(
-          await mutations.replaceEntrants(
-            f.pongId,
-            { targetIds: [f.neo, f.trinity] },
-            f.ctx,
-            tx,
-          ),
-        ).toEqual({ ok: true });
+        ).toEqual({
+          ok: false,
+          error: "A Head-to-head needs exactly 2 Entrants.",
+        });
       });
     });
 
-    it("won't remove an Entrant who has logged Games, but keeps one who has", async () => {
+    it("refuses a scoring change and deleting a player while Matches or Attempts exist", async () => {
       await inRolledBackTransaction(async (tx) => {
         const { mutations } = await modules();
-        const f = await gamesFixture(tx);
+        const f = await loggedFixture(tx);
         await mutations.replaceEntrants(
-          f.stairsId,
-          { targetIds: [f.red, f.blue, f.green] },
+          f.pongId,
+          { targetIds: [f.neo, f.trinity] },
           f.ctx,
           tx,
         );
-        await f.logGame(f.stairsId, [{ teamId: f.blue }]);
-        expect(
-          await mutations.replaceEntrants(
-            f.stairsId,
-            { targetIds: [f.red, f.green] },
-            f.ctx,
-            tx,
-          ),
-        ).toEqual({
-          ok: false,
-          error: "Blue has logged Matches or Attempts. Delete them first.",
-        });
-        expect(
-          await mutations.replaceEntrants(
-            f.stairsId,
-            { targetIds: [f.blue, f.gold] },
-            f.ctx,
-            tx,
-          ),
-        ).toEqual({ ok: true });
-      });
-    });
-
-    it("refuses a Format change, a scoring change and deleting a player while Games exist", async () => {
-      await inRolledBackTransaction(async (tx) => {
-        const f = await gamesFixture(tx);
-        await f.logGame(f.pongId, [
-          { participantId: f.neo },
-          { participantId: f.trinity },
-        ]);
-        await f.logGame(f.stairsId, [{ teamId: f.gold }]);
+        await f.logMatch();
+        await f.logAttempt(f.neo, f.gold);
 
         expect(await f.setup.deleteTeam(f.gold, f.ctx, tx)).toEqual({
           ok: false,
-          error: "This Team has 1 Match or Attempt. Move or delete them first.",
+          error: "This Team has 1 Attempt. Move or delete them first.",
         });
-        expect(await f.setup.deleteParticipant(f.trinity, f.ctx, tx)).toEqual({
-          ok: false,
-          error:
-            "This Participant has 1 Match or Attempt. Delete them or remove the Participant from them first.",
-        });
+        expect(await f.setup.deleteParticipant(f.neo, f.ctx, tx)).toMatchObject(
+          { ok: false },
+        );
         expect(
           await f.setup.updateCompetition(
             f.pongId,
@@ -2678,17 +2656,13 @@ describe.skipIf(!isLocalDatabase)(
             f.ctx,
             tx,
           ),
-        ).toEqual({
-          ok: false,
-          error:
-            "This Competition has 1 Match or Attempt. Delete them before changing its scoring.",
-        });
+        ).toMatchObject({ ok: false });
       });
     });
 
-    it("takes a closed Head-to-head or Best score Competition's Placement Points change", async () => {
+    it("takes a closed Head-to-head's Placement Points change", async () => {
       await inRolledBackTransaction(async (tx) => {
-        const f = await gamesFixture(tx);
+        const f = await loggedFixture(tx);
         await tx
           .update(f.schema.competition)
           .set({ closedAt: new Date() })
@@ -2711,18 +2685,153 @@ describe.skipIf(!isLocalDatabase)(
       });
     });
 
-    it("refuses a game config on a Competition that isn't Head-to-head or Best score (the database CHECK)", async () => {
+    it.each([
+      [
+        "a series config on a Bracket",
+        "bracket",
+        { seriesConfig: { drawsAllowed: false, bestOf: 3 } },
+      ],
+      ["a Head-to-head with no series config", "pong", { seriesConfig: null }],
+      [
+        "a Best score config on a Head-to-head",
+        "pong",
+        { bestScoreConfig: { teamScore: "best-member" } },
+      ],
+      ["Max attempts on a Head-to-head", "pong", { maxAttempts: 3 }],
+      ["Max attempts of 0", "stairs", { maxAttempts: 0 }],
+      ["enrollment on Best score", "stairs", { selfEnroll: true }],
+      ["an Entrant limit on a Head-to-head", "pong", { entrantLimit: 4 }],
+      ["Best score with no direction", "stairs", { scoreDirection: "none" }],
+    ] as const)("refuses %s (the database CHECK)", async (_, which, values) => {
       await inRolledBackTransaction(async (tx) => {
-        const f = await gamesFixture(tx);
+        const f = await loggedFixture(tx);
+        const target = {
+          bracket: f.competitionId,
+          pong: f.pongId,
+          stairs: f.stairsId,
+        }[which];
         await expect(
           tx.transaction((inner) =>
             inner
               .update(f.schema.competition)
-              .set({ gameConfig: { drawsAllowed: false, bestOf: null } })
-              .where(eq(f.schema.competition.id, f.competitionId)),
+              .set(values as Partial<typeof f.schema.competition.$inferInsert>)
+              .where(eq(f.schema.competition.id, target)),
           ),
         ).rejects.toThrow();
       });
     });
   },
 );
+
+describe.skipIf(!isLocalDatabase)("each Match's advancing count", () => {
+  it("is 1 in a head-to-head Bracket and the final, else the config's, and Scores are stored as numbers", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { mutations } = await modules();
+      const f = await fixture(tx);
+      const people = await tx
+        .insert(f.schema.participant)
+        .values(
+          Array.from({ length: 8 }, (_, i) => ({
+            warWeekId: f.ctx.warWeekId,
+            displayName: `Player ${i + 1}`,
+          })),
+        )
+        .returning({ id: f.schema.participant.id });
+      const counts = async () =>
+        (
+          await tx
+            .select({
+              round: f.schema.bracketMatch.round,
+              advanceCount: f.schema.bracketMatch.advanceCount,
+            })
+            .from(f.schema.bracketMatch)
+            .where(eq(f.schema.bracketMatch.competitionId, f.chessId))
+            .orderBy(
+              f.schema.bracketMatch.round,
+              f.schema.bracketMatch.position,
+            )
+        ).map((m) => [m.round, m.advanceCount]);
+
+      expect(
+        await mutations.setCompetitionFormat(
+          f.chessId,
+          {
+            format: "bracket",
+            config: {
+              kind: "group",
+              entrantsPerMatch: 4,
+              advancePerMatch: 2,
+              thirdPlaceMatch: false,
+              rounds: {},
+            },
+          },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+      await mutations.replaceEntrants(
+        f.chessId,
+        { targetIds: people.map((p) => p.id) },
+        f.ctx,
+        tx,
+      );
+      expect(
+        await mutations.generateBracket(f.chessId, { rng: () => 0 }, f.ctx, tx),
+      ).toEqual({ ok: true });
+      expect(await counts()).toEqual([
+        [1, 2],
+        [1, 2],
+        [2, 1],
+      ]);
+
+      const [first] = await tx
+        .select({ id: f.schema.bracketMatch.id })
+        .from(f.schema.bracketMatch)
+        .where(eq(f.schema.bracketMatch.competitionId, f.chessId))
+        .orderBy(f.schema.bracketMatch.round, f.schema.bracketMatch.position)
+        .limit(1);
+      const slots = await tx
+        .select({ entrantId: f.schema.bracketMatchEntrant.entrantId })
+        .from(f.schema.bracketMatchEntrant)
+        .where(eq(f.schema.bracketMatchEntrant.matchId, first.id))
+        .orderBy(f.schema.bracketMatchEntrant.slot);
+      const order = slots.map((s) => s.entrantId);
+      expect(
+        await mutations.recordMatchResult(
+          f.chessId,
+          first.id,
+          { order, scores: { [order[0]]: "21.5", [order[1]]: "9" } },
+          f.ctx,
+          tx,
+        ),
+      ).toMatchObject({ ok: true });
+      const scores = await tx
+        .select({ score: f.schema.bracketMatchEntrant.score })
+        .from(f.schema.bracketMatchEntrant)
+        .where(eq(f.schema.bracketMatchEntrant.matchId, first.id))
+        .orderBy(f.schema.bracketMatchEntrant.place);
+      expect(scores.map((s) => s.score).slice(0, 2)).toEqual([21.5, 9]);
+
+      expect(
+        await mutations.setCompetitionFormat(
+          f.competitionId,
+          { format: "bracket" },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+      await mutations.replaceEntrants(
+        f.competitionId,
+        { targetIds: [f.red, f.blue, f.green, f.gold] },
+        f.ctx,
+        tx,
+      );
+      await mutations.generateBracket(f.competitionId, {}, f.ctx, tx);
+      const headToHead = await tx
+        .select({ advanceCount: f.schema.bracketMatch.advanceCount })
+        .from(f.schema.bracketMatch)
+        .where(eq(f.schema.bracketMatch.competitionId, f.competitionId));
+      expect(headToHead.map((m) => m.advanceCount)).toEqual([1, 1, 1]);
+    });
+  });
+});

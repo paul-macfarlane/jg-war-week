@@ -5,12 +5,13 @@ import { DBOrTx, db } from "@/db";
 import {
   type Competition,
   WarWeek,
+  attempt,
   competition,
   entrant,
-  game,
   participation,
   placement,
   pointsEntry,
+  seriesMatch,
 } from "@/db/schema";
 import { hasResults } from "@/lib/bracket/formats";
 import { isBracketFormat } from "@/lib/bracket/view";
@@ -115,7 +116,8 @@ export async function getCompetitions(
 
   const [
     entrants,
-    games,
+    matches,
+    attempts,
     placements,
     checkIns,
     generated,
@@ -123,7 +125,8 @@ export async function getCompetitions(
     generatedEntries,
   ] = await Promise.all([
     countsBy(entrant, entrant.competitionId),
-    countsBy(game, game.competitionId),
+    countsBy(seriesMatch, seriesMatch.competitionId),
+    countsBy(attempt, attempt.competitionId),
     countsBy(placement, placement.competitionId),
     countsBy(participation, participation.competitionId),
     countsBy(
@@ -169,7 +172,7 @@ export async function getCompetitions(
         closed: row.closedAt !== null,
         hasResult: hasResult({
           entrants: entrants.get(row.id) ?? 0,
-          games: games.get(row.id) ?? 0,
+          logged: (matches.get(row.id) ?? 0) + (attempts.get(row.id) ?? 0),
           placements: placements.get(row.id) ?? 0,
           checkIns: checkIns.get(row.id) ?? 0,
           // Only Brackets have Matches, and `loadBrackets` has them.

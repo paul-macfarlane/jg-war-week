@@ -3,7 +3,7 @@ import type { FinaleSlideProps } from "./types";
 
 /**
  * The By the numbers slide: the War Week's non-zero figures (Competitions
- * run, Games logged, Matches played, Points Entries, Points handed out,
+ * run, Matches and Attempts logged, Bracket Matches played, Points Entries, Points handed out,
  * Participants), each big over its label.
  */
 export function NumbersSlide({

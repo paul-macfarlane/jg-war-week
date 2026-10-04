@@ -11,12 +11,13 @@ import {
 import { DBOrTx, db } from "@/db";
 import {
   type WarWeek,
+  attempt,
   bracketMatch,
   competition,
   finaleSlide,
-  game,
   participant,
   pointsEntry,
+  seriesMatch,
 } from "@/db/schema";
 import {
   type FinaleCounts,
@@ -57,7 +58,8 @@ export async function getFinaleSlides(
 
 /**
  * A War Week's figures for the By the numbers slide (`byTheNumbers` labels
- * and filters them): Competitions with a Points Entry, Games logged, Matches
+ * and filters them): Competitions with a Points Entry, Matches and Attempts
+ * logged, Bracket Matches
  * played, Points Entries (Discretionary points too) and the points they hand out, and the roster.
  */
 export async function getFinaleCounts(
@@ -65,33 +67,39 @@ export async function getFinaleCounts(
   dbOrTx: DBOrTx = db,
 ): Promise<FinaleCounts> {
   const ofWarWeek = eq(competition.warWeekId, warWeekId);
-  const [[entries], [games], [matches], [roster]] = await Promise.all([
-    dbOrTx
-      .select({
-        competitions: countDistinct(pointsEntry.competitionId),
-        entries: sql<number>`count(*)::int`,
-        points: sql<string>`coalesce(sum(${pointsEntry.points}), 0)`,
-      })
-      .from(pointsEntry)
-      .where(eq(pointsEntry.warWeekId, warWeekId)),
-    dbOrTx
-      .select({ n: sql<number>`count(*)::int` })
-      .from(game)
-      .innerJoin(competition, eq(competition.id, game.competitionId))
-      .where(ofWarWeek),
-    dbOrTx
-      .select({ n: sql<number>`count(*)::int` })
-      .from(bracketMatch)
-      .innerJoin(competition, eq(competition.id, bracketMatch.competitionId))
-      .where(and(ofWarWeek, eq(bracketMatch.status, "played"))),
-    dbOrTx
-      .select({ n: sql<number>`count(*)::int` })
-      .from(participant)
-      .where(eq(participant.warWeekId, warWeekId)),
-  ]);
+  const [[entries], [seriesMatches], [attempts], [matches], [roster]] =
+    await Promise.all([
+      dbOrTx
+        .select({
+          competitions: countDistinct(pointsEntry.competitionId),
+          entries: sql<number>`count(*)::int`,
+          points: sql<string>`coalesce(sum(${pointsEntry.points}), 0)`,
+        })
+        .from(pointsEntry)
+        .where(eq(pointsEntry.warWeekId, warWeekId)),
+      dbOrTx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(seriesMatch)
+        .innerJoin(competition, eq(competition.id, seriesMatch.competitionId))
+        .where(ofWarWeek),
+      dbOrTx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(attempt)
+        .innerJoin(competition, eq(competition.id, attempt.competitionId))
+        .where(ofWarWeek),
+      dbOrTx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(bracketMatch)
+        .innerJoin(competition, eq(competition.id, bracketMatch.competitionId))
+        .where(and(ofWarWeek, eq(bracketMatch.status, "played"))),
+      dbOrTx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(participant)
+        .where(eq(participant.warWeekId, warWeekId)),
+    ]);
   return {
     competitionsRun: Number(entries?.competitions ?? 0),
-    gamesLogged: Number(games?.n ?? 0),
+    resultsLogged: Number(seriesMatches?.n ?? 0) + Number(attempts?.n ?? 0),
     matchesPlayed: Number(matches?.n ?? 0),
     pointsEntries: Number(entries?.entries ?? 0),
     pointsHandedOut: Number(entries?.points ?? 0),

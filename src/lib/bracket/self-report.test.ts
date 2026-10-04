@@ -45,7 +45,13 @@ describe("matchReportState", () => {
     // 5 Entrants, 4 per Match, 2 advance: Matches of 3 and 2 (the 2 is a
     // bye), then a Final of 4 waiting for Round 1.
     let bracket = generate(
-      { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
+      {
+        kind: "group" as const,
+        entrantsPerMatch: 4,
+        advancePerMatch: 2,
+        thirdPlaceMatch: false,
+        rounds: {},
+      },
       entrants(5),
       newId,
     );

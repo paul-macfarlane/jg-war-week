@@ -151,7 +151,13 @@ describe("bracketTree, Matches", () => {
   /** 8 Entrants, 4 per Match, top 2 advance: two Matches, then the Final. */
   const matches = () =>
     generate(
-      { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
+      {
+        kind: "group" as const,
+        entrantsPerMatch: 4,
+        advancePerMatch: 2,
+        thirdPlaceMatch: false,
+        rounds: {},
+      },
       entrants(["A", "B", "C", "D", "E", "F", "G", "H"]),
       newId,
     );
@@ -197,7 +203,7 @@ describe("bracketTree, Matches", () => {
 describe("bracketTree, 3rd place Match", () => {
   it("flags only the final as the final, never the 3rd place Match beside it", () => {
     let bracket = generate(
-      { ...DEFAULT_BRACKET_CONFIG, thirdPlaceGame: true },
+      { ...DEFAULT_BRACKET_CONFIG, thirdPlaceMatch: true },
       entrants(["A", "B", "C", "D"]),
       newId,
     );

@@ -17,7 +17,7 @@ import {
 
 const NONE = {
   entrants: 0,
-  games: 0,
+  logged: 0,
   placements: 0,
   checkIns: 0,
   matches: 0,
@@ -28,7 +28,7 @@ const NONE = {
 const fresh: CompetitionLockFacts = {
   format: "placement",
   hasResult: false,
-  hasGame: false,
+  hasLogged: false,
   hasMatchResult: false,
   closed: false,
 };
@@ -41,7 +41,7 @@ const matchPlayed: CompetitionLockFacts = {
 const closed: CompetitionLockFacts = {
   ...fresh,
   hasResult: true,
-  hasGame: true,
+  hasLogged: true,
   hasMatchResult: true,
   closed: true,
 };
@@ -53,7 +53,7 @@ describe("a result", () => {
 
   it.each([
     ["an Entrant", { entrants: 1 }],
-    ["a Game", { games: 1 }],
+    ["a Match or Attempt", { logged: 1 }],
     ["a Placement", { placements: 1 }],
     ["a check-in", { checkIns: 1 }],
     ["a Match", { matches: 1 }],
@@ -95,36 +95,30 @@ describe("settingLockReason", () => {
     expect(settingLockReason(field, started)).toBe(LOCKED_BY_RESULT);
   });
 
-  it("locks a Best score Competition's direction and attempts once any result exists, an Entrant included", () => {
+  it("never locks the Score unit: it's a label", () => {
+    expect(settingLockReason("scoreUnit", matchPlayed)).toBeNull();
+    expect(settingLockReason("scoreUnit", closed)).toBeNull();
+  });
+
+  it("locks a Best score Competition's Team score once any result exists", () => {
     const bestScore = { ...fresh, format: "best-score" } as const;
-    expect(settingLockReason("gameConfig", bestScore)).toBeNull();
+    expect(settingLockReason("bestScoreConfig", bestScore)).toBeNull();
     expect(
-      settingLockReason("gameConfig", { ...bestScore, hasResult: true }),
+      settingLockReason("bestScoreConfig", { ...bestScore, hasResult: true }),
     ).toBe(LOCKED_BY_RESULT);
   });
 
-  it("locks a Head-to-head Competition's draws and Best of once it has a Game, not before", () => {
+  it("locks a Head-to-head's draws and Best of once it has a Match, not before", () => {
     const headToHead = { ...fresh, format: "head-to-head" } as const;
-    // Its Entrants are a result, but a Best of needs them first.
+    // Its two Entrants are a result, but they come first.
     const withEntrants = { ...headToHead, hasResult: true };
-    expect(settingLockReason("gameConfig", withEntrants)).toBeNull();
-    const played = { ...withEntrants, hasGame: true };
-    expect(settingLockReason("gameConfig", played)).toBe(
+    expect(settingLockReason("seriesConfig", withEntrants)).toBeNull();
+    const played = { ...withEntrants, hasLogged: true };
+    expect(settingLockReason("seriesConfig", played)).toBe(
       "Locked once the Competition has a Match or Attempt.",
     );
-    expect(settingLockReason("gameConfig", played)).toBe(LOCKED_BY_MATCH);
+    expect(settingLockReason("seriesConfig", played)).toBe(LOCKED_BY_MATCH);
   });
-
-  it.each(["head-to-head", "best-score"] as const)(
-    "locks a %s Competition's open or fixed Entrants once it has a Game, not before",
-    (format) => {
-      const withEntrants = { ...fresh, format, hasResult: true };
-      expect(settingLockReason("entrantsOpen", withEntrants)).toBeNull();
-      expect(
-        settingLockReason("entrantsOpen", { ...withEntrants, hasGame: true }),
-      ).toBe(LOCKED_BY_MATCH);
-    },
-  );
 
   it.each<CompetitionSettingField>(["bracketConfig", "entrants", "bracket"])(
     "locks %s once a Match Result exists, not before",
@@ -143,11 +137,8 @@ describe("settingLockReason", () => {
   it.each<CompetitionSettingField>([
     "selfEnroll",
     "entrantLimit",
-    "enrollClosesAt",
-    "loggingClosesAt",
     "selfReport",
     "selfCheckIn",
-    "checkInClosesAt",
   ])("locks %s only while Closed", (field) => {
     expect(settingLockReason(field, matchPlayed)).toBeNull();
     expect(settingLockReason(field, closed)).toBe(
@@ -162,7 +153,9 @@ describe("settingLockReason", () => {
       const bare = { ...fresh, format, closed: true };
       for (const field of COMPETITION_SETTING_FIELDS) {
         expect(settingLockReason(field, bare), field).toBe(
-          neverLocked.includes(field) ? null : LOCKED_WHILE_CLOSED,
+          neverLocked.includes(field) || field === "scoreUnit"
+            ? null
+            : LOCKED_WHILE_CLOSED,
         );
       }
     },
@@ -170,7 +163,7 @@ describe("settingLockReason", () => {
 });
 
 describe("lockFactsOf", () => {
-  it("reads a Game, any result, a Match Result and Closed from what was entered", () => {
+  it("reads a Match or Attempt, any result, a Match Result and Closed from what was entered", () => {
     expect(
       lockFactsOf(
         { ...NONE, entrants: 2 },
@@ -179,19 +172,19 @@ describe("lockFactsOf", () => {
     ).toEqual({
       format: "head-to-head",
       hasResult: true,
-      hasGame: false,
+      hasLogged: false,
       hasMatchResult: false,
       closed: false,
     });
     expect(
       lockFactsOf(
-        { ...NONE, games: 1 },
+        { ...NONE, logged: 1 },
         { format: "best-score", closedAt: new Date("2027-02-26T17:00:00Z") },
       ),
     ).toEqual({
       format: "best-score",
       hasResult: true,
-      hasGame: true,
+      hasLogged: true,
       hasMatchResult: false,
       closed: true,
     });

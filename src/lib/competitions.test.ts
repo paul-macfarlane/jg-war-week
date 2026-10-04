@@ -26,10 +26,10 @@ describe("groupCompetitions", () => {
 
   it("groups by Competition Group, ordering groups and Competitions by name", () => {
     const result = groupCompetitions([
-      competition("Cypher", "Night Games"),
+      competition("Cypher", "Night Contests"),
       competition("HQ Attendance", "Before the Week"),
       competition("Black Midnight"),
-      competition("Deja Vu", "Night Games"),
+      competition("Deja Vu", "Night Contests"),
       competition("AI Survey Completion", "Before the Week"),
       competition("Beyblades"),
     ]);
@@ -43,10 +43,10 @@ describe("groupCompetitions", () => {
         ],
       },
       {
-        name: "Night Games",
+        name: "Night Contests",
         competitions: [
-          competition("Cypher", "Night Games"),
-          competition("Deja Vu", "Night Games"),
+          competition("Cypher", "Night Contests"),
+          competition("Deja Vu", "Night Contests"),
         ],
       },
     ]);

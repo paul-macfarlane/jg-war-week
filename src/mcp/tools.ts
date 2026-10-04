@@ -62,7 +62,7 @@ export const MCP_TOOLS = {
   get_participation: {
     title: "Get Participation",
     description:
-      "Returns a Competition run as Participation (points for taking part) by name: its scoring settings, whether Participants can check in and until when, whether it's Closed, who took part by name, and in team scoring each Team's headcount and place. A Competition run another way instead returns participation: null; an unknown Competition returns found: false.",
+      "Returns a Competition run as Participation (points for taking part) by name: its scoring settings, whether Participants can check in, whether it's Closed, who took part by name, and in team scoring each Team's headcount and place. A Competition run another way instead returns participation: null; an unknown Competition returns found: false.",
   },
   get_placements: {
     title: "Get Placements",

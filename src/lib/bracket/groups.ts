@@ -50,16 +50,16 @@ function snakeMatch(rank: number, matchCount: number): number {
  */
 function roundShape(
   count: number,
-  { entrantsPerHeat, advancePerHeat }: BracketConfig,
+  { entrantsPerMatch, advancePerMatch }: BracketConfig,
 ): { rounds: number[][] } | { neverEnds: number } {
   const rounds: number[][] = [];
   let remaining = count;
-  while (remaining > entrantsPerHeat) {
+  while (remaining > entrantsPerMatch) {
     if (rounds.length >= MAX_ROUNDS) {
       throw new Error(`more than ${MAX_ROUNDS} Rounds for ${count} Entrants`);
     }
-    const sizes = matchSizes(remaining, entrantsPerHeat);
-    const onward = sizes.reduce((n, k) => n + Math.min(k, advancePerHeat), 0);
+    const sizes = matchSizes(remaining, entrantsPerMatch);
+    const onward = sizes.reduce((n, k) => n + Math.min(k, advancePerMatch), 0);
     if (onward >= remaining) return { neverEnds: rounds.length + 1 };
     rounds.push(sizes);
     remaining = onward;
@@ -80,8 +80,8 @@ export function validateConfig(
   if (entrantCount < 2) return "A Bracket needs at least 2 Entrants.";
   const shape = roundShape(entrantCount, parsed.data);
   if ("neverEnds" in shape) {
-    const { entrantsPerHeat, advancePerHeat } = parsed.data;
-    return `With ${entrantCount} Entrants, ${entrantsPerHeat} per Match and ${advancePerHeat} advancing, Round ${shape.neverEnds} would never end. Lower how many advance.`;
+    const { entrantsPerMatch, advancePerMatch } = parsed.data;
+    return `With ${entrantCount} Entrants, ${entrantsPerMatch} per Match and ${advancePerMatch} advancing, Round ${shape.neverEnds} would never end. Lower how many advance.`;
   }
   return null;
 }
@@ -103,7 +103,7 @@ function roundMatches(bracket: Bracket, round: number): Match[] {
 export function isBye(bracket: Bracket, match: Match): boolean {
   return (
     match.round < finalRoundOf(bracket) &&
-    match.slots.length <= bracket.config.advancePerHeat
+    match.slots.length <= bracket.config.advancePerMatch
   );
 }
 
@@ -151,9 +151,9 @@ function fillNextIfComplete(bracket: Bracket, round: number) {
 function advancersOf(bracket: Bracket, round: number): string[] | null {
   const matches = roundMatches(bracket, round);
   if (!matches.every(isDecided)) return null;
-  const { advancePerHeat } = bracket.config;
+  const { advancePerMatch } = bracket.config;
   const ranked: string[] = [];
-  for (let place = 1; place <= advancePerHeat; place++) {
+  for (let place = 1; place <= advancePerMatch; place++) {
     for (const match of matches) {
       const slot = match.slots.find((s) => s.place === place);
       if (slot) ranked.push(slot.entrantId!);
@@ -373,8 +373,8 @@ export function finalPlacings(
 }
 
 /**
- * A Bracket of any config but 2 / 1: Matches of up to `entrantsPerHeat` Entrants, the top
- * `advancePerHeat` of each going on, Round after Round until one Match is
+ * A Bracket of any config but 2 / 1: Matches of up to `entrantsPerMatch` Entrants, the top
+ * `advancePerMatch` of each going on, Round after Round until one Match is
  * left.
  */
 export const matches: FormatEngine = {

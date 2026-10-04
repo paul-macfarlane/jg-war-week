@@ -65,14 +65,14 @@ describe("CompetitionFacts", () => {
     expect(html).toContain("Team");
   });
 
-  it("shows no Games Format badge for another Format", () => {
+  it("shows no Head-to-head or Best score badge for another Format", () => {
     const html = renderToStaticMarkup(
       <CompetitionFacts
         competition={{ ...competition, format: "placement" }}
         teamLabel="House"
       />,
     );
-    expect(html).not.toMatch(/Head-to-head|Best score|Games/);
+    expect(html).not.toMatch(/Head-to-head|Best score/);
   });
 });
 

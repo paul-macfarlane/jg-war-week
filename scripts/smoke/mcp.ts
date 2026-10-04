@@ -403,41 +403,44 @@ export async function assertMcp() {
 
     // 17-M: a Head-to-head Competition by name, never an email; get_bracket
     // points to get_games.
-    const games = await callTool(16, "get_games", {
+    const series = await callTool(16, "get_games", {
       competition: "Bouncy Pong",
     });
-    const gamesCheck =
-      "MCP get_games(Bouncy Pong) returns its head-to-head settings, leaderboard and matches (no games or attempts) with no @";
+    const seriesCheck =
+      "MCP get_games(Bouncy Pong) returns its Head-to-head settings with a Best of 3 between its 2 Entrants, standings and matches (no attempts) with no @";
     if (
-      games.parsed?.found === true &&
-      games.parsed.competition?.name === "Bouncy Pong" &&
-      games.parsed.competition?.format === "head-to-head" &&
-      Array.isArray(games.parsed.leaderboard) &&
-      Array.isArray(games.parsed.matches) &&
-      !("games" in games.parsed) &&
-      !("attempts" in games.parsed) &&
-      !JSON.stringify(games.parsed).includes("@")
+      series.parsed?.found === true &&
+      series.parsed.competition?.name === "Bouncy Pong" &&
+      series.parsed.competition?.format === "head-to-head" &&
+      String(series.parsed.competition?.settings).includes("Best of 3") &&
+      JSON.stringify(series.parsed.competition?.entrants) ===
+        JSON.stringify(["Albert Hernandez", "Austin Gage"]) &&
+      Array.isArray(series.parsed.leaderboard) &&
+      Array.isArray(series.parsed.matches) &&
+      !("games" in series.parsed) &&
+      !("attempts" in series.parsed) &&
+      !JSON.stringify(series.parsed).includes("@")
     ) {
-      ok(gamesCheck);
+      ok(seriesCheck);
     } else {
-      fail(gamesCheck, `result=${JSON.stringify(games.raw)}`);
+      fail(seriesCheck, `result=${JSON.stringify(series.raw)}`);
     }
-    const gamesBracket = await callTool(17, "get_bracket", {
+    const seriesBracket = await callTool(17, "get_bracket", {
       competition: "Bouncy Pong",
     });
-    const gamesBracketCheck =
+    const seriesBracketCheck =
       "MCP get_bracket(Bouncy Pong) answers bracket: null, run as Head-to-head, pointing to get_games";
     if (
-      gamesBracket.parsed?.found === true &&
-      gamesBracket.parsed.bracket === null &&
-      String(gamesBracket.parsed.message).includes(
+      seriesBracket.parsed?.found === true &&
+      seriesBracket.parsed.bracket === null &&
+      String(seriesBracket.parsed.message).includes(
         "run as Head-to-head or Best score",
       ) &&
-      String(gamesBracket.parsed.message).includes("get_games")
+      String(seriesBracket.parsed.message).includes("get_games")
     ) {
-      ok(gamesBracketCheck);
+      ok(seriesBracketCheck);
     } else {
-      fail(gamesBracketCheck, `result=${JSON.stringify(gamesBracket.raw)}`);
+      fail(seriesBracketCheck, `result=${JSON.stringify(seriesBracket.raw)}`);
     }
 
     const participation = await callTool(18, "get_participation", {
@@ -484,10 +487,17 @@ export async function assertMcp() {
       competition: "Tuesday Stairs",
     });
     const bestScoreCheck =
-      "MCP get_games(Tuesday Stairs) returns the Best score Format and its attempts (no games or matches) with no @";
+      "MCP get_games(Tuesday Stairs) returns the Best score Format, Sum of members and its attempts (no matches, no Best / Total count) with no @";
     if (
       bestScore.parsed?.found === true &&
       bestScore.parsed.competition?.format === "best-score" &&
+      String(bestScore.parsed.competition?.settings).includes(
+        "Team score: Sum of members",
+      ) &&
+      !JSON.stringify(bestScore.parsed).includes('"count"') &&
+      !/ · (best|total) · /.test(
+        String(bestScore.parsed.competition?.settings),
+      ) &&
       Array.isArray(bestScore.parsed.attempts) &&
       !("games" in bestScore.parsed) &&
       !("matches" in bestScore.parsed) &&

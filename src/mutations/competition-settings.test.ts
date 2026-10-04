@@ -168,15 +168,32 @@ async function fixture(tx: DBTx) {
       .where(eq(schema.competition.id, competitionId));
     return found;
   };
-  /** Logs a Game straight into the tables: a result. */
-  const logGame = async (competitionId: string, participantId: string) => {
-    const [game] = await tx
-      .insert(schema.game)
+  /** Logs an Attempt straight into the tables: a result. */
+  const logAttempt = async (competitionId: string, participantId: string) => {
+    await tx.insert(schema.attempt).values({
+      competitionId,
+      participantId,
+      score: 12,
+      loggedByEmail: ORGANIZER,
+    });
+  };
+  /** Logs a Match between a Head-to-head's two Entrants straight into the tables. */
+  const logMatch = async (competitionId: string) => {
+    const [match] = await tx
+      .insert(schema.seriesMatch)
       .values({ competitionId, loggedByEmail: ORGANIZER })
-      .returning({ id: schema.game.id });
-    await tx
-      .insert(schema.gamePlayer)
-      .values({ gameId: game.id, participantId, place: 1, score: 12 });
+      .returning({ id: schema.seriesMatch.id });
+    const sides = await tx
+      .select({ id: schema.entrant.id })
+      .from(schema.entrant)
+      .where(eq(schema.entrant.competitionId, competitionId));
+    await tx.insert(schema.seriesMatchEntrant).values(
+      sides.map((side, i) => ({
+        seriesMatchId: match.id,
+        entrantId: side.id,
+        place: i + 1,
+      })),
+    );
   };
   return {
     schema,
@@ -189,7 +206,8 @@ async function fixture(tx: DBTx) {
     ctx,
     save,
     row,
-    logGame,
+    logAttempt,
+    logMatch,
   };
 }
 
@@ -292,7 +310,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: who", () => {
   const everyField: CompetitionSettingChange[] = [
     { field: "name", value: "Renamed" },
     { field: "description", value: words("New words") },
-    { field: "group", value: "Games" },
+    { field: "group", value: "Contests" },
     { field: "hosts", value: [OTHER_HOST] },
     { field: "placementPoints", value: [3, 2, 1] },
     { field: "format", value: "bracket" },
@@ -402,7 +420,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
       for (const change of [
         { field: "name", value: "Darts Final" },
         { field: "description", value: words("Three darts each.") },
-        { field: "group", value: "Pub games" },
+        { field: "group", value: "Pub contests" },
         { field: "hosts", value: [OTHER_HOST] },
         { field: "placementPoints", value: [12, 9] },
       ] as CompetitionSettingChange[]) {
@@ -412,7 +430,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
       expect(after).toMatchObject({
         name: "Darts Final",
         description: words("Three darts each."),
-        competitionGroup: "Pub games",
+        competitionGroup: "Pub contests",
         placementPoints: [12, 9],
       });
       expect(after.closedAt).toBeInstanceOf(Date);
@@ -442,8 +460,8 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
         await f.save(f.ids.other, { field: "format", value: "best-score" }),
       ).toEqual(OK);
 
-      // A logged Game is a result.
-      await f.logGame(f.ids.stairs, f.neo);
+      // A logged Attempt is a result.
+      await f.logAttempt(f.ids.stairs, f.neo);
       const before = await f.row(f.ids.stairs);
       expect(
         await f.save(f.ids.stairs, { field: "format", value: "placement" }),
@@ -482,86 +500,96 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
     });
   });
 
-  it("accepts Best score direction and attempts before any result, and refuses them once a Game exists", async () => {
+  it("accepts Best score's direction, unit and Team score before any result, then locks all but the unit", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await fixture(tx);
-      const lowerTotal = { count: "total", betterIs: "lower", unit: "s" };
       expect(
-        await f.save(f.ids.stairs, { field: "gameConfig", value: lowerTotal }),
+        await f.save(f.ids.stairs, { field: "scoreDirection", value: "lower" }),
       ).toEqual(OK);
-      expect((await f.row(f.ids.stairs)).gameConfig).toEqual(lowerTotal);
-      await f.logGame(f.ids.stairs, f.neo);
+      expect(
+        await f.save(f.ids.stairs, { field: "scoreUnit", value: "s" }),
+      ).toEqual(OK);
       expect(
         await f.save(f.ids.stairs, {
-          field: "gameConfig",
-          value: { count: "best", betterIs: "higher", unit: "" },
+          field: "bestScoreConfig",
+          value: { teamScore: "sum-of-members" },
+        }),
+      ).toEqual(OK);
+      expect(await f.row(f.ids.stairs)).toMatchObject({
+        scoreDirection: "lower",
+        scoreUnit: "s",
+        bestScoreConfig: { teamScore: "sum-of-members" },
+      });
+      // Best score is always higher or lower.
+      expect(
+        await f.save(f.ids.stairs, { field: "scoreDirection", value: "none" }),
+      ).toMatchObject({
+        ok: false,
+        error: "A Best score Competition's Score is higher or lower is better.",
+      });
+
+      await f.logAttempt(f.ids.stairs, f.neo);
+      expect(
+        await f.save(f.ids.stairs, {
+          field: "scoreDirection",
+          value: "higher",
         }),
       ).toMatchObject(LOCKED_BY_RESULT);
-      expect((await f.row(f.ids.stairs)).gameConfig).toEqual(lowerTotal);
+      expect(
+        await f.save(f.ids.stairs, {
+          field: "bestScoreConfig",
+          value: { teamScore: "best-member" },
+        }),
+      ).toMatchObject(LOCKED_BY_RESULT);
+      expect(
+        await f.save(f.ids.stairs, { field: "scoreUnit", value: "sec" }),
+      ).toEqual(OK);
+      expect(await f.row(f.ids.stairs)).toMatchObject({
+        scoreDirection: "lower",
+        scoreUnit: "sec",
+        bestScoreConfig: { teamScore: "sum-of-members" },
+      });
     });
   });
 
-  it("refuses Best score direction and attempts once an Entrant exists", async () => {
+  it("refuses an Entrant list on Best score", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await fixture(tx);
-      const brackets = await import("@/mutations/brackets");
-      expect(
-        await f.save(f.ids.stairs, { field: "entrantsOpen", value: false }),
-      ).toEqual(OK);
-      expect(
-        await brackets.replaceEntrants(
-          f.ids.stairs,
-          { targetIds: [f.neo] },
-          f.ctx(ORGANIZER),
-          tx,
-        ),
-      ).toMatchObject(OK);
-      const before = (await f.row(f.ids.stairs)).gameConfig;
       expect(
         await f.save(f.ids.stairs, {
-          field: "gameConfig",
-          value: { count: "total", betterIs: "lower", unit: "s" },
+          field: "entrants",
+          value: { targetIds: [f.neo] },
         }),
-      ).toMatchObject(LOCKED_BY_RESULT);
-      expect((await f.row(f.ids.stairs)).gameConfig).toEqual(before);
+      ).toMatchObject({
+        ok: false,
+        error: "Best score has no Entrant list: anyone can log an Attempt.",
+      });
     });
   });
 
-  it("accepts a Head-to-head Best of 3 between two fixed Entrants, and refuses its settings and Entrant list once a Game is logged", async () => {
+  it("accepts a Head-to-head's Best of between its two Entrants, and refuses its settings and Entrants once a Match is logged", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await fixture(tx);
-      const brackets = await import("@/mutations/brackets");
-      expect(
-        await f.save(f.ids.pong, { field: "entrantsOpen", value: false }),
-      ).toEqual(OK);
-      expect(
-        await brackets.replaceEntrants(
-          f.ids.pong,
-          { targetIds: [f.neo, f.trinity] },
-          f.ctx(ORGANIZER),
-          tx,
-        ),
-      ).toMatchObject(OK);
-      const bestOf3 = { drawsAllowed: false, bestOf: 3 };
-      expect(
-        await f.save(f.ids.pong, { field: "gameConfig", value: bestOf3 }),
-      ).toEqual(OK);
-      expect((await f.row(f.ids.pong)).gameConfig).toEqual(bestOf3);
-
-      await f.logGame(f.ids.pong, f.neo);
       expect(
         await f.save(f.ids.pong, {
-          field: "gameConfig",
-          value: { drawsAllowed: true, bestOf: 3 },
+          field: "entrants",
+          value: { targetIds: [f.neo, f.trinity] },
+        }),
+      ).toEqual(OK);
+      const bestOf5 = { drawsAllowed: false, bestOf: 5 as const };
+      expect(
+        await f.save(f.ids.pong, { field: "seriesConfig", value: bestOf5 }),
+      ).toEqual(OK);
+      expect((await f.row(f.ids.pong)).seriesConfig).toEqual(bestOf5);
+
+      await f.logMatch(f.ids.pong);
+      expect(
+        await f.save(f.ids.pong, {
+          field: "seriesConfig",
+          value: { drawsAllowed: true, bestOf: 5 },
         }),
       ).toMatchObject(LOCKED_BY_MATCH);
-      expect(
-        await f.save(f.ids.pong, { field: "entrantsOpen", value: true }),
-      ).toMatchObject(LOCKED_BY_MATCH);
-      expect(await f.row(f.ids.pong)).toMatchObject({
-        gameConfig: bestOf3,
-        entrantsOpen: false,
-      });
+      expect((await f.row(f.ids.pong)).seriesConfig).toEqual(bestOf5);
     });
   });
 
@@ -569,14 +597,18 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await fixture(tx);
       const threeOne = {
-        entrantsPerHeat: 3,
-        advancePerHeat: 1,
-        thirdPlaceGame: false,
+        kind: "group" as const,
+        entrantsPerMatch: 3,
+        advancePerMatch: 1,
+        thirdPlaceMatch: false,
+        rounds: {},
       };
       const headToHead = {
-        entrantsPerHeat: 2,
-        advancePerHeat: 1,
-        thirdPlaceGame: false,
+        kind: "head-to-head" as const,
+        entrantsPerMatch: 2,
+        advancePerMatch: 1,
+        thirdPlaceMatch: false,
+        rounds: {},
       };
       expect(
         await f.save(f.ids.chess, { field: "bracketConfig", value: threeOne }),
@@ -606,7 +638,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
       expect(
         await f.save(f.ids.chess, {
           field: "bracketConfig",
-          value: { ...headToHead, thirdPlaceGame: true },
+          value: { ...headToHead, thirdPlaceMatch: true },
         }),
       ).toMatchObject(LOCKED_BY_MATCH_RESULT);
       expect(
@@ -622,15 +654,13 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
     });
   });
 
-  it("accepts self-enroll, Entrant limit, close times and self-report mid-run, and refuses them while Closed", async () => {
+  it("accepts self-enroll, Entrant limit and self-report mid-run, and refuses them while Closed", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await fixture(tx);
       await playChess(f);
-      const closesAt = new Date("2099-01-03T17:00:00Z");
       const joining: CompetitionSettingChange[] = [
         { field: "selfEnroll", value: true },
         { field: "entrantLimit", value: 8 },
-        { field: "enrollClosesAt", value: closesAt },
         { field: "selfReport", value: true },
       ];
       for (const change of joining) {
@@ -639,7 +669,6 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
       expect(await f.row(f.ids.chess)).toMatchObject({
         selfEnroll: true,
         entrantLimit: 8,
-        enrollClosesAt: closesAt,
         selfReport: true,
       });
 
@@ -651,7 +680,6 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
       for (const change of [
         { field: "selfEnroll", value: false },
         { field: "entrantLimit", value: null },
-        { field: "enrollClosesAt", value: null },
         { field: "selfReport", value: false },
       ] as CompetitionSettingChange[]) {
         expect(await f.save(f.ids.chess, change), change.field).toMatchObject(
@@ -662,25 +690,15 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
     });
   });
 
-  it("accepts the logging close time with Games logged, and refuses it while Closed", async () => {
+  it("refuses self-enroll on every Format but a Bracket", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await fixture(tx);
-      await f.logGame(f.ids.stairs, f.neo);
-      const closesAt = new Date("2099-01-04T17:00:00Z");
-      expect(
-        await f.save(f.ids.stairs, {
-          field: "loggingClosesAt",
-          value: closesAt,
-        }),
-      ).toEqual(OK);
-      expect((await f.row(f.ids.stairs)).loggingClosesAt).toEqual(closesAt);
-      const games = await import("@/mutations/games");
-      expect(
-        await games.closeGames(f.ids.stairs, f.ctx(ORGANIZER), tx),
-      ).toEqual(OK);
-      expect(
-        await f.save(f.ids.stairs, { field: "loggingClosesAt", value: null }),
-      ).toMatchObject(LOCKED_WHILE_CLOSED);
+      for (const id of [f.ids.darts, f.ids.pong, f.ids.stairs, f.ids.workout]) {
+        expect(
+          await f.save(id, { field: "selfEnroll", value: true }),
+        ).toMatchObject({ ok: false });
+        expect((await f.row(id)).selfEnroll).toBe(false);
+      }
     });
   });
 
@@ -696,20 +714,10 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
           tx,
         ),
       ).toEqual(OK);
-      const closesAt = new Date("2099-01-02T17:00:00Z");
       expect(
         await f.save(f.ids.workout, { field: "selfCheckIn", value: true }),
       ).toEqual(OK);
-      expect(
-        await f.save(f.ids.workout, {
-          field: "checkInClosesAt",
-          value: closesAt,
-        }),
-      ).toEqual(OK);
-      expect(await f.row(f.ids.workout)).toMatchObject({
-        selfCheckIn: true,
-        checkInClosesAt: closesAt,
-      });
+      expect(await f.row(f.ids.workout)).toMatchObject({ selfCheckIn: true });
 
       expect(
         await participation.closeParticipation(
@@ -720,9 +728,6 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
       ).toEqual(OK);
       expect(
         await f.save(f.ids.workout, { field: "selfCheckIn", value: false }),
-      ).toMatchObject(LOCKED_WHILE_CLOSED);
-      expect(
-        await f.save(f.ids.workout, { field: "checkInClosesAt", value: null }),
       ).toMatchObject(LOCKED_WHILE_CLOSED);
       expect(
         await f.save(f.ids.workout, {
@@ -763,12 +768,14 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: Format", () => {
         format: "bracket",
         scoreDirection: "none",
         bracketConfig: {
-          entrantsPerHeat: 2,
-          advancePerHeat: 1,
-          thirdPlaceGame: false,
+          kind: "head-to-head" as const,
+          entrantsPerMatch: 2,
+          advancePerMatch: 1,
+          thirdPlaceMatch: false,
+          rounds: {},
         },
-        gameConfig: null,
-        entrantsOpen: false,
+        seriesConfig: null,
+        bestScoreConfig: null,
         placementPoints: [10, 8, 6, 4],
       });
 
@@ -781,8 +788,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: Format", () => {
       expect(await f.row(f.ids.darts)).toMatchObject({
         format: "head-to-head",
         bracketConfig: null,
-        gameConfig: { drawsAllowed: false, bestOf: null },
-        entrantsOpen: true,
+        seriesConfig: { drawsAllowed: false, bestOf: 3 },
         selfReport: false,
         placementPoints: [10, 8, 6, 4],
       });
@@ -792,8 +798,8 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: Format", () => {
       ).toEqual(OK);
       expect(await f.row(f.ids.darts)).toMatchObject({
         format: "participation",
-        gameConfig: null,
-        entrantsOpen: false,
+        seriesConfig: null,
+        scoreDirection: "none",
         // Individual: points per Participant, no Placement Points.
         participationPoints: 1,
         placementPoints: null,
@@ -807,6 +813,45 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: Format", () => {
         format: "placement",
         participationPoints: null,
         scoreDirection: "none",
+      });
+    });
+  });
+
+  it("moves a Placement with a direction to Best score and back, writing each Format's direction in the same save", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const f = await fixture(tx);
+      // Placement: none, then lower is better.
+      expect((await f.row(f.ids.darts)).scoreDirection).toBe("none");
+      expect(
+        await f.save(f.ids.darts, { field: "format", value: "best-score" }),
+      ).toEqual(OK);
+      expect(await f.row(f.ids.darts)).toMatchObject({
+        format: "best-score",
+        scoreDirection: "higher",
+        bestScoreConfig: { teamScore: "best-member" },
+        seriesConfig: null,
+      });
+
+      expect(
+        await f.save(f.ids.darts, { field: "format", value: "placement" }),
+      ).toEqual(OK);
+      expect(
+        await f.save(f.ids.darts, { field: "scoreDirection", value: "lower" }),
+      ).toEqual(OK);
+      expect(
+        await f.save(f.ids.darts, { field: "format", value: "best-score" }),
+      ).toEqual(OK);
+      expect(await f.row(f.ids.darts)).toMatchObject({
+        format: "best-score",
+        scoreDirection: "higher",
+      });
+      expect(
+        await f.save(f.ids.darts, { field: "format", value: "participation" }),
+      ).toEqual(OK);
+      expect(await f.row(f.ids.darts)).toMatchObject({
+        format: "participation",
+        scoreDirection: "none",
+        bestScoreConfig: null,
       });
     });
   });

@@ -54,7 +54,7 @@ describe("resolveFinaleSlides", () => {
       "title",
       "numbers",
       "awards",
-      "champions",
+      "winners",
       "standings",
       "winner",
     ]);
@@ -67,7 +67,7 @@ describe("resolveFinaleSlides", () => {
       row("title", 1),
       row("numbers", 2),
       row("awards", 3),
-      row("champions", 4),
+      row("winners", 4),
     ]);
     expect(names(slides)).toEqual([
       "Standings countdown",
@@ -85,7 +85,7 @@ describe("resolveFinaleSlides", () => {
       row("title", 0),
       row("numbers", 1, { hidden: true }),
       row("awards", 2),
-      row("champions", 3, { hidden: true }),
+      row("winners", 3, { hidden: true }),
       row("standings", 4),
       row("winner", 5),
     ]);
@@ -125,7 +125,7 @@ describe("resolveFinaleSlides", () => {
       row("custom", 1, { heading: "Welcome" }),
       row("numbers", 2),
       row("awards", 3),
-      row("champions", 4),
+      row("winners", 4),
       row("standings", 5),
       row("winner", 6),
       row("custom", 7, { heading: "Thank you", backgroundColor: "#112233" }),
@@ -238,13 +238,13 @@ const xii = JSON.parse(
 describe("byTheNumbers", () => {
   it("shows the XII demo's figures, leaving out the zeros", () => {
     // What the XII demo loads: its roster and its two Closed Placement
-    // Competitions, one generated Points Entry per Placement; no Game is
+    // Competitions, one generated Points Entry per Placement; no Match or Attempt is
     // logged and no Match played. Points handed out is Mile Run's 3 + 2 + 1
     // plus Step Challenge's 7 + 6.5 + 5.5 + 4.5 + 3.5 + 3 + 2.5 + 2 + 1.5 +
     // 1 + 1 + 0.5, worked by hand.
     const figures = byTheNumbers({
       competitionsRun: new Set(xii.placements.map((p) => p.competition)).size,
-      gamesLogged: 0,
+      resultsLogged: 0,
       matchesPlayed: 0,
       pointsEntries: xii.placements.length,
       pointsHandedOut: 44.5,
@@ -262,7 +262,7 @@ describe("byTheNumbers", () => {
     expect(
       byTheNumbers({
         competitionsRun: 1,
-        gamesLogged: 1204,
+        resultsLogged: 1204,
         matchesPlayed: 31,
         pointsEntries: 2,
         pointsHandedOut: 1234.567,
@@ -282,7 +282,7 @@ describe("byTheNumbers", () => {
     expect(
       byTheNumbers({
         competitionsRun: 0,
-        gamesLogged: 0,
+        resultsLogged: 0,
         matchesPlayed: 0,
         pointsEntries: 0,
         pointsHandedOut: 0,
@@ -496,7 +496,7 @@ describe("finaleSlideData", () => {
     standings,
     counts: {
       competitionsRun: 2,
-      gamesLogged: 0,
+      resultsLogged: 0,
       matchesPlayed: 0,
       pointsEntries: 3,
       pointsHandedOut: 92,
@@ -532,7 +532,7 @@ describe("finaleSlideData", () => {
       "title:Title",
       "numbers:By the numbers",
       "awards:Awards",
-      "champions:Winners",
+      "winners:Winners",
       "standings:Standings countdown",
       "winner:Winner",
     ]);
@@ -633,7 +633,7 @@ describe("finaleSlideData", () => {
     const empty = context({
       counts: {
         competitionsRun: 0,
-        gamesLogged: 0,
+        resultsLogged: 0,
         matchesPlayed: 0,
         pointsEntries: 0,
         pointsHandedOut: 0,

@@ -2,23 +2,25 @@ import { and, asc, count, eq, like } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import {
+  attempt,
   bracketMatch,
   bracketMatchEntrant,
   competition,
   competitionHost,
   entrant,
-  game,
   participant,
   participation,
+  seriesMatch,
   warWeek,
 } from "@/db/schema";
+import { logAttempt } from "@/mutations/attempts";
 import {
   generateBracket,
   recordMatchResult,
   replaceEntrants,
 } from "@/mutations/brackets";
-import { logGame } from "@/mutations/games";
 import { markParticipant } from "@/mutations/participation";
+import { logMatch } from "@/mutations/series";
 import { setCompetitionHosts } from "@/mutations/setup";
 import type { MutationContext } from "@/mutations/types";
 
@@ -29,9 +31,10 @@ export const RECORDED_ROUND_ONE = 20;
 export const PARTICIPATION = "Morning Stretch";
 export const PARTICIPATION_TICKS = 72;
 export const HEAD_TO_HEAD = "Cornhole";
-export const HEAD_TO_HEAD_GAMES = 40;
+/** The Matches logged between Cornhole's 2 Entrants: 3–2, a Best of 7 still open. */
+export const HEAD_TO_HEAD_MATCHES = 5;
 export const BEST_SCORE = "Darts";
-export const BEST_SCORE_GAMES = 60;
+export const BEST_SCORE_ATTEMPTS = 60;
 
 /** A fixed-seed generator (mulberry32), so every load draws the same Bracket. */
 function seededRng(seed: number): () => number {
@@ -52,8 +55,9 @@ function check(result: { ok: boolean; error?: string }, what: string) {
  * What the seed format can't express for the 100-Participant XII demo
  * (`seeds/demo/xii-scale.json`), written through the app's own mutations:
  * the Hosts (its @jahnelgroup.com Participants), the 64-Entrant Bracket
- * generated with Round 1 partly recorded, Participation ticks and the
- * Head-to-head and Best score Games. Each part is skipped when it is
+ * generated with Round 1 partly recorded, Participation ticks, the
+ * Head-to-head's Matches between its 2 seeded Entrants and Best score's
+ * Attempts, each by a Participant. Each part is skipped when it is
  * already there, so a reload with the fixture changes no row count.
  */
 export async function applyScaleFixture(dbOrTx: DBOrTx = db) {
@@ -122,8 +126,8 @@ export async function applyScaleFixture(dbOrTx: DBOrTx = db) {
 
   await buildBracket(dbOrTx, idOf(BRACKET), people, ctxFor(0));
   await tickParticipation(dbOrTx, idOf(PARTICIPATION), people, ctxFor(1));
-  await logGames(dbOrTx, idOf(HEAD_TO_HEAD), people, ctxFor(2), "head-to-head");
-  await logGames(dbOrTx, idOf(BEST_SCORE), people, ctxFor(3), "best-score");
+  await logMatches(dbOrTx, idOf(HEAD_TO_HEAD), ctxFor(2));
+  await logAttempts(dbOrTx, idOf(BEST_SCORE), people, ctxFor(3));
 }
 
 type Person = { id: string };
@@ -216,32 +220,59 @@ async function tickParticipation(
   }
 }
 
-async function logGames(
+async function logMatches(
+  dbOrTx: DBOrTx,
+  competitionId: string,
+  ctx: MutationContext,
+) {
+  const [{ n }] = await dbOrTx
+    .select({ n: count() })
+    .from(seriesMatch)
+    .where(eq(seriesMatch.competitionId, competitionId));
+  if (n > 0) return;
+  const sides = (
+    await dbOrTx
+      .select({ participantId: entrant.participantId })
+      .from(entrant)
+      .where(eq(entrant.competitionId, competitionId))
+      .orderBy(asc(entrant.seedPosition))
+  ).map((e) => e.participantId!);
+  if (sides.length !== 2) throw new Error(`${HEAD_TO_HEAD} needs 2 Entrants`);
+  // A, B, A, A, B: 3–2 to the first Entrant.
+  const winners = [0, 1, 0, 0, 1];
+  for (const [m, w] of winners.slice(0, HEAD_TO_HEAD_MATCHES).entries()) {
+    const players = [
+      { id: sides[w], place: 1, score: 21 },
+      { id: sides[1 - w], place: 2, score: 10 + m },
+    ];
+    check(
+      await logMatch(competitionId, { players }, ctx, dbOrTx),
+      `Match ${m + 1}`,
+    );
+  }
+}
+
+async function logAttempts(
   dbOrTx: DBOrTx,
   competitionId: string,
   people: Person[],
   ctx: MutationContext,
-  format: "head-to-head" | "best-score",
 ) {
   const [{ n }] = await dbOrTx
     .select({ n: count() })
-    .from(game)
-    .where(eq(game.competitionId, competitionId));
+    .from(attempt)
+    .where(eq(attempt.competitionId, competitionId));
   if (n > 0) return;
-  const total =
-    format === "head-to-head" ? HEAD_TO_HEAD_GAMES : BEST_SCORE_GAMES;
-  for (let g = 0; g < total; g++) {
-    const pick = (k: number) => people[(g * 7 + k * 31) % people.length].id;
-    const players =
-      format === "head-to-head"
-        ? [
-            { id: pick(0), place: 1, score: null },
-            { id: pick(1), place: 2, score: null },
-          ]
-        : [{ id: pick(0), place: null, score: 20 + ((g * 13) % 160) }];
+  for (let a = 0; a < BEST_SCORE_ATTEMPTS; a++) {
+    const participantId = people[(a * 7) % people.length].id;
     check(
-      await logGame(competitionId, { players }, ctx, dbOrTx),
-      `${format} result ${g + 1}`,
+      await logAttempt(
+        competitionId,
+        { participantId, score: 20 + ((a * 13) % 160) },
+        ctx,
+        dbOrTx,
+      ),
+      `Attempt ${a + 1}`,
     );
   }
 }

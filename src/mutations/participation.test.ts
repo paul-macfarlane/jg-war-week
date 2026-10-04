@@ -29,7 +29,7 @@ const NOT_PARTICIPATION = "This Competition isn't run as Participation.";
  * second War Week with Smith; and five Competitions: Workout (team,
  * ranked by headcount, 5/3/1, self check-in on), Stairs (team, 2 per
  * person), Spirit (individual, 1 each, counts toward the House), Trivia
- * (points) and Pong (games).
+ * (points) and Pong (head-to-head).
  */
 async function fixture(tx: DBTx) {
   const schema = await import("@/db/schema");
@@ -115,7 +115,7 @@ async function fixture(tx: DBTx) {
         name: "Pong",
         scoring: "individual" as const,
         format: "head-to-head" as const,
-        entrantsOpen: true,
+        seriesConfig: { drawsAllowed: false, bestOf: 3 as const },
       },
     ])
     .returning({ id: schema.competition.id });
@@ -228,7 +228,7 @@ describe.skipIf(!isLocalDatabase)("checkIn and checkOut", () => {
     });
   });
 
-  it("refuses an unlinked sign-in, check-in off, a passed close time and a Participant on no House", async () => {
+  it("refuses an unlinked sign-in, check-in off and a Participant on no House", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { checkIn } = await load();
       const f = await fixture(tx);
@@ -240,14 +240,6 @@ describe.skipIf(!isLocalDatabase)("checkIn and checkOut", () => {
         ok: false,
         error: "Check-in is off for this Competition.",
       });
-      await f.setCompetition(f.ids.workout, {
-        checkInClosesAt: new Date(Date.now() - 60_000),
-      });
-      expect(await checkIn(f.ids.workout, f.ctx(NEO), tx)).toEqual({
-        ok: false,
-        error: "Check-in is closed: the close time has passed.",
-      });
-      await f.setCompetition(f.ids.workout, { checkInClosesAt: null });
       await tx
         .update(f.schema.participant)
         .set({ teamId: null })
@@ -545,18 +537,15 @@ describe.skipIf(!isLocalDatabase)(
 );
 
 describe.skipIf(!isLocalDatabase)("setParticipationSettings", () => {
-  const checkInClosesAt = new Date("2099-01-05T22:00:00Z");
   const team = {
     participationPoints: null,
     placementPoints: [9, 6, 3],
     selfCheckIn: false,
-    checkInClosesAt,
   };
   const individual = {
     participationPoints: 2,
     placementPoints: null,
     selfCheckIn: false,
-    checkInClosesAt,
   };
 
   const read = async (f: Awaited<ReturnType<typeof fixture>>, id: string) =>
@@ -566,13 +555,12 @@ describe.skipIf(!isLocalDatabase)("setParticipationSettings", () => {
           participationPoints: f.schema.competition.participationPoints,
           placementPoints: f.schema.competition.placementPoints,
           selfCheckIn: f.schema.competition.selfCheckIn,
-          checkInClosesAt: f.schema.competition.checkInClosesAt,
         })
         .from(f.schema.competition)
         .where(eq(f.schema.competition.id, id))
     )[0];
 
-  it("a team Competition saves its Placement Points, the switch and the close time, and keeps no N", async () => {
+  it("a team Competition saves its Placement Points and the switch, and keeps no N", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { setParticipationSettings } = await load();
       const f = await fixture(tx);
@@ -583,12 +571,11 @@ describe.skipIf(!isLocalDatabase)("setParticipationSettings", () => {
         participationPoints: null,
         placementPoints: [9, 6, 3],
         selfCheckIn: false,
-        checkInClosesAt,
       });
     });
   });
 
-  it("an individual Competition saves N, the switch and the close time, and keeps no Placement Points", async () => {
+  it("an individual Competition saves N and the switch, and keeps no Placement Points", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { setParticipationSettings } = await load();
       const f = await fixture(tx);
@@ -604,7 +591,6 @@ describe.skipIf(!isLocalDatabase)("setParticipationSettings", () => {
         participationPoints: 2,
         placementPoints: null,
         selfCheckIn: false,
-        checkInClosesAt,
       });
     });
   });

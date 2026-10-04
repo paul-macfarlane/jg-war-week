@@ -2,7 +2,7 @@ import type { Competition } from "@/db/schema";
 import { isBye } from "@/lib/bracket/formats";
 import type { BracketFormat } from "@/lib/bracket/types";
 import { groupRounds, matchName } from "@/lib/bracket/view";
-import { type GameFormat, isGameFormat } from "@/lib/enums";
+import { type LoggedFormat, isLoggedFormat } from "@/lib/enums";
 import { notFoundMessage } from "@/mcp/not-found";
 import type { BracketView } from "@/queries/brackets";
 
@@ -65,7 +65,7 @@ export type BracketResult =
       competition: {
         name: string;
         scoring: Competition["scoring"];
-        format: GameFormat | "participation";
+        format: LoggedFormat | "participation";
       };
       bracket: null;
       message: string;
@@ -76,8 +76,8 @@ export type BracketResult =
  * The `get_bracket` answer for a Head-to-head or Best score Competition,
  * which is never a Bracket: no Bracket, and a pointer to `get_games`. Pure.
  */
-export function toGamesBracketResult(
-  competition: Pick<Competition, "name" | "scoring"> & { format: GameFormat },
+export function toLoggedBracketResult(
+  competition: Pick<Competition, "name" | "scoring"> & { format: LoggedFormat },
 ): BracketResult {
   return {
     found: true,
@@ -127,8 +127,8 @@ export function toBracketResult(
     };
   }
 
-  if (isGameFormat(view.competition.format)) {
-    return toGamesBracketResult({
+  if (isLoggedFormat(view.competition.format)) {
+    return toLoggedBracketResult({
       name: view.competition.name,
       scoring: view.competition.scoring,
       format: view.competition.format,
@@ -161,9 +161,9 @@ export function toBracketResult(
       name: view.competition.name,
       scoring: view.competition.scoring,
       format: view.competition.format,
-      matchSize: view.bracket.config.entrantsPerHeat,
-      advancing: view.bracket.config.advancePerHeat,
-      thirdPlaceMatch: view.bracket.config.thirdPlaceGame,
+      matchSize: view.bracket.config.entrantsPerMatch,
+      advancing: view.bracket.config.advancePerMatch,
+      thirdPlaceMatch: view.bracket.config.thirdPlaceMatch,
       closed: view.closed,
     },
     entrants: view.entrants.map((entrant) => ({

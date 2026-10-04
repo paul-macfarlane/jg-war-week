@@ -65,14 +65,14 @@ describe("shapeRecentResults", () => {
       kind: "participant",
     };
     const otherSam: ResultTarget = { ...sam, id: "p-sam-2" };
-    const games: ResultCompetition = {
+    const logged: ResultCompetition = {
       id: "g",
       name: "Darts",
       format: "head-to-head",
       closedAt: at(5),
     };
     const [row] = shapeRecentResults(
-      [games],
+      [logged],
       [entry("g", sam, 10, at(5), true), entry("g", otherSam, 10, at(5), true)],
     );
     expect(row).toMatchObject({ winners: [sam, otherSam] });
@@ -94,17 +94,17 @@ describe("shapeRecentResults", () => {
   });
 
   it("shows a closed Head-to-head Competition's winner, listing a tie for first", () => {
-    const games: ResultCompetition = {
+    const logged: ResultCompetition = {
       id: "g",
       name: "Darts",
       format: "head-to-head",
       closedAt: at(5),
     };
     const [row] = shapeRecentResults(
-      [games],
+      [logged],
       [entry("g", red, 10, at(5), true), entry("g", blue, 10, at(5), true)],
     );
-    expect(row).toMatchObject({ kind: "games-closed", winners: [red, blue] });
+    expect(row).toMatchObject({ kind: "results-closed", winners: [red, blue] });
   });
 
   it("shows a Closed Placement's winner instead of its generated entries, listing a tie for first", () => {

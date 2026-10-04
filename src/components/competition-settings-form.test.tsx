@@ -32,22 +32,20 @@ const SOURCE: CompetitionSettingsSource = {
   scoring: "individual",
   countsTowardTeam: false,
   scoreDirection: "none",
-  gameConfig: null,
-  entrantsOpen: false,
+  scoreUnit: null,
+  seriesConfig: null,
+  bestScoreConfig: null,
   bracketConfig: null,
   selfEnroll: false,
   entrantLimit: null,
-  enrollClosesAt: null,
-  loggingClosesAt: null,
   selfReport: false,
   selfCheckIn: false,
-  checkInClosesAt: null,
 };
 
 const OPEN: CompetitionLockFacts = {
   format: "placement",
   hasResult: false,
-  hasGame: false,
+  hasLogged: false,
   hasMatchResult: false,
   closed: false,
 };
@@ -122,11 +120,10 @@ describe("CompetitionSettingsForm", () => {
     expect(closed).toContain(LOCKED_WHILE_CLOSED);
   });
 
-  it("leaves a Head-to-head Competition's Best of open with Entrants, and locks it with the Game reason once it has a Game", () => {
+  it("leaves a Head-to-head's Best of open with Entrants, and locks it with the Match reason once it has a Match", () => {
     const headToHead = {
       format: "head-to-head" as const,
-      gameConfig: { drawsAllowed: false, bestOf: null },
-      entrantsOpen: false,
+      seriesConfig: { drawsAllowed: false, bestOf: 3 },
     };
     const facts = { ...OPEN, format: "head-to-head" as const, hasResult: true };
     const withEntrants = render(headToHead, { facts });
@@ -134,7 +131,7 @@ describe("CompetitionSettingsForm", () => {
     expect(control(withEntrants, "competition-format")).toMatch(DISABLED);
     expect(withEntrants).not.toContain(LOCKED_BY_MATCH);
 
-    const played = render(headToHead, { facts: { ...facts, hasGame: true } });
+    const played = render(headToHead, { facts: { ...facts, hasLogged: true } });
     expect(control(played, "competition-best-of")).toMatch(DISABLED);
     expect(control(played, "competition-draws-allowed")).toMatch(DISABLED);
     expect(played).toContain(
@@ -196,9 +193,11 @@ describe("CompetitionSettingsForm", () => {
         {
           ...bracket,
           bracketConfig: {
-            entrantsPerHeat: 2,
-            advancePerHeat: 1,
-            thirdPlaceGame: true,
+            kind: "head-to-head" as const,
+            entrantsPerMatch: 2,
+            advancePerMatch: 1,
+            thirdPlaceMatch: true,
+            rounds: {},
           },
         },
         { entrantCount: 3 },
@@ -216,9 +215,11 @@ describe("CompetitionSettingsForm", () => {
         {
           ...bracket,
           bracketConfig: {
-            entrantsPerHeat: 2,
-            advancePerHeat: 1,
-            thirdPlaceGame: true,
+            kind: "head-to-head" as const,
+            entrantsPerMatch: 2,
+            advancePerMatch: 1,
+            thirdPlaceMatch: true,
+            rounds: {},
           },
         },
         {
@@ -239,46 +240,61 @@ describe("CompetitionSettingsForm", () => {
       const html = render({
         ...bracket,
         bracketConfig: {
-          entrantsPerHeat: 4,
-          advancePerHeat: 2,
-          thirdPlaceGame: false,
+          kind: "group" as const,
+          entrantsPerMatch: 4,
+          advancePerMatch: 2,
+          thirdPlaceMatch: false,
+          rounds: {},
         },
       });
       expect(html).not.toContain("3rd place Match");
     });
   });
 
-  describe("a Games Format's settings", () => {
-    it("shows Draws allowed and Best of for Head-to-head, not Best score's", () => {
+  describe("a Head-to-head or Best score Competition's settings", () => {
+    it("shows Draws allowed and a required Best of for Head-to-head, not Best score's", () => {
       const html = render({ format: "head-to-head" });
       expect(html).toContain("Draws allowed");
       expect(html).toContain("Best of");
       expect(html).not.toContain("Better is");
-      expect(html).toContain("Logging closes");
+      expect(html).not.toContain(">Off<");
+      expect(html).not.toContain("Participants can enroll");
     });
 
-    it("shows count, direction and unit for Best score, not Best of", () => {
-      const html = render({ format: "best-score" });
+    it("shows direction and unit for Best score, Team score only in team scoring, and no Best / Total", () => {
+      const html = render({ format: "best-score", scoreDirection: "higher" });
       expect(html).toContain("Better is");
       expect(html).toContain("Unit");
       expect(html).not.toContain("Best of");
-    });
-
-    it("hides the enroll switch once a fixed list has a Best of set", () => {
-      const html = render({
-        format: "head-to-head",
-        entrantsOpen: false,
-        gameConfig: { drawsAllowed: false, bestOf: 3 },
-      });
+      expect(html).not.toContain("Team score");
+      expect(html).not.toContain(">Count<");
       expect(html).not.toContain("Participants can enroll");
-      expect(html).toContain(
-        "Best of needs a fixed list of exactly two Entrants.",
-      );
+      expect(
+        render({
+          format: "best-score",
+          scoring: "team",
+          scoreDirection: "higher",
+        }),
+      ).toContain("Team score");
     });
 
-    it("shows the enroll switch on a fixed list with Best of off", () => {
-      const html = render({ format: "head-to-head", entrantsOpen: false });
-      expect(html).toContain("Participants can enroll");
+    it("has no close time on any Format", () => {
+      for (const format of [
+        "placement",
+        "bracket",
+        "head-to-head",
+        "best-score",
+        "participation",
+      ] as const) {
+        const html = render({
+          format,
+          selfEnroll: true,
+          selfCheckIn: true,
+          scoreDirection: format === "best-score" ? "higher" : "none",
+        });
+        expect(html, format).not.toMatch(/closes/i);
+        expect(html, format).not.toContain("Time (ET)");
+      }
     });
 
     it("has no Finish Points field", () => {

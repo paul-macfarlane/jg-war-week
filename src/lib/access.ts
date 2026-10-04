@@ -1,23 +1,28 @@
 import type { WarWeek } from "@/db/schema";
 import {
-  type MatchReportFacet,
-  matchReportError,
-} from "@/lib/bracket/match-report-rule";
+  type AttemptLogFacet,
+  attemptChangeError,
+  attemptLogError,
+} from "@/lib/best-score/log-rule";
 import {
   type EnrollFacet,
   enrollError,
   withdrawError,
-} from "@/lib/games/enroll-rule";
+} from "@/lib/bracket/enroll-rule";
 import {
-  type GameLogFacet,
-  gameChangeError,
-  gameLogError,
-} from "@/lib/games/log-rule";
+  type MatchReportFacet,
+  matchReportError,
+} from "@/lib/bracket/match-report-rule";
 import {
   type CheckInFacet,
   checkInError,
   checkOutError,
 } from "@/lib/participation/check-in-rule";
+import {
+  type SeriesLogFacet,
+  seriesChangeError,
+  seriesLogError,
+} from "@/lib/series/log-rule";
 
 /** The only Google Workspace domain allowed to sign in. */
 export const JG_EMAIL_DOMAIN = "jahnelgroup.com";
@@ -98,10 +103,9 @@ export type WarWeekAction =
   | "bracket.reopen"
   | "bracket.squads"
   | "competition.self-report"
-  | "games.settings"
-  | "games.entrants"
-  | "games.close"
-  | "games.reopen"
+  /** Closing and reopening a Head-to-head or Best score Competition. */
+  | "results.close"
+  | "results.reopen"
   | "competition.self-enroll"
   /** A `participation` Competition's setup, took-part list and close. */
   | "participation.settings"
@@ -120,10 +124,14 @@ export type WarWeekAction =
   | "participation.check-out"
   /** Self-report (ADR 0005). */
   | "bracket.match-report"
-  /** Logging, editing and deleting a Game (ADR 0006). */
-  | "games.log"
-  | "games.edit"
-  | "games.delete"
+  /** Logging, editing and deleting a Head-to-head Match (ADR 0006). */
+  | "series.log"
+  | "series.edit"
+  | "series.delete"
+  /** Logging, editing and deleting a Best score Attempt (ADR 0006). */
+  | "attempts.log"
+  | "attempts.edit"
+  | "attempts.delete"
   /** Self-enrollment (ADR 0006). */
   | "competition.enroll"
   | "competition.withdraw"
@@ -137,8 +145,9 @@ export type WarWeekAction =
  * family needs it the row's current Competition (`competitionId`, null for
  * an unlinked Schedule Item), the Competition the request posts
  * (`postedCompetitionId`, null to unlink), an Announcement's author and,
- * for the Participant writes, their facts: a Match's (`matchReport`), a
- * Game's (`gameLog`), enrollment's (`enroll`) or Check in's (`checkIn`).
+ * for the Participant writes, their facts: a Bracket Match's
+ * (`matchReport`), a Head-to-head Match's (`seriesLog`), an Attempt's
+ * (`attemptLog`), enrollment's (`enroll`) or Check in's (`checkIn`).
  */
 export type AccessTarget = {
   warWeekId: string;
@@ -146,7 +155,8 @@ export type AccessTarget = {
   postedCompetitionId?: string | null;
   authorEmail?: string;
   matchReport?: MatchReportFacet;
-  gameLog?: GameLogFacet;
+  seriesLog?: SeriesLogFacet;
+  attemptLog?: AttemptLogFacet;
   enroll?: EnrollFacet;
   checkIn?: CheckInFacet;
 };
@@ -238,11 +248,12 @@ export const sameEmail = (a: string | null | undefined, b: string) =>
  * Entries, linked Schedule Items) and posts Announcements in a War Week
  * where they host, editing or deleting their own. Everyone else signed in
  * is a Participant, whose writes are reporting the result of a Match
- * they're in when self-report is on (ADR 0005), and logging Games,
- * changing the Games they logged, and enrolling or withdrawing (ADR 0006),
- * and checking in or out (ADR 0009). Those facet-bound rules bind
- * everyone, Organizers included: a Host or Organizer runs a Head-to-head or Best score
- * Competition through the Game facet's `runs`, adds Entrants through the
+ * they're in when self-report is on (ADR 0005), logging Head-to-head
+ * Matches and Best score Attempts and changing the ones they logged, and
+ * enrolling or withdrawing (ADR 0006), and checking in or out (ADR 0009).
+ * Those facet-bound rules bind everyone, Organizers included: a Host or
+ * Organizer runs a Head-to-head or Best score Competition through the
+ * Match or Attempt facet's `runs`, adds Entrants through the
  * picker and marks who took part through `participation.mark`. Pure: the
  * caller loads the actor and the target.
  */
@@ -273,17 +284,29 @@ export function can(
     return matchReportError(target.matchReport);
   }
   if (
-    action === "games.log" ||
-    action === "games.edit" ||
-    action === "games.delete"
+    action === "series.log" ||
+    action === "series.edit" ||
+    action === "series.delete"
   ) {
     // Before the Organizer shortcut: a closed Competition binds everyone,
     // and the facet's `runs` (loaded by the caller) is the Host's way in.
     if (!actor || !isJahnelGroupEmail(actor.email)) return SIGN_IN_REFUSAL;
-    if (!target?.gameLog) return ADMIN_REFUSAL;
-    return action === "games.log"
-      ? gameLogError(target.gameLog)
-      : gameChangeError(target.gameLog);
+    if (!target?.seriesLog) return ADMIN_REFUSAL;
+    return action === "series.log"
+      ? seriesLogError(target.seriesLog)
+      : seriesChangeError(target.seriesLog);
+  }
+  if (
+    action === "attempts.log" ||
+    action === "attempts.edit" ||
+    action === "attempts.delete"
+  ) {
+    // As a Match: a closed Competition binds everyone; `runs` lets a Host in.
+    if (!actor || !isJahnelGroupEmail(actor.email)) return SIGN_IN_REFUSAL;
+    if (!target?.attemptLog) return ADMIN_REFUSAL;
+    return action === "attempts.log"
+      ? attemptLogError(target.attemptLog)
+      : attemptChangeError(target.attemptLog);
   }
   if (action === "competition.enroll" || action === "competition.withdraw") {
     // Before the Organizer shortcut: enrollment binds everyone.
@@ -342,12 +365,10 @@ export function can(
       return hostsIn(actor, warWeekId)
         ? null
         : "Only an Organizer or a Host of this War Week can change Announcements.";
-    case "games.settings":
-    case "games.entrants":
-    case "games.close":
-    case "games.reopen":
+    case "results.close":
+    case "results.reopen":
     case "competition.self-enroll":
-      // A Head-to-head or Best score Competition's setup, Entrants and close, and the enroll
+      // A Head-to-head or Best score Competition's close, and the enroll
       // switch: the Host of this Competition, beside their Bracket twins.
       return hostsCurrent ? null : NOT_HOST;
     case "participation.settings":

@@ -496,7 +496,7 @@ describe.skipIf(!isLocalDatabase)(
           "title",
           "(numbers)",
           "awards",
-          "champions",
+          "winners",
           "winner",
         ]);
         expect(

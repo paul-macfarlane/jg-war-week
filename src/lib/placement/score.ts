@@ -80,7 +80,7 @@ export function orderPlacementRows<
 
 /**
  * Each placed row's points: its Place's Placement Points, tied rows each
- * getting them in full (`pointsFor`, the Bracket and Games rule). An
+ * getting them in full (`pointsFor`, the Bracket, Head-to-head and Best score rule). An
  * unplaced row and a Place beyond the list earn nothing and are left out.
  */
 export function placementPointsByRow(

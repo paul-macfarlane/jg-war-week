@@ -1,19 +1,26 @@
 import { and, count, eq } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
-import { bracketMatch, competition, game, pointsEntry } from "@/db/schema";
+import {
+  attempt,
+  bracketMatch,
+  competition,
+  pointsEntry,
+  seriesMatch,
+} from "@/db/schema";
 import type { ScoredCounts } from "@/lib/war-week-lifecycle";
 
 /**
  * What has been scored in a War Week, for Unstart: its Points Entries, its
- * Match results (a Match that is `played`) and its Games, all
+ * Match results (a Match that is `played`) and its logged Matches and
+ * Attempts, all
  * through the War Week's Competitions.
  */
 export async function getScoredCounts(
   warWeekId: string,
   dbOrTx: DBOrTx = db,
 ): Promise<ScoredCounts> {
-  const [[points], [matches], [games]] = await Promise.all([
+  const [[points], [matches], [seriesMatches], [attempts]] = await Promise.all([
     dbOrTx
       .select({ n: count() })
       .from(pointsEntry)
@@ -30,13 +37,18 @@ export async function getScoredCounts(
       ),
     dbOrTx
       .select({ n: count() })
-      .from(game)
-      .innerJoin(competition, eq(competition.id, game.competitionId))
+      .from(seriesMatch)
+      .innerJoin(competition, eq(competition.id, seriesMatch.competitionId))
+      .where(eq(competition.warWeekId, warWeekId)),
+    dbOrTx
+      .select({ n: count() })
+      .from(attempt)
+      .innerJoin(competition, eq(competition.id, attempt.competitionId))
       .where(eq(competition.warWeekId, warWeekId)),
   ]);
   return {
     pointsEntries: points.n,
     matchResults: matches.n,
-    games: games.n,
+    logged: seriesMatches.n + attempts.n,
   };
 }

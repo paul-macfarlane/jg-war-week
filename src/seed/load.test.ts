@@ -143,7 +143,7 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed lifecycle fields", () => {
     });
   });
 
-  it("sets a Best score Competition's settings and Entrants open on insert only", async () => {
+  it("sets a Best score Competition's direction, unit and Team score on insert only", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { loadWarWeekSeed } = await import("@/seed/load");
       const schema = await import("@/db/schema");
@@ -155,8 +155,8 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed lifecycle fields", () => {
             name: "Stairs",
             scoring: "team",
             format: "best-score",
-            gameConfig: { count: "total", betterIs: "higher", unit: "trips" },
-            entrantsOpen: true,
+            scoreUnit: "trips",
+            bestScoreConfig: { teamScore: "sum-of-members" },
           },
         ],
       });
@@ -166,31 +166,88 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed lifecycle fields", () => {
           await tx
             .select({
               format: schema.competition.format,
-              gameConfig: schema.competition.gameConfig,
-              entrantsOpen: schema.competition.entrantsOpen,
+              scoreDirection: schema.competition.scoreDirection,
+              scoreUnit: schema.competition.scoreUnit,
+              bestScoreConfig: schema.competition.bestScoreConfig,
             })
             .from(schema.competition)
             .where(eq(schema.competition.warWeekId, first.id))
         )[0];
       expect(await read()).toEqual({
         format: "best-score",
-        gameConfig: { count: "total", betterIs: "higher", unit: "trips" },
-        entrantsOpen: true,
+        scoreDirection: "higher",
+        scoreUnit: "trips",
+        bestScoreConfig: { teamScore: "sum-of-members" },
       });
 
       // A Host's change survives a reload.
       await tx
         .update(schema.competition)
         .set({
-          gameConfig: { count: "best", betterIs: "lower", unit: "s" },
-          entrantsOpen: false,
+          scoreDirection: "lower",
+          scoreUnit: "s",
+          bestScoreConfig: { teamScore: "best-member" },
         })
         .where(eq(schema.competition.warWeekId, first.id));
       await loadWarWeekSeed(seeded, tx);
       expect(await read()).toMatchObject({
-        gameConfig: { count: "best", betterIs: "lower", unit: "s" },
-        entrantsOpen: false,
+        scoreDirection: "lower",
+        scoreUnit: "s",
+        bestScoreConfig: { teamScore: "best-member" },
       });
+    });
+  });
+
+  it("enters a Head-to-head's two seeded Entrants once, with its Best of; a reload adds no row", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { loadWarWeekSeed } = await import("@/seed/load");
+      const schema = await import("@/db/schema");
+      const { eq } = await import("drizzle-orm");
+      await clearLive(tx);
+      const seeded = await seed("sh", 5, "upcoming", {
+        participants: [
+          { displayName: "Ana" },
+          { displayName: "Ben" },
+          { displayName: "Cal" },
+        ],
+        competitions: [
+          {
+            name: "Pong",
+            scoring: "individual",
+            format: "head-to-head",
+            seriesConfig: { drawsAllowed: false, bestOf: 5 },
+            entrants: ["Ben", "Ana"],
+          },
+        ],
+      });
+      const first = await loadWarWeekSeed(seeded, tx);
+      const [pong] = await tx
+        .select({
+          id: schema.competition.id,
+          seriesConfig: schema.competition.seriesConfig,
+        })
+        .from(schema.competition)
+        .where(eq(schema.competition.warWeekId, first.id));
+      expect(pong.seriesConfig).toEqual({ drawsAllowed: false, bestOf: 5 });
+      const entrants = () =>
+        tx
+          .select({
+            name: schema.participant.displayName,
+            seedPosition: schema.entrant.seedPosition,
+          })
+          .from(schema.entrant)
+          .innerJoin(
+            schema.participant,
+            eq(schema.participant.id, schema.entrant.participantId),
+          )
+          .where(eq(schema.entrant.competitionId, pong.id))
+          .orderBy(schema.entrant.seedPosition);
+      expect(await entrants()).toEqual([
+        { name: "Ben", seedPosition: 1 },
+        { name: "Ana", seedPosition: 2 },
+      ]);
+      await loadWarWeekSeed(seeded, tx);
+      expect(await entrants()).toHaveLength(2);
     });
   });
 
@@ -220,7 +277,6 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed lifecycle fields", () => {
               participationPoints: schema.competition.participationPoints,
               placementPoints: schema.competition.placementPoints,
               selfCheckIn: schema.competition.selfCheckIn,
-              checkInClosesAt: schema.competition.checkInClosesAt,
             })
             .from(schema.competition)
             .where(eq(schema.competition.warWeekId, first.id))
@@ -231,7 +287,6 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed lifecycle fields", () => {
         participationPoints: null,
         placementPoints: [5, 3, 1],
         selfCheckIn: true,
-        checkInClosesAt: null,
       });
 
       // A reload that makes it individual gives N (1 by default) and no
@@ -505,7 +560,7 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Finale slides", () => {
     { kind: "title" },
     { kind: "numbers" },
     { kind: "awards" },
-    { kind: "champions" },
+    { kind: "winners" },
     { kind: "standings" },
     { kind: "winner" },
   ];

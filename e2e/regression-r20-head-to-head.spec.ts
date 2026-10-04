@@ -38,36 +38,39 @@ const MATCHES: {
 async function addSeries(name: string): Promise<string> {
   const [{ id }] = await runQuery<{ id: string }>(
     `insert into competition
-       (war_week_id, name, scoring, format, game_config, entrants_open, placement_points)
-     select id, $1, 'individual', 'head-to-head', $2::jsonb, false, '{5,2}'
+       (war_week_id, name, scoring, format, series_config, placement_points)
+     select id, $1, 'individual', 'head-to-head', $2::jsonb, '{5,2}'
      from war_week where edition = 'xi'
      returning id`,
     [name, JSON.stringify({ drawsAllowed: true, bestOf: 3 })],
   );
-  const ashley = await xiParticipantId(ASHLEY);
-  const sam = await xiParticipantId(SAM);
-  for (const [seed, who] of [ashley, sam].entries()) {
-    await runQuery(
+  const entrants: string[] = [];
+  for (const [seed, who] of [
+    await xiParticipantId(ASHLEY),
+    await xiParticipantId(SAM),
+  ].entries()) {
+    const [entrant] = await runQuery<{ id: string }>(
       `insert into entrant (competition_id, participant_id, seed_position)
-       values ($1, $2, $3)`,
+       values ($1, $2, $3) returning id`,
       [id, who, seed + 1],
     );
+    entrants.push(entrant.id);
   }
   for (const match of MATCHES) {
-    const [game] = await runQuery<{ id: string }>(
-      `insert into game (competition_id, logged_at, logged_by_email)
+    const [logged] = await runQuery<{ id: string }>(
+      `insert into series_match (competition_id, recorded_at, logged_by_email)
        values ($1, now() - make_interval(mins => $2), 'e2e-organizer@jahnelgroup.com')
        returning id`,
       [id, match.minutesAgo],
     );
-    for (const [who, [place, score]] of [
-      [ashley, match.ashley],
-      [sam, match.sam],
+    for (const [entrant, [place, score]] of [
+      [entrants[0], match.ashley],
+      [entrants[1], match.sam],
     ] as const) {
       await runQuery(
-        `insert into game_player (game_id, participant_id, place, score)
+        `insert into series_match_entrant (series_match_id, entrant_id, place, score)
          values ($1, $2, $3, $4)`,
-        [game.id, who, place, score],
+        [logged.id, entrant, place, score],
       );
     }
   }

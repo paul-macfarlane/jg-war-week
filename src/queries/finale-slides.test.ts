@@ -57,11 +57,14 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
               join points_entry p on p.competition_id = c.id
               where c.war_week_id = ${xi.id}`,
         ),
-        gamesLogged: await sqlNumber(
+        resultsLogged: await sqlNumber(
           tx,
-          sql`select count(*) as n from game g
-              join competition c on c.id = g.competition_id
-              where c.war_week_id = ${xi.id}`,
+          sql`select (select count(*) from series_match m
+                join competition c on c.id = m.competition_id
+                where c.war_week_id = ${xi.id})
+              + (select count(*) from attempt a
+                join competition c on c.id = a.competition_id
+                where c.war_week_id = ${xi.id}) as n`,
         ),
         matchesPlayed: await sqlNumber(
           tx,
@@ -100,7 +103,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
       const xi = await loadXiDemo(tx);
 
       // As seeded, only the demo's twelve Closed Placement Competitions
-      // have a winner; no Bracket or Games Competition is closed.
+      // have a winner; no Bracket, Head-to-head or Best score is closed.
       const seeded = await getWinners(xi, tx);
       expect(seeded).toHaveLength(12);
       expect(seeded.map((winner) => winner.format)).toEqual(
@@ -128,7 +131,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
             format,
             closedAt,
             ...(format === "head-to-head"
-              ? { gameConfig: { drawsAllowed: false, bestOf: null } }
+              ? { seriesConfig: { drawsAllowed: false, bestOf: 3 as const } }
               : {}),
           })
           .returning({ id: schema.competition.id });

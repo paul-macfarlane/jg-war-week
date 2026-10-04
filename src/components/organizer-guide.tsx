@@ -207,15 +207,14 @@ export function OrganizerGuide({
           any Formats until the Competition has a result. Settings that decide
           how it runs lock as it goes, each showing why: the Format and scoring
           once any result exists; a Head-to-head Competition&apos;s draws and
-          Best of, and whether Entrants are open or a fixed list, once it has a
-          Match or Attempt; and the Match size, how many advance, the 3rd place
-          Match, the Entrants and building the Bracket once a Match has a
-          result. Nothing resets a Bracket; add a new Competition to start over.
-          A Bracket has one Format: choose how many Entrants are in each Match
-          (2 to 8) and how many advance. Two per Match with one advancing is one
-          against one, the Winner going on; bigger Matches send their top few
-          on, Round after Round, until one Match is left. With one against one
-          and at least 4 Entrants, turn on the 3rd place Match to have the
+          Best of once it has a Match; and the Match size, how many advance, the
+          3rd place Match, the Entrants and building the Bracket once a Match
+          has a result. Nothing resets a Bracket; add a new Competition to start
+          over. A Bracket has one Format: choose how many Entrants are in each
+          Match (2 to 8) and how many advance. Two per Match with one advancing
+          is one against one, the Winner going on; bigger Matches send their top
+          few on, Round after Round, until one Match is left. With one against
+          one and at least 4 Entrants, turn on the 3rd place Match to have the
           semifinal losers play for 3rd and 4th beside the final. Placings come
           only from the final and the 3rd place Match: the final gives 1st and
           2nd, the 3rd place Match 3rd and 4th; without one, only 1st and 2nd

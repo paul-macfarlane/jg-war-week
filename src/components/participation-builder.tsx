@@ -14,7 +14,7 @@ import { ConfirmActionButton } from "@/components/confirm-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { placementPointsList } from "@/lib/games/view";
+import { placementPointsList } from "@/lib/logged-results";
 import { formatPoints } from "@/lib/points";
 
 /** A Participant of the roster: id, shown name and Team (null for none). */
@@ -24,7 +24,7 @@ type RosterRow = { id: string; name: string; team: string | null };
  * A `participation` Competition's run area on its Competition page (ADR
  * 0009): the roster as a checklist to tick who took part (each tick saves
  * at once), the team counts in team scoring, and Close / Reopen. Its
- * settings (points, Self check-in and its close time) are in the page's
+ * settings (points and Self check-in) are in the page's
  * Settings. Names, ids and booleans only: no email reaches it.
  */
 export function ParticipationBuilder({

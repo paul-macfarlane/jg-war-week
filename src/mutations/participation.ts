@@ -20,11 +20,11 @@ import { scoreParticipation } from "@/lib/participation/score";
 import { generatedNote } from "@/lib/points-entry";
 import {
   COMPETITION_NOT_FOUND,
-  GAMES_CLOSED,
+  REOPEN_FIRST,
   deleteGenerated,
   refuse,
 } from "@/mutations/brackets";
-import { ALREADY_CLOSED } from "@/mutations/games";
+import { ALREADY_CLOSED } from "@/mutations/logged-results";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 import { getCheckInFacts } from "@/queries/participation";
 
@@ -73,8 +73,8 @@ async function lockedParticipation(
 
 /**
  * Saves a `participation` Competition's settings: N when individual, its
- * Placement Points when team (ranked by headcount), and Self check-in with
- * its close time. Refused while closed.
+ * Placement Points when team (ranked by headcount), and Self check-in.
+ * Refused while closed.
  */
 export async function setParticipationSettings(
   competitionId: string,
@@ -85,7 +85,7 @@ export async function setParticipationSettings(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedParticipation(tx, competitionId, ctx);
     if (typeof found === "string") return refuse(found);
-    if (found.closedAt) return refuse(GAMES_CLOSED);
+    if (found.closedAt) return refuse(REOPEN_FIRST);
     const individual = found.scoring === "individual";
     if (individual) {
       if (input.placementPoints) return refuse(INDIVIDUAL_NO_PLACEMENT_POINTS);
@@ -104,7 +104,6 @@ export async function setParticipationSettings(
         participationPoints: individual ? input.participationPoints : null,
         placementPoints: individual ? null : input.placementPoints,
         selfCheckIn: input.selfCheckIn,
-        checkInClosesAt: input.checkInClosesAt,
         updatedAt: sql`now()`,
       })
       .where(eq(competition.id, competitionId));
@@ -126,7 +125,7 @@ export async function markParticipant(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedParticipation(tx, competitionId, ctx);
     if (typeof found === "string") return refuse(found);
-    if (found.closedAt) return refuse(GAMES_CLOSED);
+    if (found.closedAt) return refuse(REOPEN_FIRST);
     const [who] = await tx
       .select({ teamId: participant.teamId })
       .from(participant)
@@ -166,7 +165,7 @@ export async function unmarkParticipant(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedParticipation(tx, competitionId, ctx);
     if (typeof found === "string") return refuse(found);
-    if (found.closedAt) return refuse(GAMES_CLOSED);
+    if (found.closedAt) return refuse(REOPEN_FIRST);
     await tx
       .delete(participation)
       .where(

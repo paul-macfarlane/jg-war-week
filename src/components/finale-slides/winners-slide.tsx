@@ -14,7 +14,7 @@ export function WinnersSlide({
   data,
   edition,
   storyTheme,
-}: FinaleSlideProps<"champions">) {
+}: FinaleSlideProps<"winners">) {
   return (
     <div className="flex h-full w-full flex-col items-center justify-center-safe gap-[5vh] overflow-y-auto px-[5vw] py-[7vh]">
       <header className="flex flex-col items-center gap-[1.5vh] text-center">

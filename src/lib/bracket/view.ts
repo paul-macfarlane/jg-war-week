@@ -193,9 +193,9 @@ export function nextMatchFor(
     .filter(inMatch)
     .reduce<Match | null>((a, h) => (a && a.round > h.round ? a : h), null);
   if (!last || last.round >= finalRoundOf(bracket)) return null;
-  const { advancePerHeat } = bracket.config;
+  const { advancePerMatch } = bracket.config;
   const place = last.slots.find((s) => s.entrantId === entrantId)?.place;
-  if (place == null || place > advancePerHeat) return null;
+  if (place == null || place > advancePerMatch) return null;
   return { kind: "advanced", round: last.round + 1 };
 }
 

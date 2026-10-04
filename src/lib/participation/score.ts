@@ -49,7 +49,7 @@ export function teamHeadcounts(tookPart: TookPart[]): TeamHeadcount[] {
  * - individual: N to each Participant who took part;
  * - team: Teams ranked by headcount, each Team's place's Placement Points
  *   (ties each get that place's points; places without Placement Points get
- *   nothing; `pointsFor`, the Bracket and Games rule).
+ *   nothing; `pointsFor`, the Bracket, Head-to-head and Best score rule).
  */
 export function scoreParticipation(
   tookPart: TookPart[],

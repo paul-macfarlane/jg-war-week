@@ -149,7 +149,7 @@ export function reopenWarWeek(
 /**
  * Unstart: `live → upcoming`, only for an edition never ended and while
  * nothing is scored (`unstartError`). The Points Entry, Match result and
- * Game counts are re-read inside the transaction that locks the row, so
+ * Match and Attempt counts are re-read inside the transaction that locks the row, so
  * one entered after the action's own check is still caught.
  */
 export function unstartWarWeek(

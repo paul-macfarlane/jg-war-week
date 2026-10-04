@@ -3,12 +3,13 @@ import { and, eq } from "drizzle-orm";
 import { DBOrTx, db } from "@/db";
 import {
   type Competition,
+  attempt,
   bracketMatch,
   entrant,
-  game,
   participation,
   placement,
   pointsEntry,
+  seriesMatch,
 } from "@/db/schema";
 import { hasResults } from "@/lib/bracket/formats";
 import { isBracketFormat } from "@/lib/bracket/view";
@@ -31,7 +32,9 @@ export async function getCompetitionResults(
   );
   return {
     entrants: await dbOrTx.$count(entrant, eq(entrant.competitionId, id)),
-    games: await dbOrTx.$count(game, eq(game.competitionId, id)),
+    logged:
+      (await dbOrTx.$count(seriesMatch, eq(seriesMatch.competitionId, id))) +
+      (await dbOrTx.$count(attempt, eq(attempt.competitionId, id))),
     placements: await dbOrTx.$count(placement, eq(placement.competitionId, id)),
     checkIns: await dbOrTx.$count(
       participation,

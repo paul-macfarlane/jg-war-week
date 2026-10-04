@@ -5,17 +5,11 @@ import {
   bracketMatch,
   competition,
   entrant,
-  game,
   participant,
   squad,
   squadParticipant,
 } from "@/db/schema";
-import { isGameFormat } from "@/lib/enums";
-import { gamesConfigOf } from "@/lib/games/config";
-import {
-  type EnrollFacet,
-  enrollmentUnavailable,
-} from "@/lib/games/enroll-rule";
+import type { EnrollFacet } from "@/lib/bracket/enroll-rule";
 import { isUuid } from "@/lib/uuid";
 
 export type EnrollFacts = {
@@ -28,14 +22,12 @@ export type EnrollFacts = {
 /** A facet that refuses: the switch reads as off. */
 function refusingFacet(): EnrollFacet {
   return {
+    format: "bracket",
     selfEnroll: false,
     closed: false,
     built: false,
-    hasGames: false,
     entrantLimit: null,
     entrantCount: 0,
-    enrollClosesAt: null,
-    now: new Date(),
     scoring: "individual",
     linked: null,
     entrants: [],
@@ -46,8 +38,8 @@ function refusingFacet(): EnrollFacet {
 
 /**
  * The facts self-enrollment is checked against (ADR 0006): the
- * Competition's switch and close conditions (Bracket built, Entrant limit,
- * close time, closed, first Game), its Entrants and Squads, the Squad
+ * Competition's Format, switch and close conditions (Bracket built,
+ * Entrant limit, Closed), its Entrants and Squads, the Squad
  * being joined or left (only a Squad of this Competition), and the
  * Participant of the Competition's War Week whose email is `email`,
  * ignoring case (account linking; more than one match counts as none), with
@@ -68,11 +60,8 @@ export async function getEnrollFacts(
           scoring: competition.scoring,
           format: competition.format,
           closedAt: competition.closedAt,
-          gameConfig: competition.gameConfig,
-          entrantsOpen: competition.entrantsOpen,
           selfEnroll: competition.selfEnroll,
           entrantLimit: competition.entrantLimit,
-          enrollClosesAt: competition.enrollClosesAt,
         })
         .from(competition)
         .where(eq(competition.id, competitionId))
@@ -80,7 +69,7 @@ export async function getEnrollFacts(
     : [];
   if (!found) return { enroll: refusingFacet(), linked: null };
 
-  const [linked, entrants, matches, games, squads, posted] = await Promise.all([
+  const [linked, entrants, matches, squads, posted] = await Promise.all([
     linkedParticipant(competitionId, found.warWeekId, email, dbOrTx),
     dbOrTx
       .select({
@@ -90,7 +79,6 @@ export async function getEnrollFacts(
       .from(entrant)
       .where(eq(entrant.competitionId, competitionId)),
     dbOrTx.$count(bracketMatch, eq(bracketMatch.competitionId, competitionId)),
-    dbOrTx.$count(game, eq(game.competitionId, competitionId)),
     dbOrTx.$count(squad, eq(squad.competitionId, competitionId)),
     squadId === undefined || squadId === null
       ? Promise.resolve(null)
@@ -98,26 +86,12 @@ export async function getEnrollFacts(
   ]);
 
   const enroll: EnrollFacet = {
-    // The switch reads as off where enrollment isn't offered (R3 decision 12).
-    selfEnroll:
-      found.selfEnroll &&
-      enrollmentUnavailable({
-        format: found.format,
-        entrantsOpen: found.entrantsOpen,
-        gameConfig: isGameFormat(found.format)
-          ? gamesConfigOf({
-              format: found.format,
-              gameConfig: found.gameConfig,
-            })
-          : null,
-      }) === null,
+    format: found.format,
+    selfEnroll: found.selfEnroll,
     closed: found.closedAt !== null,
     built: matches > 0,
-    hasGames: games > 0,
     entrantLimit: found.entrantLimit,
     entrantCount: entrants.length,
-    enrollClosesAt: found.enrollClosesAt,
-    now: new Date(),
     scoring: found.scoring,
     linked,
     entrants,

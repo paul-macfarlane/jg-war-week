@@ -11,7 +11,7 @@ import {
 import { CollapsibleDescription } from "@/components/collapsible-description";
 import { CompetitionFacts } from "@/components/competitions";
 import { EnrollButton } from "@/components/enroll-button";
-import { GamesView } from "@/components/games-view";
+import { LoggedResults } from "@/components/logged-results-view";
 import { ParticipationView } from "@/components/participation-view";
 import { PlacementView } from "@/components/placement-view";
 import { RichText } from "@/components/rich-text";
@@ -20,7 +20,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { can } from "@/lib/access";
 import { podiumOf } from "@/lib/bracket/podium";
 import { entrantForYou, nextMatchFor } from "@/lib/bracket/view";
-import { isGameFormat } from "@/lib/enums";
+import { isLoggedFormat } from "@/lib/enums";
 import { resolveYou } from "@/lib/you";
 import {
   type BracketView as BracketData,
@@ -28,7 +28,7 @@ import {
   getParticipantSquadIds,
   getParticipantTeamIds,
 } from "@/queries/brackets";
-import { getGamesView } from "@/queries/games";
+import { getLoggedResultsView } from "@/queries/logged-results";
 import { getMatchReportFacts } from "@/queries/match-reports";
 import { getParticipationView } from "@/queries/participation";
 import { getPlacementsView } from "@/queries/placements";
@@ -122,7 +122,7 @@ export default async function CompetitionPage({
   const selfReport = isBracket
     ? await selfReportFor(warWeek, bracket, participantTeams, participantSquads)
     : SELF_REPORT_OFF;
-  const isGames = isGameFormat(competition.format);
+  const isLogged = isLoggedFormat(competition.format);
   const isParticipation = competition.format === "participation";
   const isPlacement = competition.format === "placement";
   // The viewer's email stays on the server: the page gets names, ids and
@@ -136,12 +136,12 @@ export default async function CompetitionPage({
       warWeekId: warWeek.id,
       competitionId: competition.id,
     }) === null;
-  const [games, enrollOffer, participation, checkInOffer, placements] =
+  const [logged, enrollOffer, participation, checkInOffer, placements] =
     await Promise.all([
-      isGames ? getGamesView(competition.id, email) : Promise.resolve(null),
-      isBracket || isGames
-        ? enrollOfferFor(competition, email)
+      isLogged
+        ? getLoggedResultsView(competition.id, email)
         : Promise.resolve(null),
+      isBracket ? enrollOfferFor(competition, email) : Promise.resolve(null),
       isParticipation
         ? getParticipationView(competition.id)
         : Promise.resolve(undefined),
@@ -193,23 +193,21 @@ export default async function CompetitionPage({
         </CollapsibleDescription>
       ) : null}
       {enrollOffer ? <EnrollButton offer={enrollOffer} /> : null}
-      {games ? (
-        <GamesView
+      {logged ? (
+        <LoggedResults
           competitionId={competition.id}
-          gameFormat={games.competition.gameFormat}
-          config={games.competition.config}
-          scoring={games.competition.scoring}
-          closed={games.competition.closed}
-          entrantsOpen={games.competition.entrantsOpen}
-          loggingOpen={games.loggingOpen}
-          leaderboard={games.leaderboard}
-          games={games.games}
-          linked={games.linked}
-          runs={games.runs}
-          viewerCanLog={games.viewerCanLog}
-          bestOfDecided={games.bestOfDecided}
-          bestOfWinner={games.bestOfWinner}
-          entrantOptions={games.entrantOptions}
+          format={logged.competition.format}
+          config={logged.competition.config}
+          scoring={logged.competition.scoring}
+          closed={logged.competition.closed}
+          leaderboard={logged.leaderboard}
+          results={logged.results}
+          linked={logged.linked}
+          runs={logged.runs}
+          viewerCanLog={logged.viewerCanLog}
+          decided={logged.decided}
+          seriesWinner={logged.seriesWinner}
+          playerOptions={logged.playerOptions}
           primaryColor={warWeek.primaryColor}
           teamLabel={warWeek.teamLabel}
           now={new Date()}
@@ -222,7 +220,6 @@ export default async function CompetitionPage({
           offer={checkInOffer}
           teamLabel={warWeek.teamLabel}
           primaryColor={warWeek.primaryColor}
-          now={new Date()}
         />
       ) : null}
       {placements ? (
@@ -249,7 +246,7 @@ export default async function CompetitionPage({
       {/* A Bracket's view refreshes itself, pausing while a report is open. */}
       {isBracket ? null : <AutoRefresh />}
       {/* Results and refusals toast here, as on the admin screens. */}
-      {isBracket || isGames || enrollOffer || checkInOffer ? (
+      {isBracket || isLogged || enrollOffer || checkInOffer ? (
         <Toaster position="bottom-center" closeButton />
       ) : null}
     </main>

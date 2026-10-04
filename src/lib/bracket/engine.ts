@@ -96,7 +96,7 @@ export function generate(
       ids.set(`${round}:${position}`, newId(round, position));
     }
   }
-  const thirdPlaceId = config.thirdPlaceGame ? newId(rounds, 2) : null;
+  const thirdPlaceId = config.thirdPlaceMatch ? newId(rounds, 2) : null;
 
   const bracket: Bracket = { config, matches: [] };
   for (let round = 1; round <= rounds; round++) {

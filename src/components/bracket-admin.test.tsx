@@ -205,9 +205,11 @@ describe("BracketAdminView", () => {
       (label, i) => ({ id: `e${i + 1}`, seedPosition: i + 1, label }),
     );
     const config = {
-      entrantsPerHeat: 2,
-      advancePerHeat: 1,
-      thirdPlaceGame: true,
+      kind: "head-to-head" as const,
+      entrantsPerMatch: 2,
+      advancePerMatch: 1,
+      thirdPlaceMatch: true,
+      rounds: {},
     };
     let played = generate(four, undefined, config);
     played = applyResult(played, "r1h1", { order: ["e1", "e4"] });

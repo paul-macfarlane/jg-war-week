@@ -6,7 +6,7 @@ import { bracketWinner as winnerOf } from "@/lib/bracket/formats";
 import type { Entrant } from "@/lib/bracket/types";
 import {
   toBracketResult,
-  toGamesBracketResult,
+  toLoggedBracketResult,
   toParticipationBracketResult,
 } from "@/mcp/bracket";
 import type { BracketEntrant, BracketView } from "@/queries/brackets";
@@ -61,10 +61,10 @@ describe("toParticipationBracketResult", () => {
   });
 });
 
-describe("toGamesBracketResult", () => {
+describe("toLoggedBracketResult", () => {
   it("answers bracket: null and points to get_games for a Head-to-head or Best score Competition", () => {
     expect(
-      toGamesBracketResult({
+      toLoggedBracketResult({
         name: "Bouncy Pong",
         scoring: "individual",
         format: "head-to-head",
@@ -106,7 +106,6 @@ describe("toBracketResult", () => {
         selfReport: false,
         selfEnroll: false,
         entrantLimit: null,
-        enrollClosesAt: null,
       },
       entrants: [],
       bracket: { config: DEFAULT_BRACKET_CONFIG, matches: [] },
@@ -149,7 +148,6 @@ describe("toBracketResult", () => {
         selfReport: false,
         selfEnroll: false,
         entrantLimit: null,
-        enrollClosesAt: null,
       },
       entrants: entrants.map((e) =>
         bracketEntrantFixture(e, `${e.label} Squad`),
@@ -240,7 +238,6 @@ describe("toBracketResult", () => {
         selfReport: false,
         selfEnroll: false,
         entrantLimit: null,
-        enrollClosesAt: null,
       },
       entrants: entrants.map((e) =>
         bracketEntrantFixture(e, `${e.label} Squad`),
@@ -282,7 +279,6 @@ describe("toBracketResult", () => {
         selfReport: false,
         selfEnroll: false,
         entrantLimit: null,
-        enrollClosesAt: null,
       },
       entrants: entrants.map((e) =>
         bracketEntrantFixture(e, `${e.label} Squad`),
@@ -315,7 +311,6 @@ describe("toBracketResult", () => {
         selfReport: true,
         selfEnroll: false,
         entrantLimit: null,
-        enrollClosesAt: null,
       },
       entrants: [
         {
@@ -403,7 +398,6 @@ describe("toBracketResult", () => {
         selfReport: false,
         selfEnroll: false,
         entrantLimit: null,
-        enrollClosesAt: null,
       },
       entrants: entrantsWithExtras,
       bracket,
@@ -443,9 +437,11 @@ describe("toBracketResult with a 3rd place Match", () => {
       label: `S${i + 1}`,
     }));
     let bracket = generate(eight, undefined, {
-      entrantsPerHeat: 2,
-      advancePerHeat: 1,
-      thirdPlaceGame: true,
+      kind: "head-to-head" as const,
+      entrantsPerMatch: 2,
+      advancePerMatch: 1,
+      thirdPlaceMatch: true,
+      rounds: {},
     });
     for (const [matchId, order] of [
       ["r1h1", ["s1", "s8"]],
@@ -472,7 +468,6 @@ describe("toBracketResult with a 3rd place Match", () => {
         selfReport: false,
         selfEnroll: false,
         entrantLimit: null,
-        enrollClosesAt: null,
       },
       entrants: eight.map((e) => bracketEntrantFixture(e, null)),
       bracket,

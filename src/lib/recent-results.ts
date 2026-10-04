@@ -1,5 +1,5 @@
 import type { Competition } from "@/db/schema";
-import { isGameFormat } from "@/lib/enums";
+import { isLoggedFormat } from "@/lib/enums";
 
 /** Home shows at most this many Recent results rows. */
 export const RECENT_RESULTS_LIMIT = 5;
@@ -36,7 +36,7 @@ export type ResultEntry = {
 
 export type RecentResult =
   | {
-      kind: "bracket-closed" | "games-closed" | "placement-closed";
+      kind: "bracket-closed" | "results-closed" | "placement-closed";
       key: string;
       competitionId: string;
       competition: string;
@@ -72,7 +72,7 @@ export type RecentResult =
  * - A closed Bracket is one
  *   "bracket-closed" row, a Closed Placement one
  *   "placement-closed" row and a closed Head-to-head or Best score Competition one
- *   "games-closed" row, all at `closedAt`. The winner or winner is the
+ *   "results-closed" row, all at `closedAt`. The winner or winner is the
  *   target of the highest generated Points Entry (the 1st-place entry its
  *   close or close wrote); a tie for first lists every target.
  * - A closed `participation` Competition is one "participation-closed" row
@@ -108,8 +108,8 @@ export function shapeRecentResults(
       continue;
     }
     results.push({
-      kind: isGameFormat(c.format)
-        ? "games-closed"
+      kind: isLoggedFormat(c.format)
+        ? "results-closed"
         : c.format === "placement"
           ? "placement-closed"
           : "bracket-closed",

@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, ne, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
 import { DBOrTx, db } from "@/db";
@@ -8,10 +8,10 @@ import {
   bracketMatchEntrant,
   competition,
   entrant,
-  game,
-  gamePlayer,
   participant,
   pointsEntry,
+  seriesMatch,
+  seriesMatchEntrant,
   squad,
   squadParticipant,
   team,
@@ -20,6 +20,7 @@ import {
 import {
   type BracketConfig,
   configOf,
+  kindOf,
   thirdPlaceRefusal,
 } from "@/lib/bracket/config";
 import {
@@ -49,10 +50,8 @@ import {
   LOCKED_BY_MATCH_RESULT,
   settingLockReason,
 } from "@/lib/competition-locks";
-import { isGameFormat } from "@/lib/enums";
+import { isLoggedFormat } from "@/lib/enums";
 import { formatDefaults } from "@/lib/format-defaults";
-import { gamesConfigOf } from "@/lib/games/config";
-import { NOT_GAMES } from "@/lib/games/log-rule";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 import { getBracketEntrants, loadBracket } from "@/queries/brackets";
 import { getCompetitionLockFacts } from "@/queries/competition-locks";
@@ -65,11 +64,15 @@ export const SQUAD_NOT_FOUND = "That Squad no longer exists.";
 export const ONLY_A_BRACKET_TAKES_MATCHES =
   "Only a Bracket takes Match settings.";
 const NOT_A_TEAM_COMPETITION = "Squads are only for team Competitions.";
-/** A closed Head-to-head or Best score Competition's Entrants can't change. */
-export const GAMES_CLOSED = "Reopen the Competition first.";
-const NO_SQUADS_IN_GAMES =
-  "Squads aren't entered in a Head-to-head or Best score Competition.";
-export const BEST_OF_NEEDS_TWO = "A Best of needs exactly 2 Entrants.";
+/** A closed Competition's Entrants or settings can't change. */
+export const REOPEN_FIRST = "Reopen the Competition first.";
+const NO_SQUADS_IN_HEAD_TO_HEAD = "Squads aren't entered in a Head-to-head.";
+export const HEAD_TO_HEAD_NEEDS_TWO =
+  "A Head-to-head needs exactly 2 Entrants.";
+/** Best score takes no Entrant list (spec R21, decision 5). */
+export const BEST_SCORE_NO_ENTRANTS =
+  "Best score has no Entrant list: anyone can log an Attempt.";
+const NOT_HEAD_TO_HEAD = "This Competition isn't run as Head-to-head.";
 /** The note on every Points Entry a closed Bracket generates. */
 export const FROM_BRACKET_NOTE = "From bracket";
 
@@ -82,12 +85,8 @@ export type BracketCompetition = Pick<
   | "bracketConfig"
   | "placementPoints"
   | "closedAt"
-  | "gameConfig"
-  | "entrantsOpen"
-  | "loggingClosesAt"
   | "selfEnroll"
   | "entrantLimit"
-  | "enrollClosesAt"
 >;
 
 /** A Competition run as a Bracket (its Format isn't placement, Head-to-head, Best score or participation). */
@@ -112,12 +111,8 @@ export async function lockedCompetition(
       bracketConfig: competition.bracketConfig,
       placementPoints: competition.placementPoints,
       closedAt: competition.closedAt,
-      gameConfig: competition.gameConfig,
-      entrantsOpen: competition.entrantsOpen,
-      loggingClosesAt: competition.loggingClosesAt,
       selfEnroll: competition.selfEnroll,
       entrantLimit: competition.entrantLimit,
-      enrollClosesAt: competition.enrollClosesAt,
     })
     .from(competition)
     .where(
@@ -157,10 +152,38 @@ export function isBracketRun(
 
 function sameConfig(a: BracketConfig, b: BracketConfig): boolean {
   return (
-    a.entrantsPerHeat === b.entrantsPerHeat &&
-    a.advancePerHeat === b.advancePerHeat &&
-    a.thirdPlaceGame === b.thirdPlaceGame
+    a.kind === b.kind &&
+    a.entrantsPerMatch === b.entrantsPerMatch &&
+    a.advancePerMatch === b.advancePerMatch &&
+    a.thirdPlaceMatch === b.thirdPlaceMatch &&
+    JSON.stringify(a.rounds) === JSON.stringify(b.rounds)
   );
+}
+
+/**
+ * How many of a freshly generated Match advance: 1 in a head-to-head
+ * Bracket and in the final (the last round's Match that isn't the 3rd
+ * place Match), else the round's default.
+ */
+function advanceCountOf(
+  bracket: Bracket,
+  match: Bracket["matches"][number],
+): number {
+  const { config } = bracket;
+  if (config.kind === "head-to-head" || match.thirdPlace) return 1;
+  const lastRound = Math.max(...bracket.matches.map((m) => m.round));
+  if (match.round === lastRound) return 1;
+  return (
+    config.rounds[String(match.round)]?.advancePerMatch ??
+    config.advancePerMatch
+  );
+}
+
+/** A slot's Score as stored: numeric, or null when blank or not a number. */
+function storedScore(score: string | null): number | null {
+  if (score === null || score.trim() === "") return null;
+  const n = Number(score);
+  return Number.isFinite(n) ? n : null;
 }
 
 export function refuse(error: string): { ok: false; error: string } {
@@ -183,6 +206,7 @@ async function insertBracket(
       position: h.position,
       status: h.status,
       slotCount: h.slots.length,
+      advanceCount: advanceCountOf(bracket, h),
       winnerToMatchId: h.winnerTo?.matchId ?? null,
       winnerToSlot: h.winnerTo?.slot ?? null,
       loserToMatchId: h.loserTo?.matchId ?? null,
@@ -205,7 +229,7 @@ async function insertSlots(tx: DBOrTx, matches: Bracket["matches"]) {
               entrantId: slot.entrantId,
               slot: i,
               place: slot.place,
-              score: slot.score,
+              score: storedScore(slot.score),
             },
           ]
         : [],
@@ -295,11 +319,11 @@ async function saveBracket(
  * A Format change goes from any Format to any other while the Competition
  * has no result (`settingLockReason("format")`), and applies what
  * `createCompetition` gives a new Competition of that Format: a Bracket's
- * config (`config`, else the default), a Head-to-head or Best score
- * Competition's default settings and open Entrants, a Participation
+ * config (`config`, else the default), a Head-to-head's Best of 3, Best
+ * score's higher-is-better direction and Team score, a Participation
  * Competition's points columns. The old Format's settings go: the Score
- * direction back to none, Self-report, self-enroll, close times and Self
- * check-in off, a Bracket's Squads deleted. Placement Points are kept
+ * direction back to none (Best score's to higher), the unit and Max
+ * attempts cleared, Self-report, self-enroll and Self check-in off, a Bracket's Squads deleted. Placement Points are kept
  * (the first 4 for a Bracket; none for an individual Participation
  * Competition, which takes points per Participant instead).
  *
@@ -317,6 +341,17 @@ export async function setCompetitionFormat(
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
+  // The kind always follows the sizes (head-to-head is 2 / 1).
+  if (values.config) {
+    const { entrantsPerMatch, advancePerMatch } = values.config;
+    values = {
+      ...values,
+      config: {
+        ...values.config,
+        kind: kindOf(entrantsPerMatch, advancePerMatch),
+      },
+    };
+  }
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedCompetition(tx, competitionId, ctx);
     if (!found) return refuse(COMPETITION_NOT_FOUND);
@@ -384,15 +419,15 @@ async function changeFormat(
     .update(competition)
     .set({
       format,
+      // Each Format's defaults, Best score's `higher` direction among them,
+      // in the one update so the Format CHECKs never see a half change.
       ...defaults,
-      scoreDirection: "none",
+      scoreUnit: null,
+      maxAttempts: null,
       selfReport: false,
       selfEnroll: false,
       entrantLimit: null,
-      enrollClosesAt: null,
-      loggingClosesAt: null,
       selfCheckIn: false,
-      checkInClosesAt: null,
       updatedAt: sql`now()`,
     })
     .where(eq(competition.id, found.id));
@@ -406,13 +441,14 @@ async function changeFormat(
  * clears the drawn Bracket; once a Match has a Match Result the Entrants are
  * locked (`LOCKED_BY_MATCH_RESULT`).
  *
- * A Head-to-head or Best score Competition's fixed Entrant list takes the same Teams or
- * Participants (never Squads), in the order added; it has no Matches to
- * clear. While Best of is on it takes exactly 2, and an Entrant who has
- * logged Games can't be removed until they're deleted.
+ * A Head-to-head's two Entrants (spec R21, decision 12) take the same
+ * Teams or Participants (never Squads), exactly 2, in the order added.
+ * Its Matches reference the Entrant rows, so once a Match is logged its
+ * Entrants can't change until the Matches are deleted. Best score has no
+ * Entrant list.
  *
  * `format` says which the caller sets: a Bracket's Entrants refuse a
- * Head-to-head or Best score Competition, theirs refuse any other Format.
+ * Head-to-head, a Head-to-head's refuse any other Format.
  */
 export async function replaceEntrants(
   competitionId: string,
@@ -423,19 +459,22 @@ export async function replaceEntrants(
   }: {
     targetIds: string[];
     kind?: EntrantKind;
-    format?: "bracket" | "games";
+    format?: "bracket" | "head-to-head";
   },
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedCompetition(tx, competitionId, ctx);
-    const isGames = found !== undefined && isGameFormat(found.format);
-    if (found && format === "games" && !isGames) return refuse(NOT_GAMES);
-    if (found && format === "bracket" && isGames) return refuse(NOT_A_BRACKET);
-    if (isGames) {
-      if (found.closedAt) return refuse(GAMES_CLOSED);
-      if (givenKind === "squad") return refuse(NO_SQUADS_IN_GAMES);
+    if (found?.format === "best-score") return refuse(BEST_SCORE_NO_ENTRANTS);
+    const isSeries = found !== undefined && isLoggedFormat(found.format);
+    if (found && format === "head-to-head" && !isSeries) {
+      return refuse(NOT_HEAD_TO_HEAD);
+    }
+    if (found && format === "bracket" && isSeries) return refuse(NOT_A_BRACKET);
+    if (isSeries) {
+      if (found.closedAt) return refuse(REOPEN_FIRST);
+      if (givenKind === "squad") return refuse(NO_SQUADS_IN_HEAD_TO_HEAD);
     } else {
       const refusal = bracketRefusal(found);
       if (refusal || !isBracketRun(found)) {
@@ -487,21 +526,23 @@ export async function replaceEntrants(
         );
       }
     }
-    if (isGames) {
-      const config = isGameFormat(found.format)
-        ? gamesConfigOf({
-            format: found.format,
-            gameConfig: found.gameConfig,
-          })
-        : null;
-      if (config && "bestOf" in config && config.bestOf !== null) {
-        if (targetIds.length !== 2) return refuse(BEST_OF_NEEDS_TWO);
+    if (isSeries) {
+      if (targetIds.length !== 2) return refuse(HEAD_TO_HEAD_NEEDS_TWO);
+      const current = await tx
+        .select({
+          teamId: entrant.teamId,
+          participantId: entrant.participantId,
+        })
+        .from(entrant)
+        .where(eq(entrant.competitionId, competitionId))
+        .orderBy(asc(entrant.seedPosition));
+      const currentIds = current.map((e) => (e.teamId ?? e.participantId)!);
+      // The same two in the same order: nothing to change.
+      if (currentIds.join() === targetIds.join()) return { ok: true };
+      const played = await seriesPlayerOf(tx, competitionId);
+      if (played) {
+        return refuse(`${played} has logged Matches. Delete them first.`);
       }
-      const played = await removedPlayerWithGames(tx, competitionId, targetIds);
-      if (played)
-        return refuse(
-          `${played} has logged Matches or Attempts. Delete them first.`,
-        );
     } else {
       if (isBracketRun(found) && hasResults(await bracketOf(tx, found))) {
         return refuse(LOCKED_BY_MATCH_RESULT);
@@ -528,40 +569,25 @@ export async function replaceEntrants(
 }
 
 /**
- * The name of a current Entrant of this Head-to-head or Best score Competition, left out of
- * `keptIds`, who is a player in one of its Games; null when there's none.
- * Games reference Teams and Participants, never Entrant rows.
+ * The name of an Entrant of this Head-to-head who plays in one of its
+ * Matches, or null when no Match is logged. Matches reference the Entrant
+ * rows, so replacing the Entrants would delete them.
  */
-async function removedPlayerWithGames(
+async function seriesPlayerOf(
   tx: DBOrTx,
   competitionId: string,
-  keptIds: string[],
 ): Promise<string | null> {
-  const kept = new Set(keptIds);
-  const removed = (
-    await tx
-      .select({ teamId: entrant.teamId, participantId: entrant.participantId })
-      .from(entrant)
-      .where(eq(entrant.competitionId, competitionId))
-  )
-    .map((row) => row.teamId ?? row.participantId)
-    .filter((id): id is string => id !== null && !kept.has(id));
-  if (removed.length === 0) return null;
   const [played] = await tx
     .select({ teamName: team.name, participantName: participant.displayName })
-    .from(gamePlayer)
-    .innerJoin(game, eq(game.id, gamePlayer.gameId))
-    .leftJoin(team, eq(team.id, gamePlayer.teamId))
-    .leftJoin(participant, eq(participant.id, gamePlayer.participantId))
-    .where(
-      and(
-        eq(game.competitionId, competitionId),
-        or(
-          inArray(gamePlayer.teamId, removed),
-          inArray(gamePlayer.participantId, removed),
-        ),
-      ),
+    .from(seriesMatchEntrant)
+    .innerJoin(
+      seriesMatch,
+      eq(seriesMatch.id, seriesMatchEntrant.seriesMatchId),
     )
+    .innerJoin(entrant, eq(entrant.id, seriesMatchEntrant.entrantId))
+    .leftJoin(team, eq(team.id, entrant.teamId))
+    .leftJoin(participant, eq(participant.id, entrant.participantId))
+    .where(eq(seriesMatch.competitionId, competitionId))
     .orderBy(asc(team.name), asc(participant.displayName))
     .limit(1);
   return played ? (played.teamName ?? played.participantName) : null;

@@ -47,8 +47,23 @@ type Allowed = {
 };
 
 // A literal allowed to keep a banned term, one literal in one file for one
-// term. Empty: nothing is allowed. Keep the mechanism for the next exception.
-const ALLOWLIST: Allowed[] = [];
+// term. Keep the mechanism for the next exception.
+const ALLOWLIST: Allowed[] = [
+  {
+    file: "src/lib/best-score/config.ts",
+    term: "Member",
+    text: "Best member",
+    reason:
+      "Spec R21 decision 13 names the Team score setting's options Best member and Sum of members.",
+  },
+  {
+    file: "src/lib/best-score/config.ts",
+    term: "Member",
+    text: "Sum of members",
+    reason:
+      "Spec R21 decision 13 names the Team score setting's options Best member and Sum of members.",
+  },
+];
 
 // Property names under here are MCP output fields (and its input
 // schemas), which an MCP client reads as words.

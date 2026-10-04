@@ -97,32 +97,74 @@ describe("parseCompetitionSetting", () => {
     ).toMatchObject({ ok: false, error: "Choose a Format." });
   });
 
-  it("takes a blank Entrant limit or close time as none, and a date string as a time", () => {
+  it("takes a blank Entrant limit as none, and no close time at all", () => {
     expect(
       parseCompetitionSetting({ field: "entrantLimit", value: "" }),
     ).toEqual({ ok: true, value: { field: "entrantLimit", value: null } });
     expect(
       parseCompetitionSetting({ field: "entrantLimit", value: 1 }),
     ).toMatchObject({ ok: false, error: "An Entrant limit is at least 2." });
+    for (const field of [
+      "enrollClosesAt",
+      "loggingClosesAt",
+      "checkInClosesAt",
+      "entrantsOpen",
+    ]) {
+      expect(
+        parseCompetitionSetting({ field, value: "2099-01-03T17:00:00Z" }),
+        field,
+      ).toEqual({ ok: false, error: "Choose a setting to save." });
+    }
+  });
+
+  it("takes a Head-to-head's Best of, Best score's Team score and a unit", () => {
     expect(
       parseCompetitionSetting({
-        field: "enrollClosesAt",
-        value: "2099-01-03T17:00:00Z",
+        field: "seriesConfig",
+        value: { drawsAllowed: true, bestOf: 7 },
       }),
     ).toEqual({
       ok: true,
       value: {
-        field: "enrollClosesAt",
-        value: new Date("2099-01-03T17:00:00Z"),
+        field: "seriesConfig",
+        value: { drawsAllowed: true, bestOf: 7 },
       },
     });
+    expect(
+      parseCompetitionSetting({
+        field: "seriesConfig",
+        value: { drawsAllowed: true, bestOf: null },
+      }),
+    ).toMatchObject({ ok: false, error: "Best of is 1, 3, 5 or 7." });
+    expect(
+      parseCompetitionSetting({
+        field: "bestScoreConfig",
+        value: { teamScore: "sum-of-members" },
+      }),
+    ).toMatchObject({ ok: true });
+    expect(
+      parseCompetitionSetting({ field: "scoreUnit", value: "  sec " }),
+    ).toEqual({ ok: true, value: { field: "scoreUnit", value: "sec" } });
+    expect(parseCompetitionSetting({ field: "scoreUnit", value: "" })).toEqual({
+      ok: true,
+      value: { field: "scoreUnit", value: null },
+    });
+    expect(
+      parseCompetitionSetting({ field: "scoreUnit", value: "x".repeat(21) }),
+    ).toMatchObject({ ok: false });
   });
 
   it("refuses a Bracket config where as many advance as play", () => {
     expect(
       parseCompetitionSetting({
         field: "bracketConfig",
-        value: { entrantsPerHeat: 3, advancePerHeat: 3, thirdPlaceGame: false },
+        value: {
+          kind: "group" as const,
+          entrantsPerMatch: 3,
+          advancePerMatch: 3,
+          thirdPlaceMatch: false,
+          rounds: {},
+        },
       }),
     ).toMatchObject({
       ok: false,

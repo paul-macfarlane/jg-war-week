@@ -29,7 +29,7 @@ import {
 // seeds/xi.json; the smoke Organizer, the Participant and everyone else
 // never host anything.
 // AI Survey Completion stays `placement` (team scoring); Tuesday Stairs is
-// run as Games now.
+// run as Best score now.
 const HOST_COMPETITION = "AI Survey Completion";
 const OTHER_COMPETITION = "Cypher";
 const NOT_HOST_REFUSAL = "You're not a Host of that Competition.";

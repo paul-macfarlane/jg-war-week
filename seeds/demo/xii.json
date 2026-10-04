@@ -249,22 +249,24 @@
       "name": "Ping Pong",
       "scoring": "individual",
       "format": "head-to-head",
-      "gameConfig": {
+      "seriesConfig": {
         "drawsAllowed": false,
-        "bestOf": null
+        "bestOf": 3
       },
-      "entrantsOpen": true,
+      "entrants": ["Ada Anvil", "Bo Banner"],
       "placementPoints": [3, 2, 1],
-      "description": "Log a Game from your phone whenever a table frees up."
+      "description": "Log a Match from your phone whenever a table frees up."
     },
     {
       "name": "Chess Matches",
       "scoring": "individual",
       "format": "bracket",
       "bracketConfig": {
-        "entrantsPerHeat": 4,
-        "advancePerHeat": 2,
-        "thirdPlaceGame": false
+        "kind": "group",
+        "entrantsPerMatch": 4,
+        "advancePerMatch": 2,
+        "thirdPlaceMatch": false,
+        "rounds": {}
       },
       "placementPoints": [5, 3, 1],
       "description": "Four-player Matches; the top two advance to the Final."
@@ -368,7 +370,7 @@
       "kind": "awards"
     },
     {
-      "kind": "champions"
+      "kind": "winners"
     },
     {
       "kind": "standings"

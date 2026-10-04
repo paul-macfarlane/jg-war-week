@@ -46,7 +46,7 @@ export const BUILT_IN_FINALE_SLIDE_NAMES: Record<
   title: "Title",
   numbers: "By the numbers",
   awards: "Awards",
-  champions: "Winners",
+  winners: "Winners",
   standings: "Standings countdown",
   winner: "Winner",
 };
@@ -287,8 +287,8 @@ type SlideBase = { key: string; name: string };
 export type FinaleCounts = {
   /** Competitions with at least one Points Entry. */
   competitionsRun: number;
-  /** Games logged in Head-to-head or Best score Competitions. */
-  gamesLogged: number;
+  /** Matches and Attempts logged in Head-to-head or Best score Competitions. */
+  resultsLogged: number;
   /** Matches played (a bye is not played). */
   matchesPlayed: number;
   pointsEntries: number;
@@ -305,7 +305,7 @@ const count = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 /** Each figure's label, in the slide's order: plural, then singular. */
 const FIGURES: [keyof FinaleCounts, string, string][] = [
   ["competitionsRun", "Competitions run", "Competition run"],
-  ["gamesLogged", "Matches and Attempts logged", "Match or Attempt logged"],
+  ["resultsLogged", "Matches and Attempts logged", "Match or Attempt logged"],
   ["matchesPlayed", "Matches played", "Match played"],
   ["pointsEntries", "Points Entries", "Points Entry"],
   ["pointsHandedOut", "Points handed out", "Point handed out"],
@@ -426,7 +426,7 @@ export type FinaleSlideData =
       primaryColor: string;
     })
   | (SlideBase & {
-      kind: "champions";
+      kind: "winners";
       winners: FinaleWinner[];
       primaryColor: string;
     })
@@ -620,12 +620,12 @@ export function finaleSlideData(
       }
       case "awards":
         return awardSlides(base, context);
-      case "champions":
+      case "winners":
         return context.winners.length > 0
           ? [
               {
                 ...base,
-                kind: "champions",
+                kind: "winners",
                 winners: context.winners,
                 primaryColor: warWeek.primaryColor,
               },

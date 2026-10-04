@@ -162,7 +162,7 @@ test("enrollment: a Participant enrolls, withdraws and enrolls again; once the H
   );
   await runQuery(
     `update competition set format = 'bracket',
-       bracket_config = '{"entrantsPerHeat":2,"advancePerHeat":1,"thirdPlaceGame":false}'::jsonb,
+       bracket_config = '{"kind":"head-to-head","entrantsPerMatch":2,"advancePerMatch":1,"thirdPlaceMatch":false,"rounds": {}}'::jsonb,
        self_enroll = true
      where id = $1`,
     [id],

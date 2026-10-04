@@ -1,7 +1,7 @@
-import { AdminGames } from "@/components/admin-games";
+import { AdminLoggedResults } from "@/components/admin-logged-results";
 import { BracketAdmin } from "@/components/bracket-admin";
 import { BracketBuilder } from "@/components/bracket-builder";
-import { GamesBuilder } from "@/components/games-builder";
+import { LoggedResultsBuilder } from "@/components/logged-results-builder";
 import { ParticipationBuilder } from "@/components/participation-builder";
 import { PlacementSheet } from "@/components/placement-sheet";
 import type { Competition, WarWeek } from "@/db/schema";
@@ -10,15 +10,15 @@ import {
   type CompetitionLockFacts,
   settingLockReason,
 } from "@/lib/competition-locks";
-import { isGameFormat } from "@/lib/enums";
-import { resultNoun } from "@/lib/games/config";
+import { isLoggedFormat } from "@/lib/enums";
+import { resultNoun } from "@/lib/logged-results";
 import {
   getBracket,
   getBracketEntrants,
   getMatchReporters,
   getSquads,
 } from "@/queries/brackets";
-import { getGamesView } from "@/queries/games";
+import { getLoggedResultsView } from "@/queries/logged-results";
 import { getParticipationView } from "@/queries/participation";
 import {
   getPlacementCandidates,
@@ -30,15 +30,17 @@ import { getTargetOptions } from "@/queries/target-options";
 export function runAreaTitle(format: Competition["format"]): string {
   if (format === "placement") return "Record placements";
   if (format === "participation") return "Who took part";
-  if (isGameFormat(format)) return `Entrants and ${resultNoun(format).many}`;
+  if (format === "best-score") return resultNoun(format).many;
+  if (isLoggedFormat(format)) return `Entrants and ${resultNoun(format).many}`;
   return "Entrants and Bracket";
 }
 
 /**
  * The Format's run area on the Competition page (ticket 101), below the
  * Settings: Record placements (Placement); the Entrants and the Bracket
- * tree with Close (Bracket); the Entrant list and Close (Head-to-head,
- * Best score); who took part and Close (Participation). Each loads its own
+ * tree with Close (Bracket); the two Entrants and Close (Head-to-head);
+ * the Attempts and Close (Best score); who took part and Close
+ * (Participation). Each loads its own
  * data; a write that the lock table covers (Entrants, building the
  * Bracket) goes through the per-field save. Names only, never an email.
  */
@@ -51,7 +53,7 @@ export async function CompetitionRunArea({
   warWeek: WarWeek;
   competition: Competition;
   facts: CompetitionLockFacts;
-  /** The viewer, for the Games view's "Mine". */
+  /** The viewer, for the results' "Mine". */
   email: string;
 }) {
   const id = competition.id;
@@ -118,25 +120,24 @@ export async function CompetitionRunArea({
     );
   }
 
-  if (isGameFormat(competition.format)) {
+  if (isLoggedFormat(competition.format)) {
     const [view, options, entrants] = await Promise.all([
-      getGamesView(id, email),
+      getLoggedResultsView(id, email),
       getTargetOptions(warWeek),
       getBracketEntrants(id),
     ]);
     if (!view) return null;
     return (
       <div className="flex flex-col gap-10">
-        <GamesBuilder
+        <LoggedResultsBuilder
           competition={{
             id,
             scoring: view.competition.scoring,
-            gameFormat: view.competition.gameFormat,
-            entrantsOpen: view.competition.entrantsOpen,
+            format: view.competition.format,
             closed: view.competition.closed,
             placementPoints: view.competition.placementPoints,
-            bestOfDecided: view.bestOfDecided,
-            bestOfWinner: view.bestOfWinner,
+            decided: view.decided,
+            seriesWinner: view.seriesWinner,
           }}
           entrants={entrants.map(({ teamId, participantId }) => ({
             teamId,
@@ -146,16 +147,16 @@ export async function CompetitionRunArea({
           participants={options.participants}
           entrantsLock={entrantsLock}
         />
-        <AdminGames
+        <AdminLoggedResults
           competitionId={id}
-          gameFormat={view.competition.gameFormat}
+          format={view.competition.format}
           config={view.competition.config}
           scoring={view.competition.scoring}
           closed={view.competition.closed}
           viewerCanLog={view.viewerCanLog}
           leaderboard={view.leaderboard}
-          games={view.games}
-          entrantOptions={view.entrantOptions}
+          results={view.results}
+          playerOptions={view.playerOptions}
           primaryColor={warWeek.primaryColor}
           teamLabel={warWeek.teamLabel}
           now={new Date()}
