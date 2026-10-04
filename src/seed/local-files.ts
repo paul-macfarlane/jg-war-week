@@ -24,3 +24,20 @@ export function localSeedFiles(root = process.cwd()): string[] {
     DEMO_SEED,
   ];
 }
+
+/** The 100-Participant XII demo (ticket 106), live and free-for-all. */
+export const SCALE_SEED = "seeds/demo/xii-scale.json";
+
+/**
+ * What `pnpm seed:demo:scale` loads: the committed history with the real,
+ * complete XI, and the scale demo in place of `seeds/xii.json`, last.
+ * `scripts/seed-scale.ts` then adds what the seed format can't hold.
+ */
+export function scaleSeedFiles(root = process.cwd()): string[] {
+  return [
+    ...readdirSync(path.resolve(root, "seeds"))
+      .filter((f) => f.endsWith(".json") && f !== "xii.json")
+      .map((f) => `seeds/${f}`),
+    SCALE_SEED,
+  ];
+}

@@ -117,6 +117,7 @@ export function AwardForm({
     id: p.id,
     label: p.name,
     detail: p.team ?? undefined,
+    keywords: p.email,
   }));
 
   // Validation runs on the server; a refusal names its fields. Every field

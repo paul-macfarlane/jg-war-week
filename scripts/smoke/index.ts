@@ -98,6 +98,7 @@ import {
   xiFinaleSlideIds,
 } from "./pages";
 import { assertParticipationLoop } from "./participation";
+import { assertScaleSeed } from "./scale";
 import {
   assertSetup,
   assertSetupScheduleFaq,
@@ -249,6 +250,9 @@ async function main() {
       await assertWarWeekLifecycle(sessions);
       // Last: it hides the faq_item table for one request, then restores it.
       await assertEditionErrorBoundary();
+      // Final phase: reloads the seeds with the XII scale demo, then puts
+      // localSeedFiles() back.
+      await assertScaleSeed();
     }
   } finally {
     await restoreFaqTable().catch((error) =>

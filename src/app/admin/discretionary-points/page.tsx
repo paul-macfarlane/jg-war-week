@@ -4,7 +4,10 @@ import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { DiscretionaryPointsEditor } from "@/components/discretionary-points-editor";
 import { discretionaryAllowsTeams } from "@/lib/discretionary-points";
 import { getDiscretionaryLedger } from "@/queries/discretionary-points";
-import { getTargetOptions } from "@/queries/target-options";
+import {
+  getParticipantEmails,
+  getTargetOptions,
+} from "@/queries/target-options";
 
 import { loadAdminPage } from "../gate";
 
@@ -19,9 +22,10 @@ export default async function AdminDiscretionaryPointsPage() {
     await loadAdminPage("/admin/discretionary-points", "organizers");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
-  const [ledger, options] = await Promise.all([
+  const [ledger, options, emails] = await Promise.all([
     getDiscretionaryLedger(warWeek),
     getTargetOptions(warWeek),
+    getParticipantEmails(warWeek),
   ]);
   const targets = [
     ...(discretionaryAllowsTeams(warWeek.mode)
@@ -35,6 +39,7 @@ export default async function AdminDiscretionaryPointsPage() {
       id: p.id,
       name: p.name,
       detail: p.team ?? undefined,
+      email: emails.get(p.id),
     })),
   ];
 

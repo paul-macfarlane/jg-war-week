@@ -27,6 +27,8 @@ export type DiscretionaryTarget = {
   name: string;
   /** Shown muted beside the name: "Team" for a Team, else the Team's name. */
   detail?: string;
+  /** A Participant's roster email: searched, never shown. */
+  email?: string;
 };
 
 export type DiscretionaryInitial = {
@@ -97,6 +99,7 @@ export function DiscretionaryPointsForm({
               id: t.id,
               label: t.name,
               detail: t.detail,
+              keywords: t.email,
             }))}
             value={targetId}
             onValueChange={setTargetId}

@@ -1,0 +1,1431 @@
+{
+  "edition": "xii",
+  "editionNumber": 12,
+  "year": 2027,
+  "startDate": "2027-02-21",
+  "endDate": "2027-02-26",
+  "storyTheme": "No Teams. Just You. All Hundred of You.",
+  "status": "live",
+  "mode": "free-for-all",
+  "teamLabel": "Team",
+  "leaderTitle": "Captain",
+  "slackChannelUrl": "https://jahnelgroup.slack.com/archives/war-week-xii",
+  "primary": "#c2185b",
+  "primaryForeground": "#ffffff",
+  "accent": "#2f4fd8",
+  "background": "#ffffff",
+  "foreground": "#111111",
+  "fontPreset": "sans",
+  "organizers": [],
+  "highlights": [],
+  "days": [
+    {
+      "date": "2027-02-21",
+      "dayTheme": "Kickoff",
+      "scheduleItems": [
+        {
+          "startTime": "09:00",
+          "title": "Opening breakfast",
+          "category": "meal"
+        },
+        {
+          "startTime": "10:00",
+          "endTime": "17:00",
+          "title": "Step Challenge starts",
+          "category": "competition",
+          "competition": "Step Challenge"
+        },
+        {
+          "startTime": "13:00",
+          "endTime": "17:00",
+          "title": "Ping Pong Bracket, Round 1",
+          "category": "competition",
+          "competition": "Ping Pong Bracket",
+          "location": "Game room"
+        }
+      ]
+    },
+    {
+      "date": "2027-02-22",
+      "dayTheme": "Head Start",
+      "scheduleItems": [
+        {
+          "startTime": "08:00",
+          "endTime": "08:30",
+          "title": "Morning Stretch",
+          "category": "competition",
+          "competition": "Morning Stretch",
+          "location": "Main room"
+        },
+        {
+          "startTime": "12:00",
+          "endTime": "13:00",
+          "title": "Lunch: tacos",
+          "category": "meal"
+        },
+        {
+          "startTime": "13:00",
+          "endTime": "17:00",
+          "title": "Cornhole open play",
+          "category": "competition",
+          "competition": "Cornhole",
+          "location": "Out back"
+        }
+      ]
+    },
+    {
+      "date": "2027-02-23",
+      "dayTheme": "Midweek Rally",
+      "scheduleItems": [
+        {
+          "startTime": "08:00",
+          "endTime": "08:30",
+          "title": "Morning Stretch",
+          "category": "competition",
+          "competition": "Morning Stretch",
+          "location": "Main room"
+        },
+        {
+          "startTime": "15:00",
+          "endTime": "17:00",
+          "title": "Darts throw-off",
+          "category": "competition",
+          "competition": "Darts",
+          "location": "Game room"
+        }
+      ]
+    },
+    {
+      "date": "2027-02-24",
+      "dayTheme": "Final Push",
+      "scheduleItems": [
+        {
+          "startTime": "18:00",
+          "endTime": "20:00",
+          "title": "Trivia Night",
+          "category": "competition",
+          "competition": "Trivia Night",
+          "location": "Main room"
+        }
+      ]
+    },
+    {
+      "date": "2027-02-26",
+      "dayTheme": "Finale",
+      "scheduleItems": [
+        {
+          "startTime": "16:00",
+          "title": "Closing ceremonies",
+          "category": "social",
+          "location": "Main room"
+        }
+      ]
+    }
+  ],
+  "participants": [
+    {
+      "displayName": "Ada Anvil",
+      "email": "ada.anvil@example.com",
+      "companyTag": "Contractor"
+    },
+    {
+      "displayName": "Bo Banner",
+      "email": "bo.banner@example.com"
+    },
+    {
+      "displayName": "Cass Comet",
+      "email": "cass.comet@example.com"
+    },
+    {
+      "displayName": "Dot Dynamo",
+      "email": "dot.dynamo@example.com"
+    },
+    {
+      "displayName": "Eli Ember",
+      "email": "eli.ember@example.com"
+    },
+    {
+      "displayName": "Fay Falcon",
+      "email": "fay.falcon@example.com"
+    },
+    {
+      "displayName": "Gus Gadget",
+      "email": "gus.gadget@example.com"
+    },
+    {
+      "displayName": "Maximiliana Featherstonehaugh-Quicksilver",
+      "email": "maximiliana.featherstonehaugh.quicksilver@example.com"
+    },
+    {
+      "displayName": "Ivy Ion",
+      "email": "ivy.ion@example.com"
+    },
+    {
+      "displayName": "Jax Jetpack",
+      "email": "jax.jetpack@example.com",
+      "companyTag": "Contractor"
+    },
+    {
+      "displayName": "Kit Kestrel",
+      "email": "kit.kestrel@example.com"
+    },
+    {
+      "displayName": "Lou Lantern",
+      "email": "lou.lantern@example.com"
+    },
+    {
+      "displayName": "Mo Magnet",
+      "email": "mo.magnet@example.com"
+    },
+    {
+      "displayName": "Nell Nebula",
+      "email": "nell.nebula@example.com"
+    },
+    {
+      "displayName": "Otto Orbit",
+      "email": "otto.orbit@example.com"
+    },
+    {
+      "displayName": "Pia Pixel",
+      "email": "pia.pixel@example.com"
+    },
+    {
+      "displayName": "Quin Quasar",
+      "email": "quin.quasar@jahnelgroup.com"
+    },
+    {
+      "displayName": "Rex Rocket",
+      "email": "rex.rocket@example.com"
+    },
+    {
+      "displayName": "Sid Sprocket",
+      "email": "sid.sprocket@example.com",
+      "companyTag": "Contractor"
+    },
+    {
+      "displayName": "Tess Turbine",
+      "email": "tess.turbine@example.com"
+    },
+    {
+      "displayName": "Uma Umbra",
+      "email": "uma.umbra@example.com"
+    },
+    {
+      "displayName": "Vic Vortex",
+      "email": "vic.vortex@jahnelgroup.com"
+    },
+    {
+      "displayName": "Wren Widget",
+      "email": "wren.widget@example.com"
+    },
+    {
+      "displayName": "Xan Xenon",
+      "email": "xan.xenon@example.com"
+    },
+    {
+      "displayName": "Yara Yonder",
+      "email": "yara.yonder@example.com"
+    },
+    {
+      "displayName": "Zed Zeppelin",
+      "email": "zed.zeppelin@example.com"
+    },
+    {
+      "displayName": "Abe Acorn",
+      "email": "abe.acorn@example.com"
+    },
+    {
+      "displayName": "Bea Bellows",
+      "email": "bea.bellows@example.com",
+      "companyTag": "Contractor"
+    },
+    {
+      "displayName": "Cy Cobalt",
+      "email": "cy.cobalt@example.com"
+    },
+    {
+      "displayName": "Dee Domino",
+      "email": "dee.domino@example.com"
+    },
+    {
+      "displayName": "Eve Eclipse",
+      "email": "eve.eclipse@example.com"
+    },
+    {
+      "displayName": "Finn Fathom",
+      "email": "finn.fathom@example.com"
+    },
+    {
+      "displayName": "Gia Geyser",
+      "email": "gia.geyser@example.com"
+    },
+    {
+      "displayName": "Hux Halyard",
+      "email": "hux.halyard@example.com"
+    },
+    {
+      "displayName": "Ike Igloo",
+      "email": "ike.igloo@example.com"
+    },
+    {
+      "displayName": "Jo Jigsaw",
+      "email": "jo.jigsaw@example.com"
+    },
+    {
+      "displayName": "Kai Kazoo",
+      "email": "kai.kazoo@example.com",
+      "companyTag": "Contractor"
+    },
+    {
+      "displayName": "Lia Lagoon",
+      "email": "lia.lagoon@example.com"
+    },
+    {
+      "displayName": "Max Mosaic",
+      "email": "max.mosaic@example.com"
+    },
+    {
+      "displayName": "Noa Nimbus",
+      "email": "noa.nimbus@example.com"
+    },
+    {
+      "displayName": "Oz Oboe",
+      "email": "oz.oboe@example.com"
+    },
+    {
+      "displayName": "Peg Pinwheel",
+      "email": "peg.pinwheel@example.com"
+    },
+    {
+      "displayName": "Bartholomew Thistlewaite-Underhill the Third",
+      "email": "bartholomew.thistlewaite.underhill.the.third@example.com"
+    },
+    {
+      "displayName": "Sky Ripple",
+      "email": "sky.ripple@example.com"
+    },
+    {
+      "displayName": "Tal Saffron",
+      "email": "tal.saffron@example.com"
+    },
+    {
+      "displayName": "Ugo Tinsel",
+      "email": "ugo.tinsel@example.com",
+      "companyTag": "Contractor"
+    },
+    {
+      "displayName": "Val Ukulele",
+      "email": "val.ukulele@example.com"
+    },
+    {
+      "displayName": "Wes Velvet",
+      "email": "wes.velvet@example.com"
+    },
+    {
+      "displayName": "Xia Walrus",
+      "email": "xia.walrus@example.com"
+    },
+    {
+      "displayName": "Yul Yodel",
+      "email": "yul.yodel@example.com"
+    },
+    {
+      "displayName": "Zoe Zigzag",
+      "email": "zoe.zigzag@example.com"
+    },
+    {
+      "displayName": "Ari Abacus",
+      "email": "ari.abacus@example.com"
+    },
+    {
+      "displayName": "Bix Bramble",
+      "email": "bix.bramble@example.com"
+    },
+    {
+      "displayName": "Cleo Cactus",
+      "email": "cleo.cactus@example.com"
+    },
+    {
+      "displayName": "Dax Dirigible",
+      "email": "dax.dirigible@example.com",
+      "companyTag": "Contractor"
+    },
+    {
+      "displayName": "Esme Easel",
+      "email": "esme.easel@example.com"
+    },
+    {
+      "displayName": "Flo Fiddle",
+      "email": "flo.fiddle@example.com"
+    },
+    {
+      "displayName": "Gil Gondola",
+      "email": "gil.gondola@example.com"
+    },
+    {
+      "displayName": "Hana Hammock",
+      "email": "hana.hammock@example.com"
+    },
+    {
+      "displayName": "Ira Inkwell",
+      "email": "ira.inkwell@example.com"
+    },
+    {
+      "displayName": "Jem Juniper",
+      "email": "jem.juniper@example.com"
+    },
+    {
+      "displayName": "Kip Kettle",
+      "email": "kip.kettle@example.com"
+    },
+    {
+      "displayName": "Lark Lollipop",
+      "email": "lark.lollipop@example.com"
+    },
+    {
+      "displayName": "Mae Marmalade",
+      "email": "mae.marmalade@jahnelgroup.com",
+      "companyTag": "Contractor"
+    },
+    {
+      "displayName": "Ned Nutmeg",
+      "email": "ned.nutmeg@example.com"
+    },
+    {
+      "displayName": "Ora Origami",
+      "email": "ora.origami@example.com"
+    },
+    {
+      "displayName": "Pax Pretzel",
+      "email": "pax.pretzel@example.com"
+    },
+    {
+      "displayName": "Rio Quokka",
+      "email": "rio.quokka@example.com"
+    },
+    {
+      "displayName": "Sol Rhubarb",
+      "email": "sol.rhubarb@example.com"
+    },
+    {
+      "displayName": "Teo Snorkel",
+      "email": "teo.snorkel@example.com"
+    },
+    {
+      "displayName": "Una Teapot",
+      "email": "una.teapot@example.com"
+    },
+    {
+      "displayName": "Vin Upbeat",
+      "email": "vin.upbeat@example.com"
+    },
+    {
+      "displayName": "Wim Vanilla",
+      "email": "wim.vanilla@example.com",
+      "companyTag": "Contractor"
+    },
+    {
+      "displayName": "Yves Waffle",
+      "email": "yves.waffle@example.com"
+    },
+    {
+      "displayName": "Zuri Yak",
+      "email": "zuri.yak@example.com"
+    },
+    {
+      "displayName": "Arlo Zucchini",
+      "email": "arlo.zucchini@example.com"
+    },
+    {
+      "displayName": "Bram Accordion",
+      "email": "bram.accordion@example.com"
+    },
+    {
+      "displayName": "Cal Biscuit",
+      "email": "cal.biscuit@example.com"
+    },
+    {
+      "displayName": "Dov Crumpet",
+      "email": "dov.crumpet@example.com"
+    },
+    {
+      "displayName": "Edie Doodle",
+      "email": "edie.doodle@example.com"
+    },
+    {
+      "displayName": "Fen Eggnog",
+      "email": "fen.eggnog@example.com"
+    },
+    {
+      "displayName": "Gem Flapjack",
+      "email": "gem.flapjack@example.com",
+      "companyTag": "Contractor"
+    },
+    {
+      "displayName": "Hob Gumdrop",
+      "email": "hob.gumdrop@example.com"
+    },
+    {
+      "displayName": "Isla Hiccup",
+      "email": "isla.hiccup@example.com"
+    },
+    {
+      "displayName": "Jude Icicle",
+      "email": "jude.icicle@example.com"
+    },
+    {
+      "displayName": "Koa Jellybean",
+      "email": "koa.jellybean@example.com"
+    },
+    {
+      "displayName": "Lev Kumquat",
+      "email": "lev.kumquat@example.com"
+    },
+    {
+      "displayName": "Mira Limerick",
+      "email": "mira.limerick@example.com"
+    },
+    {
+      "displayName": "Nico Muffin",
+      "email": "nico.muffin@example.com"
+    },
+    {
+      "displayName": "Odo Noodle",
+      "email": "odo.noodle@example.com"
+    },
+    {
+      "displayName": "Pim Ocelot",
+      "email": "pim.ocelot@jahnelgroup.com",
+      "companyTag": "Contractor"
+    },
+    {
+      "displayName": "Roo Parsnip",
+      "email": "roo.parsnip@example.com"
+    },
+    {
+      "displayName": "Suki Quibble",
+      "email": "suki.quibble@example.com"
+    },
+    {
+      "displayName": "Tam Radish",
+      "email": "tam.radish@example.com"
+    },
+    {
+      "displayName": "Ulla Sundial",
+      "email": "ulla.sundial@example.com"
+    },
+    {
+      "displayName": "Vera Thimble",
+      "email": "vera.thimble@example.com"
+    },
+    {
+      "displayName": "Wynn Unicycle",
+      "email": "wynn.unicycle@example.com"
+    },
+    {
+      "displayName": "Yuki Vole",
+      "email": "yuki.vole@example.com"
+    },
+    {
+      "displayName": "Zev Wombat",
+      "email": "zev.wombat@example.com"
+    },
+    {
+      "displayName": "Ola Yo-yo",
+      "email": "ola.yo.yo@example.com",
+      "companyTag": "Contractor"
+    }
+  ],
+  "competitions": [
+    {
+      "name": "Step Challenge",
+      "scoring": "individual",
+      "description": "Log your steps all week. Every one of the hundred is on the sheet; the top ten take Placement Points.",
+      "scoreDirection": "higher",
+      "placementPoints": [10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
+      "finalized": true,
+      "finalizedAt": "2027-02-23T09:00:00-05:00",
+      "finalizedByEmail": "demo-organizer@jahnelgroup.com"
+    },
+    {
+      "name": "Trivia Night",
+      "scoring": "individual",
+      "description": "Pub trivia, solo. Nobody's on the sheet yet.",
+      "placementPoints": [5, 3, 1]
+    },
+    {
+      "name": "Ping Pong Bracket",
+      "scoring": "individual",
+      "format": "bracket",
+      "bracketConfig": {
+        "entrantsPerHeat": 2,
+        "advancePerHeat": 1,
+        "thirdPlaceGame": true
+      },
+      "placementPoints": [8, 5, 3, 1],
+      "description": "Sixty-four players, single elimination, with a 3rd place game."
+    },
+    {
+      "name": "Morning Stretch",
+      "scoring": "individual",
+      "format": "participation",
+      "participationPoints": 1,
+      "selfCheckIn": true,
+      "description": "Show up, stretch, get a point."
+    },
+    {
+      "name": "Cornhole",
+      "scoring": "individual",
+      "format": "head-to-head",
+      "gameConfig": {
+        "drawsAllowed": false,
+        "bestOf": null
+      },
+      "entrantsOpen": true,
+      "placementPoints": [5, 3, 1],
+      "description": "Log a Game whenever the boards are free."
+    },
+    {
+      "name": "Darts",
+      "scoring": "individual",
+      "format": "best-score",
+      "gameConfig": {
+        "count": "best",
+        "betterIs": "higher",
+        "unit": "points"
+      },
+      "entrantsOpen": true,
+      "placementPoints": [5, 3, 1],
+      "description": "Three darts a turn; your best turn counts."
+    }
+  ],
+  "discretionaryPoints": [
+    {
+      "key": "scale-discretionary-1",
+      "participant": "Dot Dynamo",
+      "points": 2,
+      "reason": "Ran the snack table all week",
+      "enteredByEmail": "demo-organizer@jahnelgroup.com",
+      "enteredAt": "2027-02-22T12:00:00-05:00"
+    },
+    {
+      "key": "scale-discretionary-2",
+      "participant": "Mo Magnet",
+      "points": 2,
+      "reason": "Fixed the projector before the Finale",
+      "enteredByEmail": "demo-organizer@jahnelgroup.com",
+      "enteredAt": "2027-02-23T12:00:00-05:00"
+    },
+    {
+      "key": "scale-discretionary-3",
+      "participant": "Bea Bellows",
+      "points": 2,
+      "reason": "Best costume on theme day",
+      "enteredByEmail": "demo-organizer@jahnelgroup.com",
+      "enteredAt": "2027-02-24T12:00:00-05:00"
+    },
+    {
+      "key": "scale-discretionary-4",
+      "participant": "Maximiliana Featherstonehaugh-Quicksilver",
+      "points": 2,
+      "reason": "Organized the carpool",
+      "enteredByEmail": "demo-organizer@jahnelgroup.com",
+      "enteredAt": "2027-02-22T12:00:00-05:00"
+    },
+    {
+      "key": "scale-discretionary-5",
+      "participant": "Esme Easel",
+      "points": 2,
+      "reason": "Helped judge Trivia Night",
+      "enteredByEmail": "demo-organizer@jahnelgroup.com",
+      "enteredAt": "2027-02-23T12:00:00-05:00"
+    },
+    {
+      "key": "scale-discretionary-6",
+      "participant": "Gem Flapjack",
+      "points": 2,
+      "reason": "Kept the Step Challenge leaderboard honest",
+      "enteredByEmail": "demo-organizer@jahnelgroup.com",
+      "enteredAt": "2027-02-24T12:00:00-05:00"
+    }
+  ],
+  "placements": [
+    {
+      "key": "step-challenge-ada-anvil",
+      "competition": "Step Challenge",
+      "participant": "Ada Anvil",
+      "place": 1,
+      "score": 182000
+    },
+    {
+      "key": "step-challenge-edie-doodle",
+      "competition": "Step Challenge",
+      "participant": "Edie Doodle",
+      "place": 2,
+      "score": 180500
+    },
+    {
+      "key": "step-challenge-hana-hammock",
+      "competition": "Step Challenge",
+      "participant": "Hana Hammock",
+      "place": 3,
+      "score": 179000
+    },
+    {
+      "key": "step-challenge-lia-lagoon",
+      "competition": "Step Challenge",
+      "participant": "Lia Lagoon",
+      "place": 4,
+      "score": 177500
+    },
+    {
+      "key": "step-challenge-quin-quasar",
+      "competition": "Step Challenge",
+      "participant": "Quin Quasar",
+      "place": 5,
+      "score": 176000
+    },
+    {
+      "key": "step-challenge-vera-thimble",
+      "competition": "Step Challenge",
+      "participant": "Vera Thimble",
+      "place": 6,
+      "score": 174500
+    },
+    {
+      "key": "step-challenge-zuri-yak",
+      "competition": "Step Challenge",
+      "participant": "Zuri Yak",
+      "place": 7,
+      "score": 173000
+    },
+    {
+      "key": "step-challenge-cleo-cactus",
+      "competition": "Step Challenge",
+      "participant": "Cleo Cactus",
+      "place": 8,
+      "score": 171500
+    },
+    {
+      "key": "step-challenge-gia-geyser",
+      "competition": "Step Challenge",
+      "participant": "Gia Geyser",
+      "place": 9,
+      "score": 170000
+    },
+    {
+      "key": "step-challenge-lou-lantern",
+      "competition": "Step Challenge",
+      "participant": "Lou Lantern",
+      "place": 10,
+      "score": 168500
+    },
+    {
+      "key": "step-challenge-pim-ocelot",
+      "competition": "Step Challenge",
+      "participant": "Pim Ocelot",
+      "place": 10,
+      "score": 168500
+    },
+    {
+      "key": "step-challenge-teo-snorkel",
+      "competition": "Step Challenge",
+      "participant": "Teo Snorkel",
+      "place": 12,
+      "score": 165500
+    },
+    {
+      "key": "step-challenge-xia-walrus",
+      "competition": "Step Challenge",
+      "participant": "Xia Walrus",
+      "place": 13,
+      "score": 164000
+    },
+    {
+      "key": "step-challenge-bea-bellows",
+      "competition": "Step Challenge",
+      "participant": "Bea Bellows",
+      "place": 14,
+      "score": 162500
+    },
+    {
+      "key": "step-challenge-gus-gadget",
+      "competition": "Step Challenge",
+      "participant": "Gus Gadget",
+      "place": 15,
+      "score": 161000
+    },
+    {
+      "key": "step-challenge-koa-jellybean",
+      "competition": "Step Challenge",
+      "participant": "Koa Jellybean",
+      "place": 16,
+      "score": 159500
+    },
+    {
+      "key": "step-challenge-ned-nutmeg",
+      "competition": "Step Challenge",
+      "participant": "Ned Nutmeg",
+      "place": 17,
+      "score": 158000
+    },
+    {
+      "key": "step-challenge-sky-ripple",
+      "competition": "Step Challenge",
+      "participant": "Sky Ripple",
+      "place": 18,
+      "score": 156500
+    },
+    {
+      "key": "step-challenge-wren-widget",
+      "competition": "Step Challenge",
+      "participant": "Wren Widget",
+      "place": 19,
+      "score": 155000
+    },
+    {
+      "key": "step-challenge-bo-banner",
+      "competition": "Step Challenge",
+      "participant": "Bo Banner",
+      "place": 20,
+      "score": 153500
+    },
+    {
+      "key": "step-challenge-fen-eggnog",
+      "competition": "Step Challenge",
+      "participant": "Fen Eggnog",
+      "place": 21,
+      "score": 152000
+    },
+    {
+      "key": "step-challenge-ira-inkwell",
+      "competition": "Step Challenge",
+      "participant": "Ira Inkwell",
+      "place": 22,
+      "score": 150500
+    },
+    {
+      "key": "step-challenge-max-mosaic",
+      "competition": "Step Challenge",
+      "participant": "Max Mosaic",
+      "place": 23,
+      "score": 149000
+    },
+    {
+      "key": "step-challenge-rex-rocket",
+      "competition": "Step Challenge",
+      "participant": "Rex Rocket",
+      "place": 24,
+      "score": 147500
+    },
+    {
+      "key": "step-challenge-wynn-unicycle",
+      "competition": "Step Challenge",
+      "participant": "Wynn Unicycle",
+      "place": 25,
+      "score": 146000
+    },
+    {
+      "key": "step-challenge-arlo-zucchini",
+      "competition": "Step Challenge",
+      "participant": "Arlo Zucchini",
+      "place": 26,
+      "score": 144500
+    },
+    {
+      "key": "step-challenge-dax-dirigible",
+      "competition": "Step Challenge",
+      "participant": "Dax Dirigible",
+      "place": 27,
+      "score": 143000
+    },
+    {
+      "key": "step-challenge-hux-halyard",
+      "competition": "Step Challenge",
+      "participant": "Hux Halyard",
+      "place": 28,
+      "score": 141500
+    },
+    {
+      "key": "step-challenge-mo-magnet",
+      "competition": "Step Challenge",
+      "participant": "Mo Magnet",
+      "place": 29,
+      "score": 140000
+    },
+    {
+      "key": "step-challenge-roo-parsnip",
+      "competition": "Step Challenge",
+      "participant": "Roo Parsnip",
+      "place": 30,
+      "score": 138500
+    },
+    {
+      "key": "step-challenge-una-teapot",
+      "competition": "Step Challenge",
+      "participant": "Una Teapot",
+      "place": 31,
+      "score": 137000
+    },
+    {
+      "key": "step-challenge-yul-yodel",
+      "competition": "Step Challenge",
+      "participant": "Yul Yodel",
+      "place": 32,
+      "score": 135500
+    },
+    {
+      "key": "step-challenge-cy-cobalt",
+      "competition": "Step Challenge",
+      "participant": "Cy Cobalt",
+      "place": 33,
+      "score": 134000
+    },
+    {
+      "key": "step-challenge-maximiliana-featherstonehaugh-quicksilver",
+      "competition": "Step Challenge",
+      "participant": "Maximiliana Featherstonehaugh-Quicksilver",
+      "place": 34,
+      "score": 132500
+    },
+    {
+      "key": "step-challenge-lev-kumquat",
+      "competition": "Step Challenge",
+      "participant": "Lev Kumquat",
+      "place": 35,
+      "score": 131000
+    },
+    {
+      "key": "step-challenge-ora-origami",
+      "competition": "Step Challenge",
+      "participant": "Ora Origami",
+      "place": 36,
+      "score": 129500
+    },
+    {
+      "key": "step-challenge-tal-saffron",
+      "competition": "Step Challenge",
+      "participant": "Tal Saffron",
+      "place": 37,
+      "score": 128000
+    },
+    {
+      "key": "step-challenge-xan-xenon",
+      "competition": "Step Challenge",
+      "participant": "Xan Xenon",
+      "place": 38,
+      "score": 126500
+    },
+    {
+      "key": "step-challenge-cass-comet",
+      "competition": "Step Challenge",
+      "participant": "Cass Comet",
+      "place": 39,
+      "score": 125000
+    },
+    {
+      "key": "step-challenge-gem-flapjack",
+      "competition": "Step Challenge",
+      "participant": "Gem Flapjack",
+      "place": 40,
+      "score": 123500
+    },
+    {
+      "key": "step-challenge-jem-juniper",
+      "competition": "Step Challenge",
+      "participant": "Jem Juniper",
+      "place": 41,
+      "score": 122000
+    },
+    {
+      "key": "step-challenge-noa-nimbus",
+      "competition": "Step Challenge",
+      "participant": "Noa Nimbus",
+      "place": 42,
+      "score": 120500
+    },
+    {
+      "key": "step-challenge-sid-sprocket",
+      "competition": "Step Challenge",
+      "participant": "Sid Sprocket",
+      "place": 43,
+      "score": 119000
+    },
+    {
+      "key": "step-challenge-yuki-vole",
+      "competition": "Step Challenge",
+      "participant": "Yuki Vole",
+      "place": 44,
+      "score": 117500
+    },
+    {
+      "key": "step-challenge-bram-accordion",
+      "competition": "Step Challenge",
+      "participant": "Bram Accordion",
+      "place": 45,
+      "score": 116000
+    },
+    {
+      "key": "step-challenge-esme-easel",
+      "competition": "Step Challenge",
+      "participant": "Esme Easel",
+      "place": 46,
+      "score": 114500
+    },
+    {
+      "key": "step-challenge-ike-igloo",
+      "competition": "Step Challenge",
+      "participant": "Ike Igloo",
+      "place": 47,
+      "score": 113000
+    },
+    {
+      "key": "step-challenge-nell-nebula",
+      "competition": "Step Challenge",
+      "participant": "Nell Nebula",
+      "place": 48,
+      "score": 111500
+    },
+    {
+      "key": "step-challenge-suki-quibble",
+      "competition": "Step Challenge",
+      "participant": "Suki Quibble",
+      "place": 49,
+      "score": 110000
+    },
+    {
+      "key": "step-challenge-vin-upbeat",
+      "competition": "Step Challenge",
+      "participant": "Vin Upbeat",
+      "place": 50,
+      "score": 108500
+    },
+    {
+      "key": "step-challenge-zoe-zigzag",
+      "competition": "Step Challenge",
+      "participant": "Zoe Zigzag",
+      "place": 51,
+      "score": 107000
+    },
+    {
+      "key": "step-challenge-dee-domino",
+      "competition": "Step Challenge",
+      "participant": "Dee Domino",
+      "place": 52,
+      "score": 105500
+    },
+    {
+      "key": "step-challenge-ivy-ion",
+      "competition": "Step Challenge",
+      "participant": "Ivy Ion",
+      "place": 53,
+      "score": 104000
+    },
+    {
+      "key": "step-challenge-mira-limerick",
+      "competition": "Step Challenge",
+      "participant": "Mira Limerick",
+      "place": 54,
+      "score": 102500
+    },
+    {
+      "key": "step-challenge-pax-pretzel",
+      "competition": "Step Challenge",
+      "participant": "Pax Pretzel",
+      "place": 55,
+      "score": 101000
+    },
+    {
+      "key": "step-challenge-ugo-tinsel",
+      "competition": "Step Challenge",
+      "participant": "Ugo Tinsel",
+      "place": 56,
+      "score": 99500
+    },
+    {
+      "key": "step-challenge-yara-yonder",
+      "competition": "Step Challenge",
+      "participant": "Yara Yonder",
+      "place": 57,
+      "score": 98000
+    },
+    {
+      "key": "step-challenge-dot-dynamo",
+      "competition": "Step Challenge",
+      "participant": "Dot Dynamo",
+      "place": 58,
+      "score": 96500
+    },
+    {
+      "key": "step-challenge-hob-gumdrop",
+      "competition": "Step Challenge",
+      "participant": "Hob Gumdrop",
+      "place": 59,
+      "score": 95000
+    },
+    {
+      "key": "step-challenge-kip-kettle",
+      "competition": "Step Challenge",
+      "participant": "Kip Kettle",
+      "place": 60,
+      "score": 93500
+    },
+    {
+      "key": "step-challenge-oz-oboe",
+      "competition": "Step Challenge",
+      "participant": "Oz Oboe",
+      "place": 61,
+      "score": 92000
+    },
+    {
+      "key": "step-challenge-tess-turbine",
+      "competition": "Step Challenge",
+      "participant": "Tess Turbine",
+      "place": 62,
+      "score": 90500
+    },
+    {
+      "key": "step-challenge-zev-wombat",
+      "competition": "Step Challenge",
+      "participant": "Zev Wombat",
+      "place": 63,
+      "score": 89000
+    },
+    {
+      "key": "step-challenge-cal-biscuit",
+      "competition": "Step Challenge",
+      "participant": "Cal Biscuit",
+      "place": 64,
+      "score": 87500
+    },
+    {
+      "key": "step-challenge-flo-fiddle",
+      "competition": "Step Challenge",
+      "participant": "Flo Fiddle",
+      "place": 65,
+      "score": 86000
+    },
+    {
+      "key": "step-challenge-jo-jigsaw",
+      "competition": "Step Challenge",
+      "participant": "Jo Jigsaw",
+      "place": 66,
+      "score": 84500
+    },
+    {
+      "key": "step-challenge-otto-orbit",
+      "competition": "Step Challenge",
+      "participant": "Otto Orbit",
+      "place": 67,
+      "score": 83000
+    },
+    {
+      "key": "step-challenge-tam-radish",
+      "competition": "Step Challenge",
+      "participant": "Tam Radish",
+      "place": 68,
+      "score": 81500
+    },
+    {
+      "key": "step-challenge-wim-vanilla",
+      "competition": "Step Challenge",
+      "participant": "Wim Vanilla",
+      "place": 69,
+      "score": 80000
+    },
+    {
+      "key": "step-challenge-ari-abacus",
+      "competition": "Step Challenge",
+      "participant": "Ari Abacus",
+      "place": 70,
+      "score": 78500
+    },
+    {
+      "key": "step-challenge-eve-eclipse",
+      "competition": "Step Challenge",
+      "participant": "Eve Eclipse",
+      "place": 71,
+      "score": 77000
+    },
+    {
+      "key": "step-challenge-jax-jetpack",
+      "competition": "Step Challenge",
+      "participant": "Jax Jetpack",
+      "place": 72,
+      "score": 75500
+    },
+    {
+      "key": "step-challenge-nico-muffin",
+      "competition": "Step Challenge",
+      "participant": "Nico Muffin",
+      "place": 73,
+      "score": 74000
+    },
+    {
+      "key": "step-challenge-rio-quokka",
+      "competition": "Step Challenge",
+      "participant": "Rio Quokka",
+      "place": 74,
+      "score": 72500
+    },
+    {
+      "key": "step-challenge-val-ukulele",
+      "competition": "Step Challenge",
+      "participant": "Val Ukulele",
+      "place": 75,
+      "score": 71000
+    },
+    {
+      "key": "step-challenge-zed-zeppelin",
+      "competition": "Step Challenge",
+      "participant": "Zed Zeppelin",
+      "place": 76,
+      "score": 69500
+    },
+    {
+      "key": "step-challenge-eli-ember",
+      "competition": "Step Challenge",
+      "participant": "Eli Ember",
+      "place": 77,
+      "score": 68000
+    },
+    {
+      "key": "step-challenge-isla-hiccup",
+      "competition": "Step Challenge",
+      "participant": "Isla Hiccup",
+      "place": 78,
+      "score": 66500
+    },
+    {
+      "key": "step-challenge-lark-lollipop",
+      "competition": "Step Challenge",
+      "participant": "Lark Lollipop",
+      "place": 79,
+      "score": 65000
+    },
+    {
+      "key": "step-challenge-peg-pinwheel",
+      "competition": "Step Challenge",
+      "participant": "Peg Pinwheel",
+      "place": 80,
+      "score": 63500
+    },
+    {
+      "key": "step-challenge-uma-umbra",
+      "competition": "Step Challenge",
+      "participant": "Uma Umbra",
+      "place": 81,
+      "score": 62000
+    },
+    {
+      "key": "step-challenge-ola-yo-yo",
+      "competition": "Step Challenge",
+      "participant": "Ola Yo-yo",
+      "place": 82,
+      "score": 60500
+    },
+    {
+      "key": "step-challenge-dov-crumpet",
+      "competition": "Step Challenge",
+      "participant": "Dov Crumpet",
+      "place": 83,
+      "score": 59000
+    },
+    {
+      "key": "step-challenge-gil-gondola",
+      "competition": "Step Challenge",
+      "participant": "Gil Gondola",
+      "place": 84,
+      "score": 57500
+    },
+    {
+      "key": "step-challenge-kai-kazoo",
+      "competition": "Step Challenge",
+      "participant": "Kai Kazoo",
+      "place": 85,
+      "score": 56000
+    },
+    {
+      "key": "step-challenge-pia-pixel",
+      "competition": "Step Challenge",
+      "participant": "Pia Pixel",
+      "place": 86,
+      "score": 54500
+    },
+    {
+      "key": "step-challenge-ulla-sundial",
+      "competition": "Step Challenge",
+      "participant": "Ulla Sundial",
+      "place": 87,
+      "score": 53000
+    },
+    {
+      "key": "step-challenge-yves-waffle",
+      "competition": "Step Challenge",
+      "participant": "Yves Waffle",
+      "place": 88,
+      "score": 51500
+    },
+    {
+      "key": "step-challenge-bix-bramble",
+      "competition": "Step Challenge",
+      "participant": "Bix Bramble",
+      "place": 89,
+      "score": 50000
+    },
+    {
+      "key": "step-challenge-finn-fathom",
+      "competition": "Step Challenge",
+      "participant": "Finn Fathom",
+      "place": 90,
+      "score": 48500
+    },
+    {
+      "key": "step-challenge-kit-kestrel",
+      "competition": "Step Challenge",
+      "participant": "Kit Kestrel",
+      "place": 91,
+      "score": 47000
+    },
+    {
+      "key": "step-challenge-odo-noodle",
+      "competition": "Step Challenge",
+      "participant": "Odo Noodle",
+      "place": 92,
+      "score": 45500
+    },
+    {
+      "key": "step-challenge-sol-rhubarb",
+      "competition": "Step Challenge",
+      "participant": "Sol Rhubarb",
+      "place": 93,
+      "score": 44000
+    },
+    {
+      "key": "step-challenge-wes-velvet",
+      "competition": "Step Challenge",
+      "participant": "Wes Velvet",
+      "place": 94,
+      "score": 42500
+    },
+    {
+      "key": "step-challenge-abe-acorn",
+      "competition": "Step Challenge",
+      "participant": "Abe Acorn",
+      "place": 95,
+      "score": 41000
+    },
+    {
+      "key": "step-challenge-fay-falcon",
+      "competition": "Step Challenge",
+      "participant": "Fay Falcon",
+      "place": 96,
+      "score": 39500
+    },
+    {
+      "key": "step-challenge-jude-icicle",
+      "competition": "Step Challenge",
+      "participant": "Jude Icicle",
+      "place": 97,
+      "score": 38000
+    },
+    {
+      "key": "step-challenge-mae-marmalade",
+      "competition": "Step Challenge",
+      "participant": "Mae Marmalade",
+      "place": 98,
+      "score": 36500
+    },
+    {
+      "key": "step-challenge-bartholomew-thistlewaite-underhill-the-third",
+      "competition": "Step Challenge",
+      "participant": "Bartholomew Thistlewaite-Underhill the Third",
+      "place": 99,
+      "score": 35000
+    },
+    {
+      "key": "step-challenge-vic-vortex",
+      "competition": "Step Challenge",
+      "participant": "Vic Vortex",
+      "place": 100,
+      "score": 33500
+    }
+  ],
+  "awards": [
+    {
+      "key": "scale-mvp",
+      "name": "War Week MVP",
+      "participants": ["Dot Dynamo"]
+    },
+    {
+      "key": "scale-spirit",
+      "name": "Spirit Award",
+      "participants": [
+        "Mo Magnet",
+        "Bartholomew Thistlewaite-Underhill the Third"
+      ]
+    }
+  ],
+  "announcements": [
+    {
+      "key": "scale-welcome",
+      "title": "Welcome, all hundred of you",
+      "pinned": true,
+      "authorEmail": "demo-organizer@jahnelgroup.com",
+      "publishedAt": "2027-02-21T08:00:00-05:00",
+      "body": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "A hundred Participants, no Teams. Check the Standings and log your Games from your phone."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "faqItems": [
+    {
+      "question": "How do I get points?",
+      "answer": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Compete in anything on the schedule; every point is yours."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "finaleSlides": [
+    {
+      "kind": "title"
+    },
+    {
+      "kind": "numbers"
+    },
+    {
+      "kind": "awards"
+    },
+    {
+      "kind": "champions"
+    },
+    {
+      "kind": "standings"
+    },
+    {
+      "kind": "winner"
+    }
+  ]
+}

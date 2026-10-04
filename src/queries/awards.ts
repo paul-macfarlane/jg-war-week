@@ -98,8 +98,16 @@ export async function getAwards(
 
 export type AwardFormOptions = {
   teams: { id: string; name: string }[];
-  /** `team` is the Participant's Team name, when they have one. */
-  participants: { id: string; name: string; team: string | null }[];
+  /**
+   * `team` is the Participant's Team name, when they have one; `email`, for
+   * the picker's search only, is added by the Organizer-only Awards page.
+   */
+  participants: {
+    id: string;
+    name: string;
+    team: string | null;
+    email?: string;
+  }[];
   /** Active Award Categories, by name. */
   categories: { id: string; name: string }[];
 };

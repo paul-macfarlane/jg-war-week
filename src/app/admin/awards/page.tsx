@@ -5,6 +5,7 @@ import { AwardCategoriesEditor } from "@/components/award-categories-editor";
 import { AwardsEditor } from "@/components/awards-editor";
 import { getAwardCategories } from "@/queries/award-categories";
 import { getAwardFormOptions, getAwards } from "@/queries/awards";
+import { getParticipantEmails } from "@/queries/target-options";
 
 import { loadAdminPage } from "../gate";
 
@@ -17,11 +18,19 @@ export default async function AdminAwardsPage() {
     await loadAdminPage("/admin/awards", "organizers");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
-  const [awards, options, categories] = await Promise.all([
+  const [awards, formOptions, categories, emails] = await Promise.all([
     getAwards(warWeek),
     getAwardFormOptions(warWeek),
     getAwardCategories(),
+    getParticipantEmails(warWeek),
   ]);
+  const options = {
+    ...formOptions,
+    participants: formOptions.participants.map((p) => ({
+      ...p,
+      email: emails.get(p.id),
+    })),
+  };
   // A free-for-all War Week with no Team on any Award has nothing to show.
   const showTeam =
     warWeek.mode !== "free-for-all" || awards.some((a) => a.team !== null);

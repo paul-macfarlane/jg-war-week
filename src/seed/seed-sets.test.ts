@@ -4,10 +4,11 @@ import path from "node:path";
 import { Client } from "pg";
 import { describe, expect, it } from "vitest";
 
+import type { DBOrTx } from "@/db";
 import { isLocalDatabaseUrl } from "@/db/local-url";
 import { withThrowawayDatabase } from "@/db/test-database";
 import { inRolledBackTransaction } from "@/db/test-transaction";
-import { localSeedFiles } from "@/seed/local-files";
+import { localSeedFiles, scaleSeedFiles } from "@/seed/local-files";
 import type { WarWeekSeed } from "@/seed/schema";
 
 // Runs only against a local Postgres (CI's service or docker compose; see
@@ -79,8 +80,8 @@ async function rowCounts(client: Client): Promise<Record<string, number>> {
 
 /**
  * Loads `files` twice, in order and without a reset, into its own migrated
- * throwaway database; `check` sees the client after the second load, with
- * the counts after each.
+ * throwaway database, running `after` (if any) after each load; `check`
+ * sees the client after the second load, with the counts after each.
  */
 async function loadTwice(
   files: string[],
@@ -88,6 +89,7 @@ async function loadTwice(
     client: Client,
     counts: { first: Record<string, number>; second: Record<string, number> },
   ) => Promise<void>,
+  after?: (database: DBOrTx) => Promise<void>,
 ) {
   const { loadWarWeekSeed } = await import("@/seed/load");
   const seeds = await Promise.all(files.map(parseSeed));
@@ -98,8 +100,10 @@ async function loadTwice(
       const schema = await import("@/db/schema");
       const database = drizzle(client, { schema });
       for (const seed of seeds) await loadWarWeekSeed(seed, database);
+      await after?.(database);
       const first = await rowCounts(client);
       for (const seed of seeds) await loadWarWeekSeed(seed, database);
+      await after?.(database);
       const second = await rowCounts(client);
       await check(client, { first, second });
     } finally {
@@ -113,15 +117,15 @@ const SEED_JSON_FILES = readdirSync(path.join(ROOT, "seeds"))
   .sort()
   .map((f) => `seeds/${f}`);
 
-/** The files `pnpm seed:demo:xii` loads, read from package.json. */
-function demoXiiFiles(): string[] {
+/** The files a package.json seed script loads. */
+function scriptFiles(script: string): string[] {
   const scripts = JSON.parse(
     readFileSync(path.join(ROOT, "package.json"), "utf-8"),
   ).scripts as Record<string, string>;
-  return scripts["seed:demo:xii"]
-    .split(/\s+/)
-    .filter((a) => a.endsWith(".json"));
+  return scripts[script].split(/\s+/).filter((a) => a.endsWith(".json"));
 }
+
+const demoXiiFiles = () => scriptFiles("seed:demo:xii");
 
 describe.skipIf(!isLocalDatabase)("every seed loads twice", () => {
   it("loads what smoke loads (localSeedFiles) twice with no row count changing", async () => {
@@ -180,4 +184,48 @@ describe.skipIf(!isLocalDatabase)("every seed loads twice", () => {
       });
     });
   }, 120_000);
+
+  it("loads the seed:demo:scale set and its fixture twice with no row count changing: 100 Participants in XII and a 64-Entrant Bracket with Round 1 partly recorded", async () => {
+    expect([...scaleSeedFiles(ROOT)].sort()).toEqual(
+      [...scriptFiles("seed:demo:scale")].sort(),
+    );
+    const { applyScaleFixture } = await import("@/seed/scale");
+    await loadTwice(
+      scaleSeedFiles(ROOT),
+      async (client, { first, second }) => {
+        expect(second).toEqual(first);
+        const [facts] = (
+          await client.query<{
+            participants: number;
+            entrants: number;
+            heats: number;
+            played: number;
+            ticks: number;
+          }>(
+            `select
+               (select count(*)::int from participant p join war_week w
+                 on w.id = p.war_week_id where w.edition = 'xii') as participants,
+               (select count(*)::int from entrant e join competition c
+                 on c.id = e.competition_id where c.name = 'Ping Pong Bracket') as entrants,
+               (select count(*)::int from heat h join competition c
+                 on c.id = h.competition_id where c.name = 'Ping Pong Bracket') as heats,
+               (select count(*)::int from heat h join competition c
+                 on c.id = h.competition_id where c.name = 'Ping Pong Bracket'
+                 and h.recorded_at is not null) as played,
+               (select count(*)::int from participation x join competition c
+                 on c.id = x.competition_id where c.name = 'Morning Stretch') as ticks`,
+          )
+        ).rows;
+        // 32 + 16 + 8 + 4 + 2 Heats, the final and the 3rd place game.
+        expect(facts).toEqual({
+          participants: 100,
+          entrants: 64,
+          heats: 64,
+          played: 20,
+          ticks: 72,
+        });
+      },
+      (database) => applyScaleFixture(database),
+    );
+  }, 180_000);
 });

@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNotNull } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import { DBOrTx, db } from "@/db";
@@ -77,4 +77,21 @@ export async function getTargetOptions(
     teams: teams.map((t) => ({ ...t, team: null })),
     participants,
   };
+}
+
+/**
+ * Each Participant's roster email by id, for the search of an
+ * Organizer-only picker. Never for a page a Participant or Host sees.
+ */
+export async function getParticipantEmails(
+  warWeek: Pick<WarWeek, "id">,
+  dbOrTx: DBOrTx = db,
+): Promise<Map<string, string>> {
+  const rows = await dbOrTx
+    .select({ id: participant.id, email: participant.email })
+    .from(participant)
+    .where(
+      and(eq(participant.warWeekId, warWeek.id), isNotNull(participant.email)),
+    );
+  return new Map(rows.map((r) => [r.id, r.email as string]));
 }
