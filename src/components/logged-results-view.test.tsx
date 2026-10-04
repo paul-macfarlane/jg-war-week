@@ -92,6 +92,10 @@ const base: LoggedResultsProps = {
   linked: null,
   runs: false,
   viewerCanLog: false,
+  scoringConfig: { direction: "higher", unit: null },
+  logOffer: null,
+  maxAttempts: null,
+  attemptCounts: {},
   decided: false,
   seriesWinner: null,
   playerOptions: [ashley, sam, kim],
@@ -466,21 +470,60 @@ describe("LoggedResults Best score (one row per person)", () => {
 });
 
 describe("LoggedResults Log a Match or Attempt and banners", () => {
+  const open = {
+    label: "Log a Match",
+    disabledReason: null,
+    attemptsLeft: null,
+  };
+
   it("offers Log a Match only when the viewer may log", () => {
-    expect(render({ viewerCanLog: true })).toMatch(
+    expect(render({ viewerCanLog: true, logOffer: open })).toMatch(
       /<button[^>]*>Log a Match<\/button>/,
     );
     expect(text(render({ viewerCanLog: false }))).not.toContain("Log a Match");
   });
 
-  it("offers Log an Attempt on a Best score Competition", () => {
+  it("disables Log a Match once the series is decided, with the reason as visible text (AC 6)", () => {
+    const html = render({
+      logOffer: {
+        ...open,
+        disabledReason: "This series is decided, so logging is closed.",
+      },
+    });
+    expect(html).toMatch(/<button[^>]*disabled[^>]*>Log a Match<\/button>/);
+    expect(text(html)).toContain(
+      "This series is decided, so logging is closed.",
+    );
+  });
+
+  it("offers Log an Attempt on a Best score Competition, with the Attempts left (AC 7)", () => {
+    const html = render({
+      format: "best-score",
+      config: { betterIs: "higher", unit: "trips", teamScore: "best-member" },
+      viewerCanLog: true,
+      logOffer: {
+        label: "Log an Attempt",
+        disabledReason: null,
+        attemptsLeft: 2,
+      },
+    });
+    expect(html).toMatch(/<button[^>]*>Log an Attempt<\/button>/);
+    expect(text(html)).toContain("2 attempts left");
+  });
+
+  it("reads Update your score at Max attempts 1 with the Attempt in (AC 9)", () => {
     expect(
       render({
         format: "best-score",
         config: { betterIs: "higher", unit: "trips", teamScore: "best-member" },
         viewerCanLog: true,
+        logOffer: {
+          label: "Update your score",
+          disabledReason: null,
+          attemptsLeft: 0,
+        },
       }),
-    ).toMatch(/<button[^>]*>Log an Attempt<\/button>/);
+    ).toMatch(/<button[^>]*>Update your score<\/button>/);
   });
 
   it("says a closed Competition's points are in the Standings", () => {

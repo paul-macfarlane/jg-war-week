@@ -7,8 +7,8 @@ import {
   generate,
   hasResults,
   isComplete,
-  resetByResult,
 } from "@/lib/bracket/engine";
+import { LATER_MATCH_USED } from "@/lib/bracket/match-report-rule";
 import type { Bracket, Entrant, Match } from "@/lib/bracket/types";
 
 /** Entrants s1…sN at Seed Positions 1…N. */
@@ -242,11 +242,10 @@ describe("applyResult", () => {
     ).toThrow("That Match isn't in this Bracket.");
   });
 
-  it("re-recording a played Match replaces the advanced Entrant downstream", () => {
+  it("re-recording a played Match replaces the advanced Entrant in the unplayed Match it went to", () => {
     let bracket = generate(entrants(4));
     bracket = win(bracket, "r1h1", "s1");
     bracket = win(bracket, "r1h2", "s2");
-    bracket = win(bracket, "r2h1", "s1");
 
     bracket = win(bracket, "r1h1", "s4");
 
@@ -280,7 +279,6 @@ describe("a score-only edit of a decided Match", () => {
   it("updates the Match's scores and keeps every later Match", () => {
     const bracket = played8();
 
-    expect(resetByResult(bracket, "r1h2", "s4")).toEqual([]);
     const edited = applyResult(bracket, "r1h2", {
       order: ["s4", "s5"],
       scores: { s4: "30", s5: "12" },
@@ -299,57 +297,28 @@ describe("a score-only edit of a decided Match", () => {
   });
 });
 
-describe("resetByResult", () => {
-  it("names every decided later Match that followed from it when the winner changes", () => {
+describe("a changed winner once a later Match used the result (D1c)", () => {
+  it("is refused: the later Match keeps its result and nothing resets", () => {
     const bracket = played8();
 
-    expect(resetByResult(bracket, "r1h2", "s5")).toEqual(["r2h1", "r3h1"]);
-    const edited = win(bracket, "r1h2", "s5");
-    expect(match(edited, "r2h1")).toMatchObject({
-      status: "ready",
-      slots: [
-        { entrantId: "s1", place: null, score: null },
-        { entrantId: "s5", place: null },
-      ],
-    });
-    expect(match(edited, "r3h1")).toMatchObject({
-      status: "pending",
-      slots: [{ entrantId: null }, { entrantId: "s2", place: null }],
-    });
-    // The other side stays as it was.
-    expect(match(edited, "r2h2").status).toBe("played");
-    expect(isComplete(edited)).toBe(false);
+    expect(() => win(bracket, "r1h2", "s5")).toThrow(LATER_MATCH_USED);
+    expect(() => win(bracket, "r2h1", "s4")).toThrow(LATER_MATCH_USED);
+    // The latest result along the path, the final, still changes.
+    expect(bracketWinner(win(bracket, "r3h1", "s2"))).toBe("s2");
   });
 
-  it("counts only later Matches that had a Match Result", () => {
+  it("takes the old winner out of an unplayed later Match, and refuses once that Match is played", () => {
     let bracket = generate(entrants(8));
-    for (const [id, winner] of [
-      ["r1h1", "s1"],
-      ["r1h2", "s4"],
-      ["r2h1", "s1"],
-    ]) {
-      bracket = win(bracket, id, winner);
-    }
-    // s1 sits in the still-pending final, which has no Match Result.
-    expect(pairing(match(bracket, "r3h1"))).toBe("s1 v -");
+    bracket = win(bracket, "r1h1", "s1");
+    expect(pairing(match(bracket, "r2h1"))).toBe("s1 v -");
 
-    expect(resetByResult(bracket, "r1h1", "s8")).toEqual(["r2h1"]);
     const edited = win(bracket, "r1h1", "s8");
-    expect(pairing(match(edited, "r2h1"))).toBe("s8 v s4");
-    // Cleared of the old winner, but not counted as reset.
-    expect(pairing(match(edited, "r3h1"))).toBe("- v -");
-  });
+    expect(pairing(match(edited, "r2h1"))).toBe("s8 v -");
+    expect(match(edited, "r2h1").status).toBe("pending");
 
-  it("names nothing when the winner has reached no decided Match", () => {
-    const bracket = win(generate(entrants(4)), "r1h1", "s1");
-    expect(resetByResult(bracket, "r1h1", "s4")).toEqual([]);
-  });
-
-  it("names nothing for an undecided Match, a bye or no winner", () => {
-    const bracket = win(generate(entrants(3)), "r1h2", "s2");
-    expect(resetByResult(bracket, "r2h1", "s1")).toEqual([]);
-    expect(resetByResult(bracket, "r1h1", "s1")).toEqual([]);
-    expect(resetByResult(bracket, "r1h2", null)).toEqual([]);
+    bracket = win(bracket, "r1h2", "s4");
+    bracket = win(bracket, "r2h1", "s1");
+    expect(() => win(bracket, "r1h1", "s8")).toThrow(LATER_MATCH_USED);
   });
 });
 

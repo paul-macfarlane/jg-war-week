@@ -499,7 +499,7 @@ async function setSelfReport(competitionId: string, on: boolean) {
   ]);
 }
 
-test("a self-reporting Participant records their own Match from the public tree; nobody else sees Record result on it", async ({
+test("a self-reporting Participant records their own Match from the public tree, and may still edit it; nobody else sees Record result on it", async ({
   browser,
   context,
   page,
@@ -578,8 +578,12 @@ test("a self-reporting Participant records their own Match from the public tree;
     const own = matchBox(tree, ownMatch);
     await expect(own.locator("[data-advances]")).toContainText(name);
     await expect(own.getByText(/^Recorded .+ ET$/)).toBeVisible();
-    // Decided: a Participant can't change it, so no Edit.
-    await expect(own.getByRole("button")).toHaveCount(0);
+    // Decided, and no later Match used it yet: they can still change it
+    // (spec R21, D1d), so it carries Edit.
+    await expect(own.getByRole("button")).toHaveCount(1);
+    await expect(
+      own.getByRole("button", { name: `Edit ${ownMatch}` }),
+    ).toBeVisible();
     await checkTree(you.page, tree, testInfo, "participant-reported", [
       "Semifinal",
       "Final",

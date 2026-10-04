@@ -95,8 +95,9 @@ const FIELD_LABELS: Record<SettingsField, string> = {
   bracketConfig: "Match settings",
   selfEnroll: "Participants can enroll",
   entrantLimit: "Entrant limit",
-  selfReport: "Self-report",
+  selfReport: "Participants can log their own results",
   selfCheckIn: "Participants can check in",
+  maxAttempts: "Max attempts per person",
 };
 
 const DIRECTION_OPTIONS = [
@@ -121,6 +122,18 @@ function directionHelp(format: CompetitionSettingsValues["format"]): string {
       return "With a direction, the better Score wins a Match; equal Scores are a Draw or need a pick.";
     default:
       return "Which Score is better.";
+  }
+}
+
+/** What "Participants can log their own results" lets them do, by Format. */
+function selfReportHelp(format: CompetitionSettingsValues["format"]): string {
+  switch (format) {
+    case "head-to-head":
+      return "Either Entrant (or anyone on an Entrant Team) logs a Match, and changes any Match of the series, from their phone. You can always log and change any Match.";
+    case "best-score":
+      return "A Participant logs Attempts as themselves, and changes or deletes their own. You can always log for anyone.";
+    default:
+      return "Participants in a Match enter its result from their phone, and change it until a later Match uses it. It counts at once; you can still change any result in the Bracket below.";
   }
 }
 
@@ -591,11 +604,35 @@ export function CompetitionSettingsForm({
           />
         )}
 
+        {shown.has("maxAttempts") && (
+          <Field className="sm:max-w-56" data-invalid={!!errors.maxAttempts}>
+            <FieldLabel htmlFor={id("maxAttempts")}>
+              Max attempts per person
+            </FieldLabel>
+            <Input
+              id={id("maxAttempts")}
+              type="number"
+              inputMode="numeric"
+              min={1}
+              placeholder="Unlimited"
+              className="h-11 sm:h-9"
+              disabled={lock("maxAttempts") !== null}
+              aria-invalid={!!errors.maxAttempts}
+              value={values.maxAttempts}
+              onChange={(event) => edit({ maxAttempts: event.target.value })}
+            />
+            {below(
+              "maxAttempts",
+              "Blank for unlimited. Binds everyone, you included; fix a mistake by editing an Attempt.",
+            )}
+          </Field>
+        )}
+
         {shown.has("selfReport") &&
           switchField(
             "selfReport",
-            "Self-report",
-            "Participants in a Match can enter its result from their phone. It counts at once; you can still change any result in the Bracket below.",
+            "Participants can log their own results",
+            selfReportHelp(values.format),
           )}
 
         {shown.has("selfEnroll") &&

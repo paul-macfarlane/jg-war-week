@@ -24,8 +24,8 @@ const isLocalDatabase = isLocalDatabaseUrl(
 
 const NOT_LINKED = "Your sign-in doesn't match a Participant of this War Week.";
 const NOT_A_PLAYER = "You're not a player in this Match.";
-const NOT_THE_LOGGER =
-  "Only the player who logged this Match can change it. Ask the Host.";
+const SELF_REPORT_OFF = "Self-report is off for this Competition.";
+const DECIDED = "This series is decided, so logging is closed.";
 const CLOSED = "This Competition is closed.";
 const MATCH_MISSING = "That Match no longer exists.";
 const NOT_AN_ENTRANT =
@@ -191,7 +191,7 @@ describe.skipIf(!isLocalDatabase)("logMatch", () => {
     });
   });
 
-  it("refuses a Participant once the series is decided, but not a Host; nothing refuses by time", async () => {
+  it("after 2–0 in a Best of 3, refuses a third Match for everyone; editing reopens logging (AC 6, D1b)", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { logMatch } = await load();
       const f = await fixture(tx);
@@ -213,14 +213,116 @@ describe.skipIf(!isLocalDatabase)("logMatch", () => {
           f.ctx(TRINITY),
           tx,
         ),
-      ).toEqual({
-        ok: false,
-        error: "This series is decided, so logging is closed.",
-      });
+      ).toEqual({ ok: false, error: DECIDED });
       expect(
         await logMatch(
           f.ids.pong,
           beat(f.ids.trinity, f.ids.neo),
+          f.ctx(HOST),
+          tx,
+        ),
+      ).toEqual({ ok: false, error: DECIDED });
+
+      // Trinity edits the first Match to her win: 1–1, so logging reopens.
+      const { updateMatch } = await load();
+      const [first] = await f.matchRows(f.ids.pong);
+      expect(
+        await updateMatch(
+          f.ids.pong,
+          first.id,
+          beat(f.ids.trinity, f.ids.neo),
+          f.ctx(TRINITY),
+          tx,
+        ),
+      ).toEqual({ ok: true });
+      expect(
+        await logMatch(
+          f.ids.pong,
+          beat(f.ids.trinity, f.ids.neo),
+          f.ctx(TRINITY),
+          tx,
+        ),
+      ).toMatchObject({ ok: true });
+    });
+  });
+
+  it("a drawn series that runs out takes no more Matches, and both share the higher place's full points on Close (AC 6)", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { logMatch } = await load();
+      const { closeCompetition } = await import("@/mutations/close");
+      const f = await fixture(tx);
+      const draw = {
+        players: [
+          { id: f.ids.red, place: 1, score: 3 },
+          { id: f.ids.blue, place: 1, score: 3 },
+        ],
+      };
+      // Relay is a Best of 3 with draws: 1–1 and a Draw is all three played.
+      for (const result of [beat(f.ids.red, f.ids.blue), draw]) {
+        expect(
+          await logMatch(f.ids.relay, result, f.ctx(HOST), tx),
+        ).toMatchObject({ ok: true });
+      }
+      expect(
+        await logMatch(
+          f.ids.relay,
+          beat(f.ids.blue, f.ids.red),
+          f.ctx(NEO),
+          tx,
+        ),
+      ).toMatchObject({ ok: true });
+      expect(
+        await logMatch(
+          f.ids.relay,
+          beat(f.ids.blue, f.ids.red),
+          f.ctx(HOST),
+          tx,
+        ),
+      ).toEqual({
+        ok: false,
+        error:
+          "Every Match of this series is played with no majority: the series is drawn.",
+      });
+
+      expect(await closeCompetition(f.ids.relay, f.ctx(HOST), tx)).toEqual({
+        ok: true,
+      });
+      const entries = await tx
+        .select({
+          teamId: f.schema.pointsEntry.teamId,
+          points: f.schema.pointsEntry.points,
+        })
+        .from(f.schema.pointsEntry)
+        .where(eq(f.schema.pointsEntry.competitionId, f.ids.relay));
+      expect(entries).toEqual(
+        expect.arrayContaining([
+          { teamId: f.ids.red, points: 10 },
+          { teamId: f.ids.blue, points: 10 },
+        ]),
+      );
+      expect(entries).toHaveLength(2);
+    });
+  });
+
+  it("with self-report off, refuses either Entrant's Match, not a Host's (AC 3)", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { logMatch } = await load();
+      const f = await fixture(tx);
+      await f.setCompetition(f.ids.pong, { selfReport: false });
+      for (const email of [NEO, TRINITY]) {
+        expect(
+          await logMatch(
+            f.ids.pong,
+            beat(f.ids.neo, f.ids.trinity),
+            f.ctx(email),
+            tx,
+          ),
+        ).toEqual({ ok: false, error: SELF_REPORT_OFF });
+      }
+      expect(
+        await logMatch(
+          f.ids.pong,
+          beat(f.ids.neo, f.ids.trinity),
           f.ctx(HOST),
           tx,
         ),
@@ -357,24 +459,43 @@ describe.skipIf(!isLocalDatabase)("updateMatch and deleteMatch", () => {
     });
   });
 
-  it("refuses another player, and lets a Host and an Organizer change any Match", async () => {
+  it("lets either Entrant edit a Match a Host logged, refuses a non-Entrant and self-report off, and lets a Host and an Organizer change any Match (AC 11)", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { updateMatch, deleteMatch } = await load();
+      const { logMatch, updateMatch, deleteMatch } = await load();
       const f = await fixture(tx);
-      const first = await loggedByNeo(f, tx);
+      const logged = await logMatch(
+        f.ids.pong,
+        beat(f.ids.neo, f.ids.trinity),
+        f.ctx(HOST),
+        tx,
+      );
+      if (!logged.ok) throw new Error(logged.error);
+      const first = logged.resultId;
 
+      for (const email of [TRINITY, NEO]) {
+        expect(
+          await updateMatch(
+            f.ids.pong,
+            first,
+            beat(f.ids.trinity, f.ids.neo),
+            f.ctx(email),
+            tx,
+          ),
+        ).toEqual({ ok: true });
+      }
       expect(
         await updateMatch(
           f.ids.pong,
           first,
           beat(f.ids.trinity, f.ids.neo),
-          f.ctx(TRINITY),
+          f.ctx(MORPHEUS),
           tx,
         ),
-      ).toEqual({ ok: false, error: NOT_THE_LOGGER });
+      ).toEqual({ ok: false, error: NOT_A_PLAYER });
+      await f.setCompetition(f.ids.pong, { selfReport: false });
       expect(await deleteMatch(f.ids.pong, first, f.ctx(TRINITY), tx)).toEqual({
         ok: false,
-        error: NOT_THE_LOGGER,
+        error: SELF_REPORT_OFF,
       });
       expect(
         await updateMatch(
@@ -567,10 +688,15 @@ describe.skipIf(!isLocalDatabase)(
           canEdit: true,
           canDelete: true,
         });
+        // Either Entrant may change any Match of the series.
         expect(byId.get(theirs.resultId)).toMatchObject({
-          canEdit: false,
-          canDelete: false,
+          canEdit: true,
+          canDelete: true,
         });
+        const outsider = await getLoggedResultsView(f.ids.pong, MORPHEUS, tx);
+        expect(outsider!.results.every((g) => !g.canEdit && !g.canDelete)).toBe(
+          true,
+        );
         expect(view!.playerOptions.map((o) => o.name)).toEqual([
           "Neo",
           "Trinity",
@@ -585,7 +711,7 @@ describe.skipIf(!isLocalDatabase)(
       });
     });
 
-    it("names a decided series' Winner and stops a Participant's logging", async () => {
+    it("names a decided series' Winner and stops everyone's logging, with the reason", async () => {
       await inRolledBackTransaction(async (tx) => {
         const { logMatch } = await load();
         const { getLoggedResultsView } =
@@ -603,9 +729,14 @@ describe.skipIf(!isLocalDatabase)(
         expect(view!.decided).toBe(true);
         expect(view!.seriesWinner).toBe("Neo");
         expect(view!.viewerCanLog).toBe(false);
-        expect(
-          (await getLoggedResultsView(f.ids.pong, HOST, tx))!.viewerCanLog,
-        ).toBe(true);
+        expect(view!.logOffer).toEqual({
+          label: "Log a Match",
+          disabledReason: DECIDED,
+          attemptsLeft: null,
+        });
+        const host = (await getLoggedResultsView(f.ids.pong, HOST, tx))!;
+        expect(host.viewerCanLog).toBe(false);
+        expect(host.logOffer?.disabledReason).toBe(DECIDED);
       });
     });
   },
@@ -627,6 +758,9 @@ describe.skipIf(!isLocalDatabase)("getLoggableCompetitions", () => {
       // Not a Pong Entrant; Red is a Relay Entrant.
       expect(await names(MORPHEUS)).toEqual(["Relay", "Stairs"]);
       expect(await names(NOBODY)).toEqual([]);
+      // Self-report off: nothing to log as yourself.
+      await f.setCompetition(f.ids.relay, { selfReport: false });
+      expect(await names(MORPHEUS)).toEqual(["Stairs"]);
     });
   });
 });

@@ -48,6 +48,8 @@ export type CompetitionSettingsValues = {
   entrantLimit: string;
   selfReport: boolean;
   selfCheckIn: boolean;
+  /** Best score's "Max attempts per person"; blank for no limit. */
+  maxAttempts: string;
 };
 
 export type SettingsField = keyof CompetitionSettingsValues &
@@ -73,6 +75,7 @@ export type CompetitionSettingsSource = {
   entrantLimit: number | null;
   selfReport: boolean;
   selfCheckIn: boolean;
+  maxAttempts: number | null;
 };
 
 /** The form's values from the stored Competition. */
@@ -103,6 +106,7 @@ export function settingsValuesOf(
       source.entrantLimit === null ? "" : String(source.entrantLimit),
     selfReport: source.selfReport,
     selfCheckIn: source.selfCheckIn,
+    maxAttempts: source.maxAttempts === null ? "" : String(source.maxAttempts),
   };
 }
 
@@ -150,7 +154,13 @@ export function shownSettings(
     format === "best-score" && values.scoring === "team" && "bestScoreConfig",
     format === "head-to-head" && "seriesConfig",
     format === "bracket" && "bracketConfig",
-    format === "bracket" && "selfReport",
+    format === "best-score" && "maxAttempts",
+    // "Participants can log their own results" (spec R21, decision 4):
+    // never Placement (ADR 0010) or Participation.
+    (format === "bracket" ||
+      format === "head-to-head" ||
+      format === "best-score") &&
+      "selfReport",
     enrolls && "selfEnroll",
     enrolls && values.selfEnroll && "entrantLimit",
     format === "participation" && "selfCheckIn",

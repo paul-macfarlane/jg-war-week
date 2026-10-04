@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { reportMatchResult } from "@/actions/match-reports";
+import { clearMatchReport, reportMatchResult } from "@/actions/match-reports";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { BracketPodium } from "@/components/bracket-podium";
 import { BracketTree } from "@/components/bracket-tree";
@@ -20,6 +20,7 @@ import {
   matchName,
   nextMatchFor,
 } from "@/lib/bracket/view";
+import type { ScoreDirection } from "@/lib/enums";
 
 type Scoring = "team" | "individual";
 
@@ -116,16 +117,20 @@ export type BracketViewSelfReport = {
   on: boolean;
   /** The Participant the session email links to, or null. */
   linkedParticipantId: string | null;
-  /** Your next Match, when the server found it reportable by You; else null. */
-  reportableMatchId: string | null;
+  /** Your Matches the server found You may record or change now. */
+  reportableMatchIds: string[];
+  /** Your decided Matches whose result a later Match already used. */
+  lockedMatchIds: string[];
 };
 
 /**
  * The Competition page's Bracket: Top finishers (the places decided so
  * far, Provisional until it's Closed) and Your next Match pinned on top,
  * then the Bracket's tree (the same one admin records from), Your
- * Entrant highlighted under the You rules. Your Match, when you may
- * self-report it, carries Record result in the tree as on the card. Owns
+ * Entrant highlighted under the You rules. Each Match of yours you may
+ * record or change carries Record result (Edit once played) in the tree,
+ * and your next one on the card too; one a later Match already used shows
+ * Edit disabled with the reason. Owns
  * the report Sheet (a centered Dialog on large screens), and refreshes
  * live while it's closed (a Bracket not drawn yet too, so the draw
  * appears).
@@ -138,6 +143,7 @@ export function BracketView({
   closed,
   scoring,
   scoreUnit = null,
+  scoreDirection = "none",
   primaryColor,
   participantTeams,
   participantSquads,
@@ -153,6 +159,8 @@ export function BracketView({
   scoring: Scoring;
   /** The Competition's Score unit, for Score labels. */
   scoreUnit?: string | null;
+  /** The Score direction: with one, Scores decide a Match's places. */
+  scoreDirection?: ScoreDirection;
   primaryColor: string;
   /** Each Participant's Team id, for finding Your Team's Entrant. */
   participantTeams: Record<string, string>;
@@ -176,11 +184,11 @@ export function BracketView({
   );
   const next = youEntrantId ? nextMatchFor(bracket, youEntrantId) : null;
   const matchesById = new Map(bracket.matches.map((h) => [h.id, h]));
+  const mine =
+    selfReport.on && you?.participantId === selfReport.linkedParticipantId;
+  const reportable = mine ? selfReport.reportableMatchIds : [];
   const canReport =
-    selfReport.on &&
-    you?.participantId === selfReport.linkedParticipantId &&
-    next?.kind === "match" &&
-    next.match.id === selfReport.reportableMatchId;
+    next?.kind === "match" && reportable.includes(next.match.id);
   const reportMatch = reporting ? matchesById.get(reporting) : undefined;
   const close = () => setReporting(null);
   const squadHelp = entrants.some((e) => e.squadId) ? (
@@ -234,13 +242,11 @@ export function BracketView({
         entrantsById={entrantsById}
         scoring={scoring}
         scoreUnit={scoreUnit}
+        scoreDirection={scoreDirection}
         primaryColor={primaryColor}
         youEntrantId={youEntrantId}
-        recordableMatchIds={
-          canReport && selfReport.reportableMatchId
-            ? [selfReport.reportableMatchId]
-            : []
-        }
+        recordableMatchIds={reportable}
+        lockedMatchIds={mine ? selfReport.lockedMatchIds : []}
         onRecord={setReporting}
       />
 
@@ -258,11 +264,12 @@ export function BracketView({
             entrantsById={entrantsById}
             scoring={scoring}
             scoreUnit={scoreUnit}
+            scoreDirection={scoreDirection}
             primaryColor={primaryColor}
             submit={(result) =>
               reportMatchResult(competitionId, reportMatch.id, result)
             }
-            confirmResets={false}
+            clear={() => clearMatchReport(competitionId, reportMatch.id)}
             successToast={() => "Result reported."}
             onSaved={close}
           />

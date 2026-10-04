@@ -36,6 +36,11 @@ export const COMPETITION_SETTING_FIELDS = [
   "entrantLimit",
   "selfReport",
   "selfCheckIn",
+  /**
+   * Best score's "Max attempts per person": free until Closed, but never
+   * below the most Attempts any one person has (the save's own rule).
+   */
+  "maxAttempts",
 ] as const;
 
 export type CompetitionSettingField =
@@ -78,6 +83,7 @@ export const SETTING_LOCKS: Record<CompetitionSettingField, SettingLock> = {
   entrantLimit: "closed",
   selfReport: "closed",
   selfCheckIn: "closed",
+  maxAttempts: "closed",
 };
 
 /** When `field` locks. */

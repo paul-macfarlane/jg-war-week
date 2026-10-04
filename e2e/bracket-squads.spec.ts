@@ -194,7 +194,7 @@ async function addSquad(page: Page, squad: (typeof SQUADS)[number]) {
   ).toBeVisible();
 }
 
-test("a Squad Bracket with self-report: a Participant reports, a second report is refused, the Host overwrites", async ({
+test("a Squad Bracket with self-report: a Participant reports, the other player changes it (D1d), the Host can't change a Semifinal the Final used until the Final is cleared (D1c)", async ({
   browser,
   context,
   page,
@@ -252,7 +252,9 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     ).toBeVisible();
 
     // Self-report is a setting: it autosaves.
-    const selfReport = page.getByRole("switch", { name: "Self-report" });
+    const selfReport = page.getByRole("switch", {
+      name: "Participants can log their own results",
+    });
     await selfReport.click();
     await expect(selfReport).toBeChecked();
     await expectSaved(page);
@@ -364,25 +366,33 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await expect(matchCard(first, "Final")).toContainText("Red Alpha");
     await checkViewports(first, testInfo, "participant-reported");
 
-    // The second's report now comes too late.
+    // The second player saves after it: a player may change their Match's
+    // recorded result (spec R21, D1d), so theirs stands.
     await secondSheet
       .getByRole("button", { name: "Save Match Result" })
       .click();
-    await expect(
-      second.getByText("This Match already has a result."),
-    ).toBeVisible();
-    await expect(secondSheet).toBeVisible();
-    await second.keyboard.press("Escape");
+    await expect(second.getByText("Result reported.")).toBeVisible();
     await expect(secondSheet).toBeHidden();
     await second.reload();
     await expect(
       matchCard(second, semifinal).locator("[data-advances]"),
-    ).toContainText("Red Alpha");
-    // Decided: no Record result for the second any more.
-    await expect(matchCard(second, semifinal).getByRole("button")).toHaveCount(
-      0,
-    );
+    ).toContainText(opponent);
+    await expect(matchCard(second, "Final")).not.toContainText("Red Alpha");
     await secondContext.close();
+
+    // The first player edits it back from the tree: Red Alpha won.
+    await first.reload();
+    await matchCard(first, semifinal)
+      .getByRole("button", { name: `Edit ${semifinal}` })
+      .click();
+    const firstEdit = first.getByRole("dialog", { name: semifinal });
+    await firstEdit
+      .getByRole("group", { name: "Winner" })
+      .getByRole("button", { name: "Red Alpha" })
+      .click();
+    await firstEdit.getByRole("button", { name: "Save Match Result" }).click();
+    await expect(first.getByText("Result reported.")).toBeVisible();
+    await expect(matchCard(first, "Final")).toContainText("Red Alpha");
 
     // The Host sees who reported it.
     await openCompetitionPage(page, id);
@@ -410,11 +420,34 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await expect(first.getByText("Result reported.")).toBeVisible();
     await firstContext.close();
 
-    // The Host overwrites Red Alpha's Semifinal: the reported Final resets.
+    // The Final used Red Alpha's Semifinal: its Edit and Clear result are
+    // disabled, the reason beside them, and nothing resets (D1c).
     await page.reload();
     await expect(matchCard(page, "Final")).toContainText(
       `Reported by ${REPORTER}`,
     );
+    const locked = matchCard(page, semifinal);
+    await expect(
+      locked.getByRole("button", { name: `Edit ${semifinal}` }),
+    ).toBeDisabled();
+    await expect(
+      locked.getByRole("button", { name: `Clear result of ${semifinal}` }),
+    ).toBeDisabled();
+    await expect(locked.locator('[data-slot="match-lock-reason"]')).toHaveText(
+      "A later Match already used this result. Change that Match first.",
+    );
+    await checkViewports(page, testInfo, "semifinal-locked");
+
+    // The Host clears the Final, then overwrites the Semifinal.
+    await page.getByRole("button", { name: "Edit Final" }).click();
+    const finalEdit = page.getByRole("dialog", { name: "Final" });
+    await finalEdit.getByRole("button", { name: "Clear result" }).click();
+    await page
+      .getByRole("alertdialog", { name: "Clear the Final result?" })
+      .getByRole("button", { name: "Clear result" })
+      .click();
+    await expect(page.getByText("Final result cleared")).toBeVisible();
+    await expect(finalEdit).toBeHidden();
     await page.getByRole("button", { name: `Edit ${semifinal}` }).click();
     const overwrite = page.getByRole("dialog", { name: semifinal });
     await overwrite
@@ -422,13 +455,7 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
       .getByRole("button", { name: opponent })
       .click();
     await overwrite.getByRole("button", { name: "Save Match Result" }).click();
-    const resetConfirm = page.getByRole("alertdialog");
-    await expect(resetConfirm).toContainText(`Change the ${semifinal} result?`);
-    await expect(resetConfirm).toContainText("Final will be reset.");
-    await resetConfirm.getByRole("button", { name: "Save and reset" }).click();
-    await expect(
-      page.getByText(`${opponent} wins ${semifinal} · 1 later Match reset`),
-    ).toBeVisible();
+    await expect(page.getByText(`${opponent} wins ${semifinal}`)).toBeVisible();
     await expect(overwrite).toBeHidden();
     await expect(matchCard(page, semifinal)).not.toContainText("Reported by");
     await expect(matchCard(page, "Final")).not.toContainText("Reported by");

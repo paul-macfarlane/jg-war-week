@@ -687,6 +687,70 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
     });
   });
 
+  it("is off on a new Competition of every Format, and turns on for a Bracket, Head-to-head and Best score only (AC 3)", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const f = await fixture(tx);
+      for (const id of Object.values(f.ids)) {
+        expect((await f.row(id)).selfReport).toBe(false);
+      }
+      for (const id of [f.ids.chess, f.ids.pong, f.ids.stairs]) {
+        expect(
+          await f.save(id, { field: "selfReport", value: true }, HOST),
+        ).toEqual(OK);
+        expect((await f.row(id)).selfReport).toBe(true);
+      }
+      for (const id of [f.ids.darts, f.ids.workout]) {
+        expect(
+          await f.save(id, { field: "selfReport", value: true }),
+        ).toMatchObject({
+          ok: false,
+          error:
+            "Only a Bracket, Head-to-head or Best score Competition lets Participants log their own results.",
+        });
+        expect((await f.row(id)).selfReport).toBe(false);
+      }
+    });
+  });
+
+  it("sets Max attempts per person on Best score, never below the most anyone has, and not while Closed", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const f = await fixture(tx);
+      expect(
+        await f.save(f.ids.stairs, { field: "maxAttempts", value: 3 }),
+      ).toEqual(OK);
+      expect((await f.row(f.ids.stairs)).maxAttempts).toBe(3);
+      await f.logAttempt(f.ids.stairs, f.neo);
+      await f.logAttempt(f.ids.stairs, f.neo);
+      await f.logAttempt(f.ids.stairs, f.trinity);
+      expect(
+        await f.save(f.ids.stairs, { field: "maxAttempts", value: 1 }),
+      ).toMatchObject({
+        ok: false,
+        error: "Someone already has 2 Attempts, so the limit can't be below 2.",
+      });
+      expect(
+        await f.save(f.ids.stairs, { field: "maxAttempts", value: 2 }),
+      ).toEqual(OK);
+      expect(
+        await f.save(f.ids.stairs, { field: "maxAttempts", value: null }),
+      ).toEqual(OK);
+      expect((await f.row(f.ids.stairs)).maxAttempts).toBeNull();
+      expect(
+        await f.save(f.ids.pong, { field: "maxAttempts", value: 3 }),
+      ).toMatchObject({
+        ok: false,
+        error: "This Competition isn't run as Best score.",
+      });
+
+      await (
+        await import("@/mutations/close")
+      ).closeCompetition(f.ids.stairs, f.ctx(ORGANIZER), tx);
+      expect(
+        await f.save(f.ids.stairs, { field: "maxAttempts", value: 5 }),
+      ).toMatchObject(LOCKED_WHILE_CLOSED);
+    });
+  });
+
   it("refuses self-enroll on every Format but a Bracket", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await fixture(tx);

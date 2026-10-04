@@ -272,7 +272,7 @@ describe.skipIf(!isLocalDatabase)(
     afterEach(() => clearWarWeek(edition));
 
     it.each([["Neo"], ["Trinity"]])(
-      "gives two reports of one Match exactly one result; the other is told it's decided (%s first)",
+      "runs two reports of one Match one after the other: both are saved, and the later one stands (%s first; D1d)",
       async (first) => {
         const { submitMatchReport } = await import("@/mutations/match-reports");
         const f = await committedReportable(edition, 6);
@@ -299,20 +299,13 @@ describe.skipIf(!isLocalDatabase)(
             : (await staggered(f.lockRow, trinity, neo)).reverse();
         });
 
-        // [Neo's, Trinity's]: the one that queued first wins.
-        const decided = {
-          ok: false,
-          error: "This Match already has a result.",
-        };
-        expect(results).toEqual(
-          first === "Neo"
-            ? [{ ok: true, resetMatchIds: [] }, decided]
-            : [decided, { ok: true, resetMatchIds: [] }],
-        );
+        // [Neo's, Trinity's]: a player may change their Match's result, so
+        // the one that queued last stands, whole, with its reporter.
+        expect(results).toEqual([{ ok: true }, { ok: true }]);
         expect(await f.saved()).toEqual(
           first === "Neo"
-            ? { winner: f.red, reporter: "neo@jahnelgroup.com" }
-            : { winner: f.blue, reporter: "trinity@jahnelgroup.com" },
+            ? { winner: f.blue, reporter: "trinity@jahnelgroup.com" }
+            : { winner: f.red, reporter: "neo@jahnelgroup.com" },
         );
       },
     );
@@ -327,7 +320,7 @@ describe.skipIf(!isLocalDatabase)(
     afterEach(() => clearWarWeek(edition));
 
     it.each([["Host"], ["report"]])(
-      "never lets a report overwrite the Host's result (%s first)",
+      "runs a report and a Host's result one after the other: the later one stands, whole (%s first; D1d)",
       async (first) => {
         const { submitMatchReport } = await import("@/mutations/match-reports");
         const f = await committedReportable(edition, 7);
@@ -354,14 +347,13 @@ describe.skipIf(!isLocalDatabase)(
             : (await staggered(f.lockRow, report, host)).reverse();
         });
 
-        expect(hosted).toEqual({ ok: true, resetMatchIds: [] });
-        expect(reported).toEqual(
+        expect(hosted).toEqual({ ok: true });
+        expect(reported).toEqual({ ok: true });
+        expect(await f.saved()).toEqual(
           first === "Host"
-            ? { ok: false, error: "This Match already has a result." }
-            : { ok: true, resetMatchIds: [] },
+            ? { winner: f.red, reporter: "neo@jahnelgroup.com" }
+            : { winner: f.blue, reporter: null },
         );
-        // The Host's result stands either way, and it's the Host's: no reporter.
-        expect(await f.saved()).toEqual({ winner: f.blue, reporter: null });
       },
     );
   },

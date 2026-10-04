@@ -672,41 +672,14 @@ async function findSeriesDemo(): Promise<{
 }
 
 /**
- * Picks `name` in a combobox found by its `<label for>` text (the Match
- * form's fields have no `aria-label`, unlike the Points Entry form's).
- */
-async function selectLabeledCombobox(
-  page: Page,
-  labelText: string,
-  name: string,
-): Promise<string> {
-  const inputId = await page.evaluate<string | null>(`(() => {
-    const label = Array.from(document.querySelectorAll("label")).find((l) => l.textContent?.trim() === ${JSON.stringify(labelText)});
-    return label ? label.getAttribute("for") : null;
-  })()`);
-  if (!inputId) throw new Error(`no field labeled "${labelText}"`);
-  await page.evaluate(
-    `document.getElementById(${JSON.stringify(inputId)})?.focus()`,
-  );
-  await page.send("Input.insertText", { text: name });
-  await sleep(500);
-  const picked = await page.evaluate<string | null>(`(() => {
-    const option = Array.from(document.querySelectorAll('[role="option"]')).find((o) => o.innerText.includes(${JSON.stringify(name)}));
-    option?.click();
-    return option ? option.innerText : null;
-  })()`);
-  if (!picked) throw new Error(`no "${labelText}" option for ${name}`);
-  return picked;
-}
-
-/**
  * Logs one Head-to-head Match through the real form (the
  * `logResult` action, as the demo Organizer): opens "Log a Match" from the
- * Competition page, picks both players and who won, and saves. The
+ * Competition page, where both Entrants are fixed rows, picks who won,
+ * and saves. The
  * `finally` undoes the Match by the demo email (`teardownSeriesDemo`).
  */
 async function captureSeriesDemo(cookie: string): Promise<void> {
-  const { competitionId, playerA, playerB } = await findSeriesDemo();
+  const { competitionId, playerA } = await findSeriesDemo();
   const page = await Page.open();
   await page.viewport(STILL, false);
   await page.cookie(cookie);
@@ -718,8 +691,6 @@ async function captureSeriesDemo(cookie: string): Promise<void> {
   if (!opened) throw new Error('no "Log a Match" button on the Competition');
   await sleep(500);
 
-  await selectLabeledCombobox(page, "Player A", playerA);
-  await selectLabeledCombobox(page, "Player B", playerB);
   const wonLabel = `${playerA} won`;
   const wonPicked = await page.evaluate<boolean>(`(() => {
     const button = Array.from(document.querySelectorAll("button")).find((b) => b.innerText.trim() === ${JSON.stringify(wonLabel)});
@@ -738,7 +709,7 @@ async function captureSeriesDemo(cookie: string): Promise<void> {
   for (let i = 0; i < 40; i++) {
     await sleep(200);
     const stillOpen = await page.evaluate<boolean>(
-      `document.body.innerText.includes("Choose both players and who won.")`,
+      `document.body.innerText.includes("Enter both Scores; the Winner follows them.")`,
     );
     if (!stillOpen) {
       saved = true;

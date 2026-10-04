@@ -21,6 +21,7 @@ const isLocalDatabase = isLocalDatabaseUrl(
 
 const CLOSED = "This Competition is closed.";
 const NOT_YOURS = "You log only your own Attempts.";
+const SELF_REPORT_OFF = "Self-report is off for this Competition.";
 
 async function load() {
   return import("@/mutations/attempts");
@@ -181,6 +182,107 @@ describe.skipIf(!isLocalDatabase)("logAttempt", () => {
     });
   });
 
+  it("with self-report off, refuses a Participant's Attempt but not a Host's (AC 3)", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { logAttempt } = await load();
+      const f = await fixture(tx);
+      await f.setCompetition(f.ids.bowl, { selfReport: false });
+
+      expect(
+        await logAttempt(
+          f.ids.bowl,
+          { participantId: f.ids.neo, score: 1 },
+          f.ctx(NEO),
+          tx,
+        ),
+      ).toEqual({ ok: false, error: SELF_REPORT_OFF });
+      expect(
+        await logAttempt(
+          f.ids.bowl,
+          { participantId: f.ids.neo, score: 1 },
+          f.ctx(HOST),
+          tx,
+        ),
+      ).toMatchObject({ ok: true });
+    });
+  });
+
+  it("with Max attempts 3, refuses a fourth for the Participant and for an Organizer (AC 7)", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { logAttempt } = await load();
+      const f = await fixture(tx);
+      await f.setCompetition(f.ids.bowl, { maxAttempts: 3 });
+      for (const email of [NEO, ORGANIZER, NEO]) {
+        expect(
+          await logAttempt(
+            f.ids.bowl,
+            { participantId: f.ids.neo, score: 1 },
+            f.ctx(email),
+            tx,
+          ),
+        ).toMatchObject({ ok: true });
+      }
+      for (const email of [NEO, ORGANIZER]) {
+        expect(
+          await logAttempt(
+            f.ids.bowl,
+            { participantId: f.ids.neo, score: 1 },
+            f.ctx(email),
+            tx,
+          ),
+        ).toEqual({
+          ok: false,
+          error: "No Attempts left: the limit is 3 per person.",
+        });
+      }
+      expect(await f.attemptRows(f.ids.bowl)).toHaveLength(3);
+      // Trinity has her own 3.
+      expect(
+        await logAttempt(
+          f.ids.bowl,
+          { participantId: f.ids.trinity, score: 1 },
+          f.ctx(ORGANIZER),
+          tx,
+        ),
+      ).toMatchObject({ ok: true });
+    });
+  });
+
+  it("with Max attempts 1, a second save edits the one Attempt, for the Participant and an Organizer logging for them (AC 9)", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { logAttempt } = await load();
+      const f = await fixture(tx);
+      await f.setCompetition(f.ids.bowl, { maxAttempts: 1 });
+      const first = await logAttempt(
+        f.ids.bowl,
+        { participantId: f.ids.neo, score: 10 },
+        f.ctx(NEO),
+        tx,
+      );
+      if (!first.ok) throw new Error(first.error);
+
+      expect(
+        await logAttempt(
+          f.ids.bowl,
+          { participantId: f.ids.neo, score: 12 },
+          f.ctx(NEO),
+          tx,
+        ),
+      ).toEqual({ ok: true, resultId: first.resultId });
+      expect(
+        await logAttempt(
+          f.ids.bowl,
+          { participantId: f.ids.neo, score: 15 },
+          f.ctx(ORGANIZER),
+          tx,
+        ),
+      ).toEqual({ ok: true, resultId: first.resultId });
+      expect(await f.attemptRows(f.ids.bowl)).toEqual([
+        expect.objectContaining({ id: first.resultId, score: 15 }),
+      ]);
+    });
+  });
+
   it("refuses a Head-to-head", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { logAttempt } = await load();
@@ -201,6 +303,96 @@ describe.skipIf(!isLocalDatabase)("logAttempt", () => {
 });
 
 describe.skipIf(!isLocalDatabase)("updateAttempt and deleteAttempt", () => {
+  it("lets a Participant edit and delete each of their own Attempts, one logged by a Host, and refuses another Participant (AC 10)", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { logAttempt, updateAttempt, deleteAttempt } = await load();
+      const f = await fixture(tx);
+      await f.setCompetition(f.ids.bowl, { maxAttempts: 3 });
+      const ids: string[] = [];
+      for (const email of [HOST, NEO, NEO]) {
+        const logged = await logAttempt(
+          f.ids.bowl,
+          { participantId: f.ids.neo, score: 5 },
+          f.ctx(email),
+          tx,
+        );
+        if (!logged.ok) throw new Error(logged.error);
+        ids.push(logged.resultId);
+      }
+
+      for (const id of ids) {
+        expect(
+          await updateAttempt(
+            f.ids.bowl,
+            id,
+            { participantId: f.ids.neo, score: 8 },
+            f.ctx(TRINITY),
+            tx,
+          ),
+        ).toEqual({ ok: false, error: NOT_YOURS });
+        expect(await deleteAttempt(f.ids.bowl, id, f.ctx(TRINITY), tx)).toEqual(
+          { ok: false, error: NOT_YOURS },
+        );
+        // Editing never counts against the limit of 3.
+        expect(
+          await updateAttempt(
+            f.ids.bowl,
+            id,
+            { participantId: f.ids.neo, score: 8 },
+            f.ctx(NEO),
+            tx,
+          ),
+        ).toEqual({ ok: true });
+      }
+      expect((await f.attemptRows(f.ids.bowl)).map((r) => r.score)).toEqual([
+        8, 8, 8,
+      ]);
+      for (const id of ids) {
+        expect(await deleteAttempt(f.ids.bowl, id, f.ctx(NEO), tx)).toEqual({
+          ok: true,
+        });
+      }
+      expect(await f.attemptRows(f.ids.bowl)).toEqual([]);
+    });
+  });
+
+  it("with self-report off, refuses the Participant's edits, not a Host's (AC 10)", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { logAttempt, updateAttempt, deleteAttempt } = await load();
+      const f = await fixture(tx);
+      const logged = await logAttempt(
+        f.ids.bowl,
+        { participantId: f.ids.neo, score: 9 },
+        f.ctx(NEO),
+        tx,
+      );
+      if (!logged.ok) throw new Error(logged.error);
+      await f.setCompetition(f.ids.bowl, { selfReport: false });
+
+      expect(
+        await updateAttempt(
+          f.ids.bowl,
+          logged.resultId,
+          { participantId: f.ids.neo, score: 1 },
+          f.ctx(NEO),
+          tx,
+        ),
+      ).toEqual({ ok: false, error: SELF_REPORT_OFF });
+      expect(
+        await deleteAttempt(f.ids.bowl, logged.resultId, f.ctx(NEO), tx),
+      ).toEqual({ ok: false, error: SELF_REPORT_OFF });
+      expect(
+        await updateAttempt(
+          f.ids.bowl,
+          logged.resultId,
+          { participantId: f.ids.neo, score: 1 },
+          f.ctx(HOST),
+          tx,
+        ),
+      ).toEqual({ ok: true });
+    });
+  });
+
   it("lets the logger change and delete their Attempt, and nobody else but a Host", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { logAttempt, updateAttempt, deleteAttempt } = await load();
@@ -231,11 +423,7 @@ describe.skipIf(!isLocalDatabase)("updateAttempt and deleteAttempt", () => {
           f.ctx(TRINITY),
           tx,
         ),
-      ).toEqual({
-        ok: false,
-        error:
-          "Only the player who logged this Attempt can change it. Ask the Host.",
-      });
+      ).toEqual({ ok: false, error: NOT_YOURS });
       expect(
         await updateAttempt(
           f.ids.bowl,

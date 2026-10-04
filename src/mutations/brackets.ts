@@ -17,6 +17,7 @@ import {
   team,
   warWeek,
 } from "@/db/schema";
+import { clearResult, otherResultsChanged } from "@/lib/bracket/clear-result";
 import {
   type BracketConfig,
   configOf,
@@ -27,10 +28,14 @@ import {
   applyResult,
   generate,
   hasResults,
-  resetByResult,
   validateConfig,
 } from "@/lib/bracket/formats";
 import { shuffleSeedPositions } from "@/lib/bracket/seeding";
+import {
+  LATER_MATCH_USED,
+  matchReportState,
+  matchResultError,
+} from "@/lib/bracket/self-report";
 import {
   type EntrantKind,
   entrantKindError,
@@ -653,10 +658,9 @@ export async function generateBracket(
 }
 
 /**
- * Records a Match Result and advances who goes on, per the Format. Changing
- * who advances from a decided Match resets the later Matches that followed
- * from it; the ids of those that had a Match Result are returned. A
- * score-only edit resets nothing.
+ * Records a Match Result and advances who goes on, per the Format. A
+ * decided Match's result changes only while no later Match has used it
+ * (spec R21, D1c): nothing that already has a result is ever reset.
  */
 export async function recordMatchResult(
   competitionId: string,
@@ -664,9 +668,7 @@ export async function recordMatchResult(
   result: MatchResult,
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
-): Promise<
-  { ok: true; resetMatchIds: string[] } | { ok: false; error: string }
-> {
+): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx) => {
     const found = await lockedCompetition(tx, competitionId, ctx);
     return writeMatchResult(tx, found, matchId, result, null);
@@ -674,21 +676,38 @@ export async function recordMatchResult(
 }
 
 /**
- * The one Match Result write, shared by a Host's `recordMatchResult` and a
+ * Clears a Match's result (spec R21, S4): its places and Scores go, and
+ * who it sent on leaves the unplayed Matches they went to. Refused, for
+ * everyone, once a later Match used the result (D1c).
+ */
+export async function clearMatchResult(
+  competitionId: string,
+  matchId: string,
+  ctx: MutationContext,
+  dbOrTx: DBOrTx = db,
+): Promise<MutationResult> {
+  return dbOrTx.transaction(async (tx) => {
+    const found = await lockedCompetition(tx, competitionId, ctx);
+    return writeMatchResult(tx, found, matchId, null, null);
+  });
+}
+
+/**
+ * The one Match Result write, shared by a Host's record or clear and a
  * Participant's self-report, run with the Competition's row lock already
- * held: refuses a Competition that can't change, finds the Match in its own
- * Bracket, resets and applies the result per the Format, and saves it with
- * its reporter (null for a Host or Organizer).
+ * held: refuses a Competition that can't change, finds the Match in its
+ * own Bracket, refuses a result a later Match already used, applies the
+ * result (or, for `null`, clears it) per the Format, refuses a write that
+ * would change any other recorded result (the backstop), and saves it
+ * with its reporter (null for a Host or Organizer, and on a clear).
  */
 export async function writeMatchResult(
   tx: DBOrTx,
   found: BracketCompetition | undefined,
   matchId: string,
-  result: MatchResult,
+  result: MatchResult | null,
   reporter: MatchReporter | null,
-): Promise<
-  { ok: true; resetMatchIds: string[] } | { ok: false; error: string }
-> {
+): Promise<MutationResult> {
   const refusal = bracketRefusal(found);
   if (refusal || !isBracketRun(found)) {
     return refuse(refusal ?? NOT_A_BRACKET);
@@ -696,24 +715,29 @@ export async function writeMatchResult(
   const bracket = await bracketOf(tx, found);
   const target = bracket.matches.find((h) => h.id === matchId);
   if (!target) return refuse(MATCH_NOT_FOUND);
+  const used = matchResultError(matchReportState(bracket, target));
+  if (used) return refuse(used);
 
   let next: Bracket;
-  let resetMatchIds: string[];
   try {
-    resetMatchIds = resetByResult(bracket, matchId, result);
-    next = applyResult(bracket, matchId, result);
+    next = result
+      ? applyResult(bracket, matchId, result)
+      : clearResult(bracket, matchId);
   } catch (error) {
     if (error instanceof BracketError) return refuse(error.message);
     throw error;
+  }
+  if (otherResultsChanged(bracket, next, matchId)) {
+    return refuse(LATER_MATCH_USED);
   }
   await saveBracket(
     tx,
     bracket,
     next,
-    reporter && { ...reporter, matchId },
+    reporter && result ? { ...reporter, matchId } : null,
     matchId,
   );
-  return { ok: true as const, resetMatchIds };
+  return { ok: true };
 }
 
 /**

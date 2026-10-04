@@ -1,8 +1,9 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, count, eq, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
-import { type Competition, competition } from "@/db/schema";
+import { type Competition, attempt, competition } from "@/db/schema";
 import { can } from "@/lib/access";
+import { maxAttemptsError } from "@/lib/best-score/log-rule";
 import { settingLockReason } from "@/lib/competition-locks";
 import type { CompetitionSettingChange } from "@/lib/competition-settings";
 import { NOT_PARTICIPATION } from "@/lib/participation/check-in-rule";
@@ -233,5 +234,18 @@ async function write(
       return setSelfReport(id, { on: change.value }, ctx, tx);
     case "selfCheckIn":
       return checkIn({ selfCheckIn: change.value });
+    case "maxAttempts": {
+      if (found.format !== "best-score") return refuse(NOT_BEST_SCORE);
+      const [most] = await tx
+        .select({ n: count() })
+        .from(attempt)
+        .where(eq(attempt.competitionId, id))
+        .groupBy(attempt.participantId)
+        .orderBy(sql`count(*) desc`)
+        .limit(1);
+      const refusal = maxAttemptsError(change.value, most?.n ?? 0);
+      if (refusal) return refuse(refusal);
+      return set({ maxAttempts: change.value });
+    }
   }
 }

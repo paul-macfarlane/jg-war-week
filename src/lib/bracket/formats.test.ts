@@ -16,6 +16,7 @@ import {
   validateConfig,
 } from "@/lib/bracket/formats";
 import { matches } from "@/lib/bracket/groups";
+import { LATER_MATCH_USED } from "@/lib/bracket/match-report-rule";
 import type { Entrant } from "@/lib/bracket/types";
 
 const config = (
@@ -60,11 +61,12 @@ describe("a 2 per Match, 1 advancing Bracket through the Format dispatch", () =>
       { entrantId: "c", place: 2 },
     ]);
 
-    // A new winner in Round 1 clears the decided final.
-    expect(resetByResult(bracket, "r1h2", { order: ["b", "c"] })).toEqual([
-      "r2h1",
-    ]);
-    expect(resetByResult(bracket, "r1h2", { order: ["c", "b"] })).toEqual([]);
+    // A new winner in Round 1 is refused once the final used it (D1c);
+    // nothing is reset.
+    expect(resetByResult(bracket, "r1h2", { order: ["b", "c"] })).toEqual([]);
+    expect(() => applyResult(bracket, "r1h2", { order: ["b", "c"] })).toThrow(
+      LATER_MATCH_USED,
+    );
   });
 });
 

@@ -305,7 +305,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
     });
   });
 
-  it("records Match Results, advances winners and resets later Matches on an edit", async () => {
+  it("records Match Results and advances winners; a result the final used can't change until the final is cleared (D1c)", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await fixture(tx);
@@ -336,7 +336,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
           f.ctx,
           tx,
         ),
-      ).toEqual({ ok: true, resetMatchIds: [] });
+      ).toEqual({ ok: true });
       await mutations.recordMatchResult(
         f.competitionId,
         semi2,
@@ -363,27 +363,40 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       view = (await queries.getBracket(f.competitionId, tx))!;
       expect(view.winner).toBe(id("Gold"));
 
-      // A score-only edit keeps the final.
-      expect(
-        await mutations.recordMatchResult(
-          f.competitionId,
-          semi1,
-          { order: [id("Red"), id("Blue")], scores: { [id("Red")]: "25" } },
-          f.ctx,
-          tx,
-        ),
-      ).toEqual({ ok: true, resetMatchIds: [] });
+      // The final used both semifinals: no edit, not even a Score, until
+      // the final is cleared (spec R21, D1c). Nothing is reset.
+      const used = {
+        ok: false,
+        error:
+          "A later Match already used this result. Change that Match first.",
+      };
+      for (const order of [
+        [id("Red"), id("Blue")],
+        [id("Blue"), id("Red")],
+      ]) {
+        expect(
+          await mutations.recordMatchResult(
+            f.competitionId,
+            semi1,
+            { order, scores: { [id("Red")]: "25" } },
+            f.ctx,
+            tx,
+          ),
+        ).toEqual(used);
+      }
       view = (await queries.getBracket(f.competitionId, tx))!;
-      expect(matchAt(view, 1, 1).match.slots[1]).toMatchObject({ score: "25" });
-      expect(matchAt(view, 2, 1).match.status).toBe("played");
+      expect(matchAt(view, 1, 1).match.slots[1]).toMatchObject({ score: "21" });
       expect(view.winner).toBe(id("Gold"));
-      // The later Match's Entrants and recorded result are untouched.
-      expect(matchAt(view, 2, 1).labels).toEqual(["Red", "Gold"]);
-      expect(matchAt(view, 2, 1).match.slots.map((s) => s.place)).toEqual([
-        2, 1,
-      ]);
 
-      // Changing the first Match's winner sends the final back to pending.
+      expect(
+        await mutations.clearMatchResult(f.competitionId, final, f.ctx, tx),
+      ).toEqual({ ok: true });
+      view = (await queries.getBracket(f.competitionId, tx))!;
+      expect(matchAt(view, 2, 1).match.status).toBe("ready");
+      expect(matchAt(view, 2, 1).match.recordedAt).toBeNull();
+      expect(view.winner).toBeNull();
+
+      // Now the first Match's winner changes, and the final takes Blue.
       expect(
         await mutations.recordMatchResult(
           f.competitionId,
@@ -392,7 +405,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
           f.ctx,
           tx,
         ),
-      ).toEqual({ ok: true, resetMatchIds: [final] });
+      ).toEqual({ ok: true });
       view = (await queries.getBracket(f.competitionId, tx))!;
       expect(matchAt(view, 2, 1).labels).toEqual(["Blue", "Gold"]);
       expect(matchAt(view, 2, 1).match.status).toBe("ready");
@@ -774,7 +787,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
           f.ctx,
           tx,
         ),
-      ).toEqual({ ok: true, resetMatchIds: [] });
+      ).toEqual({ ok: true });
       // The Entrant listed last finishes last.
       expect(
         await mutations.recordMatchResult(
@@ -784,7 +797,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
           f.ctx,
           tx,
         ),
-      ).toEqual({ ok: true, resetMatchIds: [] });
+      ).toEqual({ ok: true });
 
       view = (await queries.getBracket(f.relayId, tx))!;
       const played = matchAt(view, 1, 2).match;
@@ -810,7 +823,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
           f.ctx,
           tx,
         ),
-      ).toEqual({ ok: true, resetMatchIds: [] });
+      ).toEqual({ ok: true });
       view = (await queries.getBracket(f.relayId, tx))!;
       expect(view.winner).toBe(a1);
 
@@ -874,7 +887,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
     });
   });
 
-  it("empties a decided matches final when a re-recorded Match changes who advances", async () => {
+  it("refuses a re-record that changes who advances once the final has a result; cleared, the final re-fills (D1c)", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await generatedMatches(tx);
@@ -908,7 +921,7 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       view = (await queries.getBracket(f.relayId, tx))!;
       expect(view.winner).toBe(a0);
 
-      // a2 now advances in place of a0.
+      // a2 would advance in place of a0, but the final used the result.
       expect(
         await mutations.recordMatchResult(
           f.relayId,
@@ -917,7 +930,26 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
           f.ctx,
           tx,
         ),
-      ).toEqual({ ok: true, resetMatchIds: [final.id] });
+      ).toEqual({
+        ok: false,
+        error:
+          "A later Match already used this result. Change that Match first.",
+      });
+      view = (await queries.getBracket(f.relayId, tx))!;
+      expect(view.winner).toBe(a0);
+
+      expect(
+        await mutations.clearMatchResult(f.relayId, final.id, f.ctx, tx),
+      ).toEqual({ ok: true });
+      expect(
+        await mutations.recordMatchResult(
+          f.relayId,
+          first.id,
+          { order: [a2, a1, a0, a3] },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
       view = (await queries.getBracket(f.relayId, tx))!;
       const after = matchAt(view, 2, 1).match;
       expect(after.slots.every((s) => s.place === null)).toBe(true);
@@ -1453,7 +1485,7 @@ describe.skipIf(!isLocalDatabase)("Match recorded_at", () => {
     });
   });
 
-  it("is cleared on a later Match that a changed winner resets, and kept on the Match that was saved", async () => {
+  it("is cleared on a Match whose result is cleared, and kept on the Match that was saved", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { f, mutations, id, semi1, semi2, final } = await generated(tx);
       await mutations.recordMatchResult(
@@ -1479,7 +1511,11 @@ describe.skipIf(!isLocalDatabase)("Match recorded_at", () => {
       );
       expect(await recordedAtOf(tx, f, final)).toBeInstanceOf(Date);
 
-      // Blue now wins the first Semifinal: the Final goes back to not played.
+      // The Final is cleared, then Blue wins the first Semifinal.
+      expect(
+        await mutations.clearMatchResult(f.competitionId, final, f.ctx, tx),
+      ).toEqual({ ok: true });
+      expect(await recordedAtOf(tx, f, final)).toBeNull();
       expect(
         await mutations.recordMatchResult(
           f.competitionId,
@@ -1488,7 +1524,7 @@ describe.skipIf(!isLocalDatabase)("Match recorded_at", () => {
           f.ctx,
           tx,
         ),
-      ).toEqual({ ok: true, resetMatchIds: [final] });
+      ).toEqual({ ok: true });
       expect(await recordedAtOf(tx, f, final)).toBeNull();
       expect(await recordedAtOf(tx, f, semi1)).toBeInstanceOf(Date);
       expect(await recordedAtOf(tx, f, semi2)).toBeInstanceOf(Date);
@@ -1618,7 +1654,7 @@ describe.skipIf(!isLocalDatabase)("Match reporters", () => {
           { email: reporterEmail, participantId: f.neo },
         );
       });
-      expect(result).toEqual({ ok: true, resetMatchIds: [] });
+      expect(result).toEqual({ ok: true });
       expect(await reporterOf(tx, f, semi1)).toEqual({
         email: reporterEmail,
         participantId: f.neo,
@@ -1650,7 +1686,7 @@ describe.skipIf(!isLocalDatabase)("Match reporters", () => {
           f.ctx,
           tx,
         ),
-      ).toEqual({ ok: true, resetMatchIds: [] });
+      ).toEqual({ ok: true });
       expect(await reporterOf(tx, f, semi1)).toEqual({
         email: reporterEmail,
         participantId: f.neo,
@@ -1668,7 +1704,7 @@ describe.skipIf(!isLocalDatabase)("Match reporters", () => {
     });
   });
 
-  it("single elimination: re-recording an earlier Match clears the reporter of a later Match it refills", async () => {
+  it("single elimination: a refused re-record keeps the reported Final's reporter; clearing the Final clears it", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations } = await modules();
       const { f, id, semi1, semi2, final } = await drawn(tx);
@@ -1694,6 +1730,7 @@ describe.skipIf(!isLocalDatabase)("Match reporters", () => {
         tx,
       );
       await markReported(tx, f, final);
+      const reported = await reporterOf(tx, f, final);
 
       expect(
         await mutations.recordMatchResult(
@@ -1703,12 +1740,20 @@ describe.skipIf(!isLocalDatabase)("Match reporters", () => {
           f.ctx,
           tx,
         ),
-      ).toEqual({ ok: true, resetMatchIds: [final] });
+      ).toEqual({
+        ok: false,
+        error:
+          "A later Match already used this result. Change that Match first.",
+      });
+      expect(await reporterOf(tx, f, final)).toEqual(reported);
+      expect(
+        await mutations.clearMatchResult(f.competitionId, final, f.ctx, tx),
+      ).toEqual({ ok: true });
       expect(await reporterOf(tx, f, final)).toEqual(NONE);
     });
   });
 
-  it("Matches: re-recording an earlier Match clears the reporter of the Final it refills", async () => {
+  it("Matches: a refused re-record keeps the reported Final's reporter; clearing the Final clears it", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const f = await generatedMatches(tx);
@@ -1740,6 +1785,7 @@ describe.skipIf(!isLocalDatabase)("Match reporters", () => {
         tx,
       );
       await markReported(tx, f, final.id);
+      const reported = await reporterOf(tx, f, final.id);
 
       expect(
         await mutations.recordMatchResult(
@@ -1749,7 +1795,15 @@ describe.skipIf(!isLocalDatabase)("Match reporters", () => {
           f.ctx,
           tx,
         ),
-      ).toEqual({ ok: true, resetMatchIds: [final.id] });
+      ).toEqual({
+        ok: false,
+        error:
+          "A later Match already used this result. Change that Match first.",
+      });
+      expect(await reporterOf(tx, f, final.id)).toEqual(reported);
+      expect(
+        await mutations.clearMatchResult(f.relayId, final.id, f.ctx, tx),
+      ).toEqual({ ok: true });
       expect(await reporterOf(tx, f, final.id)).toEqual(NONE);
     });
   });

@@ -244,12 +244,13 @@ export function OrganizerGuide({
           group of one {teamLower}&apos;s Participants (each in one Squad per
           Competition); then set Entrants are to Squads and press All Squads.
           Each Squad&apos;s Placement Points go to its {teamLower}, and Squads
-          are seeded at random. Turn on Self-report and a Participant whose
-          roster email matches their sign-in can record their own Match, from
-          Your next Match or its Record result in the tree, while it has no
-          result; it counts at once. The tree shows &quot;Reported by&quot; on
-          that Match, and you can still change any result there. Turn
-          Self-report off to stop new reports; results already reported stand.
+          are seeded at random. Turn on Participants can log their own results
+          and a Participant whose roster email matches their sign-in can record
+          their own Match, from Your next Match or its Record result in the
+          tree, and change it until a later Match uses it; it counts at once.
+          The tree shows &quot;Reported by&quot; on that Match, and you can
+          still change any result there. Turn it off to stop new reports;
+          results already reported stand.
         </p>
       </section>
 

@@ -74,7 +74,8 @@ describe("BracketView", () => {
     selfReport: {
       on: true,
       linkedParticipantId: null,
-      reportableMatchId: null,
+      reportableMatchIds: [] as string[],
+      lockedMatchIds: [] as string[],
     },
   };
 
@@ -202,7 +203,8 @@ describe("BracketView's Record result in the tree", () => {
     selfReport: {
       on: boolean;
       linkedParticipantId: string | null;
-      reportableMatchId: string | null;
+      reportableMatchIds: string[];
+      lockedMatchIds?: string[];
     },
   ) =>
     renderToStaticMarkup(
@@ -217,7 +219,7 @@ describe("BracketView's Record result in the tree", () => {
           primaryColor="#000"
           participantTeams={{}}
           participantSquads={{}}
-          selfReport={selfReport}
+          selfReport={{ lockedMatchIds: [], ...selfReport }}
         />
       </YouProvider>,
     );
@@ -230,7 +232,7 @@ describe("BracketView's Record result in the tree", () => {
     const html = view("p1", {
       on: true,
       linkedParticipantId: "p1",
-      reportableMatchId: matchId,
+      reportableMatchIds: [matchId],
     });
     expect(recordButtons(html)).toEqual(["Record result for Final"]);
   });
@@ -239,7 +241,7 @@ describe("BracketView's Record result in the tree", () => {
     const html = view("p3", {
       on: true,
       linkedParticipantId: "p3",
-      reportableMatchId: null,
+      reportableMatchIds: [],
     });
     expect(recordButtons(html)).toEqual([]);
   });
@@ -248,9 +250,24 @@ describe("BracketView's Record result in the tree", () => {
     const html = view("p1", {
       on: false,
       linkedParticipantId: "p1",
-      reportableMatchId: matchId,
+      reportableMatchIds: [matchId],
     });
     expect(recordButtons(html)).toEqual([]);
     expect(html).not.toContain("Report result");
+  });
+
+  it("a Match a later Match already used shows Edit disabled with the reason beside it (D1c)", () => {
+    const html = view("p1", {
+      on: true,
+      linkedParticipantId: "p1",
+      reportableMatchIds: [],
+      lockedMatchIds: [matchId],
+    });
+    expect(recordButtons(html)).toEqual([]);
+    expect(html).toMatch(/<button[^>]*disabled[^>]*>Edit<\/button>/);
+    expect(html).toMatch(/<button[^>]*disabled[^>]*>Clear result<\/button>/);
+    expect(html).toContain(
+      "A later Match already used this result. Change that Match first.",
+    );
   });
 });

@@ -38,6 +38,7 @@ const authorizedFor = (format: "head-to-head" | "best-score") => ({
       format === "head-to-head"
         ? { drawsAllowed: false, bestOf: 3 }
         : { betterIs: "higher", unit: "", teamScore: "best-member" },
+    scoringConfig: { direction: "higher", unit: null },
   },
 });
 const REFUSED = { ok: false, error: "You're not a player in this Match." };
@@ -72,11 +73,17 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const win = { playerA: A, playerB: B, outcome: "a" };
+const win = {
+  sides: [
+    { id: A, score: "21" },
+    { id: B, score: "15" },
+  ],
+  winner: "",
+};
 const parsedWin = {
   players: [
-    { id: A, place: 1, score: null },
-    { id: B, place: 2, score: null },
+    { id: A, place: 1, score: 21 },
+    { id: B, place: 2, score: 15 },
   ],
 };
 
@@ -86,12 +93,11 @@ describe("logResult", () => {
     const series = await import("@/mutations/series");
 
     await expect(
-      logResult(ID, { playerA: A, playerB: B, outcome: "sideways" }),
+      logResult(ID, { ...win, winner: "sideways" }),
     ).resolves.toEqual(REFUSED);
     expect(authorizeResultWrite).toHaveBeenCalledWith("log", ID, null, {
-      playerA: A,
-      playerB: B,
-      outcome: "sideways",
+      ...win,
+      winner: "sideways",
     });
     expect(series.logMatch).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
@@ -101,10 +107,10 @@ describe("logResult", () => {
     authorized.current = authorizedFor("head-to-head");
     const series = await import("@/mutations/series");
 
-    await expect(logResult(ID, { ...win, outcome: "draw" })).resolves.toEqual({
+    await expect(logResult(ID, { ...win, winner: "draw" })).resolves.toEqual({
       ok: false,
       error: "Draws aren't allowed in this Competition.",
-      fieldErrors: { outcome: "Draws aren't allowed in this Competition." },
+      fieldErrors: { winner: "Draws aren't allowed in this Competition." },
     });
     expect(series.logMatch).not.toHaveBeenCalled();
   });

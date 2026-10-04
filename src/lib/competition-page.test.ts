@@ -28,6 +28,7 @@ const PLACEMENT: CompetitionSettingsSource = {
   entrantLimit: null,
   selfReport: false,
   selfCheckIn: false,
+  maxAttempts: null,
 };
 
 describe("settingsValuesOf", () => {
@@ -133,6 +134,42 @@ describe("shownSettings", () => {
     expect(shownSettings(individual, "teams")).toContain("scoring");
     const team = settingsValuesOf({ ...PLACEMENT, scoring: "team" });
     expect(shownSettings(team, "free-for-all")).toContain("scoring");
+  });
+
+  it("offers self-report on a Bracket, Head-to-head and Best score, never Placement or Participation (AC 3)", () => {
+    for (const [format, shows] of [
+      ["bracket", true],
+      ["head-to-head", true],
+      ["best-score", true],
+      ["placement", false],
+      ["participation", false],
+    ] as const) {
+      const values = settingsValuesOf({ ...PLACEMENT, format });
+      expect(
+        shownSettings(values, "teams").includes("selfReport"),
+        format,
+      ).toBe(shows);
+    }
+  });
+
+  it("offers Max attempts per person on Best score only", () => {
+    for (const format of [
+      "placement",
+      "bracket",
+      "head-to-head",
+      "best-score",
+      "participation",
+    ] as const) {
+      const values = settingsValuesOf({ ...PLACEMENT, format });
+      expect(
+        shownSettings(values, "teams").includes("maxAttempts"),
+        format,
+      ).toBe(format === "best-score");
+    }
+    expect(
+      settingsValuesOf({ ...PLACEMENT, format: "best-score", maxAttempts: 3 })
+        .maxAttempts,
+    ).toBe("3");
   });
 
   it("offers enrollment only on a Bracket", () => {

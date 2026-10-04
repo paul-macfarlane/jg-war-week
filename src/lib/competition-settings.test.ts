@@ -172,10 +172,35 @@ describe("parseCompetitionSetting", () => {
     });
   });
 
+  it("takes Max attempts per person as a whole number of at least 1, blank for no limit", () => {
+    for (const [value, parsed] of [
+      [3, 3],
+      ["2", 2],
+      ["", null],
+      [null, null],
+    ] as const) {
+      expect(parseCompetitionSetting({ field: "maxAttempts", value })).toEqual({
+        ok: true,
+        value: { field: "maxAttempts", value: parsed },
+      });
+    }
+    for (const value of [0, "1.5", "x", -2]) {
+      expect(
+        parseCompetitionSetting({ field: "maxAttempts", value }),
+      ).toMatchObject({
+        ok: false,
+        error: "Max attempts is a whole number of at least 1, or blank.",
+      });
+    }
+  });
+
   it("refuses a switch that isn't on or off, and an unknown field", () => {
     expect(
       parseCompetitionSetting({ field: "selfReport", value: "yes" }),
-    ).toMatchObject({ ok: false, error: "Turn self-report on or off." });
+    ).toMatchObject({
+      ok: false,
+      error: "Choose whether Participants can log their own results.",
+    });
     expect(parseCompetitionSetting({ field: "closedAt", value: null })).toEqual(
       { ok: false, error: "Choose a setting to save." },
     );

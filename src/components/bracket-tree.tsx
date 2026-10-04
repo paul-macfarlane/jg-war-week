@@ -5,17 +5,45 @@ import {
   EntrantMark,
 } from "@/components/entrant-mark";
 import { Button } from "@/components/ui/button";
+import { LATER_MATCH_USED } from "@/lib/bracket/match-report-rule";
 import {
   type TreeConnector,
   type TreeMatch,
   type TreeSlot,
   bracketTree,
 } from "@/lib/bracket/tree";
-import type { Bracket } from "@/lib/bracket/types";
+import type { Bracket, Match } from "@/lib/bracket/types";
 import { formatRecordedAt } from "@/lib/bracket/view";
+import type { ScoreDirection } from "@/lib/enums";
+import { isSetByHand } from "@/lib/scoring";
 import { YOU_ROW_CLASS } from "@/lib/you";
 
 type Scoring = "team" | "individual";
+
+/**
+ * Whether a decided Match's places differ from what its Scores give
+ * (`isSetByHand`): a tie settled, or a correction.
+ */
+function setByHand(match: Match, direction: ScoreDirection): boolean {
+  if (match.status !== "played") return false;
+  return isSetByHand(
+    match.slots.flatMap((s) =>
+      s.entrantId
+        ? [
+            {
+              id: s.entrantId,
+              place: s.place,
+              score:
+                s.score !== null && /^-?\d+(\.\d+)?$/.test(s.score.trim())
+                  ? Number(s.score)
+                  : null,
+            },
+          ]
+        : [],
+    ),
+    direction,
+  );
+}
 
 const LINE = "pointer-events-none absolute border-foreground/30";
 
@@ -156,17 +184,22 @@ function SlotRow({
  * each winner goes to. The Rounds scroll sideways inside their own region
  * when they don't fit, so the page itself never does. Each Match in
  * `recordableMatchIds` carries a visible Record result (Edit once played)
- * that calls `onRecord`; any other Match has none. Hiding a button grants
- * nothing: the action authorizes.
+ * that calls `onRecord`; each in `lockedMatchIds` (its result a later Match
+ * already used, spec R21 D1c) shows Edit and Clear result disabled with
+ * the reason beside them; any other Match has none. Hiding a button grants
+ * nothing: the action authorizes. A decided Match whose places differ from
+ * its Scores says "Set by hand".
  */
 export function BracketTree({
   bracket,
   entrantsById,
   scoring,
   scoreUnit = null,
+  scoreDirection = "none",
   primaryColor,
   youEntrantId = null,
   recordableMatchIds = [],
+  lockedMatchIds = [],
   onRecord,
   reporters = {},
 }: {
@@ -175,16 +208,21 @@ export function BracketTree({
   scoring: Scoring;
   /** The Score unit, shown beside each Match row's Score. */
   scoreUnit?: string | null;
+  /** The Score direction, for "Set by hand". */
+  scoreDirection?: ScoreDirection;
   primaryColor: string;
   youEntrantId?: string | null;
   /** The Matches the viewer may record now; each shows Record result or Edit. */
   recordableMatchIds?: readonly string[];
+  /** Decided Matches the viewer would edit, but a later Match used the result. */
+  lockedMatchIds?: readonly string[];
   onRecord?: (matchId: string) => void;
   /** Who self-reported each Match's current result, by Match id: a name. */
   reporters?: Record<string, string>;
 }) {
   const matchesById = new Map(bracket.matches.map((h) => [h.id, h]));
   const recordable = new Set(onRecord ? recordableMatchIds : []);
+  const locked = new Set(onRecord ? lockedMatchIds : []);
   const tree = bracketTree(bracket);
   const knockout = tree.headToHead;
   const multiEntrant = !tree.headToHead;
@@ -241,10 +279,53 @@ export function BracketTree({
               Bye — advances
             </span>
           )}
+          {source && setByHand(source, scoreDirection) && (
+            <span
+              data-slot="set-by-hand"
+              className="text-foreground/70 px-1.5 text-xs"
+            >
+              Set by hand
+            </span>
+          )}
           {reporter && (
             <span className="text-foreground/70 px-1.5 text-xs">
               Reported by {reporter}
             </span>
+          )}
+          {locked.has(match.id) && !recordable.has(match.id) && (
+            <div className="mt-1 flex flex-col gap-1">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="min-h-11 sm:min-h-8"
+                  aria-label={`Edit ${match.name}`}
+                  aria-describedby={`${match.id}-lock-reason`}
+                  disabled
+                >
+                  Edit
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="min-h-11 sm:min-h-8"
+                  aria-label={`Clear result of ${match.name}`}
+                  aria-describedby={`${match.id}-lock-reason`}
+                  disabled
+                >
+                  Clear result
+                </Button>
+              </div>
+              <p
+                id={`${match.id}-lock-reason`}
+                data-slot="match-lock-reason"
+                className="text-foreground/70 px-1.5 text-xs"
+              >
+                {LATER_MATCH_USED}
+              </p>
+            </div>
           )}
           {recordable.has(match.id) && (
             // Its ::after stretches over the Match's box, so the whole Match

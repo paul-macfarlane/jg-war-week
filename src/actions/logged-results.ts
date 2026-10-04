@@ -52,6 +52,7 @@ function parsedFor(
   if (competition.format === "head-to-head") {
     const parsed = parseMatchInput(
       competition.config as SeriesConfig,
+      competition.scoringConfig.direction,
       asRecord(input),
     );
     return parsed.ok
@@ -96,7 +97,11 @@ async function resultWrite<R extends { ok: boolean }>(
   });
 }
 
-/** Logs a Match (as a player in it) or an Attempt (as yourself), or either as a Host or Organizer. */
+/**
+ * Logs a Match or an Attempt: a Host or Organizer for anyone; with
+ * self-report on, an Entrant their Match or a Participant their own
+ * Attempt (at "Max attempts per person" 1, saving again edits it).
+ */
 export async function logResult(
   competitionId: string,
   input: unknown,
@@ -107,7 +112,7 @@ export async function logResult(
   });
 }
 
-/** Changes a Match or Attempt, as its logger or a Host or Organizer. */
+/** Changes a Match or Attempt: a Host or Organizer, or with self-report on anyone who could have logged it. */
 export async function updateResult(
   competitionId: string,
   resultId: string,
@@ -121,7 +126,7 @@ export async function updateResult(
   });
 }
 
-/** Deletes a Match or Attempt, as its logger or a Host or Organizer. */
+/** Deletes a Match or Attempt: a Host or Organizer, or with self-report on anyone who could have logged it. */
 export async function deleteResult(
   competitionId: string,
   resultId: string,

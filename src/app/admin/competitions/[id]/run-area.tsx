@@ -155,6 +155,10 @@ export async function CompetitionRunArea({
           scoring={view.competition.scoring}
           closed={view.competition.closed}
           viewerCanLog={view.viewerCanLog}
+          logOffer={view.logOffer}
+          scoringConfig={view.competition.scoringConfig}
+          maxAttempts={view.competition.maxAttempts}
+          attemptCounts={view.attemptCounts}
           leaderboard={view.leaderboard}
           results={view.results}
           playerOptions={view.playerOptions}
@@ -197,6 +201,7 @@ export async function CompetitionRunArea({
             placementPoints={competition.placementPoints}
             scoring={competition.scoring}
             scoreUnit={competition.scoreUnit}
+            scoreDirection={competition.scoreDirection}
             entrants={view.entrants}
             bracket={view.bracket}
             winner={view.winner}

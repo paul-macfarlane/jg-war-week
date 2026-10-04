@@ -53,6 +53,14 @@ const base: AdminLoggedResultsProps = {
   scoring: "individual",
   closed: false,
   viewerCanLog: true,
+  logOffer: {
+    label: "Log an Attempt",
+    disabledReason: null,
+    attemptsLeft: null,
+  },
+  scoringConfig: { direction: "higher", unit: "laps" },
+  maxAttempts: null,
+  attemptCounts: {},
   leaderboard: [ashleyRow],
   results: [attempt("g2", 30, 14), attempt("g1", 42, 13)],
   playerOptions: [ashley],
@@ -97,9 +105,9 @@ describe("AdminLoggedResults, Best score", () => {
   });
 
   it("hides Log an Attempt when logging is refused (a Closed Competition)", () => {
-    expect(render({ viewerCanLog: false, closed: true })).not.toContain(
-      "Log an Attempt</button>",
-    );
+    expect(
+      render({ viewerCanLog: false, logOffer: null, closed: true }),
+    ).not.toContain("Log an Attempt</button>");
   });
 
   it("says there are no Attempts yet", () => {

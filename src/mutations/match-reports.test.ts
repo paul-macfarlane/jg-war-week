@@ -107,14 +107,15 @@ describe.skipIf(!isLocalDatabase)("setSelfReport", () => {
     });
   });
 
-  it("refuses a points Competition and one of another War Week, changing nothing", async () => {
+  it("refuses a Placement Competition and one of another War Week, changing nothing", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { setSelfReport } = await import("@/mutations/match-reports");
       const f = await fixture(tx);
 
       expect(await setSelfReport(f.pointsId, { on: true }, f.ctx, tx)).toEqual({
         ok: false,
-        error: "This Competition isn't run as a Bracket.",
+        error:
+          "Only a Bracket, Head-to-head or Best score Competition lets Participants log their own results.",
       });
       expect(await f.selfReportOf(f.pointsId)).toBe(false);
 
@@ -344,7 +345,7 @@ async function reportThenHost(
           { warWeekId: hostCtx.warWeekId, actorEmail: reporter.email },
           sp,
         ),
-      ).toEqual({ ok: true, resetMatchIds: [] });
+      ).toEqual({ ok: true });
       reported = await loadBracket(competitionId, sp);
       expect(await reporterOf(sp, matchId)).toEqual(reporter);
       throw new Rollback();
@@ -355,7 +356,7 @@ async function reportThenHost(
   expect(await reporterOf(tx, matchId)).toEqual(NONE);
   expect(
     await recordMatchResult(competitionId, matchId, result, hostCtx, tx),
-  ).toEqual({ ok: true, resetMatchIds: [] });
+  ).toEqual({ ok: true });
   return { reported, recorded: await loadBracket(competitionId, tx) };
 }
 
@@ -432,7 +433,7 @@ describe.skipIf(!isLocalDatabase)("submitMatchReport", () => {
           { warWeekId: f.ctx.warWeekId, actorEmail: NEO },
           tx,
         ),
-      ).toEqual({ ok: true, resetMatchIds: [] });
+      ).toEqual({ ok: true });
 
       expect(await recordedAtOf(f.semi1)).toBeInstanceOf(Date);
       expect(await recordedAtOf(f.semi2)).toBeNull();
@@ -440,7 +441,7 @@ describe.skipIf(!isLocalDatabase)("submitMatchReport", () => {
     });
   });
 
-  it("refuses a second report on the now-decided Match, changing nothing", async () => {
+  it("lets the other player change the recorded result of a Match they played (D1d), recording them as its reporter", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { submitMatchReport } = await import("@/mutations/match-reports");
       const f = await reportFixture(tx);
@@ -454,8 +455,7 @@ describe.skipIf(!isLocalDatabase)("submitMatchReport", () => {
           f.as(NEO),
           tx,
         ),
-      ).toEqual({ ok: true, resetMatchIds: [] });
-      const before = await snapshot(tx, f.competitionId);
+      ).toEqual({ ok: true });
 
       expect(
         await submitMatchReport(
@@ -465,12 +465,84 @@ describe.skipIf(!isLocalDatabase)("submitMatchReport", () => {
           f.as(TRINITY),
           tx,
         ),
-      ).toEqual({ ok: false, error: "This Match already has a result." });
-      expect(await snapshot(tx, f.competitionId)).toEqual(before);
+      ).toEqual({ ok: true });
+      const { bracket } = await snapshot(tx, f.competitionId);
+      const semi = bracket.matches.find((h) => h.id === f.semi1)!;
+      expect(semi.slots.find((s) => s.place === 1)?.entrantId).toBe(blue);
       expect(await reporterOf(tx, f.semi1)).toEqual({
-        email: NEO,
-        participantId: f.participantOf(NEO),
+        email: TRINITY,
+        participantId: f.participantOf(TRINITY),
       });
+    });
+  });
+
+  it("lets a player clear their Match's result, and refuses everyone once a later Match used it (D1c)", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { submitMatchReport, clearMatchReport } =
+        await import("@/mutations/match-reports");
+      const { recordMatchResult, clearMatchResult } =
+        await import("@/mutations/brackets");
+      const f = await reportFixture(tx);
+      const [red, blue, green, gold] = ["Red", "Blue", "Green", "Gold"].map(
+        f.entrantOf,
+      );
+      expect(
+        await submitMatchReport(
+          f.competitionId,
+          f.semi1,
+          { order: [red, blue] },
+          f.as(NEO),
+          tx,
+        ),
+      ).toEqual({ ok: true });
+      expect(
+        await clearMatchReport(f.competitionId, f.semi1, f.as(TRINITY), tx),
+      ).toEqual({ ok: true });
+      expect(await reporterOf(tx, f.semi1)).toEqual(NONE);
+
+      await recordMatchResult(
+        f.competitionId,
+        f.semi1,
+        { order: [red, blue] },
+        f.ctx,
+        tx,
+      );
+      await recordMatchResult(
+        f.competitionId,
+        f.semi2,
+        { order: [gold, green] },
+        f.ctx,
+        tx,
+      );
+      await recordMatchResult(
+        f.competitionId,
+        f.final,
+        { order: [red, gold] },
+        f.ctx,
+        tx,
+      );
+      const before = await snapshot(tx, f.competitionId);
+      const used = {
+        ok: false,
+        error:
+          "A later Match already used this result. Change that Match first.",
+      };
+      expect(
+        await clearMatchReport(f.competitionId, f.semi1, f.as(NEO), tx),
+      ).toEqual(used);
+      expect(
+        await submitMatchReport(
+          f.competitionId,
+          f.semi1,
+          { order: [blue, red] },
+          f.as(NEO),
+          tx,
+        ),
+      ).toEqual(used);
+      expect(
+        await clearMatchResult(f.competitionId, f.semi1, f.ctx, tx),
+      ).toEqual(used);
+      expect(await snapshot(tx, f.competitionId)).toEqual(before);
     });
   });
 
@@ -612,7 +684,7 @@ describe.skipIf(!isLocalDatabase)("submitMatchReport", () => {
     });
   });
 
-  it("a Host overwrite of a reported Semifinal resets the reported Final and clears both reporters", async () => {
+  it("refuses a Host overwrite of a reported Semifinal once the reported Final used it; clearing the Final first lets it through (D1c)", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { submitMatchReport } = await import("@/mutations/match-reports");
       const { recordMatchResult } = await import("@/mutations/brackets");
@@ -648,19 +720,36 @@ describe.skipIf(!isLocalDatabase)("submitMatchReport", () => {
           f.as(NEO),
           tx,
         ),
-      ).toEqual({ ok: true, resetMatchIds: [] });
+      ).toEqual({ ok: true });
       expect(await reporterOf(tx, f.semi1)).toEqual(neo);
       expect(await reporterOf(tx, f.final)).toEqual(neo);
 
-      const overwritten = await recordMatchResult(
-        f.competitionId,
-        f.semi1,
-        { order: [blue, red] },
-        f.ctx,
-        tx,
-      );
-      expect(overwritten).toMatchObject({ ok: true });
-      expect(overwritten.ok && overwritten.resetMatchIds).toContain(f.final);
+      expect(
+        await recordMatchResult(
+          f.competitionId,
+          f.semi1,
+          { order: [blue, red] },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({
+        ok: false,
+        error:
+          "A later Match already used this result. Change that Match first.",
+      });
+      const { clearMatchResult } = await import("@/mutations/brackets");
+      expect(
+        await clearMatchResult(f.competitionId, f.final, f.ctx, tx),
+      ).toEqual({ ok: true });
+      expect(
+        await recordMatchResult(
+          f.competitionId,
+          f.semi1,
+          { order: [blue, red] },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
       const { bracket } = await snapshot(tx, f.competitionId);
       expect(isDecided(bracket.matches.find((h) => h.id === f.final)!)).toBe(
         false,
