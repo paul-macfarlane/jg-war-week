@@ -22,7 +22,7 @@ export type MatchReportFacts = {
 };
 
 /**
- * The facts a self-report is checked against (ADR 0005): the Competition's
+ * The facts a self-report is checked against (ADR 0011): the Competition's
  * setting, the Match's state in its own Bracket and its Entrants, and the
  * Participant of the Competition's War Week whose email is `email`,
  * ignoring case (account linking; more than one match counts as none), with

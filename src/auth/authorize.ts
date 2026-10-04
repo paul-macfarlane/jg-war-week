@@ -125,7 +125,7 @@ export async function authorize(
 }
 
 /**
- * The authorize step for self-report, the one Participant write (ADR 0005),
+ * The authorize step for a Bracket Match self-report (ADR 0011),
  * in ADR 0003's order: authenticate; both ids shaped like row ids; load the
  * Competition and its War Week; load the Match's facts for the actor's email
  * (account linking); run `can("bracket.match-report")`,
@@ -271,7 +271,7 @@ export type ResultOperation = "log" | "edit" | "delete";
 
 /**
  * The authorize step for logging, editing and deleting a Head-to-head
- * Match or a Best score Attempt (ADR 0006), in ADR 0003's order:
+ * Match or a Best score Attempt (ADR 0011), in ADR 0003's order:
  * authenticate; the ids shaped like row ids; load the Competition and its
  * War Week; load the Format's facts for the actor's email (whether they
  * run this Competition, account linking) with what `input` posts for that

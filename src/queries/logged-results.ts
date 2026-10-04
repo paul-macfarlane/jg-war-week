@@ -364,7 +364,7 @@ export type SeriesLogFacts = {
 };
 
 /**
- * The facts a Head-to-head Match write is checked against (ADR 0006):
+ * The facts a Head-to-head Match write is checked against (ADR 0011):
  * whether `email` runs this Competition (read in `dbOrTx`), whether it's
  * closed or decided, the linked Participant, its Entrants, the posted
  * players (`playerIds`, Teams or Participants by scoring; none for a
@@ -419,7 +419,7 @@ export type AttemptLogFacts = {
 };
 
 /**
- * The facts a Best score Attempt write is checked against (ADR 0006):
+ * The facts a Best score Attempt write is checked against (ADR 0011):
  * whether `email` runs this Competition, whether it's closed, the linked
  * Participant, the posted Participant (null for a delete) and, for an
  * edit or delete, the Attempt loaded by its id within this Competition.

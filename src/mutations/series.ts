@@ -107,7 +107,7 @@ async function insertSides(
 }
 
 /**
- * Logs a Head-to-head Match (ADR 0006) between the Competition's two
+ * Logs a Head-to-head Match (ADR 0011) between the Competition's two
  * Entrants: under the Competition's row lock, reloads the facts with the
  * posted players and checks them again (so a log after Close or a decided
  * series is refused), validates the players, and records who logged it:
@@ -152,8 +152,10 @@ export async function logMatch(
 }
 
 /**
- * Changes a Match's result (ADR 0006): its logger while the series is
- * open for them, or a Host or Organizer, checked again under the lock.
+ * Changes a Match's result (ADR 0011): anyone who could have logged it (a
+ * Host or Organizer, or with self-report on either Entrant or anyone on an
+ * Entrant Team), whoever logged it, while the Competition is open, checked
+ * again under the lock.
  * Replaces its sides and bumps `updated_at`; its recorded time never
  * changes.
  */
@@ -192,7 +194,10 @@ export async function updateMatch(
   });
 }
 
-/** Deletes a Match: its logger while the series is open, or a Host or Organizer. */
+/**
+ * Deletes a Match (ADR 0011): anyone who could have logged it, whoever
+ * logged it, while the Competition is open.
+ */
 export async function deleteMatch(
   competitionId: string,
   matchId: string,

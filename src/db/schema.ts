@@ -235,7 +235,9 @@ export const competition = pgTable(
     // defaults. Set for every Bracket (app logic, not a CHECK); null for
     // every other Format.
     bracketConfig: jsonb("bracket_config").$type<BracketConfig | null>(),
-    // Participants in a Match may enter its result themselves (ADR 0005).
+    // "Participants can log their own results" (ADR 0011): with it on,
+    // anyone who could have logged a result logs it and changes it while
+    // the Competition is open.
     selfReport: boolean("self_report").notNull().default(false),
     // Set while the Competition's generated Points Entries exist: a
     // closed Bracket or Placement, or a closed Head-to-head or Best score

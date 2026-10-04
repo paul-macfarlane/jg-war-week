@@ -155,11 +155,12 @@ export function OrganizerGuide({
           Participation lists; their Entrant in a Bracket (themselves, their
           Squad, or their {teamLower} in a team Bracket) is marked
           &quot;You&quot;; and a Head-to-head or Best score Competition&apos;s
-          leaderboard marks their enrolled {teamLower} &quot;Your Team&quot;.{" "}
-          {teamLabel} standings rows are not highlighted. They can log Matches
-          and Attempts, report Bracket Matches and check in. A Participant
-          without an email is never linked. It isn&apos;t used for sign-in and
-          grants nothing beyond those Participant writes.
+          leaderboard marks their {teamLower} &quot;Your Team&quot;. {teamLabel}{" "}
+          standings rows are not highlighted. They can log Matches and Attempts
+          and report Bracket Matches when &quot;Participants can log their own
+          results&quot; is on, and check in when Self check-in is on. A
+          Participant without an email is never linked. It isn&apos;t used for
+          sign-in and grants nothing beyond those Participant writes.
         </p>
       </section>
 
@@ -210,32 +211,38 @@ export function OrganizerGuide({
           Best of once it has a Match; and the Match size, how many advance, the
           3rd place Match, the Entrants and building the Bracket once a Match
           has a result. Nothing resets a Bracket; add a new Competition to start
-          over. A Bracket has one Format: choose how many Entrants are in each
-          Match (2 to 8) and how many advance. Two per Match with one advancing
-          is one against one, the Winner going on; bigger Matches send their top
-          few on, Round after Round, until one Match is left. With one against
-          one and at least 4 Entrants, turn on the 3rd place Match to have the
-          semifinal losers play for 3rd and 4th beside the final. Placings come
-          only from the final and the 3rd place Match: the final gives 1st and
-          2nd, the 3rd place Match 3rd and 4th; without one, only 1st and 2nd
-          are placed and the semifinal losers get nothing. With more per Match,
-          the final&apos;s finishing order gives places 1 to 4. Nothing goes
-          past 4th, and nobody else is placed. On the same page, pick Entrants —
-          all {teamLower}s, or specific Participants — and Generate the Bracket
-          (Seed Positions are random; Re-roll before any Match is played to try
-          again). Below it is the Bracket&apos;s tree, the same one Participants
-          see. Press Record result on a Match in the tree (Edit once it&apos;s
-          recorded) to enter it: its Winner, or for a bigger Match its Entrants
-          in finishing order, with scores, in a dialog centered on a screen or a
-          bottom sheet on a phone; the tree shows when each Match was recorded.
-          Changing who advances resets the later Matches that followed from it,
-          while a score-only edit keeps them. Close, once every Match is played
-          (the 3rd place Match too), turns the Bracket&apos;s placings into
-          Points Entries marked &quot;From bracket&quot;; Reopen removes them so
-          you can fix a Match and Close again. While it&apos;s Closed, its
-          settings except the name, description, Group, Hosts and Placement
-          Points are locked: Reopen first (a Placement Points change applies at
-          the next Close).
+          over. A Bracket is Head-to-head or Group: Head-to-head is one against
+          one, the Winner going on Round after Round to the final; Group puts 3
+          to 8 Entrants per Match and sends the top few on, Round after Round,
+          until one Match is left. In a Head-to-head Bracket with at least 4
+          Entrants, turn on the 3rd place Match to have the semifinal losers
+          play for 3rd and 4th beside the final. Placings come only from the
+          final and the 3rd place Match: the final gives 1st and 2nd, the 3rd
+          place Match 3rd and 4th; without one, only 1st and 2nd are placed and
+          the semifinal losers get nothing. In a Group Bracket, the final&apos;s
+          finishing order gives places 1 to 4. Nothing goes past 4th, and nobody
+          else is placed. On the same page, pick Entrants — all {teamLower}s, or
+          specific Participants — and Generate the Bracket (Seed Positions are
+          random; Re-roll before any Match is played to try again). Below it is
+          the Bracket&apos;s tree, the same one Participants see. In a Group
+          Bracket, Edit on each Round heading sets that Round&apos;s defaults
+          (Match size and how many advance), how many advance from one Match,
+          and moves an Entrant to another Match of the Round. A Round locks once
+          it has a result. Press Record result on a Match in the tree (Edit once
+          it&apos;s recorded) to enter it: its Winner, or for a bigger Match its
+          Entrants in finishing order, with scores, in a dialog centered on a
+          screen or a bottom sheet on a phone; the tree shows when each Match
+          was recorded. Only the latest result along a path changes: a Match a
+          later Match already used shows Edit and Clear result disabled with
+          &quot;Change that Match first&quot;, and in a Group Bracket every
+          Match before a round with a result says &quot;Change that round
+          first&quot;. To correct one, clear results back from the latest one,
+          then record again. Close, once every Match is played (the 3rd place
+          Match too), turns the Bracket&apos;s placings into Points Entries
+          marked &quot;From bracket&quot;; Reopen removes them so you can fix a
+          Match and Close again. While it&apos;s Closed, its settings except the
+          name, description, Group, Hosts and Placement Points are locked:
+          Reopen first (a Placement Points change applies at the next Close).
         </p>
         <h3 className="font-semibold">Squads and self-report</h3>
         <p className="text-foreground/70">
@@ -247,10 +254,11 @@ export function OrganizerGuide({
           are seeded at random. Turn on Participants can log their own results
           and a Participant whose roster email matches their sign-in can record
           their own Match, from Your next Match or its Record result in the
-          tree, and change it until a later Match uses it; it counts at once.
-          The tree shows &quot;Reported by&quot; on that Match, and you can
-          still change any result there. Turn it off to stop new reports;
-          results already reported stand.
+          tree, and change it until a later Match uses it (in a Group Bracket,
+          until a later round has a result); it counts at once. The tree shows
+          &quot;Reported by&quot; on that Match, and you can still change any
+          result there. Turn it off to stop new reports; results already
+          reported stand.
         </p>
       </section>
 

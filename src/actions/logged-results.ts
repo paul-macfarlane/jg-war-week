@@ -66,7 +66,7 @@ function parsedFor(
 }
 
 /**
- * Runs a Match or Attempt write (ADR 0006): authorizes the actor with the
+ * Runs a Match or Attempt write (ADR 0011): authorizes the actor with the
  * Format's facts and the posted input first, so a refusal wins over
  * malformed input, then parses the input by the Competition's Format. The
  * mutation checks the facts again under the Competition's lock.

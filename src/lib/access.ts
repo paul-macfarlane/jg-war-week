@@ -122,13 +122,13 @@ export type WarWeekAction =
   /** Checking yourself in or out (ADR 0009). */
   | "participation.check-in"
   | "participation.check-out"
-  /** Self-report (ADR 0005). */
+  /** Self-report (ADR 0011). */
   | "bracket.match-report"
-  /** Logging, editing and deleting a Head-to-head Match (ADR 0006). */
+  /** Logging, editing and deleting a Head-to-head Match (ADR 0011). */
   | "series.log"
   | "series.edit"
   | "series.delete"
-  /** Logging, editing and deleting a Best score Attempt (ADR 0006). */
+  /** Logging, editing and deleting a Best score Attempt (ADR 0011). */
   | "attempts.log"
   | "attempts.edit"
   | "attempts.delete"
@@ -247,10 +247,12 @@ export const sameEmail = (a: string | null | undefined, b: string) =>
  * War Week. A Host runs their own Competitions (setup, Bracket, Points
  * Entries, linked Schedule Items) and posts Announcements in a War Week
  * where they host, editing or deleting their own. Everyone else signed in
- * is a Participant, whose writes are reporting the result of a Match
- * they're in when self-report is on (ADR 0005), logging Head-to-head
- * Matches and Best score Attempts and changing the ones they logged, and
- * enrolling or withdrawing (ADR 0006), and checking in or out (ADR 0009).
+ * is a Participant, whose writes, with "Participants can log their own
+ * results" on (ADR 0011), are recording a Bracket Match they're in and
+ * logging Head-to-head Matches and Best score Attempts, and changing any
+ * result they could have logged, whoever logged it, while the Competition
+ * is open; plus enrolling or withdrawing (ADR 0006) and checking in or out
+ * (ADR 0009).
  * Those facet-bound rules bind everyone, Organizers included: a Host or
  * Organizer runs a Head-to-head or Best score Competition through the
  * Match or Attempt facet's `runs`, adds Entrants through the

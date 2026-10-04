@@ -506,7 +506,7 @@ describe("can: running a Head-to-head or Best score Competition and the enroll s
   });
 });
 
-describe("can: logging, editing and deleting a Head-to-head Match (ADR 0006)", () => {
+describe("can: logging, editing and deleting a Head-to-head Match (ADR 0011)", () => {
   const ME = "participant-me";
   const RIVAL = "participant-rival";
   const THIRD = "participant-third";
@@ -658,7 +658,7 @@ describe("can: logging, editing and deleting a Head-to-head Match (ADR 0006)", (
   });
 });
 
-describe("can: logging, editing and deleting a Best score Attempt (ADR 0006)", () => {
+describe("can: logging, editing and deleting a Best score Attempt (ADR 0011)", () => {
   const ME = "participant-me";
   const RIVAL = "participant-rival";
   const ADMIN = "Organizers and Hosts only.";
