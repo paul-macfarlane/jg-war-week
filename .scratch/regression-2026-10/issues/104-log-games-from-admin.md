@@ -6,7 +6,7 @@
 
 **Blocked by:** `101` (order inside R18)
 
-**Status:** ai-review
+**Status:** done
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: where to record games and scores); grilling Q22, Q36; red-team pass 1 M2
 
@@ -17,9 +17,11 @@
 
 ## Acceptance criteria
 
-- [ ] e2e: a Host (of an `E2E R18 …` Best score Competition) logs a Best score attempt for a Participant from admin, edits it, and the Competition's Games leaderboard shows the edited score (M2: the Competition leaderboard, not War Week Standings, which move only at Close).
-- [ ] e2e: the same Host deletes the Game behind a `ConfirmDialog`, and it leaves the leaderboard.
+- [x] e2e: a Host (of an `E2E R18 …` Best score Competition) logs a Best score attempt for a Participant from admin, edits it, and the Competition's Games leaderboard shows the edited score (M2: the Competition leaderboard, not War Week Standings, which move only at Close).
+- [x] e2e: the same Host deletes the Game behind a `ConfirmDialog`, and it leaves the leaderboard.
 
 ## Comments
 
 - 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r18`): claimed with Epic R18; `ready-for-agent` → `in-progress`. Execution record: [`R18-execution.md`](../epics/R18-execution.md).
+
+- 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r18`): D104 `303f082` (Sonnet): `AdminGames` in the Head-to-head and Best score run area reuses `GameLog` and `GameForm` with no player preselected; existing Game authorization unchanged. Every AC PASS; evidence in [`R18-execution.md`](../epics/R18-execution.md). `ai-review` → `done`.

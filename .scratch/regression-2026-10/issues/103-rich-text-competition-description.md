@@ -6,7 +6,7 @@
 
 **Blocked by:** `101` (order inside R18)
 
-**Status:** ai-review
+**Status:** done
 
 **Source:** Paul's regression feedback 2026-10-03 (Admin: descriptions and rules); grilling Q8; red-team pass 1 B1, W6, W7, M4
 
@@ -21,10 +21,12 @@
 
 ## Acceptance criteria
 
-- [ ] e2e: an Organizer writes a description with a heading, a list and a link on an `E2E R18 …` Competition; the Participant page renders them.
-- [ ] Unit test: the seed helper turns "Line one\nLine two\n\nLine three" into three paragraphs, in order.
-- [ ] Postgres test: a description with a `javascript:` link or a `<script>`-carrying node is refused or stripped on save, as an Announcement body is.
+- [x] e2e: an Organizer writes a description with a heading, a list and a link on an `E2E R18 …` Competition; the Participant page renders them.
+- [x] Unit test: the seed helper turns "Line one\nLine two\n\nLine three" into three paragraphs, in order.
+- [x] Postgres test: a description with a `javascript:` link or a `<script>`-carrying node is refused or stripped on save, as an Announcement body is.
 
 ## Comments
 
 - 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r18`): claimed with Epic R18; `ready-for-agent` → `in-progress`. Execution record: [`R18-execution.md`](../epics/R18-execution.md).
+
+- 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r18`): D103 `b052a82` (Sonnet): `drizzle/0030_woozy_amphibian.sql` (`USING NULL`), `contentInputSchema` on save, `RichTextEditor` on the page, `RichText` on the Participant page, `plainTextToContent` for seeds. DR1 added the old-row migration test and an image-by-URL e2e step. Every AC PASS; evidence in [`R18-execution.md`](../epics/R18-execution.md). `ai-review` → `done`.

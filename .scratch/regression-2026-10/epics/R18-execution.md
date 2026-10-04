@@ -78,3 +78,73 @@ Human gates: none before or during delivery. **Announced for later (outside this
 - 2026-10-03, DE (Opus): `f4a26b3`, `1114387`, `8cfe895`, `7491138`. Smoke checks the five 308s signed in. Product fixes: a Format change to a Games Format crashed the settings form (null config; now `gamesConfigOf`); one "Who took part" heading. Test-side fixes: Individual scoring for Placement cases; r5 reload after `withParticipantEmail`; `placement.spec.ts` focuses the picker instead of clicking (Base UI drag-select added an extra row when the list opened above the search). Smoke 266 ok / 0 FAIL; e2e 118 passed, 0 failed, 0 skipped, 0 flaky.
 - 2026-10-03, DX (Sonnet): `1913e25`. `CONTEXT.md`, `docs/agents/testing.md` smoke and e2e cells, `docs/maintainers-guide.md` (Competition page recipe; "How R18 reached staging and production (the reset)"), `docs/regression-checklist.md`, `organizer-guide.tsx`; `/about` stills regenerated (copy unchanged).
 - 2026-10-03: all parts integrated; epic and parts `in-progress` → `ai-review`; aggregate code review starts.
+- 2026-10-04, DR1 (Opus): `794a03e`, `a6abb00`, the review fixes below. Orchestrator fix `6b88369`: smoke's `hosts.ts` still expected the old Finalized lock copy (the first full gate failed on it), and the e2e row in `testing.md` now names the Best of step.
+- 2026-10-04, DR2 (Opus): `9d9ce07`. The second full gate failed once (`bracket-heats.spec.ts:124`, horizontal overflow at the builder check); about 45 reruns, including a full e2e, never reproduced it and no source changed. Recorded as an unexplained, non-reproducing failure; the final gate below is green on the same code.
+
+## [AI CODE REVIEW]
+
+2026-10-03, on `d2d38b6..682fc8f`: one fresh reviewer per axis (Opus), adjudicated by the orchestrator from the cited hunks. All resolved in `794a03e` unless marked.
+
+**Technical implementation and spec conformity**
+
+| # | Severity | Finding | Disposition |
+| --- | --- | --- | --- |
+| S1 | blocking | Head-to-head Best of could never be turned on: it needs two fixed Entrants, Entrants are a result, and `gameConfig` locked on any result | Resolved. 101's table names no Head-to-head setting; under its rule (what affects how the game runs can't change once it started), Head-to-head's settings and Entrants open lock once a **Game** exists (`LOCKED_BY_GAME`); Best score's direction and attempts keep the table's result lock. Postgres, unit, form and e2e tests |
+| S2 | blocking | A Host's page named a co-Host by the email's local part when the Profile had no name, and never by roster name (101 W3, 102) | Resolved: Profile name, else roster name, else "A Host not on the roster"; the e2e asserts no part of the co-Host's email is in the page |
+| S3 | non-blocking | r12 Participation spec's comment claimed a UI Host assignment it does by SQL | Resolved (comment) |
+| S4 | non-blocking | No old-row test that 0030 empties an existing description | Resolved: `migrations.test.ts` "migrating a pre-R18 Competition's plain-text description" |
+| S5 | non-blocking | A Format change to individual Participation drops the Placement Points | Reading: forced by the `competition_participation_columns` CHECK and the same as `createCompetition`'s Participation defaults, which 101 requires |
+| S6 | non-blocking | `autosave.reseed` runs during render | Accepted: idempotent, no wrong outcome found |
+
+**Coding standards**
+
+| # | Severity | Finding | Disposition |
+| --- | --- | --- | --- |
+| C1 | non-blocking | Autosave lifecycle copied from `WarWeekSettingsForm` (ADR 0001 §3) | Resolved: `src/components/autosave-status.tsx` (`useAutosaveLifecycle`, `AutosaveStatusLine`) used by both forms |
+| C2 | non-blocking | Format defaults copied between `createCompetition` and `changeFormat` | Resolved: `src/lib/format-defaults.ts` |
+| C3 | non-blocking | `saveCompetitionSetting` (a mutation) checks the role; ADR 0001 says mutations never authorize | Kept, as the epic requires every per-field save to go through a mutation that checks the role and the lock; recorded as a dated amendment in ADR 0001 |
+| C4 | non-blocking | Host-name helper duplicated the one name rule | Resolved with S2 |
+| C5 | non-blocking | Dead code (enroll constants, `getCompetitionLockFactsById`, misplaced constant) | Resolved |
+| C6 | non-blocking | Lock copy said "Reopen" where a Bracket's button says "Un-finalize" | Resolved: "Reopen or Un-finalize it first." everywhere |
+| C7–C12 | non-blocking | Docs: maintainers guide's server-data example, autosaving forms, "Saved" not a toast; checklist stale line; CONTEXT stale rules; testing.md claimed image coverage | Resolved; image-by-URL step added to the description spec |
+| C13 | non-blocking | Hard-coded `maxLength`; Hosts error outside its Field | Resolved |
+
+Remaining risks, not in R18's contract: (1) the Placement sheet's "Add a Participant" picker can add the highlighted Participant on a very fast press-release when its list opens above the search (seen in `placement.spec.ts`; the spec now focuses the field); question queued for Paul. (2) At 375 px the admin bottom bar clips its "More" tab (pre-existing, `admin-bottom-bar.tsx`; the bar is fixed, so the page doesn't scroll). (3) The one non-reproducing `bracket-heats` overflow failure (DR2).
+
+## [CLOSEOUT]
+
+2026-10-04.
+
+- **Repository delivery:** `war-weeker`, branch `feat/regression-r18-admin-competition-page` from `staging` at `d2d38b6`, in worktree `.claude/worktrees/regression-r18/war-weeker` with its own database `war_weeker_r18` and ports 3110 / 3210.
+- **Deliverables:** D101S (Opus) `d05e896`; D101P (Opus) `e4f0a41`, `6438fa5`; D103 (Sonnet) `b052a82`; D102 (Sonnet) `b7b38cf`; D104 (Sonnet) `303f082`; DE (Opus) `f4a26b3`, `1114387`, `8cfe895`, `7491138`; DX (Sonnet) `1913e25`; DR1 (Opus) `794a03e`, `a6abb00`; orchestrator `6b88369`; DR2 (Opus) `9d9ce07`.
+- **Isolation check:** the plan made the deliverables serial because each part edits `competition-settings-form.tsx` and the setup / Bracket mutations; the diffs bear it out (D101P, D103, D102 and DR1 all edit `competition-settings-form.tsx`; D101S, D103 and DR1 edit `src/mutations/competition-settings.ts`).
+- **Approved readings and deviations:** Head-to-head settings lock on a Game (S1); points per Participant never lock, like Placement Points; a Bracket's Squads are deleted on a Format change (not a result); Participants without an email shown disabled rather than hidden (102); individual Participation drops Placement Points (S5); the 308 smoke check uses a placeholder id, since the retired pages redirect without a lookup and a Bracket's id is its Competition's; ADR 0001 amendment (C3).
+- **Verified run command:** `pnpm format:check && pnpm gate` with `DATABASE_URL=…/war_weeker_r18 DATABASE_DRIVER=pg SMOKE_PORT=3110 E2E_PORT=3210`, exit 0 on `9d9ce07`: vitest 194 files / 3858 tests passed, 0 skipped; smoke 266 ok, 0 FAIL; e2e 118 passed (5.3m), 0 failed, 0 skipped, 0 flaky. Log `test-results/r18/gate.log`. Focused vitest (verbose, 13 files / 130 tests, 0 skipped): `test-results/r18/vitest.txt`. No deploy in this work package.
+
+| Criterion | Verdict | Evidence |
+| --- | --- | --- |
+| E1 migration `USING NULL` | PASS | `grep -n USING drizzle/0030_*.sql` → line 1 only; `RENAME` count 0 |
+| E2 seeds load twice | PASS | `vitest.txt` (three `every seed loads twice` cases) |
+| E3 skip grep | PASS | `git diff d2d38b6 -- e2e src scripts \| grep …` empty |
+| E4 retired-route grep | PASS | only the five redirect pages, `retired-routes.test.ts`, `admin-redirects.test.ts` (legacy `/admin/setup` redirects) and smoke's 308 checks |
+| E5 testing.md rows | PASS | smoke and e2e cells (`1913e25`, `6b88369`) |
+| E6 showcase | PASS | `/about` copy unchanged (no user-visible claim changed), stills regenerated, maintainers guide incl. the R18 reset, checklist (`1913e25`, `794a03e`) |
+| E7 CONTEXT | PASS | `CONTEXT.md` (`1913e25`, `794a03e`); no Reset bracket |
+| E8 closeouts | PASS | this record, the epic and parts 101–104 `done` |
+| E9 PR step | PASS | PR description lists the reset as Paul's post-merge step |
+| E10 gate | PASS (local); CI on the PR pending | `gate.log` |
+| P101-e2e-formats | PASS | `test-results/e2e/regression-r18-competition-*-reason-once-it-has-a-result-chromium/locked-*.png`; gate.log |
+| P101-e2e-format-change | PASS | `…-ettings-and-run-area-appear-chromium/format-*.png` |
+| P101-e2e-host | PASS | `…-olds-no-email-but-their-own-chromium`; gate.log |
+| P101-pg-locks, P101-pg-roles | PASS | `vitest.txt` (`competition-settings.test.ts`, `competition-locks.test.ts`) |
+| P101-redirects | PASS | gate.log: five `permanently redirects to /admin/competitions/…` smoke lines |
+| P101-no-force | PASS | both greps empty |
+| P103-e2e | PASS | gate.log (`regression-r18-description`: heading, list, link, image by URL) |
+| P103-unit | PASS | `vitest.txt` (`from-plain-text.test.ts`) |
+| P103-pg-sanitise | PASS | `vitest.txt` (`javascript:` link and script node stripped) |
+| P102-e2e | PASS | `…regression-r18-hosts-…-Host-records-a-result-chromium`; gate.log |
+| P102-unit | PASS | `vitest.txt` (`host-options.test.ts`) |
+| P102-pg | PASS | `vitest.txt` (Host refused saving Hosts) |
+| P104-e2e-log-edit, P104-e2e-delete | PASS | gate.log (`regression-r18-games-admin`) |
+
+**Human prerequisite (post-merge, Paul):** the epic's reset of staging, the prod pre-check, then prod (see the PR description and `docs/maintainers-guide.md`).

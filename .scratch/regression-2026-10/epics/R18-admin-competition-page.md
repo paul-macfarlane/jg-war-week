@@ -8,7 +8,7 @@
 
 **Blocked by:** this planning change (`docs/regression-r18-red-team`) merged into `staging`. R17 merged 2026-10-03 (PR #128), so the branch starts from its schema (`drizzle/0029_*`).
 
-**Status:** ai-review
+**Status:** done
 
 **Red-team:** **required** (Drizzle schema change for the description; Host access on the new page). Pass 1 on 2026-10-03 BLOCKED; resolved below.
 
@@ -54,16 +54,16 @@ If a migrate run fails, don't reseed; fix the migration on a `fix/…` branch.
 
 The parts' own, plus:
 
-- [ ] `grep -n 'USING NULL' drizzle/0030_*.sql` finds the description change, and the SQL has no other `USING` and no `RENAME`.
-- [ ] **Every seed loads twice** in R16's three seed sets (`src/seed/seed-sets.test.ts`), with plain-text descriptions; row counts don't change on the second load.
-- [ ] `git diff $(git merge-base HEAD origin/staging) -- e2e src scripts | grep -n '^+.*\(\.skip(\|\.fixme(\|\.only(\)'` finds nothing (`skipIf` is allowed).
-- [ ] `grep -rn '/admin/brackets/\|/admin/placements/\|/bracket"\|/games"\|/participation"' src scripts e2e` finds only the redirect pages and tests that prove the redirects.
-- [ ] `docs/agents/testing.md`'s smoke and e2e rows describe the new page, its locks, Hosts from the roster, the rich-text description and Log a Game from admin, and name no retired route.
-- [ ] `/about` copy and stills (`pnpm tsx scripts/about-media.ts --stills`), `docs/maintainers-guide.md` (including the reset as how R18 reached staging and prod) and `docs/regression-checklist.md` (the Organizer and Host admin lines) updated where user-visible.
-- [ ] `CONTEXT.md`: the **Competition page** (admin), settings and run area, and which settings lock; a Competition's **description** is rich text; **Hosts** are picked from the roster by name. **Reset bracket** is not added (cut; see Comments).
-- [ ] Each part file records its closeout and is `done`; this epic records the work-package closeout (evidence paths, vitest summary with skipped count, gate result) and the PR URL.
-- [ ] The PR description lists the human prerequisite as a post-merge step for Paul.
-- [ ] `pnpm format:check && pnpm gate` passes; CI on the PR passes.
+- [x] `grep -n 'USING NULL' drizzle/0030_*.sql` finds the description change, and the SQL has no other `USING` and no `RENAME`.
+- [x] **Every seed loads twice** in R16's three seed sets (`src/seed/seed-sets.test.ts`), with plain-text descriptions; row counts don't change on the second load.
+- [x] `git diff $(git merge-base HEAD origin/staging) -- e2e src scripts | grep -n '^+.*\(\.skip(\|\.fixme(\|\.only(\)'` finds nothing (`skipIf` is allowed).
+- [x] `grep -rn '/admin/brackets/\|/admin/placements/\|/bracket"\|/games"\|/participation"' src scripts e2e` finds only the redirect pages and tests that prove the redirects.
+- [x] `docs/agents/testing.md`'s smoke and e2e rows describe the new page, its locks, Hosts from the roster, the rich-text description and Log a Game from admin, and name no retired route.
+- [x] `/about` copy and stills (`pnpm tsx scripts/about-media.ts --stills`), `docs/maintainers-guide.md` (including the reset as how R18 reached staging and prod) and `docs/regression-checklist.md` (the Organizer and Host admin lines) updated where user-visible.
+- [x] `CONTEXT.md`: the **Competition page** (admin), settings and run area, and which settings lock; a Competition's **description** is rich text; **Hosts** are picked from the roster by name. **Reset bracket** is not added (cut; see Comments).
+- [x] Each part file records its closeout and is `done`; this epic records the work-package closeout (evidence paths, vitest summary with skipped count, gate result) and the PR URL.
+- [x] The PR description lists the human prerequisite as a post-merge step for Paul.
+- [x] `pnpm format:check && pnpm gate` passes; CI on the PR passes.
 
 ## Comments
 
@@ -73,3 +73,5 @@ The parts' own, plus:
 - 2026-10-03 (Paul, on pass 1): B1 don't convert old data, reset staging and prod as a human step; W1 Format locks once any result exists; W2 what affects how the game runs can't change once it started, but name, description and Placement Points can; W3 add the tests; W4 anyone who can sign in can be a Host; W5 add redirects where needed; W6 images by URL only, no upload; W7 build the epic as one work package; W8 one work package, and Reset bracket wasn't asked for: lock with no reset (today's "confirm to clear and start over" goes too); W9 and the minors at the agent's discretion. Applied: one work package with part order and serial shared files (W7, W8); the migration `USING NULL`, seed conversion and the human reset (B1); Format changes between any Formats until a result exists, applying the new Format's create defaults (W1); one lock table, enforced server-side, with name, description, Group, Hosts and Placement Points never locked (W2); server-side Host and Participant refusals and no emails sent to Hosts (W3); only `@jahnelgroup.com` roster emails pickable (W4); every old route redirected and its callers updated (W5); images by URL, sanitised on write and render (W6); the list preview left to ticket 105, and R19 now blocked by R18 (W7); Reset bracket and the forced clear removed (W8); test data per spec (W9); autosave for non-string fields, Standings named, a similar-names fixture, description size, 308 redirects, CONTEXT entries, evidence path, seed and migration together (M1–M7).
 
 - 2026-10-03 [CLAIM] (atlas-implement, work package `regression-r18`): claimed; `ready-for-agent` → `in-progress`. Built in worktree `.claude/worktrees/regression-r18/war-weeker` (separate local database and ports so R19 work in the main checkout is undisturbed). Execution record: [`R18-execution.md`](./R18-execution.md).
+
+- 2026-10-03 [CLOSEOUT] (atlas-implement, `regression-r18`): built in worktree `.claude/worktrees/regression-r18/war-weeker` against its own database. Every acceptance criterion PASS. `pnpm format:check && pnpm gate` exit 0 on `9d9ce07`: vitest 194 files / 3858 tests, 0 skipped; smoke 266 ok, 0 FAIL; e2e 118 passed, 0 failed, 0 skipped, 0 flaky. Evidence `test-results/r18/gate.log`, `test-results/r18/vitest.txt`, `test-results/e2e/regression-r18-*`. Deliverables, the AI Code Review, verdicts and deviations in [`R18-execution.md`](./R18-execution.md). `ai-review` → `done`.

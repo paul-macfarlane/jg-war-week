@@ -1,0 +1,146 @@
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.11 /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker
+
+ ✓ src/lib/competition-locks.test.ts > a result > is none when nothing has been entered 1ms
+ ✓ src/lib/competition-locks.test.ts > a result > is an Entrant 0ms
+ ✓ src/lib/competition-locks.test.ts > a result > is a Game 0ms
+ ✓ src/lib/competition-locks.test.ts > a result > is a Placement 0ms
+ ✓ src/lib/competition-locks.test.ts > a result > is a check-in 0ms
+ ✓ src/lib/competition-locks.test.ts > a result > is a Heat 0ms
+ ✓ src/lib/competition-locks.test.ts > a result > is a Heat Result 0ms
+ ✓ src/lib/competition-locks.test.ts > a result > is a generated Points Entry 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > never locks name, not even while Finalized 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > never locks description, not even while Finalized 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > never locks group, not even while Finalized 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > never locks hosts, not even while Finalized 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > never locks placementPoints, not even while Finalized 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > never locks participationPoints, not even while Finalized 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks format once any result exists 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks scoring once any result exists 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks countsTowardTeam once any result exists 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks scoreDirection once any result exists 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks a Best score Competition's direction and attempts once any result exists, an Entrant included 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks a Head-to-head Competition's draws and Best of once it has a Game, not before 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks a head-to-head Competition's open or fixed Entrants once it has a Game, not before 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks a best-score Competition's open or fixed Entrants once it has a Game, not before 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks bracketConfig once a Heat Result exists, not before 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks entrants once a Heat Result exists, not before 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks bracket once a Heat Result exists, not before 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks selfEnroll only while Finalized or Closed 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks entrantLimit only while Finalized or Closed 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks enrollClosesAt only while Finalized or Closed 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks loggingClosesAt only while Finalized or Closed 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks selfReport only while Finalized or Closed 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks selfCheckIn only while Finalized or Closed 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks checkInClosesAt only while Finalized or Closed 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks every field but the never-locked ones while a placement Competition is Finalized or Closed, even with no result 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks every field but the never-locked ones while a bracket Competition is Finalized or Closed, even with no result 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks every field but the never-locked ones while a head-to-head Competition is Finalized or Closed, even with no result 0ms
+ ✓ src/lib/competition-locks.test.ts > settingLockReason > locks every field but the never-locked ones while a best-score Competition is Finalized or Closed, even with no result 0ms
+ ✓ src/lib/competition-locks.test.ts > lockFactsOf > reads a Game, any result, a Heat Result and Finalized from what was entered 0ms
+ ✓ src/lib/competition-locks.test.ts > settingNote > says a Placement Points change while Finalized applies at the next Finalize or Close 0ms
+ ✓ src/lib/autosave.test.ts > createAutosave > saves a field once the Organizer stops typing, not on every key 6ms
+ ✓ src/lib/autosave.test.ts > createAutosave > starts idle and saves nothing for a value changed back to the saved one 1ms
+ ✓ src/lib/autosave.test.ts > createAutosave > shows a refusal at its field, keeps the old value saved, and lets other fields save 4ms
+ ✓ src/lib/autosave.test.ts > createAutosave > puts a refusal that names no field at the first field of the group 1ms
+ ✓ src/lib/autosave.test.ts > createAutosave > saves a group's fields together and other fields separately 1ms
+ ✓ src/lib/autosave.test.ts > createAutosave > sends one save at a time, each with only its own fields, never another field's unsaved typing 2ms
+ ✓ src/lib/autosave.test.ts > createAutosave > flush saves a pending change at once (leaving the page) 1ms
+ ✓ src/lib/autosave.test.ts > createAutosave > shows a save that throws as a refusal at the field 1ms
+ ✓ src/lib/autosave.test.ts > createAutosave with fields that aren't text > saves a boolean, a list and rich-text content, each on its own 1ms
+ ✓ src/lib/autosave.test.ts > createAutosave with fields that aren't text > sends nothing for a list or content equal to the saved one in a new copy 1ms
+ ✓ src/lib/autosave.test.ts > createAutosave with fields that aren't text > treats a set of emails in another order as unchanged, by the form's own equality 1ms
+ ✓ src/lib/autosave.test.ts > Autosave.reseed: the server's values after a save > takes the server's values as saved, so a field set back to the old value saves again 1ms
+ ✓ src/lib/autosave.test.ts > Autosave.reseed: the server's values after a save > names the fields still waiting, saving or refused, which the form keeps as typed 1ms
+ ✓ src/lib/host-options.test.ts > buildHostOptions > shows a roster Participant by name with the email beneath, selectable by email 1ms
+ ✓ src/lib/host-options.test.ts > buildHostOptions > does not let a Participant with no email be selected, and says how to fix it 0ms
+ ✓ src/lib/host-options.test.ts > buildHostOptions > disables a non-Jahnel Group email with the reason 0ms
+ ✓ src/lib/host-options.test.ts > buildHostOptions > tells two Participants named alike apart by their emails 0ms
+ ✓ src/lib/host-options.test.ts > buildHostOptions > matches a current Host to the roster whatever the email's case 1ms
+ ✓ src/lib/host-options.test.ts > buildHostOptions > keeps a current Host who is off the roster as a warned, selectable entry 0ms
+ ✓ src/app/admin/competitions/[id]/retired-routes.test.ts > the retired Competition setup routes (ticket 101) > /admin/competitions/[id]/bracket answers 308 to the Competition's page 2ms
+ ✓ src/app/admin/competitions/[id]/retired-routes.test.ts > the retired Competition setup routes (ticket 101) > /admin/competitions/[id]/games answers 308 to the Competition's page 0ms
+ ✓ src/app/admin/competitions/[id]/retired-routes.test.ts > the retired Competition setup routes (ticket 101) > /admin/competitions/[id]/participation answers 308 to the Competition's page 0ms
+ ✓ src/app/admin/competitions/[id]/retired-routes.test.ts > the retired Competition setup routes (ticket 101) > /admin/brackets/[id] answers 308 to the Competition's page 0ms
+ ✓ src/app/admin/competitions/[id]/retired-routes.test.ts > the retired Competition setup routes (ticket 101) > /admin/placements/[competitionId] answers 308 to the Competition's page 0ms
+ ✓ src/lib/rich-text/from-plain-text.test.ts > plainTextToContent > turns each non-empty line into one paragraph, in order 1ms
+ ✓ src/lib/rich-text/from-plain-text.test.ts > plainTextToContent > reads CRLF line ends and trims each line 0ms
+ ✓ src/lib/rich-text/from-plain-text.test.ts > plainTextToContent > is null for blank text 0ms
+ ✓ src/lib/format-defaults.test.ts > formatDefaults > gives a Bracket the default heat settings, or the one given, and keeps at most 4 Placement Points 4ms
+ ✓ src/lib/format-defaults.test.ts > formatDefaults > opens a Head-to-head or Best score Competition to everyone with its default settings 0ms
+ ✓ src/lib/format-defaults.test.ts > formatDefaults > gives a team Participation Competition 3/2/1 when it has no Placement Points, and an individual one 1 point per Participant 0ms
+ ✓ src/lib/format-defaults.test.ts > formatDefaults > keeps a Placement Competition's Placement Points 0ms
+ ✓ src/db/migrations.test.ts > moving Announcement videos into the body > appends each video link as a video node, in order, then drops the column 134ms
+ ✓ src/db/migrations.test.ts > migrating populated pre-R16 data to the Competition model > commits, maps every old shape to its new Format and backfills each Points Entry's War Week 774ms
+ ✓ src/lib/competition-settings.test.ts > parseCompetitionSetting > trims a name and refuses a blank one at its field 3ms
+ ✓ src/lib/competition-settings.test.ts > parseCompetitionSetting > stores a blank description or Group as none 0ms
+ ✓ src/lib/competition-settings.test.ts > parseCompetitionSetting > keeps rich text beyond the old 2000-character cap and refuses a non-document 1ms
+ ✓ src/lib/competition-settings.test.ts > parseCompetitionSetting > takes Placement Points as text or a list, highest first 2ms
+ ✓ src/lib/competition-settings.test.ts > parseCompetitionSetting > lowercases and deduplicates Hosts, refusing a non-JG email 1ms
+ ✓ src/lib/competition-settings.test.ts > parseCompetitionSetting > takes any Format, and refuses an unknown one 0ms
+ ✓ src/lib/competition-settings.test.ts > parseCompetitionSetting > takes a blank Entrant limit or close time as none, and a date string as a time 0ms
+ ✓ src/lib/competition-settings.test.ts > parseCompetitionSetting > refuses a Bracket config where as many advance as play 1ms
+ ✓ src/lib/competition-settings.test.ts > parseCompetitionSetting > refuses a switch that isn't on or off, and an unknown field 0ms
+ ✓ src/components/admin-games.test.tsx > AdminGames > lists the Competition's Games with Edit and Delete and a Log a Game button 11ms
+ ✓ src/components/admin-games.test.tsx > AdminGames > hides Log a Game when logging is refused (a Closed Competition) 2ms
+ ✓ src/components/admin-games.test.tsx > AdminGames > says there are no Games yet 1ms
+ ✓ src/db/migrations.test.ts > migrating populated pre-R17 Brackets to the one Bracket Format > commits, makes both Brackets not generated with a full config and at most 4 Placement Points 519ms
+(node:62599) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ ✓ src/seed/seed-sets.test.ts > War Week XI's frozen Standings > are Red 38.5 and Blue 31 after the real XI seed is converted and loaded 1622ms
+ ✓ src/mutations/competition-settings.test.ts > saveCompetitionSetting: who > lets a Host change their own Competition's settings 506ms
+ ✓ src/mutations/competition-settings.test.ts > saveCompetitionSetting: who > refuses a Host changing Hosts, and keeps them 31ms
+ ✓ src/mutations/competition-settings.test.ts > saveCompetitionSetting: who > refuses a Host of another Competition any field, writing nothing 52ms
+ ✓ src/mutations/competition-settings.test.ts > saveCompetitionSetting: who > refuses a Participant any field, writing nothing 46ms
+ ✓ src/db/migrations.test.ts > migrating a pre-R18 Competition's plain-text description > commits and leaves the description empty, as rich text the seeds restore 424ms
+ ✓ src/mutations/competition-settings.test.ts > saveCompetitionSetting: description > stores rich text, and strips an unsafe link and a script node as an Announcement body does 34ms
+ ✓ src/mutations/competition-settings.test.ts > saveCompetitionSetting: description > clears a blank description 48ms
+ ✓ src/mutations/competition-settings.test.ts > saveCompetitionSetting: locks > accepts name, description, Group, Hosts and Placement Points while Finalized 91ms
+ ✓ src/mutations/competition-settings.test.ts > saveCompetitionSetting: locks > accepts Format, scoring and counts toward team before any result, and refuses them once one exists 71ms
+ ✓ src/mutations/competition-settings.test.ts > saveCompetitionSetting: locks > accepts the Score direction before any result, and refuses it once a Placement exists 38ms
+ ✓ src/mutations/competition-settings.test.ts > saveCompetitionSetting: locks > accepts Best score direction and attempts before any result, and refuses them once a Game exists 31ms
+ ✓ src/mutations/competition-settings.test.ts > saveCompetitionSetting: locks > refuses Best score direction and attempts once an Entrant exists 34ms
+ ✓ src/mutations/competition-settings.test.ts > saveCompetitionSetting: locks > accepts a Head-to-head Best of 3 between two fixed Entrants, and refuses its settings and Entrant list once a Game is logged 49ms
+ ✓ src/mutations/competition-settings.test.ts > saveCompetitionSetting: locks > accepts heat size, advancing, 3rd place game, Entrants and building the Bracket until a Heat has a result, then refuses them 109ms
+ ✓ src/seed/seed-sets.test.ts > every seed loads twice > loads what smoke loads (localSeedFiles) twice with no row count changing 709ms
+(node:62600) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ ✓ src/mutations/competition-settings.test.ts > saveCompetitionSetting: locks > accepts self-enroll, Entrant limit, close times and self-report mid-run, and refuses them while Finalized 89ms
+ ✓ src/mutations/competition-settings.test.ts > saveCompetitionSetting: locks > accepts the logging close time with Games logged, and refuses it while Closed 29ms
+ ✓ src/mutations/competition-settings.test.ts > saveCompetitionSetting: locks > accepts check-in settings with someone checked in, and refuses them while Closed; Placement Points still change 55ms
+ ✓ src/mutations/competition-settings.test.ts > saveCompetitionSetting: locks > refuses everything but the never-locked fields while Finalized 37ms
+ ✓ src/mutations/competition-settings.test.ts > saveCompetitionSetting: Format > applies the new Format's create defaults, clears the old Format's settings, and keeps 4 Placement Points for a Bracket 99ms
+ ✓ src/seed/seed-sets.test.ts > every seed loads twice > loads every seeds/*.json (the Seed workflow, with the real xi.json) twice with no row count changing, and holds one Subjective Points entry per XI Team 635ms
+ ✓ src/components/competition-settings-form.test.tsx > CompetitionSettingsForm > says changes save automatically, with no Save button 39ms
+ ✓ src/components/competition-settings-form.test.tsx > CompetitionSettingsForm > offers every Format while the Competition has no result 14ms
+ ✓ src/components/competition-settings-form.test.tsx > CompetitionSettingsForm > locks the Format, scoring and Score direction with the reason once a result exists, but never the name 13ms
+ ✓ src/components/competition-settings-form.test.tsx > CompetitionSettingsForm > says a Placement Points change while Finalized applies at the next Finalize, and locks the rest 13ms
+ ✓ src/components/competition-settings-form.test.tsx > CompetitionSettingsForm > locks an enrollment setting only while Finalized, with the Reopen reason 39ms
+ ✓ src/components/competition-settings-form.test.tsx > CompetitionSettingsForm > leaves a Head-to-head Competition's Best of open with Entrants, and locks it with the Game reason once it has a Game 33ms
+ ✓ src/components/competition-settings-form.test.tsx > CompetitionSettingsForm > shows a Host the Hosts as names only, never an email 10ms
+ ✓ src/components/competition-settings-form.test.tsx > CompetitionSettingsForm > lets an Organizer pick Hosts, a current Host off the roster shown warned 10ms
+ ✓ src/components/competition-settings-form.test.tsx > CompetitionSettingsForm > shows an Organizer a current Host by their roster name 10ms
+ ✓ src/components/competition-settings-form.test.tsx > CompetitionSettingsForm > a Bracket's heat settings > offers the head-to-head preset, Heat size and how many advance 11ms
+ ✓ src/components/competition-settings-form.test.tsx > CompetitionSettingsForm > a Bracket's heat settings > shows the 3rd place game off and disabled with its reason under 4 Entrants 11ms
+ ✓ src/components/competition-settings-form.test.tsx > CompetitionSettingsForm > a Bracket's heat settings > shows a saved 3rd place game as on under 4 Entrants, and lets it be turned off 12ms
+ ✓ src/components/competition-settings-form.test.tsx > CompetitionSettingsForm > a Bracket's heat settings > locks the heat settings once a Heat has a result 12ms
+ ✓ src/components/competition-settings-form.test.tsx > CompetitionSettingsForm > a Bracket's heat settings > offers no 3rd place game at another Heat size 4ms
+ ✓ src/components/competition-settings-form.test.tsx > CompetitionSettingsForm > a Games Format's settings > shows Draws allowed and Best of for Head-to-head, not Best score's 5ms
+ ✓ src/components/competition-settings-form.test.tsx > CompetitionSettingsForm > a Games Format's settings > shows count, direction and unit for Best score, not Best of 5ms
+ ✓ src/components/competition-settings-form.test.tsx > CompetitionSettingsForm > a Games Format's settings > hides the enroll switch once a fixed list has a Best of set 5ms
+ ✓ src/components/competition-settings-form.test.tsx > CompetitionSettingsForm > a Games Format's settings > shows the enroll switch on a fixed list with Best of off 7ms
+ ✓ src/components/competition-settings-form.test.tsx > CompetitionSettingsForm > a Games Format's settings > has no Finish Points field 10ms
+ ✓ src/components/competition-settings-form.test.tsx > CompetitionSettingsForm > gives an individual Participation Competition points per Participant and check-in 3ms
+ ✓ src/components/competition-settings-form.refresh.test.tsx > CompetitionSettingsForm after a save (forms follow server data) > shows the saved values when the page's props change (router.refresh) 130ms
+ ✓ src/components/competition-settings-form.refresh.test.tsx > CompetitionSettingsForm after a save (forms follow server data) > keeps an edit when the page re-renders with the same saved props 72ms
+ ✓ src/components/competition-settings-form.refresh.test.tsx > CompetitionSettingsForm after a save (forms follow server data) > keeps an edit still waiting to save while another field follows the server 69ms
+ ✓ src/seed/seed-sets.test.ts > every seed loads twice > loads the seed:demo:xii set twice with no row count changing, and its Step Challenge is a finalized sheet of Scores 621ms
+
+ Test Files  13 passed (13)
+      Tests  130 passed (130)
+   Start at  20:17:40
+   Duration  4.23s (transform 2.26s, setup 0ms, import 13.31s, tests 7.50s, environment 439ms)
+
