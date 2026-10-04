@@ -88,6 +88,10 @@ export function PlacementSheet({
   const [saving, startSaving] = useTransition();
   const pending = running || saving;
   const locked = competition.finalized;
+  // A Finalized sheet has no Remove buttons, so no column for them.
+  const columns = locked
+    ? "grid-cols-[3.5rem_1fr_5.5rem_3rem]"
+    : "grid-cols-[3.5rem_1fr_5.5rem_3rem_2.75rem]";
   const isTeam = competition.scoring === "team";
 
   // Unsaved edits by row id; anything not edited shows what's saved.
@@ -266,13 +270,13 @@ export function PlacementSheet({
           <ol className="flex flex-col divide-y" aria-label="Placements">
             <li
               aria-hidden
-              className="text-foreground/60 grid grid-cols-[3.5rem_1fr_5.5rem_3rem_2.75rem] items-center gap-2 pb-1 text-xs"
+              className={`text-foreground/60 grid ${columns} items-center gap-2 pb-1 text-xs`}
             >
               <span>Place</span>
               <span>Name</span>
               <span>Score</span>
               <span className="text-right">Points</span>
-              <span />
+              {locked ? null : <span />}
             </li>
             {rows.map((row) => {
               const value = typed(row);
@@ -282,7 +286,7 @@ export function PlacementSheet({
               return (
                 <li
                   key={row.id}
-                  className="grid grid-cols-[3.5rem_1fr_5.5rem_3rem_2.75rem] items-center gap-2 py-1.5"
+                  className={`grid ${columns} items-center gap-2 py-1.5`}
                 >
                   <Input
                     aria-label={`Place for ${row.name}`}
@@ -294,7 +298,9 @@ export function PlacementSheet({
                     onChange={(event) => setPlace(row, event.target.value)}
                   />
                   <span className="flex min-w-0 flex-col">
-                    <span className="truncate font-medium">{row.name}</span>
+                    {/* Wraps rather than truncates: at 390 a truncated
+                        column cut even short names (ticket 106). */}
+                    <span className="font-medium break-words">{row.name}</span>
                     {row.team || needsPlace ? (
                       <span className="text-foreground/60 truncate text-xs">
                         {needsPlace ? "Needs a Place" : row.team}
@@ -312,9 +318,7 @@ export function PlacementSheet({
                   <span className="text-right font-semibold tabular-nums">
                     {earned === undefined ? "–" : formatPoints(earned)}
                   </span>
-                  {locked ? (
-                    <span />
-                  ) : (
+                  {locked ? null : (
                     <Button
                       type="button"
                       variant="ghost"

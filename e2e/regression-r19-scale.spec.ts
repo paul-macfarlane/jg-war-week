@@ -260,6 +260,10 @@ test.describe("100 Participants in the XII scale demo", () => {
           "data-finale-slide",
           "standings",
         );
+        // The countdown has revealed every row once Replay shows.
+        await expect(page.getByRole("button", { name: "Replay" })).toBeVisible(
+          { timeout: 30_000 },
+        );
       });
     } finally {
       await context.close();
