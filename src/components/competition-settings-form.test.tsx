@@ -45,6 +45,7 @@ const SOURCE: CompetitionSettingsSource = {
 const OPEN: CompetitionLockFacts = {
   format: "placement",
   hasResult: false,
+  hasPlay: false,
   hasLogged: false,
   hasMatchResult: false,
   closed: false,
@@ -91,11 +92,16 @@ describe("CompetitionSettingsForm", () => {
     expect(html).not.toContain(LOCKED_BY_RESULT);
   });
 
-  it("locks the Format, scoring and Score direction with the reason once a result exists, but never the name", () => {
-    const html = render({}, { facts: { ...OPEN, hasResult: true } });
+  it("locks the Format and scoring once a result exists, and the Score direction once play has started, with the reason as visible text, but never the name or the unit", () => {
+    const html = render(
+      {},
+      { facts: { ...OPEN, hasResult: true, hasPlay: true } },
+    );
     expect(control(html, "competition-format")).toMatch(DISABLED);
     expect(control(html, "competition-scoring")).toMatch(DISABLED);
     expect(control(html, "competition-scoreDirection")).toMatch(DISABLED);
+    expect(control(html, "competition-scoreUnit")).not.toMatch(DISABLED);
+    expect(html).toContain('data-slot="lock-reason"');
     expect(html).toContain(LOCKED_BY_RESULT);
     expect(control(html, "competition-name")).not.toMatch(DISABLED);
   });
@@ -177,7 +183,7 @@ describe("CompetitionSettingsForm", () => {
       expect(html).toContain("Entrants per Match");
       expect(html).toContain("How many advance");
       expect(html).toContain("Self-report");
-      expect(html).not.toContain("Score direction");
+      expect(html).toContain("Score direction");
     });
 
     it("shows the 3rd place Match off and disabled with its reason under 4 Entrants", () => {
@@ -256,14 +262,14 @@ describe("CompetitionSettingsForm", () => {
       const html = render({ format: "head-to-head" });
       expect(html).toContain("Draws allowed");
       expect(html).toContain("Best of");
-      expect(html).not.toContain("Better is");
+      expect(html).not.toContain("Team score");
       expect(html).not.toContain(">Off<");
       expect(html).not.toContain("Participants can enroll");
     });
 
     it("shows direction and unit for Best score, Team score only in team scoring, and no Best / Total", () => {
       const html = render({ format: "best-score", scoreDirection: "higher" });
-      expect(html).toContain("Better is");
+      expect(html).toContain("Score direction");
       expect(html).toContain("Unit");
       expect(html).not.toContain("Best of");
       expect(html).not.toContain("Team score");

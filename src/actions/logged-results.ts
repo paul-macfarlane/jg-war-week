@@ -13,7 +13,7 @@ import type { Parsed } from "@/lib/result";
 import type { SeriesConfig } from "@/lib/series/config";
 import { parseMatchInput } from "@/lib/series/input";
 import * as attempts from "@/mutations/attempts";
-import * as logged from "@/mutations/logged-results";
+import { closeCompetition, reopenCompetition } from "@/mutations/close";
 import * as series from "@/mutations/series";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 import type { LoggedCompetition } from "@/queries/logged-results";
@@ -166,7 +166,7 @@ export async function closeLoggedResults(
   competitionId: string,
 ): Promise<MutationResult> {
   return hostWrite("results.close", competitionId, (ctx) =>
-    logged.closeLoggedResults(competitionId, ctx),
+    closeCompetition(competitionId, ctx),
   );
 }
 
@@ -175,6 +175,6 @@ export async function reopenLoggedResults(
   competitionId: string,
 ): Promise<MutationResult> {
   return hostWrite("results.reopen", competitionId, (ctx) =>
-    logged.reopenLoggedResults(competitionId, ctx),
+    reopenCompetition(competitionId, ctx),
   );
 }

@@ -41,8 +41,11 @@ vi.mock("@/auth/authorize", () => ({
   authorize,
   postedCompetitionId: () => null,
 }));
+vi.mock("@/mutations/close", () => ({
+  closeCompetition: vi.fn(boom),
+  reopenCompetition: vi.fn(boom),
+}));
 vi.mock("@/mutations/brackets", () => ({
-  closeBracket: vi.fn(boom),
   createSquad: vi.fn(async () => ({ ok: true })),
   updateSquad: vi.fn(async () => ({ ok: true })),
   deleteSquad: vi.fn(async () => ({ ok: true })),

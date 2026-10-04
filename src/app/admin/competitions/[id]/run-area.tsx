@@ -70,6 +70,7 @@ export async function CompetitionRunArea({
           scoring: view.competition.scoring,
           placementPoints: view.competition.placementPoints,
           scoreDirection: view.competition.scoreDirection,
+          scoreUnit: view.competition.scoreUnit,
           closed: view.competition.closedAt !== null,
         }}
         rows={view.rows.map(({ id: rowId, name, team, place, score }) => ({
@@ -195,6 +196,7 @@ export async function CompetitionRunArea({
             competitionId={id}
             placementPoints={competition.placementPoints}
             scoring={competition.scoring}
+            scoreUnit={competition.scoreUnit}
             entrants={view.entrants}
             bracket={view.bracket}
             winner={view.winner}

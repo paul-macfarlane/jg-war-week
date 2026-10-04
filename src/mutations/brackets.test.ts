@@ -498,7 +498,11 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         f.ctx,
         tx,
       );
-      expect(await mutations.closeBracket(f.competitionId, f.ctx, tx)).toEqual({
+      expect(
+        await (
+          await import("@/mutations/close")
+        ).closeCompetition(f.competitionId, f.ctx, tx),
+      ).toEqual({
         ok: false,
         error: "Finish every Match before closing.",
       });
@@ -552,7 +556,11 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         { teamId: f.blue, points: 6, note: "From bracket" },
       ];
 
-      expect(await mutations.closeBracket(f.competitionId, f.ctx, tx)).toEqual({
+      expect(
+        await (
+          await import("@/mutations/close")
+        ).closeCompetition(f.competitionId, f.ctx, tx),
+      ).toEqual({
         ok: true,
       });
       expect(await generated()).toEqual(expected);
@@ -574,7 +582,9 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       });
 
       // Re-closing replaces the generated entries with the same ones.
-      await mutations.closeBracket(f.competitionId, f.ctx, tx);
+      await (
+        await import("@/mutations/close")
+      ).closeCompetition(f.competitionId, f.ctx, tx);
       expect(await generated()).toEqual(expected);
 
       // The non-generated entry sits beside the two generated ones.
@@ -585,9 +595,11 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(all.filter((e) => e.generated)).toHaveLength(2);
       expect(all.filter((e) => !e.generated)).toHaveLength(1);
 
-      expect(await mutations.reopenBracket(f.competitionId, f.ctx, tx)).toEqual(
-        { ok: true },
-      );
+      expect(
+        await (
+          await import("@/mutations/close")
+        ).reopenCompetition(f.competitionId, f.ctx, tx),
+      ).toEqual({ ok: true });
       expect(await generated()).toEqual([]);
       const remaining = await tx
         .select({ note: schema.pointsEntry.note })
@@ -625,7 +637,11 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         f.ctx,
         tx,
       );
-      expect(await mutations.closeBracket(f.competitionId, f.ctx, tx)).toEqual({
+      expect(
+        await (
+          await import("@/mutations/close")
+        ).closeCompetition(f.competitionId, f.ctx, tx),
+      ).toEqual({
         ok: true,
       });
 
@@ -654,7 +670,11 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect(row.placementPoints).toEqual([10, 5, 1]);
       expect(await generated()).toEqual([10, 6]);
 
-      expect(await mutations.closeBracket(f.competitionId, f.ctx, tx)).toEqual({
+      expect(
+        await (
+          await import("@/mutations/close")
+        ).closeCompetition(f.competitionId, f.ctx, tx),
+      ).toEqual({
         ok: true,
       });
       expect(await generated()).toEqual([10, 5]);
@@ -794,7 +814,11 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       view = (await queries.getBracket(f.relayId, tx))!;
       expect(view.winner).toBe(a1);
 
-      expect(await mutations.closeBracket(f.relayId, f.ctx, tx)).toEqual({
+      expect(
+        await (
+          await import("@/mutations/close")
+        ).closeCompetition(f.relayId, f.ctx, tx),
+      ).toEqual({
         ok: true,
       });
       const entrants = await tx
@@ -1141,7 +1165,11 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
 
       await record(1, 2, "Green");
       await record(2, 1, "Green");
-      expect(await mutations.closeBracket(f.competitionId, f.ctx, tx)).toEqual({
+      expect(
+        await (
+          await import("@/mutations/close")
+        ).closeCompetition(f.competitionId, f.ctx, tx),
+      ).toEqual({
         ok: false,
         error: "Finish every Match before closing.",
       });
@@ -1152,7 +1180,11 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       expect((await queries.getBracket(f.competitionId, tx))!.winner).toBe(
         id("Green"),
       );
-      expect(await mutations.closeBracket(f.competitionId, f.ctx, tx)).toEqual({
+      expect(
+        await (
+          await import("@/mutations/close")
+        ).closeCompetition(f.competitionId, f.ctx, tx),
+      ).toEqual({
         ok: true,
       });
 
@@ -2189,16 +2221,26 @@ describe.skipIf(!isLocalDatabase)("Squads", () => {
         { teamId: f.blue, participantId: null, points: 6 },
       ];
 
-      expect(await mutations.closeBracket(f.competitionId, f.ctx, tx)).toEqual({
+      expect(
+        await (
+          await import("@/mutations/close")
+        ).closeCompetition(f.competitionId, f.ctx, tx),
+      ).toEqual({
         ok: true,
       });
       expect(await generated()).toEqual(expected);
 
-      expect(await mutations.reopenBracket(f.competitionId, f.ctx, tx)).toEqual(
-        { ok: true },
-      );
+      expect(
+        await (
+          await import("@/mutations/close")
+        ).reopenCompetition(f.competitionId, f.ctx, tx),
+      ).toEqual({ ok: true });
       expect(await generated()).toEqual([]);
-      expect(await mutations.closeBracket(f.competitionId, f.ctx, tx)).toEqual({
+      expect(
+        await (
+          await import("@/mutations/close")
+        ).closeCompetition(f.competitionId, f.ctx, tx),
+      ).toEqual({
         ok: true,
       });
       expect(await generated()).toEqual(expected);

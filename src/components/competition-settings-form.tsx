@@ -100,10 +100,29 @@ const FIELD_LABELS: Record<SettingsField, string> = {
 };
 
 const DIRECTION_OPTIONS = [
-  { value: "none", label: "None: type or choose Places" },
-  { value: "higher", label: "Higher Score wins" },
-  { value: "lower", label: "Lower Score wins" },
+  { value: "none", label: "None: set by hand" },
+  { value: "higher", label: "Higher is better" },
+  { value: "lower", label: "Lower is better" },
 ] as const;
+
+/** Best score always ranks by its Scores. */
+const BEST_SCORE_DIRECTION_OPTIONS = DIRECTION_OPTIONS.filter(
+  (option) => option.value !== "none",
+);
+
+/** What a Score direction does in this Format. */
+function directionHelp(format: CompetitionSettingsValues["format"]): string {
+  switch (format) {
+    case "placement":
+      return "With a direction, Places fill from Scores as you type; you can still change any Place.";
+    case "bracket":
+      return "With a direction, a Match's places and who advances follow its Scores; you can still set them by hand.";
+    case "head-to-head":
+      return "With a direction, the better Score wins a Match; equal Scores are a Draw or need a pick.";
+    default:
+      return "Which Score is better.";
+  }
+}
 
 const BEST_OF_SELECT_OPTIONS = BEST_OF_OPTIONS.map((n) => ({
   value: String(n),
@@ -476,31 +495,6 @@ export function CompetitionSettingsForm({
           </div>
         </FieldGroup>
 
-        {shown.has("scoreDirection") && values.format === "placement" && (
-          <Field className="sm:max-w-xs" data-invalid={!!errors.scoreDirection}>
-            <FieldLabel htmlFor={id("scoreDirection")}>
-              Score direction
-            </FieldLabel>
-            <OptionSelect
-              id={id("scoreDirection")}
-              options={DIRECTION_OPTIONS}
-              value={values.scoreDirection}
-              disabled={lock("scoreDirection") !== null}
-              aria-invalid={!!errors.scoreDirection}
-              onValueChange={(value) =>
-                edit({
-                  scoreDirection:
-                    value as CompetitionSettingsValues["scoreDirection"],
-                })
-              }
-            />
-            {below(
-              "scoreDirection",
-              "With a direction, Places fill from Scores as you type; you can still change any Place.",
-            )}
-          </Field>
-        )}
-
         {shown.has("seriesConfig") && (
           <SeriesConfigFields
             values={values}
@@ -510,25 +504,27 @@ export function CompetitionSettingsForm({
           />
         )}
 
-        {shown.has("scoreUnit") && (
+        {shown.has("scoreDirection") && (
           <FieldSet>
-            <FieldLegend>Best score settings</FieldLegend>
+            <FieldLegend>Scores</FieldLegend>
             <FieldGroup className="gap-4 sm:flex-row">
               <Field
-                className="sm:max-w-48"
+                className="sm:max-w-64"
                 data-invalid={!!errors.scoreDirection}
               >
                 <FieldLabel htmlFor={id("scoreDirection")}>
-                  Better is
+                  Score direction
                 </FieldLabel>
                 <OptionSelect
                   id={id("scoreDirection")}
-                  options={[
-                    { value: "higher", label: "Higher" },
-                    { value: "lower", label: "Lower" },
-                  ]}
-                  value={values.scoreDirection === "lower" ? "lower" : "higher"}
+                  options={
+                    values.format === "best-score"
+                      ? BEST_SCORE_DIRECTION_OPTIONS
+                      : DIRECTION_OPTIONS
+                  }
+                  value={values.scoreDirection}
                   disabled={lock("scoreDirection") !== null}
+                  aria-invalid={!!errors.scoreDirection}
                   onValueChange={(value) =>
                     edit({
                       scoreDirection:
@@ -536,7 +532,7 @@ export function CompetitionSettingsForm({
                     })
                   }
                 />
-                {below("scoreDirection")}
+                {below("scoreDirection", directionHelp(values.format))}
               </Field>
               <Field className="sm:max-w-48" data-invalid={!!errors.scoreUnit}>
                 <FieldLabel htmlFor={id("scoreUnit")}>Unit</FieldLabel>
@@ -549,7 +545,7 @@ export function CompetitionSettingsForm({
                   value={values.scoreUnit}
                   onChange={(event) => edit({ scoreUnit: event.target.value })}
                 />
-                {below("scoreUnit")}
+                {below("scoreUnit", "Optional, like sec or points.")}
               </Field>
               {shown.has("bestScoreConfig") && (
                 <Field

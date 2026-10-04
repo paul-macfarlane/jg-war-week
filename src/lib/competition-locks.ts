@@ -42,13 +42,15 @@ export type CompetitionSettingField =
   (typeof COMPETITION_SETTING_FIELDS)[number];
 
 /**
- * When a setting locks: `never`; once any `result` exists; once the
+ * When a setting locks: `never`; once any `result` exists; once `play` has
+ * started in the Competition's own Format (a Placement row, a logged Match
+ * or Attempt, a Bracket Match Result; spec R21, decision 3); once the
  * Competition has a `logged` Match or Attempt; once any `match-result`
  * exists; or only while `closed`. Every setting but the `never` ones also
  * locks while Closed.
  */
 export type SettingLock =
-  "never" | "result" | "logged" | "match-result" | "closed";
+  "never" | "result" | "play" | "logged" | "match-result" | "closed";
 
 /** Each setting's lock. */
 export const SETTING_LOCKS: Record<CompetitionSettingField, SettingLock> = {
@@ -61,12 +63,13 @@ export const SETTING_LOCKS: Record<CompetitionSettingField, SettingLock> = {
   format: "result",
   scoring: "result",
   countsTowardTeam: "result",
-  scoreDirection: "result",
+  // Per Format: a Placement row, a Match or Attempt, a Match Result.
+  scoreDirection: "play",
   scoreUnit: "never",
   // A Head-to-head's two Entrants are a result, so its settings wait for
   // its first Match.
   seriesConfig: "logged",
-  bestScoreConfig: "result",
+  bestScoreConfig: "logged",
   bracketConfig: "match-result",
   entrants: "match-result",
   bracket: "match-result",
@@ -124,11 +127,32 @@ export function hasResult(results: CompetitionResults): boolean {
   );
 }
 
+/**
+ * Whether play has started, by Format: a Placement sheet has a row, a
+ * Head-to-head or Best score Competition has a Match or Attempt, a Bracket
+ * has a Match Result. A Participation Competition has no Scores.
+ */
+export function hasPlay(results: CompetitionResults, format: Format): boolean {
+  switch (format) {
+    case "placement":
+      return results.placements > 0;
+    case "head-to-head":
+    case "best-score":
+      return results.logged > 0;
+    case "participation":
+      return false;
+    default:
+      return results.matchResult;
+  }
+}
+
 /** What the lock rules read about a Competition. */
 export type CompetitionLockFacts = {
   /** The saved Format. */
   format: Format;
   hasResult: boolean;
+  /** Play has started in this Format (`hasPlay`). */
+  hasPlay: boolean;
   /** A Head-to-head Match or Best score Attempt is logged. */
   hasLogged: boolean;
   hasMatchResult: boolean;
@@ -142,6 +166,7 @@ export function lockFactsOf(
   return {
     format,
     hasResult: hasResult(results),
+    hasPlay: hasPlay(results, format),
     hasLogged: results.logged > 0,
     hasMatchResult: results.matchResult,
     closed: closedAt !== null,
@@ -160,6 +185,7 @@ export function settingLockReason(
   const lock = settingLock(field);
   if (lock === "never") return null;
   if (lock === "result" && facts.hasResult) return LOCKED_BY_RESULT;
+  if (lock === "play" && facts.hasPlay) return LOCKED_BY_RESULT;
   if (lock === "logged" && facts.hasLogged) return LOCKED_BY_MATCH;
   if (lock === "match-result" && facts.hasMatchResult) {
     return LOCKED_BY_MATCH_RESULT;

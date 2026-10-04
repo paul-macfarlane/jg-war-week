@@ -219,7 +219,6 @@ async function rowChanges(f: Fixture, competitionId = f.ids.darts) {
       "addPlacement",
       () => a.addPlacement(competitionId, { participantId: f.ids.trinity }),
     ],
-    ["addEveryone", () => a.addEveryone(competitionId)],
     [
       "removePlacement",
       () => a.removePlacement(competitionId, { placementId: f.ids.row }),
@@ -381,7 +380,7 @@ describe.skipIf(!isLocalDatabase)("the placement actions' refusals", () => {
       const f = await fixture(tx);
       const before = await f.snapshot();
       session.email = HOST;
-      for (const [name, run] of await everyAction(f, f.ids.pong)) {
+      for (const [name, run] of await rowChanges(f, f.ids.pong)) {
         expect(await run(), name).toEqual({
           ok: false,
           error: "This Competition isn't run as Placement.",

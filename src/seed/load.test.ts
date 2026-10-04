@@ -927,8 +927,9 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Placements", () => {
   it("a reload after the Host reopens and edits the sheet keeps their changes and writes no entries", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { loadWarWeekSeed } = await import("@/seed/load");
-      const { reopenPlacements, savePlacements } =
-        await import("@/mutations/placements");
+      const { savePlacements } = await import("@/mutations/placements");
+      const { reopenCompetition: reopenPlacements } =
+        await import("@/mutations/close");
       await clearLive(tx);
       const first = await loadWarWeekSeed(await placementSeed(), tx);
       const loaded = await read(tx, first.id);

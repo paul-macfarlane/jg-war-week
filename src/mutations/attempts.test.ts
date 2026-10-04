@@ -308,8 +308,10 @@ describe.skipIf(!isLocalDatabase)("Best score standings and Close", () => {
   it("Close awards Placement Points from the best Attempts, ties sharing them, and Reopen withdraws only those", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { logAttempt } = await load();
-      const { closeLoggedResults, reopenLoggedResults } =
-        await import("@/mutations/logged-results");
+      const {
+        closeCompetition: closeLoggedResults,
+        reopenCompetition: reopenLoggedResults,
+      } = await import("@/mutations/close");
       const f = await fixture(tx);
       // Neo and Trinity tie at 42 pins; Morpheus is third with 30.
       for (const [participantId, score] of [
@@ -360,9 +362,9 @@ describe.skipIf(!isLocalDatabase)("Best score standings and Close", () => {
         ]),
       );
       expect(generated).toHaveLength(3);
+      // Closing again rewrites the same entries and keeps the first time.
       expect(await closeLoggedResults(f.ids.bowl, f.ctx(HOST), tx)).toEqual({
-        ok: false,
-        error: "This Competition is already closed.",
+        ok: true,
       });
 
       expect(await reopenLoggedResults(f.ids.bowl, f.ctx(HOST), tx)).toEqual({
@@ -376,24 +378,6 @@ describe.skipIf(!isLocalDatabase)("Best score standings and Close", () => {
           generated: false,
         },
       ]);
-    });
-  });
-
-  it("refuses Close on another Format", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { closeLoggedResults, reopenLoggedResults } =
-        await import("@/mutations/logged-results");
-      const f = await fixture(tx);
-      const refused = {
-        ok: false,
-        error: "This Competition isn't run as Head-to-head or Best score.",
-      };
-      expect(await closeLoggedResults(f.ids.trivia, f.ctx(HOST), tx)).toEqual(
-        refused,
-      );
-      expect(await reopenLoggedResults(f.ids.trivia, f.ctx(HOST), tx)).toEqual(
-        refused,
-      );
     });
   });
 });

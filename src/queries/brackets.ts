@@ -63,6 +63,8 @@ export type BracketCompetition = Pick<
   | "scoring"
   | "format"
   | "placementPoints"
+  | "scoreDirection"
+  | "scoreUnit"
   | "closedAt"
   | "selfReport"
   | "selfEnroll"
@@ -314,6 +316,8 @@ export async function getBracket(
       format: competition.format,
       bracketConfig: competition.bracketConfig,
       placementPoints: competition.placementPoints,
+      scoreDirection: competition.scoreDirection,
+      scoreUnit: competition.scoreUnit,
       closedAt: competition.closedAt,
       selfReport: competition.selfReport,
       selfEnroll: competition.selfEnroll,

@@ -232,11 +232,9 @@ async function closeDarts(f: Fixture) {
     f.ctx(ORGANIZER),
     f.tx,
   );
-  const closed = await placements.closePlacements(
-    f.ids.darts,
-    f.ctx(ORGANIZER),
-    f.tx,
-  );
+  const closed = await (
+    await import("@/mutations/close")
+  ).closeCompetition(f.ids.darts, f.ctx(ORGANIZER), f.tx);
   if (!closed.ok) throw new Error(closed.error);
 }
 
@@ -266,11 +264,9 @@ async function playChess(f: Fixture, { close = false } = {}) {
     f.tx,
   );
   if (close) {
-    const done = await brackets.closeBracket(
-      f.ids.chess,
-      f.ctx(ORGANIZER),
-      f.tx,
-    );
+    const done = await (
+      await import("@/mutations/close")
+    ).closeCompetition(f.ids.chess, f.ctx(ORGANIZER), f.tx);
     if (!done.ok) throw new Error(done.error);
   }
 }
@@ -540,7 +536,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
           field: "bestScoreConfig",
           value: { teamScore: "best-member" },
         }),
-      ).toMatchObject(LOCKED_BY_RESULT);
+      ).toMatchObject(LOCKED_BY_MATCH);
       expect(
         await f.save(f.ids.stairs, { field: "scoreUnit", value: "sec" }),
       ).toEqual(OK);
@@ -672,9 +668,10 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
         selfReport: true,
       });
 
-      const brackets = await import("@/mutations/brackets");
       expect(
-        await brackets.closeBracket(f.ids.chess, f.ctx(ORGANIZER), tx),
+        await (
+          await import("@/mutations/close")
+        ).closeCompetition(f.ids.chess, f.ctx(ORGANIZER), tx),
       ).toEqual(OK);
       const before = await f.row(f.ids.chess);
       for (const change of [
@@ -720,11 +717,9 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
       expect(await f.row(f.ids.workout)).toMatchObject({ selfCheckIn: true });
 
       expect(
-        await participation.closeParticipation(
-          f.ids.workout,
-          f.ctx(ORGANIZER),
-          tx,
-        ),
+        await (
+          await import("@/mutations/close")
+        ).closeCompetition(f.ids.workout, f.ctx(ORGANIZER), tx),
       ).toEqual(OK);
       expect(
         await f.save(f.ids.workout, { field: "selfCheckIn", value: false }),

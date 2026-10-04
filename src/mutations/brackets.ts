@@ -25,14 +25,11 @@ import {
 } from "@/lib/bracket/config";
 import {
   applyResult,
-  finalPlacings,
   generate,
   hasResults,
-  isComplete,
   resetByResult,
   validateConfig,
 } from "@/lib/bracket/formats";
-import { pointsFor } from "@/lib/bracket/points";
 import { shuffleSeedPositions } from "@/lib/bracket/seeding";
 import {
   type EntrantKind,
@@ -720,55 +717,6 @@ export async function writeMatchResult(
 }
 
 /**
- * Closes a finished Bracket: replaces its generated Points Entries with
- * new ones from the final placings and Placement Points, and marks it
- * closed.
- */
-export async function closeBracket(
-  competitionId: string,
-  ctx: MutationContext,
-  dbOrTx: DBOrTx = db,
-): Promise<MutationResult> {
-  return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-    const found = await lockedCompetition(tx, competitionId, ctx);
-    const refusal = bracketRefusal(found, { allowClosed: true });
-    if (refusal || !isBracketRun(found)) {
-      return refuse(refusal ?? NOT_A_BRACKET);
-    }
-    const bracket = await bracketOf(tx, found);
-    if (!isComplete(bracket)) {
-      return refuse("Finish every Match before closing.");
-    }
-
-    const entrants = await getBracketEntrants(competitionId, tx);
-    const byId = new Map(entrants.map((e) => [e.id, e]));
-    const awarded = pointsFor(finalPlacings(bracket, entrants), found);
-
-    await deleteGenerated(tx, competitionId);
-    if (awarded.length) {
-      await tx.insert(pointsEntry).values(
-        awarded.map(({ entrantId, points }) => ({
-          warWeekId: ctx.warWeekId,
-          competitionId,
-          // A Team's, or a Squad's Team's; null for a Participant.
-          teamId: byId.get(entrantId)!.pointsTeamId,
-          participantId: byId.get(entrantId)!.participantId,
-          points,
-          note: FROM_BRACKET_NOTE,
-          enteredByEmail: ctx.actorEmail,
-          generated: true,
-        })),
-      );
-    }
-    await tx
-      .update(competition)
-      .set({ closedAt: sql`now()`, updatedAt: sql`now()` })
-      .where(eq(competition.id, competitionId));
-    return { ok: true };
-  });
-}
-
-/**
  * Deletes a Competition's generated Points Entries: a Bracket's on
  * reopen or re-close; a Head-to-head, Best score, Participation
  * or Placement Competition's on Reopen.
@@ -782,25 +730,6 @@ export function deleteGenerated(tx: DBOrTx, competitionId: string) {
         eq(pointsEntry.generated, true),
       ),
     );
-}
-
-/** Deletes a Bracket's generated Points Entries and reopens it. */
-export async function reopenBracket(
-  competitionId: string,
-  ctx: MutationContext,
-  dbOrTx: DBOrTx = db,
-): Promise<MutationResult> {
-  return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-    const found = await lockedCompetition(tx, competitionId, ctx);
-    const refusal = bracketRefusal(found, { allowClosed: true });
-    if (refusal) return refuse(refusal);
-    await deleteGenerated(tx, competitionId);
-    await tx
-      .update(competition)
-      .set({ closedAt: null, updatedAt: sql`now()` })
-      .where(eq(competition.id, competitionId));
-    return { ok: true };
-  });
 }
 
 /** A Squad's name, Team and Participants, as the Squad form posts them. */

@@ -42,6 +42,7 @@ import {
   sortResults,
   winnerKeys,
 } from "@/lib/results-table";
+import { scoreLabel } from "@/lib/scoring";
 
 /**
  * The "Provisional" badge: a button, so Tab, a tap and hover all open its
@@ -196,7 +197,7 @@ export function ResultsTable({
   const withScore = showsScore(rows);
   const winners = winnerKeys(rows);
   const columnCount = withScore ? 4 : 3;
-  const scoreHeader = scoreUnit ? `Score (${scoreUnit})` : "Score";
+  const scoreHeader = scoreLabel({ unit: scoreUnit ?? null });
   const pointsSort = (end: boolean) => (
     <span
       className={`flex flex-wrap items-center gap-x-1 gap-y-0.5 ${end ? "justify-end" : ""}`}

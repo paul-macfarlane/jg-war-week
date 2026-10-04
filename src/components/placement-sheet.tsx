@@ -6,7 +6,6 @@ import { useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import {
-  addEveryone,
   addPlacement,
   closePlacements,
   removePlacement,
@@ -22,6 +21,7 @@ import { placementLabel } from "@/lib/competitions";
 import type { ScoreDirection } from "@/lib/enums";
 import { placementPointsByRow, refilledPlaces } from "@/lib/placement/score";
 import { formatPoints } from "@/lib/points";
+import { isSetByHand, scoreLabel } from "@/lib/scoring";
 import type { MutationResult } from "@/mutations/types";
 
 /** A row as the sheet shows it: names and numbers, never an email. */
@@ -57,7 +57,7 @@ function placeOf(text: string): number | null {
 
 /**
  * A Placement Competition's sheet (CONTEXT.md, Placement), the run area of
- * its Competition page: add people by search or Add everyone, give each
+ * its Competition page: add people by search, give each
  * row a Place and an optional Score, Save, then Close into Points
  * Entries by the Placement Points; Reopen withdraws them. With a Score
  * direction (a setting in the page's Settings, saved on its own), Places
@@ -75,6 +75,7 @@ export function PlacementSheet({
     scoring: "team" | "individual";
     placementPoints: number[] | null;
     scoreDirection: ScoreDirection;
+    scoreUnit: string | null;
     closed: boolean;
   };
   rows: PlacementSheetRow[];
@@ -97,6 +98,7 @@ export function PlacementSheet({
   // Unsaved edits by row id; anything not edited shows what's saved.
   const [edits, setEdits] = useState<Record<string, Typed>>({});
   const direction = competition.scoreDirection;
+  const scoring = { direction, unit: competition.scoreUnit };
   const typed = (row: PlacementSheetRow) => edits[row.id] ?? typedOf(row);
   const changed = rows.filter((row) => {
     const now = typed(row);
@@ -140,6 +142,17 @@ export function PlacementSheet({
         : withPlaces(all, refilledPlaces(before, scoresOf(all), direction)),
     );
   }
+
+  // With a direction and every Score in, a Place that differs from the
+  // Scores' order (a tie settled by hand, say) is called out.
+  const setByHand = isSetByHand(
+    rows.map((row) => ({
+      id: row.id,
+      score: numberOf(typed(row).score),
+      place: placeOf(typed(row).place),
+    })),
+    direction,
+  );
 
   const points = new Map(
     placementPointsByRow(
@@ -239,18 +252,6 @@ export function PlacementSheet({
                 disabled={pending}
               />
             </Field>
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              className="min-h-11 w-fit sm:min-h-9"
-              disabled={pending || candidates.length === 0}
-              onClick={() =>
-                run(() => addEveryone(competition.id), "Everyone added")
-              }
-            >
-              Add everyone
-            </Button>
           </div>
         </div>
       )}
@@ -262,9 +263,14 @@ export function PlacementSheet({
             ({rows.length})
           </span>
         </h2>
+        {setByHand ? (
+          <p className="text-foreground/70 text-sm" data-slot="set-by-hand">
+            Places set by hand: they differ from the Scores&apos; order.
+          </p>
+        ) : null}
         {rows.length === 0 ? (
           <p className="text-foreground/70 text-sm">
-            No one yet. Search above, or Add everyone.
+            No one yet. Search above to add someone.
           </p>
         ) : (
           <ol className="flex flex-col divide-y" aria-label="Placements">
@@ -274,7 +280,7 @@ export function PlacementSheet({
             >
               <span>Place</span>
               <span>Name</span>
-              <span>Score</span>
+              <span className="truncate">{scoreLabel(scoring)}</span>
               <span className="text-right">Points</span>
               {locked ? null : <span />}
             </li>

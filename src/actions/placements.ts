@@ -9,6 +9,7 @@ import {
   parsePlacementTargetInput,
   parseSavePlacementsInput,
 } from "@/lib/placement/input";
+import { closeCompetition, reopenCompetition } from "@/mutations/close";
 import * as mutations from "@/mutations/placements";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 
@@ -46,15 +47,6 @@ export async function addPlacement(
   });
 }
 
-/** Add everyone: every Team, or the whole roster, not on the sheet yet. */
-export async function addEveryone(
-  competitionId: string,
-): Promise<MutationResult> {
-  return placementWrite("placement.edit", competitionId, (id, ctx) =>
-    mutations.addEveryone(id, ctx),
-  );
-}
-
 /** Removes a row; `input` is `{ placementId }`. */
 export async function removePlacement(
   competitionId: string,
@@ -84,7 +76,7 @@ export async function closePlacements(
   competitionId: string,
 ): Promise<MutationResult> {
   return placementWrite("placement.close", competitionId, (id, ctx) =>
-    mutations.closePlacements(id, ctx),
+    closeCompetition(id, ctx),
   );
 }
 
@@ -93,6 +85,6 @@ export async function reopenPlacements(
   competitionId: string,
 ): Promise<MutationResult> {
   return placementWrite("placement.reopen", competitionId, (id, ctx) =>
-    mutations.reopenPlacements(id, ctx),
+    reopenCompetition(id, ctx),
   );
 }

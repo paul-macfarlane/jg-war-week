@@ -36,6 +36,8 @@ export type MatchResultFormProps = {
   bracket: Bracket;
   entrantsById: Map<string, BracketViewEntrant>;
   scoring: Scoring;
+  /** The Competition's Score unit, shown in each Score input's label. */
+  scoreUnit?: string | null;
   primaryColor: string;
   /** Saves the Match result: a Host's record, or a Participant's report. */
   submit: (result: MatchResult) => Promise<MatchResultActionResult>;
@@ -146,18 +148,20 @@ function filledScores(scores: Record<string, string>) {
 function ScoreField({
   id,
   label,
+  unit,
   value,
   onChange,
 }: {
   id: string;
   label: string;
+  unit: string | null;
   value: string;
   onChange: (value: string) => void;
 }) {
   return (
     <Field>
       <FieldLabel htmlFor={id} className="min-w-0 break-words">
-        {label} score
+        {label} score{unit ? ` (${unit})` : ""}
       </FieldLabel>
       <Input
         id={id}
@@ -178,7 +182,7 @@ function ScoreField({
  * ask.
  */
 export function WinnerForm(props: MatchResultFormProps) {
-  const { match, entrantsById, scoring, primaryColor } = props;
+  const { match, entrantsById, scoring, scoreUnit, primaryColor } = props;
   const id = useId();
   const ids = match.slots.map((s) => s.entrantId!);
   const decided = isDecided(match);
@@ -249,6 +253,7 @@ export function WinnerForm(props: MatchResultFormProps) {
               <ScoreField
                 id={`${id}-score-${i}`}
                 label={label(entrantId)}
+                unit={scoreUnit?.trim() || null}
                 value={scores[entrantId] ?? ""}
                 onChange={(value) =>
                   setScores((s) => ({ ...s, [entrantId]: value }))
@@ -271,7 +276,7 @@ export function WinnerForm(props: MatchResultFormProps) {
  * from a complete Round asks first, naming the later Matches it resets.
  */
 export function FinishingOrderForm(props: MatchResultFormProps) {
-  const { match, entrantsById, scoring, primaryColor } = props;
+  const { match, entrantsById, scoring, scoreUnit, primaryColor } = props;
   const id = useId();
   const ids = match.slots.map((s) => s.entrantId!);
   const decided = isDecided(match);
@@ -368,6 +373,7 @@ export function FinishingOrderForm(props: MatchResultFormProps) {
               <ScoreField
                 id={`${id}-score-${i}`}
                 label={label(entrantId)}
+                unit={scoreUnit?.trim() || null}
                 value={scores[entrantId] ?? ""}
                 onChange={(value) =>
                   setScores((s) => ({ ...s, [entrantId]: value }))

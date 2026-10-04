@@ -88,12 +88,11 @@ const CASES: FormatCase[] = [
     format: "Placement",
     // Its result adds a Participant, so the sheet lists Participants.
     scoring: "Individual",
-    change: (page) =>
-      chooseOption(page, "Score direction", "Higher Score wins"),
+    change: (page) => chooseOption(page, "Score direction", "Higher is better"),
     kept: (page) =>
       expect(
         page.getByRole("combobox", { name: "Score direction", exact: true }),
-      ).toContainText("Higher Score wins"),
+      ).toContainText("Higher is better"),
     addResult: async (page) => {
       const search = page.getByRole("combobox", { name: "Add a Participant" });
       await search.click();
@@ -130,15 +129,15 @@ const CASES: FormatCase[] = [
   },
   {
     format: "Best score",
-    change: (page) => chooseOption(page, "Better is", "Lower"),
+    change: (page) => chooseOption(page, "Score direction", "Lower is better"),
     kept: (page) =>
       expect(
-        page.getByRole("combobox", { name: "Better is", exact: true }),
-      ).toContainText("Lower"),
+        page.getByRole("combobox", { name: "Score direction", exact: true }),
+      ).toContainText("Lower is better"),
     addResult: async (page) => {
       await logAttempt(page);
       await expect(
-        page.getByRole("combobox", { name: "Better is", exact: true }),
+        page.getByRole("combobox", { name: "Score direction", exact: true }),
       ).toBeDisabled();
       // The unit is a label: it never locks.
       await expect(page.getByLabel("Unit")).toBeEnabled();
@@ -268,9 +267,10 @@ test("r18 101 a new Competition with no result changes Format, Placement → Bra
       page.getByRole("switch", { name: "Self-report" }),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Generate" })).toBeVisible();
+    // Every Format with Scores takes a direction and unit (R21, decision 6).
     await expect(
       page.getByRole("combobox", { name: "Score direction", exact: true }),
-    ).toHaveCount(0);
+    ).toBeVisible();
     await page.screenshot({
       path: testInfo.outputPath("format-bracket.png"),
       fullPage: true,

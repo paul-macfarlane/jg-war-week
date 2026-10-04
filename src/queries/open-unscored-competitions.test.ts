@@ -241,7 +241,9 @@ describe.skipIf(!isLocalDatabase)("getOpenUnscoredCompetitions", () => {
       for (const id of [workout, closed]) {
         await participation.markParticipant(id, participant.id, f.ctx, tx);
       }
-      await participation.closeParticipation(closed, f.ctx, tx);
+      await (
+        await import("@/mutations/close")
+      ).closeCompetition(closed, f.ctx, tx);
 
       expect(
         await queries.getOpenUnscoredCompetitions({ id: f.ctx.warWeekId }, tx),

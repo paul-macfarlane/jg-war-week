@@ -69,6 +69,8 @@ type BracketAdminProps = {
   /** The Competition's Placement Points; none means Close creates no Points Entries. */
   placementPoints: number[] | null;
   scoring: Scoring;
+  /** The Competition's Score unit, for Score labels. */
+  scoreUnit?: string | null;
   entrants: BracketViewEntrant[];
   bracket: Bracket;
   /** The Winner's Entrant id, once the final is decided. */
@@ -109,6 +111,7 @@ export function BracketAdminView({
   competitionId,
   placementPoints,
   scoring,
+  scoreUnit = null,
   entrants,
   bracket,
   winner,
@@ -192,6 +195,7 @@ export function BracketAdminView({
         bracket={bracket}
         entrantsById={entrantsById}
         scoring={scoring}
+        scoreUnit={scoreUnit}
         primaryColor={primaryColor}
         recordableMatchIds={
           closed
@@ -218,6 +222,7 @@ export function BracketAdminView({
             bracket={bracket}
             entrantsById={entrantsById}
             scoring={scoring}
+            scoreUnit={scoreUnit}
             primaryColor={primaryColor}
             onSaved={close}
           />

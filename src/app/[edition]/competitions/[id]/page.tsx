@@ -237,6 +237,7 @@ export default async function CompetitionPage({
           podium={podiumOf(bracket)}
           closed={bracket.closed}
           scoring={competition.scoring}
+          scoreUnit={bracket.competition.scoreUnit}
           primaryColor={warWeek.primaryColor}
           participantTeams={participantTeams}
           participantSquads={participantSquads}

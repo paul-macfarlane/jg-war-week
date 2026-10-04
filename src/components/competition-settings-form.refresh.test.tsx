@@ -74,6 +74,7 @@ function show(over: Partial<CompetitionSettingsSource>) {
         facts={{
           format: "placement",
           hasResult: false,
+          hasPlay: false,
           hasLogged: false,
           hasMatchResult: false,
           closed: false,

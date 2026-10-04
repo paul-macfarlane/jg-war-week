@@ -62,6 +62,7 @@ function SlotRow({
   multiEntrant,
   entrantsById,
   scoring,
+  scoreUnit,
   primaryColor,
   youEntrantId,
 }: {
@@ -71,6 +72,7 @@ function SlotRow({
   multiEntrant: boolean;
   entrantsById: Map<string, BracketViewEntrant>;
   scoring: Scoring;
+  scoreUnit: string | null;
   primaryColor: string;
   youEntrantId: string | null;
 }) {
@@ -138,7 +140,10 @@ function SlotRow({
         </span>
       )}
       {slot.score && (
-        <span className="ml-auto shrink-0 tabular-nums">{slot.score}</span>
+        <span className="ml-auto shrink-0 tabular-nums">
+          {slot.score}
+          {scoreUnit?.trim() ? ` ${scoreUnit.trim()}` : ""}
+        </span>
       )}
     </div>
   );
@@ -158,6 +163,7 @@ export function BracketTree({
   bracket,
   entrantsById,
   scoring,
+  scoreUnit = null,
   primaryColor,
   youEntrantId = null,
   recordableMatchIds = [],
@@ -167,6 +173,8 @@ export function BracketTree({
   bracket: Bracket;
   entrantsById: Map<string, BracketViewEntrant>;
   scoring: Scoring;
+  /** The Score unit, shown beside each Match row's Score. */
+  scoreUnit?: string | null;
   primaryColor: string;
   youEntrantId?: string | null;
   /** The Matches the viewer may record now; each shows Record result or Edit. */
@@ -223,6 +231,7 @@ export function BracketTree({
               multiEntrant={multiEntrant}
               entrantsById={entrantsById}
               scoring={scoring}
+              scoreUnit={scoreUnit}
               primaryColor={primaryColor}
               youEntrantId={youEntrantId}
             />

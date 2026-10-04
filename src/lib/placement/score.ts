@@ -7,6 +7,7 @@
 import type { Competition, pointsEntry } from "@/db/schema";
 import { pointsFor } from "@/lib/bracket/points";
 import { generatedNote } from "@/lib/points-entry";
+import { type RankingDirection, orderByScore } from "@/lib/scoring";
 
 /** Close's refusal for a row with a Score and no Place. */
 export const SCORE_WITHOUT_PLACE =
@@ -15,26 +16,15 @@ export const SCORE_WITHOUT_PLACE =
 export const NOBODY_PLACED = "Give someone a Place first.";
 
 /**
- * The Places a Score direction gives the rows with a Score, by standard
- * competition ranking: equal Scores share a place and the next is skipped
- * (1, 1, 3). A row without a Score isn't in the map, so its Place stays as
- * typed.
+ * The Places a Score direction gives the rows with a Score (`orderByScore`):
+ * equal Scores share a place and the next is skipped (1, 1, 3). A row
+ * without a Score isn't in the map, so its Place stays as typed.
  */
 export function placesFromScores(
   rows: { id: string; score: number | null }[],
-  direction: "higher" | "lower",
+  direction: RankingDirection,
 ): Map<string, number> {
-  const scored = rows.filter(
-    (row): row is { id: string; score: number } => row.score !== null,
-  );
-  const better = (a: number, b: number) =>
-    direction === "higher" ? a > b : a < b;
-  return new Map(
-    scored.map((row) => [
-      row.id,
-      scored.filter((other) => better(other.score, row.score)).length + 1,
-    ]),
-  );
+  return orderByScore(rows, direction);
 }
 
 /**
@@ -46,7 +36,7 @@ export function placesFromScores(
 export function refilledPlaces(
   before: { id: string; score: number | null }[],
   after: { id: string; score: number | null }[],
-  direction: "higher" | "lower",
+  direction: RankingDirection,
 ): Map<string, number> {
   const was = placesFromScores(before, direction);
   const scoreBefore = new Map(before.map((row) => [row.id, row.score]));

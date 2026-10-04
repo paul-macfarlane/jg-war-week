@@ -24,6 +24,7 @@ function view(
       countsTowardTeam: true,
       placementPoints: [10, 6, 3],
       scoreDirection: "higher",
+      scoreUnit: null,
       closedAt: CLOSED,
       ...overrides,
     },

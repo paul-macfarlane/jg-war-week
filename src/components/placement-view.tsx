@@ -85,6 +85,7 @@ export function PlacementView({
               competition.scoring === "team" ? teamLabel : "Participant"
             }
             provisional={!closed}
+            scoreUnit={competition.scoreUnit}
           />
         </>
       )}

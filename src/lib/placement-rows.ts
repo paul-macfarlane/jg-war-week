@@ -7,9 +7,6 @@
 import { placementLimitMessage } from "@/lib/competitions";
 import { POINTS_NUMBER } from "@/lib/points-entry";
 
-/** The "5 · 3 · 1" quick fill. */
-export const QUICK_FILL = ["5", "3", "1"];
-
 /** One row per place from the form's Placement Points text. */
 export function rowsFromPlacementPoints(text: string): string[] {
   return text.split(/[\s,]+/).filter(Boolean);

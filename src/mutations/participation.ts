@@ -1,13 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
-import {
-  competition,
-  participant,
-  participation,
-  pointsEntry,
-  warWeek,
-} from "@/db/schema";
+import { competition, participant, participation, warWeek } from "@/db/schema";
 import {
   NOT_LINKED,
   NOT_PARTICIPATION,
@@ -16,15 +10,11 @@ import {
   markError,
 } from "@/lib/participation/check-in-rule";
 import type { ParticipationSettings } from "@/lib/participation/input";
-import { scoreParticipation } from "@/lib/participation/score";
-import { generatedNote } from "@/lib/points-entry";
 import {
   COMPETITION_NOT_FOUND,
   REOPEN_FIRST,
-  deleteGenerated,
   refuse,
 } from "@/mutations/brackets";
-import { ALREADY_CLOSED } from "@/mutations/logged-results";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 import { getCheckInFacts } from "@/queries/participation";
 
@@ -234,75 +224,6 @@ export async function checkOut(
           eq(participation.checkedIn, true),
         ),
       );
-    return { ok: true };
-  });
-}
-
-/**
- * Closes a `participation` Competition: who took part becomes Points
- * Entries (`scoreParticipation`, each Participant's Team as it is now),
- * marked generated and noted "From participation"; then no marks or
- * check-ins until Reopen. Nobody marked closes with no entries.
- */
-export async function closeParticipation(
-  competitionId: string,
-  ctx: MutationContext,
-  dbOrTx: DBOrTx = db,
-): Promise<MutationResult> {
-  return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-    const found = await lockedParticipation(tx, competitionId, ctx);
-    if (typeof found === "string") return refuse(found);
-    if (found.closedAt) return refuse(ALREADY_CLOSED);
-
-    const tookPart = await tx
-      .select({
-        participantId: participation.participantId,
-        teamId: participant.teamId,
-      })
-      .from(participation)
-      .innerJoin(participant, eq(participant.id, participation.participantId))
-      .where(eq(participation.competitionId, competitionId));
-    const scored = scoreParticipation(tookPart, found);
-    await deleteGenerated(tx, competitionId);
-    if (scored.length) {
-      await tx.insert(pointsEntry).values(
-        scored.map(({ teamId, participantId, points }) => ({
-          warWeekId: ctx.warWeekId,
-          competitionId,
-          teamId,
-          participantId,
-          points,
-          note: generatedNote("participation"),
-          enteredByEmail: ctx.actorEmail,
-          generated: true,
-        })),
-      );
-    }
-    await tx
-      .update(competition)
-      .set({ closedAt: sql`now()`, updatedAt: sql`now()` })
-      .where(eq(competition.id, competitionId));
-    return { ok: true };
-  });
-}
-
-/**
- * Reopens a `participation` Competition: deletes its generated Points
- * Entries and clears `closed_at`.
- */
-export async function reopenParticipation(
-  competitionId: string,
-  ctx: MutationContext,
-  dbOrTx: DBOrTx = db,
-): Promise<MutationResult> {
-  return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-    const found = await lockedParticipation(tx, competitionId, ctx);
-    if (typeof found === "string") return refuse(found);
-    await deleteGenerated(tx, competitionId);
-    await tx
-      .update(competition)
-      .set({ closedAt: null, updatedAt: sql`now()` })
-      .where(eq(competition.id, competitionId));
     return { ok: true };
   });
 }

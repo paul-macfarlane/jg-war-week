@@ -30,6 +30,7 @@ import type { BestScoreSettings } from "@/lib/best-score/config";
 import type { LoggedFormat } from "@/lib/enums";
 import { resultNoun } from "@/lib/logged-results";
 import type { FieldErrors } from "@/lib/result";
+import { scoreLabel } from "@/lib/scoring";
 import type { SeriesConfig } from "@/lib/series/config";
 import type {
   LoggedConfig,
@@ -278,7 +279,7 @@ function ResultFormBody({
             </Field>
             <Field data-invalid={Boolean(errors.score)}>
               <FieldLabel htmlFor={`${id}-score`}>
-                {unit ? `Score (${unit})` : "Score"}
+                {scoreLabel({ unit })}
               </FieldLabel>
               <Input
                 id={`${id}-score`}

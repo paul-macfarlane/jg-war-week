@@ -51,6 +51,7 @@ export type PlacementCompetition = Pick<
   | "countsTowardTeam"
   | "placementPoints"
   | "scoreDirection"
+  | "scoreUnit"
   | "closedAt"
 >;
 
@@ -134,6 +135,7 @@ export async function getPlacementsView(
       countsTowardTeam: competition.countsTowardTeam,
       placementPoints: competition.placementPoints,
       scoreDirection: competition.scoreDirection,
+      scoreUnit: competition.scoreUnit,
       closedAt: competition.closedAt,
     })
     .from(competition)
@@ -149,6 +151,7 @@ export async function getPlacementsView(
       countsTowardTeam: found.countsTowardTeam,
       placementPoints: found.placementPoints,
       scoreDirection: found.scoreDirection,
+      scoreUnit: found.scoreUnit,
       closedAt: found.closedAt,
     },
     rows: await getPlacementRows(found, dbOrTx),

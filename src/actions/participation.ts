@@ -5,6 +5,7 @@ import { revalidateWarWeek } from "@/actions/revalidate";
 import { authorize, authorizeCheckIn } from "@/auth/authorize";
 import type { WarWeekAction } from "@/lib/access";
 import { parseMarkInput } from "@/lib/participation/input";
+import { closeCompetition, reopenCompetition } from "@/mutations/close";
 import * as mutations from "@/mutations/participation";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 
@@ -64,7 +65,7 @@ export async function closeParticipation(
   competitionId: string,
 ): Promise<MutationResult> {
   return hostWrite("participation.close", competitionId, (ctx) =>
-    mutations.closeParticipation(competitionId, ctx),
+    closeCompetition(competitionId, ctx),
   );
 }
 
@@ -73,7 +74,7 @@ export async function reopenParticipation(
   competitionId: string,
 ): Promise<MutationResult> {
   return hostWrite("participation.reopen", competitionId, (ctx) =>
-    mutations.reopenParticipation(competitionId, ctx),
+    reopenCompetition(competitionId, ctx),
   );
 }
 

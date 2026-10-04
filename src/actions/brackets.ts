@@ -7,6 +7,7 @@ import type { WarWeekAction } from "@/lib/access";
 import { parseMatchResultInput, parseSquadInput } from "@/lib/bracket/input";
 import { isUuid } from "@/lib/uuid";
 import * as mutations from "@/mutations/brackets";
+import { closeCompetition, reopenCompetition } from "@/mutations/close";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 
 export type BracketActionResult = MutationResult;
@@ -59,13 +60,13 @@ export async function recordMatchResult(
 export async function closeBracket(
   competitionId: string,
 ): Promise<BracketActionResult> {
-  return bracketWrite("bracket.close", competitionId, mutations.closeBracket);
+  return bracketWrite("bracket.close", competitionId, closeCompetition);
 }
 
 export async function reopenBracket(
   competitionId: string,
 ): Promise<BracketActionResult> {
-  return bracketWrite("bracket.reopen", competitionId, mutations.reopenBracket);
+  return bracketWrite("bracket.reopen", competitionId, reopenCompetition);
 }
 
 /**

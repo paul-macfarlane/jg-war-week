@@ -113,7 +113,18 @@ describe("shownSettings", () => {
         "entrantLimit",
       ]),
     );
+    expect(shown).toEqual(
+      expect.arrayContaining(["scoreDirection", "scoreUnit"]),
+    );
+  });
+
+  it("shows no Score direction or unit for Participation", () => {
+    const shown = shownSettings(
+      settingsValuesOf({ ...PLACEMENT, format: "participation" }),
+      "teams",
+    );
     expect(shown).not.toContain("scoreDirection");
+    expect(shown).not.toContain("scoreUnit");
   });
 
   it("hides the Scoring choice in a free-for-all War Week unless the Competition is Team", () => {

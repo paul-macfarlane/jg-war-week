@@ -59,9 +59,9 @@ vi.mock("@/mutations/attempts", () => ({
   updateAttempt: vi.fn(async () => ({ ok: true })),
   deleteAttempt: vi.fn(async () => ({ ok: true })),
 }));
-vi.mock("@/mutations/logged-results", () => ({
-  closeLoggedResults: vi.fn(async () => ({ ok: true })),
-  reopenLoggedResults: vi.fn(async () => ({ ok: true })),
+vi.mock("@/mutations/close", () => ({
+  closeCompetition: vi.fn(async () => ({ ok: true })),
+  reopenCompetition: vi.fn(async () => ({ ok: true })),
 }));
 
 beforeEach(() => {
@@ -169,25 +169,25 @@ describe("updateResult and deleteResult", () => {
 describe("Host and Organizer Close and Reopen", () => {
   it('closes through "results.close" and reopens through "results.reopen"', async () => {
     authorized.current = HOST_OK;
-    const logged = await import("@/mutations/logged-results");
+    const logged = await import("@/mutations/close");
 
     await expect(closeLoggedResults(ID)).resolves.toEqual({ ok: true });
     expect(authorize).toHaveBeenCalledWith("results.close", "competition", ID);
-    expect(logged.closeLoggedResults).toHaveBeenCalledWith(ID, CTX);
+    expect(logged.closeCompetition).toHaveBeenCalledWith(ID, CTX);
 
     await expect(reopenLoggedResults(ID)).resolves.toEqual({ ok: true });
     expect(authorize).toHaveBeenCalledWith("results.reopen", "competition", ID);
-    expect(logged.reopenLoggedResults).toHaveBeenCalledWith(ID, CTX);
+    expect(logged.reopenCompetition).toHaveBeenCalledWith(ID, CTX);
   });
 
   it("returns the refusal and never writes when not authorized", async () => {
     authorized.current = { ok: false, error: "Sign in to continue." };
-    const logged = await import("@/mutations/logged-results");
+    const logged = await import("@/mutations/close");
 
     await expect(closeLoggedResults(ID)).resolves.toEqual(authorized.current);
     await expect(reopenLoggedResults(ID)).resolves.toEqual(authorized.current);
-    expect(logged.closeLoggedResults).not.toHaveBeenCalled();
-    expect(logged.reopenLoggedResults).not.toHaveBeenCalled();
+    expect(logged.closeCompetition).not.toHaveBeenCalled();
+    expect(logged.reopenCompetition).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 });

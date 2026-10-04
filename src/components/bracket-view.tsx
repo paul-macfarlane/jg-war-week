@@ -137,6 +137,7 @@ export function BracketView({
   podium,
   closed,
   scoring,
+  scoreUnit = null,
   primaryColor,
   participantTeams,
   participantSquads,
@@ -150,6 +151,8 @@ export function BracketView({
   /** Whether the Bracket is Closed: its podium's points are final. */
   closed: boolean;
   scoring: Scoring;
+  /** The Competition's Score unit, for Score labels. */
+  scoreUnit?: string | null;
   primaryColor: string;
   /** Each Participant's Team id, for finding Your Team's Entrant. */
   participantTeams: Record<string, string>;
@@ -230,6 +233,7 @@ export function BracketView({
         bracket={bracket}
         entrantsById={entrantsById}
         scoring={scoring}
+        scoreUnit={scoreUnit}
         primaryColor={primaryColor}
         youEntrantId={youEntrantId}
         recordableMatchIds={
@@ -253,6 +257,7 @@ export function BracketView({
             bracket={bracket}
             entrantsById={entrantsById}
             scoring={scoring}
+            scoreUnit={scoreUnit}
             primaryColor={primaryColor}
             submit={(result) =>
               reportMatchResult(competitionId, reportMatch.id, result)
