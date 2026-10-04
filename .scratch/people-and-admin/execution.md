@@ -104,3 +104,53 @@ start of this work package). Every e2e spec screenshots into
   step, never `PASS`.
 
 ## [PROGRESS]
+
+- 2026-10-04 D1 accepted (`b3a9dfd4`, sonnet worker): Hosts are roster
+  Participants (migration 0033), request-time Host access, Host admin scope,
+  ADR 0012. Worker run: vitest 3988 passed; smoke 302 ok; e2e
+  `regression-r22-hosts`, `regression-r18-hosts`, `regression-r5` 12 passed
+  plus 43 other Host-touching specs. Note: smoke/e2e need `DATABASE_URL` set
+  on the command line (local docker URL from `vitest.config.ts`). Unreachable
+  Host branches in the Schedule and Announcements pages left for the D6
+  sweep.
+- 2026-10-04 D2 accepted (`233b3ebd`, sonnet worker): Awards without
+  Categories, presets, `/history/awards/<slug>`, seeds renamed, one Award per
+  Finale step; the branch's one migration regenerated as
+  `0033_fluffy_vanisher.sql` (DROP TABLE moved after the FK column drop so it
+  applies). Worker run: vitest 3937 passed; smoke 302 ok; e2e 9 + 23 passed.
+  Worker deviations held for the aggregate review: the preset picker is a
+  separate field above Name; grouping is by slug (names differing only in
+  punctuation share a page); `get_awards` drops `category`. Committed e2e
+  screenshots of specs a worker didn't run go stale; the aggregate gate
+  regenerates and commits all of them.
+- 2026-10-04 D3 accepted (`c110c53d`, sonnet worker): Bracket Finale
+  removed; `/xi/finale/<id>` 404 and no "Bracket Finales" on `/admin/finale`
+  in smoke and `e2e/bracket.spec.ts`. Worker run: vitest 3930 passed; smoke
+  302 ok; e2e 14 passed.
+- 2026-10-04 D4 accepted (`100ed303`, sonnet worker): `ParticipantPicker`
+  for Hosts, Placement sheet, Entrants, Squads, Attempt players
+  (`result-form.tsx`), Award recipients and Discretionary points;
+  Participation filter rows; no email in any picker option or payload.
+  Head-to-head and Bracket Match forms have no player combobox (fixed rows),
+  so the Attempt picker is the only match/game player picker. Worker run:
+  vitest 3938 passed; smoke 373 ok (71 payload email scans); e2e 102 + 19
+  passed.
+- 2026-10-04 D5 accepted (`ea0760f6`, sonnet worker): `ParticipantMark` /
+  `TeamTag` in `src/components/participant-mark.tsx`, a Team ring on a
+  pictured Avatar. Components per surface: Standings `standings.tsx` (Home,
+  leaderboard, Finale Standings); Brackets `bracket-tree.tsx` via
+  `EntrantMark` (color), `bracket-podium.tsx`, `top-finishers.tsx`,
+  `match-result-form.tsx`; Matches and Attempts `logged-results-view.tsx`;
+  Placement `placement-view.tsx`; Recent results `recent-results.tsx`;
+  Now/Next no change (tiles are Schedule Items, no Participant); Awards
+  `[edition]/awards/page.tsx`, `history/awards/[slug]/page.tsx`, Finale
+  Awards via Avatar ring; Admin `placement-sheet.tsx`,
+  `participation-view.tsx`, `discretionary-points-editor.tsx`,
+  `awards-editor.tsx`, pickers from D4. Worker run: vitest 3951 passed;
+  smoke 373 ok; full e2e 174 passed.
+- 2026-10-04 D6 accepted (`00b8868b`, sonnet worker): `about-media.ts
+  --edition` (default `xii`) fails unless `/` resolves to that edition;
+  `/about` copy; every still regenerated in XII (viewed light and dark:
+  magenta primary, "War Week XII"); `assertNoRealEmail` runs on every page
+  and the run completed; backlog 108 and 83 `done`. Unreachable Host filters
+  removed from the Schedule admin page.
