@@ -2,12 +2,14 @@
  * Lists every row migration 0032 (R21) drops or nulls, so the PR can carry
  * them before Migrate runs (the R21 execution plan, P10 and P10b "Listed"
  * rows): `pnpm tsx scripts/r21-migration-report.ts`, against DATABASE_URL
- * at migration 0031.
+ * at migration 0030 (staging and production before this PR) or 0031.
  *
  * Read-only: one read-only transaction of selects. Prints Competition,
  * Team and Participant names and counts only: never an email or the
- * database URL. Old table names (`game`, `game_player`) are the 0031
- * schema's, read here on purpose.
+ * database URL. Old table names are read here on purpose: `game` and
+ * `game_player` (0030 and 0031), and the Bracket Match tables by whichever
+ * name the database has: `heat` / `heat_entrant.heat_id` at 0030, renamed
+ * by 0031 to `bracket_match` / `bracket_match_entrant.bracket_match_id`.
  */
 import { loadEnvConfig } from "@next/env";
 import { sql } from "drizzle-orm";
@@ -110,13 +112,27 @@ const BEST_SCORE_ENTRANTS = sql`
   where c.format::text = 'best-score'
   order by c.name, e.seed_position`;
 
+/** The Bracket Match tables' names: 0030's `heat` ones, or 0031's. */
+type MatchTables = { match: string; entrant: string; matchId: string };
+const TABLES_0030: MatchTables = {
+  match: "heat",
+  entrant: "heat_entrant",
+  matchId: "heat_id",
+};
+const TABLES_0031: MatchTables = {
+  match: "bracket_match",
+  entrant: "bracket_match_entrant",
+  matchId: "bracket_match_id",
+};
+
 /** Bracket Match Scores that aren't numbers become null. */
-const NON_NUMERIC_SCORES = sql`
+const nonNumericScores = (tables: MatchTables) => sql`
   select c.name as competition, m.round, m.position,
     coalesce(t.name, p.display_name, s.name) as entrant,
     bme.score
-  from bracket_match_entrant bme
-  join bracket_match m on m.id = bme.bracket_match_id
+  from ${sql.identifier(tables.entrant)} bme
+  join ${sql.identifier(tables.match)} m
+    on m.id = bme.${sql.identifier(tables.matchId)}
   join competition c on c.id = m.competition_id
   join entrant e on e.id = bme.entrant_id
   left join team t on t.id = e.team_id
@@ -149,11 +165,12 @@ async function main() {
   const { db } = await import("@/db");
   await db.transaction(async (tx) => {
     await tx.execute(sql`set transaction read only`);
-    const [{ present }] = (
+    const [{ present, heats }] = (
       await tx.execute(
-        sql`select to_regclass('public.game') is not null as present`,
+        sql`select to_regclass('public.game') is not null as present,
+          to_regclass('public.heat_entrant') is not null as heats`,
       )
-    ).rows as { present: boolean }[];
+    ).rows as { present: boolean; heats: boolean }[];
     console.log("# R21 migration 0032: rows dropped or nulled");
     if (!present) {
       console.log(
@@ -161,6 +178,9 @@ async function main() {
       );
       return;
     }
+    console.log(
+      `\nReading a database at migration ${heats ? "0030 (\`heat\` tables)" : "0031 (\`bracket_match\` tables)"}.`,
+    );
     const rows = async (query: ReturnType<typeof sql>) =>
       (await tx.execute(query)).rows as Row[];
 
@@ -186,7 +206,7 @@ async function main() {
     );
     print(
       "Bracket Match Scores that become null (not a number)",
-      await rows(NON_NUMERIC_SCORES),
+      await rows(nonNumericScores(heats ? TABLES_0030 : TABLES_0031)),
     );
   });
   process.exit(0);
