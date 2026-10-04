@@ -48,6 +48,12 @@ export type Match = {
   position: number;
   /** One per place in the Match: its length is the Match's slot count. */
   slots: MatchSlot[];
+  /**
+   * A Group Match's advancing count, 1…its size (`bracket_match.advance_count`);
+   * the final's is 1. Absent, the Match's Round default applies (capped at its
+   * size). Head-to-head ignores it.
+   */
+  advanceCount?: number;
   winnerTo: WinnerTo | null;
   /** A semifinal with a 3rd place Match: where its loser goes. */
   loserTo: WinnerTo | null;

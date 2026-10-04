@@ -725,3 +725,289 @@ describe("hasResults", () => {
     expect(matches.hasResults(recordInSlotOrder(bracket, "r1h1"))).toBe(true);
   });
 });
+
+describe("flexible Group Matches (spec R21, decision 11)", () => {
+  /** 11 Entrants at 4 per Match, 2 advancing: AC 13's Bracket. */
+  const eleven = () => build(11, 4, 2);
+  const roundIds = () => {
+    let n = 0;
+    return (round: number, position: number) => `n${++n}r${round}h${position}`;
+  };
+  /** Each Round's Matches as [lineup, advancing, status]. */
+  function shape(bracket: Bracket): [string, number, string][][] {
+    return rounds(bracket).map((round) =>
+      round.map((h) => [lineup(h), h.advanceCount!, h.status]),
+    );
+  }
+
+  it("deals 11 into Matches of 3, 4 and 4, then 3 and 3, then a final of 4, each Match with its own advancing count", () => {
+    expect(shape(eleven())).toEqual([
+      [
+        ["s1 s6 s7", 2, "ready"],
+        ["s2 s5 s8 s11", 2, "ready"],
+        ["s3 s4 s9 s10", 2, "ready"],
+      ],
+      [
+        ["- - -", 2, "pending"],
+        ["- - -", 2, "pending"],
+      ],
+      [["- - - -", 1, "pending"]],
+    ]);
+  });
+
+  it("builds later Rounds from their own defaults", () => {
+    const bracket = matches.generate(
+      {
+        kind: "group",
+        entrantsPerMatch: 4,
+        advancePerMatch: 2,
+        thirdPlaceMatch: false,
+        rounds: { "2": { entrantsPerMatch: 3, advancePerMatch: 1 } },
+      },
+      entrants(11),
+      newId,
+    );
+    // Round 2: 6 in Matches of 3, 1 advancing each; the final holds 2.
+    expect(rounds(bracket).map((r) => r.map((h) => h.slots.length))).toEqual([
+      [3, 4, 4],
+      [3, 3],
+      [2],
+    ]);
+  });
+
+  it("runs AC 13: a move, an override to 1 advancing, a short Match as a bye, the next Round from the summed advancers, a final of 4", () => {
+    let bracket = matches.moveEntrant(eleven(), "s11", "r1h1", roundIds());
+    bracket = matches.setMatchAdvance(bracket, "r1h2", 1, roundIds());
+    // Match 2 is now the 3-Entrant Match with 1 advancing: 2 + 1 + 2 = 5 go
+    // on, dealt into Matches of 3 and 2; the 2 both advance, a bye.
+    expect(shape(bracket)).toEqual([
+      [
+        ["s1 s6 s7 s11", 2, "ready"],
+        ["s2 s5 s8", 1, "ready"],
+        ["s3 s4 s9 s10", 2, "ready"],
+      ],
+      [
+        ["- - -", 2, "pending"],
+        ["- -", 2, "pending"],
+      ],
+      [["- - - -", 1, "pending"]],
+    ]);
+
+    for (const id of ["r1h1", "r1h2", "r1h3"]) {
+      bracket = recordInSlotOrder(bracket, id);
+    }
+    const [round2] = rounds(bracket).slice(1);
+    // 1sts s1 s2 s3, then 2nds s6 (Match 1) s4 (Match 3): dealt by snake.
+    expect(round2.map((h) => [lineup(h), h.status])).toEqual([
+      ["s1 s6 s4", "ready"],
+      ["s2 s3", "played"],
+    ]);
+    expect(matches.isBye(bracket, round2[1])).toBe(true);
+    expect(matches.isRecordable(bracket, round2[1].id)).toBe(false);
+
+    bracket = matches.applyResult(bracket, round2[0].id, {
+      order: ["s4", "s1", "s6"],
+    });
+    const final = rounds(bracket)[2][0];
+    expect(lineup(final)).toBe("s4 s2 s1 s3");
+    bracket = matches.applyResult(bracket, final.id, {
+      order: ["s2", "s4", "s3", "s1"],
+    });
+    expect(matches.finalPlacings(bracket, entrants(11))).toEqual([
+      { entrantId: "s2", place: 1 },
+      { entrantId: "s4", place: 2 },
+      { entrantId: "s3", place: 3 },
+      { entrantId: "s1", place: 4 },
+    ]);
+  });
+
+  it("refuses an edit to a Round with a result, naming why", () => {
+    const bracket = recordInSlotOrder(eleven(), "r1h1");
+    const locked = new BracketError(
+      "Editing a round is locked once any Match in it has a result.",
+    );
+    expect(matches.roundLockReason(bracket, 1)).toBe(locked.message);
+    expect(matches.roundLockReason(bracket, 2)).toBeNull();
+    expect(() =>
+      matches.setMatchAdvance(bracket, "r1h3", 1, roundIds()),
+    ).toThrow(locked);
+    expect(() =>
+      matches.moveEntrant(bracket, "s4", "r1h2", roundIds()),
+    ).toThrow(locked);
+    expect(() =>
+      matches.setRoundDefaults(
+        bracket,
+        1,
+        { entrantsPerMatch: 3, advancePerMatch: 1 },
+        entrants(11),
+        roundIds(),
+      ),
+    ).toThrow(locked);
+    // A bye isn't a result: a later Round of byes alone stays editable.
+    expect(
+      matches.roundLockReason(
+        matches.setMatchAdvance(eleven(), "r1h1", 3, roundIds()),
+        1,
+      ),
+    ).toBeNull();
+  });
+
+  it("refuses an advancing count outside 1 to the Match's size, and any for the final", () => {
+    expect(() =>
+      matches.setMatchAdvance(eleven(), "r1h1", 4, roundIds()),
+    ).toThrow(new BracketError("Between 1 and 3 can advance from this Match."));
+    expect(() =>
+      matches.setMatchAdvance(eleven(), "r1h1", 0, roundIds()),
+    ).toThrow(new BracketError("Between 1 and 3 can advance from this Match."));
+    expect(() =>
+      matches.setMatchAdvance(eleven(), "r3h1", 1, roundIds()),
+    ).toThrow(new BracketError("Nobody advances from the Final."));
+  });
+
+  it("refuses a move out of the Round, into a full Match, or emptying a Match", () => {
+    expect(() =>
+      matches.moveEntrant(eleven(), "s1", "r2h1", roundIds()),
+    ).toThrow(new BracketError("Move an Entrant only within its Round."));
+    let bracket = build(16, 8, 4);
+    expect(() =>
+      matches.moveEntrant(bracket, "s1", "r1h2", roundIds()),
+    ).toThrow(new BracketError("A Match holds at most 8 Entrants."));
+    bracket = build(5, 4, 1);
+    // Matches of 3 and 2; emptying the 2 takes two moves, the second refused.
+    bracket = matches.moveEntrant(bracket, "s2", "r1h1", roundIds());
+    expect(() =>
+      matches.moveEntrant(bracket, "s3", "r1h1", roundIds()),
+    ).toThrow(new BracketError("A Match keeps at least 1 Entrant."));
+  });
+
+  it("refuses an edit that would send on as many as the Round received", () => {
+    // Round 2 receives 6; Matches of 3 with 3 advancing send on all 6.
+    expect(() =>
+      matches.setRoundDefaults(
+        eleven(),
+        2,
+        { entrantsPerMatch: 3, advancePerMatch: 2 },
+        entrants(11),
+        roundIds(),
+      ),
+    ).not.toThrow();
+    const bracket = matches.setMatchAdvance(eleven(), "r2h1", 3, roundIds());
+    expect(() =>
+      matches.setMatchAdvance(bracket, "r2h2", 3, roundIds()),
+    ).toThrow(
+      new BracketError(
+        "Round 2 would never end: it would send on 6 of its 6 Entrants. Lower how many advance.",
+      ),
+    );
+  });
+
+  it("re-deals a filled Round from its new defaults and re-projects the rest", () => {
+    const bracket = matches.setRoundDefaults(
+      eleven(),
+      1,
+      { entrantsPerMatch: 3, advancePerMatch: 1 },
+      entrants(11),
+      roundIds(),
+    );
+    expect(bracket.config.rounds).toEqual({
+      "1": { entrantsPerMatch: 3, advancePerMatch: 1 },
+    });
+    expect(shape(bracket)).toEqual([
+      [
+        ["s1 s8 s9", 1, "ready"],
+        ["s2 s7 s10", 1, "ready"],
+        ["s3 s6 s11", 1, "ready"],
+        ["s4 s5", 1, "ready"],
+      ],
+      [["- - - -", 1, "pending"]],
+    ]);
+    // Back to the Bracket-wide defaults: the key goes.
+    const back = matches.setRoundDefaults(
+      bracket,
+      1,
+      { entrantsPerMatch: 4, advancePerMatch: 2 },
+      entrants(11),
+      roundIds(),
+    );
+    expect(back.config.rounds).toEqual({});
+    expect(shape(back)).toEqual(shape(eleven()));
+  });
+
+  it("prunes Round defaults beyond the projected final", () => {
+    let bracket = matches.setRoundDefaults(
+      eleven(),
+      3,
+      { entrantsPerMatch: 3, advancePerMatch: 1 },
+      entrants(11),
+      roundIds(),
+    );
+    // Round 3 receives 4: Matches of 2 and 2, 1 each, then a final of 2.
+    expect(rounds(bracket).map((r) => r.map((h) => h.slots.length))).toEqual([
+      [3, 4, 4],
+      [3, 3],
+      [2, 2],
+      [2],
+    ]);
+    bracket = matches.setRoundDefaults(
+      bracket,
+      2,
+      { entrantsPerMatch: 8, advancePerMatch: 2 },
+      entrants(11),
+      roundIds(),
+    );
+    // Round 2's 6 fit one Match: it's the final, and Round 3's key goes.
+    expect(rounds(bracket).map((r) => r.map((h) => h.slots.length))).toEqual([
+      [3, 4, 4],
+      [6],
+    ]);
+    expect(bracket.config.rounds).toEqual({
+      "2": { entrantsPerMatch: 8, advancePerMatch: 2 },
+    });
+  });
+
+  it("re-fills the next Round from its defaults when a changed result changes who advances, losing its moves (D1f)", () => {
+    let bracket = eleven();
+    for (const id of ["r1h1", "r1h2", "r1h3"]) {
+      bracket = recordInSlotOrder(bracket, id);
+    }
+    // 1sts s1 s2 s3, 2nds s6 s5 s4: Matches of 3 and 3.
+    expect(rounds(bracket)[1].map(lineup)).toEqual(["s1 s6 s5", "s2 s3 s4"]);
+    // Moved: Match 1's two both advance, a bye.
+    bracket = matches.moveEntrant(bracket, "s5", "r2h2", roundIds());
+    expect(rounds(bracket)[1].map((h) => [lineup(h), h.status])).toEqual([
+      ["s1 s6", "played"],
+      ["s2 s3 s4 s5", "ready"],
+    ]);
+
+    // The same advancers in the same order: Round 2 keeps its move.
+    const same = matches.applyResult(bracket, "r1h1", {
+      order: ["s1", "s6", "s7"],
+      scores: { s1: "9" },
+    });
+    expect(rounds(same)[1].map(lineup)).toEqual(["s1 s6", "s2 s3 s4 s5"]);
+
+    const changed = matches.applyResult(bracket, "r1h1", {
+      order: ["s7", "s1", "s6"],
+    });
+    expect(rounds(changed)[1].map((h) => [lineup(h), h.status])).toEqual([
+      ["s7 s1 s5", "ready"],
+      ["s2 s3 s4", "ready"],
+    ]);
+    expect(rounds(changed)[2].map(lineup)).toEqual(["- - - -"]);
+  });
+
+  it("fills a next Round of overridden sizes snake-style, keeping them", () => {
+    // Round 2 (Matches of 3 and 3) gets 1 advancing from Match 1: a final of 3.
+    let bracket = matches.setMatchAdvance(eleven(), "r2h1", 1, roundIds());
+    for (const id of ["r1h1", "r1h2", "r1h3"]) {
+      bracket = recordInSlotOrder(bracket, id);
+    }
+    expect(shape(bracket).slice(1)).toEqual([
+      [
+        ["s1 s6 s5", 1, "ready"],
+        ["s2 s3 s4", 2, "ready"],
+      ],
+      [["- - -", 1, "pending"]],
+    ]);
+  });
+});

@@ -239,6 +239,7 @@ export async function loadBrackets(
       position: bracketMatch.position,
       status: bracketMatch.status,
       slotCount: bracketMatch.slotCount,
+      advanceCount: bracketMatch.advanceCount,
       winnerToMatchId: bracketMatch.winnerToMatchId,
       winnerToSlot: bracketMatch.winnerToSlot,
       loserToMatchId: bracketMatch.loserToMatchId,
@@ -272,6 +273,7 @@ export async function loadBrackets(
       round: row.round,
       position: row.position,
       status: row.status,
+      advanceCount: row.advanceCount,
       winnerTo:
         row.winnerToMatchId !== null && row.winnerToSlot !== null
           ? { matchId: row.winnerToMatchId, slot: row.winnerToSlot }

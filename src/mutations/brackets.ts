@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, ne, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
 import { DBOrTx, db } from "@/db";
@@ -30,6 +30,7 @@ import {
   resetByResult,
   validateConfig,
 } from "@/lib/bracket/formats";
+import { matchAdvanceCount } from "@/lib/bracket/groups";
 import { shuffleSeedPositions } from "@/lib/bracket/seeding";
 import {
   type EntrantKind,
@@ -49,6 +50,7 @@ import {
 } from "@/lib/competition-locks";
 import { isLoggedFormat } from "@/lib/enums";
 import { formatDefaults } from "@/lib/format-defaults";
+import { isUuid } from "@/lib/uuid";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 import { getBracketEntrants, loadBracket } from "@/queries/brackets";
 import { getCompetitionLockFacts } from "@/queries/competition-locks";
@@ -158,22 +160,15 @@ function sameConfig(a: BracketConfig, b: BracketConfig): boolean {
 }
 
 /**
- * How many of a freshly generated Match advance: 1 in a head-to-head
- * Bracket and in the final (the last round's Match that isn't the 3rd
- * place Match), else the round's default.
+ * How many of a Match advance, as stored: 1 in a head-to-head Bracket and
+ * in the final, else the Group Match's own count (`matchAdvanceCount`).
  */
 function advanceCountOf(
   bracket: Bracket,
   match: Bracket["matches"][number],
 ): number {
-  const { config } = bracket;
-  if (config.kind === "head-to-head" || match.thirdPlace) return 1;
-  const lastRound = Math.max(...bracket.matches.map((m) => m.round));
-  if (match.round === lastRound) return 1;
-  return (
-    config.rounds[String(match.round)]?.advancePerMatch ??
-    config.advancePerMatch
-  );
+  if (bracket.config.kind === "head-to-head" || match.thirdPlace) return 1;
+  return matchAdvanceCount(bracket, match);
 }
 
 /** A slot's Score as stored: numeric, or null when blank or not a number. */
@@ -193,10 +188,23 @@ async function insertBracket(
   competitionId: string,
   bracket: Bracket,
 ) {
-  // One statement, so each winner's (and loser's) Match exists when the row
-  // is checked.
+  await insertMatches(tx, competitionId, bracket, bracket.matches);
+}
+
+/**
+ * Inserts these Matches of `bracket`, with their slots, unrecorded.
+ * One statement, so each winner's (and loser's) Match exists when the row
+ * is checked.
+ */
+async function insertMatches(
+  tx: DBOrTx,
+  competitionId: string,
+  bracket: Bracket,
+  matches: Bracket["matches"],
+) {
+  if (matches.length === 0) return;
   await tx.insert(bracketMatch).values(
-    bracket.matches.map((h) => ({
+    matches.map((h) => ({
       id: h.id,
       competitionId,
       round: h.round,
@@ -213,7 +221,83 @@ async function insertBracket(
       recordedAt: null,
     })),
   );
-  await insertSlots(tx, bracket.matches);
+  await insertSlots(tx, matches);
+}
+
+/**
+ * Rewrites a Group Bracket's Rounds from `round` on as `after` has them:
+ * their rows are deleted and inserted again (spec R21, plan P5), in the
+ * caller's transaction. Only for Rounds with no Match Result (a bye isn't
+ * one): their reporters and recorded times are all empty. A Match the
+ * engine named with no row id gets a new one.
+ */
+export async function replaceRoundsFrom(
+  tx: DBOrTx,
+  competitionId: string,
+  after: Bracket,
+  round: number,
+) {
+  await tx
+    .delete(bracketMatch)
+    .where(
+      and(
+        eq(bracketMatch.competitionId, competitionId),
+        gte(bracketMatch.round, round),
+      ),
+    );
+  await insertMatches(
+    tx,
+    competitionId,
+    after,
+    after.matches
+      .filter((h) => h.round >= round)
+      .map((h) => (isUuid(h.id) ? h : { ...h, id: randomUUID() })),
+  );
+}
+
+/** A Bracket's Matches up to and including `round`. */
+function throughRound(bracket: Bracket, round: number): Bracket {
+  return {
+    ...bracket,
+    matches: bracket.matches.filter((h) => h.round <= round),
+  };
+}
+
+/** Each Match after `round` as its id, size and advancing count. */
+function laterShape(bracket: Bracket, round: number): string {
+  return JSON.stringify(
+    bracket.matches
+      .filter((h) => h.round > round)
+      .map((h) => [h.id, h.slots.length, advanceCountOf(bracket, h)]),
+  );
+}
+
+/**
+ * Saves a recorded Match Result (`saveBracket`). When it re-filled the
+ * Rounds after the Match's own with a different shape (a Group Bracket's
+ * D1f re-fill drops the moves and advancing counts made there), those
+ * Rounds' rows are replaced (`replaceRoundsFrom`).
+ */
+async function saveRecorded(
+  tx: DBOrTx,
+  competitionId: string,
+  before: Bracket,
+  after: Bracket,
+  reporter: (MatchReporter & { matchId: string }) | null,
+  recordedMatchId: string,
+) {
+  const round = after.matches.find((h) => h.id === recordedMatchId)!.round;
+  if (laterShape(before, round) === laterShape(after, round)) {
+    return saveBracket(tx, before, after, reporter, recordedMatchId);
+  }
+  await saveBracket(
+    tx,
+    throughRound(before, round),
+    throughRound(after, round),
+    reporter,
+    recordedMatchId,
+  );
+  await replaceRoundsFrom(tx, competitionId, after, round + 1);
 }
 
 async function insertSlots(tx: DBOrTx, matches: Bracket["matches"]) {
@@ -706,8 +790,9 @@ export async function writeMatchResult(
     if (error instanceof BracketError) return refuse(error.message);
     throw error;
   }
-  await saveBracket(
+  await saveRecorded(
     tx,
+    found.id,
     bracket,
     next,
     reporter && { ...reporter, matchId },

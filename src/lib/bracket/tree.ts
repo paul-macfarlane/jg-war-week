@@ -7,6 +7,7 @@
 import { isHeadToHead } from "@/lib/bracket/config";
 import { finalMatchOf } from "@/lib/bracket/final";
 import { isBye } from "@/lib/bracket/formats";
+import { matchAdvanceCount } from "@/lib/bracket/groups";
 import type { Bracket, Match } from "@/lib/bracket/types";
 import {
   groupRounds,
@@ -52,6 +53,11 @@ export type TreeMatch = {
   /** The 3rd place Match, beside the final and drawn secondary to it. */
   thirdPlace: boolean;
   /**
+   * How many of it go through (`advancingPlaces`); Group Matches of one
+   * Round may differ.
+   */
+  advancing: number;
+  /**
    * Head-to-head: in slot order, so connectors meet the right slot. More
    * than 2 per Match: by finishing place once decided.
    */
@@ -77,12 +83,13 @@ export type BracketTree = {
 
 /**
  * How many of a decided Match's places go through: head-to-head, 1 (in the
- * 3rd place Match, who takes 3rd); the final, 1, the winner.
+ * 3rd place Match, who takes 3rd); the final, 1, the winner; any other
+ * Group Match, its own advancing count.
  */
 export function advancingPlaces(bracket: Bracket, match: Match): number {
   if (isHeadToHead(bracket.config)) return 1;
   if (match.id === finalMatchOf(bracket)?.id) return 1;
-  return bracket.config.advancePerMatch;
+  return matchAdvanceCount(bracket, match);
 }
 
 /** Whether `place` is among the places that go through from `match`. */
@@ -166,6 +173,7 @@ export function bracketTree(bracket: Bracket): BracketTree {
         bye,
         final: match.id === final?.id,
         thirdPlace: match.thirdPlace,
+        advancing: advancingPlaces(bracket, match),
         slots: treeSlots(bracket, match, bye),
       };
     }),

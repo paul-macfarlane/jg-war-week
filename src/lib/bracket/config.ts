@@ -80,6 +80,9 @@ export function thirdPlaceRefusal(
 /** The Match sizes the builder offers. */
 export const ENTRANTS_PER_MATCH_OPTIONS = [2, 3, 4, 5, 6, 7, 8] as const;
 
+/** A Group's Match sizes: 2 per Match is the Head-to-head kind. */
+export const GROUP_ENTRANTS_PER_MATCH_OPTIONS = [3, 4, 5, 6, 7, 8] as const;
+
 /** How many of a Match can advance, before the Match size narrows it. */
 export const ADVANCE_PER_MATCH_OPTIONS = [1, 2, 3, 4, 5, 6, 7] as const;
 
@@ -104,7 +107,8 @@ const sizes = {
     .max(7, { error: "At most 7 can advance from a Match." }),
 };
 
-const roundDefaultsSchema = z
+/** A Round's own defaults, as `rounds` holds them and the tree edit posts them. */
+export const roundDefaultsSchema = z
   .strictObject(sizes)
   .refine((r) => r.advancePerMatch < r.entrantsPerMatch, {
     error: "Fewer must advance than play in a Match.",

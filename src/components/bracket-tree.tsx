@@ -5,6 +5,7 @@ import {
   EntrantMark,
 } from "@/components/entrant-mark";
 import { Button } from "@/components/ui/button";
+import { advancePerMatchLabel } from "@/lib/bracket/config";
 import {
   type TreeConnector,
   type TreeMatch,
@@ -168,6 +169,7 @@ export function BracketTree({
   youEntrantId = null,
   recordableMatchIds = [],
   onRecord,
+  onEditRound,
   reporters = {},
 }: {
   bracket: Bracket;
@@ -180,6 +182,11 @@ export function BracketTree({
   /** The Matches the viewer may record now; each shows Record result or Edit. */
   recordableMatchIds?: readonly string[];
   onRecord?: (matchId: string) => void;
+  /**
+   * A Group Bracket's admin: each Round heading carries an Edit that calls
+   * this with the Round (its Matches' sizes, advancing and Entrants).
+   */
+  onEditRound?: (round: number) => void;
   /** Who self-reported each Match's current result, by Match id: a name. */
   reporters?: Record<string, string>;
 }) {
@@ -241,6 +248,12 @@ export function BracketTree({
               Bye — advances
             </span>
           )}
+          {multiEntrant && !match.bye && !match.final && (
+            // Matches of one Round may send on different numbers.
+            <span className="text-foreground/60 px-1.5 text-xs">
+              {advancePerMatchLabel(match.advancing)}
+            </span>
+          )}
           {reporter && (
             <span className="text-foreground/70 px-1.5 text-xs">
               Reported by {reporter}
@@ -281,7 +294,21 @@ export function BracketTree({
               aria-label={round.name}
               className="flex w-56 shrink-0 flex-col"
             >
-              <h3 className="mb-1 text-sm font-semibold">{round.name}</h3>
+              <div className="mb-1 flex min-h-8 items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">{round.name}</h3>
+                {multiEntrant && onEditRound && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    aria-label={`Edit ${round.name}`}
+                    className="min-h-11 sm:min-h-8"
+                    onClick={() => onEditRound(round.round)}
+                  >
+                    Edit
+                  </Button>
+                )}
+              </div>
               {knockout && round.matches.some((h) => h.thirdPlace) ? (
                 // The final stays in the middle row, where its semifinals'
                 // lines meet; the 3rd place Match sits under it, unjoined.

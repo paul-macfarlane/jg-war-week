@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Toggle } from "@/components/ui/toggle";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   type AutosaveSnapshot,
   createAutosave,
@@ -41,8 +41,9 @@ import {
 import {
   ADVANCE_PER_MATCH_OPTIONS,
   type BracketConfig,
+  type BracketKind,
   DEFAULT_BRACKET_CONFIG,
-  ENTRANTS_PER_MATCH_OPTIONS,
+  GROUP_ENTRANTS_PER_MATCH_OPTIONS,
   advancePerMatchLabel,
   entrantsPerMatchLabel,
   isHeadToHead,
@@ -699,12 +700,14 @@ function SeriesConfigFields({
 }
 
 /**
- * A Bracket's match settings: how many play in each Match and how many
- * advance (2 with 1 advancing is the "Head-to-head (single elimination)"
- * preset), and at head-to-head the 3rd place Match. With saved Entrants, a
- * "how many advance" Generate would refuse is disabled; turning the 3rd
- * place Match on is disabled, with its reason, under 4 Entrants, though a
- * saved one can still be turned off. One setting (`bracketConfig`).
+ * A Bracket's match settings (spec R21, decision 10): a two-way toggle,
+ * Head-to-head (2 per Match, 1 advancing, and the 3rd place Match) or Group
+ * (entrants per Match, 3 to 8, and how many advance). Each shows only its
+ * own fields. With saved Entrants, a "how many advance" Generate would
+ * refuse is disabled; turning the 3rd place Match on is disabled, with its
+ * reason, under 4 Entrants, though a saved one can still be turned off.
+ * Changing them starts the Round defaults over. One setting
+ * (`bracketConfig`).
  */
 function MatchSettingsFields({
   config,
@@ -743,12 +746,23 @@ function MatchSettingsFields({
           entrantCount,
         )
       : null;
-  const refusal = refusalAt(perMatch, advance);
+  const refusal = headToHead ? null : refusalAt(perMatch, advance);
+  /** The most that can advance at this size for these Entrants, at most `cap`. */
+  const bestAdvance = (size: number, cap = size - 1) =>
+    ADVANCE_PER_MATCH_OPTIONS.filter(
+      (count) =>
+        count < size && count <= cap && refusalAt(size, count) === null,
+    ).at(-1) ?? 1;
   const set = (next: Partial<BracketConfig>) => {
     const sized = { ...config, ...next };
     const merged = {
       ...sized,
       kind: kindOf(sized.entrantsPerMatch, sized.advancePerMatch),
+      // New Bracket-wide sizes start the Round defaults over.
+      rounds:
+        sized.entrantsPerMatch === perMatch && sized.advancePerMatch === advance
+          ? config.rounds
+          : {},
     };
     // Only head-to-head plays a 3rd place Match.
     onChange({
@@ -761,69 +775,89 @@ function MatchSettingsFields({
     <FieldSet data-invalid={!!error || refusal !== null}>
       <FieldLegend>Match settings</FieldLegend>
       <FieldDescription>
-        Each Round deals the Entrants into Matches; the top few of each go on to
-        the next Round until one Match, the Final, is left.
+        {headToHead
+          ? "Two play each Match and the winner goes on, Round after Round, to the Final."
+          : "Each Round deals the Entrants into Matches; the top few of each go on to the next Round until one Match, the Final, is left."}
       </FieldDescription>
-      <div className="flex flex-wrap items-center gap-2">
-        <Toggle
-          variant="outline"
-          size="lg"
-          className="min-h-11 px-3"
-          pressed={headToHead}
-          disabled={off}
-          onPressedChange={(pressed) => {
-            // A preset: pressing sets it; pressing again leaves it.
-            if (pressed) set({ entrantsPerMatch: 2, advancePerMatch: 1 });
-          }}
-        >
-          Head-to-head (single elimination)
-        </Toggle>
-      </div>
-      <FieldGroup className="gap-4 sm:flex-row">
-        <Field className="sm:max-w-48">
-          <FieldLabel htmlFor="match-entrants">Entrants per Match</FieldLabel>
-          <OptionSelect
-            id="match-entrants"
-            name="entrantsPerMatch"
-            options={ENTRANTS_PER_MATCH_OPTIONS.map((count) => ({
-              value: String(count),
-              label: entrantsPerMatchLabel(count),
-            }))}
-            value={String(perMatch)}
-            disabled={off}
-            onValueChange={(value) => {
-              const size = Number(value);
-              // The most that can advance at this size, for these Entrants.
-              const best = ADVANCE_PER_MATCH_OPTIONS.filter(
-                (count) => count < size && refusalAt(size, count) === null,
-              ).at(-1);
-              set({ entrantsPerMatch: size, advancePerMatch: best ?? 1 });
-            }}
-          />
-        </Field>
-        <Field className="sm:max-w-48" data-invalid={refusal !== null}>
-          <FieldLabel htmlFor="match-advance">How many advance</FieldLabel>
-          <OptionSelect
-            id="match-advance"
-            name="advancePerMatch"
-            options={ADVANCE_PER_MATCH_OPTIONS.filter(
-              (count) => count < perMatch,
-            ).map((count) => {
-              const why = refusalAt(perMatch, count);
-              return {
+      <ToggleGroup
+        aria-label="Bracket kind"
+        value={[headToHead ? "head-to-head" : "group"]}
+        onValueChange={(value) => {
+          // A choice can't be deselected: pressing the pressed item again
+          // would otherwise clear the group.
+          const [kind] = value as BracketKind[];
+          if (!kind || kind === config.kind) return;
+          if (kind === "head-to-head") {
+            set({ entrantsPerMatch: 2, advancePerMatch: 1 });
+          } else {
+            set({ entrantsPerMatch: 4, advancePerMatch: bestAdvance(4, 2) });
+          }
+        }}
+        disabled={off}
+        variant="outline"
+        className="grid w-full max-w-md grid-cols-2 gap-2"
+      >
+        {(
+          [
+            ["head-to-head", "Head-to-head"],
+            ["group", "Group"],
+          ] as const
+        ).map(([value, label]) => (
+          <ToggleGroupItem
+            key={value}
+            value={value}
+            className="aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary/80 h-auto min-h-11 py-2"
+          >
+            {label}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+      {!headToHead && (
+        <FieldGroup className="gap-4 sm:flex-row">
+          <Field className="sm:max-w-48">
+            <FieldLabel htmlFor="match-entrants">Entrants per Match</FieldLabel>
+            <OptionSelect
+              id="match-entrants"
+              name="entrantsPerMatch"
+              options={GROUP_ENTRANTS_PER_MATCH_OPTIONS.map((count) => ({
                 value: String(count),
-                label: advancePerMatchLabel(count),
-                disabled: why !== null,
-                title: why ?? undefined,
-              };
-            })}
-            value={String(advance)}
-            disabled={off}
-            aria-invalid={refusal !== null}
-            onValueChange={(value) => set({ advancePerMatch: Number(value) })}
-          />
-        </Field>
-      </FieldGroup>
+                label: entrantsPerMatchLabel(count),
+              }))}
+              value={String(perMatch)}
+              disabled={off}
+              onValueChange={(value) => {
+                const size = Number(value);
+                set({
+                  entrantsPerMatch: size,
+                  advancePerMatch: bestAdvance(size),
+                });
+              }}
+            />
+          </Field>
+          <Field className="sm:max-w-48" data-invalid={refusal !== null}>
+            <FieldLabel htmlFor="match-advance">How many advance</FieldLabel>
+            <OptionSelect
+              id="match-advance"
+              name="advancePerMatch"
+              options={ADVANCE_PER_MATCH_OPTIONS.filter(
+                (count) => count < perMatch,
+              ).map((count) => {
+                const why = refusalAt(perMatch, count);
+                return {
+                  value: String(count),
+                  label: advancePerMatchLabel(count),
+                  disabled: why !== null,
+                  title: why ?? undefined,
+                };
+              })}
+              value={String(advance)}
+              disabled={off}
+              aria-invalid={refusal !== null}
+              onValueChange={(value) => set({ advancePerMatch: Number(value) })}
+            />
+          </Field>
+        </FieldGroup>
+      )}
       {refusal && <FieldDescription>{refusal}</FieldDescription>}
       {headToHead && (
         <Field

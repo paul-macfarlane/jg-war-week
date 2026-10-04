@@ -157,7 +157,7 @@ const CASES: FormatCase[] = [
       ).toBeVisible();
       // Entrants are a result; the match settings wait for a Match Result.
       await expect(
-        page.getByRole("combobox", { name: "Entrants per Match" }),
+        page.getByRole("button", { name: "Group", exact: true }),
       ).toBeEnabled();
     },
   },
@@ -258,10 +258,11 @@ test("r18 101 a new Competition with no result changes Format, Placement → Bra
       page.getByRole("combobox", { name: "Add a Participant" }),
     ).toBeVisible();
 
-    // Bracket: match settings and self-report, and the Entrants and Generate.
+    // Bracket: match settings (Head-to-head / Group) and self-report, and
+    // the Entrants and Generate.
     await setFormat(page, "Bracket");
     await expect(
-      page.getByRole("combobox", { name: "Entrants per Match" }),
+      page.getByRole("button", { name: "Head-to-head", exact: true }),
     ).toBeVisible();
     await expect(
       page.getByRole("switch", { name: "Self-report" }),
@@ -289,7 +290,7 @@ test("r18 101 a new Competition with no result changes Format, Placement → Bra
       page.getByRole("button", { name: "Close", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("combobox", { name: "Entrants per Match" }),
+      page.getByRole("button", { name: "Group", exact: true }),
     ).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Generate" })).toHaveCount(0);
     await page.screenshot({
