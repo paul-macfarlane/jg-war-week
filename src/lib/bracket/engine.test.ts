@@ -354,7 +354,7 @@ describe("resetByResult", () => {
 });
 
 describe("finalPlacings", () => {
-  it("places 8 Entrants 1st, 2nd and tied 3rd, nobody else", () => {
+  it("places 8 Entrants 1st and 2nd only: semifinal losers aren't placed", () => {
     const list = entrants(8);
     let bracket = generate(list);
     for (const [id, winner] of [
@@ -374,12 +374,10 @@ describe("finalPlacings", () => {
     expect(finalPlacings(bracket, list)).toEqual([
       { entrantId: "s2", place: 1 },
       { entrantId: "s5", place: 2 },
-      { entrantId: "s1", place: 3 },
-      { entrantId: "s3", place: 3 },
     ]);
   });
 
-  it("doesn't count a bye as a played Match", () => {
+  it("places 3 Entrants 1st and 2nd: the semifinal loser isn't placed", () => {
     // 3 Entrants: 1 has a bye, then loses the final.
     const list = entrants(3);
     let bracket = generate(list);
@@ -389,11 +387,10 @@ describe("finalPlacings", () => {
     expect(finalPlacings(bracket, list)).toEqual([
       { entrantId: "s3", place: 1 },
       { entrantId: "s1", place: 2 },
-      { entrantId: "s2", place: 3 },
     ]);
   });
 
-  it("places 5 Entrants 1st, 2nd, 3rd, 3rd: the first-Round loser isn't placed", () => {
+  it("places 5 Entrants 1st and 2nd: no semifinal or first-Round loser is placed", () => {
     const list = entrants(5);
     let bracket = generate(list);
     bracket = win(bracket, "r1h2", "s4");
@@ -404,8 +401,6 @@ describe("finalPlacings", () => {
     expect(finalPlacings(bracket, list)).toEqual([
       { entrantId: "s1", place: 1 },
       { entrantId: "s3", place: 2 },
-      { entrantId: "s2", place: 3 },
-      { entrantId: "s4", place: 3 },
     ]);
   });
 

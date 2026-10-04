@@ -177,22 +177,18 @@ describe("places and points from the final", () => {
     ]);
   });
 
-  it("8 Entrants without one: both semifinal losers get 3rd's points, nobody 4th's", () => {
+  it("8 Entrants without one: only 1st and 2nd are placed and get points", () => {
     const bracket = win(throughSemifinals(withoutGame), "r3h1", "s2");
 
     expect(finalPlacings(bracket, entrants(8))).toEqual([
       { entrantId: "s2", place: 1 },
       { entrantId: "s1", place: 2 },
-      { entrantId: "s3", place: 3 },
-      { entrantId: "s4", place: 3 },
     ]);
     expect(
       pointsFor(finalPlacings(bracket, entrants(8)), { placementPoints }),
     ).toEqual([
       { entrantId: "s2", points: 10 },
       { entrantId: "s1", points: 7 },
-      { entrantId: "s3", points: 5 },
-      { entrantId: "s4", points: 5 },
     ]);
   });
 

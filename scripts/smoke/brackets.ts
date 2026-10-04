@@ -678,7 +678,7 @@ export async function assertSquadSelfReportLoop(sessions: {
   outsider: SmokeSession;
 }) {
   const check =
-    "squad loop: an Organizer builds a head-to-head Bracket of four Squads from XI's two Teams, turns on self-report; a linked Participant reports their Heat and their Squad advances, a second report and an outsider's POST are refused, the Organizer overwrites and re-records, the Participant reports the Final, finalize splits Points Entries two per Team; then cleans up";
+    "squad loop: an Organizer builds a head-to-head Bracket of four Squads from XI's two Teams, turns on self-report; a linked Participant reports their Heat and their Squad advances, a second report and an outsider's POST are refused, the Organizer overwrites and re-records, the Participant reports the Final, finalize gives the two finalist Squads' Teams 10 and 6 (no 3rd place match: the semifinal losers get nothing); then cleans up";
   const ids = serverActionIds();
   const missing = [
     "createCompetition",
@@ -1068,25 +1068,31 @@ export async function assertSquadSelfReportLoop(sessions: {
       `select team_id, points, generated_by_bracket from points_entry where competition_id = $1`,
       [id],
     );
-    const perTeamCount = new Map<string, number>();
-    let sum = 0;
     for (const entry of entries) {
       if (!entry.team_id || !entry.generated_by_bracket) {
         problems.push(
           `a Points Entry with no Team or not generated: ${JSON.stringify(entry)}`,
         );
       }
-      sum += Number(entry.points);
-      const key = entry.team_id ?? "";
-      perTeamCount.set(key, (perTeamCount.get(key) ?? 0) + 1);
     }
-    if (entries.length !== 4) {
-      problems.push(`${entries.length} Points Entries, expected 4`);
-    }
-    if (sum !== 22) problems.push(`Points Entries total ${sum}, expected 22`);
-    if ([...perTeamCount.values()].some((count) => count !== 2)) {
+    // A won the Final over C; with no 3rd place match B and D aren't placed.
+    const teamOfSquad = async (squadId: string) =>
+      (
+        await runQuery<{ team_id: string }>(
+          `select team_id from squad where id = $1`,
+          [squadId],
+        )
+      )[0]?.team_id;
+    const expectedEntries = [
+      { team: await teamOfSquad(entrantA.squad_id), points: 10 },
+      { team: await teamOfSquad(entrantC.squad_id), points: 6 },
+    ];
+    const gotEntries = entries
+      .map((entry) => ({ team: entry.team_id, points: Number(entry.points) }))
+      .sort((a, b) => b.points - a.points);
+    if (JSON.stringify(gotEntries) !== JSON.stringify(expectedEntries)) {
       problems.push(
-        `Points Entries per Team: ${JSON.stringify([...perTeamCount])}`,
+        `Points Entries ${JSON.stringify(gotEntries)}, expected ${JSON.stringify(expectedEntries)}`,
       );
     }
 

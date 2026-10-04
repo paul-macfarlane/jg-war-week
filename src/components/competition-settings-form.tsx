@@ -926,7 +926,7 @@ function MatchSettingsFields({
             </FieldLabel>
             <FieldDescription>
               {thirdPlaceReason ??
-                "The semifinal losers play for 3rd and 4th. Without it, they tie 3rd."}
+                "The semifinal losers play for 3rd and 4th. Without it, only 1st and 2nd are placed."}
             </FieldDescription>
           </FieldContent>
         </Field>

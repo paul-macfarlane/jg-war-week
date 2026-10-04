@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { heats } from "@/lib/bracket/heats";
 import { pointsFor } from "@/lib/bracket/points";
 
-// A head-to-head final without a 3rd place Match: 1st, 2nd, tied 3rd.
+// Placings with a tie at 3rd.
 const placings = [
   { entrantId: "a", place: 1 },
   { entrantId: "b", place: 2 },
@@ -21,12 +21,27 @@ describe("pointsFor", () => {
     ]);
   });
 
-  it("gives no 4th place's points when both semifinal losers tie 3rd", () => {
+  it("gives no 4th place's points when two tie 3rd", () => {
     expect(
       pointsFor(placings, { placementPoints: [10, 7, 5, 3] }).map(
         (p) => p.points,
       ),
     ).toEqual([10, 7, 5, 5]);
+  });
+
+  it("gives a head-to-head final without a 3rd place Match points for 1st and 2nd only", () => {
+    expect(
+      pointsFor(
+        [
+          { entrantId: "a", place: 1 },
+          { entrantId: "b", place: 2 },
+        ],
+        { placementPoints: [10, 7, 5, 3] },
+      ),
+    ).toEqual([
+      { entrantId: "a", points: 10 },
+      { entrantId: "b", points: 7 },
+    ]);
   });
 
   it("awards nothing without Placement Points", () => {

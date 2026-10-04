@@ -390,7 +390,7 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
       `Reported by ${REPORTER}`,
     );
     await checkViewports(page, testInfo, "results-reported");
-    await recordHeat(page, otherSemifinal);
+    const otherFinalist = await recordHeat(page, otherSemifinal);
 
     // The first reports the Final too, from its Record result in the tree.
     await first.reload();
@@ -447,7 +447,7 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
     await overwrite.getByRole("button", { name: "Save Match Result" }).click();
     await expect(page.getByText(`Red Alpha wins ${semifinal}`)).toBeVisible();
     await expect(overwrite).toBeHidden();
-    await recordHeat(page, "Final");
+    const champion = await recordHeat(page, "Final");
     await page
       .getByRole("region", { name: "Bracket", exact: true })
       .getByRole("button", { name: "Close", exact: true })
@@ -458,29 +458,37 @@ test("a Squad Bracket with self-report: a Participant reports, a second report i
       .click();
     await expect(page.getByText("Bracket closed")).toBeVisible();
 
-    // Each Squad's Placement Points go to its Team: two Red, two Blue.
+    // Each finalist Squad's Placement Points (3 / 2 / 1) go to its Team;
+    // with no 3rd place match the semifinal losers get nothing.
     await page.goto(`/xi/competitions/${id}`);
     await expect(
       page.getByRole("heading", { name: "Points Entries" }),
     ).toHaveCount(0);
+    const teamOf = (squad: string) =>
+      SQUADS.find((s) => s.name === squad)!.team;
+    const runnerUp = champion === "Red Alpha" ? otherFinalist : "Red Alpha";
+    const expected = [
+      { target: teamOf(champion), points: 3 },
+      { target: teamOf(runnerUp), points: 2 },
+    ];
     const entries = (await xiCompetitionEntries(COMPETITION)).filter(
       (entry) => entry.generated,
     );
-    expect(entries).toHaveLength(4);
-    expect(entries.filter((entry) => entry.target === "Red")).toHaveLength(2);
-    expect(entries.filter((entry) => entry.target === "Blue")).toHaveLength(2);
-    const byTeam = await runQuery<{ team_id: string; count: number }>(
-      `select team_id, count(*)::int as count from points_entry
-       where competition_id = $1 and generated_by_bracket group by team_id`,
+    expect(
+      entries
+        .map((entry) => ({ target: entry.target, points: entry.points }))
+        .sort((a, b) => b.points - a.points),
+    ).toEqual(expected);
+    const byTeam = await runQuery<{ team_id: string; points: number }>(
+      `select team_id, points::float as points from points_entry
+       where competition_id = $1 and generated_by_bracket
+       order by points desc`,
       [id],
     );
-    const counts = Object.fromEntries(
-      byTeam.map((row) => [row.team_id, row.count]),
-    );
-    expect(counts).toEqual({
-      [await xiTeamId("Red")]: 2,
-      [await xiTeamId("Blue")]: 2,
-    });
+    expect(byTeam).toEqual([
+      { team_id: await xiTeamId(expected[0].target), points: 3 },
+      { team_id: await xiTeamId(expected[1].target), points: 2 },
+    ]);
 
     // Reopen, so the Team Standings later flows read are unchanged.
     await openCompetitionPage(page, id);

@@ -5,7 +5,7 @@ import type { BracketFinaleRow } from "@/lib/bracket/finale";
 
 import { BracketFinaleStage } from "./bracket-finale";
 
-// Gold beat Red in the final; Blue and Green share 3rd.
+// Gold 1st, Red 2nd; Blue and Green share 3rd (a tie at 3rd).
 const rows: BracketFinaleRow[] = [
   { entrantId: "gold", label: "Gold", color: "#ca8a04", place: 1 },
   { entrantId: "red", label: "Red", color: "#f00", place: 2 },

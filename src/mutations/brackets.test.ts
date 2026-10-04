@@ -540,13 +540,11 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
         ).sort(
           (a, b) => b.points - a.points || a.teamId!.localeCompare(b.teamId!),
         );
+      // No 3rd place Match: only 1st and 2nd are placed, so the semifinal
+      // losers (Gold, Red) get no Placement Points.
       const expected = [
         { teamId: f.green, points: 10, note: "From bracket" },
         { teamId: f.blue, points: 6, note: "From bracket" },
-        ...[
-          { teamId: f.gold, points: 3, note: "From bracket" },
-          { teamId: f.red, points: 3, note: "From bracket" },
-        ].sort((a, b) => a.teamId.localeCompare(b.teamId)),
       ];
 
       expect(
@@ -574,12 +572,12 @@ describe.skipIf(!isLocalDatabase)("brackets", () => {
       await mutations.finalizeBracket(f.competitionId, f.ctx, tx);
       expect(await generated()).toEqual(expected);
 
-      // The non-generated entry sits beside the four generated ones.
+      // The non-generated entry sits beside the two generated ones.
       const all = await tx
         .select({ generated: schema.pointsEntry.generatedByBracket })
         .from(schema.pointsEntry)
         .where(eq(schema.pointsEntry.competitionId, f.competitionId));
-      expect(all.filter((e) => e.generated)).toHaveLength(4);
+      expect(all.filter((e) => e.generated)).toHaveLength(2);
       expect(all.filter((e) => !e.generated)).toHaveLength(1);
 
       expect(
@@ -2073,7 +2071,7 @@ describe.skipIf(!isLocalDatabase)("Squads", () => {
     });
   });
 
-  it("four Squads of two Teams generate, play out and close into two Team Points Entries per Team", async () => {
+  it("four Squads of two Teams generate, play out and close into a Team Points Entry for each finalist", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { mutations, queries } = await modules();
       const setup = await import("@/mutations/setup");
@@ -2163,13 +2161,11 @@ describe.skipIf(!isLocalDatabase)("Squads", () => {
         ).sort(
           (a, b) => b.points - a.points || a.teamId!.localeCompare(b.teamId!),
         );
+      // No 3rd place Match: the semifinal losers (Red Alpha, Blue Bravo)
+      // aren't placed and get no Placement Points.
       const expected = [
         { teamId: f.red, participantId: null, points: 10 },
         { teamId: f.blue, participantId: null, points: 6 },
-        ...[
-          { teamId: f.red, participantId: null, points: 3 },
-          { teamId: f.blue, participantId: null, points: 3 },
-        ].sort((a, b) => a.teamId.localeCompare(b.teamId)),
       ];
 
       expect(

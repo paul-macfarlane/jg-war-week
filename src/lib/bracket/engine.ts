@@ -288,9 +288,9 @@ export function applyResult(
 
 /**
  * Final placings of a finished Bracket, from the final only: 1st and 2nd;
- * then the 3rd place Match's 3rd and 4th, or without one, both semifinal
- * losers tie 3rd and nobody is 4th. Nobody else is placed. A bye is not a
- * played Heat. Sorted by place, then Seed Position.
+ * then the 3rd place Match's 3rd and 4th. Without a 3rd place Match only
+ * 1st and 2nd are placed: semifinal losers aren't. Nobody else is placed.
+ * Sorted by place, then Seed Position.
  */
 export function finalPlacings(
   bracket: Bracket,
@@ -305,13 +305,6 @@ export function finalPlacings(
   for (const slot of final.slots) place.set(slot.entrantId!, slot.place!);
   if (third) {
     for (const slot of third.slots) place.set(slot.entrantId!, slot.place! + 2);
-  } else {
-    for (const heat of bracket.heats) {
-      if (heat.round !== final.round - 1 || isBye(heat)) continue;
-      for (const slot of heat.slots) {
-        if (slot.place !== 1) place.set(slot.entrantId!, 3);
-      }
-    }
   }
   return [...entrants]
     .sort((a, b) => a.seedPosition - b.seedPosition)

@@ -218,25 +218,25 @@ export function OrganizerGuide({
           and at least 4 Entrants, turn on the 3rd place Match to have the
           semifinal losers play for 3rd and 4th beside the final. Placings come
           only from the final and the 3rd place Match: the final gives 1st and
-          2nd, the 3rd place Match 3rd and 4th; without one, both semifinal
-          losers tie 3rd. With more per Match, the final&apos;s finishing order
-          gives places 1 to 4. Nothing goes past 4th, and nobody else is placed.
-          On the same page, pick Entrants — all {teamLower}s, or specific
-          Participants — and Generate the Bracket (Seed Positions are random;
-          Re-roll before any Match is played to try again). Below it is the
-          Bracket&apos;s tree, the same one Participants see. Press Record
-          result on a Match in the tree (Edit once it&apos;s recorded) to enter
-          it: its Winner, or for a bigger Match its Entrants in finishing order,
-          with scores, in a dialog centered on a screen or a bottom sheet on a
-          phone; the tree shows when each Match was recorded. Changing who
-          advances resets the later Matches that followed from it, while a
-          score-only edit keeps them. Close, once every Match is played (the 3rd
-          place Match too), turns the Bracket&apos;s placings into Points
-          Entries marked &quot;From bracket&quot;; Reopen removes them so you
-          can fix a Match and Close again. While it&apos;s Closed, its settings
-          except the name, description, Group, Hosts and Placement Points are
-          locked: Reopen first (a Placement Points change applies at the next
-          Close).
+          2nd, the 3rd place Match 3rd and 4th; without one, only 1st and 2nd
+          are placed and the semifinal losers get nothing. With more per Match,
+          the final&apos;s finishing order gives places 1 to 4. Nothing goes
+          past 4th, and nobody else is placed. On the same page, pick Entrants —
+          all {teamLower}s, or specific Participants — and Generate the Bracket
+          (Seed Positions are random; Re-roll before any Match is played to try
+          again). Below it is the Bracket&apos;s tree, the same one Participants
+          see. Press Record result on a Match in the tree (Edit once it&apos;s
+          recorded) to enter it: its Winner, or for a bigger Match its Entrants
+          in finishing order, with scores, in a dialog centered on a screen or a
+          bottom sheet on a phone; the tree shows when each Match was recorded.
+          Changing who advances resets the later Matches that followed from it,
+          while a score-only edit keeps them. Close, once every Match is played
+          (the 3rd place Match too), turns the Bracket&apos;s placings into
+          Points Entries marked &quot;From bracket&quot;; Reopen removes them so
+          you can fix a Match and Close again. While it&apos;s Closed, its
+          settings except the name, description, Group, Hosts and Placement
+          Points are locked: Reopen first (a Placement Points change applies at
+          the next Close).
         </p>
         <h3 className="font-semibold">Squads and self-report</h3>
         <p className="text-foreground/70">

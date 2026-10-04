@@ -56,7 +56,6 @@ describe("a 2 per Match, 1 advancing Bracket through the Format dispatch", () =>
     expect(finalPlacings(bracket, entrants)).toEqual([
       { entrantId: "a", place: 1 },
       { entrantId: "c", place: 2 },
-      { entrantId: "b", place: 3 },
     ]);
 
     // A new winner in Round 1 clears the decided final.

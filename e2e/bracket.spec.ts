@@ -221,12 +221,17 @@ test("a Bracket is built, run and Closed into Points Entries, its podium 1st and
   const entries = (await xiCompetitionEntries(COMPETITION)).filter(
     (entry) => entry.generated,
   );
-  // Placement Points 5 / 3 / 1: the Winner, the runner-up, and both
-  // semifinal losers tied for third.
-  expect(entries).toHaveLength(4);
-  expect(entries.find((entry) => entry.target === winner)?.points).toBe(5);
-  // The podium shows the Points Entries Close wrote, and still only 1st and
-  // 2nd: semifinal losers with no 3rd place match aren't placed.
+  // Placement Points 5 / 3 / 1, but with no 3rd place match only the Winner
+  // and the runner-up are placed: the semifinal losers get nothing.
+  expect(
+    entries
+      .map((entry) => ({ target: entry.target, points: entry.points }))
+      .sort((a, b) => b.points - a.points),
+  ).toEqual([
+    { target: winner, points: 5 },
+    { target: runnerUp.display_name, points: 3 },
+  ]);
+  // The podium shows the Points Entries Close wrote: 1st and 2nd only.
   await expectPodium(page, podium);
   await expect(
     page
