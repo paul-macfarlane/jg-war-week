@@ -4,7 +4,7 @@
 
 **Blocked by:** R17 merged into `staging` (R18 too if run after it)
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** Paul's regression feedback 2026-10-03 (Participant: search scaling; 50–100 participants); grilling Q13
 

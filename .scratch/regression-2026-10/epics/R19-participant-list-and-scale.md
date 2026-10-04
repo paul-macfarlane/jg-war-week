@@ -6,9 +6,9 @@
 
 **Branch:** `feat/regression-r19-list-and-scale`
 
-**Blocked by:** R18 merged into `staging` (ticket 105's preview reads the rich-text description; R18 red-team pass 1, W7).
+**Blocked by:** R18 merged into `staging` (done: PR #130, 2026-10-03; ticket 105's preview reads the rich-text description; R18 red-team pass 1, W7).
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Red-team:** not required unless the scale pass needs a schema change.
 

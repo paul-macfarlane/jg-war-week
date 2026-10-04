@@ -4,7 +4,7 @@
 
 **Blocked by:** R18 merged into `staging` (`103` makes the description rich text; the preview is its plain text via `toPlainText`)
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 **Source:** Paul's regression feedback 2026-10-03 (Participant: description preview, status, bracket round, winner, "No max"); grilling Q9
 
