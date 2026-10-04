@@ -194,6 +194,11 @@ Attempt limits and no Entrant list.
       score" and edits that Attempt instead of being refused. Organizers
       and Hosts logging for someone at the limit edit that person's
       Attempt the same way. Above 1, reaching the limit refuses as before.
+    - **Participants edit their own Attempts.** When self-report is on, a
+      Participant can edit or delete each of their own Attempts (every one,
+      when more than one is allowed), whoever logged it, from their row's
+      expanded list. Organizers and Hosts edit or delete anyone's.
+      Editing never counts against "Max attempts per person".
 
 ## Schema change (for the red-team)
 
@@ -253,6 +258,10 @@ Attempt limits and no Entrant list.
       "Update your score" and saving edits it (no second Attempt is
       stored); an Organizer logging for that person edits it too
       (vitest; e2e).
+- [ ] Best score with self-report on and "Max attempts" 3: a Participant
+      with three Attempts (one logged by a Host) edits and deletes each from
+      their expanded row; another Participant can't, and the server refuses
+      them (vitest; e2e).
 - [ ] Bracket settings show Head-to-head / Group. Only Group shows the size
       fields, and only Head-to-head shows the 3rd place match (e2e).
 - [ ] Group Bracket of 11 with defaults of 4 per Match, 2 advancing:
