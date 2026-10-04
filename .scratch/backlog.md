@@ -6,26 +6,16 @@ ticket opens or closes. Last reviewed 2026-10-04.
 
 ## Paul's manual steps
 
-- [ ] **Regression pass**: Competition setup done 2026-10-03 (→ R15–R19 below); the **Host role** is still untested. [`regression-2026-09/issues/18`](./regression-2026-09/issues/18-regression-pass.md) (`needs-triage`)
+- [ ] **Regression pass**: Competition setup done 2026-10-03 (→ R15–R19, done); the **Host role** is still untested, best run after R22 changes Hosts. [`regression-2026-09/issues/18`](./regression-2026-09/issues/18-regression-pass.md) (`needs-triage`)
 
 ## Ready for an agent
 
-October Competition feedback, grilled 2026-10-03 ([`regression-2026-10/spec.md`](./regression-2026-10/spec.md), [grilling record](./regression-2026-10/grilling-2026-10-03.md)). R15 first; R16 → R17 → R18 change the schema one at a time and are red-teamed; R19 after R18.
+Regression feedback "10/3", grilled 2026-10-04 ([grilling record](./regression-2026-10/grilling-2026-10-04.md)). One work package per spec; both change the schema and are red-teamed.
 
-- [ ] **Epic R15, quick fixes**: Heats advancers highlighted (84), pointer cursor (85), centred top nav (86), solid primary buttons (87), History in the War Week chrome (88), Games settings show what was saved (89). [`regression-2026-10/epics/R15`](./regression-2026-10/epics/R15-quick-fixes.md) (`ready-for-agent`)
-- [ ] **Epic R16, the Competition model**: Placement replaces `points` (90), Discretionary points (91), no Max Points (92), Head-to-head and Best score as Formats (93), Participation follows scoring (94), Placement Points without a limit (95); one work package with one migration, seed conversion, full gate and a staging/prod reset (96 folded in). [`regression-2026-10/epics/R16`](./regression-2026-10/epics/R16-competition-model.md) (`ready-for-agent`)
-- [ ] **Epic R17, Brackets**: one Bracket Format (97), 3rd place game up to 4th (98), no seeding by Standings, Forfeit or Time & place (99), one tree for admin and Participants (100). After R16. [`regression-2026-10/epics/R17`](./regression-2026-10/epics/R17-brackets.md) (`done`; PR into `staging` awaiting review)
-- [ ] **Epic R18, the admin Competition page**: one autosaving page (101), Hosts from the roster (102), rich-text description (103), Log a Game from admin (104). After R17; red-team pass 1 resolved. [`regression-2026-10/epics/R18`](./regression-2026-10/epics/R18-admin-competition-page.md) (`done`; PR into `staging` awaiting review)
-- [ ] **Epic R19, Participant list and scale**: list status, Winner and description (105), 100 Participants (106). After R18. [`regression-2026-10/epics/R19`](./regression-2026-10/epics/R19-participant-list-and-scale.md) (`done`; [PR #131](https://github.com/paul-macfarlane/jg-war-week/pull/131) into `staging` awaiting review)
+- [ ] **Epic R22, People and admin**: Hosts are roster Participants (no email needed), Hosts see only their Competitions and the guide, one `ParticipantPicker` with avatars and email search (absorbs 108), Award presets replace Categories, `/about` stills in XII. Next up. [`people-and-admin/spec.md`](./people-and-admin/spec.md) (`ready-for-agent`)
+- [ ] **Epic R23, League (round robin and Swiss)**: a new Format for chess-style tournaments, with draws, 1 / ½ / 0, tiebreaks and Swiss pairing. [`league/spec.md`](./league/spec.md) (`ready-for-agent`)
 
-Regression feedback "10/3", grilled 2026-10-04 ([grilling record](./regression-2026-10/grilling-2026-10-04.md)). One work package per spec. R20 first, then R21 → R23; R22 runs alongside R20, its migration landing one at a time with R21's. R21, R22 and R23 change the schema and are red-teamed.
-
-- [ ] **Epic R20, Competition results and language**: one sortable results table with points and a Provisional badge, no Point Entries sections, Best score one row per person, Bracket top finishers, Head-to-head series view, description first, "Manage" link, Match / Attempt / Winner / Close. [`competition-results/spec.md`](./competition-results/spec.md) (`done`; [PR #133](https://github.com/paul-macfarlane/jg-war-week/pull/133) into `staging` awaiting review)
-- [ ] **Epic R21, Competition setup and logging**: Close everywhere and no scheduled times, one self-report setting (off by default), score direction and unit decide places and winners, Head-to-head / Group toggle and flexible Group Matches, Head-to-head as a fixed two-Entrant series, Best score attempt limits and no Entrant list; absorbs backlog 25. After R20. [`competition-setup/spec.md`](./competition-setup/spec.md) (`done`; built on `feat/r21-competition-setup`, PR into `staging` to follow)
-- [ ] **Epic R22, People and admin**: Hosts are roster Participants (no email needed), Hosts see only their Competitions and the guide, one `ParticipantPicker` with avatars and email search (absorbs 108), Award presets replace Categories, `/about` stills in XII. [`people-and-admin/spec.md`](./people-and-admin/spec.md) (`ready-for-agent`)
-- [ ] **Epic R23, League (round robin and Swiss)**: a new Format for chess-style tournaments, with draws, 1 / ½ / 0, tiebreaks and Swiss pairing. After R21. [`league/spec.md`](./league/spec.md) (`ready-for-agent`)
-
-Done: Epics R9–R14 (`regression-2026-09`, PRs through #122).
+Done: Epics R9–R14 (`regression-2026-09`, PRs through #122); Epics R15–R19 (`regression-2026-10`, PRs #124–#131); Epic R20 (`competition-results`, PR #133); Epic R21 (`competition-setup`, PR #135, absorbed backlog 25). All merged into `staging`.
 
 ## Ready, waiting on someone else
 
@@ -53,7 +43,3 @@ Done: Epics R9–R14 (`regression-2026-09`, PRs through #122).
 - [ ] **Your War Week, on your phone**: personal recap after R13. [`regression-2026-09/issues/77`](./regression-2026-09/issues/77-personal-war-week-wrapped.md) (`needs-triage`)
 
 - [ ] **About page Finale sizzle video**: low priority; needs where Paul's journeys-app version lives. [`regression-2026-10/issues/107`](./regression-2026-10/issues/107-about-finale-video.md) (`needs-info`)
-
-## Deferred on purpose
-
-- [ ] **Rename `finalized_at` / `generated_by_bracket`**: folded into Epic R21 ([`competition-setup/spec.md`](./competition-setup/spec.md)). [`regression-2026-09/issues/25`](./regression-2026-09/issues/25-rename-finalized-generated-columns.md) (`done`)
