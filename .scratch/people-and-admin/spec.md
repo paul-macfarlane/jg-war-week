@@ -104,13 +104,18 @@ On top of these, the `/about` screenshots still show War Week XI.
      Award per step. The Finale still never reorders or recomputes
      Standings.
 7. **`/about` screenshots in War Week XII.**
-   - Regenerate every still with `scripts/about-media.ts` against the XII
-     demo (`pnpm build && pnpm seed:demo:xii`), so they show XII's
-     Appearance Theme and mode.
-   - Run it last in this epic, so the stills also show the new pickers.
-   - If XII's demo seed has no Appearance Theme set, the stills step is
-     `BLOCKED`. Paul picks XII's theme in the demo seed, then the script
-     reruns.
+   - XII's theme is already in `seeds/demo/xii.json` (primary `#c2185b`,
+     accent `#2f4fd8`, sans, free-for-all). The stills were last written
+     with XI showing, most likely because `scripts/about-media.ts` uses the
+     current War Week: when the DB holds the XI demo (`live`) next to the
+     plain XII seed (`upcoming`), live XI wins.
+   - Fix the script so it can't silently shoot the wrong War Week: it
+     takes the edition to shoot (default the newest edition in `seeds/demo/`)
+     and fails if that War Week isn't the one `/` resolves to, telling the
+     runner to `pnpm seed:demo:<edition>` (and set any other live demo
+     War Week back) first.
+   - Regenerate every still (`pnpm build && pnpm seed:demo:xii`, then the
+     script), last in this epic, so the stills also show the new pickers.
 
 ## Schema change (for the red-team)
 

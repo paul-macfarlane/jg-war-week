@@ -49,6 +49,24 @@ Attempt limits and no Entrant list.
    Points Entries. Backlog 25 is folded in: rename `generated_by_bracket` to
    a Format-neutral name (for example `generated`). The Bracket's closing
    rules are unchanged apart from the name.
+1a. **Internal names follow the domain words.** With the schema, rename
+   tables, columns and code so nothing internal says Heat, Game, Finalize
+   or Champion:
+   - `heat` → `bracket_match`, `heat_entrant` → `bracket_match_entrant`.
+   - `game` / `game_player` split in two, since this epic reshapes both
+     users anyway: Head-to-head **Matches** (`series_match`,
+     `series_match_entrant`: two Entrants, Scores, Winner) and Best score
+     **Attempts** (`attempt`: one Participant or Team, one Score).
+   - `game_config` → per-Format config names (for example
+     `series_config`, `best_score_config`); `GAME_FORMATS`,
+     `src/lib/games/`, `games-builder.tsx`, `games-view.tsx`,
+     `game-form.tsx` and their actions, queries and tests renamed to match.
+   - Column and FK names follow (`reported_by_*`, `logged_by_*`,
+     `recorded_at` keep their meaning under the new tables).
+   - The exact names are the plan's call within this rule; the red-team
+     checks the migration preserves every row.
+   - Spec A's temporary banned-term allowlist is deleted: after this epic
+     the scan has no exceptions for Heat, Game or Finalize in code.
 2. **Drop scheduled times.** `logging_closes_at`, `enroll_closes_at` and
    `check_in_closes_at` are dropped. So are their settings fields, help text
    and checks (`src/lib/games/log-rule.ts`, `enroll-rule.ts`, the
@@ -174,6 +192,8 @@ Attempt limits and no Entrant list.
   - `game_config` loses the null Best of;
   - update the CHECK constraints to match.
 - `points_entry.generated_by_bracket` is renamed.
+- Table renames and the `game` split (decision 1a), each a data-preserving
+  migration, with seeds and the seed loader updated.
 - `heat`: per-Match `slot_count` and advancing count.
 - `heat_entrant.score` becomes numeric.
 - Migration and demo seed change together (`seeds/*.json`, scale seed and
@@ -231,7 +251,6 @@ Attempt limits and no Entrant list.
 - League (spec D).
 - Auto-close, or a "close it?" prompt, on the final Match (decided no).
 - Time formats for Scores (Scores stay numbers).
-- Renaming the `heat` and `game` tables.
 
 ## Definition of Done
 

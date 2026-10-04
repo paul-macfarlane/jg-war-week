@@ -101,17 +101,20 @@ this one.
     - These apply to UI copy, MCP output field names and descriptions,
       `CONTEXT.md`, `/about`, `docs/maintainers-guide.md` and the regression
       checklist.
-    - Code identifiers, table and column names (`heat`, `game`,
-      `finalized_at`) stay as they are here. Spec B renames the columns it
-      restructures; tables keep their names.
+    - Code identifiers that need no schema change rename here too
+      (`champion` → `winner`, component and helper names such as
+      `HeatSettingsFields`, copy keys). Identifiers tied to tables and
+      columns (`heat`, `game`, `finalized_at`, `GAME_FORMATS`,
+      `src/lib/games/`) rename in spec B with the schema, so nothing is
+      named twice.
     - Routes that contain old words keep working (308 redirect) if any are
       renamed.
 11. **Banned terms.** Remove **Match** from the `CONTEXT.md` banned list and
     from the banned-term scan. Add **Heat**, **Champion** and **Finalize**
     (in UI copy) as banned, with "Match", "Winner" and "Close" as the
-    replacements, so the old words don't creep back. Code identifiers that
-    must keep `heat` or `finalized` until spec B are excepted the same way
-    the scan already excepts seed content. **League** is spec D's to lift.
+    replacements, so the old words don't creep back. Identifiers that must
+    keep `heat`, `game` or `finalized` until spec B are excepted by a
+    short, named allowlist that spec B deletes. **League** is spec D's to lift.
 12. **Free-for-all hides scoring.** In a free-for-all War Week every
     Competition is Individual, so:
     - `CompetitionFacts` and the settings form don't show the
@@ -157,7 +160,8 @@ this one.
 
 ## Out of scope
 
-- Any schema change, including the `finalized_at` rename (spec B).
+- Any schema change, and the table, column and code renames tied to it
+  (spec B).
 - Units on Formats other than Best score, score direction on matches, and
   Head-to-head's two-Entrant rule (spec B).
 - The Finale's slides and Standings.
