@@ -170,11 +170,13 @@ banned word: **Heat** (say Match), **Champion** (Winner), **Finalize** and
 Head-to-head, Attempt for Best score), plus Event, League, Member, ELO,
 Placeholder, Tournament, News and "admin" for a person. Other identifiers and
 comments aren't scanned, nor are `scripts/` and `drizzle/`. **Match** is no longer banned. **League** stays
-banned until spec D lifts it. Where a file must keep an old word until the
-table and column renames (spec B: `heat`, `game`, `finalized`), add one entry
-to the `ALLOWLIST` at the top of the test naming the file and the exact
-literal, with a reason starting "spec B:". Keep it short; spec B deletes the list. A failing
-scan names the file, the term and the word to use instead.
+banned until spec D lifts it. The `ALLOWLIST` at the top of the test (one
+file, one term, the exact literal, a reason) holds only the two Team score
+labels, **"Best member"** and **"Sum of members"** in
+`src/lib/best-score/config.ts`, allowed despite the banned **Member**; Heat,
+Game and Finalize have no exceptions in code. Add an entry only for a
+literal the spec itself names. A failing scan names the file, the term and
+the word to use instead.
 
 A change people can see also updates `/about` in the same PR: its copy
 (`src/app/about/page.tsx`, `src/lib/about.ts`: six key-feature cards, copy
@@ -464,26 +466,40 @@ and a Host for their own; anyone else sees "Organizers and Hosts only."
 - **The run area** is below: Record placements (Placement), Entrants and
   Bracket tree (Bracket), Entrants and Matches with **Log a Match** (Head-to-head), Entrants and Attempts with **Log an Attempt** (Best score, Edit and Delete in each person's expanded row), or Who took part
   (Participation), with Close and Reopen. Every Format uses the same two words: **Close** writes the points, **Reopen** withdraws them.
-- **Locks** (one table, `src/lib/competition-locks.ts`; the page disables a
+- **Locks** (one table, `src/lib/competition-locks.ts`;
+  the page disables a
   locked field with a one-line reason and the server refuses the same change
-  with the same words):
+  with the same words). They come only from play having started or the
+  Competition being Closed; there are no scheduled closing times:
   - Never lock: name, description, Group, Hosts, Placement Points (and points
-    per Participant). A points change while the Competition is Closed
-    applies at the next Close.
+    per Participant), and the **Score unit** (a label). A points change while
+    the Competition is Closed applies at the next Close.
   - Lock once any result exists (an Entrant is one): Format, scoring, counts
-    toward team, Score direction, a Best score Competition's count and
-    direction. Until then the Format changes between any Formats.
-  - Lock once the Competition has a Match or Attempt: a Head-to-head Competition's draws
-    and Best of, and a Head-to-head or Best score Competition's Entrants
-    open or fixed ("Locked once the Competition has a Match or Attempt."). A Best of
-    needs its two fixed Entrants first, so Entrants alone don't lock it.
-  - Lock once a Match result exists: Match size, how many advance, the 3rd
-    place match, the Entrants, building the Bracket.
-  - Lock only while Closed: self-enroll, Entrant limit, close
-    times, self-report, check-in.
+    toward team. **Score direction** locks per Format once play has started
+    there (a Placement row, a Match or Attempt, a Bracket Match result).
+  - Lock once the Competition has a Match or Attempt: a Head-to-head
+    Competition's draws and Best of, and a Best score Competition's Team score
+    ("Locked once the Competition has a Match or Attempt."). A Best of needs
+    its two Entrants first, so Entrants alone don't lock it.
+  - Lock once a Match result exists: the Bracket kind, Entrants per Match, how
+    many advance, the 3rd place match, the Entrants, building the Bracket.
+  - Lock only while Closed: self-enroll, Entrant limit, self-report, check-in
+    and a Best score Competition's **Max attempts** (which also can't go below
+    the most Attempts any one person already has).
   - While Closed everything but the never-locking row is locked
     until you Reopen it. There is no Reset bracket: to start a played Competition
     over, add a new one.
+- **Score direction and unit** (none, higher or lower is better, plus an
+  optional unit label of up to 20 characters) are in the Settings of
+  Placement, Bracket, Head-to-head and Best score (Best score: higher or lower
+  only; Participation has neither). With a direction, Places and Winners
+  follow the Scores (a Placement's Places, a Group or Head-to-head Match's
+  places or Winner), the Score column reads "Score (sec)", and anything you
+  set against the Scores shows "set by hand". One module computes it:
+  `src/lib/scoring.ts`.
+- **Self-report** ("Participants can log their own results") is one
+  switch, off by default, on Bracket, Head-to-head and Best score and never on
+  Placement (ADR 0011). See the Format sections below for what it allows.
 - **Description is rich text.** It shows in full on the Participant
   Competition page. Migration `0030` reset every existing description (see
   "How R18 reached staging and production"), and the seeds restore them: a
@@ -498,10 +514,11 @@ Organizer screens cover setting one up and running it. Under
 **Competitions**, tap **Add Competition** (it opens a Sheet) and choose its
 **Format**: "Bracket" ("A tournament: Entrants play Matches, Round after
 Round, to a final."). **Add Competition**, and you land on that
-Competition's page, whose Bracket section holds the setup. There, set the Bracket's **Match size**
-(Entrants per Match) and **how many advance** from each Match, or tap the
-"Head-to-head (single elimination)" preset (2 per Match, 1 advancing, a
-straight 1v1 knockout, and what a new Bracket starts as); pick Entrants
+Competition's page, whose Bracket section holds the setup. There, choose the
+**Bracket kind** with the toggle: **Head-to-head** (2 per Match, 1 advancing,
+a straight 1v1 knockout, and what a new Bracket starts as; it alone has a 3rd
+place match) or **Group** (3 to 8 **Entrants per Match** and **how many
+advance** from each Match); pick Entrants
 (all Teams, or specific Participants) and Generate; then record each Match's
 result and Close to write its placings as Points Entries (Placement
 Points up to 4 places for a Bracket). No code needed for any of that. While
@@ -509,10 +526,11 @@ a Bracket is closed, its settings lock except the name, description,
 Group, Hosts and Placement Points ("Locked while the Competition is
 Closed. Reopen it first."). The Format can change, on the same
 page, until the Competition has a result. There is no Reset bracket: once a
-Match has a result the Match size, advancing, 3rd place match, Entrants and
+Match has a result the Bracket kind, sizes, 3rd place match, Entrants and
 building the Bracket are locked, and a mistake means a new Competition.
+(Fixing a result is different: see Edit a result below.)
 
-A head-to-head Bracket with at least 4 Entrants can have an optional **3rd
+A Head-to-head Bracket with at least 4 Entrants can have an optional **3rd
 place match**, a switch in the Bracket settings (off by default): the two
 semifinal losers play it beside the final, and it decides 3rd and 4th. It is
 locked once any Match result exists, like the Match size. Without it, only 1st and 2nd
@@ -540,33 +558,54 @@ results screen and `/admin/finale` ("Finale:
 <Competition>"). The rules are under "Bracket rules" and "Finale rules" in
 `CONTEXT.md`.
 
-A head-to-head Bracket is a straight 1v1 knockout. A larger Match size plays
+A Head-to-head Bracket is a straight 1v1 knockout. A Group Bracket plays
 several Entrants at once, and Organizers tap the whole finishing order
-instead of just a winner once a Match holds more than two.
+instead of just a winner once a Match holds more than two. With a Score
+direction set and every Entrant's Score typed, the places follow the Scores
+(equal Scores need your pick, shown as "set by hand").
+
+**Edit a Group Bracket.** After **Generate**, in the tree (until a Round has a
+result): set one Match's **advancing** count, **move an Entrant** to another
+Match of the same Round (sizes follow), or change a Round's defaults with
+**Edit <Round> settings**. Every edit re-projects the later Rounds from the
+summed advancers. A Match before the Final with no more Entrants than advance
+is a **bye** (never the Final). A setting that would send on as many as it
+received is refused. A Round with any result is **locked**.
+
+**Edit a result.** Only the latest result along a path changes. A Match whose
+result a later Match already used shows **Edit** and **Clear result**
+disabled with "A later Match already used this result. Change that Match
+first." (visible text, so it shows on a phone); the server refuses it too.
+Clear back from the latest result. In a Group Bracket a Match is editable
+while no Match its advancers went to has a result. Editing a finished Round's
+result while the next Match is unplayed is allowed; the next Round re-fills
+from the new advancers and anything you moved or set there is lost.
 
 A team Competition can enter **Squads** instead of whole Teams: in the
 Bracket section's Squads, **Add Squad** names a group of one Team's
 Participants (each Participant in one Squad per Competition), then
 "Entrants are: Squads" and **All Squads** make them the Entrants. Each
 Squad's Placement Points go to its Team when the Bracket is closed, and
-Squads are always seeded at random. The **Self-report** switch in the Settings
-(off by default) lets a Participant whose roster email matches their
-sign-in report the result of their own Match from "Your next Match"
-(**Report result**) while it has no result; it counts at once. The results
-screen shows "Reported by <name>" on that Match, and the Host or an
-Organizer can still change any result there (which clears the line). ADR
-0005 explains why this is the one Participant write.
+Squads are always seeded at random. The **Participants can log their own
+results** switch in the Settings (off by default) lets a Participant whose
+roster email matches their sign-in report the result of their own Match from
+"Your next Match" (**Report result**); it counts at once, and the Match's
+players may edit it while the Competition is open. The results screen shows
+"Reported by <name>" on that Match, and the Host or an Organizer can still
+change any result there (which clears the line). ADR 0005 and ADR 0011
+explain the rule.
 
-(Placement, Head-to-head, Best score and Participation have their own engines under `src/lib/placement/`, `src/lib/games/` and `src/lib/participation/`.)
+(Placement, Head-to-head, Best score and Participation have their own engines under `src/lib/placement/`, `src/lib/series/`, `src/lib/best-score/` and `src/lib/participation/`.)
 
 Bracket behavior goes through `src/lib/bracket/formats.ts`, the one place
-that picks an engine from the Bracket's config (Match size and how many
-advance): 2 per Match with 1 advancing runs the head-to-head engine in
-`engine.ts`, anything else the multi-Entrant engine in `heats.ts`. Both are
+that picks an engine from the Bracket's config (its `kind`): Head-to-head runs
+the knockout engine in `engine.ts`, Group the flexible multi-Entrant engine in
+`groups.ts` (per-Round defaults, per-Match size and advancing, byes, Round
+lock). Both are
 a `FormatEngine` (building the Matches from Entrants, applying a Match result,
 and producing final placings, which points.ts and closeBracket turn into
 Points Entries). The display helpers in `src/lib/bracket/view.ts` (Round and
-Match names, `nextHeatFor`) also branch on config. Bracket is one Format; to
+Match names, `nextMatchFor`) also branch on config. Bracket is one Format; to
 change how a Bracket plays, change its config or an engine, and describe the
 rules under "Bracket rules" in `CONTEXT.md`.
 
@@ -650,11 +689,12 @@ page, where the Host or an Organizer sets:
   (default 3, 2, 1; shown only for team scoring). There is no per-person
   team mode. A Participant on no Team can't take part in a team
   Competition.
-- **Self check-in** (off by default) with an optional close time: linked
-  Participants then see **Check in** on the Competition page. Check out
+- **Self check-in** (off by default): linked
+  Participants then see **Check in** on the Competition page until it is
+  Closed. Check out
   removes only their own check-in, never a tick you made. If you remove
   someone's check-in they can check in again while it's open; turn Self
-  check-in off or set a close time to stop that.
+  check-in off to stop that.
 - The took-part list: tick or untick anyone until Close.
 - **Close** / **Reopen**, behind a confirm, as for a Head-to-head or Best score Competition. Teams are counted
   at Close, as they are then. The Format can change, and so can the scoring,
@@ -662,8 +702,7 @@ page, where the Host or an Organizer sets:
   Competition with anyone marked can't be deleted.
 
 Who took part isn't seeded. A seed's `participation` Competition may set
-`participationPoints` (individual only), `selfCheckIn` and
-`checkInClosesAt`, but they are applied only when the Competition is first
+`participationPoints` (individual only) and `selfCheckIn`, but they are applied only when the Competition is first
 inserted, never on a reload.
 
 ### Manage Award Categories
@@ -686,13 +725,13 @@ as **Placement**), then open its page (Edit on its row): **Record placements**
 is its run area, below the Settings. Organizers and the Competition's Hosts can use it; a Participant only sees
 the result.
 
-- **Add rows** by search, or **Add everyone** (a Team Competition takes
-  Teams, an individual one Participants). Adding, removing and Add everyone
-  save at once. Give each row a **Place** and, if you have one, a **Score**;
+- **Add rows** by search (a Team Competition takes
+  Teams, an individual one Participants). Adding and removing
+  save at once. There is no Add everyone. Give each row a **Place** and, if you have one, a **Score**;
   Place and Score edits and the **Score direction** save with the one Save
   button.
-- **Score direction** (none, higher wins, lower wins) is in the page's
-  Settings, and locks once any row exists. With a direction, Places fill in from the Scores as you type and
+- **Score direction** (none, higher wins, lower wins) and **Score unit** are in the page's
+  Settings; the direction locks once any row exists, the unit never. With a direction, Places fill in from the Scores as you type and
   stay editable, for ties and judgement. Ties share a Place (1, 1, 3).
 - **Close** (behind a confirm) turns Places into points through the
   Competition's Placement Points: tied rows each get that place's full
@@ -711,7 +750,7 @@ the result.
 
 Each Competition's Placement Points are an open list, highest first, never
 increasing, each 0 or more, in the Competition page's Settings, where it saves as you edit. Add a place, remove any
-place, or use the **5·3·1** quick fill; the list is usable at 20 or more
+place; there is no quick fill, and the list is usable at 20 or more
 places on a phone. A Competition's top prize is its 1st place. The only
 limit is a Bracket's 5 places, set by `placementLimit` in
 `src/lib/competitions.ts` (the one place the rule lives; 4 since Epic R17).
@@ -757,15 +796,15 @@ Every ranked view on a Participant Competition page is one component
   final shows the final Match's order.
 - **Best score:** one row per person (or Team), from their best Attempt, so
   nobody holds two places. "2 more attempts" under a row expands (keyboard
-  too) to the others; in `count: total` mode the row is the total and the
-  expansion lists the Attempts that make it. A Host or Organizer edits or
-  deletes an Attempt there. There is no separate list of Attempts.
-- **Head-to-head with two Entrants:** no leaderboard; the series view shows
+  too) to the others. In team scoring a Team's row is its **Team score**:
+  **Best member** (its best single Attempt) or **Sum of members** (each
+  person's best added up). A Host, an Organizer or (self-report on) the person
+  edits or deletes an Attempt there. There is no separate list of Attempts.
+- **Head-to-head:** always two Entrants, so no leaderboard; the series view shows
   the Matches in order with both Scores and the Winner (or Draw), the series
   score ("2–1") and its Winner once decided, and each Entrant's Placement
   Points (Provisional until Closed). A series Closed level (no Best of
-  decided) says it ended level and names no series Winner. Any other Head-to-head Competition
-  keeps the results table with its Matches beneath.
+  decided) says it ended level and names no series Winner.
 - **Order and links:** the page reads back link, name and facts,
   **description** (long ones collapse behind "Show more"), enroll button,
   then the results. It has no Points Entries list; points are in the table.
@@ -782,58 +821,68 @@ Every ranked view on a Participant Competition page is one component
 
 ### Run a Competition as Head-to-head or Best score
 
-For a showdown, a best of X, or a week-long ladder of casual games — no code
+For a showdown, a best of X, or a week-long ladder of casual play — no code
 needed. Under **Competitions**, tap **Add Competition** (it opens a
-Sheet) and choose its **Format**: **Head-to-head** (a winner, or a draw
-when allowed) or **Best score** (each Attempt records a score; best or total,
-higher or lower is better). **The Format can change until the
+Sheet) and choose its **Format**: **Head-to-head** (a series between two
+Entrants: a winner, or a draw when allowed) or **Best score** (each Attempt
+records a score; higher or lower is better). **The Format can change until the
 Competition has a result** (a Match, an Attempt or an Entrant); after that, add a new
 Competition to run it a different way. (One logged
-play is a **Match** in Head-to-head and an **Attempt** in Best score; "Games" is no longer a Format.)
+play is a **Match** in Head-to-head and an **Attempt** in Best score.)
 
 **Add Competition**, and you land on that Competition's page, where the Host
 or an Organizer sets, in the Settings:
 
-- The Format's own settings (draws and Best of off/3/5/7 for
-  Head-to-head; count best or total, direction and a unit label for
-  Best score). Points for the places come from the Competition's
-  Placement Points, set in the same Settings. Each field saves as you change
-  it and shows the saved value when you return. Once a Match or Attempt exists the
-  Head-to-head settings and the Entrants' open or fixed list are locked;
-  Best score's count and direction lock once any result (an Entrant
-  included) exists; the reason shows under them.
-- **Entrants**: open to everyone eligible, or a fixed list (pick Teams or
-  Participants, as for a Bracket). A Best of needs a fixed list of exactly
-  two Entrants.
-- **Participants can enroll**, with an optional limit and close time (see
-  [Let Participants enroll themselves](#let-participants-enroll-themselves)
-  below) — off, and unavailable, once the Competition is open to everyone
-  or has a Best of.
-- An optional **logging close time**, after which only the Host or an
-  Organizer can log, edit or delete a Match or Attempt.
-- **Close** / **Reopen**, behind a confirm: Close turns the leaderboard's
-  places into Points Entries ("From head-to-head" or "From best score"), the same tie rule as closing a
-  Bracket; Reopen withdraws them. A closed Competition refuses every Match
-  and Attempt write, even the Host's, until it's reopened.
+- **Head-to-head:** pick its **two Entrants** (Teams or Participants; always
+  exactly two, no enrollment), whether **draws** are allowed and the **Best
+  of** 1, 3, 5 or 7 (a new one is Best of 3). Draws and Best of lock once a
+  Match exists. Log a Match shows the two Entrants as two fixed rows, with no
+  player picker. The series is decided when one Entrant has a majority of the
+  wins; then **Log a Match** is disabled with the reason and the server
+  refuses a further Match, for Organizers and Hosts too. Editing or deleting a
+  Match recomputes it. With draws allowed a series can end level; the drawn
+  series shares the higher place's full points at Close.
+- **Best score:** **Score direction** (higher or lower), **Score unit**,
+  **Max attempts per person** (blank for unlimited; the form shows "N attempts
+  left", and at 1 the button reads "Update your score" and edits the one
+  Attempt) and, in team scoring, **Team score** (Best member or Sum of
+  members). There is no Entrant list and no enrollment: any eligible
+  Participant (or Team member) logs. A Participant on no Team can't log into a
+  team Best score Competition.
+- **Score direction and unit** on a Head-to-head Competition make the
+  higher or lower Score win each Match (equal Scores are a Draw when allowed,
+  otherwise you pick, shown as "set by hand").
+- Points for the places come from the Competition's Placement Points, set in
+  the same Settings. Each field saves as you change it and shows the saved
+  value when you return; the reason shows under a locked one.
+- **Participants can log their own results** (off by default): with it on, a
+  linked Participant logs a Head-to-head Match as one of the two Entrants (or
+  on an Entrant Team) and a Best score Attempt as themselves. With it off,
+  only you and the Organizers log. Either way, anyone who could have logged a
+  result may edit or delete it while the Competition is open (ADR 0011).
+- **Close** / **Reopen**, behind a confirm: Close turns the places into
+  Points Entries ("From head-to-head" or "From best score"), the same tie
+  rule as closing a Bracket; Reopen withdraws them. A Closed Competition
+  refuses every Match and Attempt write, even the Host's, until it's reopened.
+  Nothing closes on a timer.
 
-Participants log, edit or delete Matches and Attempts straight from the Competition page; a
-Host or Organizer also does it from the admin page's run area
-(**Log a Match** or **Log an Attempt**, Edit, Delete), with the same rules. A **Log a Match** or **Log an Attempt** card on the home page
+Participants log, edit or delete Matches and Attempts straight from the Competition page (when
+self-report is on); a Host or Organizer also does it from the admin page's
+run area (**Log a Match** or **Log an Attempt**, Edit, Delete), with the same
+rules. A **Log a Match** or **Log an Attempt** card on the home page
 lists every open Head-to-head or Best score Competition the signed-in Participant may log in
 right now, straight to the form. What the page shows is under "Read a results table" above, for everyone, in
-the Archive too once the War Week ends: a Head-to-head or Best score Competition left open
-when its War Week ends keeps taking Matches and Attempts until the Host closes it.
+the Archive too once the War Week ends: a Competition left open
+when its War Week ends keeps taking results until the Host closes it.
 
 ### Let Participants enroll themselves
 
 The **"Participants can enroll"** switch (off by default) is on a
-Bracket's Settings and a fixed-list Head-to-head or Best score Competition's
-settings — never on a Placement or Participation Competition, an
-open-to-everyone Head-to-head or Best score Competition, or a
-Best of (the Host sets those two Entrants by hand). Turn it on, and
-optionally set an Entrant limit and a close time; enrollment also closes
-the moment the Bracket is built, or (for Head-to-head and Best score) the first Match or
-Attempt is logged, or whenever the Host closes the Competition.
+**Bracket's** Settings only — never on a Placement, Head-to-head, Best score or
+Participation Competition. Turn it on, and
+optionally set an Entrant limit; enrollment closes
+the moment the Bracket is built, when the limit is reached, or whenever the
+Host closes the Competition. There is no close time.
 
 In team scoring, any Participant on a Team enters or withdraws the whole
 Team. Once the Host has added any Squad to a team-scoring Bracket
@@ -991,10 +1040,10 @@ emails.
 are `get_current_war_week`, `get_leaderboard`, `get_schedule`,
 `get_announcements` (a video is its URL in the plain-text body),
 `get_awards`, `get_faq`, `list_history`, `get_history`, `get_bracket` (a
-Competition's Bracket by name, with its Match size, how many advance and
+Competition's Bracket by name, with its kind, Match size, how many advance and
 whether it has a 3rd place match, each played Match's recorded time, its `winner` once the Bracket is Closed (`closed`, `matchSize`, `thirdPlaceMatch` and each Round's `matches` are the field names), and a
 Squad's `participants` by name; never who reported a result) and
-`get_games` (a Head-to-head or Best score Competition, by name: its Format and settings, leaderboard
+`get_games` (a Head-to-head or Best score Competition, by name: its Format and settings (Score direction and unit, Best of, draws, Max attempts, Team score), leaderboard
 ranked by that Format and its `matches` (Head-to-head) or `attempts` (Best score) newest first, with `closed`; never an email or who
 logged one) and `get_participation` (a Competition run as Participation, by
 name: its settings, closed state, who took part by name and, in team
@@ -1107,6 +1156,59 @@ paragraphs. The procedure is R16's and R17's:
 
 If a migrate run fails, **don't reseed**: fix the migration on a `fix/…`
 branch.
+
+### How R21 reached staging and production (migrations 0031 and 0032)
+
+Epic R21 (Competition setup and logging: Close everywhere, no scheduled
+times, one self-report setting, score direction and unit, the Bracket kind
+and flexible Group Matches, Head-to-head as a two-Entrant series, Best score
+Attempt limits) changed the schema with **two hand-edited migrations**, the
+precedent of 0028 and 0029 (the one exception to "never hand-edit a
+migration": `drizzle-kit generate` asks interactively about renames):
+
+- `drizzle/0031_*` is **pure renames** (`heat` → `bracket_match`, `game` →
+  `series_match` and so on; `finalized_at` → `closed_at`,
+  `generated_by_bracket` → `generated`). Row-preserving by construction.
+- `drizzle/0032_*` **reshapes**: it splits `game` into `series_match` and
+  `attempt`, adds `score_unit`, `series_config`, `best_score_config`,
+  `max_attempts` and `bracket_match.advance_count`, converts `bracket_config`
+  to the new shape, turns Bracket Match Scores numeric, and drops
+  `logging_closes_at`, `enroll_closes_at`, `check_in_closes_at`,
+  `entrants_open` and `game_config`. Some rows cannot convert and are
+  **dropped or nulled**: a Head-to-head's Entrants beyond the two who played
+  (or beyond the first two), its Matches among more than two players or past
+  seven, Best score Attempts with no score or Host-logged in team scoring, a
+  Best score Competition's Entrants, and a Match Score that is not a number.
+  Everything dropped is deliberate; the report lists it first.
+
+**Before the production Migrate, run the report.** It is read-only, prints
+names and counts only (never an email), and must run **while the database is
+still at 0031**, before `migrate.yml` runs 0032:
+
+```bash
+pnpm tsx scripts/r21-migration-report.ts
+```
+
+Paul runs it with his own credentials against staging, then production (agents
+never read `.env*`), and pastes the output in the PR. If it lists anything an
+Organizer wants kept, don't migrate; ask Paul. Then, as for R16 to R18:
+
+1. **Staging.** After the PR merges into `staging` and `migrate.yml`'s run is
+   green, run the **Seed** workflow on `staging`, file blank (all seeds),
+   **reset** ticked, `staging` typed in **confirm_reset**. Check:
+   `/xii/competitions` renders, a Head-to-head's `get_games` answers over MCP,
+   and the Bracket page answers 200.
+2. **Production pre-check** before the `staging` → `main` PR merges: the report
+   above, plus a look in Admin for anything an Organizer entered that should
+   be kept.
+3. **Production.** After the `main` merge's migrate run is green, run the Seed
+   workflow **from `main`**, as for staging.
+
+The app errors between the deploy and the Migrate job (the tables are
+renamed), so confirm **Migrate** succeeded before checking the new deployment,
+and **a Vercel rollback past this deploy is unsafe**: it would run the old
+code against the new tables. If a migrate run fails, **don't reseed**: fix the
+migration on a `fix/…` branch.
 
 ## Guardrails
 
