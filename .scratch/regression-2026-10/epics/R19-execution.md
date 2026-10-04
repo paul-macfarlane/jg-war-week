@@ -69,3 +69,4 @@ Human gates: none. No deploy step (no schema change, nothing to reset).
   - Fixes: Organizer-only pickers (Discretionary points, Awards) search by email through a hidden `keywords` field; Placement sheet names wrap at 390.
   - Filed 108–113.
   - Smoke OK=278 FAIL=0; vitest 195 files / 3913 passed, 0 skipped; e2e for the two specs passed, 8 tests.
+- 2026-10-04: D105, D106 and DX integrated (DX `2597428f` plus orchestrator fix `1af9afe9`: the email rule moved from the Host entry to the You rule in CONTEXT, the scale fixture's real contents in the guide, the checklist naming the pickers that search by email; `/about` copy never describes the list, so no copy or still change). Epic and tickets `in-progress` → `ai-review`; aggregate code review starts.

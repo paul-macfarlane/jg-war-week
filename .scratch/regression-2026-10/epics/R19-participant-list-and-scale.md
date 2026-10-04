@@ -8,7 +8,7 @@
 
 **Blocked by:** R18 merged into `staging` (done: PR #130, 2026-10-03; ticket 105's preview reads the rich-text description; R18 red-team pass 1, W7).
 
-**Status:** in-progress
+**Status:** ai-review
 
 **Red-team:** not required unless the scale pass needs a schema change.
 
