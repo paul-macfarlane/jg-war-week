@@ -382,7 +382,7 @@ export function BracketTree({
                     type="button"
                     variant="outline"
                     size="sm"
-                    aria-label={`Edit ${round.name}`}
+                    aria-label={`Edit ${round.name} settings`}
                     className="min-h-11 sm:min-h-8"
                     onClick={() => onEditRound(round.round)}
                   >

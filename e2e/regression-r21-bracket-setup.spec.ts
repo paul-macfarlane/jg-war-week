@@ -118,7 +118,7 @@ async function recordMatch(
 /** Opens a Round's editor from its heading in the tree. */
 async function openRoundEditor(page: Page, round: string): Promise<Locator> {
   await tree(page)
-    .getByRole("button", { name: `Edit ${round}`, exact: true })
+    .getByRole("button", { name: `Edit ${round} settings`, exact: true })
     .click();
   const editor = page.getByRole("dialog", { name: `Edit ${round}` });
   await expect(editor).toBeVisible();

@@ -249,7 +249,11 @@ describe("BracketTree, a Group Bracket", () => {
       buttonNames(tree({ onEditRound: edit }, eleven(), groupById)).filter(
         (name) => name.startsWith("Edit "),
       ),
-    ).toEqual(["Edit Round 1", "Edit Round 2", "Edit Final"]);
+    ).toEqual([
+      "Edit Round 1 settings",
+      "Edit Round 2 settings",
+      "Edit Final settings",
+    ]);
     expect(buttonNames(tree({}, eleven(), groupById))).toEqual([]);
     expect(buttonNames(tree({ onEditRound: edit }))).toEqual([]);
   });
