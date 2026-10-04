@@ -1,6 +1,7 @@
 ---
 title: Competition setup and logging (Epic R21)
-status: ready-for-agent
+status: in-progress
+claimed: atlas-implement, Paul Macfarlane, 2026-10-04
 grilled: 2026-10-04 (see ../regression-2026-10/grilling-2026-10-04.md)
 created: 2026-10-04
 source: Paul's regression feedback "10/3", items 2.1, 3.2, 3.4, 3.5, 5.1, 5.6, 5.7, 8.1, 8.3, 8.4, 8.5, 8.7, 10.1, 10.3, 10.5, 14.1
@@ -11,7 +12,7 @@ source: Paul's regression feedback "10/3", items 2.1, 3.2, 3.4, 3.5, 5.1, 5.6, 5
 **Epic:** R21 · **Branch:** `feat/r21-competition-setup` · **Blocked by:**
 R20 (`../competition-results/spec.md`) merged into `staging` ·
 **Red-team:** required (Drizzle schema change) · **Status:**
-ready-for-agent · **Absorbs:** backlog `regression-2026-09/issues/25` (rename
+in-progress · **Absorbs:** backlog `regression-2026-09/issues/25` (rename
 `finalized_at` / `generated_by_bracket`)
 
 ## Summary

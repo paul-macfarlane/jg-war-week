@@ -361,3 +361,37 @@ Extra checks for decisions without an AC:
   `seed.yml` workflow; post-check `/xii/competitions` renders and MCP
   `get_games` for a Head-to-head answers.
 - **PR review and merge** into `staging`; CI green.
+
+## [PROGRESS]
+
+### Implementation run (`/atlas-implement`, 2026-10-04)
+
+- Claimed: spec `status: in-progress`. Comparison point `6cccc63e`
+  (`origin/staging`). R22 waits for R21 to merge (Paul), so R21 keeps
+  migration numbers 0031 / 0032 and R22 renumbers (P11).
+- Proof root: clearing the committed R20 evidence in `test-results/` was
+  refused by the session's permission guard, so it stays; R21 evidence goes
+  only under `test-results/r21/` and `test-results/e2e/regression-r21-*/`
+  (and specs it reruns replace their own directories).
+- Structure: waves on the integration worktree. Deliverables (slices
+  regrouped so each worker owns a behavior with its tests and e2e):
+
+  | Deliverable | Plan slices | ACs | Worker | Checkout |
+  |---|---|---|---|---|
+  | D1 Rename | S1 | 1a names scan | sonnet | integration worktree |
+  | D2 Model | S2 | 2, 15 | opus | integration worktree |
+  | D3 Close, locks, scoring UI | S3, S6, `scoring.ts` | 1, 4, 14 | sonnet | integration worktree |
+  | D4 Logging and rules | S4, D1 | 3, 5, 6, 7, 8, 9, 10, 11 | opus | `war-weeker-a`, db `war_weeker_r21a`, ports 3131 / 3231 |
+  | D5 Bracket setup | S5 | 12, 13 | opus | `war-weeker-b`, db `war_weeker_r21b`, ports 3132 / 3232 |
+  | D6 MCP and smoke | S7 | 16, smoke parts of 15 | sonnet | integration worktree |
+  | D7 Docs | S8 | DoD 3–6 | sonnet | integration worktree |
+
+  Edges: D1 → D2 → D3 → {D4 ∥ D5} → D6 → D7 → aggregate review → gate →
+  PR. D4 ∥ D5 predicted collisions (re-checked at closeout):
+  `src/components/competition-settings-form.tsx` and
+  `src/mutations/competition-settings.ts` (each adds its own fields),
+  `src/lib/bracket/engine.ts` (D4 removes the decided-Match reset; D5
+  touches build and projection), `src/lib/competition-locks.ts`.
+- Each deliverable ends green on `pnpm typecheck && pnpm lint && pnpm test`
+  and `pnpm build && pnpm smoke && pnpm e2e` on its own database; the
+  orchestrator reruns `pnpm gate` on the integrated head after each wave.
