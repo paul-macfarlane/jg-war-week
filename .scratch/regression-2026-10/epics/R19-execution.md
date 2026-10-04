@@ -71,3 +71,85 @@ Human gates: none. No deploy step (no schema change, nothing to reset).
   - Smoke OK=278 FAIL=0; vitest 195 files / 3913 passed, 0 skipped; e2e for the two specs passed, 8 tests.
 - 2026-10-03: D105, D106 and DX integrated (DX `2597428f` plus orchestrator fix `1af9afe9`: the email rule moved from the Host entry to the You rule in CONTEXT, the scale fixture's real contents in the guide, the checklist naming the pickers that search by email; `/about` copy never describes the list, so no copy or still change). Epic and tickets `in-progress` → `ai-review`; aggregate code review starts.
 - **[SCOPE CHANGE]** 2026-10-03: the plan's decision "Search in `EntityCombobox` pickers matches name and email" is narrowed to the Organizer-only pickers (Discretionary points, Awards). The run-area pickers are used by Hosts and Log a Game by Participants, and sending them Participant emails would break CONTEXT's email rule, so that choice goes to Paul as ticket 108.
+- 2026-10-03, DR1 (Sonnet): `ec45a799`. The review fixes listed below. Vitest 195 / 3915, 0 skipped; the scale, list and placement e2e specs passed.
+- 2026-10-03, gate (orchestrator):
+  - The first full gate on `d2801cd8` passed.
+  - The gate on `ec45a799` failed once, in `bracket-heats`: after Escape the Entrants list sometimes stayed open and widened the page at 375. This flake was already on `staging`: it fails 1 in 4 repeats on `65431510` too, checked in a throwaway worktree and removed afterwards.
+  - Fixed on the test side in `9bdf6a21` by waiting for the list to close (6 of 6 repeats pass). The final gate on `9bdf6a21` passed.
+
+## [AI CODE REVIEW]
+
+2026-10-03. Two fresh Opus reviewers read `git diff 65431510 HEAD`, one per axis. The orchestrator ruled on each finding by reading the hunks it cites. **Blocking: none.**
+
+**Technical implementation and spec conformity** (reviewer checked every AC; status rules, round logic, winner sharing, privacy gates, fixture guard and smoke restore found correct):
+
+| # | Finding | Severity | Disposition |
+|---|---|---|---|
+| T1 | `src/seed/scale.ts`: the fixture isn't atomic; a crash partway leaves a partial XII that a rerun skips | non-blocking | Accepted risk: `pnpm seed:demo:scale` resets XII first; the seed-sets case asserts the full state |
+| T2 | `src/queries/competitions.ts`: `Promise.all` on one tx client (pg@9 deprecation) | non-blocking | Accepted: the repo's existing pattern (`getRecentResults`, enrollment); a repo-wide follow-up |
+| T3 | Redundant Heat count query | non-blocking | Fixed `ec45a799` (Heats from `loadBrackets`) |
+| T4 | Scale e2e titles overclaim (one name for "all 100") | non-blocking | Fixed `ec45a799`: exactly 100 roster rows, "(64 chosen)", "72 of 100" |
+| T5 | Placement wrap fix had no regression assert | non-blocking | Fixed `ec45a799`: no ellipsis, height over 1.5 lines, no Remove on a Finalized sheet |
+| T6 | Awards picker email search untested | non-blocking | Fixed `ec45a799` (e2e: exactly "Pim Ocelot") |
+| T7 | Smoke "Last:" comment stale; restore depends on the faq table | non-blocking | Fixed `ec45a799`: scale phase moved before the error-boundary step |
+| T8 | No Heats-engine bye or final + 3rd place game case | non-blocking | Fixed `ec45a799` (two cases) |
+| T9 | Tie order: the list sorts by name, Home keeps entry order | non-blocking | Accepted (cosmetic; the list's order is stable) |
+| T10 | Backlog line stale | non-blocking | Fixed `cc330f93` |
+
+**Coding standards** (CLAUDE.md UI rules, no cursor classes, made-up data, put-back and every-assert-can-fail team rules found clean):
+
+| # | Finding | Severity | Disposition |
+|---|---|---|---|
+| C1 | Checklist said the leaderboard lists every Participant (only those with points) | non-blocking | Fixed `cc330f93` |
+| C2 | CONTEXT called the status "one word" | non-blocking | Fixed `cc330f93` ("label") |
+| C3 | Ticket 108 quoted the old email rule | non-blocking | Fixed `cc330f93` |
+| C4 | R19 records dated 2026-10-04; commits are 2026-10-03 local | non-blocking | Fixed `cc330f93` |
+| C5 | Backlog status | non-blocking | Fixed `cc330f93` |
+| C6 | Email search narrowing logged as a fix, not a scope change | non-blocking | Fixed `cc330f93` ([SCOPE CHANGE] above) |
+| C7 | `scale.ts` comment didn't match the stride-37 key | non-blocking | Fixed `ec45a799` |
+| C8 | `AwardFormOptions.email` declared on the query but filled by the page | non-blocking | Fixed `ec45a799` (`AwardFormPickerOptions` beside the form) |
+| C9 | Long one-line script headers | non-blocking | Fixed `ec45a799` |
+
+Earlier orchestrator fix to DX (`1af9afe9`): the email rule moved from the Host entry to the You rule in CONTEXT; the guide names the fixture's real contents; the checklist names the pickers that search by email.
+
+## [CLOSEOUT]
+
+2026-10-03.
+
+- **Repository delivery:** `war-weeker`, branch `feat/regression-r19-list-and-scale` from `staging` at `6543151`, direct checkout of the main repo, which Paul confirmed twice.
+- **Deliverables:**
+  - D105 (Opus): `541d63eb`.
+  - D106 (Opus): `4c66899b`, `7ef301eb`, `998ff0b2`, `848b5332`, `b5c1c343`.
+  - DX (Sonnet): `2597428f`, plus orchestrator fix `1af9afe9`.
+  - Review doc fixes (orchestrator): `cc330f93`.
+  - DR1 (Sonnet): `ec45a799`.
+  - Gate flake fix (orchestrator): `9bdf6a21`.
+- **Isolation check:** the plan serialized D105 and D106, partly because D106 might edit the list files. That prediction didn't come true: D106's commits touch none of `src/components/competitions.tsx`, `src/queries/competitions.ts` or the list page. Only DR1 later edited `src/queries/competitions.ts`. The other reason held: both deliverables' e2e specs reseed the one local database, and D106 regenerated D105's list screenshots. A parallel run would still have needed separate databases.
+- **Scope changes and approved readings:**
+  - The scale fixture runs through the app's mutations because the seed format can't hold Hosts, Entrants, Heats, Games or ticks.
+  - Email search applies only to Organizer-only pickers; the Host and Participant pickers are ticket 108.
+  - A Finalized Placement or Bracket with no Placement Points reads "Done".
+  - Ties read "Winners: A, B".
+- **Verified run command:** `pnpm format:check && pnpm gate` with `DATABASE_URL=postgres://…@localhost:2345/war_weeker DATABASE_DRIVER=pg`, exit 0 on `9bdf6a21`:
+  - lint 0 errors, 10 warnings, the same as `staging`;
+  - vitest 195 files, 3915 tests passed, 0 skipped;
+  - smoke 278 ok, 0 FAIL;
+  - e2e 127 passed (6.1m), 0 failed, 0 skipped, 0 flaky.
+
+  Log: `test-results/r19/gate.log`. No deploy and no schema change, so nothing to reset.
+
+| Criterion | Verdict | Evidence |
+| --- | --- | --- |
+| P105-unit | PASS | gate.log (vitest; `competition-status.test.ts` 29 cases) |
+| P105-e2e | PASS | `test-results/e2e/regression-r19-list-*/competitions-list-{1440,390}{,-in-view}.png`; gate.log |
+| P106-seed-twice | PASS | gate.log: smoke `the XII scale demo loads twice with no row count changing`, `100 Participants and 64 Entrants`; seed-sets Postgres case |
+| P106-screens | PASS | `test-results/e2e/regression-r19-scale-*/` (each page at 1440 and 390, no sideways scroll asserted); gate.log |
+| P106-search | PASS | e2e: `@` lists all 100, `pim.ocelot@jahnel` finds one (Discretionary points and Awards pickers); `entity-combobox.test.ts` |
+| P106-names | PASS | `seeds/demo/xii-scale.json`: made-up names, `@example.com` plus four fictional `@jahnelgroup.com` Hosts |
+| P106-findings | PASS | 106's Scale pass findings; tickets 108–113 `needs-triage`; backlog lines |
+| E1 showcase | PASS | guide and checklist (`2597428f`, `1af9afe9`, `cc330f93`); `/about` copy never describes the list, so no copy or still change |
+| E2 CONTEXT | PASS | Competition status entry; email rule (`2597428f`, `1af9afe9`, `cc330f93`) |
+| E3 testing.md | PASS | smoke and e2e cells (`2597428f`) |
+| E4 skip grep | PASS | `git diff 65431510 -- e2e src scripts \| grep …` empty |
+| E5 closeouts | PASS | this record, the epic and tickets 105, 106 `done` |
+| E6 gate | PASS (local); CI on the PR pending | gate.log |
