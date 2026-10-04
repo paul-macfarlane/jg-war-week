@@ -1,5 +1,6 @@
 "use client";
 
+import { XIcon } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import {
   FieldSet,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { MAX_PLACEMENTS, placementLabel } from "@/lib/competitions";
+import { placementLabel } from "@/lib/competitions";
 import {
   QUICK_FILL,
   placementPointsFromRows,
@@ -19,20 +20,21 @@ import {
 } from "@/lib/placement-rows";
 
 /**
- * Placement Points as numbered rows (1st, 2nd…), up to five, with a
- * 5 · 3 · 1 quick fill and live errors. `value` is the same comma-separated
+ * Placement Points as a list editor of numbered rows (1st, 2nd…): add a
+ * place, remove any place, a 5 · 3 · 1 quick fill and live errors. `limit`
+ * is the Format's `placementLimit` (null: any number of places). `value` is the same comma-separated
  * text the Competition action already validates. `invalid` marks every
  * row when the server refused the Placement Points.
  */
 export function PlacementPointsRows({
   value,
-  maxPoints,
   invalid = false,
+  limit = null,
   onChange,
 }: {
   value: string;
-  maxPoints: string;
   invalid?: boolean;
+  limit?: number | null;
   onChange: (value: string) => void;
 }) {
   const [rows, setRowsState] = useState(() => rowsFromPlacementPoints(value));
@@ -56,7 +58,7 @@ export function PlacementPointsRows({
     onChange(placementPointsFromRows(next));
   }
 
-  const errors = placementRowErrors(rows, maxPoints);
+  const errors = placementRowErrors(rows, limit);
 
   return (
     <FieldSet className="min-w-0 gap-2">
@@ -93,13 +95,23 @@ export function PlacementPointsRows({
                     )
                   }
                 />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Remove ${label} place`}
+                  className="size-11 sm:size-9"
+                  onClick={() => setRows(rows.filter((_, i) => i !== index))}
+                >
+                  <XIcon aria-hidden />
+                </Button>
               </li>
             );
           })}
         </ol>
       )}
       <div className="flex flex-wrap gap-2">
-        {rows.length < MAX_PLACEMENTS && (
+        {(limit === null || rows.length < limit) && (
           <Button
             type="button"
             variant="outline"
@@ -112,15 +124,6 @@ export function PlacementPointsRows({
         <Button
           type="button"
           variant="outline"
-          disabled={rows.length === 0}
-          className="min-h-11 sm:min-h-9"
-          onClick={() => setRows(rows.slice(0, -1))}
-        >
-          Remove last
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
           aria-label="Fill 5, 3, 1"
           className="min-h-11 sm:min-h-9"
           onClick={() => setRows([...QUICK_FILL])}

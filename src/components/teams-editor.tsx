@@ -12,137 +12,144 @@ import {
 } from "@/actions/setup";
 import { ColorField, type ColorSwatch } from "@/components/color-field";
 import { OptionSelect } from "@/components/option-select";
+import { RosterImport } from "@/components/roster-import";
 import {
   SETUP_EDITOR,
-  SetupRowButtons,
+  SetupAddButton,
+  SetupListRow,
   SetupRowError,
-  setupRowProps,
+  SetupSaveButton,
+  SetupSheetFooter,
   usageSummary,
   useSetupRow,
 } from "@/components/setup-row";
 import { SuggestionCombobox } from "@/components/suggestion-combobox";
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import type { WarWeek } from "@/db/schema";
 import type { ParticipantInput, TeamInput } from "@/lib/setup";
 import { teamSwatches } from "@/lib/theme";
 import type { SetupParticipant, SetupTeam } from "@/queries/setup";
 
 const EMPTY_TEAM: TeamInput = { name: "", color: "#888888", logoUrl: "" };
 
-/** One Team's name, color and logo URL. With no `team` it's the add row. */
-function TeamRow({
+/** "2 Participants · 1 Points Entry": what deleting the Team takes with it. */
+function teamUsage(team: SetupTeam): string {
+  return usageSummary([
+    [team.participantCount, "Participant", "Participants"],
+    [team.pointsEntryCount, "Points Entry", "Points Entries"],
+    [team.awardCount, "Award", "Awards"],
+    [team.entrantCount, "Bracket Entrant", "Bracket Entrants"],
+    [team.squadCount, "Squad", "Squads"],
+  ]);
+}
+
+/**
+ * One Team's name, color and logo URL, in its Sheet. With no `team` it
+ * adds one. `onSaved` closes the Sheet.
+ */
+function TeamForm({
   warWeekId,
   team,
   teamLabel,
   swatches,
+  onSaved,
 }: {
   warWeekId: string;
   team?: SetupTeam;
   teamLabel: string;
   swatches: ColorSwatch[];
+  onSaved: () => void;
 }) {
   const initial: TeamInput = team
     ? { name: team.name, color: team.color, logoUrl: team.logoUrl ?? "" }
     : EMPTY_TEAM;
   const id = useId();
   const [values, setValues] = useState(initial);
-  const { pending, formRef, formAction, fieldErrors, error, remove } =
-    useSetupRow(
-      () =>
-        team ? updateTeam(team.id, values) : createTeam(warWeekId, values),
-      `${teamLabel} saved`,
-      team ? undefined : () => setValues(EMPTY_TEAM),
-    );
+  const { pending, formRef, formAction, fieldErrors, error } = useSetupRow(
+    () => (team ? updateTeam(team.id, values) : createTeam(warWeekId, values)),
+    `${teamLabel} saved`,
+    onSaved,
+  );
   const set =
     (field: keyof TeamInput) => (event: React.ChangeEvent<HTMLInputElement>) =>
       setValues((v) => ({ ...v, [field]: event.target.value }));
 
-  const usage = team
-    ? usageSummary([
-        [team.participantCount, "Participant", "Participants"],
-        [team.pointsEntryCount, "Points Entry", "Points Entries"],
-        [team.awardCount, "Award", "Awards"],
-        [team.entrantCount, "Bracket Entrant", "Bracket Entrants"],
-        [team.squadCount, "Squad", "Squads"],
-      ])
-    : "";
-
   return (
-    <li
-      {...setupRowProps(team?.id)}
-      className="border-border border-b py-3 last:border-b-0"
+    <form
+      ref={formRef}
+      action={formAction}
+      aria-label={team ? `${teamLabel} ${team.name}` : `New ${teamLabel}`}
+      className="flex flex-col gap-4"
     >
-      <form
-        ref={formRef}
-        action={formAction}
-        aria-label={team ? `${teamLabel} ${team.name}` : `New ${teamLabel}`}
-      >
-        <FieldGroup className="gap-2 sm:flex-row sm:items-end">
-          <Field
-            className="min-w-0 sm:flex-1"
-            data-invalid={!!fieldErrors.name}
-          >
-            <FieldLabel htmlFor={`${id}-name`}>Name</FieldLabel>
-            <Input
-              id={`${id}-name`}
-              name="name"
-              required
-              maxLength={80}
-              className="h-11 sm:h-9"
-              aria-invalid={!!fieldErrors.name}
-              value={values.name}
-              onChange={set("name")}
-            />
-            <FieldError>{fieldErrors.name}</FieldError>
-          </Field>
-          <Field className="sm:w-auto" data-invalid={!!fieldErrors.color}>
-            <FieldLabel htmlFor={`${id}-color`}>Color</FieldLabel>
-            <ColorField
-              id={`${id}-color`}
-              name="color"
-              aria-invalid={!!fieldErrors.color}
-              value={values.color}
-              swatches={swatches}
-              onValueChange={(color) => setValues((v) => ({ ...v, color }))}
-            />
-            <FieldError>{fieldErrors.color}</FieldError>
-          </Field>
-          <Field className="sm:flex-1" data-invalid={!!fieldErrors.logoUrl}>
-            <FieldLabel htmlFor={`${id}-logo`}>Logo URL</FieldLabel>
-            <Input
-              id={`${id}-logo`}
-              name="logoUrl"
-              maxLength={500}
-              placeholder="Optional"
-              className="h-11 sm:h-9"
-              aria-invalid={!!fieldErrors.logoUrl}
-              value={values.logoUrl}
-              onChange={set("logoUrl")}
-            />
-            <FieldError>{fieldErrors.logoUrl}</FieldError>
-          </Field>
-          <SetupRowButtons
-            pending={pending}
-            addLabel={`Add ${teamLabel}`}
-            onDelete={
-              team &&
-              (() => remove(() => deleteTeam(team.id), `${teamLabel} deleted`))
-            }
-            deleteTitle={team && `Delete ${teamLabel} ${team.name}?`}
-            deleteDescription={usage}
+      <FieldGroup className="gap-4 px-4">
+        <Field data-invalid={!!fieldErrors.name}>
+          <FieldLabel htmlFor={`${id}-name`}>Name</FieldLabel>
+          <Input
+            id={`${id}-name`}
+            name="name"
+            required
+            maxLength={80}
+            className="h-11 sm:h-9"
+            aria-invalid={!!fieldErrors.name}
+            value={values.name}
+            onChange={set("name")}
           />
-        </FieldGroup>
-      </form>
-      {team && <p className="text-foreground/60 mt-1 text-xs">{usage}</p>}
-      <SetupRowError error={error} />
-    </li>
+          <FieldError>{fieldErrors.name}</FieldError>
+        </Field>
+        <Field data-invalid={!!fieldErrors.color}>
+          <FieldLabel htmlFor={`${id}-color`}>Color</FieldLabel>
+          <ColorField
+            id={`${id}-color`}
+            name="color"
+            aria-invalid={!!fieldErrors.color}
+            value={values.color}
+            swatches={swatches}
+            onValueChange={(color) => setValues((v) => ({ ...v, color }))}
+          />
+          <FieldError>{fieldErrors.color}</FieldError>
+        </Field>
+        <Field data-invalid={!!fieldErrors.logoUrl}>
+          <FieldLabel htmlFor={`${id}-logo`}>Logo URL</FieldLabel>
+          <Input
+            id={`${id}-logo`}
+            name="logoUrl"
+            maxLength={500}
+            placeholder="Optional"
+            className="h-11 sm:h-9"
+            aria-invalid={!!fieldErrors.logoUrl}
+            value={values.logoUrl}
+            onChange={set("logoUrl")}
+          />
+          <FieldError>{fieldErrors.logoUrl}</FieldError>
+        </Field>
+      </FieldGroup>
+      <SetupSheetFooter>
+        <SetupSaveButton
+          pending={pending}
+          label={team ? "Save" : `Add ${teamLabel}`}
+        />
+        <SetupRowError error={error} />
+      </SetupSheetFooter>
+    </form>
   );
+}
+
+/** What deleting the Participant takes with it. */
+function participantUsage(participant: SetupParticipant): string {
+  return usageSummary([
+    [participant.pointsEntryCount, "Points Entry", "Points Entries"],
+    [participant.awardCount, "Award", "Awards"],
+    [participant.entrantCount, "Bracket Entrant", "Bracket Entrants"],
+    [participant.squadCount, "Squad", "Squads"],
+  ]);
 }
 
 const EMPTY_PARTICIPANT: ParticipantInput = {
@@ -154,16 +161,18 @@ const EMPTY_PARTICIPANT: ParticipantInput = {
 };
 
 /**
- * One roster row: display name, Company Tag, email, Team and Leader. With
- * no `participant` it's the inline "Add Participant" row.
+ * One Participant's display name, Company Tag, email, Team and Leader, in
+ * their Sheet. With no `participant` it adds one. `onSaved` closes the
+ * Sheet.
  */
-function ParticipantRow({
+function ParticipantForm({
   warWeekId,
   participant,
   teams,
   teamLabel,
   leaderTitle,
   tagSuggestions,
+  onSaved,
 }: {
   warWeekId: string;
   participant?: SetupParticipant;
@@ -173,6 +182,7 @@ function ParticipantRow({
   leaderTitle: string;
   /** Company Tags used in any War Week. */
   tagSuggestions: string[];
+  onSaved: () => void;
 }) {
   const initial: ParticipantInput = participant
     ? {
@@ -185,15 +195,14 @@ function ParticipantRow({
     : EMPTY_PARTICIPANT;
   const id = useId();
   const [values, setValues] = useState(initial);
-  const { pending, formRef, formAction, fieldErrors, error, remove } =
-    useSetupRow(
-      () =>
-        participant
-          ? updateParticipant(participant.id, values)
-          : createParticipant(warWeekId, values),
-      "Participant saved",
-      participant ? undefined : () => setValues(EMPTY_PARTICIPANT),
-    );
+  const { pending, formRef, formAction, fieldErrors, error } = useSetupRow(
+    () =>
+      participant
+        ? updateParticipant(participant.id, values)
+        : createParticipant(warWeekId, values),
+    "Participant saved",
+    onSaved,
+  );
   const set =
     (field: Exclude<keyof ParticipantInput, "isLeader">) =>
     (event: React.ChangeEvent<HTMLInputElement>) =>
@@ -203,26 +212,34 @@ function ParticipantRow({
     ...teams.map((team) => ({ value: team.id, label: team.name })),
   ];
 
-  const usage = participant
-    ? usageSummary([
-        [participant.pointsEntryCount, "Points Entry", "Points Entries"],
-        [participant.awardCount, "Award", "Awards"],
-        [participant.entrantCount, "Bracket Entrant", "Bracket Entrants"],
-        [participant.squadCount, "Squad", "Squads"],
-      ])
-    : "";
+  const usage = participant ? participantUsage(participant) : "";
 
   return (
-    <li
-      {...setupRowProps(participant?.id)}
-      className="border-border border-b py-3 last:border-b-0"
+    <form
+      ref={formRef}
+      action={formAction}
+      aria-label={participant ? participant.displayName : "New Participant"}
+      className="flex flex-col gap-4"
     >
-      <form
-        ref={formRef}
-        action={formAction}
-        aria-label={participant ? participant.displayName : "New Participant"}
-      >
-        <FieldGroup className="grid gap-2 sm:grid-cols-3 sm:items-end xl:grid-cols-[minmax(0,1.4fr)_minmax(0,0.7fr)_minmax(0,1.4fr)_minmax(0,1fr)_auto_auto]">
+      <FieldGroup className="gap-4 px-4">
+        {participant?.profileName ? (
+          <Field>
+            <FieldLabel htmlFor={`${id}-name`}>Display name</FieldLabel>
+            <Input
+              id={`${id}-name`}
+              className="h-11 sm:h-9"
+              readOnly
+              value={participant.profileName}
+            />
+            <FieldDescription>Set by the person</FieldDescription>
+            {/* The typed name stays saved, as the fallback. */}
+            <input
+              type="hidden"
+              name="displayName"
+              value={values.displayName}
+            />
+          </Field>
+        ) : (
           <Field data-invalid={!!fieldErrors.displayName}>
             <FieldLabel htmlFor={`${id}-name`}>Display name</FieldLabel>
             <Input
@@ -237,96 +254,84 @@ function ParticipantRow({
             />
             <FieldError>{fieldErrors.displayName}</FieldError>
           </Field>
-          <Field data-invalid={!!fieldErrors.companyTag}>
-            <FieldLabel htmlFor={`${id}-tag`}>Company Tag</FieldLabel>
-            <SuggestionCombobox
-              id={`${id}-tag`}
-              name="companyTag"
-              maxLength={40}
-              placeholder="Optional"
-              suggestions={tagSuggestions}
-              value={values.companyTag}
-              onValueChange={(companyTag) =>
-                setValues((v) => ({ ...v, companyTag }))
-              }
-            />
-            <FieldError>{fieldErrors.companyTag}</FieldError>
-          </Field>
-          <Field data-invalid={!!fieldErrors.email}>
-            <FieldLabel htmlFor={`${id}-email`}>Email</FieldLabel>
-            <Input
-              id={`${id}-email`}
-              name="email"
-              type="email"
-              maxLength={254}
-              placeholder="Optional"
-              className="h-11 sm:h-9"
-              aria-invalid={!!fieldErrors.email}
-              value={values.email}
-              onChange={set("email")}
-            />
-            <FieldError>{fieldErrors.email}</FieldError>
-          </Field>
-          {teams.length > 0 ? (
-            <>
-              <Field data-invalid={!!fieldErrors.teamId}>
-                <FieldLabel htmlFor={`${id}-team`}>{teamLabel}</FieldLabel>
-                <OptionSelect
-                  id={`${id}-team`}
-                  name="teamId"
-                  aria-invalid={!!fieldErrors.teamId}
-                  options={teamOptions}
-                  value={values.teamId}
-                  onValueChange={(teamId) =>
-                    setValues((v) => ({ ...v, teamId }))
-                  }
-                />
-                <FieldError>{fieldErrors.teamId}</FieldError>
-              </Field>
-              <Field orientation="horizontal" className="min-h-11 sm:min-h-9">
-                <Switch
-                  id={`${id}-leader`}
-                  name="isLeader"
-                  checked={values.isLeader}
-                  onCheckedChange={(isLeader) =>
-                    setValues((v) => ({ ...v, isLeader }))
-                  }
-                />
-                <FieldLabel htmlFor={`${id}-leader`}>{leaderTitle}</FieldLabel>
-              </Field>
-            </>
-          ) : (
-            <span className="hidden sm:col-span-2 sm:block" />
-          )}
-          <SetupRowButtons
-            pending={pending}
-            addLabel="Add Participant"
-            onDelete={
-              participant &&
-              (() =>
-                remove(
-                  () => deleteParticipant(participant.id),
-                  "Participant deleted",
-                ))
-            }
-            deleteTitle={participant && `Delete ${participant.displayName}?`}
-            deleteDescription={usage}
-          />
-        </FieldGroup>
-      </form>
-      {participant &&
-        (participant.pointsEntryCount > 0 ||
-          participant.awardCount > 0 ||
-          participant.entrantCount > 0 ||
-          participant.squadCount > 0) && (
-          <p className="text-foreground/60 mt-1 text-xs">{usage}</p>
         )}
-      <SetupRowError error={error} />
-    </li>
+        <Field data-invalid={!!fieldErrors.companyTag}>
+          <FieldLabel htmlFor={`${id}-tag`}>Company Tag</FieldLabel>
+          <SuggestionCombobox
+            id={`${id}-tag`}
+            name="companyTag"
+            maxLength={40}
+            placeholder="Optional"
+            suggestions={tagSuggestions}
+            value={values.companyTag}
+            onValueChange={(companyTag) =>
+              setValues((v) => ({ ...v, companyTag }))
+            }
+          />
+          <FieldError>{fieldErrors.companyTag}</FieldError>
+        </Field>
+        <Field data-invalid={!!fieldErrors.email}>
+          <FieldLabel htmlFor={`${id}-email`}>Email</FieldLabel>
+          <Input
+            id={`${id}-email`}
+            name="email"
+            type="email"
+            maxLength={254}
+            placeholder="Optional"
+            className="h-11 sm:h-9"
+            aria-invalid={!!fieldErrors.email}
+            value={values.email}
+            onChange={set("email")}
+          />
+          <FieldError>{fieldErrors.email}</FieldError>
+        </Field>
+        {teams.length > 0 && (
+          <>
+            <Field data-invalid={!!fieldErrors.teamId}>
+              <FieldLabel htmlFor={`${id}-team`}>{teamLabel}</FieldLabel>
+              <OptionSelect
+                id={`${id}-team`}
+                name="teamId"
+                aria-invalid={!!fieldErrors.teamId}
+                options={teamOptions}
+                value={values.teamId}
+                onValueChange={(teamId) => setValues((v) => ({ ...v, teamId }))}
+              />
+              <FieldError>{fieldErrors.teamId}</FieldError>
+            </Field>
+            <Field orientation="horizontal" className="min-h-11 sm:min-h-9">
+              <Switch
+                id={`${id}-leader`}
+                name="isLeader"
+                checked={values.isLeader}
+                onCheckedChange={(isLeader) =>
+                  setValues((v) => ({ ...v, isLeader }))
+                }
+              />
+              <FieldLabel htmlFor={`${id}-leader`}>{leaderTitle}</FieldLabel>
+            </Field>
+          </>
+        )}
+        {participant &&
+          (participant.pointsEntryCount > 0 ||
+            participant.awardCount > 0 ||
+            participant.entrantCount > 0 ||
+            participant.squadCount > 0) && (
+            <p className="text-foreground/60 text-xs">{usage}</p>
+          )}
+      </FieldGroup>
+      <SetupSheetFooter>
+        <SetupSaveButton
+          pending={pending}
+          label={participant ? "Save" : "Add Participant"}
+        />
+        <SetupRowError error={error} />
+      </SetupSheetFooter>
+    </form>
   );
 }
 
-/** The War Week's Teams, each editable, plus an add row. */
+/** The War Week's Teams, each with Edit (a Sheet) and Delete, plus an Add button. */
 export function TeamsEditor({
   warWeekId,
   teams,
@@ -340,45 +345,67 @@ export function TeamsEditor({
   /** The Appearance Theme's colors, offered as Team color swatches. */
   themeSwatches: ColorSwatch[];
 }) {
-  // Each row offers the theme colors plus the other Teams' colors.
+  // Each form offers the theme colors plus the other Teams' colors.
   const swatchesFor = (teamId?: string) => [
     ...themeSwatches,
     ...teamSwatches(teams, teamId),
   ];
+  const formProps = { warWeekId, teamLabel };
   return (
-    <div {...SETUP_EDITOR} className="flex flex-col gap-1">
+    <div {...SETUP_EDITOR} className="flex flex-col gap-3">
       {teams.length === 0 ? (
         <p className="text-foreground/70 text-sm">No {teamLabel}s yet.</p>
       ) : (
         <ul aria-label={`${teamLabel}s`}>
           {teams.map((team) => (
-            // Keyed on the saved values so a refresh resets the row's fields.
-            <TeamRow
-              key={`${team.id}-${team.name}-${team.color}-${team.logoUrl}`}
-              warWeekId={warWeekId}
-              team={team}
-              teamLabel={teamLabel}
-              swatches={swatchesFor(team.id)}
+            <SetupListRow
+              key={team.id}
+              id={team.id}
+              name={team.name}
+              label={`${teamLabel} ${team.name}`}
+              details={teamUsage(team)}
+              leading={
+                <span
+                  aria-hidden
+                  className="border-border size-3 shrink-0 rounded-full border"
+                  style={{ backgroundColor: team.color }}
+                />
+              }
+              form={(close) => (
+                <TeamForm
+                  {...formProps}
+                  team={team}
+                  swatches={swatchesFor(team.id)}
+                  onSaved={close}
+                />
+              )}
+              onDelete={() => deleteTeam(team.id)}
+              deleteTitle={`Delete ${teamLabel} ${team.name}?`}
+              deleteDescription={teamUsage(team)}
+              deleteSuccess={`${teamLabel} deleted`}
             />
           ))}
         </ul>
       )}
-      <ul>
-        <TeamRow
-          warWeekId={warWeekId}
-          teamLabel={teamLabel}
-          swatches={swatchesFor()}
-        />
-      </ul>
+      <SetupAddButton
+        label={`Add ${teamLabel}`}
+        form={(close) => (
+          <TeamForm {...formProps} swatches={swatchesFor()} onSaved={close} />
+        )}
+      />
     </div>
   );
 }
 
-/** The roster: every Participant, editable in place, then "Add Participant". */
+/**
+ * The roster: every Participant, each with Edit (a Sheet) and Delete, then
+ * "Add Participant" and "Import" (from a spreadsheet).
+ */
 export function RosterEditor({
   warWeekId,
   participants,
   teams,
+  mode,
   teamLabel,
   leaderTitle,
   tagSuggestions,
@@ -387,43 +414,74 @@ export function RosterEditor({
   warWeekId: string;
   participants: SetupParticipant[];
   teams: SetupTeam[];
+  mode: WarWeek["mode"];
   teamLabel: string;
   leaderTitle: string;
   /** Company Tags used in any War Week, for the Company Tag field. */
   tagSuggestions: string[];
 }) {
-  const rowProps = {
+  const formProps = {
     warWeekId,
     teams,
     teamLabel,
     leaderTitle,
     tagSuggestions,
   };
+  const teamName = new Map(teams.map((team) => [team.id, team.name]));
   return (
-    <div {...SETUP_EDITOR} className="flex flex-col gap-1">
+    <div {...SETUP_EDITOR} className="flex flex-col gap-3">
       {participants.length === 0 ? (
         <p className="text-foreground/70 text-sm">No Participants yet.</p>
       ) : (
         <ul aria-label="Roster">
           {participants.map((p) => (
-            <ParticipantRow
-              key={[
-                p.id,
-                p.displayName,
+            <SetupListRow
+              key={p.id}
+              id={p.id}
+              name={p.displayName}
+              details={[
                 p.companyTag,
-                p.email,
-                p.teamId,
-                p.isLeader,
-              ].join("-")}
-              participant={p}
-              {...rowProps}
+                p.teamId && teamName.get(p.teamId),
+                // The page passes no Teams in a free-for-all, and a teams War
+                // Week with no Teams has no Leaders to show.
+                teams.length > 0 && p.isLeader && leaderTitle,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+              note={
+                p.email?.trim()
+                  ? undefined
+                  : "No email: won't be linked when they sign in"
+              }
+              form={(close) => (
+                <ParticipantForm
+                  {...formProps}
+                  participant={p}
+                  onSaved={close}
+                />
+              )}
+              onDelete={() => deleteParticipant(p.id)}
+              deleteTitle={`Delete ${p.displayName}?`}
+              deleteDescription={participantUsage(p)}
+              deleteSuccess="Participant deleted"
             />
           ))}
         </ul>
       )}
-      <ul>
-        <ParticipantRow {...rowProps} />
-      </ul>
+      <div className="flex flex-wrap items-start gap-2">
+        <SetupAddButton
+          label="Add Participant"
+          form={(close) => <ParticipantForm {...formProps} onSaved={close} />}
+        />
+        <RosterImport
+          warWeekId={warWeekId}
+          participants={participants}
+          teams={teams}
+          mode={mode}
+          teamLabel={teamLabel}
+          leaderTitle={leaderTitle}
+        />
+      </div>
     </div>
   );
 }

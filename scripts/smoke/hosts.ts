@@ -5,6 +5,11 @@ import {
   deleteSmokeAnnouncements,
 } from "./announcements";
 import {
+  SMOKE_REASON_PREFIX,
+  deleteSmokeDiscretionary,
+  smokeDiscretionary,
+} from "./discretionary-points";
+import {
   ADMIN_REFUSAL_TEXT,
   BASE_URL,
   SMOKE_HOST_EMAIL,
@@ -12,33 +17,30 @@ import {
   type SmokeSession,
   callAction,
   fail,
-  hasNameProp,
   ok,
   runCheck,
   runQuery,
   serverActionIds,
   xiWarWeekId,
 } from "./harness";
-import {
-  SMOKE_NOTE_PREFIX,
-  deleteSmokeEntries,
-  smokeEntries,
-} from "./points-entries";
 
 // The smoke Host (ADR 0002): a JG user with no Organizer row who hosts one
 // seeded XI Competition. Both Competitions are picked by name from
 // seeds/xi.json; the smoke Organizer, the Participant and everyone else
 // never host anything.
-// AI Survey Completion stays `points` (team scoring); Tuesday Stairs is
+// AI Survey Completion stays `placement` (team scoring); Tuesday Stairs is
 // run as Games now.
 const HOST_COMPETITION = "AI Survey Completion";
 const OTHER_COMPETITION = "Cypher";
 const NOT_HOST_REFUSAL = "You're not a Host of that Competition.";
-// Both fixture Competitions default to `format: "points"` (the seed sets no
+// Both fixture Competitions default to `format: "placement"` (the seed sets no
 // Format), so a Bracket-only action refuses them with this before it ever
 // reaches a Host check.
 const NOT_A_BRACKET = "This Competition isn't run as a Bracket.";
 const SELF_REPORT_OFF = "Self-report is off for this Competition.";
+// A setting that locks while its Competition is Finalized (ticket 101).
+const LOCKED_WHILE_FINALIZED =
+  "Locked while the Competition is Finalized or Closed. Reopen or Un-finalize it first.";
 
 /** Removes every `competition_host` row the smoke Host has. */
 export async function deleteSmokeHosts() {
@@ -111,6 +113,7 @@ export async function assertHostChecks(sessions: {
     await assertAdminTrimmedForHost(sessions);
     await assertAdminLinkForHost(sessions);
     await assertAccessBeforeValidation(sessions, fixture);
+    await assertImportOrganizerOnly(sessions, fixture);
     await assertFormerHostRefused(fixture);
   } finally {
     await deleteSmokeHosts().catch((error) =>
@@ -123,53 +126,68 @@ export async function assertHostChecks(sessions: {
 async function assertHostAllowedAndRefused(fixture: HostFixture) {
   const ids = serverActionIds();
   const { session, xiId } = fixture;
-  const entry = (competitionId: string, note: string) => ({
-    competitionId,
+  const discretionary = (reason: string) => ({
     targetId: fixture.teamId,
     points: "3",
-    note: `${SMOKE_NOTE_PREFIX}${note}`,
+    reason: `${SMOKE_REASON_PREFIX}${reason}`,
   });
 
   try {
-    await deleteSmokeEntries();
+    await deleteSmokeDiscretionary();
     await runCheck(
-      "createPointsEntry as a Host saves an entry on their Competition, entered by the Host",
+      "createDiscretionaryPoints as a Host is refused with 'Only an Organizer can give Discretionary points.' and writes nothing",
       async () => {
         const result = await callAction(
-          ids.createPointsEntry,
-          [entry(fixture.hostCompetitionId, "host")],
+          ids.createDiscretionaryPoints,
+          [xiId, discretionary("host")],
           session,
         );
-        const rows = await smokeEntries();
-        return result.ok &&
-          rows.length === 1 &&
-          rows[0].entered_by_email === SMOKE_HOST_EMAIL
+        const rows = await smokeDiscretionary();
+        return !result.ok &&
+          result.error === "Only an Organizer can give Discretionary points." &&
+          rows.length === 0
           ? null
-          : `result=${JSON.stringify(result)} rows=${JSON.stringify(rows)}`;
+          : `result=${JSON.stringify(result)} rows=${rows.length}`;
+      },
+    );
+
+    await runCheck(
+      "updateDiscretionaryPoints and deleteDiscretionaryPoints as a Host are refused and change nothing",
+      async () => {
+        const [seeded] = await runQuery<{ id: string; points: string }>(
+          `insert into points_entry (war_week_id, competition_id, team_id, points, note, entered_by_email)
+           values ($1, null, $2, 2, $3, $4) returning id, points`,
+          [
+            xiId,
+            fixture.teamId,
+            `${SMOKE_REASON_PREFIX}host-edit`,
+            SMOKE_ORGANIZER_EMAIL,
+          ],
+        );
+        const update = await callAction(
+          ids.updateDiscretionaryPoints,
+          [seeded.id, discretionary("host-edit")],
+          session,
+        );
+        const remove = await callAction(
+          ids.deleteDiscretionaryPoints,
+          [seeded.id],
+          session,
+        );
+        const [row] = await smokeDiscretionary();
+        return !update.ok &&
+          !remove.ok &&
+          row &&
+          Number(row.points) === Number(seeded.points)
+          ? null
+          : `update=${JSON.stringify(update)} delete=${JSON.stringify(remove)} row=${JSON.stringify(row)}`;
       },
     );
   } finally {
-    await deleteSmokeEntries().catch((error) =>
-      fail("delete smoke Points Entries", String(error)),
+    await deleteSmokeDiscretionary().catch((error) =>
+      fail("delete smoke Discretionary points", String(error)),
     );
   }
-
-  await runCheck(
-    "createPointsEntry as a Host refuses another Competition with 'You're not a Host of that Competition.'",
-    async () => {
-      const result = await callAction(
-        ids.createPointsEntry,
-        [entry(fixture.otherCompetitionId, "host-other")],
-        session,
-      );
-      const rows = await smokeEntries();
-      return !result.ok &&
-        result.error === NOT_HOST_REFUSAL &&
-        rows.length === 0
-        ? null
-        : `result=${JSON.stringify(result)} rows=${rows.length}`;
-    },
-  );
 
   const [settingsBefore] = await runQuery<{ story_theme: string }>(
     `select story_theme from war_week where id = $1`,
@@ -187,8 +205,8 @@ async function assertHostAllowedAndRefused(fixture: HostFixture) {
 
   for (const [label, action, args, expected, unchanged] of [
     [
-      "updateWarWeekSettings for XI",
-      "updateWarWeekSettings",
+      "updateWarWeekSettingsFields for XI",
+      "updateWarWeekSettingsFields",
       [xiId, { storyTheme: "smoke-host-theme" }],
       "Only an Organizer can change War Week settings.",
       async () => {
@@ -238,32 +256,40 @@ async function assertHostAllowedAndRefused(fixture: HostFixture) {
     );
   }
 
-  // Squads and self-report are Bracket-only actions. The hosted Competition
-  // (AI Survey Completion) is a `points` Competition, so access passes (it's the
-  // Host's own) and the Bracket rule refuses it; the other Competition
-  // (Cypher, not hosted by this Host) refuses on access first.
-  for (const [action, args] of [
-    ["setSelfReport", { on: true }],
+  // Squads and self-report are Bracket-only. The hosted Competition (AI
+  // Survey Completion) is a Finalized Placement, so access passes (it's the
+  // Host's own): self-report, a setting saved on the Competition page, is
+  // refused by its lock, and a Squad by the Bracket rule. The other
+  // Competition (Cypher, not hosted by this Host) refuses on access first.
+  for (const [label, action, args, expected] of [
+    [
+      "self-report",
+      "saveCompetitionSetting",
+      { field: "selfReport", value: true },
+      LOCKED_WHILE_FINALIZED,
+    ],
     [
       "createSquad",
+      "createSquad",
       { name: "SMOKE Host Squad", teamId: fixture.teamId, participantIds: [] },
+      NOT_A_BRACKET,
     ],
   ] as const) {
     await runCheck(
-      `${action} as a Host on their own points Competition is refused with '${NOT_A_BRACKET}'`,
+      `${label} as a Host on their own Finalized Placement is refused with '${expected}'`,
       async () => {
         const result = await callAction(
           ids[action],
           [fixture.hostCompetitionId, args],
           session,
         );
-        return !result.ok && result.error === NOT_A_BRACKET
+        return !result.ok && result.error === expected
           ? null
           : `result=${JSON.stringify(result)}`;
       },
     );
     await runCheck(
-      `${action} as a Host on another Competition is refused with '${NOT_HOST_REFUSAL}'`,
+      `${label} as a Host on another Competition is refused with '${NOT_HOST_REFUSAL}'`,
       async () => {
         const result = await callAction(
           ids[action],
@@ -309,7 +335,7 @@ async function assertHostKeepsOwnPin(fixture: HostFixture) {
       async () => {
         const result = await callAction(
           ids.updateAnnouncement,
-          [row.id, { title: `${title}-edited`, body, videoUrls: [] }],
+          [row.id, { title: `${title}-edited`, body }],
           fixture.session,
         );
         const after = await pinned(row.id);
@@ -326,10 +352,7 @@ async function assertHostKeepsOwnPin(fixture: HostFixture) {
       async () => {
         const result = await callAction(
           ids.updateAnnouncement,
-          [
-            row.id,
-            { title: `${title}-unpinned`, body, videoUrls: [], pinned: false },
-          ],
+          [row.id, { title: `${title}-unpinned`, body, pinned: false }],
           fixture.session,
         );
         const after = await pinned(row.id);
@@ -363,28 +386,74 @@ async function assertAdminTrimmedForHost(sessions: {
   };
 
   await runCheck(
-    `GET /admin/points as a Host offers ${HOST_COMPETITION} and not ${OTHER_COMPETITION}`,
+    "GET /admin/discretionary-points as a Host shows the refusal, not the form",
     async () => {
-      const { status, body } = await get("/admin/points", sessions.host);
+      const { status, body } = await get(
+        "/admin/discretionary-points",
+        sessions.host,
+      );
       const result = {
         status,
-        form: body.includes("Add a Points Entry"),
-        hosted: hasNameProp(body, HOST_COMPETITION),
-        other: hasNameProp(body, OTHER_COMPETITION),
+        refused: body.includes(ADMIN_REFUSAL_TEXT),
+        form: body.includes("Give Discretionary points"),
       };
-      return status === 200 && result.form && result.hosted && !result.other
+      return status === 200 && result.refused && !result.form
         ? null
         : JSON.stringify(result);
     },
   );
 
   await runCheck(
-    `GET /admin/setup/war-week as a Host shows '${ADMIN_REFUSAL_TEXT}'`,
+    "GET /admin/competitions as a Host shows the Host's nav: Competitions, Schedule, Announcements, Finale and Guide only",
     async () => {
-      const { status, body } = await get(
-        "/admin/setup/war-week",
-        sessions.host,
-      );
+      const { status, body } = await get("/admin/competitions", sessions.host);
+      const shown = (section: string) =>
+        body.includes(`href="/admin/${section}"`);
+      const result = {
+        status,
+        shown: [
+          "competitions",
+          "schedule",
+          "announcements",
+          "finale",
+          "guide",
+        ].filter((section) => !shown(section)),
+        hidden: [
+          "discretionary-points",
+          "roster",
+          "awards",
+          "faq",
+          "settings",
+          "organizers",
+        ].filter(shown),
+      };
+      return status === 200 &&
+        result.shown.length === 0 &&
+        result.hidden.length === 0
+        ? null
+        : JSON.stringify(result);
+    },
+  );
+
+  await runCheck(
+    "GET /admin/schedule as a Host shows the Schedule Items and not the Days editor",
+    async () => {
+      const { status, body } = await get("/admin/schedule", sessions.host);
+      const result = {
+        status,
+        items: body.includes('aria-label="Schedule Items"'),
+        days: body.includes('aria-label="Days"'),
+      };
+      return status === 200 && result.items && !result.days
+        ? null
+        : JSON.stringify(result);
+    },
+  );
+
+  await runCheck(
+    `GET /admin/settings as a Host shows '${ADMIN_REFUSAL_TEXT}'`,
+    async () => {
+      const { status, body } = await get("/admin/settings", sessions.host);
       return status === 200 &&
         body.includes(ADMIN_REFUSAL_TEXT) &&
         !body.includes(">War Week settings</h1>")
@@ -406,23 +475,27 @@ async function assertAdminTrimmedForHost(sessions: {
   );
 }
 
-/** The Admin link in the edition navigation (`canOpenAdmin`). */
+/**
+ * The account menu is in the edition header for a Host and a Participant
+ * alike. Its Admin item (`canOpenAdmin`) renders only when the menu opens,
+ * so the e2e `regression-r9-account` spec covers who sees it.
+ */
 async function assertAdminLinkForHost(sessions: {
   host: SmokeSession;
   notOrganizer: SmokeSession;
 }) {
   for (const [label, session, expected] of [
     ["a Host", sessions.host, true],
-    ["a Participant", sessions.notOrganizer, false],
+    ["a Participant", sessions.notOrganizer, true],
   ] as const) {
     await runCheck(
-      `GET /xi as ${label} ${expected ? "shows" : "hides"} the Admin link`,
+      `GET /xi as ${label} has the account menu in the header`,
       async () => {
         const res = await fetch(`${BASE_URL}/xi`, {
           headers: { cookie: session.cookie },
         });
         const body = await res.text();
-        const shown = body.includes('href="/admin"');
+        const shown = body.includes('aria-label="Account menu"');
         return res.status === 200 && shown === expected
           ? null
           : `status=${res.status} shown=${shown}`;
@@ -489,7 +562,7 @@ async function assertAccessBeforeValidation(
   }[] = [
     {
       family: "settings",
-      action: "updateWarWeekSettings",
+      action: "updateWarWeekSettingsFields",
       args: [fixture.xiId, "not settings"],
       participant: organizerOnly("change War Week settings"),
       host: organizerOnly("change War Week settings"),
@@ -517,8 +590,8 @@ async function assertAccessBeforeValidation(
     },
     {
       family: "Competition",
-      action: "updateCompetition",
-      args: [other, { scoring: 7 }],
+      action: "saveCompetitionSetting",
+      args: [other, { field: "scoring", value: 7 }],
       participant: NOT_HOST_REFUSAL,
       host: NOT_HOST_REFUSAL,
     },
@@ -551,23 +624,16 @@ async function assertAccessBeforeValidation(
       host: "Only an Organizer can change someone else's Announcement.",
     },
     {
-      family: "Points Entry",
-      action: "createPointsEntry",
-      args: [{ competitionId: other, points: {}, targetId: 7 }],
-      participant: NOT_HOST_REFUSAL,
-      host: NOT_HOST_REFUSAL,
+      family: "Discretionary points",
+      action: "createDiscretionaryPoints",
+      args: [fixture.xiId, { points: {}, targetId: 7 }],
+      participant: organizerOnly("give Discretionary points"),
+      host: organizerOnly("give Discretionary points"),
     },
     {
       family: "Bracket",
-      action: "replaceEntrants",
-      args: [other, { targetIds: "everyone" }],
-      participant: NOT_HOST_REFUSAL,
-      host: NOT_HOST_REFUSAL,
-    },
-    {
-      family: "Heat time",
-      action: "setHeatSchedule",
-      args: [other, randomUUID(), null, {}],
+      action: "saveCompetitionSetting",
+      args: [other, { field: "entrants", value: { targetIds: "everyone" } }],
       participant: NOT_HOST_REFUSAL,
       host: NOT_HOST_REFUSAL,
     },
@@ -593,6 +659,13 @@ async function assertAccessBeforeValidation(
       args: [fixture.xiId, "no Winner"],
       participant: organizerOnly("end a War Week"),
       host: organizerOnly("end a War Week"),
+    },
+    {
+      family: "lifecycle",
+      action: "unstartWarWeek",
+      args: [fixture.xiId],
+      participant: organizerOnly("unstart a War Week"),
+      host: organizerOnly("unstart a War Week"),
     },
     {
       family: "Organizer list",
@@ -623,35 +696,64 @@ async function assertAccessBeforeValidation(
   }
 }
 
+/**
+ * Ticket 67: importing the roster is Organizer-only. A Host (of an XI
+ * Competition) and a Participant both get the refusal, and the roster gains
+ * no row.
+ */
+async function assertImportOrganizerOnly(
+  sessions: { host: SmokeSession; notOrganizer: SmokeSession },
+  fixture: HostFixture,
+) {
+  const ids = serverActionIds();
+  const name = "Smoke Refused Import";
+  const refusal = "Only an Organizer can import Participants.";
+  for (const [label, session] of [
+    ["a Host", sessions.host],
+    ["a Participant", sessions.notOrganizer],
+  ] as const) {
+    await runCheck(
+      `importParticipants as ${label} is refused with '${refusal}' and writes nothing`,
+      async () => {
+        if (!ids.importParticipants) {
+          return "no server action id for importParticipants";
+        }
+        const result = await callAction(
+          ids.importParticipants,
+          [
+            fixture.xiId,
+            { text: name, expected: [{ row: 1, kind: "add", changes: [] }] },
+          ],
+          session,
+        );
+        const [{ count }] = await runQuery<{ count: string }>(
+          `select count(*) from participant where display_name = $1`,
+          [name],
+        );
+        return !result.ok && result.error === refusal && count === "0"
+          ? null
+          : `result=${JSON.stringify(result)} rows=${count}`;
+      },
+    );
+  }
+}
+
 /** Spec S-FORMER: removing the assignment takes effect on the next request. */
 async function assertFormerHostRefused(fixture: HostFixture) {
   const ids = serverActionIds();
   await runCheck(
-    "createPointsEntry as a former Host is refused on the Competition they no longer host",
+    "saveCompetitionSetting as a former Host is refused on the Competition they no longer host",
     async () => {
       await deleteSmokeHosts();
-      try {
-        const result = await callAction(
-          ids.createPointsEntry,
-          [
-            {
-              competitionId: fixture.hostCompetitionId,
-              targetId: fixture.teamId,
-              points: "3",
-              note: `${SMOKE_NOTE_PREFIX}former-host`,
-            },
-          ],
-          fixture.session,
-        );
-        const rows = await smokeEntries();
-        return !result.ok &&
-          result.error === NOT_HOST_REFUSAL &&
-          rows.length === 0
-          ? null
-          : `result=${JSON.stringify(result)} rows=${rows.length}`;
-      } finally {
-        await deleteSmokeEntries();
-      }
+      const result = await callAction(
+        ids.saveCompetitionSetting,
+        // Junk input: access is checked before it is read.
+        [fixture.hostCompetitionId, { field: "scoring", value: 7 }],
+        fixture.session,
+      );
+      return !result.ok && result.error === NOT_HOST_REFUSAL
+        ? null
+        : `result=${JSON.stringify(result)}`;
     },
   );
 }
@@ -685,7 +787,7 @@ export async function assertParticipantRefused(sessions: {
   const cases: [string, string, unknown[], string][] = [
     [
       "settings",
-      "updateWarWeekSettings",
+      "updateWarWeekSettingsFields",
       [xi, { storyTheme: "smoke-participant" }],
       organizerOnly("change War Week settings"),
     ],
@@ -779,23 +881,22 @@ export async function assertParticipantRefused(sessions: {
       "Only an Organizer or a Host of this War Week can post Announcements.",
     ],
     [
-      "Points Entry",
-      "createPointsEntry",
+      "Discretionary points",
+      "createDiscretionaryPoints",
       [
+        xi,
         {
-          competitionId: competition.id,
           targetId: team.id,
           points: "1",
-          note: `${SMOKE_NOTE_PREFIX}participant`,
+          reason: `${SMOKE_REASON_PREFIX}participant`,
         },
       ],
-      NOT_HOST_REFUSAL,
+      organizerOnly("give Discretionary points"),
     ],
-    ["Bracket", "generateBracket", [competition.id, {}], NOT_HOST_REFUSAL],
     [
-      "Heat time",
-      "setHeatSchedule",
-      [competition.id, randomUUID(), null, {}],
+      "Bracket",
+      "saveCompetitionSetting",
+      [competition.id, { field: "bracket", value: null }],
       NOT_HOST_REFUSAL,
     ],
     [
@@ -806,8 +907,8 @@ export async function assertParticipantRefused(sessions: {
     ],
     [
       "Self-report",
-      "setSelfReport",
-      [competition.id, { on: true }],
+      "saveCompetitionSetting",
+      [competition.id, { field: "selfReport", value: true }],
       NOT_HOST_REFUSAL,
     ],
     [
@@ -819,6 +920,7 @@ export async function assertParticipantRefused(sessions: {
       SELF_REPORT_OFF,
     ],
     ["lifecycle", "startWarWeek", [xi], organizerOnly("start a War Week")],
+    ["lifecycle", "unstartWarWeek", [xi], organizerOnly("unstart a War Week")],
     [
       "Organizer list",
       "removeOrganizer",
@@ -862,7 +964,7 @@ export async function assertParticipantRefused(sessions: {
          (select count(*) from squad) as squads,
          (select count(*) from heat where reported_by_email is not null) as reported_heats`,
       [
-        `${SMOKE_NOTE_PREFIX}participant`,
+        `${SMOKE_REASON_PREFIX}participant`,
         `${SMOKE_ANNOUNCEMENT_PREFIX}participant`,
         SMOKE_ORGANIZER_EMAIL,
       ],

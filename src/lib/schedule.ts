@@ -27,13 +27,12 @@ export type ScheduleEntry = Pick<
   | "category"
 > & {
   competition: { id: string; name: string } | null;
-  /** Set on a timed Heat's entry (Now/Next only); unset on a Schedule Item. */
-  kind?: "heat";
-  /** A Heat's Entrants line, like "Red vs Blue". */
-  entrants?: string;
 };
 
-export type ScheduleDay = Pick<Day, "id" | "date" | "dayTheme"> & {
+export type ScheduleDay = Pick<
+  Day,
+  "id" | "date" | "dayTheme" | "description"
+> & {
   items: ScheduleEntry[];
 };
 
@@ -90,7 +89,8 @@ function compareItems(a: ScheduleEntry, b: ScheduleEntry): number {
  * start time then title.
  */
 export function groupSchedule(
-  days: Pick<Day, "id" | "date" | "dayTheme">[],
+  days: (Pick<Day, "id" | "date" | "dayTheme"> &
+    Partial<Pick<Day, "description">>)[],
   items: { dayId: string; entry: ScheduleEntry }[],
 ): ScheduleDay[] {
   return [...days]
@@ -99,30 +99,12 @@ export function groupSchedule(
       id: day.id,
       date: day.date,
       dayTheme: day.dayTheme,
+      description: day.description ?? null,
       items: items
         .filter((item) => item.dayId === day.id)
         .map((item) => item.entry)
         .sort(compareItems),
     }));
-}
-
-/**
- * Adds entries (timed Heats, for Now/Next) to a grouped schedule under
- * their Days, keeping each Day's start time then title order. An entry
- * whose Day isn't in `days` is dropped. `days` is left unchanged.
- */
-export function withHeats(
-  days: ScheduleDay[],
-  entries: { dayId: string; entry: ScheduleEntry }[],
-): ScheduleDay[] {
-  return days.map((day) => {
-    const added = entries
-      .filter((item) => item.dayId === day.id)
-      .map((item) => item.entry);
-    return added.length === 0
-      ? day
-      : { ...day, items: [...day.items, ...added].sort(compareItems) };
-  });
 }
 
 /** `HH:MM[:SS]` to seconds since midnight. */

@@ -1,9 +1,18 @@
+import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import type { DBTx } from "@/db";
 import { isLocalDatabaseUrl } from "@/db/local-url";
 import { inRolledBackTransaction } from "@/db/test-transaction";
+import type { Content } from "@/lib/rich-text/content";
 import type { NextWarWeekValues } from "@/lib/war-week-lifecycle";
+
+const paragraphs = (text: string): Content => ({
+  type: "doc",
+  content: [{ type: "paragraph", content: [{ type: "text", text }] }],
+});
+const ONE_V_ONE = paragraphs("1v1");
+const CUP = paragraphs("Cup");
 
 // Runs only against a local Postgres (CI's service or docker compose; see
 // vitest.config.ts), never a hosted database.
@@ -90,14 +99,14 @@ async function fixture(tx: DBTx) {
     .values({
       warWeekId: live.id,
       name: "Chess",
-      description: "1v1",
-      maxPoints: 10,
+      description: ONE_V_ONE,
       placementPoints: [10, 5],
       scoring: "team",
       competitionGroup: "Board games",
     })
     .returning();
   await tx.insert(schema.pointsEntry).values({
+    warWeekId: live.id,
     competitionId: chess.id,
     teamId: red.id,
     points: 10,
@@ -256,6 +265,7 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
         .values({ warWeekId: live.id, name: "Blue", color: "#00f" })
         .returning();
       await tx.insert(schema.pointsEntry).values({
+        warWeekId: live.id,
         competitionId: chess.id,
         teamId: blue.id,
         points: 10,
@@ -406,6 +416,158 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
     });
   });
 
+  it("unstarts a live War Week with nothing scored", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { unstartWarWeek } = await import("@/mutations/war-week-lifecycle");
+      const { schema, byId } = await fixture(tx);
+      await tx.update(schema.warWeek).set({ status: "complete" });
+      const [empty] = await tx
+        .insert(schema.warWeek)
+        .values(warWeekValues(2, "live"))
+        .returning();
+
+      expect(await unstartWarWeek(ctxOf(empty.id), tx)).toEqual({ ok: true });
+      expect((await byId(empty.id)).status).toBe("upcoming");
+    });
+  });
+
+  it("re-checks under the lock: a Points Entry entered after the action's check refuses Unstart", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { unstartWarWeek } = await import("@/mutations/war-week-lifecycle");
+      const { getScoredCounts } = await import("@/queries/scored-counts");
+      const { schema, byId } = await fixture(tx);
+      await tx.update(schema.warWeek).set({ status: "complete" });
+      const [empty] = await tx
+        .insert(schema.warWeek)
+        .values(warWeekValues(2, "live"))
+        .returning();
+      const [cup] = await tx
+        .insert(schema.competition)
+        .values({
+          warWeekId: empty.id,
+          name: "Cup",
+          description: CUP,
+          placementPoints: [10, 5],
+          scoring: "team",
+        })
+        .returning();
+      const [blue] = await tx
+        .insert(schema.team)
+        .values({ warWeekId: empty.id, name: "Blue", color: "#00f" })
+        .returning();
+      // The action's check sees nothing scored...
+      expect(await getScoredCounts(empty.id, tx)).toEqual({
+        pointsEntries: 0,
+        heatResults: 0,
+        games: 0,
+      });
+      // ...then a Points Entry lands before the mutation locks the row.
+      await tx.insert(schema.pointsEntry).values({
+        warWeekId: empty.id,
+        competitionId: cup.id,
+        teamId: blue.id,
+        points: 5,
+        enteredByEmail: "lead@jahnelgroup.com",
+      });
+
+      expect(await unstartWarWeek(ctxOf(empty.id), tx)).toEqual({
+        ok: false,
+        error: "Points have been entered; Unstart isn't available.",
+      });
+      expect((await byId(empty.id)).status).toBe("live");
+    });
+  });
+
+  it("refuses Unstart once a Heat has a result, or a Game is logged", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { unstartWarWeek } = await import("@/mutations/war-week-lifecycle");
+      const { schema, byId } = await fixture(tx);
+      await tx.update(schema.warWeek).set({ status: "complete" });
+      const [live] = await tx
+        .insert(schema.warWeek)
+        .values(warWeekValues(2, "live"))
+        .returning();
+      const [cup] = await tx
+        .insert(schema.competition)
+        .values({
+          warWeekId: live.id,
+          name: "Cup",
+          description: CUP,
+          placementPoints: [10, 5],
+          scoring: "team",
+        })
+        .returning();
+      const [heat] = await tx
+        .insert(schema.heat)
+        .values({ competitionId: cup.id, round: 1, position: 1 })
+        .returning();
+      // A pending Heat isn't a result.
+      expect(await unstartWarWeek(ctxOf(live.id), tx)).toEqual({ ok: true });
+      await tx
+        .update(schema.warWeek)
+        .set({ status: "live" })
+        .where(eq(schema.warWeek.id, live.id));
+      await tx
+        .update(schema.heat)
+        .set({ status: "played" })
+        .where(eq(schema.heat.id, heat.id));
+      expect(await unstartWarWeek(ctxOf(live.id), tx)).toEqual({
+        ok: false,
+        error: "A Heat has a result; Unstart isn't available.",
+      });
+      await tx.delete(schema.heat).where(eq(schema.heat.id, heat.id));
+      await tx.insert(schema.game).values({
+        competitionId: cup.id,
+        loggedByEmail: "lead@jahnelgroup.com",
+      });
+      expect(await unstartWarWeek(ctxOf(live.id), tx)).toEqual({
+        ok: false,
+        error: "A Game has been logged; Unstart isn't available.",
+      });
+      expect((await byId(live.id)).status).toBe("live");
+    });
+  });
+
+  it("refuses to Unstart a reopened War Week, which has been ended before", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { unstartWarWeek } = await import("@/mutations/war-week-lifecycle");
+      const { schema, byId } = await fixture(tx);
+      await tx.update(schema.warWeek).set({ status: "complete" });
+      // Ended with a Winner, then reopened: live, Winner kept, nothing scored.
+      const [reopened] = await tx
+        .insert(schema.warWeek)
+        .values({ ...warWeekValues(2, "live"), winner: "Red" })
+        .returning();
+
+      expect(await unstartWarWeek(ctxOf(reopened.id), tx)).toEqual({
+        ok: false,
+        error: "This War Week has been ended; Unstart isn't available.",
+      });
+      expect((await byId(reopened.id)).status).toBe("live");
+    });
+  });
+
+  it("refuses to Unstart an upcoming or ended War Week", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { unstartWarWeek } = await import("@/mutations/war-week-lifecycle");
+      const { schema } = await fixture(tx);
+      const [upcoming] = await tx
+        .insert(schema.warWeek)
+        .values(warWeekValues(2, "upcoming"))
+        .returning();
+      const [ended] = await tx
+        .insert(schema.warWeek)
+        .values(warWeekValues(3, "complete"))
+        .returning();
+      const refusal = {
+        ok: false,
+        error: "Only a live War Week can be unstarted.",
+      };
+      expect(await unstartWarWeek(ctxOf(upcoming.id), tx)).toEqual(refusal);
+      expect(await unstartWarWeek(ctxOf(ended.id), tx)).toEqual(refusal);
+    });
+  });
+
   it("refuses moves that aren't Start, End or Reopen", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { endWarWeek, startWarWeek } =
@@ -545,8 +707,7 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
       expect(competitions).toHaveLength(1);
       expect(competitions[0]).toMatchObject({
         name: "Chess",
-        description: "1v1",
-        maxPoints: 10,
+        description: ONE_V_ONE,
         placementPoints: [10, 5],
         scoring: "team",
         countsTowardTeam: false,

@@ -28,7 +28,7 @@ function issueMessage(issue: Issue, options: FieldErrorsOptions): string {
 /**
  * Turns a form's zod refusal into the first message (`error`) and one
  * message per field (`fieldErrors`), keyed by the top-level field name, so a
- * nested issue such as `videoUrls.2` lands on `videoUrls`. The first issue
+ * nested issue such as `body.content.2` lands on `body`. The first issue
  * per field wins; an issue on the whole input goes to `error` only.
  */
 export function fieldErrorsFrom(

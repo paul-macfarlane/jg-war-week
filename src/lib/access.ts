@@ -13,6 +13,11 @@ import {
   gameChangeError,
   gameLogError,
 } from "@/lib/games/log-rule";
+import {
+  type CheckInFacet,
+  checkInError,
+  checkOutError,
+} from "@/lib/participation/check-in-rule";
 
 /** The only Google Workspace domain allowed to sign in. */
 export const JG_EMAIL_DOMAIN = "jahnelgroup.com";
@@ -42,9 +47,21 @@ export type Actor = {
   hosts: { competitionId: string; warWeekId: string }[];
 } | null;
 
-/** The Organizer list family: global, so it takes no target. */
+/**
+ * What a signed-in person does to their own Profile or account: no target,
+ * since the write is keyed on the actor's own email.
+ */
+export type SelfAction = "profile.save" | "account.delete";
+
+/**
+ * The global Organizer-only families (the Organizer list, Award Categories):
+ * no War Week, so they take no target.
+ */
 export type OrganizerListAction =
-  "organizers.view" | "organizers.add" | "organizers.remove";
+  | "organizers.view"
+  | "organizers.add"
+  | "organizers.remove"
+  | `award-category.${"create" | "rename" | "archive" | "restore"}`;
 
 type Crud = "create" | "edit" | "delete";
 
@@ -55,9 +72,21 @@ export type WarWeekAction =
   | "lifecycle.start"
   | "lifecycle.end"
   | "lifecycle.reopen"
+  | "lifecycle.unstart"
   | "lifecycle.create-next"
   | `${"day" | "team" | "participant" | "award"}.${Crud}`
+  /** Importing the roster from a spreadsheet (ticket 67). */
+  | "participant.import"
   | `faq-item.${Crud | "move"}`
+  /** Reordering, hiding and showing Finale slides (ticket 72). */
+  | "finale-slide.move"
+  | "finale-slide.hide"
+  /** Custom Finale slides (ticket 74). */
+  | "finale-slide.create"
+  | "finale-slide.update"
+  | "finale-slide.delete"
+  /** How the Finale shows Awards: one slide, or one per Category (ticket 73). */
+  | "finale.awards-layout"
   | "competition.create"
   | "competition.delete"
   | "competition.assign-hosts"
@@ -65,7 +94,6 @@ export type WarWeekAction =
   | "bracket.entrants"
   | "bracket.generate"
   | "bracket.heat-result"
-  | "bracket.heat-schedule"
   | "bracket.finalize"
   | "bracket.unfinalize"
   | "bracket.squads"
@@ -75,6 +103,21 @@ export type WarWeekAction =
   | "games.close"
   | "games.reopen"
   | "competition.self-enroll"
+  /** A `participation` Competition's setup, took-part list and close. */
+  | "participation.settings"
+  | "participation.mark"
+  | "participation.close"
+  | "participation.reopen"
+  /**
+   * A Placement Competition's sheet: adding, changing and removing rows and
+   * the Score direction, then Finalize and Reopen.
+   */
+  | "placement.edit"
+  | "placement.finalize"
+  | "placement.reopen"
+  /** Checking yourself in or out (ADR 0009). */
+  | "participation.check-in"
+  | "participation.check-out"
   /** Self-report (ADR 0005). */
   | "bracket.heat-report"
   /** Logging, editing and deleting a Game (ADR 0006). */
@@ -84,7 +127,8 @@ export type WarWeekAction =
   /** Self-enrollment (ADR 0006). */
   | "competition.enroll"
   | "competition.withdraw"
-  | `points-entry.${Crud}`
+  /** Discretionary points: points with no Competition behind them. */
+  | `discretionary.${Crud}`
   | `schedule-item.${Crud}`
   | `announcement.${Crud | "pin" | "unpin"}`;
 
@@ -94,7 +138,7 @@ export type WarWeekAction =
  * an unlinked Schedule Item), the Competition the request posts
  * (`postedCompetitionId`, null to unlink), an Announcement's author and,
  * for the Participant writes, their facts: a Heat's (`heatReport`), a
- * Game's (`gameLog`) or enrollment's (`enroll`).
+ * Game's (`gameLog`), enrollment's (`enroll`) or Check in's (`checkIn`).
  */
 export type AccessTarget = {
   warWeekId: string;
@@ -104,6 +148,7 @@ export type AccessTarget = {
   heatReport?: HeatReportFacet;
   gameLog?: GameLogFacet;
   enroll?: EnrollFacet;
+  checkIn?: CheckInFacet;
 };
 
 export const SIGN_IN_REFUSAL = "Sign in to continue.";
@@ -118,10 +163,15 @@ const ORGANIZER_ONLY: Partial<
   "organizers.view": "see the Organizer list",
   "organizers.add": "add an Organizer",
   "organizers.remove": "remove an Organizer",
+  "award-category.create": "add Award Categories",
+  "award-category.rename": "rename Award Categories",
+  "award-category.archive": "archive Award Categories",
+  "award-category.restore": "restore Award Categories",
   "settings.save": "change War Week settings",
   "lifecycle.start": "start a War Week",
   "lifecycle.end": "end a War Week",
   "lifecycle.reopen": "reopen a War Week",
+  "lifecycle.unstart": "unstart a War Week",
   "lifecycle.create-next": "create the next War Week",
   "day.create": "add Days",
   "day.edit": "change Days",
@@ -132,10 +182,20 @@ const ORGANIZER_ONLY: Partial<
   "participant.create": "add Participants",
   "participant.edit": "change Participants",
   "participant.delete": "delete Participants",
+  "participant.import": "import Participants",
   "faq-item.create": "add FAQ Items",
   "faq-item.edit": "change FAQ Items",
   "faq-item.delete": "delete FAQ Items",
   "faq-item.move": "move FAQ Items",
+  "finale-slide.move": "reorder Finale slides",
+  "finale-slide.hide": "hide Finale slides",
+  "finale-slide.create": "add Custom Finale slides",
+  "finale-slide.update": "change Custom Finale slides",
+  "finale-slide.delete": "delete Custom Finale slides",
+  "finale.awards-layout": "change how the Finale shows Awards",
+  "discretionary.create": "give Discretionary points",
+  "discretionary.edit": "change Discretionary points",
+  "discretionary.delete": "delete Discretionary points",
   "award.create": "give Awards",
   "award.edit": "change Awards",
   "award.delete": "delete Awards",
@@ -179,12 +239,14 @@ export const sameEmail = (a: string | null | undefined, b: string) =>
  * where they host, editing or deleting their own. Everyone else signed in
  * is a Participant, whose writes are reporting the result of a Heat
  * they're in when self-report is on (ADR 0005), and logging Games,
- * changing the Games they logged, and enrolling or withdrawing (ADR 0006).
- * Those facet-bound rules bind everyone, Organizers included: a Host or
- * Organizer runs a `games` Competition through the Game facet's `runs`,
- * and adds Entrants through the picker. Pure: the caller loads the actor
- * and the target.
+ * changing the Games they logged, and enrolling or withdrawing (ADR 0006),
+ * and checking in or out (ADR 0009). Those facet-bound rules bind
+ * everyone, Organizers included: a Host or Organizer runs a Head-to-head or Best score
+ * Competition through the Game facet's `runs`, adds Entrants through the
+ * picker and marks who took part through `participation.mark`. Pure: the
+ * caller loads the actor and the target.
  */
+export function can(actor: Actor, action: SelfAction): string | null;
 export function can(actor: Actor, action: OrganizerListAction): string | null;
 export function can(
   actor: Actor,
@@ -193,9 +255,15 @@ export function can(
 ): string | null;
 export function can(
   actor: Actor,
-  action: OrganizerListAction | WarWeekAction,
+  action: SelfAction | OrganizerListAction | WarWeekAction,
   target?: AccessTarget,
 ): string | null {
+  if (action === "profile.save" || action === "account.delete") {
+    // Before the Organizer shortcut: anyone signed in may change their own
+    // Profile or delete their own account, and nobody else's (the write is
+    // keyed on `actor.email`).
+    return actor && isJahnelGroupEmail(actor.email) ? null : SIGN_IN_REFUSAL;
+  }
   if (action === "bracket.heat-report") {
     // Before the Organizer shortcut: the Heat facts bind everyone. A non-JG
     // session already counts as anonymous upstream; checked again here.
@@ -225,6 +293,18 @@ export function can(
       ? enrollError(target.enroll)
       : withdrawError(target.enroll);
   }
+  if (
+    action === "participation.check-in" ||
+    action === "participation.check-out"
+  ) {
+    // Before the Organizer shortcut: Check in binds everyone; a Host or
+    // Organizer marks anyone through `participation.mark` instead.
+    if (!actor || !isJahnelGroupEmail(actor.email)) return SIGN_IN_REFUSAL;
+    if (!target?.checkIn) return ADMIN_REFUSAL;
+    return action === "participation.check-in"
+      ? checkInError(target.checkIn)
+      : checkOutError(target.checkIn);
+  }
   if (!actor) return SIGN_IN_REFUSAL;
   if (actor.isOrganizer) return null;
 
@@ -239,10 +319,6 @@ export function can(
   switch (action) {
     case "admin.view":
       return hostsIn(actor, warWeekId) ? null : ADMIN_REFUSAL;
-    case "points-entry.create":
-      return hostsPosted ? null : NOT_HOST;
-    case "points-entry.edit":
-      return hostsCurrent && hostsPosted ? null : NOT_HOST;
     case "schedule-item.create":
       if (!postedCompetitionId) {
         return "Link the Schedule Item to a Competition you host.";
@@ -271,8 +347,21 @@ export function can(
     case "games.close":
     case "games.reopen":
     case "competition.self-enroll":
-      // A `games` Competition's setup, Entrants and close, and the enroll
+      // A Head-to-head or Best score Competition's setup, Entrants and close, and the enroll
       // switch: the Host of this Competition, beside their Bracket twins.
+      return hostsCurrent ? null : NOT_HOST;
+    case "participation.settings":
+    case "participation.mark":
+    case "participation.close":
+    case "participation.reopen":
+      // A `participation` Competition's setup, who took part and its close:
+      // the Host of this Competition, like a Head-to-head or Best score Competition.
+      return hostsCurrent ? null : NOT_HOST;
+    case "placement.edit":
+    case "placement.finalize":
+    case "placement.reopen":
+      // A Placement Competition's sheet, Finalize and Reopen: the Host of
+      // this Competition. Participants never record Placements.
       return hostsCurrent ? null : NOT_HOST;
     default:
       // A Competition's setup and Bracket, and deleting a Points Entry or
@@ -357,8 +446,9 @@ const PUBLIC_PATHS = ["/about", "/privacy", "/terms"];
 
 /**
  * The only paths reachable without a session: the sign-in page,
- * better-auth's own routes and the About, Privacy and Terms pages (static
- * copy and media, no War Week data). Everything else needs a Jahnel Group
+ * better-auth's own routes and the About, Privacy and Terms pages (copy and
+ * media; they read only the current War Week's Appearance Theme, no other War
+ * Week data). Everything else needs a Jahnel Group
  * sign-in, except that `/api/mcp` also takes `canUseMcp` (see CONTEXT.md,
  * "Access rules"). A prefix matches itself or a `/`-separated subpath,
  * never `/sign-inx`.

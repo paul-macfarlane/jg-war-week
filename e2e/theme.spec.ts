@@ -98,12 +98,14 @@ async function contextWithDisplay(browser: Browser, display: Display) {
   return context;
 }
 
+/** Changes the Display through the header's account menu, then closes it. */
 async function chooseDisplay(page: Page, label: "Light" | "Dark" | "System") {
-  const control = page.getByRole("group", { name: "Display" }).first();
-  await control.getByRole("button", { name: label, exact: true }).click();
-  await expect(
-    control.getByRole("button", { name: label, exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Account menu" }).click();
+  const option = page.getByRole("menuitemradio", { name: label, exact: true });
+  await option.click();
+  await expect(option).toHaveAttribute("aria-checked", "true");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu")).toHaveCount(0);
 }
 
 test.describe("Display: Light, Dark and System", () => {
@@ -111,7 +113,7 @@ test.describe("Display: Light, Dark and System", () => {
     await signIn(context, E2E_PARTICIPANT_EMAIL);
   });
 
-  test("XI (dark base) follows the header's Display control, across reloads and the system setting", async ({
+  test("XI (dark base) follows the account menu's Display, across reloads and the system setting", async ({
     page,
   }, testInfo) => {
     // XI's base background, and its derived light one (its base text color).
@@ -279,8 +281,8 @@ test("every themed surface follows the Display: the Finale, the Archive, /about,
       );
 
       const admin = await organizer.newPage();
-      await admin.goto("/admin/setup");
-      expect(await rootBackground(admin), `/admin/setup ${scheme}`).toBe(
+      await admin.goto("/admin/settings");
+      expect(await rootBackground(admin), `/admin/settings ${scheme}`).toBe(
         rgb(xi[scheme].background),
       );
     } finally {
@@ -306,29 +308,27 @@ function readXiOverrides() {
   ).then(([row]) => row);
 }
 
-/** Saves the form and waits for the server action's response. */
-async function saveSettings(page: Page) {
-  const form = page.getByRole("form", { name: "War Week settings" });
-  await Promise.all([
-    page.waitForResponse(
-      (response) =>
-        response.request().method() === "POST" &&
-        new URL(response.url()).pathname === "/admin/setup/war-week",
-    ),
-    form.getByRole("button", { name: "Save settings" }).click(),
-  ]);
-  await expect(page.getByText("War Week settings saved").first()).toBeVisible();
+/**
+ * Waits for the settings form's autosave (r9 59) to finish: an edit shows
+ * "Saving…" at once, then "Saved" (or nothing, for a value changed back to
+ * the saved one, which sends no save).
+ */
+async function autosaved(page: Page) {
+  await expect(page.locator('[data-slot="autosave-status"]')).not.toHaveText(
+    "Saving…",
+    { timeout: 15_000 },
+  );
 }
 
 async function openSetup(context: BrowserContext) {
   const page = await context.newPage();
-  await page.goto("/admin/setup/war-week");
+  await page.goto("/admin/settings");
   const form = page.getByRole("form", { name: "War Week settings" });
   await expect(form).toBeVisible();
   return { page, form };
 }
 
-test("Setup: the other scheme's colors are derived, overridable and reset; an untouched save stores no override", async ({
+test("Setup: the other scheme's colors are derived, overridable and reset; an untouched form stores no override", async ({
   browser,
 }, testInfo) => {
   const before = await readXiOverrides();
@@ -345,9 +345,11 @@ test("Setup: the other scheme's colors are derived, overridable and reset; an un
       override_foreground_color: null,
     });
 
-    // Untouched save: every override as it was.
+    // Untouched: nothing saves, every override as it was.
     let { page, form } = await openSetup(context);
-    await saveSettings(page);
+    await expect(page.locator('[data-slot="autosave-status"]')).toHaveText(
+      "Changes save automatically",
+    );
     expect(await readXiOverrides()).toEqual(before);
 
     // A background typed through a light 3-digit prefix (#1a1 is #11aa11)
@@ -363,19 +365,19 @@ test("Setup: the other scheme's colors are derived, overridable and reset; an un
     await hex.fill("#000000");
     await page.keyboard.press("Escape");
     await expect(background).toContainText("#000000");
-    await saveSettings(page);
+    await autosaved(page);
     expect(await readXiOverrides()).toEqual(before);
     await page.close();
 
-    // Open and dismiss a derived color's picker (the Light accent), save:
-    // it isn't frozen into an override, and every override is unchanged.
+    // Open and dismiss a derived color's picker (the Light accent): it
+    // isn't frozen into an override, and every override is unchanged.
     ({ page, form } = await openSetup(context));
     hex = page.getByRole("textbox", { name: "Hex color" });
     await form.getByLabel("Light accent color", { exact: true }).click();
     await expect(hex).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(hex).toBeHidden();
-    await saveSettings(page);
+    await autosaved(page);
     expect(await readXiOverrides()).toEqual(before);
 
     const lightPrimary = form.getByLabel("Light primary color", {
@@ -387,19 +389,14 @@ test("Setup: the other scheme's colors are derived, overridable and reset; an un
     await page.getByRole("textbox", { name: "Hex color" }).fill(override);
     await page.keyboard.press("Escape");
     await expect(lightPrimary).toContainText(override);
-    // Earlier saves' toasts would cover the previews.
-    await expect(page.getByText("War Week settings saved")).toHaveCount(0, {
-      timeout: 15_000,
-    });
+    await autosaved(page);
+    await expect
+      .poll(readXiOverrides)
+      .toEqual({ ...before, override_primary_color: override });
     await settled(page);
     await page.screenshot({
       path: testInfo.outputPath("setup-overrides.png"),
       fullPage: true,
-    });
-    await saveSettings(page);
-    expect(await readXiOverrides()).toEqual({
-      ...before,
-      override_primary_color: override,
     });
     const xi = await context.newPage();
     await xi.goto("/xi");
@@ -420,11 +417,10 @@ test("Setup: the other scheme's colors are derived, overridable and reset; an un
     await expect(
       form.getByRole("button", { name: "Reset to derived" }),
     ).toHaveCount(0);
-    await saveSettings(page);
-    expect(await readXiOverrides()).toEqual({
-      ...before,
-      override_primary_color: null,
-    });
+    await autosaved(page);
+    await expect
+      .poll(readXiOverrides)
+      .toEqual({ ...before, override_primary_color: null });
   } finally {
     await runQuery(
       `update war_week set ${OVERRIDE_COLUMNS.map((c, i) => `${c} = $${i + 1}`).join(", ")}

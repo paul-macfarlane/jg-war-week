@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { authClient } from "@/auth/client";
 import { Button } from "@/components/ui/button";
@@ -30,21 +30,43 @@ export function GoogleSignInButton({ callbackURL }: { callbackURL: string }) {
   );
 }
 
-export function SignOutButton() {
+/**
+ * Signs out, then goes home. A second call while one is under way does
+ * nothing, so a double click signs out once. `pending` stays true: the
+ * page is leaving.
+ */
+export function useSignOut() {
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  const started = useRef(false);
+
+  async function signOut() {
+    if (started.current) return;
+    started.current = true;
+    setPending(true);
+    try {
+      await authClient.signOut();
+    } catch (error) {
+      started.current = false;
+      setPending(false);
+      throw error;
+    }
+    router.push("/");
+    router.refresh();
+  }
+
+  return { pending, signOut };
+}
+
+export function SignOutButton() {
+  const { pending, signOut } = useSignOut();
 
   return (
     <Button
       variant="outline"
       size="sm"
       disabled={pending}
-      onClick={async () => {
-        setPending(true);
-        await authClient.signOut();
-        router.push("/");
-        router.refresh();
-      }}
+      onClick={() => void signOut()}
     >
       Sign out
     </Button>

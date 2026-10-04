@@ -5,8 +5,7 @@ import {
   Info,
   type LucideIcon,
   Medal,
-  Shield,
-  Trophy,
+  Newspaper,
   Users,
 } from "lucide-react";
 
@@ -14,14 +13,13 @@ import type { MoreLinkIcon as IconKey } from "@/lib/more-links";
 
 /** The icon each More link shows, on `/[edition]/more` and in the More Sheet. */
 const ICONS: Record<IconKey, LucideIcon> = {
-  competitions: Trophy,
+  announcements: Newspaper,
   roster: Users,
   awards: Medal,
   faq: CircleHelp,
   history: History,
   install: Download,
   about: Info,
-  admin: Shield,
 };
 
 export function MoreLinkIcon({ icon }: { icon: IconKey }) {

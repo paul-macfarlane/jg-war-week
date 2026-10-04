@@ -1,0 +1,774 @@
+# Regression checklist
+
+The agent-run regression suite for JG War Week. An agent works through it
+line by line, with no human in the loop, and reports what passed, what
+failed and what it couldn't check. Each line names what to do and what
+counts as a pass, so the run doesn't depend on remembering what to look at.
+
+## What it covers, and what it doesn't
+
+- **`pnpm gate` comes first.** Typecheck, lint, unit tests, build, smoke and
+  the Playwright e2e flows run in CI on every PR and assert the core flows
+  automatically. This checklist doesn't repeat their assertions.
+- **This checklist covers what the gate can't judge:** every page, at
+  both viewports, as every role. It checks that each page wears the right
+  theme, fits a phone, says true and current things, and shows only what its
+  reader needs. It also walks the flows Organizers, Hosts and Participants
+  actually use end to end, the way a person would.
+- **Not part of CI.** Nothing runs it automatically. An agent runs it on
+  demand: before War Week each year, or whenever someone asks for a
+  regression pass (all of it, or the sections they name).
+
+## Running it
+
+- **Verdicts:** each line is `PASS`, `FAIL` or `BLOCKED`, with the
+  meanings in `docs/agents/testing.md`. `BLOCKED` means the line couldn't be
+  exercised; say why. A line that "looks fine" without its check having run
+  is not `PASS`.
+- **Findings:** don't fix anything during the run. Each `FAIL` becomes a
+  ticket under `.scratch/<feature>/issues/` with `Status: needs-triage`,
+  holding the line, the viewport, the role, the screenshot path and what
+  was expected. List the tickets in the run's report.
+- **Judgment lines:** lines marked *(judgment)* ask whether a page carries
+  more than it needs. For each, list the page's sections and the one need
+  each serves (a named Participant, Host or Organizer need). `FAIL` any
+  section that repeats another, serves no need, or crowds the page's main
+  job off the first screen on a phone.
+
+## Keeping it current
+
+A PR that changes a page, a flow or a role's access updates that page's
+lines here in the same PR: new pages get lines, removed features lose
+theirs. Updating a line doesn't mean running it; runs stay on demand. A
+line that no longer matches the app is a bug in this file.
+
+## Setup
+
+- Seed the current edition's demo and build: `docker compose up -d`, then,
+  in a shell with the local database's `DATABASE_URL` and
+  `DATABASE_DRIVER` exported (the local values are in `.env.example`),
+  `pnpm build && pnpm seed:demo:<edition>` (e.g. `pnpm seed:demo:xii`).
+  Then start the server the way `playwright.config.ts` does, with the e2e
+  secret and no Google, or every signed-in page 500s on the session check:
+
+  ```sh
+  BETTER_AUTH_SECRET=e2e-only-secret-never-used-in-production \
+    BETTER_AUTH_URL=http://localhost:3200 GOOGLE_CLIENT_ID= GOOGLE_CLIENT_SECRET= \
+    TEST_SIGN_IN_SECRET=<a string of 32 or more characters> \
+    pnpm start -p 3200
+  ```
+
+  The demo makes `<edition>` the one live War Week,
+  so it is the "current War Week" (`getCurrentWarWeek`: live, else next
+  upcoming, else latest complete) every themed page reads. Port 3200 is the
+  one `e2e/session.ts` signs cookies for.
+- **Two passes, one per Mode.** Lines marked *(teams)* or *(free-for-all)*
+  run only in that pass; the rest run in both.
+  - **Free-for-all pass:** `pnpm seed:demo:xii` (XII, free-for-all, live;
+    XI and earlier are the Archive).
+  - **Teams pass:** `pnpm seed:demo` (the demo XI, teams mode, live, with
+    two Teams, Captains, Awards, FAQ and Head-to-head and Best score Competitions).
+  - Each pass reseeds with `--reset`, which wipes only the seeded War Weeks
+    in the local database: a War Week the run creates (Lifecycle) survives
+    it, so delete that one yourself. Never run against a hosted database.
+- **Navigation, for the lines below.** Participant pages: the phone tab bar
+  is Home, Schedule, Competitions, Leaderboard, More (Announcements is
+  More's first item); the desktop top nav adds Announcements. Admin: one
+  flat nav, Competitions, Discretionary points, Schedule, Roster,
+  Announcements, Awards, FAQ, Finale, Settings, Organizers, Guide (a Host
+  sees Competitions, Schedule, Announcements, Finale, Guide); the phone bar
+  is Competitions, Discretionary points, Schedule, Announcements, More. The avatar button
+  (**Account menu**) at the top right of both headers holds the account.
+- **Run order:** Public Pages, then Admin as an Organizer (it links the
+  Participant account and assigns the Host the later sections use), then
+  Host, then User Pages.
+- **Accounts:** sign in without Google with **Test sign-in** at
+  `/sign-in/test`: type the email and the secret. The local server needs
+  Test sign-in on, so start it with
+  `TEST_SIGN_IN_SECRET=<a 32+ character string>` in its environment (as
+  `playwright.config.ts` does for e2e) and no `VERCEL_ENV=production`.
+  Use `+` aliases of one JG address as the accounts:
+  - **Organizer:** `regression+organizer@jahnelgroup.com`, added at
+    `/admin/organizers` by the first Organizer.
+  - **Linked Participant:** `regression+participant@jahnelgroup.com`, after
+    the Admin run puts that email on a Participant.
+  - **Unlinked:** `regression+unlinked@jahnelgroup.com`, a JG account on
+    no roster.
+  - **Host:** `regression+host@jahnelgroup.com`, after the Admin run makes
+    it a Host of one Competition.
+  - **Driver:** `scripts/regression/driver.ts` signs in for you with
+    `e2e/session.ts` (the e2e accounts `e2e-organizer@`, `e2e-host@`,
+    `e2e-participant@` and `e2e-unlinked@jahnelgroup.com`, signed with the
+    e2e secret the server was started with); use it for the page-basics
+    checks, and Test sign-in for the lines below that need the real flow.
+    `openAs(browser, role, width)` gives a signed-in page at a checklist
+    viewport, and `pageBasics(page, dir)` runs the theme check, the
+    no-horizontal-scroll and clipping checks, and saves a full-page
+    screenshot. From the shell,
+    `pnpm tsx scripts/regression/driver.ts <role> <width> test-results/<run>/checklist --tag=<pass> <path>...`
+    prints one JSON line of results per page. Roles: `organizer`, `host`,
+    `participant`, `unlinked`, `anon`.
+- **Viewports:** run every line at laptop **1440×900** and iPhone
+  **390×844**.
+- **Theme check:** a page "wears the current War Week" when its themed root
+  (`[data-theme-root]`) carries the inline `--light-*`, `--dark-*` and
+  `--font-sans` of `warWeekThemeStyle` (`src/lib/theme.ts`) for the current
+  War Week, taken from `seeds/demo/<edition>.json`'s colors and font (or, to
+  compare against the app itself, sign in and read `/<edition>`'s root,
+  since `/<edition>` is not public), and the screenshot shows that
+  edition's colors and font, not a past edition's. Two by-design
+  exceptions: `/admin` wears the edition being edited (an Archive edition
+  picked in the switcher wears its own theme), and each Archive view
+  (`/<past edition>`) wears that past edition's own theme. `/history` and
+  `/history/awards/<id>` wear the current War Week, like any participant
+  page; only the edition cards on `/history` show their own colors.
+- **No horizontal scroll:** on each page,
+  `document.documentElement.scrollWidth <= document.documentElement.clientWidth`.
+  That alone cannot catch clipping (`/about`'s root has `overflow-hidden`),
+  so also check that no visible text element (`h1,h2,h3,p,li,a,button,span`)
+  has a `getBoundingClientRect()` that extends past the viewport's left or
+  right edge.
+- **Page basics:** every signed-in page below also gets the theme check,
+  the no-horizontal-scroll check and a screenshot. Those three are implied by
+  each line and not repeated.
+- Save a screenshot per page per viewport under
+  `test-results/<run>/<page>-<pass>-<width>/` (e.g.
+  `admin-announcements-ffa-390/`, `admin-announcements-teams-390/`, so the
+  two passes don't overwrite each other) and record each line's verdict in
+  the run's report (the ticket's closeout when a ticket asked for the run).
+
+## Public Pages
+
+`/sign-in`, `/about`, `/privacy`, `/terms`, signed out.
+
+- [ ] **Sign-in wears the current War Week.** Open `/sign-in`; its colors
+      and font match the current War Week (theme check above).
+- [ ] **About wears the current War Week, stills included.** Open `/about`;
+      the page passes the theme check, and every still (the hero Standings,
+      the Finale poster and each "What it does" card) shows the current
+      War Week's colors, not a past edition's. If not, refresh them:
+      `pnpm build && pnpm seed:demo:<edition>`, then
+      `pnpm tsx scripts/about-media.ts`.
+- [ ] **About is up to date, without redundancy or salesy copy.** Read
+      `/about` against the app today: every "What it does" card describes a
+      feature that exists, in the app's navigation order; nothing is said
+      twice; no hackathon leftovers, maintainer pitch or over-promise; no
+      copy assumes Teams mode (the current War Week may be free-for-all).
+- [ ] **Privacy and Terms are up to date and name the admins.** Read
+      `/privacy` and `/terms`: everything they say is true of the app today,
+      nothing is said twice, they pass the theme check, and the contact line
+      reads "Contact the Jahnel Group admins."
+- [ ] **Footer shows the current year.** Every public page's footer reads
+      "© <this year> Jahnel Group".
+- [ ] **Nothing is cut off on a phone.** At 390×844, every public page passes
+      the no-horizontal-scroll check, and no text is clipped (read the
+      screenshot: every heading and paragraph wraps fully).
+
+## Admin, as an Organizer
+
+`/admin/**` as the Organizer, in the current War Week unless a line says
+otherwise. Every create, edit and delete below ends with the change visible
+on the matching War Week page.
+
+- [ ] **Lands on the current War Week, on Competitions.** Open `/admin`; it
+      redirects to `/admin/competitions` (there is no Overview, Setup hub or
+      Points page). The header names the current War Week, and the edition
+      switcher (in the header at 1440, in More at 390) lists every edition.
+      Switch to a past edition: the banner reads "Editing the Archive: War
+      Week <X>". Switch back.
+- [ ] **Flat admin nav.** At 1440 the side nav lists Competitions,
+      Discretionary points, Schedule, Roster, Announcements, Awards, FAQ,
+      Finale, Settings, Organizers, Guide, in that order, current page
+      highlighted. At 390 the bottom bar is Competitions, Discretionary
+      points, Schedule, Announcements, More, and More's Sheet holds the other
+      six plus the edition switcher; More is highlighted on a page that lives
+      in it (e.g. Settings).
+- [ ] **Old Setup URLs redirect.** `/admin/setup` and `/admin/setup/war-week`
+      land on `/admin/settings`; `/admin/setup/days` and
+      `/admin/setup/schedule` on `/admin/schedule`; `/admin/setup/teams` on
+      `/admin/roster`; `/admin/setup/competitions` on `/admin/competitions`;
+      `/admin/setup/faq` on `/admin/faq`.
+- [ ] **Account menu in admin.** The header's right side is the avatar
+      alone at 1440 and 390. Opening it shows the name and email, Display
+      (Light, Dark, System), Profile, "Back to War Week", "Join the Slack channel"
+      (when the War Week has a Slack URL) and Sign out. Enter opens it,
+      arrows move, Escape closes. Display changes restyle admin and survive
+      a reload.
+- [ ] **Every list row has Edit and Delete.** On Competitions, Schedule
+      (Days and Items), Roster (Teams and Participants), Announcements,
+      Awards, FAQ and Organizers, each row shows a visible **Edit** and a
+      **Delete** button (touch targets at least 44px at 390). Edit opens the
+      form in a dialog at 1440 and a bottom sheet at 390 (Announcements'
+      Edit and Competitions' Edit go to their own page); Delete opens a confirm and ends in a
+      toast. There is no whole-row hidden button. Schedule, FAQ and Awards
+      have no `/new` or `/[id]` page: `/admin/schedule/new`,
+      `/admin/faq/new` and `/admin/awards/new` redirect to their list.
+- [ ] **Settings autosave and show.** In Settings, change the Story Theme,
+      the dates (DateRangePicker: picking the end date leaves it open until
+      Done), the Slack URL and one Appearance Theme color. There is no Save
+      button; the heading shows "Saving…" then "Saved" after each change.
+      The preview shows both schemes, and `/<edition>` shows the new Story
+      Theme, dates and color after a reload. Reload Settings: every change
+      persisted. Restore the originals.
+- [ ] **Settings refuse bad input at the field.** A Slack URL that isn't
+      `https` (e.g. `http://jahnelgroup.slack.com/x`) shows "Slack URL must
+      be an https URL." at its field (text that isn't a URL at all is
+      stopped earlier by the browser's own "Please enter a URL."). An end
+      date before the start date shows "Start date must not be after the
+      end date." at Dates: the DateRangePicker can't produce one (a second
+      tap before the first just reorders the range), so set the form's
+      `startDate` and `endDate` inputs in the page (e.g. `2027-02-26` and
+      `2027-02-21`) and let it autosave. Each time the error shows at the field, the value
+      stays typed in the field, and nothing is saved (reload Settings to
+      confirm the old value).
+- [ ] **Settings: Team fields follow Mode.** In Settings,
+      *(free-for-all)* Team Label and Leader Title are hidden and Roster
+      has no Team controls; set Mode to Teams (it autosaves) and they show
+      with their saved values. Restore the Mode.
+- [ ] **Days.** On `/admin/schedule` the Days sit together with their
+      Schedule Items on one page. Add a Day inside the War Week with a Day
+      Theme (Add Day, a dialog or sheet); it shows on
+      `/<edition>/schedule`. Give it a Day description (up to 280
+      characters, counted under the field); it shows under the Day Theme on
+      `/<edition>/schedule` and, for today's Day, in Home's Now/Next Today
+      header. Edit it through its Edit button. The Day picker greys out
+      dates that already have a Day (not the edited Day's own date) and
+      dates outside the War Week, so the form can't post a duplicate (the
+      server's "There's already a Day on <date>." is unit-tested in
+      `src/mutations/setup.test.ts`). Delete the added Day through its
+      Delete button and confirm. When every date already has a Day (the XI
+      demo), widen the War Week's dates by one in settings first and
+      restore them after.
+- [ ] **Roster: add, link, edit, delete.** On `/admin/roster`, add a
+      Participant (on a Team, *(teams)*); edit an existing Participant's email to
+      `e2e-participant@jahnelgroup.com` (this is the linked Participant the
+      User Pages use; pick one in the top five of the Standings, e.g. Cass
+      Comet in the XII demo or Anthony Conway in the XI demo, so the
+      Standings show the You highlight);
+      a Participant row without an email shows "No email: won't be
+      linked when they sign in"; delete the added Participant through its
+      confirm.
+      *(teams)* Add a Team, mark a Leader (e.g. the added Participant, on
+      the new Team, as Captain); the Captain title shows on
+      `/<edition>/teams`; delete the Team (a Team with Participants can't
+      be deleted, so delete its Participant first).
+- [ ] **Roster import.** On `/admin/roster` as an Organizer, Import: paste
+      rows from a sheet without a header (*(teams)* name, email, Team,
+      Company Tag, Leader; *(free-for-all)* name, email, Company Tag, as
+      the hint says). The preview badges each row Add, Update (matched by
+      email, shows the changes, a cleared field in bold), Unchanged or
+      Error (an unknown Team is an Error, never created); Import adds and
+      updates only the valid rows. As a Host there is no Import and the
+      server refuses it. Delete what you added.
+- [ ] **Competitions, one of each Format.** Create a Placement Competition
+      with Placement Points 5/3/1, a Bracket Competition, and a
+      Head-to-head Competition (Add Competition creates it in a sheet and
+      opens its Competition page: set Entrants to "A fixed list" and turn on
+      "Participants can enroll"; each saves as you change it); assign
+      `e2e-host@jahnelgroup.com` as Host of the Placement one (the Hosts
+      field is in its page's Settings, not in Add; see the Competition page
+      lines below). The Format select
+      offers Placement, Bracket, Head-to-head, Best score
+      and Participation (no Single-elimination or Heats, no "Games" Format or Game Type). Each
+      shows on `/<edition>/competitions` (when the War Week has Groups, as
+      the XI demo does, one without a Group is under the Other
+      Competitions tab).
+- [ ] **Placement Points: 20 places at 390.** At 390, in a new
+      Competition's page Settings, add Placement Points places up to 20 with
+      "add a place": every place is reachable with no sideways scroll, a
+      place can be removed from anywhere in the list, and the 5·3·1 quick
+      fill works; a list that rises (1, 3) is refused. On a Bracket the list
+      stops at 4 places with the message naming the limit.
+- [ ] **Record placements: add rows.** On the Placement Competition's
+      page, under "Record placements", add a row by search and press Add everyone
+      (Teams for a team Competition, Participants for an individual one):
+      each saves at once. Remove one. Edit a Place and press Save.
+- [ ] **Record placements: Score direction.** Set Score direction to Higher
+      wins and type Scores: the Places fill from the Scores (highest first);
+      switch to Lower wins and they refill (lowest first); the Places stay
+      editable (make two tie: 1, 1, then 3). Set it to none and Places are
+      manual.
+- [ ] **Record placements: Score without a Place.** Type a Score on a row
+      and clear its Place: Finalize is refused with "Give every row with a
+      Score a Place, or clear its Score.", naming the row(s). A sheet with
+      nobody placed refuses too, and Finalize is disabled while there are
+      unsaved edits.
+- [ ] **Record placements: Finalize and Reopen.** Finalize behind its
+      confirm: the Standings move (ties share the place's points, 1st gets
+      the 1st Placement Points, unplaced rows nothing), the Competition
+      shows in Home's Recent results and in the Finale's Champions, and its
+      page lists the Placements (place, name, Score, points) for a
+      Participant. Rows can't change while Finalized. Reopen withdraws the
+      points from the Standings. Changing the Format while rows exist is
+      locked ("Locked once the Competition has a result.").
+- [ ] **Record placements: a Participant is refused.** As the linked
+      Participant, open `/admin/competitions/<id>`: "Organizers and Hosts
+      only." and no page; their Competition page shows the result read-only.
+- [ ] **Discretionary points: give, edit, delete.** On
+      `/admin/discretionary-points` (the page opens with the Standings beside
+      the ledger), give points to a Team or Participant with a reason (an
+      empty Reason is refused), edit its points and reason, then delete it
+      behind a confirm; `/<edition>/leaderboard` follows each change within
+      about 10 s, and the points breakdown reads "Discretionary: <reason>".
+      `/admin/points` redirects to this page. *(Host refused: see Admin, as a
+      Host.)*
+- [ ] **MCP: `get_placements` and `get_discretionary_points`.** Call each
+      against a signed-in session or `MCP_TOKEN`: `get_placements` for the
+      Placement Competition by name returns its Score direction, Placement
+      Points, finalized state and rows by place with names, Teams, Scores and
+      points; `get_discretionary_points` returns the current War Week's
+      entries by name and reason. Neither output contains an `@`. For a
+      Placement Competition `get_bracket` points to `get_placements`.
+- [ ] **Run a Bracket end to end.** On the Bracket Competition's page
+      (Format "Bracket"), tap the "Head-to-head (single elimination)" preset
+      (2 per Heat, 1 advancing), pick Entrants and Save Entrants, then
+      Generate to build it. There is no By Standings button and no Time &
+      place. *(teams)* A new Competition scores by Team: Add Squad two
+      Squads per Team, set Entrants are to Squads and press All Squads; the
+      finalized Placement Points go to each Squad's Team. Record every Heat from the tree on the same page (a
+      dialog at 1440, a bottom sheet at 390); no Heat has a Forfeit option,
+      and each played Heat shows "Recorded <time>". Finalize. The finalized
+      Bracket's Placement Points appear in Points Entries and the
+      Standings, and "Play the Finale" opens its Bracket Finale.
+- [ ] **Bracket: 3rd place game.** In a head-to-head Bracket of at least 4
+      Entrants (a new Bracket of 4 or 8), turn on the Bracket's 3rd place
+      game switch: the tree shows it beside the Final, labelled "3rd place
+      game"; with 3 Entrants, or a heat size other than 2 with 1 advancing,
+      the switch is off or absent with a reason. Record the semifinals, the
+      final and the 3rd place game and Finalize: the champion is the
+      final's winner whichever Heat was recorded last, and Points Entries
+      give 1st, 2nd, 3rd and 4th their Placement Points (a fifth place is
+      refused: Placement Points stop at 4). Once any Heat has a result the
+      switch can't change. Without the game, both semifinal losers tie 3rd.
+- [ ] **Bracket tree: one tree, admin and Participant.** Open the same
+      Bracket on its admin Competition page and on its public Competition page: both
+      show the one tree (Rounds left to right at 1440), with no List toggle
+      anywhere. An unplayed Heat has a solid "Record result" in the admin
+      tree and a recorded one an outline "Edit"; the Participant tree shows
+      neither unless self-report is on and the Heat is their own. A Bracket
+      of more per Heat (4 with 2 advancing, e.g. Chess Heats) is the same
+      tree of Heat boxes, with every Entrant that advances highlighted and
+      the Heat result form marking "Advances" beside those places (only 1st
+      highlighted, "Wins", in the final). At 390 the tree scrolls sideways
+      inside its own "Rounds" region and the page itself never scrolls
+      sideways.
+- [ ] **Games settings show what was saved.** On a Head-to-head or Best
+      score Competition's page, change a setting (Draws or Best of; for
+      Best score, count best or total, direction, unit label): it saves as
+      you change it, and the fields keep the saved values with no reload; reload and
+      come back later, and they are still there. There is no Finish Points
+      table. The page's Settings show Placement Points as what
+      each place earns in the Standings.
+- [ ] **Close a Head-to-head Competition.** Log two Games as the Organizer
+      in a Head-to-head Competition with Placement Points (Log a Game on its
+      public Competition page), then Close in its Entrants and Games section: its top
+      finishers get Placement Points ("From head-to-head" in the ledger) and
+      the Standings move. Reopen withdraws them. *(teams)* Add it with
+      Scoring Individual and Counts toward the Team on, so the Team Standings
+      move. Do the same with a Best score Competition ("From best score");
+      its Competitions-list Edit opens its page, whose run area reads
+      "Entrants and Games".
+- [ ] **Run a Competition as Participation.** Add a Participation
+      Competition (Add Competition opens its Competition page, whose run area
+      reads "Who took part"). Settings: *(individual)* Points per
+      Participant; *(teams)* Placement Points 3/2/1 by headcount (there is no
+      per-Participant N and no per-person mode); turn on
+      Self check-in. Tick two Participants, untick one, then Close: the
+      generated Points Entries ("From participation") appear in the ledger
+      and the Standings move. Closed, the ticks and the Settings are disabled with their reason (the server's
+      refusals are covered by unit tests and smoke). Reopen withdraws them. Changing the scoring while anyone is ticked is locked ("Locked once the
+      Competition has a result."), and deleting the Competition is refused
+      with the count.
+- [ ] **Competition page: settings autosave.** Open a Competition from
+      the list's Edit: one page, Settings on top and the Format's run area
+      below it. Change the name, Group and a Placement Points place: each
+      saves on its own (no Save button), "Saved" shows by the Settings
+      heading (no toast), and it is still there after a reload. Check at 1440 and 390: no sideways scroll.
+- [ ] **Competition page: locks with reasons.** On a Competition with a
+      result (a recorded Placement, a Game or an Entrant), Format, scoring,
+      Score direction and Best score's count and direction are disabled
+      with "Locked once the Competition has a result."; on a Head-to-head
+      Competition with a fixed list of two Entrants and no Game, Draws and
+      Best of still save (choose Best of 3: "Saved", kept after a reload),
+      and once a Game is logged they and the Entrants' open or fixed list
+      are disabled with "Locked once the Competition has a Game."; name, description, Group, Hosts and
+      Placement Points still save. In a Bracket with a recorded Heat, heat
+      size, how many advance, the 3rd place game, the Entrants and Generate
+      are disabled with "Locked once a Heat has a result." Finalize
+      (Placement or Bracket) or Close: everything but name, description,
+      Group, Hosts and Placement Points is disabled with "Locked while the
+      Competition is Finalized or Closed. Reopen or Un-finalize it first."; a Placement
+      Points change then says "Applies at the next Finalize or Close."
+      Reopen unlocks the fields that only the Finalized state locked. There
+      is no Reset bracket and no "confirm to clear and start over".
+- [ ] **Competition page: change the Format.** On a new Competition with no
+      result, change the Format between Placement, Bracket, Head-to-head,
+      Best score and Participation: each applies the new Format's
+      defaults and shows its run area. Add a result and the Format locks.
+- [ ] **Competition page: Hosts picker.** In the Hosts field, search the
+      roster by name: each option shows its email beneath; a Participant
+      with no email, or a non-@jahnelgroup.com one, is disabled with the
+      reason. Pick one (it saves at once), remove it, and open the Competition
+      as that Host.
+- [ ] **Competition page: rich-text description.** Write a description with
+      a heading, a list, a link and an image by URL; it saves on its own.
+      On `/<edition>/competitions/<id>` the Participant sees it in full,
+      formatted. There is no image upload.
+- [ ] **Competition page: Log a Game from admin.** On a Head-to-head or
+      Best score Competition, Entrants and Games: Log a Game, edit it and
+      delete it, from the admin page; the Competition's page and
+      leaderboard follow.
+- [ ] **Competition page: retired routes redirect.** Open
+      `/admin/competitions/<id>/bracket`, `/games`, `/participation`,
+      `/admin/brackets/<id>` and `/admin/placements/<id>`: each lands on
+      `/admin/competitions/<id>` (a 308).
+- [ ] **Schedule Items.** On `/admin/schedule`, add a Schedule Item on a
+      Day, linked to a Competition; it shows on `/<edition>/schedule` under
+      that Day with its time in ET and links to the Competition. Edit it
+      (sheet or dialog, no separate page), then delete it (confirm and
+      toast).
+- [ ] **Announcements.** Post an Announcement with a heading, a quote, a
+      link, a captioned image (by URL) and a video (the editor's Video
+      button), then pin it. The form has no Video links field, and the
+      editor's toolbar buttons show their keyboard shortcut in a tooltip. It
+      shows first on the Announcements page and as the pinned card on Home,
+      with every element rendered.
+      Pinned Announcements sort newest first and a demo's are dated in its
+      War Week, after anything posted today, so unpin the seeded pinned one
+      first and pin it again at the end. Unpin, then delete. The admin list
+      shows "Posted by <name>" (the poster's display name or the part of
+      their email before the @, never the email) and no video count. MCP
+      `get_announcements` returns no `videoUrls`; the video shows as its URL
+      in the plain-text body.
+- [ ] **Awards.** Give an Award to two Participants (and a Team,
+      *(teams)*); it shows on `/<edition>/awards`. Delete it.
+- [ ] **Award Categories.** On `/admin/awards`, Categories lists the seven
+      seeded ones. Add one (a name already taken, ignoring case, is refused),
+      rename it, archive it, restore it; there is no delete. Archived, it's
+      absent from the Award form's Category select, but an Award that already
+      has it keeps it (labeled archived) when edited. Give an Award a
+      Category with the select ("None" is allowed): `/<edition>/awards` shows
+      it under that Category's heading.
+- [ ] **FAQ.** Add an FAQ Item and move it first; `/<edition>/faq` shows it
+      first. Delete it.
+- [ ] **Organizers.** Add `e2e-extra@jahnelgroup.com`, then remove it
+      through its confirm. The last Organizer can't be removed: with only
+      one Organizer listed, its Remove control is gone and the page says
+      "The last Organizer can't be removed." If others are listed, delete
+      their rows from the local `organizer` table for this check and put
+      them back after; never remove a real Organizer in the app.
+- [ ] **Lifecycle.** On Settings (the Lifecycle box and Create next War
+      Week live there, not on a separate page; the seed-overwrite warning
+      shows there too, and only there), Create next War Week makes an Upcoming edition (copy
+      settings only). Start on it is refused while the current one is live
+      ("End <X> first."). End the current War Week: its confirm names any
+      generated Bracket that isn't finalized, any open Head-to-head or Best score
+      Competition with at least one Game and any open Participation
+      Competition with anyone ticked (linked to its Competition page), and on End it records the Winner
+      from first place. Unstart on a live edition with nothing scored (an
+      edition freshly started, e.g. XII) goes back to Upcoming behind a
+      confirm; on one with a Points Entry (a Finalized Placement's included), Heat result or Game it is
+      refused. Reopen makes it live again. Reopen is refused while a later
+      edition is upcoming ("War Week <Y> is next; reopen isn't
+      available."), so before Reopen delete the edition this line created
+      from the local database (`delete from war_week where edition =
+      '<new>'`; `--reset` doesn't remove it). In the teams pass XII is
+      upcoming too: delete it as well; the closing `pnpm seed:demo`
+      restores it.
+- [ ] **Unstart a reopened edition.** On the edition the Lifecycle line
+      reopened (ended before, so it has a Winner), Unstart is refused:
+      "This War Week has been ended; Unstart isn't available." It stays
+      live.
+- [ ] **Finale links.** `/admin/finale` links to the Finale and to each
+      finalized Bracket's Finale; both open. (The Bracket's Finale keeps its
+      Start button.)
+- [ ] **Finale slide list.** `/admin/finale` lists the Finale slides in
+      order (Title, By the numbers, Awards, Champions, Standings countdown,
+      Winner, plus the demo's Custom "Thank you" before Standings or after
+      Winner, per the seed). Move a slide with its Move up/down buttons
+      (1440 and 390) and by dragging it at 1440: the order changes at once
+      and survives reload. Hide a slide: it shows as hidden and keeps its
+      place; Show brings it back. Open the Finale: hidden slides are
+      skipped and the rest play in the saved order.
+- [ ] **Custom slides.** Add Custom slide (a heading, a body with an image
+      by URL, a background color): it appears just before Standings
+      countdown, and in the Finale shows heading, body and background. On a
+      dark background and on a light one the text stays readable (4.5:1; run
+      the page's axe check or read the colors). Editing changes it; adding a
+      second one with the same heading is refused ("There's already a Custom
+      slide called <heading>."); delete asks first and removes it. A
+      built-in has Hide/Show but no Delete.
+- [ ] **Awards layout.** On `/admin/finale`, set the Awards layout to "One
+      slide per Category": the Finale's Awards become one slide per Category
+      ("Awards: <Category>", the uncategorized "Other Awards"); back to "All
+      on one slide": one Awards slide. Each choice saves at once.
+- [ ] **Forms behave the same everywhere.** On a long form (Competition),
+      resize from 1440 to 390 (crossing 768) with typed input: the input
+      survives the dialog-to-sheet switch. At 820 the add-Participant and
+      *(teams)* Squad (Competition page → Add Squad) forms are dialogs; at
+      390, bottom sheets. Every delete
+      above used `ConfirmDialog`, and every save and delete showed a toast.
+- [ ] **The Guide is true.** Read `/admin/guide`: every step names a page
+      and control that exists and works as described (it is written for the
+      flat nav: Settings, Schedule, Roster, no Setup hub). Its "What a
+      Participant email does" note matches where You and "Your Team" show:
+      You on the roster, the individual leaderboards, Award recipients on
+      the Awards page, Participation lists and Your Entrant in a Bracket
+      (the Team or Squad in a team Bracket); "Your Team" on a Games
+      leaderboard; no highlight on Team Standings rows.
+- [ ] **No admin page carries more than it needs.** *(judgment)* Apply the
+      judgment rule to every admin page (Competitions through Guide), every list
+      page and every form.
+
+## Admin, as a Host
+
+`/admin/**` as `e2e-host@jahnelgroup.com`, Host of one Placement
+Competition (from the Organizer run).
+
+- [ ] **Five sections, trimmed to their Competitions.** The admin nav is
+      Competitions, Schedule, Announcements, Finale, Guide at 1440 (no
+      Discretionary points); at 390 the bar is Competitions, Schedule,
+      Announcements, More (Finale and Guide in More). Competitions and Schedule list only the Host's Competition
+      and its Schedule Items. Each row has Edit and
+      Delete where the Host may use them.
+- [ ] **Organizer-only pages refuse.** Settings, Roster, FAQ, Awards and
+      Organizers (open their URLs directly) each show "Organizers and Hosts
+      only."; there is no Lifecycle box, no Create next War Week and no
+      Add Competition or Days editor.
+- [ ] **Account menu as a Host.** The avatar menu offers "Back to War Week"
+      in admin and Admin on participant pages (a Host is not a plain
+      Participant), plus Display and Sign out.
+- [ ] **What a Host can do works.** Record placements on their Competition
+      (add rows, set Places, Finalize, Reopen) and see the Standings move;
+      post an Announcement, edit it and delete it. They
+      can't create or delete a Competition or assign Hosts: no Add
+      Competition or Delete, and the Competition page's Hosts are shown
+      read-only by name with no emails (the server's refusal is
+      unit-tested in `src/lib/access.test.ts` and the mutation tests). Their
+      Competition page's settings autosave and show the same lock reasons as
+      an Organizer's; a Host logs a Game from it.
+- [ ] **A Host can't give Discretionary points.** `/admin/discretionary-points`
+      shows "Organizers and Hosts only." and no form (server-refused in
+      `src/lib/access.test.ts`); `/admin/points` redirects there and shows
+      the same. A Host can't open another Competition's
+      `/admin/competitions/<id>` either.
+- [ ] **Finale is read-only for a Host.** `/admin/finale` shows the slide
+      list and "Open Finale", but no Move, Hide/Show, Add Custom slide, edit
+      or delete, and the Awards layout is shown disabled.
+- [ ] **Not a Host elsewhere.** Switch to another edition (if offered), or
+      set the `admin_edition` cookie to a past edition, and open another
+      War Week's admin URL (e.g. `/admin/competitions/<a Competition they don't host>`; use `<an X
+      Competition id>` when the demo has no other): nothing to manage there.
+
+## User Pages
+
+Every War Week page, signed in as the **linked Participant** unless a line
+says otherwise. Run each line again as the **unlinked** account and check
+that nothing personal shows (no You highlight, no Log a Game).
+
+- [ ] **Home.** `/<edition>` shows the hero (with no Banner URL set, as in
+      the XII demo, no banner block and no "War Week" eyebrow: the hero
+      names "War Week XII" once, and at 390 the Log a Game heading is on the
+      first screen), Now/Next for the time given by
+      `?at=` (pick a time with a Schedule Item; a Heat has no time and never shows here), the
+      pinned Announcement, Recent results and the top of the Standings: *(free-for-all)*
+      with the linked Participant highlighted as You; *(teams)* the Team
+      Standings, which carry no You (it marks individual rows: Leaderboard,
+      Teams). With a Head-to-head or Best score Competition open, the
+      "Log a Game" shortcut shows for the linked Participant only. There is no
+      "Join the Slack channel" button on Home (it moved to the account
+      menu). Home's
+      "Your next Heat", for a linked Participant in a generated Bracket
+      (generate Chess Heats as the Organizer), names the Round and opponent
+      with no time or place.
+- [ ] **Recent results.** After a Bracket or Placement is finalized or a
+      Head-to-head or Best score Competition closed and Discretionary points are given, Home's
+      Recent results lists up to 5 rows newest first (a champion, a winner, a
+      finalized Placement, a Discretionary points entry with its reason), each linking to its Competition (a closed Participation Competition is a
+      row too: *(teams)* its top Team, else how many took part), with "All Competitions"
+      opening `/<edition>/competitions`. With nothing scored the section is
+      hidden. It follows a new result within about 10 s.
+- [ ] **Navigation.** At 390 the tab bar is Home, Schedule, Competitions,
+      Leaderboard, More, with the current page's tab highlighted:
+      Competitions on `/<edition>/competitions` and on a Competition page,
+      More on Announcements, Roster, Awards, FAQ and About. At 1440 the top
+      nav is Home, Schedule, Competitions, Leaderboard, Announcements, More.
+- [ ] **Log a Game from a phone.** At 390, log a head-to-head Game from
+      Home's shortcut against another Entrant; it shows in that
+      Competition's Game log as the newest Game, and its leaderboard
+      updates. As the unlinked account, there's no shortcut and no Log a
+      Game on the Competition page (the server's refusal of a posted Game
+      is unit-tested in `src/lib/access.test.ts`).
+- [ ] **A Participation Competition page.** In the Participation
+      Competition (Self check-in on), the page says how it scores, shows
+      "Took part" with the ticked Participants by name and *(teams)* each
+      Team's count. The linked Participant's **Check in** adds them
+      ("You're checked in") and **Check out** removes them; one the Host
+      ticked can't be checked out ("The Host marked you; ask them to remove
+      it."). With Self check-in off, or once closed, there is no Check in
+      button (closed shows the Closed badge); after the close time, for a
+      Participant on no Team, or when the Host marked them, the button is
+      disabled with its reason, e.g. *(teams)* a Participant on no Team is
+      told only those on a Team can take part. As the unlinked account there
+      is no Check in. At
+      390 the button and list fit without sideways scrolling.
+- [ ] **Enroll and withdraw.** In the self-enroll Competition, the linked
+      Participant enrolls, withdraws and enrolls again; the Entrant list
+      follows each step.
+- [ ] **Schedule.** `/<edition>/schedule` lists every Day with its Day
+      Theme, Day description (when it has one: in the XI demo, Sun Feb 22
+      "The Matrix Has You" reads "Opening Sunday: Black Midnight from 12:01
+      AM, …") and Items in time order (ET), filterable by Day; each linked
+      Competition opens.
+- [ ] **Competitions.** `/<edition>/competitions` lists every Competition;
+      when there are Groups the Group tabs wrap onto more lines instead of
+      scrolling sideways, and every tab (Other Competitions too) shows at
+      390. Each row shows its status: Not started, Underway (a Bracket adds
+      "Round N of M" or "Final"), Closed, or Done · Winner: X (a tie reads
+      "Winners: A, B"; a Finalized Placement or Bracket with no Placement
+      Points is just Done), a description preview of two lines at most, and
+      no max-points badge.
+      Open one of each Format: a Placement Competition shows its
+      Placements (place, name, Score, points; a Participant can't edit); a Bracket shows the one tree (no List toggle; at 390 it
+      scrolls sideways in its own region) and its champion once finalized; a Head-to-head or Best score Competition
+      shows its leaderboard with that Format's columns and the Game log
+      newest first, with the "Mine" filter.
+- [ ] **Scale: 100 Participants.** Run `pnpm seed:demo:scale`, then
+      `pnpm seed:demo` when done. At both viewports: the admin roster lists all
+      100 Participants and `/xii/leaderboard` everyone with points, with no
+      sideways scroll; a
+      Placement sheet lists its rows with names wrapping (not truncating)
+      at 390; the 64-Entrant Bracket tree scrolls sideways only in its own
+      "Rounds" region; as an Organizer, the Discretionary points and Award
+      pickers find a Participant by email (never shown) with no cap on the
+      list.
+- [ ] **Teams show in team events.** *(teams)* Wherever a Participant
+  appears in a Competition or scoring context (individual Standings, a
+  Bracket's entrants and Heat results, the Games leaderboard and Game log,
+  Recent results, a Competition's ledger, Award recipients, the Finale,
+  Now/Next), their Team shows by name where there's room, else by its
+  color, including for a Participant whose Avatar is a Profile picture (`CONTEXT.md`, "The Team shows in team events").
+- [ ] **Leaderboard.** `/<edition>/leaderboard` shows the main Standings
+      (Team Standings *(teams)*, individual Standings *(free-for-all)*), the
+      points breakdown per row, and the linked Participant highlighted.
+- [ ] **Announcements.** The Announcements page (`/<edition>/announcements`;
+      at 390 it is More's first item and More is highlighted there)
+      lists the pinned Announcement first, renders rich text (headings,
+      quotes, captioned images) and videos, each player titled "Video:
+      <Announcement title>", and shows who posted each by name, never an
+      email.
+- [ ] **Roster.** `/<edition>/teams` *(teams)* shows each Team in its
+      color with its Captain and Participants; *(free-for-all)* the
+      Participants. The linked Participant is highlighted.
+- [ ] **Awards and FAQ.** `/<edition>/awards` and `/<edition>/faq` show
+      their content, or a plain empty state when there is none (XII demo).
+      Once an Award has a Category, Awards sit under Category headings (each
+      a link to its through-the-years page), then "Other Awards"; with no
+      Category anywhere there are no headings.
+- [ ] **Top nav is centred.** At 1440, on `/<edition>` and `/history`, the
+      links in the header's top nav sit in the header's true centre (their
+      midpoint within a few px of the viewport's midpoint, with the brand on
+      the left and the avatar on the right); a long tagline truncates
+      rather than pushing them off centre.
+- [ ] **Cursors.** At 1440, hover a link, a button, a tab and a menu item
+      on a participant page and in admin: each shows the pointer cursor; a
+      disabled button (e.g. Save settings on a closed Participation
+      Competition), a disabled toggle and a disabled tab show not-allowed
+      (menu and list items stay inert but keep the plain cursor).
+- [ ] **Buttons follow the rule.** On the admin Competitions, Roster and
+      Schedule lists, the primary action ("Add Competition", "Add Team",
+      "Add Participant", etc.) is a solid button, secondary ones are
+      outline (on the Competition page's Bracket section, Add Squad sits outline beside the solid
+      Generate), and only icon or tertiary actions are ghost.
+- [ ] **History wears the War Week chrome.** `/history` and a Category page
+      (`/history/awards/<id>`) show the current War Week's top nav (at
+      1440), phone tab bar (at 390) and footer, in the current War Week's
+      Appearance Theme and the viewer's Display; there is no "Back to War
+      Week" link; the edition cards keep their own colors.
+- [ ] **History.** `/history` lists every past War Week with its Story
+      Theme and Winner; open three past editions, including the oldest:
+      each shows its archive view (an edition with no Banner URL shows no
+      banner block and names the War Week once in the hero). "Awards
+      through the years" lists each
+      Award Category; open one: `/history/awards/<id>` shows its War Weeks
+      newest first with recipients, and an unknown id is a 404 page.
+- [ ] **Finale slideshow.** `/<edition>/finale` opens full screen (over the
+      edition nav, with a small Exit link back to the edition) on the Title
+      slide, showing no Standings. `→`, `Space` or a click on the stage
+      goes next (an Awards slide first shows its Awards one per press);
+      `←` goes back to the previous slide in its final state; `Escape`
+      returns to the first slide; Next on the last slide does nothing.
+      Nothing auto-advances: leave it 10 s on a slide and it stays. A click
+      on a link or video in a slide doesn't advance it. Hidden slides and
+      slides with nothing to show (no Awards, no finalized Competitions, no
+      Standings rows) are skipped. With every slide hidden it says "Nothing
+      to show yet." (an Organizer also sees "Set up the Finale").
+- [ ] **Finale slides.** Step through the demo's Finale: By the numbers shows
+      only non-zero figures ("Points handed out" among them); Awards lists
+      each Award once, grouped by Category (or one slide per Category, per
+      the Awards layout); Champions lists each finalized Bracket's champion
+      and the winner of each Finalized Placement and each closed Games or
+      team-scoring Participation Competition, ties together; Winner is the first place of the Standings, a
+      tie shown as "Tie: A & B". No slide scrolls at 1440 (1920x1080 is the
+      projector) or at 390.
+- [ ] **Finale Standings countdown.** Arriving on Standings countdown with
+      → starts it (no Start button): rows appear from last place to first,
+      ties together, totals counting up from 0, within 8 s (`FINALE_MAX_MS`;
+      time it in the page, from the → press to `[data-finale="done"]`: a
+      frame or two over 8000 ms is the animation clock, Playwright's own
+      waits add more), ending in the same order as the Leaderboard. → while
+      it plays jumps to its final state; Replay plays it again and doesn't
+      advance. Arriving by ← shows the final state. With
+      `prefers-reduced-motion` every slide shows its final state on arrival
+      and still waits for →.
+- [ ] **Account menu.** The avatar button at the top right (at 1440 and
+      390; no email text, no Sign out button beside it) opens a menu with
+      the name and email, Profile, Display, "Join the Slack channel" (when the War
+      Week has a Slack URL; it opens it) and Sign out; for the Organizer and
+      the Host it also has Admin, which opens `/admin/competitions`; for a plain
+      Participant (the linked or the unlinked account, never a Host) there
+      is no Admin item. Enter opens it, arrows move,
+      Escape closes.
+- [ ] **Test sign-in banner.** Signed in through `/sign-in/test`, every page
+      (public ones, admin and participant pages) shows a "Test sign-in:
+      <email>" strip with that email, above the page. Open `/sign-in/test`
+      with Test sign-in off (restart the server without
+      `TEST_SIGN_IN_SECRET`): it is a 404, and the old test session counts as
+      signed out (a page goes to `/sign-in`). A wrong secret and a non-JG
+      email are each refused with a message.
+- [ ] **Profile page.** "Profile" in the account menu opens
+      `/<edition>/profile`. It has a Profile name field (a hint says what
+      shows when it is empty: the roster name), a Picture URL field and a
+      "Use Google photo" button that clears it, and a Light and a Dark
+      preview side by side (stacked or fitting at 390, no horizontal
+      scroll). Save a name and an `https://` picture URL: both preview at
+      once and persist after a reload; an `http://` URL is refused at the
+      field. Empty both and save: the roster name returns.
+- [ ] **Profile name and picture show everywhere.** As the linked
+      Participant, set a Profile name and an `https://` picture URL, then
+      check the name and picture on the Teams roster, the Leaderboard
+      (Standings), a Competition's Games and Awards, and Recent results on
+      Home. Open a past War Week the same email is on: it shows the Profile
+      name too. As the Organizer, the roster form shows that name read-only
+      with "Set by the person".
+- [ ] **Delete my account.** At the bottom of the Profile page, "Delete my
+      account" opens a confirm that needs the email typed (the button stays
+      disabled until it matches, ignoring case). As the only Organizer it is
+      refused with a message, and the account stays. As the linked
+      Participant it signs you out to `/`; sign in again with the same
+      address and the Teams roster shows the roster name again, not the
+      Profile name, with Awards, results and Announcements intact.
+- [ ] **Display.** In the account menu, Light, Dark and System each restyle
+      every page above, and the choice survives a reload. In Dark, text
+      passes contrast (axe) on Home, Leaderboard and a Competition.
+- [ ] **More.** Every link in More (the page at 1440, the sheet at 390:
+      Announcements *(390 only)*, Roster, Awards, FAQ, War Week history,
+      Install app, About) opens its page. More has no "Signed in as" or
+      Display rows; Admin is in the account menu, not here.
+- [ ] **Access.** Signed out, `/<edition>` goes to
+      `/sign-in?callbackURL=%2F<edition>` (finish it with Test sign-in at
+      `/sign-in/test` and check it returns to `/<edition>`). As the linked Participant, `/admin` (which redirects to
+      `/admin/competitions`) shows "Organizers and Hosts only." in the current
+      War Week's colors and font (theme check), with the footer.
+- [ ] **No page carries more than it needs.** *(judgment)* Apply the
+      judgment rule to every page above, at 390 first.

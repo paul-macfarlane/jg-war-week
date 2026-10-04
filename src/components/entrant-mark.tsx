@@ -10,7 +10,10 @@ export type BracketViewEntrant = Pick<
   | "participantId"
   | "squadId"
   | "participantNames"
->;
+> & {
+  /** An individual Entrant's picture URL; null or absent for initials. */
+  image?: BracketEntrant["image"];
+};
 
 type Scoring = "team" | "individual";
 
@@ -30,6 +33,7 @@ export function EntrantMark({
         name={entrant.label}
         teamColor={entrant.color}
         primaryColor={primaryColor}
+        image={entrant.image}
       />
     );
   }

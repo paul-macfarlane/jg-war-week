@@ -4,7 +4,12 @@ export type RosterTeamInput = Pick<Team, "id" | "name" | "color" | "logoUrl">;
 export type RosterParticipantInput = Pick<
   Participant,
   "id" | "displayName" | "companyTag" | "teamId" | "isLeader"
->;
+> & {
+  /** The shown name: the Profile name, else the roster name. */
+  displayName: string;
+  /** The picture URL, or null for initials. */
+  image?: string | null;
+};
 
 export type RosterParticipant = Omit<RosterParticipantInput, "teamId">;
 export type RosterTeam = RosterTeamInput & {
@@ -40,10 +45,11 @@ function byRosterOrder(a: RosterParticipant, b: RosterParticipant): number {
 function toRosterParticipant({
   id,
   displayName,
+  image,
   companyTag,
   isLeader,
 }: RosterParticipantInput): RosterParticipant {
-  return { id, displayName, companyTag, isLeader };
+  return { id, displayName, image, companyTag, isLeader };
 }
 
 /**
@@ -84,13 +90,4 @@ export function buildRoster({
       .map(toRosterParticipant)
       .sort(byRosterOrder),
   };
-}
-
-/** Every Participant on a roster, by display name. */
-export function rosterParticipants(roster: Roster): RosterParticipant[] {
-  const all =
-    roster.kind === "free-for-all"
-      ? roster.participants
-      : [...roster.teams.flatMap((t) => t.participants), ...roster.unassigned];
-  return [...all].sort((a, b) => a.displayName.localeCompare(b.displayName));
 }

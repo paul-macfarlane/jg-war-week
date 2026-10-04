@@ -1,12 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  enroll,
-  joinSquad,
-  leaveSquad,
-  setSelfEnroll,
-  withdraw,
-} from "@/actions/enrollment";
+import { enroll, joinSquad, leaveSquad, withdraw } from "@/actions/enrollment";
 
 // vi.mock factories are hoisted above the imports, so their values are too.
 const { ID, SQUAD, WAR_WEEK, authorized } = vi.hoisted(() => {
@@ -19,14 +13,6 @@ const { ID, SQUAD, WAR_WEEK, authorized } = vi.hoisted(() => {
     authorized: { current: {} as Record<string, unknown> },
   };
 });
-
-const OK = {
-  ok: true,
-  actor: { email: "tony@jahnelgroup.com", isOrganizer: false, hosts: [] },
-  warWeek: { id: WAR_WEEK, edition: "xi" },
-  target: { warWeek: { id: WAR_WEEK, edition: "xi" } },
-  ctx: { warWeekId: WAR_WEEK, actorEmail: "tony@jahnelgroup.com" },
-};
 
 const ENROLLER = {
   ok: true,
@@ -42,7 +28,6 @@ const authorize = vi.hoisted(() => vi.fn(async () => authorized.current));
 const authorizeEnroll = vi.hoisted(() => vi.fn(async () => authorized.current));
 vi.mock("@/auth/authorize", () => ({ authorize, authorizeEnroll }));
 vi.mock("@/mutations/enrollment", () => ({
-  setSelfEnroll: vi.fn(async () => ({ ok: true })),
   enroll: vi.fn(async () => ({ ok: true })),
   withdraw: vi.fn(async () => ({ ok: true })),
   joinSquad: vi.fn(async () => ({ ok: true })),
@@ -55,88 +40,6 @@ beforeEach(() => {
 afterEach(() => {
   vi.clearAllMocks();
   vi.restoreAllMocks();
-});
-
-describe("setSelfEnroll", () => {
-  it('authorizes "competition.self-enroll" before parsing; the refusal wins over malformed input', async () => {
-    authorized.current = {
-      ok: false,
-      error: "You're not a Host of that Competition.",
-    };
-    const mutations = await import("@/mutations/enrollment");
-
-    await expect(setSelfEnroll(ID, "junk")).resolves.toEqual({
-      ok: false,
-      error: "You're not a Host of that Competition.",
-    });
-    expect(authorize).toHaveBeenCalledWith(
-      "competition.self-enroll",
-      "competition",
-      ID,
-    );
-    expect(mutations.setSelfEnroll).not.toHaveBeenCalled();
-  });
-
-  it("refuses malformed input once authorized", async () => {
-    authorized.current = OK;
-    const mutations = await import("@/mutations/enrollment");
-
-    await expect(
-      setSelfEnroll(ID, { on: "yes", entrantLimit: "", enrollClosesAt: "" }),
-    ).resolves.toEqual({ ok: false, error: "Turn enrollment on or off." });
-    await expect(
-      setSelfEnroll(ID, { on: true, entrantLimit: "1", enrollClosesAt: "" }),
-    ).resolves.toMatchObject({
-      ok: false,
-      error: "An Entrant limit is at least 2.",
-    });
-    await expect(
-      setSelfEnroll(ID, { on: true, entrantLimit: "", enrollClosesAt: "soon" }),
-    ).resolves.toMatchObject({
-      ok: false,
-      error: "Enter the close time as a date and time.",
-    });
-    expect(mutations.setSelfEnroll).not.toHaveBeenCalled();
-  });
-
-  it("passes the parsed values and the authorized context, then revalidates", async () => {
-    authorized.current = OK;
-    const mutations = await import("@/mutations/enrollment");
-
-    await expect(
-      setSelfEnroll(ID, {
-        on: true,
-        entrantLimit: "8",
-        enrollClosesAt: "2027-02-22T17:00:00.000Z",
-      }),
-    ).resolves.toEqual({ ok: true });
-    expect(mutations.setSelfEnroll).toHaveBeenCalledWith(
-      ID,
-      {
-        on: true,
-        entrantLimit: 8,
-        enrollClosesAt: new Date("2027-02-22T17:00:00.000Z"),
-      },
-      OK.ctx,
-    );
-    expect(revalidatePath).toHaveBeenCalled();
-  });
-
-  it("reads a blank limit and close time as none", async () => {
-    authorized.current = OK;
-    const mutations = await import("@/mutations/enrollment");
-
-    await setSelfEnroll(ID, {
-      on: false,
-      entrantLimit: "",
-      enrollClosesAt: "",
-    });
-    expect(mutations.setSelfEnroll).toHaveBeenCalledWith(
-      ID,
-      { on: false, entrantLimit: null, enrollClosesAt: null },
-      OK.ctx,
-    );
-  });
 });
 
 describe("enroll and withdraw", () => {

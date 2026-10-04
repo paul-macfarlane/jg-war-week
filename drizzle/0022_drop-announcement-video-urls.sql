@@ -1,0 +1,1 @@
+ALTER TABLE "announcement" DROP COLUMN "video_urls";

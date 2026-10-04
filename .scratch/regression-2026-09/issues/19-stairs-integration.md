@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** needs-info
+**Status:** wontfix
 
 **Source:** regression feedback item 21
 
@@ -17,3 +17,5 @@ Out of scope in the hardening spec: no documented owner or access for the Stairs
 - [ ] Owner and access identified; a need named before any spec.
 
 ## Comments
+
+Superseded 2026-09-30 by the [Stairs map](../../stairs/map.md): owner and access are reachable through Paul, and the need is named (no duplicate data entry).

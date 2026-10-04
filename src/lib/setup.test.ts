@@ -11,14 +11,17 @@ import {
   dayGuardError,
   dayOutsideRangeError,
   inUseError,
+  mergeWarWeekSettings,
   parseCompetitionInput,
   parseCreateCompetitionInput,
   parseDayInput,
   parseParticipantInput,
   parseTeamInput,
+  parseWarWeekSettingsFields,
   parseWarWeekSettingsInput,
   participantGuardError,
   settingsGuardError,
+  settingsSaveGroup,
   teamGuardError,
 } from "@/lib/setup";
 
@@ -208,8 +211,41 @@ describe("parseDayInput", () => {
       parseDayInput({ date: "2026-02-23", dayTheme: " Red pill " }),
     ).toEqual({
       ok: true,
-      value: { date: "2026-02-23", dayTheme: "Red pill" },
+      value: { date: "2026-02-23", dayTheme: "Red pill", description: null },
     });
+  });
+
+  it("trims the description and stores blank as null", () => {
+    expect(
+      parseDayInput({ date: "2026-02-23", dayTheme: "x", description: " Hi " }),
+    ).toEqual({
+      ok: true,
+      value: { date: "2026-02-23", dayTheme: "x", description: "Hi" },
+    });
+    expect(
+      parseDayInput({ date: "2026-02-23", dayTheme: "x", description: "  " }),
+    ).toEqual({
+      ok: true,
+      value: { date: "2026-02-23", dayTheme: "x", description: null },
+    });
+  });
+
+  it("refuses a description over 280 characters", () => {
+    expectRefused(
+      parseDayInput({
+        date: "2026-02-23",
+        dayTheme: "x",
+        description: "x".repeat(281),
+      }),
+      "Description must be at most 280 characters.",
+    );
+    expect(
+      parseDayInput({
+        date: "2026-02-23",
+        dayTheme: "x",
+        description: "x".repeat(280),
+      }).ok,
+    ).toBe(true);
   });
 
   it.each([
@@ -339,7 +375,6 @@ describe("parseCompetitionInput", () => {
     name: " Catan ",
     description: " ",
     scoring: "individual",
-    maxPoints: " 10 ",
     placementPoints: "5, 3 1",
     countsTowardTeam: true,
     group: " Board games ",
@@ -352,7 +387,6 @@ describe("parseCompetitionInput", () => {
         name: "Catan",
         description: null,
         scoring: "individual",
-        maxPoints: 10,
         placementPoints: [5, 3, 1],
         countsTowardTeam: true,
         competitionGroup: "Board games",
@@ -361,21 +395,18 @@ describe("parseCompetitionInput", () => {
     expect(
       parseCompetitionInput({
         ...competition,
-        maxPoints: "",
         placementPoints: " ",
         group: "",
       }),
     ).toMatchObject({
       ok: true,
-      value: { maxPoints: null, placementPoints: null, competitionGroup: null },
+      value: { placementPoints: null, competitionGroup: null },
     });
   });
 
   it.each([
     [{ name: "" }, "Name must not be empty."],
     [{ scoring: "both" }, "Scoring must be one of team, individual."],
-    [{ maxPoints: "ten" }, "Max points must be a number."],
-    [{ maxPoints: "0" }, "Max points must be more than 0."],
     [
       { placementPoints: "5, three" },
       "Placement Points must be numbers separated by commas, 1st place first.",
@@ -384,14 +415,6 @@ describe("parseCompetitionInput", () => {
     [
       { placementPoints: "3, 5" },
       "Each place's Placement Points must be no more than the place above it.",
-    ],
-    [
-      { placementPoints: "6, 5, 4, 3, 2, 1" },
-      "Placement Points cover at most 5 places.",
-    ],
-    [
-      { placementPoints: "12, 3" },
-      "1st place's Placement Points can't be more than Max points.",
     ],
     [
       { scoring: "team" },
@@ -410,16 +433,15 @@ describe("parseCreateCompetitionInput", () => {
     name: " Catan ",
     description: "",
     scoring: "individual",
-    maxPoints: "",
     placementPoints: "",
     countsTowardTeam: false,
     group: "",
   };
 
-  it("defaults to the points Format", () => {
+  it("defaults to the placement Format", () => {
     expect(parseCreateCompetitionInput(competition)).toMatchObject({
       ok: true,
-      value: { format: "points" },
+      value: { format: "placement" },
     });
   });
 
@@ -427,63 +449,63 @@ describe("parseCreateCompetitionInput", () => {
     expect(
       parseCreateCompetitionInput({
         ...competition,
-        format: "single-elimination",
+        format: "bracket",
       }),
     ).toMatchObject({
       ok: true,
-      value: { format: "single-elimination" },
+      value: { format: "bracket" },
     });
     expect(
-      parseCreateCompetitionInput({ ...competition, format: "heats" }),
+      parseCreateCompetitionInput({ ...competition, format: "bracket" }),
     ).toMatchObject({
       ok: true,
-      value: { format: "heats" },
+      value: { format: "bracket" },
+    });
+  });
+
+  it("takes 12 places for Placement and refuses 5 for a Bracket", () => {
+    const twelve = Array.from({ length: 12 }, (_, i) => 12 - i).join(", ");
+    expect(
+      parseCreateCompetitionInput({ ...competition, placementPoints: twelve }),
+    ).toMatchObject({ ok: true });
+    expect(
+      parseCreateCompetitionInput({
+        ...competition,
+        format: "bracket",
+        placementPoints: "5, 4, 3, 2, 1",
+      }),
+    ).toEqual({
+      ok: false,
+      error: "Placement Points cover at most 4 places for this Format.",
+      fieldErrors: {
+        placementPoints:
+          "Placement Points cover at most 4 places for this Format.",
+      },
     });
   });
 
   it("refuses an unknown Format", () => {
     expectRefused(
       parseCreateCompetitionInput({ ...competition, format: "swiss" }),
-      "Format must be one of points, single-elimination, heats, games.",
+      "Format must be one of placement, bracket, head-to-head, best-score, participation.",
     );
   });
 
-  it("takes the games Format with its Game Type", () => {
-    expect(
-      parseCreateCompetitionInput({
-        ...competition,
-        format: "games",
-        gameType: "best-score",
-      }),
-    ).toMatchObject({
-      ok: true,
-      value: { format: "games", gameType: "best-score" },
-    });
-  });
+  it.each(["head-to-head", "best-score"])(
+    "takes the %s Format on its own, with no Format to choose",
+    (format) => {
+      expect(
+        parseCreateCompetitionInput({ ...competition, format }),
+      ).toMatchObject({ ok: true, value: { format } });
+    },
+  );
 
-  it("refuses the games Format without a Game Type", () => {
-    expectRefused(
-      parseCreateCompetitionInput({ ...competition, format: "games" }),
-      "Choose a Game Type.",
-    );
-    expectRefused(
-      parseCreateCompetitionInput({
-        ...competition,
-        format: "games",
-        gameType: "darts",
-      }),
-      "Choose a Game Type.",
-    );
-  });
-
-  it("ignores a Game Type sent with another Format", () => {
-    const parsed = parseCreateCompetitionInput({
-      ...competition,
-      format: "heats",
-      gameType: "ranked",
-    });
-    expect(parsed).toMatchObject({ ok: true, value: { format: "heats" } });
-    expect(parsed.ok && parsed.value.gameType).toBeFalsy();
+  it("refuses the retired games and points Formats", () => {
+    for (const format of ["games", "points"]) {
+      expect(
+        parseCreateCompetitionInput({ ...competition, format }),
+      ).toMatchObject({ ok: false });
+    }
   });
 
   it("refuses a non-string format as a field error instead of throwing", () => {
@@ -492,7 +514,7 @@ describe("parseCreateCompetitionInput", () => {
         ...competition,
         format: 123 as unknown as string,
       }),
-      "Format must be one of points, single-elimination, heats, games.",
+      "Format must be one of placement, bracket, head-to-head, best-score, participation.",
     );
   });
 });
@@ -504,46 +526,129 @@ describe("competitionSeedSchema, games", () => {
     return result.success ? [] : result.error.issues.map((i) => i.message);
   };
 
-  it("takes a games Competition with its Game Type, settings and Entrants open", () => {
+  it("takes a Head-to-head Competition with its settings and Entrants open", () => {
     expect(
       issues({
         ...base,
-        format: "games",
-        gameType: "head-to-head",
+        format: "head-to-head",
         gameConfig: { drawsAllowed: false, bestOf: null },
         entrantsOpen: true,
       }),
     ).toEqual([]);
-    expect(issues({ ...base, format: "games", gameType: "ranked" })).toEqual(
-      [],
-    );
+    expect(issues({ ...base, format: "best-score" })).toEqual([]);
   });
 
-  it("needs a gameType exactly when the Format is games", () => {
-    expect(issues({ ...base, format: "games" })).toEqual([
-      "gameType is required for a games Competition",
+  it("takes gameConfig and entrantsOpen only on a Head-to-head or Best score Competition", () => {
+    expect(issues({ ...base, entrantsOpen: true })).toEqual([
+      "entrantsOpen is only for a head-to-head or best-score Competition",
     ]);
-    expect(issues({ ...base, gameType: "ranked" })).toEqual([
-      "gameType is only for a games Competition",
-    ]);
-  });
-
-  it("takes gameConfig and entrantsOpen only on a games Competition", () => {
-    expect(issues({ ...base, format: "heats", entrantsOpen: true })).toEqual([
-      "entrantsOpen is only for a games Competition",
-    ]);
-    expect(issues({ ...base, gameConfig: { finishPoints: [] } })).toEqual([
-      "gameConfig is only for a games Competition",
+    expect(issues({ ...base, gameConfig: { drawsAllowed: true } })).toEqual([
+      "gameConfig is only for a head-to-head or best-score Competition",
     ]);
   });
 
-  it("checks gameConfig against the Game Type", () => {
+  it("needs a Bracket's full bracketConfig, and gives no other Format one", () => {
+    expect(issues({ ...base, format: "bracket" })).toEqual([
+      "a Bracket needs its bracketConfig (entrantsPerHeat, advancePerHeat, thirdPlaceGame)",
+    ]);
     expect(
       issues({
         ...base,
-        format: "games",
-        gameType: "best-score",
+        format: "bracket",
+        bracketConfig: {
+          entrantsPerHeat: 2,
+          advancePerHeat: 1,
+          thirdPlaceGame: false,
+        },
+      }),
+    ).toEqual([]);
+    expect(
+      issues({
+        ...base,
+        bracketConfig: {
+          entrantsPerHeat: 2,
+          advancePerHeat: 1,
+          thirdPlaceGame: false,
+        },
+      }),
+    ).toEqual(["bracketConfig is only for a Bracket"]);
+  });
+
+  it("refuses a 3rd place game on a Bracket config other than 2 per Heat with 1 advancing", () => {
+    const bracket = (config: object) =>
+      issues({
+        ...base,
+        format: "bracket",
+        bracketConfig: { thirdPlaceGame: true, ...config },
+      });
+    expect(bracket({ entrantsPerHeat: 4, advancePerHeat: 2 })).toEqual([
+      "A 3rd place game is only for 2 per Heat with 1 advancing.",
+    ]);
+    expect(bracket({ entrantsPerHeat: 2, advancePerHeat: 1 })).toEqual([]);
+  });
+
+  it("refuses the removed gameType and finishPoints keys", () => {
+    for (const extra of [
+      { gameType: "head-to-head" },
+      { gameConfig: { finishPoints: [] }, format: "best-score" },
+    ]) {
+      expect(issues({ ...base, format: "head-to-head", ...extra })).not.toEqual(
+        [],
+      );
+    }
+  });
+
+  it("checks gameConfig against the Format", () => {
+    expect(
+      issues({
+        ...base,
+        format: "best-score",
         gameConfig: { drawsAllowed: true, bestOf: null },
+      }),
+    ).not.toEqual([]);
+  });
+});
+
+describe("competitionSeedSchema, participation", () => {
+  const base = { name: "Check-in", format: "participation" as const };
+  const issues = (input: unknown) => {
+    const result = competitionSeedSchema.safeParse(input);
+    return result.success ? [] : result.error.issues.map((i) => i.message);
+  };
+
+  it("an individual one takes N and no Placement Points", () => {
+    expect(
+      issues({ ...base, scoring: "individual", participationPoints: 2 }),
+    ).toEqual([]);
+    expect(
+      issues({ ...base, scoring: "individual", placementPoints: [3] }),
+    ).toEqual(["placementPoints is only for a team participation Competition"]);
+  });
+
+  it("a team one takes Placement Points and no N", () => {
+    expect(
+      issues({ ...base, scoring: "team", placementPoints: [3, 2, 1] }),
+    ).toEqual([]);
+    expect(issues({ ...base, scoring: "team" })).toEqual([
+      "placementPoints is required for a team participation Competition",
+    ]);
+    expect(
+      issues({
+        ...base,
+        scoring: "team",
+        placementPoints: [3],
+        participationPoints: 1,
+      }),
+    ).toEqual(["participationPoints is only for an individual Competition"]);
+  });
+
+  it("refuses the removed participationTeamScoring key", () => {
+    expect(
+      issues({
+        ...base,
+        scoring: "team",
+        placementPoints: [3],
+        participationTeamScoring: "ranked",
       }),
     ).not.toEqual([]);
   });
@@ -624,6 +729,29 @@ describe("competitionGuardError", () => {
     finalizedAt: null as Date | null,
   };
 
+  it("refuses more than 4 places for a Bracket, on create and on edit, but not for Placement", () => {
+    const six = { ...values, placementPoints: [5, 4, 3, 2, 1] };
+    const refusal = "Placement Points cover at most 4 places for this Format.";
+    expect(competitionGuardError({ ...six, format: "bracket" }, ctx)).toBe(
+      refusal,
+    );
+    expect(
+      competitionGuardError(six, {
+        ...ctx,
+        existing: { ...existingBase, format: "bracket" },
+      }),
+    ).toBe(refusal);
+    expect(
+      competitionGuardError(
+        {
+          ...six,
+          placementPoints: Array.from({ length: 12 }, (_, i) => 12 - i),
+        },
+        { ...ctx, existing: { ...existingBase, format: "placement" } },
+      ),
+    ).toBeNull();
+  });
+
   it("allows a new Competition and a scoring change with no Points Entries", () => {
     expect(competitionGuardError(values, ctx)).toBeNull();
     expect(
@@ -657,7 +785,7 @@ describe("competitionGuardError", () => {
     );
   });
 
-  it("refuses a scoring or Placement Points change while the Bracket is finalized, but allows an unchanged save", () => {
+  it("refuses a scoring change while the Bracket is finalized, but allows a Placement Points change (it applies at the next Finalize)", () => {
     const finalized = { ...existingBase, finalizedAt: new Date() };
     expect(
       competitionGuardError(values, {
@@ -672,9 +800,7 @@ describe("competitionGuardError", () => {
         { ...values, placementPoints: [10, 5] },
         { ...ctx, existing: finalized },
       ),
-    ).toBe(
-      "This Competition's Bracket is finalized. Un-finalize the Bracket first.",
-    );
+    ).toBeNull();
     expect(
       competitionGuardError(values, { ...ctx, existing: finalized }),
     ).toBeNull();
@@ -686,18 +812,38 @@ describe("competitionGuardError", () => {
     ).toBeNull();
   });
 
-  it("asks to reopen a closed games Competition before a scoring or Placement Points change", () => {
+  it("asks to reopen a closed Head-to-head or Best score Competition before a scoring change, not a Placement Points one", () => {
     const closed = {
       ...existingBase,
-      format: "games" as const,
+      format: "head-to-head" as const,
       finalizedAt: new Date(),
     };
+    expect(
+      competitionGuardError(values, {
+        ...ctx,
+        existing: { ...closed, scoring: "individual" },
+      }),
+    ).toBe("This Competition is closed. Reopen the Competition first.");
     expect(
       competitionGuardError(
         { ...values, placementPoints: [10, 5] },
         { ...ctx, existing: closed },
       ),
-    ).toBe("This Competition is closed. Reopen the Competition first.");
+    ).toBeNull();
+  });
+
+  it("asks to reopen a Finalized Placement, not to un-finalize a Bracket, before a scoring change", () => {
+    const finalized = {
+      ...existingBase,
+      format: "placement" as const,
+      finalizedAt: new Date(),
+    };
+    expect(
+      competitionGuardError(values, {
+        ...ctx,
+        existing: { ...finalized, scoring: "individual" },
+      }),
+    ).toBe("This Competition is finalized. Reopen it first.");
   });
 });
 
@@ -770,7 +916,6 @@ describe("setup parsers given a malformed call", () => {
     name: "Catan",
     description: "",
     scoring: "individual",
-    maxPoints: "10",
     placementPoints: "5, 3, 1",
     countsTowardTeam: false,
     group: "",
@@ -779,7 +924,6 @@ describe("setup parsers given a malformed call", () => {
   it.each<[string, Record<string, unknown>]>([
     ["placementPoints: 5", { placementPoints: 5 }],
     ["placementPoints: [5]", { placementPoints: [5] }],
-    ["maxPoints: 10", { maxPoints: 10 }],
     ["name: null", { name: null }],
     ["description: {}", { description: {} }],
     ["group: []", { group: [] }],
@@ -824,5 +968,105 @@ describe("setup parsers' field errors", () => {
       error: "The form's fields are missing.",
       fieldErrors: {},
     });
+  });
+});
+
+describe("settingsSaveGroup", () => {
+  it("saves a text field on its own", () => {
+    expect(settingsSaveGroup("storyTheme")).toEqual(["storyTheme"]);
+    expect(settingsSaveGroup("slackChannelUrl")).toEqual(["slackChannelUrl"]);
+  });
+
+  it("saves the date range as one", () => {
+    expect(settingsSaveGroup("startDate")).toEqual(["startDate", "endDate"]);
+    expect(settingsSaveGroup("endDate")).toEqual(["startDate", "endDate"]);
+  });
+
+  it("saves the background with every override, so a light/dark flip and the overrides it clears land together", () => {
+    const group = [
+      "backgroundColor",
+      "overridePrimaryColor",
+      "overridePrimaryForegroundColor",
+      "overrideAccentColor",
+      "overrideBackgroundColor",
+      "overrideForegroundColor",
+    ];
+    expect(settingsSaveGroup("backgroundColor")).toEqual(group);
+    expect(settingsSaveGroup("overrideAccentColor")).toEqual(group);
+  });
+});
+
+describe("parseWarWeekSettingsFields", () => {
+  it("accepts some of the settings fields, as strings", () => {
+    expect(
+      parseWarWeekSettingsFields({ storyTheme: "Moon", winner: "" }),
+    ).toEqual({ ok: true, value: { storyTheme: "Moon", winner: "" } });
+  });
+
+  it("refuses a field that isn't a setting", () => {
+    expect(parseWarWeekSettingsFields({ status: "live" })).toMatchObject({
+      ok: false,
+      error: "The form's fields are missing.",
+    });
+  });
+
+  it("refuses a setting that isn't a string, at its field", () => {
+    expect(parseWarWeekSettingsFields({ storyTheme: 7 })).toEqual({
+      ok: false,
+      error: "Story Theme must be filled in.",
+      fieldErrors: { storyTheme: "Story Theme must be filled in." },
+    });
+  });
+
+  it("refuses no fields, or no object at all", () => {
+    for (const malformed of [{}, null, "storyTheme", ["storyTheme"]]) {
+      expect(parseWarWeekSettingsFields(malformed)).toMatchObject({
+        ok: false,
+        error: "The form's fields are missing.",
+      });
+    }
+  });
+});
+
+describe("mergeWarWeekSettings", () => {
+  it("lays the saved fields over the stored ones and changes only those columns", () => {
+    const stored = { ...input, winner: "Red", highlights: "Won it" };
+    const result = mergeWarWeekSettings(stored, { storyTheme: " Moon " });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.changed).toEqual({ storyTheme: "Moon" });
+    // The whole row is checked, newer stored values included.
+    expect(result.value.values).toMatchObject({
+      storyTheme: "Moon",
+      winner: "Red",
+      highlights: ["Won it"],
+      startDate: "2026-02-22",
+    });
+  });
+
+  it("changes a group's columns together", () => {
+    const result = mergeWarWeekSettings(input, {
+      startDate: "2026-02-21",
+      endDate: "2026-02-28",
+    });
+    expect(result).toMatchObject({
+      ok: true,
+      value: { changed: { startDate: "2026-02-21", endDate: "2026-02-28" } },
+    });
+  });
+
+  it("refuses a field the whole settings would refuse, at that field", () => {
+    expectRefused(
+      mergeWarWeekSettings(input, { slackChannelUrl: "http://x.example" }),
+      "Slack URL must be an https URL.",
+    );
+  });
+
+  it("checks rules across fields against the stored ones", () => {
+    // The stored end date is 2026-02-27.
+    expectRefused(
+      mergeWarWeekSettings(input, { startDate: "2026-03-01" }),
+      "Start date must not be after the end date.",
+    );
   });
 });

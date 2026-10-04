@@ -17,8 +17,12 @@ import {
 } from "@/components/form-field-errors";
 import { OptionSelect } from "@/components/option-select";
 import { RichTextEditor } from "@/components/rich-text-editor";
+import {
+  SetupRowError,
+  SetupSaveButton,
+  SetupSheetFooter,
+} from "@/components/setup-row";
 import { TimeCombobox } from "@/components/time-combobox";
-import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldError,
@@ -57,12 +61,11 @@ const EMPTY: ScheduleItemInput = {
   description: { type: "doc", content: [] },
 };
 
-const BACK = "/admin/setup/schedule";
-
 /**
- * Add or edit one Schedule Item. Times are ET wall-clock times on the chosen
- * Day. The server action checks the times, the Day and the (Day, start time,
- * title) key; its error is what's shown.
+ * Add or edit one Schedule Item, in its Sheet on the Schedule page. Times
+ * are ET wall-clock times on the chosen Day. The server action checks the
+ * times, the Day and the (Day, start time, title) key; its error is what's
+ * shown. `onSaved` closes the Sheet.
  */
 export function ScheduleItemForm({
   warWeekId,
@@ -71,6 +74,7 @@ export function ScheduleItemForm({
   initial,
   days,
   competitions,
+  onSaved,
 }: {
   /** The War Week this page was rendered for; creates post it. */
   warWeekId: string;
@@ -84,6 +88,7 @@ export function ScheduleItemForm({
   initial?: ScheduleItemInput;
   days: { id: string; date: string; dayTheme: string }[];
   competitions: { id: string; name: string }[];
+  onSaved?: () => void;
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -145,7 +150,7 @@ export function ScheduleItemForm({
         return saved;
       }
       toast.success("Schedule Item saved");
-      router.push(BACK);
+      onSaved?.();
       router.refresh();
       return saved;
     },
@@ -162,7 +167,7 @@ export function ScheduleItemForm({
       className="flex flex-col gap-5"
       aria-label="Schedule Item"
     >
-      <FieldGroup>
+      <FieldGroup className="px-4">
         <div className="grid gap-4 sm:grid-cols-3">
           <Field data-invalid={!!fieldErrors.dayId}>
             <FieldLabel htmlFor="schedule-day">Day</FieldLabel>
@@ -290,31 +295,19 @@ export function ScheduleItemForm({
             onChange={(description) => set("description", description)}
             label="Description"
             labelId="schedule-description-label"
+            placeholder="Add details (optional)…"
           />
           <FieldError>{fieldErrors.description}</FieldError>
         </Field>
       </FieldGroup>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
-          type="submit"
-          size="lg"
-          className="min-h-11 sm:min-h-9"
-          disabled={pending}
-        >
-          {pending ? "Saving…" : itemId ? "Save changes" : "Add Schedule Item"}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          className="min-h-11 sm:min-h-9"
-          onClick={() => router.push(BACK)}
-        >
-          Cancel
-        </Button>
-      </div>
-      {formError && !pending && <FieldError>{formError}</FieldError>}
+      <SetupSheetFooter>
+        <SetupSaveButton
+          pending={pending}
+          label={itemId ? "Save" : "Add Schedule Item"}
+        />
+        <SetupRowError error={pending ? null : formError} />
+      </SetupSheetFooter>
     </form>
   );
 }

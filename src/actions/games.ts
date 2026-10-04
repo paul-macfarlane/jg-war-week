@@ -4,9 +4,7 @@ import { guarded } from "@/actions/result";
 import { revalidateWarWeek } from "@/actions/revalidate";
 import { authorize, authorizeGameWrite } from "@/auth/authorize";
 import type { WarWeekAction } from "@/lib/access";
-import { parseEntrantsInput } from "@/lib/bracket/input";
-import { parseGameInput, parseGamesSettingsInput } from "@/lib/games/input";
-import { replaceEntrants } from "@/mutations/brackets";
+import { parseGameInput } from "@/lib/games/input";
 import * as mutations from "@/mutations/games";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 
@@ -21,8 +19,8 @@ function asRecord(input: unknown): Record<string, unknown> {
 
 /**
  * Runs a Game write (ADR 0006): authorizes the actor with the Game facts
- * and the posted input (its players read by the Game Type) first, so a refusal wins over malformed input,
- * then parses the input by the Competition's Game Type. The mutation
+ * and the posted input (its players read by the Format) first, so a refusal wins over malformed input,
+ * then parses the input by the Competition's Format. The mutation
  * checks the facts again under the Competition's lock.
  */
 async function gameWrite<R extends { ok: boolean }>(
@@ -45,8 +43,8 @@ async function gameWrite<R extends { ok: boolean }>(
     if (!authorized.ok) return authorized;
     let players: Parameters<typeof mutations.logGame>[1] = { players: [] };
     if (action !== "games.delete") {
-      const { gameType, config } = authorized.competition;
-      const parsed = parseGameInput(gameType, config, asRecord(input));
+      const { gameFormat, config } = authorized.competition;
+      const parsed = parseGameInput(gameFormat, config, asRecord(input));
       if (!parsed.ok) return parsed;
       players = parsed.value;
     }
@@ -88,7 +86,7 @@ export async function deleteGame(
 }
 
 /**
- * Runs a Host or Organizer write on a `games` Competition, in its own War
+ * Runs a Host or Organizer write on a Head-to-head or Best score Competition, in its own War
  * Week (loaded from the row), then revalidates the War Week's pages.
  * `write` parses its input, after authorize.
  */
@@ -106,35 +104,6 @@ async function hostWrite(
   });
 }
 
-/** Saves a `games` Competition's Game Type settings, Entrant and logging rules. */
-export async function setGamesSettings(
-  competitionId: string,
-  input: unknown,
-): Promise<MutationResult> {
-  return hostWrite("games.settings", competitionId, async (ctx) => {
-    const parsed = parseGamesSettingsInput(asRecord(input));
-    if (!parsed.ok) return parsed;
-    return mutations.setGamesSettings(competitionId, parsed.value, ctx);
-  });
-}
-
-/** Sets a `games` Competition's fixed Entrant list, in the order added. */
-export async function setGamesEntrants(
-  competitionId: string,
-  input: unknown,
-): Promise<MutationResult> {
-  return hostWrite("games.entrants", competitionId, async (ctx) => {
-    const parsed = parseEntrantsInput(input);
-    if (!parsed.ok) return parsed;
-    return replaceEntrants(
-      competitionId,
-      { ...parsed.value, format: "games" },
-      ctx,
-    );
-  });
-}
-
-/** Closes a `games` Competition, awarding Placement Points from its leaderboard. */
 export async function closeGames(
   competitionId: string,
 ): Promise<MutationResult> {
@@ -143,7 +112,7 @@ export async function closeGames(
   );
 }
 
-/** Reopens a closed `games` Competition, withdrawing its generated Points Entries. */
+/** Reopens a closed Head-to-head or Best score Competition, withdrawing its generated Points Entries. */
 export async function reopenGames(
   competitionId: string,
 ): Promise<MutationResult> {

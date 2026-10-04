@@ -1,16 +1,32 @@
 import { Node, mergeAttributes } from "@tiptap/core";
 
+import { FIGURE_GROUP, insertFigure } from "@/lib/rich-text/figures";
 import { VIDEO_IFRAME, videoEmbedUrl } from "@/lib/video";
+
+declare module "@tiptap/core" {
+  interface Commands<ReturnType> {
+    video: {
+      /**
+       * Inserts a video in place of the selection, or directly after the
+       * list or quote the selection sits in, since a video cannot live
+       * inside either.
+       */
+      insertVideo: (attrs: { src: string }) => ReturnType;
+    };
+  }
+}
 
 /**
  * The editor's `video` block: an atom holding one attribute, `src`, the
  * video's original share URL. The editor draws the same embed the viewer
  * does (`videoEmbedUrl`) so an Organizer sees what they inserted; the
- * sanitizer drops any `src` that does not resolve to an embed.
+ * sanitizer drops any `src` that does not resolve to an embed. It sits in
+ * the `figure` group with the image, so like the image it lives only at the
+ * top of a document and is placed the same way (`insertFigure`).
  */
 export const Video = Node.create({
   name: "video",
-  group: "block",
+  group: FIGURE_GROUP,
   atom: true,
   draggable: true,
 
@@ -21,6 +37,13 @@ export const Video = Node.create({
         parseHTML: (element) => element.getAttribute("data-video-src"),
         renderHTML: (attributes) => ({ "data-video-src": attributes.src }),
       },
+    };
+  },
+
+  addCommands() {
+    return {
+      insertVideo: (attrs) => (props) =>
+        insertFigure(this.type.create(attrs), props),
     };
   },
 

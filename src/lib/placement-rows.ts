@@ -4,7 +4,7 @@
  * validates; these live errors mirror the server's rules, reusing its
  * wording where it already has one.
  */
-import { MAX_PLACEMENTS } from "@/lib/competitions";
+import { placementLimitMessage } from "@/lib/competitions";
 import { POINTS_NUMBER } from "@/lib/points-entry";
 
 /** The "5 · 3 · 1" quick fill. */
@@ -23,10 +23,13 @@ export function placementPointsFromRows(rows: string[]): string {
     .join(", ");
 }
 
-/** Live errors for the rows, in the server's wording; empty when valid. */
+/**
+ * Live errors for the rows, in the server's wording; empty when valid.
+ * `limit` is the Format's `placementLimit` (null: none).
+ */
 export function placementRowErrors(
   rows: string[],
-  maxPoints: string,
+  limit: number | null = null,
 ): string[] {
   const values = rows.map((row) => row.trim()).filter(Boolean);
   const errors: string[] = [];
@@ -37,8 +40,8 @@ export function placementRowErrors(
   if (rows.slice(0, lastFilled).some((row) => !row.trim())) {
     errors.push("Fill in every place above the last one, or remove it.");
   }
-  if (values.length > MAX_PLACEMENTS) {
-    errors.push(`Placement Points cover at most ${MAX_PLACEMENTS} places.`);
+  if (limit !== null && values.length > limit) {
+    errors.push(placementLimitMessage(limit));
   }
   if (!values.every((value) => POINTS_NUMBER.test(value))) {
     errors.push("Each place's Placement Points must be a number.");
@@ -52,10 +55,6 @@ export function placementRowErrors(
     errors.push(
       "Each place's Placement Points must be no more than the place above it.",
     );
-  }
-  const max = maxPoints.trim();
-  if (points.length > 0 && POINTS_NUMBER.test(max) && points[0] > Number(max)) {
-    errors.push("1st place's Placement Points can't be more than Max points.");
   }
   return errors;
 }

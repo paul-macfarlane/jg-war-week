@@ -10,6 +10,7 @@ describe("OrganizerGuide", () => {
   const text = html.replace(/<[^>]+>/g, " ");
 
   const topics = [
+    "Finding your way",
     "First-time setup order",
     "Organizers and Hosts",
     "What a Participant email does",
@@ -33,10 +34,16 @@ describe("OrganizerGuide", () => {
   });
 
   it("links to the setup, standings and Organizers admin pages", () => {
-    expect(html).toContain('href="/admin/setup/war-week"');
-    expect(html).toContain('href="/admin/standings"');
+    expect(html).toContain('href="/admin/settings"');
+    expect(html).toContain('href="/admin/finale"');
     expect(html).toContain('href="/admin/organizers"');
-    expect(html).toContain('href="/admin/setup/competitions"');
+    expect(html).toContain('href="/admin/competitions"');
+  });
+
+  it("says where You and Your Team show, and that Team standings aren't highlighted", () => {
+    expect(text).toContain("Your Team");
+    expect(text).toContain("Squad standings rows are not highlighted");
+    expect(text).not.toMatch(/and their squad are highlighted/i);
   });
 
   it("never uses banned vocabulary", () => {

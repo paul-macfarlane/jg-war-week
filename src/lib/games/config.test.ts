@@ -4,25 +4,23 @@ import {
   BEST_OF_OPTIONS,
   bestOfLabel,
   defaultGamesConfig,
-  finishPointsFor,
-  gameTypeLabel,
+  gameFormatLabel,
   gamesConfigOf,
   gamesConfigSchema,
 } from "@/lib/games/config";
 
 function messages(
-  gameType: Parameters<typeof gamesConfigSchema>[0],
+  gameFormat: Parameters<typeof gamesConfigSchema>[0],
   input: unknown,
 ) {
-  const result = gamesConfigSchema(gameType).safeParse(input);
+  const result = gamesConfigSchema(gameFormat).safeParse(input);
   return result.success ? [] : result.error.issues.map((i) => i.message);
 }
 
-describe("gameTypeLabel", () => {
-  it("names each Game Type for people", () => {
-    expect(gameTypeLabel("head-to-head")).toBe("Head-to-head");
-    expect(gameTypeLabel("best-score")).toBe("Best score");
-    expect(gameTypeLabel("ranked")).toBe("Ranked");
+describe("gameFormatLabel", () => {
+  it("names each Format for people", () => {
+    expect(gameFormatLabel("head-to-head")).toBe("Head-to-head");
+    expect(gameFormatLabel("best-score")).toBe("Best score");
   });
 });
 
@@ -51,10 +49,6 @@ describe("defaultGamesConfig", () => {
       betterIs: "higher",
       unit: "",
     });
-  });
-
-  it("ranked: an empty Finish Points table (one per player beaten)", () => {
-    expect(defaultGamesConfig("ranked")).toEqual({ finishPoints: [] });
   });
 });
 
@@ -91,56 +85,29 @@ describe("gamesConfigSchema", () => {
     ).toEqual(["A unit is at most 20 characters."]);
   });
 
-  it("ranked takes Finish Points of zero or more", () => {
-    expect(messages("ranked", { finishPoints: [5, 3, 1] })).toEqual([]);
-    expect(messages("ranked", { finishPoints: [] })).toEqual([]);
-    expect(messages("ranked", { finishPoints: [3, -1] })).toEqual([
-      "Finish Points can't be negative.",
-    ]);
-  });
-
-  it("refuses another Game Type's settings", () => {
+  it("refuses another Format's settings", () => {
     expect(
-      messages("ranked", { drawsAllowed: true, bestOf: null }),
+      messages("best-score", { drawsAllowed: true, bestOf: null }),
     ).not.toEqual([]);
   });
 });
 
 describe("gamesConfigOf", () => {
-  it("reads a saved config valid for the Game Type", () => {
+  it("reads a saved config valid for the Format", () => {
     expect(
       gamesConfigOf({
-        gameType: "best-score",
+        format: "best-score",
         gameConfig: { count: "total", betterIs: "higher", unit: "trips" },
       }),
     ).toEqual({ count: "total", betterIs: "higher", unit: "trips" });
   });
 
-  it("falls back to the Game Type's default when nothing valid is saved", () => {
+  it("falls back to the Format's default when nothing valid is saved", () => {
+    expect(gamesConfigOf({ format: "head-to-head", gameConfig: null })).toEqual(
+      { drawsAllowed: false, bestOf: null },
+    );
     expect(
-      gamesConfigOf({ gameType: "head-to-head", gameConfig: null }),
-    ).toEqual({ drawsAllowed: false, bestOf: null });
-    expect(
-      gamesConfigOf({ gameType: "ranked", gameConfig: { bestOf: 3 } }),
-    ).toEqual({ finishPoints: [] });
-  });
-});
-
-describe("finishPointsFor", () => {
-  it("by default gives one point per player beaten", () => {
-    expect(finishPointsFor({ finishPoints: [] }, [1, 2, 3, 4])).toEqual([
-      3, 2, 1, 0,
-    ]);
-  });
-
-  it("by default, tied players beat only the players behind them", () => {
-    // Places 1, 1, 3: each winner beats one player, the last beats none.
-    expect(finishPointsFor({ finishPoints: [] }, [1, 1, 3])).toEqual([1, 1, 0]);
-  });
-
-  it("uses the Host's table, and zero past its end", () => {
-    expect(finishPointsFor({ finishPoints: [10, 6] }, [2, 1, 3])).toEqual([
-      6, 10, 0,
-    ]);
+      gamesConfigOf({ format: "best-score", gameConfig: { bestOf: 3 } }),
+    ).toEqual({ count: "best", betterIs: "higher", unit: "" });
   });
 });

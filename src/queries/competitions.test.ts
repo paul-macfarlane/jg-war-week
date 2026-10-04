@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 import type { DBTx } from "@/db";
 import { isLocalDatabaseUrl } from "@/db/local-url";
 import { inRolledBackTransaction } from "@/db/test-transaction";
-import { getCompetitionByName } from "@/queries/competitions";
+import { competitionStatusText } from "@/lib/competition-status";
+import { getCompetitionByName, getCompetitions } from "@/queries/competitions";
 
 // Runs only against a local Postgres (CI's service or docker compose; see
 // vitest.config.ts), never a hosted database.
@@ -52,7 +53,7 @@ describe.skipIf(!isLocalDatabase)("getCompetitionByName", () => {
       expect(await getCompetitionByName(warWeek, "Beyblades", tx)).toEqual({
         id: pool.id,
         name: "Beyblades",
-        format: "points",
+        format: "placement",
         scoring: "team",
       });
     });
@@ -74,7 +75,7 @@ describe.skipIf(!isLocalDatabase)("getCompetitionByName", () => {
       expect(await getCompetitionByName(warWeek, "beyblades", tx)).toEqual({
         id: exact.id,
         name: "beyblades",
-        format: "points",
+        format: "placement",
         scoring: "team",
       });
     });
@@ -91,7 +92,7 @@ describe.skipIf(!isLocalDatabase)("getCompetitionByName", () => {
       expect(await getCompetitionByName(warWeek, "beyblades", tx)).toEqual({
         id: pool.id,
         name: "Beyblades",
-        format: "points",
+        format: "placement",
         scoring: "team",
       });
     });
@@ -155,6 +156,117 @@ describe.skipIf(!isLocalDatabase)("getCompetitionByName", () => {
       expect(
         await getCompetitionByName(warWeek, "Nonexistent", tx),
       ).toBeUndefined();
+    });
+  });
+});
+
+describe.skipIf(!isLocalDatabase)("getCompetitions", () => {
+  it("gives each Competition its status, from one batch of facts per War Week", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { schema, warWeek } = await fixture(tx);
+      const [zion, nebuchadnezzar, logos, hammer] = await tx
+        .insert(schema.team)
+        .values(
+          ["Zion", "Nebuchadnezzar", "Logos", "Hammer"].map((name) => ({
+            warWeekId: warWeek.id,
+            name,
+            color: "#123456",
+          })),
+        )
+        .returning({ id: schema.team.id });
+      const competitions = await tx
+        .insert(schema.competition)
+        .values(
+          [
+            { name: "Fresh", format: "placement" as const },
+            { name: "Open games", format: "head-to-head" as const },
+            {
+              name: "Tied",
+              format: "placement" as const,
+              finalizedAt: new Date("2099-01-03T12:00:00Z"),
+            },
+            {
+              name: "Stairs",
+              format: "best-score" as const,
+              finalizedAt: new Date("2099-01-03T13:00:00Z"),
+            },
+            { name: "Knockout", format: "bracket" as const },
+          ].map((c) => ({
+            ...c,
+            warWeekId: warWeek.id,
+            scoring: "team" as const,
+          })),
+        )
+        .returning({
+          id: schema.competition.id,
+          name: schema.competition.name,
+        });
+      const id = (name: string) =>
+        competitions.find((c) => c.name === name)!.id;
+
+      // Open games: an Entrant is a result.
+      await tx.insert(schema.entrant).values({
+        competitionId: id("Open games"),
+        teamId: zion.id,
+        seedPosition: 1,
+      });
+
+      // Tied: two 1st-place entries and a 2nd.
+      await tx.insert(schema.pointsEntry).values(
+        [
+          { teamId: zion.id, points: 10 },
+          { teamId: nebuchadnezzar.id, points: 10 },
+          { teamId: logos.id, points: 5 },
+        ].map((e) => ({
+          ...e,
+          warWeekId: warWeek.id,
+          competitionId: id("Tied"),
+          enteredByEmail: "organizer@jahnelgroup.com",
+          generatedByBracket: true,
+        })),
+      );
+
+      // Knockout: four Entrants, Round 1 half played, the final to come.
+      const entrants = await tx
+        .insert(schema.entrant)
+        .values(
+          [zion, nebuchadnezzar, logos, hammer].map((t, index) => ({
+            competitionId: id("Knockout"),
+            teamId: t.id,
+            seedPosition: index + 1,
+          })),
+        )
+        .returning({ id: schema.entrant.id });
+      const heats = await tx
+        .insert(schema.heat)
+        .values(
+          [
+            { round: 1, position: 1, status: "played" as const },
+            { round: 1, position: 2, status: "ready" as const },
+            { round: 2, position: 1, status: "pending" as const },
+          ].map((h) => ({ ...h, competitionId: id("Knockout") })),
+        )
+        .returning({ id: schema.heat.id });
+      await tx.insert(schema.heatEntrant).values([
+        { heatId: heats[0].id, entrantId: entrants[0].id, slot: 0, place: 1 },
+        { heatId: heats[0].id, entrantId: entrants[3].id, slot: 1, place: 2 },
+        { heatId: heats[1].id, entrantId: entrants[1].id, slot: 0 },
+        { heatId: heats[1].id, entrantId: entrants[2].id, slot: 1 },
+        { heatId: heats[2].id, entrantId: entrants[0].id, slot: 0 },
+      ]);
+
+      const { ungrouped } = await getCompetitions(warWeek, tx);
+      expect(
+        Object.fromEntries(
+          ungrouped.map((c) => [c.name, competitionStatusText(c.status)]),
+        ),
+      ).toEqual({
+        Fresh: "Not started",
+        "Open games": "Underway",
+        Tied: "Done · Winners: Nebuchadnezzar, Zion",
+        Stairs: "Closed",
+        Knockout: "Underway · Round 1 of 2",
+      });
     });
   });
 });

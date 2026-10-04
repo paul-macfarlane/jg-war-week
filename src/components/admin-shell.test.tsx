@@ -2,11 +2,28 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import type { WarWeek } from "@/db/schema";
+import type { AdminEdition } from "@/lib/access";
+import type { AdminSection } from "@/lib/admin-sections";
 
 import { AdminRefused, AdminShell, editingBanner } from "./admin-shell";
 
 vi.mock("@/components/auth-buttons", () => ({
   SignOutButton: () => null,
+}));
+vi.mock("@/components/admin-account-menu", () => ({
+  AdminAccountMenu: ({
+    email,
+    profileEdition,
+  }: {
+    email: string;
+    profileEdition: string;
+  }) => (
+    <button
+      aria-label="Account menu"
+      data-email={email}
+      data-profile-edition={profileEdition}
+    />
+  ),
 }));
 vi.mock("@/components/admin-edition-switcher", () => ({
   AdminEditionSwitcher: () => null,
@@ -30,7 +47,7 @@ describe("AdminShell", () => {
         warWeek={fakeWarWeek}
         email="o@jahnelgroup.com"
         isOrganizer
-        current="Overview"
+        current="Competitions"
       >
         x
       </AdminShell>,
@@ -40,13 +57,54 @@ describe("AdminShell", () => {
     expect(html).not.toContain("public site");
   });
 
+  it("puts the account menu, not the email or Sign out, in the header", () => {
+    const html = renderToStaticMarkup(
+      <AdminShell
+        warWeek={fakeWarWeek}
+        email="o@jahnelgroup.com"
+        isOrganizer
+        current="Competitions"
+      >
+        x
+      </AdminShell>,
+    );
+
+    expect(html).toContain('aria-label="Account menu"');
+    expect(html).toContain('data-email="o@jahnelgroup.com"');
+    expect(html).not.toContain("Signed in as");
+  });
+
+  it("opens the current War Week's Profile page from the account menu", () => {
+    const shell = (editions: AdminEdition[]) =>
+      renderToStaticMarkup(
+        <AdminShell
+          warWeek={fakeWarWeek}
+          email="o@jahnelgroup.com"
+          isOrganizer
+          editions={editions}
+          current="Competitions"
+        >
+          x
+        </AdminShell>,
+      );
+    // Administering XI while XII is current.
+    expect(
+      shell([
+        { edition: "xii", status: "live", current: true },
+        { edition: "xi", status: "complete", current: false },
+      ]),
+    ).toContain('data-profile-edition="xii"');
+    // A Host who can't open the current War Week: the one shown.
+    expect(shell([])).toContain('data-profile-edition="xi"');
+  });
+
   it("links an Organizer to Awards and the Organizer list", () => {
     const html = renderToStaticMarkup(
       <AdminShell
         warWeek={fakeWarWeek}
         email="o@jahnelgroup.com"
         isOrganizer
-        current="Overview"
+        current="Competitions"
       >
         x
       </AdminShell>,
@@ -55,21 +113,83 @@ describe("AdminShell", () => {
     expect(html).toContain('href="/admin/organizers"');
   });
 
-  it("hides Awards and the Organizer list from a Host", () => {
+  it("hides the Organizer-only sections from a Host", () => {
     const html = renderToStaticMarkup(
       <AdminShell
         warWeek={fakeWarWeek}
         email="host@jahnelgroup.com"
         isOrganizer={false}
-        current="Overview"
+        current="Competitions"
       >
         x
       </AdminShell>,
     );
     expect(html).not.toContain('href="/admin/awards"');
     expect(html).not.toContain('href="/admin/organizers"');
-    expect(html).toContain('href="/admin/points"');
-    expect(html).toContain('href="/admin/setup"');
+    expect(html).not.toContain('href="/admin/roster"');
+    expect(html).not.toContain('href="/admin/faq"');
+    expect(html).not.toContain('href="/admin/settings"');
+    expect(html).not.toContain('href="/admin/discretionary-points"');
+    expect(html).toContain('href="/admin/competitions"');
+    expect(html).toContain('href="/admin/schedule"');
+    expect(html).toContain('href="/admin/finale"');
+  });
+});
+
+describe("AdminShell bottom bar (phone)", () => {
+  function shell(current: AdminSection, isOrganizer = true) {
+    return renderToStaticMarkup(
+      <AdminShell
+        warWeek={fakeWarWeek}
+        email="o@jahnelgroup.com"
+        isOrganizer={isOrganizer}
+        current={current}
+      >
+        x
+      </AdminShell>,
+    );
+  }
+  /** The More tab: the bar's Sheet trigger button. */
+  const moreTab = (html: string) =>
+    html.match(/<button[^>]*>(?:(?!<\/button>).)*More<\/button>/)?.[0];
+
+  it("links the header's title to Competitions, the first section", () => {
+    expect(shell("Competitions")).toMatch(
+      /<a[^>]*href="\/admin\/competitions"[^>]*>War Week (?:<!-- -->)?XI(?:<!-- -->)? admin<\/a>/,
+    );
+  });
+
+  it("labels both the side column and the bar Admin sections", () => {
+    const html = shell("Competitions");
+    expect(html.match(/aria-label="Admin sections"/g)).toHaveLength(2);
+  });
+
+  it("gives the bar a Discretionary points tab and a More tab", () => {
+    const html = shell("Competitions");
+    expect(html).toMatch(
+      /href="\/admin\/discretionary-points"[^>]*>(?:(?!<\/a>).)*Discretionary points<\/a>/,
+    );
+    expect(moreTab(html)).toBeDefined();
+  });
+
+  it("marks the More tab current for a section inside More", () => {
+    expect(moreTab(shell("Guide"))).toContain('aria-current="page"');
+    expect(moreTab(shell("Awards"))).toContain('aria-current="page"');
+  });
+
+  it("doesn't mark the More tab current for a tab section", () => {
+    const html = shell("Schedule");
+    expect(moreTab(html)).not.toContain('aria-current="page"');
+    expect(html).toMatch(
+      /<a[^>]*href="\/admin\/schedule"[^>]*aria-current="page"|<a[^>]*aria-current="page"[^>]*href="\/admin\/schedule"/,
+    );
+  });
+
+  it("shows a Host no Awards or Organizers in the side column or the bar", () => {
+    const html = shell("Guide", false);
+    expect(html).not.toContain("Awards");
+    expect(html).not.toContain("Organizers");
+    expect(moreTab(html)).toContain('aria-current="page"');
   });
 });
 
@@ -80,7 +200,7 @@ describe("AdminShell footer", () => {
         warWeek={fakeWarWeek}
         email="o@jahnelgroup.com"
         isOrganizer
-        current="Overview"
+        current="Competitions"
       >
         x
       </AdminShell>,
@@ -97,6 +217,20 @@ describe("AdminRefused", () => {
     );
 
     expect(html).toMatch(/<footer class="[^"]*\bmt-auto\b[^"]*"/);
+  });
+
+  it("wears the War Week's Appearance Theme", () => {
+    const html = renderToStaticMarkup(
+      <AdminRefused warWeek={fakeWarWeek} email="host@jahnelgroup.com" />,
+    );
+
+    expect(html).toContain("data-theme-root");
+    expect(html).toContain("--font-sans:var(--font-preset-sans)");
+    expect(html).toContain("--light-primary:");
+    expect(html).toMatch(/class="[^"]*\bflex-col\b[^"]*\bfont-sans\b[^"]*"/);
+    expect(html.indexOf("data-theme-root")).toBeLessThan(
+      html.indexOf("<footer"),
+    );
   });
 });
 
@@ -132,7 +266,7 @@ describe("editingBanner", () => {
         email="o@jahnelgroup.com"
         isOrganizer
         editions={editions}
-        current="Overview"
+        current="Competitions"
       >
         x
       </AdminShell>,

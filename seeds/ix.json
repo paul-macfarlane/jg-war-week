@@ -500,21 +500,18 @@
     {
       "name": "Settlers of Catan",
       "description": "5 team points to the champion, 1 to others at the final table.",
-      "maxPoints": 5,
       "scoring": "individual",
       "countsTowardTeam": true
     },
     {
       "name": "Magic the Gathering",
       "description": "Round robin sealed draft; 2 team points for the winner.",
-      "maxPoints": 2,
       "scoring": "individual",
       "countsTowardTeam": true
     },
     {
       "name": "Beer & Cards",
       "description": "2 team points for the winner.",
-      "maxPoints": 2,
       "scoring": "individual",
       "countsTowardTeam": true
     },
@@ -527,7 +524,6 @@
     {
       "name": "Rock Band",
       "description": "3 points to the winning team.",
-      "maxPoints": 3,
       "scoring": "team",
       "group": "Gaming Night"
     },
@@ -545,14 +541,12 @@
     {
       "name": "Chess Tournament",
       "description": "5 / 3 / 1 team points for 1st, 2nd and 3rd place.",
-      "maxPoints": 5,
       "scoring": "individual",
       "countsTowardTeam": true
     },
     {
       "name": "Pool Tournament",
       "description": "3 team points for the winner, 1 for the runner up.",
-      "maxPoints": 3,
       "scoring": "individual",
       "countsTowardTeam": true
     },
@@ -565,27 +559,23 @@
     {
       "name": "Billable Hours",
       "description": "5 / 3 / 1 team points for the top 3 billers of the week.",
-      "maxPoints": 5,
       "scoring": "individual",
       "countsTowardTeam": true
     },
     {
       "name": "Mug Shots",
-      "maxPoints": 1,
       "scoring": "individual",
       "countsTowardTeam": true,
       "group": "Spirit"
     },
     {
       "name": "Memes",
-      "maxPoints": 1,
       "scoring": "individual",
       "countsTowardTeam": true,
       "group": "Spirit"
     },
     {
       "name": "Collage Wall",
-      "maxPoints": 1,
       "scoring": "individual",
       "countsTowardTeam": true,
       "group": "Spirit"
@@ -598,20 +588,17 @@
     },
     {
       "name": "Magnets",
-      "maxPoints": 1,
       "scoring": "individual",
       "countsTowardTeam": true,
       "group": "Spirit"
     },
     {
       "name": "Postcards",
-      "maxPoints": 1,
       "scoring": "individual",
       "countsTowardTeam": true,
       "group": "Spirit"
     }
   ],
-  "pointsEntries": [],
   "awards": [
     {
       "key": "battle-of-the-bands",

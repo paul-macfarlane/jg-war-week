@@ -1,28 +1,10 @@
-import { REPO_URL } from "@/lib/site";
 import type { ThemeColors } from "@/lib/theme";
 
 /**
- * The Privacy and Terms pages' theme: static copy with no War Week data
- * (ticket 28), so it's copied here from `seeds/xi.json` rather than read at
- * request time. Unlike `/about` (ticket 03), those two pages don't follow
- * the current War Week; update this together with `seeds/xi.json` if XI's
- * look changes.
- */
-export const STATIC_PAGE_THEME: ThemeColors = {
-  primaryColor: "#00ff41",
-  primaryForegroundColor: "#000000",
-  accentColor: "#008f11",
-  backgroundColor: "#000000",
-  foregroundColor: "#d1ffd6",
-  fontPreset: "mono",
-  overridePrimaryColor: "#0a7a1f",
-};
-
-/**
- * `/about`'s theme (ticket 03) when no War Week exists at all (an empty
- * database, e.g. before the first `seed:load`): a neutral black-on-white
- * look so the page stays readable rather than wearing a stale edition's
- * colors. Whenever a War Week exists, `/about` wears *its* Appearance
+ * The theme of `/about`, `/privacy` and `/terms` (tickets 03, 44) when no
+ * War Week exists at all (an empty database, e.g. before the first
+ * `seed:load`): a neutral black-on-white look so the page stays readable rather than wearing a stale edition's
+ * colors. Whenever a War Week exists, those pages wear *its* Appearance
  * Theme instead (`getCurrentWarWeek`, same resolution the root page uses:
  * live, else next upcoming, else most recent completed).
  */
@@ -35,67 +17,49 @@ export const ABOUT_FALLBACK_THEME: ThemeColors = {
   fontPreset: "sans",
 };
 
-/** The maintainer's guide (ticket 31), read on GitHub. */
-export const MAINTAINERS_GUIDE_URL = `${REPO_URL}/blob/main/docs/maintainers-guide.md`;
-
 /**
- * The feature cards, in order. Each `slug` names a still at
- * `public/about/<slug>.png`, written by `scripts/about-media.ts`; the
- * Finale is the video hero, not a card.
+ * The feature cards, in the app's navigation order with the Admin card first. Each
+ * `slug` names a still at `public/about/<slug>.png`, written by
+ * `scripts/about-media.ts`. The hero is the Standings stills; the Finale is
+ * a still poster (its Title slide) below the grid, not a card. Copy is
+ * mode-neutral: it reads the same for Teams and free-for-all editions.
  */
 export const ABOUT_FEATURES = [
   {
-    slug: "organizer-setup",
-    title: "Organizer setup, no code",
-    text: "War Week, Days, Teams, roster, Competitions, schedule and FAQ are all Organizer screens under Admin. Organizers can hand a Competition to its Hosts, who see just that Competition and enter its points themselves. Next year's edition takes an afternoon, not a code editor.",
-    alt: "The Admin Setup screen listing War Week, Days, Teams, Competitions, Schedule and FAQ.",
-  },
-  {
-    slug: "points",
-    title: "Points entry with Placement Points",
-    text: "Pick the Competition, pick the Team or Participant, tap “1st · 5”. Placement Points are presets an Organizer sets once per Competition (with an optional Max points cap on 1st place; going over it still saves, with a warning), so scoring is one tap and the Standings move on the spot. Every Standings row expands to show the Points Entries behind its total, newest first.",
-    alt: "The Points Entry form with Settlers of Catan selected and the 1st, 2nd and 3rd Placement Points buttons.",
+    slug: "organizer-admin",
+    title: "Organizer and Host admin",
+    text: "Organizers run the whole War Week from one Admin nav: the Days and schedule, the roster (paste it in from a sheet), Competitions, Announcements, Awards, FAQ and settings. Hosts get just their Competition and record its results themselves.",
+    alt: "The Admin Schedule page with the flat Admin nav (Competitions, Discretionary points, Schedule, Roster and more) beside the War Week's Days and their Schedule Items.",
   },
   {
     slug: "schedule",
-    title: "Schedule with Now / Next",
-    text: "Every Day Theme and every item on the ET clock, with day chips to jump straight to one Day. The home screen says what's on now and what's up next, so nobody has to ask.",
-    alt: "War Week XI's home: today's Day Theme, what's on now and what's up next on the ET clock, then the pinned Announcement.",
+    title: "Schedule, Now and Next",
+    text: "Every Day Theme, with a line about each Day, and every item on the ET clock. The home screen says what's on now and what's up next, so nobody has to ask.",
+    alt: "The current War Week's home: today's Day Theme, what's on now and what's up next on the ET clock, then the pinned Announcement.",
+  },
+  {
+    slug: "points",
+    title: "Points and Standings",
+    text: "A Competition's results turn into points through its Placement Points, and Discretionary points reward what no Competition covers; the Standings move on the spot. Sign in and you're highlighted on the leaderboards, the roster and your Brackets, under the name and picture you set in your Profile.",
+    alt: "The Give Discretionary points form open over the Admin Discretionary points page, asking for a Participant, a number of points and a reason.",
   },
   {
     slug: "announcements",
-    title: "Announcements with video",
-    text: "Organizers post rich-text Announcements with video, pin one to the home screen, and everyone sees it on the next refresh.",
-    alt: "War Week XI's Announcements feed with an embedded welcome video.",
+    title: "Announcements",
+    text: "Organizers post rich-text Announcements, videos included, and pin one to the home screen for everyone.",
+    alt: "The current War Week's Announcements feed with its pinned welcome Announcement.",
   },
   {
-    slug: "brackets",
-    title: "Brackets for knockouts and Heats",
-    text: "Choose a Competition's Format — Single elimination or Heats — when you add it, land straight on its Bracket setup, pick its Entrants (Teams, Participants, or Squads: named groups from one Team whose points go to that Team) and Generate a Bracket, or draw its Seed Positions By Standings. The Bracket reads as a tree on the Competition page: Rounds left to right for single elimination, or a box per Heat with advancers highlighted, one Round at a time on a phone; a List toggle keeps the old view. Recording or reporting a Heat's result opens a dialog centered on a screen and a bottom sheet on a phone. Finalize turns the Bracket's placings straight into Points Entries, and the Bracket gets its own Finale for the projector. Flip on \"Participants can enroll\" and players add themselves as Entrants instead of the Host typing every name in.",
-    alt: "A Bracket shown as a tree on its Competition page: Rounds joined by lines, with results filled in live.",
-  },
-  {
-    slug: "games",
-    title: "Games you log yourself",
-    text: "Not every Competition is a knockout. Choose the Games Format for a showdown, a best of 5, or ping pong running all week, pick a Game Type — Head-to-head, Best score or Ranked — and players log their own results from a phone in seconds. The Competition page shows the leaderboard and every Game logged, newest first; Close turns the standings into Placement Points, the same as finalizing a Bracket.",
-    alt: "A Games Competition's leaderboard and Game log on its Competition page, with a Game just logged.",
-  },
-  {
-    slug: "lifecycle",
-    title: "One War Week live at a time",
-    text: 'Start, End (the Winner computed from first place in the Standings, ties recorded as "Tie: A & B") and Reopen move a War Week through its lifecycle. Only one is ever live; Create next War Week starts the next edition without disturbing this one.',
-    alt: "The Admin Setup screen's Lifecycle box: Start, End and Reopen.",
+    slug: "competitions",
+    title:
+      "Competitions: Placements, Brackets, Head-to-head, Best score and Participation",
+    text: "Run a Competition as a Placement sheet (who came 1st, 2nd, 3rd, with or without a Score), a Bracket, Head-to-head or Best score Games players log themselves from a phone, or Participation: the Host ticks who took part, or people check themselves in. Finalizing or closing it turns the results into points.",
+    alt: "A finished Bracket on its Competition page: two Round 1 Heats of Participants feeding the Final, with its champion on top.",
   },
   {
     slug: "archive",
     title: "The Archive",
-    text: "Every War Week since 2016, each in its own theme: the Story Theme, the Teams, the winner, the Awards and the highlights, with a link to the original wiki page.",
-    alt: "The War Week history page: one card per edition since 2016, each in its own colors.",
-  },
-  {
-    slug: "ask-claude",
-    title: "Ask Claude",
-    text: "Add the JG War Week app to Claude as an MCP connector and ask who's winning, what's on this afternoon, or who won War Week VIII. Read-only, with the same Standings everyone sees.",
-    alt: "A chat with Claude asking who's winning War Week XI, answered from the JG War Week app's MCP connector.",
+    text: "Past War Weeks, each in its own theme: the Story Theme, the winner, the Awards and the highlights. Award Categories show every year's recipients through the years.",
+    alt: "The War Week history page: one card per edition, each in its own colors.",
   },
 ] as const;

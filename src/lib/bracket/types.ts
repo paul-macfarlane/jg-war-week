@@ -4,21 +4,26 @@
  * result.
  */
 import type { BracketConfig } from "@/lib/bracket/config";
-import type { COMPETITION_FORMATS } from "@/lib/enums";
+import type { COMPETITION_FORMATS, GameFormat } from "@/lib/enums";
 
 /** How a Competition is run; see CONTEXT.md. */
 export type Format = (typeof COMPETITION_FORMATS)[number];
 
 /**
- * A Format that runs as a Bracket: every Format but `points` and `games`
- * (a `games` Competition is decided by logged Games, never Heats).
+ * The Format that runs as a Bracket, `bracket`: what's left once
+ * `placement`, the Games Formats (a Head-to-head or Best score Competition
+ * is decided by logged Games, never Heats) and `participation` (decided by
+ * who took part) are excluded.
  */
-export type BracketFormat = Exclude<Format, "points" | "games">;
+export type BracketFormat = Exclude<
+  Format,
+  "placement" | GameFormat | "participation"
+>;
 
 /** A Team or Participant entered in a Bracket, at its Seed Position. */
 export type Entrant = { id: string; seedPosition: number; label: string };
 
-export type HeatStatus = "pending" | "ready" | "played" | "forfeit";
+export type HeatStatus = "pending" | "ready" | "played";
 
 /** One place in a Heat. An empty slot is waiting for an Entrant (or a bye). */
 export type HeatSlot = {
@@ -26,44 +31,51 @@ export type HeatSlot = {
   /** The finishing place, 1…n (1 is the winner); null until decided. */
   place: number | null;
   score: string | null;
-  forfeited: boolean;
 };
 
-/** Where a Heat's winner goes: a later Heat and its slot index. */
+/** Where a Heat's winner (or loser) goes: a later Heat and its slot index. */
 export type WinnerTo = { heatId: string; slot: number };
 
 export type Heat = {
   id: string;
-  /** 1 is the first Round; the last Round holds the final. */
+  /**
+   * 1 is the first Round; the last Round holds the final (and, beside it,
+   * the 3rd place game).
+   */
   round: number;
-  /** 1-based, top to bottom within the Round. */
+  /** 1-based, top to bottom within the Round; the final is 1. */
   position: number;
   /** One per place in the Heat: its length is the Heat's slot count. */
   slots: HeatSlot[];
   winnerTo: WinnerTo | null;
+  /** A semifinal with a 3rd place game: where its loser goes. */
+  loserTo: WinnerTo | null;
+  /**
+   * The 3rd place game: in the final's Round, beside the final. The final
+   * is the Heat of the last Round that isn't this.
+   */
+  thirdPlace: boolean;
   status: HeatStatus;
-  /** Optional time and place, set from the results screen; both null until set. */
-  dayId: string | null;
-  /** A wall-clock ET time, `HH:MM` or `HH:MM:SS` as the row returns it. */
-  startTime: string | null;
-  location: string | null;
+  /**
+   * When the Heat's Result was last saved; null until it is played. The
+   * engines never set it: the mutation stamps it when it saves a Result.
+   */
+  recordedAt: Date | null;
 };
 
 export type Bracket = {
-  format: BracketFormat;
-  /** The Format's settings; null for single elimination. */
+  /** The Bracket's settings; never null. */
   config: BracketConfig;
   heats: Heat[];
 };
 
 /**
  * A Heat Result: every Entrant of the Heat in finishing order, with optional
- * scores and forfeits (a forfeiting Entrant finishes behind the others).
+ * scores (a no-show just loses: it is last in the order).
  */
 export type HeatResult = {
   order: string[];
   scores?: Record<string, string>;
-  forfeits?: string[];
 };
 
 export type Placing = { entrantId: string; place: number };
@@ -94,13 +106,6 @@ export type FormatEngine = {
   champion(bracket: Bracket): string | null;
   finalPlacings(bracket: Bracket, entrants: Entrant[]): Placing[];
 };
-
-/**
- * Why regenerating or replacing Entrants was refused: the Bracket has Heat
- * Results. The builder asks for confirmation and retries with `force`.
- */
-export const HAS_RESULTS_ERROR =
-  "This Bracket has Heat Results. Confirm to clear them and start over.";
 
 /** A refused engine operation; the message is shown to the Organizer. */
 export class BracketError extends Error {

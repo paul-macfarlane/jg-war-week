@@ -6,7 +6,7 @@ import { BRACKET_FORMATS } from "@/lib/bracket/view";
 
 /**
  * A War Week's unfinalized Brackets: Competitions with a Bracket Format
- * (not `points` or `games`), not finalized, that have been generated (at least one Heat), by
+ * (not Placement, Participation, Head-to-head or Best score), not finalized, that have been generated (at least one Heat), by
  * name. Used to warn when ending a War Week with Brackets whose placings
  * aren't yet in the Standings.
  */

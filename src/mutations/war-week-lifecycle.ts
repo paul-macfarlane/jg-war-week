@@ -15,9 +15,11 @@ import {
   defaultWinner,
   moveError,
   transitionError,
+  unstartError,
 } from "@/lib/war-week-lifecycle";
 import { isUniqueViolation } from "@/mutations/setup";
 import type { MutationContext, MutationResult } from "@/mutations/types";
+import { getScoredCounts } from "@/queries/scored-counts";
 import { getStandings } from "@/queries/standings";
 
 const WAR_WEEK_NOT_FOUND = "That War Week no longer exists.";
@@ -35,11 +37,11 @@ async function liveEdition(
   return live?.edition ?? null;
 }
 
-type LifecycleRow = Pick<WarWeek, "status" | "mode">;
+type LifecycleRow = Pick<WarWeek, "status" | "mode" | "winner">;
 
 /**
  * Moves a War Week to `to` when `transitionError` (and, for Start or
- * Reopen, `moveError`) allows it. A second
+ * Reopen, `moveError`; for Unstart, `unstartError`) allows it. A second
  * `live` War Week is refused by the check and, for a concurrent Start that
  * slipped past it, by the `war_week_one_live` index: both read
  * "End <EDITION> first."
@@ -55,18 +57,31 @@ async function transition(
     | Partial<WarWeek>
     | ((tx: DBOrTx, row: LifecycleRow) => Promise<Partial<WarWeek>>),
   dbOrTx: DBOrTx,
-  action?: "start" | "reopen",
+  action?: "start" | "reopen" | "unstart",
 ): Promise<MutationResult> {
   try {
     return await dbOrTx.transaction(async (tx): Promise<MutationResult> => {
       const [row] = await tx
-        .select({ status: warWeek.status, mode: warWeek.mode })
+        .select({
+          status: warWeek.status,
+          mode: warWeek.mode,
+          winner: warWeek.winner,
+        })
         .from(warWeek)
         .where(eq(warWeek.id, warWeekId))
         .for("update");
       if (!row) return { ok: false, error: WAR_WEEK_NOT_FOUND };
+      // Unstart re-reads what is scored under the lock: the action's own
+      // check may be stale by now.
+      const actionRefusal =
+        action === "unstart"
+          ? unstartError({
+              ...row,
+              scored: await getScoredCounts(warWeekId, tx),
+            })
+          : action && moveError(action, row.status);
       const refusal =
-        (action && moveError(action, row.status)) ||
+        actionRefusal ||
         transitionError(row.status, to, {
           liveEdition: await liveEdition(tx, warWeekId),
         });
@@ -129,6 +144,19 @@ export function reopenWarWeek(
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
   return transition(ctx.warWeekId, "live", {}, dbOrTx, "reopen");
+}
+
+/**
+ * Unstart: `live → upcoming`, only for an edition never ended and while
+ * nothing is scored (`unstartError`). The Points Entry, Heat result and
+ * Game counts are re-read inside the transaction that locks the row, so
+ * one entered after the action's own check is still caught.
+ */
+export function unstartWarWeek(
+  ctx: MutationContext,
+  dbOrTx: DBOrTx = db,
+): Promise<MutationResult> {
+  return transition(ctx.warWeekId, "upcoming", {}, dbOrTx, "unstart");
 }
 
 /** Why the new edition, edition number or year is taken, or null. */
@@ -234,7 +262,6 @@ export async function createNextWarWeek(
                 warWeekId: created.id,
                 name: c.name,
                 description: c.description,
-                maxPoints: c.maxPoints,
                 placementPoints: c.placementPoints,
                 scoring: c.scoring,
                 countsTowardTeam: c.countsTowardTeam,

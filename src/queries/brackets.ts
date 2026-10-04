@@ -14,11 +14,17 @@ import {
   squadParticipant,
   team,
 } from "@/db/schema";
-import { configOf } from "@/lib/bracket/config";
+import { DEFAULT_BRACKET_CONFIG, configOf } from "@/lib/bracket/config";
 import { champion } from "@/lib/bracket/formats";
-import type { Bracket, Entrant, Heat } from "@/lib/bracket/types";
+import type { Bracket, Entrant } from "@/lib/bracket/types";
 import { BRACKET_FORMATS, isBracketFormat } from "@/lib/bracket/view";
+import { isGameFormat } from "@/lib/enums";
 import { isUuid } from "@/lib/uuid";
+import {
+  participantImageSql,
+  participantNameSql,
+  withProfile,
+} from "@/queries/profile-join";
 
 /** An Entrant with what the Bracket view shows and finalizing needs. */
 export type BracketEntrant = Entrant & {
@@ -29,13 +35,21 @@ export type BracketEntrant = Entrant & {
   /** A Squad's Participants' display names, by name; [] otherwise. */
   participantNames: string[];
   /**
+   * An individual Entrant's picture URL; null for initials and for Teams
+   * and Squads.
+   */
+  image?: string | null;
+  /**
    * The Team a Placement Points Entry goes to: the Team itself, or a
    * Squad's Team; null for a Participant.
    */
   pointsTeamId: string | null;
   /** The Team's color (a Participant's or Squad's Team), or null without one. */
   color: string | null;
-  /** A Participant or Squad Entrant's Team name, for `get_bracket`; null without one. */
+  /**
+   * A Participant or Squad Entrant's Team name, for `get_bracket`; null
+   * without one.
+   */
   teamName: string | null;
 };
 
@@ -74,15 +88,21 @@ async function squadParticipantNames(
 ): Promise<Map<string, string[]>> {
   const names = new Map<string, string[]>();
   if (squadIds.length === 0) return names;
-  const rows = await dbOrTx
-    .select({
-      squadId: squadParticipant.squadId,
-      displayName: participant.displayName,
-    })
-    .from(squadParticipant)
-    .innerJoin(participant, eq(participant.id, squadParticipant.participantId))
+  const rows = await withProfile(
+    dbOrTx
+      .select({
+        squadId: squadParticipant.squadId,
+        displayName: participantNameSql(),
+      })
+      .from(squadParticipant)
+      .innerJoin(
+        participant,
+        eq(participant.id, squadParticipant.participantId),
+      )
+      .$dynamic(),
+  )
     .where(inArray(squadParticipant.squadId, squadIds))
-    .orderBy(asc(participant.displayName));
+    .orderBy(asc(participantNameSql()));
   for (const row of rows) {
     names.set(row.squadId, [
       ...(names.get(row.squadId) ?? []),
@@ -101,29 +121,33 @@ export async function getBracketEntrants(
   dbOrTx: DBOrTx = db,
 ): Promise<BracketEntrant[]> {
   if (!isUuid(competitionId)) return [];
-  const rows = await dbOrTx
-    .select({
-      id: entrant.id,
-      seedPosition: entrant.seedPosition,
-      teamId: entrant.teamId,
-      participantId: entrant.participantId,
-      squadId: entrant.squadId,
-      teamName: team.name,
-      teamColor: team.color,
-      participantName: participant.displayName,
-      participantTeamColor: participantTeam.color,
-      participantTeamName: participantTeam.name,
-      squadName: squad.name,
-      squadTeamId: squad.teamId,
-      squadTeamColor: squadTeam.color,
-      squadTeamName: squadTeam.name,
-    })
-    .from(entrant)
-    .leftJoin(team, eq(team.id, entrant.teamId))
-    .leftJoin(participant, eq(participant.id, entrant.participantId))
-    .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))
-    .leftJoin(squad, eq(squad.id, entrant.squadId))
-    .leftJoin(squadTeam, eq(squadTeam.id, squad.teamId))
+  const rows = await withProfile(
+    dbOrTx
+      .select({
+        id: entrant.id,
+        seedPosition: entrant.seedPosition,
+        teamId: entrant.teamId,
+        participantId: entrant.participantId,
+        squadId: entrant.squadId,
+        teamName: team.name,
+        teamColor: team.color,
+        participantName: participantNameSql(),
+        participantImage: participantImageSql(),
+        participantTeamColor: participantTeam.color,
+        participantTeamName: participantTeam.name,
+        squadName: squad.name,
+        squadTeamId: squad.teamId,
+        squadTeamColor: squadTeam.color,
+        squadTeamName: squadTeam.name,
+      })
+      .from(entrant)
+      .leftJoin(team, eq(team.id, entrant.teamId))
+      .leftJoin(participant, eq(participant.id, entrant.participantId))
+      .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))
+      .leftJoin(squad, eq(squad.id, entrant.squadId))
+      .leftJoin(squadTeam, eq(squadTeam.id, squad.teamId))
+      .$dynamic(),
+  )
     .where(eq(entrant.competitionId, competitionId))
     .orderBy(asc(entrant.seedPosition));
   const names = await squadParticipantNames(
@@ -138,6 +162,7 @@ export async function getBracketEntrants(
     participantId: row.participantId,
     squadId: row.squadId,
     participantNames: row.squadId ? (names.get(row.squadId) ?? []) : [],
+    image: row.participantId ? row.participantImage : null,
     pointsTeamId: row.teamId ?? row.squadTeamId ?? null,
     color:
       row.teamColor ?? row.participantTeamColor ?? row.squadTeamColor ?? null,
@@ -170,29 +195,56 @@ export async function loadBracket(
         .limit(1)
     )[0];
   if (!found || !isBracketFormat(found.format)) {
-    // A points or games Competition (or a missing one) has no Bracket and
-    // so no Heats: the Format returned here is arbitrary, since nothing
+    // A Placement, Head-to-head, Best score or Participation Competition (or a missing one) has no Bracket and
+    // so no Heats: the config returned here is arbitrary, since nothing
     // reads its rules for an empty Bracket, and getBracket shows no
     // champion for a points Competition.
-    return { format: "single-elimination", config: null, heats: [] };
+    return { config: DEFAULT_BRACKET_CONFIG, heats: [] };
   }
+  const brackets = await loadBrackets(
+    [{ id: competitionId, bracketConfig: found.bracketConfig }],
+    dbOrTx,
+  );
+  return brackets.get(competitionId)!;
+}
+
+/**
+ * Several Bracket Competitions' Brackets in two queries (their Heats, then
+ * every Heat's slots), by Competition id; a Bracket with no Heats before
+ * Generate. Pass only Competitions of the Bracket Format.
+ */
+export async function loadBrackets(
+  competitions: Pick<Competition, "id" | "bracketConfig">[],
+  dbOrTx: DBOrTx = db,
+): Promise<Map<string, Bracket>> {
+  const brackets = new Map<string, Bracket>(
+    competitions.map((c) => [c.id, { config: configOf(c), heats: [] }]),
+  );
+  if (competitions.length === 0) return brackets;
   // An explicit list: the reporter columns (an email among them) are never
   // read into a Bracket, which feeds pages and MCP.
   const heats = await dbOrTx
     .select({
       id: heat.id,
+      competitionId: heat.competitionId,
       round: heat.round,
       position: heat.position,
       status: heat.status,
       slotCount: heat.slotCount,
       winnerToHeatId: heat.winnerToHeatId,
       winnerToSlot: heat.winnerToSlot,
-      dayId: heat.dayId,
-      startTime: heat.startTime,
-      location: heat.location,
+      loserToHeatId: heat.loserToHeatId,
+      loserToSlot: heat.loserToSlot,
+      thirdPlace: heat.thirdPlace,
+      recordedAt: heat.recordedAt,
     })
     .from(heat)
-    .where(eq(heat.competitionId, competitionId))
+    .where(
+      inArray(
+        heat.competitionId,
+        competitions.map((c) => c.id),
+      ),
+    )
     .orderBy(asc(heat.round), asc(heat.position));
   const slots = heats.length
     ? await dbOrTx
@@ -205,10 +257,9 @@ export async function loadBracket(
           ),
         )
     : [];
-  return {
-    format: found.format,
-    config: configOf(found),
-    heats: heats.map((row): Heat => ({
+  const slotOf = new Map(slots.map((s) => [`${s.heatId}:${s.slot}`, s]));
+  for (const row of heats) {
+    brackets.get(row.competitionId)?.heats.push({
       id: row.id,
       round: row.round,
       position: row.position,
@@ -217,26 +268,29 @@ export async function loadBracket(
         row.winnerToHeatId !== null && row.winnerToSlot !== null
           ? { heatId: row.winnerToHeatId, slot: row.winnerToSlot }
           : null,
-      dayId: row.dayId,
-      startTime: row.startTime,
-      location: row.location,
+      loserTo:
+        row.loserToHeatId !== null && row.loserToSlot !== null
+          ? { heatId: row.loserToHeatId, slot: row.loserToSlot }
+          : null,
+      thirdPlace: row.thirdPlace,
+      recordedAt: row.recordedAt,
       slots: Array.from({ length: row.slotCount }, (_, slot) => {
-        const found = slots.find((s) => s.heatId === row.id && s.slot === slot);
+        const found = slotOf.get(`${row.id}:${slot}`);
         return {
           entrantId: found?.entrantId ?? null,
           place: found?.place ?? null,
           score: found?.score ?? null,
-          forfeited: found?.forfeited ?? false,
         };
       }),
-    })),
-  };
+    });
+  }
+  return brackets;
 }
 
 /**
  * A Competition's Bracket for display: its Entrants with labels and colors,
  * its Heats, the champion and whether it's finalized. Undefined when there's
- * no such Competition, or it's run as Games (a `games` Competition is never
+ * no such Competition, or it's run as Games (a Head-to-head or Best score Competition is never
  * a Bracket). A points Competition returns an empty Bracket.
  */
 export async function getBracket(
@@ -262,7 +316,13 @@ export async function getBracket(
     .from(competition)
     .where(eq(competition.id, competitionId))
     .limit(1);
-  if (!found || found.format === "games") return undefined;
+  if (
+    !found ||
+    isGameFormat(found.format) ||
+    found.format === "participation"
+  ) {
+    return undefined;
+  }
   // The config reaches the view through the Bracket, not the Competition.
   const { bracketConfig, ...shown } = found;
   const [entrants, bracket] = await Promise.all([
@@ -284,7 +344,7 @@ export type BracketCompetitionLink = Pick<
   "id" | "name" | "format" | "finalizedAt"
 >;
 
-/** A War Week's Competitions run as a Bracket (never `games`), by name. */
+/** A War Week's Competitions run as a Bracket (never Head-to-head or Best score), by name. */
 export async function getBracketCompetitions(
   warWeek: Pick<WarWeek, "id">,
   dbOrTx: DBOrTx = db,
@@ -359,21 +419,27 @@ export async function getSquads(
     .where(eq(squad.competitionId, competitionId))
     .orderBy(asc(squad.name));
   if (squads.length === 0) return [];
-  const rows = await dbOrTx
-    .select({
-      squadId: squadParticipant.squadId,
-      id: participant.id,
-      displayName: participant.displayName,
-    })
-    .from(squadParticipant)
-    .innerJoin(participant, eq(participant.id, squadParticipant.participantId))
+  const rows = await withProfile(
+    dbOrTx
+      .select({
+        squadId: squadParticipant.squadId,
+        id: participant.id,
+        displayName: participantNameSql(),
+      })
+      .from(squadParticipant)
+      .innerJoin(
+        participant,
+        eq(participant.id, squadParticipant.participantId),
+      )
+      .$dynamic(),
+  )
     .where(
       inArray(
         squadParticipant.squadId,
         squads.map((s) => s.id),
       ),
     )
-    .orderBy(asc(participant.displayName));
+    .orderBy(asc(participantNameSql()));
   return squads.map((s) => ({
     ...s,
     participants: rows
@@ -415,16 +481,15 @@ export async function getHeatReporters(
   competitionId: string,
   dbOrTx: DBOrTx = db,
 ): Promise<Record<string, string>> {
-  const rows = await dbOrTx
-    .select({ heatId: heat.id, name: participant.displayName })
-    .from(heat)
-    .leftJoin(participant, eq(participant.id, heat.reportedByParticipantId))
-    .where(
-      and(
-        eq(heat.competitionId, competitionId),
-        isNotNull(heat.reportedByEmail),
-      ),
-    );
+  const rows = await withProfile(
+    dbOrTx
+      .select({ heatId: heat.id, name: participantNameSql() })
+      .from(heat)
+      .leftJoin(participant, eq(participant.id, heat.reportedByParticipantId))
+      .$dynamic(),
+  ).where(
+    and(eq(heat.competitionId, competitionId), isNotNull(heat.reportedByEmail)),
+  );
   return Object.fromEntries(
     rows.map((row) => [row.heatId, row.name ?? UNKNOWN_REPORTER]),
   );

@@ -46,14 +46,6 @@ describe("leaderboardColumns", () => {
       { key: "played", label: "Played" },
     ]);
   });
-
-  it("ranked: Finish Points, Played, Wins", () => {
-    expect(leaderboardColumns("ranked", { finishPoints: [] })).toEqual([
-      { key: "finishPoints", label: "Finish Points" },
-      { key: "played", label: "Played" },
-      { key: "wins", label: "Wins" },
-    ]);
-  });
 });
 
 describe("recordLabel", () => {
@@ -100,15 +92,6 @@ describe("gameSummary", () => {
       "trips",
     );
     expect(summary).toBe("Ashley · 42 trips");
-  });
-
-  it("ranked: '1. Red 2. Blue 3. Green'", () => {
-    const summary = gameSummary("ranked", [
-      { name: "Blue", place: 2, score: null },
-      { name: "Green", place: 3, score: null },
-      { name: "Red", place: 1, score: null },
-    ]);
-    expect(summary).toBe("1. Red 2. Blue 3. Green");
   });
 });
 

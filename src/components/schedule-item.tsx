@@ -111,7 +111,8 @@ export function ScheduleItemCard({
       ) : null}
       {item.description ? (
         <div className="text-sm">
-          <RichText content={item.description} />
+          {/* One below the Schedule Item title's `h3`. */}
+          <RichText content={item.description} headingFloor={4} />
         </div>
       ) : null}
       {item.virtualLink || item.competition ? (

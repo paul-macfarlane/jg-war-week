@@ -9,8 +9,10 @@ import {
   nextEditionDefaults,
   parseClosingInput,
   parseNextWarWeekInput,
+  tieTitle,
   toRoman,
   transitionError,
+  unstartError,
 } from "@/lib/war-week-lifecycle";
 
 /** Refused with `error`, which also shows under the field it names. */
@@ -33,7 +35,7 @@ describe("transitionError", () => {
     ["live", "live", "This War Week is already live."],
     ["complete", "complete", "This War Week is already complete."],
     ["upcoming", "complete", "Start this War Week before ending it."],
-    ["live", "upcoming", "A War Week can't go back to upcoming."],
+    ["live", "upcoming", null],
     ["complete", "upcoming", "A War Week can't go back to upcoming."],
   ])("%s → %s with nothing else live: %j", (from, to, expected) => {
     expect(transitionError(from, to, { liveEdition: null })).toBe(expected);
@@ -106,6 +108,15 @@ const person = (name: string, rank: number) => ({
   team: null,
   total: 10,
   rank,
+});
+
+describe("tieTitle", () => {
+  it("is the one name, or 'Tie: A & B & C' for more", () => {
+    expect(tieTitle(["Red"])).toBe("Red");
+    expect(tieTitle(["Red", "Blue"])).toBe("Tie: Red & Blue");
+    expect(tieTitle(["Red", "Blue", "Green"])).toBe("Tie: Red & Blue & Green");
+    expect(tieTitle([])).toBe("");
+  });
 });
 
 describe("defaultWinner", () => {
@@ -243,6 +254,39 @@ describe("parseNextWarWeekInput", () => {
   });
 });
 
+describe("unstartError", () => {
+  const none = { pointsEntries: 0, heatResults: 0, games: 0 };
+
+  it.each<[string, Parameters<typeof unstartError>[0], string | null]>([
+    [
+      "a live edition never ended, nothing scored",
+      { status: "live", winner: null, scored: none },
+      null,
+    ],
+    [
+      "not live comes first",
+      { status: "upcoming", winner: "Red", scored: { ...none, games: 1 } },
+      "Only a live War Week can be unstarted.",
+    ],
+    [
+      "ended before comes before anything scored",
+      { status: "live", winner: "Red", scored: { ...none, pointsEntries: 1 } },
+      "This War Week has been ended; Unstart isn't available.",
+    ],
+    [
+      "then Points, Heat results and Games, in that order",
+      {
+        status: "live",
+        winner: null,
+        scored: { pointsEntries: 0, heatResults: 1, games: 1 },
+      },
+      "A Heat has a result; Unstart isn't available.",
+    ],
+  ])("%s", (_, input, expected) => {
+    expect(unstartError(input)).toBe(expected);
+  });
+});
+
 describe("lifecycleActionError", () => {
   // Who may run a lifecycle action is `can` (Organizers only); this is only
   // the status rules.
@@ -252,6 +296,7 @@ describe("lifecycleActionError", () => {
     editionNumber: number;
     status: Status;
     startDate: string;
+    winner: string | null;
   };
   const edition = (n: number, roman: string, status: Status): Edition => ({
     id: roman,
@@ -259,6 +304,7 @@ describe("lifecycleActionError", () => {
     editionNumber: n,
     status,
     startDate: `20${n + 15}-02-21`,
+    winner: status === "complete" ? "Red" : null,
   });
 
   // X and XI are over; XII is live.
@@ -270,6 +316,8 @@ describe("lifecycleActionError", () => {
   // XI ended and XII is upcoming.
   const xiiUpcoming = edition(12, "xii", "upcoming");
   const upcomingWeeks = [x, xi, xiiUpcoming];
+
+  const none = { pointsEntries: 0, heatResults: 0, games: 0 };
 
   it.each<[string, Parameters<typeof lifecycleActionError>[0], string | null]>([
     [
@@ -306,6 +354,76 @@ describe("lifecycleActionError", () => {
       "Reopen runs when every edition has ended",
       { action: "reopen", target: xi, warWeeks: [x, xi] },
       null,
+    ],
+    [
+      "Unstart runs on a live edition with nothing scored",
+      { action: "unstart", target: xiiLive, warWeeks: liveWeeks },
+      null,
+    ],
+    [
+      "Unstart runs when every count is zero",
+      { action: "unstart", target: xiiLive, warWeeks: liveWeeks, scored: none },
+      null,
+    ],
+    [
+      "Unstart refuses once a Points Entry exists",
+      {
+        action: "unstart",
+        target: xiiLive,
+        warWeeks: liveWeeks,
+        scored: { ...none, pointsEntries: 1 },
+      },
+      "Points have been entered; Unstart isn't available.",
+    ],
+    [
+      "Unstart refuses once a Heat has a result",
+      {
+        action: "unstart",
+        target: xiiLive,
+        warWeeks: liveWeeks,
+        scored: { ...none, heatResults: 2 },
+      },
+      "A Heat has a result; Unstart isn't available.",
+    ],
+    [
+      "Unstart refuses once a Game is logged",
+      {
+        action: "unstart",
+        target: xiiLive,
+        warWeeks: liveWeeks,
+        scored: { ...none, games: 1 },
+      },
+      "A Game has been logged; Unstart isn't available.",
+    ],
+    [
+      "Unstart names the Points Entry first when several apply",
+      {
+        action: "unstart",
+        target: xiiLive,
+        warWeeks: liveWeeks,
+        scored: { pointsEntries: 1, heatResults: 1, games: 1 },
+      },
+      "Points have been entered; Unstart isn't available.",
+    ],
+    [
+      "Unstart refuses an upcoming edition",
+      { action: "unstart", target: xiiUpcoming, warWeeks: upcomingWeeks },
+      "Only a live War Week can be unstarted.",
+    ],
+    [
+      "Unstart refuses an ended edition",
+      { action: "unstart", target: xi, warWeeks: liveWeeks },
+      "Only a live War Week can be unstarted.",
+    ],
+    [
+      "Unstart refuses a reopened edition, which has been ended before",
+      {
+        action: "unstart",
+        target: { ...xi, status: "live" },
+        warWeeks: [x, { ...xi, status: "live" }],
+        scored: { pointsEntries: 1, heatResults: 0, games: 0 },
+      },
+      "This War Week has been ended; Unstart isn't available.",
     ],
     [
       "End leaves the live check to the transition",

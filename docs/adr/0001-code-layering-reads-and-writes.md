@@ -98,3 +98,15 @@ bundles that use lib. The enum value lists live in `src/lib/enums.ts`;
   write ticket (09 for Points Entries).
 - A new folder (`src/actions/`, `src/mutations/`) appears only when its
   first file does. Nothing is scaffolded ahead of need.
+
+## Amendment (2026-10-03): one mutation checks the role
+
+`saveCompetitionSetting` (`src/mutations/competition-settings.ts`), the
+admin Competition page's per-field autosave, checks the actor's role
+itself (`can`, with the role read in its transaction), after its action has
+already authorized. It is the one exception to "the action runs `can`, the
+mutation enforces business rules": Epic R18 requires every per-field save
+to go through one mutation that checks both the role and the setting's
+lock under the Competition's row lock, so a Host can never save a field
+only an Organizer may (Hosts) and a locked field is refused with the same
+words the page shows. Other mutations keep the role check in the action.

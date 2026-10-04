@@ -59,3 +59,35 @@ describe("toPlainText", () => {
     expect(toPlainText({ type: "doc", content: [] })).toBeNull();
   });
 });
+
+describe("toPlainText over the rich-text content set", () => {
+  it("prefixes a quote's lines, breaks on a hard break, and keeps a caption", () => {
+    expect(
+      toPlainText({
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: [
+              { type: "text", text: "one" },
+              { type: "hardBreak" },
+              { type: "text", text: "two" },
+            ],
+          },
+          {
+            type: "blockquote",
+            content: [
+              { type: "paragraph", content: [{ type: "text", text: "said" }] },
+              { type: "paragraph", content: [{ type: "text", text: "again" }] },
+            ],
+          },
+          {
+            type: "image",
+            attrs: { src: "https://x.test/a.png", alt: "A", caption: "Cap" },
+          },
+          { type: "image", attrs: { src: "https://x.test/b.png", alt: "B" } },
+        ],
+      }),
+    ).toBe("one\ntwo\n> said\n> again\nCap");
+  });
+});

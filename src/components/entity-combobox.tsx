@@ -21,6 +21,13 @@ export type EntityComboboxItem = {
   label: string;
   /** Shown muted next to the label, and included in the search. */
   detail?: string;
+  /**
+   * Included in the search but never shown: a Participant's email, on an
+   * Organizer-only picker (emails never reach a Participant's or Host's page).
+   */
+  keywords?: string;
+  /** Shown but not selectable. */
+  disabled?: boolean;
 };
 
 type CommonProps = {
@@ -52,13 +59,23 @@ type MultipleProps = CommonProps & {
 
 export type EntityComboboxProps = SingleProps | MultipleProps;
 
-function fitsQuery(item: EntityComboboxItem, query: string) {
+/** Whether the item matches the typed query: a substring of its label, detail or keywords, ignoring case. */
+export function fitsQuery(item: EntityComboboxItem, query: string) {
   const needle = query.trim().toLowerCase();
   if (!needle) return true;
-  return (
-    item.label.toLowerCase().includes(needle) ||
-    (item.detail ?? "").toLowerCase().includes(needle)
+  return [item.label, item.detail, item.keywords].some((text) =>
+    (text ?? "").toLowerCase().includes(needle),
   );
+}
+
+/**
+ * Whether a multiple combobox applies a value change. Base UI empties a
+ * multiple selection on Escape with the popup closed (reason
+ * "escape-key"); Escape should only close the popup, so that change is
+ * ignored and every chosen item stays.
+ */
+export function appliesMultipleChange(reason: string | undefined): boolean {
+  return reason !== "escape-key";
 }
 
 function isSameItem(a: EntityComboboxItem, b: EntityComboboxItem) {
@@ -78,7 +95,8 @@ function EntityComboboxItemRow({ item }: { item: EntityComboboxItem }) {
 
 /**
  * A searchable combobox over Teams, Participants, or Competitions. Filters
- * by a case-insensitive substring of the label or detail. In single mode it
+ * by a case-insensitive substring of the label, detail or keywords, with no
+ * cap on how many it lists. In single mode it
  * behaves like a themed select; in multiple mode selections show as
  * removable chips.
  */
@@ -110,9 +128,10 @@ export function EntityCombobox(props: EntityComboboxProps) {
         items={items}
         multiple
         value={selected}
-        onValueChange={(next) =>
-          props.onValueChange(next.map((item) => item.id))
-        }
+        onValueChange={(next, eventDetails) => {
+          if (!appliesMultipleChange(eventDetails.reason)) return;
+          props.onValueChange(next.map((item) => item.id));
+        }}
         isItemEqualToValue={isSameItem}
         itemToStringLabel={(item) => item.label}
         itemToStringValue={(item) => item.id}
@@ -148,6 +167,7 @@ export function EntityCombobox(props: EntityComboboxProps) {
               <ComboboxItem
                 key={item.id}
                 value={item}
+                disabled={item.disabled}
                 className="min-h-11 sm:min-h-9"
               >
                 <EntityComboboxItemRow item={item} />
@@ -192,6 +212,7 @@ export function EntityCombobox(props: EntityComboboxProps) {
             <ComboboxItem
               key={item.id}
               value={item}
+              disabled={item.disabled}
               className="min-h-11 sm:min-h-9"
             >
               <EntityComboboxItemRow item={item} />

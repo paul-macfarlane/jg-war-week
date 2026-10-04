@@ -10,6 +10,7 @@ import {
   endWarWeek,
   reopenWarWeek,
   startWarWeek,
+  unstartWarWeek,
 } from "@/actions/war-week-lifecycle";
 import {
   ConfirmActionButton,
@@ -31,12 +32,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { WarWeek } from "@/db/schema";
-import type { OpenGamesCompetition } from "@/queries/open-games-competitions";
+import { competitionPageHref } from "@/lib/competitions";
+import type { OpenUnscoredCompetition } from "@/queries/open-unscored-competitions";
 
 /**
  * The lifecycle action for a War Week's status, behind a confirm that says
- * what changes: Start (`upcoming`), End with the Winner and highlights
- * (`live`) or Reopen (`complete`).
+ * what changes: Start (`upcoming`), End with the Winner and highlights or
+ * Unstart (`live`) or Reopen (`complete`).
  */
 export function WarWeekLifecycleControls({
   warWeekId,
@@ -45,7 +47,7 @@ export function WarWeekLifecycleControls({
   suggestedWinner,
   highlights,
   unfinalizedBrackets,
-  openGamesCompetitions,
+  openUnscoredCompetitions,
 }: {
   warWeekId: string;
   edition: string;
@@ -58,8 +60,11 @@ export function WarWeekLifecycleControls({
   highlights: string[];
   /** Names of Brackets not yet finalized, to warn about when ending. */
   unfinalizedBrackets: string[];
-  /** Open `games` Competitions with Games, to warn about when ending. */
-  openGamesCompetitions: OpenGamesCompetition[];
+  /**
+   * Open Head-to-head or Best score Competitions with Games and `participation` ones with
+   * anyone marked, to warn about when ending.
+   */
+  openUnscoredCompetitions: OpenUnscoredCompetition[];
 }) {
   const name = edition.toUpperCase();
 
@@ -98,14 +103,28 @@ export function WarWeekLifecycleControls({
   }
 
   return (
-    <EndWarWeekButton
-      warWeekId={warWeekId}
-      name={name}
-      suggestedWinner={suggestedWinner}
-      highlights={highlights}
-      unfinalizedBrackets={unfinalizedBrackets}
-      openGamesCompetitions={openGamesCompetitions}
-    />
+    <>
+      <EndWarWeekButton
+        warWeekId={warWeekId}
+        name={name}
+        suggestedWinner={suggestedWinner}
+        highlights={highlights}
+        unfinalizedBrackets={unfinalizedBrackets}
+        openUnscoredCompetitions={openUnscoredCompetitions}
+      />
+      <ConfirmActionButton
+        title={`Unstart War Week ${name}?`}
+        description="It goes back to Upcoming. Only possible while nothing has been scored."
+        confirmLabel="Unstart"
+        variant="outline"
+        size="lg"
+        className="min-h-11 self-start sm:min-h-9"
+        successMessage={`War Week ${name} is upcoming again`}
+        action={() => unstartWarWeek(warWeekId)}
+      >
+        Unstart
+      </ConfirmActionButton>
+    </>
   );
 }
 
@@ -115,14 +134,14 @@ function EndWarWeekButton({
   suggestedWinner,
   highlights: initialHighlights,
   unfinalizedBrackets,
-  openGamesCompetitions,
+  openUnscoredCompetitions,
 }: {
   warWeekId: string;
   name: string;
   suggestedWinner: string;
   highlights: string[];
   unfinalizedBrackets: string[];
-  openGamesCompetitions: OpenGamesCompetition[];
+  openUnscoredCompetitions: OpenUnscoredCompetition[];
 }) {
   const router = useRouter();
   const formId = useId();
@@ -175,23 +194,22 @@ function EndWarWeekButton({
           aren&apos;t in the Standings until you finalize them.
         </>
       )}
-      {openGamesCompetitions.length > 0 && (
+      {openUnscoredCompetitions.length > 0 && (
         <>
           {" "}
           Still open:{" "}
-          {openGamesCompetitions.map((c, i) => (
+          {openUnscoredCompetitions.map((c, i) => (
             <span key={c.id}>
               {i > 0 && ", "}
               <Link
-                href={`/admin/setup/competitions/${c.id}/games`}
+                href={competitionPageHref(c.id)}
                 className="text-primary underline underline-offset-4"
               >
                 {c.name}
               </Link>
             </span>
           ))}
-          . Their Placement Points aren&apos;t in the Standings until you close
-          them.
+          . Their points aren&apos;t in the Standings until you close them.
         </>
       )}
     </>

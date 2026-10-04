@@ -3,10 +3,14 @@ import { describe, expect, it } from "vitest";
 import {
   type LedgerRow,
   buildCompetitionLedger,
+  competitionPageHref,
   describeScoring,
-  formatMaxPoints,
   groupCompetitions,
+  hasPlacementPoints,
+  hostName,
   placementLabel,
+  placementLimit,
+  placementLimitRefusal,
   pointsForPlacement,
 } from "@/lib/competitions";
 
@@ -74,17 +78,6 @@ describe("describeScoring", () => {
     ],
   ] as const)("describes %o as %s", (c, expected) => {
     expect(describeScoring(c, "House")).toBe(expected);
-  });
-});
-
-describe("formatMaxPoints", () => {
-  it.each([
-    [3, "Max 3 pts"],
-    [1, "Max 1 pt"],
-    [1.5, "Max 1.5 pts"],
-    [null, "No max"],
-  ])("formats %s as %s", (maxPoints, expected) => {
-    expect(formatMaxPoints(maxPoints)).toBe(expected);
   });
 });
 
@@ -187,6 +180,18 @@ describe("pointsForPlacement", () => {
   });
 });
 
+describe("hasPlacementPoints", () => {
+  it("is true when at least one place has points", () => {
+    expect(hasPlacementPoints([5, 3, 1])).toBe(true);
+    expect(hasPlacementPoints([0])).toBe(true);
+  });
+
+  it("is false with no Placement Points or an empty list", () => {
+    expect(hasPlacementPoints(null)).toBe(false);
+    expect(hasPlacementPoints([])).toBe(false);
+  });
+});
+
 describe("placementLabel", () => {
   it("names places as ordinals", () => {
     expect([1, 2, 3, 4, 5].map(placementLabel)).toEqual([
@@ -196,5 +201,62 @@ describe("placementLabel", () => {
       "4th",
       "5th",
     ]);
+  });
+});
+
+describe("hostName", () => {
+  const profiles = new Map([
+    [
+      "host@jahnelgroup.com",
+      { profileName: "Hosty", profileImage: null, googleImage: null },
+    ],
+    [
+      "plain@jahnelgroup.com",
+      { profileName: null, profileImage: null, googleImage: null },
+    ],
+  ]);
+
+  it("shows the Profile name, matching the email in any case", () => {
+    expect(hostName("Host@JahnelGroup.com", profiles)).toBe("Hosty");
+  });
+
+  it("shows the email with no Profile name or no Profile", () => {
+    expect(hostName("plain@jahnelgroup.com", profiles)).toBe(
+      "plain@jahnelgroup.com",
+    );
+    expect(hostName("new@jahnelgroup.com", profiles)).toBe(
+      "new@jahnelgroup.com",
+    );
+  });
+});
+
+describe("competitionPageHref", () => {
+  it("opens the Competition's one admin page, whatever its Format", () => {
+    expect(competitionPageHref("c1")).toBe("/admin/competitions/c1");
+  });
+});
+
+describe("placementLimit and placementLimitRefusal", () => {
+  const places = (n: number) => Array.from({ length: n }, (_, i) => n - i);
+
+  it("limits Brackets to 4 places and every other Format to none", () => {
+    expect(placementLimit("bracket")).toBe(4);
+    for (const format of [
+      "placement",
+      "head-to-head",
+      "best-score",
+      "participation",
+    ] as const) {
+      expect(placementLimit(format)).toBeNull();
+    }
+  });
+
+  it("accepts 12 places for Placement and refuses 5 for a Bracket", () => {
+    expect(placementLimitRefusal("placement", places(12))).toBeNull();
+    expect(placementLimitRefusal("bracket", places(4))).toBeNull();
+    expect(placementLimitRefusal("bracket", places(5))).toBe(
+      "Placement Points cover at most 4 places for this Format.",
+    );
+    expect(placementLimitRefusal("bracket", null)).toBeNull();
   });
 });

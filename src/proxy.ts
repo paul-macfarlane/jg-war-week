@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { auth } from "@/auth/server";
-import { canUseMcp, isJahnelGroupEmail, isPublicPath } from "@/lib/access";
+import { auth, identityFromSession } from "@/auth/server";
+import { canUseMcp, isPublicPath } from "@/lib/access";
 
 /**
  * Every page and API route needs a Jahnel Group session. Pages redirect
@@ -13,8 +13,12 @@ export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   if (isPublicPath(pathname)) return NextResponse.next();
 
-  const session = await auth.api.getSession({ headers: request.headers });
-  const hasSession = !!session && isJahnelGroupEmail(session.user.email);
+  // The same rule as `getSessionIdentity`: a Test sign-in session counts as
+  // anonymous (no page, no API, no MCP) once Test sign-in is off.
+  const hasSession =
+    identityFromSession(
+      await auth.api.getSession({ headers: request.headers }),
+    ) !== null;
   if (hasSession) return NextResponse.next();
 
   if (pathname === "/api/mcp") {

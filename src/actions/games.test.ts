@@ -5,8 +5,6 @@ import {
   deleteGame,
   logGame,
   reopenGames,
-  setGamesEntrants,
-  setGamesSettings,
   updateGame,
 } from "@/actions/games";
 
@@ -35,7 +33,7 @@ const PLAYER_OK = {
   warWeek: { id: WAR_WEEK, edition: "xi" },
   ctx: CTX,
   competition: {
-    gameType: "head-to-head",
+    gameFormat: "head-to-head",
     config: { drawsAllowed: false, bestOf: null },
   },
 };
@@ -52,12 +50,8 @@ vi.mock("@/mutations/games", () => ({
   logGame: vi.fn(async () => ({ ok: true, gameId: GAME })),
   updateGame: vi.fn(async () => ({ ok: true })),
   deleteGame: vi.fn(async () => ({ ok: true })),
-  setGamesSettings: vi.fn(async () => ({ ok: true })),
   closeGames: vi.fn(async () => ({ ok: true })),
   reopenGames: vi.fn(async () => ({ ok: true })),
-}));
-vi.mock("@/mutations/brackets", () => ({
-  replaceEntrants: vi.fn(async () => ({ ok: true })),
 }));
 
 beforeEach(() => {
@@ -85,7 +79,7 @@ describe("logGame", () => {
       logGame(ID, { playerA: A, playerB: B, outcome: "sideways" }),
     ).resolves.toEqual(REFUSED);
     // The raw input goes to authorize, which reads its players by the
-    // Competition's Game Type.
+    // Competition's Format.
     expect(authorizeGameWrite).toHaveBeenCalledWith("games.log", ID, null, {
       playerA: A,
       playerB: B,
@@ -95,7 +89,7 @@ describe("logGame", () => {
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 
-  it("parses by the Competition's Game Type once authorized", async () => {
+  it("parses by the Competition's Format once authorized", async () => {
     authorized.current = PLAYER_OK;
     const mutations = await import("@/mutations/games");
 
@@ -155,57 +149,6 @@ describe("updateGame and deleteGame", () => {
 });
 
 describe("Host and Organizer Games writes", () => {
-  const settings = {
-    gameType: "head-to-head",
-    drawsAllowed: true,
-    bestOf: "off",
-    entrantsOpen: true,
-    selfEnroll: false,
-  };
-
-  it('authorizes "games.settings" before parsing, then saves the parsed settings', async () => {
-    authorized.current = {
-      ok: false,
-      error: "You're not a Host of that Competition.",
-    };
-    const mutations = await import("@/mutations/games");
-    await expect(setGamesSettings(ID, "junk")).resolves.toEqual(
-      authorized.current,
-    );
-    expect(authorize).toHaveBeenCalledWith("games.settings", "competition", ID);
-    expect(mutations.setGamesSettings).not.toHaveBeenCalled();
-
-    authorized.current = HOST_OK;
-    await expect(setGamesSettings(ID, settings)).resolves.toEqual({ ok: true });
-    expect(mutations.setGamesSettings).toHaveBeenCalledWith(
-      ID,
-      {
-        gameConfig: { drawsAllowed: true, bestOf: null },
-        entrantsOpen: true,
-        loggingClosesAt: null,
-        selfEnroll: false,
-        entrantLimit: null,
-        enrollClosesAt: null,
-      },
-      CTX,
-    );
-  });
-
-  it('sets a fixed Entrant list through "games.entrants"', async () => {
-    authorized.current = HOST_OK;
-    const brackets = await import("@/mutations/brackets");
-
-    await expect(setGamesEntrants(ID, { targetIds: [A, B] })).resolves.toEqual({
-      ok: true,
-    });
-    expect(authorize).toHaveBeenCalledWith("games.entrants", "competition", ID);
-    expect(brackets.replaceEntrants).toHaveBeenCalledWith(
-      ID,
-      { targetIds: [A, B], format: "games" },
-      CTX,
-    );
-  });
-
   it('closes through "games.close" and reopens through "games.reopen"', async () => {
     authorized.current = HOST_OK;
     const mutations = await import("@/mutations/games");

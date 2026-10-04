@@ -11,7 +11,7 @@ import {
   team,
 } from "@/db/schema";
 import { pointsFor } from "@/lib/bracket/points";
-import type { GameType } from "@/lib/enums";
+import { type GameFormat, isGameFormat } from "@/lib/enums";
 import { gamesConfigSchema } from "@/lib/games/config";
 import { enrollmentUnavailable } from "@/lib/games/enroll-rule";
 import type { GameInput, GamesSettingsInput } from "@/lib/games/input";
@@ -47,16 +47,17 @@ import {
 } from "@/queries/games";
 
 export const ALREADY_CLOSED = "This Competition is already closed.";
-export const GAME_TYPE_FIXED =
-  "A Games Competition keeps its Game Type; add a new Competition to play another.";
+/** Settings of another Format than the Competition's (change the Format first). */
+export const GAME_FORMAT_FIXED =
+  "Those settings are for another Format. Change the Format first.";
 export const BEST_OF_NEEDS_FIXED = "A Best of needs a fixed Entrant list.";
 
-type GamesRun = BracketCompetition & { gameType: GameType };
+type GamesRun = BracketCompetition & { format: GameFormat };
 
 /** Why this Competition can't take a Games write, or null. */
 function gamesRefusal(found: BracketCompetition | undefined): string | null {
   if (!found) return COMPETITION_NOT_FOUND;
-  if (found.format !== "games" || !found.gameType) return NOT_GAMES;
+  if (!isGameFormat(found.format)) return NOT_GAMES;
   return null;
 }
 
@@ -93,7 +94,7 @@ async function playersError(
     : 0;
   const config = facts.competition?.config;
   return playersRuleError({
-    gameType: found.gameType,
+    gameFormat: found.format,
     scoring: found.scoring,
     ids,
     allInWarWeek: valid === ids.length,
@@ -263,7 +264,7 @@ export async function deleteGame(
 }
 
 /**
- * Saves a `games` Competition's settings (R3 decision 11). Its Game Type
+ * Saves a Head-to-head or Best score Competition's settings (R3 decision 11). Its Format
  * is fixed: only that type's settings change. A Best of needs a fixed list
  * of exactly two Entrants and takes no enrollment; enrollment is for a
  * fixed list only (`enrollmentUnavailable`). The logged Games must still
@@ -279,10 +280,8 @@ export async function setGamesSettings(
     const found = await lockedGames(tx, competitionId, ctx);
     if (typeof found === "string") return refuse(found);
     if (found.finalizedAt) return refuse(GAMES_CLOSED);
-    const config = gamesConfigSchema(found.gameType).safeParse(
-      input.gameConfig,
-    );
-    if (!config.success) return refuse(GAME_TYPE_FIXED);
+    const config = gamesConfigSchema(found.format).safeParse(input.gameConfig);
+    if (!config.success) return refuse(GAME_FORMAT_FIXED);
 
     const h2h = "bestOf" in config.data ? config.data : null;
     const bestOf = h2h?.bestOf ?? null;
@@ -291,9 +290,8 @@ export async function setGamesSettings(
     }
     if (input.selfEnroll) {
       const unavailable = enrollmentUnavailable({
-        format: "games",
+        format: found.format,
         entrantsOpen: input.entrantsOpen,
-        gameType: found.gameType,
         gameConfig: config.data,
       });
       if (unavailable) return refuse(unavailable);
@@ -337,9 +335,9 @@ export async function setGamesSettings(
 }
 
 /**
- * Closes a `games` Competition: its leaderboard's places become Placement
+ * Closes a Head-to-head or Best score Competition: its leaderboard's places become Placement
  * Points Entries (`pointsFor`, ties sharing a place's points, as when
- * finalizing a Bracket), marked generated and noted "From games", to the
+ * finalizing a Bracket), marked generated and noted "From head-to-head" or "From best score", to the
  * Team or the Participant by scoring; then no Game changes until Reopen.
  */
 export async function closeGames(
@@ -358,10 +356,11 @@ export async function closeGames(
     if (awarded.length) {
       await tx.insert(pointsEntry).values(
         awarded.map(({ entrantId, points }) => ({
+          warWeekId: ctx.warWeekId,
           competitionId,
           ...sideOf(found.scoring, entrantId),
           points,
-          note: generatedNote("games"),
+          note: generatedNote(found.format),
           enteredByEmail: ctx.actorEmail,
           generatedByBracket: true,
         })),
@@ -376,8 +375,8 @@ export async function closeGames(
 }
 
 /**
- * Reopens a closed `games` Competition: deletes its generated Points
- * Entries (hand-entered ones are untouched) and clears `finalized_at`.
+ * Reopens a closed Head-to-head or Best score Competition: deletes its generated Points
+ * Entries and clears `finalized_at`.
  */
 export async function reopenGames(
   competitionId: string,

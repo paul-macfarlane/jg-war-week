@@ -13,11 +13,12 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { DismissToasts } from "@/components/ui/sonner";
 
 /**
- * A form that opens as a bottom Sheet on phones and tablets and as a
- * centered Dialog at `lg` and up, where a bottom Sheet stretches awkwardly
- * across the screen. One Dialog, styled per breakpoint, so crossing `lg`
+ * A form that opens as a bottom Sheet on phones and as a
+ * centered Dialog at `md` (768px) and up, where a bottom Sheet stretches awkwardly
+ * across the screen. One Dialog, styled per breakpoint, so crossing `md`
  * while it's open keeps the form and what the person typed. It portals into the
  * themed root. Lay the content out with the `ResponsiveSheetDialog*` parts.
  */
@@ -40,14 +41,16 @@ export function ResponsiveSheetDialog({
         <DialogPrimitive.Popup
           data-slot="responsive-sheet-dialog-content"
           className={cn(
-            // Below `lg`: a bottom Sheet that slides up.
+            // Below `md`: a bottom Sheet that slides up.
             "bg-popover text-popover-foreground fixed inset-x-0 bottom-0 z-50 flex h-auto max-h-[90dvh] flex-col gap-4 overflow-y-auto border-t bg-clip-padding text-sm shadow-lg outline-none",
             "transition duration-200 ease-in-out data-ending-style:translate-y-[2.5rem] data-ending-style:opacity-0 data-starting-style:translate-y-[2.5rem] data-starting-style:opacity-0",
-            // From `lg`: a centered Dialog that zooms and fades.
-            "lg:ring-foreground/10 lg:inset-x-auto lg:top-1/2 lg:bottom-auto lg:left-1/2 lg:w-full lg:max-w-lg lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-xl lg:border-t-0 lg:shadow-none lg:ring-1 lg:duration-100",
-            "lg:data-ending-style:-translate-y-1/2 lg:data-ending-style:scale-95 lg:data-starting-style:-translate-y-1/2 lg:data-starting-style:scale-95",
+            // From `md`: a centered Dialog that zooms and fades.
+            "md:ring-foreground/10 md:inset-x-auto md:top-1/2 md:bottom-auto md:left-1/2 md:w-full md:max-w-lg md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-xl md:border-t-0 md:shadow-none md:ring-1 md:duration-100",
+            "md:data-ending-style:-translate-y-1/2 md:data-ending-style:scale-95 md:data-starting-style:-translate-y-1/2 md:data-starting-style:scale-95",
           )}
         >
+          {/* Below `md` it opens where toasts show. */}
+          <DismissToasts />
           {children}
           <DialogPrimitive.Close
             data-slot="responsive-sheet-dialog-close"

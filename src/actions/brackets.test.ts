@@ -4,8 +4,6 @@ import {
   createSquad,
   deleteSquad,
   finalizeBracket,
-  generateBracket,
-  setHeatSchedule,
   updateSquad,
 } from "@/actions/brackets";
 
@@ -45,8 +43,6 @@ vi.mock("@/auth/authorize", () => ({
 }));
 vi.mock("@/mutations/brackets", () => ({
   finalizeBracket: vi.fn(boom),
-  setHeatSchedule: vi.fn(async () => ({ ok: true })),
-  generateBracket: vi.fn(async () => ({ ok: true })),
   createSquad: vi.fn(async () => ({ ok: true })),
   updateSquad: vi.fn(async () => ({ ok: true })),
   deleteSquad: vi.fn(async () => ({ ok: true })),
@@ -66,52 +62,6 @@ describe("Bracket actions", () => {
       error: "Something went wrong. Try again.",
     });
     expect(console.error).toHaveBeenCalled();
-  });
-});
-
-describe("generateBracket", () => {
-  it('passes seeding: "standings" through to the mutation', async () => {
-    authorized.current = { ...AUTHORIZED_OK };
-    const mutations = await import("@/mutations/brackets");
-
-    await expect(
-      generateBracket(ID, { seeding: "standings" }),
-    ).resolves.toEqual({ ok: true });
-
-    expect(mutations.generateBracket).toHaveBeenCalledWith(
-      ID,
-      { force: undefined, seeding: "standings" },
-      (authorized.current as { ctx: unknown }).ctx,
-    );
-  });
-});
-
-describe("setHeatSchedule", () => {
-  it("authorizes before parsing malformed input; the refusal wins", async () => {
-    authorized.current = {
-      ok: false,
-      error: "You're not a Host of that Competition.",
-    };
-    const mutations = await import("@/mutations/brackets");
-    // A Day with no start time (the form's zod refine would refuse this),
-    // and a Heat id that isn't a UUID: neither ever gets checked.
-    const formData = new FormData();
-    formData.set("dayId", "11111111-1111-4111-8111-111111111111");
-    formData.set("startTime", "");
-    formData.set("location", "");
-
-    await expect(
-      setHeatSchedule(ID, "not-a-uuid", null, formData),
-    ).resolves.toEqual({
-      ok: false,
-      error: "You're not a Host of that Competition.",
-    });
-    expect(authorize).toHaveBeenCalledWith(
-      "bracket.heat-schedule",
-      "competition",
-      ID,
-    );
-    expect(mutations.setHeatSchedule).not.toHaveBeenCalled();
   });
 });
 

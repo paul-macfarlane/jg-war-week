@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** in-progress
+**Status:** done
 
 **Source:** Seed workflow annotations while deploying tickets 11 and 27, 2026-09-30
 
@@ -19,9 +19,10 @@
 
 ## Acceptance criteria
 
-- [ ] No workflow uses an action that runs on Node 20.
-- [ ] All three workflows run on `ubuntu-26.04`.
-- [ ] The PR's `checks` job (Postgres service, build, smoke, Playwright e2e) passes on `ubuntu-26.04`.
-- [ ] Migrate passes on the merge to `staging`; the next Seed run passes (manual; human).
+- [x] No workflow uses an action that runs on Node 20.
+- [x] All three workflows run on `ubuntu-26.04`.
+- [x] The PR's `checks` job (Postgres service, build, smoke, Playwright e2e) passes on `ubuntu-26.04`.
+- [x] Migrate passes on the merge to `staging`; the next Seed run passes (manual; human).
 
 ## Comments
+- 2026-09-30 [CLOSEOUT]: PR https://github.com/paul-macfarlane/jg-war-week/pull/98 merged; its `checks` job passed on `ubuntu-26.04` (run 36671125404). All three workflows use `runs-on: ubuntu-26.04` with `actions/checkout@v5`, `pnpm/action-setup@v6`, `actions/setup-node@v5`, `actions/upload-artifact@v7`. Migrate passed on `staging` and `main`; Seed passed on staging (run 36728531380) and production (run 36730075666).

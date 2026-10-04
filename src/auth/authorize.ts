@@ -4,10 +4,11 @@ import {
   type Actor,
   type OrganizerListAction,
   SIGN_IN_REFUSAL,
+  type SelfAction,
   type WarWeekAction,
   can,
 } from "@/lib/access";
-import type { GameType } from "@/lib/enums";
+import type { GameFormat } from "@/lib/enums";
 import type { GamesConfig } from "@/lib/games/config";
 import { SQUAD_MISSING } from "@/lib/games/enroll-rule";
 import { postedGamePlayerIds } from "@/lib/games/input";
@@ -20,6 +21,7 @@ import {
   type HeatReportFacts,
   getHeatReportFacts,
 } from "@/queries/heat-reports";
+import { getCheckInFacts } from "@/queries/participation";
 import {
   type LoadedTarget,
   type TargetWarWeek,
@@ -28,6 +30,7 @@ import {
   loadCompetitionTarget,
   loadDayTarget,
   loadFaqItemTarget,
+  loadFinaleSlideTarget,
   loadParticipantTarget,
   loadPointsEntryTarget,
   loadScheduleItemTarget,
@@ -59,6 +62,7 @@ const TARGETS = {
     loadScheduleItemTarget,
   ],
   faqItem: ["That FAQ Item no longer exists.", loadFaqItemTarget],
+  finaleSlide: ["That Finale slide no longer exists.", loadFinaleSlideTarget],
   award: ["That Award no longer exists.", loadAwardTarget],
   announcement: ["That Announcement no longer exists.", loadAnnouncementTarget],
 } as const satisfies Record<
@@ -118,7 +122,7 @@ export async function authorize(
  * The authorize step for self-report, the one Participant write (ADR 0005),
  * in ADR 0003's order: authenticate; both ids shaped like row ids; load the
  * Competition and its War Week; load the Heat's facts for the actor's email
- * (account linking, never the pick); run `can("bracket.heat-report")`,
+ * (account linking); run `can("bracket.heat-report")`,
  * which binds Organizers and Hosts too. The caller parses its input only
  * after this. Never throws on a refusal.
  */
@@ -168,7 +172,7 @@ export async function authorizeHeatReport(
  * or with a `squadId` join or leave that Squad. In ADR 0003's order:
  * authenticate; the ids shaped like row ids; load the Competition and its
  * War Week; load the enrollment facts for the actor's email (account
- * linking, never the pick); run `can`, which binds Organizers and Hosts
+ * linking); run `can`, which binds Organizers and Hosts
  * too. Never throws on a refusal.
  */
 export async function authorizeEnroll(
@@ -216,15 +220,56 @@ export async function authorizeEnroll(
 }
 
 /**
+ * The authorize step for checking in or out (ADR 0009), in ADR 0003's
+ * order: authenticate; the id shaped like a row id; load the Competition
+ * and its War Week; load the check-in facts for the actor's email (account
+ * linking); run `can`, which binds Organizers and Hosts too. Never throws
+ * on a refusal.
+ */
+export async function authorizeCheckIn(
+  action: "participation.check-in" | "participation.check-out",
+  competitionId: unknown,
+): Promise<
+  | {
+      ok: true;
+      actor: NonNullable<Actor>;
+      warWeek: TargetWarWeek;
+      ctx: MutationContext;
+    }
+  | Refused
+> {
+  const actor = await getActor();
+  if (!actor) return { ok: false, error: SIGN_IN_REFUSAL };
+  const [competitionNotFound, load] = TARGETS.competition;
+  if (!isUuid(competitionId)) return { ok: false, error: competitionNotFound };
+  const target = await load(competitionId);
+  if (!target) return { ok: false, error: competitionNotFound };
+
+  const facts = await getCheckInFacts(competitionId, actor.email);
+  const refusal = can(actor, action, {
+    warWeekId: target.warWeek.id,
+    competitionId: target.competitionId,
+    checkIn: facts.checkIn,
+  });
+  if (refusal) return { ok: false, error: refusal };
+  return {
+    ok: true,
+    actor,
+    warWeek: target.warWeek,
+    ctx: { warWeekId: target.warWeek.id, actorEmail: actor.email },
+  };
+}
+
+/**
  * The authorize step for logging, editing and deleting a Game (ADR 0006),
  * in ADR 0003's order: authenticate; the ids shaped like row ids; load the
  * Competition and its War Week; load the Game facts for the actor's email
- * (whether they run this Competition, account linking, never the pick) with
- * the player ids `input` posts for the Competition's Game Type
+ * (whether they run this Competition, account linking) with
+ * the player ids `input` posts for the Competition's Format
  * (`postedGamePlayerIds`, so another type's keys never reach `can`; none
  * for a delete); run
  * `can`, which binds Organizers and Hosts too when closed. Returns the
- * Competition's Game Type and config, which the caller parses its input
+ * Competition's Format and config, which the caller parses its input
  * with only after this. Never throws on a refusal.
  */
 export async function authorizeGameWrite(
@@ -238,7 +283,7 @@ export async function authorizeGameWrite(
       actor: NonNullable<Actor>;
       warWeek: TargetWarWeek;
       ctx: MutationContext;
-      competition: { gameType: GameType; config: GamesConfig };
+      competition: { gameFormat: GameFormat; config: GamesConfig };
     }
   | Refused
 > {
@@ -256,8 +301,8 @@ export async function authorizeGameWrite(
     isLog ? null : (gameId as string),
     actor.email,
     {
-      playerIds: (gameType) =>
-        action === "games.delete" ? [] : postedGamePlayerIds(gameType, input),
+      playerIds: (gameFormat) =>
+        action === "games.delete" ? [] : postedGamePlayerIds(gameFormat, input),
     },
   );
   if (!facts.competition) return { ok: false, error: NOT_GAMES };
@@ -277,7 +322,7 @@ export async function authorizeGameWrite(
     warWeek: target.warWeek,
     ctx: { warWeekId: target.warWeek.id, actorEmail: actor.email },
     competition: {
-      gameType: facts.competition.gameType,
+      gameFormat: facts.competition.gameFormat,
       config: facts.competition.config,
     },
   };
@@ -291,6 +336,21 @@ export async function authorizeOrganizerList(
   if (!actor) return { ok: false, error: SIGN_IN_REFUSAL };
   const refusal = can(actor, action);
   return refusal ? { ok: false, error: refusal } : { ok: true, actor };
+}
+
+/**
+ * The authorize step for a self action (your own Profile or account): no
+ * target to load; the caller keys its write on the returned actor's email.
+ * Never throws on a refusal.
+ */
+export async function authorizeSelf(
+  action: SelfAction,
+): Promise<{ ok: true; actor: NonNullable<Actor> } | Refused> {
+  const actor = await getActor();
+  const refusal = can(actor, action);
+  if (refusal || !actor)
+    return { ok: false, error: refusal ?? SIGN_IN_REFUSAL };
+  return { ok: true, actor };
 }
 
 /**

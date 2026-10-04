@@ -31,12 +31,12 @@
     }
   ],
   "competitions": [],
-  "pointsEntries": [],
   "awards": [
     {
       "key": "mvp-1st-place",
       "name": "MVP 1st Place",
-      "participants": ["Anthony Conway"]
+      "participants": ["Anthony Conway"],
+      "category": "war-week-mvp"
     },
     {
       "key": "mvp-2nd-place",
@@ -51,7 +51,8 @@
     {
       "key": "billing-hours-champ",
       "name": "Billing Hours Champ",
-      "participants": ["Akshay Palekar"]
+      "participants": ["Akshay Palekar"],
+      "category": "billable-hours-champ"
     }
   ],
   "announcements": [],

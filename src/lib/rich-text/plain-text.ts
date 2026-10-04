@@ -1,18 +1,26 @@
 import {
   type Block,
-  type TextElement,
+  type InlineElement,
   sanitizeContent,
 } from "@/lib/rich-text/content";
 
-function inlineText(elements: TextElement[] | undefined): string {
-  return elements?.map((e) => e.text).join("") ?? "";
+/** A block's text as lines: a hard break starts a new one. */
+function inlineLines(elements: InlineElement[] | undefined): string[] {
+  return (elements ?? [])
+    .map((e) => (e.type === "text" ? e.text : "\n"))
+    .join("")
+    .split("\n");
 }
 
 function blockLines(block: Block, indent = ""): string[] {
   switch (block.type) {
     case "paragraph":
     case "heading":
-      return [indent + inlineText(block.content)];
+      return inlineLines(block.content).map((line) => indent + line);
+    case "blockquote":
+      return block.content.flatMap((paragraph) =>
+        blockLines(paragraph, indent).map((line) => `> ${line}`),
+      );
     case "bulletList":
     case "orderedList":
       return block.content.flatMap((item) =>
@@ -23,15 +31,17 @@ function blockLines(block: Block, indent = ""): string[] {
         ),
       );
     case "image":
-      return [];
+      // An image is its caption, when it has one.
+      return block.attrs.caption ? [indent + block.attrs.caption] : [];
     case "video":
       return [indent + block.attrs.src];
   }
 }
 
 /**
- * Rich text as plain text for a Claude user; images are dropped and videos
- * become their URL. Shared by
+ * Rich text as plain text for a Claude user: a quote's lines read `> `, a
+ * line break is a newline, an image is its caption (or nothing) and a video
+ * is its URL. Shared by
  * every MCP serializer that returns a rich-text field as readable text
  * (Schedule Item descriptions, Announcement bodies).
  */

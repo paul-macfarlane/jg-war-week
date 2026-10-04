@@ -1,16 +1,57 @@
 /**
- * A Bracket's Format settings, saved in `competition.bracket_config`: how
- * many Entrants play in each Heat and how many of them advance. Only the
- * heats Format has any; single elimination's is null. Pure, like the engine.
+ * A Bracket's settings, saved in `competition.bracket_config`: how many
+ * Entrants play in each Heat, how many of them advance, and the 3rd place
+ * game. Never null for a Bracket. Pure, like the engine.
  */
 import { z } from "zod";
 
-import type { Format } from "@/lib/bracket/types";
+export type BracketConfig = {
+  entrantsPerHeat: number;
+  advancePerHeat: number;
+  /**
+   * A 3rd place game between the semifinal losers: head-to-head only, with
+   * at least 4 Entrants (see `thirdPlaceRefusal`).
+   */
+  thirdPlaceGame: boolean;
+};
 
-export type HeatsConfig = { entrantsPerHeat: number; advancePerHeat: number };
+/** What a new Bracket gets: head-to-head, no 3rd place game. */
+export const DEFAULT_BRACKET_CONFIG: BracketConfig = {
+  entrantsPerHeat: 2,
+  advancePerHeat: 1,
+  thirdPlaceGame: false,
+};
 
-/** Null for single elimination (and points, which has no Bracket). */
-export type BracketConfig = HeatsConfig | null;
+/**
+ * Whether a config is the head-to-head preset (2 per Heat, 1 advancing):
+ * the one config the single-elimination engine runs. `engineFor`
+ * (`formats.ts`) is where it picks the engine.
+ */
+export function isHeadToHead(config: BracketConfig): boolean {
+  return config.entrantsPerHeat === 2 && config.advancePerHeat === 1;
+}
+
+/** A 3rd place game on any config but head-to-head. */
+export const THIRD_PLACE_HEAD_TO_HEAD_ONLY =
+  "A 3rd place game is only for 2 per Heat with 1 advancing.";
+
+/** A 3rd place game with fewer than two real semifinals. */
+export const THIRD_PLACE_NEEDS_FOUR =
+  "A 3rd place game needs at least 4 Entrants.";
+
+/**
+ * Why this config's 3rd place game is refused for `entrantCount` Entrants,
+ * or null: it needs head-to-head and two real semifinals (4 Entrants).
+ */
+export function thirdPlaceRefusal(
+  config: BracketConfig,
+  entrantCount: number,
+): string | null {
+  if (!config.thirdPlaceGame) return null;
+  if (!isHeadToHead(config)) return THIRD_PLACE_HEAD_TO_HEAD_ONLY;
+  if (entrantCount < 4) return THIRD_PLACE_NEEDS_FOUR;
+  return null;
+}
 
 /** The Heat sizes the builder offers. */
 export const ENTRANTS_PER_HEAT_OPTIONS = [2, 3, 4, 5, 6, 7, 8] as const;
@@ -26,7 +67,7 @@ export function advancePerHeatLabel(count: number): string {
   return count === 1 ? "Top 1 advances" : `Top ${count} advance`;
 }
 
-export const heatsConfigSchema = z
+export const bracketConfigSchema = z
   .object({
     entrantsPerHeat: z
       .number()
@@ -38,40 +79,22 @@ export const heatsConfigSchema = z
       .int()
       .min(1, { error: "At least 1 must advance from a Heat." })
       .max(7, { error: "At most 7 can advance from a Heat." }),
+    thirdPlaceGame: z.boolean({
+      error: "Choose whether to play a 3rd place game.",
+    }),
   })
   .refine((c) => c.advancePerHeat < c.entrantsPerHeat, {
     error: "Fewer must advance than play in a Heat.",
     path: ["advancePerHeat"],
   });
 
-const noConfigSchema = z.null().optional();
-
-/** The config a Format takes: a Heats config, or none. */
-export function bracketConfigSchema(
-  format: Format,
-): z.ZodType<BracketConfig | undefined> {
-  return format === "heats" ? heatsConfigSchema : noConfigSchema;
-}
-
-/** What a Bracket of this Format uses when nothing is saved. */
-export function defaultConfig(format: Format): BracketConfig {
-  return format === "heats" ? heatsConfig(null) : null;
-}
-
-/** A heats Bracket's config: the saved one, or the heats default. */
-export function heatsConfig(config: BracketConfig): HeatsConfig {
-  return config ?? { entrantsPerHeat: 4, advancePerHeat: 2 };
-}
-
 /**
- * A Competition's config: its saved `bracketConfig` when that's valid for
- * its Format, otherwise the Format's default.
+ * A Bracket Competition's config: its saved `bracketConfig` when valid,
+ * otherwise the default. Never null: only call it for a Bracket.
  */
 export function configOf(competition: {
-  format: Format;
   bracketConfig: unknown;
 }): BracketConfig {
-  if (competition.format !== "heats") return null;
-  const parsed = heatsConfigSchema.safeParse(competition.bracketConfig);
-  return parsed.success ? parsed.data : defaultConfig(competition.format);
+  const parsed = bracketConfigSchema.safeParse(competition.bracketConfig);
+  return parsed.success ? parsed.data : DEFAULT_BRACKET_CONFIG;
 }

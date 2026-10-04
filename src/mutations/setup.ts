@@ -11,6 +11,8 @@ import {
   game,
   gamePlayer,
   participant,
+  participation,
+  placement,
   pointsEntry,
   scheduleItem,
   squad,
@@ -18,10 +20,14 @@ import {
   team,
   warWeek,
 } from "@/db/schema";
-import { defaultConfig } from "@/lib/bracket/config";
-import { defaultGamesConfig } from "@/lib/games/config";
+import { formatDefaults } from "@/lib/format-defaults";
 import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
 import type { FieldErrors } from "@/lib/result";
+import {
+  type RosterImportSignature,
+  planRosterText,
+  planSignature,
+} from "@/lib/roster-import";
 import {
   type CompetitionCreateValues,
   type CompetitionValues,
@@ -29,17 +35,21 @@ import {
   type OverrideColumn,
   type ParticipantValues,
   type TeamValues,
+  type WarWeekSettingsInput,
   type WarWeekSettingsValues,
   competitionGuardError,
   dayDeleteGuardError,
   dayGuardError,
   inUseError,
+  mergeWarWeekSettings,
   participantGuardError,
   settingsGuardError,
+  settingsInputFrom,
   teamGuardError,
 } from "@/lib/setup";
 import { backgroundColorScheme } from "@/lib/theme";
 import type { MutationContext, MutationResult } from "@/mutations/types";
+import { getSetupParticipants, getSetupTeams } from "@/queries/setup";
 
 const WAR_WEEK_NOT_FOUND = "That War Week no longer exists.";
 const DAY_NOT_FOUND = "That Day no longer exists.";
@@ -52,6 +62,14 @@ export function isUniqueViolation(error: unknown): boolean {
   const cause = (error as { cause?: { code?: string } })?.cause;
   return (
     (error as { code?: string })?.code === "23505" || cause?.code === "23505"
+  );
+}
+
+/** Postgres foreign_key_violation: a row it points at was deleted meanwhile. */
+export function isForeignKeyViolation(error: unknown): boolean {
+  const cause = (error as { cause?: { code?: string } })?.cause;
+  return (
+    (error as { code?: string })?.code === "23503" || cause?.code === "23503"
   );
 }
 
@@ -136,16 +154,29 @@ function overridesClearedByFlip(
 }
 
 /**
- * Saves the War Week's settings and Appearance Theme, refusing a save that
- * would strand Teams or Days. A background that crosses light and dark
- * clears the overrides the save left untouched (`overridesClearedByFlip`).
+ * Saves some of the War Week's settings (one autosave's fields): laid over
+ * the row as it stands now, locked, and checked whole, then only those
+ * columns are written, so a value stored since the form loaded (another
+ * tab, End War Week's Winner) is never written back over. Refuses a save that
+ * would strand Teams or Days, and clears the overrides a light/dark flip
+ * leaves untouched.
  */
-export async function updateWarWeekSettings(
-  values: WarWeekSettingsValues,
+export async function updateWarWeekSettingsFields(
+  fields: Partial<WarWeekSettingsInput>,
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
+    const [stored] = await tx
+      .select()
+      .from(warWeek)
+      .where(eq(warWeek.id, ctx.warWeekId))
+      .for("update");
+    if (!stored) return { ok: false, error: WAR_WEEK_NOT_FOUND };
+    const merged = mergeWarWeekSettings(settingsInputFrom(stored), fields);
+    if (!merged.ok) return merged;
+    const { values, changed } = merged.value;
+
     const [teams] = await tx
       .select({ count: count() })
       .from(team)
@@ -156,31 +187,15 @@ export async function updateWarWeekSettings(
     });
     if (refusal) return { ok: false, error: refusal };
 
-    const [stored] = await tx
-      .select({
-        backgroundColor: warWeek.backgroundColor,
-        overridePrimaryColor: warWeek.overridePrimaryColor,
-        overridePrimaryForegroundColor: warWeek.overridePrimaryForegroundColor,
-        overrideAccentColor: warWeek.overrideAccentColor,
-        overrideBackgroundColor: warWeek.overrideBackgroundColor,
-        overrideForegroundColor: warWeek.overrideForegroundColor,
-      })
-      .from(warWeek)
-      .where(eq(warWeek.id, ctx.warWeekId));
-    if (!stored) return { ok: false, error: WAR_WEEK_NOT_FOUND };
-
-    const updated = await tx
+    await tx
       .update(warWeek)
       .set({
-        ...values,
+        ...changed,
         ...overridesClearedByFlip(values, stored),
         updatedAt: sql`now()`,
       })
-      .where(eq(warWeek.id, ctx.warWeekId))
-      .returning({ id: warWeek.id });
-    return updated.length > 0
-      ? { ok: true }
-      : { ok: false, error: WAR_WEEK_NOT_FOUND };
+      .where(eq(warWeek.id, ctx.warWeekId));
+    return { ok: true };
   });
 }
 
@@ -527,6 +542,99 @@ export async function updateParticipant(
   );
 }
 
+/** A roster import as the preview posts it: the text and what it showed. */
+export type ImportParticipantsInput = {
+  text: string;
+  expected: RosterImportSignature;
+};
+
+export type ImportParticipantsResult =
+  { ok: true; added: number; updated: number } | { ok: false; error: string };
+
+const ROSTER_CHANGED = "The roster changed since the preview. Review it again.";
+
+/**
+ * Imports the roster from a spreadsheet (ticket 67) in one transaction:
+ * locks this War Week's Participants, re-plans the posted text against the
+ * roster, Teams and Squad membership as they stand now, refuses if that
+ * plan isn't the one the preview showed (`expected`), then inserts the
+ * Adds and writes the Updates. Error and Unchanged rows are skipped. A Team
+ * deleted meanwhile (a foreign-key violation) refuses as a changed roster.
+ */
+export async function importParticipants(
+  input: ImportParticipantsInput,
+  ctx: MutationContext,
+  dbOrTx: DBOrTx = db,
+): Promise<ImportParticipantsResult> {
+  return refusingDuplicate(PARTICIPANT_TAKEN, async () => {
+    try {
+      return await importRoster(input, ctx, dbOrTx);
+    } catch (error) {
+      if (!isForeignKeyViolation(error)) throw error;
+      return { ok: false, error: ROSTER_CHANGED };
+    }
+  });
+}
+
+async function importRoster(
+  input: ImportParticipantsInput,
+  ctx: MutationContext,
+  dbOrTx: DBOrTx,
+): Promise<ImportParticipantsResult> {
+  return dbOrTx.transaction(async (tx): Promise<ImportParticipantsResult> => {
+    const [week] = await tx
+      .select({
+        id: warWeek.id,
+        mode: warWeek.mode,
+        teamLabel: warWeek.teamLabel,
+        leaderTitle: warWeek.leaderTitle,
+      })
+      .from(warWeek)
+      .where(eq(warWeek.id, ctx.warWeekId));
+    if (!week) return { ok: false, error: WAR_WEEK_NOT_FOUND };
+    // A Squad write takes a Participant `for share`, so a Team change
+    // here and a Squad write on the same Participant run one at a time.
+    await tx
+      .select({ id: participant.id })
+      .from(participant)
+      .where(eq(participant.warWeekId, ctx.warWeekId))
+      .for("update");
+    const roster = await getSetupParticipants(week, tx);
+    const teams = week.mode === "teams" ? await getSetupTeams(week, tx) : [];
+
+    const plan = planRosterText(input.text, { ...week, roster, teams });
+    if (!plan.ok) return plan;
+    if (
+      JSON.stringify(planSignature(plan.entries)) !==
+      JSON.stringify(input.expected)
+    ) {
+      return { ok: false, error: ROSTER_CHANGED };
+    }
+
+    const adds = plan.entries.flatMap((entry) =>
+      entry.kind === "add"
+        ? [{ warWeekId: ctx.warWeekId, ...entry.values }]
+        : [],
+    );
+    const updates = plan.entries.flatMap((entry) =>
+      entry.kind === "update" ? [entry] : [],
+    );
+    if (adds.length === 0 && updates.length === 0) {
+      return { ok: false, error: "There's nothing to add or update." };
+    }
+    if (adds.length > 0) await tx.insert(participant).values(adds);
+    for (const { id, values } of updates) {
+      await tx
+        .update(participant)
+        .set({ ...values, updatedAt: sql`now()` })
+        .where(
+          and(eq(participant.id, id), eq(participant.warWeekId, ctx.warWeekId)),
+        );
+    }
+    return { ok: true, added: adds.length, updated: updates.length };
+  });
+}
+
 /**
  * Deletes a Participant of this War Week, refusing one with Points Entries
  * or who receives an Award.
@@ -667,6 +775,35 @@ async function competitionRefusal(
     "Delete them before changing its scoring.",
   );
   if (gameRefusal) return gameRefusal;
+  // Who took part is checked against Teams in team scoring (ADR 0009).
+  const participationRefusal = inUseError(
+    "Competition",
+    [
+      [
+        await tx.$count(
+          participation,
+          eq(participation.competitionId, exceptId),
+        ),
+        "Participant who took part",
+        "Participants who took part",
+      ],
+    ],
+    "Remove who took part before changing its scoring.",
+  );
+  if (participationRefusal) return participationRefusal;
+  // A Placement's rows are Teams or Participants by its scoring.
+  const placementRefusal = inUseError(
+    "Competition",
+    [
+      [
+        await tx.$count(placement, eq(placement.competitionId, exceptId)),
+        "Placement",
+        "Placements",
+      ],
+    ],
+    "Remove them before changing its scoring.",
+  );
+  if (placementRefusal) return placementRefusal;
   // Squads are only for team Competitions.
   return inUseError(
     "Competition",
@@ -688,9 +825,12 @@ export type CreateCompetitionResult =
 
 /**
  * Creates a Competition, with the Format an Organizer chose (default
- * "points") and, for a heats Format with none given, the Bracket builder's
- * default config (`defaultConfig`). A `games` Competition stores its Game
- * Type and that type's default settings; any other Format has no Game Type.
+ * "placement") and that Format's create defaults (`formatDefaults`, as a
+ * Format change gives): a Bracket's default heat settings, a Head-to-head
+ * or Best score Competition's default settings open to everyone, a
+ * `participation` Competition's 1 point per Participant when individual or
+ * Placement Points 3, 2, 1 (ranked by headcount) when team, with Self
+ * check-in off.
  */
 export async function createCompetition(
   values: CompetitionCreateValues,
@@ -703,22 +843,14 @@ export async function createCompetition(
       dbOrTx.transaction(async (tx): Promise<CreateCompetitionResult> => {
         const refusal = await competitionRefusal(values, ctx, tx);
         if (refusal) return { ok: false, error: refusal };
-        const format = values.format ?? "points";
-        const gameType = format === "games" ? (values.gameType ?? null) : null;
-        if (format === "games" && !gameType) {
-          return { ok: false, error: "Choose a Game Type." };
-        }
+        const format = values.format ?? "placement";
         const [created] = await tx
           .insert(competition)
           .values({
             warWeekId: ctx.warWeekId,
             ...values,
             format,
-            bracketConfig: defaultConfig(format),
-            gameType,
-            gameConfig: gameType ? defaultGamesConfig(gameType) : null,
-            // A new `games` Competition is open to everyone (Best of is off).
-            entrantsOpen: format === "games",
+            ...formatDefaults(format, values),
           })
           .returning({ id: competition.id });
         return { ok: true, id: created.id };
@@ -736,16 +868,44 @@ export async function updateCompetition(
     `There's already a Competition named "${values.name}".`,
     () =>
       dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-        // Adding a Points Entry or Entrant, or finalizing the Bracket, takes
-        // the same lock, so the counts below hold until this commits.
+        // Adding a Placement or Entrant, and Finalizing or closing (which
+        // write its Points Entries), take the same lock, so the counts below
+        // hold until this commits.
         if (!(await locked(competition, id, ctx, tx))) {
           return { ok: false, error: COMPETITION_NOT_FOUND };
         }
         const refusal = await competitionRefusal(values, ctx, tx, id);
         if (refusal) return { ok: false, error: refusal };
+        // A `participation` Competition keeps the columns its scoring takes
+        // (the CHECK `competition_participation_columns`).
+        const [existing] = await tx
+          .select({
+            format: competition.format,
+            placementPoints: competition.placementPoints,
+            participationPoints: competition.participationPoints,
+          })
+          .from(competition)
+          .where(eq(competition.id, id));
+        const participationColumns =
+          existing?.format === "participation"
+            ? values.scoring === "team"
+              ? {
+                  participationPoints: null,
+                  placementPoints: values.placementPoints ??
+                    existing.placementPoints ?? [3, 2, 1],
+                }
+              : {
+                  participationPoints: existing.participationPoints ?? 1,
+                  placementPoints: null,
+                }
+            : {};
         const updated = await tx
           .update(competition)
-          .set({ ...values, updatedAt: sql`now()` })
+          .set({
+            ...values,
+            ...participationColumns,
+            updatedAt: sql`now()`,
+          })
           .where(
             and(
               eq(competition.id, id),
@@ -762,7 +922,7 @@ export async function updateCompetition(
 
 /**
  * Deletes a Competition of this War Week, refusing one with Points Entries,
- * Schedule Items or Games.
+ * Schedule Items, Games or anyone who took part.
  */
 export async function deleteCompetition(
   id: string,
@@ -791,6 +951,18 @@ export async function deleteCompetition(
       "Delete or move them first.",
     );
     if (refusal) return { ok: false, error: refusal };
+    const tookPart = inUseError(
+      "Competition",
+      [
+        [
+          await tx.$count(participation, eq(participation.competitionId, id)),
+          "Participant who took part",
+          "Participants who took part",
+        ],
+      ],
+      "Remove who took part first.",
+    );
+    if (tookPart) return { ok: false, error: tookPart };
 
     const deleted = await tx
       .delete(competition)

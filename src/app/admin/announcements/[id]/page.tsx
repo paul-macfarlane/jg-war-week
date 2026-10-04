@@ -5,7 +5,10 @@ import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { AnnouncementForm } from "@/components/announcement-form";
 import { can } from "@/lib/access";
 import { sanitizeContent } from "@/lib/rich-text/content";
-import { getAnnouncementForEdit } from "@/queries/announcements";
+import {
+  getAnnouncementAuthorName,
+  getAnnouncementForEdit,
+} from "@/queries/announcements";
 
 import { loadAdminPage } from "../../gate";
 
@@ -33,6 +36,10 @@ export default async function EditAnnouncementPage({
   // The stored body was sanitized on write; sanitize again so the editor is
   // only ever handed the closed content set.
   const body = sanitizeContent(announcement.body);
+  const authorName = await getAnnouncementAuthorName(
+    warWeek,
+    announcement.authorEmail,
+  );
 
   return (
     <AdminShell
@@ -44,9 +51,7 @@ export default async function EditAnnouncementPage({
     >
       <section className="flex max-w-3xl flex-col gap-4">
         <h1 className="text-2xl font-bold">Edit Announcement</h1>
-        <p className="text-foreground/70 text-sm">
-          Posted by {announcement.authorEmail}.
-        </p>
+        <p className="text-foreground/70 text-sm">Posted by {authorName}.</p>
         <AnnouncementForm
           warWeekId={warWeek.id}
           announcementId={announcement.id}
@@ -54,7 +59,6 @@ export default async function EditAnnouncementPage({
           initial={{
             title: announcement.title,
             body: body.ok ? body.content : { type: "doc", content: [] },
-            videoUrls: announcement.videoUrls,
             pinned: announcement.pinned,
           }}
         />

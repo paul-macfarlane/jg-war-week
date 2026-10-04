@@ -1,7 +1,8 @@
 # Stairs App integration (not built)
 
 Status: **stub**. Nothing here is implemented. HQ Attendance is scored with
-Points Entries that Organizers enter by hand in `/admin/points`.
+a Placement sheet that its Host or an Organizer records in `/admin/placements`
+(Participation could replace it).
 
 This note records what we know so the integration can be picked up later
 without redoing the research.
@@ -23,10 +24,9 @@ climbs per email. The JG War Week app would then:
    browser) for the War Week's dates.
 2. Match each email to a Participant by their optional `email` (unique within
    a War Week; see `CONTEXT.md`).
-3. Write the result as ordinary Points Entries in the HQ Attendance
-   Competition, with `entered_by_email` naming the integration, so the
-   Standings function, the ledger and the Finale treat them like any other
-   entry.
+3. Write the result as Placements in the HQ Attendance Competition and Finalize
+   it, so the Standings function, the ledger and the Finale treat it like any
+   other result.
 
 ## Blocker
 

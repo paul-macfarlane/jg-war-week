@@ -4,26 +4,34 @@ import { guarded } from "@/actions/result";
 import { revalidateSite, revalidateWarWeek } from "@/actions/revalidate";
 import { type TargetKind, authorize } from "@/auth/authorize";
 import type { WarWeekAction } from "@/lib/access";
-import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
+import { parseCompetitionSetting } from "@/lib/competition-settings";
 import type { Parsed } from "@/lib/result";
+import { rosterImportInputSchema } from "@/lib/roster-import";
 import {
   type CompetitionInput,
   type DayInput,
   type ParticipantInput,
   type TeamInput,
   type WarWeekSettingsInput,
-  parseCompetitionInput,
   parseCreateCompetitionInput,
   parseDayInput,
   parseParticipantInput,
   parseTeamInput,
-  parseWarWeekSettingsInput,
+  parseWarWeekSettingsFields,
 } from "@/lib/setup";
+import { saveCompetitionSetting as saveSetting } from "@/mutations/competition-settings";
 import * as mutations from "@/mutations/setup";
-import type { CreateCompetitionResult } from "@/mutations/setup";
+import type {
+  CreateCompetitionResult,
+  ImportParticipantsInput,
+  ImportParticipantsResult,
+} from "@/mutations/setup";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 
 export type SetupActionResult = MutationResult;
+
+/** A setup write's refusal: access, input, or the write itself. */
+type Refusal = Extract<SetupActionResult, { ok: false }>;
 
 /**
  * Runs a setup write: authorizes `action` on the row `id` names (or, for a
@@ -33,14 +41,14 @@ export type SetupActionResult = MutationResult;
  * (`revalidateSite`). Every setup action goes through here, so
  * none of them throws (`guarded`).
  */
-async function setupWrite<T>(
+async function setupWrite<T, R extends MutationResult = MutationResult>(
   action: WarWeekAction,
   kind: TargetKind,
   id: unknown,
   parse: () => Parsed<T>,
-  write: (value: T, ctx: MutationContext) => Promise<MutationResult>,
+  write: (value: T, ctx: MutationContext) => Promise<R>,
   reach: "edition" | "site" = "edition",
-): Promise<SetupActionResult> {
+): Promise<R | Refusal> {
   return guarded(async () => {
     const authorized = await authorize(action, kind, id);
     if (!authorized.ok) return authorized;
@@ -58,16 +66,21 @@ async function setupWrite<T>(
 
 const nothing = (): Parsed<null> => ({ ok: true, value: null });
 
-export async function updateWarWeekSettings(
+/**
+ * Saves some of the War Week's settings: the fields one autosave sends.
+ * Only those columns are written, laid over the row as it stands now
+ * (`mutations.updateWarWeekSettingsFields`).
+ */
+export async function updateWarWeekSettingsFields(
   warWeekId: string,
-  input: WarWeekSettingsInput,
+  fields: Partial<WarWeekSettingsInput>,
 ): Promise<SetupActionResult> {
   return setupWrite(
     "settings.save",
     "warWeek",
     warWeekId,
-    () => parseWarWeekSettingsInput(input),
-    mutations.updateWarWeekSettings,
+    () => parseWarWeekSettingsFields(fields),
+    mutations.updateWarWeekSettingsFields,
     // The header and the Archive show the settings and Appearance Theme.
     "site",
   );
@@ -178,6 +191,29 @@ export async function deleteParticipant(
 }
 
 /**
+ * Imports the roster from pasted cells or a CSV (ticket 67), Organizer
+ * only: the Adds and Updates the preview showed (`expected`), or nothing
+ * if the roster changed since.
+ */
+export async function importParticipants(
+  warWeekId: string,
+  input: ImportParticipantsInput,
+): Promise<ImportParticipantsResult> {
+  return setupWrite(
+    "participant.import",
+    "warWeek",
+    warWeekId,
+    (): Parsed<ImportParticipantsInput> => {
+      const parsed = rosterImportInputSchema.safeParse(input);
+      return parsed.success
+        ? { ok: true, value: parsed.data }
+        : { ok: false, error: "The import's rows are missing." };
+    },
+    mutations.importParticipants,
+  );
+}
+
+/**
  * Creates a Competition, with the Format an Organizer chose on the create
  * form. Returns the new row's id, so the form can send a Bracket Format
  * straight to its Bracket setup.
@@ -204,17 +240,23 @@ export async function createCompetition(
   });
 }
 
-/** A Competition's setup: its Organizers, or a Host of that Competition. */
-export async function updateCompetition(
-  id: string,
-  input: CompetitionInput,
+/**
+ * Saves one setting of a Competition (the admin Competition page's
+ * autosave): `{ field, value }` (`parseCompetitionSetting`). An Organizer,
+ * or a Host of this Competition for any field but Hosts; the mutation
+ * checks the role again with the field, and refuses a locked field with
+ * its one-line reason (`src/lib/competition-locks.ts`).
+ */
+export async function saveCompetitionSetting(
+  competitionId: string,
+  input: unknown,
 ): Promise<SetupActionResult> {
   return setupWrite(
     "competition.edit",
     "competition",
-    id,
-    () => parseCompetitionInput(input),
-    (value, ctx) => mutations.updateCompetition(id, value, ctx),
+    competitionId,
+    () => parseCompetitionSetting(input),
+    (value, ctx) => saveSetting(competitionId, value, ctx),
   );
 }
 
@@ -227,28 +269,5 @@ export async function deleteCompetition(
     id,
     nothing,
     (_, ctx) => mutations.deleteCompetition(id, ctx),
-  );
-}
-
-/**
- * Replaces a Competition's Hosts ("assign Hosts", Organizer only). Saved on
- * its own, never with the Competition's setup, so a Host's setup save can't
- * carry a Hosts list.
- */
-export async function setCompetitionHosts(
-  competitionId: string,
-  emails: string[],
-): Promise<SetupActionResult> {
-  return setupWrite(
-    "competition.assign-hosts",
-    "competition",
-    competitionId,
-    (): Parsed<string[]> => {
-      const parsed = jgEmailListSchema.safeParse(emails);
-      return parsed.success
-        ? { ok: true, value: parsed.data }
-        : { ok: false, error: JG_EMAIL_MESSAGE };
-    },
-    (value, ctx) => mutations.setCompetitionHosts(competitionId, value, ctx),
   );
 }

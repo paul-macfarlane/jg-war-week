@@ -15,7 +15,7 @@ const HOST = "host@jahnelgroup.com";
 const NEO = "neo@jahnelgroup.com";
 const TRINITY = "trinity@jahnelgroup.com";
 const MORPHEUS = "morpheus@jahnelgroup.com";
-/** Matches no Participant: Tank has no email, so only the pick names him. */
+/** Matches no Participant: Tank has no email, so nothing links him. */
 const TANK = "tank@jahnelgroup.com";
 
 const PAST = new Date("2020-01-01T00:00:00Z");
@@ -26,7 +26,7 @@ const FUTURE = new Date("2099-12-31T00:00:00Z");
  * and with no email, and Competitions with the enroll switch on: Cypher
  * (individual Bracket), Tug of War (team Bracket), Relay (team Bracket with
  * the Squads Red One: Trinity, and Blue One: Morpheus), Pong (individual
- * fixed-list head-to-head `games`), and Trivia (points).
+ * fixed-list Head-to-head), and Trivia (points).
  */
 async function fixture(tx: DBTx) {
   const schema = await import("@/db/schema");
@@ -85,34 +85,33 @@ async function fixture(tx: DBTx) {
         warWeekId,
         name: "Cypher",
         scoring: "individual",
-        format: "single-elimination",
+        format: "bracket",
         selfEnroll: true,
       },
       {
         warWeekId,
         name: "Tug of War",
         scoring: "team",
-        format: "single-elimination",
+        format: "bracket",
         selfEnroll: true,
       },
       {
         warWeekId,
         name: "Relay",
         scoring: "team",
-        format: "single-elimination",
+        format: "bracket",
         selfEnroll: true,
       },
       {
         warWeekId,
         name: "Pong",
         scoring: "individual",
-        format: "games",
-        gameType: "head-to-head",
+        format: "head-to-head",
         gameConfig: { drawsAllowed: false, bestOf: null },
         entrantsOpen: false,
         selfEnroll: true,
       },
-      { warWeekId, name: "Trivia", scoring: "team", format: "points" },
+      { warWeekId, name: "Trivia", scoring: "team", format: "placement" },
     ])
     .returning({ id: schema.competition.id });
   const [redOne, blueOne] = await tx
@@ -256,7 +255,7 @@ describe.skipIf(!isLocalDatabase)("enroll (individual scoring)", () => {
     });
   });
 
-  it("refuses an actor no Participant's email matches: the pick grants nothing", async () => {
+  it("refuses an actor no Participant's email matches: nothing links them", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { enroll } = await mutations();
       const { NOT_LINKED } = await rule();
@@ -352,7 +351,7 @@ describe.skipIf(!isLocalDatabase)("enroll (individual scoring)", () => {
 });
 
 describe.skipIf(!isLocalDatabase)(
-  "enroll (a fixed-list games Competition)",
+  "enroll (a fixed-list Head-to-head or Best score Competition)",
   () => {
     it("enrolls before the first Game and refuses after it", async () => {
       await inRolledBackTransaction(async (tx) => {
@@ -372,7 +371,7 @@ describe.skipIf(!isLocalDatabase)(
       });
     });
 
-    it("is off on a Best of or open-to-everyone games Competition, whatever the switch", async () => {
+    it("is off on a Best of or open-to-everyone Head-to-head or Best score Competition, whatever the switch", async () => {
       await inRolledBackTransaction(async (tx) => {
         const { enroll } = await mutations();
         const { ENROLL_OFF } = await rule();
@@ -640,7 +639,7 @@ describe.skipIf(!isLocalDatabase)("setSelfEnroll", () => {
     });
   });
 
-  it("turns it on for a fixed-list games Competition", async () => {
+  it("turns it on for a fixed-list Head-to-head or Best score Competition", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { setSelfEnroll } = await mutations();
       const f = await fixture(tx);

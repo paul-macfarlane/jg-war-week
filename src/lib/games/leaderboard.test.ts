@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type {
-  BestScoreConfig,
-  HeadToHeadConfig,
-  RankedConfig,
-} from "@/lib/games/config";
+import type { BestScoreConfig, HeadToHeadConfig } from "@/lib/games/config";
 import {
   type GameFact,
   bestOfWinner,
@@ -48,7 +44,6 @@ describe("rankGames head-to-head", () => {
       draws: 0,
       best: null,
       total: null,
-      finishPoints: 0,
     });
     const sam = rows.find((r) => r.id === "sam")!;
     expect(sam.wins).toBe(1);
@@ -190,56 +185,6 @@ describe("rankGames best-score", () => {
     expect(rankOf("ashley")).toBe(1);
     expect(rankOf("sam")).toBe(1);
     expect(rankOf("kim")).toBe(3);
-  });
-});
-
-describe("rankGames ranked", () => {
-  function ranked(players: { id: string; place: number }[]): GameFact {
-    return {
-      id: players.map((p) => p.id).join("-"),
-      loggedAt,
-      players: players.map((p) => ({ id: p.id, place: p.place, score: null })),
-    };
-  }
-
-  it("sums Finish Points by the default table (one point per player beaten)", () => {
-    const config: RankedConfig = { finishPoints: [] };
-    const games: GameFact[] = [
-      ranked([
-        { id: "red", place: 1 },
-        { id: "blue", place: 2 },
-        { id: "green", place: 3 },
-      ]),
-    ];
-    const rows = rankGames("ranked", config, games, null);
-    const red = rows.find((r) => r.id === "red")!;
-    expect(red.finishPoints).toBe(2);
-    expect(red.wins).toBe(1);
-    const green = rows.find((r) => r.id === "green")!;
-    expect(green.finishPoints).toBe(0);
-    expect(red.rank).toBe(1);
-  });
-
-  it("shares the higher finish for a tie within a Game (1, 1, 3)", () => {
-    const config: RankedConfig = { finishPoints: [3, 2, 1] };
-    const games: GameFact[] = [
-      ranked([
-        { id: "red", place: 1 },
-        { id: "blue", place: 1 },
-        { id: "green", place: 3 },
-      ]),
-    ];
-    const rows = rankGames("ranked", config, games, null);
-    const red = rows.find((r) => r.id === "red")!;
-    const blue = rows.find((r) => r.id === "blue")!;
-    const green = rows.find((r) => r.id === "green")!;
-    expect(red.finishPoints).toBe(3);
-    expect(blue.finishPoints).toBe(3);
-    expect(green.finishPoints).toBe(1);
-    expect(red.rank).toBe(1);
-    expect(blue.rank).toBe(1);
-    // Standard competition ranking: two tied for 1st, the next is 3rd, not 2nd.
-    expect(green.rank).toBe(3);
   });
 });
 

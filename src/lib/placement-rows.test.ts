@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { MAX_PLACEMENTS } from "@/lib/competitions";
 import {
   QUICK_FILL,
   placementPointsFromRows,
@@ -37,55 +36,51 @@ describe("placementPointsFromRows", () => {
 });
 
 describe("placementRowErrors", () => {
-  it("has no errors for a valid set within Max points", () => {
-    expect(placementRowErrors(["5", "3", "1"], "5")).toEqual([]);
-    expect(placementRowErrors(["5", "5", "0"], "")).toEqual([]);
-    expect(placementRowErrors([], "10")).toEqual([]);
+  it("has no errors for a valid set", () => {
+    expect(placementRowErrors(["5", "3", "1"])).toEqual([]);
+    expect(placementRowErrors(["5", "5", "0"])).toEqual([]);
+    expect(placementRowErrors([])).toEqual([]);
   });
 
   it("flags a place worth more than the place above it", () => {
-    expect(placementRowErrors(["3", "5"], "")).toEqual([
+    expect(placementRowErrors(["3", "5"])).toEqual([
       "Each place's Placement Points must be no more than the place above it.",
     ]);
   });
 
   it("flags a negative value", () => {
-    expect(placementRowErrors(["5", "-1"], "")).toEqual([
+    expect(placementRowErrors(["5", "-1"])).toEqual([
       "Placement Points can't be negative.",
     ]);
   });
 
   it("flags a value that isn't a number", () => {
-    expect(placementRowErrors(["5", "abc"], "")).toEqual([
+    expect(placementRowErrors(["5", "abc"])).toEqual([
       "Each place's Placement Points must be a number.",
     ]);
   });
 
-  it("flags 1st place over Max points", () => {
-    expect(placementRowErrors(["12", "3"], "10")).toEqual([
-      "1st place's Placement Points can't be more than Max points.",
+  it("caps the rows at the Format's limit, and at none without one", () => {
+    const six = ["6", "5", "4", "3", "2", "1"];
+    expect(placementRowErrors(six, 5)).toEqual([
+      "Placement Points cover at most 5 places for this Format.",
     ]);
-  });
-
-  it("caps the rows at five places", () => {
-    expect(MAX_PLACEMENTS).toBe(5);
-    expect(placementRowErrors(["6", "5", "4", "3", "2", "1"], "")).toEqual([
-      "Placement Points cover at most 5 places.",
-    ]);
+    expect(placementRowErrors(six)).toEqual([]);
+    expect(placementRowErrors(six, null)).toEqual([]);
   });
 
   it("flags a blank row sitting above a filled one", () => {
-    expect(placementRowErrors(["5", "", "1"], "")).toEqual([
+    expect(placementRowErrors(["5", "", "1"])).toEqual([
       "Fill in every place above the last one, or remove it.",
     ]);
   });
 
   it("ignores a blank trailing row", () => {
-    expect(placementRowErrors(["5", "3", ""], "")).toEqual([]);
+    expect(placementRowErrors(["5", "3", ""])).toEqual([]);
   });
 
   it("offers a 5 · 3 · 1 quick fill that is itself valid", () => {
     expect(QUICK_FILL).toEqual(["5", "3", "1"]);
-    expect(placementRowErrors(QUICK_FILL, "5")).toEqual([]);
+    expect(placementRowErrors(QUICK_FILL)).toEqual([]);
   });
 });

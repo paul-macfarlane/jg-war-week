@@ -16,6 +16,12 @@ import {
   useFocusFirstInvalid,
 } from "@/components/form-field-errors";
 import { OptionSelect } from "@/components/option-select";
+import {
+  ResponsiveSheetDialogDescription,
+  ResponsiveSheetDialogFooter,
+  ResponsiveSheetDialogHeader,
+  ResponsiveSheetDialogTitle,
+} from "@/components/responsive-sheet-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -25,12 +31,6 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { SQUAD_LIMITS } from "@/lib/bracket/squads";
 import type { SquadRow } from "@/queries/brackets";
 
@@ -42,7 +42,7 @@ export type SquadFormParticipant = {
 };
 
 /**
- * A Squad's name, {Team Label} and Participants, in a Sheet from the Bracket
+ * A Squad's name, {Team Label} and Participants, in a ResponsiveSheetDialog from the Bracket
  * builder. Only the chosen Team's Participants are offered; one already in
  * another Squad of this Competition shows "in <Squad>" and the server
  * refuses them. Posts JSON (decision 13); a refused field shows its error
@@ -68,7 +68,7 @@ export function SquadForm({
   teamLabel: string;
   /** Whether the Squad being edited is an Entrant: its Team is fixed. */
   entered?: boolean;
-  /** Closes the Sheet: after a save, or on Cancel. */
+  /** Closes the form: after a save, or on Cancel. */
   onDone: () => void;
 }) {
   const router = useRouter();
@@ -120,13 +120,15 @@ export function SquadForm({
       aria-label={squad ? `Edit Squad ${squad.name}` : "New Squad"}
       className="flex flex-col gap-4"
     >
-      <SheetHeader>
-        <SheetTitle>{squad ? `Edit ${squad.name}` : "Add Squad"}</SheetTitle>
-        <SheetDescription>
+      <ResponsiveSheetDialogHeader>
+        <ResponsiveSheetDialogTitle>
+          {squad ? `Edit ${squad.name}` : "Add Squad"}
+        </ResponsiveSheetDialogTitle>
+        <ResponsiveSheetDialogDescription>
           A Squad is a named group of Participants from one {teamLabel}, entered
           as one Entrant. Its Placement Points go to its {teamLabel}.
-        </SheetDescription>
-      </SheetHeader>
+        </ResponsiveSheetDialogDescription>
+      </ResponsiveSheetDialogHeader>
       <FieldGroup className="gap-4 px-4">
         <Field data-invalid={!!fieldErrors.name}>
           <FieldLabel htmlFor={`${id}-name`}>Name</FieldLabel>
@@ -192,7 +194,7 @@ export function SquadForm({
         </Field>
         {formError && !pending && <FieldError>{formError}</FieldError>}
       </FieldGroup>
-      <SheetFooter className="flex-row flex-wrap">
+      <ResponsiveSheetDialogFooter className="flex-row flex-wrap">
         <Button type="submit" size="lg" className="min-h-11" disabled={pending}>
           {pending ? "Saving…" : "Save"}
         </Button>
@@ -206,7 +208,7 @@ export function SquadForm({
         >
           Cancel
         </Button>
-      </SheetFooter>
+      </ResponsiveSheetDialogFooter>
     </form>
   );
 }

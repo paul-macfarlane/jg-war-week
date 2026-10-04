@@ -57,7 +57,6 @@ describe.skipIf(!isLocalDatabase)("Announcement mutations", () => {
         {
           title: "Kickoff",
           body: emptyBody,
-          videoUrls: ["https://youtu.be/abc123"],
           pinned: true,
         },
         { warWeekId: home.warWeekId, actorEmail },
@@ -72,7 +71,6 @@ describe.skipIf(!isLocalDatabase)("Announcement mutations", () => {
       expect(rows).toMatchObject([
         {
           title: "Kickoff",
-          videoUrls: ["https://youtu.be/abc123"],
           pinned: true,
           authorEmail: actorEmail,
           warWeekId: home.warWeekId,
@@ -89,7 +87,7 @@ describe.skipIf(!isLocalDatabase)("Announcement mutations", () => {
       const { home, other, schema } = await fixture(tx);
 
       await createAnnouncement(
-        { title: "Kickoff", body: emptyBody, videoUrls: [], pinned: false },
+        { title: "Kickoff", body: emptyBody, pinned: false },
         { warWeekId: home.warWeekId, actorEmail },
         tx,
       );
@@ -101,7 +99,7 @@ describe.skipIf(!isLocalDatabase)("Announcement mutations", () => {
       const edited = {
         title: "Kickoff (updated)",
         body: emptyBody,
-        videoUrls: [],
+
         pinned: true,
       };
       const editor = {
@@ -148,7 +146,7 @@ describe.skipIf(!isLocalDatabase)("Announcement mutations", () => {
       const { home, other, schema } = await fixture(tx);
 
       await createAnnouncement(
-        { title: "Kickoff", body: emptyBody, videoUrls: [], pinned: false },
+        { title: "Kickoff", body: emptyBody, pinned: false },
         { warWeekId: home.warWeekId, actorEmail },
         tx,
       );

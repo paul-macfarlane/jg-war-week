@@ -1,19 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import type {
-  BestScoreConfig,
-  HeadToHeadConfig,
-  RankedConfig,
-} from "@/lib/games/config";
-import {
-  parseGameInput,
-  parseGamesSettingsInput,
-  postedGamePlayerIds,
-} from "@/lib/games/input";
+import type { BestScoreConfig, HeadToHeadConfig } from "@/lib/games/config";
+import { parseGameInput, postedGamePlayerIds } from "@/lib/games/input";
 
 const A = "11111111-1111-4111-8111-111111111111";
 const B = "22222222-2222-4222-8222-222222222222";
-const C = "33333333-3333-4333-8333-333333333333";
 
 describe("parseGameInput head-to-head", () => {
   const config: HeadToHeadConfig = { drawsAllowed: false, bestOf: null };
@@ -142,146 +133,8 @@ describe("parseGameInput best-score", () => {
   });
 });
 
-describe("parseGameInput ranked", () => {
-  const config: RankedConfig = { finishPoints: [] };
-
-  it("normalizes places to standard competition ranking", () => {
-    const result = parseGameInput("ranked", config, {
-      order: [
-        { id: A, place: 1 },
-        { id: B, place: 1 },
-        { id: C, place: 3 },
-      ],
-    });
-    expect(result).toEqual({
-      ok: true,
-      value: {
-        players: [
-          { id: A, place: 1, score: null },
-          { id: B, place: 1, score: null },
-          { id: C, place: 3, score: null },
-        ],
-      },
-    });
-  });
-
-  it("refuses fewer than two players", () => {
-    const result = parseGameInput("ranked", config, {
-      order: [{ id: A, place: 1 }],
-    });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toBe("List at least two players.");
-  });
-
-  it("refuses a repeated id", () => {
-    const result = parseGameInput("ranked", config, {
-      order: [
-        { id: A, place: 1 },
-        { id: A, place: 2 },
-      ],
-    });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toBe("List at least two players.");
-  });
-});
-
-describe("parseGamesSettingsInput", () => {
-  it("parses head-to-head settings with Best of and finish times", () => {
-    const result = parseGamesSettingsInput({
-      gameType: "head-to-head",
-      drawsAllowed: true,
-      bestOf: "5",
-      entrantsOpen: true,
-      loggingClosesAt: "2027-02-22T19:00:00.000Z",
-      selfEnroll: false,
-      entrantLimit: "",
-      enrollClosesAt: "",
-    });
-    expect(result).toEqual({
-      ok: true,
-      value: {
-        gameConfig: { drawsAllowed: true, bestOf: 5 },
-        entrantsOpen: true,
-        loggingClosesAt: new Date("2027-02-22T19:00:00.000Z"),
-        selfEnroll: false,
-        entrantLimit: null,
-        enrollClosesAt: null,
-      },
-    });
-  });
-
-  it("defaults Best of off and reads an empty finishPoints string as the default table", () => {
-    const result = parseGamesSettingsInput({
-      gameType: "ranked",
-      finishPoints: "",
-      entrantsOpen: false,
-      loggingClosesAt: "",
-      selfEnroll: true,
-      entrantLimit: 4,
-      enrollClosesAt: "",
-    });
-    expect(result).toEqual({
-      ok: true,
-      value: {
-        gameConfig: { finishPoints: [] },
-        entrantsOpen: false,
-        loggingClosesAt: null,
-        selfEnroll: true,
-        entrantLimit: 4,
-        enrollClosesAt: null,
-      },
-    });
-  });
-
-  it("parses a comma/whitespace-separated Finish Points string", () => {
-    const result = parseGamesSettingsInput({
-      gameType: "ranked",
-      finishPoints: "5, 3 1",
-      entrantsOpen: true,
-      loggingClosesAt: "",
-      selfEnroll: false,
-      entrantLimit: "",
-      enrollClosesAt: "",
-    });
-    expect(result).toEqual({
-      ok: true,
-      value: {
-        gameConfig: { finishPoints: [5, 3, 1] },
-        entrantsOpen: true,
-        loggingClosesAt: null,
-        selfEnroll: false,
-        entrantLimit: null,
-        enrollClosesAt: null,
-      },
-    });
-  });
-
-  it("refuses an Entrant limit of 1", () => {
-    const result = parseGamesSettingsInput({
-      gameType: "best-score",
-      count: "best",
-      betterIs: "higher",
-      unit: "",
-      entrantsOpen: true,
-      loggingClosesAt: "",
-      selfEnroll: true,
-      entrantLimit: 1,
-      enrollClosesAt: "",
-    });
-    expect(result.ok).toBe(false);
-    if (!result.ok)
-      expect(result.error).toBe("An Entrant limit is at least 2.");
-  });
-
-  it("refuses an unknown Game Type", () => {
-    const result = parseGamesSettingsInput({ gameType: "not-a-type" });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toBe("Choose a Game Type.");
-  });
-});
-
 describe("postedGamePlayerIds", () => {
-  it("reads only the player ids the Game Type's form posts", () => {
+  it("reads only the player ids the Format's form posts", () => {
     expect(
       postedGamePlayerIds("head-to-head", {
         playerA: "a",
@@ -292,14 +145,9 @@ describe("postedGamePlayerIds", () => {
     expect(
       postedGamePlayerIds("best-score", { player: "p", score: 4 }),
     ).toEqual(["p"]);
-    expect(
-      postedGamePlayerIds("ranked", {
-        order: [{ id: "x", place: 1 }, { id: "y" }, 3],
-      }),
-    ).toEqual(["x", "y"]);
   });
 
-  it("ignores another Game Type's keys", () => {
+  it("ignores another Format's keys", () => {
     expect(
       postedGamePlayerIds("head-to-head", {
         playerA: "a",
@@ -311,9 +159,6 @@ describe("postedGamePlayerIds", () => {
     expect(
       postedGamePlayerIds("best-score", { player: "p", playerA: "me" }),
     ).toEqual(["p"]);
-    expect(
-      postedGamePlayerIds("ranked", { order: [{ id: "x" }], player: "me" }),
-    ).toEqual(["x"]);
   });
 
   it("ignores junk", () => {
@@ -321,58 +166,5 @@ describe("postedGamePlayerIds", () => {
     expect(
       postedGamePlayerIds("head-to-head", { playerA: 7, playerB: "" }),
     ).toEqual([]);
-  });
-});
-
-describe("parseGamesSettingsInput close times", () => {
-  const base = {
-    gameType: "ranked",
-    finishPoints: "",
-    entrantsOpen: false,
-    selfEnroll: true,
-    entrantLimit: " 6 ",
-  };
-
-  it("reads a trimmed Entrant limit and both close times", () => {
-    expect(
-      parseGamesSettingsInput({
-        ...base,
-        loggingClosesAt: "2027-02-26T17:00:00.000Z",
-        enrollClosesAt: "2027-02-22T17:00:00.000Z",
-      }),
-    ).toEqual({
-      ok: true,
-      value: {
-        gameConfig: { finishPoints: [] },
-        entrantsOpen: false,
-        loggingClosesAt: new Date("2027-02-26T17:00:00.000Z"),
-        selfEnroll: true,
-        entrantLimit: 6,
-        enrollClosesAt: new Date("2027-02-22T17:00:00.000Z"),
-      },
-    });
-  });
-
-  it("refuses an Entrant limit that isn't a whole number", () => {
-    expect(parseGamesSettingsInput({ ...base, entrantLimit: "2.5" })).toEqual({
-      ok: false,
-      error: "An Entrant limit is at least 2.",
-      fieldErrors: { entrantLimit: "An Entrant limit is at least 2." },
-    });
-    expect(parseGamesSettingsInput({ ...base, entrantLimit: true })).toEqual({
-      ok: false,
-      error: "An Entrant limit is at least 2.",
-      fieldErrors: { entrantLimit: "An Entrant limit is at least 2." },
-    });
-  });
-
-  it("refuses a close time that isn't a date", () => {
-    expect(
-      parseGamesSettingsInput({ ...base, loggingClosesAt: "someday" }),
-    ).toEqual({ ok: false, error: "Enter a valid logging close time." });
-    expect(parseGamesSettingsInput({ ...base, enrollClosesAt: 5 })).toEqual({
-      ok: false,
-      error: "Enter a valid enrollment close time.",
-    });
   });
 });

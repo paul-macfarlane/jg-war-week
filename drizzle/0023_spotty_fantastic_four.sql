@@ -1,0 +1,1 @@
+ALTER TYPE "public"."competition_format" ADD VALUE 'participation';

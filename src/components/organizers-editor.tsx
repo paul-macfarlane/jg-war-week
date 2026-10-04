@@ -1,11 +1,18 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { addOrganizer, removeOrganizer } from "@/actions/organizers";
-import { ConfirmActionButton } from "@/components/confirm-dialog";
+import {
+  SETUP_EDITOR,
+  SetupListRow,
+  SetupRowError,
+  SetupSaveButton,
+  SetupSheetFooter,
+  useSetupRow,
+} from "@/components/setup-row";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -86,7 +93,85 @@ function AddOrganizerForm() {
   );
 }
 
-/** The global Organizer list: every Organizer, each removable, plus an add form. */
+/**
+ * Changes one Organizer's email, in its Sheet: adds the new email, then
+ * removes the old one, so the list never loses an Organizer on a refusal.
+ * `onSaved` closes the Sheet.
+ */
+function OrganizerForm({
+  email,
+  self,
+  onSaved,
+}: {
+  email: string;
+  /** Is this the signed-in Organizer? */
+  self: boolean;
+  onSaved: () => void;
+}) {
+  const id = useId();
+  const router = useRouter();
+  const [value, setValue] = useState(email);
+  const { pending, formRef, formAction, error } = useSetupRow(
+    async () => {
+      const next = value.trim().toLowerCase();
+      if (next === email) return { ok: true };
+      if (!jgEmailSchema.safeParse(next).success) {
+        return { ok: false, error: JG_EMAIL_MESSAGE };
+      }
+      const added = await addOrganizer(next);
+      if (!added.ok) return added;
+      const removed = await removeOrganizer(email);
+      if (removed.ok) return removed;
+      // The new email is on the list now: show it, and say the old one stays.
+      router.refresh();
+      return {
+        ok: false,
+        error: `Added ${next}, but couldn't remove ${email}: ${removed.error}`,
+      };
+    },
+    "Organizer saved",
+    onSaved,
+  );
+
+  return (
+    <form
+      ref={formRef}
+      action={formAction}
+      aria-label={`Organizer ${email}`}
+      className="flex flex-col gap-4"
+    >
+      <Field className="px-4" data-invalid={!!error}>
+        <FieldLabel htmlFor={`${id}-email`}>Email</FieldLabel>
+        <Input
+          id={`${id}-email`}
+          name="email"
+          type="email"
+          inputMode="email"
+          autoComplete="off"
+          required
+          className="h-11 sm:h-9"
+          aria-invalid={error ? true : undefined}
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+        />
+        {self && (
+          <FieldDescription>
+            Changing your own email takes your Organizer access to the new one.
+          </FieldDescription>
+        )}
+      </Field>
+      <SetupSheetFooter>
+        <SetupSaveButton pending={pending} label="Save" />
+        <SetupRowError error={error} />
+      </SetupSheetFooter>
+    </form>
+  );
+}
+
+/**
+ * The global Organizer list: every Organizer with Edit (a Sheet) and
+ * Delete (except the last one), plus an add form.
+ */
 export function OrganizersEditor({
   organizers,
   actorEmail,
@@ -97,20 +182,17 @@ export function OrganizersEditor({
 }) {
   const last = organizers.length === 1;
   return (
-    <div className="flex flex-col gap-6">
-      <ul
-        aria-label="Organizers"
-        className="border-border divide-border divide-y rounded-lg border"
-      >
+    <div {...SETUP_EDITOR} className="flex flex-col gap-6">
+      <ul aria-label="Organizers">
         {organizers.map((organizer) => {
           const self = organizer.email === actorEmail.toLowerCase();
           return (
-            <li
+            <SetupListRow
               key={organizer.email}
-              className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center"
-            >
-              <div className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate font-medium">
+              id={organizer.email}
+              label={organizer.email}
+              name={
+                <>
                   {organizer.email}
                   {self && (
                     <span className="text-foreground/60 font-normal">
@@ -118,39 +200,39 @@ export function OrganizersEditor({
                       (you)
                     </span>
                   )}
-                </span>
-                {organizer.addedBy && (
-                  <span className="text-foreground/60 text-xs">
-                    Added by {organizer.addedBy}
-                  </span>
-                )}
-              </div>
-              {!last && (
-                <ConfirmActionButton
-                  title={
-                    self
-                      ? "Remove yourself as an Organizer?"
-                      : `Remove ${organizer.email}?`
-                  }
-                  description={
-                    self
-                      ? "You'll lose access to the Organizer pages in /admin."
-                      : "They'll lose access to the Organizer pages in /admin."
-                  }
-                  confirmLabel="Remove"
-                  action={() => removeOrganizer(organizer.email)}
-                  successMessage="Organizer removed"
-                >
-                  Remove
-                </ConfirmActionButton>
+                </>
+              }
+              details={
+                organizer.addedBy ? `Added by ${organizer.addedBy}` : undefined
+              }
+              form={(close) => (
+                <OrganizerForm
+                  email={organizer.email}
+                  self={self}
+                  onSaved={close}
+                />
               )}
-            </li>
+              onDelete={
+                last ? undefined : () => removeOrganizer(organizer.email)
+              }
+              deleteTitle={
+                self
+                  ? "Delete yourself as an Organizer?"
+                  : `Delete ${organizer.email} as an Organizer?`
+              }
+              deleteDescription={
+                self
+                  ? "You'll lose access to the Organizer pages in /admin."
+                  : "They'll lose access to the Organizer pages in /admin."
+              }
+              deleteSuccess="Organizer removed"
+            />
           );
         })}
       </ul>
       {last && (
         <p className="text-foreground/70 text-sm">
-          The last Organizer can&apos;t be removed.
+          The last Organizer can&apos;t be deleted.
         </p>
       )}
       <AddOrganizerForm />

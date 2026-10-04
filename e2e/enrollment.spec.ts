@@ -9,7 +9,9 @@ import path from "node:path";
 
 import { DISPLAY_STORAGE_KEY } from "@/lib/display";
 
+import { openCompetitionPage } from "./competition-page";
 import {
+  openForBracket,
   runQuery,
   setParticipantEmail,
   xiCompetitionId,
@@ -24,9 +26,20 @@ import {
 } from "./session";
 
 // Pool is an individual War Week XI Competition (counts toward Team) that
-// no other flow touches: the flow runs it as a single-elimination Bracket
+// no other flow touches: the flow runs it as a head-to-head Bracket
 // with "Participants can enroll" on, then puts it back.
 const COMPETITION = "Pool";
+
+// The seeded Competitions are Finalized Placement sheets; open each for a
+// Bracket and put the sheet back afterwards.
+let restoreCompetition: (() => Promise<void>) | null = null;
+test.beforeEach(async () => {
+  restoreCompetition = await openForBracket(await xiCompetitionId(COMPETITION));
+});
+test.afterEach(async () => {
+  await restoreCompetition?.();
+  restoreCompetition = null;
+});
 /** Enrolls, withdraws and enrolls again; linked by email. */
 const ENROLLEE = "Alex Nikolis";
 /** The second Entrant, added by SQL (Generate needs two). */
@@ -148,7 +161,9 @@ test("enrollment: a Participant enrolls, withdraws and enrolls again; once the H
     [id],
   );
   await runQuery(
-    `update competition set format = 'single-elimination', self_enroll = true
+    `update competition set format = 'bracket',
+       bracket_config = '{"entrantsPerHeat":2,"advancePerHeat":1,"thirdPlaceGame":false}'::jsonb,
+       self_enroll = true
      where id = $1`,
     [id],
   );
@@ -202,7 +217,7 @@ test("enrollment: a Participant enrolls, withdraws and enrolls again; once the H
 
     // The Host generates the Bracket.
     await asHost(context);
-    await page.goto(`/admin/setup/competitions/${id}/bracket`);
+    await openCompetitionPage(page, id);
     await page.getByRole("button", { name: "Generate" }).click();
     await expect(page.getByText("Bracket generated")).toBeVisible();
     await shoot(page, testInfo, "generated");

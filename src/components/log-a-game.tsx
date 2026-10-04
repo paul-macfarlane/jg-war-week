@@ -2,21 +2,21 @@ import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 import { Card } from "@/components/ui/card";
-import type { GameType } from "@/lib/enums";
-import { gameTypeLabel } from "@/lib/games/config";
+import type { GameFormat } from "@/lib/enums";
+import { gameFormatLabel } from "@/lib/games/config";
 
 /**
- * The home page's "Log a Game" card (Games rules): the open `games` Competitions
+ * The home page's "Log a Game" card (Games rules): the open Head-to-head or Best score Competitions
  * the linked Participant may log in right now, each opening its page with
- * the Game form up. Nothing when there are none, so a pick-only You (who
- * can't log) never sees it.
+ * the Game form up. Nothing when there are none, so a signed-in person no Participant email
+ * matches (who can't log) never sees it.
  */
 export function LogAGame({
   edition,
   competitions,
 }: {
   edition: string;
-  competitions: { id: string; name: string; gameType: GameType }[];
+  competitions: { id: string; name: string; gameFormat: GameFormat }[];
 }) {
   if (competitions.length === 0) return null;
   return (
@@ -33,7 +33,7 @@ export function LogAGame({
                 <span className="flex flex-1 flex-col">
                   <span className="font-medium">{c.name}</span>
                   <span className="text-foreground/60 text-xs">
-                    {gameTypeLabel(c.gameType)}
+                    {gameFormatLabel(c.gameFormat)}
                   </span>
                 </span>
                 <ChevronRight aria-hidden className="text-primary size-4" />

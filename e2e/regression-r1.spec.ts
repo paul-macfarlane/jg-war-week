@@ -245,8 +245,8 @@ test("r1 05 the End War Week dialog shows the computed Winner read-only", async 
   page,
 }, testInfo) => {
   await asOrganizer(context);
-  // War Week XI is the live one, so /admin/setup shows End War Week.
-  await page.goto("/admin/setup");
+  // War Week XI is the live one, so /admin/settings shows End War Week.
+  await page.goto("/admin/settings");
   await page.getByRole("button", { name: "End War Week" }).click();
   const dialog = page.getByRole("alertdialog", { name: "End War Week XI?" });
   await expect(dialog).toBeVisible();
@@ -270,54 +270,56 @@ test("r1 05 the End War Week dialog shows the computed Winner read-only", async 
   expect(row.status).toBe("live");
 });
 
-test("r1 06 09 the Competitions form explains Max points and offers Format including Bracket formats, linking a Bracket Competition to its Bracket setup", async ({
+test("r1 06 09 the Competitions form offers Format including Bracket and no points cap, opening a new Competition's page with its Bracket", async ({
   context,
   page,
 }, testInfo) => {
   await asOrganizer(context);
-  await page.goto("/admin/setup/competitions");
+  await page.goto("/admin/competitions");
 
-  const addForm = page.getByRole("form", { name: "New Competition" });
-  await expect(
-    addForm.getByText(
-      "Optional. The most points 1st place’s Placement Points can be worth.",
-      { exact: false },
-    ),
-  ).toBeVisible();
-
+  // The Add form opens in a Sheet from the list's Add button: name, Format
+  // and scoring (ticket 101); everything else is on the Competition's page.
+  await page.getByRole("button", { name: "Add Competition" }).click();
+  const addForm = page
+    .getByRole("dialog", { name: "Add Competition" })
+    .getByRole("form", { name: "New Competition" });
+  await expect(addForm.getByLabel(/^Max\b/i)).toHaveCount(0);
   await expect(addForm.getByRole("combobox", { name: "Format" })).toBeVisible();
-  await expect(addForm.getByText("Points:")).toBeVisible();
-  await expect(addForm.getByText("Single elimination:")).toBeVisible();
-  await expect(addForm.getByText("Heats:")).toBeVisible();
-  await expect(
-    addForm.getByText("Only Points Entries; no Bracket."),
-  ).toBeVisible();
-  await expect(
-    addForm.getByText("A knockout Bracket: one loss and an Entrant is out."),
-  ).toBeVisible();
   await expect(
     addForm.getByText(
-      "A Bracket where Entrants play in Heats; a set number advance each round.",
+      "One result on one sheet: give each Team or Participant a Place, optionally a Score, then Finalize.",
     ),
   ).toBeVisible();
-  await page.screenshot({
-    path: testInfo.outputPath("competition-form.png"),
-    fullPage: true,
-  });
 
   try {
     await addForm
       .getByRole("textbox", { name: "Name" })
       .fill("R1 E2E Knockout");
     await addForm.getByRole("combobox", { name: "Format" }).click();
-    await page.getByRole("option", { name: "Single elimination" }).click();
-    await addForm.getByRole("button", { name: "Add Competition" }).click();
-    await expect(page.getByText("Competition saved")).toBeVisible();
-    await expect(page).toHaveURL(
-      /\/admin\/setup\/competitions\/[0-9a-f-]+\/bracket$/,
-    );
+    await page.getByRole("option", { name: "Bracket", exact: true }).click();
+    await expect(
+      addForm.getByText(
+        "Entrants play in Heats and a set number advance each Round, down to a final. Two per Heat with one advancing is a head-to-head knockout.",
+      ),
+    ).toBeVisible();
     await page.screenshot({
-      path: testInfo.outputPath("created-links-to-bracket.png"),
+      path: testInfo.outputPath("competition-form.png"),
+      fullPage: true,
+    });
+    await addForm.getByRole("button", { name: "Add Competition" }).click();
+    await expect(page.getByText("Competition added")).toBeVisible();
+    await expect(page).toHaveURL(/\/admin\/competitions\/[0-9a-f-]{36}$/);
+    // The page holds its Bracket's run area, and Placement Points with no
+    // cap but a Bracket's 4 places.
+    await expect(
+      page.getByRole("heading", { level: 2, name: "Entrants and Bracket" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("group", { name: "Placement Points" }),
+    ).toBeVisible();
+    await expect(page.getByLabel(/^Max\b/i)).toHaveCount(0);
+    await page.screenshot({
+      path: testInfo.outputPath("created-opens-its-page.png"),
     });
   } finally {
     await deleteXiCompetition("R1 E2E Knockout");

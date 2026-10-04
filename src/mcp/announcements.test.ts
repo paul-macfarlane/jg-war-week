@@ -14,36 +14,41 @@ const welcomeBody: Content = {
 };
 
 describe("toAnnouncementsResult", () => {
-  it("serializes title, author handle (never the email), published-at, plain-text body and video links", () => {
+  it("serializes title, resolved author name (never the email), published-at, plain-text body (a video as its URL)", () => {
+    // As `getAnnouncementsWithAuthors` returns them: the author's email too.
     const rows = [
       {
         title: "Welcome",
         pinned: true,
-        authorEmail: "organizer@jahnelgroup.com",
+        authorName: "Olivia Organizer",
+        authorEmail: "olivia@jahnelgroup.com",
         publishedAt: new Date("2026-02-23T18:00:00.000Z"),
         body: welcomeBody,
-        videoUrls: ["https://www.youtube.com/watch?v=abc123"],
+        // A video is a block of the body.
       },
       {
         title: "Reminder",
         pinned: false,
+        authorName: "b",
         authorEmail: "b@jahnelgroup.com",
         publishedAt: new Date("2026-02-24T12:00:00.000Z"),
         body: { type: "doc", content: [] } satisfies Content,
-        videoUrls: [],
       },
     ];
 
+    expect(JSON.stringify(toAnnouncementsResult("xi", rows))).not.toContain(
+      "@",
+    );
     expect(toAnnouncementsResult("xi", rows)).toEqual({
       edition: "xi",
       announcements: [
         {
           title: "Welcome",
           pinned: true,
-          author: "organizer",
+          author: "Olivia Organizer",
           publishedAt: "2026-02-23T18:00:00.000Z",
           body: "Let's go.",
-          videoUrls: ["https://www.youtube.com/watch?v=abc123"],
+          // A video is a block of the body.
         },
         {
           title: "Reminder",
@@ -51,7 +56,6 @@ describe("toAnnouncementsResult", () => {
           author: "b",
           publishedAt: "2026-02-24T12:00:00.000Z",
           body: null,
-          videoUrls: [] as string[],
         },
       ],
     });

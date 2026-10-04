@@ -6,6 +6,7 @@ import type { Entrant } from "@/lib/bracket/types";
 import { nextHeatFor } from "@/lib/bracket/view";
 
 import { BracketView, YourNextHeatCard } from "./bracket-view";
+import { YouProvider } from "./you";
 
 vi.mock("@/components/auto-refresh", () => ({
   AutoRefresh: () => <span data-auto-refresh />,
@@ -32,13 +33,12 @@ const entrants = seeds.map((e) => ({
 }));
 const entrantsById = new Map(entrants.map((e) => [e.id, e]));
 
-function card(options: { canReport: boolean; pickOnly: boolean }) {
+function card(options: { canReport: boolean }) {
   return renderToStaticMarkup(
     <YourNextHeatCard
       next={nextHeatFor(bracket, "e1")!}
       bracket={bracket}
       entrantsById={entrantsById}
-      when={null}
       onReport={() => {}}
       {...options}
     />,
@@ -47,23 +47,14 @@ function card(options: { canReport: boolean; pickOnly: boolean }) {
 
 describe("YourNextHeatCard", () => {
   it("offers Report result when Your next Heat is reportable", () => {
-    const html = card({ canReport: true, pickOnly: false });
+    const html = card({ canReport: true });
     expect(html).toContain("vs Blue");
     expect(html).toMatch(/<button[^>]*>Report result<\/button>/);
   });
 
-  it("tells someone known only by their pick how to report", () => {
-    const html = card({ canReport: false, pickOnly: true });
-    expect(html).toContain(
-      "To report results, ask an Organizer to add your email to the roster.",
-    );
-    expect(html).not.toContain("Report result");
-  });
-
   it("offers neither when self-report doesn't apply", () => {
-    const html = card({ canReport: false, pickOnly: false });
+    const html = card({ canReport: false });
     expect(html).not.toContain("Report result");
-    expect(html).not.toContain("To report results");
   });
 });
 
@@ -76,7 +67,6 @@ describe("BracketView", () => {
     primaryColor: "#000",
     participantTeams: {},
     participantSquads: {},
-    days: [],
     finaleHref: null,
     selfReport: { on: true, linkedParticipantId: null, reportableHeatId: null },
   };
@@ -95,12 +85,39 @@ describe("BracketView", () => {
     ).toContain("data-auto-refresh");
   });
 
-  it("shows the Bracket as a tree by default, with a List toggle", () => {
+  it("shows the Bracket as the tree alone, with no List toggle", () => {
     const html = renderToStaticMarkup(
       <BracketView {...props} bracket={bracket} />,
     );
     expect(html).toContain("data-bracket-tree");
-    expect(html).toMatch(/<button[^>]*role="tab"[^>]*>List<\/button>/);
+    expect(html).not.toContain('role="tab"');
+    expect(html).not.toContain(">List<");
+  });
+
+  it("shows when a played Heat was recorded, in the default tree", () => {
+    const played = {
+      ...bracket,
+      heats: bracket.heats.map((h, i) =>
+        i === 0
+          ? {
+              ...h,
+              status: "played" as const,
+              recordedAt: new Date("2026-02-22T00:05:00Z"),
+            }
+          : h,
+      ),
+    };
+    const html = renderToStaticMarkup(
+      <BracketView {...props} bracket={played} />,
+    );
+    expect(html).toContain("Recorded Sat 7:05 PM ET");
+  });
+
+  it("shows no time on Heats that aren't played", () => {
+    const html = renderToStaticMarkup(
+      <BracketView {...props} bracket={bracket} />,
+    );
+    expect(html).not.toContain("Recorded");
   });
 
   it("explains Squads beside a Squads Bracket's Entrants", () => {
@@ -132,5 +149,72 @@ describe("BracketView", () => {
     expect(
       renderToStaticMarkup(<BracketView {...props} bracket={bracket} />),
     ).not.toContain("a pair or group");
+  });
+});
+
+describe("BracketView's Record result in the tree", () => {
+  // An individual Bracket: Neo (p1) v Trinity (p2); Morpheus (p3) isn't in it.
+  const people = entrants.map((e, i) => ({
+    ...e,
+    teamId: null,
+    participantId: `p${i + 1}`,
+    label: ["Neo", "Trinity"][i],
+  }));
+  const heatId = bracket.heats[0].id;
+  const view = (
+    linkedId: string | null,
+    selfReport: {
+      on: boolean;
+      linkedParticipantId: string | null;
+      reportableHeatId: string | null;
+    },
+  ) =>
+    renderToStaticMarkup(
+      <YouProvider linkedId={linkedId}>
+        <BracketView
+          competitionId="c1"
+          entrants={people}
+          bracket={bracket}
+          champion={null}
+          scoring="individual"
+          primaryColor="#000"
+          participantTeams={{}}
+          participantSquads={{}}
+          finaleHref={null}
+          selfReport={selfReport}
+        />
+      </YouProvider>,
+    );
+  const recordButtons = (html: string) =>
+    [...html.matchAll(/aria-label="(Record result for [^"]*)"/g)].map(
+      (m) => m[1],
+    );
+
+  it("a self-reporting Participant sees Record result on their own Heat", () => {
+    const html = view("p1", {
+      on: true,
+      linkedParticipantId: "p1",
+      reportableHeatId: heatId,
+    });
+    expect(recordButtons(html)).toEqual(["Record result for Final"]);
+  });
+
+  it("a Participant not in the Heat sees no Record result", () => {
+    const html = view("p3", {
+      on: true,
+      linkedParticipantId: "p3",
+      reportableHeatId: null,
+    });
+    expect(recordButtons(html)).toEqual([]);
+  });
+
+  it("with self-report off, a Participant in the Heat sees no Record result", () => {
+    const html = view("p1", {
+      on: false,
+      linkedParticipantId: "p1",
+      reportableHeatId: heatId,
+    });
+    expect(recordButtons(html)).toEqual([]);
+    expect(html).not.toContain("Report result");
   });
 });

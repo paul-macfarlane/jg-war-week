@@ -12,7 +12,7 @@ import {
   participant,
   team,
 } from "@/db/schema";
-import type { GameType } from "@/lib/enums";
+import { GAME_FORMATS, type GameFormat, isGameFormat } from "@/lib/enums";
 import {
   type GamesConfig,
   type HeadToHeadConfig,
@@ -32,17 +32,22 @@ import {
 import { loggingStateOf } from "@/lib/games/log-state";
 import { isUuid } from "@/lib/uuid";
 import type { BracketCompetitionLink } from "@/queries/brackets";
+import {
+  participantImageSql,
+  participantNameSql,
+  withProfile,
+} from "@/queries/profile-join";
 
 type Scoring = GameLogFacet["scoring"];
 type Linked = GameLogFacet["linked"];
 
-/** A `games` Competition's facts, explicit columns only. */
+/** A Head-to-head or Best score Competition's facts, explicit columns only. */
 export type GamesCompetition = {
   id: string;
   warWeekId: string;
   name: string;
   scoring: Scoring;
-  gameType: GameType;
+  gameFormat: GameFormat;
   config: GamesConfig;
   entrantsOpen: boolean;
   loggingClosesAt: Date | null;
@@ -84,7 +89,6 @@ async function loadGamesCompetition(
       name: competition.name,
       scoring: competition.scoring,
       format: competition.format,
-      gameType: competition.gameType,
       gameConfig: competition.gameConfig,
       entrantsOpen: competition.entrantsOpen,
       loggingClosesAt: competition.loggingClosesAt,
@@ -97,15 +101,15 @@ async function loadGamesCompetition(
     .from(competition)
     .where(eq(competition.id, competitionId))
     .limit(1);
-  if (!found || found.format !== "games" || !found.gameType) return null;
+  if (!found || !isGameFormat(found.format)) return null;
   return {
     id: found.id,
     warWeekId: found.warWeekId,
     name: found.name,
     scoring: found.scoring,
-    gameType: found.gameType,
+    gameFormat: found.format,
     config: gamesConfigOf({
-      gameType: found.gameType,
+      format: found.format,
       gameConfig: found.gameConfig,
     }),
     entrantsOpen: found.entrantsOpen,
@@ -243,7 +247,7 @@ function factsOf(games: LoadedGame[]): GameFact[] {
 }
 
 function bestOfOf(found: GamesCompetition): HeadToHeadConfig | null {
-  if (found.gameType !== "head-to-head") return null;
+  if (found.gameFormat !== "head-to-head") return null;
   const config = found.config as HeadToHeadConfig;
   return config.bestOf === null ? null : config;
 }
@@ -291,7 +295,7 @@ const REFUSING_FACET: GameLogFacet = {
  * whether logging is open for a Participant, the linked Participant of the
  * Competition's War Week, its Entrants, the posted players (`playerIds`,
  * as Teams or Participants by scoring; none for a delete; a function picks
- * them by the Competition's Game Type) and, for an edit or delete, the
+ * them by the Competition's Format) and, for an edit or delete, the
  * Game loaded by its id within this Competition.
  */
 export async function getGameLogFacts(
@@ -300,7 +304,7 @@ export async function getGameLogFacts(
   email: string | null | undefined,
   {
     playerIds = [],
-  }: { playerIds?: string[] | ((gameType: GameType) => string[]) } = {},
+  }: { playerIds?: string[] | ((gameFormat: GameFormat) => string[]) } = {},
   dbOrTx: DBOrTx = db,
 ): Promise<GameLogFacts> {
   const found = await loadGamesCompetition(competitionId, dbOrTx);
@@ -317,7 +321,7 @@ export async function getGameLogFacts(
   const { loggingOpen, bestOfDecided } = loggingState(found, games);
   const loaded = gameId ? games.find((g) => g.id === gameId) : undefined;
   const posted =
-    typeof playerIds === "function" ? playerIds(found.gameType) : playerIds;
+    typeof playerIds === "function" ? playerIds(found.gameFormat) : playerIds;
   return {
     gameLog: {
       runs,
@@ -348,7 +352,7 @@ export async function getGameLogFacts(
 }
 
 /**
- * A `games` Competition's leaderboard rows (`rankGames`): every Entrant on
+ * A Head-to-head or Best score Competition's leaderboard rows (`rankGames`): every Entrant on
  * a fixed list, or everyone who has played when open. Empty when the
  * Competition is gone or not run as Games.
  */
@@ -363,22 +367,25 @@ export async function getGamesLeaderboard(
     gamesOf([competitionId], dbOrTx),
   ]);
   return rankGames(
-    found.gameType,
+    found.gameFormat,
     found.config,
     factsOf(games),
     found.entrantsOpen ? null : entrants.map(idOf),
   );
 }
 
-/** A Team or Participant as a `games` page shows it: name and Team color. */
+/** A Team or Participant as a Head-to-head or Best score page shows it: name and Team color. */
 export type GamesViewName = { id: string; name: string; color: string | null };
 
 export type GamesViewRow = LeaderboardRow & {
   name: string;
   color: string | null;
+  /** A Participant's picture URL; null for initials and for Teams. */
+  image?: string | null;
 };
 
 export type GamesViewPlayer = GamesViewName & {
+  image?: string | null;
   place: number | null;
   score: number | null;
 };
@@ -393,7 +400,7 @@ export type GamesViewGame = {
 };
 
 /**
- * Everything a `games` Competition's page shows, for one viewer. Names,
+ * Everything a Head-to-head or Best score Competition's page shows, for one viewer. Names,
  * ids and booleans only: no email is ever selected (R3 decision 17).
  */
 export type GamesView = {
@@ -417,7 +424,7 @@ export type GamesView = {
 };
 
 /**
- * A `games` Competition's leaderboard, Game log and form options for
+ * A Head-to-head or Best score Competition's leaderboard, Game log and form options for
  * `viewerEmail` (null when anonymous), with `canEdit`/`canDelete` per Game
  * computed here. Null when the Competition is gone or not run as Games.
  */
@@ -440,29 +447,34 @@ export async function getGamesView(
         .from(team)
         .where(eq(team.warWeekId, found.warWeekId))
         .orderBy(asc(team.name)),
-      dbOrTx
-        .select({
-          id: participant.id,
-          name: participant.displayName,
-          teamId: participant.teamId,
-        })
-        .from(participant)
+      withProfile(
+        dbOrTx
+          .select({
+            id: participant.id,
+            name: participantNameSql(),
+            image: participantImageSql(),
+            teamId: participant.teamId,
+          })
+          .from(participant)
+          .$dynamic(),
+      )
         .where(eq(participant.warWeekId, found.warWeekId))
-        .orderBy(asc(participant.displayName)),
+        .orderBy(asc(participantNameSql())),
     ]);
 
   const colorOfTeam = new Map(teams.map((t) => [t.id, t.color]));
-  const names = new Map<string, GamesViewName>();
-  for (const t of teams) names.set(t.id, t);
+  const names = new Map<string, GamesViewName & { image: string | null }>();
+  for (const t of teams) names.set(t.id, { ...t, image: null });
   for (const p of participants) {
     names.set(p.id, {
       id: p.id,
       name: p.name,
+      image: p.image,
       color: p.teamId ? (colorOfTeam.get(p.teamId) ?? null) : null,
     });
   }
-  const nameOf = (id: string): GamesViewName =>
-    names.get(id) ?? { id, name: "Unknown", color: null };
+  const nameOf = (id: string) =>
+    names.get(id) ?? { id, name: "Unknown", color: null, image: null };
 
   const { loggingOpen, bestOfDecided, winnerId } = loggingState(found, games);
   const facet: GameLogFacet = {
@@ -479,7 +491,7 @@ export async function getGamesView(
   };
 
   const rows = rankGames(
-    found.gameType,
+    found.gameFormat,
     found.config,
     factsOf(games),
     found.entrantsOpen ? null : entrants.map(idOf),
@@ -493,8 +505,8 @@ export async function getGamesView(
   return {
     competition: found,
     leaderboard: rows.map((row) => {
-      const { name, color } = nameOf(row.id);
-      return { ...row, name, color };
+      const { name, color, image } = nameOf(row.id);
+      return { ...row, name, color, image };
     }),
     games: games.map((g) => {
       const allowed =
@@ -533,11 +545,11 @@ export async function getGamesView(
 export type LoggableCompetition = {
   id: string;
   name: string;
-  gameType: GameType;
+  gameFormat: GameFormat;
 };
 
 /**
- * The open `games` Competitions of a War Week where the Participant linked
+ * The open Head-to-head and Best score Competitions of a War Week where the Participant linked
  * to `email` may log a Game right now: not closed, logging open for them,
  * and they (or their Team) may play. Empty with no link. For the home
  * page's "Log a Game" card; ordered by name.
@@ -556,7 +568,7 @@ export async function getLoggableCompetitions(
       .where(
         and(
           eq(competition.warWeekId, warWeekId),
-          eq(competition.format, "games"),
+          inArray(competition.format, [...GAME_FORMATS]),
           isNull(competition.finalizedAt),
         ),
       )
@@ -586,12 +598,12 @@ export async function getLoggableCompetitions(
       game: null,
     };
     return canLogSomething(facet)
-      ? [{ id: c.id, name: c.name, gameType: c.gameType }]
+      ? [{ id: c.id, name: c.name, gameFormat: c.gameFormat }]
       : [];
   });
 }
 
-/** A War Week's `games` Competitions, by name. */
+/** A War Week's Head-to-head and Best score Competitions, by name. */
 export async function getGamesCompetitions(
   warWeek: Pick<WarWeek, "id">,
   dbOrTx: DBOrTx = db,
@@ -607,7 +619,7 @@ export async function getGamesCompetitions(
     .where(
       and(
         eq(competition.warWeekId, warWeek.id),
-        eq(competition.format, "games"),
+        inArray(competition.format, [...GAME_FORMATS]),
       ),
     )
     .orderBy(asc(competition.name));
