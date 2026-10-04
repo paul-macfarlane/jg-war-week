@@ -155,11 +155,11 @@ describe("BracketAdminView", () => {
     expect(closed).not.toContain("Provisional");
   });
 
-  it("says a closed Bracket's Points Entries are in the ledger with Placement Points", () => {
+  it("says a closed Bracket's Points Entries are in the Standings with Placement Points", () => {
     const html = renderToStaticMarkup(
       <BracketAdminView {...props} finalized openHeatId={null} />,
     );
-    expect(html).toContain("Closed: its Points Entries are in the ledger.");
+    expect(html).toContain("Closed: its Points Entries are in the Standings.");
   });
 
   it("claims no Points Entries for a closed Bracket without Placement Points", () => {
@@ -172,7 +172,7 @@ describe("BracketAdminView", () => {
       />,
     );
     expect(html).toContain("it made no Points Entries");
-    expect(html).not.toContain("Points Entries are in the ledger");
+    expect(html).not.toContain("Points Entries are in the Standings");
   });
 
   it("words the Close confirm by whether Placement Points exist", () => {

@@ -706,7 +706,7 @@ async function selectLabeledCombobox(
  * Logs one head-to-head Match through the real form (the
  * `logGame` action, as the demo Organizer): opens "Log a Match" from the
  * Competition page, picks both players and who won, and saves. The
- * `finally` undoes the Game by the demo email (`teardownGamesDemo`).
+ * `finally` undoes the Match by the demo email (`teardownGamesDemo`).
  */
 async function captureGamesDemo(cookie: string): Promise<void> {
   const { competitionId, playerA, playerB } = await findGamesDemo();

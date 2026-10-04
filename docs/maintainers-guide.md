@@ -163,16 +163,17 @@ Words must follow `CONTEXT.md`. If Claude refuses a word, that's why.
 
 **The banned-term scan.** `src/lib/banned-terms.test.ts` (run by `pnpm test`)
 reads the string literals, template text and JSX text of every non-test
-`.ts`/`.tsx` file under `src/`, so UI copy and MCP output can't carry a
+`.ts`/`.tsx` file under `src/`, plus the property names of MCP output
+under `src/mcp/`, so UI copy and MCP output can't carry a
 banned word: **Heat** (say Match), **Champion** (Winner), **Finalize** and
 **Un-finalize** (Close, Closed, Reopen), **Game** (Match for a Bracket or
 Head-to-head, Attempt for Best score), plus Event, League, Member, ELO,
-Placeholder, Tournament, News and "admin" for a person. Identifiers and
-comments aren't scanned. **Match** is no longer banned. **League** stays
+Placeholder, Tournament, News and "admin" for a person. Other identifiers and
+comments aren't scanned, nor are `scripts/` and `drizzle/`. **Match** is no longer banned. **League** stays
 banned until spec D lifts it. Where a file must keep an old word until the
 table and column renames (spec B: `heat`, `game`, `finalized`), add one entry
-to the `ALLOWLIST` at the top of the test: `{ file, term, reason }`, the
-reason starting "spec B:". Keep it short; spec B deletes the list. A failing
+to the `ALLOWLIST` at the top of the test naming the file and the exact
+literal, with a reason starting "spec B:". Keep it short; spec B deletes the list. A failing
 scan names the file, the term and the word to use instead.
 
 A change people can see also updates `/about` in the same PR: its copy
@@ -467,8 +468,8 @@ and a Host for their own; anyone else sees "Organizers and Hosts only."
   locked field with a one-line reason and the server refuses the same change
   with the same words):
   - Never lock: name, description, Group, Hosts, Placement Points (and points
-    per Participant). A points change while the Competition is Closed or
-    Closed applies at the next Close.
+    per Participant). A points change while the Competition is Closed
+    applies at the next Close.
   - Lock once any result exists (an Entrant is one): Format, scoring, counts
     toward team, Score direction, a Best score Competition's count and
     direction. Until then the Format changes between any Formats.
@@ -481,7 +482,7 @@ and a Host for their own; anyone else sees "Organizers and Hosts only."
   - Lock only while Closed: self-enroll, Entrant limit, close
     times, self-report, check-in.
   - While Closed everything but the never-locking row is locked
-    until you Reopen (Reopen a Bracket). There is no Reset bracket: to start a played Competition
+    until you Reopen it. There is no Reset bracket: to start a played Competition
     over, add a new one.
 - **Description is rich text.** It shows in full on the Participant
   Competition page. Migration `0030` reset every existing description (see
@@ -514,8 +515,9 @@ building the Bracket are locked, and a mistake means a new Competition.
 A head-to-head Bracket with at least 4 Entrants can have an optional **3rd
 place match**, a switch in the Bracket settings (off by default): the two
 semifinal losers play it beside the final, and it decides 3rd and 4th. It is
-locked once any Match result exists, like the Match size. Without it, both semifinal
-losers tie 3rd and there is no 4th. Places come only from the final (and the
+locked once any Match result exists, like the Match size. Without it, only 1st and 2nd
+are placed: Close gives Placement Points to 1st and 2nd only, and the
+semifinal losers get none and aren't shown. Places come only from the final (and the
 3rd place match), so a Bracket's Placement Points stop at 4 places; the
 winner is always the final's winner.
 
@@ -713,8 +715,8 @@ place, or use the **5·3·1** quick fill; the list is usable at 20 or more
 places on a phone. A Competition's top prize is its 1st place. The only
 limit is a Bracket's 5 places, set by `placementLimit` in
 `src/lib/competitions.ts` (the one place the rule lives; 4 since Epic R17).
-Placement Points never lock: changed while the Competition is Closed or
-Closed, they apply at the next Close.
+Placement Points never lock: changed while the Competition is Closed,
+they apply at the next Close.
 
 ### Give Discretionary points
 
@@ -734,12 +736,13 @@ redirects. ADR 0010 explains who may do what.
 Every ranked view on a Participant Competition page is one component
 (`ResultsTable`, built on the shadcn `Table`), so they all read alike:
 
-- **Columns:** Rank, Participant or Team, Score (with its unit, only where
-  the Format has a Score) and War Week points. Click or tap any header to
+- **Columns:** Rank, Participant or Team, Score (with its unit, left out when
+  no row has a Score) and War Week points. Click or tap any header to
   sort it (ascending, then descending); it opens sorted by Rank. Cells hold
   values only. At 390px the points fold under the name; nothing is dropped.
 - **Winner:** the first place (every tied first place) carries a mark and
-  the word "Winner".
+  the word "Winner". No Winner is marked when nothing decides first place
+  (no points and no Score, or every row tied).
 - **Provisional points:** while a Competition isn't Closed, the points
   header shows a "Provisional" badge; focus it, hover it or tap it for
   "Points become final when the Competition is Closed." Close removes the
@@ -748,7 +751,9 @@ Every ranked view on a Participant Competition page is one component
 - **Top finishers:** the block above the table (or the Bracket) lists every
   place the Competition decides, each with its points, 1st as Winner. A
   Bracket shows 1st and 2nd from the final, plus 3rd and 4th only with a 3rd
-  place match; semifinal losers without one aren't placed or shown. A Group
+  place match; without one only 1st and 2nd are placed (Close gives
+  Placement Points to 1st and 2nd only; semifinal losers get none and
+  aren't shown). A Group
   final shows the final Match's order.
 - **Best score:** one row per person (or Team), from their best Attempt, so
   nobody holds two places. "2 more attempts" under a row expands (keyboard
@@ -758,15 +763,20 @@ Every ranked view on a Participant Competition page is one component
 - **Head-to-head with two Entrants:** no leaderboard; the series view shows
   the Matches in order with both Scores and the Winner (or Draw), the series
   score ("2–1") and its Winner once decided, and each Entrant's Placement
-  Points (Provisional until Closed). Any other Head-to-head Competition
+  Points (Provisional until Closed). A series Closed level (no Best of
+  decided) says it ended level and names no series Winner. Any other Head-to-head Competition
   keeps the results table with its Matches beneath.
 - **Order and links:** the page reads back link, name and facts,
   **description** (long ones collapse behind "Show more"), enroll button,
   then the results. It has no Points Entries list; points are in the table.
   Organizers and that Competition's Hosts see a **Manage** button to the
   Competition's admin page, which the server decides with the same rules as
-  the admin page itself. In a free-for-all War Week the Individual/Team
-  choice and the "Individual" label are hidden.
+  the admin page itself; from a past edition's Competition page it still
+  lands on that Competition's admin page, whichever War Week `/admin` shows.
+  In a free-for-all War Week the Individual/Team choice and the
+  "Individual" label are hidden on the Participant Competition page and
+  list, the admin New Competition form, the admin Competitions list and the
+  Competition page's Settings.
 - The same table is the Standings on `/<edition>/leaderboard`, with each
   row's points breakdown in an expandable row.
 
@@ -810,7 +820,7 @@ Participants log, edit or delete Matches and Attempts straight from the Competit
 Host or Organizer also does it from the admin page's run area
 (**Log a Match** or **Log an Attempt**, Edit, Delete), with the same rules. A **Log a Match** or **Log an Attempt** card on the home page
 lists every open Head-to-head or Best score Competition the signed-in Participant may log in
-right now, straight to the form. What the page shows is under "Read a results table" below, for everyone, in
+right now, straight to the form. What the page shows is under "Read a results table" above, for everyone, in
 the Archive too once the War Week ends: a Head-to-head or Best score Competition left open
 when its War Week ends keeps taking Matches and Attempts until the Host closes it.
 
@@ -1042,7 +1052,7 @@ old-row shape. Fix it on a `fix/…` branch.
 
 Epic R17 (Brackets: one Bracket Format with a heat size and how many
 advance, a "Head-to-head (single elimination)" preset, an optional 3rd place
-game (these were Heats then), no seeding by Standings, Forfeit or Heat time & place, and one Bracket
+match (then the "3rd place game", when Matches were Heats), no seeding by Standings, Forfeit or Heat time & place, and one Bracket
 tree for admin and Participants) changed the schema with one migration
 (`drizzle/0029_*`) and, as R16 did, **reset** the deployed data rather than
 converting it. The migration recreates `competition_format` with `bracket`

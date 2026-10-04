@@ -332,7 +332,7 @@ on the matching War Week page.
       and each played Match shows "Recorded <time>". Close. The closed
       Bracket's Placement Points appear in Points Entries and the
       Standings, and its Competition page shows **Top finishers** (1st and 2nd,
-      each with points, 1st marked Winner) in place of a Winner card, with no
+      each with points, 1st marked Winner) in place of the old Champion card, with no
       Points Entries section and no "Play the finale" button on the page or in the admin
       Bracket (its Bracket Finale is reached from `/admin/finale`).
 - [ ] **Bracket: 3rd place match.** In a head-to-head Bracket of at least 4
@@ -345,8 +345,9 @@ on the matching War Week page.
       give 1st, 2nd, 3rd and 4th their Placement Points (a fifth place is
       refused: Placement Points stop at 4); Top finishers lists the same four
       places with their points. Once any Match has a result the
-      switch can't change. Without the 3rd place match, both semifinal losers tie 3rd,
-      and Top finishers shows 1st and 2nd only (a semifinal loser is neither placed nor shown).
+      switch can't change. Without the 3rd place match, only 1st and 2nd are
+      placed: Close gives Placement Points to 1st and 2nd only (the semifinal
+      losers get none), and Top finishers shows 1st and 2nd only (a semifinal loser is neither placed nor shown).
       A Bracket of 4 per Match with 2 advancing shows the final Match's order.
 - [ ] **Bracket tree: one tree, admin and Participant.** Open the same
       Bracket on its admin Competition page and on its public Competition page: both
@@ -370,7 +371,7 @@ on the matching War Week page.
 - [ ] **Close a Head-to-head Competition.** Log two Matches as the Organizer
       in a Head-to-head Competition with Placement Points (Log a Match on its
       public Competition page), then Close in its run area: its top
-      finishers get Placement Points ("From head-to-head" in the ledger) and
+      finishers get Placement Points ("From head-to-head" in the leaderboard's points breakdown) and
       the Standings move. Reopen withdraws them. *(teams)* Add it with
       Scoring Individual and Counts toward the Team on, so the Team Standings
       move. Do the same with a Best score Competition ("From best score");
@@ -382,7 +383,7 @@ on the matching War Week page.
       Participant; *(teams)* Placement Points 3/2/1 by headcount (there is no
       per-Participant N and no per-person mode); turn on
       Self check-in. Tick two Participants, untick one, then Close: the
-      generated Points Entries ("From participation") appear in the ledger
+      generated Points Entries ("From participation") appear in the leaderboard's points breakdown
       and the Standings move. Closed, the ticks and the Settings are disabled with their reason (the server's
       refusals are covered by unit tests and smoke). Reopen withdraws them. Changing the scoring while anyone is ticked is locked ("Locked once the
       Competition has a result."), and deleting the Competition is refused
@@ -421,7 +422,7 @@ on the matching War Week page.
 - [ ] **Competition page: rich-text description.** Write a description with
       a heading, a list, a link and an image by URL; it saves on its own.
       On `/<edition>/competitions/<id>` the Participant sees it formatted,
-      above the results (back link, name and facts, description, enroll
+      above the results (back link, group, name and facts, description, enroll
       button, then the results); a long one clamps after a few lines with
       "Show more" (and "Show less"), at 1440 and 390. There is no image upload.
 - [ ] **Competition page: Log a Match or Attempt from admin.** On a Head-to-head
@@ -594,8 +595,8 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       with no time or place.
 - [ ] **Recent results.** After a Bracket or Placement is closed or a
       Head-to-head or Best score Competition closed and Discretionary points are given, Home's
-      Recent results lists up to 5 rows newest first (a winner, a winner, a
-      closed Placement, a Discretionary points entry with its reason), each linking to its Competition (a closed Participation Competition is a
+      Recent results lists up to 5 rows newest first (a Bracket's winner, a
+      Head-to-head or Best score winner, a closed Placement, a Discretionary points entry with its reason), each linking to its Competition (a closed Participation Competition is a
       row too: *(teams)* its top Team, else how many took part), with "All Competitions"
       opening `/<edition>/competitions`. With nothing scored the section is
       hidden. It follows a new result within about 10 s.
@@ -648,7 +649,9 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       "N more attempts" row; a Head-to-head Competition with a fixed list of
       exactly two Entrants shows the series view (Matches with both Scores and the
       Winner or Draw, the series score, the series Winner once decided, and
-      each Entrant's Placement Points) and no leaderboard; any other
+      each Entrant's Placement Points; a series Closed level, with no Best
+      of decided, says it ended level and names no series Winner) and no
+      leaderboard; any other
       Head-to-head Competition shows the results table with its Matches
       newest first, with the "Mine" filter. On every one: no Points Entries
       section anywhere on the page.
@@ -664,7 +667,7 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
 - [ ] **Teams show in team events.** *(teams)* Wherever a Participant
   appears in a Competition or scoring context (individual Standings, a
   Bracket's entrants and Match results, the Head-to-head and Best score results,
-  Recent results, a Competition's ledger, Award recipients, the Finale,
+  Recent results, the leaderboard's points breakdown, Award recipients, the Finale,
   Now/Next), their Team shows by name where there's room, else by its
   color, including for a Participant whose Avatar is a Profile picture (`CONTEXT.md`, "The Team shows in team events").
 - [ ] **Leaderboard.** `/<edition>/leaderboard` shows the main Standings
@@ -678,23 +681,29 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       and 390, on an open Placement, Best score and team Participation
       Competition (and a Head-to-head with other than two Entrants): the
       results table has Rank, name, Score (with its unit; no Score column
-      where the Format has none) and War Week points, with no "Score" text
+      when no row has a Score) and War Week points, with no "Score" text
       inside cells; click each header and the rows reorder; the Winner's
-      row carries a mark and the word "Winner". The points header shows a
+      row carries a mark and the word "Winner"; on a Competition whose rows
+      have no points and no Score, or are all tied, no row says Winner. The
+      points header shows a
       "Provisional" badge whose tooltip opens by keyboard (Tab to it) and
       by tap, saying "Points become final when the Competition is Closed.";
       Close the Competition and the badge is gone with the same points.
       No Points Entries section appears on any Participant Competition page.
 - [ ] **Competition page: Manage link.** As an Organizer and as that
       Competition's Host, a **Manage** button (outline) on
-      `/<edition>/competitions/<id>` opens `/admin/competitions/<id>`. As a
-      Host of another Competition, a Participant and an anonymous visitor,
-      the button is absent; the Host of another Competition and a Participant
-      are refused at the admin route ("Organizers and Hosts only."). There is no
+      `/<edition>/competitions/<id>` opens `/admin/competitions/<id>`.
+      Repeat from a past edition's Competition page while `/admin` shows the
+      current War Week: Manage opens that Competition's admin page. As a
+      Host of another Competition and as a Participant the button is absent,
+      and both are refused at the admin route ("Organizers and Hosts
+      only."); an anonymous visitor is sent to `/sign-in`. There is no
       "Close it" link on a Head-to-head or Best score page.
-- [ ] **Free-for-all Competition pages.** *(free-for-all)* No Competition
-      page, list row or settings form shows an Individual/Team choice or an
-      "Individual" label; a Competition that is already Team shows "Team".
+- [ ] **Free-for-all Competition pages.** *(free-for-all)* The Participant
+      Competition page and list, the admin New Competition form, the admin
+      Competitions list and the Competition page's Settings show no
+      Individual/Team choice and no "Individual" label; a Competition that
+      is already Team shows "Team".
 - [ ] **MCP: `get_bracket` and `get_games` words.** Call each against the
       Bracket and the Head-to-head and Best score Competitions: `get_bracket`
       returns `matchSize`, `advancing`, `thirdPlaceMatch`, `closed`, each

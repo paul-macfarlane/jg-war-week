@@ -52,7 +52,7 @@ export function closeCopy(placementPoints: number[] | null) {
   return hasPlacementPoints(placementPoints)
     ? {
         confirmTitle: "Create Points Entries from the final placings?",
-        closedNote: "Closed: its Points Entries are in the ledger.",
+        closedNote: "Closed: its Points Entries are in the Standings.",
         reopenTitle: "Delete the Points Entries this Bracket created?",
       }
     : {
