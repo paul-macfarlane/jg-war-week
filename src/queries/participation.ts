@@ -12,8 +12,10 @@ import {
 } from "@/db/schema";
 import type { CheckInFacet } from "@/lib/participation/check-in-rule";
 import { type TeamHeadcount, teamHeadcounts } from "@/lib/participation/score";
+import type { EntryPoints } from "@/lib/results-table";
 import { isUuid } from "@/lib/uuid";
 import type { BracketCompetitionLink } from "@/queries/brackets";
+import { getCompetitionEntryPoints } from "@/queries/entry-points";
 import {
   participantImageSql,
   participantNameSql,
@@ -54,6 +56,8 @@ export type ParticipationView = {
   tookPart: TookPartRow[];
   /** Team scoring only (empty otherwise): most first, ties sharing a place. */
   teamCounts: TeamCountRow[];
+  /** Once Closed, its generated Points Entries; else empty. */
+  entryPoints: EntryPoints[];
 };
 
 /**
@@ -124,6 +128,10 @@ export async function getParticipationView(
     teamCounts:
       found.scoring === "team"
         ? teamHeadcounts(rows).map((h) => ({ ...h, ...teams.get(h.teamId)! }))
+        : [],
+    entryPoints:
+      found.finalizedAt !== null
+        ? await getCompetitionEntryPoints(found.id, dbOrTx)
         : [],
   };
 }

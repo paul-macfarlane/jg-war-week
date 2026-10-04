@@ -273,13 +273,24 @@ export async function leaderboardTeamTotal(
   return teamTotalIn(await res.text(), teamName);
 }
 
-/** A Team's total in a page's Team Standings list, or null when not shown. */
+/**
+ * A Team's total in a page's Team Standings: the leaderboard's results
+ * table (its row's name, then its points cell), else home's compact list.
+ * Null when not shown.
+ */
 export function teamTotalIn(body: string, teamName: string): number | null {
-  const match = body.match(
-    new RegExp(
-      `font-semibold">${escapeHtml(teamName)}</span><span class="[^"]*">([-\\d.,]+)</span>`,
-    ),
-  );
+  const name = escapeHtml(teamName);
+  const match =
+    body.match(
+      new RegExp(
+        `data-slot="results-name"[^>]*>${name}</span>[\\s\\S]*?data-slot="results-points"[^>]*>([-\\d.,]+)</td>`,
+      ),
+    ) ??
+    body.match(
+      new RegExp(
+        `font-semibold">${name}</span><span class="[^"]*">([-\\d.,]+)</span>`,
+      ),
+    );
   return match ? Number(match[1].replace(/,/g, "")) : null;
 }
 

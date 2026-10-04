@@ -9,6 +9,7 @@ function view(
   overrides: Partial<ParticipationView["competition"]> = {},
 ): ParticipationView {
   return {
+    entryPoints: [],
     competition: {
       id: "c1",
       warWeekId: "w1",
