@@ -634,8 +634,9 @@ that nothing personal shows (no You highlight, no Log a Game).
       shows its leaderboard with that Format's columns and the Game log
       newest first, with the "Mine" filter.
 - [ ] **Scale: 100 Participants.** Run `pnpm seed:demo:scale`, then
-      `pnpm seed:demo` when done. At both viewports: the admin roster and
-      `/xii/leaderboard` list every Participant with no sideways scroll; a
+      `pnpm seed:demo` when done. At both viewports: the admin roster lists all
+      100 Participants and `/xii/leaderboard` everyone with points, with no
+      sideways scroll; a
       Placement sheet lists its rows with names wrapping (not truncating)
       at 390; the 64-Entrant Bracket tree scrolls sideways only in its own
       "Rounds" region; as an Organizer, the Discretionary points and Award

@@ -22,7 +22,7 @@
 
 ## Scale pass findings
 
-2026-10-04, from the `regression-r19-scale` screenshots (`test-results/e2e/regression-r19-scale-*/`): the XII scale demo (100 Participants, free-for-all) and the live XI demo (101 in Teams), each at 1440 and 390. No page scrolls sideways at 390 (asserted on every page).
+2026-10-03, from the `regression-r19-scale` screenshots (`test-results/e2e/regression-r19-scale-*/`): the XII scale demo (100 Participants, free-for-all) and the live XI demo (101 in Teams), each at 1440 and 390. No page scrolls sideways at 390 (asserted on every page).
 
 | Page | What I saw | Outcome |
 |---|---|---|

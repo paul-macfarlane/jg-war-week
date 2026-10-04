@@ -3,13 +3,13 @@
 Contract: [`R19-participant-list-and-scale.md`](./R19-participant-list-and-scale.md) (one work package) and its tickets
 [`105`](../issues/105-competitions-list-status.md) and [`106`](../issues/106-hundred-participants.md),
 with the decisions in each and `../grilling-2026-10-03.md` (Q9, Q13).
-No `/atlas-plan` ran. On 2026-10-04, `/atlas-implement` derived this plan against `staging` at `6543151` (PR #130 R18 merged).
+No `/atlas-plan` ran. On 2026-10-03, `/atlas-implement` derived this plan against `staging` at `6543151` (PR #130 R18 merged).
 Red-team: not required (no schema change planned; a schema need found by the scale pass stops the run and comes back to Paul).
 Branch: `feat/regression-r19-list-and-scale`.
 
 ## [EXECUTION PLAN]
 
-2026-10-04.
+2026-10-03.
 
 ### Run record
 
@@ -61,12 +61,13 @@ Human gates: none. No deploy step (no schema change, nothing to reset).
 
 ## [PROGRESS]
 
-- 2026-10-04, D105 (Opus): `541d63eb`. `src/lib/competition-status.ts` (`competitionStatus`, `competitionStatusText`, `bracketRoundInPlay`), 27 unit cases. `getCompetitions` supplies the facts in one batch per War Week: `hasResult` counts, a new batched `loadBrackets` (`src/queries/brackets.ts`; `loadBracket` delegates to it) and winners from the existing `finalWinners` (`src/lib/recent-results.ts`, already shared by Recent results and the Finale), so no second rule. Row: name, status badge, `line-clamp-2` preview of `toPlainText`, Format and scoring badges. No seed change: the spec adds an Underway Bracket and a Closed Participation of its own and deletes them in `finally`. Choices accepted: a Finalized Placement or Bracket with no Placement Points shows "Done" with no winner; ties read "Winners: A, B". Vitest 195 files / 3888 passed, 0 skipped; `regression-r19-list` e2e passed.
-- 2026-10-04, D106 (Opus): `4c66899b`, `7ef301eb`, `998ff0b2`, `848b5332`, `b5c1c343`. `seeds/demo/xii-scale.json` (100 made-up Participants, free-for-all, live XII; generator `scripts/xii-scale-seed.ts`).
+- 2026-10-03, D105 (Opus): `541d63eb`. `src/lib/competition-status.ts` (`competitionStatus`, `competitionStatusText`, `bracketRoundInPlay`), 27 unit cases. `getCompetitions` supplies the facts in one batch per War Week: `hasResult` counts, a new batched `loadBrackets` (`src/queries/brackets.ts`; `loadBracket` delegates to it) and winners from the existing `finalWinners` (`src/lib/recent-results.ts`, already shared by Recent results and the Finale), so no second rule. Row: name, status badge, `line-clamp-2` preview of `toPlainText`, Format and scoring badges. No seed change: the spec adds an Underway Bracket and a Closed Participation of its own and deletes them in `finally`. Choices accepted: a Finalized Placement or Bracket with no Placement Points shows "Done" with no winner; ties read "Winners: A, B". Vitest 195 files / 3888 passed, 0 skipped; `regression-r19-list` e2e passed.
+- 2026-10-03, D106 (Opus): `4c66899b`, `7ef301eb`, `998ff0b2`, `848b5332`, `b5c1c343`. `seeds/demo/xii-scale.json` (100 made-up Participants, free-for-all, live XII; generator `scripts/xii-scale-seed.ts`).
   - **[SCOPE CHANGE]** The seed format can't hold Hosts, Entrants, generated Heats, Heat Results, Games or Participation ticks. A post-load fixture (`src/seed/scale.ts` `applyScaleFixture`, run by `scripts/seed-scale.ts`) adds them through the app's own mutations, skipping any part whose rows already exist. `pnpm seed:demo:scale` is the seed load followed by the fixture. Neither the seed schema nor the DB schema changed.
   - What it holds: a Finalized 100-row Placement with a tie, an empty Placement, a 64-Entrant Bracket (64 Heats with the 3rd place game, 20 of Round 1 recorded), Participation with 72 ticks, a Head-to-head with 40 Games and a Best score with 60.
   - Smoke phase `scripts/smoke/scale.ts`: loads twice, counts unchanged, 100 Participants and 64 Entrants, four pages answer 200, then `localSeedFiles()` is restored. The Postgres seed-sets case proves the same. `e2e/regression-r19-scale.spec.ts` screenshots every page at 1440 and 390, plus XI's 101 in Teams.
   - Fixes: Organizer-only pickers (Discretionary points, Awards) search by email through a hidden `keywords` field; Placement sheet names wrap at 390.
   - Filed 108–113.
   - Smoke OK=278 FAIL=0; vitest 195 files / 3913 passed, 0 skipped; e2e for the two specs passed, 8 tests.
-- 2026-10-04: D105, D106 and DX integrated (DX `2597428f` plus orchestrator fix `1af9afe9`: the email rule moved from the Host entry to the You rule in CONTEXT, the scale fixture's real contents in the guide, the checklist naming the pickers that search by email; `/about` copy never describes the list, so no copy or still change). Epic and tickets `in-progress` → `ai-review`; aggregate code review starts.
+- 2026-10-03: D105, D106 and DX integrated (DX `2597428f` plus orchestrator fix `1af9afe9`: the email rule moved from the Host entry to the You rule in CONTEXT, the scale fixture's real contents in the guide, the checklist naming the pickers that search by email; `/about` copy never describes the list, so no copy or still change). Epic and tickets `in-progress` → `ai-review`; aggregate code review starts.
+- **[SCOPE CHANGE]** 2026-10-03: the plan's decision "Search in `EntityCombobox` pickers matches name and email" is narrowed to the Organizer-only pickers (Discretionary points, Awards). The run-area pickers are used by Hosts and Log a Game by Participants, and sending them Participant emails would break CONTEXT's email rule, so that choice goes to Paul as ticket 108.

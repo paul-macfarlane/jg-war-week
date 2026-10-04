@@ -6,7 +6,7 @@
 
 **Status:** needs-triage
 
-**Source:** Ticket 106 scale pass (2026-10-04)
+**Source:** Ticket 106 scale pass (2026-10-03)
 
 ## Finding
 

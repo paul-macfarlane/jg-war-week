@@ -6,12 +6,12 @@
 
 **Status:** needs-triage
 
-**Source:** Ticket 106 scale pass (2026-10-04); R19 resolved decision "Search in `EntityCombobox` pickers matches name and email"
+**Source:** Ticket 106 scale pass (2026-10-03); R19 resolved decision "Search in `EntityCombobox` pickers matches name and email"
 
 ## Finding
 
 - Ticket 106 made `EntityCombobox` search a hidden `keywords` field and wired Participant emails into the two Organizer-only pickers (Discretionary points, Awards).
-- The other Participant pickers sit on the Competition page's run area, which Hosts use too, and Log a Game is Participant-facing. CONTEXT.md says "Participant emails never reach the client, only the matched id", and `PlacementSheetRow` says "never an email". Sending emails for search there needs a product call: Organizer-only (by actor), a server-side search, or name-only.
+- The other Participant pickers sit on the Competition page's run area, which Hosts use too, and Log a Game is Participant-facing. CONTEXT.md (as R19 left it) says Participant emails never reach a Participant's or Host's page, only the matched id, and `PlacementSheetRow` says "never an email". Sending emails for search there needs a product call: Organizer-only (by actor), a server-side search, or name-only.
 
 ## Repro
 
