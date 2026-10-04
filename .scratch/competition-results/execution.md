@@ -273,4 +273,6 @@ Accepted risks: T11; the Manage route switches the admin edition on a GET (needs
 | DoD2 CONTEXT | PASS | `CONTEXT.md` glossary, banned table, display rules (`50ca7e2f`, `9c0ec252`) |
 | DoD3 screenshots + axe | PASS | `test-results/e2e/` from the final gate (1440 and 390 for every changed page); axe on the table (`regression-r20-results-tab-*` light/dark) and the podium (Bracket specs, light/dark) |
 | DoD4 gate | PASS (local); CI on the PR pending | gate.log |
+
+- **PR:** https://github.com/paul-macfarlane/jg-war-week/pull/133
 | X1 skip grep | PASS | `git diff d97b5364 -- e2e src scripts \| grep …` empty |

@@ -11,7 +11,7 @@ source: Paul's regression feedback "10/3", items 1, 3.1, 3.3, 4, 5.5, 6, 8.2, 8.
 **Epic:** R20 · **Branch:** `feat/r20-competition-results` · **Blocked by:**
 R19 merged into `staging` · **Red-team:** not required (no schema change; if
 planning finds one is needed, it becomes required) · **Status:**
-done (2026-10-04; [execution record](./execution.md); PR into `staging` awaiting review)
+done (2026-10-04; [execution record](./execution.md); [PR #133](https://github.com/paul-macfarlane/jg-war-week/pull/133) into `staging` awaiting review)
 
 ## Summary
 
