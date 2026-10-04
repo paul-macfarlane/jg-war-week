@@ -1,0 +1,29 @@
+39a40
+>     ADD CONSTRAINT __drizzle_migrations_pkey PRIMARY KEY (id);
+148a150,151
+>     AS integer
+>     CACHE 1;
+174a178,181
+>     INCREMENT BY 1
+>     NO MAXVALUE
+>     NO MINVALUE
+>     START WITH 1
+213a221
+>     created_at bigint
+268a277
+>     hash text NOT NULL
+272a282
+>     id integer NOT NULL
+483a494,499
+> );
+> ALTER SCHEMA drizzle OWNER TO postgres;
+> ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNED BY drizzle.__drizzle_migrations.id;
+> ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNER TO postgres;
+> ALTER TABLE ONLY drizzle.__drizzle_migrations
+> ALTER TABLE ONLY drizzle.__drizzle_migrations ALTER COLUMN id SET DEFAULT nextval('drizzle.__drizzle_migrations_id_seq'::regclass);
+592a609
+> ALTER TABLE drizzle.__drizzle_migrations OWNER TO postgres;
+661a679,681
+> CREATE SCHEMA drizzle;
+> CREATE SEQUENCE drizzle.__drizzle_migrations_id_seq
+> CREATE TABLE drizzle.__drizzle_migrations (

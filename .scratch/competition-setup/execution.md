@@ -436,3 +436,140 @@ Extra checks for decisions without an AC:
     Group Bracket empties later rounds. D5 readings: Bracket edits
     authorize as `bracket.generate`; a D1f re-fill happens only when the
     advancers or their order change.
+- **D6 and D7 integrated**: D6 MCP and smoke `e6c7f53c` (sonnet); the
+  orchestrator renamed the last Game words in test identifiers
+  (`f1a93e98`). D7 docs `90222d45` (sonnet): ADR 0011, 0005 / 0006
+  superseded in part, `CONTEXT.md`, guide, checklist, testing cells,
+  `/about` copy (stills not re-shot: no feature card's screen changed),
+  backlog 25 closed.
+
+## [AI CODE REVIEW]
+
+Two fresh reviewers (opus), one per axis, over `6cccc63e..6c0fd58a`
+(excluding `test-results/` and `drizzle/meta`); findings adjudicated by
+the orchestrator against the cited lines. All resolved by the review-fix
+deliverable (opus, `cdc1bd6e`..`6c0fd58a`).
+
+**Technical implementation and spec conformity**
+
+| # | Severity | Finding | Resolution |
+|---|---|---|---|
+| F1 | blocking | A Best of played out with no majority but uneven wins (win, Draw, Draw) refused logging as drawn, yet Close gave the leader sole 1st (decision 12, AC 6) | `seriesDrawn` drives standings, Winner, page note and placings; both share 1st's full points (`cdc1bd6e`; vitest standings, placings, close; e2e uneven case) |
+| F2 | blocking | `scripts/r21-migration-report.ts` queried 0031 table names, but staging / prod are at 0030 when Paul runs it, so the non-numeric Score list (decision 8) could never be produced | Reads 0030 or 0031 names via `to_regclass` (`49ef1e27`); proven on a scratch database at 0030 listing a `DNF` Score, then at 0031 |
+| F3 | non-blocking | Group Bracket: Edit / Clear shown enabled, then refused with an untrue "later Match used" reason | One `resultLockReason`: a Group Match locks once any later round has a result, "A later round already has a result. Change that round first." (`81c67f2d`) |
+| F4 | non-blocking | 0032 kept a saved Best of smaller than the converted Matches | Grows to the smallest 1/3/5/7 that holds them (`e8ed2854`; migration test) |
+| F5 | non-blocking | Moving an Attempt to another Participant skipped their Max attempts | Refused (`9a6e5d47`) |
+| F6 | non-blocking | Sum of members added floats (0.1 + 0.2 ≠ 0.3) | Rounded to 3 decimals (`f290b1b8`) |
+| F7 | non-blocking | Evidence not committed yet | Closeout commit (this record) |
+
+Clean per the reviewer: server-side authorization under the Competition
+row lock for every write; self-report off refused on the server for all
+three Formats; Closed blocks every Format; max attempts serialized; 0031
+pure renames; 0032 CHECKs, NOT NULLs, Seed Position uniqueness and the
+guarded Score cast.
+
+**Coding standards**
+
+| # | Severity | Finding | Resolution |
+|---|---|---|---|
+| S1 | blocking (orchestrator: the in-app guide contradicted D1c) | Organizer guide described the pre-R21 Bracket and reset-on-edit | Rewritten (`6c0fd58a`) |
+| S2 | non-blocking | "enrolled Team", unconditional Participant logging in guide / `CONTEXT.md` | Fixed (`6c0fd58a`) |
+| S3 | non-blocking | Comments citing ADR 0006's "only the logger" | Cite ADR 0011 (`6c0fd58a`) |
+| S4 | non-blocking | testing.md named a renamed spec | Fixed (`6c0fd58a`) |
+| S5 | non-blocking | "Update their's score" | "Update their score" (`61001cde`) |
+| S6 | non-blocking | Score-parsing regex copied in three components | One `parseScore` in `src/lib/scoring.ts` (`61001cde`) |
+| S7 | non-blocking | `placings-now.ts` had no direct test | `placings-now.test.ts` (`cdc1bd6e`) |
+| S8 | non-blocking | Participant page classified a refusal by message text | Lib predicate (`81c67f2d`) |
+| S9 | nit | `(h) =>` lambdas left from the rename | Renamed (`81c67f2d`) |
+
+Clean per the reviewer: no `cursor-*` or `disabled:pointer-events-none`
+added; button variants; `ConfirmDialog` / sonner / `ResponsiveSheetDialog`
+use; shadcn `ToggleGroup`; team test rules (no conditional skips, each
+R21 spec owns and deletes its Competition, seeded data restored); ADR
+0001 layering.
+
+## [CLOSEOUT]
+
+2026-10-04. Repository delivery `war-weeker`, branch
+`feat/r21-competition-setup` from `6cccc63e`, verified head `6c0fd58a`
+(this closeout and the evidence commit follow it; no code after it).
+
+**Deliverables and workers**
+
+| Deliverable | Commit | Worker |
+|---|---|---|
+| D1 Rename (0031) | `266ece83` | sonnet |
+| D2 Model (0032, `game` split, seeds) | `798f9e60` | opus |
+| D3 Close, locks, scoring UI | `2d218deb` | sonnet |
+| D4 Logging and rules (D1a–e) | `e4b813b1` (merge `fd92be3a`) | opus, worktree `war-weeker-a` |
+| D5 Bracket setup (D1f) | `ca61b13c` (merge `827b07ae`) | opus, worktree `war-weeker-b` |
+| D6 MCP and smoke | `e6c7f53c` | sonnet |
+| D7 Docs | `90222d45` | sonnet |
+| Review fixes | `cdc1bd6e`..`6c0fd58a` | opus |
+| Merge fixes | `1111aa0a`, `751346f8`, `8dc1cc96`, `f1a93e98` | orchestrator |
+
+Isolation re-check: the predicted D4 ∥ D5 collisions in the settings
+form, settings mutation and locks merged cleanly and `engine.ts` did not
+collide; the real conflicts were `bracket-tree.tsx`, the settings form
+test and `mutations/brackets.ts`, plus one runtime collision (two "Edit
+Final" buttons) only the integrated e2e found. Parallelism was right.
+
+**Verified run** on the integration worktree:
+`DATABASE_URL=postgres://…@localhost:2345/war_weeker_r21 DATABASE_DRIVER=pg SMOKE_PORT=3130 E2E_PORT=3230 pnpm format:check && pnpm gate`
+at `6c0fd58a`: Prettier clean; typecheck; lint 0 errors (9 existing
+`<img>` warnings); 4041 tests in 210 files; build; smoke 288 ok; e2e 157
+passed. Log: `test-results/r21/gate.log`.
+
+**Acceptance criteria** (all PASS at `6c0fd58a`, evidence in
+`test-results/r21/gate.log` unless named)
+
+| AC | Verdict | Evidence |
+|---|---|---|
+| 1 Close / Reopen everywhere | PASS | `close.test.ts`, `placings-now.test.ts`; smoke Bracket loop |
+| 2 No closes-at; enrollment closes on build, limit, Close | PASS | `enroll-rule.test.ts`; `test-results/e2e/regression-r21-settings-*` |
+| 3 Self-report off by default; three writes on / off; Placement never | PASS | rule vitest; smoke self-report lines; `test-results/e2e/regression-r21-self-report-*` |
+| 4 Placement lower, "sec", set by hand | PASS | `test-results/e2e/regression-r21-scoring-*` |
+| 5 Group and H2H Match from Scores; tie pick or Draw | PASS | `scoring.test.ts`, `series/input.test.ts`; `test-results/e2e/regression-r21-match-scoring-*` |
+| 6 Best of 3 2–0 refused; drawn series shares points; two fixed rows | PASS | `series/log-rule.test.ts`, `standings.test.ts`, `close.test.ts`; `test-results/e2e/regression-r21-head-to-head-*` |
+| 7 Max attempts 3 | PASS | `best-score/log-rule.test.ts`, `attempts.test.ts`; `test-results/e2e/regression-r21-best-score-*` |
+| 8 No Best / Total; Team score; Tuesday Stairs Sum of members | PASS | `best-score/standings.test.ts`, `seeds.test.ts`; MCP smoke line; same e2e. Tuesday Stairs before / after: no Attempts are seeded, so its totals are unchanged by the conversion |
+| 9 Max 1 "Update your score" | PASS | same |
+| 10 Participant edits own Attempts | PASS | same |
+| 11 H2H player edits a Host-logged Match | PASS | `series/log-rule.test.ts`, `series.test.ts` |
+| 12 Bracket toggle | PASS | `test-results/e2e/regression-r21-bracket-set-*` |
+| 13 Group of 11, 4 / 2 | PASS | `groups.test.ts`, `bracket-edits.test.ts`; same e2e |
+| 14 No 5 · 3 · 1, no Add everyone | PASS | `test-results/e2e/regression-r21-scoring-*` |
+| 15 Migration, non-numeric Scores listed, seeds twice, CHECK inserts | PASS | `migrations.test.ts`; smoke seed and CHECK lines; report proven at 0030 (review F2); `test-results/r21/schema-parity.txt` (only drizzle's bookkeeping differs) |
+| 16 MCP config, no `@` | PASS | `src/mcp/*.test.ts`; smoke MCP lines |
+| 1a names | PASS | `test-results/r21/names-scan.txt`: every hit is an exemption (route dirs, `get_games` / `get_bracket`, migration-test old-shape SQL, the migration report, absence guards, JG wiki award names) |
+
+**Definition of Done**
+
+| DoD | Verdict | Evidence |
+|---|---|---|
+| Red-team before implementation | PASS | [EXECUTION PLAN] status |
+| Migration and seed together; smoke on seeded local Postgres | PASS | gate.log |
+| ADR for self-report; 0005 / 0006 superseded in part | PASS | `docs/adr/0011-one-self-report-setting.md` |
+| `CONTEXT.md` | PASS | diff |
+| `/about`, guide, regression checklist | PASS (stills not re-shot: copy-only change to the feature card; deviation) | diff |
+| Backlog 25 closed | PASS | `.scratch/regression-2026-09/issues/25-*` |
+| e2e screenshots 1440 and 390 committed | PASS | `test-results/e2e/regression-r21-*` |
+| `pnpm format:check && pnpm gate`; CI | gate PASS; CI on the PR | gate.log; PR checks |
+
+**Deviations and readings** (recorded in [PROGRESS]): finale kind
+`champions` → `winners`; "Best member" / "Sum of members" allowlisted;
+re-close re-writes generated entries for every Format; decided or drawn
+series refuses Organizers and Hosts too; Group results lock once any
+later round has a result; Clear on a Group Bracket empties later rounds;
+Bracket edits authorize as `bracket.generate`; the migration report is a
+script run before Migrate; the proof root's R20 files were not cleared
+(the session's permission guard refused it), only replaced where specs
+reran.
+
+**Human-gated, after merge** (unchanged from the plan): Paul runs
+`scripts/r21-migration-report.ts` against staging, then production, and
+pastes the output in the PR before `migrate.yml`; reseed staging and
+production with `seed.yml`; post-checks `/xii/competitions`, the Bracket
+page and MCP `get_games` answer.
+
+PR: see below.
