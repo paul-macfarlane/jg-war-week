@@ -150,6 +150,10 @@ describe("toLoggedResultsAnswer", () => {
         scoring: "individual",
         format: "head-to-head",
         settings: "Head-to-head · draws off · Best of 5",
+        scoreDirection: "none",
+        scoreUnit: null,
+        bestOf: 5,
+        drawsAllowed: false,
         entrants: ["Ashley Schuliger", "Sam Schantz"],
         closed: false,
       },
@@ -190,6 +194,8 @@ describe("toLoggedResultsAnswer", () => {
         name: "Tuesday Stairs",
         scoring: "team",
         format: "best-score",
+        scoringConfig: { direction: "higher", unit: "trips" },
+        maxAttempts: 3,
         config: {
           betterIs: "higher",
           unit: "trips",
@@ -253,7 +259,14 @@ describe("toLoggedResultsAnswer", () => {
     expect(result.competition.settings).toBe(
       "Best score · higher is better · trips · Team score: Sum of members",
     );
-    expect(result.competition.entrants).toBe("open to everyone");
+    expect(result.competition).toMatchObject({
+      scoreDirection: "higher wins",
+      scoreUnit: "trips",
+      maxAttempts: 3,
+      teamScore: "Sum of members",
+    });
+    expect(result.competition).not.toHaveProperty("entrants");
+    expect(result.competition).not.toHaveProperty("bestOf");
     expect(result.leaderboard).toEqual([
       { rank: 1, name: "Red", played: 2, total: 42 },
     ]);
@@ -268,6 +281,7 @@ describe("toLoggedResultsAnswer", () => {
         competition: baseView({
           name: "Darts",
           format: "best-score",
+          scoringConfig: { direction: "lower", unit: null },
           config: { betterIs: "lower", unit: "", teamScore: "best-member" },
         }),
         leaderboard: [
@@ -300,6 +314,13 @@ describe("toLoggedResultsAnswer", () => {
     if (!result.found || !("attempts" in result) || result.attempts === null)
       throw new Error("unreachable");
     expect(result.competition.settings).toBe("Best score · lower is better");
+    expect(result.competition).toMatchObject({
+      scoreDirection: "lower wins",
+      scoreUnit: null,
+      maxAttempts: "unlimited",
+    });
+    expect(result.competition).not.toHaveProperty("teamScore");
+    expect(result.competition).not.toHaveProperty("entrants");
     expect(result.leaderboard).toEqual([
       { rank: 1, name: "Ana", played: 3, best: 7 },
     ]);

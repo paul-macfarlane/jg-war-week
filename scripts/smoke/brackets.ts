@@ -292,6 +292,8 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
       status: string;
       recordedAt: string | null;
       thirdPlace: boolean;
+      size: number;
+      advancing: number;
       entrants: { name: string; place: number | null }[];
     };
     const bracketPayload = bracket.parsed as
@@ -312,15 +314,27 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
       (entrant) => entrant.place === 1,
     )?.name;
     const matchKeys = [
+      "advancing",
       "entrants",
       "name",
       "recordedAt",
+      "size",
       "status",
       "thirdPlace",
     ];
     const bracketProblems = [
       bracketPayload?.found !== true && "not found",
       bracketPayload?.competition?.format !== "bracket" && "format",
+      bracketPayload?.competition?.kind !== "head-to-head" && "kind",
+      bracketPayload?.competition?.scoreDirection === undefined &&
+        "scoreDirection",
+      bracketPayload?.competition !== undefined &&
+        !("scoreUnit" in bracketPayload.competition) &&
+        "scoreUnit",
+      !Array.isArray(bracketPayload?.competition?.roundDefaults) &&
+        "roundDefaults",
+      matches.some((match) => match.size !== 2 || match.advancing !== 1) &&
+        "Match size 2 and advancing 1",
       bracketPayload?.competition?.matchSize !== 2 && "matchSize",
       bracketPayload?.competition?.advancing !== 1 && "advancing",
       bracketPayload?.competition?.thirdPlaceMatch !== true &&
@@ -1188,7 +1202,11 @@ export async function assertSquadSelfReportLoop(sessions: {
       bearer,
     );
     const bracketPayload = bracket.parsed as
-      | { found: boolean; entrants?: { participants: string[] | null }[] }
+      | {
+          found: boolean;
+          competition?: Record<string, unknown>;
+          entrants?: { participants: string[] | null }[];
+        }
       | undefined;
     const withParticipants = bracketPayload?.entrants?.filter((entrant) =>
       Array.isArray(entrant.participants),
@@ -1198,6 +1216,9 @@ export async function assertSquadSelfReportLoop(sessions: {
       bracketPayload.entrants?.length !== 4 ||
       withParticipants?.length !== 4 ||
       withParticipants.some((entrant) => entrant.participants!.length !== 2) ||
+      !["head-to-head", "group"].includes(
+        String(bracketPayload.competition?.kind),
+      ) ||
       bracket.text.includes("@") ||
       bracket.text.toLowerCase().includes("report")
     ) {

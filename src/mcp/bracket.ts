@@ -1,9 +1,15 @@
 import type { Competition } from "@/db/schema";
 import { isBye } from "@/lib/bracket/formats";
+import { matchAdvanceCount } from "@/lib/bracket/groups";
 import type { BracketFormat } from "@/lib/bracket/types";
 import { groupRounds, matchName } from "@/lib/bracket/view";
 import { type LoggedFormat, isLoggedFormat } from "@/lib/enums";
 import { notFoundMessage } from "@/mcp/not-found";
+import {
+  type ScoreDirectionLabel,
+  scoreDirectionLabel,
+  scoreUnitLabel,
+} from "@/mcp/score";
 import type { BracketView } from "@/queries/brackets";
 
 export type BracketResult =
@@ -13,10 +19,20 @@ export type BracketResult =
         name: string;
         scoring: Competition["scoring"];
         format: BracketFormat;
+        /** Head-to-head (2 per Match, 1 advancing) or group. */
+        kind: "head-to-head" | "group";
+        scoreDirection: ScoreDirectionLabel;
+        scoreUnit: string | null;
         /** Entrants per Match. */
         matchSize: number;
         /** How many of each Match advance. */
         advancing: number;
+        /** Rounds whose defaults differ from the Bracket-wide ones. */
+        roundDefaults: {
+          round: number;
+          matchSize: number;
+          advancing: number;
+        }[];
         thirdPlaceMatch: boolean;
         closed: boolean;
       };
@@ -33,6 +49,10 @@ export type BracketResult =
         matches: {
           name: string;
           status: string;
+          /** Entrants the Match holds. */
+          size: number;
+          /** How many of the Match advance. */
+          advancing: number;
           /** When a played Match's result was recorded (ISO instant); else null. */
           recordedAt: string | null;
           /**
@@ -161,8 +181,18 @@ export function toBracketResult(
       name: view.competition.name,
       scoring: view.competition.scoring,
       format: view.competition.format,
+      kind: view.bracket.config.kind,
+      scoreDirection: scoreDirectionLabel(view.competition.scoreDirection),
+      scoreUnit: scoreUnitLabel(view.competition.scoreUnit),
       matchSize: view.bracket.config.entrantsPerMatch,
       advancing: view.bracket.config.advancePerMatch,
+      roundDefaults: Object.entries(view.bracket.config.rounds)
+        .map(([round, defaults]) => ({
+          round: Number(round),
+          matchSize: defaults.entrantsPerMatch,
+          advancing: defaults.advancePerMatch,
+        }))
+        .sort((a, b) => a.round - b.round),
       thirdPlaceMatch: view.bracket.config.thirdPlaceMatch,
       closed: view.closed,
     },
@@ -178,6 +208,8 @@ export function toBracketResult(
       matches: round.matches.map((match) => ({
         name: matchName(view.bracket, match),
         status: isBye(view.bracket, match) ? "bye" : match.status,
+        size: match.slots.length,
+        advancing: matchAdvanceCount(view.bracket, match),
         recordedAt: match.recordedAt ? match.recordedAt.toISOString() : null,
         thirdPlace: match.thirdPlace,
         entrants: match.slots

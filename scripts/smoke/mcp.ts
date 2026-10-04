@@ -407,7 +407,7 @@ export async function assertMcp() {
       competition: "Bouncy Pong",
     });
     const seriesCheck =
-      "MCP get_games(Bouncy Pong) returns its Head-to-head settings with a Best of 3 between its 2 Entrants, standings and matches (no attempts) with no @";
+      "MCP get_games(Bouncy Pong) returns its Head-to-head settings (Best of 3, draws not allowed, Score direction and unit) between its 2 Entrants, standings and matches (no attempts, no count) with no @";
     if (
       series.parsed?.found === true &&
       series.parsed.competition?.name === "Bouncy Pong" &&
@@ -415,6 +415,13 @@ export async function assertMcp() {
       String(series.parsed.competition?.settings).includes("Best of 3") &&
       JSON.stringify(series.parsed.competition?.entrants) ===
         JSON.stringify(["Albert Hernandez", "Austin Gage"]) &&
+      series.parsed.competition?.bestOf === 3 &&
+      series.parsed.competition?.drawsAllowed === false &&
+      series.parsed.competition?.scoreDirection === "none" &&
+      series.parsed.competition?.scoreUnit === null &&
+      !("maxAttempts" in series.parsed.competition) &&
+      !("teamScore" in series.parsed.competition) &&
+      !JSON.stringify(series.parsed).includes('"count"') &&
       Array.isArray(series.parsed.leaderboard) &&
       Array.isArray(series.parsed.matches) &&
       !("games" in series.parsed) &&
@@ -465,7 +472,7 @@ export async function assertMcp() {
       competition: "Speed Chess",
     });
     const placementsCheck =
-      "MCP get_placements(Speed Chess) returns its Closed sheet by name (closed, no finalized field) with no @";
+      "MCP get_placements(Speed Chess) returns its Closed sheet by name (closed, no finalized field, Score direction and unit) with no @";
     if (
       placements.parsed?.found === true &&
       placements.parsed.competition?.name === "Speed Chess" &&
@@ -473,6 +480,8 @@ export async function assertMcp() {
       !("finalized" in placements.parsed.competition) &&
       Array.isArray(placements.parsed.placements) &&
       placements.parsed.placements.length === 1 &&
+      "scoreDirection" in placements.parsed.competition &&
+      "scoreUnit" in placements.parsed.competition &&
       !JSON.stringify(placements.parsed).includes("@")
     ) {
       ok(placementsCheck);
@@ -487,13 +496,19 @@ export async function assertMcp() {
       competition: "Tuesday Stairs",
     });
     const bestScoreCheck =
-      "MCP get_games(Tuesday Stairs) returns the Best score Format, Sum of members and its attempts (no matches, no Best / Total count) with no @";
+      "MCP get_games(Tuesday Stairs) returns the Best score Format with higher wins in trips, unlimited attempts, Team score Sum of members and its attempts (no matches, no entrants, no count) with no @";
     if (
       bestScore.parsed?.found === true &&
       bestScore.parsed.competition?.format === "best-score" &&
       String(bestScore.parsed.competition?.settings).includes(
         "Team score: Sum of members",
       ) &&
+      bestScore.parsed.competition?.scoreDirection === "higher wins" &&
+      bestScore.parsed.competition?.scoreUnit === "trips" &&
+      bestScore.parsed.competition?.maxAttempts === "unlimited" &&
+      bestScore.parsed.competition?.teamScore === "Sum of members" &&
+      !("entrants" in bestScore.parsed.competition) &&
+      !("bestOf" in bestScore.parsed.competition) &&
       !JSON.stringify(bestScore.parsed).includes('"count"') &&
       !/ · (best|total) · /.test(
         String(bestScore.parsed.competition?.settings),

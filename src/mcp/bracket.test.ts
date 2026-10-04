@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 import { applyResult, generate } from "@/lib/bracket/engine";
-import { bracketWinner as winnerOf } from "@/lib/bracket/formats";
+import {
+  generate as generateFor,
+  bracketWinner as winnerOf,
+} from "@/lib/bracket/formats";
 import type { Entrant } from "@/lib/bracket/types";
 import {
   toBracketResult,
@@ -170,8 +173,12 @@ describe("toBracketResult", () => {
       name: "Beyblades",
       scoring: "team",
       format: "bracket",
+      kind: "head-to-head",
+      scoreDirection: "none",
+      scoreUnit: null,
       matchSize: 2,
       advancing: 1,
+      roundDefaults: [],
       thirdPlaceMatch: false,
       closed: false,
     });
@@ -435,7 +442,15 @@ describe("toBracketResult", () => {
     expect(result.entrants[0].participants).toEqual(["Ashley Schuliger"]);
     for (const match of result.rounds.flatMap((r) => r.matches)) {
       expect(Object.keys(match).sort()).toEqual(
-        ["entrants", "name", "recordedAt", "status", "thirdPlace"].sort(),
+        [
+          "advancing",
+          "entrants",
+          "name",
+          "recordedAt",
+          "size",
+          "status",
+          "thirdPlace",
+        ].sort(),
       );
     }
   });
@@ -503,5 +518,71 @@ describe("toBracketResult with a 3rd place Match", () => {
     expect(result.rounds[1].matches.every((h) => h.thirdPlace === false)).toBe(
       true,
     );
+  });
+});
+
+describe("toBracketResult for a group Bracket", () => {
+  it("names the kind, the Round defaults, and each Match's size and how many advance", () => {
+    const eight: Entrant[] = Array.from({ length: 8 }, (_, i) => ({
+      id: `s${i + 1}`,
+      seedPosition: i + 1,
+      label: `S${i + 1}`,
+    }));
+    const config = {
+      kind: "group" as const,
+      entrantsPerMatch: 4,
+      advancePerMatch: 2,
+      thirdPlaceMatch: false,
+      rounds: {},
+    };
+    const bracket = generateFor(config, eight, (r, p) => `r${r}m${p}`);
+    const view: BracketView = {
+      competition: {
+        id: "c1",
+        warWeekId: "w1",
+        name: "Chess Matches",
+        scoring: "individual",
+        format: "bracket",
+        placementPoints: null,
+        closedAt: null,
+        selfReport: false,
+        scoreDirection: "higher",
+        scoreUnit: "pts",
+        selfEnroll: false,
+        entrantLimit: null,
+      },
+      entrants: eight.map((e) => bracketEntrantFixture(e, "Team")),
+      bracket: {
+        ...bracket,
+        config: {
+          ...config,
+          rounds: { "2": { entrantsPerMatch: 4, advancePerMatch: 1 } },
+        },
+      },
+      winner: null,
+      closed: false,
+      entryPoints: [],
+    };
+
+    const result = toBracketResult(view, "Chess Matches");
+
+    if (!result.found || !("rounds" in result)) throw new Error("no rounds");
+    expect(result.competition).toMatchObject({
+      kind: "group",
+      scoreDirection: "higher wins",
+      scoreUnit: "pts",
+      matchSize: 4,
+      advancing: 2,
+      roundDefaults: [{ round: 2, matchSize: 4, advancing: 1 }],
+    });
+    expect(
+      result.rounds.map((r) => r.matches.map((m) => [m.size, m.advancing])),
+    ).toEqual([
+      [
+        [4, 2],
+        [4, 2],
+      ],
+      [[4, 1]],
+    ]);
   });
 });

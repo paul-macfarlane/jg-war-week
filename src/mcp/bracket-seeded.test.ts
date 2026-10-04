@@ -62,6 +62,7 @@ describe.skipIf(!isLocalDatabase)("get_bracket on the seeded demo XII", () => {
           competition: {
             name: "Chess Matches",
             format: "bracket",
+            kind: "group",
             matchSize: 4,
             advancing: 2,
             thirdPlaceMatch: false,

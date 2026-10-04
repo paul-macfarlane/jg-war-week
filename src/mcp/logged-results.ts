@@ -9,6 +9,11 @@ import { loggedFormatLabel } from "@/lib/logged-results";
 import { type SeriesConfig, bestOfLabel } from "@/lib/series/config";
 import { matchSummary } from "@/lib/series/standings";
 import { notFoundMessage } from "@/mcp/not-found";
+import {
+  type ScoreDirectionLabel,
+  scoreDirectionLabel,
+  scoreUnitLabel,
+} from "@/mcp/score";
 import type {
   LoggedResultsRow,
   LoggedResultsView,
@@ -33,13 +38,23 @@ type FoundLogged = {
     format: LoggedFormat;
     /** A short human summary of the Format's settings. */
     settings: string;
-    /**
-     * A Head-to-head's two Entrants by name; Best score has no Entrant
-     * list, so anyone may log ("open to everyone").
-     */
-    entrants: "open to everyone" | string[];
+    scoreDirection: ScoreDirectionLabel;
+    scoreUnit: string | null;
     closed: boolean;
-  };
+  } & (
+    | {
+        /** Head-to-head: the Best of, whether a Match may be a Draw, and the two Entrants by name. */
+        bestOf: number;
+        drawsAllowed: boolean;
+        entrants: string[];
+      }
+    | {
+        /** Best score: "Max attempts per person", or "unlimited". */
+        maxAttempts: number | "unlimited";
+        /** In team scoring only: how a Team's score adds up. */
+        teamScore?: string;
+      }
+  );
   leaderboard: Record<string, unknown>[];
 };
 
@@ -77,6 +92,28 @@ function settingsSummary(
       ? ` · Team score: ${teamScoreLabel(config.teamScore)}`
       : "";
   return `${label} · ${config.betterIs} is better${unit}${team}`;
+}
+
+/** The Format's own fields: a Head-to-head's Best of, draws and Entrants; a Best score's attempt limit and Team score. */
+function formatFields(
+  competition: LoggedResultsView["competition"],
+  view: LoggedResultsView,
+) {
+  if (competition.format === "head-to-head") {
+    const config = competition.config as SeriesConfig;
+    return {
+      bestOf: config.bestOf,
+      drawsAllowed: config.drawsAllowed,
+      entrants: view.playerOptions.map((p) => p.name),
+    };
+  }
+  const config = competition.config as BestScoreSettings;
+  return {
+    maxAttempts: competition.maxAttempts ?? ("unlimited" as const),
+    ...(competition.scoring === "team"
+      ? { teamScore: teamScoreLabel(config.teamScore) }
+      : {}),
+  };
 }
 
 /** A leaderboard row's fields for the tool payload, only the Format's. */
@@ -151,10 +188,9 @@ export function toLoggedResultsAnswer(
       scoring: competition.scoring,
       format: competition.format,
       settings: settingsSummary(competition),
-      entrants:
-        competition.format === "best-score"
-          ? "open to everyone"
-          : view.playerOptions.map((p) => p.name),
+      scoreDirection: scoreDirectionLabel(competition.scoringConfig.direction),
+      scoreUnit: scoreUnitLabel(competition.scoringConfig.unit),
+      ...formatFields(competition, view),
       closed: competition.closed,
     },
     leaderboard: leaderboard.map((row) => leaderboardRow(competition, row)),

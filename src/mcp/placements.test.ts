@@ -105,6 +105,7 @@ describe("toPlacementsResult", () => {
         name: "Darts",
         scoring: "individual",
         scoreDirection: "higher wins",
+        scoreUnit: null,
         placementPoints: [10, 6, 3],
         closed: true,
         closedAt: "2027-02-24T21:30:00.000Z",
@@ -114,6 +115,18 @@ describe("toPlacementsResult", () => {
         { place: 1, name: "Trinity", team: "Blue", score: 30, points: 10 },
         { place: null, name: "Tank", team: null, score: null, points: null },
       ],
+    });
+  });
+
+  it("names the Score unit", () => {
+    expect(
+      toPlacementsResult(
+        { name: "Darts", scoring: "individual", format: "placement" },
+        view({ scoreUnit: "sec", scoreDirection: "lower" }),
+        "Darts",
+      ),
+    ).toMatchObject({
+      competition: { scoreDirection: "lower wins", scoreUnit: "sec" },
     });
   });
 
