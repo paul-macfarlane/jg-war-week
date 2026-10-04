@@ -146,6 +146,8 @@ test("a Bracket of 4 per Heat is built, run and finalized into Points Entries", 
   }
   await expect(page.getByText("(8 chosen)")).toBeVisible();
   await page.keyboard.press("Escape");
+  // A list still open would widen the page in the overflow checks below.
+  await expect(page.getByRole("listbox")).toBeHidden();
   await page.getByRole("button", { name: "Save Entrants" }).click();
   await expect(page.getByText("Entrants saved", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Generate" }).click();
