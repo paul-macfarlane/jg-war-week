@@ -21,3 +21,5 @@
 
 ## Comments
 - 2026-09-29 (Paul): backlog. Internal naming only, no user-facing effect; a schema change that needs a red-team. Do it alongside a future schema change that is red-teamed anyway.
+
+- 2026-10-04: folded into Epic R21 (`../../competition-setup/spec.md`); closes when that epic ships.
