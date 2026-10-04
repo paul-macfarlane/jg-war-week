@@ -1,130 +1,132 @@
-commit 9d9ce078
+9bdf6a21
 
-> war-weeker@0.1.0 format:check /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker
+> war-weeker@0.1.0 format:check /Users/paulmacfarlane/Code/jg-war-week
 > prettier --check .
 
 Checking formatting...
 All matched files use Prettier code style!
 
-> war-weeker@0.1.0 gate /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker
+> war-weeker@0.1.0 gate /Users/paulmacfarlane/Code/jg-war-week
 > pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm smoke && pnpm e2e
 
 
-> war-weeker@0.1.0 typecheck /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker
+> war-weeker@0.1.0 typecheck /Users/paulmacfarlane/Code/jg-war-week
 > next typegen && tsc --noEmit
 
 Generating route types...
 ✓ Types generated successfully
 
-> war-weeker@0.1.0 lint /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker
+> war-weeker@0.1.0 lint /Users/paulmacfarlane/Code/jg-war-week
 > eslint .
 
 
-/Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker/e2e/regression-r13-built-in-slides.spec.ts
+/Users/paulmacfarlane/Code/jg-war-week/e2e/regression-r13-built-in-slides.spec.ts
   6:3  warning  'nextSlide' is defined but never used  @typescript-eslint/no-unused-vars
 
-/Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker/src/app/sign-in/page.tsx
+/Users/paulmacfarlane/Code/jg-war-week/src/app/sign-in/page.tsx
   46:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
   57:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
 
-/Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker/src/components/about-still.tsx
+/Users/paulmacfarlane/Code/jg-war-week/src/components/about-still.tsx
   21:7  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
   28:7  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
 
-/Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker/src/components/finale-slides/title-slide.tsx
+/Users/paulmacfarlane/Code/jg-war-week/src/components/finale-slides/title-slide.tsx
   13:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
   26:9   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
 
-/Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker/src/components/roster.tsx
+/Users/paulmacfarlane/Code/jg-war-week/src/components/roster.tsx
   77:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
 
-/Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker/src/components/war-week-hero.tsx
+/Users/paulmacfarlane/Code/jg-war-week/src/components/war-week-hero.tsx
   15:9   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
   25:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
 
 ✖ 10 problems (0 errors, 10 warnings)
 
 
-> war-weeker@0.1.0 test /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker
+> war-weeker@0.1.0 test /Users/paulmacfarlane/Code/jg-war-week
 > vitest run
 
 (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
   - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
 Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
 
- RUN  v4.1.11 /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker
+ RUN  v4.1.11 /Users/paulmacfarlane/Code/jg-war-week
 
-(node:61467) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:8410) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:61469) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:8412) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:61464) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:8411) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:61471) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:8413) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:61468) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:8405) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:61473) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:8417) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:61474) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:8418) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:61487) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:8414) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:61489) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:8421) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:61490) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:8430) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:61492) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:8431) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:61493) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:8435) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:61494) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:8438) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:61500) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:8443) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:8452) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
 
- Test Files  194 passed (194)
-      Tests  3858 passed (3858)
-   Start at  20:11:16
-   Duration  21.06s (transform 8.14s, setup 0ms, import 83.47s, tests 77.46s, environment 1.02s)
+ Test Files  195 passed (195)
+      Tests  3915 passed (3915)
+   Start at  22:01:56
+   Duration  21.88s (transform 8.64s, setup 0ms, import 84.36s, tests 83.93s, environment 1.02s)
 
 
-> war-weeker@0.1.0 build /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker
+> war-weeker@0.1.0 build /Users/paulmacfarlane/Code/jg-war-week
 > next build
 
 ▲ Next.js 16.3.6 (Turbopack)
-✓ Running next.config.ts took 58ms
+✓ Running next.config.ts took 60ms
 
   Creating an optimized production build ...
-✓ Compiled successfully in 768ms
+✓ Compiled successfully in 1351ms
   Running TypeScript ...
-  Finished TypeScript in 2.6s ...
+  Finished TypeScript in 2.5s ...
   Collecting page data using 9 workers ...
-2026-10-04T00:11:43.113Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-10-04T00:11:43.132Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-10-04T00:11:43.143Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-10-04T00:11:43.147Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-2026-10-04T00:11:43.155Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-10-04T02:02:23.768Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-10-04T02:02:23.768Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-10-04T00:11:43.163Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-2026-10-04T00:11:43.165Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-10-04T02:02:23.793Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-10-04T02:02:23.786Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-10-04T00:11:43.192Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-10-04T02:02:23.805Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-10-04T02:02:23.816Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-10-04T00:11:43.265Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-2026-10-04T00:11:43.272Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-10-04T02:02:23.840Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-10-04T02:02:23.859Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
+2026-10-04T02:02:24.023Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+2026-10-04T02:02:24.034Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
 [Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
   Generating static pages using 9 workers (0/5) ...
   Generating static pages using 9 workers (1/5) 
   Generating static pages using 9 workers (2/5) 
   Generating static pages using 9 workers (3/5) 
-✓ Generating static pages using 9 workers (5/5) in 71ms
+✓ Generating static pages using 9 workers (5/5) in 66ms
   Finalizing page optimization ...
 
 Route (app)
@@ -182,19 +184,19 @@ Route (app)
 ƒ  (Dynamic)  server-rendered on demand
 
 
-> war-weeker@0.1.0 smoke /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker
+> war-weeker@0.1.0 smoke /Users/paulmacfarlane/Code/jg-war-week
 > tsx scripts/smoke/index.ts
 
 
-> war-weeker@0.1.0 db:migrate /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker
+> war-weeker@0.1.0 db:migrate /Users/paulmacfarlane/Code/jg-war-week
 > drizzle-kit migrate
 
 No config path provided, using default 'drizzle.config.ts'
-Reading config file '/Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker/drizzle.config.ts'
+Reading config file '/Users/paulmacfarlane/Code/jg-war-week/drizzle.config.ts'
 Using 'pg' driver for database querying
 [⣷] applying migrations...[2K[1G[✓] migrations applied successfully!ok - pnpm db:migrate
 
-> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker
+> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week
 > tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xii.json seeds/demo/xi.json
 
 Loaded War Week i (reset)
@@ -211,7 +213,7 @@ Loaded War Week xii (reset)
 Loaded War Week xi (reset)
 ok - pnpm seed:load --reset (12 seeds, load 1)
 
-> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker
+> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week
 > tsx scripts/seed-load.ts seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xii.json seeds/demo/xi.json
 
 Loaded War Week i
@@ -251,14 +253,14 @@ ok - the XI seed loads 5/3/1 Placement Points for Catan and the lone-winner 3 fo
 ok - the seven seeded Award Category keys exist
 ok - after loading the seeds twice, the demo XI Black Midnight Award is tagged and seeded Awards carry exactly the seeds' Categories
 
-> war-weeker@0.1.0 start /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker
-> next start -p 3110
+> war-weeker@0.1.0 start /Users/paulmacfarlane/Code/jg-war-week
+> next start -p 3100
 
 ▲ Next.js 16.3.6
-- Local:         http://localhost:3110
-- Network:       http://192.168.1.184:3110
-✓ Ready in 86ms
-✓ Running next.config.ts took 22ms
+- Local:         http://localhost:3100
+- Network:       http://192.168.1.184:3100
+✓ Ready in 83ms
+✓ Running next.config.ts took 20ms
 ok - server ready
 ok - signed-in GET / redirects to /xi
 ok - GET /xi renders War Week XI with the Team Standings
@@ -494,21 +496,85 @@ ok - participation: clear Daily Workout Check-in's check-ins
 ok - games: /xi/competitions/<Bouncy Pong> answers 200 with "Head-to-head", an empty log and no email but the viewer's
 ok - games: /xi/competitions/<Tuesday Stairs> answers 200 with "Best score", an empty log and no email but the viewer's
 ok - games: logGame by a signed-in JG user linked to no Participant is refused
-(node:61896) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(node:8860) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
 ok - games: logGame as the linked smoke Participant succeeds and the page shows the Game
 ok - games: closed and with XI ended, the page still renders the leaderboard and log, with no Log a Game
 ok - games: reopen Bouncy Pong and delete the smoke Game
 ok - createFaqItem posting XI's warWeekId with admin_edition=x in the cookie writes to XI and leaves X unchanged
 ok - lifecycle: create XII, end XI with a Winner, start XII; an Organizer corrects XI but a Participant can't reopen it; then restore
+
+> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week
+> tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xi.json seeds/demo/xii-scale.json
+
+Loaded War Week i (reset)
+Loaded War Week ii (reset)
+Loaded War Week iii (reset)
+Loaded War Week iv (reset)
+Loaded War Week ix (reset)
+Loaded War Week v (reset)
+Loaded War Week vi (reset)
+Loaded War Week vii (reset)
+Loaded War Week viii (reset)
+Loaded War Week x (reset)
+Loaded War Week xi (reset)
+Loaded War Week xii (reset)
+ok - pnpm seed:load --reset with the XII scale demo (load 1)
+(node:8928) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Applied the XII scale fixture
+ok - the XII scale fixture (load 1)
+
+> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week
+> tsx scripts/seed-load.ts seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xi.json seeds/demo/xii-scale.json
+
+Loaded War Week i
+Loaded War Week ii
+Loaded War Week iii
+Loaded War Week iv
+Loaded War Week ix
+Loaded War Week v
+Loaded War Week vi
+Loaded War Week vii
+Loaded War Week viii
+Loaded War Week x
+Loaded War Week xi
+Loaded War Week xii
+ok - pnpm seed:load with the XII scale demo (load 2)
+Applied the XII scale fixture
+ok - the XII scale fixture (load 2)
+ok - the XII scale demo loads twice with no row count changing
+ok - the XII scale demo has 100 Participants and 64 Entrants in Ping Pong Bracket
+ok - the XII scale demo's /xii answers 200
+ok - the XII scale demo's /xii/leaderboard answers 200
+ok - the XII scale demo's /xii/competitions answers 200
+ok - the XII scale demo's /xii/competitions/aa3f3d51-459a-40f4-83a3-ad1d47389f17 answers 200
+
+> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week
+> tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xii.json seeds/demo/xi.json
+
+Loaded War Week i (reset)
+Loaded War Week ii (reset)
+Loaded War Week iii (reset)
+Loaded War Week iv (reset)
+Loaded War Week ix (reset)
+Loaded War Week v (reset)
+Loaded War Week vi (reset)
+Loaded War Week vii (reset)
+Loaded War Week viii (reset)
+Loaded War Week x (reset)
+Loaded War Week xii (reset)
+Loaded War Week xi (reset)
+ok - pnpm seed:load --reset (12 seeds) puts the usual state back
+ok - the XII scale demo phase restored localSeedFiles()
 ⨯ Error: Failed query: select "id", "war_week_id", "question", "answer", "sort_order", "created_at", "updated_at" from "faq_item" where "faq_item"."war_week_id" = $1 order by "faq_item"."sort_order" asc, "faq_item"."id" asc
-params: 5beffbdc-3cb2-40d6-8cc8-6277035b97bd
+params: 10a189a2-2633-4f19-b59b-9bec44e5d720
     at o.queryWithCache (.next/server/chunks/ssr/_06a5mlc._.js:25:37181)
     at async (.next/server/chunks/ssr/_06a5mlc._.js:18:6014)
     at async k (.next/server/chunks/ssr/[root-of-the-server]__1tnyg3a._.js:1:4473) {
   query: 'select "id", "war_week_id", "question", "answer", "sort_order", "created_at", "updated_at" from "faq_item" where "faq_item"."war_week_id" = $1 order by "faq_item"."sort_order" asc, "faq_item"."id" asc',
-  params: [ '5beffbdc-3cb2-40d6-8cc8-6277035b97bd' ],
-  digest: '1365796936',
+  params: [ '10a189a2-2633-4f19-b59b-9bec44e5d720' ],
+  digest: '3009632979',
   [cause]: error: relation "faq_item" does not exist
       at async (.next/server/chunks/ssr/_06a5mlc._.js:18:6229)
       at async o.queryWithCache (.next/server/chunks/ssr/_06a5mlc._.js:25:37156)
@@ -537,18 +603,18 @@ params: 5beffbdc-3cb2-40d6-8cc8-6277035b97bd
 ok - GET /xi/faq with its table missing streams the edition error boundary (ErrorScreen copy), not Next's default error page
  ELIFECYCLE  Command failed with exit code 143.
 
-> war-weeker@0.1.0 e2e /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker
+> war-weeker@0.1.0 e2e /Users/paulmacfarlane/Code/jg-war-week
 > playwright test
 
 
-> war-weeker@0.1.0 db:migrate /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker
+> war-weeker@0.1.0 db:migrate /Users/paulmacfarlane/Code/jg-war-week
 > drizzle-kit migrate
 
 No config path provided, using default 'drizzle.config.ts'
-Reading config file '/Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker/drizzle.config.ts'
+Reading config file '/Users/paulmacfarlane/Code/jg-war-week/drizzle.config.ts'
 Using 'pg' driver for database querying
 [⣷] applying migrations...[2K[1G[✓] migrations applied successfully!
-> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/regression-r18/war-weeker
+> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week
 > tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xii.json seeds/demo/xi.json
 
 Loaded War Week i (reset)
@@ -564,208 +630,268 @@ Loaded War Week x (reset)
 Loaded War Week xii (reset)
 Loaded War Week xi (reset)
 
-Running 118 tests using 1 worker
+Running 127 tests using 1 worker
 
-  ✓    1 [chromium] › e2e/about-games.spec.ts:16:5 › about the Competitions feature card shows and screenshots on /about (426ms)
-  ✓    2 [chromium] › e2e/archive.spec.ts:25:5 › the Archive lists every past War Week (410ms)
+  ✓    1 [chromium] › e2e/about-games.spec.ts:16:5 › about the Competitions feature card shows and screenshots on /about (485ms)
 [WebServer] ⨯ Error: The destination stream closed early.
 [WebServer]     at ignore-listed frames {
-[WebServer]   digest: '1720613918'
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓    2 [chromium] › e2e/archive.spec.ts:25:5 › the Archive lists every past War Week (392ms)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
 [WebServer] }
 [WebServer] ⨯ Error: The destination stream closed early.
 [WebServer]     at ignore-listed frames {
-[WebServer]   digest: '1720613918'
+[WebServer]   digest: '3680567621'
 [WebServer] }
-  ✓    3 [chromium] › e2e/archive.spec.ts:46:7 › past edition /i renders (209ms)
-  ✓    4 [chromium] › e2e/archive.spec.ts:46:7 › past edition /ii renders (209ms)
+  ✓    3 [chromium] › e2e/archive.spec.ts:46:7 › past edition /i renders (218ms)
+  ✓    4 [chromium] › e2e/archive.spec.ts:46:7 › past edition /ii renders (212ms)
 [WebServer] ⨯ Error: The destination stream closed early.
 [WebServer]     at ignore-listed frames {
-[WebServer]   digest: '1720613918'
+[WebServer]   digest: '3680567621'
 [WebServer] }
-[WebServer] ⨯ Error: The destination stream closed early.
-[WebServer]     at ignore-listed frames {
-[WebServer]   digest: '1720613918'
-[WebServer] }
-[WebServer] ⨯ Error: The destination stream closed early.
-[WebServer]     at ignore-listed frames {
-[WebServer]   digest: '1720613918'
-[WebServer] }
-[WebServer] ⨯ Error: The destination stream closed early.
-[WebServer]     at ignore-listed frames {
-[WebServer]   digest: '1720613918'
-[WebServer] }
-[WebServer] ⨯ Error: The destination stream closed early.
-[WebServer]     at ignore-listed frames {
-[WebServer]   digest: '1720613918'
-[WebServer] }
-  ✓    5 [chromium] › e2e/archive.spec.ts:46:7 › past edition /iii renders (241ms)
-  ✓    6 [chromium] › e2e/archive.spec.ts:46:7 › past edition /iv renders (271ms)
-  ✓    7 [chromium] › e2e/archive.spec.ts:46:7 › past edition /ix renders (263ms)
-  ✓    8 [chromium] › e2e/archive.spec.ts:46:7 › past edition /v renders (226ms)
-  ✓    9 [chromium] › e2e/archive.spec.ts:46:7 › past edition /vi renders (241ms)
-  ✓   10 [chromium] › e2e/archive.spec.ts:46:7 › past edition /vii renders (270ms)
-  ✓   11 [chromium] › e2e/archive.spec.ts:46:7 › past edition /viii renders (273ms)
-[WebServer] ⨯ Error: The destination stream closed early.
-[WebServer]     at ignore-listed frames {
-[WebServer]   digest: '1720613918'
-[WebServer] }
-  ✓   12 [chromium] › e2e/archive.spec.ts:46:7 › past edition /x renders (228ms)
-  ✓   13 [chromium] › e2e/axe.spec.ts:36:9 › xi has no color-contrast violations (light) (1.2s)
-  ✓   14 [chromium] › e2e/axe.spec.ts:36:9 › xi has no color-contrast violations (dark) (1.1s)
-  ✓   15 [chromium] › e2e/axe.spec.ts:36:9 › history has no color-contrast violations (light) (399ms)
-  ✓   16 [chromium] › e2e/axe.spec.ts:36:9 › history has no color-contrast violations (dark) (380ms)
+  ✓    5 [chromium] › e2e/archive.spec.ts:46:7 › past edition /iii renders (262ms)
+  ✓    6 [chromium] › e2e/archive.spec.ts:46:7 › past edition /iv renders (274ms)
+  ✓    7 [chromium] › e2e/archive.spec.ts:46:7 › past edition /ix renders (261ms)
+  ✓    8 [chromium] › e2e/archive.spec.ts:46:7 › past edition /v renders (241ms)
+  ✓    9 [chromium] › e2e/archive.spec.ts:46:7 › past edition /vi renders (230ms)
+  ✓   10 [chromium] › e2e/archive.spec.ts:46:7 › past edition /vii renders (283ms)
+  ✓   11 [chromium] › e2e/archive.spec.ts:46:7 › past edition /viii renders (277ms)
+  ✓   12 [chromium] › e2e/archive.spec.ts:46:7 › past edition /x renders (250ms)
+  ✓   13 [chromium] › e2e/axe.spec.ts:36:9 › xi has no color-contrast violations (light) (1.3s)
+  ✓   14 [chromium] › e2e/axe.spec.ts:36:9 › xi has no color-contrast violations (dark) (1.2s)
+  ✓   15 [chromium] › e2e/axe.spec.ts:36:9 › history has no color-contrast violations (light) (403ms)
+  ✓   16 [chromium] › e2e/axe.spec.ts:36:9 › history has no color-contrast violations (dark) (381ms)
   ✓   17 [chromium] › e2e/axe.spec.ts:36:9 › about has no color-contrast violations (light) (1.1s)
   ✓   18 [chromium] › e2e/axe.spec.ts:36:9 › about has no color-contrast violations (dark) (1.1s)
-  ✓   19 [chromium] › e2e/bracket-heats.spec.ts:124:5 › a Bracket of 4 per Heat is built, run and finalized into Points Entries (9.3s)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓   19 [chromium] › e2e/bracket-heats.spec.ts:124:5 › a Bracket of 4 per Heat is built, run and finalized into Points Entries (9.6s)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
   ✓   20 [chromium] › e2e/bracket-squads.spec.ts:196:5 › a Squad Bracket with self-report: a Participant reports, a second report is refused, the Host overwrites (16.6s)
-  ✓   21 [chromium] › e2e/bracket-third-place.spec.ts:76:5 › a head-to-head Bracket of 8 with a 3rd place game is run to Finalize, placing 10, 7, 5 and 3 (8.5s)
-  ✓   22 [chromium] › e2e/bracket-tree.spec.ts:337:5 › a head-to-head Bracket is one tree: the Organizer records from it in admin, Participants see it without a List toggle (9.2s)
+  ✓   21 [chromium] › e2e/bracket-third-place.spec.ts:76:5 › a head-to-head Bracket of 8 with a 3rd place game is run to Finalize, placing 10, 7, 5 and 3 (8.4s)
+  ✓   22 [chromium] › e2e/bracket-tree.spec.ts:337:5 › a head-to-head Bracket is one tree: the Organizer records from it in admin, Participants see it without a List toggle (9.5s)
   ✓   23 [chromium] › e2e/bracket-tree.spec.ts:415:5 › a Bracket of 4 per Heat is the same tree of Heat boxes, advancers highlighted (9.3s)
-  ✓   24 [chromium] › e2e/bracket-tree.spec.ts:500:5 › a self-reporting Participant records their own Heat from the public tree; nobody else sees Record result on it (4.1s)
-  ✓   25 [chromium] › e2e/bracket.spec.ts:107:5 › a Bracket is built, run and finalized into Points Entries (10.4s)
+  ✓   24 [chromium] › e2e/bracket-tree.spec.ts:500:5 › a self-reporting Participant records their own Heat from the public tree; nobody else sees Record result on it (4.0s)
+  ✓   25 [chromium] › e2e/bracket.spec.ts:107:5 › a Bracket is built, run and finalized into Points Entries (10.6s)
+  ✓   26 [chromium] › e2e/delete-account.spec.ts:31:7 › 61 a signed-in person deletes their account by typing their email, and lands signed out, at 390 (839ms)
+  ✓   27 [chromium] › e2e/delete-account.spec.ts:31:7 › 61 a signed-in person deletes their account by typing their email, and lands signed out, at 1440 (858ms)
+  ✓   28 [chromium] › e2e/discretionary-points.spec.ts:16:5 › an Organizer gives 3 Discretionary points to a Team, edits it to 4 and deletes it, and the leaderboard follows (1.9s)
 [WebServer] ⨯ Error: The destination stream closed early.
 [WebServer]     at ignore-listed frames {
-[WebServer]   digest: '1720613918'
+[WebServer]   digest: '3680567621'
 [WebServer] }
-  ✓   26 [chromium] › e2e/delete-account.spec.ts:31:7 › 61 a signed-in person deletes their account by typing their email, and lands signed out, at 390 (815ms)
-  ✓   27 [chromium] › e2e/delete-account.spec.ts:31:7 › 61 a signed-in person deletes their account by typing their email, and lands signed out, at 1440 (897ms)
-  ✓   28 [chromium] › e2e/discretionary-points.spec.ts:16:5 › an Organizer gives 3 Discretionary points to a Team, edits it to 4 and deletes it, and the leaderboard follows (1.8s)
-  ✓   29 [chromium] › e2e/discretionary-points.spec.ts:88:5 › a Discretionary entry without a reason is refused under Reason (725ms)
-  ✓   30 [chromium] › e2e/discretionary-points.spec.ts:121:5 › a Host gets the refusal page and no nav link for Discretionary points (300ms)
+  ✓   29 [chromium] › e2e/discretionary-points.spec.ts:88:5 › a Discretionary entry without a reason is refused under Reason (752ms)
 [WebServer] ⨯ Error: The destination stream closed early.
 [WebServer]     at ignore-listed frames {
-[WebServer]   digest: '1720613918'
+[WebServer]   digest: '3680567621'
 [WebServer] }
+  ✓   30 [chromium] › e2e/discretionary-points.spec.ts:121:5 › a Host gets the refusal page and no nav link for Discretionary points (301ms)
 [WebServer] ⨯ Error: The destination stream closed early.
 [WebServer]     at ignore-listed frames {
-[WebServer]   digest: '1720613918'
+[WebServer]   digest: '3680567621'
 [WebServer] }
-  ✓   31 [chromium] › e2e/discretionary-points.spec.ts:153:5 › the old Points links redirect, and /admin lands on Competitions (414ms)
-[WebServer] (node:61983) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  ✓   31 [chromium] › e2e/discretionary-points.spec.ts:153:5 › the old Points links redirect, and /admin lands on Competitions (415ms)
+[WebServer] (node:9105) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 [WebServer] (Use `node --trace-deprecation ...` to show where the warning was created)
-  ✓   32 [chromium] › e2e/enrollment.spec.ts:143:5 › enrollment: a Participant enrolls, withdraws and enrolls again; once the Host builds the Bracket, enrollment is refused (2.6s)
+  ✓   32 [chromium] › e2e/enrollment.spec.ts:143:5 › enrollment: a Participant enrolls, withdraws and enrolls again; once the Host builds the Bracket, enrollment is refused (2.7s)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
   ✓   33 [chromium] › e2e/finale.spec.ts:11:5 › the Finale's Standings countdown ends on first place (3.3s)
-  ✓   34 [chromium] › e2e/forms.spec.ts:7:7 › forms › Discretionary points refused on the server show under Points and focus it (757ms)
+  ✓   34 [chromium] › e2e/forms.spec.ts:7:7 › forms › Discretionary points refused on the server show under Points and focus it (776ms)
   ✓   35 [chromium] › e2e/forms.spec.ts:44:7 › forms › a settings autosave refused on the server shows under Slack URL and keeps the value (1.7s)
-  ✓   36 [chromium] › e2e/games.spec.ts:99:5 › games: a Participant logs a head-to-head Game from home, the Host edits it and closes the Competition, the Standings move (5.9s)
+  ✓   36 [chromium] › e2e/games.spec.ts:99:5 › games: a Participant logs a head-to-head Game from home, the Host edits it and closes the Competition, the Standings move (5.8s)
   ✓   37 [chromium] › e2e/placement-points.spec.ts:17:5 › r16 95 twenty Placement Points places are all reachable at 390 wide without horizontal scroll (3.1s)
-  ✓   38 [chromium] › e2e/placement.spec.ts:87:5 › r16 90 a Host records placements with Scores, breaks a tie and Finalizes: the Standings move, Recent results shows it, Reopen withdraws, a Participant is refused (4.6s)
-  ✓   39 [chromium] › e2e/profile-core.spec.ts:29:7 › 60 a Participant sets a Profile name and picture URL; the menu and both previews show them, at 390 (1.3s)
-  ✓   40 [chromium] › e2e/profile-core.spec.ts:29:7 › 60 a Participant sets a Profile name and picture URL; the menu and both previews show them, at 1440 (1.4s)
-  ✓   41 [chromium] › e2e/profile.spec.ts:44:7 › 60 the Profile name and picture show on the leaderboard, teams and a Games Competition, and the roster form reads the name read-only, at 390 (1.7s)
 [WebServer] ⨯ Error: The destination stream closed early.
 [WebServer]     at ignore-listed frames {
-[WebServer]   digest: '1720613918'
+[WebServer]   digest: '3680567621'
 [WebServer] }
+  ✓   38 [chromium] › e2e/placement.spec.ts:87:5 › r16 90 a Host records placements with Scores, breaks a tie and Finalizes: the Standings move, Recent results shows it, Reopen withdraws, a Participant is refused (5.1s)
+  ✓   39 [chromium] › e2e/profile-core.spec.ts:29:7 › 60 a Participant sets a Profile name and picture URL; the menu and both previews show them, at 390 (1.4s)
+  ✓   40 [chromium] › e2e/profile-core.spec.ts:29:7 › 60 a Participant sets a Profile name and picture URL; the menu and both previews show them, at 1440 (1.5s)
+  ✓   41 [chromium] › e2e/profile.spec.ts:44:7 › 60 the Profile name and picture show on the leaderboard, teams and a Games Competition, and the roster form reads the name read-only, at 390 (1.9s)
   ✓   42 [chromium] › e2e/profile.spec.ts:44:7 › 60 the Profile name and picture show on the leaderboard, teams and a Games Competition, and the roster form reads the name read-only, at 1440 (2.0s)
-  ✓   43 [chromium] › e2e/regression-r1.spec.ts:91:5 › r1 01 the site footer sits at the bottom of a short page and follows a long page's content (1.5s)
 [WebServer] ⨯ Error: The destination stream closed early.
 [WebServer]     at ignore-listed frames {
-[WebServer]   digest: '1720613918'
+[WebServer]   digest: '3680567621'
 [WebServer] }
-  ✓   44 [chromium] › e2e/regression-r1.spec.ts:106:5 › r1 02 a free-for-all edition shows only a Standings heading; a teams edition still shows the Team label (890ms)
-  ✓   45 [chromium] › e2e/regression-r1.spec.ts:158:5 › r1 10 expanding a Team or Participant row on the leaderboard shows its Points Entries, newest first, summing to the row total (694ms)
-  ✓   46 [chromium] › e2e/regression-r1.spec.ts:243:5 › r1 05 the End War Week dialog shows the computed Winner read-only (717ms)
+  ✓   43 [chromium] › e2e/regression-r1.spec.ts:91:5 › r1 01 the site footer sits at the bottom of a short page and follows a long page's content (1.5s)
+  ✓   44 [chromium] › e2e/regression-r1.spec.ts:106:5 › r1 02 a free-for-all edition shows only a Standings heading; a teams edition still shows the Team label (1.0s)
+  ✓   45 [chromium] › e2e/regression-r1.spec.ts:158:5 › r1 10 expanding a Team or Participant row on the leaderboard shows its Points Entries, newest first, summing to the row total (674ms)
+  ✓   46 [chromium] › e2e/regression-r1.spec.ts:243:5 › r1 05 the End War Week dialog shows the computed Winner read-only (701ms)
   ✓   47 [chromium] › e2e/regression-r1.spec.ts:273:5 › r1 06 09 the Competitions form offers Format including Bracket and no points cap, opening a new Competition's page with its Bracket (1.1s)
-  ✓   48 [chromium] › e2e/regression-r1.spec.ts:346:5 › r1 08 the Schedule defaults to All and filters to one Day by URL (911ms)
-  ✓   49 [chromium] › e2e/regression-r11-day-description.spec.ts:23:5 › r11 66 a Day saved with a description shows on the Schedule and in Home's Today header (2.4s)
-r11 64 stored body: {"type":"doc","content":[{"type":"heading","attrs":{"level":2},"content":[{"text":"Closing Ceremonies","type":"text"}]},{"type":"blockquote","content":[{"type":"paragraph","content":[{"text":"There is no spoon.","type":"text"}]}]},{"type":"paragraph","content":[{"text":"Doors open at nine.","type":"text"}]},{"type":"image","attrs":{"alt":"The Announcements page","src":"http://localhost:3210/about/announcements.png","caption":"Edited: the Announcements page"}},{"type":"video","attrs":{"src":"https://youtu.be/dQw4w9WgXcQ"}}]}
-  ✓   50 [chromium] › e2e/regression-r11-editor.spec.ts:40:5 › r11 64 an Organizer posts a heading, a quote, a captioned image and a video; the participant page shows all four (4.7s)
-  ✓   51 [chromium] › e2e/regression-r11-roster-import.spec.ts:21:5 › r11 67 paste three rows, preview 2 Add and 1 Update, import, and the roster shows them (1.3s)
-  ✓   52 [chromium] › e2e/regression-r11-unstart.spec.ts:35:5 › r11 68 Start then Unstart a fresh edition; it shows Upcoming again (1.6s)
-  ✓   53 [chromium] › e2e/regression-r12-award-categories.spec.ts:6:5 › r12 70 an Organizer adds a Category, gives an Award in it, and the Awards page groups it (2.3s)
-  ✓   54 [chromium] › e2e/regression-r12-award-history.spec.ts:17:5 › r12 71 History lists Awards through the years and a Category lists its War Weeks newest first (671ms)
-  ✓   55 [chromium] › e2e/regression-r12-participation.spec.ts:74:5 › r12 69 a Host runs a team Participation Competition: check-ins, a tick, Close moves the Standings, Reopen withdraws (25.7s)
-  ✓   56 [chromium] › e2e/regression-r12-participation.spec.ts:229:5 › r16 94 an individual Participation Competition gives N points to each Participant who took part (2.9s)
-  ✓   57 [chromium] › e2e/regression-r13-built-in-slides.spec.ts:29:5 › 73: the Awards slide reveals one Award per step, grouped by Category (515ms)
-  ✓   58 [chromium] › e2e/regression-r13-built-in-slides.spec.ts:73:5 › 73: the Winner slide shows the leaderboard's first place (625ms)
+  ✓   48 [chromium] › e2e/regression-r1.spec.ts:346:5 › r1 08 the Schedule defaults to All and filters to one Day by URL (945ms)
+  ✓   49 [chromium] › e2e/regression-r11-day-description.spec.ts:23:5 › r11 66 a Day saved with a description shows on the Schedule and in Home's Today header (2.5s)
+r11 64 stored body: {"type":"doc","content":[{"type":"heading","attrs":{"level":2},"content":[{"text":"Closing Ceremonies","type":"text"}]},{"type":"blockquote","content":[{"type":"paragraph","content":[{"text":"There is no spoon.","type":"text"}]}]},{"type":"paragraph","content":[{"text":"Doors open at nine.","type":"text"}]},{"type":"image","attrs":{"alt":"The Announcements page","src":"http://localhost:3200/about/announcements.png","caption":"Edited: the Announcements page"}},{"type":"video","attrs":{"src":"https://youtu.be/dQw4w9WgXcQ"}}]}
+  ✓   50 [chromium] › e2e/regression-r11-editor.spec.ts:40:5 › r11 64 an Organizer posts a heading, a quote, a captioned image and a video; the participant page shows all four (4.5s)
+  ✓   51 [chromium] › e2e/regression-r11-roster-import.spec.ts:21:5 › r11 67 paste three rows, preview 2 Add and 1 Update, import, and the roster shows them (1.4s)
+  ✓   52 [chromium] › e2e/regression-r11-unstart.spec.ts:35:5 › r11 68 Start then Unstart a fresh edition; it shows Upcoming again (1.5s)
+  ✓   53 [chromium] › e2e/regression-r12-award-categories.spec.ts:6:5 › r12 70 an Organizer adds a Category, gives an Award in it, and the Awards page groups it (2.1s)
+  ✓   54 [chromium] › e2e/regression-r12-award-history.spec.ts:17:5 › r12 71 History lists Awards through the years and a Category lists its War Weeks newest first (667ms)
+  ✓   55 [chromium] › e2e/regression-r12-participation.spec.ts:74:5 › r12 69 a Host runs a team Participation Competition: check-ins, a tick, Close moves the Standings, Reopen withdraws (25.9s)
+  ✓   56 [chromium] › e2e/regression-r12-participation.spec.ts:229:5 › r16 94 an individual Participation Competition gives N points to each Participant who took part (3.0s)
+  ✓   57 [chromium] › e2e/regression-r13-built-in-slides.spec.ts:29:5 › 73: the Awards slide reveals one Award per step, grouped by Category (498ms)
+  ✓   58 [chromium] › e2e/regression-r13-built-in-slides.spec.ts:73:5 › 73: the Winner slide shows the leaderboard's first place (627ms)
 [WebServer] ⨯ Error: The destination stream closed early.
 [WebServer]     at ignore-listed frames {
-[WebServer]   digest: '1720613918'
+[WebServer]   digest: '3680567621'
 [WebServer] }
   ✓   59 [chromium] › e2e/regression-r13-built-in-slides.spec.ts:102:5 › 73: the per-Category Awards layout, set in admin → Finale, plays one Awards slide per Category (6.1s)
-  ✓   60 [chromium] › e2e/regression-r13-custom-slides.spec.ts:45:5 › 74-AC1 74-AC2: an Organizer adds a Custom slide with an image between Awards and Standings, the Finale shows it with readable text, and the Organizer edits and deletes it (3.7s)
+  ✓   60 [chromium] › e2e/regression-r13-custom-slides.spec.ts:45:5 › 74-AC1 74-AC2: an Organizer adds a Custom slide with an image between Awards and Standings, the Finale shows it with readable text, and the Organizer edits and deletes it (3.6s)
   ✓   61 [chromium] › e2e/regression-r13-finale.spec.ts:22:5 › 72-AC2: an Organizer moves the Standings slide and hides one, and the Finale plays in that order (7.0s)
-[WebServer] ⨯ Error: The destination stream closed early.
-[WebServer]     at ignore-listed frames {
-[WebServer]   digest: '1720613918'
-[WebServer] }
-  ✓   62 [chromium] › e2e/regression-r15-cursor.spec.ts:12:7 › cursors › r15 85 buttons, links, combobox options and tabs show a pointer (605ms)
-  ✓   63 [chromium] › e2e/regression-r15-cursor.spec.ts:42:7 › cursors › r15 85 a disabled button shows not-allowed and is what the pointer is over (254ms)
+  ✓   62 [chromium] › e2e/regression-r15-cursor.spec.ts:12:7 › cursors › r15 85 buttons, links, combobox options and tabs show a pointer (635ms)
+  ✓   63 [chromium] › e2e/regression-r15-cursor.spec.ts:42:7 › cursors › r15 85 a disabled button shows not-allowed and is what the pointer is over (256ms)
   ✓   64 [chromium] › e2e/regression-r15-games-settings.spec.ts:16:5 › r15 89 Games settings and Placement Points show what was saved after leaving and returning (3.9s)
-  ✓   65 [chromium] › e2e/regression-r15-heats-advancers.spec.ts:28:5 › r15 84 a recorded Heat of 4 with 2 advancing highlights both advancers in admin (10.4s)
-[WebServer] ⨯ Error: The destination stream closed early.
-[WebServer]     at ignore-listed frames {
-[WebServer]   digest: '1720613918'
-[WebServer] }
-[WebServer] ⨯ Error: The destination stream closed early.
-[WebServer]     at ignore-listed frames {
-[WebServer]   digest: '1720613918'
-[WebServer] }
-  ✓   66 [chromium] › e2e/regression-r15-history-chrome.spec.ts:26:5 › r15 88 History and a Category page wear the current War Week's nav, tab bar and theme (1.4s)
-  ✓   67 [chromium] › e2e/regression-r15-nav-centre.spec.ts:9:7 › r15 86 the top nav is centred at 1280 wide on XI and XII (885ms)
-  ✓   68 [chromium] › e2e/regression-r15-nav-centre.spec.ts:9:7 › r15 86 the top nav is centred at 1024 wide on XI and XII (827ms)
-  ✓   69 [chromium] › e2e/regression-r15-nav-centre.spec.ts:38:5 › r15 86 at 390 wide the header keeps the brand left and the account menu right (667ms)
-  ✓   70 [chromium] › e2e/regression-r15-solid-buttons.spec.ts:20:5 › r15 87 the admin Bracket's unrecorded Heat has a solid Record result button, and the whole card is one tap target (3.1s)
+  ✓   65 [chromium] › e2e/regression-r15-heats-advancers.spec.ts:28:5 › r15 84 a recorded Heat of 4 with 2 advancing highlights both advancers in admin (10.1s)
+  ✓   66 [chromium] › e2e/regression-r15-history-chrome.spec.ts:26:5 › r15 88 History and a Category page wear the current War Week's nav, tab bar and theme (1.5s)
+  ✓   67 [chromium] › e2e/regression-r15-nav-centre.spec.ts:9:7 › r15 86 the top nav is centred at 1280 wide on XI and XII (869ms)
+  ✓   68 [chromium] › e2e/regression-r15-nav-centre.spec.ts:9:7 › r15 86 the top nav is centred at 1024 wide on XI and XII (884ms)
+  ✓   69 [chromium] › e2e/regression-r15-nav-centre.spec.ts:38:5 › r15 86 at 390 wide the header keeps the brand left and the account menu right (684ms)
+  ✓   70 [chromium] › e2e/regression-r15-solid-buttons.spec.ts:20:5 › r15 87 the admin Bracket's unrecorded Heat has a solid Record result button, and the whole card is one tap target (3.0s)
   ✓   71 [chromium] › e2e/regression-r18-competition-page.spec.ts:168:7 › r18 101 a Placement Competition's setting autosaves, survives reload and leaving, and locks with its reason once it has a result (3.4s)
   ✓   72 [chromium] › e2e/regression-r18-competition-page.spec.ts:168:7 › r18 101 a Head-to-head Competition's setting autosaves, survives reload and leaving, and locks with its reason once it has a result (6.7s)
-  ✓   73 [chromium] › e2e/regression-r18-competition-page.spec.ts:168:7 › r18 101 a Best score Competition's setting autosaves, survives reload and leaving, and locks with its reason once it has a result (4.8s)
+  ✓   73 [chromium] › e2e/regression-r18-competition-page.spec.ts:168:7 › r18 101 a Best score Competition's setting autosaves, survives reload and leaving, and locks with its reason once it has a result (5.0s)
   ✓   74 [chromium] › e2e/regression-r18-competition-page.spec.ts:168:7 › r18 101 a Bracket Competition's setting autosaves, survives reload and leaving, and locks with its reason once it has a result (2.9s)
   ✓   75 [chromium] › e2e/regression-r18-competition-page.spec.ts:168:7 › r18 101 a Participation Competition's setting autosaves, survives reload and leaving, and locks with its reason once it has a result (3.1s)
   ✓   76 [chromium] › e2e/regression-r18-competition-page.spec.ts:225:5 › r18 101 a new Competition with no result changes Format, Placement → Bracket → Head-to-head, and each Format's settings and run area appear (4.4s)
   ✓   77 [chromium] › e2e/regression-r18-competition-page.spec.ts:295:5 › r18 101 a Host edits their Competition's settings, sees Hosts as names only, and the page holds no email but their own (2.0s)
   ✓   78 [chromium] › e2e/regression-r18-description.spec.ts:22:5 › r18 103 an Organizer writes a heading, a list, a link and an image by URL in a Competition's description; the Participant page renders them (2.8s)
-  ✓   79 [chromium] › e2e/regression-r18-games-admin.spec.ts:27:5 › r18 104 a Host logs, edits and deletes a Best score Game from admin, and the Competition leaderboard follows (5.1s)
+  ✓   79 [chromium] › e2e/regression-r18-games-admin.spec.ts:27:5 › r18 104 a Host logs, edits and deletes a Best score Game from admin, and the Competition leaderboard follows (4.9s)
   ✓   80 [chromium] › e2e/regression-r18-hosts.spec.ts:27:5 › r18 102 an Organizer picks two Hosts by name from the roster, and a picked Host records a result (3.4s)
-  ✓   81 [chromium] › e2e/regression-r5.spec.ts:54:5 › r5 30 admin header and section bar on a phone (2.3s)
-  ✓   82 [chromium] › e2e/regression-r5.spec.ts:242:5 › r5 34 admin controls are 44px on a phone (1.7s)
-  ✓   83 [chromium] › e2e/regression-r5.spec.ts:372:5 › r5 35 selects and the color picker on a phone (2.1s)
-Teams & roster at 375px: 9671px tall
-Competitions at 375px: 2356px tall
-  ✓   84 [chromium] › e2e/regression-r5.spec.ts:513:5 › r5 31 setup rows open in a Sheet (4.5s)
+  ✓   81 [chromium] › e2e/regression-r19-list.spec.ts:81:5 › r19 105 the Competitions list shows each status, a two-line preview and no max badge at 1440 and 390 (788ms)
+  ✓   82 [chromium] › e2e/regression-r19-scale.spec.ts:84:5 › r19 106 the live XI demo's roster and leaderboard with 101 Participants in Teams at 1440 and 390 (1.3s)
+
+> war-weeker@0.1.0 seed:demo:scale /Users/paulmacfarlane/Code/jg-war-week
+> tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/ix.json seeds/x.json seeds/xi.json seeds/demo/xii-scale.json && tsx scripts/seed-scale.ts
+
+Loaded War Week i (reset)
+Loaded War Week ii (reset)
+Loaded War Week iii (reset)
+Loaded War Week iv (reset)
+Loaded War Week v (reset)
+Loaded War Week vi (reset)
+Loaded War Week vii (reset)
+Loaded War Week viii (reset)
+Loaded War Week ix (reset)
+Loaded War Week x (reset)
+Loaded War Week xi (reset)
+Loaded War Week xii (reset)
+(node:9680) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Applied the XII scale fixture
+  ✓   83 [chromium] › e2e/regression-r19-scale.spec.ts:124:7 › 100 Participants in the XII scale demo › r19 106 the roster lists all 100 at 1440 and 390 (837ms)
+  ✓   84 [chromium] › e2e/regression-r19-scale.spec.ts:141:7 › 100 Participants in the XII scale demo › r19 106 the Standings and leaderboard at 1440 and 390 (890ms)
 [WebServer] ⨯ Error: The destination stream closed early.
 [WebServer]     at ignore-listed frames {
-[WebServer]   digest: '1720613918'
+[WebServer]   digest: '3680567621'
 [WebServer] }
-  ✓   85 [chromium] › e2e/regression-r5.spec.ts:697:5 › r5 32 admin lists fit a phone; free-for-all drops Team (3.0s)
-  ✓   86 [chromium] › e2e/regression-r5.spec.ts:870:5 › r5 33 Reset to derived is a 44px target on a phone (271ms)
-  ✓   87 [chromium] › e2e/regression-r5.spec.ts:889:5 › r5 38 Escape keeps chosen Entrants; Tree shows Recorded <time>; Format help (2.8s)
-  ✓   88 [chromium] › e2e/regression-r5.spec.ts:1003:5 › r5 epic admin pages at 375 and 1280, as Organizer and Host (4.4s)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓   85 [chromium] › e2e/regression-r19-scale.spec.ts:163:7 › 100 Participants in the XII scale demo › r19 106 the Placement sheet, Entrants and Participation ticks at 1440 and 390 (3.0s)
+  ✓   86 [chromium] › e2e/regression-r19-scale.spec.ts:223:7 › 100 Participants in the XII scale demo › r19 106 a picker finds a Participant by name and by email, all 100 with no cap (1.0s)
+  ✓   87 [chromium] › e2e/regression-r19-scale.spec.ts:257:7 › 100 Participants in the XII scale demo › r19 106 the Awards recipient picker finds a Participant by email (508ms)
+  ✓   88 [chromium] › e2e/regression-r19-scale.spec.ts:274:7 › 100 Participants in the XII scale demo › r19 106 the 64-Entrant Bracket tree at 1440 and 390, scrolling inside its own region (671ms)
+
+> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week
+> tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xii.json seeds/demo/xi.json
+
+Loaded War Week i (reset)
+Loaded War Week ii (reset)
+Loaded War Week iii (reset)
+Loaded War Week iv (reset)
+Loaded War Week ix (reset)
+Loaded War Week v (reset)
+Loaded War Week vi (reset)
+Loaded War Week vii (reset)
+Loaded War Week viii (reset)
+Loaded War Week x (reset)
+Loaded War Week xii (reset)
+Loaded War Week xi (reset)
+  ✓   89 [chromium] › e2e/regression-r19-scale.spec.ts:296:7 › 100 Participants in the XII scale demo › r19 106 the Finale's Standings slide at 1440 and 390 (17.5s)
+  ✓   90 [chromium] › e2e/regression-r5.spec.ts:54:5 › r5 30 admin header and section bar on a phone (2.5s)
+  ✓   91 [chromium] › e2e/regression-r5.spec.ts:242:5 › r5 34 admin controls are 44px on a phone (1.7s)
+  ✓   92 [chromium] › e2e/regression-r5.spec.ts:372:5 › r5 35 selects and the color picker on a phone (2.2s)
+Teams & roster at 375px: 9671px tall
+Competitions at 375px: 2356px tall
+  ✓   93 [chromium] › e2e/regression-r5.spec.ts:513:5 › r5 31 setup rows open in a Sheet (4.6s)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓   94 [chromium] › e2e/regression-r5.spec.ts:697:5 › r5 32 admin lists fit a phone; free-for-all drops Team (2.8s)
+  ✓   95 [chromium] › e2e/regression-r5.spec.ts:870:5 › r5 33 Reset to derived is a 44px target on a phone (308ms)
+  ✓   96 [chromium] › e2e/regression-r5.spec.ts:889:5 › r5 38 Escape keeps chosen Entrants; Tree shows Recorded <time>; Format help (2.6s)
+  ✓   97 [chromium] › e2e/regression-r5.spec.ts:1003:5 › r5 epic admin pages at 375 and 1280, as Organizer and Host (4.5s)
 r5 37 stored body: {"type":"doc","content":[{"type":"paragraph","content":[{"text":"Doors open at nine.","type":"text"}]}]}
 r5 37 pinned card at 375 on /xi: 112px
 r5 37 pinned card at 375 on /xi/announcements: 112px
 r5 37 pinned video card at 375 on /xi: 325px
 r5 37 pinned video card at 375 on /xi/announcements: 325px
-  ✓   89 [chromium] › e2e/regression-r5.spec.ts:1060:5 › r5 37 pinned Announcement card fits its content (2.3s)
-  ✓   90 [chromium] › e2e/regression-r6.spec.ts:51:5 › r6 39 a refusal toast clears the section bar, and keeps Sonner's offset from md (5.2s)
-  ✓   91 [chromium] › e2e/regression-r8.spec.ts:18:5 › r8 50 the date range picker stays open until Done, then the range saves itself (1.7s)
-  ✓   92 [chromium] › e2e/regression-r9-account.spec.ts:39:9 › 55 account menu › Organizer: participant and admin headers show only the avatar, menu has every item at 390 (555ms)
-  ✓   93 [chromium] › e2e/regression-r9-account.spec.ts:96:9 › 55 account menu › a plain Participant has no Admin item at 390 (827ms)
-  ✓   94 [chromium] › e2e/regression-r9-account.spec.ts:39:9 › 55 account menu › Organizer: participant and admin headers show only the avatar, menu has every item at 1440 (586ms)
-  ✓   95 [chromium] › e2e/regression-r9-account.spec.ts:96:9 › 55 account menu › a plain Participant has no Admin item at 1440 (859ms)
-  ✓   96 [chromium] › e2e/regression-r9-account.spec.ts:123:7 › 55 account menu › Home no longer has a Slack button, and More has no Admin, Display or account rows (272ms)
-  ✓   97 [chromium] › e2e/regression-r9-account.spec.ts:143:7 › 55 account menu › keyboard: Enter opens, arrows move, Escape closes and returns focus (416ms)
-  ✓   98 [chromium] › e2e/regression-r9-home.spec.ts:18:5 › r9 56 Home shows Recent results newest first, one row per Discretionary entry (1.2s)
-  ✓   99 [chromium] › e2e/regression-r9-lists.spec.ts:58:7 › 58 one Edit and Delete pattern for every admin list › every admin list shows Edit and Delete per row at 390 and 1440 (3.9s)
-  ✓  100 [chromium] › e2e/regression-r9-lists.spec.ts:102:7 › 58 one Edit and Delete pattern for every admin list › edit and delete a Participant and a Schedule Item through the row buttons (2.1s)
-  ✓  101 [chromium] › e2e/regression-r9-lists.spec.ts:220:7 › 58 one Edit and Delete pattern for every admin list › the old Schedule Item, FAQ and Award pages land on their lists (574ms)
-  ✓  102 [chromium] › e2e/regression-r9-nav.spec.ts:17:7 › 54 Competitions in the main nav › phone tab bar order, highlighting and Announcements in More (467ms)
-  ✓  103 [chromium] › e2e/regression-r9-nav.spec.ts:59:7 › 54 Competitions in the main nav › desktop top nav order and highlighting (202ms)
-  ✓  104 [chromium] › e2e/regression-r9-settings.spec.ts:33:5 › r9 59-1 a Story Theme change saves itself and survives a reload (1.7s)
-  ✓  105 [chromium] › e2e/regression-r9-settings.spec.ts:60:5 › r9 59-2 a bad Slack URL shows its error at the field and isn't saved; other fields still save (2.7s)
-  ✓  106 [chromium] › e2e/regression-r9-settings.spec.ts:108:5 › r9 59-3 a value stored after the page loaded survives another field's save (1.6s)
-  ✓  107 [chromium] › e2e/regression-r9-settings.spec.ts:141:5 › r9 59-4 leaving Settings with a refused field asks first; Cancel stays (2.0s)
-  ✓  108 [chromium] › e2e/sign-in.spec.ts:5:5 › an anonymous visit to /xi lands on /sign-in (227ms)
-  ✓  109 [chromium] › e2e/sign-in.spec.ts:20:5 › a session with a non-JG email is refused /xi (241ms)
-  ✓  110 [chromium] › e2e/sign-in.spec.ts:38:5 › a JG session opens /xi (658ms)
-  ✓  111 [chromium] › e2e/test-sign-in.spec.ts:37:9 › 62 Test sign-in › signs in as a linked + alias: You on the roster, the banner on every page, at 390 (592ms)
-  ✓  112 [chromium] › e2e/test-sign-in.spec.ts:37:9 › 62 Test sign-in › signs in as a linked + alias: You on the roster, the banner on every page, at 1440 (619ms)
-  ✓  113 [chromium] › e2e/test-sign-in.spec.ts:76:7 › 62 Test sign-in › refuses a wrong secret and stays signed out (282ms)
-  ✓  114 [chromium] › e2e/theme.spec.ts:116:7 › Display: Light, Dark and System › XI (dark base) follows the account menu's Display, across reloads and the system setting (2.7s)
-  ✓  115 [chromium] › e2e/theme.spec.ts:166:7 › Display: Light, Dark and System › VII (light base) follows it in reverse (1.4s)
-  ✓  116 [chromium] › e2e/theme.spec.ts:196:5 › a stored Dark applies before any client JavaScript loads: no flash (727ms)
-  ✓  117 [chromium] › e2e/theme.spec.ts:225:5 › every themed surface follows the Display: the Finale, the Archive, /about, /privacy, /terms, sign-in and /admin (2.2s)
-  ✓  118 [chromium] › e2e/theme.spec.ts:331:5 › Setup: the other scheme's colors are derived, overridable and reset; an untouched form stores no override (5.6s)
+  ✓   98 [chromium] › e2e/regression-r5.spec.ts:1060:5 › r5 37 pinned Announcement card fits its content (2.4s)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓   99 [chromium] › e2e/regression-r6.spec.ts:51:5 › r6 39 a refusal toast clears the section bar, and keeps Sonner's offset from md (5.2s)
+  ✓  100 [chromium] › e2e/regression-r8.spec.ts:18:5 › r8 50 the date range picker stays open until Done, then the range saves itself (1.8s)
+  ✓  101 [chromium] › e2e/regression-r9-account.spec.ts:39:9 › 55 account menu › Organizer: participant and admin headers show only the avatar, menu has every item at 390 (562ms)
+  ✓  102 [chromium] › e2e/regression-r9-account.spec.ts:96:9 › 55 account menu › a plain Participant has no Admin item at 390 (871ms)
+  ✓  103 [chromium] › e2e/regression-r9-account.spec.ts:39:9 › 55 account menu › Organizer: participant and admin headers show only the avatar, menu has every item at 1440 (677ms)
+  ✓  104 [chromium] › e2e/regression-r9-account.spec.ts:96:9 › 55 account menu › a plain Participant has no Admin item at 1440 (881ms)
+  ✓  105 [chromium] › e2e/regression-r9-account.spec.ts:123:7 › 55 account menu › Home no longer has a Slack button, and More has no Admin, Display or account rows (253ms)
+  ✓  106 [chromium] › e2e/regression-r9-account.spec.ts:143:7 › 55 account menu › keyboard: Enter opens, arrows move, Escape closes and returns focus (422ms)
+  ✓  107 [chromium] › e2e/regression-r9-home.spec.ts:18:5 › r9 56 Home shows Recent results newest first, one row per Discretionary entry (1.2s)
+  ✓  108 [chromium] › e2e/regression-r9-lists.spec.ts:58:7 › 58 one Edit and Delete pattern for every admin list › every admin list shows Edit and Delete per row at 390 and 1440 (4.1s)
+  ✓  109 [chromium] › e2e/regression-r9-lists.spec.ts:102:7 › 58 one Edit and Delete pattern for every admin list › edit and delete a Participant and a Schedule Item through the row buttons (2.2s)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓  110 [chromium] › e2e/regression-r9-lists.spec.ts:220:7 › 58 one Edit and Delete pattern for every admin list › the old Schedule Item, FAQ and Award pages land on their lists (605ms)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓  111 [chromium] › e2e/regression-r9-nav.spec.ts:17:7 › 54 Competitions in the main nav › phone tab bar order, highlighting and Announcements in More (489ms)
+  ✓  112 [chromium] › e2e/regression-r9-nav.spec.ts:59:7 › 54 Competitions in the main nav › desktop top nav order and highlighting (207ms)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3680567621'
+[WebServer] }
+  ✓  113 [chromium] › e2e/regression-r9-settings.spec.ts:33:5 › r9 59-1 a Story Theme change saves itself and survives a reload (1.8s)
+  ✓  114 [chromium] › e2e/regression-r9-settings.spec.ts:60:5 › r9 59-2 a bad Slack URL shows its error at the field and isn't saved; other fields still save (2.7s)
+  ✓  115 [chromium] › e2e/regression-r9-settings.spec.ts:108:5 › r9 59-3 a value stored after the page loaded survives another field's save (1.6s)
+  ✓  116 [chromium] › e2e/regression-r9-settings.spec.ts:141:5 › r9 59-4 leaving Settings with a refused field asks first; Cancel stays (2.0s)
+  ✓  117 [chromium] › e2e/sign-in.spec.ts:5:5 › an anonymous visit to /xi lands on /sign-in (249ms)
+  ✓  118 [chromium] › e2e/sign-in.spec.ts:20:5 › a session with a non-JG email is refused /xi (236ms)
+  ✓  119 [chromium] › e2e/sign-in.spec.ts:38:5 › a JG session opens /xi (668ms)
+  ✓  120 [chromium] › e2e/test-sign-in.spec.ts:37:9 › 62 Test sign-in › signs in as a linked + alias: You on the roster, the banner on every page, at 390 (604ms)
+  ✓  121 [chromium] › e2e/test-sign-in.spec.ts:37:9 › 62 Test sign-in › signs in as a linked + alias: You on the roster, the banner on every page, at 1440 (623ms)
+  ✓  122 [chromium] › e2e/test-sign-in.spec.ts:76:7 › 62 Test sign-in › refuses a wrong secret and stays signed out (284ms)
+  ✓  123 [chromium] › e2e/theme.spec.ts:116:7 › Display: Light, Dark and System › XI (dark base) follows the account menu's Display, across reloads and the system setting (2.7s)
+  ✓  124 [chromium] › e2e/theme.spec.ts:166:7 › Display: Light, Dark and System › VII (light base) follows it in reverse (1.5s)
+  ✓  125 [chromium] › e2e/theme.spec.ts:196:5 › a stored Dark applies before any client JavaScript loads: no flash (706ms)
+  ✓  126 [chromium] › e2e/theme.spec.ts:225:5 › every themed surface follows the Display: the Finale, the Archive, /about, /privacy, /terms, sign-in and /admin (2.3s)
+  ✓  127 [chromium] › e2e/theme.spec.ts:331:5 › Setup: the other scheme's colors are derived, overridable and reset; an untouched form stores no override (5.7s)
 
-  118 passed (5.3m)
-EXIT=0
+  127 passed (6.1m)
+EXIT 0

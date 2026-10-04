@@ -93,6 +93,7 @@ before it says it's done.
 | Participation run area, and its Competition page parts | `src/components/participation-builder.tsx`, `participation-view.tsx`, `check-in-button.tsx` |
 | Award Categories (list, rename, archive, restore) | `src/lib/award-categories.ts`, `src/mutations/award-categories.ts`, `src/components/award-categories-editor.tsx` (on `/admin/awards`) |
 | Awards grouped by Category; a Category through the years | `src/app/[edition]/awards/`, `src/app/history/awards/[id]/`, `src/queries/award-category-history.ts`; the list on `/history` is `src/app/history/(list)/` |
+| The Competitions list's status (Not started, Underway, Closed, Done · Winner) | `src/lib/competition-status.ts` (the one rule, with `*.test.ts`; the list query only loads the facts) |
 | Database schema                            | `src/db/schema.ts`                                                     |
 | Migrations (generated, never hand-edited)  | `drizzle/`                                                             |
 | Seed data, one file per War Week           | `seeds/i.json` … `seeds/xi.json`, the tentative upcoming `seeds/xii.json`; the live XI demo in `seeds/demo/xi.json` |
@@ -380,6 +381,22 @@ staging. It is never on for production (ADR 0008).
   `src/components/delete-account-section.tsx`. A person asking Jason to
   remove them from Host or audit records is outside this button: that is a
   data request for the Jahnel Group admins.
+
+### See the app at scale (100 Participants)
+
+```bash
+pnpm seed:demo:scale
+```
+
+It loads every seed plus the XII scale demo (`seeds/demo/xii-scale.json`:
+100 made-up Participants, free-for-all, with a Finalized 100-row Placement),
+then runs the fixture (`src/seed/scale.ts`) through the app's own
+mutations for what the seed format can't hold: Hosts, a 64-Entrant Bracket
+with 20 Round 1 results, Participation ticks, Head-to-head and Best score
+Games. For Teams at scale, the normal XI demo already has 101 Participants. It refuses
+a database that is not local. Open `/xii`, its leaderboard and Competitions,
+the roster, a Placement sheet and the Bracket tree. Afterwards
+`pnpm seed:demo` puts the normal demo back.
 
 ### Rolling out R10 (migrations 0018 and 0019)
 

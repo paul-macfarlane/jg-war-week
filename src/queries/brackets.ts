@@ -16,7 +16,7 @@ import {
 } from "@/db/schema";
 import { DEFAULT_BRACKET_CONFIG, configOf } from "@/lib/bracket/config";
 import { champion } from "@/lib/bracket/formats";
-import type { Bracket, Entrant, Heat } from "@/lib/bracket/types";
+import type { Bracket, Entrant } from "@/lib/bracket/types";
 import { BRACKET_FORMATS, isBracketFormat } from "@/lib/bracket/view";
 import { isGameFormat } from "@/lib/enums";
 import { isUuid } from "@/lib/uuid";
@@ -201,11 +201,32 @@ export async function loadBracket(
     // champion for a points Competition.
     return { config: DEFAULT_BRACKET_CONFIG, heats: [] };
   }
+  const brackets = await loadBrackets(
+    [{ id: competitionId, bracketConfig: found.bracketConfig }],
+    dbOrTx,
+  );
+  return brackets.get(competitionId)!;
+}
+
+/**
+ * Several Bracket Competitions' Brackets in two queries (their Heats, then
+ * every Heat's slots), by Competition id; a Bracket with no Heats before
+ * Generate. Pass only Competitions of the Bracket Format.
+ */
+export async function loadBrackets(
+  competitions: Pick<Competition, "id" | "bracketConfig">[],
+  dbOrTx: DBOrTx = db,
+): Promise<Map<string, Bracket>> {
+  const brackets = new Map<string, Bracket>(
+    competitions.map((c) => [c.id, { config: configOf(c), heats: [] }]),
+  );
+  if (competitions.length === 0) return brackets;
   // An explicit list: the reporter columns (an email among them) are never
   // read into a Bracket, which feeds pages and MCP.
   const heats = await dbOrTx
     .select({
       id: heat.id,
+      competitionId: heat.competitionId,
       round: heat.round,
       position: heat.position,
       status: heat.status,
@@ -218,7 +239,12 @@ export async function loadBracket(
       recordedAt: heat.recordedAt,
     })
     .from(heat)
-    .where(eq(heat.competitionId, competitionId))
+    .where(
+      inArray(
+        heat.competitionId,
+        competitions.map((c) => c.id),
+      ),
+    )
     .orderBy(asc(heat.round), asc(heat.position));
   const slots = heats.length
     ? await dbOrTx
@@ -231,9 +257,9 @@ export async function loadBracket(
           ),
         )
     : [];
-  return {
-    config: configOf(found),
-    heats: heats.map((row): Heat => ({
+  const slotOf = new Map(slots.map((s) => [`${s.heatId}:${s.slot}`, s]));
+  for (const row of heats) {
+    brackets.get(row.competitionId)?.heats.push({
       id: row.id,
       round: row.round,
       position: row.position,
@@ -249,15 +275,16 @@ export async function loadBracket(
       thirdPlace: row.thirdPlace,
       recordedAt: row.recordedAt,
       slots: Array.from({ length: row.slotCount }, (_, slot) => {
-        const found = slots.find((s) => s.heatId === row.id && s.slot === slot);
+        const found = slotOf.get(`${row.id}:${slot}`);
         return {
           entrantId: found?.entrantId ?? null,
           place: found?.place ?? null,
           score: found?.score ?? null,
         };
       }),
-    })),
-  };
+    });
+  }
+  return brackets;
 }
 
 /**

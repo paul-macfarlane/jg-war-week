@@ -48,6 +48,16 @@ import {
 } from "@/lib/awards";
 import type { AwardFormOptions } from "@/queries/awards";
 
+/**
+ * The form's options: the query's, plus each Participant's `email`, for the
+ * picker's search only, which only the Organizer-only Awards page adds.
+ */
+export type AwardFormPickerOptions = Omit<AwardFormOptions, "participants"> & {
+  participants: (AwardFormOptions["participants"][number] & {
+    email?: string;
+  })[];
+};
+
 /** Base UI's Select won't accept `""` as an item value. */
 const NO_TEAM = "none";
 
@@ -74,7 +84,7 @@ export function AwardForm({
   initial?: AwardInput;
   /** The Award's Category when editing; an archived one stays selectable. */
   currentCategory?: { id: string; name: string; archived: boolean } | null;
-  options: AwardFormOptions;
+  options: AwardFormPickerOptions;
   /** The War Week's Team Label, e.g. "House". */
   teamLabel: string;
   /** The War Week's Mode: a free-for-all has no Team field. */
@@ -117,6 +127,7 @@ export function AwardForm({
     id: p.id,
     label: p.name,
     detail: p.team ?? undefined,
+    keywords: p.email,
   }));
 
   // Validation runs on the server; a refusal names its fields. Every field

@@ -18,6 +18,7 @@
     "seed:all": "tsx scripts/seed-load.ts seeds/*.json",
     "seed:demo": "tsx scripts/seed-load.ts --reset seeds/xii.json seeds/demo/xi.json",
     "seed:demo:xii": "tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/ix.json seeds/x.json seeds/xi.json seeds/demo/xii.json",
+    "seed:demo:scale": "tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/ix.json seeds/x.json seeds/xi.json seeds/demo/xii-scale.json && tsx scripts/seed-scale.ts",
     "smoke": "tsx scripts/smoke/index.ts",
     "stills:finale": "tsx scripts/finale-stills.ts",
     "e2e": "playwright test",

@@ -55,6 +55,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **FAQ Item**                  | A question and answer pair for a War Week.                                                                                        |
 | **Archive**                   | The past War Weeks shown at `/history`.                                                                                           |
 | **Recent results**            | Home's section of the latest results: finalized Brackets, finalized Placements, closed Head-to-head, Best score and Participation Competitions and Discretionary points, newest first, up to 5. |
+| **Competition status**        | The label on each row of the Participant Competitions list (`src/lib/competition-status.ts`): **Not started** (no result yet); **Underway**, with a Bracket's "Round N of M" or "Final"; **Closed** (a Head-to-head, Best score or Participation Competition closed with no 1st place; an individual Participation Competition always); **Done · Winner: X** (Finalized, or Closed with a 1st place; a tie lists every winner as "Winners: A, B"; a Finalized Placement or Bracket with no Placement Points is "Done" with no winner). |
 | **Format**                    | How a Competition is run, one of five: **Placement** (one result recorded on a sheet), **Head-to-head** and **Best score** (decided by Games players log, once or recurring), **Participation** (decided by who took part, ticked by the Host or checked in by the Participants themselves), or **Bracket** (a tournament: Entrants play Heats, Round after Round, to a final). "Single elimination" and "Heats" are retired as Format names: a Bracket is one Format, and a head-to-head knockout is just a Bracket of 2 per Heat with 1 advancing. Chosen when the Competition is created, and changeable between any Formats until the Competition has a result. |
 | **Placement** (Format)        | A Competition whose one result is recorded on one sheet, with no Games and no Bracket. A new Competition starts as one.            |
 | **Placement** (row)           | A Team's or Participant's row on a Placement sheet: a **Place** (1, 2, 3…, or none yet) and an optional **Score**. Ties share a Place.  |
@@ -160,7 +161,9 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   Participant, that Participant is You; otherwise nobody is. There is no
   self-pick. The roster admin shows "No email: won't be linked when they sign
   in" on a Participant row without an email. Participant emails never reach
-  the client, only the matched id. Past editions use their own roster.
+  a Participant's or Host's page, only the matched id; the Organizer-only
+  Discretionary points and Award pickers match a Participant's email in
+  their search without showing it. Past editions use their own roster.
 - **The Team shows in team events.** In a teams War Week, wherever a
   Participant appears in a Competition or scoring context (Standings,
   Brackets and Heats, Placements, Games, Recent results, Points Entry ledgers, Awards,

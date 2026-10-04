@@ -21,6 +21,11 @@ export type EntityComboboxItem = {
   label: string;
   /** Shown muted next to the label, and included in the search. */
   detail?: string;
+  /**
+   * Included in the search but never shown: a Participant's email, on an
+   * Organizer-only picker (emails never reach a Participant's or Host's page).
+   */
+  keywords?: string;
   /** Shown but not selectable. */
   disabled?: boolean;
 };
@@ -54,12 +59,12 @@ type MultipleProps = CommonProps & {
 
 export type EntityComboboxProps = SingleProps | MultipleProps;
 
-function fitsQuery(item: EntityComboboxItem, query: string) {
+/** Whether the item matches the typed query: a substring of its label, detail or keywords, ignoring case. */
+export function fitsQuery(item: EntityComboboxItem, query: string) {
   const needle = query.trim().toLowerCase();
   if (!needle) return true;
-  return (
-    item.label.toLowerCase().includes(needle) ||
-    (item.detail ?? "").toLowerCase().includes(needle)
+  return [item.label, item.detail, item.keywords].some((text) =>
+    (text ?? "").toLowerCase().includes(needle),
   );
 }
 
@@ -90,7 +95,8 @@ function EntityComboboxItemRow({ item }: { item: EntityComboboxItem }) {
 
 /**
  * A searchable combobox over Teams, Participants, or Competitions. Filters
- * by a case-insensitive substring of the label or detail. In single mode it
+ * by a case-insensitive substring of the label, detail or keywords, with no
+ * cap on how many it lists. In single mode it
  * behaves like a themed select; in multiple mode selections show as
  * removable chips.
  */

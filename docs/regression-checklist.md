@@ -623,12 +623,25 @@ that nothing personal shows (no You highlight, no Log a Game).
 - [ ] **Competitions.** `/<edition>/competitions` lists every Competition;
       when there are Groups the Group tabs wrap onto more lines instead of
       scrolling sideways, and every tab (Other Competitions too) shows at
-      390.
+      390. Each row shows its status: Not started, Underway (a Bracket adds
+      "Round N of M" or "Final"), Closed, or Done · Winner: X (a tie reads
+      "Winners: A, B"; a Finalized Placement or Bracket with no Placement
+      Points is just Done), a description preview of two lines at most, and
+      no max-points badge.
       Open one of each Format: a Placement Competition shows its
       Placements (place, name, Score, points; a Participant can't edit); a Bracket shows the one tree (no List toggle; at 390 it
       scrolls sideways in its own region) and its champion once finalized; a Head-to-head or Best score Competition
       shows its leaderboard with that Format's columns and the Game log
       newest first, with the "Mine" filter.
+- [ ] **Scale: 100 Participants.** Run `pnpm seed:demo:scale`, then
+      `pnpm seed:demo` when done. At both viewports: the admin roster lists all
+      100 Participants and `/xii/leaderboard` everyone with points, with no
+      sideways scroll; a
+      Placement sheet lists its rows with names wrapping (not truncating)
+      at 390; the 64-Entrant Bracket tree scrolls sideways only in its own
+      "Rounds" region; as an Organizer, the Discretionary points and Award
+      pickers find a Participant by email (never shown) with no cap on the
+      list.
 - [ ] **Teams show in team events.** *(teams)* Wherever a Participant
   appears in a Competition or scoring context (individual Standings, a
   Bracket's entrants and Heat results, the Games leaderboard and Game log,

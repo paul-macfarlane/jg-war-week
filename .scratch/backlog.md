@@ -16,7 +16,7 @@ October Competition feedback, grilled 2026-10-03 ([`regression-2026-10/spec.md`]
 - [ ] **Epic R16, the Competition model**: Placement replaces `points` (90), Discretionary points (91), no Max Points (92), Head-to-head and Best score as Formats (93), Participation follows scoring (94), Placement Points without a limit (95); one work package with one migration, seed conversion, full gate and a staging/prod reset (96 folded in). [`regression-2026-10/epics/R16`](./regression-2026-10/epics/R16-competition-model.md) (`ready-for-agent`)
 - [ ] **Epic R17, Brackets**: one Bracket Format (97), 3rd place game up to 4th (98), no seeding by Standings, Forfeit or Time & place (99), one tree for admin and Participants (100). After R16. [`regression-2026-10/epics/R17`](./regression-2026-10/epics/R17-brackets.md) (`done`; PR into `staging` awaiting review)
 - [ ] **Epic R18, the admin Competition page**: one autosaving page (101), Hosts from the roster (102), rich-text description (103), Log a Game from admin (104). After R17; red-team pass 1 resolved. [`regression-2026-10/epics/R18`](./regression-2026-10/epics/R18-admin-competition-page.md) (`done`; PR into `staging` awaiting review)
-- [ ] **Epic R19, Participant list and scale**: list status, Winner and description (105), 100 Participants (106). After R18. [`regression-2026-10/epics/R19`](./regression-2026-10/epics/R19-participant-list-and-scale.md) (`ready-for-agent`)
+- [ ] **Epic R19, Participant list and scale**: list status, Winner and description (105), 100 Participants (106). After R18. [`regression-2026-10/epics/R19`](./regression-2026-10/epics/R19-participant-list-and-scale.md) (`done`; [PR #131](https://github.com/paul-macfarlane/jg-war-week/pull/131) into `staging` awaiting review)
 
 Done: Epics R9–R14 (`regression-2026-09`, PRs through #122).
 
@@ -26,7 +26,12 @@ Done: Epics R9–R14 (`regression-2026-09`, PRs through #122).
 
 ## Needs a decision, info or grilling before a plan
 
-
+- [ ] **Search by email on Host pickers**: Placement, Entrants, Games and Who took part search names only; emails never reach a Host's page today. [`regression-2026-10/issues/108`](./regression-2026-10/issues/108-host-picker-email-search.md) (`needs-triage`)
+- [ ] **Roster admin at 100 Participants**: one long list, no search, actions below the last row. [`regression-2026-10/issues/109`](./regression-2026-10/issues/109-roster-at-a-hundred.md) (`needs-triage`)
+- [ ] **Bracket admin at 64 Entrants**: every Entrant listed three times before the tree. [`regression-2026-10/issues/110`](./regression-2026-10/issues/110-bracket-admin-at-sixty-four.md) (`needs-triage`)
+- [ ] **Bracket tree at 64 Entrants**: narrow on desktop, 4,700 px tall, no jump to your Heat. [`regression-2026-10/issues/111`](./regression-2026-10/issues/111-bracket-tree-at-sixty-four.md) (`needs-triage`)
+- [ ] **Admin bottom bar with a wide font**: "More" clipped at 390 in XI's monospace preset. [`regression-2026-10/issues/112`](./regression-2026-10/issues/112-admin-bottom-bar-wide-font.md) (`needs-triage`)
+- [ ] **Finale Standings with many scorers**: rows below the screen never show; the countdown runs a second a row. [`regression-2026-10/issues/113`](./regression-2026-10/issues/113-finale-standings-at-scale.md) (`needs-triage`)
 - [ ] **Move to Jahnel Group ownership**: GitHub, Vercel, Neon, the GCP OAuth project, the domain and any other secret or bill; who owns and pays for each, cutover order, whether Paul keeps admin. [`hardening/issues/20`](./hardening/issues/20-transfer-to-jahnel-group-ownership.md) (`needs-triage`)
 - [ ] **Stairs integration**: wayfinder map charted; mirror Stairs climbs so Hosts can score a stair Competition without re-typing. Work the frontier tickets. [`stairs/map`](./stairs/map.md)
 - [ ] **Beytopia integration**: read beyblade rip results instead of re-entering them; needs owner, access and an API or export. [`beytopia/issues/01`](./beytopia/issues/01-beytopia-integration.md) (`needs-info`)
