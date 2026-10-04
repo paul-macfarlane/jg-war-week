@@ -90,6 +90,18 @@ describe("rankAttempts, team", () => {
     ]);
   });
 
+  it("Sum of members adds to the Score's 3 decimals, so 0.1 + 0.2 ties 0.3", () => {
+    const rows = rankAttempts(sum, "team", [
+      attempt("ana", "red", 0.1),
+      attempt("dee", "red", 0.2),
+      attempt("ben", "blue", 0.3),
+    ]);
+    expect(rows.map((r) => [r.id, r.rank, r.total])).toEqual([
+      ["blue", 1, 0.3],
+      ["red", 1, 0.3],
+    ]);
+  });
+
   it("counts an Attempt for the Team it was credited to, and none on no Team", () => {
     const rows = rankAttempts(higher, "team", [
       attempt("ana", "blue", 9),

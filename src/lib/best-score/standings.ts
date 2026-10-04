@@ -81,10 +81,15 @@ export function rankAttempts(
   const sum = sumsMembers(scoring, settings);
   for (const row of rows.values()) {
     if (!sum) continue;
-    row.total = [...(memberBest.get(row.id)?.values() ?? [])].reduce(
-      (a, b) => a + b,
-      0,
-    );
+    // Rounded to the Score's 3 decimals (numeric(12,3)), so float error
+    // never splits a tie: 0.1 + 0.2 is 0.3.
+    row.total =
+      Math.round(
+        [...(memberBest.get(row.id)?.values() ?? [])].reduce(
+          (a, b) => a + b,
+          0,
+        ) * 1000,
+      ) / 1000;
     row.best = null;
   }
   return rankRows(
