@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 
 import type { DBTx } from "@/db";
+import { insertHosts } from "@/db/test-hosts";
 
 export const NEO = "neo@jahnelgroup.com";
 export const TRINITY = "trinity@jahnelgroup.com";
@@ -61,7 +62,7 @@ export async function loggedFixture(tx: DBTx) {
       { warWeekId, displayName: "Trinity", email: TRINITY, teamId: blue.id },
       { warWeekId, displayName: "Morpheus", email: MORPHEUS, teamId: red.id },
       { warWeekId, displayName: "Cypher", teamId: blue.id },
-      { warWeekId, displayName: "Dozer" },
+      { warWeekId, displayName: "Dozer", email: HOST },
     ])
     .returning({ id: schema.participant.id });
   const [smith] = await tx
@@ -127,7 +128,8 @@ export async function loggedFixture(tx: DBTx) {
     { competitionId: relay.id, teamId: red.id, seedPosition: 1 },
     { competitionId: relay.id, teamId: blue.id, seedPosition: 2 },
   ]);
-  await tx.insert(schema.competitionHost).values(
+  await insertHosts(
+    tx,
     [pong.id, relay.id, bowl.id, stairs.id].map((competitionId) => ({
       competitionId,
       email: HOST,

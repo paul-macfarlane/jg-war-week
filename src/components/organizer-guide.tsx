@@ -27,10 +27,9 @@ export function OrganizerGuide({
       "The War Week's Days with their Day Themes and short descriptions, and each Day's Schedule Items.",
     Roster: `${teamLabel}s, Participants and ${leaderTitle}s, with Import from a sheet or CSV.`,
     Announcements: "Post, pin and edit Announcements.",
-    Awards: `Give Awards to a ${teamLower} or to Participants, and manage the Award Categories that group them.`,
+    Awards: `Give Awards to a ${teamLower} or to Participants, and add one from a preset name.`,
     FAQ: "FAQ Items and their order on the public FAQ.",
-    Finale:
-      "Open the Finale, and each closed Bracket's Finale, on the projector.",
+    Finale: "Open the Finale on the projector, and order or hide its slides.",
     Settings:
       "Story Theme, dates, mode, labels, links and the Appearance Theme; the Lifecycle box (Start, End, Unstart, Reopen) and Create next War Week.",
     Organizers: "Who the Organizers are.",
@@ -91,8 +90,8 @@ export function OrganizerGuide({
           Week and Sign out are in the account menu (your initials, top right).
         </p>
         <p className="text-foreground/70">
-          A Host sees Competitions, Schedule, Announcements, Finale and Guide;
-          the other pages are for Organizers.
+          A Host sees only the Competitions they host and the Guide; the other
+          pages are for Organizers.
         </p>
       </section>
 
@@ -128,7 +127,8 @@ export function OrganizerGuide({
           yourself included, as long as one Organizer is left.
         </p>
         <p className="text-foreground/70">
-          A Host runs one Competition for you. Assign Hosts on{" "}
+          A Host runs one Competition for you, and is a Participant on the
+          roster. Assign Hosts on{" "}
           <Link
             href="/admin/competitions"
             className="text-primary underline underline-offset-4"
@@ -136,12 +136,15 @@ export function OrganizerGuide({
             Competitions
           </Link>{" "}
           (the Hosts field in each Competition&apos;s Settings, picked from the
-          roster by name). A Host sees only their Competitions in Admin: they
-          record its results, run its Bracket, Matches and Attempts, change its
-          settings and see its Hosts by name, and manage its linked Schedule
-          Items, and can post Announcements. Everything else stays with
-          Organizers. A Schedule Item&apos;s host text is just what the schedule
-          shows; it doesn&apos;t make anyone a Host.
+          roster by name; no email is shown). A Host gets access when they sign
+          in with the email on their roster entry, so add it in Roster if they
+          have none (changing a Participant&apos;s email moves their Host access
+          to whoever owns the new one). A Host sees only the Competitions they
+          host and this Guide in Admin: they record a Competition&apos;s
+          results, run its Bracket, Matches and Attempts, and change its
+          settings. Schedule, Announcements, the Finale and everything else stay
+          with Organizers. A Schedule Item&apos;s host text is just what the
+          schedule shows; it doesn&apos;t make anyone a Host.
         </p>
       </section>
 
@@ -288,20 +291,21 @@ export function OrganizerGuide({
       </section>
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Award Categories</h2>
+        <h2 className="text-lg font-semibold">Awards across years</h2>
         <p className="text-foreground/70">
-          A Category groups Awards across War Weeks (War Week MVP, Grow…).
-          Manage them in the Categories section of{" "}
+          When you add an Award on{" "}
           <Link
             href="/admin/awards"
             className="text-primary underline underline-offset-4"
           >
             Awards
           </Link>
-          : add, rename, archive or restore, never delete. An archived Category
-          stays on its past Awards but can&apos;t be picked for new ones. Pick
-          an Award&apos;s Category in the Award form; the Awards page groups by
-          it, and History shows each Category through the years.
+          , the Preset picker offers every Award name used in any War Week, plus
+          War Week MVP, Billable Hours Champ, Black Midnight, Grow, Grind, Serve
+          and Inspire. Picking one fills in the name and its latest description;
+          both stay editable, and a brand-new name works too. There are no
+          Categories: the same name, ignoring case and punctuation, is what
+          History uses to show an Award through the years.
         </p>
       </section>
 
@@ -324,15 +328,9 @@ export function OrganizerGuide({
           Title, By the numbers, Awards, Winners, the Standings countdown (last
           place to first) and Winner; the countdown plays when you arrive on it,
           and Replay runs it again. On the Finale page you can reorder or hide
-          the slides, add your own Custom slides, and choose whether the Awards
-          are on one slide or one per Category (Hosts see the list but
-          can&apos;t change it). The Finale never changes the Standings, it only
-          plays them.
-        </p>
-        <p className="text-foreground/70">
-          A Closed Bracket has its own Finale: open it from the same page
-          (&quot;Finale:&quot; and the Competition&apos;s name), and press Start
-          to count its placings in to the Winner.
+          the slides, add your own Custom slides (only Organizers open this
+          page). The Awards slide reveals one Award per step. The Finale never
+          changes the Standings, it only plays them.
         </p>
       </section>
 
@@ -356,7 +354,7 @@ export function OrganizerGuide({
           tie, blank when nobody scored, with no way to type a different one —
           and any highlights) before the next can Start. Create next War Week,
           further down Settings, copies what you choose (settings by default;
-          Competitions, with their Hosts, and the FAQ are off) and opens the new
+          Competitions, without Hosts, and the FAQ are off) and opens the new
           edition as upcoming, so you can set it up while this one stays live.
           The End confirm names any Bracket that isn&apos;t closed: close it
           first so its placings count (it warns, it doesn&apos;t stop you). The

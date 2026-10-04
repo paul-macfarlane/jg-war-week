@@ -26,6 +26,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Team Label**                | What teams are called this year (House / Tribe / Team).                                                                           |
 | **Leader** / **Leader Title** | A participant flagged as a team leader, displayed with the year's title (Captain, Head of House). A label only, not a permission. |
 | **Participant**               | A person in a War Week. A record, not a user.                                                                                     |
+| **Participant picker**        | The one control (`ParticipantPicker`) wherever someone chooses a Participant (Hosts, Placement sheet, Entrants, Squads, Attempts, Award recipients, Discretionary points; the Participation list's filter shows the same rows). Each row is avatar, name and, in a teams War Week, Team. It searches the **display name only**, lists every match with no cap, and no option, keyword or page payload carries an email. |
 | **Profile**                   | A person's own Profile name and picture URL, stored once by email (ADR 0007). It overrides the roster name and picture wherever that email is on a roster, in every War Week, past ones too. Set on the Profile page, opened from the Account menu. |
 | **Profile name**              | The name a person sets on their Profile. Empty means the roster name shows. An Organizer's roster form shows a set one read-only, "Set by the person".  |
 | **Avatar**                    | A person's visual marker: their Profile's picture URL (`https://` only), else their Google photo, else their initials in their Team's color. |
@@ -35,8 +36,8 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Test sign-in**              | A maintainer tool at `/sign-in/test` for testing as any `@jahnelgroup.com` address (`+` aliases included) on staging, by typing a secret. Never on production (ADR 0008). |
 | **Company Tag**               | An optional affiliation label on a participant (LTI, IL, …).                                                                      |
 | **Organizer**                 | A signed-in `@jahnelgroup.com` user on the global Organizer list. Can change anything in any War Week (ADR 0002).                 |
-| **Host**                      | A signed-in JG user an Organizer assigns to a Competition ("hosted by Tony M"), **picked from the roster by name** (email beneath), not typed. Runs that Competition; needn't be a Participant. A Schedule Item's free-text `host` field is display copy, not the Host role. |
-| **Admin**                     | The management area at `/admin` that Organizers and Hosts use. A place, never a role: say Organizer or Host for people.           |
+| **Host**                      | A **roster Participant** an Organizer assigns to a Competition of their War Week ("hosted by Tony M"), **picked by name** (no email shown), with or without an email on the roster (ADR 0012). Runs that Competition. Their access is worked out on every request: the session email matches their roster email. A Participant with no email, or a non-@jahnelgroup.com one, can be picked but can't sign in until an Organizer fixes the email. A Schedule Item's free-text `host` field is display copy, not the Host role. |
+| **Admin**                     | The management area at `/admin`. Organizers use all of it; a Host sees only their Competitions and the Guide. A place, never a role: say Organizer or Host for people. |
 | **Competition**               | Anything that awards points. Scored as team or individual. Skill divisions are separate Competitions ("MTG Advanced", "MTG Beginner"). |
 | **Competition Group**         | An optional grouping of competitions ("Team Night Events").                                                                       |
 | **Competition page** (admin)  | A Competition's one admin page, `/admin/competitions/<id>`: its **Settings** on top, each field autosaving, and the Format's **run area** below it (Entrants and the Bracket tree, Entrants and Matches or Attempts with Log a Match / Log an Attempt, Record placements, or who took part, and Close or Reopen). The Competitions list's Edit opens it; Add Competition creates one in a sheet and then opens it. Organizers and that Competition's Hosts use it; a Participant is refused. |
@@ -47,11 +48,11 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Placement Points**          | A Competition's points for 1st, 2nd, 3rd… : an open list, highest first, never increasing, each 0 or more, with any number of places (a Bracket's has at most 4). Close turns a result into Points Entries through it; a place beyond the list earns nothing. A Competition's top prize is its 1st place. |
 | **Counts Toward Team**        | Whether an individual competition's points also go to the participant's team.                                                     |
 | **Standings**                 | The main leaderboard, computed from Points Entries.                                                                               |
-| **Finale**                    | The closing-ceremony slideshow at `/<edition>/finale`: the War Week's **Finale slides**, one full screen at a time, stepped through by the presenter. A closed Bracket has its own **Bracket Finale** at `/<edition>/finale/<competitionId>`. |
+| **Finale**                    | The closing-ceremony slideshow at `/<edition>/finale`: the War Week's **Finale slides**, one full screen at a time, stepped through by the presenter. There is no per-Competition Finale: a Bracket has no Finale of its own. |
 | **Finale slide**              | One full-screen step of the Finale: a built-in (Title, By the numbers, Awards, Winners, **Standings countdown**, Winner) or a **Custom slide**. Each War Week orders and hides its slides in admin → Finale. |
 | **Custom slide**              | An Organizer's own Finale slide: a heading (unique among the War Week's Custom slides), a rich-text body (the editor's images and video by URL) and an optional background color. It's added just before the Standings countdown, then moved, edited, hidden or deleted like any slide; a built-in is hidden, never deleted. Its text colors are overridden so they read on the background. |
 | **Award**                     | A named honor given to participants or a team. It doesn't affect points.                                                          |
-| **Announcement**              | A post by an Organizer or Host (rich text, videos included).                                                                      |
+| **Announcement**              | A post by an Organizer (rich text, videos included).                                                                              |
 | **FAQ Item**                  | A question and answer pair for a War Week.                                                                                        |
 | **Archive**                   | The past War Weeks shown at `/history`.                                                                                           |
 | **Recent results**            | Home's section of the latest results: closed Brackets, closed Placements, closed Head-to-head, Best score and Participation Competitions and Discretionary points, newest first, up to 5. |
@@ -87,7 +88,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Enroll** / **Withdraw**     | A Participant's writes entering or leaving a Bracket themselves, when its "Participants can enroll" switch is on. Only a Bracket has enrollment. |
 | **Participation**             | A Participation Competition: scored by who took part (Black Midnight, a daily workout, HQ attendance). The Host or an Organizer ticks Participants as having **taken part**, and Participants can **Check in** themselves; points land at **Close**. The Format, not a Participant's act. |
 | **Check in** / **Check out**  | A Participant's write saying they took part in a Participation Competition, when its **Self check-in** switch is on (ADR 0009). Check out removes only their own check-in, never a tick the Host made. |
-| **Award Category**            | A global name that groups Awards across War Weeks (War Week MVP, Grow, Black Midnight…). Managed by Organizers at `/admin/awards`; archived, never deleted. An Award has at most one. |
+| **Award preset**              | A name an Organizer can start an Award from when adding one: every distinct Award name in any War Week (case-insensitive) plus seven fixed names in code (War Week MVP, Billable Hours Champ, Black Midnight, Grow, Grind, Serve, Inspire). Picking one copies its name and most recent description into the form. There is no Award Category; the same name is what groups an Award across years. |
 
 **Reveal** is retired: Standings are never hidden any more, and the
 countdown it played is now the **Finale**.
@@ -194,9 +195,9 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   Participant, that Participant is You; otherwise nobody is. There is no
   self-pick. The roster admin shows "No email: won't be linked when they sign
   in" on a Participant row without an email. Participant emails never reach
-  a Participant's or Host's page, only the matched id; the Organizer-only
-  Discretionary points and Award pickers match a Participant's email in
-  their search without showing it. Past editions use their own roster.
+  a Participant's or Host's page, only the matched id; no picker's options,
+  search or page payload carries a Participant's email for any actor (the
+  **Participant picker** is name-only). Past editions use their own roster.
 - **The Team shows in team events.** In a teams War Week, wherever a
   Participant appears in a Competition or scoring context (Standings,
   Brackets and Matches, Placements, Head-to-head and Best score, Recent results, the leaderboard's points breakdown, Awards,
@@ -205,8 +206,18 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   where there isn't (the initials Avatar's fill; a Profile picture hides it,
   so a pictured Avatar needs another mark, such as a Team-colored ring).
   Never by color alone where the name fits.
-  Free-for-all War Weeks have no Teams. Ticket 83 audits the surfaces that
-  don't yet.
+  Free-for-all War Weeks have no Teams. One display, `TeamTag`
+  (`participant-mark.tsx`), with `EntrantMark` and the `Avatar`'s
+  `data-team-color` ring, serves every surface: Standings (Home's and the
+  leaderboard's individual list, its points breakdown, the Finale's
+  Standings); Brackets (tree nodes show the Team **color** only; Top
+  finishers show the name; the Match result form shows the name from `sm`
+  up and the color below); Matches and Attempts (Head-to-head series and
+  results table, Best score table); Placement results table and Top
+  finishers; Recent results; Now/Next (Schedule Items: no Participant, so no
+  Team); Award recipients (`/awards`, `/history/awards/<slug>`, the admin
+  list by name; the Finale's Awards and Winners steps by color); and the
+  admin Placement sheet, Participation list and Discretionary points ledger.
 - A Participant-facing Announcement card shows its author's Profile name,
   else their Participant display name when the author's email matches a
   Participant's (account linking), else the part of the email before the
@@ -243,7 +254,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   removes the login (`user`, `session`, `account`), the Profile and the
   person's Organizer-list entry; it is refused for the last Organizer. It
   keeps roster records, results, Awards, Announcements, history, Host
-  assignments (`competition_host`) and the email audit columns, which show
+  assignments (`competition_host`, by roster Participant) and the email audit columns, which show
   the roster name again. Signing in again creates a fresh account that
   re-links by email.
 
@@ -294,17 +305,24 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
     every War Week. Organizers manage the list at `/admin/organizers`: any
     Organizer can add a JG email or remove one, themselves included while
     another remains; the last Organizer can't be removed.
-  - A **Host** is a signed-in JG email an Organizer assigns to a
-    Competition (a `competition_host` row, picked from the roster by name in the Competition page's Settings by an Organizer). A
-    Host runs their own Competitions: their Competition page (not creating, deleting or
-    assigning Hosts; a Host sees the Hosts read-only by name and no emails), their Bracket, their Placements (`placement.edit`,
-    `.finalize`, `.reopen`) and the Schedule Items linked to them, and for a
-    Participation Competition its
-    settings, who took part, Close and Reopen (`participation.settings`,
-    `.mark`, `.close`, `.reopen`). A Host can also post Announcements in a War Week
-    where they host, and edit or delete their own. Hosting is per
-    Competition, so a Host of one War Week's Competition has no say in
-    another War Week's.
+  - A **Host** is a **roster Participant** an Organizer assigns to a
+    Competition (a `competition_host` row holding the Participant's id,
+    picked by name in the Competition page's Settings by an Organizer, ADR
+    0012). The Participant must be on the Competition's War Week roster (a
+    write-time rule in `setCompetitionHosts`). A Host's access is worked out
+    per request: the session email matches, ignoring case, a roster
+    Participant's email, and that Participant hosts the Competition. So
+    changing a Participant's roster email moves their Host access to whoever
+    owns the new email, and a Host chosen with no email gets access once an
+    Organizer adds one. A Host runs their own Competitions: their Competition
+    page (not creating, deleting or assigning Hosts; a Host sees the Hosts
+    read-only by name and no emails), their Bracket, their Placements
+    (`placement.edit`, `.finalize`, `.reopen`), and for a Participation
+    Competition its settings, who took part, Close and Reopen
+    (`participation.settings`, `.mark`, `.close`, `.reopen`). A Host has no
+    Schedule, Announcements or Finale in admin (Organizer-only, on the server
+    too). Hosting is per Competition, so a Host of one War Week's
+    Competition has no say in another War Week's.
   - Everyone else signed in is a **Participant** for access purposes. Their
     writes are each found by account linking, checked in `can` and again in the mutation: with a
     Competition's one self-report setting on (ADR 0011), recording the result
@@ -319,10 +337,9 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
     never records a Placement (ADR 0010).
 - `can(actor, action, target)` in `src/lib/access.ts` is the one access
   rule: it returns why the actor can't take the action, or null. It's pure;
-  the caller loads the actor and the target. A Schedule Item edit needs the
-  Host of both the row's current Competition and the one the request posts,
-  and a Host can't unlink a Schedule Item from its Competition. Changing another person's Announcement, pinning and
-  unpinning are Organizer-only.
+  the caller loads the actor and the target. Schedule Items, Announcements
+  (post, change, delete, pin and unpin) and the Finale are Organizer-only: a
+  Host is refused them (ADR 0012).
 - Every War Week action runs `authorize` (`src/auth/authorize.ts`) before
   it touches its input (ADR 0003), in this order:
   1. authenticate ("Sign in to continue.");
@@ -347,15 +364,17 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   edition for an Organizer, the editions they host in for a Host. A banner
   marks the Archive ("Editing the Archive: War Week X"). Anonymous visitors
   go to sign-in; anyone else sees "Organizers and Hosts only."
-- `/admin` is trimmed for a Host (`loadAdminPage` in
-  `src/app/admin/gate.ts`): the Placements, the Brackets, Admin →
-  Competitions and Admin → Schedule list only their Competitions and the
-  Schedule Items linked to them. Discretionary points, War Week settings,
-  Days, Teams and roster, FAQ, Awards, the Organizer list and Create next
-  War Week are
-  Organizer-only pages and show a Host "Organizers and Hosts only." The
-  Account menu's Admin item shows for Organizers and for anyone who hosts a
-  Competition.
+- **Access rules for Hosts.** `/admin` is trimmed for a Host
+  (`loadAdminPage` in `src/app/admin/gate.ts`, `src/lib/admin-sections.ts`):
+  they see only **Competitions** (the list filtered to the Competitions they
+  host, plus each one's admin page) and the **Guide**. Schedule,
+  Announcements, Finale, Discretionary points, War Week settings, Days,
+  Teams and roster, FAQ, Awards, the Organizer list and Create next War Week
+  are Organizer-only pages and show a Host "Organizers and Hosts only.", as
+  does another Competition's admin page; their actions refuse a Host on the
+  server. The War Week Finale at `/<edition>/finale` stays readable by any
+  signed-in JG user. The Account menu's Admin item shows for Organizers and
+  for anyone who hosts a Competition.
 - Every page and API route needs a JG sign-in. Anonymous visitors to a
   page go to `/sign-in` and come back afterwards; API routes answer 401.
   Only `/sign-in`, `/api/auth/*`, `/about`, `/privacy` and `/terms` are
@@ -383,14 +402,11 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   delete refuses a generated entry (one with a Competition).
 - **Placements** (`placement.edit`, `.finalize`, `.reopen`, ADR 0010) are the
   Organizers' and that Competition's Hosts'; a Participant is refused.
-- **Award Categories** are global (no War Week), so every `award-category.*`
-  action (create, rename, archive, restore) is Organizer-only and takes no
-  target, like the Organizer list. A Host or Participant is refused. Awards
-  themselves stay Organizer-only too.
+- **Awards** are Organizer-only (`award.create`, `.edit`, `.delete`); a Host
+  or Participant is refused. There is no Award Category to manage.
 - Standings are always visible to every signed-in user. `/<edition>/finale`
-  and a closed Bracket's `/<edition>/finale/<competitionId>` are readable
-  by any signed-in JG user; Organizers and Hosts see the links to them in
-  `/admin/finale`.
+  is readable by any signed-in JG user; Organizers and Hosts see the link to
+  it in `/admin/finale`.
 - **Self-report** (ADR 0011, superseding in part ADR 0005 and 0006) is one
   setting, "Participants can log their own results", off by default on
   every Format and offered on Bracket, Head-to-head and Best score, never
@@ -450,8 +466,10 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 - **Create next War Week** (on `/admin/settings`, Organizers only) makes an
   `upcoming` edition from any edition, prefilled with the next Roman
   numeral, edition number and year. It can copy settings with the
-  Appearance Theme (on), Competitions with new ids and their Hosts (off) and
-  the FAQ (off). It never copies Organizers: the Organizer list is global.
+  Appearance Theme (on), Competitions with new ids and no Hosts (off) and
+  the FAQ (off). It never copies Hosts: the new roster is empty, so there is
+  no Participant to point at, and Organizers add Hosts once it exists
+  (ADR 0012). It never copies Organizers: the Organizer list is global.
   Teams, roster, Days, Schedule, Points Entries, Awards and Announcements
   are never copied. It doesn't change what's current until it starts.
 
@@ -739,28 +757,35 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   team scoring its top Team, in individual scoring how many took part.
 - Who took part isn't seeded, like Matches and Attempts.
 
-## Award Category rules
+## Award preset and history rules
 
-- An **Award Category** is global: one list across every War Week, managed
-  by Organizers in a Categories section on `/admin/awards`. Seven come from
-  a migration: War Week MVP, Billable Hours Champ, Black Midnight, Grow,
-  Grind, Serve, Inspire.
-- Names are trimmed, at most 80 characters and unique ignoring case. A
-  Category is **renamed**, **archived** and **restored**, never deleted. An
-  archived Category stays on the past Awards that have it (and is labeled
-  archived) but can't be picked for another Award; restoring it makes it
-  pickable again. An Award has one Category or none ("None" in the Award
-  form's Category select).
-- A seeded Category has a stable key, so renaming never breaks a seed.
-- `/<edition>/awards` groups Awards under their Category's heading, linked
-  to its page, then "Other Awards" for those with none; with no Category on
-  any Award there are no headings. The Award's own name always shows here.
-- **Through the years**: `/history` lists every Category that has an Award
-  under "Awards through the years", and `/history/awards/<categoryId>` shows
-  that Category's Awards by War Week, newest first, with their recipients
-  (Profile names). An Award's own name shows there only when it adds to its
-  Category's ("MVP 1st Place" under War Week MVP). It is keyed by id, so a rename never breaks the link; an
-  unknown or malformed id is a 404.
+- There are no Award Categories (R22). An Award is a name, a description,
+  and its recipients.
+- **Presets.** When an Organizer adds an Award, the form's **Preset** picker
+  offers every distinct Award name already in the database across War Weeks
+  (ignoring case and punctuation) plus the seven former Category names, a
+  constant in code (`FORMER_CATEGORY_NAMES`). Picking one copies its name and its most
+  recent description into the form; both stay editable. Typing a brand-new
+  name always works.
+- `/<edition>/awards` lists the War Week's Awards flat, each name linking to
+  its history.
+- **History by name.** The same name is the same Award across years:
+  grouping is by **slug**, ignoring case and punctuation (the lowercased name with
+  each run of non-alphanumerics collapsed to "-", none leading or
+  trailing), so names that differ only in case or punctuation share a page.
+  `/history/awards` lists every Award name; `/history/awards/<slug>` shows
+  that name by War Week, newest first, with the recipients (Profile names).
+  An unknown slug, and an old `/history/awards/<categoryId>`, is a 404 (no
+  redirects). `/history` lists the names too, under "Awards through the
+  years".
+- To make a name group across years, **write it the same**: the history
+  seeds apply a rename table (Billing Hours Champ to Billable Hours Champ,
+  Settlers of Catan to Settlers of Catan Champion, Chess Tourney Champion,
+  Chess and Chess Tournament Winners to Chess Tournament Champion, Stairs
+  Challenge Winners to Stairs Challenge Winner, Mario Kart Winner to Mario
+  Kart Champion, Super Smash Bros to Super Smash Bros. Champion, Battle of
+  the Memes Winner to Battle of the Memes Champion); all other names stay as
+  the wikis wrote them.
 
 ## Enrollment rules
 
@@ -787,7 +812,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
 ## Finale rules
 
 - The Finale is the closing-ceremony slideshow at `/<edition>/finale`, for
-  the projector. Organizers and Hosts open it from `/admin/finale` ("Open
+  the projector. Organizers open it from `/admin/finale` ("Open
   Finale"); anyone signed in may watch it. One Finale slide fills the
   screen at a time, over the edition's navigation; Exit goes back to the
   edition.
@@ -797,8 +822,8 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   moves a slide (drag on a pointer device, or Move up/down) and hides or
   shows it; each change saves at once, and the first one saves the whole
   list. A hidden slide keeps its place in the list and is skipped by the
-  Finale. A built-in missing from a saved list is added at its end. Hosts
-  see the list but can't change it. With every slide hidden, the Finale
+  Finale. A built-in missing from a saved list is added at its end. A Host
+  can't open it. With every slide hidden, the Finale
   says "Nothing to show yet."
 - **Keys.** `→`, `Space`, `PageDown` or a click on the stage: next. `←` or
   `PageUp`: back. `Escape`: back to the first slide. `Space` (and `Enter`)
@@ -818,12 +843,8 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
     **Points handed out** (the sum of every Points Entry, generated ones
     included: not a Standings total) and Participants (the roster). Only
     non-zero figures show; with every figure zero the slide is skipped.
-  - **Awards:** one Award revealed per step, grouped by Award Category
-    (Categories by name, the uncategorized last as "Other Awards"). The
-    War Week's **Awards layout**, set by an Organizer in admin → Finale:
-    "All on one slide", or "One slide per Category" (each slide named
-    "Awards: <Category>", the uncategorized "Other Awards"). No Awards: no
-    slide.
+  - **Awards:** one slide, one Award revealed per step, always (no
+    layout setting, no grouping). No Awards: no slide.
   - **Winners:** every closed Bracket's winner and the winner of every
     Closed Placement and every closed Head-to-head, Best score or team-scoring Participation
     Competition, ties listed together, by the rule Recent results uses but never capped, in
@@ -850,17 +871,11 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   (reload for the latest).
 - The home and leaderboard pages keep refreshing about every 10 s while the
   tab is visible, and always show the plain Standings.
-- **Bracket Finale.** A closed Bracket has its own Finale at
-  `/<edition>/finale/<competitionId>`, readable by any signed-in JG user and
-  not found for any other Competition. It plays the Bracket's final placings
-  (places and names, no points) from last place to first, tied places
-  together, and ends on the winner card ("Winner of <Competition>").
-  It opens on a big Start button (Start, `Space` or a click on the stage
-  plays it), Replay plays it again, and with `prefers-reduced-motion` Start
-  still has to be pressed and shows the final state. It reads nothing
-  from the Standings and changes nothing. It is linked from the results
-  screen once closed and from `/admin/finale` ("Finale: <Competition>"); the
-  Participant Bracket page and Bracket admin have no "Play the finale" link.
+- **No Bracket Finale.** A Bracket has no Finale of its own:
+  `/<edition>/finale/<competitionId>` is not a page (a 404), `/admin/finale`
+  has no Bracket Finales section, and the Participant Bracket page and
+  Bracket admin have no "Play the finale" link. The War Week Finale at
+  `/<edition>/finale` is the only Finale.
 
 ## Seed idempotence rules
 
@@ -936,17 +951,10 @@ same rows with the same values (only `updated_at` moves).
     entries. **Discretionary points** (`{key, team|participant, points,
     reason, enteredByEmail, enteredAt}`) are idempotent on
     `(war_week_id, seed_key)`. A seed's old `pointsEntries` list is refused.
-  - An Award's `category` in a seed is a seeded Category's **key**, never
-    its name; an unknown key fails the load naming it. It is applied when
-    the Award is inserted. The one exception to "never updated" is
-    fill-if-empty: a seeded Award that has no Category and was never edited
-    in the app (`updated_at` still equals `created_at`) gets the seed's. An
-    Organizer's choice, "None" included, is never overwritten.
-  - A War Week's `finaleAwardsLayout` (the Finale's Awards layout) is
-    insert-only: set from the seed when the War Week is first inserted
-    (default "All on one slide"), then owned by the Organizer's setting.
-  - **Award Categories** themselves come from a migration, not a seed, are
-    global, and survive `--reset`.
+  - A seed's Awards carry no `category` and a seed has no
+    `finaleAwardsLayout` (both were removed in R22); a seed that names them
+    is refused. An Award's name is what groups it across years (see "Award
+    preset and history rules").
 
 **Setup in the UI.** Organizers can also edit setup in `/admin`: War Week
 settings and the Appearance Theme in `/admin/settings`, Days and Schedule

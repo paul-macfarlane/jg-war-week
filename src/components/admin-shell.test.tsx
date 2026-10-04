@@ -131,8 +131,10 @@ describe("AdminShell", () => {
     expect(html).not.toContain('href="/admin/settings"');
     expect(html).not.toContain('href="/admin/discretionary-points"');
     expect(html).toContain('href="/admin/competitions"');
-    expect(html).toContain('href="/admin/schedule"');
-    expect(html).toContain('href="/admin/finale"');
+    expect(html).not.toContain('href="/admin/schedule"');
+    expect(html).not.toContain('href="/admin/announcements"');
+    expect(html).not.toContain('href="/admin/finale"');
+    expect(html).toContain('href="/admin/guide"');
   });
 });
 

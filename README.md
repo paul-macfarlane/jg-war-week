@@ -89,7 +89,7 @@ with `pnpm start -p 3200`, and signs its own JG sessions (no Google). The flows:
 anonymous and non-JG visitors are sent to `/sign-in`; an Organizer's Discretionary
 points show on `/xi/leaderboard`; a head-to-head Bracket is built, recorded in its tree
 (each played Heat showing when it was recorded), advanced, finalized into
-Points Entries and played as a Bracket Finale (also under reduced motion); a
+Points Entries, with no Bracket Finale (its old URL is a 404); a
 Bracket with a 3rd place game places 1st to 4th; a Bracket of 4 per Heat is run to Points Entries,
 with the End War Week warning; a Host builds a Squad Bracket with self-report on,
 a Participant reports their Heat and their Squad advances, a second report on it is

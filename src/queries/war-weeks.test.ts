@@ -34,7 +34,6 @@ function warWeekFixture(overrides: Partial<WarWeek>): WarWeek {
     wikiUrl: overrides.wikiUrl ?? null,
     winner: overrides.winner ?? null,
     highlights: overrides.highlights ?? [],
-    finaleAwardsLayout: "one-slide",
     createdAt: overrides.createdAt ?? new Date(),
     updatedAt: overrides.updatedAt ?? new Date(),
   };

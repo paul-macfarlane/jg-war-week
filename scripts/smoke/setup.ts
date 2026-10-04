@@ -591,7 +591,7 @@ export async function assertSetupScheduleFaq(sessions: {
         return !backwards.ok &&
           backwards.error === "End time must be after the start time." &&
           !outsider.ok &&
-          outsider.error === "Link the Schedule Item to a Competition you host."
+          outsider.error === "Only an Organizer can add Schedule Items."
           ? null
           : `backwards=${JSON.stringify(backwards)} outsider=${JSON.stringify(outsider)}`;
       },

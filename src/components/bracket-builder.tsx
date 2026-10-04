@@ -17,6 +17,7 @@ import { isBye } from "@/lib/bracket/formats";
 import { type EntrantKind, squadLabel } from "@/lib/bracket/squads";
 import type { Bracket } from "@/lib/bracket/types";
 import { groupRounds, matchName } from "@/lib/bracket/view";
+import { optionsFromTargets } from "@/lib/participant-options";
 import type { MutationResult } from "@/mutations/types";
 import type { BracketEntrant, SquadRow } from "@/queries/brackets";
 
@@ -26,6 +27,8 @@ type Target = {
   team: string | null;
   /** A Participant's Team id, for the Squad form's Team filter. */
   teamId?: string | null;
+  teamColor?: string | null;
+  image?: string | null;
 };
 
 /** A Bracket write and what it says when it's done. */
@@ -140,11 +143,10 @@ export function BracketBuilder({
         label: squad.name,
         detail: squadDetail(squad),
       }))
-    : (isTeam ? teams : participants).map((t) => ({
-        id: t.id,
-        label: t.name,
-        detail: t.team ?? undefined,
-      }));
+    : isTeam
+      ? teams.map((t) => ({ id: t.id, label: t.name }))
+      : [];
+  const participantOptions = optionsFromTargets(participants);
   const editing = squadSheet === "new" ? undefined : (squadSheet ?? undefined);
   // Participant id → the other Squad they're in, for the Squad form.
   const taken: Record<string, string> = Object.fromEntries(
@@ -255,6 +257,7 @@ export function BracketBuilder({
             kind={kind}
             kindLabel={teamLabel}
             options={items}
+            participantOptions={participantOptions}
             selected={selected}
             onChange={setSelected}
             onSave={() =>
@@ -410,7 +413,10 @@ export function BracketBuilder({
             participants={participants.map((p) => ({
               id: p.id,
               name: p.name,
+              image: p.image,
               teamId: p.teamId ?? null,
+              teamName: p.team,
+              teamColor: p.teamColor,
             }))}
             taken={taken}
             teamLabel={teamLabel}

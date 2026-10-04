@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import {
   type BracketViewEntrant,
   EntrantMark,
+  EntrantTeam,
 } from "@/components/entrant-mark";
 import { TopFinishers } from "@/components/top-finishers";
 import type { PodiumPlace } from "@/lib/bracket/podium";
@@ -44,6 +45,7 @@ export function BracketPodium({
               />
             ),
             after: after?.(entrant.id),
+            team: <EntrantTeam entrant={entrant} scoring={scoring} />,
           },
         ]
       : [];

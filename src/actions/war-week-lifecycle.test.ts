@@ -25,7 +25,6 @@ vi.mock("@/auth/authorize", () => ({
     target: { warWeek: { id: WAR_WEEK, edition: "xi" } },
     ctx: { warWeekId: WAR_WEEK, actorEmail: "organizer@jahnelgroup.com" },
   })),
-  postedCompetitionId: () => null,
 }));
 vi.mock("next/headers", () => ({ cookies: vi.fn() }));
 vi.mock("@/auth/actor", () => ({

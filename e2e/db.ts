@@ -1,6 +1,6 @@
 import { Client } from "pg";
 
-import { E2E_EMAIL_PATTERN, E2E_EXACT_EMAILS } from "./env";
+import { E2E_EMAIL_PATTERN, E2E_EXACT_EMAILS, E2E_HOST_EMAIL } from "./env";
 
 /** Runs one query on its own connection, as `scripts/smoke/harness.ts` does. */
 export async function runQuery<T extends Record<string, unknown>>(
@@ -40,26 +40,68 @@ export async function deleteE2eUsers() {
   await runQuery(`delete from organizer where email = any($1::text[])`, [
     E2E_EXACT_EMAILS,
   ]);
-  await runQuery(`delete from competition_host where email like $1`, [
-    E2E_EMAIL_PATTERN,
-  ]);
+  // The roster Participants `addE2eHost` made (their Host rows cascade).
+  await runQuery(
+    `delete from participant where email like $1 and display_name like 'E2E %'`,
+    [E2E_EMAIL_PATTERN],
+  );
 }
 
 /**
- * Deletes the Award Categories an e2e run added: only the seeded ones have a
- * `key`. Awards go with their War Week's reset first (`on delete restrict`).
+ * Makes the roster Participant with `email` (default the e2e Host) a Host of
+ * the Competition, adding that Participant to the Competition's War Week
+ * roster first when it has none with that email (a Host is a roster
+ * Participant, ADR 0012). Undo with `removeE2eHost`.
  */
-export async function deleteE2eAwardCategories() {
+export async function addE2eHost(
+  competitionId: string,
+  email: string = E2E_HOST_EMAIL,
+) {
+  const name =
+    email === E2E_HOST_EMAIL ? "E2E Host" : `E2E ${email.split("@")[0]}`;
   await runQuery(
-    `delete from award_category c where c.key is null
-     and not exists (select 1 from award a where a.category_id = c.id)`,
+    `insert into participant (war_week_id, display_name, email)
+     select war_week_id, $2, $3 from competition where id = $1
+     on conflict (war_week_id, email) do nothing`,
+    [competitionId, name, email],
+  );
+  await runQuery(
+    `insert into competition_host (competition_id, participant_id)
+     select c.id, p.id from competition c
+     join participant p on p.war_week_id = c.war_week_id and lower(p.email) = lower($2)
+     where c.id = $1
+     on conflict do nothing`,
+    [competitionId, email],
+  );
+}
+
+/**
+ * Removes the Host row `addE2eHost` made, and the roster Participant it
+ * created (one named "E2E …"; a seeded Participant is never deleted).
+ */
+export async function removeE2eHost(
+  competitionId: string,
+  email: string = E2E_HOST_EMAIL,
+) {
+  await runQuery(
+    `delete from competition_host h using participant p
+     where h.participant_id = p.id and h.competition_id = $1
+       and lower(p.email) = lower($2)`,
+    [competitionId, email],
+  );
+  await runQuery(
+    `delete from participant p using competition c
+     where c.id = $1 and p.war_week_id = c.war_week_id
+       and lower(p.email) = lower($2) and p.display_name like 'E2E %'
+       and not exists (select 1 from competition_host h where h.participant_id = p.id)`,
+    [competitionId, email],
   );
 }
 
 /**
  * Gives War Week XI back the default Finale: no saved slide list (so it
  * plays Title, By the numbers, Awards, Winners, Standings countdown,
- * Winner) and the one-slide Awards layout. Each Finale slide spec calls it
+ * Winner). Each Finale slide spec calls it
  * before and after its flows.
  */
 export async function resetXiFinaleSlides() {
@@ -67,17 +109,24 @@ export async function resetXiFinaleSlides() {
     `delete from finale_slide s using war_week w
      where s.war_week_id = w.id and w.edition = 'xi'`,
   );
-  await runQuery(
-    `update war_week set finale_awards_layout = 'one-slide' where edition = 'xi'`,
-  );
 }
 
-/** Deletes a War Week XI Competition by name, if it exists. Test cleanup. */
+/**
+ * Deletes a War Week XI Competition by name, if it exists, and every roster
+ * Participant `addE2eHost` made (named "E2E %", an `e2e-` email) that no
+ * longer hosts anything. The orphan sweep covers every War Week, not just XI.
+ * Test cleanup.
+ */
 export async function deleteXiCompetition(name: string) {
   await runQuery(
     `delete from competition c using war_week w
      where c.war_week_id = w.id and w.edition = 'xi' and c.name = $1`,
     [name],
+  );
+  await runQuery(
+    `delete from participant p
+     where p.display_name like 'E2E %' and p.email like 'e2e-%'
+       and not exists (select 1 from competition_host h where h.participant_id = p.id)`,
   );
 }
 

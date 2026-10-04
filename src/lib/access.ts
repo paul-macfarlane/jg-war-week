@@ -59,14 +59,11 @@ export type Actor = {
 export type SelfAction = "profile.save" | "account.delete";
 
 /**
- * The global Organizer-only families (the Organizer list, Award Categories):
- * no War Week, so they take no target.
+ * The global Organizer-only family (the Organizer list): no War Week, so it
+ * takes no target.
  */
 export type OrganizerListAction =
-  | "organizers.view"
-  | "organizers.add"
-  | "organizers.remove"
-  | `award-category.${"create" | "rename" | "archive" | "restore"}`;
+  "organizers.view" | "organizers.add" | "organizers.remove";
 
 type Crud = "create" | "edit" | "delete";
 
@@ -90,8 +87,6 @@ export type WarWeekAction =
   | "finale-slide.create"
   | "finale-slide.update"
   | "finale-slide.delete"
-  /** How the Finale shows Awards: one slide, or one per Category (ticket 73). */
-  | "finale.awards-layout"
   | "competition.create"
   | "competition.delete"
   | "competition.assign-hosts"
@@ -142,18 +137,14 @@ export type WarWeekAction =
 
 /**
  * What a War Week action is checked against: the War Week, plus where the
- * family needs it the row's current Competition (`competitionId`, null for
- * an unlinked Schedule Item), the Competition the request posts
- * (`postedCompetitionId`, null to unlink), an Announcement's author and,
- * for the Participant writes, their facts: a Bracket Match's
+ * family needs it the row's current Competition (`competitionId`) and, for
+ * the Participant writes, their facts: a Bracket Match's
  * (`matchReport`), a Head-to-head Match's (`seriesLog`), an Attempt's
  * (`attemptLog`), enrollment's (`enroll`) or Check in's (`checkIn`).
  */
 export type AccessTarget = {
   warWeekId: string;
   competitionId?: string | null;
-  postedCompetitionId?: string | null;
-  authorEmail?: string;
   matchReport?: MatchReportFacet;
   seriesLog?: SeriesLogFacet;
   attemptLog?: AttemptLogFacet;
@@ -173,10 +164,6 @@ const ORGANIZER_ONLY: Partial<
   "organizers.view": "see the Organizer list",
   "organizers.add": "add an Organizer",
   "organizers.remove": "remove an Organizer",
-  "award-category.create": "add Award Categories",
-  "award-category.rename": "rename Award Categories",
-  "award-category.archive": "archive Award Categories",
-  "award-category.restore": "restore Award Categories",
   "settings.save": "change War Week settings",
   "lifecycle.start": "start a War Week",
   "lifecycle.end": "end a War Week",
@@ -202,7 +189,6 @@ const ORGANIZER_ONLY: Partial<
   "finale-slide.create": "add Custom Finale slides",
   "finale-slide.update": "change Custom Finale slides",
   "finale-slide.delete": "delete Custom Finale slides",
-  "finale.awards-layout": "change how the Finale shows Awards",
   "discretionary.create": "give Discretionary points",
   "discretionary.edit": "change Discretionary points",
   "discretionary.delete": "delete Discretionary points",
@@ -212,6 +198,12 @@ const ORGANIZER_ONLY: Partial<
   "competition.create": "add Competitions",
   "competition.delete": "delete Competitions",
   "competition.assign-hosts": "assign Hosts",
+  "schedule-item.create": "add Schedule Items",
+  "schedule-item.edit": "change Schedule Items",
+  "schedule-item.delete": "delete Schedule Items",
+  "announcement.create": "post Announcements",
+  "announcement.edit": "change Announcements",
+  "announcement.delete": "delete Announcements",
   "announcement.pin": "pin Announcements",
   "announcement.unpin": "unpin Announcements",
 };
@@ -245,8 +237,8 @@ export const sameEmail = (a: string | null | undefined, b: string) =>
  * The one access rule (ADR 0002): why `actor` can't take `action` on
  * `target`, or null when it can. An Organizer can do everything in every
  * War Week. A Host runs their own Competitions (setup, Bracket, Points
- * Entries, linked Schedule Items) and posts Announcements in a War Week
- * where they host, editing or deleting their own. Everyone else signed in
+ * Entries) and nothing else in admin: Schedule, Announcements and the
+ * Finale are Organizer-only (ADR 0012). Everyone else signed in
  * is a Participant, whose writes, with "Participants can log their own
  * results" on (ADR 0011), are recording a Bracket Match they're in and
  * logging Head-to-head Matches and Best score Attempts, and changing any
@@ -337,36 +329,12 @@ export function can(
   if (organizerOnly) return `Only an Organizer can ${organizerOnly}.`;
   if (!target) return ADMIN_REFUSAL;
 
-  const { warWeekId, competitionId, postedCompetitionId } = target;
+  const { warWeekId, competitionId } = target;
   const hostsCurrent = hosts(actor, warWeekId, competitionId);
-  const hostsPosted = hosts(actor, warWeekId, postedCompetitionId);
 
   switch (action) {
     case "admin.view":
       return hostsIn(actor, warWeekId) ? null : ADMIN_REFUSAL;
-    case "schedule-item.create":
-      if (!postedCompetitionId) {
-        return "Link the Schedule Item to a Competition you host.";
-      }
-      return hostsPosted ? null : NOT_HOST;
-    case "schedule-item.edit":
-      if (!hostsCurrent) return NOT_HOST;
-      if (!postedCompetitionId) {
-        return "Only an Organizer can unlink a Schedule Item from its Competition.";
-      }
-      return hostsPosted ? null : NOT_HOST;
-    case "announcement.create":
-      return hostsIn(actor, warWeekId)
-        ? null
-        : "Only an Organizer or a Host of this War Week can post Announcements.";
-    case "announcement.edit":
-    case "announcement.delete":
-      if (!sameEmail(target.authorEmail, actor.email)) {
-        return "Only an Organizer can change someone else's Announcement.";
-      }
-      return hostsIn(actor, warWeekId)
-        ? null
-        : "Only an Organizer or a Host of this War Week can change Announcements.";
     case "results.close":
     case "results.reopen":
     case "competition.self-enroll":
@@ -387,8 +355,8 @@ export function can(
       // this Competition. Participants never record Placements.
       return hostsCurrent ? null : NOT_HOST;
     default:
-      // A Competition's setup and Bracket, and deleting a Points Entry or
-      // Schedule Item: the Host of the row's current Competition.
+      // A Competition's setup and Bracket, and deleting a Points Entry: the
+      // Host of the row's current Competition.
       return hostsCurrent ? null : NOT_HOST;
   }
 }

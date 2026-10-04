@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { announcementTitleSchema } from "@/lib/announcements";
 import { AWARD_DESCRIPTION_MAX, AWARD_NAME_MAX } from "@/lib/awards";
-import { FINALE_AWARDS_LAYOUTS, WAR_WEEK_STATUSES } from "@/lib/enums";
+import { WAR_WEEK_STATUSES } from "@/lib/enums";
 import { finaleSlideSeedSchema } from "@/lib/finale-slides";
 import { jgEmailSchema } from "@/lib/jg-email";
 import { MAX_SCORE } from "@/lib/placement/input";
@@ -101,8 +101,6 @@ export const awardSeedSchema = z
     team: z.string().min(1).max(80).nullish(),
     /** Participant display names from this seed. */
     participants: z.array(z.string().min(1).max(120)).default([]),
-    /** An Award Category's key (not its name, which an Organizer may rename). */
-    category: seedKey.nullish(),
   })
   .refine((a) => a.team != null || a.participants.length > 0, {
     message: "an Award needs at least one recipient (a team or participants)",
@@ -163,8 +161,6 @@ export const warWeekSeedSchema = z
     awards: z.array(awardSeedSchema).default([]),
     announcements: z.array(announcementSeedSchema).default([]),
     faqItems: z.array(faqItemSeedSchema).default([]),
-    /** Set when the War Week is first inserted, never on a reload. */
-    finaleAwardsLayout: z.enum(FINALE_AWARDS_LAYOUTS).optional(),
     /**
      * The Finale's slides in order. Absent: a load leaves the saved list
      * alone (CONTEXT.md, "Seed idempotence rules").
@@ -318,6 +314,14 @@ export const warWeekSeedSchema = z
     });
 
     seed.competitions.forEach((c, index) => {
+      (c.hosts ?? []).forEach((name, hostIndex) => {
+        if (!participants.has(name)) {
+          issue(
+            ["competitions", index, "hosts", hostIndex],
+            `Host "${name}" is not on this War Week's roster`,
+          );
+        }
+      });
       (c.entrants ?? []).forEach((name, entrantIndex) => {
         const known = c.scoring === "team" ? teams : participants;
         if (!known.has(name)) {

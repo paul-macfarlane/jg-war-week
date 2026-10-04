@@ -1,7 +1,7 @@
 import { type Page, type TestInfo, expect, test } from "@playwright/test";
 
 import { openCompetitionPage } from "./competition-page";
-import { runQuery, xiTeamPointsBreakdown } from "./db";
+import { addE2eHost, runQuery, xiTeamPointsBreakdown } from "./db";
 import { E2E_BASE_URL } from "./env";
 import {
   E2E_HOST_EMAIL,
@@ -103,10 +103,7 @@ test("r16 90 a Host records placements with Scores, breaks a tie and Closes: the
     baseURL: E2E_BASE_URL,
   });
   try {
-    await runQuery(
-      `insert into competition_host (competition_id, email) values ($1, $2)`,
-      [id, E2E_HOST_EMAIL],
-    );
+    await addE2eHost(id, E2E_HOST_EMAIL);
     const before = await breakdownTotals();
     await asHost(context);
     expect(await leaderboardTotals(page)).toEqual(before);

@@ -58,11 +58,6 @@ export const FINALE_SLIDE_KINDS = [
 
 export type FinaleSlideKind = (typeof FINALE_SLIDE_KINDS)[number];
 
-/** How the Finale shows Awards: one slide, or one slide per Award Category. */
-export const FINALE_AWARDS_LAYOUTS = ["one-slide", "per-category"] as const;
-
-export type FinaleAwardsLayout = (typeof FINALE_AWARDS_LAYOUTS)[number];
-
 /**
  * The two Formats whose results are logged one at a time (CONTEXT.md): a
  * Head-to-head series' Matches and a Best score Competition's Attempts.

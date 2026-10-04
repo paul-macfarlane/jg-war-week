@@ -2531,15 +2531,11 @@ describe.skipIf(!isLocalDatabase)(
       });
     });
 
-    it("is never a Bracket: getBracket is undefined and the Bracket list leaves it out", async () => {
+    it("is never a Bracket: getBracket is undefined", async () => {
       await inRolledBackTransaction(async (tx) => {
         const { queries } = await modules();
         const f = await loggedFixture(tx);
         expect(await queries.getBracket(f.pongId, tx)).toBeUndefined();
-        const names = (
-          await queries.getBracketCompetitions({ id: f.ctx.warWeekId }, tx)
-        ).map((c) => c.name);
-        expect(names).toEqual(["Captain Clash", "Speed Chess"]);
       });
     });
 

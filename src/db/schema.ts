@@ -31,7 +31,6 @@ import type { BracketConfig } from "@/lib/bracket/config";
 import {
   COMPETITION_FORMATS,
   COMPETITION_SCORINGS,
-  FINALE_AWARDS_LAYOUTS,
   FINALE_SLIDE_KINDS,
   FONT_PRESETS,
   MATCH_STATUSES,
@@ -75,11 +74,6 @@ export const scoreDirection = pgEnum("score_direction", SCORE_DIRECTIONS);
 
 export const finaleSlideKind = pgEnum("finale_slide_kind", FINALE_SLIDE_KINDS);
 
-export const finaleAwardsLayout = pgEnum(
-  "finale_awards_layout",
-  FINALE_AWARDS_LAYOUTS,
-);
-
 export const warWeek = pgTable(
   "war_week",
   {
@@ -122,11 +116,6 @@ export const warWeek = pgTable(
     fontPreset: fontPreset("font_preset").notNull(),
     wikiUrl: varchar("wiki_url", { length: 500 }),
     winner: varchar("winner", { length: 200 }),
-    // How the Finale shows Awards (ticket 73); the Organizer sets it on
-    // `/admin/finale`.
-    finaleAwardsLayout: finaleAwardsLayout("finale_awards_layout")
-      .notNull()
-      .default("one-slide"),
     highlights: varchar("highlights", { length: 500 })
       .array()
       .notNull()
@@ -749,32 +738,6 @@ export const participation = pgTable(
   ],
 );
 
-/**
- * A global Award Category (e.g. War Week MVP): what Awards of different War
- * Weeks share, so one view lists a Category's recipients through the years.
- * Archived, never deleted: an archived Category stays on past Awards but
- * can't be newly picked. `key` is set only on the seeded Categories, which
- * seeds name so a rename never breaks them.
- */
-export const awardCategory = pgTable(
-  "award_category",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    name: varchar("name", { length: 80 }).notNull(),
-    key: varchar("key", { length: 80 }).unique(),
-    archivedAt: timestamp("archived_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    uniqueIndex("award_category_name_lower").on(sql`lower(${table.name})`),
-  ],
-);
-
 export const award = pgTable(
   "award",
   {
@@ -787,9 +750,6 @@ export const award = pgTable(
     teamId: uuid("team_id").references(() => team.id, {
       onDelete: "set null",
     }),
-    categoryId: uuid("category_id").references(() => awardCategory.id, {
-      onDelete: "restrict",
-    }),
     seedKey: varchar("seed_key", { length: 80 }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -797,7 +757,6 @@ export const award = pgTable(
   (table) => [
     unique().on(table.warWeekId, table.seedKey),
     index("award_team_id_idx").on(table.teamId),
-    index("award_category_id_idx").on(table.categoryId),
   ],
 );
 
@@ -938,7 +897,12 @@ export const profile = pgTable(
   ],
 );
 
-/** A Host: a JG email that runs one Competition. */
+/**
+ * A Host: a roster Participant who runs one Competition (ADR 0012). Access
+ * follows the Participant's roster email at request time. The Participant
+ * must be on the Competition's War Week roster, a write-time rule in
+ * `setCompetitionHosts`, not a constraint.
+ */
 export const competitionHost = pgTable(
   "competition_host",
   {
@@ -946,17 +910,15 @@ export const competitionHost = pgTable(
     competitionId: uuid("competition_id")
       .notNull()
       .references(() => competition.id, { onDelete: "cascade" }),
-    email: varchar("email", { length: 254 }).notNull(),
+    participantId: uuid("participant_id")
+      .notNull()
+      .references(() => participant.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => [
-    // Email first, so it also serves the lookup of what an email hosts.
-    unique().on(table.email, table.competitionId),
+    // Participant first, so it also serves what a Participant hosts.
+    unique().on(table.participantId, table.competitionId),
     index("competition_host_competition_id_idx").on(table.competitionId),
-    check(
-      "competition_host_email_lowercase",
-      sql`${table.email} = lower(${table.email})`,
-    ),
   ],
 );
 
@@ -1119,10 +1081,6 @@ export const awardRelations = relations(award, ({ one, many }) => ({
     references: [warWeek.id],
   }),
   team: one(team, { fields: [award.teamId], references: [team.id] }),
-  category: one(awardCategory, {
-    fields: [award.categoryId],
-    references: [awardCategory.id],
-  }),
   participants: many(awardParticipant),
 }));
 
@@ -1172,7 +1130,6 @@ export type ScheduleItem = InferSelectModel<typeof scheduleItem>;
 export type PointsEntry = InferSelectModel<typeof pointsEntry>;
 export type PlacementRow = InferSelectModel<typeof placement>;
 export type Award = InferSelectModel<typeof award>;
-export type AwardCategory = InferSelectModel<typeof awardCategory>;
 export type AwardParticipant = InferSelectModel<typeof awardParticipant>;
 export type Announcement = InferSelectModel<typeof announcement>;
 export type FaqItem = InferSelectModel<typeof faqItem>;

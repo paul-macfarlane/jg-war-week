@@ -16,7 +16,7 @@ import {
   useFocusFirstInvalid,
 } from "@/components/form-field-errors";
 import { FormValueInput } from "@/components/form-value-input";
-import { OptionSelect } from "@/components/option-select";
+import { ParticipantPicker } from "@/components/participant-picker";
 import {
   SetupRowError,
   SetupSaveButton,
@@ -46,17 +46,8 @@ import {
   AWARD_NAME_MAX,
   type AwardInput,
 } from "@/lib/awards";
+import { optionsFromTargets } from "@/lib/participant-options";
 import type { AwardFormOptions } from "@/queries/awards";
-
-/**
- * The form's options: the query's, plus each Participant's `email`, for the
- * picker's search only, which only the Organizer-only Awards page adds.
- */
-export type AwardFormPickerOptions = Omit<AwardFormOptions, "participants"> & {
-  participants: (AwardFormOptions["participants"][number] & {
-    email?: string;
-  })[];
-};
 
 /** Base UI's Select won't accept `""` as an item value. */
 const NO_TEAM = "none";
@@ -71,7 +62,6 @@ export function AwardForm({
   warWeekId,
   awardId,
   initial,
-  currentCategory,
   options,
   teamLabel,
   mode,
@@ -82,9 +72,7 @@ export function AwardForm({
   /** Set when editing an existing Award. */
   awardId?: string;
   initial?: AwardInput;
-  /** The Award's Category when editing; an archived one stays selectable. */
-  currentCategory?: { id: string; name: string; archived: boolean } | null;
-  options: AwardFormPickerOptions;
+  options: AwardFormOptions;
   /** The War Week's Team Label, e.g. "House". */
   teamLabel: string;
   /** The War Week's Mode: a free-for-all has no Team field. */
@@ -96,7 +84,7 @@ export function AwardForm({
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [teamId, setTeamId] = useState(initial?.teamId ?? "");
-  const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
+  const [preset, setPreset] = useState("");
   const [participantIds, setParticipantIds] = useState<string[]>(
     initial?.participantIds ?? [],
   );
@@ -111,24 +99,20 @@ export function AwardForm({
     { value: NO_TEAM, label: `No ${teamLabel}` },
     ...options.teams.map((team) => ({ value: team.id, label: team.name })),
   ];
-  const categoryItems = [
-    { value: "", label: "None" },
-    ...options.categories.map((c) => ({ value: c.id, label: c.name })),
-    ...(currentCategory?.archived
-      ? [
-          {
-            value: currentCategory.id,
-            label: `${currentCategory.name} (archived)`,
-          },
-        ]
-      : []),
-  ];
-  const participantItems = options.participants.map((p) => ({
-    id: p.id,
+  const presetItems = options.presets.map((p) => ({
+    id: p.name,
     label: p.name,
-    detail: p.team ?? undefined,
-    keywords: p.email,
   }));
+  // Picking a preset copies its name and most recent description into the
+  // form; both stay editable.
+  function pickPreset(presetName: string) {
+    setPreset(presetName);
+    const picked = options.presets.find((p) => p.name === presetName);
+    if (!picked) return;
+    setName(picked.name);
+    setDescription(picked.description ?? "");
+  }
+  const participantOptions = optionsFromTargets(options.participants);
 
   // Validation runs on the server; a refusal names its fields. Every field
   // is closed over from state (rather than read off `FormData`).
@@ -138,7 +122,6 @@ export function AwardForm({
         name,
         description,
         teamId: teamId || null,
-        categoryId: categoryId || null,
         participantIds,
       };
       const saved = awardId
@@ -167,6 +150,24 @@ export function AwardForm({
       aria-label="Award"
     >
       <FieldGroup className="px-4">
+        {!awardId && (
+          <Field>
+            <FieldLabel htmlFor="award-preset">Preset</FieldLabel>
+            <EntityCombobox
+              id="award-preset"
+              items={presetItems}
+              value={preset}
+              onValueChange={pickPreset}
+              placeholder="Start from a past Award name"
+              emptyText="No preset matches. Type a new name below."
+            />
+            <FieldDescription>
+              Copies the name and its latest description. Both stay editable,
+              and a new name always works.
+            </FieldDescription>
+          </Field>
+        )}
+
         <Field data-invalid={!!fieldErrors.name}>
           <FieldLabel htmlFor="award-name">Name</FieldLabel>
           <Input
@@ -194,22 +195,6 @@ export function AwardForm({
             onChange={(event) => setDescription(event.target.value)}
           />
           <FieldError>{fieldErrors.description}</FieldError>
-        </Field>
-
-        <Field data-invalid={!!fieldErrors.categoryId}>
-          <FieldLabel htmlFor="award-category">Category</FieldLabel>
-          <OptionSelect
-            id="award-category"
-            name="categoryId"
-            value={categoryId}
-            onValueChange={setCategoryId}
-            options={categoryItems}
-            aria-invalid={!!fieldErrors.categoryId}
-          />
-          <FieldDescription>
-            Groups this Award with the same Category in other War Weeks.
-          </FieldDescription>
-          <FieldError>{fieldErrors.categoryId}</FieldError>
         </Field>
 
         <FieldSet>
@@ -261,17 +246,15 @@ export function AwardForm({
               <FieldLabel htmlFor="award-participants">
                 Participants ({participantIds.length} chosen)
               </FieldLabel>
-              <EntityCombobox
+              <ParticipantPicker
                 id="award-participants"
                 multiple
                 name="participantIds"
                 aria-invalid={!!fieldErrors.participantIds}
-                items={participantItems}
+                options={participantOptions}
                 value={participantIds}
                 onValueChange={setParticipantIds}
-                placeholder={
-                  showTeam ? `Find by name or ${teamLabel}` : "Find by name"
-                }
+                placeholder="Find by name"
               />
               <FieldError>{fieldErrors.participantIds}</FieldError>
             </Field>

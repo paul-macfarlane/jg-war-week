@@ -118,8 +118,7 @@
     {
       "key": "mvp-1st-place",
       "name": "MVP 1st Place",
-      "participants": ["Ian Ballard"],
-      "category": "war-week-mvp"
+      "participants": ["Ian Ballard"]
     },
     {
       "key": "mvp-2nd-place",
@@ -138,9 +137,8 @@
     },
     {
       "key": "billing-hours-champ",
-      "name": "Billing Hours Champ",
-      "participants": ["Kelly Byrnes"],
-      "category": "billable-hours-champ"
+      "name": "Billable Hours Champ",
+      "participants": ["Kelly Byrnes"]
     },
     {
       "key": "four-score-club",
@@ -195,7 +193,7 @@
     },
     {
       "key": "settlers-of-catan",
-      "name": "Settlers of Catan",
+      "name": "Settlers of Catan Champion",
       "description": "Won via Tony M",
       "participants": ["Dan Bedian"]
     },
@@ -235,7 +233,7 @@
     },
     {
       "key": "super-smash-bros",
-      "name": "Super Smash Bros",
+      "name": "Super Smash Bros. Champion",
       "participants": ["James Rivera"]
     },
     {
@@ -250,7 +248,7 @@
     },
     {
       "key": "chess",
-      "name": "Chess",
+      "name": "Chess Tournament Champion",
       "participants": ["Dylan Mann"]
     }
   ],

@@ -1,15 +1,14 @@
 import type { ArchiveAward } from "@/lib/archive";
 import { type AwardView, namedAward } from "@/lib/awards";
 
-/** An Award as `get_awards` shows it: `get_history`'s shape plus its Category. */
-export type McpAward = ArchiveAward & { category: string | null };
+/** An Award as `get_awards` shows it: `get_history`'s shape. */
+export type McpAward = ArchiveAward;
 
 export type AwardsResult = { edition: string; awards: McpAward[] };
 
 /**
  * Serializes a War Week's Awards into the `get_awards` MCP tool payload:
- * recipients by name, the same shape `get_history` uses, plus each Award's
- * Category name (null when uncategorized).
+ * recipients by name, the same shape `get_history` uses.
  */
 export function toAwardsResult(
   edition: string,
@@ -17,9 +16,6 @@ export function toAwardsResult(
 ): AwardsResult {
   return {
     edition,
-    awards: awards.map((award) => ({
-      ...namedAward(award),
-      category: award.category?.name ?? null,
-    })),
+    awards: awards.map(namedAward),
   };
 }

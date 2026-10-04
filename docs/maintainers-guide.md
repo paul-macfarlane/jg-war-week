@@ -23,7 +23,7 @@ you set them in your own `.env.local` or in the service's settings.
 | Vercel project                             | Preview deploys, production deploys, env vars, rollbacks                                      | Paul                           |
 | Neon project                               | The staging and production databases (you rarely touch them directly)                         | Paul                           |
 | Google Cloud OAuth client                  | Local sign-in: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and adding redirect URIs           | Paul                           |
-| Organizer list                             | `/admin` only opens for Organizers (and Hosts, for their Competitions)                        | Any Organizer, in-app          |
+| Organizer list                             | `/admin` only opens for Organizers (and Hosts, for their Competitions and the Guide)          | Any Organizer, in-app          |
 | Claude Code with the Atlas plugin          | The recommended way to make changes ([section 2](#2-set-up-claude-code))                      | You (Paul if the install fails) |
 
 Your local `.env.local` needs the variables named in `.env.example`:
@@ -85,14 +85,15 @@ before it says it's done.
 | The Bracket engine (seeding, Rounds/Matches, advancing winners, Bracket → Points Entries) | `src/lib/bracket/` (`*.test.ts` next to each file) |
 | The admin Competition page (Settings on top, the Format's run area below) | `src/app/admin/competitions/[id]/page.tsx` and `run-area.tsx`, `src/components/competition-settings-form.tsx`, `src/lib/competition-page.ts`, `src/queries/competition-page.ts` |
 | Which settings lock, and the per-field save | `src/lib/competition-locks.ts` (the one lock table and its one-line reasons), `src/queries/competition-locks.ts`, `src/mutations/competition-settings.ts`, `src/lib/competition-settings.ts`, `src/lib/autosave.ts` |
-| The Hosts picker (roster by name, emails beneath) | `src/lib/host-options.ts`, `getHostCandidates` in `src/queries/roster.ts` |
+| The one Participant picker (avatar, name, Team; name-only search, no cap, no email in any option or payload) | `src/components/participant-picker.tsx` (on `entity-combobox.tsx`), `src/lib/participant-options.ts` (the option type and the name match, with its vitest); the Hosts picker's "Can't sign in" note in `src/lib/host-options.ts`, `getHostCandidates` in `src/queries/roster.ts` |
+| How a Participant's Team shows wherever they compete or score (name beside the name, color where tight; a ring on a pictured Avatar) | `src/components/participant-mark.tsx` (`TeamTag`), `src/components/entrant-mark.tsx`, `src/components/avatar.tsx` |
 | The description's plain-text to rich-text conversion for seeds | `src/lib/rich-text/from-plain-text.ts` |
 | Bracket builder and results screens                | the Bracket section of `src/components/competition-settings-form.tsx` and of the run area; `src/components/bracket-builder.tsx` |
 | The retired setup routes (308 to the Competition page) | `src/app/admin/competitions/[id]/{bracket,games,participation}/`, `src/app/admin/brackets/[id]/`, `src/app/admin/placements/[competitionId]/`: each a redirect page, proven by `retired-routes.test.ts` |
 | Participation (scoring, Check in rule)     | `src/lib/participation/` (`score.ts`, `check-in-rule.ts`, `input.ts`), `src/mutations/participation.ts`, `src/queries/participation.ts` |
 | Participation run area, and its Competition page parts | `src/components/participation-builder.tsx`, `participation-view.tsx`, `check-in-button.tsx` |
-| Award Categories (list, rename, archive, restore) | `src/lib/award-categories.ts`, `src/mutations/award-categories.ts`, `src/components/award-categories-editor.tsx` (on `/admin/awards`) |
-| Awards grouped by Category; a Category through the years | `src/app/[edition]/awards/`, `src/app/history/awards/[id]/`, `src/queries/award-category-history.ts`; the list on `/history` is `src/app/history/(list)/` |
+| Award presets (the names the Add Award form offers) and the name slug | `src/lib/award-names.ts` (the seven `FORMER_CATEGORY_NAMES`, `awardNameSlug`, `awardPresets`), `getAwardPresets` in `src/queries/awards.ts`, the Preset picker in `src/components/award-form.tsx` |
+| An Award name through the years | `src/app/[edition]/awards/` (names link to history), `src/app/history/awards/page.tsx` (every name) and `[slug]/page.tsx` (one name), `src/queries/award-history.ts`; the list on `/history` is `src/app/history/(list)/` |
 | The Competitions list's status (Not started, Underway, Closed, Done · Winner) | `src/lib/competition-status.ts` (the one rule, with `*.test.ts`; the list query only loads the facts) |
 | Database schema                            | `src/db/schema.ts`                                                     |
 | Migrations (generated, never hand-edited)  | `drizzle/`                                                             |
@@ -243,7 +244,8 @@ redirect to their new homes.
   optional short Day description) and each Day's Schedule Items on one
   page. **`/admin/roster`**: Teams and Participants, with an Organizer-only
   Import (paste from Google Sheets or upload a CSV, preview, then Import).
-  **`/admin/competitions`**: Competitions, with their Hosts. A row's **Edit**
+  **`/admin/competitions`**: Competitions, with their Hosts (a Host sees only
+  the ones they host). A row's **Edit**
   opens the Competition's own page (see [Run a Competition from its
   page](#run-a-competition-from-its-page)).
 - **On a phone**, the admin sections are a bar fixed to the bottom of the
@@ -269,7 +271,7 @@ redirect to their new homes.
   sign in" on Roster.
 - **`/admin/organizers`**: the Organizer list (see
   [Add an Organizer or assign Hosts](#add-an-organizer-or-assign-hosts)).
-- **`/admin/discretionary-points`** (Organizers only: give, edit or delete points with no Competition, each with a required reason; the old `/admin/points` redirects here), **`/admin/finale`** (Run the Finale: the slide list and Awards layout, "Open Finale" at closing ceremonies, and "Finale: <Competition>" for each closed Bracket),
+- **`/admin/discretionary-points`** (Organizers only: give, edit or delete points with no Competition, each with a required reason; the old `/admin/points` redirects here), **`/admin/finale`** (Run the Finale: the slide list, "Open Finale" at closing ceremonies),
   **`/admin/announcements`**, **`/admin/awards`**.
 
 To start next year's edition in the app:
@@ -277,7 +279,8 @@ To start next year's edition in the app:
 1. In `/admin/settings`, press **Create next War Week**. The edition, number
    and year are prefilled (XII, 12, next year); add the dates and Story
    Theme, and choose what to copy (settings are on; Competitions, with
-   their Hosts, and the FAQ are off). Organizers are global, so there's
+   no Hosts, and the FAQ are off: the new roster is empty, so add Hosts once it
+   exists). Organizers are global, so there's
    nothing to copy for them. It starts `upcoming`, and the admin
    switches to it so you can set it up while XI stays current.
 2. When XI is over, switch back to XI in the header's edition switcher and
@@ -314,19 +317,27 @@ signed in is a **Participant** (`CONTEXT.md`, "Access rules").
   one Organizer is left. The list is global: one list for every War Week.
 - **Assign Hosts**: the Hosts field in the Settings of each Competition's
   page (`/admin/competitions`, Edit), saved as you pick (Organizers only).
-  Search the roster by name: the email shows beneath, and a Participant with
-  no email, or one that isn't `@jahnelgroup.com`, is shown disabled with the
-  reason (fix it in Roster first). A Host needs
-  no Participant record. They get the Admin link and see only their Competitions in Admin: its Placements,
-  Bracket, Matches and Attempts, settings (the Hosts shown by name only, no emails) and linked Schedule Items, plus Announcements for
-  that War Week. Remove the email to take it away; it applies on their next
-  request. A Schedule Item's "host" text is only what the schedule shows;
-  it doesn't make anyone a Host.
+  A Host is a **Participant on that War Week's roster**: search the roster by
+  name (no email is shown). A Participant with no email can be picked; one
+  whose email isn't `@jahnelgroup.com` can be picked too and is marked "Can't
+  sign in". A Host gets access when they sign in with the email on their
+  roster entry, so add it in Roster if they have none; the email is matched
+  on each request, so changing a Participant's roster email moves their Host
+  access to whoever owns the new one. A Host gets the Admin link and sees
+  only the Competitions they host and the Guide: each Competition's page
+  (its Placements, Bracket, Matches and Attempts, settings; the Hosts shown
+  by name only, no emails). Schedule, Announcements and the Finale are
+  Organizer-only, and the server refuses a Host there. Remove the Participant
+  from the Hosts field to take access away; it applies on their next request.
+  A Schedule Item's "host" text is only what the schedule shows; it doesn't
+  make anyone a Host.
 - **A fresh database** gets its first Organizers from a seed's `organizers`
   list: a seed load adds any that are missing and never removes one, even
   with `--reset`. After that, manage them in the app. Hosts never come from
-  seeds; a plain reload leaves them alone, and `--reset` deletes them along
-  with the War Week's Competitions.
+  the seeds unless a seed Competition lists them (`hosts`: Participant display
+  names from that seed's roster, refused otherwise); a plain reload keeps any
+  Host an Organizer added, and `--reset` deletes them along with the War
+  Week's Competitions.
 - **Expand/contract.** `war_week.organizer_emails` and
   `competition.bracket_points` were dropped in migration 0013 once Epics B
   and E had run on `main` long enough that rolling back past them was no
@@ -357,7 +368,8 @@ staging. It is never on for production (ADR 0008).
     (`/admin/roster`), and it links as that Participant. With no roster row
     it is a signed-in person on no roster.
   - **Host:** give the alias to a roster Participant's email, then pick that
-    Participant in a Competition's Hosts field (`/admin/competitions`).
+    Participant in a Competition's Hosts field (`/admin/competitions`); no
+    other email is shown there.
   - **Organizer:** "inviting" is just adding the alias at
     `/admin/organizers`.
 - **Every page shows a "Test sign-in: <email>" banner** while you are in a
@@ -451,7 +463,8 @@ So R11 doesn't follow the usual expand-then-contract wait:
 Every Competition has one admin page, **`/admin/competitions/<id>`**: the
 Competitions list's **Edit** opens it, and **Add Competition** creates the
 Competition in a sheet, then opens it. Organizers use it for any Competition
-and a Host for their own; anyone else sees "Organizers and Hosts only."
+and a Host for their own; anyone else, and a Host opening another
+Competition's page, sees "Organizers and Hosts only."
 
 - **Settings** are on top and **autosave per field**: change a field and it
   saves ("Saved" by the Settings heading, no toast; a refusal shows under
@@ -459,10 +472,11 @@ and a Host for their own; anyone else sees "Organizers and Hosts only."
   **description** (the Announcement editor: headings, lists, links, images by
   URL, no upload), Group, **Hosts**, Format, scoring, Placement Points and the
   Format's own settings are all here.
-- **Hosts** are picked from the roster by name, with the email beneath. A
-  Participant with no email, or one that isn't `@jahnelgroup.com`, shows
-  disabled with the reason: fix it in Roster first. A Host sees the Hosts
-  read-only, by name, and no emails.
+- **Hosts** are picked from the roster by name, never showing an email. A
+  Participant with no email, or one that isn't `@jahnelgroup.com`, can be
+  picked (the latter is marked "Can't sign in"); a Host with no email gets
+  access once you add one in Roster. A Host sees the Hosts read-only, by
+  name, and no emails.
 - **The run area** is below: Record placements (Placement), Entrants and
   Bracket tree (Bracket), Entrants and Matches with **Log a Match** (Head-to-head), Entrants and Attempts with **Log an Attempt** (Best score, Edit and Delete in each person's expanded row), or Who took part
   (Participation), with Close and Reopen. Every Format uses the same two words: **Close** writes the points, **Reopen** withdraws them.
@@ -552,10 +566,8 @@ Competition allows self-report, from your own Match on the public tree: a
 dialog centered on a screen, a bottom sheet on a phone. Hosts can do it for
 their own Competitions. A Match has no time or place and isn't on the
 schedule; a played Match shows "Recorded <time>", when its result was
-saved. Once closed, the Bracket has its own **Bracket Finale** at
-`/<edition>/finale/<competitionId>` for the projector, linked from the
-results screen and `/admin/finale` ("Finale:
-<Competition>"). The rules are under "Bracket rules" and "Finale rules" in
+saved. A Bracket has no Finale of its own; the War Week Finale
+(`/<edition>/finale`) is the only one. The rules are under "Bracket rules" and "Finale rules" in
 `CONTEXT.md`.
 
 A Head-to-head Bracket is a straight 1v1 knockout. A Group Bracket plays
@@ -642,19 +654,18 @@ back, Escape to the first slide) and nothing advances on its own. Its
 slides are the built-ins (Title, By the numbers, Awards, Winners,
 Standings countdown, Winner) plus any **Custom slides**. In `/admin/finale`
 an Organizer sees the slide list, moves a slide (drag, or ↑/↓), hides or
-shows it, adds a Custom slide (heading, rich-text body, optional background
-color; its text colors adjust to read on it) and edits or deletes it, and
-picks the Awards layout ("All on one slide" or "One slide per Category").
-Every change saves at once. Writes are Organizer-only: a Host sees the list
-but no controls. A slide with nothing to show is skipped, and with every
+shows it, and adds a Custom slide (heading, rich-text body, optional
+background color; its text colors adjust to read on it) and edits or deletes
+it. The Awards slide always reveals one Award per step; there is no layout
+setting. Every change saves at once. Only Organizers can open it: a Host can't open
+`/admin/finale`. A slide with nothing to show is skipped, and with every
 slide hidden the Finale says "Nothing to show yet." The rules are under
 "Finale rules" in `CONTEXT.md`.
 
 Schema: slides live in the `finale_slide` table (unique on War Week, kind and
 heading, so each built-in is once per War Week and a Custom slide is unique
-by heading) and the layout in `war_week.finale_awards_layout`. A seed's
-optional `finaleSlides` list is synced like FAQ Items and its
-`finaleAwardsLayout` is insert-only (`CONTEXT.md`, "Seed idempotence rules").
+by heading). A seed's optional `finaleSlides` list is synced like FAQ Items
+(`CONTEXT.md`, "Seed idempotence rules").
 The demo seeds `seeds/demo/xi.json` and `xii.json` carry a list (the six
 built-ins plus a Custom "Thank you").
 
@@ -707,17 +718,21 @@ Who took part isn't seeded. A seed's `participation` Competition may set
 `participationPoints` (individual only) and `selfCheckIn`, but they are applied only when the Competition is first
 inserted, never on a reload.
 
-### Manage Award Categories
+### Manage Awards
 
-On `/admin/awards` (Organizers only) the **Categories** section adds, renames,
-archives and restores global Award Categories; there is no delete. An
-archived one stays on its past Awards but can't be picked for another. Give an
-Award a Category in the Award form's **Category** select ("None" is allowed).
-`/<edition>/awards` groups by Category, and `/history` and
-`/history/awards/<id>` show each Category through the years. A seed's Award
-`category` is a Category's **key** (the seven seeded: `war-week-mvp`,
-`billable-hours-champ`, `black-midnight`, `grow`, `grind`, `serve`,
-`inspire`), never its name, so a rename doesn't break a seed.
+On `/admin/awards` (Organizers only) **Add Award** opens the form. Its
+**Preset** picker offers every Award name already used in any War Week plus
+the seven that used to be Categories (War Week MVP, Billable Hours Champ,
+Black Midnight, Grow, Grind, Serve, Inspire); picking one fills the name and
+its most recent description, and both stay editable. A brand-new name works
+too. There are no Categories: the same name, ignoring case and punctuation, is what
+ties an Award together across years. `/<edition>/awards` lists the Awards,
+each name linking to `/history/awards/<slug>`, which shows that name by War
+Week, newest first (case and punctuation don't split a name). `/history` and
+`/history/awards` list every name. To make a historic Award group with
+another year's, spell it the same in its seed; the wikis' differing spellings
+were aligned once (the rename table is in `CONTEXT.md`, "Award preset and
+history rules").
 
 ### Record a Placement (the default Format)
 
@@ -909,7 +924,7 @@ The chain is schema → `pnpm db:generate` → migration in `drizzle/` →
 `pnpm db:migrate` locally → seed format and seed files → UI. Never hand-edit
 a migration. The one exception is a data step that the schema diff can't
 express (copying rows between tables, or inserting fixed reference rows
-such as the seeded Award Categories): create it with
+such as inserting fixed reference rows): create it with
 `pnpm db:generate --custom --name <what-it-copies>` so it gets its
 own journal entry, and write only that file.
 
@@ -1066,7 +1081,7 @@ Competiscore data is gone; `old-wikis/`, the live wiki pages (and the Drive
 folders they link to) and what you remember are the only sources. For
 Claude to read the wiki, sign in to it in the Claude Code browser first.
 Leave `seeds/demo/xi.json` alone unless a test needs different demo data. Load locally with `pnpm seed:load seeds/<edition>.json`, then check
-`/history` and `/<edition>`. `/history` and a Category page wear the
+`/history` and `/<edition>`. `/history` and an Award name page wear the
 current War Week's nav, tab bar, footer and theme (`src/app/history/layout.tsx`).
 
 ### How R16 reached staging and production (the reset)

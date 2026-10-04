@@ -15,6 +15,9 @@ export const E2E_BASE_URL = `http://localhost:${E2E_PORT}`;
 export const E2E_AUTH_SECRET =
   process.env.BETTER_AUTH_SECRET || "e2e-only-secret-never-used-in-production";
 
+/** A Host once a flow gives it a `competition_host` row; not an Organizer. */
+export const E2E_HOST_EMAIL = "e2e-host@jahnelgroup.com";
+
 /** e2e users never share an email with a real person. */
 export const E2E_EMAIL_PATTERN = "e2e-%";
 

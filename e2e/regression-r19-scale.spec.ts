@@ -220,7 +220,7 @@ test.describe("100 Participants in the XII scale demo", () => {
     }
   });
 
-  test("r19 106 a picker finds a Participant by name and by email, all 100 with no cap", async ({
+  test("r19 106 a picker finds a Participant by name and not by email, all 100 with no cap", async ({
     browser,
   }, testInfo) => {
     const { context, page } = await organizerPage(browser);
@@ -233,15 +233,25 @@ test.describe("100 Participants in the XII scale demo", () => {
           .click();
         const picker = page.getByRole("combobox", { name: "Participant" });
         await picker.click();
-        // Every Participant's email has an "@": no result cap at 100.
-        await picker.fill("@");
+        // No result cap at 100: with nothing typed, every one is listed.
+        await picker.fill("");
         await expect(page.getByRole("option")).toHaveCount(100);
-        // By email: nothing in the name says "pim.ocelot".
+        // Not by email (R22: name-only): nothing in the name says "@".
+        await picker.fill("@");
+        await expect(page.getByRole("option")).toHaveCount(0);
         await picker.fill("pim.ocelot@jahnel");
-        await expect(page.getByRole("option")).toHaveText(["Pim Ocelot"]);
+        await expect(page.getByRole("option")).toHaveCount(0);
         // By name.
+        await picker.fill("pim ocel");
+        await expect(page.getByRole("option")).toHaveCount(1);
+        await expect(
+          page.getByRole("option", { name: "Pim Ocelot" }),
+        ).toBeVisible();
         await picker.fill("feather");
-        await expect(page.getByRole("option")).toHaveText([LONG_NAME]);
+        await expect(page.getByRole("option")).toHaveCount(1);
+        await expect(
+          page.getByRole("option", { name: LONG_NAME }),
+        ).toBeVisible();
         await picker.fill("an");
         if (size === PHONE) await expectNoSidewaysScroll(page);
         await page.screenshot({
@@ -254,7 +264,7 @@ test.describe("100 Participants in the XII scale demo", () => {
     }
   });
 
-  test("r19 106 the Awards recipient picker finds a Participant by email", async ({
+  test("r19 106 the Awards recipient picker finds a Participant by name and not by email", async ({
     browser,
   }) => {
     const { context, page } = await organizerPage(browser);
@@ -263,9 +273,15 @@ test.describe("100 Participants in the XII scale demo", () => {
       await page.getByRole("button", { name: "Add Award" }).click();
       const picker = page.getByRole("combobox", { name: /^Participants/ });
       await picker.click();
-      // By email: nothing in the name says "pim.ocelot".
+      // Not by email (R22: name-only).
       await picker.fill("pim.ocelot@jahnel");
-      await expect(page.getByRole("option")).toHaveText(["Pim Ocelot"]);
+      await expect(page.getByRole("option")).toHaveCount(0);
+      // By name.
+      await picker.fill("pim ocel");
+      await expect(page.getByRole("option")).toHaveCount(1);
+      await expect(
+        page.getByRole("option", { name: "Pim Ocelot" }),
+      ).toBeVisible();
     } finally {
       await context.close();
     }

@@ -94,6 +94,7 @@ export function resultEntryQuery(dbOrTx: DBOrTx) {
         participantName: participantNameSql(),
         participantImage: participantImageSql(),
         participantTeamColor: participantTeam.color,
+        participantTeamName: participantTeam.name,
       })
       .from(pointsEntry)
       .leftJoin(team, eq(team.id, pointsEntry.teamId))
@@ -128,6 +129,7 @@ export function toResultEntry(
           name: r.participantName ?? "Unknown",
           image: r.participantImage,
           color: r.participantTeamColor,
+          teamName: r.participantTeamName,
         },
   };
 }

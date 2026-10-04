@@ -361,10 +361,7 @@ describe.skipIf(!isLocalDatabase)("Bracket queries", () => {
           await queries.getMatchReporters(id, tx),
         );
       }
-      shapes.push(
-        await queries.getBracketCompetitions({ id: f.warWeekId }, tx),
-        await queries.getParticipantTeamIds({ id: f.warWeekId }, tx),
-      );
+      shapes.push(await queries.getParticipantTeamIds({ id: f.warWeekId }, tx));
       expect(JSON.stringify(shapes)).toContain("Ashley Schuliger");
       for (const rows of shapes) {
         expect(JSON.stringify(rows)).not.toContain("@");

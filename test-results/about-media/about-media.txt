@@ -1,5 +1,5 @@
 current War Week: xii (free-for-all, light base palette)
-bracket demo: seeded competition fc2fde20-834a-4181-ae8f-5a4f0c461ecf, Winner entrant 1eae36b2-237b-45e3-9e71-b4904968d3a5
+bracket demo: seeded competition ebfc37a9-5175-4ffb-8f8d-05c74e2dd5e2, Winner entrant 8b8d6ed4-4772-46a1-88c0-d6b62a481094
 still: standings-before.png from /xii/leaderboard
 still: standings-before-dark.png from /xii/leaderboard
 standings demo: moving "Lou Lantern" from last (0.5) past first (7.5) with +22
@@ -8,6 +8,12 @@ still: standings-entry-dark.png from /admin/discretionary-points, filled in
 still: standings-after.png from /xii/leaderboard
 still: standings-after-dark.png from /xii/leaderboard
 standings demo: "Lou Lantern" is now #1 of 12 (22.5 pts)
+finale (light): reached Standings after 3 presses
+finale (light): countdown started 8 ms after the → onto Standings
+finale (light): 470 frames captured, 467 kept
+finale (dark): reached Standings after 3 presses
+finale (dark): countdown started 8 ms after the → onto Standings
+finale (dark): 471 frames captured, 468 kept
 still: organizer-admin.png from /admin/schedule
 still: organizer-admin-dark.png from /admin/schedule
 points: the Discretionary points form is open: true
@@ -18,10 +24,10 @@ still: schedule.png from /xii?at=2027-02-23T12%3A15%3A00.000-05%3A00
 still: schedule-dark.png from /xii?at=2027-02-23T12%3A15%3A00.000-05%3A00
 still: announcements.png from /xii/announcements
 still: announcements-dark.png from /xii/announcements
-still: competitions.png from /xii/competitions/fc2fde20-834a-4181-ae8f-5a4f0c461ecf
-still: competitions-dark.png from /xii/competitions/fc2fde20-834a-4181-ae8f-5a4f0c461ecf
-games: frame 1600x900@1.6 used (h1 top 121, header bottom 53, first Game row bottom 574.5, viewport height 900)
-evidence: games from /xii/competitions/68b5cccf-5dce-4349-bf56-afe52b3125d8, one Match logged
+still: competitions.png from /xii/competitions/ebfc37a9-5175-4ffb-8f8d-05c74e2dd5e2
+still: competitions-dark.png from /xii/competitions/ebfc37a9-5175-4ffb-8f8d-05c74e2dd5e2
+series: frame 1600x900@1.6 used (h1 top 121, header bottom 53, first Match row bottom 601, viewport height 900)
+evidence: series from /xii/competitions/c5aa244c-7da9-44b2-9b18-511963e2c91f, one Match logged
 still: archive.png from /history
 still: archive-dark.png from /history
 evidence: anonymous /about landed on /about
@@ -30,6 +36,8 @@ evidence: desktop hero {"steps":["standings-before","standings-entry","standings
 evidence: /about desktop under the light Display shows 10 stills, 0 wrong or unloaded
 evidence: /about desktop under the dark Display shows 10 stills, 0 wrong or unloaded
 evidence: /about prerendered at build (.next/server/app/about.html exists): false
+wrote public/about/finale-poster.png: 683 KB
+wrote public/about/finale-poster-dark.png: 672 KB
 wrote public/about/standings-before.png: 110 KB
 wrote public/about/standings-before-dark.png: 110 KB
 wrote public/about/standings-entry.png: 117 KB
@@ -42,9 +50,9 @@ wrote public/about/schedule.png: 171 KB
 wrote public/about/schedule-dark.png: 171 KB
 wrote public/about/points.png: 200 KB
 wrote public/about/points-dark.png: 193 KB
-wrote public/about/announcements.png: 127 KB
-wrote public/about/announcements-dark.png: 127 KB
-wrote public/about/competitions.png: 165 KB
-wrote public/about/competitions-dark.png: 166 KB
+wrote public/about/announcements.png: 128 KB
+wrote public/about/announcements-dark.png: 128 KB
+wrote public/about/competitions.png: 171 KB
+wrote public/about/competitions-dark.png: 172 KB
 wrote public/about/archive.png: 321 KB
 wrote public/about/archive-dark.png: 319 KB

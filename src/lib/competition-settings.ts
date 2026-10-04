@@ -27,7 +27,6 @@ import {
   SCORE_DIRECTIONS,
   type ScoreDirection,
 } from "@/lib/enums";
-import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
 import { participationPointsSchema } from "@/lib/participation/input";
 import { parsePlacementPointsText } from "@/lib/placement-points";
 import type { Parsed } from "@/lib/result";
@@ -37,6 +36,9 @@ import {
   isBlankContent,
 } from "@/lib/rich-text/content";
 import { type SeriesConfig, seriesConfigSchema } from "@/lib/series/config";
+
+/** The refusal for a Hosts list that isn't Participant ids. */
+const HOSTS_MESSAGE = "Pick Hosts from the roster.";
 
 /** The highest "Max attempts per person" the form takes. */
 export const MAX_ATTEMPTS_LIMIT = 999;
@@ -50,7 +52,7 @@ export type CompetitionSettingChange =
   /** Rich text, as an Announcement body; blank is none. */
   | { field: "description"; value: Content | null }
   | { field: "group"; value: string | null }
-  /** Host emails, each `@jahnelgroup.com`. */
+  /** Host Participant ids (roster Participants of this War Week). */
   | { field: "hosts"; value: string[] }
   /** Points for 1st, 2nd, 3rd…, highest first; null or empty for none. */
   | { field: "placementPoints"; value: number[] | null }
@@ -153,10 +155,9 @@ export function parseCompetitionSetting(
       return text.ok ? ok({ field, value: text.value }) : text;
     }
     case "hosts": {
-      const parsed = jgEmailListSchema.safeParse(value);
-      if (!parsed.success) return refusedAt(field, JG_EMAIL_MESSAGE);
-      const emails = parsed.data.map((email) => email.trim().toLowerCase());
-      return ok({ field, value: [...new Set(emails)] });
+      const parsed = z.array(z.uuid()).safeParse(value);
+      if (!parsed.success) return refusedAt(field, HOSTS_MESSAGE);
+      return ok({ field, value: [...new Set<string>(parsed.data)] });
     }
     case "placementPoints": {
       const text = Array.isArray(value)

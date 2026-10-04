@@ -23,6 +23,7 @@ import {
   serverActionIds,
   xiWarWeekId,
 } from "./harness";
+import { assertNoRosterEmailInPickers } from "./pickers";
 
 // The smoke Host (ADR 0002): a JG user with no Organizer row who hosts one
 // seeded XI Competition. Both Competitions are picked by name from
@@ -42,9 +43,12 @@ const SELF_REPORT_OFF = "Self-report is off for this Competition.";
 const LOCKED_WHILE_CLOSED =
   "Locked while the Competition is Closed. Reopen it first.";
 
-/** Removes every `competition_host` row the smoke Host has. */
+/**
+ * Removes the smoke Host's roster Participants, and with them every
+ * `competition_host` row they have (a Host is a roster Participant, ADR 0012).
+ */
 export async function deleteSmokeHosts() {
-  await runQuery(`delete from competition_host where email = $1`, [
+  await runQuery(`delete from participant where email = $1`, [
     SMOKE_HOST_EMAIL,
   ]);
 }
@@ -91,14 +95,21 @@ async function hostFixture(session: SmokeSession): Promise<HostFixture> {
 export async function assertHostChecks(sessions: {
   host: SmokeSession;
   notOrganizer: SmokeSession;
+  organizer: SmokeSession;
 }) {
-  const setup = "the smoke Host hosts one XI Competition";
+  const setup =
+    "the smoke Host, a roster Participant, hosts one XI Competition";
   let fixture: HostFixture;
   try {
     fixture = await hostFixture(sessions.host);
     await deleteSmokeHosts();
     await runQuery(
-      `insert into competition_host (competition_id, email) values ($1, $2)`,
+      `insert into participant (war_week_id, display_name, email) values ($1, 'Smoke Host', $2)`,
+      [fixture.xiId, SMOKE_HOST_EMAIL],
+    );
+    await runQuery(
+      `insert into competition_host (competition_id, participant_id)
+       select $1, id from participant where email = $2`,
       [fixture.hostCompetitionId, SMOKE_HOST_EMAIL],
     );
     ok(setup);
@@ -109,15 +120,21 @@ export async function assertHostChecks(sessions: {
   }
   try {
     await assertHostAllowedAndRefused(fixture);
-    await assertHostKeepsOwnPin(fixture);
-    await assertAdminTrimmedForHost(sessions);
+    await assertHostRefusedOrganizerAreas(fixture);
+    await assertAdminTrimmedForHost(sessions, fixture);
     await assertAdminLinkForHost(sessions);
     await assertAccessBeforeValidation(sessions, fixture);
     await assertImportOrganizerOnly(sessions, fixture);
+    await assertNoRosterEmailInPickers(
+      sessions,
+      SMOKE_HOST_EMAIL,
+      SMOKE_ORGANIZER_EMAIL,
+      "smoke-participant@jahnelgroup.com",
+    );
     await assertFormerHostRefused(fixture);
   } finally {
     await deleteSmokeHosts().catch((error) =>
-      fail("delete the smoke Host's competition_host rows", String(error)),
+      fail("delete the smoke Host's roster entry and Host rows", String(error)),
     );
   }
 }
@@ -304,68 +321,151 @@ async function assertHostAllowedAndRefused(fixture: HostFixture) {
   }
 }
 
-/** Spec: a Host's edit of their own Announcement never changes its pin. */
-async function assertHostKeepsOwnPin(fixture: HostFixture) {
+/**
+ * R22 (ADR 0012): Schedule, Announcements and the Finale are Organizer-only.
+ * A Host's calls to their actions are refused with the Organizer-only
+ * message and write nothing.
+ */
+async function assertHostRefusedOrganizerAreas(fixture: HostFixture) {
   const ids = serverActionIds();
-  const title = `${SMOKE_ANNOUNCEMENT_PREFIX}host-pinned`;
-  const body = {
+  const { session, xiId } = fixture;
+  const row = await xiRowIds(fixture);
+  const doc = (text: string) => ({
     type: "doc",
-    content: [
-      { type: "paragraph", content: [{ type: "text", text: "smoke" }] },
-    ],
-  };
-  const pinned = async (id: string) => {
-    const [row] = await runQuery<{ pinned: boolean; title: string }>(
-      `select pinned, title from announcement where id = $1`,
-      [id],
-    );
-    return row;
-  };
+    content: [{ type: "paragraph", content: [{ type: "text", text }] }],
+  });
+  const title = `${SMOKE_ANNOUNCEMENT_PREFIX}host-refused`;
+  const scheduleTitle = "smoke-host-schedule-item";
+  const count = async (sql: string, params: unknown[] = []) =>
+    Number((await runQuery<{ n: string }>(sql, params))[0].n);
+
   try {
     await deleteSmokeAnnouncements();
-    // An Organizer pinned the Host's own Announcement.
-    const [row] = await runQuery<{ id: string }>(
+    // The Host's own Announcement, as before R22: still not theirs to change.
+    const [mine] = await runQuery<{ id: string }>(
       `insert into announcement (war_week_id, title, body, pinned, author_email)
-       values ($1, $2, $3, true, $4) returning id`,
-      [fixture.xiId, title, JSON.stringify(body), SMOKE_HOST_EMAIL],
+       values ($1, $2, $3, false, $4) returning id`,
+      [xiId, title, JSON.stringify(doc("smoke")), SMOKE_HOST_EMAIL],
     );
+    const scheduleBefore = await count(
+      `select count(*) as n from schedule_item where title = $1`,
+      [scheduleTitle],
+    );
+    const slide = { kind: "title" };
+    const cases: [string, string, unknown[], string][] = [
+      [
+        "createScheduleItem linked to their own Competition",
+        "createScheduleItem",
+        [
+          xiId,
+          {
+            dayId: row.day,
+            startTime: "23:10",
+            endTime: "23:50",
+            title: scheduleTitle,
+            host: "",
+            location: "",
+            virtualLink: "",
+            category: "competition",
+            competitionId: fixture.hostCompetitionId,
+            description: doc("smoke"),
+          },
+        ],
+        "Only an Organizer can add Schedule Items.",
+      ],
+      [
+        "updateScheduleItem",
+        "updateScheduleItem",
+        [row.scheduleItem, { title: "smoke-host-edit" }],
+        "Only an Organizer can change Schedule Items.",
+      ],
+      [
+        "deleteScheduleItem",
+        "deleteScheduleItem",
+        [row.scheduleItem],
+        "Only an Organizer can delete Schedule Items.",
+      ],
+      [
+        "createAnnouncement",
+        "createAnnouncement",
+        [xiId, { title: `${title}-new`, body: doc("smoke"), pinned: false }],
+        "Only an Organizer can post Announcements.",
+      ],
+      [
+        "updateAnnouncement on their own Announcement",
+        "updateAnnouncement",
+        [mine.id, { title: `${title}-edited`, body: doc("smoke") }],
+        "Only an Organizer can change Announcements.",
+      ],
+      [
+        "deleteAnnouncement on their own Announcement",
+        "deleteAnnouncement",
+        [mine.id],
+        "Only an Organizer can delete Announcements.",
+      ],
+      [
+        "moveFinaleSlide",
+        "moveFinaleSlide",
+        [xiId, { slide, toIndex: 0 }],
+        "Only an Organizer can reorder Finale slides.",
+      ],
+      [
+        "setFinaleSlideHidden",
+        "setFinaleSlideHidden",
+        [xiId, { slide, hidden: true }],
+        "Only an Organizer can hide Finale slides.",
+      ],
+      [
+        "createCustomFinaleSlide",
+        "createCustomFinaleSlide",
+        [xiId, { title: "smoke-host-slide", body: doc("smoke") }],
+        "Only an Organizer can add Custom Finale slides.",
+      ],
+    ];
+    for (const [label, action, args, expected] of cases) {
+      await runCheck(
+        `${label} as a Host is refused with '${expected}'`,
+        async () => {
+          if (!ids[action]) return `no server action id for ${action}`;
+          const result = await callAction(ids[action], args, session);
+          return !result.ok && result.error === expected
+            ? null
+            : `result=${JSON.stringify(result)}`;
+        },
+      );
+    }
 
     await runCheck(
-      "updateAnnouncement as a Host without pinned keeps their Organizer-pinned Announcement pinned",
+      "the Host's refused Schedule and Announcement calls wrote nothing",
       async () => {
-        const result = await callAction(
-          ids.updateAnnouncement,
-          [row.id, { title: `${title}-edited`, body }],
-          fixture.session,
+        const [announcement] = await runQuery<{ title: string }>(
+          `select title from announcement where id = $1`,
+          [mine.id],
         );
-        const after = await pinned(row.id);
-        return result.ok &&
-          after.pinned === true &&
-          after.title === `${title}-edited`
-          ? null
-          : `result=${JSON.stringify(result)} row=${JSON.stringify(after)}`;
-      },
-    );
-
-    await runCheck(
-      "updateAnnouncement as a Host with pinned: false on their pinned Announcement is refused with 'Only an Organizer can unpin Announcements.'",
-      async () => {
-        const result = await callAction(
-          ids.updateAnnouncement,
-          [row.id, { title: `${title}-unpinned`, body, pinned: false }],
-          fixture.session,
+        const schedule = await count(
+          `select count(*) as n from schedule_item where title = $1`,
+          [scheduleTitle],
         );
-        const after = await pinned(row.id);
-        return !result.ok &&
-          result.error === "Only an Organizer can unpin Announcements." &&
-          after.pinned === true &&
-          after.title === `${title}-edited`
+        const created = await count(
+          `select count(*) as n from announcement where title = $1`,
+          [`${title}-new`],
+        );
+        const edited = await count(
+          `select count(*) as n from schedule_item where title = 'smoke-host-edit'`,
+        );
+        return announcement?.title === title &&
+          schedule === scheduleBefore &&
+          created === 0 &&
+          edited === 0
           ? null
-          : `result=${JSON.stringify(result)} row=${JSON.stringify(after)}`;
+          : `announcement=${JSON.stringify(announcement)} schedule=${schedule} created=${created} edited=${edited}`;
       },
     );
   } catch (error) {
-    fail("the Host's own pinned Announcement", String(error));
+    fail(
+      "the Host's Schedule, Announcement and Finale refusals",
+      String(error),
+    );
   } finally {
     await deleteSmokeAnnouncements().catch((error) =>
       fail("delete smoke Announcements", String(error)),
@@ -373,11 +473,18 @@ async function assertHostKeepsOwnPin(fixture: HostFixture) {
   }
 }
 
-/** Spec: `/admin` shows a Host their Competitions only. */
-async function assertAdminTrimmedForHost(sessions: {
-  host: SmokeSession;
-  notOrganizer: SmokeSession;
-}) {
+/**
+ * Spec (ADR 0012): `/admin` shows a Host their Competitions and the Guide
+ * only. Schedule, Announcements, Finale and another Competition's page are
+ * the refusal; the War Week Finale stays readable.
+ */
+async function assertAdminTrimmedForHost(
+  sessions: {
+    host: SmokeSession;
+    notOrganizer: SmokeSession;
+  },
+  fixture: HostFixture,
+) {
   const get = async (route: string, session: SmokeSession) => {
     const res = await fetch(`${BASE_URL}${route}`, {
       headers: { cookie: session.cookie },
@@ -404,49 +511,94 @@ async function assertAdminTrimmedForHost(sessions: {
   );
 
   await runCheck(
-    "GET /admin/competitions as a Host shows the Host's nav: Competitions, Schedule, Announcements, Finale and Guide only",
+    "GET /admin/competitions as a Host shows the Host's nav (Competitions and Guide only) and only the Competitions they host",
     async () => {
       const { status, body } = await get("/admin/competitions", sessions.host);
       const shown = (section: string) =>
         body.includes(`href="/admin/${section}"`);
       const result = {
         status,
-        shown: [
-          "competitions",
+        missing: ["competitions", "guide"].filter((section) => !shown(section)),
+        hidden: [
+          "discretionary-points",
           "schedule",
           "announcements",
           "finale",
-          "guide",
-        ].filter((section) => !shown(section)),
-        hidden: [
-          "discretionary-points",
           "roster",
           "awards",
           "faq",
           "settings",
           "organizers",
         ].filter(shown),
+        hostsOwn: body.includes(
+          `/admin/competitions/${fixture.hostCompetitionId}`,
+        ),
+        listsOther: body.includes(
+          `/admin/competitions/${fixture.otherCompetitionId}`,
+        ),
       };
       return status === 200 &&
-        result.shown.length === 0 &&
-        result.hidden.length === 0
+        result.missing.length === 0 &&
+        result.hidden.length === 0 &&
+        result.hostsOwn &&
+        !result.listsOther
+        ? null
+        : JSON.stringify(result);
+    },
+  );
+
+  for (const route of [
+    "/admin/schedule",
+    "/admin/announcements",
+    "/admin/announcements/new",
+    "/admin/finale",
+    `/admin/competitions/${fixture.otherCompetitionId}`,
+  ]) {
+    await runCheck(
+      `GET ${route.replace(fixture.otherCompetitionId, "<another Competition>")} as a Host shows '${ADMIN_REFUSAL_TEXT}'`,
+      async () => {
+        const { status, body } = await get(route, sessions.host);
+        const result = {
+          status,
+          refused: body.includes(ADMIN_REFUSAL_TEXT),
+          // The page's own content: the Competition's name, the editors.
+          editor:
+            body.includes('aria-label="Schedule Items"') ||
+            body.includes('aria-label="Competition settings"') ||
+            body.includes("Add Custom slide"),
+        };
+        return status === 200 && result.refused && !result.editor
+          ? null
+          : JSON.stringify(result);
+      },
+    );
+  }
+
+  await runCheck(
+    "GET their own Competition's admin page as a Host shows its Settings",
+    async () => {
+      const { status, body } = await get(
+        `/admin/competitions/${fixture.hostCompetitionId}`,
+        sessions.host,
+      );
+      const result = {
+        status,
+        refused: body.includes(ADMIN_REFUSAL_TEXT),
+        settings: body.includes("Competition settings"),
+      };
+      return status === 200 && !result.refused && result.settings
         ? null
         : JSON.stringify(result);
     },
   );
 
   await runCheck(
-    "GET /admin/schedule as a Host shows the Schedule Items and not the Days editor",
+    "GET /xi/finale as a Host still opens the War Week Finale",
     async () => {
-      const { status, body } = await get("/admin/schedule", sessions.host);
-      const result = {
-        status,
-        items: body.includes('aria-label="Schedule Items"'),
-        days: body.includes('aria-label="Days"'),
-      };
-      return status === 200 && result.items && !result.days
+      const { status, body } = await get("/xi/finale", sessions.host);
+      return status === 200 && body.includes('data-finale-slide="title"')
         ? null
-        : JSON.stringify(result);
+        : `status=${status}`;
     },
   );
 
@@ -599,8 +751,8 @@ async function assertAccessBeforeValidation(
       family: "Schedule Item",
       action: "updateScheduleItem",
       args: [row.scheduleItem, { competitionId: other, startTime: 9 }],
-      participant: NOT_HOST_REFUSAL,
-      host: NOT_HOST_REFUSAL,
+      participant: organizerOnly("change Schedule Items"),
+      host: organizerOnly("change Schedule Items"),
     },
     {
       family: "FAQ",
@@ -620,8 +772,8 @@ async function assertAccessBeforeValidation(
       family: "Announcement",
       action: "updateAnnouncement",
       args: [row.announcement, { title: 3, pinned: "yes" }],
-      participant: "Only an Organizer can change someone else's Announcement.",
-      host: "Only an Organizer can change someone else's Announcement.",
+      participant: organizerOnly("change Announcements"),
+      host: organizerOnly("change Announcements"),
     },
     {
       family: "Discretionary points",
@@ -845,7 +997,7 @@ export async function assertParticipantRefused(sessions: {
           description: doc("smoke"),
         },
       ],
-      NOT_HOST_REFUSAL,
+      organizerOnly("add Schedule Items"),
     ],
     [
       "FAQ",
@@ -878,7 +1030,7 @@ export async function assertParticipantRefused(sessions: {
           pinned: false,
         },
       ],
-      "Only an Organizer or a Host of this War Week can post Announcements.",
+      organizerOnly("post Announcements"),
     ],
     [
       "Discretionary points",

@@ -6,6 +6,7 @@ import {
   EntityCombobox,
   type EntityComboboxItem,
 } from "@/components/entity-combobox";
+import { ParticipantPicker } from "@/components/participant-picker";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -16,12 +17,13 @@ import {
   FieldSet,
 } from "@/components/ui/field";
 import type { EntrantKind } from "@/lib/bracket/squads";
+import type { ParticipantOption } from "@/lib/participant-options";
 
 export type EntrantsPickerItem = EntityComboboxItem;
 
 const PLACEHOLDER: Record<EntrantKind, (label: string) => string> = {
   team: (label) => `Find a ${label}`,
-  participant: (label) => `Find by name or ${label}`,
+  participant: () => "Find by name",
   squad: () => "Find a Squad",
 };
 
@@ -45,6 +47,7 @@ export function EntrantsPicker({
   kind,
   kindLabel = "Team",
   options,
+  participantOptions = [],
   selected,
   onChange,
   onSave,
@@ -59,7 +62,10 @@ export function EntrantsPicker({
   kind: EntrantKind;
   /** The War Week's Team Label ("Team", "Cabin"…), for a team kind. */
   kindLabel?: string;
+  /** The Teams or Squads to choose from (a Participant kind uses `participantOptions`). */
   options: EntrantsPickerItem[];
+  /** The Participants to choose from, in a Participant kind. */
+  participantOptions?: ParticipantOption[];
   selected: string[];
   onChange: (ids: string[]) => void;
   onSave: () => void;
@@ -78,15 +84,27 @@ export function EntrantsPicker({
           <FieldLabel htmlFor={id}>
             {FIELD_LABEL[kind](kindLabel)} ({selected.length} chosen)
           </FieldLabel>
-          <EntityCombobox
-            id={id}
-            multiple
-            items={options}
-            value={selected}
-            onValueChange={onChange}
-            disabled={disabled}
-            placeholder={PLACEHOLDER[kind](kindLabel)}
-          />
+          {kind === "participant" ? (
+            <ParticipantPicker
+              id={id}
+              multiple
+              options={participantOptions}
+              value={selected}
+              onValueChange={onChange}
+              disabled={disabled}
+              placeholder={PLACEHOLDER[kind](kindLabel)}
+            />
+          ) : (
+            <EntityCombobox
+              id={id}
+              multiple
+              items={options}
+              value={selected}
+              onValueChange={onChange}
+              disabled={disabled}
+              placeholder={PLACEHOLDER[kind](kindLabel)}
+            />
+          )}
         </Field>
         <Button
           type="button"

@@ -10,15 +10,23 @@ import {
   reopenParticipation,
   unmarkParticipant,
 } from "@/actions/participation";
+import { Avatar } from "@/components/avatar";
 import { ConfirmActionButton } from "@/components/confirm-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { placementPointsList } from "@/lib/logged-results";
+import { nameMatches } from "@/lib/participant-options";
 import { formatPoints } from "@/lib/points";
 
-/** A Participant of the roster: id, shown name and Team (null for none). */
-type RosterRow = { id: string; name: string; team: string | null };
+/** A Participant of the roster: id, shown name, picture and Team (null for none). */
+type RosterRow = {
+  id: string;
+  name: string;
+  team: string | null;
+  teamColor?: string | null;
+  image?: string | null;
+};
 
 /**
  * A `participation` Competition's run area on its Competition page (ADR
@@ -81,13 +89,8 @@ export function ParticipationBuilder({
   }
 
   const [search, setSearch] = useState("");
-  const query = search.trim().toLowerCase();
-  const shown = roster.filter(
-    (row) =>
-      !query ||
-      row.name.toLowerCase().includes(query) ||
-      row.team?.toLowerCase().includes(query),
-  );
+  // The filter matches the display name alone, like every Participant picker.
+  const shown = roster.filter((row) => nameMatches(row.name, search));
   const markedCount = roster.filter((row) => isMarked(row.id)).length;
 
   const closeDescription = !isTeam
@@ -144,11 +147,17 @@ export function ParticipationBuilder({
                     />
                     <FieldLabel
                       htmlFor={`${id}-p-${row.id}`}
-                      className="font-normal"
+                      className="min-w-0 flex-1 font-normal"
                     >
-                      {row.name}
+                      <Avatar
+                        name={row.name}
+                        teamColor={row.teamColor ?? null}
+                        image={row.image}
+                        className="size-6"
+                      />
+                      <span className="min-w-0 truncate">{row.name}</span>
                       {row.team || checkedIn ? (
-                        <span className="text-foreground/60 text-xs">
+                        <span className="text-foreground/60 max-w-[45%] shrink-0 truncate text-xs">
                           {[row.team, checkedIn && "checked in"]
                             .filter(Boolean)
                             .join(" · ")}

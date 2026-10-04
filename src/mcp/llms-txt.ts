@@ -12,10 +12,6 @@ const PAGES: [path: string, purpose: string][] = [
     "/<edition>/finale",
     "The closing-ceremony slideshow (Title, By the numbers, Awards, Winners, the Standings countdown from last place to first, Winner, plus Custom slides), stepped through by the presenter.",
   ],
-  [
-    "/<edition>/finale/<competitionId>",
-    "A closed Bracket's Finale: its final placings, last place to the Winner.",
-  ],
   ["/<edition>/schedule", "The schedule, grouped by Day with each Day Theme."],
   [
     "/<edition>/announcements",

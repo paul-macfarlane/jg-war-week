@@ -1,6 +1,11 @@
 import { type Page, type TestInfo, expect, test } from "@playwright/test";
 
-import { deleteXiCompetition, runQuery, xiCompetitionId } from "./db";
+import {
+  addE2eHost,
+  deleteXiCompetition,
+  runQuery,
+  xiCompetitionId,
+} from "./db";
 import { E2E_BASE_URL } from "./env";
 import {
   E2E_HOST_EMAIL,
@@ -214,10 +219,7 @@ test("r20 Manage shows to an Organizer and that Competition's Host only", async 
   try {
     const mine = await addCompetition("xi", LONG, { description: SHORT_DOC });
     const other = await addCompetition("xi", OTHER);
-    await runQuery(
-      `insert into competition_host (competition_id, email) values ($1, $2)`,
-      [mine, E2E_HOST_EMAIL],
-    );
+    await addE2eHost(mine, E2E_HOST_EMAIL);
     const manage = (p: Page) =>
       p.getByRole("link", { name: "Manage", exact: true });
 

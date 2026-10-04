@@ -28,7 +28,7 @@ export const ABOUT_FEATURES = [
   {
     slug: "organizer-admin",
     title: "Organizer and Host admin",
-    text: "Organizers run the whole War Week from one Admin nav: the Days and schedule, the roster (paste it in from a sheet), Competitions, Announcements, Awards, FAQ and settings. Hosts get just their Competition and record its results themselves.",
+    text: "Organizers run the whole War Week from one Admin nav: the Days and schedule, the roster (paste it in from a sheet), Competitions, Announcements, Awards, FAQ and settings. Hosts are roster Participants too, and see just their Competitions (and the guide) to record results themselves.",
     alt: "The Admin Schedule page with the flat Admin nav (Competitions, Discretionary points, Schedule, Roster and more) beside the War Week's Days and their Schedule Items.",
   },
   {
@@ -40,7 +40,7 @@ export const ABOUT_FEATURES = [
   {
     slug: "points",
     title: "Points and Standings",
-    text: "A Competition's results turn into points through its Placement Points, and Discretionary points reward what no Competition covers; the Standings move on the spot. Sign in and you're highlighted on the leaderboards, the roster and your Brackets, under the name and picture you set in your Profile.",
+    text: "A Competition's results turn into points through its Placement Points, and Discretionary points reward what no Competition covers; the Standings move on the spot. One name-search picker, with faces, finds anyone. Sign in and you're highlighted on the leaderboards, the roster and your Brackets, under the name and picture you set in your Profile.",
     alt: "The Give Discretionary points form open over the Admin Discretionary points page, asking for a Participant, a number of points and a reason.",
   },
   {
@@ -59,7 +59,7 @@ export const ABOUT_FEATURES = [
   {
     slug: "archive",
     title: "The Archive",
-    text: "Past War Weeks, each in its own theme: the Story Theme, the winner, the Awards and the highlights. Award Categories show every year's recipients through the years.",
+    text: "Past War Weeks, each in its own theme: the Story Theme, the winner, the Awards and the highlights. Each Award name has its own page: every War Week's recipients, by name, through the years. Awards come from presets.",
     alt: "The War Week history page: one card per edition, each in its own colors.",
   },
 ] as const;

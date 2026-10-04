@@ -608,7 +608,7 @@
     },
     {
       "key": "stairs-challenge-record",
-      "name": "Stairs Challenge Winners",
+      "name": "Stairs Challenge Winner",
       "description": "Broke the record with 171 trips each on Sunday 2/25/24.",
       "participants": ["Brandon Badgett", "Alec Haring"]
     },
@@ -640,7 +640,7 @@
     },
     {
       "key": "mario-kart-winner",
-      "name": "Mario Kart Winner",
+      "name": "Mario Kart Champion",
       "participants": ["Dom Favata"]
     },
     {

@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { openCompetitionPage } from "./competition-page";
 import {
+  addE2eHost,
+  removeE2eHost,
   runQuery,
   setParticipantEmail,
   xiCompetitionId,
@@ -115,11 +117,7 @@ test("series: a Participant logs a Head-to-head Match from home, the Host edits 
   test.setTimeout(180_000);
   const id = await xiCompetitionId(COMPETITION);
   const playerId = await xiParticipantId(PLAYER.name);
-  await runQuery(
-    `insert into competition_host (competition_id, email) values ($1, $2)
-     on conflict do nothing`,
-    [id, E2E_HOST_EMAIL],
-  );
+  await addE2eHost(id, E2E_HOST_EMAIL);
   await setParticipantEmail(playerId, E2E_PARTICIPANT_EMAIL);
   // Participants log their own results (spec R21, decision 4).
   await runQuery(`update competition set self_report = true where id = $1`, [
@@ -325,9 +323,6 @@ test("series: a Participant logs a Head-to-head Match from home, the Host edits 
       id,
     ]);
     await setParticipantEmail(playerId, null);
-    await runQuery(
-      `delete from competition_host where competition_id = $1 and email = $2`,
-      [id, E2E_HOST_EMAIL],
-    );
+    await removeE2eHost(id, E2E_HOST_EMAIL);
   }
 });

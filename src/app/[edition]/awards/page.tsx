@@ -3,9 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Avatar } from "@/components/avatar";
+import { TeamTag } from "@/components/participant-mark";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { YouTag } from "@/components/you";
-import { type AwardView, groupAwardsByCategory } from "@/lib/awards";
+import { awardNameSlug } from "@/lib/award-names";
+import type { AwardView } from "@/lib/awards";
 import { YOU_ROW_CLASS } from "@/lib/you";
 import { getAwards } from "@/queries/awards";
 
@@ -19,10 +21,6 @@ export default async function AwardsPage({
   if (!warWeek) notFound();
 
   const awards = await getAwards(warWeek);
-  const groups = groupAwardsByCategory(awards);
-  // Headings only once some Award has a Category, so a War Week without
-  // Categories reads as it always did.
-  const headed = groups.some((group) => group.category !== null);
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 px-4 py-6 md:max-w-3xl">
@@ -36,44 +34,13 @@ export default async function AwardsPage({
       {awards.length === 0 ? (
         <p className="text-foreground/70 text-sm">No Awards yet.</p>
       ) : (
-        groups.map((group) => (
-          <section
-            key={group.category?.id ?? "other"}
-            aria-labelledby={
-              headed ? `category-${group.category?.id ?? "other"}` : undefined
-            }
-            className="flex flex-col gap-3"
-          >
-            {headed ? (
-              <h2
-                id={`category-${group.category?.id ?? "other"}`}
-                className="text-xl font-bold"
-              >
-                {group.category ? (
-                  <Link
-                    href={`/history/awards/${group.category.id}`}
-                    className="underline-offset-4 hover:underline"
-                  >
-                    {group.category.name}
-                  </Link>
-                ) : (
-                  "Other Awards"
-                )}
-              </h2>
-            ) : null}
-            <ul className="grid gap-3 md:grid-cols-2">
-              {group.awards.map((award) => (
-                <li key={award.id}>
-                  <AwardCard
-                    award={award}
-                    primaryColor={warWeek.primaryColor}
-                    headed={headed}
-                  />
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))
+        <ul className="grid gap-3 md:grid-cols-2">
+          {awards.map((award) => (
+            <li key={award.id}>
+              <AwardCard award={award} primaryColor={warWeek.primaryColor} />
+            </li>
+          ))}
+        </ul>
       )}
     </main>
   );
@@ -82,19 +49,27 @@ export default async function AwardsPage({
 function AwardCard({
   award,
   primaryColor,
-  headed,
 }: {
   award: AwardView;
   primaryColor: string;
-  /** Under a Category heading, so the Award's own name is a level lower. */
-  headed: boolean;
 }) {
-  const Heading = headed ? "h3" : "h2";
+  const slug = awardNameSlug(award.name);
   return (
     <Card className="h-full gap-2">
       <CardHeader className="flex items-center gap-2">
         <Medal aria-hidden className="text-primary size-5 shrink-0" />
-        <Heading className="text-lg font-semibold">{award.name}</Heading>
+        <h2 className="text-lg font-semibold">
+          {slug ? (
+            <Link
+              href={`/history/awards/${slug}`}
+              className="underline-offset-4 hover:underline"
+            >
+              {award.name}
+            </Link>
+          ) : (
+            award.name
+          )}
+        </h2>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
         {award.team ? (
@@ -121,6 +96,7 @@ function AwardCard({
                   image={p.image}
                 />
                 {p.displayName}
+                <TeamTag name={p.teamName} color={p.teamColor} />
                 <YouTag participantId={p.id} />
               </li>
             ))}

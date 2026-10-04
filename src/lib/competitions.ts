@@ -1,6 +1,5 @@
 import type { Competition } from "@/db/schema";
 import type { Format } from "@/lib/bracket/view";
-import type { ProfilesByEmail } from "@/lib/profile";
 
 export type CompetitionListItem = Pick<
   Competition,
@@ -114,14 +113,6 @@ export function describeScoring(
   return competition.countsTowardTeam
     ? `Individual · counts toward ${teamLabel}`
     : "Individual";
-}
-
-/**
- * A Host as the admin Competitions row shows them: their Profile name, else
- * their email (Hosts are email-keyed and need not be Participants).
- */
-export function hostName(email: string, profiles: ProfilesByEmail): string {
-  return profiles.get(email.trim().toLowerCase())?.profileName || email;
 }
 
 /**

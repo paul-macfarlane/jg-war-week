@@ -9,13 +9,13 @@ import {
   createSquad,
   updateSquad,
 } from "@/actions/brackets";
-import { EntityCombobox } from "@/components/entity-combobox";
 import {
   fieldErrorsOf,
   formErrorOf,
   useFocusFirstInvalid,
 } from "@/components/form-field-errors";
 import { OptionSelect } from "@/components/option-select";
+import { ParticipantPicker } from "@/components/participant-picker";
 import {
   ResponsiveSheetDialogDescription,
   ResponsiveSheetDialogFooter,
@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { SQUAD_LIMITS } from "@/lib/bracket/squads";
+import { buildParticipantOptions } from "@/lib/participant-options";
 import type { SquadRow } from "@/queries/brackets";
 
 /** A Participant the form can put in a Squad, with their Team. */
@@ -39,6 +40,9 @@ export type SquadFormParticipant = {
   id: string;
   name: string;
   teamId: string | null;
+  teamName?: string | null;
+  teamColor?: string | null;
+  image?: string | null;
 };
 
 /**
@@ -105,13 +109,18 @@ export function SquadForm({
     { value: "", label: `Choose a ${teamLabel}` },
     ...teams.map((team) => ({ value: team.id, label: team.name })),
   ];
-  const items = participants
-    .filter((p) => teamId !== "" && p.teamId === teamId)
-    .map((p) => ({
-      id: p.id,
-      label: p.name,
-      detail: taken[p.id] ? `in ${taken[p.id]}` : undefined,
-    }));
+  const options = buildParticipantOptions(
+    participants
+      .filter((p) => teamId !== "" && p.teamId === teamId)
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        image: p.image,
+        teamName: p.teamName,
+        teamColor: p.teamColor,
+        note: taken[p.id] ? `in ${taken[p.id]}` : undefined,
+      })),
+  );
 
   return (
     <form
@@ -174,10 +183,10 @@ export function SquadForm({
           <FieldLabel htmlFor={`${id}-participants`}>
             Participants ({participantIds.length} chosen)
           </FieldLabel>
-          <EntityCombobox
+          <ParticipantPicker
             id={`${id}-participants`}
             multiple
-            items={items}
+            options={options}
             value={participantIds}
             onValueChange={setParticipantIds}
             disabled={teamId === ""}

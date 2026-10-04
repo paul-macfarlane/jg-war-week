@@ -53,8 +53,7 @@ export function participantImageSql(): SQL<string | null> {
 }
 
 /**
- * For the email-keyed callers (the account menu, Hosts, Announcement
- * authors): each email's Profile name and picture URL and its Google photo,
+ * For the email-keyed callers (the account menu, Announcement authors): each email's Profile name and picture URL and its Google photo,
  * by lowercase email. Resolve with `resolveProfileForEmail`.
  */
 export async function getProfilesByEmail(

@@ -12,7 +12,9 @@ import {
   openCompetitionPage,
 } from "./competition-page";
 import {
+  addE2eHost,
   deleteXiCompetition,
+  removeE2eHost,
   runQuery,
   withParticipantEmail,
   xiCompetitionId,
@@ -175,25 +177,26 @@ test("r5 30 admin header and section bar on a phone", async ({
     }
 
     // 30-3: a Host sees no Awards or Organizers in the bar or the Sheet.
-    await runQuery(
-      `insert into competition_host (competition_id, email) values ($1, $2)
-       on conflict do nothing`,
-      [competitionId, E2E_HOST_EMAIL],
-    );
+    await addE2eHost(competitionId, E2E_HOST_EMAIL);
     await context.clearCookies();
     await asHost(context);
     await page.setViewportSize(PHONE);
     await page.goto("/admin/competitions");
-    // A Host has no Discretionary points (Organizers only).
-    await expect(bar.getByRole("link")).toHaveText([
-      "Competitions",
+    // A Host has only Competitions and the Guide (ADR 0012).
+    await expect(bar.getByRole("link")).toHaveText(["Competitions"]);
+    await bar.getByRole("button", { name: "More" }).click();
+    await expect(sheet.getByRole("link", { name: "Guide" })).toBeVisible();
+    for (const name of [
+      "Discretionary points",
       "Schedule",
       "Announcements",
-    ]);
-    await bar.getByRole("button", { name: "More" }).click();
-    await expect(sheet.getByRole("link", { name: "Finale" })).toBeVisible();
-    await expect(sheet.getByRole("link", { name: "Guide" })).toBeVisible();
-    for (const name of ["Roster", "Awards", "FAQ", "Settings", "Organizers"]) {
+      "Finale",
+      "Roster",
+      "Awards",
+      "FAQ",
+      "Settings",
+      "Organizers",
+    ]) {
       await expect(page.getByRole("link", { name, exact: true })).toHaveCount(
         0,
       );
@@ -201,10 +204,7 @@ test("r5 30 admin header and section bar on a phone", async ({
     await shoot(page, testInfo, "host-more-375");
   } finally {
     await runQuery(`delete from organizer where email = $1`, [toastEmail]);
-    await runQuery(
-      `delete from competition_host where competition_id = $1 and email = $2`,
-      [competitionId, E2E_HOST_EMAIL],
-    );
+    await removeE2eHost(competitionId, E2E_HOST_EMAIL);
   }
 });
 
@@ -340,25 +340,18 @@ test("r5 34 admin controls are 44px on a phone", async ({
     await shoot(page, testInfo, "faq-375");
 
     // The email chip's remove button, on the Competition's Hosts field.
-    await runQuery(
-      `insert into competition_host (competition_id, email) values ($1, $2)
-       on conflict do nothing`,
-      [competitionId, hostEmail],
-    );
+    await addE2eHost(competitionId, hostEmail);
     // The Hosts field is on the Competition's page (ticket 101).
     await openCompetitionPage(page, competitionId);
     await expectAfterTouchTarget(
       page.getByRole("button", {
-        name: `Remove ${hostEmail} (not on the roster)`,
+        name: `Remove E2E ${hostEmail.split("@")[0]}`,
       }),
       "email chip remove",
     );
     await shoot(page, testInfo, "competition-hosts-375");
   } finally {
-    await runQuery(
-      `delete from competition_host where competition_id = $1 and email = $2`,
-      [competitionId, hostEmail],
-    );
+    await removeE2eHost(competitionId, hostEmail);
   }
 });
 
@@ -675,10 +668,10 @@ test("r5 31 setup rows open in a Sheet", async ({
        where w.id = t.war_week_id and w.edition = 'xi' and t.name = $1`,
       [throwaway],
     );
-    await runQuery(
-      `delete from competition_host where competition_id = $1 and email = $2`,
-      [poolId, sheetHost],
-    );
+    // The Host picked on the page, whichever email they had by now.
+    await runQuery(`delete from competition_host where competition_id = $1`, [
+      poolId,
+    ]);
   }
 });
 
@@ -997,11 +990,11 @@ const EPIC_PAGES = [
     slug: "discretionary-points",
     hostSees: false,
   },
-  { path: "/admin/schedule", slug: "schedule", hostSees: true },
+  { path: "/admin/schedule", slug: "schedule", hostSees: false },
   { path: "/admin/roster", slug: "teams", hostSees: false },
   { path: "/admin/competitions", slug: "competitions", hostSees: true },
   { path: "/admin/settings", slug: "war-week", hostSees: false },
-  { path: "/admin/announcements", slug: "announcements", hostSees: true },
+  { path: "/admin/announcements", slug: "announcements", hostSees: false },
   { path: "/admin/awards", slug: "awards", hostSees: false },
 ];
 
@@ -1046,19 +1039,12 @@ test("r5 epic admin pages at 375 and 1280, as Organizer and Host", async ({
     await asOrganizer(context);
     await visit("organizer");
 
-    await runQuery(
-      `insert into competition_host (competition_id, email) values ($1, $2)
-       on conflict do nothing`,
-      [competitionId, E2E_HOST_EMAIL],
-    );
+    await addE2eHost(competitionId, E2E_HOST_EMAIL);
     await context.clearCookies();
     await asHost(context);
     await visit("host");
   } finally {
-    await runQuery(
-      `delete from competition_host where competition_id = $1 and email = $2`,
-      [competitionId, E2E_HOST_EMAIL],
-    );
+    await removeE2eHost(competitionId, E2E_HOST_EMAIL);
   }
 });
 

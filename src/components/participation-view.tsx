@@ -1,5 +1,6 @@
 import { Avatar } from "@/components/avatar";
 import { CheckInButton, type CheckInOffer } from "@/components/check-in-button";
+import { TeamTag } from "@/components/participant-mark";
 import { ProvisionalBadge, ResultsTable } from "@/components/results-table";
 import { Badge } from "@/components/ui/badge";
 import { YouTag } from "@/components/you";
@@ -124,11 +125,7 @@ export function ParticipationView({
                   />
                   <span className="truncate font-medium">{row.name}</span>
                   <YouTag participantId={row.participantId} />
-                  {isTeam && row.team ? (
-                    <span className="text-foreground/60 truncate">
-                      {row.team}
-                    </span>
-                  ) : null}
+                  <TeamTag name={row.team} color={row.teamColor} />
                   {isTeam ? null : (
                     <span className="ml-auto shrink-0 font-semibold tabular-nums">
                       {points === null ? "–" : formatPointsLabel(points)}

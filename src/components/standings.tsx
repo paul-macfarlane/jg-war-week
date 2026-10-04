@@ -1,4 +1,5 @@
 import { Avatar } from "@/components/avatar";
+import { TeamTag } from "@/components/participant-mark";
 import { ResultsTable } from "@/components/results-table";
 import { Card } from "@/components/ui/card";
 import {
@@ -176,12 +177,11 @@ export function IndividualStandingsList({
               <span className="flex-1">
                 {row.name}
                 {team ? (
-                  <span
-                    className="ml-2 text-xs font-medium"
-                    style={{ color: team.color }}
-                  >
-                    {team.name}
-                  </span>
+                  <TeamTag
+                    name={team.name}
+                    color={team.color}
+                    className="ml-2 align-baseline"
+                  />
                 ) : null}
               </span>
               <YouTag participantId={row.id} />
@@ -320,14 +320,7 @@ function IndividualStandingsTable({
           // The Team by name and color dot: colored text wouldn't read on
           // every row's background.
           detail: row.team ? (
-            <span className="inline-flex items-center gap-1">
-              <span
-                aria-hidden
-                className="size-2 shrink-0 rounded-full"
-                style={{ backgroundColor: row.team.color }}
-              />
-              {row.team.name}
-            </span>
+            <TeamTag name={row.team.name} color={row.team.color} />
           ) : null,
           points: row.total,
           className: YOU_ROW_CLASS,

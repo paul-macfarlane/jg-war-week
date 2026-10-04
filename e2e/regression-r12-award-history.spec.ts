@@ -14,7 +14,7 @@ async function shoot(page: Page, testInfo: TestInfo, name: string) {
   });
 }
 
-test("r12 71 History lists Awards through the years and a Category lists its War Weeks newest first", async ({
+test("r12 71 History lists Awards through the years and an Award name lists its War Weeks newest first", async ({
   context,
   page,
 }, testInfo) => {
@@ -60,13 +60,13 @@ async function runR12AwardHistory(
     await page.goto("/history");
     const list = page.getByRole("region", { name: "Awards through the years" });
     await expect(list).toBeVisible();
-    await list.getByRole("link", { name: "War Week MVP" }).click();
+    await list.getByRole("link", { name: "MVP 1st Place" }).click();
 
-    await expect(page).toHaveURL(/\/history\/awards\/[0-9a-f-]{36}$/);
+    await expect(page).toHaveURL(/\/history\/awards\/mvp-1st-place$/);
     await expect(
-      page.getByRole("heading", { level: 1, name: "War Week MVP" }),
+      page.getByRole("heading", { level: 1, name: "MVP 1st Place" }),
     ).toBeVisible();
-    // Seeded MVP Awards: War Week V (2020) before War Week IV (2019).
+    // Seeded MVP 1st Place Awards: War Week V (2020) before War Week IV (2019).
     const editions = await page
       .getByRole("heading", { level: 2 })
       .allTextContents();
@@ -79,12 +79,14 @@ async function runR12AwardHistory(
     await expect(page.getByText("Anthony Conway")).toBeVisible();
     await expect(page.getByText(profileName)).toBeVisible();
     await expect(page.getByText("Ian Ballard")).toHaveCount(0);
-    await shoot(page, testInfo, `category-${name}`);
+    await shoot(page, testInfo, `award-name-${name}`);
   }
 
-  // An unknown id is a 404.
-  const missing = await page.goto(
+  // An old Category id and an unknown slug are a 404 (no redirects).
+  const oldCategoryId = await page.goto(
     "/history/awards/00000000-0000-4000-8000-000000000000",
   );
-  expect(missing?.status()).toBe(404);
+  expect(oldCategoryId?.status()).toBe(404);
+  const unknown = await page.goto("/history/awards/no-such-award-name");
+  expect(unknown?.status()).toBe(404);
 }

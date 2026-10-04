@@ -76,7 +76,7 @@ line that no longer matches the app is a bug in this file.
   More's first item); the desktop top nav adds Announcements. Admin: one
   flat nav, Competitions, Discretionary points, Schedule, Roster,
   Announcements, Awards, FAQ, Finale, Settings, Organizers, Guide (a Host
-  sees Competitions, Schedule, Announcements, Finale, Guide); the phone bar
+  sees only Competitions and Guide); the phone bar
   is Competitions, Discretionary points, Schedule, Announcements, More. The avatar button
   (**Account menu**) at the top right of both headers holds the account.
 - **Run order:** Public Pages, then Admin as an Organizer (it links the
@@ -94,8 +94,9 @@ line that no longer matches the app is a bug in this file.
     the Admin run puts that email on a Participant.
   - **Unlinked:** `regression+unlinked@jahnelgroup.com`, a JG account on
     no roster.
-  - **Host:** `regression+host@jahnelgroup.com`, after the Admin run makes
-    it a Host of one Competition.
+  - **Host:** `regression+host@jahnelgroup.com`, after the Admin run puts
+    that email on a roster Participant and makes them a Host of one
+    Competition (a Host is a roster Participant).
   - **Driver:** `scripts/regression/driver.ts` signs in for you with
     `e2e/session.ts` (the e2e accounts `e2e-organizer@`, `e2e-host@`,
     `e2e-participant@` and `e2e-unlinked@jahnelgroup.com`, signed with the
@@ -266,9 +267,9 @@ on the matching War Week page.
       opens its Competition page: on the Bracket turn on "Participants can
       enroll", on the Head-to-head pick its two Entrants; each saves as you
       change it); assign
-      `e2e-host@jahnelgroup.com` as Host of the Placement one (the Hosts
-      field is in its page's Settings, not in Add; see the Competition page
-      lines below). The Format select
+      the roster Participant whose email is `e2e-host@jahnelgroup.com` as
+      Host of the Placement one (the Hosts field is in its page's Settings,
+      not in Add; see the Competition page lines below). The Format select
       offers Placement, Bracket, Head-to-head, Best score
       and Participation (no Single-elimination or Heats, no "Games" Format or Game Type). Only the
       Bracket offers "Participants can enroll"; no Format offers a "closes at" time. Each
@@ -346,7 +347,8 @@ on the matching War Week page.
       Standings, and its Competition page shows **Top finishers** (1st and 2nd,
       each with points, 1st marked Winner) in place of the old Champion card, with no
       Points Entries section and no "Play the finale" button on the page or in the admin
-      Bracket (its Bracket Finale is reached from `/admin/finale`).
+      Bracket. `/<edition>/finale/<competitionId>` for that Competition shows
+      the 404 page, and `/admin/finale` has no "Bracket Finales" section.
 - [ ] **Bracket: 3rd place match.** In a head-to-head Bracket of at least 4
       Entrants (a new Bracket of 4 or 8), turn on the Bracket's 3rd place
       match switch: the tree shows it beside the Final, labelled "3rd place
@@ -476,10 +478,13 @@ on the matching War Week page.
       Best score and Participation: each applies the new Format's
       defaults and shows its run area. Add a result and the Format locks.
 - [ ] **Competition page: Hosts picker.** In the Hosts field, search the
-      roster by name: each option shows its email beneath; a Participant
-      with no email, or a non-@jahnelgroup.com one, is disabled with the
-      reason. Pick one (it saves at once), remove it, and open the Competition
-      as that Host.
+      roster by name: each option is avatar, name and Team (the Team only in a
+      teams War Week), never an email, and an email typed finds no one. A
+      Participant with no email is pickable; a non-@jahnelgroup.com one is
+      pickable and marked "Can't sign in". Pick one (it saves at once),
+      remove it, and open the Competition as that Host once their roster email
+      is set (with no email nobody signs in as them: the admin page refuses).
+      Create next War Week copies no Hosts.
 - [ ] **Competition page: rich-text description.** Write a description with
       a heading, a list, a link and an image by URL; it saves on its own.
       On `/<edition>/competitions/<id>` the Participant sees it formatted,
@@ -515,13 +520,13 @@ on the matching War Week page.
       in the plain-text body.
 - [ ] **Awards.** Give an Award to two Participants (and a Team,
       *(teams)*); it shows on `/<edition>/awards`. Delete it.
-- [ ] **Award Categories.** On `/admin/awards`, Categories lists the seven
-      seeded ones. Add one (a name already taken, ignoring case, is refused),
-      rename it, archive it, restore it; there is no delete. Archived, it's
-      absent from the Award form's Category select, but an Award that already
-      has it keeps it (labeled archived) when edited. Give an Award a
-      Category with the select ("None" is allowed): `/<edition>/awards` shows
-      it under that Category's heading.
+- [ ] **Award presets.** On `/admin/awards`, Add Award: the Preset picker
+      offers every past Award name (case-insensitive, each once) and the seven
+      former Category names (War Week MVP, Billable Hours Champ, Black
+      Midnight, Grow, Grind, Serve, Inspire). Pick one: the name and its most
+      recent description fill in, and both stay editable. A brand-new name
+      saves and is then offered as a preset. There is no Category anywhere in
+      `/admin/awards` (no Categories section, no Category select).
 - [ ] **FAQ.** Add an FAQ Item and move it first; `/<edition>/faq` shows it
       first. Delete it.
 - [ ] **Organizers.** Add `e2e-extra@jahnelgroup.com`, then remove it
@@ -552,9 +557,8 @@ on the matching War Week page.
       reopened (ended before, so it has a Winner), Unstart is refused:
       "This War Week has been ended; Unstart isn't available." It stays
       live.
-- [ ] **Finale links.** `/admin/finale` links to the Finale and to each
-      closed Bracket's Finale; both open. (The Bracket's Finale keeps its
-      Start button.)
+- [ ] **Finale links.** `/admin/finale` links to the Finale and it opens;
+      there is no Bracket Finales section and no Finale link per Bracket.
 - [ ] **Finale slide list.** `/admin/finale` lists the Finale slides in
       order (Title, By the numbers, Awards, Winners, Standings countdown,
       Winner, plus the demo's Custom "Thank you" before Standings or after
@@ -571,10 +575,8 @@ on the matching War Week page.
       second one with the same heading is refused ("There's already a Custom
       slide called <heading>."); delete asks first and removes it. A
       built-in has Hide/Show but no Delete.
-- [ ] **Awards layout.** On `/admin/finale`, set the Awards layout to "One
-      slide per Category": the Finale's Awards become one slide per Category
-      ("Awards: <Category>", the uncategorized "Other Awards"); back to "All
-      on one slide": one Awards slide. Each choice saves at once.
+- [ ] **Awards slide.** `/admin/finale` has no Awards layout control; the
+      Finale plays one Awards slide that reveals one Award per step.
 - [ ] **Forms behave the same everywhere.** On a long form (Competition),
       resize from 1440 to 390 (crossing 768) with typed input: the input
       survives the dialog-to-sheet switch. At 820 the add-Participant and
@@ -598,13 +600,13 @@ on the matching War Week page.
 `/admin/**` as `e2e-host@jahnelgroup.com`, Host of one Placement
 Competition (from the Organizer run).
 
-- [ ] **Five sections, trimmed to their Competitions.** The admin nav is
-      Competitions, Schedule, Announcements, Finale, Guide at 1440 (no
-      Discretionary points); at 390 the bar is Competitions, Schedule,
-      Announcements, More (Finale and Guide in More). Competitions and Schedule list only the Host's Competition
-      and its Schedule Items. Each row has Edit and
-      Delete where the Host may use them.
-- [ ] **Organizer-only pages refuse.** Settings, Roster, FAQ, Awards and
+- [ ] **Two sections: Competitions and Guide.** The admin nav is
+      Competitions and Guide at 1440 (no Discretionary points, Schedule,
+      Announcements or Finale); at 390 the bar is Competitions and More
+      (Guide in More). Competitions lists only the Host's Competition, with
+      its Edit.
+- [ ] **Organizer-only pages refuse.** Schedule, Announcements (and New
+      Announcement), Finale, Settings, Roster, FAQ, Awards and
       Organizers (open their URLs directly) each show "Organizers and Hosts
       only."; there is no Lifecycle box, no Create next War Week and no
       Add Competition or Days editor.
@@ -612,9 +614,9 @@ Competition (from the Organizer run).
       in admin and Admin on participant pages (a Host is not a plain
       Participant), plus Display and Sign out.
 - [ ] **What a Host can do works.** Record placements on their Competition
-      (add rows, set Places, Close, Reopen) and see the Standings move;
-      post an Announcement, edit it and delete it. They
-      can't create or delete a Competition or assign Hosts: no Add
+      (add rows, set Places, Close, Reopen) and see the Standings move. They
+      can't post Announcements or change Schedule Items (the server refuses
+      them), and can't create or delete a Competition or assign Hosts: no Add
       Competition or Delete, and the Competition page's Hosts are shown
       read-only by name with no emails (the server's refusal is
       unit-tested in `src/lib/access.test.ts` and the mutation tests). Their
@@ -625,9 +627,10 @@ Competition (from the Organizer run).
       `src/lib/access.test.ts`); `/admin/points` redirects there and shows
       the same. A Host can't open another Competition's
       `/admin/competitions/<id>` either.
-- [ ] **Finale is read-only for a Host.** `/admin/finale` shows the slide
-      list and "Open Finale", but no Move, Hide/Show, Add Custom slide, edit
-      or delete, and the Awards layout is shown disabled.
+- [ ] **The Finale is not a Host's.** `/admin/finale` shows "Organizers
+      and Hosts only." and no slide list; the War Week Finale at
+      `/<edition>/finale` still plays for the Host, as for any signed-in JG
+      user.
 - [ ] **Not a Host elsewhere.** Switch to another edition (if offered), or
       set the `admin_edition` cookie to a past edition, and open another
       War Week's admin URL (e.g. `/admin/competitions/<a Competition they don't host>`; use `<an X
@@ -722,14 +725,18 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       Placement sheet lists its rows with names wrapping (not truncating)
       at 390; the 64-Entrant Bracket tree scrolls sideways only in its own
       "Rounds" region; as an Organizer, the Discretionary points and Award
-      pickers find a Participant by email (never shown) with no cap on the
-      list.
+      pickers find a Participant by display name (never by email) with no
+      cap on the list.
 - [ ] **Teams show in team events.** *(teams)* Wherever a Participant
-  appears in a Competition or scoring context (individual Standings, a
-  Bracket's entrants and Match results, the Head-to-head and Best score results,
-  Recent results, the leaderboard's points breakdown, Award recipients, the Finale,
-  Now/Next), their Team shows by name where there's room, else by its
-  color, including for a Participant whose Avatar is a Profile picture (`CONTEXT.md`, "The Team shows in team events").
+  appears in a Competition or scoring context (individual Standings on
+  Home, `/leaderboard` and the Finale; a Bracket's tree (color), Top
+  finishers and Match result form; the Head-to-head series and results
+  table, Best score and Placement results and Top finishers; Recent results;
+  Award recipients on `/awards`, `/history/awards/<slug>` and the Finale's
+  Awards steps (color); the admin Placement sheet, Participation list,
+  Discretionary points and Awards; Now/Next shows no Participant), their
+  Team shows by name where there's room, else by its
+  color, in XI at 1440 and 390, and a free-for-all War Week shows none, including for a Participant whose Avatar is a Profile picture (`CONTEXT.md`, "The Team shows in team events").
 - [ ] **Leaderboard.** `/<edition>/leaderboard` shows the main Standings
       as the results table (Team Standings *(teams)*, individual Standings
       *(free-for-all)*): Rank, name, War Week points, the points breakdown
@@ -785,9 +792,8 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       Participants. The linked Participant is highlighted.
 - [ ] **Awards and FAQ.** `/<edition>/awards` and `/<edition>/faq` show
       their content, or a plain empty state when there is none (XII demo).
-      Once an Award has a Category, Awards sit under Category headings (each
-      a link to its through-the-years page), then "Other Awards"; with no
-      Category anywhere there are no headings.
+      Awards are listed flat, with no headings; each Award's name links to
+      its through-the-years page (`/history/awards/<slug>`).
 - [ ] **Top nav is centred.** At 1440, on `/<edition>` and `/history`, the
       links in the header's top nav sit in the header's true centre (their
       midpoint within a few px of the viewport's midpoint, with the brand on
@@ -803,8 +809,8 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       "Add Participant", etc.) is a solid button, secondary ones are
       outline (on the Competition page's Bracket section, Add Squad sits outline beside the solid
       Generate), and only icon or tertiary actions are ghost.
-- [ ] **History wears the War Week chrome.** `/history` and a Category page
-      (`/history/awards/<id>`) show the current War Week's top nav (at
+- [ ] **History wears the War Week chrome.** `/history` and an Award name page
+      (`/history/awards/<slug>`) show the current War Week's top nav (at
       1440), phone tab bar (at 390) and footer, in the current War Week's
       Appearance Theme and the viewer's Display; there is no "Back to War
       Week" link; the edition cards keep their own colors.
@@ -812,9 +818,10 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       Theme and Winner; open three past editions, including the oldest:
       each shows its archive view (an edition with no Banner URL shows no
       banner block and names the War Week once in the hero). "Awards
-      through the years" lists each
-      Award Category; open one: `/history/awards/<id>` shows its War Weeks
-      newest first with recipients, and an unknown id is a 404 page.
+      through the years" lists each Award name (`/history/awards` lists them
+      all); open "Billable Hours Champ": `/history/awards/billable-hours-champ`
+      shows War Weeks VIII, V and IV together, newest first, with
+      recipients, and an unknown slug (or an old Category id) is a 404 page.
 - [ ] **Finale slideshow.** `/<edition>/finale` opens full screen (over the
       edition nav, with a small Exit link back to the edition) on the Title
       slide, showing no Standings. `→`, `Space` or a click on the stage
@@ -828,8 +835,7 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       to show yet." (an Organizer also sees "Set up the Finale").
 - [ ] **Finale slides.** Step through the demo's Finale: By the numbers shows
       only non-zero figures ("Points handed out" among them); Awards lists
-      each Award once, grouped by Category (or one slide per Category, per
-      the Awards layout); Winners lists each closed Bracket's winner
+      each Award once, one per step; Winners lists each closed Bracket's winner
       and the winner of each Closed Placement and each closed Head-to-head, Best score or
       team-scoring Participation Competition, ties together; Winner is the first place of the Standings, a
       tie shown as "Tie: A & B". No slide scrolls at 1440 (1920x1080 is the

@@ -82,6 +82,9 @@ export type DiscretionaryLedgerRow = Pick<
   participantId: string | null;
   teamName: string | null;
   participantName: string | null;
+  /** A Participant target's Team, for the Team rule; absent or null for none. */
+  participantTeamName?: string | null;
+  participantTeamColor?: string | null;
 };
 
 export type DiscretionaryLedgerEntry = {
@@ -89,6 +92,8 @@ export type DiscretionaryLedgerEntry = {
   /** The Team's or Participant's id, for the edit form. */
   targetId: string;
   target: string;
+  /** A Participant target's Team (the Team rule); null for a Team target or none. */
+  targetTeam?: { name: string; color: string | null } | null;
   points: number;
   reason: string;
   enteredByEmail: string;
@@ -116,6 +121,13 @@ export function buildDiscretionaryLedger(
       id: row.id,
       targetId: (row.teamId ?? row.participantId) as string,
       target: row.participantName ?? row.teamName ?? "Unknown",
+      targetTeam:
+        row.participantName && row.participantTeamName
+          ? {
+              name: row.participantTeamName,
+              color: row.participantTeamColor ?? null,
+            }
+          : null,
       points: row.points,
       reason: row.note ?? "",
       enteredByEmail: row.enteredByEmail,

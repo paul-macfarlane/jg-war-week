@@ -14,11 +14,13 @@ import {
 } from "@/actions/placements";
 import { ConfirmActionButton } from "@/components/confirm-dialog";
 import { EntityCombobox } from "@/components/entity-combobox";
+import { ParticipantPicker } from "@/components/participant-picker";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { placementLabel } from "@/lib/competitions";
 import type { ScoreDirection } from "@/lib/enums";
+import { optionsFromTargets } from "@/lib/participant-options";
 import { placementPointsByRow, refilledPlaces } from "@/lib/placement/score";
 import { formatPoints } from "@/lib/points";
 import { isSetByHand, scoreLabel } from "@/lib/scoring";
@@ -80,7 +82,13 @@ export function PlacementSheet({
   };
   rows: PlacementSheetRow[];
   /** Who the search can add: Teams, or Participants with their Team. */
-  candidates: { id: string; name: string; team: string | null }[];
+  candidates: {
+    id: string;
+    name: string;
+    team: string | null;
+    teamColor?: string | null;
+    image?: string | null;
+  }[];
   teamLabel: string;
 }) {
   const id = useId();
@@ -234,23 +242,35 @@ export function PlacementSheet({
               <FieldLabel htmlFor={`${id}-add`}>
                 {isTeam ? `Add a ${teamLabel}` : "Add a Participant"}
               </FieldLabel>
-              <EntityCombobox
-                id={`${id}-add`}
-                items={candidates.map((c) => ({
-                  id: c.id,
-                  label: c.name,
-                  detail: c.team ?? undefined,
-                }))}
-                value={adding}
-                onValueChange={add}
-                placeholder="Search by name"
-                emptyText={
-                  candidates.length === 0
-                    ? "Everyone is on the sheet."
-                    : "No one matches."
-                }
-                disabled={pending}
-              />
+              {isTeam ? (
+                <EntityCombobox
+                  id={`${id}-add`}
+                  items={candidates.map((c) => ({ id: c.id, label: c.name }))}
+                  value={adding}
+                  onValueChange={add}
+                  placeholder="Search by name"
+                  emptyText={
+                    candidates.length === 0
+                      ? "Everyone is on the sheet."
+                      : "No one matches."
+                  }
+                  disabled={pending}
+                />
+              ) : (
+                <ParticipantPicker
+                  id={`${id}-add`}
+                  options={optionsFromTargets(candidates)}
+                  value={adding}
+                  onValueChange={add}
+                  placeholder="Search by name"
+                  emptyText={
+                    candidates.length === 0
+                      ? "Everyone is on the sheet."
+                      : "No one matches."
+                  }
+                  disabled={pending}
+                />
+              )}
             </Field>
           </div>
         </div>
@@ -309,7 +329,9 @@ export function PlacementSheet({
                     <span className="font-medium break-words">{row.name}</span>
                     {row.team || needsPlace ? (
                       <span className="text-foreground/60 truncate text-xs">
-                        {needsPlace ? "Needs a Place" : row.team}
+                        {[row.team, needsPlace && "Needs a Place"]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </span>
                     ) : null}
                   </span>

@@ -164,16 +164,6 @@ describe("can: the Organizer list", () => {
     ["organizers.view", "Only an Organizer can see the Organizer list."],
     ["organizers.add", "Only an Organizer can add an Organizer."],
     ["organizers.remove", "Only an Organizer can remove an Organizer."],
-    ["award-category.create", "Only an Organizer can add Award Categories."],
-    ["award-category.rename", "Only an Organizer can rename Award Categories."],
-    [
-      "award-category.archive",
-      "Only an Organizer can archive Award Categories.",
-    ],
-    [
-      "award-category.restore",
-      "Only an Organizer can restore Award Categories.",
-    ],
   ])("%s is Organizer-only", (action, message) => {
     const expected = organizerOnly(message);
     for (const name of Object.keys(ACTORS) as ActorName[]) {
@@ -248,7 +238,6 @@ describe("can: Organizer-only War Week families", () => {
           ["finale-slide.create", "add Custom Finale slides"],
           ["finale-slide.update", "change Custom Finale slides"],
           ["finale-slide.delete", "delete Custom Finale slides"],
-          ["finale.awards-layout", "change how the Finale shows Awards"],
           ["award.create", "give Awards"],
           ["award.edit", "change Awards"],
           ["award.delete", "delete Awards"],
@@ -1050,7 +1039,6 @@ describe("can: Discretionary points", () => {
         can(ACTORS.host, action, {
           warWeekId: XI,
           competitionId: CATAN,
-          postedCompetitionId: CATAN,
         }),
         action,
       ).toMatch(/^Only an Organizer can /);
@@ -1058,120 +1046,34 @@ describe("can: Discretionary points", () => {
   });
 });
 
-describe("can: Schedule Items", () => {
-  const LINK = "Link the Schedule Item to a Competition you host.";
-  const UNLINK =
-    "Only an Organizer can unlink a Schedule Item from its Competition.";
+describe("can: Schedule Items and Announcements are Organizer-only (ADR 0012)", () => {
+  const only = (what: string): Expected => {
+    const refusal = `Only an Organizer can ${what}.`;
+    return {
+      organizer: null,
+      host: refusal,
+      otherHost: refusal,
+      namesakeHost: refusal,
+      participant: refusal,
+      anonymous: SIGN_IN,
+    };
+  };
   it.each(
     cases([
-      [
-        "schedule-item.create",
-        { warWeekId: XI, postedCompetitionId: CATAN },
-        catanHostOr(),
-      ],
-      [
-        "schedule-item.create",
-        { warWeekId: XI, postedCompetitionId: null },
-        {
-          organizer: null,
-          host: LINK,
-          otherHost: LINK,
-          namesakeHost: LINK,
-          participant: LINK,
-          anonymous: SIGN_IN,
-        },
-      ],
+      ["schedule-item.create", { warWeekId: XI }, only("add Schedule Items")],
       [
         "schedule-item.edit",
-        { warWeekId: XI, competitionId: CATAN, postedCompetitionId: CATAN },
-        catanHostOr(),
-      ],
-      [
-        "schedule-item.edit",
-        { warWeekId: XI, competitionId: CATAN, postedCompetitionId: MTG },
-        { ...catanHostOr(), host: NOT_HOST },
-      ],
-      [
-        "schedule-item.edit",
-        { warWeekId: XI, competitionId: MTG, postedCompetitionId: CATAN },
-        { ...catanHostOr(), host: NOT_HOST },
-      ],
-      [
-        "schedule-item.edit",
-        { warWeekId: XI, competitionId: CATAN, postedCompetitionId: null },
-        { ...catanHostOr(), host: UNLINK },
-      ],
-      [
-        "schedule-item.edit",
-        { warWeekId: XI, competitionId: null, postedCompetitionId: CATAN },
-        { ...catanHostOr(), host: NOT_HOST },
+        { warWeekId: XI, competitionId: CATAN },
+        only("change Schedule Items"),
       ],
       [
         "schedule-item.delete",
         { warWeekId: XI, competitionId: CATAN },
-        catanHostOr(),
+        only("delete Schedule Items"),
       ],
-      [
-        "schedule-item.delete",
-        { warWeekId: XI, competitionId: null },
-        { ...catanHostOr(), host: NOT_HOST },
-      ],
-    ]),
-  )("%s", (_, action, target, actor, expected) => {
-    expect(can(ACTORS[actor], action, target)).toBe(expected);
-  });
-});
-
-describe("can: Announcements", () => {
-  const POST =
-    "Only an Organizer or a Host of this War Week can post Announcements.";
-  const OTHERS = "Only an Organizer can change someone else's Announcement.";
-  const NO_LONGER =
-    "Only an Organizer or a Host of this War Week can change Announcements.";
-  it.each(
-    cases([
-      [
-        "announcement.create",
-        { warWeekId: XI },
-        {
-          organizer: null,
-          host: null,
-          otherHost: null,
-          namesakeHost: POST,
-          participant: POST,
-          anonymous: SIGN_IN,
-        },
-      ],
-      ...(["announcement.edit", "announcement.delete"] as const).flatMap(
-        (action): [WarWeekAction, Parameters<typeof can>[2], Expected][] => [
-          // Written by the Host of Catan.
-          [
-            action,
-            { warWeekId: XI, authorEmail: "Tony@JahnelGroup.com" },
-            {
-              organizer: null,
-              host: null,
-              otherHost: OTHERS,
-              namesakeHost: OTHERS,
-              participant: OTHERS,
-              anonymous: SIGN_IN,
-            },
-          ],
-          // Written by the namesake Host, who hosts nothing in XI.
-          [
-            action,
-            { warWeekId: XI, authorEmail: "casey@jahnelgroup.com" },
-            {
-              organizer: null,
-              host: OTHERS,
-              otherHost: OTHERS,
-              namesakeHost: NO_LONGER,
-              participant: OTHERS,
-              anonymous: SIGN_IN,
-            },
-          ],
-        ],
-      ),
+      ["announcement.create", { warWeekId: XI }, only("post Announcements")],
+      ["announcement.edit", { warWeekId: XI }, only("change Announcements")],
+      ["announcement.delete", { warWeekId: XI }, only("delete Announcements")],
     ]),
   )("%s", (_, action, target, actor, expected) => {
     expect(can(ACTORS[actor], action, target)).toBe(expected);

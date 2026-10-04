@@ -6,18 +6,13 @@
 import { z } from "zod";
 
 import type { Competition, WarWeek } from "@/db/schema";
-import { type AwardView, groupAwardsByCategory } from "@/lib/awards";
+import type { AwardView } from "@/lib/awards";
 import {
   type CustomSlideColors,
   customSlideColors,
   customSlideFields,
 } from "@/lib/custom-finale-slide";
-import {
-  FINALE_AWARDS_LAYOUTS,
-  FINALE_SLIDE_KINDS,
-  type FinaleAwardsLayout,
-  type FinaleSlideKind,
-} from "@/lib/enums";
+import { FINALE_SLIDE_KINDS, type FinaleSlideKind } from "@/lib/enums";
 import { formatPoints } from "@/lib/points";
 import {
   type ResultCompetition,
@@ -249,16 +244,6 @@ export function parseFinaleSlideHidden(
   );
 }
 
-/** Validates an Awards layout: "one-slide" or "per-category". */
-export function parseFinaleAwardsLayout(
-  input: unknown,
-): Parsed<FinaleAwardsLayout> {
-  const parsed = z.enum(FINALE_AWARDS_LAYOUTS).safeParse(input);
-  return parsed.success
-    ? { ok: true, value: parsed.data }
-    : { ok: false, error: "Pick how the Finale shows Awards." };
-}
-
 /**
  * `ids` with `id` moved to `index` (clamped to the list), or null when
  * `id` isn't in the list.
@@ -470,7 +455,7 @@ export type FinaleSlideContext = {
     | "teamLabel"
     | "primaryColor"
     | "foregroundColor"
-  > & { finaleAwardsLayout: FinaleAwardsLayout };
+  >;
   /** The page's one `getStandings` result. */
   standings: Standings;
   counts: FinaleCounts;
@@ -493,49 +478,21 @@ function finaleAward(award: AwardView): FinaleAward {
   };
 }
 
-/** The Awards slide (or slides, one per Category), none without Awards. */
+/** The Awards slide, none without Awards; one Award is revealed per step. */
 function awardSlides(
   base: SlideBase,
   context: FinaleSlideContext,
 ): FinaleSlideData[] {
-  const groups = groupAwardsByCategory(context.awards);
-  if (groups.length === 0) return [];
-  const primaryColor = context.warWeek.primaryColor;
-  // Headings (and per-Category slides) only once some Award has a
-  // Category, as the Awards page.
-  const headed = groups.some((group) => group.category !== null);
-  const categoryName = (group: (typeof groups)[number]) =>
-    group.category?.name ?? "Other Awards";
-  const groupKey = (group: (typeof groups)[number]) =>
-    group.category?.id ?? "other";
-
-  if (headed && context.warWeek.finaleAwardsLayout === "per-category") {
-    return groups.map((group) => ({
-      kind: "awards",
-      key: `${base.key}:${groupKey(group)}`,
-      name: group.category ? `Awards: ${group.category.name}` : "Other Awards",
-      heading: categoryName(group),
-      groups: [
-        {
-          key: groupKey(group),
-          name: null,
-          awards: group.awards.map(finaleAward),
-        },
-      ],
-      primaryColor,
-    }));
-  }
+  if (context.awards.length === 0) return [];
   return [
     {
       ...base,
       kind: "awards",
       heading: "Awards",
-      groups: groups.map((group) => ({
-        key: groupKey(group),
-        name: headed ? categoryName(group) : null,
-        awards: group.awards.map(finaleAward),
-      })),
-      primaryColor,
+      groups: [
+        { key: "all", name: null, awards: context.awards.map(finaleAward) },
+      ],
+      primaryColor: context.warWeek.primaryColor,
     },
   ];
 }
@@ -585,8 +542,7 @@ function winnerSlide(
  * Each slide the Finale plays, in order, with its data: the visible slides,
  * less any with nothing to show (By the numbers with every figure zero, no
  * Awards, no Winners, no Standings rows, or a Winner with every total
- * zero). In the per-Category Awards layout the Awards slide becomes one
- * slide per Category. The Standings countdown and the Winner read the
+ * zero). The Standings countdown and the Winner read the
  * page's one `getStandings` result, so the Finale never recomputes
  * Standings.
  */

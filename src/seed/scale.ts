@@ -85,18 +85,17 @@ export async function applyScaleFixture(dbOrTx: DBOrTx = db) {
     .from(participant)
     .where(eq(participant.warWeekId, ww.id))
     .orderBy(asc(participant.displayName));
-  const hosts = (
-    await dbOrTx
-      .select({ email: participant.email })
-      .from(participant)
-      .where(
-        and(
-          eq(participant.warWeekId, ww.id),
-          like(participant.email, "%@jahnelgroup.com"),
-        ),
-      )
-      .orderBy(asc(participant.email))
-  ).map((h) => h.email as string);
+  const hostRows = await dbOrTx
+    .select({ id: participant.id, email: participant.email })
+    .from(participant)
+    .where(
+      and(
+        eq(participant.warWeekId, ww.id),
+        like(participant.email, "%@jahnelgroup.com"),
+      ),
+    )
+    .orderBy(asc(participant.email));
+  const hosts = hostRows.map((h) => h.email as string);
   if (hosts.length === 0) throw new Error("War Week XII has no JG Hosts");
 
   const ctxFor = (index: number): MutationContext => ({
@@ -115,7 +114,7 @@ export async function applyScaleFixture(dbOrTx: DBOrTx = db) {
       check(
         await setCompetitionHosts(
           id,
-          [hosts[i % hosts.length]],
+          [hostRows[i % hostRows.length].id],
           ctxFor(i),
           dbOrTx,
         ),

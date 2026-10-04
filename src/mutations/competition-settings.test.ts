@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import type { DBTx } from "@/db";
 import { isLocalDatabaseUrl } from "@/db/local-url";
+import { insertHosts } from "@/db/test-hosts";
 import { inRolledBackTransaction } from "@/db/test-transaction";
 import {
   type CompetitionSettingChange,
@@ -147,14 +148,12 @@ async function fixture(tx: DBTx) {
   );
   if (!workout.ok) throw new Error(workout.error);
   ids.workout = workout.id;
-  await tx
-    .insert(schema.competitionHost)
-    .values([
-      ...[ids.darts, ids.chess, ids.pong, ids.stairs, ids.workout].map(
-        (competitionId) => ({ competitionId, email: HOST }),
-      ),
-      { competitionId: ids.other, email: OTHER_HOST },
-    ]);
+  const hostIds = await insertHosts(tx, [
+    ...[ids.darts, ids.chess, ids.pong, ids.stairs, ids.workout].map(
+      (competitionId) => ({ competitionId, email: HOST }),
+    ),
+    { competitionId: ids.other, email: OTHER_HOST },
+  ]);
 
   const save = (
     competitionId: string,
@@ -199,6 +198,7 @@ async function fixture(tx: DBTx) {
     schema,
     tx,
     ids,
+    hostIds,
     red,
     blue,
     neo,
@@ -288,7 +288,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: who", () => {
       expect(
         await f.save(
           f.ids.darts,
-          { field: "hosts", value: ["someone@jahnelgroup.com"] },
+          { field: "hosts", value: [f.hostIds.get(OTHER_HOST)!] },
           HOST,
         ),
       ).toMatchObject({
@@ -296,10 +296,10 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: who", () => {
         error: "Only an Organizer can assign Hosts.",
       });
       const hosts = await tx
-        .select({ email: f.schema.competitionHost.email })
+        .select({ participantId: f.schema.competitionHost.participantId })
         .from(f.schema.competitionHost)
         .where(eq(f.schema.competitionHost.competitionId, f.ids.darts));
-      expect(hosts).toEqual([{ email: HOST }]);
+      expect(hosts).toEqual([{ participantId: f.hostIds.get(HOST) }]);
     });
   });
 
@@ -307,7 +307,10 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: who", () => {
     { field: "name", value: "Renamed" },
     { field: "description", value: words("New words") },
     { field: "group", value: "Contests" },
-    { field: "hosts", value: [OTHER_HOST] },
+    {
+      field: "hosts",
+      value: ["00000000-0000-4000-8000-000000000001"],
+    },
     { field: "placementPoints", value: [3, 2, 1] },
     { field: "format", value: "bracket" },
     { field: "scoring", value: "team" },
@@ -417,7 +420,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
         { field: "name", value: "Darts Final" },
         { field: "description", value: words("Three darts each.") },
         { field: "group", value: "Pub contests" },
-        { field: "hosts", value: [OTHER_HOST] },
+        { field: "hosts", value: [f.hostIds.get(OTHER_HOST)!] },
         { field: "placementPoints", value: [12, 9] },
       ] as CompetitionSettingChange[]) {
         expect(await f.save(f.ids.darts, change), change.field).toEqual(OK);

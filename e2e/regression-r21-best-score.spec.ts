@@ -61,7 +61,7 @@ async function logAttempt(page: Page, score: string, who?: string) {
   const form = page.getByRole("dialog", { name: "Log an Attempt" });
   if (who) {
     await form.getByRole("combobox", { name: "Participant" }).click();
-    await page.getByRole("option", { name: who, exact: true }).click();
+    await page.getByRole("option", { name: new RegExp(`^${who}`) }).click();
   }
   await form.getByLabel(/^Score/).fill(score);
   await form.getByRole("button", { name: "Log Attempt" }).click();
@@ -144,7 +144,9 @@ test("r21 AC7 AC8 Max attempts 3 refuses a fourth for the Participant and an Org
       await page.getByRole("button", { name: "Log an Attempt" }).click();
       const form = page.getByRole("dialog", { name: "Log an Attempt" });
       await form.getByRole("combobox", { name: "Participant" }).click();
-      await page.getByRole("option", { name: ASHLEY, exact: true }).click();
+      await page
+        .getByRole("option", { name: new RegExp(`^${ASHLEY}`) })
+        .click();
       await expect(form.locator('[data-slot="attempts-left"]')).toHaveText(
         "1 attempt left",
       );
@@ -159,7 +161,9 @@ test("r21 AC7 AC8 Max attempts 3 refuses a fourth for the Participant and an Org
       await page.getByRole("button", { name: "Log an Attempt" }).click();
       const fourth = page.getByRole("dialog", { name: "Log an Attempt" });
       await fourth.getByRole("combobox", { name: "Participant" }).click();
-      await page.getByRole("option", { name: ASHLEY, exact: true }).click();
+      await page
+        .getByRole("option", { name: new RegExp(`^${ASHLEY}`) })
+        .click();
       await expect(fourth.locator('[data-slot="attempts-left"]')).toHaveText(
         "0 attempts left",
       );
@@ -225,7 +229,7 @@ test("r21 AC9 at Max attempts 1 the button reads Update your score and saving ed
     await page.getByRole("button", { name: "Log an Attempt" }).click();
     const form = page.getByRole("dialog", { name: "Log an Attempt" });
     await form.getByRole("combobox", { name: "Participant" }).click();
-    await page.getByRole("option", { name: ASHLEY, exact: true }).click();
+    await page.getByRole("option", { name: new RegExp(`^${ASHLEY}`) }).click();
     const forAshley = page.getByRole("dialog", {
       name: `Update ${ASHLEY}'s score`,
     });

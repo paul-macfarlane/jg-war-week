@@ -4,9 +4,7 @@ import { DBOrTx, db } from "@/db";
 import {
   attempt,
   competition,
-  competitionHost,
   entrant,
-  organizer,
   participant,
   seriesMatch,
   seriesMatchEntrant,
@@ -45,6 +43,7 @@ import {
 import { bestOfWinner, rankSeries } from "@/lib/series/standings";
 import { isUuid } from "@/lib/uuid";
 import { getCompetitionEntryPoints } from "@/queries/entry-points";
+import { getHostedCompetitions, isOrganizerEmail } from "@/queries/organizers";
 import {
   participantImageSql,
   participantNameSql,
@@ -175,17 +174,10 @@ async function runsCompetition(
   dbOrTx: DBOrTx,
 ): Promise<boolean> {
   if (!email) return false;
-  const [organizers, hosts] = await Promise.all([
-    dbOrTx.$count(organizer, eq(organizer.email, email)),
-    dbOrTx.$count(
-      competitionHost,
-      and(
-        eq(competitionHost.competitionId, competitionId),
-        eq(competitionHost.email, email),
-      ),
-    ),
-  ]);
-  return organizers + hosts > 0;
+  if (await isOrganizerEmail(email, dbOrTx)) return true;
+  // The one Host rule (ADR 0012), shared with the admin gate.
+  const hosted = await getHostedCompetitions(email, dbOrTx);
+  return hosted.some((h) => h.competitionId === competitionId);
 }
 
 /**
@@ -532,9 +524,19 @@ export type LoggedResultsName = {
   color: string | null;
 };
 
+/** A result form's choice of player: the name and Team color, plus what its picker shows. */
+export type LoggedResultsPlayerOption = LoggedResultsName & {
+  /** A Participant's picture URL; null or absent for initials. */
+  image?: string | null;
+  /** A Participant's Team name; null or absent for none. Never an email. */
+  teamName?: string | null;
+};
+
 export type LoggedResultsRow = StandingsRow & {
   name: string;
   color: string | null;
+  /** A Participant's Team name, for the Team rule; null or absent for none. */
+  teamName?: string | null;
   /** A Participant's picture URL; null for initials and for Teams. */
   image?: string | null;
   /**
@@ -611,7 +613,7 @@ export type LoggedResultsView = {
    * Who the result form offers: a Head-to-head's two Entrants, or every
    * Participant of the War Week for Best score.
    */
-  playerOptions: LoggedResultsName[];
+  playerOptions: LoggedResultsPlayerOption[];
 };
 
 /**
@@ -659,18 +661,29 @@ export async function getLoggedResultsView(
     : [];
 
   const colorOfTeam = new Map(teams.map((t) => [t.id, t.color]));
-  const names = new Map<string, LoggedResultsName & { image: string | null }>();
-  for (const t of teams) names.set(t.id, { ...t, image: null });
+  const nameOfTeam = new Map(teams.map((t) => [t.id, t.name]));
+  const names = new Map<
+    string,
+    LoggedResultsName & { image: string | null; teamName: string | null }
+  >();
+  for (const t of teams) names.set(t.id, { ...t, image: null, teamName: null });
   for (const p of participants) {
     names.set(p.id, {
       id: p.id,
       name: p.name,
       image: p.image,
       color: p.teamId ? (colorOfTeam.get(p.teamId) ?? null) : null,
+      teamName: p.teamId ? (nameOfTeam.get(p.teamId) ?? null) : null,
     });
   }
   const nameOf = (id: string) =>
-    names.get(id) ?? { id, name: "Unknown", color: null, image: null };
+    names.get(id) ?? {
+      id,
+      name: "Unknown",
+      color: null,
+      image: null,
+      teamName: null,
+    };
 
   const rows = standingsOf(found, entrants, matches, attempts);
   const provisional = new Map(
@@ -681,8 +694,8 @@ export async function getLoggedResultsView(
       ? entryPointsFor(entryPoints, sideOf(found.scoring, id))
       : (provisional.get(id) ?? null);
   const leaderboard = rows.map((row) => {
-    const { name, color, image } = nameOf(row.id);
-    return { ...row, name, color, image, points: pointsOf(row.id) };
+    const { name, color, image, teamName } = nameOf(row.id);
+    return { ...row, name, color, image, teamName, points: pointsOf(row.id) };
   });
   const { decided, winnerId } = decidedOf(found, matches);
   const seriesWinner = winnerId ? nameOf(winnerId).name : null;
@@ -724,8 +737,8 @@ export async function getLoggedResultsView(
       decided,
       seriesWinner,
       playerOptions: entrants.map((e) => {
-        const { id, name, color } = nameOf(idOf(e));
-        return { id, name, color };
+        const { id, name, color, image, teamName } = nameOf(idOf(e));
+        return { id, name, color, image, teamName };
       }),
     };
   }
@@ -772,8 +785,8 @@ export async function getLoggedResultsView(
     decided: false,
     seriesWinner: null,
     playerOptions: participants.map((p) => {
-      const { id, name, color } = nameOf(p.id);
-      return { id, name, color };
+      const { id, name, color, image, teamName } = nameOf(p.id);
+      return { id, name, color, image, teamName };
     }),
   };
 }

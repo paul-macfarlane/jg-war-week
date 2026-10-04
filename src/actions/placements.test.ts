@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { DBTx } from "@/db";
 import { isLocalDatabaseUrl } from "@/db/local-url";
+import { insertHosts } from "@/db/test-hosts";
 import { inRolledBackTransaction } from "@/db/test-transaction";
 
 // Runs only against a local Postgres (see vitest.config.ts).
@@ -148,7 +149,7 @@ async function fixture(tx: DBTx) {
       },
     ])
     .returning({ id: schema.competition.id });
-  await tx.insert(schema.competitionHost).values([
+  await insertHosts(tx, [
     { competitionId: darts.id, email: HOST },
     { competitionId: quiz.id, email: OTHER_HOST },
     { competitionId: relay.id, email: HOST },
