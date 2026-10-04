@@ -36,7 +36,7 @@ import { attemptsLeft } from "@/lib/best-score/log-rule";
 import type { LoggedFormat } from "@/lib/enums";
 import { resultNoun } from "@/lib/logged-results";
 import type { FieldErrors } from "@/lib/result";
-import { type ScoringConfig, scoreLabel } from "@/lib/scoring";
+import { type ScoringConfig, parseScore, scoreLabel } from "@/lib/scoring";
 import type { SeriesConfig } from "@/lib/series/config";
 import { computedOutcome } from "@/lib/series/input";
 import type {
@@ -98,12 +98,7 @@ function fieldErrorsFrom(result: { ok: boolean }): FieldErrors {
   return (result as { fieldErrors?: FieldErrors }).fieldErrors ?? {};
 }
 
-/** A typed Score as a number, or null when blank or not a number. */
-function scoreOf(text: string): number | null {
-  const trimmed = text.trim();
-  return /^-?\d+(\.\d+)?$/.test(trimmed) ? Number(trimmed) : null;
-}
-
+/** A Score as the text its field starts with: blank for none. */
 const scoreText = (score: number | null | undefined) =>
   score === null || score === undefined ? "" : String(score);
 
@@ -213,7 +208,7 @@ function MatchForm(props: ResultFormProps) {
     const computed = computedOutcome(
       scoringConfig.direction,
       config as SeriesConfig,
-      [scoreOf(s[0]), scoreOf(s[1])],
+      [parseScore(s[0]), parseScore(s[1])],
     );
     return computed === 0 ? "a" : computed === 1 ? "b" : computed;
   };
@@ -354,11 +349,14 @@ function AttemptForm(props: ResultFormProps) {
   const updates = !editing && maxAttempts === 1 && count >= 1;
   const { pending, errors, submit, noun } = useResultSubmit(props, updates);
 
+  const name = nameOf(player);
   const title = editing
     ? `Edit ${noun.one}`
     : updates
       ? runs
-        ? `Update ${nameOf(player) ?? "their"}'s score`
+        ? name
+          ? `Update ${name}'s score`
+          : "Update their score"
         : "Update your score"
       : `Log ${noun.a}`;
 

@@ -23,7 +23,7 @@ import { advancesAtPlace } from "@/lib/bracket/tree";
 import type { Bracket, Match, MatchResult } from "@/lib/bracket/types";
 import { finalRoundOf, isDecided, matchName } from "@/lib/bracket/view";
 import type { ScoreDirection } from "@/lib/enums";
-import { finishingOrder } from "@/lib/scoring";
+import { finishingOrder, parseScore } from "@/lib/scoring";
 import type { MutationResult } from "@/mutations/types";
 
 type Scoring = "team" | "individual";
@@ -47,12 +47,6 @@ export type MatchResultFormProps = {
   onSaved: () => void;
 };
 
-/** A typed Score as a number, or null when blank or not a number. */
-function scoreOf(text: string | undefined): number | null {
-  const trimmed = text?.trim() ?? "";
-  return /^-?\d+(\.\d+)?$/.test(trimmed) ? Number(trimmed) : null;
-}
-
 /** The scores typed so far, without the empty ones. */
 function filledScores(scores: Record<string, string>) {
   return Object.fromEntries(
@@ -67,7 +61,7 @@ function scoredOrder(
   direction: ScoreDirection,
 ) {
   return finishingOrder(
-    ids.map((id) => ({ id, score: scoreOf(scores[id]) })),
+    ids.map((id) => ({ id, score: parseScore(scores[id] ?? "") })),
     direction,
   );
 }

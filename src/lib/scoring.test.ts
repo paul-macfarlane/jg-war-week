@@ -4,6 +4,7 @@ import {
   finishingOrder,
   isSetByHand,
   orderByScore,
+  parseScore,
   scoreLabel,
   scoringOf,
 } from "@/lib/scoring";
@@ -132,5 +133,20 @@ describe("finishingOrder", () => {
   it("works nothing out with direction none or a Score missing", () => {
     expect(finishingOrder(entries(3, 9, 5), "none")).toBeNull();
     expect(finishingOrder(entries(3, null, 5), "higher")).toBeNull();
+  });
+});
+
+describe("parseScore", () => {
+  it("reads a typed number, trimmed: whole, decimal or negative", () => {
+    expect(parseScore("21")).toBe(21);
+    expect(parseScore(" 7.5 ")).toBe(7.5);
+    expect(parseScore("-3")).toBe(-3);
+    expect(parseScore("0.25")).toBe(0.25);
+  });
+
+  it("is null for blank or anything that isn't a plain number", () => {
+    for (const text of ["", "   ", "W/O", "21-19", "1e3", "7.", ".5", "+4"]) {
+      expect(parseScore(text)).toBeNull();
+    }
   });
 });

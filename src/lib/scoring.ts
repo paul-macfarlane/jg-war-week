@@ -17,6 +17,16 @@ export type ScoringConfig = {
 /** A direction that ranks Scores. */
 export type RankingDirection = Exclude<ScoreDirection, "none">;
 
+/**
+ * A typed Score as a number, trimmed: a plain whole or decimal number,
+ * optionally negative ("21", " 7.5 ", "-3"); null for blank or anything
+ * else ("W/O", "21-19"), so a form's Scores rank only when they're numbers.
+ */
+export function parseScore(text: string): number | null {
+  const trimmed = text.trim();
+  return /^-?\d+(\.\d+)?$/.test(trimmed) ? Number(trimmed) : null;
+}
+
 /** A Competition's scoring config from its columns. */
 export function scoringOf(source: {
   scoreDirection: ScoreDirection;

@@ -16,7 +16,7 @@ import {
 import type { Bracket, Match } from "@/lib/bracket/types";
 import { formatRecordedAt } from "@/lib/bracket/view";
 import type { ScoreDirection } from "@/lib/enums";
-import { isSetByHand } from "@/lib/scoring";
+import { isSetByHand, parseScore } from "@/lib/scoring";
 import { YOU_ROW_CLASS } from "@/lib/you";
 
 type Scoring = "team" | "individual";
@@ -34,10 +34,7 @@ function setByHand(match: Match, direction: ScoreDirection): boolean {
             {
               id: s.entrantId,
               place: s.place,
-              score:
-                s.score !== null && /^-?\d+(\.\d+)?$/.test(s.score.trim())
-                  ? Number(s.score)
-                  : null,
+              score: s.score === null ? null : parseScore(s.score),
             },
           ]
         : [],
