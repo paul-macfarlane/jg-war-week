@@ -20,8 +20,6 @@ export default async function AdminAnnouncementsPage() {
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const announcements = await getAdminAnnouncementRows(warWeek);
-  // A Host edits and deletes only their own Announcements; only an
-  // Organizer pins.
   const mayChange = (authorEmail: string) =>
     can(actor, "announcement.edit", { warWeekId: warWeek.id, authorEmail }) ===
     null;

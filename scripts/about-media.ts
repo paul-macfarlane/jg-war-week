@@ -28,6 +28,10 @@
  * everything after, including the one Points Entry the Standings hero saves:
  *   pnpm tsx scripts/about-media.ts
  *
+ * `--edition <slug>` (default `xii`) names the War Week the stills are of:
+ * before shooting, the run fails unless the War Week `/` resolves to it, and
+ * says to run `pnpm seed:demo:<slug>` first.
+ *
  * `--stills` rewrites the feature-card and Standings-hero stills (both
  * schemes) and leaves the Finale poster alone (both schemes):
  *   pnpm tsx scripts/about-media.ts --stills
@@ -62,6 +66,7 @@ import {
   setupBracketDemo as setupBracketDemoOn,
   startDemoServer,
 } from "./media/demo";
+import { assertEdition, requestedEdition } from "./media/edition";
 
 loadEnvConfig(process.cwd());
 
@@ -1055,6 +1060,7 @@ async function main() {
   mkdirSync(EVIDENCE, { recursive: true });
 
   current = await resolveCurrentWarWeek();
+  assertEdition(current.edition, requestedEdition(process.argv));
   note(
     `current War Week: ${current.edition} (${current.mode}, ${pinnedDisplay()} base palette)`,
   );

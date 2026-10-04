@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** needs-triage
+**Status:** done
 
 **Source:** Ticket 106 scale pass (2026-10-03); R19 resolved decision "Search in `EntityCombobox` pickers matches name and email"
 
@@ -27,3 +27,4 @@
 
 - 2026-10-04: folded into Epic R22 (`../../people-and-admin/spec.md`, ParticipantPicker searches name and email); closes when that epic ships.
 - 2026-10-04: decided with R22's red-team pass 1: **name-only**. No picker searches or carries a Participant's email, for any actor (the Organizer-only email keyword from 106 goes too). Implemented in Epic R22; closes when it ships.
+- 2026-10-04: Closed as name-only search by Epic R22 (.scratch/people-and-admin/spec.md, Decision 3).

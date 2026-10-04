@@ -20,52 +20,45 @@ export const metadata: Metadata = { title: "Schedule · JG War Week" };
 
 /**
  * The War Week's Days (with their Day Themes) and each Day's Schedule
- * Items on one page, each row with Edit (a Sheet) and Delete. An Organizer
- * edits the Days; a Host sees, adds and edits only the Schedule Items
- * linked to their Competitions.
+ * Items on one page, each row with Edit (a Sheet) and Delete. Organizers only.
  */
 export default async function AdminSchedulePage() {
-  const { warWeek, email, allowed, isOrganizer, editions, runs } =
+  const { warWeek, email, allowed, isOrganizer, editions } =
     await loadAdminPage("/admin/schedule", "organizers");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
-  const [schedule, setupDays, allCompetitions] = await Promise.all([
+  const [schedule, setupDays, competitions] = await Promise.all([
     getSchedule(warWeek.id),
     isOrganizer ? getSetupDays(warWeek) : [],
     getCompetitionOptions(warWeek),
   ]);
-  // A Host links an item only to one of their own Competitions.
-  const competitions = allCompetitions.filter((c) => runs(c.id));
   // The same grouping and order as the public Schedule page.
   const days = schedule.map((day) => ({
     id: day.id,
     date: day.date,
     dayTheme: day.dayTheme,
-    items: day.items
-      .filter((item) => runs(item.competition?.id))
-      .map((item) => {
-        // Sanitized on write; again here so the editor only gets the
-        // closed set.
-        const description =
-          item.description && sanitizeContent(item.description);
-        return {
-          id: item.id,
-          title: item.title,
-          details: (
-            <span className="flex flex-wrap items-center gap-2">
-              <span className="tabular-nums">{formatTimeRange(item)}</span>
-              <CategoryBadge category={item.category} />
-              {item.competition && <span>{item.competition.name}</span>}
-            </span>
-          ),
-          initial: scheduleItemInputFrom({
-            ...item,
-            dayId: day.id,
-            competitionId: item.competition?.id ?? null,
-            description: description?.ok ? description.content : null,
-          }),
-        };
-      }),
+    items: day.items.map((item) => {
+      // Sanitized on write; again here so the editor only gets the
+      // closed set.
+      const description = item.description && sanitizeContent(item.description);
+      return {
+        id: item.id,
+        title: item.title,
+        details: (
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="tabular-nums">{formatTimeRange(item)}</span>
+            <CategoryBadge category={item.category} />
+            {item.competition && <span>{item.competition.name}</span>}
+          </span>
+        ),
+        initial: scheduleItemInputFrom({
+          ...item,
+          dayId: day.id,
+          competitionId: item.competition?.id ?? null,
+          description: description?.ok ? description.content : null,
+        }),
+      };
+    }),
   }));
 
   return (
