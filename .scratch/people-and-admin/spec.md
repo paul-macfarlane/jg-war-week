@@ -1,6 +1,6 @@
 ---
 title: People and admin (Epic R22)
-status: ready-for-agent
+status: in-progress
 grilled: 2026-10-04 (see ../regression-2026-10/grilling-2026-10-04.md)
 created: 2026-10-04
 revised: 2026-10-04 (red-team pass 1 resolved; see Comments)
@@ -13,7 +13,7 @@ source: Paul's regression feedback "10/3", items 5.2, 5.4, 7.1, 12.1, 15.1
 none (R19 and R21 are merged; this epic's migration is the next one on
 `staging`, `0033`, renumbered if another lands first) · **Red-team:**
 required (Drizzle schema change and an access change); pass 1 resolved ·
-**Status:** ready-for-agent · **Absorbs:** backlog
+**Status:** in-progress · **Absorbs:** backlog
 `regression-2026-10/issues/108` (closed as name-only search) and
 `regression-2026-09/issues/83` (Show the Team in team events)
 
