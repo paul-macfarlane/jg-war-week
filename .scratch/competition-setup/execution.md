@@ -414,3 +414,25 @@ Extra checks for decisions without an AC:
     3939 tests, 285 smoke, 147 e2e. Deviation: closing a Closed
     Competition re-writes its generated entries for every Format (was
     Placement and Bracket only) instead of refusing.
+- **Wave 4 integrated** (D5 `ca61b13c` merged first, then D4
+  `e4b813b1`; both opus, in worker worktrees `war-weeker-b` / `-a`).
+  - Predicted collisions: `competition-settings-form.tsx`,
+    `competition-settings.ts` and `competition-locks.ts` merged cleanly;
+    `engine.ts` did not collide. Real conflicts, resolved by the
+    orchestrator: `bracket-tree.tsx` (both kept: D5's "Top N advance",
+    D4's "Set by hand"), `competition-settings-form.test.tsx` (D5's toggle
+    test plus D4's self-report label), `mutations/brackets.ts` (D4's
+    `otherResultsChanged` backstop before D5's `saveRecorded`).
+  - Orchestrator fixes after the merge: the D1f test's stale
+    `resetMatchIds` expectation (D4 dropped the field); the round
+    settings button renamed "Edit <Round> settings" because a Group
+    Bracket's one-Match Final made two buttons named "Edit Final"; the
+    match-scoring spec's locator made exact.
+  - Gate on the integrated head: 4017 tests, 288 smoke ok (`751346f8`),
+    e2e 157 passed (`8dc1cc96`, test-only change since).
+  - D4 readings: decided or drawn series refuses logging for Organizers
+    and Hosts too; a Group result edit that would change who advances is
+    refused once the next round has a result (D1c); Clear result on a
+    Group Bracket empties later rounds. D5 readings: Bracket edits
+    authorize as `bracket.generate`; a D1f re-fill happens only when the
+    advancers or their order change.
