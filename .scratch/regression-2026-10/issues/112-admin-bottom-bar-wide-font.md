@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent (absorbed by Epic R24, [`../../scale/spec.md`](../../scale/spec.md); decisions there)
+**Status:** in-progress (absorbed by Epic R24, [`../../scale/spec.md`](../../scale/spec.md); decisions there)
 
 **Source:** Ticket 106 scale pass (2026-10-03)
 

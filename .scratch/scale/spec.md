@@ -1,6 +1,6 @@
 ---
 title: War Week at full size (Epic R24)
-status: ready-for-agent
+status: in-progress
 grilled: 2026-10-04 (in session; decisions below)
 created: 2026-10-04
 source: Ticket 106 scale pass (2026-10-03), backlog issues 109–113
@@ -9,9 +9,10 @@ source: Ticket 106 scale pass (2026-10-03), backlog issues 109–113
 # War Week at full size
 
 **Epic:** R24 · **Branch:** `feat/r24-scale` · **Blocked by:** none ·
+**Execution:** [`execution.md`](./execution.md) ·
 **Red-team:** not required (no schema change, no access change; the Finale
 change only limits which rows count down and never reorders or recomputes
-Standings) · **Status:** ready-for-agent · **Absorbs:** backlog
+Standings) · **Status:** in-progress · **Absorbs:** backlog
 `regression-2026-10/issues/109`, `110`, `111`, `112`, `113`
 
 ## Summary
