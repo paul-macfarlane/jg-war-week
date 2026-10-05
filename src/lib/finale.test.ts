@@ -111,7 +111,7 @@ describe("finaleDurationMs", () => {
 
 describe("finaleTopRows", () => {
   const rowsWith = (ranks: number[]) =>
-    ranks.map((rank, i) => ({ id: `p${i}`, rank }));
+    ranks.map((rank, i) => ({ id: `p${i}`, rank, total: 200 - rank }));
   const ranked = (n: number) =>
     rowsWith(Array.from({ length: n }, (_, i) => i + 1));
 
@@ -137,6 +137,17 @@ describe("finaleTopRows", () => {
     const { shown, moreCount } = finaleTopRows(ranked(100));
     expect(shown).toHaveLength(10);
     expect(moreCount).toBe(90);
+  });
+
+  it("doesn't count left-out rows on 0 points as scorers", () => {
+    const rows = [
+      ...ranked(11),
+      { id: "zero-a", rank: 12, total: 0 },
+      { id: "zero-b", rank: 12, total: 0 },
+    ];
+    const { shown, moreCount } = finaleTopRows(rows);
+    expect(shown).toHaveLength(10);
+    expect(moreCount).toBe(1);
   });
 
   it("returns the input's first rows by identity and order", () => {

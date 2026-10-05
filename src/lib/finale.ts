@@ -18,14 +18,17 @@ export const FINALE_TOP_RANK = 10;
 /**
  * The rows the Standings countdown plays: those ranked 10th or better, every
  * row tied at 10th included, exactly as given (same objects, same order;
- * nothing is reordered or recomputed). `moreCount` is how many rows are left
- * out.
+ * nothing is reordered or recomputed). `moreCount` is how many of the rows
+ * left out scored (a Team on 0 points is listed but didn't score).
  */
-export function finaleTopRows<T extends { rank: number }>(
+export function finaleTopRows<T extends { rank: number; total: number }>(
   rows: T[],
 ): { shown: T[]; moreCount: number } {
   const shown = rows.filter((row) => row.rank <= FINALE_TOP_RANK);
-  return { shown, moreCount: rows.length - shown.length };
+  const moreCount = rows.filter(
+    (row) => row.rank > FINALE_TOP_RANK && row.total > 0,
+  ).length;
+  return { shown, moreCount };
 }
 
 export type RowFinale = { shown: boolean; progress: number };
