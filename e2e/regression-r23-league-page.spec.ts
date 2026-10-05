@@ -26,6 +26,10 @@ import {
   signIn,
 } from "./session";
 
+// An action that can't complete fails with its reason instead of
+// waiting out the test's timeout (CI showed only a hang).
+test.use({ actionTimeout: 20_000 });
+
 // Epic R23, AC 7 (.scratch/league/spec.md, decisions 10 and 11; reading
 // R6, R7): a round robin of 5 made by SQL, its results the hand-worked
 // fixture of the plan (Ashley A, Sam B, Graham C, Brandon D, Abby E): the
@@ -387,13 +391,18 @@ test("r23 R7 a round robin's Edit pairings that would repeat a Match warns, nami
     ]) {
       await edit.getByRole("combobox", { name: label, exact: true }).click();
       await expect(page.getByRole("listbox")).toBeVisible();
+      // Let the popup's opening animation end (at most 2s: an animation that
+      // never finishes must not hang the test).
       await page.evaluate(() =>
-        Promise.allSettled(
-          document
-            .getAnimations()
-            .filter((a) => a.effect?.getTiming().iterations !== Infinity)
-            .map((a) => a.finished),
-        ),
+        Promise.race([
+          Promise.allSettled(
+            document
+              .getAnimations()
+              .filter((a) => a.effect?.getTiming().iterations !== Infinity)
+              .map((a) => a.finished),
+          ),
+          new Promise((resolve) => setTimeout(resolve, 2_000)),
+        ]),
       );
       await page.getByRole("option", { name: person, exact: true }).click();
     }

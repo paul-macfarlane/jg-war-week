@@ -21,6 +21,10 @@ import {
 } from "./r23-league";
 import { participantPageAs } from "./session";
 
+// An action that can't complete fails with its reason instead of
+// waiting out the test's timeout (CI showed only a hang).
+test.use({ actionTimeout: 20_000 });
+
 // Epic R23, AC 4 (.scratch/league/spec.md, decision 8): with self-report
 // on, a player records their own Match from the Participant page, the
 // other player edits it, and a non-player sees no Record result and a

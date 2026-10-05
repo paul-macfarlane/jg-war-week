@@ -22,6 +22,10 @@ import {
 } from "./r23-league";
 import { asOrganizer } from "./session";
 
+// An action that can't complete fails with its reason instead of
+// waiting out the test's timeout (CI showed only a hang).
+test.use({ actionTimeout: 20_000 });
+
 // Epic R23, AC 3 and AC 6 (.scratch/league/spec.md, decisions 4 to 11;
 // reading R7 and R10): an Organizer makes a Swiss League through the UI (6
 // Entrants from the picker), pairs round 1, swaps two Entrants before a
