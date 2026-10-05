@@ -71,15 +71,14 @@ test("r5 30 admin header and section bar on a phone", async ({
     await shoot(page, testInfo, "organizer-competitions-375");
 
     // 30-2: the bar is fixed to the viewport's bottom, Schedule current on
-    // Schedule; its tabs are Competitions, Discretionary points, Schedule,
-    // Announcements.
+    // Schedule; its tabs read Competitions, Points, Schedule, News (r24).
     await page.goto("/admin/schedule");
     const bar = adminBar(page);
     await expect(bar.getByRole("link")).toHaveText([
       "Competitions",
-      "Discretionary points",
+      "Points",
       "Schedule",
-      "Announcements",
+      "News",
     ]);
     await expect(bar.getByRole("link", { name: "Schedule" })).toHaveAttribute(
       "aria-current",

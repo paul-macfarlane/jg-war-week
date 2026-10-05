@@ -166,10 +166,10 @@ describe("AdminShell bottom bar (phone)", () => {
     expect(html.match(/aria-label="Admin sections"/g)).toHaveLength(2);
   });
 
-  it("gives the bar a Discretionary points tab and a More tab", () => {
+  it("gives the bar a Points tab named Discretionary points, and a More tab", () => {
     const html = shell("Competitions");
     expect(html).toMatch(
-      /href="\/admin\/discretionary-points"[^>]*>(?:(?!<\/a>).)*Discretionary points<\/a>/,
+      /<a[^>]*aria-label="Discretionary points"[^>]*href="\/admin\/discretionary-points"[^>]*>(?:(?!<\/a>).)*Points<\/a>/,
     );
     expect(moreTab(html)).toBeDefined();
   });
