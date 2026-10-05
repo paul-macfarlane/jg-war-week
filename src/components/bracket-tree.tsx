@@ -261,6 +261,7 @@ export function BracketTree({
           role="group"
           aria-label={match.name}
           data-match-id={match.id}
+          tabIndex={-1}
           data-highlighted={highlighted ? "" : undefined}
           aria-current={highlighted ? "true" : undefined}
           className={`text-card-foreground relative flex w-full min-w-0 flex-col gap-1 rounded-lg p-2 ${

@@ -1,13 +1,13 @@
+import { nameMatches } from "@/lib/participant-options";
+
 /** The roster search: a case-insensitive substring of the name or the email. */
 export function filterRoster<
   T extends { displayName: string; email: string | null },
 >(participants: T[], query: string): T[] {
-  const needle = query.trim().toLowerCase();
-  if (!needle) return participants;
+  if (!query.trim()) return participants;
   return participants.filter(
     (p) =>
-      p.displayName.toLowerCase().includes(needle) ||
-      (p.email ?? "").toLowerCase().includes(needle),
+      nameMatches(p.displayName, query) || nameMatches(p.email ?? "", query),
   );
 }
 

@@ -30,9 +30,9 @@ const TAB_CLASS =
 
 /**
  * Below `md`: the admin's fixed bottom section bar, for one-thumb use. Four
- * tabs (Competitions, Points, Schedule, News) and a More tab whose Sheet holds the viewer's other sections, the
- * edition switcher. Display, the way back and the account are in the
- * header's account menu.
+ * tabs (Competitions, Points, Schedule, News) and a More tab whose Sheet
+ * holds the viewer's other sections and the edition switcher. Display, the
+ * way back and the account are in the header's account menu.
  * Its height is the admin root's `--admin-bar-height`. Highlights from
  * `current`, the page's own section, not the pathname.
  */
@@ -76,11 +76,13 @@ export function AdminBottomBar({
             <Link
               href={href}
               aria-current={active ? "page" : undefined}
-              aria-label={tabLabel === label ? undefined : label}
               className={tabClassName(active)}
             >
               <AdminSectionIcon icon={icon} className="size-5" />
               {tabLabel}
+              {tabLabel !== label && (
+                <span className="sr-only">{` (${label})`}</span>
+              )}
             </Link>
           </li>
         ))}

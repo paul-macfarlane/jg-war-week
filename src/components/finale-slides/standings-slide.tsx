@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   IndividualStandingsList,
@@ -32,14 +32,14 @@ export function StandingsSlide({
   const { standings, teamLabel, primaryColor } = data;
   const main = standings.main;
   // Only the top 10 (ties included) count down; the rest are one line.
-  const [top] = useState(() =>
-    main === "team"
-      ? finaleTopRows(standings.team)
-      : finaleTopRows(standings.individual),
-  );
-  const [ranks] = useState(() => top.shown.map((row) => row.rank));
+  const [tops] = useState(() => ({
+    team: finaleTopRows(standings.team),
+    individual: finaleTopRows(standings.individual),
+  }));
+  const top = main === "team" ? tops.team : tops.individual;
+  const ranks = useMemo(() => top.shown.map((row) => row.rank), [top]);
   const noun = main === "team" ? teamLabel : "Participant";
-  const moreLine = `\u2026and ${top.moreCount} more ${noun}${top.moreCount === 1 ? "" : "s"} scored`;
+  const moreLine = `…and ${top.moreCount} more ${noun}${top.moreCount === 1 ? "" : "s"} scored`;
   const { phase, start, finish, rows, startedAt } = useFinale(
     ranks,
     final ? "done" : "playing",
@@ -71,13 +71,10 @@ export function StandingsSlide({
           rows, order and values untouched). */}
       <div className="flex w-full max-w-[min(64rem,92vw)] flex-col gap-6 min-[1800px]:[zoom:1.5] md:text-lg lg:[zoom:1.25] xl:text-2xl">
         {main === "team" ? (
-          <TeamStandingsList
-            rows={standings.team.slice(0, top.shown.length)}
-            finale={rows}
-          />
+          <TeamStandingsList rows={tops.team.shown} finale={rows} />
         ) : (
           <IndividualStandingsList
-            rows={standings.individual.slice(0, top.shown.length)}
+            rows={tops.individual.shown}
             finale={rows}
             primaryColor={primaryColor}
           />

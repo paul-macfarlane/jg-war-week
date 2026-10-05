@@ -454,12 +454,13 @@ export function RosterEditor({
             type="search"
             aria-label="Search the roster"
             placeholder="Search by name or email"
+            className="h-11 sm:h-9 sm:max-w-xs"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
           <p
             role="status"
-            data-testid="roster-count"
+            data-slot="roster-count"
             className="text-foreground/70 text-sm"
           >
             {rosterCountText(shown.length, participants.length, query)}

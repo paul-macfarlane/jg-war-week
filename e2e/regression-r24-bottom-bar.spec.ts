@@ -1,8 +1,6 @@
 import { type Page, type TestInfo, expect, test } from "@playwright/test";
-import { spawnSync } from "node:child_process";
 
-import { localSeedFiles } from "@/seed/local-files";
-
+import { loadScaleDemo, restoreLocalSeed } from "./scale-demo";
 import { asOrganizer } from "./session";
 
 // Epic R24, finding 112 (.scratch/regression-2026-10/issues/112-admin-bottom-bar-wide-font.md):
@@ -13,13 +11,6 @@ import { asOrganizer } from "./session";
 
 const PHONE = { width: 390, height: 844 };
 const DESKTOP = { width: 1440, height: 900 };
-
-function pnpm(args: string[]) {
-  const result = spawnSync("pnpm", args, { stdio: "inherit" });
-  if (result.status !== 0) {
-    throw new Error(`pnpm ${args.join(" ")} exited with ${result.status}`);
-  }
-}
 
 async function checkBar(page: Page, testInfo: TestInfo, edition: string) {
   await page.setViewportSize(PHONE);
@@ -32,9 +23,9 @@ async function checkBar(page: Page, testInfo: TestInfo, edition: string) {
   await expect(tabs).toHaveCount(5);
   await expect(tabs).toHaveText([
     "Competitions",
-    "Points",
+    /^Points \(Discretionary points\)$/,
     "Schedule",
-    "News",
+    /^News \(Announcements\)$/,
     "More",
   ]);
   for (let i = 0; i < 5; i++) {
@@ -46,11 +37,23 @@ async function checkBar(page: Page, testInfo: TestInfo, edition: string) {
     );
   }
   await expect(
-    bar.getByRole("link", { name: "Discretionary points" }),
-  ).toHaveText("Points");
-  await expect(bar.getByRole("link", { name: "Announcements" })).toHaveText(
-    "News",
+    bar.getByRole("link", { name: /Discretionary points/ }),
+  ).toHaveText(/^Points \(/);
+  await expect(bar.getByRole("link", { name: /Announcements/ })).toHaveText(
+    /^News \(/,
   );
+  for (let i = 0; i < 5; i++) {
+    expect(
+      await tabs.nth(i).evaluate((el) => getComputedStyle(el).fontFamily),
+      `tab ${i} font`,
+    ).toMatch(/Inter/);
+  }
+  // The page's own font (the admin root sets it): the monospace preset in XI,
+  // so the tabs' Inter is deliberate there.
+  const bodyFont = await page
+    .getByText(`War Week ${edition} admin`, { exact: true })
+    .evaluate((el) => getComputedStyle(el).fontFamily);
+  if (edition === "XI") expect(bodyFont).toMatch(/JetBrains/);
   await page.screenshot({
     path: testInfo.outputPath(`bar-${edition.toLowerCase()}-390.png`),
     animations: "disabled",
@@ -81,12 +84,12 @@ test("r24 112 XI (monospace): five bottom-bar tabs fit 390 with short labels", a
 
 test.describe("XII (sans)", () => {
   test.beforeAll(() => {
-    pnpm(["seed:demo:scale"]);
+    loadScaleDemo();
   });
 
   test.afterAll(() => {
     // Team rule: put the shared seeded data back.
-    pnpm(["seed:load", "--reset", ...localSeedFiles()]);
+    restoreLocalSeed();
   });
 
   test("r24 112 XII (sans): five bottom-bar tabs fit 390 with short labels", async ({

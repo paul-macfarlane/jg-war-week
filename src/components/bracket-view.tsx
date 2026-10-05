@@ -205,9 +205,9 @@ export function BracketView({
     : null;
   const jumpToCurrent = () => {
     if (!current) return;
-    const el = Array.from(
-      treeRef.current?.querySelectorAll<HTMLElement>("[data-match-id]") ?? [],
-    ).find((m) => m.dataset.matchId === current.id);
+    const el = treeRef.current?.querySelector<HTMLElement>(
+      `[data-match-id="${CSS.escape(current.id)}"]`,
+    );
     if (!el) return;
     const reduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
@@ -218,6 +218,10 @@ export function BracketView({
       block: "center",
       inline: "center",
     });
+    // Screen-reader and keyboard users land on the Match too. The ring's
+    // keydown/pointerdown listeners attach in an effect after this state
+    // change, so moving focus doesn't clear it.
+    el.focus({ preventScroll: true });
     setHighlighted(current.id);
   };
   const matchesById = new Map(bracket.matches.map((h) => [h.id, h]));

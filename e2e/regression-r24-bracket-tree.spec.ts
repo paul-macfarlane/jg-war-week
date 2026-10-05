@@ -5,11 +5,14 @@ import {
   expect,
   test,
 } from "@playwright/test";
-import { spawnSync } from "node:child_process";
-
-import { localSeedFiles } from "@/seed/local-files";
 
 import { runQuery, setParticipantEmail } from "./db";
+import {
+  competitionId,
+  expectNoSidewaysScroll,
+  loadScaleDemo,
+  restoreLocalSeed,
+} from "./scale-demo";
 import { signIn } from "./session";
 
 // Epic R24, ticket 111 (.scratch/regression-2026-10/issues/111-bracket-tree-at-sixty-four.md):
@@ -21,22 +24,6 @@ import { signIn } from "./session";
 
 const PHONE = { width: 390, height: 844 };
 const DESKTOP = { width: 1440, height: 900 };
-
-function pnpm(args: string[]) {
-  const result = spawnSync("pnpm", args, { stdio: "inherit" });
-  if (result.status !== 0) {
-    throw new Error(`pnpm ${args.join(" ")} exited with ${result.status}`);
-  }
-}
-
-async function pingPongId(): Promise<string> {
-  const [row] = await runQuery<{ id: string }>(
-    `select c.id from competition c join war_week w on w.id = c.war_week_id
-     where w.edition = 'xii' and c.name = 'Ping Pong Bracket'`,
-  );
-  if (!row) throw new Error('No xii Competition named "Ping Pong Bracket"');
-  return row.id;
-}
 
 /**
  * An Entrant whose Participant is in the furthest unplayed Match, so Jump
@@ -51,7 +38,7 @@ async function entrantParticipant(): Promise<{ id: string; match: string }> {
      where m.competition_id = $1 and m.status <> 'played'
        and e.participant_id is not null
      order by m.round desc, m.position desc, me.slot limit 1`,
-    [await pingPongId()],
+    [await competitionId("xii", "Ping Pong Bracket")],
   );
   if (!row) throw new Error("No Entrant Participant in an unplayed Match");
   return { id: row.id, match: row.match };
@@ -64,7 +51,7 @@ async function nonEntrantParticipantId(): Promise<string> {
        and not exists (select 1 from entrant e where e.participant_id = p.id
                        and e.competition_id = $1)
      limit 1`,
-    [await pingPongId()],
+    [await competitionId("xii", "Ping Pong Bracket")],
   );
   if (!row) throw new Error("No non-Entrant XII Participant");
   return row.id;
@@ -82,14 +69,10 @@ const rounds = (page: Page) => page.getByRole("region", { name: "Rounds" });
 
 async function open(page: Page, size: { width: number; height: number }) {
   await page.setViewportSize(size);
-  await page.goto(`/xii/competitions/${await pingPongId()}`);
+  await page.goto(
+    `/xii/competitions/${await competitionId("xii", "Ping Pong Bracket")}`,
+  );
   await expect(rounds(page)).toBeVisible();
-}
-
-async function expectNoPageSidewaysScroll(page: Page, width: number) {
-  expect(
-    await page.evaluate(() => document.documentElement.scrollWidth),
-  ).toBeLessThanOrEqual(width);
 }
 
 /** `match` is fully inside the viewport and inside the Rounds region's box. */
@@ -132,11 +115,12 @@ test.describe.configure({ mode: "serial" });
 
 test.describe("Bracket tree at 64 Entrants in the XII scale demo", () => {
   test.beforeAll(() => {
-    pnpm(["seed:demo:scale"]);
+    loadScaleDemo();
   });
 
   test.afterAll(() => {
-    pnpm(["seed:load", "--reset", ...localSeedFiles()]);
+    // Team rule: put the shared seeded data back.
+    restoreLocalSeed();
   });
 
   test("r24 111 at 1440 the tree is wider than the text column, shows five Rounds, and Jump finds an Entrant's Match", async ({
@@ -154,20 +138,25 @@ test.describe("Bracket tree at 64 Entrants in the XII scale demo", () => {
     expect(treeBox).not.toBeNull();
     expect(treeBox!.width).toBeGreaterThan(column!.width + 200);
 
-    const headings = await rounds(page).getByRole("heading").all();
-    expect(headings.length).toBeGreaterThan(5);
-    let inside = 0;
-    for (const heading of headings) {
-      const box = await heading.boundingBox();
-      if (box && box.x >= 0 && box.x + box.width <= DESKTOP.width) inside++;
-    }
-    expect(inside).toBeGreaterThanOrEqual(5);
+    // With the Rounds region at scrollLeft 0, count the Round groups whose
+    // right edge is within the region's own box.
     expect(await rounds(page).evaluate((el) => el.scrollLeft)).toBe(0);
-    await expectNoPageSidewaysScroll(page, DESKTOP.width);
+    const region = await rounds(page).boundingBox();
+    expect(region).not.toBeNull();
+    const groups = await rounds(page).locator('[role="group"]:has(h3)').all();
+    let visibleRounds = 0;
+    for (const group of groups) {
+      const box = await group.boundingBox();
+      if (box && box.x + box.width <= region!.x + region!.width + 1) {
+        visibleRounds++;
+      }
+    }
+    expect(visibleRounds).toBeGreaterThanOrEqual(5);
+    await expectNoSidewaysScroll(page);
     await shoot(page, testInfo, "bracket-tree-1440.png");
 
     await jumpAndCheck(page, entrant.match);
-    await expectNoPageSidewaysScroll(page, DESKTOP.width);
+    await expectNoSidewaysScroll(page);
     await shoot(page, testInfo, "bracket-tree-jump-1440.png");
   });
 
@@ -178,7 +167,7 @@ test.describe("Bracket tree at 64 Entrants in the XII scale demo", () => {
     const entrant = await entrantParticipant();
     await signInAs(page, entrant.id);
     await open(page, PHONE);
-    await expectNoPageSidewaysScroll(page, PHONE.width);
+    await expectNoSidewaysScroll(page);
     await shoot(page, testInfo, "bracket-tree-390.png");
 
     const match = await jumpAndCheck(page, entrant.match);
@@ -187,7 +176,7 @@ test.describe("Bracket tree at 64 Entrants in the XII scale demo", () => {
       0,
     );
     await expect(match).toBeVisible();
-    await expectNoPageSidewaysScroll(page, PHONE.width);
+    await expectNoSidewaysScroll(page);
     await shoot(page, testInfo, "bracket-tree-jump-390.png");
   });
 

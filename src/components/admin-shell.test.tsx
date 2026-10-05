@@ -169,7 +169,7 @@ describe("AdminShell bottom bar (phone)", () => {
   it("gives the bar a Points tab named Discretionary points, and a More tab", () => {
     const html = shell("Competitions");
     expect(html).toMatch(
-      /<a[^>]*aria-label="Discretionary points"[^>]*href="\/admin\/discretionary-points"[^>]*>(?:(?!<\/a>).)*Points<\/a>/,
+      /<a[^>]*href="\/admin\/discretionary-points"[^>]*>(?:(?!<\/a>).)*Points<span class="sr-only"> \(Discretionary points\)<\/span><\/a>/,
     );
     expect(moreTab(html)).toBeDefined();
   });

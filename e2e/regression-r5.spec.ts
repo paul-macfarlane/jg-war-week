@@ -76,9 +76,9 @@ test("r5 30 admin header and section bar on a phone", async ({
     const bar = adminBar(page);
     await expect(bar.getByRole("link")).toHaveText([
       "Competitions",
-      "Points",
+      /^Points \(Discretionary points\)$/,
       "Schedule",
-      "News",
+      /^News \(Announcements\)$/,
     ]);
     await expect(bar.getByRole("link", { name: "Schedule" })).toHaveAttribute(
       "aria-current",

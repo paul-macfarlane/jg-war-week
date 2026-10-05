@@ -56,11 +56,12 @@ function squadDetail(squad: SquadRow): string {
  * A Bracket's Entrants, in its Competition page's run area: a team
  * Competition's Squads, the Entrants ("All Teams", "All Squads" or picked
  * ones for team scoring, picked Participants for individual) and their Seed
- * Positions with Generate / Re-roll. Its settings
- * (match size, self-report, enrollment) are in the page's Settings. Saving
- * Entrants and Generate go through the per-field save, so once a Match has
- * a result they're locked (`entrantsLock`, shown with its reason), and the
- * Entrants and Seed Positions then fold into one closed Collapsible.
+ * Positions with Generate / Re-roll. Its settings (match size, self-report,
+ * enrollment) are in the page's Settings. Saving Entrants and Generate go
+ * through the per-field save, so once a Match has a result they're locked
+ * (`entrantsLock`, shown with its reason). The Entrants and Seed Positions
+ * then fold into one closed Collapsible; the Squads fold with them because
+ * they're locked together (intended).
  */
 export function BracketBuilder({
   competition,

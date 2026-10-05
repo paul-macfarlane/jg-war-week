@@ -1,10 +1,8 @@
-import { type Page, expect, test } from "@playwright/test";
-import { spawnSync } from "node:child_process";
-
-import { localSeedFiles } from "@/seed/local-files";
+import { type Locator, expect, test } from "@playwright/test";
 
 import { runQuery } from "./db";
 import { finaleStage, nextUntil, openFinale } from "./finale-slides";
+import { loadScaleDemo, restoreLocalSeed } from "./scale-demo";
 import { asOrganizer } from "./session";
 
 // Epic R24, ticket 113: the Finale's Standings countdown plays only the top
@@ -16,16 +14,9 @@ const VIEWPORTS = [
   ["390x844", { width: 390, height: 844 }],
 ] as const;
 
-function pnpm(args: string[]) {
-  const result = spawnSync("pnpm", args, { stdio: "inherit" });
-  if (result.status !== 0) {
-    throw new Error(`pnpm ${args.join(" ")} exited with ${result.status}`);
-  }
-}
-
 test.describe("the Finale's Standings countdown with 100 scorers", () => {
   test.beforeAll(async () => {
-    pnpm(["seed:demo:scale"]);
+    loadScaleDemo();
     // Everyone with no points gets a Discretionary entry of 1.0 to 9.9
     // points: mostly distinct, a few ties. The afterAll reload below puts the data back.
     await runQuery(
@@ -40,7 +31,7 @@ test.describe("the Finale's Standings countdown with 100 scorers", () => {
 
   test.afterAll(() => {
     // Team rule: put the shared seeded data back (drops the entries above).
-    pnpm(["seed:load", "--reset", ...localSeedFiles()]);
+    restoreLocalSeed();
   });
 
   async function expected() {
@@ -60,7 +51,7 @@ test.describe("the Finale's Standings countdown with 100 scorers", () => {
     };
   }
 
-  async function words(page: Page, row: ReturnType<Page["locator"]>) {
+  async function words(row: Locator) {
     return (await row.innerText()).trim().split(/\s+/);
   }
 
@@ -119,7 +110,7 @@ test.describe("the Finale's Standings countdown with 100 scorers", () => {
         const shown: string[][] = [];
         for (let i = 0; i < want.shown; i++) {
           // The row's Avatar initials come right after the rank.
-          const [rank, , ...rest] = await words(page, items.nth(i));
+          const [rank, , ...rest] = await words(items.nth(i));
           shown.push([rank, ...rest]);
         }
         expect(shown).toEqual(top);
@@ -129,6 +120,7 @@ test.describe("the Finale's Standings countdown with 100 scorers", () => {
         await expect(page.locator("[data-finale-more]")).toHaveText(
           `…and ${more} more Participants scored`,
         );
+        await expect(page.locator("[data-finale-more]")).toBeInViewport();
         await page.screenshot({
           path: testInfo.outputPath(`finale-top-10-${label}.png`),
           animations: "disabled",

@@ -13,7 +13,7 @@ const COUNT_UP_MS = 1_500;
 const MAX_STEP_MS = 1_200;
 
 /** The Standings countdown shows and counts down ranks up to this one. */
-export const FINALE_TOP_RANK = 10;
+const FINALE_TOP_RANK = 10;
 
 /**
  * The rows the Standings countdown plays: those ranked 10th or better, every
@@ -25,6 +25,8 @@ export function finaleTopRows<T extends { rank: number; total: number }>(
   rows: T[],
 ): { shown: T[]; moreCount: number } {
   const shown = rows.filter((row) => row.rank <= FINALE_TOP_RANK);
+  // "Scored" means a total above 0, for individuals and Teams alike; a row
+  // listed at 0 or below is left out of the count.
   const moreCount = rows.filter(
     (row) => row.rank > FINALE_TOP_RANK && row.total > 0,
   ).length;

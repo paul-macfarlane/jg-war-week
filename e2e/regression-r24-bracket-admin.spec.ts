@@ -1,10 +1,13 @@
 import { type Page, type TestInfo, expect, test } from "@playwright/test";
-import { spawnSync } from "node:child_process";
-
-import { localSeedFiles } from "@/seed/local-files";
 
 import { addCompetition, openCompetitionPage } from "./competition-page";
 import { runQuery } from "./db";
+import {
+  competitionId,
+  expectNoSidewaysScroll,
+  loadScaleDemo,
+  restoreLocalSeed,
+} from "./scale-demo";
 import { asOrganizer } from "./session";
 
 // Epic R24, ticket 110 (.scratch/regression-2026-10/issues/110-bracket-admin-at-sixty-four.md):
@@ -17,22 +20,6 @@ const PHONE = { width: 390, height: 844 };
 const DESKTOP = { width: 1440, height: 900 };
 /** The issue's measurement of this page at 1440 before this change. */
 const BEFORE_HEIGHT_1440 = 12_000;
-
-function pnpm(args: string[]) {
-  const result = spawnSync("pnpm", args, { stdio: "inherit" });
-  if (result.status !== 0) {
-    throw new Error(`pnpm ${args.join(" ")} exited with ${result.status}`);
-  }
-}
-
-async function pingPongId(): Promise<string> {
-  const [row] = await runQuery<{ id: string }>(
-    `select c.id from competition c join war_week w on w.id = c.war_week_id
-     where w.edition = 'xii' and c.name = 'Ping Pong Bracket'`,
-  );
-  if (!row) throw new Error('No xii Competition named "Ping Pong Bracket"');
-  return row.id;
-}
 
 async function pageHeight(page: Page) {
   return page.evaluate(() => document.documentElement.scrollHeight);
@@ -58,12 +45,12 @@ test.describe.configure({ mode: "serial" });
 
 test.describe("Bracket admin at 64 Entrants in the XII scale demo", () => {
   test.beforeAll(() => {
-    pnpm(["seed:demo:scale"]);
+    loadScaleDemo();
   });
 
   test.afterAll(() => {
     // Team rule: put the shared seeded data back (this drops the result too).
-    pnpm(["seed:load", "--reset", ...localSeedFiles()]);
+    restoreLocalSeed();
   });
 
   test("r24 110 on an unlocked Bracket, Entrants and Seed Positions are expanded and there is no Preview", async ({
@@ -137,7 +124,7 @@ test.describe("Bracket admin at 64 Entrants in the XII scale demo", () => {
     await asOrganizer(context);
     const page = await context.newPage();
     try {
-      const url = `/admin/competitions/${await pingPongId()}`;
+      const url = `/admin/competitions/${await competitionId("xii", "Ping Pong Bracket")}`;
       const trigger = page.getByRole("button", {
         name: "Entrants and Seed Positions (64)",
       });
@@ -164,14 +151,13 @@ test.describe("Bracket admin at 64 Entrants in the XII scale demo", () => {
         await expect(reason).toContainText("Entrants and Seed Positions:");
 
         if (width === "390") {
-          expect(
-            await page.evaluate(() => document.documentElement.scrollWidth),
-          ).toBeLessThanOrEqual(PHONE.width);
+          await expectNoSidewaysScroll(page);
         } else {
           const lockedHeight = await pageHeight(page);
           console.log(
             `r24 110 page height at 1440: before ~${BEFORE_HEIGHT_1440} px (issue), now, locked and collapsed, ${lockedHeight} px`,
           );
+          expect(lockedHeight).toBeLessThan(BEFORE_HEIGHT_1440 * 0.7);
         }
         await shoot(page, testInfo, `collapsed-${width}.png`);
       }

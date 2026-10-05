@@ -200,10 +200,9 @@ export function nextMatchFor(
 }
 
 /**
- * The Match to show an Entrant as their current one: their next unplayed
- * Match; or, once they're out, through to a Round not yet filled, or the
- * Bracket is Closed, the last Match they played (the latest Round's). Null
- * when they have no Match at all, or aren't an Entrant.
+ * Their next unplayed Match; otherwise (out, waiting on a Round, or Closed)
+ * the latest Match they played, else their latest Match. Null when they have
+ * none.
  */
 export function currentMatchFor(
   bracket: Bracket,

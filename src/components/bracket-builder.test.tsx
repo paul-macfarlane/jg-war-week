@@ -51,8 +51,6 @@ function savedEntrants(count: number): BracketEntrant[] {
   }));
 }
 
-const DISABLED = /\sdisabled=""/;
-
 describe("BracketBuilder", () => {
   it("shows the Squad help text under the Squads heading", () => {
     const html = renderToStaticMarkup(<BracketBuilder {...baseProps} />);

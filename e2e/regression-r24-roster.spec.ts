@@ -1,9 +1,11 @@
 import { type Page, expect, test } from "@playwright/test";
-import { spawnSync } from "node:child_process";
-
-import { localSeedFiles } from "@/seed/local-files";
 
 import { runQuery } from "./db";
+import {
+  expectNoSidewaysScroll,
+  loadScaleDemo,
+  restoreLocalSeed,
+} from "./scale-demo";
 import { asOrganizer } from "./session";
 
 // Epic R24, ticket 109: /admin/roster with 100 Participants (the XII scale
@@ -12,13 +14,6 @@ import { asOrganizer } from "./session";
 
 const PHONE = { width: 390, height: 844 };
 const DESKTOP = { width: 1440, height: 900 };
-
-function pnpm(args: string[]) {
-  const result = spawnSync("pnpm", args, { stdio: "inherit" });
-  if (result.status !== 0) {
-    throw new Error(`pnpm ${args.join(" ")} exited with ${result.status}`);
-  }
-}
 
 async function expectInViewport(page: Page, name: string) {
   const box = await page.getByRole("button", { name }).first().boundingBox();
@@ -30,12 +25,12 @@ async function expectInViewport(page: Page, name: string) {
 
 test.describe("Roster at 100 Participants", () => {
   test.beforeAll(() => {
-    pnpm(["seed:demo:scale"]);
+    loadScaleDemo();
   });
 
   test.afterAll(() => {
     // Team rule: put the shared seeded data back.
-    pnpm(["seed:load", "--reset", ...localSeedFiles()]);
+    restoreLocalSeed();
   });
 
   for (const [width, size] of [
@@ -61,16 +56,14 @@ test.describe("Roster at 100 Participants", () => {
         await page.setViewportSize(size);
         await page.goto("/admin/roster");
         const rows = page.getByRole("list", { name: "Roster" }).locator("> li");
-        const count = page.getByTestId("roster-count");
+        const count = page.locator('[data-slot="roster-count"]');
         await expect(rows).toHaveCount(100);
         await expect(count).toHaveText("100 of 100");
 
         await expectInViewport(page, "Add Participant");
         await expectInViewport(page, "Import");
         if (size === PHONE) {
-          expect(
-            await page.evaluate(() => document.documentElement.scrollWidth),
-          ).toBeLessThanOrEqual(PHONE.width);
+          await expectNoSidewaysScroll(page);
         }
 
         const search = page.getByRole("searchbox", {
