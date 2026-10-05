@@ -200,6 +200,32 @@ export function nextMatchFor(
 }
 
 /**
+ * The Match to show an Entrant as their current one: their next unplayed
+ * Match; or, once they're out, through to a Round not yet filled, or the
+ * Bracket is Closed, the last Match they played (the latest Round's). Null
+ * when they have no Match at all, or aren't an Entrant.
+ */
+export function currentMatchFor(
+  bracket: Bracket,
+  entrantId: string,
+  closed: boolean,
+): Match | null {
+  if (!closed) {
+    const next = nextMatchFor(bracket, entrantId);
+    if (next?.kind === "match") return next.match;
+  }
+  const mine = bracket.matches.filter((h) =>
+    h.slots.some((s) => s.entrantId === entrantId),
+  );
+  const latest = (list: Match[]) =>
+    list.reduce<Match | null>((a, h) => (a && a.round > h.round ? a : h), null);
+  return (
+    latest(mine.filter((h) => isDecided(h) && !isBye(bracket, h))) ??
+    latest(mine)
+  );
+}
+
+/**
  * Your Entrant under the You rules: Your Squad's Entrant when it's entered;
  * none when the Entrants are Squads and Yours isn't one of them (Your Team
  * isn't entered as such); otherwise the Participant themselves in an
