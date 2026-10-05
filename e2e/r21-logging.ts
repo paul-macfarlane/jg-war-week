@@ -29,12 +29,13 @@ export async function shoot(page: Page, testInfo: TestInfo, step: string) {
 
 /** The columns a spec sets on its own Competition. */
 export type CompetitionColumns = {
-  format: "placement" | "bracket" | "head-to-head" | "best-score";
+  format: "placement" | "bracket" | "head-to-head" | "best-score" | "league";
   scoring?: "individual" | "team";
   scoreDirection?: "none" | "higher" | "lower";
   scoreUnit?: string | null;
   seriesConfig?: { drawsAllowed: boolean; bestOf: 1 | 3 | 5 | 7 } | null;
   bracketConfig?: Record<string, unknown> | null;
+  leagueConfig?: { pairing: "round-robin" | "swiss"; rounds: number | null };
   selfReport?: boolean;
   maxAttempts?: number | null;
   placementPoints?: number[];
@@ -49,8 +50,9 @@ export async function addXiCompetition(
     `insert into competition
        (war_week_id, name, scoring, format, score_direction, score_unit,
         series_config, bracket_config, self_report, max_attempts,
-        placement_points)
-     select id, $1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8, $9, $10
+        placement_points, league_config)
+     select id, $1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8, $9, $10,
+       $11::jsonb
      from war_week where edition = 'xi'
      returning id`,
     [
@@ -69,6 +71,11 @@ export async function addXiCompetition(
       columns.selfReport ?? false,
       columns.maxAttempts ?? null,
       columns.placementPoints ?? [5, 2, 1],
+      columns.format === "league"
+        ? JSON.stringify(
+            columns.leagueConfig ?? { pairing: "round-robin", rounds: null },
+          )
+        : null,
     ],
   );
   await addE2eHost(id, E2E_HOST_EMAIL);

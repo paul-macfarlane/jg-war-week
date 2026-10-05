@@ -10,7 +10,7 @@ import { deleteXiCompetition } from "./db";
 import { asOrganizer } from "./session";
 
 // Epic R21, AC 2 (.scratch/competition-setup/spec.md, decision 2): no
-// Format's settings have a "closes at" time. Each of the five Formats'
+// Format's settings have a "closes at" time. Each of the six Formats'
 // settings form is opened on a Competition this spec adds to demo XI (and
 // deletes in `finally`), with the switches that used to reveal a close
 // time turned on, and screenshotted at 1440×900 and 390×844.
@@ -24,6 +24,7 @@ const FORMATS: FormatName[] = [
   "Head-to-head",
   "Best score",
   "Participation",
+  "League",
 ];
 
 /** The Settings form, and nothing else on the page. */
@@ -62,15 +63,18 @@ for (const format of FORMATS) {
       await expect(form).toBeVisible();
 
       // The switches that used to reveal a close time beside them.
-      if (format === "Bracket") await turnOn(page, "Participants can enroll");
+      if (format === "Bracket" || format === "League") {
+        await turnOn(page, "Participants can enroll");
+      }
       if (format === "Participation") {
         await turnOn(page, "Participants can check in");
       }
 
-      // Enrollment is a Bracket's alone (spec R21, decision 5).
+      // Enrollment is a Bracket's and a League's alone (spec R21, decision 5;
+      // R23, decision 11).
       await expect(
         form.getByRole("switch", { name: "Participants can enroll" }),
-      ).toHaveCount(format === "Bracket" ? 1 : 0);
+      ).toHaveCount(format === "Bracket" || format === "League" ? 1 : 0);
 
       for (const [label, viewport] of [
         ["1440", DESKTOP],
