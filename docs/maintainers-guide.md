@@ -1318,7 +1318,8 @@ additive migration**, `drizzle/0034_*`: a `league` value on the Format enum,
 the `league_result` type, `competition.league_config`, the `league_match`
 table and its CHECKs, and `competition_self_enroll_bracket_only` widened to
 admit a League. It converts and drops nothing, so there is no report script.
-After the PR merges into `staging`: run **`migrate.yml`**, then **`seed.yml`**
+After the PR merges into `staging`, 0034 applies on its own (the deploy
+migrates; nothing to run by hand). Once it has, run **`seed.yml`**
 (file blank, all seeds) so the XII demo gains **Chess Round Robin** and
 **Chess Swiss**. Check: `/xii/competitions` lists both, both pages answer 200
 and `get_league` answers over MCP. Repeat for production after the `main`

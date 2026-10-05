@@ -420,9 +420,9 @@ Extra checks for decisions without an AC:
 ### Human-gated items
 
 - **PR review and merge** into `staging`; CI green.
-- **Staging and production after merge**: Paul runs `migrate.yml`
-  (additive 0034: enum value, column, table, CHECKs) then `seed.yml` for
-  the XII demo. Post-check: `/xii/competitions` lists Chess Round Robin and
+- **Staging and production after merge**: 0034 (additive: enum value,
+  column, table, CHECKs) applies on its own on merge (`migrate.yml` runs on
+  push; corrected 2026-10-05), then Paul runs `seed.yml` for the XII demo. Post-check: `/xii/competitions` lists Chess Round Robin and
   Chess Swiss, both pages answer 200, MCP `get_league` answers. Rollback
   note: an older deploy can't read a `league` Competition (no Format
   branch), so roll back only after deleting League Competitions.
@@ -610,7 +610,9 @@ S3 and S4 in parallel in `war-weeker-a` / `war-weeker-b`. No predicted
 collision, and none happened (S4 cherry-picked cleanly onto S3).
 
 Human gates after merge: Paul reviews and merges the PR into `staging`;
-then runs `migrate.yml` (additive 0034) and `seed.yml` for the XII demo.
+0034 (additive) applies on its own on merge; Paul then runs `seed.yml`
+for the XII demo (corrected 2026-10-05: `migrate.yml` runs on push, it
+isn't run by hand).
 Post-check: `/xii/competitions` lists Chess Round Robin and Chess Swiss,
 both pages answer 200, MCP `get_league` answers. Roll back only after
 deleting League Competitions. If `feat/r24-scale` merges a migration
