@@ -3,8 +3,8 @@ name: CI
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  push:
-    branches: [staging, main]
+  # No push trigger: staging and main change only by merging a PR that
+  # already ran these checks, and a run after the merge to main is too late.
   # Manual runs, e.g. to prove the drift check on a throwaway branch.
   workflow_dispatch:
 
@@ -77,11 +77,16 @@ jobs:
       # The Playwright flows (sign-in, Points Entry, Bracket, Heats Bracket
       # with the End War Week warning, Finale, Archive, forms, theme) in
       # Chromium over the same build and Postgres service.
-      - run: pnpm exec playwright install --with-deps chromium
+      # e2e runs only on PRs into main (staging -> main, before production):
+      # a PR into staging runs only the checks above. A browser regression on staging fails the next staging -> main
+      # PR, so fix it there before shipping.
+      - if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        run: pnpm exec playwright install --with-deps chromium
 
-      - run: pnpm e2e
+      - if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        run: pnpm e2e
 
-      - if: failure()
+      - if: failure() && (github.event_name == 'pull_request' && github.base_ref == 'main')
         uses: actions/upload-artifact@v7
         with:
           name: playwright-results
