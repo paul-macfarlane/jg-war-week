@@ -132,3 +132,117 @@ Both changes were approved by Paul in chat on 2026-10-04.
 
 Correction, not a scope change: a 64-Entrant Bracket has 6 Rounds, not 7.
 The spec's Summary was fixed. The AC's "at least five Rounds" is unchanged.
+
+## [AI CODE REVIEW]
+
+2026-10-04. One formal review of `8c1d8db1..d81f98d3` (src, e2e, scripts).
+Two fresh reviewers each read the full diff on one axis. The orchestrator
+judged every candidate. No finding was blocking. The fixes landed in
+`4ecf76ad`, with the review's verdicts below.
+
+**Axis 1: technical implementation and spec conformity.** Decisions 1–5
+and every AC conform, with the approved deviations noted.
+
+| # | Finding | Paths | Disposition |
+|---|---|---|---|
+| F1 | "News" tab's accessible name "Announcements" doesn't contain its visible text (WCAG 2.5.3) | `admin-bottom-bar.tsx` | resolved: visible short label plus sr-only "(full label)", so names read "News (Announcements)" and "Points (Discretionary points)" |
+| F2 | "Five Rounds" counted headings in the viewport, not Round columns in the region | `regression-r24-bracket-tree.spec.ts` | resolved: counts Round groups whose right edge is within the Rounds region, with `scrollLeft` 0 |
+| F3 | Bottom-bar e2e didn't prove the font | `regression-r24-bottom-bar.spec.ts` | resolved: tabs' font matches Inter in XI and XII; XI's header is JetBrains Mono |
+| F4 | Bracket admin height only logged | `regression-r24-bracket-admin.spec.ts` | resolved: asserts below 70% of before (amended AC) |
+| F5 | "More" line might fall below the projector's fold | `standings-slide.tsx`, finale spec | resolved: `toBeInViewport()` at 1440×900 and 390×844; it fits with no layout change |
+| F6 | "Scored" means total > 0 | `finale.ts` | resolved: documented in the helper |
+| F7 | Squads fold with the Entrants | `bracket-builder.tsx` | resolved: intended (locked together); comment added |
+| F8 | Collapsible remounts when a lock arrives mid-session | `bracket-builder.tsx` | accepted: the controls are disabled once locked and no data is lost |
+| F9 | Jump announces nothing | `bracket-view.tsx`, `bracket-tree.tsx` | resolved: focus moves to the Match (`tabIndex=-1`), highlight kept |
+| F10 | Re-slice vs `top.shown` | `standings-slide.tsx` | resolved: passes the computed rows |
+| F11 | Roster count announces on each keystroke | `teams-editor.tsx` | accepted: polite status, acceptable |
+
+Probes that came back clean: null emails in the roster filter;
+highlight clearing on the Jump click; the breakout (centred `main`, no
+sidebar, no page scroll at md–lg); `currentMatchFor` with byes, Squads,
+the 3rd place match, multi-Entrant advancing and Closed-early Brackets;
+`slice`/`filter` equivalence (ranks never decrease); the frozen Finale
+state (the slide remounts each visit); no `if (count > 0)` guards; every
+seed restored.
+
+**Axis 2: coding standards.** It conforms on shadcn controls, button
+variants, no cursor classes, ADR 0001, helpers with vitests beside them,
+banned terms (News allowlisted) and restored seeded data. All eleven
+non-blocking items were resolved:
+- a dead `DISABLED` test constant
+- over-long comment lines
+- an escaped `…`
+- the `nameMatches` reuse in `roster-filter.ts`
+- the roster input's `h-11 sm:h-9 sm:max-w-xs` idiom
+- `data-testid` replaced by `data-slot`
+- the untested "page is shorter" title (now asserted)
+- duplicated e2e helpers, moved into the new `e2e/scale-demo.ts`
+- an unused `page` param and a `Locator` type
+- `querySelector` with `CSS.escape`
+- the `currentMatchFor` JSDoc, an un-exported constant and the missing afterAll comment
+
+## [CLOSEOUT]
+
+2026-10-04. Repository delivery `war-weeker`. Branch `feat/r24-scale` was
+compared against `734f28e7` (`origin/staging`), with the spec at
+`8c1d8db1`. Two lane branches were merged in (`feat/r24-scale-a`,
+`feat/r24-scale-b`; local only, not pushed).
+
+| Deliverable | Commit(s) | Worker / model |
+|---|---|---|
+| D1 Roster | `480cabda` | atlas-worker / sonnet |
+| D4 Bottom bar | `71db6a76` | atlas-worker / sonnet |
+| D5 Finale | `70cc24ca`, orchestrator fix `8dd68d7d` | atlas-worker / sonnet; orchestrator |
+| D2 Bracket admin | `b6753fd0`, `832242c9` | atlas-worker / sonnet |
+| D3 Bracket tree | `7d22e9f6` | atlas-worker / sonnet |
+| D6 Docs | `d7b72e0c`, checklist overview line in `0c38a8d6` | atlas-worker / sonnet; orchestrator |
+| Review fixes | `4ecf76ad` | atlas-worker / sonnet |
+
+**Verified run command:** `SMOKE_PORT=3124 E2E_PORT=3224 pnpm gate`, run
+from `feat/r24-scale` at `cc9d3442` against local Postgres
+`war_weeker_r24`. It exited 0:
+- typecheck: pass
+- lint: 0 errors
+- vitest: 212 files, 3975 tests passed
+- build: pass
+- smoke: every check `ok`
+- e2e: 187 passed (11.1 m), 0 failed, 0 flaky
+
+The evidence root `test-results/` was cleared first and holds only this
+gate's output, committed in `0c38a8d6`. That commit's only other change is
+a docs line, which doesn't affect any check.
+
+| Criterion | Verdict | Evidence |
+|---|---|---|
+| AC Roster | PASS | `regression-r24-roster` in the gate; `test-results/e2e/regression-r24-roster-*/` |
+| AC Bracket admin | PASS (amended AC) | `regression-r24-bracket-admin`; about 12,000 → 7,662 px at 1440, asserted < 70%; `test-results/e2e/regression-r24-bracket-adm-*/` |
+| AC Bracket tree | PASS | `regression-r24-bracket-tree`; `test-results/e2e/regression-r24-bracket-tre-*/` |
+| AC Bottom bar | PASS | `regression-r24-bottom-bar` plus the `admin-sections` vitest; `test-results/e2e/regression-r24-bottom-bar-*/` |
+| AC Finale | PASS | `regression-r24-finale` plus the `finaleTopRows` vitests (tie at 10th, fewer than 10); `test-results/e2e/regression-r24-finale-*/` |
+| AC existing assertions updated | PASS | bracket-matches, r5, r19-scale and admin-shell were updated, not removed; full e2e and smoke green |
+| AC `pnpm gate` | PASS | gate exit 0 (above) |
+| DoD evidence committed | PASS | `0c38a8d6` |
+| DoD `/about` and maintainers guide | PASS | `d7b72e0c`: maintainers guide and organizer guide updated. `/about` copy is still true, and no still shows a changed surface (`scripts/about-media.ts` shoots 1280×720 desktop pages: schedule, points, the home Standings and the Finale Title) |
+| DoD regression checklist | PASS | `d7b72e0c`, `0c38a8d6`: Roster, Bracket admin, Bracket tree, bottom bar and Finale lines |
+| DoD issues and backlog | PASS | 109–113 `done`, backlog moved under Done (this commit) |
+| DoD one PR | PASS | PR link below |
+
+**Deviations (approved):**
+- the "News" label with a `CONTEXT.md` exception
+- the Bracket admin height AC amended
+- 6 Rounds, not 7
+- Add Participant / Import sit at the top of the Roster section, which is below the Teams editor in a teams War Week
+
+**Isolation re-check:** lane B's predicted overlap was real: bracket e2e
+specs, and `regression-r19-scale.spec.ts`, which D3 had to change for
+D2's collapsible. The prediction that lanes A and B wouldn't overlap held,
+except for `regression-r19-scale.spec.ts` (different hunks; it merged
+cleanly).
+
+**Run surface:** local. This epic has no schema change and no deploy step;
+staging picks it up on merge.
+
+**Seen during fixes, not reproduced in the gate:**
+- one vitest failure that passed on rerun
+- one strict-mode flake in `regression-r22-hosts` (two `[data-finale-slide="title"]`)
+Both passed in the full gate.

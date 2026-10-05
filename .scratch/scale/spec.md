@@ -1,6 +1,6 @@
 ---
 title: War Week at full size (Epic R24)
-status: in-progress
+status: done
 grilled: 2026-10-04 (in session; decisions below)
 created: 2026-10-04
 source: Ticket 106 scale pass (2026-10-03), backlog issues 109–113
@@ -12,7 +12,7 @@ source: Ticket 106 scale pass (2026-10-03), backlog issues 109–113
 **Execution:** [`execution.md`](./execution.md) ·
 **Red-team:** not required (no schema change, no access change; the Finale
 change only limits which rows count down and never reorders or recomputes
-Standings) · **Status:** in-progress · **Absorbs:** backlog
+Standings) · **Status:** done · **Absorbs:** backlog
 `regression-2026-10/issues/109`, `110`, `111`, `112`, `113`
 
 ## Summary
