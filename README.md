@@ -192,20 +192,22 @@ Production: **https://jg-war-week.vercel.app** (MCP at
   collecting page data; it is harmless there, but a deployment without the
   secret answers 500 on any page that checks the session.
 - **GitHub repo secrets:** `PROD_DATABASE_URL` and `STAGING_DATABASE_URL`,
-  used by the Migrate and Seed workflows below.
+  used by the Seed workflow below.
 
-Release flow: merge PRs into `staging` (staging database migrates, preview
-deploys) → merge `staging` into `main` (production database migrates,
-production deploys). Load or refresh seed data with the Seed workflow; check
+Release flow: merge PRs into `staging` (its Vercel build migrates the
+staging database, then deploys) → merge `staging` into `main` (its build
+migrates the production database, then deploys). Load or refresh seed data with the Seed workflow; check
 the deploy by confirming `/` redirects to `/xi`, `/xi` responds 200, and
 `/api/mcp` answers a `tools/call` of `get_current_war_week`.
 
 ## Deployed migrations
 
-`.github/workflows/migrate.yml` runs `pnpm db:migrate` on every push to
-`staging` (against the `STAGING_DATABASE_URL` repo secret) and `main`
-(against `PROD_DATABASE_URL`). A branch whose secret is unset logs a notice
-and skips. Generate migrations locally with `pnpm db:generate` and commit the
+Vercel's build runs `scripts/vercel-build.sh` (`vercel.json`
+`buildCommand`): `pnpm db:migrate` against the deployment's own
+`DATABASE_URL`, then `pnpm build`, for production (`main`) and the `staging`
+branch only. A migration that fails fails the build, so nothing deploys
+ahead of its migration. Other preview builds share staging's
+`DATABASE_URL` and never migrate. Generate migrations locally with `pnpm db:generate` and commit the
 `drizzle/` output; never run `db:migrate` by hand against a deployed database.
 
 Seeds are never loaded on deploy. To load them, run the **Seed** workflow from
