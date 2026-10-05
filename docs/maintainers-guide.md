@@ -109,7 +109,7 @@ before it says it's done.
 | Smoke test                                 | `scripts/smoke/` (entry: `scripts/smoke/index.ts`)                     |
 | Browser flows (Playwright, `pnpm e2e`)     | `e2e/`, `playwright.config.ts`                                         |
 | Past wiki text for history                 | `old-wikis/2016.txt` … `old-wikis/2026.txt`                            |
-| CI, deployed migrations, seeding           | `.github/workflows/` (`ci.yml`, `migrate.yml`, `seed.yml`)             |
+| CI, deployed migrations, seeding           | `.github/workflows/` (`ci.yml`, `seed.yml`), `scripts/vercel-build.sh` |
 
 The words in code come from [`CONTEXT.md`](../CONTEXT.md). The ones you'll
 see most: **War Week** (one year), **Edition** (`xi`, used in URLs),
@@ -146,7 +146,8 @@ Every change, however small:
    Postgres, and a migration drift check that fails when
    `src/db/schema.ts` changed without a `drizzle/` migration.
 6. **Check the Vercel preview** linked on the PR.
-7. **Merge into `staging`.** The staging database migrates automatically.
+7. **Merge into `staging`.** Vercel's build migrates the staging database,
+   then deploys; a failed migration fails the deploy.
 8. **Ship to production:** open a PR from `staging` into `main`, merge it.
    Production migrates and deploys. Check https://jg-war-week.vercel.app.
 
@@ -430,6 +431,11 @@ Attempts. For Teams at scale, the normal XI demo already has 101 Participants. I
 a database that is not local. Open `/xii`, its leaderboard and Competitions,
 the roster, a Placement sheet and the Bracket tree. Afterwards
 `pnpm seed:demo` puts the normal demo back.
+
+Deployed migrations now run in Vercel's build (`scripts/vercel-build.sh`),
+before the build and so before the deploy; `migrate.yml` is gone. In the
+rollout notes below, read "`migrate.yml`'s run is green" as "the Vercel
+deployment of that push is Ready".
 
 ### Rolling out R10 (migrations 0018 and 0019)
 
@@ -1247,7 +1253,8 @@ migration on a `fix/…` branch.
 - **Never open, cat or paste `.env*` files**, into Claude or anywhere else.
   Claude is told the same; use `.env.example` for variable names.
 - **Migrations reach deployed databases only through the deploy path**
-  (merge to `staging` / `main`, `migrate.yml`). Never run `pnpm db:migrate`
+  (merge to `staging` / `main`; Vercel's build migrates before it builds).
+  Never run `pnpm db:migrate`
   against Neon by hand.
 - **Never use `--reset`** on a War Week organizers are running; it deletes
   their points, Awards and Announcements. Against a non-local database it
